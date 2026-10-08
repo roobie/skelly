@@ -11,9 +11,9 @@ read_if:
 
 This document defines what version 1 is, then breaks the way there into
 slices. Each slice is playable and deployed to GitHub Pages. The first real
-playtest is at the end of Slice 3, before Slice 4 starts (BR, 2026-10-02); later
-slices are playtested before the next one starts. The systems are described in
-[DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES.md).
+playtest is at the end of Slice 3, before Slice 4 starts, so the base game is in
+place; later slices are playtested before the next one starts. The systems are
+described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES.md).
 
 ## What version 1 is
 
@@ -138,9 +138,8 @@ wear and light. Slice 3's milestone scope and gates are in
 Use the authored map specified in
 [#181](https://github.com/roobie/skelly/issues/181) and detailed in
 [SLICE-3.md](SLICE-3.md). Test at least three people, including someone new to
-both CDDA and DayZ, in a 45-minute session on Pages. BR confirmed the prompt
-“find the military camp” in conversation at 13:05 on 2026-10-06; #181 records
-that confirmation. Do not teach the systems first.
+both CDDA and DayZ, in a 45-minute session on Pages. Use “find the military
+camp” as the prompt specified by #181. Do not teach the systems first.
 
 For #181, open the Pages build, read the controls card and start in late
 afternoon at the lone house. Follow the authored progression through the first
@@ -245,19 +244,22 @@ zombie types, hordes, input replay and authored playtest map are planned there.
   save migration.
 - Content filled up to the minimums.
 
-### Sound polish — BR 2026-10-01
+### Sound polish
 
-**Re-listen — BR 2026-10-02:** BR approved the current d13-selected recordings presented for re-listen. Prior explicit placeholders and rejected/deferred work below remain open (including a better fist hit, a hard-landing-specific sound, a distinct stuck-door cue, and the rejected mud/stone footsteps).
+The current d13-selected recordings are approved. Explicit placeholders and
+rejected or deferred work below remain open, including a better fist hit, a
+hard-landing-specific sound, a distinct stuck-door cue and replacement mud/stone
+footsteps.
 
 - Surface-hit sounds by weapon type and surface: blade on stone has recordings parked as `melee-swing-01..03.ogg`; blunt on a wall and blunt on wood still need recordings. Implement after d7's deferred surface-hit result.
-- Split item-drop sounds by pile surface; the wood clips currently play on every surface because piles expose no surface classification.
+- Split item-drop sounds by pile surface; the wood clips play on every surface because piles expose no surface classification.
 - Short drop onto a hard floor: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/hard_floor_drop--bfh1_wood_hit_02.ogg` is in the mail scratch and intentionally not in the repo.
 - Wood tap or knock: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/wood_tap--thwack-02.wav` is in the mail scratch and intentionally not in the repo.
-- New sources for `footstep_mud` and `shambler_step_mud` (all current variants rejected).
-- More `footstep_leaves` variants (BR rejected `footstep-leaves-02.ogg`: it sounds like linoleum).
-- New sources for `footstep_stone` and `shambler_step_stone`; park the current gravel-sounding clips for a future gravel surface.
-- More `door_open` variants; only `door-open-03.ogg` is currently accepted.
-- A distinct stuck-door sound; `door_close` and `door_blocked_close` temporarily share `door_blocked_close-01.ogg`.
+- New sources for `footstep_mud` and `shambler_step_mud`; the existing variants are rejected.
+- More `footstep_leaves` variants. Do not use `footstep-leaves-02.ogg`; it sounds like linoleum.
+- New sources for `footstep_stone` and `shambler_step_stone`; keep the gravel-sounding clips for a future gravel surface.
+- More `door_open` variants; only `door-open-03.ogg` is accepted.
+- A distinct stuck-door sound; use `door_blocked_close-01.ogg` for both `door_close` and `door_blocked_close` until a separate cue is added.
 - Wire eating, drinking, and flashlight on/off sounds to their use actions; add
   sustained or periodic breathing when stamina is low.
 - Add shambler door-contact sounds with the door-banging behavior.
@@ -275,31 +277,34 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 - A better fist-hit source (the current placeholder is retained).
 - A blunt hit on a wall, a hard landing, and more swing variants.
 
-## Later, after the game is more playable
+## Unscheduled polish
 
-**Shambler polish — not scheduled; take up once the game is more playable.** BR's
-later notes (2026-09-27):
-- “a sickly, fleshy look, not a swamp monster”;
-- “minor details: nose, neck, feet, hands”;
-- “dismemberment when hit hard enough”. Designed on 2026-09-28: see
-  [Damage, destruction and dismemberment](DESIGN.md#damage-destruction-and-dismemberment)
-  (body regions, death only when the head is destroyed, damage types against
-  materials);
-- “at least three basic attack animations, and animations for taking damage”.
-- “Q and E are reserved for later actions” (nothing is bound to them in the world today).
+### Shambler
 
-**Crafting and condition, later (BR, 2026-10-03, from the Slice 2 plan).**
+The target is a sickly, fleshy figure rather than a swamp monster, with
+recognizable nose, neck, feet and hands. Sufficiently forceful hits can dismember;
+see [Damage, destruction and dismemberment](DESIGN.md#damage-destruction-and-dismemberment)
+for body regions, death on head destruction and damage types against materials.
+The shambler needs at least three basic attack animations and damage reactions.
+Q and E remain reserved for later actions and have no world bindings.
+
+### Crafting and condition
+
 - Items carried in clothing can be damaged when that clothing is hit.
-- Condition affects how an item performs, not only whether it's ruined.
-- Books may also speed up skill practice, not only teach recipes.
-- **Learning from books, later (BR, 2026-10-05):** “at this point it's ok to just 'learn' the recipes, but we will transition to a more in-depth leaning system in future - i.e. you don't just learn the recipe by reading it once, but rather you det to know it, and then you can use the book as reference while performing it, until learned fully”.
+- Condition can affect an item's performance before it is ruined.
+- Books teach recipes only, for now; they may also speed up skill practice in a
+  later reading design.
+- Learning from books will become gradual: reading lets the player use the book
+  as a reference while doing the work, until the recipe is learned fully.
 - Condition may lower salvage yield.
 
-**Player melee polish (not scheduled).** BR's note (2026-09-30): “fists are OK. At some point we might wanna add variations (cross/hook/uppercut) but let's just note those down for now.”
-- Fist variations: cross, hook, uppercut (BR).
-- Per-weapon motion overrides where a weapon does not fit its damage-type profile.
-- Surface-hit result from the combat query for a thud or recoil when a swing hits a wall (today it counts as a miss).
-- Full player figure (`playerFigure.ts`) following first-person swings; third-person views do not animate yet.
+### Player melee
+
+Fists are acceptable as they are; cross, hook and uppercut variants are possible
+polish. Per-weapon motion may override a damage-type profile. A surface-hit result
+could provide a wall-hit thud or recoil instead of counting as a miss.
+`src/render/playerFigure.ts` could follow first-person swings; third-person views
+do not animate.
 
 ## Cut list
 
@@ -329,8 +334,8 @@ qualities, the body model, saves, dark nights and sound. They are the game.
    metrics. Revisit dated backlog decisions throughout the slice, not just at
    its end.
 3. **Playtest:** at least 3 people follow a short script, and the build logs
-   local metrics. The first real playtest is scheduled for the end of Slice 3
-   (BR, 2026-10-02), covering the first-slice questions recorded above plus
+   local metrics. The first real playtest is scheduled for the end of Slice 3,
+   covering the first-slice questions recorded above plus
    questions from Slices 2 and 3.
 4. **Review the slice:** run the exit consolidation surveys and report the
    process metrics: findings and their dispositions, per-item line/site changes,
