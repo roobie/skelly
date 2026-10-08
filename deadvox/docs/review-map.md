@@ -1,7 +1,7 @@
 ---
 read_if:
-  - you're reviewing the authored playtest layout in #181
-  - you're changing the top-down review map before #470
+  - "you're reviewing the authored playtest layout in #181"
+  - "you're changing the top-down review map before #470"
 ---
 
 # Playtest review map

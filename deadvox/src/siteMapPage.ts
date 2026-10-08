@@ -151,7 +151,7 @@ const sampleGround = async () => {
   );
 };
 
-const sampleTopBlocks = async (): Promise<{ columns: number; seconds: number }> => {
+const sampleTopBlocks = async (): Promise<{ columns: number; realSeconds: number }> => {
   const minCx = toChunk(minBlockX);
   const minCz = toChunk(minBlockZ);
   const countZ = Math.ceil(maxBlockZ / CHUNK) - minCz;
@@ -184,7 +184,7 @@ const sampleTopBlocks = async (): Promise<{ columns: number; seconds: number }> 
       }
     },
   );
-  return { columns: total, seconds: (performance.now() - started) / 1000 };
+  return { columns: total, realSeconds: (performance.now() - started) / 1000 };
 };
 
 const makeRaster = (mapView: SiteMapView, shades: Float32Array, colors: Uint8Array): HTMLCanvasElement => {
@@ -243,7 +243,7 @@ const generateMap = async (): Promise<RasterMap> => {
   const topographic = makeRaster('topographic', shades, colors);
   const satellite = makeRaster('satellite', shades, colors);
   await addContours(topographic);
-  status.textContent = `Ready · generated ${generated.columns} chunk columns in ${generated.seconds.toFixed(1)} s`;
+  status.textContent = `Ready · generated ${generated.columns} chunk columns in ${generated.realSeconds.toFixed(1)} s`;
   return { topographic, satellite };
 };
 
