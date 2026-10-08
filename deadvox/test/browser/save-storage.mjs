@@ -801,6 +801,23 @@ try {
     );
     assert.equal(beforeNavigation.locks.pending.length, 0);
     await page.evaluate(() => {
+      const { controller, storage } = globalThis.deadvoxSaveTest;
+      const captures = controller.capture.bind(controller);
+      controller.capture = (reason) => {
+        const events = JSON.parse(sessionStorage.getItem('d144-captures') ?? '[]');
+        events.push({ reason, pageIsLeaving: controller.pageIsLeaving, visibilityState: document.visibilityState });
+        sessionStorage.setItem('d144-captures', JSON.stringify(events));
+        return captures(reason);
+      };
+      const save = storage.save.bind(storage);
+      storage.save = (...args) => {
+        const events = JSON.parse(sessionStorage.getItem('d144-writes') ?? '[]');
+        events.push({ pageIsLeaving: controller.pageIsLeaving, visibilityState: document.visibilityState });
+        sessionStorage.setItem('d144-writes', JSON.stringify(events));
+        return save(...args);
+      };
+      sessionStorage.removeItem('d144-captures');
+      sessionStorage.removeItem('d144-writes');
       sessionStorage.removeItem('d144-held-writer');
       sessionStorage.removeItem('d144-writer-requested');
       sessionStorage.removeItem('d144-writer-trigger');
@@ -909,6 +926,8 @@ try {
       const postBackSave = await page.evaluate(async () => ({
         pageIsLeaving: globalThis.deadvoxSaveTest.controller.pageIsLeaving,
         statusText: globalThis.deadvoxSaveTest.controller.statusText,
+        captures: JSON.parse(sessionStorage.getItem('d144-captures') ?? '[]'),
+        writes: JSON.parse(sessionStorage.getItem('d144-writes') ?? '[]'),
         generation: (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
       }));
       process.stdout.write(`${browserName}: post-Back capture ${JSON.stringify(postBackSave)}\n`);
