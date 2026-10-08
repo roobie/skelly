@@ -47,7 +47,6 @@
       "count": 1
     },
     { "path": "deadvox/docs/trees-first-look.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
-    { "path": "deadvox/GRAPHICS.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "deadvox/INTERACTIONS.md", "check": "path", "text": "core/food.ts", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "render/playFrames.ts", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "render/playView.ts", "count": 1 },
