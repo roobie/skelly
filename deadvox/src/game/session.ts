@@ -1031,9 +1031,6 @@ export const createSession = (options: SessionOptions) => {
     playerInput = controls.sampleAtPlayerTick?.(tick, live, time, sim.compression.c) ?? live;
     const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal;
     const intent = moving ? playerInput.intent : IDLE;
-    if (moving && (intent.forward !== 0 || intent.right !== 0) && sim.actions.job?.jobType === 'pry') {
-      sim.actions.cancel();
-    }
     const handling = queue.busy || firearms.busy;
     const readyGait = advancePlayerReadiness(dt, intent, moving);
     controls.consumeDominantUse?.();
