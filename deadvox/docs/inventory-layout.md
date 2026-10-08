@@ -18,10 +18,12 @@ and nearby piles or containers stay together on Items so drag and drop remains
 within one view. Tab selection is runtime UI state, not save or replay state.
 Per-tab hotkeys are pending BR's choice on #435.
 
-Container grids scroll in their bounded region on both axes so a large or wide
-container cannot expand the nearby pane and push other useful contents out of
-view. The pane scrolls among its contents, and the Items body can also scroll
-to bring its pane rows into view on short screens. Since this leaves nested
+Container grids scroll within bounded regions so a tall container cannot expand
+the nearby pane and push other useful contents out of view. The content-owned
+width cap applies to visible grid cells: an ordinary cap-wide grid fits without
+horizontal scrolling, while a justified wider container can scroll horizontally.
+The pane scrolls among its contents, and the Items body can also scroll to bring
+its pane rows into view on short screens. Since this leaves nested
 scroll regions, `deadvox/src/ui/inventoryScreen.ts`,
 `InventoryScreen.scrollSelectedItemIntoView`, reveals a newly selected row
 through every scrollable ancestor. Routine redraws leave the player's browsing

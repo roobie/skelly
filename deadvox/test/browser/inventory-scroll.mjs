@@ -21,6 +21,15 @@ const content = [
     source: 'inventory-scroll-fixture',
     data: {
       inventory: [{ id: 'player', containerMaxWidthCells: 5 }],
+      furniture: [
+        {
+          id: 'scroll_rack',
+          name: 'Scroll rack',
+          size: [1, 1, 1],
+          color: '#494b4e',
+          container: { pockets: [{ name: 'Rack', grid: [5, 2], handlingSimSeconds: 0.1 }] },
+        },
+      ],
       items: [
         ...['legs', 'torso', 'back'].map((slot) => ({
           id: `scroll_${slot}`,
@@ -83,7 +92,7 @@ let needsText = 'health 100% · stamina 100%';
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
-  containers: () => [], entityDistance: () => 0, dispatch: () => undefined, searching: () => false,
+  containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: () => undefined, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
   body: () => body.snapshotState(), character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
 });
@@ -113,6 +122,17 @@ target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions: BODY_REGIONS,
   containerMaxWidthCells: registry.inventory.get('player')?.containerMaxWidthCells,
   populatePiles,
+  addCapRack() {
+    const width = registry.inventory.get('player')?.containerMaxWidthCells;
+    if (width === undefined) throw Error('content width cap is missing');
+    const rack = inventory.entities.add({ type: 'scroll_rack', pos: [0, 0, 0], size: [1, 1, 1], facing: 'n' });
+    if (!rack) throw Error('cap-width rack fixture failed');
+    rack.searched = true;
+    if (!inventory.add(inventory.create('scroll_token'), { kind: 'furniture', entity: rack, pocket: 0, at: { x: width - 1, y: 0, rotated: false } })) {
+      throw Error('last-column item fixture failed');
+    }
+    screen.update();
+  },
   get gameplayWheels() { return gameplayWheels; },
   resetWheels() { gameplayWheels = 0; },
   redraw() {
@@ -223,7 +243,6 @@ try {
       you: { width: youBox.width, height: youBox.height },
       target: { width: targetBox.width, height: targetBox.height },
       cell,
-      maxWidth: Number.parseFloat(getComputedStyle(around).maxWidth),
       cap: globalThis.scrollFixture.containerMaxWidthCells,
       targetIsHit: hit?.closest('.inv-grid') === grid,
     };
@@ -244,12 +263,47 @@ try {
     emptyAround.target.width >= 2 * emptyAround.cell && emptyAround.target.height >= 2 * emptyAround.cell,
     `feet target remains a usable two-cell hit area: ${JSON.stringify(emptyAround)}`,
   );
-  assert.equal(
-    emptyAround.maxWidth,
-    emptyAround.cap * emptyAround.cell,
-    'vicinity width reads the content-owned cell cap',
-  );
   assert.ok(emptyAround.targetIsHit, 'the visible empty-feet target receives a centre pointer hit');
+  await page.evaluate(() => globalThis.scrollFixture.addCapRack());
+  const capWideRack = await page.evaluate(() => {
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
+    const scroll = rack?.querySelector('.inv-grid-scroll');
+    const grid = scroll?.querySelector('.inv-grid');
+    const item = grid?.querySelector('.inv-item');
+    if (!(around && scroll && grid && item)) {
+      throw new Error('cap-width rack fixture is missing');
+    }
+    const pane = around.getBoundingClientRect();
+    const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+    const itemBox = item.getBoundingClientRect();
+    const hit = document.elementFromPoint(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
+    return {
+      pane: { left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom },
+      clientWidth: scroll.clientWidth,
+      scrollWidth: scroll.scrollWidth,
+      itemLeft: Number.parseFloat(item.style.left),
+      expectedLastColumnLeft: (globalThis.scrollFixture.containerMaxWidthCells - 1) * cell,
+      itemHit: hit?.closest('.inv-item') === item,
+    };
+  });
+  assert.ok(
+    capWideRack.pane.left >= 0 &&
+      capWideRack.pane.right <= 640 &&
+      capWideRack.pane.top >= 0 &&
+      capWideRack.pane.bottom <= 400,
+    `cap-wide vicinity stays in the 640×400 viewport: ${JSON.stringify(capWideRack)}`,
+  );
+  assert.ok(
+    capWideRack.scrollWidth <= capWideRack.clientWidth,
+    `cap-wide rack needs no horizontal scrolling: ${JSON.stringify(capWideRack)}`,
+  );
+  assert.equal(
+    capWideRack.itemLeft,
+    capWideRack.expectedLastColumnLeft,
+    'fixture item occupies the rack’s last column',
+  );
+  assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack)}`);
   await page.setViewportSize({ width: 960, height: 540 });
   const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
   assert.ok(

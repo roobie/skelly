@@ -426,7 +426,7 @@ body.unconscious::after {
 }
 #inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
   align-self: start;
-  max-width: var(--inv-around-width-cap, 100%);
+  max-width: min(100%, calc(var(--inv-around-width-cap, 100%) + 26px + 1.25em));
   max-height: 100%;
 }
 .inv-body[data-tab-panel="items"] .inv-details {
@@ -542,7 +542,7 @@ body.unconscious::after {
   overscroll-behavior: contain;
 }
 #inventory .inv-pane[data-pane="around"] .inv-grid-scroll {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
 }
 .inv-grid {
   position: relative;
