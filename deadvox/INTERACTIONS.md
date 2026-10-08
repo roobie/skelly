@@ -12,7 +12,7 @@ read_if:
   - you change movement or action input during long actions
   - you reconcile BR's interaction rulings with actor handedness
   - you change quickbar hand displacement or automatic item-stow behavior
-  - "you're changing inventory handling for #478"
+  - "you change inventory handling costs or training"
   - you change long-action admission or interruption behavior
 ---
 
@@ -110,10 +110,10 @@ The arrow only points one way: `ui` reads `core` and calls its commands;
 Each item carries its location and the handling time to bring it to your
 hands, from `src/core/inventory.ts`, `Inventory.handlingTime`. The inventory's
 "around" pane, crafting planner, gathering, appliance panel and a dead light's
-spare-battery search all read the same snapshot. For #478, the Inventory
-Management skill improves ordinary transfers and their derived gathering
-estimates; Firearms Combat retains ownership of firearm readiness, reload, rack
-and magazine insert/remove timing. This separation avoids applying two skill
+spare-battery search all read the same snapshot. The Inventory Management
+skill improves ordinary transfers and their derived gathering estimates; Firearms
+Combat retains ownership of firearm readiness, reload, rack and magazine
+insert/remove timing. This separation avoids applying two skill
 effects to the same handling action.
 
 The snapshot is cached against the inventory, block-entity and player-block

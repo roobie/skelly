@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're planning or implementing a Slice 3 milestone
-  - "you're implementing inventory management skill work for #478"
+  - "you change skill effects or training rules in Slice 3"
   - you're checking Slice 3 scope, saves, tests or BR approval gates
   - "you're tracking #308's playtest 1 apex enemy scope and design questions"
   - you're interpreting BR's camera-directed gaze ruling for zombie models
@@ -449,7 +449,7 @@ Loose-item pickup belongs in the first Slice 3 playtest because looting is centr
 
 #### Inventory management skill
 
-For #478, the Inventory Management skill makes ordinary item transfers faster with practice. Transfers between hands, worn slots, pockets, furniture and ground use the same handling-time owner, so their previews and crafting/disassembly gathering estimates stay consistent. Firearms Combat owns firearm readiness, reload, rack and magazine insert/remove timing; those actions do not receive a second skill factor. Moving a magazine between inventory locations remains an ordinary transfer. This skill's fixed practice award is untiered and can train through level 10; the initial practice amount is a first-look proposal, not an approved value.
+The Inventory Management skill makes ordinary item transfers faster with practice. Transfers between hands, worn slots, pockets, furniture and ground use the same handling-time owner, so their previews and crafting/disassembly gathering estimates stay consistent. Firearms Combat owns firearm readiness, reload, rack and magazine insert/remove timing; those actions do not receive a second skill factor. Moving a magazine between inventory locations remains an ordinary transfer. This skill's fixed practice award is untiered and can train through level 10; the initial practice amount is a first-look proposal, not an approved value.
 
 **In:** Add the skill to content, scale `Inventory.handlingTime` through the shared skill curve with level 0 unchanged and legendary matching level 10, and award practice only when an inventory move completes. Preserve progression through save/load and replay; allow fresh debug games to set the skill level.
 

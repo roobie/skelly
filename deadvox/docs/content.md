@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
-  - "you're implementing the Inventory Management skill for #478"
+  - "you change skill content tuning or training rules"
   - you're authoring or changing base template geometry or palettes
   - you change content references, static reachability, or disassembly-output contracts
   - you change how content-loading tests build their registry fixtures
