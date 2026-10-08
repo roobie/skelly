@@ -1217,6 +1217,22 @@ const SkillSchema = pipe(
     );
   }, 'missing required skill tuning or effect range exceeds one'),
 );
+const SiteGenerationSchema = strictObject({
+  id: Id,
+  topography: strictObject({
+    amplitudeMetres: NonNegative,
+    wavelengthMetres: PositiveMetres,
+    buildingMarginMetres: NonNegative,
+    roadShoulderMetres: NonNegative,
+    spawnMarginMetres: NonNegative,
+  }),
+  vegetation: strictObject({
+    woodlandEdgeWavelengthMetres: PositiveMetres,
+    woodlandEdgeVariation: pipe(Fraction, maxValue(0.5, 'must not exceed 0.5')),
+    openDensity: Fraction,
+    obstacleMarginMetres: NonNegative,
+  }),
+});
 const SenseSchema = strictObject({
   id: Id,
   crouch: strictObject({
@@ -1336,6 +1352,7 @@ const SECTION_DESCRIPTOR = {
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
+  siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1365,6 +1382,7 @@ export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type SiteGenerationDef = InferOutput<typeof SiteGenerationSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof typeof SECTION_DESCRIPTOR;
