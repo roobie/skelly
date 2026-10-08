@@ -53,10 +53,14 @@ jobs:
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
         timeout-minutes: 1
         run: node test/browser/melee-build-click.mjs
-      - name: Primary-action browser contract
+      - name: Primary-action interaction and replay contract
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
         timeout-minutes: 2
         run: node test/browser/primary-action.mjs
+      - name: Primary-action glowstick pixel contract
+        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
+        timeout-minutes: 1
+        run: node test/browser/primary-action-pixel.mjs
       - name: Save-controller browser regressions
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' }}
         timeout-minutes: 4
