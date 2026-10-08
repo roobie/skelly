@@ -11,7 +11,7 @@ export interface RigidBody {
   inertiaBody: Tensor3;
   /** Vertices of the body's local-space OBB, relative to its COM (metres). */
   corners: readonly Vec3[];
-  timeRemainder: number;
+  remainderRealSeconds: number;
   elapsed: number;
   quietTime: number;
   asleep: boolean;
@@ -315,15 +315,15 @@ export const stepRigidBody = (body: RigidBody, dt: number, world?: RigidWorld, g
     throw new RangeError('blockSize must be positive');
   }
   const fixedStep = 1 / 120;
-  body.timeRemainder += dt;
-  const availableSteps = Math.floor(body.timeRemainder / fixedStep + 1e-10);
+  body.remainderRealSeconds += dt;
+  const availableSteps = Math.floor(body.remainderRealSeconds / fixedStep + 1e-10);
   const count = Math.min(16, availableSteps);
-  body.timeRemainder -= count * fixedStep;
+  body.remainderRealSeconds -= count * fixedStep;
   if (availableSteps > 16) {
-    body.timeRemainder %= fixedStep;
+    body.remainderRealSeconds %= fixedStep;
   }
-  if (body.timeRemainder < 0 && body.timeRemainder > -fixedStep * 1e-10) {
-    body.timeRemainder = 0;
+  if (body.remainderRealSeconds < 0 && body.remainderRealSeconds > -fixedStep * 1e-10) {
+    body.remainderRealSeconds = 0;
   }
   for (let step = 0; step < count && !body.asleep; step++) {
     stepFixed(body, fixedStep, world, gravity);
