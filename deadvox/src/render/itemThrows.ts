@@ -7,6 +7,7 @@ import { ITEM_ARC_HEIGHT_METRES, ITEM_FLIGHT_SECONDS, itemFlightPoint } from '..
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
+import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
 import type { ModelLibrary } from './models.ts';
 
@@ -49,6 +50,7 @@ export class ItemThrows {
     flight.age = 0;
     flight.start.set(...from);
     flight.end.set(...to);
+    disposeItemEmissiveMaterials(flight.group);
     flight.group.clear();
     flight.modelVisual = false;
     flight.emissive.visible = false;
@@ -58,6 +60,12 @@ export class ItemThrows {
     const model = look ? this.models?.groundLook(look) : undefined;
     if (look && model) {
       model.name = look.key;
+      applyItemEmissive(
+        model,
+        item,
+        definition,
+        definition.model ? this.registry.models.get(definition.model) : undefined,
+      );
       flight.modelVisual = true;
       flight.group.add(model);
     } else if (definition.pileDisplay === PILE_DISPLAY_KIND.scatter) {
@@ -71,7 +79,7 @@ export class ItemThrows {
     }
 
     const { light } = definition;
-    if (item.on && light?.emissive !== undefined && light.burning?.drop === 'stay') {
+    if (!flight.modelVisual && item.on && light?.emissive !== undefined && light.burning?.drop === 'stay') {
       flight.emissiveMaterial.color.set(new Color(light.color).multiplyScalar(light.emissive));
       flight.emissive.scale.set(this.blockSize * 0.36, this.blockSize * 0.06, this.blockSize * 0.06);
       flight.emissive.position.y = this.blockSize * 0.15;
@@ -104,6 +112,7 @@ export class ItemThrows {
 
   dispose(): void {
     for (const flight of this.flights) {
+      disposeItemEmissiveMaterials(flight.group);
       flight.emissiveMaterial.dispose();
     }
     this.bundleMaterial.dispose();
@@ -120,6 +129,7 @@ export class ItemThrows {
       }
       current.active = false;
       current.group.visible = false;
+      disposeItemEmissiveMaterials(current.group);
       current.group.clear();
       return current;
     }

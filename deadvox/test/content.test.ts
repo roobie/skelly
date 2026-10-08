@@ -737,6 +737,30 @@ describe('content references', () => {
   const withBase = (...extra: { source: string; data: unknown }[]) => buildRegistry([...base, ...extra]);
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
 
+  it('requires a model material for an emissive modeled light', () => {
+    const { issues } = buildRegistry([
+      {
+        source: 'emissive-light.json',
+        data: {
+          items: [
+            {
+              id: 'glowstick',
+              name: 'Glowstick',
+              category: 'light',
+              weight: 1,
+              size: [1, 1],
+              model: 'glowstick',
+              light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, emissive: 1 },
+            },
+          ],
+          models: [{ id: 'glowstick', file: 'assets/models/glowstick.glb' }],
+        },
+      },
+    ]);
+
+    expect(issues.some((issue) => issue.message === 'an emissive light model needs an emissive material')).toBe(true);
+  });
+
   it('requires an explicit disassembly yield for a recipe result', () => {
     const missingYield = {
       ...structuredClone(recipePack),

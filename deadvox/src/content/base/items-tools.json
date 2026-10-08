@@ -10,7 +10,11 @@
         "lens": [0.199, 0, 0]
       }
     },
-    { "id": "glowstick", "file": "assets/models/glowstick.glb" }
+    {
+      "id": "glowstick",
+      "file": "assets/models/glowstick.glb",
+      "emissiveMaterial": "chemical-light tube"
+    }
   ],
   "meleeClasses": [
     {

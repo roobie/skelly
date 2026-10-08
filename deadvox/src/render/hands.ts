@@ -59,6 +59,7 @@ import {
 } from './firearmModel.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
+import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
 import { type ComposedSlot, LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
@@ -820,6 +821,9 @@ export class HeldItems {
     this.drawn = version;
     this.disposeCompasses();
     this.clearArms();
+    for (const held of this.shown.values()) {
+      disposeItemEmissiveMaterials(held);
+    }
     this.view.clear();
     this.view.add(this.torso, this.opticWindow);
     this.shown.clear();
@@ -860,6 +864,9 @@ export class HeldItems {
     this.flameGeometry.dispose();
     this.opticWindow.geometry.dispose();
     (this.opticWindow.material as MeshBasicMaterial).dispose();
+    for (const held of this.shown.values()) {
+      disposeItemEmissiveMaterials(held);
+    }
     this.view.clear();
     this.shown.clear();
     this.heldByHand.clear();
@@ -1001,6 +1008,7 @@ export class HeldItems {
     const look = itemLook(this.inventory.registry, item);
     const model = look && this.models?.heldLook(look);
     if (model) {
+      applyItemEmissive(model.root, item, def, this.inventory.registry.models.get(def.model!));
       const action = this.inventory.registry.models.get(def.model!)?.action;
       if (model.slots.magazine) {
         this.magazineSlots.set(item.uid, model.slots.magazine);
