@@ -36,8 +36,21 @@ controls remain proposals until their issue is implemented.
   circumstance; see `noclip.ascend` and `noclip.descend` in
   `src/game/inputBindings.ts`.
 - **No Ctrl, Cmd or Meta, ever (2026-10-04):** “due to the browser being the
-  browser, we cannot use Ctrl or Cmd for anything, ever.” Game bindings refuse
-  these modifiers; native text editing and browser shortcuts remain native.
+  browser, we cannot use Ctrl or Cmd for anything, ever.” The binding registry
+  refuses Ctrl and Meta (Cmd): a key or pointer-button binding pressed with
+  either does nothing. See `src/game/inputBindings.ts`, `REFUSED_MODIFIERS` and
+  `KeyboardInput.press`. Pointer actions outside the registry ignore modifiers,
+  so a click held with Ctrl is a plain click; see `src/game/input.ts`, `Input`,
+  and `src/game/play.ts`, `startPlay`. Native text editing and browser shortcuts
+  stay native.
+  - **The wheel:** the wheel's only input is plain scroll; nothing is bound to
+    Ctrl+scroll. Plain scroll covers everything the wheel does, and Ctrl+wheel
+    is the browser's page zoom. The wheel ignores modifiers. With the pointer
+    locked in play it steps the wielded item's action (`src/game/play.ts`,
+    `cycleWieldedAction`). In a menu it scrolls the pane under the cursor, even
+    at the pane's edge (`src/ui/menuPointer.ts`, `mountMenuPointer`). Elsewhere
+    the game leaves the wheel alone, so where the pointer is free and no pane is
+    under it, Ctrl+wheel zooms the page.
 - **Quick actions (2026-10-04):** “like with F1 being the debug mod key ... we'd
   use a non modifier key, like say 'T' as a general quick action mod key” and
   “hold T+click on item does the quick action (auto move)”. The held
@@ -97,10 +110,7 @@ controls remain proposals until their issue is implemented.
     Releasing R starts no further rack, and the one under way finishes. A gun
     with a detachable magazine keeps tap-then-hold as removal. See
     `ReloadBinding.stillLoaded` and `FirearmMechanics.stillLoaded`.
-  - History, **Reload only (2026-10-04):** “It shall mean only (re)load in the
-    default view”; “press and hold R to load it with shells from inventory
-    double-press R to rack”; “Single tap r does nothing”. The removal ruling
-    above supersedes “only (re)load”; a single tap still does nothing.
+  - **A single tap does nothing (2026-10-04):** “Single tap r does nothing”.
 - **No rest or sleep keys (2026-10-04):** “`rest` shouldn't have a dedicatec
   keybind - instead, you interact with 'restable' items - e.g. beds, sofas,
   chairs, etc” and “`L` remvoed - sleep is on sleepable objects, like bed”.
@@ -124,12 +134,11 @@ controls remain proposals until their issue is implemented.
   `dominantSide` and `offSide`; `src/game/primaryAction.ts`,
   `selectPrimaryAction`; and [character-handedness.md](docs/character-handedness.md).
   Mouse-button codes share the binding registry: the held `stance.ready` and
-  pressed `aim.ads-toggle` actions can each use a pointer button or a key, with
-  no Ctrl/Cmd modifiers. For d94, wielded-item wheel selection belongs to a
-  pointer-specific owner, not `BindingRegistry`: a directional wheel event is
-  not a keyboard chord. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and
-  `src/game/input.ts`, `Input`; `src/ui/menuPointer.ts`, `mountMenuPointer`, keeps
-  menu scrolling in its separate route.
+  pressed `aim.ads-toggle` actions can each use a pointer button or a key. The
+  wheel stays outside `BindingRegistry`, because a directional wheel event is not
+  a keyboard chord: `src/game/play.ts`, `cycleWieldedAction`, owns wielded-item
+  action selection, and `src/ui/menuPointer.ts`, `mountMenuPointer`, keeps menu
+  scrolling in its separate route.
 - **Quickbar (2026-10-05 14:43):** “okay, yes, quickbar-hold is the secondary allowed
   pathway to activating / but e.g. racking a shell into a shotgun is _not_
   covered by the quickbar-hold”. A tap takes an item into its capability-directed
@@ -192,14 +201,13 @@ trigger the browser's native range-drag action.
 Noclip flight is the substantive debug exception: holding the debug gate for an
 entire flight would occupy a hand and interfere with viewing. Space/C flight
 controls are ungated only in the visible noclip context; entering/exiting it
-remains gated. BR's earlier exception clause was “Unless some special circumstance
-for a key need it readily available”. Spawn selection and dismissal are ordinary modal navigation, not authoring.
-Keyboard confirmation is available only while that debug-only menu owns input;
-native activation of debug buttons still requires the gate. Mouse authoring remains
-available without it. The debug menu's type-spawn actions support the 3.8 first
-look without adding player bindings; see `src/debug/index.ts`, `createDebugActions`.
+remains gated. Spawn selection and dismissal are ordinary modal navigation, not
+authoring. Keyboard confirmation is available only while that debug-only menu owns
+input; native activation of debug buttons still requires the gate. Mouse authoring
+remains available without it. The debug menu's type-spawn actions add no player
+bindings; see `src/debug/index.ts`, `createDebugActions`.
 
-Alt is not refused pending BR's ruling. `REFUSED_MODIFIERS` in
+Alt is not refused, so a binding may use it. `REFUSED_MODIFIERS` in
 `src/game/inputBindings.ts` is the one place to extend refusal; it also drives
 capture diagnostics. A deliverable key does not prove immunity from desktop OS
 interception. Chromium/Firefox native input and pointer-lock checks do not imply
@@ -256,8 +264,8 @@ are not part of the recorded session; live play still cancels held input on focu
 Firearms fire only while ready and never while sprinting. Ready movement is a
 skill-scaled duck-walk that stacks with crouch pace. Holding the rebindable
 `stance.ready` action raises a firearm or enters en-garde; the rebindable
-`aim.ads-toggle` action toggles the sight line while a firearm is raised. Their
-defaults are right and middle mouse respectively. Blocking also requires the
+`aim.ads-toggle` action toggles the sight line while a firearm is raised; their
+defaults are rows in `INPUT_BINDINGS`. Blocking also requires the
 back movement action and succeeds according to melee skill. An
 unready firearm click does nothing, including no refusal sound. BR settled the
 skill split: “The FC affects stuff like duck walking, whereas MC affects

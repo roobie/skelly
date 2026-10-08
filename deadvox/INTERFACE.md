@@ -101,8 +101,8 @@ See `src/game/play.ts`, `showRefusal`, and
 `src/game/audioPresentation.ts`, `createRefusalPresenter`.
 
 The limp is also movement, not only a look: the pace really drops, so it belongs
-with the body model. Wounds per body part come in Slice 3 ([EPIC.md](EPIC.md#3-flesh-and-noise));
-until then a limp can follow low health.
+with the body model, which tracks wounds per body part (`src/core/body.ts`,
+`BodyWounds`). The limp comes with fractures (#277).
 
 Web Audio starts on the first click, as DESIGN.md says. Sounds are content ids
 in the pack, validated and credited in the asset manifest. The refusal cue is a
@@ -137,23 +137,26 @@ Text on screen falls into four classes, and only three of them ship:
 ### How it's encoded
 
 A rule that lives only in prose gets broken the next time someone is in a hurry,
-so class 4 is made mechanical:
+so class 4 is to be made mechanical. Only the key-name rule is built; the hint
+channel, its profile and its guard test are planned work, "Order of work" item 2.
 
-- **One hint channel.** Every instruction is an entry in one table of hints
-  (id, text, the binding it names), shown through one function. Nothing else in
-  the UI may name a key or give a procedure.
-- **Key names come from the bindings.** A hint that mentions a key reads its
-  label from the key-binding table, so a rebinding can't leave a stale "press E"
-  behind (as the swap of E to F nearly did).
-- **A profile decides whether hints show.** Development and playtest builds show
-  hints; the shipped profile doesn't. A first-run tutorial, if the game gets one,
-  is a *diegetic* problem to solve first (a note, a radio message), and hints
-  only as a fallback.
-- **A guard test enforces it,** like `test/uiLitHtml.test.ts` does for ADR 0001.
-  Templates and view models under `src/ui` may not contain key names
-  (`Key[A-Z]`, `Digit`, "press", "click", "Tab", "F9" and so on) or
-  instruction phrasing outside the hint table. Anything in `src/debug` is exempt,
-  since none of it ships.
+- **Key names come from the bindings (built).** UI text that names a key reads
+  its label from the binding registry, so a rebinding can't leave a stale "press
+  E" behind. See `src/game/inputBindings.ts`, `labelForAction`.
+- **One hint channel (planned).** Every instruction becomes an entry in one table
+  of hints (id, text, the binding it names), shown through one function. Nothing
+  else in the UI may then name a key or give a procedure. Until it exists,
+  instructions sit in the UI modules that show them, behind the player's
+  `interaction` and `messages` HUD options (`src/ui/hudOptions.ts`,
+  `hudVisibility`).
+- **A profile decides whether hints show (planned).** Development and playtest
+  builds show hints; the shipped profile doesn't. A first-run tutorial, if the
+  game gets one, is a *diegetic* problem to solve first (a note, a radio
+  message), and hints only as a fallback.
+- **A guard test enforces it (planned),** like `test/uiLitHtml.test.ts` does for
+  ADR 0001. Templates and view models under `src/ui` may not contain key names
+  or instruction phrasing outside the hint table. Anything in `src/debug` is
+  exempt, since none of it ships.
 - **Review asks one question:** could the player learn this from the world or
   their hands? If yes, the text goes.
 
@@ -173,9 +176,9 @@ melee combat governs block success. The tiered practice contract is in
   with the firearm because it changes when that weapon can shoot; held input is
   transient.
 - **ADS is a toggle inside a fully raised firearm stance,** for iron sights and
-  optics. It is not a separate HUD mode. The `aim.ads-toggle` action defaults to
-  mouse-3 and can be rebound to a mouse button or key; both it and the held ready
-  action share the pointer/keyboard binding registry. In optic ADS, an ocular
+  optics. It is not a separate HUD mode. The `aim.ads-toggle` action can be
+  rebound to a mouse button or key; both it and the held ready action share the
+  pointer/keyboard binding registry, which holds their defaults. In optic ADS, an ocular
   window shows the unmagnified scene instead of a pipe view down the tube; the
   aperture fill is content-tuned from exported ocular geometry. The later
   magnification and blurred surround remain in 3.7. See
@@ -214,8 +217,9 @@ second widget or key instruction. See `src/ui/hud.ts`,
 ## Development and playtest
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in
-  `src/debug` and load only there (ui.2's split). They can say anything. The
-  target ping and F2+L laser are debug-profile tools; see `src/game/worldSetup.ts`,
+  `src/debug` and load only there. They can say anything. The target ping and the
+  impact laser (`debug.impact-laser` in `src/game/inputBindings.ts`,
+  `INPUT_BINDINGS`) are debug-profile tools; see `src/game/worldSetup.ts`,
   `DebugTestHouseSite`, `src/debug/index.ts`, `createDebugActions`, and
   `src/render/impactEffects.ts`, `ImpactEffects`. The target-range readout sits
   beside the gizmo in `src/debug/index.ts`, `attachDebugTools`. Shots follow the visible firearm's
@@ -239,12 +243,15 @@ second widget or key instruction. See `src/ui/hud.ts`,
   still moves the view through `src/game/session.ts`, `applyAimViewPitchShift`
   (`controls.adjustPitch`). The looked-at tooltip still stops at solid geometry, matching shot occlusion;
   `src/debug/lookedAt.ts`, `describeLookedAt`, uses the solid-world query.
-- **Playtests need hints but not debug tools.** A playtest profile (a URL flag, not
-  a build) shows the hint channel and nothing from `src/debug`, so a tester sees
-  the game close to how it ships, with the instructions it still needs.
-- **The shipped profile** shows no hints and no debug, and its HUD defaults are
-  empty (as ui.1 already made them). The optional crosshair remains development-only;
-  the debug center X is part of `?debug=1` and never ships.
+- **Playtests need hints but not debug tools (planned, "Order of work" item 3).**
+  A playtest profile (a URL flag, not a build) is to show the hint channel and
+  nothing from `src/debug`, so a tester sees the game close to how it ships, with
+  the instructions it still needs. No such flag exists yet: `src/game/config.ts`,
+  `configFromUrl`, reads none.
+- **The shipped profile** shows no debug, and its HUD options start off
+  (`src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`), so hints show only if the
+  player turns them on. The optional crosshair remains development-only; the
+  debug center X is part of `?debug=1` and never ships.
 
 ## Where the current interface stands
 
@@ -257,10 +264,10 @@ second widget or key instruction. See `src/ui/hud.ts`,
 | Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
-| Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; key names come from the hint channel |
+| Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; its key names come from the bindings, and it moves to the hint channel with "Order of work" item 2 |
 | Main menu (F9) | meta | meta | fine; settings and help live here |
 | Inventory screen | meta | meta | grids stay; numbers per DESIGN.md "numbers are there when you look" |
-| Notices ("Quickbar 1 is empty: open the inventory…") | mixed | voice | keep the voice part, move the procedure to the hint channel |
+| Refusal notices ("Quickbar 1 is empty") | voice | voice | none: they name no key or procedure (`src/game/play.ts`, `showRefusal`) |
 | Drawn menu cursor | meta | meta | fine |
 
 ## Numbers and diegesis
@@ -280,8 +287,8 @@ simulation facts accessible without undermining diegesis.
 4. **Onboarding:** the shipped first run gets a diegetic introduction, shaped by
    where playtesters get stuck. Hints remain an off-by-default fallback in the
    F9 menu.
-5. **Playtest profile:** `?playtest=1` turns on the hint channel and loads nothing
-   from `src/debug`.
+5. **Playtest profile:** `?playtest=1` is to turn on the hint channel and load
+   nothing from `src/debug` ("Order of work" item 3).
 6. **Character sounds:** vocal pain and strain sounds are noise events with a
    radius in data, so BR can judge their effect in play and tune or disable them.
    Variation comes from random but curated picks for the events we have.
@@ -293,8 +300,12 @@ simulation facts accessible without undermining diegesis.
 ## Order of work
 
 1. Add the spatial outline for the one usable thing within reach.
-2. Move remaining procedural notices into the hint table.
-3. Shape the diegetic first-run introduction from playtest findings.
-4. Make the clock diegetic through a watch the player can inspect or hold.
-5. Develop bodily cues one state at a time; retire a HUD line only after BR has
+2. Build the hint channel ("How it's encoded"): the hint table and its one
+   function, the profile that decides whether hints show, and the guard test.
+   Then move the instructions the UI modules show, such as the interruption
+   prompt, into the table.
+3. Add the playtest profile, `?playtest=1` ("Development and playtest").
+4. Shape the diegetic first-run introduction from playtest findings.
+5. Make the clock diegetic through a watch the player can inspect or hold.
+6. Develop bodily cues one state at a time; retire a HUD line only after BR has
    judged its replacement cue in play.
