@@ -36,21 +36,22 @@ controls remain proposals until their issue is implemented.
   circumstance; see `noclip.ascend` and `noclip.descend` in
   `src/game/inputBindings.ts`.
 - **No Ctrl, Cmd or Meta, ever (2026-10-04):** “due to the browser being the
-  browser, we cannot use Ctrl or Cmd for anything, ever.” The binding registry
-  refuses Ctrl and Meta (Cmd): a key or pointer-button binding pressed with
-  either does nothing. See `src/game/inputBindings.ts`, `REFUSED_MODIFIERS` and
-  `KeyboardInput.press`. Pointer actions outside the registry ignore modifiers,
-  so a click held with Ctrl is a plain click; see `src/game/input.ts`, `Input`,
-  and `src/game/play.ts`, `startPlay`. Native text editing and browser shortcuts
-  stay native.
-  - **The wheel:** the wheel's only input is plain scroll; nothing is bound to
-    Ctrl+scroll. Plain scroll covers everything the wheel does, and Ctrl+wheel
-    is the browser's page zoom. The wheel ignores modifiers. With the pointer
-    locked in play it steps the wielded item's action (`src/game/play.ts`,
-    `cycleWieldedAction`). In a menu it scrolls the pane under the cursor, even
-    at the pane's edge (`src/ui/menuPointer.ts`, `mountMenuPointer`). Elsewhere
-    the game leaves the wheel alone, so where the pointer is free and no pane is
-    under it, Ctrl+wheel zooms the page.
+  browser, we cannot use Ctrl or Cmd for anything, ever.” Ctrl, Cmd and Meta are
+  never a game modifier, for keys, clicks or the wheel: Ctrl+click is a plain
+  click, Ctrl+scroll is plain scroll, and quick move stays T+click (below). One
+  rule with no exceptions keeps it simple, and plain scroll is enough for
+  everything the wheel does. The binding registry refuses Ctrl and Meta, so a key
+  or pointer-button binding pressed with either does nothing; see
+  `src/game/inputBindings.ts`, `REFUSED_MODIFIERS` and `KeyboardInput.press`.
+  Clicks outside the registry and the wheel ignore modifiers; see
+  `src/game/input.ts`, `Input`, and `src/game/play.ts`, `startPlay` and
+  `cycleWieldedAction`. Native text editing and browser shortcuts stay native.
+  - **Where the wheel goes:** with the pointer locked in play it steps the
+    wielded item's action. In a menu it scrolls the pane under the cursor, even
+    at the pane's edge and with Ctrl held (`src/ui/menuPointer.ts`,
+    `mountMenuPointer`). Elsewhere the game leaves the wheel alone, so where the
+    pointer is free and no pane is under it, Ctrl+wheel is the browser's page
+    zoom.
 - **Quick actions (2026-10-04):** “like with F1 being the debug mod key ... we'd
   use a non modifier key, like say 'T' as a general quick action mod key” and
   “hold T+click on item does the quick action (auto move)”. The held
