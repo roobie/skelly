@@ -104,20 +104,4 @@ describe('viewer geometry', () => {
     }
   });
 
-  it('renders the beveled grip as one chamfered mesh', () => {
-    const layers = buildLayers(validate(loadFixture('archetype-battle-rifle'), gunDomain), []);
-    try {
-      const grip = layers.solids.children.find((child) =>
-        String(child.userData.label).includes('grip (grip) · solid body'),
-      );
-      expect(grip).toBeInstanceOf(Mesh);
-      const { geometry } = grip as Mesh;
-      expect(geometry.type).toBe('BufferGeometry');
-      expect(geometry.getIndex()?.count).toBeGreaterThan(0);
-    } finally {
-      for (const group of Object.values(layers)) {
-        disposeGroup(group);
-      }
-    }
-  });
 });

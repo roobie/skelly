@@ -32,10 +32,18 @@ describe('octagonal barrel and gas-system geometry', () => {
   it('makes every barrel profile a centred regular octagon that encloses its bore axis', () => {
     const family = FAMILIES.barrel!;
     expect(family.params).not.toHaveProperty('crossSection');
+    const standardWidths = new Map<string, number>();
     for (const bore of ['S', 'M', 'L'] as const) {
       const standard = family.build({ profile: 'standard', bore, length: bore });
       const standardBarrel = requireOctagon(standard.solids.find(({ id }) => id === 'tube')!);
       const [min, max] = localSolidBounds(standardBarrel);
+      const muzzleX = standard.ports.find(({ id }) => id === 'muzzle')!.pos[0];
+      expect([min[0], max[0]]).toEqual([0, muzzleX]);
+      standardWidths.set(bore, max[2] - min[2]);
+      const pistol = family.build({ profile: 'pistol', bore, length: bore });
+      const pistolBarrel = requireOctagon(pistol.solids.find(({ id }) => id === 'tube')!);
+      const [pistolMin, pistolMax] = localSolidBounds(pistolBarrel);
+      expect([pistolMin[0], pistolMax[0]]).toEqual([0, pistol.ports.find(({ id }) => id === 'muzzle')!.pos[0]]);
       const boreAxis = standard.axes.find(({ kind }) => kind === 'bore')!.origin;
       expect(min[1] + max[1]).toBeCloseTo(2 * boreAxis[1]);
       expect(min[2] + max[2]).toBeCloseTo(2 * boreAxis[2]);
@@ -48,6 +56,8 @@ describe('octagonal barrel and gas-system geometry', () => {
       const [heavyMin, heavyMax] = localSolidBounds(heavyBarrel);
       expect(heavyMax[1] - heavyMin[1]).toBeGreaterThan(max[1] - min[1]);
     }
+    expect(standardWidths.get('S')).toBeLessThan(standardWidths.get('M')!);
+    expect(standardWidths.get('M')).toBeLessThan(standardWidths.get('L')!);
   });
 
   it('keeps the AK gas cylinder a regular octagon centred on its axis', () => {

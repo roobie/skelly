@@ -306,6 +306,8 @@ describe('part library', () => {
     }
     const topstrapBounds = localSolidBounds(topstrap);
     const cylinderGap = frame.keepOuts.find(({ id }) => id === 'cylinder-gap')!.box;
+    const cylinderSwing = frame.keepOuts.find(({ id }) => id === 'cylinder-swing')!.box;
+    expect(drum.z[1] - drum.z[0]).toBeLessThanOrEqual(cylinderSwing.half[0] * 2);
     expect(topstrapBounds[0][0]).toBeLessThan(cylinderGap.center[0] - cylinderGap.half[0]);
     expect(topstrapBounds[1][0]).toBeGreaterThan(cylinderGap.center[0] + cylinderGap.half[0]);
     expect(cylinderGap.half[0] * 2).toBe(REVOLVER_PROPORTIONS.cylinderGap.pickedU);

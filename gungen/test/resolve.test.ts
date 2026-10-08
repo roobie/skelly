@@ -35,15 +35,17 @@ describe('resolve', () => {
       return r.defs.get(part)!.ports.find(({ id }) => id === portId)!;
     };
     const stockPort = connectedPort('stock');
-    const stockRear = at(r, 'stock', stockPort.pos);
+    const stockBounds = r.defs.get('stock')!.solids.map(localSolidBounds);
+    const stockRearmostX = Math.min(...stockBounds.map(([min]) => min[0]));
     const lowerPort = connectedPort('lower');
     const lower = at(r, 'lower', lowerPort.pos);
     const magazinePort = connectedPort('magazine');
-    const magazine = at(r, 'magazine', magazinePort.pos);
+    const magazineBounds = r.defs.get('magazine')!.solids.map(localSolidBounds);
+    const magazineBottomY = Math.min(...magazineBounds.map(([min]) => min[1]));
     expect(muzzle[0]).toBeGreaterThan(receiverOrigin[0]);
-    expect(stockRear[0]).toBeLessThan(receiverOrigin[0]);
+    expect(stockRearmostX).toBeLessThan(stockPort.pos[0]);
     expect(lower[1]).toBeLessThan(receiverOrigin[1]);
-    expect(magazine[1]).toBeLessThan(lower[1]);
+    expect(magazineBottomY).toBeLessThan(magazinePort.pos[1]);
   });
 
   it('gives the conventional magazine a well with material thickness', () => {

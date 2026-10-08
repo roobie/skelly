@@ -67,6 +67,18 @@ describe('M4-only AR stock', () => {
       expect(tubeBounds.y[0]! + tubeBounds.y[1]!).toBeCloseTo(0);
       expect(tubeBounds.z[0]! + tubeBounds.z[1]!).toBeCloseTo(0);
       expect(M4_STOCK_GEOMETRY.bufferTubeBoreAcrossFlats).toBeLessThan(M4_STOCK_GEOMETRY.bufferTubeAcrossFlats);
+      const radiiAcrossFlats = tubePoints.map(([, y, z]) => Math.max(Math.abs(y), Math.abs(z)));
+      expect(radiiAcrossFlats.every((radius) => radius >= M4_STOCK_GEOMETRY.bufferTubeBoreAcrossFlats / 2 - 1e-8)).toBe(
+        true,
+      );
+      expect(
+        radiiAcrossFlats.some(
+          (radius) => Math.abs(radius - M4_STOCK_GEOMETRY.bufferTubeBoreAcrossFlats / 2) < 1e-8,
+        ),
+      ).toBe(true);
+      expect(radiiAcrossFlats.every((radius) => radius <= M4_STOCK_GEOMETRY.bufferTubeAcrossFlats / 2 + 1e-8)).toBe(
+        true,
+      );
       const bodyVertices = bodySolids.flatMap(vertices);
       const frontX = Math.max(...bodyVertices.map(([x]) => x));
       const frontFace = bodyVertices.filter(([x]) => Math.abs(x - frontX) < 1e-8);
