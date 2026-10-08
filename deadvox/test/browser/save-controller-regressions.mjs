@@ -172,6 +172,15 @@ try {
     await page.goto(url);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    const radiusLinks = await page.locator('[data-view-distance]').evaluateAll((links) =>
+      links.map((link) => {
+        const expected = new URL(location.href);
+        expected.searchParams.set('radius', link.dataset.viewDistance);
+        return new URL(link.href).href === expected.href;
+      }),
+    );
+    assert(radiusLinks.length > 0, 'view-distance links are present');
+    assert(radiusLinks.every(Boolean), 'each view-distance link preserves the current URL parameters');
     assert.equal(
       await page.locator('#startup-screen').isVisible(),
       false,

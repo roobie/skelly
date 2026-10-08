@@ -35,6 +35,16 @@ inputBindings.subscribe(drawMenuLabel);
 drawMenuLabel();
 const bench = params.get('bench');
 const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
+if (bench === null) {
+  for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-view-distance]')) {
+    const radius = link.dataset.viewDistance;
+    if (radius) {
+      const target = new URL(location.href);
+      target.searchParams.set('radius', radius);
+      link.href = target.href;
+    }
+  }
+}
 
 if (bench !== null) {
   hideStartupScreen();
