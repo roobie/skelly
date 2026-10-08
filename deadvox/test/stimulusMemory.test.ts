@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
@@ -125,5 +126,41 @@ describe('stimulus memory', () => {
     system.tickActive(dt, time);
     expect(zombie.mode).toBe('return');
     expect(zombie.lastPerceived).toBeUndefined();
+  });
+
+  it('saves a zombie that forgot its stimulus', () => {
+    const noise = noiseAtPlayer(1, 1);
+    const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
+    const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
+    const wall: SolidAt = (x, y) => y === 0 || (x === 10 && y > 0 && y < 5);
+    const options = { ...senses(target, wall), seed: 113 };
+    const system = new ZombieSystem(options);
+    const zombie = system.store.get(system.add(type, [20, 1, 0]))!;
+    zombie.body.onGround = true;
+    const dt = 1 / 20;
+    let time = dt;
+    system.tickActive(dt, time);
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.stimulusAt).toBeDefined();
+    expect(zombie.lastPerceived).toBeDefined();
+    expect(zombie.investigationTier).toBeDefined();
+    const stimulusAt = zombie.stimulusAt!;
+    const deadline = stimulusAt + type.stimulusMemorySimSeconds;
+    while (time < deadline + dt) {
+      time += dt;
+      system.tickActive(dt, time);
+    }
+
+    expect(zombie.mode).toBe('return');
+    expect(zombie.stimulusAt).toBeUndefined();
+    expect(zombie.lastPerceived).toBeUndefined();
+    expect(zombie.investigationTier).toBeUndefined();
+    expect(zombie.searchAnchor).toBeUndefined();
+    const snapshot = system.snapshotState();
+    expect(() => canonicalJsonBytes(snapshot)).not.toThrow();
+
+    const restored = new ZombieSystem(options);
+    restored.restoreState(snapshot, (id) => registry.zombies.get(id));
+    expect(restored.snapshotState()).toEqual(snapshot);
   });
 });
