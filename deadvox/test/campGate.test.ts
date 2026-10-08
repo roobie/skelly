@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { type CompiledTemplate, compileTemplate } from '../src/core/templates.ts';
 
 const sources = readdirSync('src/content/base')
@@ -10,7 +11,7 @@ const sources = readdirSync('src/content/base')
   .map((source) => ({ source, data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')) as unknown }));
 const { registry } = buildRegistry(sources);
 
-const template = (id: string): CompiledTemplate => compileTemplate(registry, registry.templates.get(id)!);
+const compileById = (id: string): CompiledTemplate => compileTemplate(registry, registry.templates.get(id)!);
 
 const doorPieces = (compiled: CompiledTemplate) =>
   compiled.pieces.filter((piece) => registry.furniture.get(piece.furniture)?.door);
@@ -139,8 +140,8 @@ const findPath = ({
 
 describe('camp gate templates', () => {
   it('uses two operable gate leaves wider than a person door and removes one leaf for gate 2', () => {
-    const gate = template('camp_gate');
-    const damaged = template('camp_gate_damaged');
+    const gate = compileById('camp_gate');
+    const damaged = compileById('camp_gate_damaged');
     const leaves = doorPieces(gate);
     const remaining = doorPieces(damaged);
     const personDoor = registry.furniture.get('wood_door')!;
@@ -154,21 +155,46 @@ describe('camp gate templates', () => {
     expect(remaining.length).toBeGreaterThan(0);
   });
 
-  it('routes through gate 2’s missing leaf and prevents a route around the closed gate', () => {
-    const outer = template('camp_gate');
-    const inner = template('camp_gate_damaged');
-    const returnWall = template('camp_gate_return');
-    const [returnWidth, , innerZ] = returnWall.size;
+  it('keeps the placed north entrance passable through gate 2 and blocks bypasses around its closed leaf', () => {
+    const { layouts } = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
+      layouts: SiteLayoutDef[];
+    };
+    const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;
+    const gateBuildings = camp.buildings.filter(({ template }) =>
+      ['camp_gate', 'camp_gate_damaged'].includes(template),
+    );
+    expect(gateBuildings).toHaveLength(2);
+    const outerBuilding = gateBuildings.find(({ template }) => template === 'camp_gate')!;
+    const innerBuilding = gateBuildings.find(({ template }) => template === 'camp_gate_damaged')!;
+    const returnBuildings = camp.buildings.filter(({ template }) => template === 'camp_gate_return');
+    expect(returnBuildings).toHaveLength(2);
+
+    const outer = compileById(outerBuilding.template);
+    const inner = compileById(innerBuilding.template);
+    const returnWall = compileById('camp_gate_return');
+    const [returnWidth, , returnDepth] = returnWall.size;
     const [gateWidth, , outerDepth] = outer.size;
     const gateX = returnWidth;
+    const toBlocks = (metres: number) => Math.round(metres * 2);
+    const outerX = toBlocks(outerBuilding.position[0]);
+    const outerZ = toBlocks(outerBuilding.position[2]);
+    const innerZ = toBlocks(innerBuilding.position[2] - outerBuilding.position[2]);
+    const returnXs = returnBuildings.map(({ position }) => toBlocks(position[0]) - outerX).sort((a, b) => a - b);
+    expect(returnXs).toEqual([0, gateWidth - returnWidth]);
+    expect(returnBuildings.every(({ position }) => toBlocks(position[2]) - outerZ === outerDepth)).toBe(true);
+    expect(innerZ).toBe(outerDepth + returnDepth);
+
     const innerDoorOpening = new Set(
       [...doorFootprintAtStandingHeight(outer)].filter((cell) => !doorFootprintAtStandingHeight(inner).has(cell)),
     );
     const placements: Placement[] = [
       { compiled: outer, x: gateX, z: 0 },
       { compiled: inner, x: gateX, z: innerZ },
-      { compiled: returnWall, x: gateX, z: 0 },
-      { compiled: returnWall, x: gateX + gateWidth - returnWidth, z: 0 },
+      ...returnBuildings.map(({ position }) => ({
+        compiled: returnWall,
+        x: gateX + toBlocks(position[0]) - outerX,
+        z: toBlocks(position[2]) - outerZ,
+      })),
     ];
 
     const path = findPath({ placements, gateX, outerDepth, innerZ, gateWidth, returnWidth });

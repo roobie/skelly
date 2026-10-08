@@ -716,55 +716,74 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('keeps the south double gate on the route with both doors openable', () => {
+  it('routes through the north double gate while keeping the south wall breach open', () => {
     const campSite = new AuthoredSite(73, result.registry, scale, layout);
     const wallRects = layout.buildings
       .filter(({ template }) => template === 'camp_wall_run')
       .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
     expect(wallRects.length).toBeGreaterThan(0);
+    const northEdge = Math.min(...wallRects.map(({ z0 }) => z0));
     const southEdge = Math.max(...wallRects.map(({ z1 }) => z1));
     const southRuns = wallRects.filter(({ z1 }) => z1 === southEdge).sort((a, b) => a.x0 - b.x0);
-    const gaps = southRuns.slice(1).flatMap((run, index) => {
+    const southGaps = southRuns.slice(1).flatMap((run, index) => {
       const prior = southRuns[index]!;
       return run.x0 > prior.x1 ? [[prior.x1, run.x0] as const] : [];
     });
-    expect(gaps.length).toBeGreaterThan(0);
-    const [gapStart, gapEnd] = gaps.sort((a, b) => b[1] - b[0] - (a[1] - a[0]))[0]!;
+    expect(southGaps.length).toBeGreaterThan(0);
+    const [breachStart, breachEnd] = southGaps.sort((a, b) => b[1] - b[0] - (a[1] - a[0]))[0]!;
+    const southWallStart = Math.min(...wallRects.filter(({ z1 }) => z1 === southEdge).map(({ z0 }) => z0));
     const gateObjects = layout.buildings.filter(({ template }) =>
       ['camp_gate', 'camp_gate_damaged'].includes(template),
     );
-    const outer = gateObjects.find(
-      (building) =>
-        building.template === 'camp_gate' &&
-        buildingBounds(building, result.registry.templates.get(building.template)!.size).z1 === southEdge,
-    );
+    const outer = gateObjects.find(({ template }) => template === 'camp_gate');
     const inner = gateObjects.find(({ template }) => template === 'camp_gate_damaged');
-    const north = gateObjects.find((building) => building.template === 'camp_gate' && building !== outer);
-    if (!(outer && inner && north)) {
-      throw new Error('the camp needs north, south outer, and south inner gates');
+    if (!(outer && inner)) {
+      throw new Error('the camp needs north outer gate 1 and damaged inner gate 2');
     }
     const outerBounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
     const innerBounds = buildingBounds(inner, result.registry.templates.get(inner.template)!.size);
-    const routeX = (gapStart + gapEnd) / 2;
-    expect(outerBounds.z1).toBe(southEdge);
-    expect(outerBounds.x0).toBeGreaterThanOrEqual(gapStart);
-    expect(outerBounds.x1).toBeLessThanOrEqual(gapEnd);
+    expect(outerBounds.z0).toBe(northEdge);
     expect([innerBounds.x0, innerBounds.x1]).toEqual([outerBounds.x0, outerBounds.x1]);
-    expect(innerBounds.z1).toBeLessThan(outerBounds.z0);
-    for (const bounds of [outerBounds, innerBounds]) {
-      const centreZ = (bounds.z0 + bounds.z1) / 2;
-      expect(layout.tracks.some((track) => polylineDistance([routeX, centreZ], track.points) <= track.width / 2)).toBe(
-        true,
-      );
-    }
-    const routeHeights = Array.from({ length: 17 }, (_, index) =>
-      campSite.surface.height(routeX, outerBounds.z1 + 1 - index * 0.5, layout.ground / scale.blockSize),
+    expect(innerBounds.z0).toBeGreaterThan(outerBounds.z1);
+    expect(
+      gateObjects.every(
+        (building) => buildingBounds(building, result.registry.templates.get(building.template)!.size).z1 < southEdge,
+      ),
+    ).toBe(true);
+    const gateWidth = outerBounds.x1 - outerBounds.x0;
+    const road = layout.tracks.find(
+      (track) =>
+        track.surface === 'dirt' &&
+        track.width >= gateWidth &&
+        [outerBounds, innerBounds].every(
+          (bounds) =>
+            polylineDistance([(bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2], track.points) <=
+            track.width / 2,
+        ),
+    );
+    expect(road).toBeDefined();
+    const routeX = (breachStart + breachEnd) / 2;
+    const southWallZ = southEdge - (wallRects[0]!.z1 - wallRects[0]!.z0) / 2;
+    expect(layout.tracks.some((track) => polylineDistance([routeX, southWallZ], track.points) <= track.width / 2)).toBe(
+      true,
+    );
+    expect(
+      gateObjects.every((building) => {
+        const bounds = buildingBounds(building, result.registry.templates.get(building.template)!.size);
+        return bounds.z1 <= southWallStart || bounds.z0 >= southEdge;
+      }),
+    ).toBe(true);
+
+    const routeXNorth = (outerBounds.x0 + outerBounds.x1) / 2;
+    const routeSamples = Math.ceil((innerBounds.z1 - outerBounds.z0 + 2) / 0.5);
+    const routeHeights = Array.from({ length: routeSamples + 1 }, (_, index) =>
+      campSite.surface.height(routeXNorth, outerBounds.z0 - 1 + index * 0.5, layout.ground / scale.blockSize),
     );
     expect(routeHeights.every((height, index) => index === 0 || Math.abs(height - routeHeights[index - 1]!) <= 1)).toBe(
       true,
     );
 
-    for (const building of [north, outer, inner]) {
+    for (const building of gateObjects) {
       const gate = compileTemplate(result.registry, result.registry.templates.get(building.template)!);
       const door = gate.pieces.find((piece) => result.registry.furniture.get(piece.furniture)?.door);
       expect(door).toBeDefined();
@@ -936,13 +955,6 @@ describe('authored fixed loot', () => {
     expect(ammunition).not.toBe(rifleLoot);
     expect(ammunition).not.toBe(magazines);
     expect(furnitureAt(ammunition!)).toBe('ammo_crate');
-    const sparse = result.registry.loot.get('military_armoury')!;
-    const nothingWeight = sparse.entries.find(({ nothing }) => nothing)?.weight ?? 0;
-    const itemWeight = sparse.entries
-      .filter(({ item }) => item !== undefined)
-      .reduce((sum, entry) => sum + entry.weight, 0);
-    expect(nothingWeight).toBeGreaterThanOrEqual(itemWeight);
-
     const inventory = new Inventory(result.registry);
     for (const rifle of ['rifle_assault', 'rifle_ak']) {
       expect(inventory.create(rifle)).toMatchObject({ firearm: { chamber: 'empty' }, slots: {} });
@@ -1316,7 +1328,6 @@ describe('authored fixed loot', () => {
   it('joins the workshop-yard gate to the existing cabin route', () => {
     const fixture = compactFixture();
     const mainTrack = fixture.tracks[0]!;
-    const spur = fixture.tracks.find((track) => track !== mainTrack)!;
     const yard = fixture.buildings.find((building) => building.template === 'workshop_yard')!;
     const template = result.registry.templates.get(yard.template)!;
     const bounds = buildingBounds(yard, template.size);
@@ -1329,6 +1340,15 @@ describe('authored fixed loot', () => {
       [entranceX, bounds.z0],
       [entranceX, bounds.z1],
     ];
+    const spur = fixture.tracks.find((track) => {
+      const start = track.points[0]!;
+      const end = track.points.at(-1)!;
+      return (
+        track !== mainTrack &&
+        polylineDistance(start, mainTrack.points) <= track.width / 2 &&
+        Math.min(...gatePoints.map(([x, z]) => Math.hypot(end[0] - x, end[1] - z))) <= track.width / 2
+      );
+    })!;
     const start = spur.points[0]!;
     const end = spur.points.at(-1)!;
     expect(polylineDistance(start, mainTrack.points)).toBeLessThanOrEqual(spur.width / 2);

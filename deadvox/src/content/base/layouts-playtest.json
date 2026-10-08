@@ -788,14 +788,20 @@
           "storeys": 1
         },
         {
-          "template": "camp_gate",
-          "position": [472, 21, 559],
+          "template": "camp_gate_return",
+          "position": [472, 21, 495],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_gate_return",
+          "position": [479, 21, 495],
           "rotation": 0,
           "storeys": 1
         },
         {
           "template": "camp_gate_damaged",
-          "position": [472, 21, 551],
+          "position": [472, 21, 503],
           "rotation": 0,
           "storeys": 1
         }
@@ -846,10 +852,15 @@
             [440, 300],
             [455, 360],
             [470, 430],
-            [474, 480],
-            [473.5, 510]
+            [476, 480],
+            [476, 510]
           ],
           "width": 2,
+          "surface": "dirt"
+        },
+        {
+          "points": [[476, 480], [476, 510]],
+          "width": 8,
           "surface": "dirt"
         },
         {

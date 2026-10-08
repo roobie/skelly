@@ -11,13 +11,13 @@ read_if:
 
 Tiled `.tmj` files describe site-scale terrain, routes, building placements and spawns; interiors stay reusable ASCII templates. `maps/extensions/deadvox.mjs`, `exportLayout`, turns one map into a content layout, and `npm run validate` checks the exported file against the merged content registry. Format the exported JSON with Biome before validation so Tiled output also satisfies the repository's formatting check. Keep the authored source and its committed JSON together. Review the extension before trusting it in Tiled.
 
-The playtest map links the shelter, workshop, medical site and military compound as distinct beats. Open approaches preserve player choice; the military compound's two-stage south entrance gives the route a defended threshold without closing it. The Tiled source and exported layout stay paired, while reusable interiors remain separate templates. See `maps/extensions/deadvox.mjs`, `exportLayout`, and `test/authoredFixedLoot.test.ts`, `keeps the south double gate on the route with both doors openable`.
+The playtest map links the shelter, workshop, medical site and military compound as distinct beats. A vehicle-width north approach leads through the compound's guarded two-gate entrance; the southern breach remains another way in. This keeps the perimeter defended without making the site a dead end. The Tiled source and exported layout stay paired, while reusable interiors remain separate templates. See `maps/extensions/deadvox.mjs`, `exportLayout`, and `test/authoredFixedLoot.test.ts`, `routes through the north double gate while keeping the south wall breach open`.
 
 `lone-house.tmj` / `layouts.json` remains the small authored-site pipeline sample. `hunting_cabins.tmj` / `layouts-cabins.json` remains the terrain-and-cabin sample (`cabins_demo`). Keeping these examples separate lets them continue to demonstrate narrow editor/runtime contracts without turning them into alternate versions of the playtest progression.
 
 ## Military compound
 
-The compound's perimeter should feel guarded without making entry a dead end. Its north gate and south double gate remain traversable; the damaged inner gate gives the south approach a breached, lived-in character. See `src/content/base/camp.json`, `camp_hq` and `camp_gate_damaged`, and `test/authoredFixedLoot.test.ts`, `keeps the south double gate on the route with both doors openable`.
+The north pen makes the second gate a real threshold instead of a panel one can walk around; the breached southern wall preserves an alternate approach. The uneven wall tops carry the abandoned-site motif. See `src/content/base/camp.json`, `camp_gate_return` and `camp_gate_damaged`, and `test/campGate.test.ts`, `keeps the placed north entrance passable through gate 2 and blocks bypasses around its closed leaf`.
 
 ## Fixed loot
 

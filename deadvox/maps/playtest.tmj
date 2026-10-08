@@ -10,7 +10,7 @@
   "tileheight": 1,
   "infinite": false,
   "nextlayerid": 7,
-  "nextobjectid": 95,
+  "nextobjectid": 98,
   "properties": [
     {
       "name": "id",
@@ -1628,7 +1628,7 @@
         },
         {
           "id": 92,
-          "name": "North gate",
+          "name": "North outer gate 1",
           "type": "building",
           "x": 472,
           "y": 494,
@@ -1651,13 +1651,13 @@
           ]
         },
         {
-          "id": 93,
-          "name": "South outer gate 1",
+          "id": 95,
+          "name": "North pen west return",
           "type": "building",
           "x": 472,
-          "y": 559,
-          "width": 8,
-          "height": 1,
+          "y": 495,
+          "width": 1,
+          "height": 8,
           "rotation": 0,
           "visible": true,
           "properties": [
@@ -1665,7 +1665,7 @@
               "name": "template",
               "type": "string",
               "propertytype": "template_id",
-              "value": "camp_gate"
+              "value": "camp_gate_return"
             },
             {
               "name": "fixed_loot",
@@ -1675,11 +1675,35 @@
           ]
         },
         {
-          "id": 94,
-          "name": "South inner gate 2 — damaged",
+          "id": 96,
+          "name": "North pen east return",
+          "type": "building",
+          "x": 479,
+          "y": 495,
+          "width": 1,
+          "height": 8,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_gate_return"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 97,
+          "name": "North inner gate 2 — damaged",
           "type": "building",
           "x": 472,
-          "y": 551,
+          "y": 503,
           "width": 8,
           "height": 1,
           "rotation": 0,
@@ -2192,11 +2216,11 @@
               "y": 345
             },
             {
-              "x": 382,
+              "x": 384,
               "y": 395
             },
             {
-              "x": 381.5,
+              "x": 384,
               "y": 425
             }
           ],
@@ -2205,6 +2229,39 @@
               "name": "width",
               "type": "float",
               "value": 2
+            }
+          ]
+        },
+        {
+          "id": 94,
+          "name": "Full-width dirt road through the north double gate",
+          "type": "track",
+          "x": 476,
+          "y": 480,
+          "width": 0,
+          "height": 30,
+          "rotation": 0,
+          "visible": true,
+          "polyline": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0,
+              "y": 30
+            }
+          ],
+          "properties": [
+            {
+              "name": "width",
+              "type": "float",
+              "value": 8
+            },
+            {
+              "name": "surface",
+              "type": "string",
+              "value": "dirt"
             }
           ]
         },
