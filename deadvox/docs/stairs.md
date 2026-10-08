@@ -152,8 +152,12 @@ from these fixtures.
 Walk toward the lower landing in the house, up/down with ordinary movement. In the
 cabin, the ground landing leads down; take a flashlight. The maintained
 `test/browser/stairs.mjs traversal` uses actual keyboard movement and checks
-noclip stays off. Horizontal arrival and landing settlement have separate
-simulation-time bounds; see `deadvox/test/browser/stairs.mjs`, `walkTo`. Both waits end
+noclip stays off. The lower-floor sprint targets the projection of a grounded
+upstairs position because the resident can move onto the stairs while pursuing
+the player; its live position is not a stable lower-floor target. The stage
+checks floor and stair collision support before the sprint; see
+`deadvox/test/browser/stairs.mjs`, `upperAnchor` and `walkTo`. Horizontal arrival
+and landing settlement have separate simulation-time bounds. Both waits end
 and fail if the simulation pauses, rather than waiting for the outer kill. Body
 position, velocity, onGround, simulation time and pause state are written to
 `states.json` before assertions and on walk/settle failure. Traversal uses a smaller

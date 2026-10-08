@@ -280,7 +280,7 @@ try {
     );
     await page.waitForTimeout(200);
   };
-  const state = async (label) => {
+  const state = async (label, details) => {
     const value = await page.evaluate(() => {
       const { body, noclip, engine, session, input } = globalThis.stairsWitness;
       return {
@@ -300,7 +300,7 @@ try {
         })),
       };
     });
-    states.push({ label, ...value });
+    states.push({ label, ...value, ...(details ? { details } : {}) });
     await writeFile(resolve(artifacts, 'states.json'), JSON.stringify(states, null, 2));
     assert.equal(value.noclip, false);
     assert.equal(value.locked, true);
@@ -407,7 +407,7 @@ try {
     );
     assert.equal((await result.jsonValue()).open, true, "world interaction opens the resident's ordinary closed door");
   };
-  const walkTo = async (target, label, { settleBelowTarget = false } = {}) => {
+  const walkTo = async (target, label) => {
     const start = await page.evaluate((destination) => {
       const { input, session, body } = globalThis.stairsWitness;
       input.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
@@ -419,12 +419,49 @@ try {
       await waitForSimulation(
         page,
         (destination) => {
-          const { body, session, input } = globalThis.stairsWitness;
+          const { body, session, input, engine } = globalThis.stairsWitness;
           const dx = destination[0] - body.pos[0];
           const dz = destination[2] - body.pos[2];
           input.yaw = Math.atan2(-dx, -dz);
           const distance = Math.hypot(dx, dz);
-          return { time: session.sim.time, paused: session.sim.paused, reached: distance < 0.5, distance };
+          const supportCell = (position) => [
+            Math.floor(position[0]),
+            Math.floor(position[1] - 1),
+            Math.floor(position[2]),
+          ];
+          const playerSupport = supportCell(body.pos);
+          const targetSupport = supportCell(destination);
+          const intent = input.intent();
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: distance < 0.5,
+            distance,
+            position: [...body.pos],
+            target: [...destination],
+            onGround: body.onGround,
+            velocity: [...body.vel],
+            path: {
+              from: [body.pos[0], body.pos[2]],
+              to: [destination[0], destination[2]],
+              delta: [dx, dz],
+              yaw: input.yaw,
+              forward: intent.forward,
+              sprint: intent.sprint,
+            },
+            readiness: {
+              playerColumnGenerated: engine.streamer.isReady(body.pos[0], body.pos[2]),
+              playerColumnUnmeshed: engine.streamer.unmeshedColumns(body.pos[0], body.pos[2], 0),
+              playerSupport: engine.isSolid(...playerSupport),
+              targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
+              targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
+              targetSupport: engine.isSolid(...targetSupport),
+            },
+            residents: [...session.zombieStore.values()].map((resident) => ({
+              position: [...resident.body.pos],
+              mode: resident.mode,
+            })),
+          };
         },
         target,
         { seconds: 12, from: start, label, record: state, stop: releaseForward },
@@ -434,16 +471,26 @@ try {
     }
     await waitForSimulation(
       page,
-      ({ height, settleBelow }) => {
-        const { body, session } = globalThis.stairsWitness;
+      (destination) => {
+        const { body, session, engine } = globalThis.stairsWitness;
+        const supportCell = [Math.floor(destination[0]), Math.floor(destination[1] - 1), Math.floor(destination[2])];
         return {
           time: session.sim.time,
           paused: session.sim.paused,
-          reached: body.onGround && (settleBelow ? body.pos[1] < height : Math.abs(body.pos[1] - height) < 0.01),
+          reached: body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01,
+          position: [...body.pos],
+          target: [...destination],
           feet: body.pos[1],
+          onGround: body.onGround,
+          velocity: [...body.vel],
+          readiness: {
+            targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
+            targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
+            targetSupport: engine.isSolid(...supportCell),
+          },
         };
       },
-      { height: target[1], settleBelow: settleBelowTarget },
+      target,
       { seconds: 4, label: `${label}: settle after releasing forward input`, record: state },
     );
   };
@@ -575,6 +622,42 @@ try {
     const houseUpper = await state('house upstairs walked');
     const residentAtUpper = houseUpper.zombies.find(({ id }) => id === residentId);
     assert.ok(residentAtUpper && residentAtUpper.pos[1] > houseLower.position[1]);
+    const upperAnchor = await page
+      .waitForFunction(
+        ({ id, lowerLanding, upperLanding }) => {
+          const { engine, session } = globalThis.stairsWitness;
+          const resident = session.zombieStore.get(id);
+          if (!resident?.body.onGround || Math.abs(resident.body.pos[1] - upperLanding[1]) >= 0.01) {
+            return false;
+          }
+          const supportCell = (position) => [
+            Math.floor(position[0]),
+            Math.floor(position[1] - 1),
+            Math.floor(position[2]),
+          ];
+          const lowerTarget = [resident.body.pos[0], lowerLanding[1], resident.body.pos[2]];
+          const middleStair = [
+            Math.floor((lowerLanding[0] + upperLanding[0]) / 2),
+            Math.floor((lowerLanding[1] + upperLanding[1]) / 2 - 1),
+            Math.floor((lowerLanding[2] + upperLanding[2]) / 2),
+          ];
+          const collisionCells = [lowerLanding, middleStair, upperLanding, lowerTarget].map(supportCell);
+          const collisionReady = collisionCells.map((cell) => engine.isSolid(...cell));
+          return collisionReady.every(Boolean)
+            ? {
+                residentPosition: [...resident.body.pos],
+                target: lowerTarget,
+                collisionCells,
+                collisionReady,
+                terrainGenerated: engine.streamer.isReady(lowerTarget[0], lowerTarget[2]),
+              }
+            : false;
+        },
+        { id: residentId, lowerLanding: houseLower.position, upperLanding: houseUpper.position },
+        { timeout: 60_000, polling: 50 },
+      )
+      .then((handle) => handle.jsonValue());
+    await state('upper resident and lower-floor/stair collision ready', { upperAnchor });
     await openResidentDoor(residentId);
     const approachStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     const releaseForward = await holdAction(page, 'movement.forward');
@@ -609,18 +692,11 @@ try {
     });
     await walk('movement.back', 112, false, 43);
     await state('house downstairs walked');
-    const underResident = await page.evaluate((id) => {
-      const { session } = globalThis.stairsWitness;
-      const resident = session.zombieStore.get(id);
-      if (!resident) {
-        throw new Error('stairs_house resident left the entity store');
-      }
-      return [resident.body.pos[0], resident.body.pos[1], resident.body.pos[2]];
-    }, residentId);
+    const lowerFloorTarget = upperAnchor.target;
     const releaseResidentSprint = await holdAction(page, 'movement.sprint');
     try {
-      // The doorway can raise this approach, so settle relative to the resident rather than the starting floor.
-      await walkTo(underResident, 'sprint below resident on the lower floor', { settleBelowTarget: true });
+      // The resident can chase down the stairs; keep the target projected from its grounded upstairs position.
+      await walkTo(lowerFloorTarget, 'sprint below resident on the lower floor');
     } finally {
       await releaseResidentSprint();
     }
