@@ -43,8 +43,8 @@ export const eulerXyzDegrees = (m: Mat3): Vec3 => {
  * Held-model `grip.turn` for a model written with `fileFromGungen`: the fixed rotation that carries the
  * exported file's axes onto the held axes (+X forward, +Y up).
  *
- * BR ruling (2026-09-29): this is NOT the hold frame's orientation. A grip is raked, and the hold frame leans
- * with it, but `turn` says how the model file is oriented, not how the hand sits. The tilted frame stays in
- * gun anchor data for future hand posing. This function takes no anchor.
+ * The grip transform maps the exported file onto the held-model axes; it is not the hold frame's orientation.
+ * A grip may be raked and its hold frame may lean, but `turn` carries only the model file's orientation. The
+ * tilted frame stays in gun anchor data for hand posing, so this function takes no anchor.
  */
 export const gripTurn = (fileFromGungen: Mat3 = FILE_FROM_GUNGEN): Vec3 => eulerXyzDegrees(transpose(fileFromGungen));
