@@ -152,8 +152,12 @@ from these fixtures.
 Walk toward the lower landing in the house, up/down with ordinary movement. In the
 cabin, the ground landing leads down; take a flashlight. The maintained
 `test/browser/stairs.mjs traversal` uses actual keyboard movement and checks
-noclip stays off. Horizontal arrival and landing settlement have separate
-simulation-time bounds; see `deadvox/test/browser/stairs.mjs`, `walkTo`. Both waits end
+noclip stays off. The lower-floor sprint targets the projection of a grounded
+upstairs position because the resident can move onto the stairs while pursuing
+the player; its live position is not a stable lower-floor target. The stage
+checks floor and stair collision support before the sprint; see
+`deadvox/test/browser/stairs.mjs`, `upperAnchor` and `walkTo`. Horizontal arrival
+and landing settlement have separate simulation-time bounds. Both waits end
 and fail if the simulation pauses, rather than waiting for the outer kill. Body
 position, velocity, onGround, simulation time and pause state are written to
 `states.json` before assertions and on walk/settle failure. Traversal uses a smaller
@@ -173,9 +177,10 @@ override exist only in the lighting test's Vite plugin, not the demo or build. B
 stages keep the existing outer cap; neither retries to green. Traversal witnesses
 actual floor following; screenshots are secondary to its simulation observations.
 
-Shamblers do not traverse authored flights or otherwise navigate between
-storeys. They beeline toward their attention target, move horizontally, slide
-along obstacles through collision physics, and prefer jumping low obstacles;
+Shamblers do not navigate between storeys or follow authored flights as routes,
+though a resident can drift onto the flight while beelining. They move
+horizontally toward their attention target, slide along obstacles through
+collision physics, and prefer jumping low obstacles;
 some obstacle hits trigger an open-direction wander before pursuit resumes. A
 target on another floor does not give the shambler stair knowledge. Closed doors
 block it like walls. BR deferred door bashing for #273 until mob and obstacle

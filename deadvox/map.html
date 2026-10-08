@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>Deadvox playtest site map</title>
+    <style>
+      * { box-sizing: border-box; }
+      :root { color-scheme: light; font-family: system-ui, sans-serif; color: #202822; background: #d7ddd4; }
+      html, body { width: 100%; height: 100%; margin: 0; }
+      body { overflow: hidden; }
+      header { height: 46px; display: flex; align-items: center; padding: 0 16px; color: #f4f1e7; background: #242b27; letter-spacing: .07em; font-size: 13px; font-weight: 750; }
+      #workspace { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: calc(100% - 46px); }
+      #stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #c7d0c6; }
+      #map { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+      #map.dragging { cursor: grabbing; }
+      #map-label, #map-status { position: absolute; z-index: 1; padding: 6px 9px; background: #17201ddf; color: #f7f3e9; border-radius: 3px; pointer-events: none; font-size: 12px; }
+      #map-label { top: 12px; left: 12px; font-weight: 700; letter-spacing: .04em; }
+      #map-status { right: 12px; top: 12px; max-width: min(420px, 55%); }
+      #hint { position: absolute; bottom: 12px; left: 12px; max-width: 360px; padding: 6px 9px; color: #17201d; background: #f4f1e7e8; border-radius: 3px; font-size: 11px; pointer-events: none; }
+      #controls { min-height: 0; overflow: auto; padding: 16px; background: #f0f0e8; border-left: 1px solid #a0a89e; }
+      h1 { margin: 0 0 7px; font-size: 17px; }
+      h2 { margin: 18px 0 7px; color: #586358; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+      p { margin: 6px 0; font-size: 12px; line-height: 1.45; }
+      .quiet { color: #59665d; }
+      .row { display: flex; flex-wrap: wrap; gap: 6px; }
+      button { border: 1px solid #87948b; border-radius: 3px; padding: 7px 9px; color: #29352e; background: #e4e7de; font: inherit; font-size: 12px; cursor: pointer; }
+      button:hover { background: #d8dfd4; }
+      button[aria-pressed="true"] { border-color: #76613b; color: #46371d; background: #eadcb9; }
+      #point { min-height: 76px; padding: 9px; background: #e2e5dc; border-left: 3px solid #7a825f; font-size: 12px; line-height: 1.5; }
+      #point a { color: #285844; font-weight: 650; }
+      #error { position: fixed; z-index: 3; left: 12px; bottom: 12px; max-width: 80%; color: #8b1720; background: #fff5ee; padding: 8px 10px; font-weight: 700; }
+      @media (max-width: 850px) {
+        body { overflow: auto; }
+        #workspace { height: auto; min-height: calc(100% - 46px); grid-template-columns: 1fr; }
+        #stage { height: min(68vh, 680px); min-height: 390px; }
+        #controls { overflow: visible; border-left: 0; border-top: 1px solid #a0a89e; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>DEADVOX · PLAYTEST SITE REVIEW MAP</header>
+    <main id="workspace">
+      <section id="stage" aria-label="Top-down map of the playtest site">
+        <canvas id="map"></canvas>
+        <div id="map-label">PLAYTEST SITE · TOP VIEW</div>
+        <div id="map-status" role="status">Loading authored world…</div>
+        <div id="hint">Drag to pan · wheel to zoom · click for ground coordinates and a game link</div>
+      </section>
+      <aside id="controls">
+        <h1>Playtest site map</h1>
+        <p class="quiet">Seed <span id="seed"></span> · north is up · contours follow the generated ground</p>
+        <h2>View</h2>
+        <div class="row">
+          <button type="button" data-view="topographic" aria-pressed="true">Topographic</button>
+          <button type="button" data-view="satellite" aria-pressed="false">Block colours</button>
+          <button type="button" id="fit">Fit</button>
+        </div>
+        <h2>Selected ground</h2>
+        <div id="point">Click a point on the map.</div>
+        <h2>Map layers</h2>
+        <p>Contours and hillshade show the sampled ground. The block-colour view uses the generated top solid block. Footprints, track lines and forest polygons come from the authored layout.</p>
+        <p class="quiet">The outside margin shows the site terrain blending into the seeded world.</p>
+      </aside>
+    </main>
+    <div id="error" hidden></div>
+    <script type="module" src="./src/siteMapPage.ts"></script>
+  </body>
+</html>

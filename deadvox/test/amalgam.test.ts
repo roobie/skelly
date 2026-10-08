@@ -524,16 +524,17 @@ describe('amalgam body and combat seam', () => {
     expect(body.pos[0]).toBeLessThan(-envelope.halfWidth);
   });
 
-  it('keeps amalgams grounded behind a fence or crate row while shamblers cross it', () => {
-    for (const kind of ['fence', 'crates'] as const) {
-      const amalgam = runObstacleCase(kind, 'amalgam');
-      expect(amalgam.barrierSolid).toBe(true);
-      expect(amalgam.mode).toBe('chase');
-      expect(amalgam.maxZ).toBeGreaterThan(-30);
-      expect(amalgam.crossed).toBe(false);
-      expect(amalgam.leftGround).toBe(false);
-      expect(runObstacleCase(kind, 'shambler').crossed).toBe(true);
-    }
+  it.each(['fence', 'crates'] as const)('keeps amalgams grounded behind %s while shamblers cross', (kind) => {
+    const amalgam = runObstacleCase(kind, 'amalgam');
+    expect(amalgam.barrierSolid).toBe(true);
+    expect(amalgam.mode).toBe('chase');
+    expect(amalgam.maxZ).toBeGreaterThan(-30);
+    expect(amalgam.crossed).toBe(false);
+    expect(amalgam.leftGround).toBe(false);
+    expect(runObstacleCase(kind, 'shambler').crossed).toBe(true);
+  });
+
+  it('keeps a grounded shambler from crossing a fence', () => {
     const groundedShambler = runObstacleCase('fence', 'shambler', false);
     expect(groundedShambler.crossed).toBe(false);
     expect(groundedShambler.leftGround).toBe(false);

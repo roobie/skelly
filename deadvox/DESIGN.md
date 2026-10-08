@@ -720,7 +720,7 @@ and `src/core/content.ts`, `checkItemFirearm`.
   each is about half the previous curve's duration; legendary remains clamped to skill 10.
   BR, 2026-10-07 10:23: “yep, feels good” on the handling comparison for PR #343.
 
-  Aim sway remains separate from dispersion and recoil so firearms skill affects steadiness without changing weapon accuracy or kick. Sharing `src/core/footsteps.ts`, `FootstepClock`, keeps the stride-synced path aligned with gait; content-owned shape settings allow a shallower path without changing cadence. See `src/core/aim.ts`, `frameFromState`, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`.
+  Readied-gait sway and look lag follow firearms skill, while dispersion and recoil remain separate. An unskilled character's readied sway is large with any firearm because they've never handled one; at skill 10, the character hardly sways. Each firearm's skill-zero values set the relative steadiness between guns. Automatic follow-ups sway at least as much as single shots, so sway does not drop during burst fire. Sharing `src/core/footsteps.ts`, `FootstepClock`, keeps the stride-synced path aligned with gait, and content owns the shape and skill endpoints. See `src/core/aim.ts`, `frameFromState`, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`.
 
   Mean-reverting Brownian drift replaces stride-eased jitter; the shared walking lune remains separate, and firearms skill continues to scale sway. Mean reversion avoids unbounded drift, while smoothing keeps fixed-tick noise from reading as frame-level twitch. Content owns the noise tuning. Saving the running state lets Continue and replay segments preserve the exact path, avoiding a motion discontinuity in the drift chosen by feel. The vertical/horizontal lune ratio remains independently tunable for BR's shape comparisons; it does not change the OU drift. See `src/core/aim.ts`, `advanceOrnsteinUhlenbeckAxis` and `AimController.snapshotState`, `src/core/saveState.ts`, `snapshotSession`, `src/game/inputReplay.ts`, `encodeInputReplay`, `src/game/config.ts`, `configFromUrl`, and `src/content/base/recipes.json`, `firearms_combat`.
 
@@ -1320,7 +1320,8 @@ decoration.
   you can read it; play stays as diegetic as possible (see INTERFACE.md).
 - **The UI only shows what your character knows.** No enemy markers, no
   minimap of zombies, no threat meter. A rest interruption says what you
-  heard, not what it was.
+  heard, not what it was. The in-game map is a paper map (#470); top-down
+  renders are review tools, not UI.
 - **Aim for full diegesis (BR, 2026-10-03):** "we should _aim_ for full
   diegesis - that's why the HUD is default off, but we can't always with voxel
   graphics". Utilities such as the compass and the wristwatch are items the
