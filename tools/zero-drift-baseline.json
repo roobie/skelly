@@ -1,7 +1,6 @@
 {
   "version": 1,
   "violations": [
-    { "path": ".claude/CLAUDE.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "deadvox/CONTROLS.md", "check": "citation", "text": "(2026-10-04 12:12):** “", "count": 1 },
     { "path": "deadvox/CONTROLS.md", "check": "citation", "text": "(2026-10-04):** “", "count": 6 },
     { "path": "deadvox/CONTROLS.md", "check": "citation", "text": "(2026-10-05 13:16):** “", "count": 1 },
@@ -59,7 +58,6 @@
     { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR's earlier 2026-10-05", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "path", "text": "assets/", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "path", "text": "assets/manifest.json", "count": 1 },
-    { "path": "deadvox/DESIGN.md", "check": "when", "text": "today", "count": 1 },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "core/soundPicker.ts", "count": 1 },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "game/audio.ts", "count": 1 },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "game/audioPresentation.ts", "count": 1 },
@@ -143,7 +141,7 @@
     { "path": "deadvox/SLICE-3.md", "check": "citation", "text": "BR's #275 answers (2026-10-06", "count": 1 },
     { "path": "deadvox/SLICE-3.md", "check": "citation", "text": "BR's 13:35", "count": 1 },
     { "path": "deadvox/SLICE-3.md", "check": "citation", "text": "BR's 2026-10-01", "count": 1 },
-    { "path": "deadvox/SLICE-3.md", "check": "citation", "text": "BR's 2026-10-05", "count": 2 },
+    { "path": "deadvox/SLICE-3.md", "check": "citation", "text": "BR's 2026-10-05", "count": 1 },
     { "path": "deadvox/SLICE-3.md", "check": "citation", "text": "BR's 2026-10-07", "count": 1 },
     { "path": "deadvox/src/ui/soundGuide.ts", "check": "citation", "text": "(2026-10-05 11:31): “", "count": 1 },
     { "path": "deadvox/src/ui/soundGuide.ts", "check": "citation", "text": "(2026-10-05 11:32): “", "count": 1 },
@@ -184,20 +182,10 @@
     { "path": "docs/PROCESS.md", "check": "path", "text": "skills/agent-mail/TEAM.md", "count": 1 },
     { "path": "gungen/cartridges/README.md", "check": "path", "text": "gun/", "count": 1 },
     { "path": "gungen/cartridges/README.md", "check": "path", "text": "viewer/", "count": 1 },
-    { "path": "gungen/cartridges/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "core/resolve.ts", "count": 1 },
     { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "viewer/scene.ts", "count": 1 },
     { "path": "gungen/docs/anti-materiel.md", "check": "symbol", "text": "viewer/scene.ts, glb.ts", "count": 1 },
     { "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md", "check": "citation", "text": "br-75", "count": 1 },
-    { "path": "gungen/docs/pump-action-export.md", "check": "path", "text": "gun/tubeCapacity.ts", "count": 1 },
-    {
-      "path": "gungen/docs/pump-action-export.md",
-      "check": "read_if",
-      "text": "missing YAML front matter",
-      "count": 1
-    },
-    { "path": "gungen/docs/shotshell-export.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
-    { "path": "gungen/PROJECT.md", "check": "citation", "text": "(2026-09-29, see \"3.0b (implemented)\"", "count": 1 },
     { "path": "gungen/PROJECT.md", "check": "citation", "text": "BR 18:36", "count": 1 },
     { "path": "gungen/PROJECT.md", "check": "citation", "text": "BR 20:27", "count": 2 },
     { "path": "gungen/PROJECT.md", "check": "citation", "text": "BR 20:34", "count": 1 },
@@ -221,20 +209,8 @@
     { "path": "gungen/PROJECT.md", "check": "citation", "text": "BR's hollow-shell follow-up (2026-09-30", "count": 1 },
     { "path": "gungen/PROJECT.md", "check": "citation", "text": "BR's reference screenshot (2026-10-06", "count": 1 },
     { "path": "gungen/PROJECT.md", "check": "citation", "text": "BR's ruling (2026-09-28", "count": 1 },
-    { "path": "gungen/PROJECT.md", "check": "line_number", "text": "deadvox/src/core/schema.ts:197-212", "count": 1 },
-    { "path": "gungen/PROJECT.md", "check": "line_number", "text": "deadvox/src/core/schema.ts:202-204", "count": 1 },
-    { "path": "gungen/PROJECT.md", "check": "line_number", "text": "deadvox/src/render/models.ts:50-52", "count": 1 },
-    { "path": "gungen/PROJECT.md", "check": "path", "text": "src/core/suggest.ts", "count": 1 },
-    {
-      "path": "gungen/PROJECT.md",
-      "check": "path",
-      "text": "test/fixtures/broken-connection-contact.json",
-      "count": 1
-    },
-    { "path": "gungen/PROJECT.md", "check": "when", "text": "currently", "count": 2 },
-    { "path": "gungen/PROJECT.md", "check": "when", "text": "today", "count": 2 },
+    { "path": "gungen/PROJECT.md", "check": "when", "text": "currently", "count": 1 },
     { "path": "gungen/src/gun/parts.ts", "check": "citation", "text": "BR, 2026-10-06", "count": 1 },
-    { "path": "gungen/test/ak.test.ts", "check": "citation", "text": "BR 22:47", "count": 1 },
-    { "path": "mobgen/reference/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 }
+    { "path": "gungen/test/ak.test.ts", "check": "citation", "text": "BR 22:47", "count": 1 }
   ]
 }
