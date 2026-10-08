@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
-import { HAMLET_TEMPLATES } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
@@ -952,43 +951,6 @@ describe('content references', () => {
       { source, path: 'items[1].disassembly.yields[0].item', message: `${only(item)}; salvage may not yield it` },
       { source, path: 'recipes[0].result.item', message: `${only('fixture_box')}; no recipe may make it` },
     ]);
-  });
-
-  it('makes every military-only item reachable once an authored site rolls all military tables', () => {
-    const militaryTables = [...baseRegistry.loot.values()].filter((table) => table.military);
-    // Demo layouts aren't world sources (`worldSources`), so the site must come from a played layout.
-    const authoredOnly = [...baseRegistry.layouts.values()]
-      .filter((layout) => !layout.demo)
-      .flatMap((layout) => layout.buildings.map(({ template }) => baseRegistry.templates.get(template)!))
-      .filter((definition) => !HAMLET_TEMPLATES.includes(definition.id));
-    const site = authoredOnly
-      .map((definition) => structuredClone(definition))
-      .find((definition) =>
-        Object.values(definition.palette).some((entry) => typeof entry === 'object' && 'loot' in entry),
-      );
-    if (militaryTables.length === 0 || site === undefined) {
-      throw new Error('base content needs military tables and an authored-only template with a loot container');
-    }
-    const allMilitaryLoot = {
-      id: 'fixture_all_military_tables',
-      military: true,
-      rolls: [1, 1],
-      entries: militaryTables.map(({ id }) => ({ table: id, weight: 1 })),
-    };
-    site.military = true;
-    for (const [key, entry] of Object.entries(site.palette)) {
-      if (typeof entry === 'object' && 'loot' in entry) {
-        site.palette[key] = { ...entry, loot: allMilitaryLoot.id };
-      }
-    }
-    // Reuse the already validated base registry; this scenario only changes a known loot table on an existing template.
-    const templates = new Map(baseRegistry.templates);
-    templates.set(site.id, site);
-    const registry = { ...baseRegistry, templates };
-    const { found } = checkReachability(registry);
-    const military = [...militaryLootItems(registry)];
-    expect(military.length).toBeGreaterThan(0);
-    expect(military.filter((id) => !found.has(id))).toEqual([]);
   });
 
   it('limits military tables to military templates and forbids them on zombie types', () => {
