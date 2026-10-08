@@ -31,7 +31,7 @@ const observation = {
       marker,
       `
   Object.assign(globalThis, { pumpHandlingTest: { engine, session, input, camera, audio, screen,
-    getNotice: () => notice, getFramePacing: () => frameInterval.summary(), getGameFrozen: () => debugTools?.frozen } });
+    getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {
     globalThis.pumpCurrentAudioEvent = source.event;
@@ -62,6 +62,65 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
+    const nativeRequestAnimationFrame = globalThis.requestAnimationFrame.bind(globalThis);
+    const nativeCancelAnimationFrame = globalThis.cancelAnimationFrame.bind(globalThis);
+    let manualFrames = false;
+    let nextFrameId = 0;
+    let lastManualTimestamp;
+    const queuedFrames = [];
+    const frameWaiters = [];
+    const queueFrame = (frame) => {
+      queuedFrames.push(frame);
+      frameWaiters.shift()?.();
+    };
+    const waitForQueuedFrame = () =>
+      queuedFrames.length > 0 ? Promise.resolve() : new Promise((resolveFrame) => frameWaiters.push(resolveFrame));
+    globalThis.requestAnimationFrame = (callback) => {
+      nextFrameId += 1;
+      const id = nextFrameId;
+      if (manualFrames) {
+        queueFrame({ id, callback });
+      } else {
+        nativeRequestAnimationFrame((timestamp) => {
+          if (manualFrames) {
+            queueFrame({ id, callback, timestamp });
+          } else {
+            callback(timestamp);
+          }
+        });
+      }
+      return id;
+    };
+    globalThis.cancelAnimationFrame = (id) => {
+      const index = queuedFrames.findIndex((frame) => frame.id === id);
+      if (index >= 0) {
+        queuedFrames.splice(index, 1);
+      } else {
+        nativeCancelAnimationFrame(id);
+      }
+    };
+    globalThis.pumpManualFrames = {
+      enable: async () => {
+        manualFrames = true;
+        await waitForQueuedFrame();
+      },
+      step: (seconds) => {
+        const frame = queuedFrames.shift();
+        if (!frame) {
+          throw new Error('No queued game frame to step');
+        }
+        const timestamp = frame.timestamp ?? (lastManualTimestamp ?? performance.now()) + seconds * 1000;
+        lastManualTimestamp = timestamp;
+        frame.callback(timestamp);
+      },
+      disable: () => {
+        manualFrames = false;
+        lastManualTimestamp = undefined;
+        for (const frame of queuedFrames.splice(0)) {
+          nativeRequestAnimationFrame(frame.callback);
+        }
+      },
+    };
     globalThis.pumpDecoded = [];
     globalThis.pumpRDownAt = 0;
     globalThis.pumpRDowns = [];
@@ -213,17 +272,17 @@ try {
             return { complete: true, start, current: [...session.body.pos], goal, frames: 0, frameLimit: 0 };
           }
 
-          // The debug freeze keeps the live RAF from advancing simulation between these bounded
-          // frames; the actual held input drives the player inside this synchronous loop.
+          // Manually stepping the production RAF callback keeps live time out of the route; real
+          // held input drives the player through the normal input and simulation path.
           const frameSeconds = 1 / 60;
           const distanceMetres = Math.abs(goal - startCoordinate) * engine.config.scale.blockSize;
           const expectedFrames = Math.ceil(distanceMetres / speedMetresPerSecond / frameSeconds);
           // Authored walking pace plus margin covers load/stance slowdown and tick quantization; initial velocity is zero.
           const frameLimit = Math.max(1, Math.ceil(expectedFrames * 4) + 2);
-          session.frame(frameSeconds);
+          globalThis.pumpManualFrames.step(frameSeconds);
           let frames = 1;
           while (!complete() && frames < frameLimit) {
-            session.frame(frameSeconds);
+            globalThis.pumpManualFrames.step(frameSeconds);
             frames += 1;
           }
           return {
@@ -249,7 +308,7 @@ try {
       let frames = 0;
       const horizontalSpeed = () => Math.hypot(session.body.vel[0], session.body.vel[2]);
       while (horizontalSpeed() > 1e-9 && frames < maxSettleFrames) {
-        session.frame(frameSeconds);
+        globalThis.pumpManualFrames.step(frameSeconds);
         frames += 1;
       }
       return {
@@ -264,12 +323,6 @@ try {
       `player settles after route leg ${waypoint.id}: ${JSON.stringify(settled)}`,
     );
     return settled;
-  };
-  const setGameFrozen = async (frozen) => {
-    if ((await page.evaluate(() => globalThis.pumpHandlingTest.getGameFrozen())) !== frozen) {
-      await pressAction(page, 'debug.freeze-game');
-      await page.waitForFunction((expected) => globalThis.pumpHandlingTest.getGameFrozen() === expected, frozen);
-    }
   };
   const routeInputs = await page.evaluate(() => {
     const { engine, session } = globalThis.pumpHandlingTest;
@@ -296,7 +349,7 @@ try {
     await pressAction(page, 'movement.walk-toggle');
     await page.waitForFunction(() => globalThis.pumpHandlingTest.input.walking);
   }
-  await setGameFrozen(true);
+  await page.evaluate(() => globalThis.pumpManualFrames.enable());
   let routeStop;
   for (const waypoint of lockerRoute.waypoints) {
     const settled = await moveTo(waypoint);
@@ -315,7 +368,7 @@ try {
     }
     routeStop = settled;
   }
-  await setGameFrozen(false);
+  await page.evaluate(() => globalThis.pumpManualFrames.disable());
   if (!wasWalking) {
     await pressAction(page, 'movement.walk-toggle');
     await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.walking);
