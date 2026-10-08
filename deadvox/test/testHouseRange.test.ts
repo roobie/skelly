@@ -12,11 +12,12 @@ import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
+import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { GARDEN_GATE, HOUSE_OFFSET, SPAWN_YAW } from '../src/game/testHouse.ts';
 import { isTestHouseRangeStockItem, testHouseRangeStock } from '../src/game/testHouseRange.ts';
 import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
-import { buildTestHouseRangeRoute } from './testHouseRangeRoute.ts';
+import { buildTestHouseRangeRoute, routeMovementInput } from './testHouseRangeRoute.ts';
 
 const withRangeStockFixtures = (): { registry: Registry; firearm: string; ammo: string; box: string } => {
   const base = BUNDLED_CONTENT.registry;
@@ -149,25 +150,33 @@ type RangeWalkFixture = ReturnType<typeof buildRangeWalkFixture>;
 const crossedWaypoint = (position: number, target: number, direction: number): boolean =>
   direction > 0 ? position >= target : position <= target;
 
-const movePlayerTo = (fixture: RangeWalkFixture, waypoint: RangeWalkFixture['waypoints'][number]): boolean => {
+const movePlayerTo = (
+  fixture: RangeWalkFixture,
+  waypoint: RangeWalkFixture['waypoints'][number],
+): { reached: boolean; action?: string } => {
   const { body, blockSize, scale, isSolid, physics } = fixture;
   const { axis, target } = waypoint;
   const direction = Math.sign(target - body.pos[axis]);
   if (!direction) {
-    return true;
+    return { reached: true };
   }
-  const forward = axis === 0 ? direction : 0;
-  const right = axis === 2 ? direction : 0;
+  const movement = routeMovementInput(axis, direction > 0 ? 1 : -1);
   const maxFrames = Math.ceil(((Math.abs(target - body.pos[axis]) * blockSize) / PLAYER.sprint + 1) * 120);
   for (let frame = 0; frame < maxFrames && !crossedWaypoint(body.pos[axis], target, direction); frame++) {
-    steer(body, scale, SPAWN_YAW, { forward, right, jump: false, sprint: true, walk: false });
+    steer(body, scale, SPAWN_YAW, {
+      forward: movement.forward,
+      right: movement.right,
+      jump: false,
+      sprint: true,
+      walk: false,
+    });
     stepBody(body, 1 / 60, isSolid, physics);
   }
   steer(body, scale, SPAWN_YAW, { forward: 0, right: 0, jump: false, sprint: false, walk: false });
   for (let frame = 0; frame < 4; frame++) {
     stepBody(body, 1 / 60, isSolid, physics);
   }
-  return crossedWaypoint(body.pos[axis], target, direction);
+  return { reached: crossedWaypoint(body.pos[axis], target, direction), action: movement.action };
 };
 
 describe('the debug test-house range', () => {
@@ -209,8 +218,15 @@ describe('the debug test-house range', () => {
   it('walks every shared route leg to a clear, reachable rack-facing stop', () => {
     const fixture = buildRangeWalkFixture();
     expect(fixture.waypoints).not.toHaveLength(0);
+    const knownActions = new Set(INPUT_BINDINGS.map(({ id }) => id));
     for (const waypoint of fixture.waypoints) {
-      expect(movePlayerTo(fixture, waypoint), `route leg ${waypoint.id}`).toBe(true);
+      const result = movePlayerTo(fixture, waypoint);
+      expect(result.action, `route leg ${waypoint.id} emits an action`).toBeDefined();
+      if (!result.action) {
+        throw new Error(`route leg ${waypoint.id} did not emit a movement action`);
+      }
+      expect(knownActions.has(result.action), `route leg ${waypoint.id} uses a bound action`).toBe(true);
+      expect(result.reached, `route leg ${waypoint.id}`).toBe(true);
       if (waypoint.id === 'centre-in-gate') {
         expect(Math.abs(fixture.body.pos[0] - fixture.gateCentreX)).toBeLessThanOrEqual(fixture.gateClearance);
       }

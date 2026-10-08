@@ -1,3 +1,5 @@
+import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
+
 interface TestHouseRangeWaypoint {
   readonly id: string;
   readonly axis: 0 | 2;
@@ -11,6 +13,24 @@ interface TestHouseRangeRoute {
 }
 
 /** Waypoint geometry shared by the unit and browser collision contracts for the debug range. */
+export const routeMovementInput = (axis: 0 | 2, direction: -1 | 1) => {
+  let actionId: string;
+  if (axis === 0) {
+    actionId = direction > 0 ? 'movement.forward' : 'movement.back';
+  } else {
+    actionId = direction > 0 ? 'movement.right' : 'movement.left';
+  }
+  const binding = INPUT_BINDINGS.find(({ id }) => id === actionId);
+  if (!binding) {
+    throw new Error(`Test-house route movement action is not bound: ${actionId}`);
+  }
+  return {
+    action: binding.id,
+    forward: axis === 0 ? direction : 0,
+    right: axis === 2 ? direction : 0,
+  };
+};
+
 export const buildTestHouseRangeRoute = ({
   blockSize,
   playerHalfWidth,

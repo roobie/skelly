@@ -11,7 +11,7 @@ import { createServer } from 'vite';
 import { PLAYER } from '../../src/game/player.ts';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../../src/game/testHouse.ts';
-import { buildTestHouseRangeRoute } from '../testHouseRangeRoute.ts';
+import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeRoute.ts';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
@@ -197,12 +197,7 @@ try {
     if (!moveDirection) {
       return;
     }
-    let action;
-    if (waypoint.axis === 0) {
-      action = moveDirection > 0 ? 'movement.forward' : 'movement.backward';
-    } else {
-      action = moveDirection > 0 ? 'movement.right' : 'movement.left';
-    }
+    const { action } = routeMovementInput(waypoint.axis, moveDirection > 0 ? 1 : -1);
     const releaseSprint = await holdAction(page, 'movement.sprint');
     const releaseMove = await holdAction(page, action);
     try {
