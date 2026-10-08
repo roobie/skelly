@@ -294,8 +294,7 @@ try {
       lockerGeometry.lockerScroll.scrollHeight > lockerGeometry.lockerScroll.clientHeight,
     `the locker grid scrolls both ways inside its region: ${JSON.stringify(lockerGeometry.lockerScroll)}`,
   );
-  const tabChecks = [];
-  for (const tab of ['items', 'skills', 'crafting', 'items']) {
+  const selectInventoryTab = async (tab) => {
     const tabButton = page.locator(`#inventory .inv-tab[data-tab="${tab}"]`);
     const tabBox = await tabButton.boundingBox();
     assert(tabBox, `tab ${tab} has a layout box`);
@@ -310,6 +309,10 @@ try {
       movementY: target.y - cursor.y,
     });
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
+  };
+  const tabChecks = [];
+  for (const tab of ['items', 'skills', 'crafting', 'items']) {
+    await selectInventoryTab(tab);
     tabChecks.push(
       await page.evaluate(
         (selected) => ({
@@ -354,15 +357,15 @@ try {
       `tab content owns its overflow: ${JSON.stringify(result)}`,
     );
   }
-  await page.locator('#inventory .inv-tab[data-tab="crafting"]').click();
+  await selectInventoryTab('crafting');
   await page.screenshot({ path: resolve(screenshotDirectory, 'crafting.png') });
-  await page.locator('#inventory .inv-tab[data-tab="items"]').click();
+  await selectInventoryTab('items');
   await page.screenshot({ path: resolve(screenshotDirectory, 'locker-items.png') });
-  await page.locator('#inventory .inv-tab[data-tab="skills"]').click();
+  await selectInventoryTab('skills');
   await page.screenshot({ path: resolve(screenshotDirectory, 'skills.png') });
   await page.setViewportSize({ width: 880, height: 540 });
   for (const tab of ['items', 'skills', 'crafting']) {
-    await page.locator(`#inventory .inv-tab[data-tab="${tab}"]`).click();
+    await selectInventoryTab(tab);
     const view = await page.evaluate((selected) => {
       const panel =
         selected === 'crafting'
