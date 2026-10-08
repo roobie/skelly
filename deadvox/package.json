@@ -15,6 +15,7 @@
     "test:browser:melee-build-click": "timeout 300 node test/browser/melee-build-click.mjs",
     "test:browser:pump": "timeout 300 node test/browser/pump-handling.mjs",
     "test:browser:firefox": "timeout 300 node test/browser/inventory-scroll.mjs firefox && timeout 300 node test/browser/firefox-ui.mjs && SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=busy-lock timeout 300 node test/browser/save-storage.mjs firefox && SAVE_NAVIGATION_ONLY=1 timeout 300 node test/browser/save-storage.mjs firefox && SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=replacement timeout 300 node test/browser/save-storage.mjs firefox",
+    "test:browser:firefox:ui": "timeout 300 node test/browser/firefox-ui.mjs",
     "test:browser:firefox:save-storage": "xvfb-run -a timeout 300 node test/browser/save-storage.mjs firefox",
     "test:browser:firefox:native": "timeout 300 node test/browser/firefox-first-click.mjs",
     "test:browser:firefox:continue": "SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=continue timeout 300 node test/browser/save-storage.mjs firefox",

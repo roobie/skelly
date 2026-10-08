@@ -5,6 +5,7 @@ read_if:
   - you change content references, static reachability, or disassembly-output contracts
   - you change how content-loading tests build their registry fixtures
   - you change recipe, workstation or book reachability contracts
+  - you author weathering profiles or site weathering-profile references
   - you change static reachability checks
   - you author or validate time-windowed template spawns
   - you're authoring or changing playtest fixed loot
@@ -22,6 +23,10 @@ entry. Blocks keep explicit numeric IDs and reserved AIR handling. Model/sound
 origin tables remain explicit. File order, overrides and diagnostic order remain
 unchanged. See `npm run validate` for the exhaustive current section/count list,
 not a second hand-maintained section table here.
+
+## Weathering profiles
+
+Weathering is a render-only content choice rather than saved world state. `WeatheringSchema` in `src/core/schema.ts` validates named profiles, and `referenceIssues` in `src/core/content.ts` checks a layout's optional profile reference; layouts without one use the shared default in `src/game/config.ts`, `configFromUrl`. This lets sites share the shader while mod content changes the age and material response that BR can compare in the debug scene.
 
 ## Content test registries
 

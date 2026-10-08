@@ -13,7 +13,7 @@ import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDe
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
-import { WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
+import { WEATHERING_RANGES } from '../src/core/weather.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 
 const BASE = 'src/content/base';
@@ -43,34 +43,32 @@ const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: '
   return validateContent({ source: zombieFile.source, data });
 };
 
-it('validates weathering strength and world-variation settings', () => {
-  const settings = {
-    id: 'world',
-    strength: 0.5,
-    variationScaleMetres: 12,
-    variationStrength: 0.7,
-    mossThreshold: 0.68,
-    mossBias: 0.5,
-  };
-  expect(validateContent({ source: 'weathering.json', data: { weathering: [settings] } })).toEqual([]);
-  expect(
-    validateContent({
-      source: 'weathering.json',
-      data: { weathering: [{ ...settings, strength: WEATHERING_STRENGTH_MAX }] },
-    }),
-  ).toEqual([]);
-  expect(
-    validateContent({
-      source: 'weathering.json',
-      data: { weathering: [{ ...settings, strength: WEATHERING_STRENGTH_MAX + 1 }] },
-    }),
-  ).not.toEqual([]);
-  expect(
-    validateContent({
-      source: 'weathering.json',
-      data: { weathering: [{ ...settings, variationScaleMetres: 0 }] },
-    }),
-  ).not.toEqual([]);
+it('validates weathering profile bounds without pinning authored tuning', () => {
+  const profile = baseRegistry.weathering.get('proper')!;
+  const validate = (candidate: typeof profile) =>
+    validateContent({ source: 'weathering.json', data: { weathering: [candidate] } });
+  expect(validate(profile)).toEqual([]);
+  expect([...baseRegistry.weathering.keys()]).toEqual(expect.arrayContaining(['proper', 'overgrown']));
+  for (const [field, range] of Object.entries(WEATHERING_RANGES)) {
+    expect(validate({ ...profile, [field]: range.min } as typeof profile)).toEqual([]);
+    expect(validate({ ...profile, [field]: range.max } as typeof profile)).toEqual([]);
+    expect(validate({ ...profile, [field]: range.min - 1 } as typeof profile)).not.toEqual([]);
+    expect(validate({ ...profile, [field]: range.max + 1 } as typeof profile)).not.toEqual([]);
+  }
+  expect(validate({ ...profile, tintColor: 'blue' })).not.toEqual([]);
+});
+
+it('rejects a layout that names an unknown weathering profile', () => {
+  const file = base.find(({ data: candidateData }) => 'layouts' in (candidateData as Record<string, unknown>))!;
+  const layoutData = structuredClone(file.data) as { layouts: { weatheringProfile?: string }[] };
+  layoutData.layouts[0]!.weatheringProfile = 'not_a_weathering_profile';
+  const result = buildRegistry([
+    ...base.filter(({ source }) => source !== file.source),
+    { source: file.source, data: layoutData },
+  ]);
+  expect(result.issues).toEqual(
+    expect.arrayContaining([expect.objectContaining({ path: expect.stringContaining('.weatheringProfile') })]),
+  );
 });
 
 interface WindowFrameRun {

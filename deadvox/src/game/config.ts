@@ -2,7 +2,8 @@ import { parseTimeOfDay, SPAWN_TIME, SPAWN_TIMES } from '../core/clock.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
-import { clampWeathering } from '../core/weather.ts';
+import { DEFAULT_WEATHERING_PROFILE_ID } from '../core/weather.ts';
+import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
 import { BUNDLED_CONTENT } from './bundledContent.ts';
 
 /** View distances offered on the start card, in metres. 96 m is the default. */
@@ -39,7 +40,11 @@ export interface GameConfig {
   storeys: number;
   /** Fixed occupancy override (`?density=0..1`); null selects the frozen seeded field. */
   density: number | null;
-  /** Render-only weathering settings from content, with optional debug URL comparisons applied. */
+  /** Profile id selected for this site, with debug URL selection applied. */
+  weatheringProfileId: string;
+  /** Site's authored weathering profile id, which is the URL's default. */
+  weatheringDefaultProfileId: string;
+  /** Render-only weathering profile with optional debug URL edits applied. */
   weathering: WeatheringDef | undefined;
   /** Debug-only world-x boundary; only fragments east of it receive weathering. */
   weatheringSplit?: number;
@@ -63,7 +68,9 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
     site: 'hamlet',
     storeys: 1,
     density: null,
-    weathering: baseWeathering,
+    weatheringProfileId: DEFAULT_WEATHERING_PROFILE_ID,
+    weatheringDefaultProfileId: DEFAULT_WEATHERING_PROFILE_ID,
+    weathering: BUNDLED_CONTENT.registry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID),
     actors: 'detailed',
   };
 };
@@ -104,36 +111,6 @@ const debugWobbleNoiseScaleFromUrl = (params: URLSearchParams): number | undefin
   return Number.isFinite(value) && value >= 0 && value <= 8 ? value : undefined;
 };
 
-const debugWeatheringVariationFromUrl = (params: URLSearchParams): number | undefined => {
-  if (params.get('debug') !== '1') {
-    return undefined;
-  }
-  const raw = params.get('weatheringVariation');
-  if (raw === null || raw.trim() === '') {
-    return undefined;
-  }
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
-};
-
-const weatheringFromUrl = (
-  params: URLSearchParams,
-  base: WeatheringDef | undefined,
-  debug: boolean,
-): WeatheringDef | undefined => {
-  if (!(base && debug)) {
-    return base;
-  }
-  const rawStrength = params.get('weathering');
-  const strength = rawStrength === null || rawStrength.trim() === '' ? Number.NaN : Number(rawStrength);
-  let settings = Number.isFinite(strength) ? { ...base, strength: clampWeathering(strength) } : base;
-  const variation = debugWeatheringVariationFromUrl(params);
-  if (variation !== undefined) {
-    settings = { ...settings, variationStrength: variation };
-  }
-  return settings;
-};
-
 const debugWeatheringSplitFromUrl = (params: URLSearchParams, debug: boolean, site: SiteName): number | undefined => {
   if (!debug) {
     return undefined;
@@ -171,8 +148,6 @@ const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
 
 // URL parsing precedes world construction; only admitted files may contribute authored ids.
 const authoredIds = new Set(BUNDLED_CONTENT.registry.layouts.keys());
-// A rejected or absent optional tuning file leaves startup usable with weathering disabled.
-const baseWeathering = BUNDLED_CONTENT.registry.weathering.get('world');
 
 const MAX_STOREYS = 20;
 
@@ -204,9 +179,22 @@ export const siteFromUrl = (
   };
 };
 
+const applyWeatheringConfig = (config: GameConfig, params: URLSearchParams): void => {
+  config.weatheringDefaultProfileId =
+    BUNDLED_CONTENT.registry.layouts.get(config.site)?.weatheringProfile ?? DEFAULT_WEATHERING_PROFILE_ID;
+  const weathering = resolveWeatheringUrl(
+    params,
+    BUNDLED_CONTENT.registry.weathering,
+    config.weatheringDefaultProfileId,
+    config.debug,
+  );
+  config.weatheringProfileId = weathering?.profileId ?? config.weatheringDefaultProfileId;
+  config.weathering = weathering?.settings;
+};
+
 /**
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
- * With `?debug=1`, `?weathering=0..8` overrides the content strength, `?weatheringVariation=0..1` compares world-scale variation, and `?weatheringSplit=<x metres>` limits weathering to world x at or east of the split. The debug tools also read and write look parameters (`?tone=`, `?exposure=`, `?srgb=`, `?patterns=`), documented in src/debug/lookUrl.ts.
+ * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in src/debug/lookUrl.ts.
  */
 export const configFromUrl = (params: URLSearchParams): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
@@ -222,7 +210,7 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
       ? (layoutTime ?? (config.site === 'weatheringTest' ? SPAWN_TIMES.noon : SPAWN_TIME))
       : (parseTimeOfDay(requestedTime) ?? SPAWN_TIME);
   config.debug = params.get('debug') === '1';
-  config.weathering = weatheringFromUrl(params, config.weathering, config.debug);
+  applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);
   if (weatheringSplit !== undefined) {
     config.weatheringSplit = weatheringSplit;

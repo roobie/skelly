@@ -11,6 +11,9 @@ import {
 } from '../core/firearmsSkill.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
+import type { WeatheringDef } from '../core/schema.ts';
+import { WEATHERING_RANGES } from '../core/weather.ts';
+import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type {
   DebugHooks,
@@ -261,6 +264,52 @@ const firearmsSkillEffectSlider = (
   `;
 };
 
+type WeatheringNumberField = keyof typeof WEATHERING_RANGES;
+type WeatheringColorField = 'tintColor' | 'streakColor' | 'mossColor';
+
+const WEATHERING_LABELS: Record<WeatheringNumberField, string> = {
+  strength: 'Strength',
+  tintDarkness: 'Tint darkness',
+  streakStrength: 'Streak strength',
+  streakLengthMetres: 'Streak length (m)',
+  mossStrength: 'Moss amount',
+  variationScaleMetres: 'Patch size (m)',
+  variationStrength: 'Patch variation',
+  mossThreshold: 'Moss threshold',
+  mossBias: 'Moss shelter bias',
+  mixCeiling: 'Mix ceiling',
+  weatheringBlend: 'Blend toward grime colours',
+};
+
+const weatheringSlider = (
+  state: WeatheringUrlState,
+  field: WeatheringNumberField,
+  change: (field: WeatheringNumberField, value: number) => void,
+): TemplateResult => {
+  const id = `weathering-${field}`;
+  const value = state.settings[field];
+  const { min, max, step } = WEATHERING_RANGES[field];
+  return html`
+    <label for=${id}>${WEATHERING_LABELS[field]}</label>
+    <input id=${id} type="range" min=${min} max=${max} step=${step} .value=${String(value)}
+      @input=${(event: Event) => change(field, Number((event.currentTarget as HTMLInputElement).value))} />
+  `;
+};
+
+const weatheringColorInput = (
+  state: WeatheringUrlState,
+  field: WeatheringColorField,
+  label: string,
+  change: (field: WeatheringColorField, value: string) => void,
+): TemplateResult => {
+  const id = `weathering-${field}`;
+  return html`
+    <label for=${id}>${label}</label>
+    <input id=${id} type="color" .value=${state.settings[field]}
+      @input=${(event: Event) => change(field, (event.currentTarget as HTMLInputElement).value)} />
+  `;
+};
+
 const panelTemplate = ({
   open,
   groups,
@@ -296,6 +345,13 @@ const panelTemplate = ({
   changeFirearmsSkillZeroEffect,
   copyFirearmsSkillZeroHandling,
   firearmsSkillCopyStatus,
+  weatheringState,
+  weatheringProfiles,
+  selectWeatheringProfile,
+  changeWeatheringNumber,
+  changeWeatheringColor,
+  copyWeatheringValues,
+  weatheringCopyStatus,
 }: {
   open: boolean;
   groups: readonly GroupView[];
@@ -336,9 +392,35 @@ const panelTemplate = ({
   ) => void;
   copyFirearmsSkillZeroHandling: () => void;
   firearmsSkillCopyStatus: string;
+  weatheringState: WeatheringUrlState | undefined;
+  weatheringProfiles: readonly WeatheringDef[];
+  selectWeatheringProfile: (profileId: string) => void;
+  changeWeatheringNumber: (field: WeatheringNumberField, value: number) => void;
+  changeWeatheringColor: (field: WeatheringColorField, value: string) => void;
+  copyWeatheringValues: () => void;
+  weatheringCopyStatus: string;
 }): TemplateResult => {
   // What each group shows besides its action buttons.
-  const extras: Partial<Record<GroupId, TemplateResult>> = {
+  const extras: Partial<Record<GroupId, TemplateResult | typeof nothing>> = {
+    weathering: weatheringState
+      ? html`
+          <label for="weathering-profile">Weathering profile</label>
+          <select id="weathering-profile" .value=${weatheringState.profileId}
+            @change=${(event: Event) => selectWeatheringProfile((event.currentTarget as HTMLSelectElement).value)}>
+            ${weatheringProfiles.map(({ id }) => html`<option value=${id}>${id}</option>`)}
+          </select>
+          ${Object.keys(WEATHERING_RANGES).map((field) =>
+            weatheringSlider(weatheringState, field as WeatheringNumberField, changeWeatheringNumber),
+          )}
+          ${weatheringColorInput(weatheringState, 'tintColor', 'Grime tint colour', changeWeatheringColor)}
+          ${weatheringColorInput(weatheringState, 'streakColor', 'Streak colour', changeWeatheringColor)}
+          ${weatheringColorInput(weatheringState, 'mossColor', 'Moss colour', changeWeatheringColor)}
+          <div class="debug-actions">
+            <button id="copy-weathering-values" type="button" @click=${copyWeatheringValues}>Copy profile as content JSON</button>
+            <output aria-live="polite">${weatheringCopyStatus}</output>
+          </div>
+        `
+      : nothing,
     tools: html`
       <fieldset class="debug-firearms-skill-tuning" ?disabled=${firearmsSkillZeroTarget === undefined}>
         <legend>${firearmsSkillZeroTarget ?? 'Hold a firearm'} · skill-0 handling · runtime only</legend>
@@ -973,6 +1055,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let targetRangeText = '';
   let crosshairRay: { eye: Vec3; dir: Vec3; active: boolean } | undefined;
   let copyStatus = '';
+  let weatheringCopyStatus = '';
   let firearmsSkillCopyStatus = '';
   let cameraQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
   let axisAnimation: number | undefined;
@@ -996,6 +1079,21 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     weather: hooks.weather,
     ...(shadows ? { shadows } : {}),
     flashlight: hooks.flashlight,
+    ...(hooks.engine.config.weathering
+      ? {
+          weathering: {
+            state: {
+              profileId: hooks.engine.config.weatheringProfileId,
+              defaultProfileId: hooks.engine.config.weatheringDefaultProfileId,
+              settings: hooks.engine.config.weathering,
+            },
+            profiles: hooks.engine.registry.weathering,
+            ...(hooks.engine.config.weatheringSplit === undefined
+              ? {}
+              : { split: hooks.engine.config.weatheringSplit }),
+          },
+        }
+      : {}),
   });
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
@@ -1031,12 +1129,37 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
-    const next = lookUrl(location.href, lookState());
+    const next = lookUrl(location.href, lookState(), look.weatheringState, hooks.engine.registry.weathering);
     if (next !== location.href) {
       history.replaceState(history.state, '', next);
     }
     syncCamUrl(true);
   }
+  const selectWeatheringProfile = (profileId: string): void => {
+    look.selectWeatheringProfile(profileId);
+    syncLookUrl();
+    shellKey = '';
+    drawShell();
+  };
+  const changeWeatheringNumber = (field: WeatheringNumberField, value: number): void => {
+    look.setWeatheringNumber(field, value);
+    syncLookUrl();
+  };
+  const changeWeatheringColor = (field: WeatheringColorField, value: string): void => {
+    look.setWeatheringColor(field, value);
+    syncLookUrl();
+  };
+  const copyWeatheringValues = async (): Promise<void> => {
+    const state = look.weatheringState;
+    if (!state) {
+      return;
+    }
+    const content = JSON.stringify({ weathering: [state.settings] }, null, 2);
+    const copied = await copyTextOrSelect(content, globalThis.navigator.clipboard, () => undefined);
+    weatheringCopyStatus = copied ? 'Profile JSON copied' : 'Clipboard unavailable';
+    shellKey = '';
+    drawShell();
+  };
   const metresPerBlock = hooks.engine.config.scale.blockSize;
   /** Reused each call: the pose is read a few times a second, so no per-call allocation worth noticing. */
   const camNow: CamPose = { position: [0, 0, 0], yaw: 0, pitch: 0, roll: 0 };
@@ -1386,6 +1509,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             drawShell();
           },
           firearmsSkillCopyStatus,
+          weatheringState: look.weatheringState,
+          weatheringProfiles: look.weatheringProfileOptions,
+          selectWeatheringProfile,
+          changeWeatheringNumber,
+          changeWeatheringColor,
+          copyWeatheringValues,
+          weatheringCopyStatus,
         }),
         host,
       );

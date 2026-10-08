@@ -53,9 +53,7 @@ it('turns off only world-scale weathering variation through a debug URL override
   const variationOff = configFromUrl(new URLSearchParams('debug=1&weatheringVariation=0')).weathering;
   expect(variationOff?.strength).toBe(content?.strength);
   expect(variationOff?.variationStrength).toBe(0);
-  expect(configFromUrl(new URLSearchParams('debug=1&weatheringVariation=2')).weathering?.variationStrength).toBe(
-    content?.variationStrength,
-  );
+  expect(configFromUrl(new URLSearchParams('debug=1&weatheringVariation=2')).weathering?.variationStrength).toBe(2);
 });
 
 it('limits wobble-flat ratios to debug URLs and the unit interval', () => {

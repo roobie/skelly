@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { measureHamletWeathering } from './weatheringPixels.mjs';
+import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -23,9 +23,9 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\n${exposed}`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\n${exposed}`;
   },
 };
 const vite = await createServer({
@@ -365,7 +365,7 @@ try {
   await page.goto(
     browserStageUrl(
       'firefox-ui',
-      `http://127.0.0.1:${address.port}/?debug=1&site=hamlet&seed=73&radius=64&post=0&time=12:00`,
+      `http://127.0.0.1:${address.port}/?debug=1&site=weatheringTest&seed=73&radius=64&post=0&time=12:00`,
       'pixel',
     ),
   );
@@ -390,7 +390,7 @@ try {
   await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
   await pressAction(page, 'ui.main-menu-toggle');
   await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
-  const weatheringPixels = await measureHamletWeathering(page);
+  const weatheringPixels = await measureWeatheringMaterials(page);
   process.stdout.write(
     `Weathering pixel measurement: ${JSON.stringify({
       size: weatheringPixels.size,
@@ -398,11 +398,13 @@ try {
       buildingPixels: weatheringPixels.buildingPixels,
       weatherablePixels: weatheringPixels.weatherablePixels,
       weatherableFraction: weatheringPixels.weatherableFraction,
+      materialPixels: weatheringPixels.materialPixels,
+      profileStrengths: weatheringPixels.profileStrengths,
+      strengthCeiling: weatheringPixels.strengthCeiling,
       uniforms: weatheringPixels.uniforms,
       differences: weatheringPixels.differences,
       maxWeatherablePixelChange: weatheringPixels.maxWeatherablePixelChange,
       maxZeroStrengthPixelChange: weatheringPixels.maxZeroStrengthPixelChange,
-      closeupPixels: weatheringPixels.groundWallPixels,
       artifactDirectory: 'test-results/weathering/',
     })}\n`,
   );
@@ -411,12 +413,13 @@ try {
     [],
     'Firefox chunk and mask shaders compile',
   );
-  assert.deepEqual(weatheringPixels.uniforms, {
-    off: 0,
-    default: weatheringPixels.authoredStrength,
-    strong: weatheringPixels.authoredStrength + 1,
-    'zero-control': 0,
-  });
+  assert.equal(weatheringPixels.uniforms.off, 0);
+  assert.equal(weatheringPixels.uniforms.proper, weatheringPixels.profileStrengths.proper);
+  assert.equal(weatheringPixels.uniforms.overgrown, weatheringPixels.profileStrengths.overgrown);
+  assert.equal(weatheringPixels.uniforms.strong, weatheringPixels.strongStrength);
+  assert.equal(weatheringPixels.uniforms['zero-control'], 0);
+  assert.ok(weatheringPixels.strongStrength <= weatheringPixels.authoredStrength + 1);
+  assert.ok(weatheringPixels.strongStrength <= weatheringPixels.strengthCeiling);
   assert.deepEqual(
     weatheringPixels.beforeCamera,
     weatheringPixels.afterCamera,
@@ -430,11 +433,39 @@ try {
   // Lighting and fog scale the shader's effect in the final image, so assert a change, not a shader-space bound.
   assert.ok(
     weatheringPixels.maxWeatherablePixelChange > 0,
-    `full-strength weathering changes a weatherable building pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
+    `full-strength weathering changes a weatherable comparison pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
   );
+  for (const [material, difference] of Object.entries(weatheringPixels.differences.overgrown)) {
+    assert.ok(
+      difference.pixels > 0 && difference.changedShare > 0,
+      `overgrown weathering changes ${material} pixels: ${JSON.stringify(difference)}`,
+    );
+  }
+  await pressAction(page, 'ui.main-menu-toggle');
+  await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
+  await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
+  const weatheringGroup = page.locator('.debug-group[data-group="weathering"]');
+  const weatheringGroupHeader = weatheringGroup.locator('.debug-group-header');
+  if ((await weatheringGroupHeader.getAttribute('aria-expanded')) !== 'true') {
+    await weatheringGroupHeader.click();
+  }
+  await weatheringGroup.locator('#weathering-profile').selectOption('overgrown');
+  const strengthSlider = weatheringGroup.locator('#weathering-strength');
+  const sliderStart = Number(await strengthSlider.inputValue());
+  const sliderStep = Number(await strengthSlider.getAttribute('step'));
+  const sliderNext = sliderStart + sliderStep;
+  await strengthSlider.evaluate((input, value) => {
+    input.value = String(value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }, sliderNext);
+  assert.equal(new URL(page.url()).searchParams.get('weatheringProfile'), 'overgrown');
+  assert.equal(Number(new URL(page.url()).searchParams.get('weathering')), sliderNext);
+  assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
+  assert.equal(await weatheringGroup.locator('#weathering-tintColor').isVisible(), true);
+  assert.equal(await weatheringGroup.locator('#copy-weathering-values').isVisible(), true);
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer and visible weathering changes on hamlet building pixels. Native lock acquisition is NOT tested.\n',
+    'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer, shareable live weathering controls, and visible weathering changes on comparison-pad concrete, brick and wood. Native lock acquisition is NOT tested.\n',
   );
 } finally {
   await browser?.close();

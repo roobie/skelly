@@ -1,12 +1,38 @@
 {
   "weathering": [
     {
-      "id": "world",
+      "id": "proper",
       "strength": 4,
+      "tintColor": "#ddd7d7",
+      "tintDarkness": 1,
+      "streakColor": "#ddddcf",
+      "streakStrength": 0.22,
+      "streakLengthMetres": 2.38,
+      "mossColor": "#dde7d7",
+      "mossStrength": 0.2,
       "variationScaleMetres": 12,
       "variationStrength": 0.85,
       "mossThreshold": 0.68,
-      "mossBias": 0.5
+      "mossBias": 0.5,
+      "mixCeiling": 0.78,
+      "weatheringBlend": 0
+    },
+    {
+      "id": "overgrown",
+      "strength": 4,
+      "tintColor": "#bcb9aa",
+      "tintDarkness": 1.5,
+      "streakColor": "#948d78",
+      "streakStrength": 0.8,
+      "streakLengthMetres": 4.5,
+      "mossColor": "#799247",
+      "mossStrength": 0.85,
+      "variationScaleMetres": 24,
+      "variationStrength": 1.2,
+      "mossThreshold": 0.55,
+      "mossBias": 0.7,
+      "mixCeiling": 1.1,
+      "weatheringBlend": 0.9
     }
   ]
 }

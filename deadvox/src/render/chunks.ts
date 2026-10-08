@@ -3,6 +3,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   type Camera,
+  Color,
   Frustum,
   Group,
   Matrix4,
@@ -43,7 +44,6 @@ vec3 srgbToLinear(vec3 c) {
 // The id is `flat` (provoking vertex; never interpolated, so it can't extrapolate).
 const PATTERN_VARYING = 'flat varying float vPattern;\ncentroid varying vec3 vWorld;\ncentroid varying vec3 vFaceN;';
 const WEATHERING_BASE_GRIME_FLOOR = 0.22;
-const WEATHERING_MIN_RED_TINT = 0.72;
 
 // Wide-radius ambient occlusion (core/occlusion.ts), a per-vertex factor in 0..1 from the mesher. It
 // scales only the indirect irradiance (hemisphere and ambient light), never the sun or flashlight.
@@ -74,6 +74,15 @@ const chunkMaterial = ({
   variationScaleMetres,
   mossThreshold,
   mossBias,
+  tintColor,
+  tintDarkness,
+  streakColor,
+  streakStrength,
+  streakLengthMetres,
+  mossColor,
+  mossStrength,
+  mixCeiling,
+  weatheringBlend,
 }: {
   blockSize: number;
   linearColors: { value: number };
@@ -86,6 +95,15 @@ const chunkMaterial = ({
   variationScaleMetres: { value: number };
   mossThreshold: { value: number };
   mossBias: { value: number };
+  tintColor: { value: Color };
+  tintDarkness: { value: number };
+  streakColor: { value: Color };
+  streakStrength: { value: number };
+  streakLengthMetres: { value: number };
+  mossColor: { value: Color };
+  mossStrength: { value: number };
+  mixCeiling: { value: number };
+  weatheringBlend: { value: number };
 }): MeshLambertMaterial => {
   const material = new MeshLambertMaterial({ vertexColors: true });
   material.onBeforeCompile = (shader) => {
@@ -100,6 +118,15 @@ const chunkMaterial = ({
     shader.uniforms.uWeatheringVariationScale = variationScaleMetres;
     shader.uniforms.uMossThreshold = mossThreshold;
     shader.uniforms.uMossBias = mossBias;
+    shader.uniforms.uWeatheringTintColor = tintColor;
+    shader.uniforms.uWeatheringTintDarkness = tintDarkness;
+    shader.uniforms.uWeatheringStreakColor = streakColor;
+    shader.uniforms.uWeatheringStreakStrength = streakStrength;
+    shader.uniforms.uWeatheringStreakLength = streakLengthMetres;
+    shader.uniforms.uWeatheringMossColor = mossColor;
+    shader.uniforms.uWeatheringMossStrength = mossStrength;
+    shader.uniforms.uWeatheringMixCeiling = mixCeiling;
+    shader.uniforms.uWeatheringBlend = weatheringBlend;
     patchHeightFog(shader, 'chunk');
     shader.vertexShader = shader.vertexShader
       .replace('#include <color_pars_vertex>', centroidColorPars(COLOR_PARS_GUARD_VERTEX))
@@ -122,7 +149,7 @@ vFaceN = normalize(normal);`,
       .replace('#include <color_pars_fragment>', centroidColorPars(COLOR_PARS_GUARD_FRAGMENT))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringSplit;\nuniform float uWeatheringSplitEnabled;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
+        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringSplit;\nuniform float uWeatheringSplitEnabled;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\nuniform vec3 uWeatheringTintColor;\nuniform float uWeatheringTintDarkness;\nuniform vec3 uWeatheringStreakColor;\nuniform float uWeatheringStreakStrength;\nuniform float uWeatheringStreakLength;\nuniform vec3 uWeatheringMossColor;\nuniform float uWeatheringMossStrength;\nuniform float uWeatheringMixCeiling;\nuniform float uWeatheringBlend;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
       )
       .replace(
         '#include <lights_fragment_end>',
@@ -162,8 +189,8 @@ if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheri
   float broadStrength = mix(1.0, 0.24 + 1.52 * broadNoise, uWeatheringVariation);
   float cornerGrime = (1.0 - sheltered) * (${WEATHERING_BASE_GRIME_FLOOR} + 0.34 * weatherPatch) + vWeather.y * 0.3;
   float grime = cornerGrime * broadStrength;
-  float streakNoise = vnoise(vec2(patUV.x * 3.1 + patSeed, patUV.y * 0.16));
-  float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) * (1.0 - smoothstep(0.0, 0.75, fract(patUV.y * 0.42))) * broadStrength;
+  float streakNoise = vnoise(vec2(patUV.x * 3.1 + patSeed, patUV.y * 0.381 / uWeatheringStreakLength));
+  float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) * (1.0 - smoothstep(0.0, 0.75, fract(patUV.y / uWeatheringStreakLength))) * broadStrength;
   float northShade = 0.65 + 0.35 * step(vFaceN.z, -0.5);
   float baseMoss = (1.0 - sheltered) * (0.4 + 0.6 * weatherPatch) * (0.25 + 0.75 * verticalFace) * northShade;
   vec2 warp = (vec2(
@@ -175,9 +202,13 @@ if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheri
   float mossCutoff = uMossThreshold - uMossBias * environment;
   float mossPatches = smoothstep(mossCutoff, mossCutoff + 0.18, mossNoise) * environment * uWeatheringVariation;
   float moss = baseMoss * broadStrength + mossPatches;
-  vec3 tint = vec3(${WEATHERING_MIN_RED_TINT}, ${WEATHERING_MIN_RED_TINT} + 0.08 * moss, 0.68 - 0.06 * streak);
-  float weatheringMix = clamp(weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78), 0.0, 1.0);
-  diffuseColor.rgb *= mix(vec3(1.0), tint, weatheringMix);
+  vec3 tint = uWeatheringTintColor;
+  tint = mix(tint, uWeatheringMossColor, moss);
+  tint = mix(tint, uWeatheringStreakColor, streak);
+  float weatheringMix = clamp(weatherable * uWeathering * clamp(uWeatheringTintDarkness * grime + uWeatheringStreakStrength * streak + uWeatheringMossStrength * moss, 0.0, uWeatheringMixCeiling), 0.0, 1.0);
+  vec3 multiplicativeWeathering = diffuseColor.rgb * mix(vec3(1.0), tint, weatheringMix);
+  vec3 blendedWeathering = mix(diffuseColor.rgb, tint, weatheringMix);
+  diffuseColor.rgb = mix(multiplicativeWeathering, blendedWeathering, uWeatheringBlend);
 }`,
       );
   };
@@ -206,6 +237,15 @@ export class ChunkMeshes {
   private readonly variationScaleMetres = { value: 0 };
   private readonly mossThreshold = { value: 0 };
   private readonly mossBias = { value: 0 };
+  private readonly tintColor = { value: new Color() };
+  private readonly tintDarkness = { value: 0 };
+  private readonly streakColor = { value: new Color() };
+  private readonly streakStrength = { value: 0 };
+  private readonly streakLengthMetres = { value: 1 };
+  private readonly mossColor = { value: new Color() };
+  private readonly mossStrength = { value: 0 };
+  private readonly mixCeiling = { value: 0 };
+  private readonly weatheringBlend = { value: 0 };
   private readonly frustum = new Frustum();
   private readonly viewProjection = new Matrix4();
   private changes = 0;
@@ -226,6 +266,15 @@ export class ChunkMeshes {
       variationScaleMetres: this.variationScaleMetres,
       mossThreshold: this.mossThreshold,
       mossBias: this.mossBias,
+      tintColor: this.tintColor,
+      tintDarkness: this.tintDarkness,
+      streakColor: this.streakColor,
+      streakStrength: this.streakStrength,
+      streakLengthMetres: this.streakLengthMetres,
+      mossColor: this.mossColor,
+      mossStrength: this.mossStrength,
+      mixCeiling: this.mixCeiling,
+      weatheringBlend: this.weatheringBlend,
     });
     this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);
@@ -274,13 +323,26 @@ export class ChunkMeshes {
 
   /** Takes effect next frame without recompiling or remeshing. */
   setWeathering(settings: WeatheringDef | undefined, split?: number): void {
-    this.weathering.value = settings?.strength ?? 0;
     this.weatheringSplit.value = split ?? 0;
     this.weatheringSplitEnabled.value = split === undefined ? 0 : 1;
+    this.applyWeatheringSettings(settings);
+  }
+
+  private applyWeatheringSettings(settings: WeatheringDef | undefined): void {
+    this.weathering.value = settings?.strength ?? 0;
     this.weatheringVariation.value = settings?.variationStrength ?? 0;
     this.variationScaleMetres.value = settings?.variationScaleMetres ?? 0;
     this.mossThreshold.value = settings?.mossThreshold ?? 0;
     this.mossBias.value = settings?.mossBias ?? 0;
+    this.tintColor.value.set(settings?.tintColor ?? '#ffffff');
+    this.tintDarkness.value = settings?.tintDarkness ?? 0;
+    this.streakColor.value.set(settings?.streakColor ?? '#ffffff');
+    this.streakStrength.value = settings?.streakStrength ?? 0;
+    this.streakLengthMetres.value = settings?.streakLengthMetres ?? 1;
+    this.mossColor.value.set(settings?.mossColor ?? '#ffffff');
+    this.mossStrength.value = settings?.mossStrength ?? 0;
+    this.mixCeiling.value = settings?.mixCeiling ?? 0;
+    this.weatheringBlend.value = settings?.weatheringBlend ?? 0;
   }
 
   get count(): number {

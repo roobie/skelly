@@ -44,7 +44,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
-import { WEATHERING_STRENGTH_MAX } from './weather.ts';
+import { WEATHERING_RANGES } from './weather.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
@@ -935,6 +935,8 @@ const SiteLayoutSchema = strictObject({
   id: Id,
   /** Fixture and showcase layouts are not world sources; unmarked authored layouts contribute building containers and fixed loot. */
   demo: optional(vBoolean()),
+  /** The render-only weathering profile for this site; absent layouts use the default profile. */
+  weatheringProfile: optional(Id),
   bounds: pipe(
     strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
     check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'bounds must have positive area'),
@@ -1248,18 +1250,41 @@ const SenseSchema = strictObject({
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
 const RecipeItemSchema = ItemCountSchema;
 
+const weatheringNumber = (field: keyof typeof WEATHERING_RANGES) => {
+  const { min, max } = WEATHERING_RANGES[field];
+  return pipe(number(), minValue(min), maxValue(max));
+};
+
 const WeatheringSchema = strictObject({
   id: Id,
-  /** Shared weathering strength for the rendered world. */
-  strength: pipe(number(), minValue(0), maxValue(WEATHERING_STRENGTH_MAX)),
+  /** Shared weathering strength for the rendered site. */
+  strength: weatheringNumber('strength'),
+  /** Linear tint multiplier for grime. */
+  tintColor: Color,
+  /** Grime darkness multiplier, before the profile's mix ceiling. */
+  tintDarkness: weatheringNumber('tintDarkness'),
+  /** Streak tint, blended from the grime tint where runoff appears. */
+  streakColor: Color,
+  /** Amount of vertical runoff mixed into the profile. */
+  streakStrength: weatheringNumber('streakStrength'),
+  /** World-space period of vertical runoff, in metres. */
+  streakLengthMetres: weatheringNumber('streakLengthMetres'),
+  /** Organic patch colour. */
+  mossColor: Color,
+  /** Amount of moss mixed into the profile; zero disables moss independently. */
+  mossStrength: weatheringNumber('mossStrength'),
   /** World-space wavelength for broad weathering changes, in metres. */
-  variationScaleMetres: Positive,
-  /** Strength of world-scale weathering variation, independent of the shared look strength. */
-  variationStrength: Fraction,
+  variationScaleMetres: weatheringNumber('variationScaleMetres'),
+  /** Strength of world-scale weathering variation. */
+  variationStrength: weatheringNumber('variationStrength'),
   /** Noise cutoff for organic moss and damp patches. */
-  mossThreshold: Fraction,
+  mossThreshold: weatheringNumber('mossThreshold'),
   /** How much shelter and ground proximity lower the organic-patch cutoff. */
-  mossBias: Fraction,
+  mossBias: weatheringNumber('mossBias'),
+  /** Upper bound for the combined grime, streak and moss mix before shader saturation. */
+  mixCeiling: weatheringNumber('mixCeiling'),
+  /** Blend from the historic multiplicative tint toward opaque grime/moss colours. */
+  weatheringBlend: weatheringNumber('weatheringBlend'),
 });
 
 const BodyTuningSchema = strictObject({

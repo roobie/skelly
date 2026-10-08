@@ -44,7 +44,9 @@ import {
   type MoodState,
   type ShadowState,
 } from '../core/mood.ts';
+import type { WeatheringDef } from '../core/schema.ts';
 import { clampFogginess, DEFAULT_FOGGINESS } from '../core/weather.ts';
+import { WEATHERING_URL_PARAMS, type WeatheringUrlState, writeWeatheringParams } from '../core/weatheringUrl.ts';
 import { TONE_MODES } from '../render/look.ts';
 
 export interface LookUrlState extends LookState, MoodState {
@@ -90,6 +92,7 @@ export const LOOK_PARAMS = [
   'shadowdist',
   'crackcheck',
   'hotcheck',
+  ...WEATHERING_URL_PARAMS,
 ] as const;
 
 /** The tone mapper's own bloom clip when it is one value; null for `auto`, whose clip moves with the time of day, so any override is kept. */
@@ -155,7 +158,12 @@ const writeMoodParams = (next: URLSearchParams, state: LookUrlState): void => {
 };
 
 /** A copy of `params` with the look parameters replaced by `state`'s non-default ones. */
-export const writeLookParams = (params: URLSearchParams, state: LookUrlState): URLSearchParams => {
+export const writeLookParams = (
+  params: URLSearchParams,
+  state: LookUrlState,
+  weathering?: WeatheringUrlState,
+  profiles: ReadonlyMap<string, WeatheringDef> = new Map(),
+): URLSearchParams => {
   const next = new URLSearchParams(params);
   for (const name of LOOK_PARAMS) {
     next.delete(name);
@@ -195,7 +203,7 @@ export const writeLookParams = (params: URLSearchParams, state: LookUrlState): U
     next.set('shadowdist', String(state.shadows.distance));
   }
   writeCheckParams(next, state);
-  return next;
+  return writeWeatheringParams(next, weathering, profiles);
 };
 
 /** The diagnostic checks are written only when on. */
@@ -209,9 +217,14 @@ const writeCheckParams = (next: URLSearchParams, { crackCheck, hotCheck }: LookU
 };
 
 /** `href` with the look parameters set from `state`; other parameters, path and hash are kept. */
-export const lookUrl = (href: string, state: LookUrlState): string => {
+export const lookUrl = (
+  href: string,
+  state: LookUrlState,
+  weathering?: WeatheringUrlState,
+  profiles: ReadonlyMap<string, WeatheringDef> = new Map(),
+): string => {
   const url = new URL(href);
   // ':' is legal in a query, and a kept `time=20:30` reads better than `time=20%3A30`.
-  url.search = writeLookParams(url.searchParams, state).toString().replace(/%3A/g, ':');
+  url.search = writeLookParams(url.searchParams, state, weathering, profiles).toString().replace(/%3A/g, ':');
   return url.toString();
 };

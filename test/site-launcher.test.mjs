@@ -18,6 +18,19 @@ const intentionallyUnofferedDeadvoxParams = {
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
+  weatheringProfile: 'A profile choice owned by the in-game debug look panel, not the start launcher.',
+  weatheringTint: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringTintColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
+  weatheringStreaks: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringStreakLength: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringStreakColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
+  weatheringMoss: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMossColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
+  weatheringScale: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMossThreshold: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMossBias: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMixCeiling: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringBlend: 'A debug-panel weathering look slider, not a launch-time site option.',
 };
 const intentionallyUnofferedGungenParams = {
   camera:
@@ -37,10 +50,16 @@ const intentionallyUnofferedGungenParams = {
 const paramsReadBy = (sources) => {
   const found = new Set();
   for (const source of sources) {
-    for (const match of read(source).matchAll(
+    const text = read(source);
+    for (const match of text.matchAll(
       /(?:\b(?:params|query|initialQuery)|new URLSearchParams\([^)]*\))\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g,
     )) {
       found.add(match[1]);
+    }
+    if (source.endsWith('core/weatheringUrl.ts')) {
+      for (const match of text.matchAll(/^\s*\['(weathering[^']*)',\s*'[^']+'\],?$/gm)) {
+        found.add(match[1]);
+      }
     }
   }
   return [...found].sort();
@@ -72,6 +91,7 @@ describe('site launchers track the games’ URL parameters', () => {
     const supported = paramsReadBy([
       'deadvox/src/main.ts',
       'deadvox/src/game/config.ts',
+      'deadvox/src/core/weatheringUrl.ts',
       'deadvox/src/bench/run.ts',
       'deadvox/src/bench/shamblers.ts',
       'deadvox/src/debug/debugLoadout.ts',

@@ -19,7 +19,9 @@ import {
   type ShadowState,
   TORCH_STEP,
 } from '../core/mood.ts';
-import { clampFogginess, type Weather } from '../core/weather.ts';
+import type { WeatheringDef } from '../core/schema.ts';
+import { clampFogginess, WEATHERING_RANGES, type Weather } from '../core/weather.ts';
+import { isWeatheringColor, type WeatheringUrlState } from '../core/weatheringUrl.ts';
 import { autoToneUniforms } from '../render/autoTone.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import { hotCheckOn, setHotCheck } from '../render/hotCheck.ts';
@@ -56,7 +58,10 @@ type LookRenderer = Pick<WebGLRenderer, 'toneMapping' | 'toneMappingExposure'>;
 type LookMeshes = Pick<
   ChunkMeshes,
   'linearColorsOn' | 'setLinearColors' | 'patternsOn' | 'setPatterns' | 'occlusionOn' | 'setOcclusion'
->;
+> &
+  Partial<Pick<ChunkMeshes, 'setWeathering'>>;
+type WeatheringNumberField = keyof typeof WEATHERING_RANGES;
+type WeatheringColorField = 'tintColor' | 'streakColor' | 'mossColor';
 
 export class LookControls {
   private mode: number;
@@ -73,13 +78,25 @@ export class LookControls {
   private patternsValue = DEFAULT_LOOK.patterns;
   private occlusionValue = DEFAULT_LOOK.vao;
   private crackCheckValue = false;
+  private weatheringValue: WeatheringUrlState | undefined;
+  private readonly weatheringProfiles: ReadonlyMap<string, WeatheringDef>;
+  private readonly weatheringSplit: number | undefined;
 
   /** Takes the renderer as it is: play has applied the default look, and the tone mode follows it. */
   constructor(
     renderer: LookRenderer | undefined,
     meshes: LookMeshes | undefined,
     mood: MoodControls | undefined,
-    environment: { weather: Weather; shadows?: ShadowControls; flashlight: { strength: number } },
+    environment: {
+      weather: Weather;
+      shadows?: ShadowControls;
+      flashlight: { strength: number };
+      weathering?: {
+        state: WeatheringUrlState;
+        profiles: ReadonlyMap<string, WeatheringDef>;
+        split?: number;
+      };
+    },
   ) {
     this.renderer = renderer;
     this.meshes = meshes;
@@ -87,6 +104,9 @@ export class LookControls {
     this.weather = environment.weather;
     this.shadows = environment.shadows;
     this.flashlight = environment.flashlight;
+    this.weatheringValue = environment.weathering?.state;
+    this.weatheringProfiles = environment.weathering?.profiles ?? new Map();
+    this.weatheringSplit = environment.weathering?.split;
     this.mode = Math.max(
       0,
       renderer
@@ -206,6 +226,45 @@ export class LookControls {
   /** Steps the fogginess by `steps` tenths, clamped to [0, 1]. A weather system would set this itself. */
   stepFogginess(steps: number): void {
     this.weather.fogginess = clampFogginess(this.weather.fogginess + steps * FOGGINESS_STEP);
+  }
+
+  /** Site profile values as currently edited; the URL writer omits values equal to the selected profile. */
+  get weatheringState(): WeatheringUrlState | undefined {
+    return this.weatheringValue
+      ? { ...this.weatheringValue, settings: { ...this.weatheringValue.settings } }
+      : undefined;
+  }
+
+  get weatheringProfileOptions(): readonly WeatheringDef[] {
+    return [...this.weatheringProfiles.values()];
+  }
+
+  selectWeatheringProfile(profileId: string): void {
+    const profile = this.weatheringProfiles.get(profileId);
+    if (!(profile && this.weatheringValue)) {
+      return;
+    }
+    this.weatheringValue = { ...this.weatheringValue, profileId: profile.id, settings: { ...profile } };
+    this.meshes?.setWeathering?.(this.weatheringValue.settings, this.weatheringSplit);
+  }
+
+  setWeatheringNumber(field: WeatheringNumberField, value: number): void {
+    const state = this.weatheringValue;
+    if (!(state && Number.isFinite(value))) {
+      return;
+    }
+    const { min, max } = WEATHERING_RANGES[field];
+    state.settings[field] = Math.max(min, Math.min(max, value));
+    this.meshes?.setWeathering?.(state.settings, this.weatheringSplit);
+  }
+
+  setWeatheringColor(field: WeatheringColorField, value: string): void {
+    const state = this.weatheringValue;
+    if (!(state && isWeatheringColor(value))) {
+      return;
+    }
+    state.settings[field] = value;
+    this.meshes?.setWeathering?.(state.settings, this.weatheringSplit);
   }
 
   get toneMappingName(): string {
