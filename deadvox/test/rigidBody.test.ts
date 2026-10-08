@@ -45,6 +45,7 @@ const body = (): RigidBody => ({
     [-0.2, -0.1, -0.3],
     [0.2, 0.1, 0.3],
   ],
+  timeRemainder: 0,
   elapsed: 0,
   quietTime: 0,
   asleep: false,
@@ -272,6 +273,19 @@ describe('rigid body', () => {
     }
     expect(bounced).toBe(true);
     expect(apex).toBeLessThanOrEqual(0.2);
+  });
+  it('retains the frame remainder for 144 fps free flight', () => {
+    const reference = body();
+    const highFrameRate = body();
+    reference.center = [0, 20, 0];
+    highFrameRate.center = [0, 20, 0];
+    for (let frame = 0; frame < 120; frame++) {
+      stepRigidBody(reference, 1 / 120);
+    }
+    for (let frame = 0; frame < 144; frame++) {
+      stepRigidBody(highFrameRate, 1 / 144);
+    }
+    expect(Math.abs(reference.center[1] - highFrameRate.center[1])).toBeLessThan(0.01);
   });
   it('caps calls at sixteen fixed substeps', () => {
     const b = body();
