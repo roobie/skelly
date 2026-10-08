@@ -90,7 +90,7 @@ try {
     browser = await launchChromium(stageId, {
       headless: true,
       args: ['--disable-extensions', '--password-store=basic', '--window-size=1280,900'],
-      ...(navigationOnly ? { ignoreDefaultArgs: ['--disable-back-forward-cache'] } : {}),
+      ...(navigationOnly ? { channel: 'chromium', ignoreDefaultArgs: ['--disable-back-forward-cache'] } : {}),
       timeout: STAGE_TIMEOUT_MS,
     });
     context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -732,7 +732,11 @@ try {
     const beforeNavigation = await page.evaluate(async () => ({
       writing: globalThis.deadvoxSaveTest.controller.writing,
       locks: await navigator.locks.query(),
+      namespace: globalThis.deadvoxSaveTest.controller.namespace,
+      generation: globalThis.deadvoxSaveTest.controller.currentRecord?.generation,
+      savedGeneration: globalThis.deadvoxSaveTest.controller.savedGeneration,
     }));
+    process.stdout.write(`${browserName}: pre-navigation save state ${JSON.stringify(beforeNavigation)}\n`);
     assert.equal(beforeNavigation.writing, false);
     assert.equal(
       beforeNavigation.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
@@ -781,6 +785,12 @@ try {
         held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
         pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
         warnings: globalThis.__d144LockWarnings ?? [],
+        namespace: controller?.namespace,
+        generation: controller?.currentRecord?.generation,
+        savedGeneration: controller?.savedGeneration,
+        statusText: controller?.statusText,
+        failure: controller?.failure,
+        notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons ?? null,
       };
     });
     process.stdout.write(`${browserName}: in-tab loadout navigation ${JSON.stringify(result)}\n`);
