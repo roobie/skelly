@@ -419,8 +419,9 @@ body.unconscious::after {
   grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
   grid-template-rows: minmax(0, 1fr);
 }
+/* Keep nearby grids tall enough for a usable scrollport on short displays; the body scrolls when both rows don't fit. */
 #inventory .inv-body[data-tab-panel="items"] {
-  grid-template-rows: minmax(0, 3fr) minmax(96px, 1fr);
+  grid-template-rows: minmax(160px, 3fr) minmax(96px, 1fr);
 }
 .inv-body[data-tab-panel="items"] .inv-details {
   grid-column: 1 / -1;

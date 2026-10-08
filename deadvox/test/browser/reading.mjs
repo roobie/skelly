@@ -433,6 +433,58 @@ try {
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
     const note = page.locator('.inv-item').filter({ hasText: 'Placeholder note' });
     await note.waitFor();
+    await note.scrollIntoViewIfNeeded();
+    const noteLayout = await note.evaluate((row) => {
+      const rect = row.getBoundingClientRect();
+      const centre = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      const clips = [];
+      for (let parent = row.parentElement; parent; parent = parent.parentElement) {
+        const style = getComputedStyle(parent);
+        const clipsX = ['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowX);
+        const clipsY = ['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowY);
+        if (!(clipsX || clipsY)) {
+          continue;
+        }
+        const bounds = parent.getBoundingClientRect();
+        const left = bounds.left + parent.clientLeft;
+        const top = bounds.top + parent.clientTop;
+        const right = left + parent.clientWidth;
+        const bottom = top + parent.clientHeight;
+        clips.push({
+          className: String(parent.className),
+          bounds: { left, top, right, bottom },
+          scroll: {
+            left: parent.scrollLeft,
+            top: parent.scrollTop,
+            width: parent.scrollWidth,
+            height: parent.scrollHeight,
+          },
+          containsCentre:
+            (!clipsX || (centre.x >= left && centre.x <= right)) &&
+            (!clipsY || (centre.y >= top && centre.y <= bottom)),
+        });
+      }
+      const hit = document.elementFromPoint(centre.x, centre.y);
+      return {
+        row: {
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        },
+        viewport: { width: innerWidth, height: innerHeight },
+        centreInViewport: centre.x >= 0 && centre.x < innerWidth && centre.y >= 0 && centre.y < innerHeight,
+        clips,
+        hit: hit && { tag: hit.tagName, className: String(hit.className) },
+        hitIsRow: hit?.closest('.inv-item') === row,
+      };
+    });
+    assert.ok(
+      noteLayout.centreInViewport && noteLayout.clips.every((clip) => clip.containsCentre) && noteLayout.hitIsRow,
+      `note row must be visible and topmost at its centre: ${JSON.stringify(noteLayout)}`,
+    );
     await uiClick(note);
     const noteSelection = await page.evaluate(() => {
       const { input, screen } = globalThis.readingWitness;
