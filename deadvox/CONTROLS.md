@@ -221,8 +221,9 @@ The debug actions make import and export available without adding another input-
 surface. Retaining an earlier segment preserves recent history across bounded storage
 rollover while its start snapshot keeps the exported input replayable. An end-state
 fingerprint surfaces simulation drift from uncovered input rather than silently implying
-reproduction. The scope question was whether replay should cover inventory and crafting
-screen use. BR asked on 2026-10-06:
+reproduction. A live stance throw takes place on the player tick whose sample records it,
+so live and replay throws use the same body pose and aim. The scope question was whether replay
+should cover inventory and crafting screen use. BR asked on 2026-10-06:
 
 > "how much effort is it to scope it to inventory and crafting too?"
 > "yes, do inventory and crafting in the validation too"
@@ -235,7 +236,8 @@ set back to content values: using a slider means the session no longer uses cont
 and a reload clears the override. See `withReplayExportGuard` in `src/game/inputReplay.ts`.
 The replay rationale remains in [SLICE-3.md](SLICE-3.md), 3.10. See `INPUT_BINDINGS` in
 `src/game/inputBindings.ts` for the debug export and import actions, `InputReplayRecorder`
-and `replayStateFingerprint` in `src/game/inputReplay.ts`.
+and `replayStateFingerprint` in `src/game/inputReplay.ts`, and `PlayerTickActions` in
+`src/game/playerTickActions.ts`.
 
 ## Readiness and melee (2026-10-05, #267)
 

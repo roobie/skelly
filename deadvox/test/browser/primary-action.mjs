@@ -197,6 +197,7 @@ const observationPlugin = {
     screen,
     dispatchScreenCommand,
     get inputRecorder() { return inputRecorder; },
+    captureSnapshot,
     startInputReplayRecording: () => {
       previousInputRecorder = undefined;
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
@@ -523,6 +524,16 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw')
       );
     }, fixture);
+    const liveThrowOutcome = await page.evaluate((ids) => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(ids.offUid);
+      const location = item && r.inventory.locate(item);
+      return {
+        itemLocation: location?.kind === 'pile' ? location.pos : location?.kind,
+        bodyPosition: [...r.session.body.pos],
+        look: [r.input.yaw, r.input.pitch],
+      };
+    }, fixture);
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -532,7 +543,16 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         { id: action, moduleUrl: inputBindingsModule },
       );
     await command('debug.panel-toggle');
-    await command('debug.input-replay-export');
+    const liveEndSnapshot = await page.evaluate(
+      async ({ id, moduleUrl }) => {
+        const { keyboardInput } = await import(moduleUrl);
+        const r = globalThis.primaryActionTest;
+        const snapshot = r.captureSnapshot();
+        keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+        return snapshot;
+      },
+      { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule },
+    );
     await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
     const replayText = await page.evaluate(() => {
       const link = document.querySelector('#replay-download');
@@ -559,6 +579,35 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       undefined,
       { timeout: 20_000 },
     );
+    const replayState = await page.locator('#input-replay-status').getAttribute('data-state');
+    const { replayEndSnapshot, replayThrowOutcome } = await page.evaluate((ids) => {
+      const r = globalThis.primaryActionTest;
+      const off = r.inventory.itemByUid(ids.offUid);
+      const location = off && r.inventory.locate(off);
+      return {
+        replayEndSnapshot: r.captureSnapshot(),
+        replayThrowOutcome: {
+          itemLocation: location?.kind === 'pile' ? location.pos : location?.kind,
+          bodyPosition: [...r.session.body.pos],
+          look: [r.input.yaw, r.input.pitch],
+        },
+      };
+    }, fixture);
+    let endSnapshotDifference = '';
+    try {
+      assert.deepEqual(replayEndSnapshot, liveEndSnapshot);
+    } catch (error) {
+      endSnapshotDifference = error.message;
+    }
+    if (replayState !== 'verified') {
+      process.stderr.write(
+        `Throw replay ${replayState}: ${JSON.stringify({
+          snapshotDifference: endSnapshotDifference,
+          liveThrowOutcome,
+          replayThrowOutcome,
+        })}\n`,
+      );
+    }
     const items = await page.evaluate((ids) => {
       const r = globalThis.primaryActionTest;
       const off = r.inventory.itemByUid(ids.offUid);
@@ -580,6 +629,12 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       },
       'replay throws the off-hand item exactly once and leaves the main-hand item held',
     );
+    assert.deepEqual(
+      replayThrowOutcome.itemLocation,
+      liveThrowOutcome.itemLocation,
+      'replay lands the throw in the same cell',
+    );
+    assert.equal(replayState, 'verified', `replay end state differs: ${JSON.stringify(endSnapshotDifference)}`);
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();

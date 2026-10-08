@@ -98,6 +98,7 @@ import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
 import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import type { MoveIntent } from './player.ts';
+import { PlayerTickActions } from './playerTickActions.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -306,6 +307,7 @@ export const startPlay = (
   let itemThrowStartedAt: number | undefined;
   let itemThrowItemUid: number | undefined;
   let itemThrowHand: HandSide | undefined;
+  const pendingItemThrowActions = new PlayerTickActions();
   let interactionPressTarget: InteractionTarget | undefined;
   const audio = new GameAudio({
     registry,
@@ -345,6 +347,7 @@ export const startPlay = (
   ): PlayerInputSample => {
     if (!replayPlayer) {
       inputRecorder?.recordTick(live, compressionAtTick);
+      pendingItemThrowActions.applyAtNextTick();
       const commands = pendingScreenCommands;
       pendingScreenCommands = [];
       for (const payload of commands) {
@@ -1795,11 +1798,17 @@ export const startPlay = (
       return;
     }
     const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
+    const chargeProgress = Math.min(1, heldSimSeconds / itemThrowTuning.chargeSimSeconds);
     if (!replayPlayer) {
       inputRecorder?.queueAction('item.throw', 'down', inputContext(), distance);
+      pendingItemThrowActions.enqueue(() => {
+        if (inventory.hands[hand] !== item) {
+          return;
+        }
+        throwHeldItem(item, hand, distance, chargeProgress);
+        syncThrowingStance();
+      });
     }
-    throwHeldItem(item, hand, distance, Math.min(1, heldSimSeconds / itemThrowTuning.chargeSimSeconds));
-    syncThrowingStance();
   }
 
   function cancelItemThrow(): void {
