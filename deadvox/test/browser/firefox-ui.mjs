@@ -365,7 +365,7 @@ try {
   await page.goto(
     browserStageUrl(
       'firefox-ui',
-      `http://127.0.0.1:${address.port}/?debug=1&site=hamlet&seed=73&radius=64&post=0`,
+      `http://127.0.0.1:${address.port}/?debug=1&site=hamlet&seed=73&radius=64&post=0&time=12:00`,
       'pixel',
     ),
   );
@@ -427,6 +427,7 @@ try {
     0,
     'zero-strength control leaves building pixels unchanged',
   );
+  // Lighting and fog scale the shader's effect in the final image, so assert a change, not a shader-space bound.
   assert.ok(
     weatheringPixels.maxWeatherablePixelChange > 0,
     `full-strength weathering changes a weatherable building pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,

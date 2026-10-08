@@ -221,15 +221,21 @@ const occlusionKey = (ctx: Context, face: Face, slice: number, cell: number): nu
 /** The occlusion key of a face with no occlusion data: every corner fully open. */
 const OPEN_KEY = [0, 1, 2, 3].reduce((key, corner) => key | (OPEN_LEVEL << (OCC_BITS * corner)), 0);
 
-const wideSolidAt = (wide: Uint8Array, [x, y, z]: Vec3): boolean =>
+const wideSolidAt = (wide: Uint8Array, x: number, y: number, z: number): boolean =>
   x >= 0 && x < WIDE && y >= 0 && y < WIDE && z >= 0 && z < WIDE && wide[wideIndex(x, y, z)] !== 0;
 
-const shelteredFromRain = (wide: Uint8Array, face: Face, [x, y, z]: Vec3): boolean => {
+const shelteredFromRain = (wide: Uint8Array, face: Face, x: number, y: number, z: number): boolean => {
   const across = face.d === 0 ? 2 : 0;
   for (let height = 0; height < 3; height++) {
     for (let side = -1; side <= 1; side++) {
-      const cell: Vec3 = [x + (across === 0 ? side : 0), y + height, z + (across === 2 ? side : 0)];
-      if (wideSolidAt(wide, cell)) {
+      if (
+        wideSolidAt(
+          wide,
+          x + (across === 0 ? side : 0),
+          y + height,
+          z + (across === 2 ? side : 0),
+        )
+      ) {
         return true;
       }
     }
@@ -237,9 +243,9 @@ const shelteredFromRain = (wide: Uint8Array, face: Face, [x, y, z]: Vec3): boole
   return false;
 };
 
-const groundProximity = (wide: Uint8Array, [x, y, z]: Vec3): number => {
+const groundProximity = (wide: Uint8Array, x: number, y: number, z: number): number => {
   for (let down = 0; down < OCCLUSION_RADIUS; down++) {
-    if (wideSolidAt(wide, [x, y - down - 1, z])) {
+    if (wideSolidAt(wide, x, y - down - 1, z)) {
       return 1 - down / OCCLUSION_RADIUS;
     }
   }
@@ -247,16 +253,23 @@ const groundProximity = (wide: Uint8Array, [x, y, z]: Vec3): number => {
 };
 
 /** Grid-derived rain exposure and ground proximity at a face vertex; the shader supplies patch detail. */
-const weatherAt = (wide: Uint8Array | undefined, face: Face, pos: Vec3): [number, number] => {
+const weatherAt = (
+  target: number[],
+  wide: Uint8Array | undefined,
+  face: Face,
+  px: number,
+  py: number,
+  pz: number,
+): void => {
   if (!wide || face.d === 1) {
-    return [1, 0];
+    target.push(1, 0);
+    return;
   }
   const r = OCCLUSION_RADIUS;
-  const x = Math.floor(pos[0] + face.normal[0] * 0.5) + r;
-  const y = Math.floor(pos[1]) + r;
-  const z = Math.floor(pos[2] + face.normal[2] * 0.5) + r;
-  const cell: Vec3 = [x, y, z];
-  return [shelteredFromRain(wide, face, cell) ? 0.25 : 1, groundProximity(wide, cell)];
+  const x = Math.floor(px + face.normal[0] * 0.5) + r;
+  const y = Math.floor(py) + r;
+  const z = Math.floor(pz + face.normal[2] * 0.5) + r;
+  target.push(shelteredFromRain(wide, face, x, y, z) ? 0.25 : 1, groundProximity(wide, x, y, z));
 };
 
 /** Fills the masks for one slice of one face direction. Returns whether any face is visible. */
@@ -299,7 +312,7 @@ const emitQuad = (ctx: Context, face: Face, [key, occ]: Keys, [slice, u0, v0, w,
     ctx.vcolors.push(ctx.colors[id * 3]! * k, ctx.colors[id * 3 + 1]! * k, ctx.colors[id * 3 + 2]! * k);
     ctx.vpatterns.push(ctx.patterns[id] ?? 0);
     ctx.voccs.push(occlusionByte(occAt(occ, corner)));
-    ctx.vweather.push(...weatherAt(ctx.wide, face, pos));
+    weatherAt(ctx.vweather, ctx.wide, face, pos[0], pos[1], pos[2]);
   }
   // Split along the brighter diagonal so AO interpolates without a seam; on a tie, the diagonal with the
   // more open occlusion.

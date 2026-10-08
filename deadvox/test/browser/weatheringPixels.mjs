@@ -190,16 +190,15 @@ void main() {
         buildingPixels += 1;
         const offset = (y * frameWidth + x) * 4;
         const off = pixelLuminance(decoded.off.data, offset);
-        deltas.default.push(Math.abs(pixelLuminance(decoded.default.data, offset) - off));
-        deltas.strong.push(Math.abs(pixelLuminance(decoded.strong.data, offset) - off));
         if (!isWeatherable(x, y)) {
           return;
         }
         weatherablePixels += 1;
-        maxWeatherablePixelChange = Math.max(
-          maxWeatherablePixelChange,
-          Math.abs(pixelLuminance(decoded.strong.data, offset) - off),
-        );
+        const defaultChange = Math.abs(pixelLuminance(decoded.default.data, offset) - off);
+        const strongChange = Math.abs(pixelLuminance(decoded.strong.data, offset) - off);
+        deltas.default.push(defaultChange);
+        deltas.strong.push(strongChange);
+        maxWeatherablePixelChange = Math.max(maxWeatherablePixelChange, strongChange);
         maxZeroStrengthPixelChange = Math.max(
           maxZeroStrengthPixelChange,
           Math.abs(pixelLuminance(decoded['zero-control'].data, offset) - off),
@@ -215,6 +214,8 @@ void main() {
         return {
           mean: values.reduce((total, value) => total + value, 0) / values.length,
           p95: values[Math.max(0, Math.ceil(values.length * 0.95) - 1)] ?? 0,
+          max: values.at(-1) ?? 0,
+          changedShare: values.filter((value) => value > 0).length / values.length,
         };
       };
       return {
