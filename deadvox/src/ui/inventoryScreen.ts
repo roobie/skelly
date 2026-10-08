@@ -6,8 +6,8 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import type { BodyRegion, BodyState } from '../core/body.ts';
-import { BODY_REGIONS } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion, type BodyState } from '../core/body.ts';
+import { practiceForNextLevel } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import type { HandlingQueue } from '../core/handling.ts';
@@ -19,6 +19,7 @@ import type { WearSlot } from '../core/schema.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
+import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 
 /** Pixels per inventory cell. */
 const CELL = 32;
@@ -57,7 +58,12 @@ export interface ScreenHooks {
   /** Extra lines for the details panel: freshness, charge. */
   describe: (item: Item) => string[];
   workOptions: (uid: number) => readonly WorkOption[];
+  character: () => {
+    readonly skills: Readonly<Record<string, number>>;
+    readonly practice: Readonly<Record<string, number>>;
+  };
   body: () => Readonly<BodyState>;
+  needs: () => string;
   actionRefusal?: () => string | undefined;
   attachmentCandidates?: (firearmUid: number, slotId: string) => readonly Item[];
 }
@@ -154,6 +160,15 @@ interface BodyRegionViewModel {
   readonly damage: string;
 }
 
+interface SkillViewModel {
+  readonly id: string;
+  readonly name: string;
+  readonly level: number;
+  readonly practice: number;
+  readonly nextLevelPractice: number;
+  readonly progress: number;
+}
+
 interface InventoryScreenViewModel {
   readonly body: {
     readonly health: string;
@@ -161,6 +176,8 @@ interface InventoryScreenViewModel {
     readonly shock: string;
     readonly regions: readonly BodyRegionViewModel[];
   };
+  readonly skills: readonly SkillViewModel[];
+  readonly needs: string;
   readonly weight: string;
   readonly hands: readonly SlotViewModel[];
   readonly worn: readonly SlotViewModel[];
@@ -191,6 +208,39 @@ const optionAction = (option: Option | WorkOption): Pick<OptionViewModel, 'targe
     return option.kind === 'move' ? { target: option.target } : {};
   }
   return { operation: option.operation };
+};
+
+const addScrollOffset = (parent: HTMLElement, axis: 'x' | 'y', offset: number): void => {
+  if (axis === 'x') {
+    parent.scrollLeft += offset;
+  } else {
+    parent.scrollTop += offset;
+  }
+};
+
+const scrollItemWithinAncestor = (row: HTMLElement, parent: HTMLElement, axis: 'x' | 'y'): void => {
+  const style = parent.ownerDocument.defaultView?.getComputedStyle(parent);
+  if (!style) {
+    return;
+  }
+  const overflow = axis === 'x' ? style.overflowX : style.overflowY;
+  if (!['auto', 'scroll', 'hidden'].includes(overflow)) {
+    return;
+  }
+  const bounds = parent.getBoundingClientRect();
+  const viewportStart = axis === 'x' ? bounds.left + parent.clientLeft : bounds.top + parent.clientTop;
+  const viewportSize = axis === 'x' ? parent.clientWidth : parent.clientHeight;
+  if (viewportSize <= 0) {
+    return;
+  }
+  const rect = row.getBoundingClientRect();
+  const itemStart = axis === 'x' ? rect.left : rect.top;
+  const itemEnd = axis === 'x' ? rect.right : rect.bottom;
+  if (itemStart < viewportStart) {
+    addScrollOffset(parent, axis, itemStart - viewportStart);
+  } else if (itemEnd > viewportStart + viewportSize) {
+    addScrollOffset(parent, axis, itemEnd - viewportStart - viewportSize);
+  }
 };
 
 const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
@@ -292,23 +342,106 @@ const furnitureBodyTemplate = (
     return html`<button class="inv-option" type="button" @click=${() => search(furniture.uid)}><span>Search it (S)</span><span class="inv-time">${furniture.searchLabel}</span></button>`;
   }
   return furniture.grids.map(
-    (pocket) =>
-      html`${pocket.label ? html`<span class="inv-pocket-label">${pocket.label}</span>` : nothing}${gridTemplate(pocket.grid)}`,
+    (pocket) => html`
+      ${pocket.label ? html`<span class="inv-pocket-label">${pocket.label}</span>` : nothing}
+      <div class="inv-grid-scroll">${gridTemplate(pocket.grid)}</div>
+    `,
   );
 };
 
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
-  queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
-  search: (uid: number) => void,
-  attachmentAction: (payload: ReplayActionPayload) => void,
+  tab: InventoryTab,
+  selectTab: (tab: InventoryTab) => void,
+  {
+    queue,
+    search,
+    attachmentAction,
+  }: {
+    queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
+    search: (uid: number) => void;
+    attachmentAction: (payload: ReplayActionPayload) => void;
+  },
 ): TemplateResult => html`
   <header class="inv-head">
-    <h2>Inventory</h2>
-    <span class="inv-weight">Carrying ${vm.weight}</span>
-    <span class="inv-help">Drag items · Hold ${labelForAction('inventory.quick-action-gate')} and click for quick move · ${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
+    <div class="inv-title"><h2>Inventory</h2><span class="inv-weight">Carrying ${vm.weight}</span></div>
+    <nav class="inv-tabs" aria-label="Character screen">
+      ${(['items', 'skills', 'crafting'] as const).map(
+        (name) => html`
+        <button type="button" class="inv-tab" data-tab=${name} aria-selected=${tab === name} @click=${() => selectTab(name)}>
+          ${({ items: 'Items', skills: 'Skills', crafting: 'Crafting' } satisfies Record<InventoryTab, string>)[name]}
+        </button>
+      `,
+      )}
+    </nav>
+    <div class="inv-needs" aria-label="Needs">${vm.needs}</div>
+    <details class="inv-help">
+      <summary>Controls</summary>
+      <span>Drag items · Hold ${labelForAction('inventory.quick-action-gate')} and click for quick move · ${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
+    </details>
   </header>
-  <div class="inv-body">
+  <div class="inv-body" data-tab-panel="items" ?hidden=${tab !== 'items'}>
+    <section class="inv-pane" data-pane="you">
+      <h3>You</h3>
+      <div class="inv-hands">
+        ${vm.hands.map(
+          (slot) => html`
+          <div class="inv-slot" data-target=${slot.target}>
+            <span class="inv-slot-label">${slot.label}</span>${handContents(slot)}
+          </div>
+        `,
+        )}
+      </div>
+      ${vm.worn.map(
+        (slot) => html`
+        <div class="inv-worn">
+          <div class="inv-slot inv-slot-worn" data-target=${slot.target}>
+            <span class="inv-slot-label">${slot.label}</span>${slot.item ? itemTemplate(slot.item) : nothing}
+          </div>
+          ${slot.pockets?.length ? html`<div class="inv-pockets">${slot.pockets.map(pocketTemplate)}</div>` : nothing}
+        </div>
+      `,
+      )}
+    </section>
+    <section class="inv-pane" data-pane="around">
+      <h3>Around you</h3>
+      ${vm.piles.map(
+        (pile) => html`
+        <div class="inv-pile">
+          <div class="inv-pile-label">${pile.label}</div>
+          ${pile.grids.map(gridTemplate)}
+          ${pile.bags.map(
+            (bag) => html`
+            <div class="inv-bag">
+              <div class="inv-pile-label">${bag.name}, on the floor</div>
+              <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
+            </div>
+          `,
+          )}
+        </div>
+      `,
+      )}
+      ${
+        vm.hasFeetPile
+          ? nothing
+          : html`
+        <div class="inv-pile">
+          <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: PILE_GRID.w * CELL, height: PILE_GRID.h * CELL, items: [] })}
+        </div>
+      `
+      }
+      ${vm.furniture.map(
+        (furniture) => html`
+        <div class="inv-pile" data-entity-uid=${furniture.uid}>
+          <div class="inv-pile-label">${furniture.label}</div>
+          ${furnitureBodyTemplate(furniture, search)}
+        </div>
+      `,
+      )}
+    </section>
+    ${detailsTemplate(vm.details, queue, attachmentAction)}
+  </div>
+  <div class="inv-body inv-skills" data-tab-panel="skills" ?hidden=${tab !== 'skills'}>
     <section class="inv-pane inv-body-panel" data-pane="body">
       <h3>Body</h3>
       <div class="inv-body-vitals">Health ${vm.body.health} · Blood ${vm.body.blood} · Shock ${vm.body.shock}</div>
@@ -323,65 +456,30 @@ const inventoryTemplate = (
       `,
       )}
     </section>
-    <section class="inv-pane" data-pane="you">
-      <h3>You</h3>
-      <div class="inv-hands">
-        ${vm.hands.map(
-          (slot) => html`
-            <div class="inv-slot" data-target=${slot.target}>
-              <span class="inv-slot-label">${slot.label}</span>${handContents(slot)}
-            </div>
-          `,
-        )}
-      </div>
-      ${vm.worn.map(
-        (slot) => html`
-          <div class="inv-worn">
-            <div class="inv-slot inv-slot-worn" data-target=${slot.target}>
-              <span class="inv-slot-label">${slot.label}</span>${slot.item ? itemTemplate(slot.item) : nothing}
-            </div>
-            ${slot.pockets?.length ? html`<div class="inv-pockets">${slot.pockets.map(pocketTemplate)}</div>` : nothing}
-          </div>
-        `,
-      )}
-    </section>
-    <section class="inv-pane" data-pane="around">
-      <h3>Around you</h3>
-      ${vm.piles.map(
-        (pile) => html`
-          <div class="inv-pile">
-            <div class="inv-pile-label">${pile.label}</div>
-            ${pile.grids.map(gridTemplate)}
-            ${pile.bags.map(
-              (bag) => html`
-                <div class="inv-bag">
-                  <div class="inv-pile-label">${bag.name}, on the floor</div>
-                  <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
-                </div>
-              `,
-            )}
-          </div>
-        `,
-      )}
-      ${
-        vm.hasFeetPile
-          ? nothing
-          : html`
-            <div class="inv-pile">
-              <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: PILE_GRID.w * CELL, height: PILE_GRID.h * CELL, items: [] })}
+    <section class="inv-pane inv-skill-list" aria-label="Skills">
+      <h3>Skills</h3>
+      ${vm.skills.map(
+        (skill) => html`
+        <div class="inv-skill" data-skill=${skill.id} data-level=${skill.level}>
+          <div class="inv-skill-heading"><strong>${skill.name}</strong><span>Level ${skill.level}</span></div>
+          <div class="inv-skill-practice">${
+            Number.isFinite(skill.nextLevelPractice)
+              ? `${skill.practice} / ${skill.nextLevelPractice} practice`
+              : `${skill.practice} practice · no next level`
+          }</div>
+          ${
+            Number.isFinite(skill.nextLevelPractice)
+              ? html`
+            <div class="inv-skill-progress" role="progressbar" aria-label=${`${skill.name} progress`} aria-valuemin="0" aria-valuemax=${skill.nextLevelPractice} aria-valuenow=${skill.practice}>
+              <span style=${`width:${skill.progress}%`}></span>
             </div>
           `
-      }
-      ${vm.furniture.map(
-        (furniture) => html`
-          <div class="inv-pile">
-            <div class="inv-pile-label">${furniture.label}</div>
-            ${furnitureBodyTemplate(furniture, search)}
-          </div>
-        `,
+              : nothing
+          }
+        </div>
+      `,
       )}
     </section>
-    ${detailsTemplate(vm.details, queue, attachmentAction)}
   </div>
   <footer class="inv-queue"></footer>
 `;
@@ -431,10 +529,12 @@ export class InventoryScreen {
   >;
   private readonly queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>;
   private readonly hooks: ScreenHooks;
+  private readonly tabs = new InventoryTabState();
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
   private order: Item[] = [];
   private drawn = '';
+  private revealedSelectionUid: number | undefined;
   private drag: Drag | undefined;
 
   constructor(
@@ -468,20 +568,41 @@ export class InventoryScreen {
   }
 
   get isOpen(): boolean {
-    return !this.root.hidden;
+    return this.tabs.isOpen;
+  }
+
+  get activeTab(): InventoryTab {
+    return this.tabs.active;
   }
 
   open(): void {
+    this.tabs.open();
     this.root.hidden = false;
+    this.root.dataset.tab = this.tabs.active;
     document.body.classList.add('inventory-open');
+    this.syncTabClass();
     this.drawn = '';
     this.update();
   }
 
   close(): void {
+    this.tabs.close();
+    this.revealedSelectionUid = undefined;
     this.root.hidden = true;
-    document.body.classList.remove('inventory-open');
+    document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
     this.endDrag();
+  }
+
+  selectTab(tab: InventoryTab): void {
+    this.tabs.select(tab);
+    this.root.dataset.tab = tab;
+    this.syncTabClass();
+    this.drawn = '';
+    this.update();
+  }
+
+  private syncTabClass(): void {
+    document.body.classList.toggle('inventory-tab-crafting', this.tabs.active === 'crafting');
   }
 
   /** Redraws when something changed; call every frame while open. */
@@ -499,7 +620,9 @@ export class InventoryScreen {
       .join(',');
     const view = this.hooks.reach();
     const bodyKey = JSON.stringify(this.hooks.body());
-    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}`;
+    const characterKey = JSON.stringify(this.hooks.character());
+    const needsKey = this.hooks.needs();
+    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -681,9 +804,8 @@ export class InventoryScreen {
     this.order = [];
     const vm = this.viewModel();
     render(
-      inventoryTemplate(
-        vm,
-        (item, target, operation) => {
+      inventoryTemplate(vm, this.tabs.active, (tab) => this.selectTab(tab), {
+        queue: (item, target, operation) => {
           const refusal = this.hooks.actionRefusal?.();
           if (refusal) {
             this.refuse(refusal);
@@ -693,7 +815,7 @@ export class InventoryScreen {
             this.report(this.tryQueue(item, target));
           }
         },
-        (uid) => {
+        search: (uid) => {
           const refusal = this.hooks.actionRefusal?.();
           const entity = this.entityByUid.get(uid);
           if (refusal) {
@@ -702,7 +824,7 @@ export class InventoryScreen {
             this.report(this.hooks.dispatch({ kind: 'inventory.search', entityUid: entity.uid }));
           }
         },
-        (payload) => {
+        attachmentAction: (payload) => {
           const refusal = this.hooks.actionRefusal?.();
           if (refusal) {
             this.refuse(refusal);
@@ -710,14 +832,39 @@ export class InventoryScreen {
             this.report(this.hooks.dispatch(payload));
           }
         },
-      ),
+      }),
       this.root,
     );
     this.renderQueue();
+    const selectedUid = this.selected?.uid;
+    if (selectedUid === undefined) {
+      this.revealedSelectionUid = undefined;
+    } else if (selectedUid !== this.revealedSelectionUid && this.scrollSelectedItemIntoView()) {
+      this.revealedSelectionUid = selectedUid;
+    }
+  }
+
+  private scrollSelectedItemIntoView(): boolean {
+    if (!this.selected) {
+      return false;
+    }
+    const selectedUid = String(this.selected.uid);
+    const row = [...this.root.querySelectorAll<HTMLElement>('.inv-item[data-uid]')].find(
+      (candidate) => candidate.dataset.uid === selectedUid,
+    );
+    if (!row?.getClientRects().length) {
+      return false;
+    }
+    for (let parent = row.parentElement; parent; parent = parent.parentElement) {
+      scrollItemWithinAncestor(row, parent, 'x');
+      scrollItemWithinAncestor(row, parent, 'y');
+    }
+    return true;
   }
 
   private viewModel(): InventoryScreenViewModel {
     const body = this.hooks.body();
+    const character = this.hooks.character();
     const bodyView = {
       health: `${Math.round(body.health)}%`,
       blood: `${Math.round(body.blood)}%`,
@@ -783,8 +930,23 @@ export class InventoryScreen {
         grids: searchedGrids,
       };
     });
+    const skills = [...this.inv.registry.skills.values()].map((definition): SkillViewModel => {
+      const level = character.skills[definition.id] ?? 0;
+      const practice = character.practice[definition.id] ?? 0;
+      const nextLevelPractice = practiceForNextLevel(level);
+      return {
+        id: definition.id,
+        name: definition.name,
+        level,
+        practice,
+        nextLevelPractice,
+        progress: Number.isFinite(nextLevelPractice) ? (practice / nextLevelPractice) * 100 : 100,
+      };
+    });
     return {
       body: bodyView,
+      skills,
+      needs: this.hooks.needs(),
       weight: kg(this.inv.carriedWeight()),
       hands,
       worn,

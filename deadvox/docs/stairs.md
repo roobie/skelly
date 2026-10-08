@@ -65,9 +65,10 @@ After natural terrain and vegetation, `stampPlacement` writes **every** template
 cell, including air, over the terrain. This carves the buried room; repeated
 stamping and regeneration produce the same void, even across horizontal/vertical
 chunk seams and quarter turns. Surrounding soil, foundation, upper floor and roof
-stay solid. A placement cannot put its lowest layer below the world's -48 m floor.
+stay solid. A placement cannot put its lowest layer below the world's floor
+(`deadvox/src/core/scale.ts`, `WORLD_BOTTOM_M`).
 
-`compileTemplate`, in `deadvox/src/core/templates.ts`, constructs the authored treads in compiled block data; `AuthoredSite.stamp`, in `deadvox/src/core/authoredSite.ts`, writes those blocks through `stampPlacement`. d84-2 removes `placedFlights` and `Site.stairFlights`: shambler route planning was their only consumer, and the flight-rotation assertions are no longer part of `test/stairs.test.ts`. The cellar test still exercises quarter-turned placement and chunk stamping. Door actions remain separate from static floor-space connectivity.
+`compileTemplate`, in `deadvox/src/core/templates.ts`, constructs the authored treads in compiled block data; `AuthoredSite.stamp`, in `deadvox/src/core/authoredSite.ts`, writes those blocks through `stampPlacement`. A flight exists only while a template compiles and validates (`deadvox/src/core/stairFlight.ts`, `planFlight` and `constructFlight`); a placed site keeps the blocks, not a list of flights. The cellar test in `test/stairs.test.ts` exercises quarter-turned placement and chunk stamping. Door actions remain separate from static floor-space connectivity.
 
 ## Spatial validation
 

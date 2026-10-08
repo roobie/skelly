@@ -1,3 +1,9 @@
+---
+read_if:
+  - you calibrate mobgen's voxel size or body proportions against a reference figure
+  - you add, run or credit a reference asset or its Blender scripts
+---
+
 # Reference assets
 
 Dev-only references for calibrating mobgen. Nothing here is generated from or

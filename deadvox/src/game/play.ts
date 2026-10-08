@@ -57,7 +57,6 @@ import {
   projectCrosshairScreenPosition,
   renderPlayHandling,
   renderPlayHud,
-  renderPlayInventoryStats,
 } from '../ui/playHud.ts';
 import { playReadout } from '../ui/playReadout.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
@@ -317,6 +316,7 @@ export const startPlay = (
     inputTarget,
     () => !debugTools?.buildOn,
     () => shouldCancelForViewerFocus('window-blur'),
+    () => replayPlayer === undefined,
   );
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
@@ -687,7 +687,6 @@ export const startPlay = (
   const inventoryPanel = $('inventory');
   const reading = mountReading($('reading'), () => syncMenuState());
   const hud = $('hud');
-  const inventoryStats = $('inventory-stats');
   const hudOptions = readHudOptions();
   const drawHudOptions = () =>
     renderHudOptions($('hud-options'), hudOptions, (key, value) => {
@@ -798,7 +797,9 @@ export const startPlay = (
     refusal: (text) => showRefusal(text, sim.time),
     describe: (item) => [...survival.describe(item), ...firearms.describe(item), ...magazines.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
+    character: () => session.character,
     body: () => sim.body.snapshotState(),
+    needs: () => needsText(),
     actionRefusal: () => sim.body.actionRefusal,
     attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
   });
@@ -1029,6 +1030,9 @@ export const startPlay = (
     return state;
   };
   const resume = () => {
+    if (replayPlayer) {
+      return;
+    }
     resumeRequested = true;
     if (input.locked) {
       syncMenuState();
@@ -1458,7 +1462,7 @@ export const startPlay = (
         input.rightMouseHeld = true;
         break;
       case 'aim.ads-toggle':
-        input.toggleAimingDownSights();
+        input.toggleAimingDownSights(replayPlayer !== undefined);
         break;
       case 'movement.walk-toggle':
         input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
@@ -2825,7 +2829,6 @@ export const startPlay = (
     });
     screen.update();
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
-    renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(

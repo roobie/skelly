@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
-import { Character } from '../src/core/character.ts';
+import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
@@ -87,12 +87,14 @@ function setup(contentRegistry = registry) {
   }
   const searching = new Set<typeof entity>();
   const body = new Body(BODY_TUNING_FIXTURE);
+  const character = new Character(registry);
   queue.registerAction('furniture.search', () => {
     searching.delete(entity);
     inv.entities.markSearched(entity);
   });
   const notices: string[] = [];
   const refusals: string[] = [];
+  let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0%';
   let lastPayload: ReplayActionPayload | undefined;
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
   const hooks = {
@@ -131,7 +133,9 @@ function setup(contentRegistry = registry) {
     refusal: (text: string) => refusals.push(text),
     describe: (_item: typeof beans) => ['test description'],
     workOptions: (_uid: number): WorkOption[] => [],
+    character: () => character,
     body: () => body.snapshotState(),
+    needs: () => needs,
     actionRefusal: () => body.actionRefusal,
     attachmentCandidates: (_firearmUid: number, _slotId: string) => [beans],
   };
@@ -150,9 +154,13 @@ function setup(contentRegistry = registry) {
     refusals,
     hooks,
     body,
+    character,
     lastPayload: () => lastPayload,
     setWorkHandler: (handler: typeof workHandler) => {
       workHandler = handler;
+    },
+    setNeeds: (value: string) => {
+      needs = value;
     },
   };
 }
@@ -179,6 +187,49 @@ const holdQuickGate = () => {
 };
 
 describe('inventory screen Lit rendering', () => {
+  it('keeps the selected tab across closing and reopening the screen', () => {
+    const { screen, root } = setup();
+    screen.selectTab('skills');
+    screen.close();
+    screen.open();
+
+    expect(screen.activeTab).toBe('skills');
+    expect(root.querySelector<HTMLElement>('[data-tab-panel="skills"]')?.hidden).toBe(false);
+    expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
+  });
+
+  it('keeps live needs in the character-screen header on every tab', () => {
+    const { screen, root, setNeeds } = setup();
+    const needs = () => root.querySelector<HTMLElement>('.inv-needs')?.textContent;
+    expect(needs()).toContain('stamina 100%');
+
+    screen.selectTab('skills');
+    expect(needs()).toContain('water 100%');
+    screen.selectTab('crafting');
+    expect(needs()).toContain('food 100%');
+
+    setNeeds('health 80% · stamina 60% · food 40% · water 20% · fatigue 90%');
+    screen.update();
+    expect(needs()).toContain('fatigue 90%');
+  });
+
+  it('renders a skill level from the live character progression', () => {
+    const { screen, root, character } = setup();
+    const [skill] = registry.skills.values();
+    if (!skill) {
+      throw new Error('The skill screen needs a registry skill fixture');
+    }
+    screen.selectTab('skills');
+    const initialLevel = character.skills[skill.id]!;
+    const row = () => root.querySelector<HTMLElement>(`[data-skill="${skill.id}"]`);
+    expect(row()?.dataset.level).toBe(String(initialLevel));
+
+    character.awardPractice(skill.id, practiceForNextLevel(initialLevel), SKILL_LEVEL_LEGENDARY);
+    screen.update();
+
+    expect(character.skills[skill.id]).toBeGreaterThan(initialLevel);
+    expect(row()?.dataset.level).toBe(String(character.skills[skill.id]));
+  });
   it('shows the nested battery slot of a mounted light in firearm details', () => {
     const mounted = withDefaultMountedLight(registry, 'rifle_assault', 'flashlight');
     const { screen, inv, root } = setup(mounted.registry);
