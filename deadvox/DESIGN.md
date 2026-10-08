@@ -756,7 +756,7 @@ and `src/core/content.ts`, `checkItemFirearm`.
   without saving an individual physics body for every shot. A deterministic
   scatter represents the pile visually. See
   `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
-  `FirearmMechanics.ejectionDrop`, and `src/render/spentCaseScatter.ts`,
+  `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`,
   `spentCaseScatter`.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
