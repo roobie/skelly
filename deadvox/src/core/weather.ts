@@ -16,7 +16,7 @@ export interface Weather {
 /** A light mist. At this value the height fog has exactly the time-of-day keyframes' density. */
 export const DEFAULT_FOGGINESS = 0.2;
 
-/** Shared upper bound for authored and debug render-only weathering strength. */
+/** Shared ceiling leaves debug comparisons room above authored weathering without a separate cap. */
 export const WEATHERING_STRENGTH_MAX = 8;
 
 export const clampWeathering = (value: number): number => Math.min(WEATHERING_STRENGTH_MAX, Math.max(0, value));
