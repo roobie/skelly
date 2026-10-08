@@ -1004,80 +1004,108 @@ type HordeSnapshotField = (typeof hordeSnapshotFields)[number];
 type HordeSnapshot = Pick<HordeState, HordeSnapshotField> &
   Record<Exclude<keyof HordeState, HordeSnapshotField>, never>;
 
+type ZombieSnapshotProjectors = {
+  [K in ZombieSnapshotField]-?: (zombie: Zombie) => ZombieSnapshot[K];
+} & Record<Exclude<keyof ZombieState, ZombieSnapshotField>, never>;
+
+interface HordeSnapshotInput {
+  readonly horde: Omit<HordeState, 'rng'>;
+  readonly rng: Rng;
+}
+
+type HordeSnapshotProjectors = {
+  [K in HordeSnapshotField]-?: (input: HordeSnapshotInput) => HordeSnapshot[K];
+} & Record<Exclude<keyof HordeState, HordeSnapshotField>, never>;
+
+const projectSnapshot = <Source extends object>(
+  source: Source,
+  projectors: Record<string, (source: Source) => unknown>,
+): Record<string, unknown> =>
+  Object.fromEntries(
+    Object.entries(projectors).flatMap(([key, project]) => {
+      const value = project(source);
+      return value === undefined ? [] : [[key, value]];
+    }),
+  );
+
+const zombieSnapshotProjectors = {
+  type: (zombie) => zombie.type.id,
+  hordeId: (zombie) => zombie.hordeId,
+  hordeOffset: (zombie) => (zombie.hordeOffset === undefined ? undefined : ([...zombie.hordeOffset] as Vec3)),
+  body: (zombie) => ({ ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] }),
+  facing: (zombie) => [...zombie.facing],
+  home: (zombie) => [...zombie.home],
+  mode: (zombie) => zombie.mode,
+  investigationTier: (zombie) => zombie.investigationTier,
+  behaviorRng: (zombie) => [...zombie.behaviorRng.state()] as RngState,
+  soundRng: (zombie) => [...zombie.soundRng.state()] as RngState,
+  dismemberRng: (zombie) => [...zombie.dismemberRng.state()] as RngState,
+  idleSoundTimer: (zombie) => zombie.idleSoundTimer,
+  lastVocalNoiseId: (zombie) => zombie.lastVocalNoiseId ?? null,
+  modeTimer: (zombie) => zombie.modeTimer,
+  searchAnchor: (zombie) => (zombie.searchAnchor === undefined ? undefined : [...zombie.searchAnchor]),
+  searchTimer: (zombie) => zombie.searchTimer,
+  searchStrolling: (zombie) => zombie.searchStrolling,
+  searchHeading: (zombie) => [...zombie.searchHeading],
+  strollHeading: (zombie) => [...zombie.strollHeading],
+  horizontalSpeed: (zombie) => zombie.horizontalSpeed,
+  obstacleWanderHeading: (zombie) =>
+    zombie.obstacleWanderHeading === undefined ? undefined : ([...zombie.obstacleWanderHeading] as Vec3),
+  obstacleWanderRemaining: (zombie) => zombie.obstacleWanderRemaining,
+  obstacleContact: (zombie) => zombie.obstacleContact,
+  obstacleSlideSide: (zombie) => zombie.obstacleSlideSide,
+  bodyLookTarget: (zombie) => zombie.bodyLookTarget,
+  headYaw: (zombie) => zombie.headYaw,
+  headYawTarget: (zombie) => zombie.headYawTarget,
+  lookTimer: (zombie) => zombie.lookTimer,
+  swayValue: (zombie) => zombie.swayValue,
+  swayStart: (zombie) => zombie.swayStart,
+  swayTarget: (zombie) => zombie.swayTarget,
+  swayElapsed: (zombie) => zombie.swayElapsed,
+  swayDuration: (zombie) => zombie.swayDuration,
+  lurchValue: (zombie) => zombie.lurchValue,
+  lurchStart: (zombie) => zombie.lurchStart,
+  lurchTarget: (zombie) => zombie.lurchTarget,
+  lurchElapsed: (zombie) => zombie.lurchElapsed,
+  lurchDuration: (zombie) => zombie.lurchDuration,
+  stumbleFactor: (zombie) => zombie.stumbleFactor,
+  stumbleElapsed: (zombie) => zombie.stumbleElapsed,
+  stumbleDuration: (zombie) => zombie.stumbleDuration,
+  regions: (zombie) => ({ ...zombie.regions }),
+  figureSeed: (zombie) => zombie.figureSeed,
+  incapacitated: (zombie) => zombie.incapacitated,
+  lastPerceived: (zombie) => (zombie.lastPerceived === undefined ? undefined : [...zombie.lastPerceived]),
+  stimulusAt: (zombie) => zombie.stimulusAt,
+  attackWait: (zombie) => zombie.attackWait,
+  attackWindup: (zombie) => zombie.attackWindup,
+  gaitPhase: (zombie) => zombie.gaitPhase,
+  footstepClock: (zombie) => ({ ...zombie.footstepClock }),
+  wanderClock: (zombie) => zombie.wanderClock,
+  stanceWeight: (zombie) => zombie.stanceWeight,
+  stepOffset: (zombie) => zombie.stepOffset,
+  hitFlinchTime: (zombie) => zombie.hitFlinchTime,
+  severed: (zombie) => [...zombie.severed],
+} satisfies ZombieSnapshotProjectors;
+
+const hordeSnapshotProjectors = {
+  id: ({ horde }) => horde.id,
+  type: ({ horde }) => horde.type,
+  home: ({ horde }) => [...horde.home],
+  target: ({ horde }) => [...horde.target],
+  mode: ({ horde }) => horde.mode,
+  roamTimer: ({ horde }) => horde.roamTimer,
+  stimulusAt: ({ horde }) => horde.stimulusAt,
+  lastNoiseId: ({ horde }) => horde.lastNoiseId,
+  rng: ({ rng }) => [...rng.state()] as RngState,
+} satisfies HordeSnapshotProjectors;
+
 const snapshotZombie = (id: number, zombie: Zombie): { id: number; zombie: ZombieSnapshot } => ({
   id,
-  zombie: {
-    type: zombie.type.id,
-    ...(zombie.hordeId === undefined ? {} : { hordeId: zombie.hordeId }),
-    ...(zombie.hordeOffset === undefined ? {} : { hordeOffset: [...zombie.hordeOffset] as Vec3 }),
-    body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
-    facing: [...zombie.facing],
-    home: [...zombie.home],
-    mode: zombie.mode,
-    ...(zombie.investigationTier === undefined ? {} : { investigationTier: zombie.investigationTier }),
-    behaviorRng: [...zombie.behaviorRng.state()] as RngState,
-    soundRng: [...zombie.soundRng.state()] as RngState,
-    dismemberRng: [...zombie.dismemberRng.state()] as RngState,
-    idleSoundTimer: zombie.idleSoundTimer,
-    lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
-    modeTimer: zombie.modeTimer,
-    ...(zombie.searchAnchor === undefined ? {} : { searchAnchor: [...zombie.searchAnchor] }),
-    searchTimer: zombie.searchTimer,
-    searchStrolling: zombie.searchStrolling,
-    searchHeading: [...zombie.searchHeading],
-    strollHeading: [...zombie.strollHeading],
-    horizontalSpeed: zombie.horizontalSpeed,
-    ...(zombie.obstacleWanderHeading === undefined
-      ? {}
-      : { obstacleWanderHeading: [...zombie.obstacleWanderHeading] as Vec3 }),
-    obstacleWanderRemaining: zombie.obstacleWanderRemaining,
-    obstacleContact: zombie.obstacleContact,
-    obstacleSlideSide: zombie.obstacleSlideSide,
-    bodyLookTarget: zombie.bodyLookTarget,
-    headYaw: zombie.headYaw,
-    headYawTarget: zombie.headYawTarget,
-    lookTimer: zombie.lookTimer,
-    swayValue: zombie.swayValue,
-    swayStart: zombie.swayStart,
-    swayTarget: zombie.swayTarget,
-    swayElapsed: zombie.swayElapsed,
-    swayDuration: zombie.swayDuration,
-    lurchValue: zombie.lurchValue,
-    lurchStart: zombie.lurchStart,
-    lurchTarget: zombie.lurchTarget,
-    lurchElapsed: zombie.lurchElapsed,
-    lurchDuration: zombie.lurchDuration,
-    stumbleFactor: zombie.stumbleFactor,
-    stumbleElapsed: zombie.stumbleElapsed,
-    stumbleDuration: zombie.stumbleDuration,
-    regions: { ...zombie.regions },
-    figureSeed: zombie.figureSeed,
-    incapacitated: zombie.incapacitated,
-    ...(zombie.lastPerceived === undefined ? {} : { lastPerceived: [...zombie.lastPerceived] }),
-    ...(zombie.stimulusAt === undefined ? {} : { stimulusAt: zombie.stimulusAt }),
-    attackWait: zombie.attackWait,
-    attackWindup: zombie.attackWindup,
-    gaitPhase: zombie.gaitPhase,
-    footstepClock: { ...zombie.footstepClock },
-    wanderClock: zombie.wanderClock,
-    ...(zombie.stanceWeight === undefined ? {} : { stanceWeight: zombie.stanceWeight }),
-    ...(zombie.stepOffset === undefined ? {} : { stepOffset: zombie.stepOffset }),
-    ...(zombie.hitFlinchTime === undefined ? {} : { hitFlinchTime: zombie.hitFlinchTime }),
-    severed: [...zombie.severed],
-  },
+  zombie: projectSnapshot(zombie, zombieSnapshotProjectors) as ZombieSnapshot,
 });
 
-const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot => ({
-  id: horde.id,
-  type: horde.type,
-  home: [...horde.home],
-  target: [...horde.target],
-  mode: horde.mode,
-  roamTimer: horde.roamTimer,
-  ...(horde.stimulusAt === undefined ? {} : { stimulusAt: horde.stimulusAt }),
-  lastNoiseId: horde.lastNoiseId,
-  rng: [...rng.state()] as RngState,
-});
+const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot =>
+  projectSnapshot({ horde, rng }, hordeSnapshotProjectors) as HordeSnapshot;
 
 export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
