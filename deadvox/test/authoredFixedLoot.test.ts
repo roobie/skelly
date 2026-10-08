@@ -708,7 +708,7 @@ describe('authored fixed loot', () => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
     const jumpReachMeters = PLAYER.jump ** 2 / (2 * physicsFor(scale).gravity * scale.blockSize);
     const wallPlacements = site.placements.filter(({ template }) =>
-      ['camp_wall_run', 'camp_gate', 'camp_gate_damaged'].includes(template.id),
+      ['camp_wall_run', 'camp_gate', 'camp_gate_damaged', 'camp_gate_return'].includes(template.id),
     );
     expect(wallPlacements.length).toBeGreaterThan(0);
     for (const placement of wallPlacements) {
@@ -955,6 +955,13 @@ describe('authored fixed loot', () => {
     expect(ammunition).not.toBe(rifleLoot);
     expect(ammunition).not.toBe(magazines);
     expect(furnitureAt(ammunition!)).toBe('ammo_crate');
+    const sparse = result.registry.loot.get('military_armoury')!;
+    const nothingWeight = sparse.entries.find(({ nothing }) => nothing)?.weight ?? 0;
+    const itemWeight = sparse.entries
+      .filter(({ item }) => item !== undefined)
+      .reduce((sum, entry) => sum + entry.weight, 0);
+    expect(nothingWeight).toBeGreaterThanOrEqual(itemWeight);
+
     const inventory = new Inventory(result.registry);
     for (const rifle of ['rifle_assault', 'rifle_ak']) {
       expect(inventory.create(rifle)).toMatchObject({ firearm: { chamber: 'empty' }, slots: {} });
