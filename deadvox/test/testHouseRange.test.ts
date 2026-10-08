@@ -13,13 +13,10 @@ import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
-import { SPAWN_YAW } from '../src/game/testHouse.ts';
-import {
-  buildTestHouseRangeRoute,
-  isTestHouseRangeStockItem,
-  testHouseRangeStock,
-} from '../src/game/testHouseRange.ts';
+import { GARDEN_GATE, HOUSE_OFFSET, SPAWN_YAW } from '../src/game/testHouse.ts';
+import { isTestHouseRangeStockItem, testHouseRangeStock } from '../src/game/testHouseRange.ts';
 import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
+import { buildTestHouseRangeRoute } from './testHouseRangeRoute.ts';
 
 const withRangeStockFixtures = (): { registry: Registry; firearm: string; ammo: string; box: string } => {
   const base = BUNDLED_CONTENT.registry;
@@ -93,7 +90,13 @@ const buildRangeWalkFixture = () => {
   const startX = spawn.pos[0] / blockSize;
   const startZ = spawn.pos[2] / blockSize;
   const body = createPlayerBody(scale, startX, spawn.pos[1] / blockSize + 0.01, startZ);
-  const route = buildTestHouseRangeRoute({ blockSize, playerHalfWidth: body.halfWidth, rack: rackSpec });
+  const route = buildTestHouseRangeRoute({
+    blockSize,
+    playerHalfWidth: body.halfWidth,
+    rack: rackSpec,
+    houseOffset: HOUSE_OFFSET,
+    gardenGate: GARDEN_GATE,
+  });
   const routeXs = route.waypoints.filter(({ axis }) => axis === 0).map(({ target }) => target);
   const routeZs = route.waypoints.filter(({ axis }) => axis === 2).map(({ target }) => target);
   const minX = Math.floor(Math.min(startX, ...routeXs) - 2);

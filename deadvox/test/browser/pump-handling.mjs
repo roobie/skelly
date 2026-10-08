@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { PLAYER } from '../../src/game/player.ts';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
-import { buildTestHouseRangeRoute } from '../../src/game/testHouseRange.ts';
+import { GARDEN_GATE, HOUSE_OFFSET } from '../../src/game/testHouse.ts';
+import { buildTestHouseRangeRoute } from '../testHouseRangeRoute.ts';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
@@ -262,7 +263,11 @@ try {
       rack: { pos: [...rack.pos], size: [...rack.size] },
     };
   });
-  const lockerRoute = buildTestHouseRangeRoute(routeInputs);
+  const lockerRoute = buildTestHouseRangeRoute({
+    ...routeInputs,
+    houseOffset: HOUSE_OFFSET,
+    gardenGate: GARDEN_GATE,
+  });
   const { lockerUid: routeLockerUid } = routeInputs;
   assert.ok(lockerRoute.waypoints.length > 0);
   for (const waypoint of lockerRoute.waypoints) {
