@@ -89,20 +89,24 @@ export class InputReplayPlayer {
     return true;
   }
 
+  private dispatchActionsAtTick(tick: number, sample: ReplayControlSample): void {
+    while (this.actionIndex < this.inputs.actions.length && this.inputs.actions[this.actionIndex]!.tick === tick) {
+      const action = this.inputs.actions[this.actionIndex]!;
+      this.actionIndex += 1;
+      this.dispatch(action, sample);
+    }
+  }
+
   next(): ReplayControlSample | undefined {
     if (this.finished) {
       return;
     }
     const sample = sampleFromReplayFrame(this.inputs.frames[this.tickIndex]!);
-    while (
-      this.actionIndex < this.inputs.actions.length &&
-      this.inputs.actions[this.actionIndex]!.tick === this.tickIndex
-    ) {
-      const action = this.inputs.actions[this.actionIndex]!;
-      this.actionIndex += 1;
-      this.dispatch(action, sample);
-    }
+    this.dispatchActionsAtTick(this.tickIndex, sample);
     this.tickIndex += 1;
+    if (this.finished) {
+      this.dispatchActionsAtTick(this.tickIndex, sample);
+    }
     this.preparedColumnChanges = this.prepareColumnChangesForNextTick();
     return sample;
   }

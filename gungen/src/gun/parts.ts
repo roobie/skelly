@@ -452,7 +452,7 @@ const PISTOL_GRIP_HALF_Z = PISTOL_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_WELL_HEIGHT = 6;
 const PISTOL_MAGAZINE_INSERTION = PISTOL_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const PISTOL_BARREL_LENGTH: Record<SizeClass, number> = { S: 12, M: 16, L: 20 };
-const PISTOL_CROWN_LENGTH = 1;
+export const PISTOL_CROWN_LENGTH_U = 1;
 const PISTOL_BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
 const PISTOL_SLIDE_CHANNEL_CLEARANCE = 0.125;
 const PISTOL_SLIDE_WALL_THICKNESS = 0.5;
@@ -658,6 +658,8 @@ export const carrierCavityBounds = (pattern: BoltCarrierPattern, carrierY: numbe
   };
 };
 
+export const RECEIVER_SECTION_WALL_U = 0.5;
+
 export const RECEIVER_SECTION = {
   ar: {
     outline: [
@@ -779,8 +781,9 @@ const receiverShellSolids = ({
       id: `receiver-${section}`,
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
       x: [xMin, xMax] as const,
-      wall: 0.5,
-      cavity: rearSlopeRun === undefined ? cavity : { ...cavity, x: [xMin + rearSlopeRun, xMax - 0.5] },
+      wall: RECEIVER_SECTION_WALL_U,
+      cavity:
+        rearSlopeRun === undefined ? cavity : { ...cavity, x: [xMin + rearSlopeRun, xMax - RECEIVER_SECTION_WALL_U] },
       port: {
         x: portWindow.x,
         sectionAxis: 0,
@@ -3510,7 +3513,7 @@ const integratedPistolGrip = (gripLength: string): PartDef => {
   };
 };
 
-const pistolSlideEnd = (length: string): number => PISTOL_BARREL_LENGTH[length as SizeClass] - PISTOL_CROWN_LENGTH;
+const pistolSlideEnd = (length: string): number => PISTOL_BARREL_LENGTH[length as SizeClass] - PISTOL_CROWN_LENGTH_U;
 
 const pistolFrame: PartFamily = {
   name: 'frame',

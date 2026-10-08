@@ -27,8 +27,7 @@ describe('pump shotgun variants', () => {
     expect(counts.pump + counts.trigger).toBe(SEEDS.length);
   });
 
-  // Measured 4-5 s for 40 validated seeds on a host at load 9-10, most of vitest's 5 s default; the
-  // explicit timeout, about 5x that, keeps it from flaking under load.
+  // Generates and validates the selected seed sample for pump variants.
   it('generates valid gripless and pistol-grip builds with exactly one hold', { timeout: 25_000 }, () => {
     for (const seed of VALIDATED_SEEDS) {
       const assembly = generate(pumpShotgun, gunDomain, seed);
