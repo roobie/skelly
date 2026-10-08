@@ -59,15 +59,20 @@ export interface FootstepAdvance {
   steps: number;
 }
 
-/** Emits one footfall per gait distance actually travelled; airborne and stationary movement resets cadence. */
+const distanceToNextFootfall = (stridePhase: number, stepDistance: number): number => {
+  const phaseDistance = (0.25 - stridePhase + 1) % 0.5;
+  return (phaseDistance === 0 ? 0.5 : phaseDistance) * 2 * stepDistance;
+};
+
+/** Emits footfalls from travelled distance; stationary and airborne ticks freeze the shared gait phase. */
 export const advanceFootsteps = (clock: FootstepClock, gait: PlayerGait, travelledMetres: number): FootstepAdvance => {
   if (gait === 'still' || !(travelledMetres > 0)) {
-    return { clock: { ...initialFootstepClock(), stepIndex: clock.stepIndex }, steps: 0 };
+    return { clock: { ...clock, gait: 'still', distanceUntilStep: 0 }, steps: 0 };
   }
   const stepDistance = STEP_DISTANCE_METRES[gait];
-  const remaining = clock.gait === gait ? clock.distanceUntilStep : stepDistance;
-  const stridePhase =
-    (clock.gait === gait ? clock.stridePhase : INITIAL_STRIDE_PHASE) + travelledMetres / (2 * stepDistance);
+  const remaining =
+    clock.gait === gait ? clock.distanceUntilStep : distanceToNextFootfall(clock.stridePhase, stepDistance);
+  const stridePhase = clock.stridePhase + travelledMetres / (2 * stepDistance);
   const normalizedStridePhase = stridePhase - Math.floor(stridePhase);
   if (travelledMetres < remaining) {
     return {

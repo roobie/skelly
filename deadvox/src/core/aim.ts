@@ -129,7 +129,8 @@ const isValidWobbleShape = (shape: AimWobbleShape): boolean =>
   Number.isFinite(shape.archPower) &&
   shape.archPower > 0 &&
   Number.isFinite(shape.phaseOffsetRadians) &&
-  Math.abs(shape.phaseOffsetRadians) < 0.5 &&
+  shape.phaseOffsetRadians >= 0 &&
+  shape.phaseOffsetRadians <= 0.45 &&
   Number.isFinite(shape.jitterShare) &&
   shape.jitterShare >= 0 &&
   shape.jitterShare <= 1 &&

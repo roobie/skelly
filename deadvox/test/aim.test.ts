@@ -354,6 +354,53 @@ it('step-clock wobble forms an open, concave-down lune once per stride', () => {
   expect(outgoing.pitch).not.toBeCloseTo(returning.pitch, 8);
 });
 
+it('bounds aim changes at gait switches and airborne freezes by steady-walk motion', () => {
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const travel = speed / 60;
+  const { blockSize } = step();
+  const aimStep = (stridePhase: number, stepIndex: number) =>
+    step({ velocity: [0, 0, -speed / blockSize], stridePhase, stepIndex });
+  const steadyAim = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  let steadyClock = initialFootstepClock();
+  let steadyFrame = NEUTRAL_AIM;
+  let steadyWalkBound = 0;
+  for (let tick = 0; tick < 480; tick++) {
+    const next = advanceFootsteps(steadyClock, 'walking', travel);
+    const frame = steadyAim.advance(aimStep(next.clock.stridePhase, next.clock.stepIndex));
+    if (tick > 0) {
+      steadyWalkBound = Math.max(
+        steadyWalkBound,
+        Math.hypot(frame.yaw - steadyFrame.yaw, frame.pitch - steadyFrame.pitch),
+      );
+    }
+    steadyClock = next.clock;
+    steadyFrame = frame;
+  }
+
+  const transitionAim = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  let transitionClock = initialFootstepClock();
+  let transitionFrame = NEUTRAL_AIM;
+  for (let tick = 0; tick < 120; tick++) {
+    const next = advanceFootsteps(transitionClock, 'walking', travel);
+    transitionFrame = transitionAim.advance(aimStep(next.clock.stridePhase, next.clock.stepIndex));
+    transitionClock = next.clock;
+  }
+  const jogging = advanceFootsteps(transitionClock, 'jogging', travel);
+  const joggingFrame = transitionAim.advance(aimStep(jogging.clock.stridePhase, jogging.clock.stepIndex));
+  const gaitChange = Math.hypot(joggingFrame.yaw - transitionFrame.yaw, joggingFrame.pitch - transitionFrame.pitch);
+  const airborne = advanceFootsteps(jogging.clock, 'still', 0);
+  const airborneFrame = transitionAim.advance(aimStep(airborne.clock.stridePhase, airborne.clock.stepIndex));
+  const takeoff = Math.hypot(airborneFrame.yaw - joggingFrame.yaw, airborneFrame.pitch - joggingFrame.pitch);
+  const landed = advanceFootsteps(airborne.clock, 'walking', travel);
+  const landedFrame = transitionAim.advance(aimStep(landed.clock.stridePhase, landed.clock.stepIndex));
+  const landing = Math.hypot(landedFrame.yaw - airborneFrame.yaw, landedFrame.pitch - airborneFrame.pitch);
+
+  expect(steadyWalkBound).toBeGreaterThan(0);
+  expect(gaitChange).toBeLessThanOrEqual(steadyWalkBound + 1e-10);
+  expect(takeoff).toBeLessThanOrEqual(steadyWalkBound + 1e-10);
+  expect(landing).toBeLessThanOrEqual(steadyWalkBound + 1e-10);
+});
+
 it('sets lune vertical extent as the content fraction of its horizontal extent', () => {
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
   const { blockSize } = step();

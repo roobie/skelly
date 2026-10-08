@@ -44,14 +44,31 @@ describe('player footsteps', () => {
     }
   });
 
-  it('does not carry cadence across a gait change or while still', () => {
+  it('preserves stride phase across gait changes and airborne ticks', () => {
     const walking = advanceFootsteps(initialFootstepClock(), 'walking', 0.5);
-    const jogging = advanceFootsteps(walking.clock, 'jogging', 0.5);
+    const joggingTravel = 0.1;
+    const jogging = advanceFootsteps(walking.clock, 'jogging', joggingTravel);
     expect(jogging.steps).toBe(0);
-    expect(jogging.clock.distanceUntilStep).toBeCloseTo(STEP_DISTANCE_METRES.jogging - 0.5);
-    const stopped = advanceFootsteps(jogging.clock, 'still', 5);
-    expect(stopped.clock).toEqual({ ...initialFootstepClock(), stepIndex: jogging.clock.stepIndex });
-    expect(stopped.steps).toBe(0);
+    expect(jogging.clock.stridePhase).toBeCloseTo(
+      walking.clock.stridePhase + joggingTravel / (2 * STEP_DISTANCE_METRES.jogging),
+    );
+    const phaseToNextFootfall = (0.25 - jogging.clock.stridePhase + 1) % 0.5;
+    expect(jogging.clock.distanceUntilStep).toBeCloseTo(
+      (phaseToNextFootfall === 0 ? 0.5 : phaseToNextFootfall) * 2 * STEP_DISTANCE_METRES.jogging,
+    );
+
+    const airborne = advanceFootsteps(jogging.clock, 'still', 0);
+    expect(airborne.steps).toBe(0);
+    expect(airborne.clock).toMatchObject({
+      gait: 'still',
+      distanceUntilStep: 0,
+      stridePhase: jogging.clock.stridePhase,
+      stepIndex: jogging.clock.stepIndex,
+    });
+    const landed = advanceFootsteps(airborne.clock, 'walking', joggingTravel);
+    expect(landed.clock.stridePhase).toBeCloseTo(
+      airborne.clock.stridePhase + joggingTravel / (2 * STEP_DISTANCE_METRES.walking),
+    );
   });
 
   it('plays a hard landing at and above a 2.5 m drop, not below it', () => {

@@ -1070,7 +1070,7 @@ export const createSession = (options: SessionOptions) => {
     );
     const tools = debug?.();
     if (tools?.noclip) {
-      footstepClock = { ...initialFootstepClock(), stepIndex: footstepClock.stepIndex };
+      footstepClock = advanceFootsteps(footstepClock, 'still', 0).clock;
       airbornePeakY = undefined;
       tools.stepNoclip({
         body,
