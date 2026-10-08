@@ -92,6 +92,7 @@ function setup() {
   });
   const notices: string[] = [];
   const refusals: string[] = [];
+  let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0%';
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
   const hooks = {
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
@@ -129,6 +130,7 @@ function setup() {
     workOptions: (_uid: number): WorkOption[] => [],
     character: () => character,
     body: () => body.snapshotState(),
+    needs: () => needs,
     actionRefusal: () => body.actionRefusal,
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
@@ -149,6 +151,9 @@ function setup() {
     character,
     setWorkHandler: (handler: typeof workHandler) => {
       workHandler = handler;
+    },
+    setNeeds: (value: string) => {
+      needs = value;
     },
   };
 }
@@ -186,6 +191,21 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
   });
 
+  it('keeps live needs in the character-screen header on every tab', () => {
+    const { screen, root, setNeeds } = setup();
+    const needs = () => root.querySelector<HTMLElement>('.inv-needs')?.textContent;
+    expect(needs()).toContain('stamina 100%');
+
+    screen.selectTab('skills');
+    expect(needs()).toContain('water 100%');
+    screen.selectTab('crafting');
+    expect(needs()).toContain('food 100%');
+
+    setNeeds('health 80% · stamina 60% · food 40% · water 20% · fatigue 90%');
+    screen.update();
+    expect(needs()).toContain('fatigue 90%');
+  });
+
   it('renders a skill level from the live character progression', () => {
     const { screen, root, character } = setup();
     const [skill] = registry.skills.values();
@@ -200,6 +220,7 @@ describe('inventory screen Lit rendering', () => {
     character.awardPractice(skill.id, practiceForNextLevel(initialLevel), SKILL_LEVEL_LEGENDARY);
     screen.update();
 
+    expect(character.skills[skill.id]).toBeGreaterThan(initialLevel);
     expect(row()?.dataset.level).toBe(String(character.skills[skill.id]));
   });
   it('refuses inventory actions while unconscious and permits them after waking', () => {

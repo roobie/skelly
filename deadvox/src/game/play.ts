@@ -57,7 +57,6 @@ import {
   projectCrosshairScreenPosition,
   renderPlayHandling,
   renderPlayHud,
-  renderPlayInventoryStats,
 } from '../ui/playHud.ts';
 import { playReadout } from '../ui/playReadout.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
@@ -647,7 +646,6 @@ export const startPlay = (
   const inventoryPanel = $('inventory');
   const reading = mountReading($('reading'), () => syncMenuState());
   const hud = $('hud');
-  const inventoryStats = $('inventory-stats');
   const hudOptions = readHudOptions();
   const drawHudOptions = () =>
     renderHudOptions($('hud-options'), hudOptions, (key, value) => {
@@ -760,6 +758,7 @@ export const startPlay = (
     workOptions: (uid) => session.crafting.options(uid),
     character: () => session.character,
     body: () => sim.body.snapshotState(),
+    needs: () => needsText(),
     actionRefusal: () => sim.body.actionRefusal,
   });
 
@@ -2709,7 +2708,6 @@ export const startPlay = (
     });
     screen.update();
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
-    renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(

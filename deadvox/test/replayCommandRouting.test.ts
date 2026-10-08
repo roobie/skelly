@@ -28,6 +28,7 @@ describe('screen command routing', () => {
       'workOptions',
       'character',
       'body',
+      'needs',
       'actionRefusal',
     ]);
     expect(inventoryCallbacks).toContain('dispatch');

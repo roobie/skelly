@@ -63,6 +63,7 @@ export interface ScreenHooks {
     readonly practice: Readonly<Record<string, number>>;
   };
   body: () => Readonly<BodyState>;
+  needs: () => string;
   actionRefusal?: () => string | undefined;
 }
 
@@ -165,6 +166,7 @@ interface InventoryScreenViewModel {
     readonly regions: readonly BodyRegionViewModel[];
   };
   readonly skills: readonly SkillViewModel[];
+  readonly needs: string;
   readonly weight: string;
   readonly hands: readonly SlotViewModel[];
   readonly worn: readonly SlotViewModel[];
@@ -297,6 +299,7 @@ const inventoryTemplate = (
       `,
       )}
     </nav>
+    <div class="inv-needs" aria-label="Needs">${vm.needs}</div>
     <details class="inv-help">
       <summary>Controls</summary>
       <span>Drag items · Hold ${labelForAction('inventory.quick-action-gate')} and click for quick move · ${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
@@ -354,7 +357,7 @@ const inventoryTemplate = (
       }
       ${vm.furniture.map(
         (furniture) => html`
-        <div class="inv-pile">
+        <div class="inv-pile" data-entity-uid=${furniture.uid}>
           <div class="inv-pile-label">${furniture.label}</div>
           ${furnitureBodyTemplate(furniture, search)}
         </div>
@@ -541,7 +544,8 @@ export class InventoryScreen {
     const view = this.hooks.reach();
     const bodyKey = JSON.stringify(this.hooks.body());
     const characterKey = JSON.stringify(this.hooks.character());
-    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}`;
+    const needsKey = this.hooks.needs();
+    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -833,6 +837,7 @@ export class InventoryScreen {
     return {
       body: bodyView,
       skills,
+      needs: this.hooks.needs(),
       weight: kg(this.inv.carriedWeight()),
       hands,
       worn,

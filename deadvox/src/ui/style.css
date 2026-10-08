@@ -419,6 +419,9 @@ body.unconscious::after {
   grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
   grid-template-rows: minmax(0, 1fr);
 }
+#inventory .inv-body[data-tab-panel="items"] {
+  grid-template-rows: minmax(0, 3fr) minmax(96px, 1fr);
+}
 .inv-body[data-tab-panel="items"] .inv-details {
   grid-column: 1 / -1;
 }
@@ -519,7 +522,14 @@ body.unconscious::after {
     monospace;
   color: var(--muted);
 }
+.inv-pile[data-entity-uid] {
+  flex: 1;
+  min-height: 0;
+}
 .inv-grid-scroll {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   max-width: 100%;
   overflow: auto;
   overscroll-behavior: contain;
@@ -909,23 +919,14 @@ body.resting #handling {
   display: none;
 }
 
-#inventory-stats {
-  position: fixed;
-  z-index: 12;
-  top: 38px;
-  right: 38px;
-  max-width: 34ch;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: var(--panel);
-  white-space: pre;
+.inv-needs {
+  flex: 1 1 200px;
+  max-width: 38ch;
+  min-width: 0;
+  color: var(--muted);
   font:
-    12px / 1.5 ui-monospace,
+    11px / 1.3 ui-monospace,
     monospace;
-  pointer-events: none;
-}
-#inventory-stats[hidden] {
-  display: none;
 }
 .hud-options {
   margin-top: 14px;
@@ -1209,24 +1210,6 @@ body.inventory-open.inventory-tab-crafting #crafting {
   width: 100%;
   margin: 8px 0;
 }
-@media (max-width: 900px) {
-  /* The side catalogue cannot fit beside the inventory's detail pane on a narrow screen. */
-  body.inventory-open #inventory,
-  body.inventory-open #inventory-stats {
-    right: 24px;
-  }
-  body.inventory-open #crafting {
-    display: none;
-  }
-  .inv-body {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow: auto;
-  }
-  .inv-details {
-    grid-column: 1 / -1;
-  }
-}
-
 /* ---- rest and sleep (1.8) ---- */
 #rest {
   position: fixed;
