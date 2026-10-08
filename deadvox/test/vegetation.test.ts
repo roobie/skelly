@@ -382,7 +382,7 @@ describe('passable but opaque vegetation', () => {
     const { gain, wavelengthMetres } = FOREST_DENSITY_FIELD;
     const maxStepDifference = (3 * gain * sampleStepMetres) / wavelengthMetres;
 
-    expect(samples.every((density) => density >= 0 && density <= 1)).toBe(true);
+    expect(samples.every((sampledDensity) => sampledDensity >= 0 && sampledDensity <= 1)).toBe(true);
     for (let index = 1; index < samples.length; index += 1) {
       expect(Math.abs(samples[index]! - samples[index - 1]!)).toBeLessThanOrEqual(maxStepDifference);
     }
