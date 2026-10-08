@@ -51,8 +51,9 @@ const carryCrowbar = (runtime: ReturnType<typeof createRuntime>) => {
   return crowbar;
 };
 const nearSpawn: [number, number, number] = [0, 1, 0];
-const makePryRuntime = (snapshot?: Parameters<typeof createRuntime>[0]) => {
-  const runtime = createRuntime(snapshot, false, undefined, { spawn: nearSpawn });
+const pryingQualityHint = /prying quality/;
+const makePryRuntime = (snapshot?: Parameters<typeof createRuntime>[0], active = false) => {
+  const runtime = createRuntime(snapshot, false, undefined, { spawn: nearSpawn, active });
   const floor = registry.blockIds.get('planks')!;
   for (let x = -1; x <= 1; x++) {
     for (let z = 0; z <= 6; z++) {
@@ -148,29 +149,77 @@ it('prying advances at normal simulation speed without compression', () => {
   expect(runtime.sim.actions.job.elapsed).toBeGreaterThan(0);
 });
 
-it('an interruption pauses normal-speed prying and resume preserves its cursor', () => {
+it('an interruption stops normal-speed prying with progress retained for the same-door interaction', () => {
   const runtime = makePryRuntime();
   const door = makeDoor(runtime);
   const crowbar = carryCrowbar(runtime);
+  const notices: string[] = [];
+  runtime.sim.actions.notice = (text) => notices.push(text);
   expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
   runtime.sim.frame(1);
-  const elapsed = runtime.sim.actions.job?.jobType === 'pry' ? runtime.sim.actions.job.elapsed : 0;
+  const before = runtime.sim.actions.job;
+  if (before?.jobType !== 'pry') {
+    throw new Error('The normal-speed pry did not retain its action');
+  }
+  expect(before.stopped).toBe(false);
   const reason = 'A test interruption';
 
   runtime.sim.emit({ kind: 'interrupt', reason });
   runtime.sim.frame(0.1);
 
-  const stopped = runtime.sim.actions.job;
-  expect(stopped).toMatchObject({ jobType: 'pry', stopped: true, elapsed });
-  expect(runtime.sim.compression.interruption).toBe(reason);
+  expect(runtime.sim.actions.job).toMatchObject({
+    jobType: 'pry',
+    stopped: true,
+    entityUid: door.uid,
+    toolUid: crowbar.uid,
+    elapsed: before.elapsed,
+  });
+  expect(notices).toContain(reason);
+  expect(runtime.sim.compression.interruption).toBeUndefined();
   expect(runtime.sim.compression.c).toBe(1);
   expect(runtime.sim.compression.active).toBe(false);
+  expect(runtime.sim.compression.locksInput).toBe(false);
 
-  expect(runtime.sim.actions.resume()).toBeUndefined();
-  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false, elapsed });
+  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false, elapsed: before.elapsed });
+});
+
+it('losing the carried tool stops prying without an input latch and leaves movement available', () => {
+  const runtime = makePryRuntime(undefined, true);
+  const door = makeDoor(runtime);
+  const crowbar = carryCrowbar(runtime);
+  const notices: string[] = [];
+  runtime.sim.actions.notice = (text) => notices.push(text);
+  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  runtime.sim.frame(1);
+  const before = runtime.sim.actions.job;
+  if (before?.jobType !== 'pry') {
+    throw new Error('The normal-speed pry did not retain its action');
+  }
+  expect(before.elapsed).toBeGreaterThan(0);
+  const drop = runtime.inventory.move(crowbar, {
+    kind: 'pile',
+    pos: [runtime.session.body.pos[0], runtime.session.body.pos[1], runtime.session.body.pos[2]],
+  });
+  if (!drop.ok) {
+    throw new Error(`Could not drop the prying tool: ${drop.reason}`);
+  }
+
+  runtime.sim.frame(1);
+
+  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: true, elapsed: before.elapsed });
+  expect(notices.at(-1)).toMatch(pryingQualityHint);
   expect(runtime.sim.compression.interruption).toBeUndefined();
   expect(runtime.sim.compression.locksInput).toBe(false);
-  expect(runtime.sim.compression.active).toBe(false);
+  const positionBeforeMove = [...runtime.session.body.pos];
+  runtime.view.intent.forward = 1;
+  runtime.sim.frame(0.5);
+  expect(
+    Math.hypot(
+      runtime.session.body.pos[0]! - positionBeforeMove[0]!,
+      runtime.session.body.pos[2]! - positionBeforeMove[2]!,
+    ),
+  ).toBeGreaterThan(0);
 });
 
 it('the matching key still unlocks a pryable door silently', () => {

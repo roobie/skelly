@@ -95,8 +95,11 @@ describe('explicit storeys and ordinary-block flights', () => {
     for (const y of [1, 2, 3, 4]) {
       authored.layers[y]![0] = 'wwwwwwwwwwwwwwww';
     }
-    const result = buildRegistry([...sources, { source: 'sealed.json', data: { templates: [authored] } }]);
-    expect(result.issues.some((issue) => issue.path.includes('access.entrance'))).toBe(true);
+    const template = compileTemplate(registry, authored);
+    expect(templateSpatialIssues(registry, template)).toContainEqual([
+      '.access.entrance',
+      'entrance must reach a standing opening at the footprint edge on the ground storey',
+    ]);
   });
   it('rejects upstairs floor space isolated behind a non-openable wall', () => {
     const template = house();
