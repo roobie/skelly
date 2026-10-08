@@ -187,22 +187,47 @@ try {
     assert.ok(rows.includes(String(uid)), `selected ${uid} from visible inventory rows: ${rows.join(',')}`);
   };
   const moveTo = async (action, axis, target) => {
-    const start = await page.evaluate((coordinate) => globalThis.pumpHandlingTest.session.body.pos[coordinate], axis);
-    const direction = Math.sign(target - start);
-    if (!direction) {
-      return;
-    }
     const releaseSprint = await holdAction(page, 'movement.sprint');
     const releaseMove = await holdAction(page, action);
     try {
-      await page.waitForFunction(
-        ({ coordinate, goal, sign }) => {
-          const position = globalThis.pumpHandlingTest.session.body.pos[coordinate];
-          return sign > 0 ? position >= goal : position <= goal;
+      const result = await page.evaluate(
+        ({ coordinate, goal }) => {
+          const { session } = globalThis.pumpHandlingTest;
+          const start = [...session.body.pos];
+          const startCoordinate = start[coordinate];
+          const direction = Math.sign(goal - startCoordinate);
+          const complete = () =>
+            direction === 0 ||
+            (direction > 0 ? session.body.pos[coordinate] >= goal : session.body.pos[coordinate] <= goal);
+          if (complete()) {
+            return { complete: true, start, current: [...session.body.pos], goal, frames: 0, frameLimit: 0 };
+          }
+
+          // This synchronous loop blocks the live RAF loop; as in waitForWork, these are the only
+          // frames advancing the session while the actual held input drives the player.
+          const frameSeconds = 1 / 60;
+          session.frame(frameSeconds);
+          const speed = Math.abs(session.body.vel[coordinate]);
+          const expectedFrames = speed > 0 ? Math.ceil(Math.abs(goal - startCoordinate) / speed / frameSeconds) : 0;
+          const frameLimit = Math.max(1, Math.ceil(expectedFrames * 1.5) + 2);
+          let frames = 1;
+          while (!complete() && frames < frameLimit) {
+            session.frame(frameSeconds);
+            frames += 1;
+          }
+          return {
+            complete: complete(),
+            start,
+            current: [...session.body.pos],
+            goal,
+            speed,
+            frames,
+            frameLimit,
+          };
         },
-        { coordinate: axis, goal: target, sign: direction },
-        { timeout: 20_000 },
+        { coordinate: axis, goal: target },
       );
+      assert.equal(result.complete, true, `player could not reach route target: ${JSON.stringify(result)}`);
     } finally {
       await releaseMove();
       await releaseSprint();
