@@ -574,13 +574,13 @@ const columnSeamChanges = (
   );
   const seamChanges: ReplayColumnChange[] = [];
   for (const key of [...generated].sort()) {
-    if (!nextGenerated.has(key) && !explicitSeamChanges.has(key)) {
+    if (!(nextGenerated.has(key) || explicitSeamChanges.has(key))) {
       const [cx, cz] = key.split(',').map(Number) as [number, number];
       seamChanges.push([offset, cx, cz, false]);
     }
   }
   for (const key of [...nextGenerated].sort()) {
-    if (!generated.has(key) && !explicitSeamChanges.has(key)) {
+    if (!(generated.has(key) || explicitSeamChanges.has(key))) {
       const [cx, cz] = key.split(',').map(Number) as [number, number];
       seamChanges.push([offset, cx, cz, true]);
     }

@@ -2558,16 +2558,21 @@ export const startPlay = (
     inputRecorder = nextRecorder;
   };
 
+  const handleInputRecorderColumnOverflow = (): void => {
+    if (replayPlayer || !inputRecorder?.columnChangesWouldOverflow) {
+      return;
+    }
+    if (inputRecorder.pendingColumnChangesExceedWindow) {
+      stopInputRecordingForColumnOverflow();
+    } else {
+      rollInputRecorderWindow();
+    }
+  };
+
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
     cancelItemThrowOnRightClick();
-    if (!replayPlayer && inputRecorder?.columnChangesWouldOverflow) {
-      if (inputRecorder.pendingColumnChangesExceedWindow) {
-        stopInputRecordingForColumnOverflow();
-      } else {
-        rollInputRecorderWindow();
-      }
-    }
+    handleInputRecorderColumnOverflow();
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     if (replayPlayer) {
