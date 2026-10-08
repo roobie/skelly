@@ -351,7 +351,7 @@ try {
       { timeout: 10_000 },
     );
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
-    const fitButtons = page.locator('#inventory button.inv-option').filter({ hasText: /Fit .*foregrip/i });
+    const fitButtons = page.locator('#inventory .inv-details button.inv-option').filter({ hasText: /Fit .*foregrip/i });
     await fitButtons.first().scrollIntoViewIfNeeded();
     assert.equal(await fitButtons.count(), 1, 'held AR offers the pocketed foregrip as a fit action');
     const before = await page.evaluate(() => ({
