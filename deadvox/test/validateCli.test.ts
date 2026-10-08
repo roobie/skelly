@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
@@ -41,9 +41,7 @@ describe('validate CLI', () => {
         { cwd: root, encoding: 'utf8' },
       );
       expect(run.status).toBe(1);
-      expect(run.stdout).toContain(
-        'FAIL  test/fixtures/content/missing-model.json items[0].model: no model "lamp"',
-      );
+      expect(run.stdout).toContain('FAIL  test/fixtures/content/missing-model.json items[0].model: no model "lamp"');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -99,7 +97,7 @@ describe('validate CLI', () => {
         'test/fixtures/assets/manifest.json',
       );
       expect(run.status).toBe(1);
-      stdout = run.stdout;
+      ({ stdout } = run);
     } finally {
       process.chdir(originalCwd);
       rmSync(root, { recursive: true, force: true });
