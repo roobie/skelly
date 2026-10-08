@@ -92,11 +92,11 @@ BR's dilapidation direction is recorded in [DESIGN.md](DESIGN.md#a-world-that-fe
 
 ## Open
 
-- **Not benchmarked.** The cost of patterns, post-processing and shadows on the reference
-  laptop is unmeasured. The benchmarks render without the new look unless given `&post=1`
-  (`src/bench/post.ts`), which draws through the mood pass with the default look and shadows; run
-  both variants on the reference laptop and compare (commands in the PR note). Pulling in the view
-  distance is the agreed lever if it costs too much. Do not read SwiftShader timings as cost.
+- **Not benchmarked.** The reference-GPU cost of surface patterns, weathering, post-processing
+  and shadows remains unknown; SwiftShader timings are not representative. `src/bench/post.ts`,
+  `benchDraw`, selects the mood pass but does not disable the content-driven chunk weathering in
+  `src/render/chunks.ts`, `chunkMaterial`. A same-workload comparison against `origin/main` is
+  required for a weathering cost claim.
 - **Sun shadows rely on a three.js internal.** `src/render/shadows.ts` wraps
   `renderer.shadowMap.render` to choose casters, which a three.js upgrade could break.
   Needs a proper solution before merging.

@@ -191,7 +191,7 @@ export class ChunkMeshes {
   private readonly occlusion = { value: 1 };
   private readonly weathering = { value: 0 };
   private readonly weatheringVariation = { value: 0 };
-  private readonly variationScaleMetres = { value: 1 };
+  private readonly variationScaleMetres = { value: 0 };
   private readonly mossThreshold = { value: 0 };
   private readonly mossBias = { value: 0 };
   private readonly frustum = new Frustum();
@@ -262,7 +262,7 @@ export class ChunkMeshes {
   setWeathering(settings: WeatheringDef | undefined): void {
     this.weathering.value = settings?.strength ?? 0;
     this.weatheringVariation.value = settings?.variationStrength ?? 0;
-    this.variationScaleMetres.value = settings?.variationScaleMetres ?? 1;
+    this.variationScaleMetres.value = settings?.variationScaleMetres ?? 0;
     this.mossThreshold.value = settings?.mossThreshold ?? 0;
     this.mossBias.value = settings?.mossBias ?? 0;
   }
