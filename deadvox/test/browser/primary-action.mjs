@@ -176,19 +176,41 @@ const observationPlugin = {
           syncThrowingStance();
         });
       });`;
+    const playerTickMarker = '      pendingPlayerTickActions.applyAtNextTick();';
     assert(code.includes(marker), 'game-loop observation point exists');
     assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
-    const observedCode = code.replace(
+    assert(code.includes(playerTickMarker), 'player tick action observation point exists');
+    let observedCode = code.replace(
       throwQueueMarker,
       `${throwQueueMarker}
       if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
         const slot = proof.quickbarTapAfterNextThrowCommit;
         proof.quickbarTapAfterNextThrowCommit = undefined;
         quickbarTap(slot);
+        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
+        proof.quickbarTapCommitObservation = {
+          itemMoveQueued: queue.jobs.some(
+            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
+          ),
+          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
+        };
       }
       if (proof.dropAfterNextThrowCommit) {
         proof.dropAfterNextThrowCommit = false;
         dropHeldItemForThrowingStance();
+      }`,
+    );
+    observedCode = observedCode.replace(
+      playerTickMarker,
+      `${playerTickMarker}
+      if (proof.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
+        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
+        proof.quickbarTapTickObservation = {
+          itemMoveQueued: queue.jobs.some(
+            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
+          ),
+          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
+        };
       }`,
     );
     return observedCode.replace(
@@ -220,6 +242,9 @@ const observationPlugin = {
     captureSnapshot,
     dropAfterNextThrowCommit: false,
     quickbarTapAfterNextThrowCommit: undefined,
+    quickbarTapItemUid: undefined,
+    quickbarTapCommitObservation: undefined,
+    quickbarTapTickObservation: undefined,
     startInputReplayRecording: () => {
       previousInputRecorder = undefined;
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
@@ -510,6 +535,10 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.clearHand(r.off);
       const mainItem = r.inventory.create('glowstick');
       const offItem = r.inventory.create('glowstick');
+      const backpack = r.inventory.create('hiking_backpack');
+      if (!r.inventory.add(backpack, { kind: 'worn' })) {
+        throw new Error('Could not wear replay fixture backpack');
+      }
       r.setHand(r.dominant, mainItem);
       r.setHand(r.off, offItem);
       const minimumHoldSimSeconds = r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds;
@@ -526,6 +555,9 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.startInputReplayRecording();
       r.dropAfterNextThrowCommit = true;
       r.quickbarTapAfterNextThrowCommit = slot;
+      r.quickbarTapItemUid = r.quickbar.slots[slot];
+      r.quickbarTapCommitObservation = undefined;
+      r.quickbarTapTickObservation = undefined;
     }, fixture.quickbarSlot);
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
@@ -550,6 +582,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       return (
         offLocation?.kind === 'pile' &&
         r.inventory.locate(r.inventory.itemByUid(ids.mainUid))?.kind === 'pile' &&
+        r.quickbarTapCommitObservation &&
+        r.quickbarTapTickObservation &&
         r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw') &&
         r.inputRecorder.copyInputs().actions.some((action) => action.action === 'quickbar.tap.1') &&
         r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.drop')
@@ -566,10 +600,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
         bodyPosition: [...r.session.body.pos],
         look: [r.input.yaw, r.input.pitch],
-        hands: Object.values(r.inventory.hands)
-          .filter(Boolean)
-          .map(({ uid }) => uid)
-          .sort((a, b) => a - b),
+        quickbarTapCommit: r.quickbarTapCommitObservation,
+        quickbarTapTick: r.quickbarTapTickObservation,
       };
     }, fixture);
     const command = async (action) =>
@@ -640,10 +672,6 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
           mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
           bodyPosition: [...r.session.body.pos],
           look: [r.input.yaw, r.input.pitch],
-          hands: Object.values(r.inventory.hands)
-            .filter(Boolean)
-            .map(({ uid }) => uid)
-            .sort((a, b) => a - b),
         },
       };
     }, fixture);
@@ -691,7 +719,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       'replay lands the throw in the same cell',
     );
     assert.deepEqual(replayThrowOutcome.mainLocation, liveThrowOutcome.mainLocation);
-    assert.deepEqual(replayThrowOutcome.hands, liveThrowOutcome.hands, 'live and replay hands match');
+    assert.deepEqual(liveThrowOutcome.quickbarTapCommit, { itemMoveQueued: false, location: 'hand' });
+    assert.deepEqual(liveThrowOutcome.quickbarTapTick, { itemMoveQueued: true, location: 'pile' });
     assert.equal(replayState, 'verified', `replay end state differs: ${JSON.stringify(endSnapshotDifference)}`);
     assert.deepEqual(pageErrors, []);
   } finally {
