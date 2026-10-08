@@ -7,6 +7,7 @@ import { HAMLET_TEMPLATES } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
+import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
@@ -125,12 +126,14 @@ describe('content', () => {
     }
   });
 
-  it('keeps the thermal optic out of every loot table', () => {
+  it('keeps the thermal optic out of loot, fitting and ADS', () => {
     expect(
       [...baseRegistry.loot.values()].some((table) =>
         table.entries.some((entry) => entry.item === 'optic_digital_thermal'),
       ),
     ).toBe(false);
+    const thermal = baseRegistry.items.get('optic_digital_thermal')!;
+    expect(opticViewSettings(thermal, baseRegistry.models.get(thermal.model!)!)).toBeUndefined();
   });
 
   it('rejects a non-positive firearms skill-zero handling value', () => {
