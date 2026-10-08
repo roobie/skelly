@@ -38,6 +38,26 @@ const rayIsClear = (from: Body, to: Body, isSolid: SolidAt, blockSize: number): 
   return raycast(origin, unit, distance, isSolid) === undefined;
 };
 
+const placementBody = (
+  engine: ShamblerPlacementWorld,
+  x: number,
+  z: number,
+  bodyDimensions: { readonly halfWidth: number; readonly halfDepth?: number; readonly height: number } | undefined,
+): Body => {
+  const {
+    scale,
+    scale: { blockSize },
+  } = engine.config;
+  const body = createPlayerBody(scale, x / blockSize, engine.groundAt(x, z) / blockSize, z / blockSize);
+  body.halfWidth = bodyDimensions?.halfWidth ?? 0.28 / blockSize;
+  if (bodyDimensions?.halfDepth !== undefined) {
+    body.halfDepth = bodyDimensions.halfDepth;
+  }
+  body.height = bodyDimensions?.height ?? 1.7 / blockSize;
+  body.onGround = true;
+  return body;
+};
+
 /** Finds the same clear player foothold near the hamlet spawn for browser and CPU runs. */
 export const findShamblerBenchPlayer = (engine: ShamblerPlacementWorld): Body => {
   const s = engine.config.scale.blockSize;
@@ -66,6 +86,7 @@ export const placeShamblerRing = ({
   player,
   engine,
   occupied: existing = [],
+  bodyDimensions,
   allowPartial = false,
   minRadiusMetres = 8,
   maxRadiusMetres = 20,
@@ -76,6 +97,7 @@ export const placeShamblerRing = ({
   player: Body;
   engine: ShamblerPlacementWorld;
   occupied?: readonly Body[];
+  bodyDimensions?: { readonly halfWidth: number; readonly halfDepth?: number; readonly height: number };
   allowPartial?: boolean;
   minRadiusMetres?: number;
   maxRadiusMetres?: number;
@@ -95,10 +117,7 @@ export const placeShamblerRing = ({
       const angle = fract(Math.sin(key + 19.19) * 19_349.123) * Math.PI * 2;
       const x = player.pos[0] * s + radius * Math.cos(angle);
       const z = player.pos[2] * s + radius * Math.sin(angle);
-      const candidate = createPlayerBody(engine.config.scale, x / s, engine.groundAt(x, z) / s, z / s);
-      candidate.halfWidth = 0.28 / s;
-      candidate.height = 1.7 / s;
-      candidate.onGround = true;
+      const candidate = placementBody(engine, x, z, bodyDimensions);
       const overlaps = occupied.some(
         (other) =>
           Math.abs(candidate.pos[0] - other.pos[0]) < candidate.halfWidth + other.halfWidth &&

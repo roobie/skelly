@@ -4,6 +4,7 @@
       "id": "shambler",
       "name": "Shambler",
       "model": "shambler",
+      "canJumpObstacles": true,
       "spawnWeight": 1,
       "sounds": {
         "idle": "shambler_idle",
@@ -88,6 +89,7 @@
       "id": "runner",
       "name": "Runner",
       "model": "runner",
+      "canJumpObstacles": true,
       "spawnWeight": 0.12,
       "sounds": {
         "idle": "runner_idle",
@@ -152,6 +154,7 @@
       "id": "crawler",
       "name": "Crawler",
       "model": "shambler",
+      "canJumpObstacles": true,
       "spawnWeight": 0.08,
       "sounds": {
         "idle": "crawler_idle",
@@ -216,7 +219,9 @@
       "id": "amalgam",
       "name": "Amalgam",
       "model": "amalgam",
+      "canJumpObstacles": false,
       "bodyScale": 4,
+      "soundPitchMultiplier": 0.5,
       "spawnWeight": 1,
       "debugOnly": true,
       "sounds": {
@@ -243,8 +248,8 @@
         "rightLeg": { "blunt": 0, "cut": 0, "pierce": 0 }
       },
       "speed": {
-        "wanderMetresPerSimSecond": 0.8,
-        "chaseMetresPerSimSecond": 2.8
+        "wanderMetresPerSimSecond": 0.25,
+        "chaseMetresPerSimSecond": 1.4
       },
       "stepLength": 0.6,
       "sight": 25,
@@ -275,21 +280,21 @@
         "movementAccelerationMetresPerSimSecondSquared": 4
       },
       "chaseMotion": {
-        "swayDegrees": 25,
+        "swayDegrees": 0,
         "swayIntervalSimSeconds": { "min": 0.7, "max": 1.1 },
-        "speedMultiplier": { "min": 0.6, "max": 1.2 },
+        "speedMultiplier": { "min": 1, "max": 1 },
         "lurchSimSeconds": 1,
-        "stumbleChancePerSimSecond": 0.16,
+        "stumbleChancePerSimSecond": 0,
         "stumbleDurationSimSeconds": { "min": 0.55, "max": 0.75 },
         "stumbleEaseSimSeconds": 0.2,
         "stumbleSpeedFraction": 0.04,
         "stumbleDecelerationMetresPerSimSecondSquared": 14
       },
       "attack": {
-        "damage": 8,
-        "reach": 1.2,
-        "cooldownSimSeconds": 1.5,
-        "windupSimSeconds": 0.3,
+        "damage": 22,
+        "reach": 2.2,
+        "cooldownSimSeconds": 2.8,
+        "windupSimSeconds": 1,
         "hitRegion": "torso"
       },
       "dismember": { "chance": 0.15, "headOnKillChance": 0.25 },

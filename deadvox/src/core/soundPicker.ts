@@ -23,6 +23,8 @@ export interface SoundEmission {
 
 export interface SoundEmissionMeta {
   sourceLabel?: string | null;
+  /** Overrides body-height pitch scaling for a mob's authored sound style. */
+  soundPitchMultiplier?: number;
   /** Gameplay hearing radius scale for a source-specific modifier such as a suppressor. */
   noiseRadiusScale?: number;
   /** Playback-only first-person routing, never a hearing-policy decision. */

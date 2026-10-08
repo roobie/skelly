@@ -1,5 +1,5 @@
 import type { Bone } from '@mobgen/core/body.ts';
-import { IDENTITY_M, type Mat3, mulMM, rotY } from '@mobgen/core/math.ts';
+import { IDENTITY_M, type Mat3, mulMM, rotX, rotY, rotZ } from '@mobgen/core/math.ts';
 import { blendPose, boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, groundCrawlerPose } from '@mobgen/mob/crawler.ts';
@@ -135,6 +135,23 @@ export const flinchSideForId = (id: number): number => {
   return (h % 2000) / 1000 - 1;
 };
 
+const amalgamHitFlinchPose = (pose: Pose, time: number, id: number): Pose => {
+  const peak = HIT_FLINCH.keys[1]!;
+  const chest = peak.rotations.chest!;
+  const recovery = (HIT_FLINCH.duration - time) / (HIT_FLINCH.duration - peak.t);
+  const snap = time <= peak.t ? time / peak.t : recovery;
+  const weight = Math.max(0, Math.min(1, snap));
+  const eased = weight * weight * (3 - 2 * weight);
+  const side = flinchSideForId(id);
+  return {
+    ...pose,
+    rotations: {
+      ...pose.rotations,
+      core: mulMM(mulMM(pose.rotations.core ?? IDENTITY_M, rotX(chest[0] * eased)), rotZ(chest[2] * side * eased)),
+    },
+  };
+};
+
 const attackTimeFor = ({
   attackWait,
   attackCooldown,
@@ -195,31 +212,39 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
   return Math.abs(delta) <= maxDelta + 1e-12 ? target : current + Math.sign(delta) * maxDelta;
 };
 
+const posedAmalgam = (input: ShamblerPoseInput): PosedShambler => {
+  if (input.bodyScale === undefined) {
+    throw new Error('Amalgam pose is missing its authored bodyScale');
+  }
+  const figure = amalgamFigure(input.seed, input.bodyScale);
+  const { bones } = figure.realized.body;
+  const basePose: Pose = {
+    root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
+    rotations: {},
+  };
+  const pose =
+    input.hitFlinchTime === undefined
+      ? basePose
+      : amalgamHitFlinchPose(basePose, input.hitFlinchTime, input.id ?? input.seed);
+  const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
+  const cuts = input.severed.map((part) => partRoots.get(part) ?? part);
+  return {
+    pose,
+    transforms: boneTransforms(bones, pose),
+    bones,
+    figure,
+    hidden: severedBoneSet(bones, cuts),
+    yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
+    position: input.position,
+    blockSize: input.blockSize,
+  };
+};
+
 /** The shared living-zombie pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
 export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
   const model = input.model ?? 'shambler';
   if (model === 'amalgam') {
-    if (input.bodyScale === undefined) {
-      throw new Error('Amalgam pose is missing its authored bodyScale');
-    }
-    const figure = amalgamFigure(input.seed, input.bodyScale);
-    const { bones } = figure.realized.body;
-    const pose: Pose = {
-      root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
-      rotations: {},
-    };
-    const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
-    const cuts = input.severed.map((part) => partRoots.get(part) ?? part);
-    return {
-      pose,
-      transforms: boneTransforms(bones, pose),
-      bones,
-      figure,
-      hidden: severedBoneSet(bones, cuts),
-      yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
-      position: input.position,
-      blockSize: input.blockSize,
-    };
+    return posedAmalgam(input);
   }
   const figure = humanoidFigure(model, input.seed);
   const { actor, bones, idleBases } = actorForSeed(model, input.seed);
