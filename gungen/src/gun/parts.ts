@@ -3807,10 +3807,7 @@ const magazineGeometryFor = (
         bodyLength: MAGAZINE_PROFILE_LENGTHS_U['stanag-curved'].L,
         upperWidth: MAGAZINE_WIDTH,
       };
-      const [sharedUpper] = curvedMagazineGeometry(
-        referenceShape,
-        CURVED_MAGAZINE_PROFILES.stanag30,
-      ).collision;
+      const [sharedUpper] = curvedMagazineGeometry(referenceShape, CURVED_MAGAZINE_PROFILES.stanag30).collision;
       if (sharedUpper?.kind !== 'extruded-polygon') {
         throw new Error('the STANAG magazine top must be an extruded profile');
       }
