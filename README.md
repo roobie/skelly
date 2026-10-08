@@ -32,9 +32,9 @@ Prefer a maintainable design over minimizing short-term churn, unless the churn 
 
 ### Zero drift
 
-Code owns what and how; docs preserve why and, when useful, the trigger. This keeps tracked explanations from duplicating implementation or accumulating obsolete history. Cue code by path and symbol, replace superseded text instead of appending amendments, and keep the settled reason in a tracked doc. Design docs may state intent before implementation; implementation trims them to the reason and code cues.
+Code owns what and how; docs preserve why and, when useful, the trigger. Issues and PRs show what and how too, but they end, so code is the lasting record. This keeps tracked explanations from duplicating implementation or accumulating obsolete history. Cue code by path and symbol, replace superseded text instead of appending amendments, and keep the settled reason in a tracked doc. Design docs may state intent before implementation; implementation trims them to the reason and code cues.
 
-Reviews that find an amendment trail return FIX. Superseded ADRs, reviews and retros belong in git history, not in the working tree. Run the deep docs pass once when closing each slice.
+Reviews that find an amendment trail return FIX. Obsolete or superseded ADRs are deleted, and reviews and retros live only in git history, never as current records in the working tree. Apply it continuously, as each change trims the docs it touches, and periodically, with a deep docs pass once when closing each slice.
 
 ## Run and check
 
