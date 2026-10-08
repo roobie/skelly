@@ -34,7 +34,7 @@ The curated `gungen/designs/archetype-ar.json` (with `--calibre 5.56x45`) and
 `archetype-ak-akm.json` (whose design carries its calibre) are exported with
 `export:glb`, and their sidecar metadata copied into
 `src/content/base/models-firearms.json`. See Gungen's
-PROJECT.md §3.5 and ADR 0003. The 7.62×39 cartridge exporter supplies the new case
+PROJECT.md §3.5 and [ADR 0006](decisions/0006-firearm-handling.md). The 7.62×39 cartridge exporter supplies the new case
 and round meshes. Asset provenance is in `src/content/base/assets/manifest.json`.
 
 Held-clone action bindings match each exact exported node name in
