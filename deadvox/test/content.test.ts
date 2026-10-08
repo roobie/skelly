@@ -1,7 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
 import { HAMLET_TEMPLATES } from '../src/core/hamlet.ts';
@@ -14,6 +13,7 @@ import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDe
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 
 const BASE = 'src/content/base';
@@ -54,7 +54,10 @@ it('validates weathering strength and world-variation settings', () => {
   };
   expect(validateContent({ source: 'weathering.json', data: { weathering: [settings] } })).toEqual([]);
   expect(
-    validateContent({ source: 'weathering.json', data: { weathering: [{ ...settings, strength: WEATHERING_STRENGTH_MAX }] } }),
+    validateContent({
+      source: 'weathering.json',
+      data: { weathering: [{ ...settings, strength: WEATHERING_STRENGTH_MAX }] },
+    }),
   ).toEqual([]);
   expect(
     validateContent({
