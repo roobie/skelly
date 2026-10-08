@@ -386,7 +386,7 @@ These contracts define the interaction boundary:
 3. **Where materials can be.** Items inside containers within the 2 m reach
    count at their pocket's handling time, including a backpack on the ground.
 4. **Partial stacks.** When gathering time is equal, smaller stacks are used
-   first so leftovers are preserved.
+   first, so leftovers get used up.
 5. **Per-place versions.** One inventory counter per store remains the default.
    BR decides whether to add per-place counters if Slice 5 profiling shows that
    view-model rebuilding costs too much.

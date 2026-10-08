@@ -292,10 +292,10 @@ Q and E remain reserved for later actions and have no world bindings.
 
 - Items carried in clothing can be damaged when that clothing is hit.
 - Condition can affect an item's performance before it is ruined.
-- Books teach recipes only in Slice 2; they may also speed up skill practice in
-  a later reading design.
-- A later reading design may require using a book as a reference while practicing,
-  rather than granting full recipe knowledge after one reading.
+- Books teach recipes only, for now; they may also speed up skill practice in a
+  later reading design.
+- Learning from books will become gradual: reading lets the player use the book
+  as a reference while doing the work, until the recipe is learned fully.
 - Condition may lower salvage yield.
 
 ### Player melee

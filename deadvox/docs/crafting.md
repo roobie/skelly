@@ -244,4 +244,4 @@ The panel remains a projection: `src/ui/crafting.ts`, `renderCrafting`, forwards
 This is mixed feature/validation/consolidation work, **not an isolated or
 line-reducing refactor**. The staged report names source, test, doc and content
 deltas separately; the final slice is still gated by long-action proofs and
-in-game panel approval.
+BR's in-game panel approval.

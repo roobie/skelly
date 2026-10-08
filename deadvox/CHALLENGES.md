@@ -39,7 +39,7 @@ the surface faces, and 8× the memory for the same area. Rough numbers for
   moves into the fragment shader as a hash of world position. Faces then merge
   whenever they share block type and AO.
 - **Batched draws, if measurement shows draw overhead is the bottleneck.** The
-  2026-09-26 reference run left render time unchanged despite one quarter of the
+  A reference run left render time unchanged despite one quarter of the
   draw calls; grouping chunks is not an established speedup.
 
 **When.** The measured block-size decision is complete; its feel rationale is
@@ -54,7 +54,7 @@ zombies, lighting and UI. See `src/bench/run.ts`, `startBench`. The challenge's 
 target is unchanged: a 128 m near radius runs at 60 fps, with meshing keeping up
 with walking speed.
 
-The 2026-09-26 decision keeps culling, which costs nothing and hides no visible
+The block-size decision keeps culling, which costs nothing and hides no visible
 chunks, and rejects occlusion culling because GPU time did not track chunk count;
 if a later milestone needs GPU headroom, inspect per-pixel cost first (pixel
 ratio, antialiasing, chunk shader). The cull is in `src/render/chunks.ts`,
