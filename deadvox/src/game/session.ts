@@ -145,9 +145,7 @@ const createSessionAim = ({
       smoothingSimSeconds: tuning.wobbleNoiseSmoothingSimSeconds,
     } satisfies AimWobbleNoiseTuning,
     wobbleNoiseStrengthScale: wobbleNoiseScaleOverride ?? 1,
-    ...(restored
-      ? { state: restored.character.aim, wobbleNoiseState: restored.character.aim.wobbleNoise }
-      : {}),
+    ...(restored ? { state: restored.character.aim, wobbleNoiseState: restored.character.aim.wobbleNoise } : {}),
     variance: firearmsSkillEffects(firearmsSkillLevel(character), tuning).variance,
     stridePhase: footstepClock.stridePhase,
   });

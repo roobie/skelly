@@ -83,10 +83,9 @@ export const assertAimWobbleNoiseState = (state: AimWobbleNoiseState): void => {
   const validAxis = (axis: AimWobbleNoiseAxisState): boolean =>
     Boolean(axis) && Number.isFinite(axis.raw) && Number.isFinite(axis.smooth);
   if (
-    !(state && validAxis(state.yaw) && validAxis(state.pitch)) ||
-    !Array.isArray(state.rng) ||
+    !(state && validAxis(state.yaw) && validAxis(state.pitch) && Array.isArray(state.rng)) ||
     state.rng.length !== 4 ||
-    state.rng.some((word) => !Number.isInteger(word) || word < -0x8000_0000 || word > 0x7fff_ffff)
+    state.rng.some((word) => !Number.isInteger(word) || word < -0x80_00_00_00 || word > 0x7f_ff_ff_ff)
   ) {
     throw new Error('Invalid aim wobble noise state');
   }
@@ -309,7 +308,11 @@ export class AimController {
     const initialWobbleRng = Rng.stream(wobbleSeed, 'aim-wobble-ou');
     const savedWobbleState =
       wobbleNoiseState ??
-      ({ yaw: { raw: 0, smooth: 0 }, pitch: { raw: 0, smooth: 0 }, rng: initialWobbleRng.state() } satisfies AimWobbleNoiseState);
+      ({
+        yaw: { raw: 0, smooth: 0 },
+        pitch: { raw: 0, smooth: 0 },
+        rng: initialWobbleRng.state(),
+      } satisfies AimWobbleNoiseState);
     assertAimWobbleNoiseState(savedWobbleState);
     this.wobbleNoiseRng = new Rng(savedWobbleState.rng);
     this.wobbleNoiseYaw = { ...savedWobbleState.yaw };
