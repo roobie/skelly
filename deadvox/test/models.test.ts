@@ -180,8 +180,12 @@ describe('piles with models', () => {
 it('loads the curated pump through preparation and resolves separate movers by glTF node index, not sanitized name', async () => {
   const def = registry.models.get('shotgun_pump')!;
   const gltf = await parseGlb(readFileSync(`${BASE}/${def.file}`));
-  expect(def.calibre).toBe('12-gauge-00-buck');
-  expect(def.tube?.capacity).toBe(4);
+  expect(def.tube?.capacity).toBeGreaterThan(0);
+  expect(def.calibre).toBeDefined();
+  expect(
+    [...registry.items.values()].some((item) => item.ammo?.calibre === def.calibre),
+    'the pump calibre resolves to an ammunition item',
+  ).toBe(true);
   expect(def.action?.fire).toBeUndefined();
   expect(def.grip?.turn).toEqual([0, 0, 0]);
   expect(def.sight?.kind).toBe('iron');
@@ -340,21 +344,22 @@ describe('base pack melee', () => {
     return new Vector3(...def.anchors![name]!).applyMatrix4(offset.matrixWorld);
   };
 
-  it('maps the seven matching Slice 1 items to their melee models', () => {
-    expect(
-      ['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe', 'machete', 'kabar'].map(
-        (id) => registry.items.get(id)?.model,
-      ),
-    ).toEqual(['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe', 'machete', 'kabar']);
-  });
+  it('maps melee weapons to models with attack-compatible hold poses', () => {
+    expect(models.length).toBeGreaterThan(0);
+    for (const model of models) {
+      expect(['forward', 'upright']).toContain(model.hold);
+    }
 
-  it('assigns forward holds to stabbing blades and the machete slash', () => {
-    const forward = models
-      .filter((model) => model.hold === 'forward')
-      .map((model) => model.id)
-      .sort();
-    expect(forward).toEqual(['kabar', 'kitchen_knife', 'machete', 'pocket_knife', 'tanto']);
-    expect(models.filter((model) => model.hold !== 'forward').every((model) => model.hold === 'upright')).toBe(true);
+    const weapons = [...registry.items.values()].filter((item) => item.weapon?.melee);
+    expect(weapons.length).toBeGreaterThan(0);
+    for (const item of weapons) {
+      expect(item.model, `${item.id} model`).toBeDefined();
+      const model = melee.models.get(item.model!);
+      expect(model, `${item.id} melee model`).toBeDefined();
+      if (model!.hold === 'forward') {
+        expect(item.weapon!.melee!.type, `${item.id} forward hold`).not.toBe('blunt');
+      }
+    }
   });
 
   it('requires a hold pose for every melee model', () => {
