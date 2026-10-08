@@ -18,7 +18,7 @@ import {
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const { scripts } = JSON.parse(readFileSync(join(ROOT, 'deadvox/package.json'), 'utf8'));
 const browserStages = browserStagesOfScripts(scripts);
-const customChromiumSelection = /\b(?:executablePath|channel|CHROME_BIN)\b/;
+const customChromiumSelection = /\b(?:executablePath|CHROME_BIN)\b|channel\s*:\s*(?!\s*['"]chromium['"])/;
 const stageScriptPathPattern = /^node (\S+\.mjs)\b/;
 const directChromiumLaunchPattern = /\bchromium\.launch\s*\(/;
 const sharedChromiumLaunchPattern = /\blaunchChromium\s*\(/;
