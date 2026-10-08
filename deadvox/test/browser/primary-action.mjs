@@ -1009,6 +1009,11 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       globalThis.dispatchEvent(new FocusEvent('blur'));
       return { before, after: read() };
     });
+    assert.deepEqual(
+      viewerBlurInput.before,
+      { readyHeld: true, aimingDownSights: true },
+      'viewer blur lands while the replay holds readiness and ADS',
+    );
     assert.equal(
       viewerBlurInput.after.readyHeld,
       viewerBlurInput.before.readyHeld,
