@@ -32,9 +32,9 @@ import { AR_HANDLE_CHANNEL, arChargingHandle } from './arChargingHandle.ts';
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
+import { METRES_PER_UNIT } from './exportFrame.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { gunPort } from './portData.ts';
-import { METRES_PER_UNIT } from './exportFrame.ts';
 import {
   PUMP_ACTION_TRAVEL_U,
   PUMP_LOADING_PORT_HALF_WIDTH_U,
@@ -193,13 +193,12 @@ const PUMP_TUBE_LENGTH_PERCENTAGES = ['50', '75', '100'] as const;
 const MAGAZINE_DEPTH = 5.5;
 const MAGAZINE_WIDTH = 2.5;
 const mmToMagazineUnits = (millimetres: number): number => millimetres / (METRES_PER_UNIT * 1000);
-const snapMagazineDimension = (millimetres: number): number =>
-  Math.round(mmToMagazineUnits(millimetres) / GRID) * GRID;
+const snapMagazineDimension = (millimetres: number): number => Math.round(mmToMagazineUnits(millimetres) / GRID) * GRID;
 // Brownells listing for the USGI straight 20-round magazine: https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983
 // Its delivery dimensions (127 x 66 x 25 mm) corroborate the outer box within about 3 mm; they are package dimensions, not the body envelope.
 const STANAG20_BODY_BOX_U = {
   length: snapMagazineDimension(4.895 * 25.4),
-  depth: snapMagazineDimension(2.540 * 25.4),
+  depth: snapMagazineDimension(2.54 * 25.4),
   width: snapMagazineDimension(0.975 * 25.4),
 } as const;
 const MAGAZINE_WELL_CLEARANCE = 0.25;
@@ -3743,9 +3742,7 @@ const magazineGeometryFor = (
     const frontX = topCentreX + shape.depth / 2;
     const bottomRearY = shape.insertion - shape.bodyLength;
     const floorplateRise =
-      Math.round(
-        (shape.depth * Math.tan((STANAG20_ESTIMATED_FLOORPLATE_ANGLE_DEGREES * Math.PI) / 180)) / GRID,
-      ) * GRID;
+      Math.round((shape.depth * Math.tan((STANAG20_ESTIMATED_FLOORPLATE_ANGLE_DEGREES * Math.PI) / 180)) / GRID) * GRID;
     const bottomFrontY = bottomRearY + floorplateRise;
     const plateThickness = 0.25;
     const body = extrudedPolygon(
