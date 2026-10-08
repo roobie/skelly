@@ -88,9 +88,7 @@ describe('generated magazine round columns', () => {
     const twentyCenterline = magazineCenterline(twenty.solids)!;
     const thirtyCenterline = magazineCenterline(thirty.solids)!;
     expect(top).toEqual(sharedTop);
-    expect(new Set(thirtyCenterline.sectionWidths.slice(2))).toEqual(
-      new Set([twentyCenterline.sectionWidths.at(-1)]),
-    );
+    expect(new Set(thirtyCenterline.sectionWidths.slice(2))).toEqual(new Set([twentyCenterline.sectionWidths.at(-1)]));
     if (!(body?.kind === 'extruded-polygon' && floorplate?.kind === 'extruded-polygon')) {
       throw new Error('Expected an extruded straight STANAG body and floorplate.');
     }
