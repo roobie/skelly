@@ -5,8 +5,8 @@ import type { ItemDef, ModelDef, Registry } from '../src/core/content.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { opticViewSettings } from '../src/core/opticView.ts';
 import { defOf, type Item } from '../src/core/items.ts';
+import { opticViewSettings } from '../src/core/opticView.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 
 type Pair = NonNullable<ModelDef['compatibilityPairs']>[number];
