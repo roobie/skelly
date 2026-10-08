@@ -3,7 +3,7 @@
 
 import type { PlayerState } from '../game/player.ts';
 import type { Survival } from '../game/survival.ts';
-import type { AimState } from './aim.ts';
+import type { AimSnapshotState } from './aim.ts';
 import type { Character, CharacterState } from './character.ts';
 import type { RustleClock } from './foliageRustle.ts';
 import type { FootstepClock } from './footsteps.ts';
@@ -30,7 +30,7 @@ export interface SaveSnapshot {
     progression: CharacterState;
     simulation: SimulationState;
     player: PlayerState;
-    aim: AimState;
+    aim: AimSnapshotState;
     inventory: InventoryState;
     longAction: LongActionState;
     playerCombat: PlayerCombatState;
@@ -60,7 +60,7 @@ export interface SnapshotSessionInput {
   character: Character;
   simulation: Simulation;
   player: PlayerState;
-  aim: { snapshotState: () => Readonly<AimState> };
+  aim: { snapshotState: () => Readonly<AimSnapshotState> };
   survival: Survival;
   quickbar: readonly (number | null)[];
   zombies: ZombieSystem;
@@ -118,7 +118,7 @@ export const snapshotSession = ({
       progression: character.snapshotState(),
       simulation: simulation.snapshotState() as SimulationState,
       player: structuredClone(player),
-      aim: structuredClone(aim.snapshotState()) as AimState,
+      aim: structuredClone(aim.snapshotState()) as AimSnapshotState,
       inventory: inventory.snapshotState() as InventoryState,
       longAction: simulation.actions.snapshotState(),
       playerCombat: playerCombat.snapshotState(),

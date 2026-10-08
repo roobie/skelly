@@ -430,6 +430,7 @@ export const startPlay = (
     scale,
     seed: config.seed,
     wobbleFlatOverride: config.debugWobbleFlat,
+    wobbleNoiseScaleOverride: config.debugWobbleNoiseScale,
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
