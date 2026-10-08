@@ -1,6 +1,6 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { dominantSide, offSide } from '../core/character.ts';
-import { formatClock } from '../core/clock.ts';
+import { formatClock, SPAWN_TIME } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import {
@@ -363,7 +363,7 @@ const panelTemplate = ({
       <div class="debug-actions"><button id="reveal-zombies" type="button" aria-pressed=${revealZombies} @click=${toggleReveal}>Reveal zombies · ${revealZombies ? 'ON' : 'OFF'}</button></div>
     `,
     time: html`
-      <label>Set time <input id="debug-time" type="time" value="19:30" /> <button id="set-debug-time" type="button" @click=${(
+      <label>Set time <input id="debug-time" type="time" value=${formatClock(SPAWN_TIME).slice(-5)} /> <button id="set-debug-time" type="button" @click=${(
         event: Event,
       ) => {
         const root = (event.currentTarget as HTMLElement).parentElement;

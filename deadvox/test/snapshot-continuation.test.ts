@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SPAWN_TIMES } from '../src/core/clock.ts';
+import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { STAMINA } from '../src/core/needs.ts';
@@ -327,7 +327,8 @@ describe('hamlet save/load continuation', () => {
         runtime.session.frame(planRealFrame(runtime.sim.compression, realSeconds(1 / 60)));
       }
     };
-    const source = createRuntime(undefined, true, oneColumn);
+    const nightStart = parseTimeOfDay('19:30')!;
+    const source = createRuntime(undefined, true, oneColumn, { start: nightStart });
     expect(startRest(source, 'sleep')).toBeUndefined();
     advanceReal(source, 120);
     expect(source.sim.compression.active).toBe(true);
@@ -336,7 +337,7 @@ describe('hamlet save/load continuation', () => {
 
     const savedNeeds = { ...source.sim.needs };
     const snapshot = capture(source);
-    const loaded = createRuntime(snapshot, true, oneColumn);
+    const loaded = createRuntime(snapshot, true, oneColumn, { start: nightStart });
     expect(loaded.sim.compression.active).toBe(true);
     expect(loaded.sim.compression.c).toBeGreaterThan(1);
     expect(loaded.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });

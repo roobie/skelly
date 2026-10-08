@@ -49,8 +49,26 @@ const PERSISTENCE_GRANTED = /Persistent storage granted/;
 const PERSISTENT_BACKEND = /Persistent indexeddb/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
 const BASE_MISMATCH = /Generated base mismatch/;
+const REPLAY_REJECTED = /^Replay rejected:/;
 
 try {
+  await test('rejected pending replay reveals its error instead of leaving the loading screen up', async () => {
+    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
+    try {
+      await context.addInitScript(() => {
+        sessionStorage.setItem('deadvox.pending-replay', btoa('not a replay'));
+      });
+      const page = await context.newPage();
+      await page.goto(url);
+      await page.waitForFunction(() => document.querySelector('#errors')?.textContent.startsWith('Replay rejected:'));
+      assert.equal(await page.locator('#startup-screen').isVisible(), false);
+      assert.equal(await page.locator('#errors').isVisible(), true);
+      assert.match(await page.locator('#errors').textContent(), REPLAY_REJECTED);
+    } finally {
+      await context.close();
+    }
+  });
+
   await test('persistence button alone requests once and updates status after an unavailable startup query', async () => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     try {
@@ -207,9 +225,7 @@ try {
       'the start hint has one text node',
     );
     const card = page.locator('#overlay .card');
-    await card.evaluate((element) => {
-      element.style.maxHeight = '120px';
-    });
+    await page.setViewportSize({ width: 800, height: 200 });
     await page.waitForFunction(() => document.querySelector('#card-scroll-down')?.hidden === false);
     await card.evaluate((element) => {
       element.scrollTop = element.scrollHeight;
@@ -223,8 +239,8 @@ try {
     await card.evaluate((element) => {
       element.scrollTop = 0;
       element.dispatchEvent(new Event('scroll'));
-      element.style.removeProperty('max-height');
     });
+    await page.setViewportSize({ width: 800, height: 600 });
     const before = await page.evaluate(() => ({
       hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
       entered: deadvoxSaveTest.controller.isEntered,

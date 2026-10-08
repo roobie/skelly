@@ -267,6 +267,7 @@ body.unconscious::after {
   max-height: calc(100vh - 32px);
   margin-right: 16px;
 }
+/* This card is opaque because there is no dimming layer behind it. */
 #overlay .card {
   width: 100%;
   max-width: 100%;

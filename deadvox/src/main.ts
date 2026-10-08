@@ -27,6 +27,23 @@ const startupScreen = document.getElementById('startup-screen')!;
 const hideStartupScreen = () => {
   startupScreen.hidden = true;
 };
+const showStartupFailure = (message: string) => {
+  document.getElementById('errors')!.textContent = message;
+  hideStartupScreen();
+};
+// The opaque loading screen covers errors, so surface failures from module startup as well as replay setup.
+globalThis.addEventListener('error', (event) => {
+  if (!startupScreen.hidden) {
+    showStartupFailure(`Startup failed: ${event.error instanceof Error ? event.error.message : event.message}`);
+  }
+});
+globalThis.addEventListener('unhandledrejection', (event) => {
+  if (!startupScreen.hidden) {
+    event.preventDefault();
+    const detail = event.reason instanceof Error ? event.reason.message : String(event.reason);
+    showStartupFailure(`Startup failed: ${detail}`);
+  }
+});
 const menuCard = document.querySelector<HTMLElement>('#overlay .card');
 const scrollUpCue = document.getElementById('card-scroll-up');
 const scrollDownCue = document.getElementById('card-scroll-down');
@@ -129,8 +146,7 @@ if (bench === 'report') {
       hideStartupScreen();
     } catch (error) {
       clearPendingInputReplay();
-      document.getElementById('errors')!.textContent =
-        `Replay rejected: ${error instanceof Error ? error.message : String(error)}`;
+      showStartupFailure(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
     }
   } else {
     const saveBackend = params.get('save-backend');
