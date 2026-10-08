@@ -78,7 +78,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [], entityDistance: () => 0, search: () => undefined, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {}, workOptions: () => [], work: () => undefined,
-  body: () => body.snapshotState(), character: () => ({ skills: {}, practice: {} }),
+  body: () => body.snapshotState(), character: () => ({ skills: {}, practice: {} }), needs: () => 'health 100% · stamina 100%',
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
