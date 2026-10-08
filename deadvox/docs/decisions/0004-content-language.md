@@ -36,13 +36,27 @@ and how mod-owned state is saved. Open design issue #313 records dynamic
 world-event needs and the remaining boundary questions. #393 tracks inventory
 and extraction of existing TypeScript content and tunables.
 
-The Mind Over Matter content for Cataclysm: DDA is a capability benchmark, not
-an implementation mandate. A later spike should compare a small runtime
-expression evaluator with CEL and establish an authoring and runtime boundary
-before a format is treated as stable.
+### BR's direction so far—not yet decided
+
+- Weather simulation stays in code while mods configure weather; a mod may
+  configure continual rain. Rules may read weather through an event such as
+  `weather_changed`.
+- Ordering and conflict policy should be simple and useful, not clever. Mods
+  may declare `dependencies: Mod[]`; whether anything more is needed is open.
+- Migration should be incremental, in a low number of large steps; the steps
+  remain open.
+- Purity should be enforced by the language or a sandbox, not by convention,
+  so composed content can be hashed and replayed deterministically. The
+  mechanism remains open.
+- Mind Over Matter is the golden standard the content format should aim to
+  support, not only a capability benchmark; its scope is still open.
+
+A later spike should compare a small runtime expression evaluator with CEL and
+establish an authoring and runtime boundary before a format is treated as
+stable.
 
 ## When
 
-Revisit after playtest 1 (#181), or earlier if BR directs. The first spike should
-cover one content area and one runtime function; existing TypeScript tunables
-move only through scoped follow-up work.
+Revisit after Slice 3's playtest 1 (#181), or earlier if BR directs. The first
+spike should cover one content area and one runtime function; existing
+TypeScript tunables move only through scoped follow-up work.

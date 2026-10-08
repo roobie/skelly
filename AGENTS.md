@@ -22,7 +22,8 @@ mattering at v1.0 beta.
 ## No host-specific information in tracked files
 
 Tracked files describe the project, not the machine the team happens to work on. Every
-tracked file must work for anyone who clones the repo and for CI. This covers code, tests, docs, content and credits. Never commit:
+tracked file must work for anyone who clones the repo and for CI. This covers code,
+tests, docs, content and credits. Never commit:
 
 - **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`. A location a tool
   defines the same way for every clone, such as Playwright's browser cache, is fine; the

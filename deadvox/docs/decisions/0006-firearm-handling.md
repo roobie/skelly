@@ -25,7 +25,8 @@ The firearm's mechanical state belongs to the simulation. Its cycle, ammunition,
 magazine contents and saved case counts must not depend on renderer timing.
 Animation, sound, muzzle flash, recoil display and flying cases are presentation.
 Cycle differences such as hold-open behavior remain firearm data because they
-change how the weapon behaves and feels.
+change how the weapon behaves and feels. Cycle timelines are estimates checked
+by eye against slow-motion footage, not measured timing constants.
 
 Spent cases are saved as a calibre-specific count on the block where each case
 lands. A deterministic scatter represents that count visually. This gives cases
@@ -35,12 +36,22 @@ shot, and keeps a case with the place it actually landed. See
 `src/render/spentCaseScatter.ts`, `spentCaseScatter`.
 
 Fitted attachments affect the firearm through their authored geometry and
-properties. Suppressor mass contributes to handling; gas reduction, sound
-reduction and wear distinguish suppressor types without hard-coding values in
-the model contract. The unresolved AK muzzle-device host is tracked by #364.
-Heat, smoke, improvised-suppressor accuracy loss and fouling remain deferred in
-#367 because they depend on broader physical, ballistic or maintenance systems.
+properties. Gungen derives suppressor mass from geometry and material. The only
+hand-set suppressor effect is each type's recoil reduction, with the improvised
+type less effective. One shared muzzle rule uses weight multiplied by distance
+from the hands to slow raising and swinging, add sway and slow recovery between
+shots. Each type has noise reduction and wear; suppression falls with condition,
+and the improvised type wears quickly and eventually breaks. The unresolved AK
+muzzle-device host is tracked by #364. Heat, smoke, improvised-suppressor
+accuracy loss and fouling remain deferred in #367 because they depend on broader
+physical, ballistic or maintenance systems.
 
-The current model contract is defined by Gungen's `src/gun/exportGlb.ts`,
-`exportGunGlb`, and Deadvox's `src/core/schema.ts`, `ModelSchema`. The acceptance
-check is an exported model that Deadvox validates and loads.
+The current model contract is defined by Gungen's
+`gungen/src/gun/exportGlb.ts`, `exportGunGlb`, and Deadvox's
+`src/core/schema.ts`, `ModelSchema`. The acceptance check is an exported model
+that Deadvox validates and loads.
+
+## Open questions
+
+- Whether physical recoil should affect more than presentation remains open.
+- Whether piles keep steel-cased and brass cases separate remains open.

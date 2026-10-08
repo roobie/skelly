@@ -514,8 +514,9 @@ and `src/core/content.ts`, `checkItemFirearm`.
   containers within 2 m (see [Hands](#hands-what-you-see-is-whats-there)). A workbench within reach provides its qualities and a
   speed bonus.
 - **Disassembly** is a recipe run in reverse. An authored yield or salvage list
-  keeps the result specific to the item's design instead of deriving it from
-  material weight.
+  keeps the result specific to the item's design; it isn't calculated by
+  reversing every alternative or every recipe that could make the item. See
+  `docs/crafting.md`, `planDisassembly`.
 - **Crafting runs compressed**, like other long actions, and can be interrupted
   and resumed. An interrupted craft leaves an "in progress" item that holds its
   components.

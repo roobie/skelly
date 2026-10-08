@@ -25,10 +25,12 @@ Exactness matters because a restored scheduler, random stream or action must
 continue as if saving and loading had not changed the simulation.
 
 Persist every future-affecting owner state in the same change that introduces
-it. Keep input, rendering and external playback out of the snapshot. Presentation
-changes leave save identity stable only when their modules stay outside the
-simulation dependency graph; gameplay rules remain fingerprinted even when they
-share a file with presentation code. See `tools/simulationFingerprint.ts`,
+it. Keep input, rendering and external playback out of the snapshot. God mode,
+noclip and build toggles are debug state: they are not saved and are off after
+load, while world changes made with them remain saved. Presentation changes leave
+save identity stable only when their modules stay outside the simulation
+dependency graph; gameplay rules remain fingerprinted even when they share a
+file with presentation code. See `tools/simulationFingerprint.ts`,
 `SIMULATION_ENTRIES`, and `src/core/saveState.ts`, `snapshotSession`.
 
 Write snapshots through crash-safe A/B records. Disk work is asynchronous and
@@ -43,9 +45,10 @@ These safeguards reduce corruption risk but are not backups.
 
 Cross-version restore and migration are not supported. A changed simulation,
 schema, generator or content identity is a different save world, not an input
-to an implicit upgrade. Before v1.0 beta, choose whether old saves are selected
-with their matching build or migrated; until then, preserve and refuse mismatched
-records.
+to an implicit upgrade. This strict policy defers EPIC.md's v1 exit criterion
+Old saves migrate; it does not waive it. Before v1.0 beta, BR owns the hard-fork
+choice between selecting a matching build and migrating old saves. Until then,
+preserve and refuse mismatched records.
 
 The save boundary exists so mutable simulation state can resume exactly while
 browser storage, rendering and input are rebuilt by the running version. The

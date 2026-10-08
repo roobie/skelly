@@ -68,12 +68,6 @@
     { "path": "deadvox/docs/compass-spike.md", "check": "when", "text": "currently", "count": 1 },
     { "path": "deadvox/docs/crafting.md", "check": "citation", "text": "(BR,", "count": 1 },
     { "path": "deadvox/docs/crafting.md", "check": "citation", "text": "BR, 2026-10-05", "count": 5 },
-    {
-      "path": "deadvox/docs/decisions/0006-firearm-handling.md",
-      "check": "path",
-      "text": "src/gun/exportGlb.ts",
-      "count": 1
-    },
     { "path": "deadvox/docs/firearm-cycle-playback.md", "check": "citation", "text": "BR's 12:09", "count": 1 },
     { "path": "deadvox/docs/firearm-cycle-playback.md", "check": "citation", "text": "BR's 14:55", "count": 1 },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "citation", "text": "BR's 2026-10-02", "count": 1 },

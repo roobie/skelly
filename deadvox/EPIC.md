@@ -198,12 +198,8 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 - Towns from templates plus procedural houses. Room types choose furniture and
   loot.
 - Far-terrain level of detail, and worldgen in workers.
-- A world that feels real (see [DESIGN.md](DESIGN.md#a-world-that-feels-real)):
-  vegetation by biome (trees, shrubs, hedges, overgrowth) that gives cover,
-  makes noise and yields wood; cosmetic wind and motion; the sound of the place;
-  and wildlife as scenery. Vegetation starts in the hamlet and expands across
-  the region; trees are voxels near the player and simplified shapes in the far
-  terrain, measured against a forest benchmark.
+- A world that feels real, including vegetation and its role in play (see
+  [DESIGN.md](DESIGN.md#a-world-that-feels-real)).
 - Voxel light: interiors pitch black at night and dim by day. Light through
   windows and doors can be seen from outside.
 - Body temperature, clothing warmth, and rain.

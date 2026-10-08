@@ -64,7 +64,13 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
 
 ## Slice checklist
 
-The active slice checklist issue is the record of milestone evidence and carried-forward work; keeping it live prevents a parallel plan from drifting. The merge workflow updates milestone status on default-branch merges (`.github/workflows/slice-checklist.yml`, `tickMilestone`). The lead reconciles cases the workflow cannot update, including fork merges and cancelled runs. Slice 3's checklist is #293.
+The active slice checklist issue records milestone evidence and carried-forward
+work; keeping it live prevents a parallel plan from drifting. Milestone PRs carry
+`Slice-Milestone: <id>`, which `tools/slice-checklist.mjs`,
+`milestonesFromPrBody`, reads. The merge workflow updates milestone status on
+default-branch merges (`.github/workflows/slice-checklist.yml`, `tickMilestone`).
+The lead reconciles cases the workflow cannot update, including fork merges and
+cancelled runs. Slice 3's checklist is #293.
 
 ## Done, per subproject
 
@@ -107,8 +113,7 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
   `<subproject>/docs/decisions/`. Each ADR states one current decision and why; it
   does not accumulate amendments. When a decision changes, add an ADR with the next
   free number, delete the superseded ADR and repoint every reference. Name the
-  superseded ADR in the changing commit message; the PR body identifies that tracing
-  convention as the lead's choice for BR to veto.
+  superseded ADR in the changing commit message.
 - Keep source quotations and timestamps out of tracked docs; preserve the source in
   the commit message that adds or changes the rule. Mail and chat carry rulings but
   do not record them. The reason that governs the current rule must be in a tracked
@@ -128,6 +133,14 @@ The repository keeps no review or retrospective snapshots.
   deliberate distinctions. Review callers and secondary consumers, not only the
   new owner. Prove a risky boundary with a discriminating test or mutation; do not
   add near-duplicate tests for a larger count.
+- **At slice start and exit:** commission a history-and-planned-change
+  maintainability survey for each subproject. Use the `maintainability-review`
+  method: checks first; ranked, refutation-tested findings; stable IDs; and
+  explicit disposition of earlier findings. An exit survey may serve as the next
+  start survey only when its base and next-change assumptions still hold; record
+  reuse and inspect the intervening delta. A recurring smell or repeated boundary
+  failure triggers a targeted survey, not automatically another full survey.
+  Reports live in #159 or an issue linked from it, not in files.
 - **At slice closure:** commission one deep docs pass, as tracked by the exit item
   on #293 and planned in r50. A recurring smell or repeated boundary failure can
   still trigger a targeted maintainability survey.
@@ -163,9 +176,14 @@ snapshots; distinguish whole-delivery totals from refactor-only totals. If mixed
 changes cannot be isolated, say so rather than estimate.
 
 At slice closure, remove the plan after its live content has moved to current
-owners. Record the retrospective as a comment on that slice's checklist issue
-(#293 for Slice 3), not as a tracked file. This keeps the repository a current
-record while the issue preserves the slice's findings and follow-up decisions.
+owners. Record the retrospective as a comment on that slice's checklist issue or
+a linked issue, not as a tracked file. Report findings opened, completed, partly
+completed, carried and dropped; per-item line/site figures; review-caught defects,
+escaped regressions and review/CI rework separately; standalone and folded counts
+with their denominator; and whether each finding is persistent or reintroduced. For
+milestones said to be unblocked, record ready, start, review-ready and merge
+dates, plus known waits. Decide whether the cadence earned its cost and date the
+next review. Keep unknown effort or time saved unknown.
 
 ## Working rules
 
