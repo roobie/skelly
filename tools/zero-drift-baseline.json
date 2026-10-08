@@ -239,8 +239,6 @@
       "count": 1
     },
     { "path": "deadvox/test/pumpShotgun.test.ts", "check": "citation", "text": "BR, 2026-10-07", "count": 1 },
-    { "path": "deadvox/TROUBLESHOOTING.md", "check": "citation", "text": "BR decision (br-43, 2026-10-07", "count": 1 },
-    { "path": "deadvox/TROUBLESHOOTING.md", "check": "citation", "text": "BR, 2026-10-07", "count": 3 },
     {
       "path": "docs/deferred-assertions.md",
       "check": "citation",
