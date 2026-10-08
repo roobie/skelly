@@ -66,15 +66,15 @@ describe('870-derived pump silhouette', () => {
     const finger = lower.keepOuts.find((v) => v.id === 'trigger-finger')!.box;
     const fingerSolid: Solid = { id: 'trigger-finger-probe', kind: 'box', box: finger };
     const guards = lower.solids.filter((s) => s.id.startsWith('trigger-guard-'));
-    const guardBounds = guards.map(localSolidBounds);
-    for (const axis of [0, 1, 2] as const) {
-      expect(Math.min(...guardBounds.map(([guardMin]) => guardMin[axis]))).toBeLessThanOrEqual(
-        finger.center[axis] - finger.half[axis],
-      );
-      expect(Math.max(...guardBounds.map(([, guardMax]) => guardMax[axis]))).toBeGreaterThanOrEqual(
-        finger.center[axis] + finger.half[axis],
-      );
-    }
+    const guardBounds = new Map(guards.map((guard) => [guard.id, localSolidBounds(guard)]));
+    const rear = guardBounds.get('trigger-guard-rear')!;
+    const front = guardBounds.get('trigger-guard-front')!;
+    const top = guardBounds.get('trigger-guard-top')!;
+    const bottom = guardBounds.get('trigger-guard-bottom')!;
+    expect(finger.center[0] - finger.half[0]).toBeGreaterThanOrEqual(rear[1][0]);
+    expect(finger.center[0] + finger.half[0]).toBeLessThanOrEqual(front[0][0]);
+    expect(finger.center[1] - finger.half[1]).toBeGreaterThanOrEqual(bottom[1][1]);
+    expect(finger.center[1] + finger.half[1]).toBeLessThanOrEqual(top[0][1]);
     expect(
       guards.every((guard) => penetrationWorld(worldSolid(IDENTITY, guard), worldSolid(IDENTITY, fingerSolid)) <= 0),
       'finger keep-out clears guard material',

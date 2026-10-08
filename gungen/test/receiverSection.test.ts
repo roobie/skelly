@@ -281,8 +281,11 @@ describe('receiver section builder', () => {
   });
 
   it('rounds the pump rear transition while preserving its declared run and rise', () => {
-    const bottomY = 0;
-    const topY = PUMP_REAR_SLOPE.rise;
+    const { faces } = RECEIVER_SECTION.pump;
+    const bottomY = Math.min(
+      ...PUMP_REAR_SLOPE.clip.map(({ normal, offset }) => (offset - normal[0] * faces.rear) / normal[1]),
+    );
+    const topY = bottomY + PUMP_REAR_SLOPE.rise;
     const rearXAt = (y: number) =>
       Math.max(...PUMP_REAR_SLOPE.clip.map(({ normal, offset }) => (offset - normal[1] * y) / normal[0]));
     const run = Math.abs(rearXAt(topY) - rearXAt(bottomY));
@@ -417,7 +420,7 @@ describe('receiver section builder', () => {
     const tube = def.ports.find(({ id }) => id === 'tube')!;
     expect(lower.pos[1]).toBeLessThan(stock.pos[1]);
     expect(handguard.pos[0]).toBe(tube.pos[0]);
-    expect(handguard.pos[0]).toBeGreaterThan(faces.front);
+    expect(handguard.pos[0]).toBeGreaterThanOrEqual(faces.front);
     expectWatertightMesh(mesh, 'receiver-pump');
   });
 

@@ -191,8 +191,9 @@ const rotateByQuaternion = (q: readonly number[], v: Vec3): Vec3 => {
 describe('glb export: axes and units', () => {
   it('calibrates authored STANAG depth against its millimetre reference within one grid step', () => {
     const stanag = FAMILIES.magazine!.build({ length: 'M', profile: 'stanag-curved' });
-    const bounds = stanag.solids.map(localSolidBounds);
-    const topDepthUnits = Math.max(...bounds.map(([, max]) => max[0]!)) - Math.min(...bounds.map(([min]) => min[0]!));
+    const upperBody = stanag.solids.find(({ id }) => id === 'upper-body')!;
+    const [min, max] = localSolidBounds(upperBody);
+    const topDepthUnits = max[0]! - min[0]!;
     const authoredDepthMm = topDepthUnits * METRES_PER_UNIT * 1000;
     const sourcedDepthMm = 63;
     const gridStepMm = gunDomain.units.grid * METRES_PER_UNIT * 1000;

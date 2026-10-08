@@ -42,7 +42,7 @@ describe('shotshell cartridge export', () => {
       const assetId = shell.id.replaceAll('-', '_h_');
       expect(model.modelEntry).toEqual({
         id: `${kind}_${assetId}`,
-        file: `assets/models/${kind}-${assetId.replaceAll('_h_', '-')}.glb`,
+        file: `assets/models/${kind}-${assetId}.glb`,
         calibre: shell.id,
       });
       const bounds = new Box3().setFromObject(scene);

@@ -128,7 +128,7 @@ describe('front-sight families', () => {
     )!;
     const handguard = report.resolved.defs.get('handguard')!;
     const rail = handguard.ports.find(({ id }) => id === 'rail')!;
-    expect(connection.conn.slot).toBe(rail.slots!.count - 1);
+    expect(connection.conn.slot).toBe(Math.ceil(rail.slots!.count) - 1);
     const handguardTop = localSolidBounds(handguard.solids.find(({ id }) => id === 'top')!);
     expect(rail.pos[1]).toBe(handguardTop[1][1]);
     const localSlot = rail.pos.map((value, axis) => value + rail.up[axis]! * connection.conn.slot! * rail.slots!.pitch);

@@ -29,11 +29,16 @@ describe('resolve', () => {
     const receiverOrigin = at(r, 'receiver');
     const muzzlePort = r.defs.get('barrel')!.ports.find(({ id }) => id === 'muzzle')!;
     const muzzle = at(r, 'barrel', muzzlePort.pos);
-    const stockPort = r.defs.get('stock')!.ports.find(({ id }) => id === 'receiver')!;
+    const connectedPort = (part: string) => {
+      const endpoint = r.connections.find(({ conn }) => conn.to.startsWith(`${part}.`))!.conn.to;
+      const portId = endpoint.slice(endpoint.indexOf('.') + 1);
+      return r.defs.get(part)!.ports.find(({ id }) => id === portId)!;
+    };
+    const stockPort = connectedPort('stock');
     const stockRear = at(r, 'stock', stockPort.pos);
-    const lowerPort = r.defs.get('lower')!.ports.find(({ id }) => id === 'receiver')!;
+    const lowerPort = connectedPort('lower');
     const lower = at(r, 'lower', lowerPort.pos);
-    const magazinePort = r.defs.get('magazine')!.ports.find(({ id }) => id === 'lower')!;
+    const magazinePort = connectedPort('magazine');
     const magazine = at(r, 'magazine', magazinePort.pos);
     expect(muzzle[0]).toBeGreaterThan(receiverOrigin[0]);
     expect(stockRear[0]).toBeLessThan(receiverOrigin[0]);

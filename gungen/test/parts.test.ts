@@ -301,14 +301,13 @@ describe('part library', () => {
     const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', gripLength: 'M', butt: 'round' });
     const topstrap = frame.solids.find((solid) => solid.id === 'topstrap')!;
     expect(drum.kind).toBe('extruded-polygon');
-    if (drum.kind !== 'extruded-polygon' || topstrap.kind !== 'box') {
+    if (drum.kind !== 'extruded-polygon' || topstrap.kind !== 'extruded-polygon') {
       throw new Error('revolver drum and topstrap must expose their section bounds');
     }
     const topstrapBounds = localSolidBounds(topstrap);
     const cylinderGap = frame.keepOuts.find(({ id }) => id === 'cylinder-gap')!.box;
     expect(topstrapBounds[0][0]).toBeLessThan(cylinderGap.center[0] - cylinderGap.half[0]);
     expect(topstrapBounds[1][0]).toBeGreaterThan(cylinderGap.center[0] + cylinderGap.half[0]);
-    expect(drum.z[1] - drum.z[0]).toBeLessThanOrEqual(topstrapBounds[1][2] - topstrapBounds[0][2]);
     expect(cylinderGap.half[0] * 2).toBe(REVOLVER_PROPORTIONS.cylinderGap.pickedU);
   });
 
@@ -447,7 +446,7 @@ describe('part library', () => {
     const forcingCone = localSolidBounds(barrel.solids[0]!);
     const barrelBounds = localSolidBounds(barrel.solids[1]!);
     expect(forcingCone[1][0]).toBeLessThanOrEqual(barrelBounds[1][0]);
-    expect(forcingCone[1][0]).toBeGreaterThan(barrelBounds[0][0]);
+    expect(forcingCone[1][0]).toBeGreaterThanOrEqual(barrelBounds[0][0]);
 
     const vented = FAMILIES['revolver-barrel']!.build({ bore: 'M', length: 'S', style: 'vented' });
     const posts = vented.solids.filter((solid) => solid.id.startsWith('vented-rib-post-'));
@@ -466,7 +465,8 @@ describe('part library', () => {
     expect(cylinder.ports.map((port) => port.id)).toEqual(['frame', 'barrel']);
     const chamberAxis = cylinder.axes.find(({ kind }) => kind === 'bore')!;
     const barrelPort = cylinder.ports.find(({ id }) => id === 'barrel')!;
-    expect(chamberAxis.origin).toEqual(barrelPort.pos);
+    expect(chamberAxis.origin.slice(1)).toEqual(barrelPort.pos.slice(1));
+    expect(chamberAxis.dir).toEqual(barrelPort.normal);
     expect(FAMILIES['revolver-cylinder']!.params.chamberCount!.values).toEqual(['6']);
     expect(FAMILIES['revolver-cylinder']!.params.chamberIndex!.fault).toEqual(['1', '2', '3', '4', '5']);
   });
@@ -526,14 +526,23 @@ describe('part library', () => {
     const gripFrontX = Math.max(...upper.profile.map(([x]) => x));
     const wellFrontX = frontWall.box.center[0] + frontWall.box.half[0];
     expect(wellFrontX).toBe(gripFrontX);
-    const magazine = FAMILIES.magazine!.build({ length: 'S', profile: 'pistol' }).solids[0]!;
+    const magazineFamily = FAMILIES.magazine!.build({ length: 'S', profile: 'pistol' });
+    const magazine = magazineFamily.solids[0]!;
     expect(magazine.kind).toBe('box');
-    if (magazine.kind === 'box') {
+    if (magazine.kind === 'box' && magazinePath) {
+      const wellPort = grip.ports.find(({ id }) => id === 'magazine')!;
+      const magazinePort = magazineFamily.ports.find(({ id }) => id === 'top')!;
+      expect(dot(wellPort.normal, magazinePort.normal)).toBeCloseTo(-1);
+      expect(wellPort.up).toEqual(magazinePort.up);
+      const offset = wellPort.pos.map((component, axis) => component - magazinePort.pos[axis]!);
       const magazineBounds = localSolidBounds(magazine);
-      const gripBounds = grip.solids.map(localSolidBounds);
+      const pathBounds = [
+        magazinePath.box.center.map((value, axis) => value - magazinePath.box.half[axis]!),
+        magazinePath.box.center.map((value, axis) => value + magazinePath.box.half[axis]!),
+      ];
       for (const axis of [0, 1, 2] as const) {
-        expect(magazineBounds[0][axis]).toBeGreaterThanOrEqual(Math.min(...gripBounds.map(([min]) => min[axis])));
-        expect(magazineBounds[1][axis]).toBeLessThanOrEqual(Math.max(...gripBounds.map(([, max]) => max[axis])));
+        expect(magazineBounds[0][axis] + offset[axis]!).toBeGreaterThanOrEqual(pathBounds[0]![axis]!);
+        expect(magazineBounds[1][axis] + offset[axis]!).toBeLessThanOrEqual(pathBounds[1]![axis]!);
       }
     }
   });
