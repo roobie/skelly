@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're running the game, its debug tools or its benchmarks
+  - you're running Deadvox unit tests or the opt-in CPU benchmark
   - you're checking the present implementation and known limits
 ---
 
@@ -119,8 +120,14 @@ npm install
 npm run dev        # http://localhost:5173
 npm run dev:https  # https://<this-machine-lan-ip>:5173 (self-signed, dev-only cert)
 npm test
-npm run validate   # base content; add paths to validate a mod on top
+npm run bench:shambler-budget  # opt into the host-sensitive shambler CPU-budget check
+npm run validate               # base content; add paths to validate a mod on top
 ```
+
+The default suite skips the host-sensitive CPU budget check. `npm run bench:shambler-budget`
+sets `DEADVOX_BENCH` and runs that benchmark alone; its budget is defined by
+`test/zombies.test.ts`, `SHAMBLER_CPU_BUDGET_MS`. Pin the budget only when a supported-host
+performance target is agreed.
 
 `npm run bench:shamblers` compares headless `ZombieSystem` tick cost. Because it runs
 outside Vite, the Node resolver (`tools/register-mobgen-alias.mjs`, `registerHooks`)
@@ -192,4 +199,3 @@ keeps mobgen source imports available; its obstruction predicate must match play
 - [EPIC.md](EPIC.md): what version 1 is, and the slices that get there.
 - [CHALLENGES.md](CHALLENGES.md): the hard problems and how we plan to tackle
   them.
-- [SLICE-2.md](SLICE-2.md): the plan for the second ("Craft and mend").

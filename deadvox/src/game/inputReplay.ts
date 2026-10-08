@@ -28,7 +28,6 @@ const INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS =
   INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW * 2 + INPUT_REPLAY_MAX_GENERATED_COLUMNS * 2;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
-const SNAPSHOT_REFLECTED_REPLAY_ACTIONS = new Set(['movement.walk-toggle']);
 
 const MAGIC = 'DEADVOX_REPLAY';
 const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/;
@@ -330,6 +329,7 @@ export class InputReplayRecorder {
     action: string;
     phase: 'down' | 'up';
     context: InputContext;
+    inSnapshot: boolean;
     payload?: string;
   }[] = [];
   private actionPayloadBytes = 0;
@@ -423,17 +423,23 @@ export class InputReplayRecorder {
     );
   }
 
-  queueAction(action: string, phase: 'down' | 'up', context: InputContext, payload?: ReplayActionPayload): void {
+  queueAction(
+    action: string,
+    phase: 'down' | 'up',
+    context: InputContext,
+    options: { payload?: ReplayActionPayload; inSnapshot?: boolean } = {},
+  ): void {
     if (
       this.frameCount >= this.bufferTicks ||
       this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW
     ) {
       return;
     }
-    if (!isValidQueuedAction(action, context, payload)) {
+    if (!isValidQueuedAction(action, context, options.payload)) {
       throw new Error(`Input replay cannot encode ${action} in ${context}`);
     }
-    const payloadText = payload === undefined ? undefined : new TextDecoder().decode(canonicalJsonBytes(payload));
+    const payloadText =
+      options.payload === undefined ? undefined : new TextDecoder().decode(canonicalJsonBytes(options.payload));
     const payloadBytes = payloadText === undefined ? 0 : new TextEncoder().encode(payloadText).byteLength;
     if (payloadBytes + this.actionPayloadBytes > INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES) {
       throw new Error('Input replay action payloads exceed the supported size');
@@ -443,6 +449,7 @@ export class InputReplayRecorder {
       action,
       phase,
       context,
+      inSnapshot: options.inSnapshot ?? false,
       ...(payloadText === undefined ? {} : { payload: payloadText }),
     });
   }
@@ -461,17 +468,23 @@ export class InputReplayRecorder {
   resolvePendingActionsAtRollover(next: InputReplayRecorder): void {
     let transferredPayloadBytes = 0;
     for (const pending of this.pending) {
-      if (this.frameCount > 0 && pending.phase === 'down' && SNAPSHOT_REFLECTED_REPLAY_ACTIONS.has(pending.action)) {
+      if (pending.inSnapshot) {
         const index = this.actionCount;
         this.actionCount += 1;
         this.actionTicks[index] = this.frameCount;
         this.actionIds[index] = ACTION_INDEX.get(pending.action)!;
-        this.actionPhases[index] = 0;
+        this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
         this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
+        if (pending.payload !== undefined) {
+          this.actionPayloads[index] = pending.payload;
+        }
         continue;
       }
       const payload = pending.payload === undefined ? undefined : (JSON.parse(pending.payload) as ReplayActionPayload);
-      next.queueAction(pending.action, pending.phase, pending.context, payload);
+      next.queueAction(pending.action, pending.phase, pending.context, {
+        ...(payload === undefined ? {} : { payload }),
+        inSnapshot: pending.inSnapshot,
+      });
       if (pending.payload !== undefined) {
         transferredPayloadBytes += new TextEncoder().encode(pending.payload).byteLength;
       }
