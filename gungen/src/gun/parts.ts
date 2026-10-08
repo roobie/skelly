@@ -3816,9 +3816,7 @@ export const magazine: PartFamily = {
     variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
   },
   validateParams: (params) =>
-    params.profile === 'stanag-straight' && (params.length ?? 'M') !== 'M'
-      ? STRAIGHT_STANAG_LENGTH_REFUSAL
-      : undefined,
+    params.profile === 'stanag-straight' && (params.length ?? 'M') !== 'M' ? STRAIGHT_STANAG_LENGTH_REFUSAL : undefined,
   build(params): PartDef {
     const profile = (params.profile ?? 'standard') as MagazineProfile;
     if (profile === 'stanag-straight' && (params.length ?? 'M') !== 'M') {
