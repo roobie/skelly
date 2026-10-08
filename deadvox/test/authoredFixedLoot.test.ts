@@ -671,9 +671,10 @@ describe('authored fixed loot', () => {
     expect(mountRecipe!.workstation).toBe(workstation!.id);
     expect(suppressorRecipe!.workstation).toBe(workstation!.id);
     const qualitiesAvailable = (recipe: NonNullable<typeof mountRecipe>) =>
-      Object.entries(recipe.qualities).every(([quality, level]) =>
-        (workstation!.qualities[quality] ?? 0) >= level ||
-        garageItems.some((fixed) => (result.registry.items.get(fixed.item)?.tool?.qualities[quality] ?? 0) >= level),
+      Object.entries(recipe.qualities).every(
+        ([quality, level]) =>
+          (workstation!.qualities[quality] ?? 0) >= level ||
+          garageItems.some((fixed) => (result.registry.items.get(fixed.item)?.tool?.qualities[quality] ?? 0) >= level),
       );
     expect(qualitiesAvailable(mountRecipe!)).toBe(true);
     expect(qualitiesAvailable(suppressorRecipe!)).toBe(true);
@@ -683,7 +684,8 @@ describe('authored fixed loot', () => {
       workshopCounts.set(fixed.item, (workshopCounts.get(fixed.item) ?? 0) + (fixed.count ?? 1));
     }
     const missingGroups = suppressorRecipe!.components.filter(
-      (alternatives) => !alternatives.some((ingredient) => (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count),
+      (alternatives) =>
+        !alternatives.some((ingredient) => (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count),
     );
     expect(missingGroups).toHaveLength(1);
     const scrapPile = compileTemplate(result.registry, result.registry.templates.get('workshop_yard')!).pieces.find(
@@ -695,9 +697,7 @@ describe('authored fixed loot', () => {
         building.template === 'workshop_yard' && override.at.join(',') === scrapPile!.pos.join(','),
     );
     const pileItems = pileOverride?.override.items ?? [];
-    expect(
-      missingGroups[0]!.some(({ item, count }) => itemCount(pileItems, item) >= count),
-    ).toBe(true);
+    expect(missingGroups[0]!.some(({ item, count }) => itemCount(pileItems, item) >= count)).toBe(true);
     const searchNoise = result.registry.furniture.get('workshop_scrap_pile')?.searchNoise;
     expect(searchNoise).toBeDefined();
     expect(result.registry.sounds.get(searchNoise!.sound)?.noise.enabled).toBe(true);

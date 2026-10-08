@@ -399,10 +399,7 @@
             },
             {
               "at": [17, 1, 15],
-              "items": [
-                { "item": "portable_radio", "count": 1, "condition": 0 },
-                { "item": "jerry_can", "count": 1 }
-              ]
+              "items": [{ "item": "portable_radio", "count": 1, "condition": 0 }, { "item": "jerry_can", "count": 1 }]
             }
           ]
         },
