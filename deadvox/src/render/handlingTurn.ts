@@ -1,6 +1,4 @@
-// The turn a rack or a magazine job gives a held gun so the hands' work is seen: a rifle turns toward the player and
-// its handle toward the off hand for a rack and muzzle-in for a magazine job; the pump cants its port into view. The drawn model and the crosshair both take it (DESIGN.md, "Firearms", BR's 14:55
-// ruling); shots keep the unturned bore, since neither job admits one.
+/** Align the model and crosshair with visible hand motion; shots retain the unturned bore. */
 
 import type { ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -18,12 +16,10 @@ const RACK_ROLL_PER_HANDLE_RADIAN = 0.25;
  * rotation in view axes (x right, y up, z toward the player). `grip` is the held root's camera-local position, which
  * the pump's cant reads.
  *
- * BR names the turn in the weapon's own axes (2026-10-07 15:42: "x is forward along bore" / "y is up" / "z is side"):
- * the view pitch turns about the weapon's Z, the view yaw about its Y, and the view roll about its X, the bore,
- * with the sign flipped since the view's z points back along it. For a right-hander, a rack (BR, 15:34) yaws
- * clockwise about Y seen from above, so the gun's right side turns toward the player. It rolls counter-clockwise
- * about X seen from behind, bringing the handle toward the off hand, and further the further the handle
- * (`chargingHandleDegrees`) sits from it. A left-hander gets the mirror. A magazine job keeps its own turn, muzzle in.
+ * View-space pitch, yaw and roll use the weapon's Z, Y and X axes respectively, with the view's z reversed
+ * from the bore. A rack turns the rifle's far side toward the player and rolls its handle toward the off hand,
+ * with a larger roll for a handle farther from that hand. The motion mirrors for a left-hander. A magazine job
+ * turns the muzzle inward. Shot trajectories keep the unturned bore because this motion is presentation only.
  */
 export const handlingRotation = (
   model: ModelDef | undefined,
