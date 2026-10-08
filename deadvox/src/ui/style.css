@@ -555,6 +555,7 @@ body.unconscious::after {
 }
 #inventory .inv-pane[data-pane="around"] .inv-grid-scroll {
   flex: 0 1 auto;
+  max-height: max(96px, 40vh);
 }
 .inv-grid {
   position: relative;

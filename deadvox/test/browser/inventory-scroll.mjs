@@ -276,13 +276,16 @@ try {
     }
     const pane = around.getBoundingClientRect();
     const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+    item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     const itemBox = item.getBoundingClientRect();
     const hit = document.elementFromPoint(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
     return {
       pane: { left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom },
       clientWidth: scroll.clientWidth,
       scrollWidth: scroll.scrollWidth,
+      scrollLeft: scroll.scrollLeft,
       itemLeft: Number.parseFloat(item.style.left),
+      itemRect: { x: itemBox.x, y: itemBox.y, width: itemBox.width, height: itemBox.height },
       cell,
       cap: globalThis.scrollFixture.containerMaxWidthCells,
       itemHit: hit?.closest('.inv-item') === item,
@@ -304,7 +307,8 @@ try {
     capWideRack.cap - 1,
     'fixture item occupies the rack’s last column',
   );
-  assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack)}`);
+  assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
+  assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
   await page.setViewportSize({ width: 960, height: 540 });
   const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
   assert.ok(
