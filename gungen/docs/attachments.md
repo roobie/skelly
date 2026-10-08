@@ -42,7 +42,7 @@ feet rather than the optic's full visual envelope. `src/gun/rules.ts`,
 `opticMountFitForPart`, checks that those feet are supported, while the pair
 certificates cover body collisions. This lets long scopes overhang the rail
 without treating unsupported feet as a valid mount. Deadvox's
-`src/core/firearmFitting.ts`, `railFootprint`, enforces rail-notch ownership and
+`deadvox/src/core/firearmFitting.ts`, `railFootprint`, enforces rail-notch ownership and
 mount-foot overlap. Attachment `massKg` is a model fact, not Deadvox inventory
 `weight`; d118 owns deriving or validating item weight against this single
 source.
