@@ -613,6 +613,11 @@ try {
     if ((await readGeneration()) !== beforeContinue) {
       throw new Error(`${backend} title-screen pagehide wrote before Continue or New world was selected`);
     }
+    await page.evaluate(() => {
+      const event = new Event('pageshow');
+      Object.defineProperty(event, 'persisted', { value: true });
+      globalThis.dispatchEvent(event);
+    });
     if (autosaveScenario === 'continue') {
       await Promise.all([
         page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
@@ -853,7 +858,9 @@ try {
       assert.equal(result.writerRequested, null, 'leaving for bfcache must not request a save lock');
       assert.equal(result.writerTrigger, null);
       assert.equal(result.heldWriter, null, 'the cached page has not entered a lock-holding save');
-      assert.equal(result.lockSnapshot, null, 'the new page has no reader queued behind a cached writer');
+      assert.deepEqual(result.lockSnapshot.held, [], 'the new page has no held lock');
+      assert.deepEqual(result.lockSnapshot.pending, [], 'the new page has no reader queued behind a cached writer');
+      assert.equal(result.lockSnapshot.ready, true);
       assert.equal(result.held.length, 0, 'the cached page leaves no exclusive writer lock');
       assert.equal(result.pending.length, 0, 'the new page has no shared request waiting on a cached writer');
       assert.equal(result.storageUnavailable, false);
