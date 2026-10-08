@@ -1,6 +1,6 @@
 import { encodeSave, type SaveVersionComponents, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { createDurableWriteTransaction, transactionDone } from '../game/indexedDbCommit.ts';
+import { createDurableWriteTransaction } from '../game/indexedDbCommit.ts';
 import { SAVE_RECORD_HEADER_BYTES, SAVE_RECORD_MAX_BYTES, sealSaveSlot } from '../game/saveStorageRecord.ts';
 
 const DATABASE = 'deadvox-save-slots';
@@ -144,6 +144,13 @@ const readIdbSlots = async (namespace: string): Promise<SlotPair> => {
   await transactionDone(tx);
   return { a: values[0]!, b: values[1]! };
 };
+
+const transactionDone = (tx: IDBTransaction): Promise<void> =>
+  new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error ?? new Error('Save IndexedDB transaction aborted'));
+    tx.onerror = () => reject(tx.error ?? new Error('Save IndexedDB transaction failed'));
+  });
 
 const listOpfsNamespaces = async (): Promise<string[]> => {
   let saves: FileSystemDirectoryHandle;

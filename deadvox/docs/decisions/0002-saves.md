@@ -35,11 +35,11 @@ file with presentation code. See `tools/simulationFingerprint.ts`,
 
 Write snapshots through crash-safe A/B records. Disk work is asynchronous and
 must not block a simulation frame; a failed write leaves the previous valid
-record available. On #446, the Firefox save-navigation test reloaded to a title
-screen with no saved world. An IndexedDB save acknowledgement must guarantee a
-durable transaction, not merely a queued write; see
-`src/game/indexedDbCommit.ts`, `createDurableWriteTransaction`. A
-back/forward-cache transition does not require a new save:
+record available. IndexedDB save writes request strict durability, so a save is
+flushed to disk before it is acknowledged, as the OPFS path flushes before it
+acknowledges; see `src/game/indexedDbCommit.ts`,
+`createDurableWriteTransaction`, and `src/worker/save.worker.ts`, `writeOpfs`.
+A back/forward-cache transition does not require a new save:
 a frozen page can hold the origin lock and block the next page, so the last
 committed generation remains the recovery point. See
 `src/ui/saveController.ts`, `SaveController`, and `test/browser/save-storage.mjs`.
