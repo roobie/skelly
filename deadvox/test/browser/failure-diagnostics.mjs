@@ -179,6 +179,43 @@ export async function observeFailures(context, browser, child) {
         }),
       ]);
       clearTimeout(timer);
+      let diagnosticTimer;
+      const saveDiagnostics = await Promise.race([
+        page
+          .evaluate(async () => {
+            const capture = async (read) => {
+              try {
+                return await read();
+              } catch (failure) {
+                return { error: String(failure) };
+              }
+            };
+            const storage = globalThis.deadvoxSaveTest?.storage;
+            const [databases, namespaces, estimate] = await Promise.all([
+              capture(() => indexedDB.databases()),
+              capture(() => {
+                if (!storage) {
+                  throw new Error('save storage unavailable');
+                }
+                return storage.listNamespaces();
+              }),
+              capture(() => navigator.storage.estimate()),
+            ]);
+            return {
+              indexedDbDatabases: databases,
+              saveNamespaces: namespaces,
+              storageEstimate: estimate,
+              generationBeforeReload: sessionStorage.getItem('d144-generation-before-reload'),
+              d144Pagehide: sessionStorage.getItem('d144-pagehide'),
+              d144WriterTrigger: sessionStorage.getItem('d144-writer-trigger'),
+            };
+          })
+          .catch((failure) => ({ evaluationError: String(failure) })),
+        new Promise((resolve) => {
+          diagnosticTimer = setTimeout(() => resolve({ timeoutMs: 3000 }), 3000);
+        }),
+      ]);
+      clearTimeout(diagnosticTimer);
       const current = { parent: await cgroup(process.pid), child: child?.pid ? await cgroup(child.pid) : undefined };
       process.stderr.write(
         `BROWSER_FAILURE ${JSON.stringify({
@@ -186,6 +223,7 @@ export async function observeFailures(context, browser, child) {
           error: String(error),
           events,
           state,
+          saveDiagnostics,
           lastResponsiveFrame: lastFrames.get(page),
           browser: {
             connected: browser.isConnected(),
