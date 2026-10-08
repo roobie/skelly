@@ -227,7 +227,7 @@ const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
   readonly pistol: MagazineBands;
   readonly 'ak-curved': Readonly<Record<'ak74' | 'akm', MagazineBands>>;
   readonly 'stanag-curved': MagazineBands;
-  readonly 'stanag-straight': Readonly<{ M: number }>;
+  readonly 'stanag-straight': Readonly<Pick<MagazineBands, 'M'>>;
 }> = {
   compact: { '5-round': 4.5, '10-round': 5.5 },
   standard: { S: 6, M: 10, L: 16 },

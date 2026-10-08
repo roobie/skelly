@@ -19,6 +19,7 @@ const cartridge = loadCartridgeFile('7.62x39.json') as MetallicCartridge;
 const natoCartridge = loadCartridgeFile('5.56x45.json') as MetallicCartridge;
 const NARROW_MAGAZINE_ERROR = /narrower than.*round diameter/;
 const NARROW_BODY_DEPTH_ERROR = /body section.*round length/;
+const STRAIGHT_STANAG_LENGTH_ERROR = /only at M length/;
 
 describe('generated magazine round columns', () => {
   it.each([
@@ -93,7 +94,7 @@ describe('generated magazine round columns', () => {
   });
 
   it.each(['S', 'L', '5-round', '10-round'])('rejects a straight STANAG magazine at %s length', (length) => {
-    expect(() => magazine.build({ length, profile: 'stanag-straight' })).toThrow(/only at M length/);
+    expect(() => magazine.build({ length, profile: 'stanag-straight' })).toThrow(STRAIGHT_STANAG_LENGTH_ERROR);
   });
 
   it('fits each curated STANAG prefab to its nominal 5.56 column capacity', () => {

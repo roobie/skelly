@@ -109,7 +109,7 @@ const defaultCases = (key: string, family: PartFamily): Record<string, string>[]
     const cases = fullProduct(params);
     // Straight STANAG only accepts M; the rejected lengths have a dedicated contract test.
     return key === 'magazine'
-      ? cases.filter(({ profile, length }) => profile !== 'stanag-straight' || length === 'M')
+      ? cases.filter(({ profile, length: lengthClass }) => profile !== 'stanag-straight' || lengthClass === 'M')
       : cases;
   }
   const cases = tWiseCases(params, ARRAY_STRENGTH);
