@@ -89,6 +89,8 @@ This file describes the code as it is. The game's design and roadmap are in
 | CI | `.github/workflows/deadvox.yml`: typecheck, tests, content validation, build |
 | Hosting | GitHub Pages via `.github/workflows/pages.yml`, published under `/deadvox/` |
 
+See `docs/decisions/0005-own-voxel-engine.md`, `Decision`, for why this stack was chosen.
+
 ## Layout
 
 ```
