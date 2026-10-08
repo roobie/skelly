@@ -23,8 +23,8 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 const BAT_DEF = registry.items.get('baseball_bat')!.weapon!.melee!;
 const BAT = { ...BAT_DEF, cooldown: BAT_DEF.cooldownSimSeconds };
 const HEALTHY_REGIONS = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
-const ROLLED_CUT_SEEDS = [3, 11, 25] as const;
-// Vary severing outcomes here; figure variation has its own coverage in mobActors.test.ts.
+const ROLLED_CUT_SEEDS = [3, 11, 19, 23, 29] as const;
+// Keep the four renderer pools identical; these cases vary severing paths, not figure seeds.
 const CUT_FIXTURE_SEED = 5;
 const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   isSolid,
