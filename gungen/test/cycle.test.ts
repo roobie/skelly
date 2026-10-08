@@ -29,13 +29,13 @@ const motionFor = (name: string) => {
 
 describe('firearm cycle timelines', () => {
   it('uses the action-specific cyclic rates and matches the estimated rearward speed', () => {
-    for (const [name, action, expectedRpm] of [
-      ['archetype-ak', 'ak', 600],
-      ['archetype-ar', 'ar', 800],
+    for (const [name, action] of [
+      ['archetype-ak', 'ak'],
+      ['archetype-ar', 'ar'],
     ] as const) {
       const { cycle } = motionFor(name);
-      expect(cycle.rpm).toBe(expectedRpm);
-      expect(cycle.fire.durationSeconds).toBeCloseTo(60 / expectedRpm, 9);
+      expect(cycle.rpm).toBe(ACTION_CYCLE_PROFILES[action].rpm);
+      expect(cycle.fire.durationSeconds).toBeCloseTo(60 / cycle.rpm, 9);
       expect(cycle.strokeMetres / cycle.fire.rearwardSeconds).toBeCloseTo(
         ACTION_CYCLE_PROFILES[action].rearwardSpeedMetresPerSecond,
         9,

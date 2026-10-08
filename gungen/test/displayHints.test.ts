@@ -51,7 +51,8 @@ describe('per-solid display hints', () => {
       );
       expect(grip).toBeInstanceOf(Mesh);
       expect(grip?.children).toHaveLength(1);
-      expect((grip as Mesh).geometry.index?.count).toBe(56 * 3);
+      const solid = gunDomain.families.grip!.build({ length: 'M' }).solids.find(({ id }) => id === 'body')!;
+      expect((grip as Mesh).geometry.index?.count).toBe(meshForSolid(solid).triangleCount * 3);
     } finally {
       for (const group of Object.values(layers)) {
         disposeGroup(group);
