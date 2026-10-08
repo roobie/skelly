@@ -14,16 +14,12 @@ it('uses content weathering by default and applies only debug URL overrides', ()
   expect(content).toBeDefined();
   expect(configFromUrl(new URLSearchParams('weathering=0')).weathering?.strength).toBe(content?.strength);
   expect(configFromUrl(new URLSearchParams('debug=1&weathering=0')).weathering?.strength).toBe(0);
+  const debugWeatheringStrength = (strength: number) =>
+    configFromUrl(new URLSearchParams(`debug=1&weathering=${strength}`)).weathering?.strength;
   const comparisonStrength = content!.strength / 2;
-  expect(
-    configFromUrl(new URLSearchParams(`debug=1&weathering=${comparisonStrength}`)).weathering?.strength,
-  ).toBe(comparisonStrength);
-  expect(
-    configFromUrl(new URLSearchParams(`debug=1&weathering=${WEATHERING_STRENGTH_MAX}`)).weathering?.strength,
-  ).toBe(WEATHERING_STRENGTH_MAX);
-  expect(
-    configFromUrl(new URLSearchParams(`debug=1&weathering=${WEATHERING_STRENGTH_MAX + 1}`)).weathering?.strength,
-  ).toBe(WEATHERING_STRENGTH_MAX);
+  expect(debugWeatheringStrength(comparisonStrength)).toBe(comparisonStrength);
+  expect(debugWeatheringStrength(WEATHERING_STRENGTH_MAX)).toBe(WEATHERING_STRENGTH_MAX);
+  expect(debugWeatheringStrength(WEATHERING_STRENGTH_MAX + 1)).toBe(WEATHERING_STRENGTH_MAX);
   expect(configFromUrl(new URLSearchParams('debug=1&weathering=-0.1')).weathering?.strength).toBe(0);
 });
 
