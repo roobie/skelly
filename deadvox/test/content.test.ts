@@ -970,17 +970,14 @@ describe('content references', () => {
     if (armoury === undefined || site === undefined) {
       throw new Error('base content needs a military table and an authored-only template with a loot container');
     }
+    const baseFound = checkReachability(baseRegistry).found;
+    const baseMilitaryItems = [...militaryLootItems(baseRegistry)];
+    expect(baseMilitaryItems.some((id) => !baseFound.has(id))).toBe(true);
     for (const [key, entry] of Object.entries(site.palette)) {
       if (typeof entry === 'object' && 'loot' in entry) {
         site.palette[key] = { ...entry, loot: armoury.id };
       }
     }
-    expect(armoury.military).toBe(true);
-    expect(
-      Object.values(site.palette).some(
-        (entry) => typeof entry === 'object' && 'loot' in entry && entry.loot === armoury.id,
-      ),
-    ).toBe(true);
     // Reuse the already validated base registry; this scenario only changes a known loot table on an existing template.
     const templates = new Map(baseRegistry.templates);
     templates.set(site.id, site);

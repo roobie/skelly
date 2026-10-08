@@ -116,6 +116,7 @@ describe('validate CLI', () => {
     ]) {
       expect(stdout).toContain(diagnostic);
     }
+    expect(stdout).toContain('7 file(s):');
   });
 
   it('accepts the same unfound component when a grounded recipe makes it', () => {
