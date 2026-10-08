@@ -469,10 +469,12 @@ export const measureWeatheringMaterials = async (page) => {
   }
   const artifactsDir = path.resolve(process.cwd(), 'test-results', 'weathering');
   await mkdir(artifactsDir, { recursive: true });
-  await Promise.all(
-    Object.entries(result.images).map(([name, dataUrl]) =>
+  const { images, ...metrics } = result;
+  await Promise.all([
+    ...Object.entries(images).map(([name, dataUrl]) =>
       writeFile(path.join(artifactsDir, `comparison-${name}.png`), decodeDataUrl(dataUrl)),
     ),
-  );
+    writeFile(path.join(artifactsDir, 'measurement.json'), `${JSON.stringify(metrics, null, 2)}\n`),
+  ]);
   return result;
 };
