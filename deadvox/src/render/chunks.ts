@@ -42,8 +42,8 @@ vec3 srgbToLinear(vec3 c) {
 // the group only scales, so it is the world normal too).
 // The id is `flat` (provoking vertex; never interpolated, so it can't extrapolate).
 const PATTERN_VARYING = 'flat varying float vPattern;\ncentroid varying vec3 vWorld;\ncentroid varying vec3 vFaceN;';
-export const WEATHERING_BASE_GRIME_FLOOR = 0.22;
-export const WEATHERING_MIN_RED_TINT = 0.72;
+const WEATHERING_BASE_GRIME_FLOOR = 0.22;
+const WEATHERING_MIN_RED_TINT = 0.72;
 
 // Wide-radius ambient occlusion (core/occlusion.ts), a per-vertex factor in 0..1 from the mesher. It
 // scales only the indirect irradiance (hemisphere and ambient light), never the sun or flashlight.

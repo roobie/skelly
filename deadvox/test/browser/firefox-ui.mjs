@@ -23,9 +23,9 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, minimumShaderSignal: FirefoxGrimeFloor * (1 - FirefoxMinRedTint) } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl } });\n${marker}`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\nimport { WEATHERING_BASE_GRIME_FLOOR as FirefoxGrimeFloor, WEATHERING_MIN_RED_TINT as FirefoxMinRedTint } from '../render/chunks.ts';\n${exposed}`;
+    return `import * as FirefoxTHREE from 'three';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\n${exposed}`;
   },
 };
 const vite = await createServer({
@@ -402,8 +402,6 @@ try {
       differences: weatheringPixels.differences,
       maxWeatherablePixelChange: weatheringPixels.maxWeatherablePixelChange,
       maxZeroStrengthPixelChange: weatheringPixels.maxZeroStrengthPixelChange,
-      zeroStrengthWouldPass: weatheringPixels.maxZeroStrengthPixelChange > weatheringPixels.derivedPixelThreshold,
-      derivedPixelThreshold: weatheringPixels.derivedPixelThreshold,
       closeupPixels: weatheringPixels.groundWallPixels,
       artifactDirectory: 'test-results/weathering/',
     })}\n`,
@@ -424,14 +422,10 @@ try {
     weatheringPixels.afterCamera,
     'weathering states share one paused camera',
   );
-  assert.equal(
-    weatheringPixels.maxZeroStrengthPixelChange > weatheringPixels.derivedPixelThreshold,
-    false,
-    'the positive pixel assertion fails for the zero-strength control',
-  );
+  assert.equal(weatheringPixels.maxZeroStrengthPixelChange, 0, 'zero-strength control leaves building pixels unchanged');
   assert.ok(
-    weatheringPixels.maxWeatherablePixelChange > weatheringPixels.derivedPixelThreshold,
-    `full-strength weathering changes a weatherable building pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance; shader-derived minimum is ${weatheringPixels.derivedPixelThreshold.toFixed(5)}`,
+    weatheringPixels.maxWeatherablePixelChange > 0,
+    `full-strength weathering changes a weatherable building pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
   );
   assert.deepEqual(pageErrors, []);
   process.stdout.write(

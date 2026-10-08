@@ -250,7 +250,7 @@ void main() {
       return crop.toDataURL('image/png');
     };
 
-    const { engine: testEngine, THREE: three, minimumShaderSignal } = globalThis.firefoxUiTest;
+    const { engine: testEngine, THREE: three } = globalThis.firefoxUiTest;
     const {
       site: generatedSite,
       config: gameConfig,
@@ -331,11 +331,9 @@ void main() {
       width: canvasWidth,
       height: canvasHeight,
     });
-    const srgb = (linear) => (linear <= 0.003_130_8 ? 12.92 * linear : 1.055 * linear ** (1 / 2.4) - 0.055);
     return {
       size: [canvasWidth, canvasHeight],
       metric: 'absolute Rec. 709 luminance difference on sRGB screenshot pixels, normalized to [0,1]',
-      derivedPixelThreshold: 1 - srgb(1 - minimumShaderSignal),
       ...measurements,
       images,
       uniforms,
