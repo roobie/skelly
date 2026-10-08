@@ -1,3 +1,10 @@
+---
+read_if:
+  - you change the pump shotgun design, its tube capacity or its loading port
+  - you change the hand-driven action data a pump exports to Deadvox
+  - you re-export or inspect the pump shotgun model
+---
+
 # Hunting-cabin pump: action and export
 
 `designs/archetype-pump-shotgun.json` is the curated, unbranded 12-gauge pump:

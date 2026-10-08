@@ -1,3 +1,9 @@
+---
+read_if:
+  - you export or change shotshell or cartridge models for Deadvox
+  - you change a shotshell's visual proxies or its gameplay mass estimates
+---
+
 # Shotshell export (g39)
 
 Both `MetallicCartridge` and `Shotshell` use `exportCartridgeModels` in
