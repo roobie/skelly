@@ -262,9 +262,12 @@ export class SaveStorage {
       });
     } catch (error) {
       if (timedOut) {
-        throw new Error('World is still open or saving in another tab. Retry saved worlds after it finishes.', {
-          cause: error,
-        });
+        throw new Error(
+          'World is still open or saving in another page (possibly in the back/forward cache). Retry saved worlds after it finishes.',
+          {
+            cause: error,
+          },
+        );
       }
       throw error;
     } finally {

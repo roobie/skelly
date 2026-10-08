@@ -175,7 +175,8 @@ try {
           const held = locks.held.filter((lock) => lock.name === 'deadvox-save-storage');
           const pending = locks.pending.filter((lock) => lock.name === 'deadvox-save-storage');
           const ready = globalThis.deadvoxSaveTest?.controller.ready === true;
-          if (held.length + pending.length > 0 || ready || frames >= 120) {
+          const writerWaiting = [...held, ...pending].some((lock) => lock.mode === 'exclusive');
+          if (writerWaiting || ready || frames >= 120) {
             sessionStorage.setItem('d144-lock-snapshot', JSON.stringify({ held, pending, ready }));
             return;
           }
@@ -375,7 +376,7 @@ try {
                   (error) => error.message,
                 ),
             );
-            if (!failure.includes('World is still open or saving in another tab') || encodedWhileBusy) {
+            if (!failure.includes('World is still open or saving in another page') || encodedWhileBusy) {
               throw new Error(`Queued writer did not fail safely at its deadline: ${failure}`);
             }
             const locks = await navigator.locks.query();
@@ -914,7 +915,7 @@ try {
         locks: await navigator.locks.query(),
         warnings: globalThis.__d144LockWarnings,
       }));
-      assert.match(hiddenFailure.status, /World is still open or saving in another tab/);
+      assert.match(hiddenFailure.status, /World is still open or saving in another page/);
       assert.equal(hiddenFailure.continueDisabled, true);
       const hiddenWarning = hiddenFailure.warnings.find(
         ([message]) => message === 'Deadvox save lock request timed out',
@@ -1037,7 +1038,7 @@ try {
         locks: await navigator.locks.query(),
         warnings: globalThis.__d144LockWarnings,
       }));
-      assert.match(busy.status, /World is still open or saving in another tab/);
+      assert.match(busy.status, /World is still open or saving in another page/);
       assert.match(busy.newWorldLabel, /Play without saving/);
       assert.equal(busy.retryVisible, true);
       assert.equal(busy.continueDisabled, true);
