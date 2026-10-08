@@ -2062,8 +2062,7 @@ describe('shambler scenarios', () => {
         const center = FIGURE_BOXES[part].at[axis]!;
         return [center - size / 2, center + size / 2] as const;
       });
-    const gap = (a: readonly [number, number], b: readonly [number, number]) =>
-      Math.max(0, a[0] - b[1], b[0] - a[1]);
+    const gap = (a: readonly [number, number], b: readonly [number, number]) => Math.max(0, a[0] - b[1], b[0] - a[1]);
     const bodyRanges = ranges('body');
     const jointTolerance = 0.02;
     const touchesBody = (part: keyof typeof FIGURE_BOXES) =>
