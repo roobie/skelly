@@ -414,7 +414,7 @@ try {
   assert.deepEqual(weatheringPixels.uniforms, {
     off: 0,
     default: weatheringPixels.authoredStrength,
-    strong: 1,
+    strong: weatheringPixels.authoredStrength + 1,
     'zero-control': 0,
   });
   assert.deepEqual(

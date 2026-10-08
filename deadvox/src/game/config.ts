@@ -206,7 +206,7 @@ export const siteFromUrl = (
 
 /**
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
- * With `?debug=1`, `?weathering=0..3` overrides the content strength, `?weatheringVariation=0..1` compares world-scale variation, and `?weatheringSplit=<x metres>` limits weathering to world x at or east of the split. The debug tools also read and write look parameters (`?tone=`, `?exposure=`, `?srgb=`, `?patterns=`), documented in src/debug/lookUrl.ts.
+ * With `?debug=1`, `?weathering=0..8` overrides the content strength, `?weatheringVariation=0..1` compares world-scale variation, and `?weatheringSplit=<x metres>` limits weathering to world x at or east of the split. The debug tools also read and write look parameters (`?tone=`, `?exposure=`, `?srgb=`, `?patterns=`), documented in src/debug/lookUrl.ts.
  */
 export const configFromUrl = (params: URLSearchParams): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);

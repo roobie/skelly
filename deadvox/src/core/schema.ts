@@ -44,6 +44,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
+import { WEATHERING_STRENGTH_MAX } from './weather.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
@@ -1250,7 +1251,7 @@ const RecipeItemSchema = ItemCountSchema;
 const WeatheringSchema = strictObject({
   id: Id,
   /** Shared weathering strength for the rendered world. */
-  strength: Fraction,
+  strength: pipe(number(), minValue(0), maxValue(WEATHERING_STRENGTH_MAX)),
   /** World-space wavelength for broad weathering changes, in metres. */
   variationScaleMetres: Positive,
   /** Strength of world-scale weathering variation, independent of the shared look strength. */

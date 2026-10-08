@@ -1,5 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { SPAWN_TIMES } from '../src/core/clock.ts';
+import { WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
 import { configFromUrl } from '../src/game/config.ts';
 
 it('restricts handedness overrides to debug URL configuration', () => {
@@ -13,9 +14,16 @@ it('uses content weathering by default and applies only debug URL overrides', ()
   expect(content).toBeDefined();
   expect(configFromUrl(new URLSearchParams('weathering=0')).weathering?.strength).toBe(content?.strength);
   expect(configFromUrl(new URLSearchParams('debug=1&weathering=0')).weathering?.strength).toBe(0);
-  expect(configFromUrl(new URLSearchParams('debug=1&weathering=2')).weathering?.strength).toBe(2);
-  expect(configFromUrl(new URLSearchParams('debug=1&weathering=3')).weathering?.strength).toBe(3);
-  expect(configFromUrl(new URLSearchParams('debug=1&weathering=30')).weathering?.strength).toBe(3);
+  const comparisonStrength = content!.strength / 2;
+  expect(
+    configFromUrl(new URLSearchParams(`debug=1&weathering=${comparisonStrength}`)).weathering?.strength,
+  ).toBe(comparisonStrength);
+  expect(
+    configFromUrl(new URLSearchParams(`debug=1&weathering=${WEATHERING_STRENGTH_MAX}`)).weathering?.strength,
+  ).toBe(WEATHERING_STRENGTH_MAX);
+  expect(
+    configFromUrl(new URLSearchParams(`debug=1&weathering=${WEATHERING_STRENGTH_MAX + 1}`)).weathering?.strength,
+  ).toBe(WEATHERING_STRENGTH_MAX);
   expect(configFromUrl(new URLSearchParams('debug=1&weathering=-0.1')).weathering?.strength).toBe(0);
 });
 

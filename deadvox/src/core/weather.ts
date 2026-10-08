@@ -16,8 +16,10 @@ export interface Weather {
 /** A light mist. At this value the height fog has exactly the time-of-day keyframes' density. */
 export const DEFAULT_FOGGINESS = 0.2;
 
-/** Bound a debug render-only weathering strength to [0, 3]. */
-export const clampWeathering = (value: number): number => Math.min(3, Math.max(0, value));
+/** Shared upper bound for authored and debug render-only weathering strength. */
+export const WEATHERING_STRENGTH_MAX = 8;
+
+export const clampWeathering = (value: number): number => Math.min(WEATHERING_STRENGTH_MAX, Math.max(0, value));
 
 /** Clamped to [0, 1] and rounded to a tenth, so repeated steps don't accumulate float error. */
 export const clampFogginess = (value: number): number => Math.min(1, Math.max(0, Math.round(value * 10) / 10));

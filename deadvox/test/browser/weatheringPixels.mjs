@@ -115,7 +115,7 @@ void main() {
       const settings = [
         ['off', 0],
         ['default', content.strength],
-        ['strong', 1],
+        ['strong', content.strength + 1],
         ['zero-control', 0],
       ];
       const images = {};
