@@ -1,111 +1,111 @@
 import { describe, expect, it } from 'vitest';
+import { SECONDS_PER_DAY } from '../src/core/clock.ts';
+import { type DayCycle, type DayPhase, DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
+import { phaseMidpoint } from './dayPhaseFixture.ts';
 
+const hourAt = (seconds: number): number => seconds / 3600;
 const brightness = (hour: number) => {
   const sky = skyAt(hour);
   return sky.ambientIntensity + sky.lightIntensity;
 };
 
+const day = dayPhaseAt(DEFAULT_DAY_CYCLE, phaseMidpoint('day'));
+const otherCycle: DayCycle = {
+  ...DEFAULT_DAY_CYCLE,
+  latitudeDegrees:
+    DEFAULT_DAY_CYCLE.latitudeDegrees > 80
+      ? DEFAULT_DAY_CYCLE.latitudeDegrees - 7
+      : DEFAULT_DAY_CYCLE.latitudeDegrees + 7,
+};
+const phaseSamples = (cycle: DayCycle): { phase: DayPhase; time: number }[] => {
+  const state = dayPhaseAt(cycle, 0);
+  const spans: { phase: DayPhase; start: number; end: number }[] = [
+    { phase: 'night', start: state.nightfall, end: state.dawn + SECONDS_PER_DAY },
+    { phase: 'dawn', start: state.dawn, end: state.sunrise },
+    { phase: 'day', start: state.sunrise, end: state.sunset },
+    { phase: 'dusk', start: state.sunset, end: state.nightfall },
+  ];
+  return spans.flatMap(({ phase, start, end }) =>
+    [0, 0.5].map((position) => ({ phase, time: (start + (end - start) * position) % SECONDS_PER_DAY })),
+  );
+};
+const lookFields = (sky: ReturnType<typeof skyAt>) => {
+  const { dayPhase: _dayPhase, light: _light, ...look } = sky;
+  return look;
+};
+
 describe('sky', () => {
-  it('puts the sun up by day and down by night', () => {
-    expect(sunDirection(12)[1]).toBeGreaterThan(0.9);
-    expect(sunDirection(0)[1]).toBeLessThan(-0.9);
-    expect(sunDirection(6)[0]).toBeGreaterThan(0.9); // east at sunrise
-    expect(sunDirection(18)[0]).toBeLessThan(-0.9); // west at sunset
+  it('keys the sky look to phase position across different solar cycles', () => {
+    const reference = phaseSamples(DEFAULT_DAY_CYCLE);
+    const comparison = phaseSamples(otherCycle);
+    reference.forEach(({ phase, time }, index) => {
+      expect(comparison[index]!.phase).toBe(phase);
+      const first = lookFields(skyAt(hourAt(time), DEFAULT_DAY_CYCLE));
+      const second = lookFields(skyAt(hourAt(comparison[index]!.time), otherCycle));
+      for (const key of Object.keys(first) as (keyof typeof first)[]) {
+        const a = first[key];
+        const b = second[key];
+        if (Array.isArray(a) && Array.isArray(b)) {
+          for (const [componentIndex, value] of a.entries()) {
+            expect(value).toBeCloseTo(b[componentIndex]!, 8);
+          }
+        } else {
+          expect(a).toBeCloseTo(b as number, 8);
+        }
+      }
+    });
   });
 
-  it('keeps the main light above the horizon, day and night', () => {
-    for (let hour = 0; hour < 24; hour += 0.25) {
+  it('keeps sun direction and sky labels aligned with derived solar phases', () => {
+    for (let minute = 0; minute < 24 * 60; minute++) {
+      const time = minute * 60;
+      const state = dayPhaseAt(DEFAULT_DAY_CYCLE, time);
+      const hour = hourAt(time);
+      expect(sunDirection(hour)[1] > 0, `sun at ${time}`).toBe(state.phase === 'day');
+      expect(skyAt(hour).dayPhase, `sky at ${time}`).toBe(state.phase);
       const [x, y, z] = skyAt(hour).light;
       expect(y).toBeGreaterThan(0);
       expect(Math.hypot(x, y, z)).toBeCloseTo(1, 9);
     }
+    expect(sunDirection(hourAt(day.sunrise))[0]).toBeGreaterThan(0);
+    expect(sunDirection(hourAt(day.sunset))[0]).toBeLessThan(0);
   });
 
-  it('is darkest in the dead of night', () => {
-    expect(brightness(1)).toBeLessThan(brightness(21.5));
-    expect(skyAt(1).fogFar).toBeLessThan(skyAt(21.5).fogFar);
+  it('makes full night darker and foggier than full day', () => {
+    const daySky = skyAt(hourAt(phaseMidpoint('day')));
+    const nightSky = skyAt(hourAt(phaseMidpoint('night')));
+    expect(brightness(hourAt(phaseMidpoint('day')))).toBeGreaterThan(brightness(hourAt(phaseMidpoint('night'))));
+    expect(daySky.fogFar).toBeGreaterThan(nightSky.fogFar);
+    expect(Math.max(...nightSky.sky)).toBeLessThan(Math.max(...daySky.sky));
   });
 
-  it('is dark at night, with the fog closer in', () => {
-    expect(brightness(0)).toBeLessThan(brightness(12) / 5);
-    expect(skyAt(0).fogFar).toBeLessThan(skyAt(12).fogFar);
-    expect(Math.max(...skyAt(0).sky)).toBeLessThan(0.1);
+  it('changes smoothly through the full day and midnight', () => {
+    let previousBrightness = brightness(0);
+    let previousTone = skyAt(0).tone;
+    for (let minute = 1; minute <= 24 * 60; minute++) {
+      const hour = (minute / 60) % 24;
+      const step = Math.abs(brightness(hour) - previousBrightness);
+      expect(step).toBeLessThan(0.1);
+      const { tone } = skyAt(hour);
+      expect(Math.abs(tone - previousTone)).toBeLessThan(0.05);
+      previousBrightness = brightness(hour);
+      previousTone = tone;
+    }
   });
 
-  it('keeps the height mist thickest at dawn and night and thinnest by day, bloom the other way round', () => {
-    expect(skyAt(6.5).heightFog).toBeGreaterThan(skyAt(19.5).heightFog);
-    expect(skyAt(19.5).heightFog).toBeGreaterThan(skyAt(12).heightFog);
-    expect(skyAt(23).heightFog).toBeGreaterThan(skyAt(12).heightFog * 4);
-    expect(skyAt(1).bloom).toBeGreaterThan(skyAt(12).bloom * 4);
-  });
-
-  it('interpolates the mood fields between keyframes, across midnight too', () => {
-    const night = skyAt(21); // NIGHT
-    const deep = skyAt(23); // DEEP_NIGHT
-    const mid = skyAt(22);
-    expect(mid.heightFog).toBeCloseTo((night.heightFog + deep.heightFog) / 2, 9);
-    expect(mid.bloom).toBeCloseTo((night.bloom + deep.bloom) / 2, 9);
-    expect(mid.heightFogColor[2]).toBeCloseTo((night.heightFogColor[2] + deep.heightFogColor[2]) / 2, 9);
-    // 23:00 to 03:30 wraps midnight between two dead-of-night keyframes, so it holds their value.
-    expect(skyAt(1.25).heightFog).toBe(deep.heightFog);
-    // 03:30 to 05:00 rises towards NIGHT's, which is thinner than DEEP_NIGHT's.
-    expect(skyAt(4.25).heightFog).toBeLessThan(deep.heightFog);
-    expect(skyAt(4.25).heightFog).toBeGreaterThan(night.heightFog);
-  });
-
-  it('keeps every mood field in range', () => {
-    for (let hour = 0; hour < 24; hour += 0.25) {
-      const sky = skyAt(hour);
-      expect(sky.heightFog).toBeGreaterThan(0);
-      expect(sky.heightFog).toBeLessThan(0.05);
+  it('keeps sky fields finite and within their normalized ranges all day', () => {
+    for (let time = 0; time < SECONDS_PER_DAY; time += 60) {
+      const sky = skyAt(hourAt(time));
+      expect(Number.isFinite(sky.heightFog)).toBe(true);
       expect(sky.bloom).toBeGreaterThanOrEqual(0);
       expect(sky.bloom).toBeLessThanOrEqual(1);
-      for (const channel of sky.heightFogColor) {
+      expect(sky.tone).toBeGreaterThanOrEqual(0);
+      expect(sky.tone).toBeLessThanOrEqual(1);
+      for (const channel of [...sky.sky, ...sky.lightColor, ...sky.ambientSky, ...sky.ambientGround]) {
         expect(channel).toBeGreaterThanOrEqual(0);
         expect(channel).toBeLessThanOrEqual(1);
       }
-    }
-  });
-
-  it('weighs the auto tone mapping by phase: Neutral by day, ACES at night, mostly ACES at dawn and dusk', () => {
-    expect(skyAt(12).tone).toBe(0);
-    expect(skyAt(8.5).tone).toBe(0); // the DAY keyframes
-    expect(skyAt(17.5).tone).toBe(0);
-    expect(skyAt(6.5).tone).toBe(0.85); // DAWN
-    expect(skyAt(19.5).tone).toBe(0.85); // DUSK
-    for (const hour of [0, 1, 3.5, 5, 21, 23]) {
-      expect(skyAt(hour).tone).toBe(1);
-    }
-    // Halfway between two keyframes is the mean of their weights.
-    expect(skyAt(7.5).tone).toBeCloseTo(0.425, 9);
-    expect(skyAt(5.75).tone).toBeCloseTo(0.925, 9);
-  });
-
-  it('moves the auto tone weight monotonically through sunrise and sunset, never stepping', () => {
-    let { tone: last } = skyAt(5);
-    for (let hour = 5.05; hour <= 8.5; hour += 0.05) {
-      const { tone } = skyAt(hour);
-      expect(tone).toBeLessThanOrEqual(last + 1e-12);
-      expect(last - tone).toBeLessThan(0.05);
-      last = tone;
-    }
-    ({ tone: last } = skyAt(17.5));
-    for (let hour = 17.55; hour <= 21; hour += 0.05) {
-      const { tone } = skyAt(hour);
-      expect(tone).toBeGreaterThanOrEqual(last - 1e-12);
-      expect(tone - last).toBeLessThan(0.05);
-      last = tone;
-    }
-    for (let hour = 0; hour < 24; hour += 0.05) {
-      expect(Math.abs(skyAt((hour + 0.05) % 24).tone - skyAt(hour).tone)).toBeLessThan(0.05);
-    }
-  });
-
-  it('changes smoothly through the day, across midnight too', () => {
-    for (let hour = 0; hour < 24; hour += 0.05) {
-      const step = Math.abs(brightness((hour + 0.05) % 24) - brightness(hour));
-      expect(step).toBeLessThan(0.1);
     }
   });
 });

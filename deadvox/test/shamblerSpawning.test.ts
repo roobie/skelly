@@ -8,6 +8,7 @@ import { ZombieSystem } from '../src/core/zombies.ts';
 import { spawnShamblers } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
@@ -46,7 +47,7 @@ const zombiesFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: num
       lit: false,
       lightSeenFrom: 40,
     }),
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
   });
 

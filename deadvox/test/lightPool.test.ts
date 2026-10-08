@@ -11,6 +11,7 @@ import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -110,7 +111,7 @@ describe('made-light point pool', () => {
       }),
       isSolid: floor,
       isOpaque: floor,
-      hour: () => 0,
+      dayPhase: () => dayStateAtHour(0),
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
@@ -201,11 +202,16 @@ describe('made-light point pool', () => {
   });
 
   it('uses daytime sky exposure for light gating, not direct sun angle', () => {
-    const wallShadow: SolidAt = (_x, y, z) => y >= 2 && z === -1;
-    const open = sunExposedAt([0.5, 1, 0.5], 12, 20, () => false);
-    const roofed = sunExposedAt([0.5, 1, 0.5], 12, 20, (_x, y) => y === 2);
-    const shadow = sunExposedAt([0.5, 1, 0.5], 12, 20, wallShadow);
-    const night = sunExposedAt([0.5, 1, 0.5], 0, 20, () => false);
+    const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
+    const open = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: () => false });
+    const roofed = sunExposedAt({
+      position: [0.5, 1, 0.5],
+      gameHours: 12,
+      skyTop: 20,
+      isOpaque: (_x, y) => y === 2,
+    });
+    const shadow = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: wallShadow });
+    const night = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 0, skyTop: 20, isOpaque: () => false });
 
     expect(open).toBe(true);
     expect(roofed).toBe(false);

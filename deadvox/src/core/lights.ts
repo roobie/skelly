@@ -7,6 +7,7 @@
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { type DayCycle, DEFAULT_DAY_CYCLE } from './dayPhase.ts';
 import type { Inventory, Location, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { isInHeldItemSlotTree } from './itemTree.ts';
@@ -88,13 +89,20 @@ export const lightSenseSourceFor = ({
 };
 
 /** A daylight sky-exposure test for simulation senses; authored renderer skylight is not authoritative here. */
-export const sunExposedAt = (
-  position: readonly [number, number, number],
-  hour: number,
-  skyTop: number,
-  isOpaque: SolidAt,
-): boolean => {
-  if (sunDirection(hour)[1] <= 0) {
+export const sunExposedAt = ({
+  position,
+  gameHours,
+  skyTop,
+  isOpaque,
+  cycle = DEFAULT_DAY_CYCLE,
+}: {
+  position: readonly [number, number, number];
+  gameHours: number;
+  skyTop: number;
+  isOpaque: SolidAt;
+  cycle?: DayCycle;
+}): boolean => {
+  if (sunDirection(gameHours, cycle)[1] <= 0) {
     return false;
   }
   const distance = skyTop - position[1];

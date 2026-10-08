@@ -296,6 +296,16 @@ const resolveParams = (assembly: Assembly, domain: Domain, structure: ReportStru
       pending.splice(pending.indexOf(p), 1);
     }
   }
+
+  for (const [part, resolved] of result) {
+    const family = domain.families[assembly.parts[part]!.family]!;
+    const values = Object.fromEntries(Object.entries(resolved).map(([name, param]) => [name, param.value]));
+    const refusal = family.validateParams?.(values);
+    if (refusal) {
+      structure(`Part "${part}" (${family.name}) cannot be built: ${refusal}`, [part]);
+      result.delete(part);
+    }
+  }
   return result;
 };
 

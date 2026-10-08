@@ -7,6 +7,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
@@ -52,6 +53,8 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
+const DAY_CYCLE = dayCycleFor(registry.dayCycle);
+const dayStateAtHour = (hour: number) => dayPhaseAt(DAY_CYCLE, hour * 3600);
 const SHAMBLER = registry.zombies.get('shambler')!;
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
@@ -85,7 +88,7 @@ const senses = (
   player: playerFn,
   isSolid,
   isOpaque: isSolid,
-  hour: hourFn,
+  dayPhase: () => dayStateAtHour(hourFn()),
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
   jumpSpeed: PLAYER.jump,
@@ -96,7 +99,7 @@ const sensesWithLocalSun = (
   playerFn: () => PlayerSense,
   hour: number,
   isSunExposedAt: (position: Vec3, hour: number) => boolean,
-) => ({ ...senses(playerFn, FLOOR, () => hour), isSunExposedAt });
+) => ({ ...senses(playerFn, FLOOR, () => hour), isSunExposedAt: (position: Vec3) => isSunExposedAt(position, hour) });
 const run = (system: ZombieSystem, seconds: number, onStep?: () => void) => {
   const frames = Math.ceil(seconds * 60);
   for (let frame = 0; frame < frames; frame++) {
@@ -366,7 +369,8 @@ describe('shambler perception', () => {
         from: [0, 2, 0],
         facing: [1, 0, 0],
         player: player(at, [-1, 0, 0], movement, lit),
-        hour,
+        dayPhase: dayStateAtHour(hour).phase,
+        sightBlend: dayStateAtHour(hour).sightBlend,
         blockSize: BLOCK_SIZE,
         isSolid: wall,
         tuning: SENSE_TUNING,
@@ -403,7 +407,8 @@ describe('shambler perception', () => {
         from: [0, 2, 0],
         facing: [1, 0, 0],
         player: player(at, [-1, 0, 0], movement),
-        hour: 12,
+        dayPhase: dayStateAtHour(12).phase,
+        sightBlend: dayStateAtHour(12).sightBlend,
         blockSize: BLOCK_SIZE,
         isSolid: wall,
         tuning: SENSE_TUNING,
@@ -437,7 +442,8 @@ describe('shambler perception', () => {
         from,
         facing: [1, 0, 0],
         player: player([distanceMetres / BLOCK_SIZE, 2, 0], [-1, 0, 0], movement, false, crouching),
-        hour,
+        dayPhase: dayStateAtHour(hour).phase,
+        sightBlend: dayStateAtHour(hour).sightBlend,
         blockSize: BLOCK_SIZE,
         isSolid: FLOOR,
         tuning: SENSE_TUNING,
@@ -483,7 +489,8 @@ describe('shambler perception', () => {
         from: [0, 0, 0],
         facing: [1, 0, 0],
         player: { ...source, pos: [distanceMetres / BLOCK_SIZE, 0, 0] },
-        hour,
+        dayPhase: dayStateAtHour(hour).phase,
+        sightBlend: dayStateAtHour(hour).sightBlend,
         blockSize: BLOCK_SIZE,
         isSolid: FLOOR,
         isSunExposedAt: () => sunlit,
@@ -521,8 +528,9 @@ describe('shambler perception', () => {
     expect(carriedAt(12, false)).toBe('investigate');
     expect(carriedAt(0, false)).toBe('investigate');
 
-    const wallShadow: SolidAt = (_x, y, z) => y >= 2 && z === -1;
-    const daylightSky = (position: Vec3, hour: number) => sunExposedAt(position, hour, 20, wallShadow);
+    const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
+    const daylightSky = (position: Vec3, hour: number) =>
+      sunExposedAt({ position, gameHours: hour, skyTop: 20, isOpaque: wallShadow });
     const sunlitSample: Vec3 = [0.5, 1.15, 0.5];
     expect(
       raycast([sunlitSample[0], sunlitSample[1] + 1e-4, sunlitSample[2]], sunDirection(12), 20, wallShadow),
@@ -538,10 +546,11 @@ describe('shambler perception', () => {
         pos: [distanceMetres / BLOCK_SIZE, 0, 0],
         sunlit: daylightSky([distanceMetres / BLOCK_SIZE, 1.3 / BLOCK_SIZE, 0], 12),
       },
-      hour: 12,
+      dayPhase: dayStateAtHour(12).phase,
+      sightBlend: dayStateAtHour(12).sightBlend,
       blockSize: BLOCK_SIZE,
       isSolid: FLOOR,
-      isSunExposedAt: daylightSky,
+      isSunExposedAt: (position) => daylightSky(position, 12),
       tuning: SENSE_TUNING,
     });
     expect(shadowPlayer).toBe(false);
@@ -576,7 +585,8 @@ describe('shambler perception', () => {
           eyeHeightMetres,
           lightHeightMetres: eyeHeightMetres,
         },
-        hour: 0,
+        dayPhase: dayStateAtHour(0).phase,
+        sightBlend: dayStateAtHour(0).sightBlend,
         blockSize: BLOCK_SIZE,
         isSolid: blocked ? isSolid : () => false,
         tuning: SENSE_TUNING,
@@ -2361,7 +2371,7 @@ describe('attention targets across terrain and changing blockers', () => {
     const system = new ZombieSystem({
       ...senses(() => player(target, [-1, 0, 0], 'sprinting')),
       blockSize,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
     });
     const id = system.add(type, [1, 1, 1]);
     const zombie = system.store.get(id)!;

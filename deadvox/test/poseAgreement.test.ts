@@ -15,6 +15,7 @@ import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from
 import { type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
@@ -108,7 +109,7 @@ describe('rendered and hit shambler poses', () => {
       isOpaque: FLOOR,
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
@@ -143,7 +144,7 @@ describe('rendered and hit shambler poses', () => {
       isOpaque: FLOOR,
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
@@ -183,7 +184,7 @@ describe('rendered and hit shambler poses', () => {
       isOpaque: FLOOR,
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
@@ -217,7 +218,7 @@ describe('rendered and hit shambler poses', () => {
       isOpaque: FLOOR,
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
@@ -241,7 +242,7 @@ describe('rendered and hit shambler poses', () => {
       isOpaque: FLOOR,
       player: () => ({ pos: [2, 1, 1], facing: [0, 0, 1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
@@ -261,7 +262,7 @@ describe('rendered and hit shambler poses', () => {
       isOpaque: FLOOR,
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
