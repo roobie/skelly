@@ -199,4 +199,3 @@ keeps mobgen source imports available; its obstruction predicate must match play
 - [EPIC.md](EPIC.md): what version 1 is, and the slices that get there.
 - [CHALLENGES.md](CHALLENGES.md): the hard problems and how we plan to tackle
   them.
-- [SLICE-2.md](SLICE-2.md): the plan for the second ("Craft and mend").

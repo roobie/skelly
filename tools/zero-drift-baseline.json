@@ -49,9 +49,9 @@
     { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR, 12:19", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR, 2026-10-03", "count": 2 },
     { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR, 2026-10-04", "count": 2 },
-    { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR, 2026-10-05", "count": 2 },
+    { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR, 2026-10-05", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR, 2026-10-06", "count": 1 },
-    { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR, 2026-10-07", "count": 12 },
+    { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR, 2026-10-07", "count": 11 },
     { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR's 08:33", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR's 08:35", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "citation", "text": "BR's 08:41", "count": 1 },
@@ -68,86 +68,6 @@
     { "path": "deadvox/docs/compass-spike.md", "check": "when", "text": "currently", "count": 1 },
     { "path": "deadvox/docs/crafting.md", "check": "citation", "text": "(BR,", "count": 1 },
     { "path": "deadvox/docs/crafting.md", "check": "citation", "text": "BR, 2026-10-05", "count": 5 },
-    {
-      "path": "deadvox/docs/decisions/0001-ui-rendering-with-lit-html.md",
-      "check": "read_if",
-      "text": "read_if must be a non-empty list of non-empty strings",
-      "count": 1
-    },
-    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "citation", "text": "2026-09-28). BR", "count": 1 },
-    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "citation", "text": "2026-10-02 BR", "count": 1 },
-    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "citation", "text": "BR ruled (2026-09-28", "count": 1 },
-    {
-      "path": "deadvox/docs/decisions/0002-saves.md",
-      "check": "citation",
-      "text": "BR's framing (2026-09-28",
-      "count": 1
-    },
-    {
-      "path": "deadvox/docs/decisions/0002-saves.md",
-      "check": "citation",
-      "text": "BR's rationale (2026-09-28",
-      "count": 1
-    },
-    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "../worker/mesh.worker.ts", "count": 1 },
-    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "game/audio.ts", "count": 1 },
-    {
-      "path": "deadvox/docs/decisions/0002-saves.md",
-      "check": "symbol",
-      "text": "deadvox/src/core/worldgen.ts, hamlet.ts",
-      "count": 1
-    },
-    {
-      "path": "deadvox/docs/decisions/0002-saves.md",
-      "check": "symbol",
-      "text": "deadvox/src/game/player.ts, rest.ts",
-      "count": 1
-    },
-    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "when", "text": "currently", "count": 2 },
-    {
-      "path": "deadvox/docs/decisions/0003-firearm-handling.md",
-      "check": "citation",
-      "text": "2026-10-02). BR",
-      "count": 1
-    },
-    {
-      "path": "deadvox/docs/decisions/0003-firearm-handling.md",
-      "check": "citation",
-      "text": "BR, 2026-10-07",
-      "count": 3
-    },
-    {
-      "path": "deadvox/docs/decisions/0003-firearm-handling.md",
-      "check": "citation",
-      "text": "BR's 2026-10-07",
-      "count": 2
-    },
-    { "path": "deadvox/docs/decisions/0003-firearm-handling.md", "check": "when", "text": "today", "count": 1 },
-    {
-      "path": "deadvox/docs/decisions/0004-content-language.md",
-      "check": "citation",
-      "text": "(2026-10-06, 12:08): “",
-      "count": 1
-    },
-    {
-      "path": "deadvox/docs/decisions/0004-content-language.md",
-      "check": "citation",
-      "text": "BR's 11:52",
-      "count": 1
-    },
-    {
-      "path": "deadvox/docs/decisions/0004-content-language.md",
-      "check": "citation",
-      "text": "BR's answers to the protocol questions (2026-10-06",
-      "count": 1
-    },
-    {
-      "path": "deadvox/docs/decisions/0004-content-language.md",
-      "check": "citation",
-      "text": "BR's words (2026-10-06",
-      "count": 2
-    },
-    { "path": "deadvox/docs/decisions/0004-content-language.md", "check": "when", "text": "today", "count": 1 },
     { "path": "deadvox/docs/firearm-cycle-playback.md", "check": "citation", "text": "BR's 12:09", "count": 1 },
     { "path": "deadvox/docs/firearm-cycle-playback.md", "check": "citation", "text": "BR's 14:55", "count": 1 },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "citation", "text": "BR's 2026-10-02", "count": 1 },
@@ -163,18 +83,6 @@
     { "path": "deadvox/docs/reach-options.md", "check": "citation", "text": "BR ruled on 2026-10-04", "count": 1 },
     { "path": "deadvox/docs/readables.md", "check": "citation", "text": "BR's 2026-10-07", "count": 1 },
     { "path": "deadvox/docs/readables.md", "check": "when", "text": "today", "count": 1 },
-    {
-      "path": "deadvox/docs/reviews/2026-09-29-maintainability.md",
-      "check": "read_if",
-      "text": "missing YAML front matter",
-      "count": 1
-    },
-    {
-      "path": "deadvox/docs/reviews/2026-10-03-consolidation.md",
-      "check": "read_if",
-      "text": "missing YAML front matter",
-      "count": 1
-    },
     { "path": "deadvox/docs/stairs.md", "check": "citation", "text": "(BR,", "count": 1 },
     { "path": "deadvox/docs/stairs.md", "check": "path", "text": "core/templateSpatial.ts", "count": 1 },
     { "path": "deadvox/docs/test-budget.md", "check": "citation", "text": "BR, 2026-10-06", "count": 1 },
@@ -197,8 +105,8 @@
     { "path": "deadvox/EPIC.md", "check": "citation", "text": "(BR)", "count": 1 },
     { "path": "deadvox/EPIC.md", "check": "citation", "text": "2026-10-02:** BR", "count": 1 },
     { "path": "deadvox/EPIC.md", "check": "citation", "text": "BR 2026-10-01", "count": 1 },
-    { "path": "deadvox/EPIC.md", "check": "citation", "text": "BR, 2026-10-02", "count": 3 },
-    { "path": "deadvox/EPIC.md", "check": "citation", "text": "BR, 2026-10-03", "count": 2 },
+    { "path": "deadvox/EPIC.md", "check": "citation", "text": "BR, 2026-10-02", "count": 2 },
+    { "path": "deadvox/EPIC.md", "check": "citation", "text": "BR, 2026-10-03", "count": 1 },
     { "path": "deadvox/EPIC.md", "check": "citation", "text": "BR's note (2026-09-30", "count": 1 },
     { "path": "deadvox/EPIC.md", "check": "when", "text": "currently", "count": 2 },
     { "path": "deadvox/EPIC.md", "check": "when", "text": "today", "count": 2 },
@@ -283,40 +191,6 @@
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "ui/death.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "ui/hud.ts", "count": 2 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "ui/inventoryScreen.ts", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "(BR,", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "(BR, 2026-10-05): \"", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "(BR)", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR reference-laptop result (2026-10-05", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR ruled on 2026-10-04", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR, 2026-10-02", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR, 2026-10-03", "count": 8 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR, 2026-10-04", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR, 2026-10-05", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR's answers (2026-10-03", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR's defaults of 2026-10-03", "count": 1 },
-    {
-      "path": "deadvox/SLICE-2.md",
-      "check": "citation",
-      "text": "BR's reference after-runs and d24-3 (2026-10-03",
-      "count": 1
-    },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR's ruling, 2026-10-03", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "citation", "text": "BR's rulings (lead, 2026-10-03", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/blockEntities.ts:292", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/hamlet.ts:54-57", "count": 2 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/inventory.ts:289", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/lights.ts:59", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/schema.ts:137-140", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/schema.ts:159-168", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/zombies.ts:396", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/game/session.ts:358", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/game/session.ts:59", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/game/survival.ts:172", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/game/targets.ts:36", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/render/flashlight.ts:84", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "path", "text": "core/footsteps.ts", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "path", "text": "src/game/targets.ts:36", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "when", "text": "today", "count": 6 },
     { "path": "deadvox/SLICE-3.md", "check": "citation", "text": "(BR, 2026-10-01)\"", "count": 1 },
     { "path": "deadvox/SLICE-3.md", "check": "citation", "text": "(BR, 2026-10-05 21:29):** “", "count": 1 },
     { "path": "deadvox/SLICE-3.md", "check": "citation", "text": "(d98, BR, 2026-10-06 10:12):** “", "count": 1 },
@@ -385,8 +259,6 @@
       "text": "mobgen/test/poseEquivalence.test.ts",
       "count": 1
     },
-    { "path": "docs/PROCESS.md", "check": "citation", "text": "(2026-10-06 06:54): “", "count": 1 },
-    { "path": "docs/PROCESS.md", "check": "citation", "text": "(2026-10-06 06:56): “", "count": 1 },
     { "path": "docs/PROCESS.md", "check": "citation", "text": "(BR, 2026-10-03): \"", "count": 1 },
     { "path": "docs/PROCESS.md", "check": "citation", "text": "BR, 2026-10-02", "count": 1 },
     { "path": "docs/PROCESS.md", "check": "citation", "text": "BR, 2026-10-03", "count": 2 },
@@ -408,24 +280,6 @@
     { "path": "gungen/docs/pump-action-export.md", "check": "path", "text": "gun/tubeCapacity.ts", "count": 1 },
     {
       "path": "gungen/docs/pump-action-export.md",
-      "check": "read_if",
-      "text": "missing YAML front matter",
-      "count": 1
-    },
-    {
-      "path": "gungen/docs/reviews/2026-09-29-maintainability.md",
-      "check": "read_if",
-      "text": "missing YAML front matter",
-      "count": 1
-    },
-    {
-      "path": "gungen/docs/reviews/2026-10-03-consolidation.md",
-      "check": "read_if",
-      "text": "missing YAML front matter",
-      "count": 1
-    },
-    {
-      "path": "gungen/docs/reviews/g24-ak-stock-step.md",
       "check": "read_if",
       "text": "missing YAML front matter",
       "count": 1
@@ -465,23 +319,10 @@
       "text": "test/fixtures/broken-connection-contact.json",
       "count": 1
     },
-    { "path": "gungen/PROJECT.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "gungen/PROJECT.md", "check": "when", "text": "currently", "count": 2 },
     { "path": "gungen/PROJECT.md", "check": "when", "text": "today", "count": 3 },
     { "path": "gungen/src/gun/parts.ts", "check": "citation", "text": "BR, 2026-10-06", "count": 1 },
     { "path": "gungen/test/ak.test.ts", "check": "citation", "text": "BR 22:47", "count": 1 },
-    {
-      "path": "mobgen/docs/reviews/2026-09-29-maintainability.md",
-      "check": "read_if",
-      "text": "missing YAML front matter",
-      "count": 1
-    },
-    {
-      "path": "mobgen/docs/reviews/2026-10-03-consolidation.md",
-      "check": "read_if",
-      "text": "missing YAML front matter",
-      "count": 1
-    },
     { "path": "mobgen/reference/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 }
   ]
 }
