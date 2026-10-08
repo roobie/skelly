@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { roundProfiles } from '../src/ammo/roundProfile.ts';
+import { resolve } from '../src/core/resolve.ts';
 import type { Solid } from '../src/core/schema.ts';
+import { gunDomain } from '../src/gun/domain.ts';
 import { magazineCenterline } from '../src/gun/magazineCenterline.ts';
 import { exportMagazineGlb } from '../src/gun/magazineExport.ts';
-import { MAGAZINE_WALL_U, magazineRoundColumn, magazineRoundPoses, UNITS_PER_MM } from '../src/gun/magazineGeometry.ts';
+import {
+  MAGAZINE_WALL_U,
+  magazineRoundColumn,
+  magazineRoundPoses,
+  nominalCapacityForMagazine,
+  UNITS_PER_MM,
+} from '../src/gun/magazineGeometry.ts';
 import { magazine } from '../src/gun/parts.ts';
+import { GUN_PREFABS } from '../src/gun/prefabs.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 
 const cartridge = loadCartridgeFile('7.62x39.json') as MetallicCartridge;
@@ -69,25 +78,64 @@ describe('generated magazine round columns', () => {
     expect(result.modelEntry.rounds?.[1]?.at[2]).toBeLessThan(0);
   });
 
-  it('fits and exports 30 source-profile 5.56 rounds in a STANAG L magazine', () => {
-    const params = { length: 'L', profile: 'stanag-curved' };
-    const part = magazine.build(params);
-    const { column } = magazineRoundColumn(part.displaySolids ?? part.solids, natoCartridge, params, part.solids);
-    expect(column.capacity).toBe(30);
-    expect(column.rounds).toHaveLength(30);
-    expect(column.rounds.every(({ position, z }) => position.every(Number.isFinite) && Number.isFinite(z))).toBe(true);
-    const result = exportMagazineGlb({
-      asset: { id: 'magazine_stanag_30', file: 'assets/models/magazine-stanag-30.glb' },
-      params,
-      cartridge: natoCartridge,
-    });
-    expect(result.ok).toBe(true);
-    if (!result.ok) {
-      return;
+  it('keeps the STANAG 20 straight with a slanted floorplate and the 30-round shared top', () => {
+    const twenty = magazine.build({ length: 'M', profile: 'stanag-straight' });
+    const thirty = magazine.build({ length: 'L', profile: 'stanag-curved' });
+    const top = twenty.solids.find(({ id }) => id === 'upper-body');
+    const sharedTop = thirty.solids.find(({ id }) => id === 'upper-body');
+    const body = twenty.solids.find(({ id }) => id === 'straight-body');
+    const floorplate = twenty.solids.find(({ id }) => id === 'floorplate');
+    expect(top).toEqual(sharedTop);
+    if (!(body?.kind === 'extruded-polygon' && floorplate?.kind === 'extruded-polygon')) {
+      throw new Error('Expected an extruded straight STANAG body and floorplate.');
     }
-    expect(result.modelEntry.calibre).toBe('5.56x45');
-    expect(result.modelEntry.capacity).toBe(30);
-    expect(result.modelEntry.rounds).toHaveLength(30);
+    expect(body.profile[0]![0]).toBe(body.profile[1]![0]);
+    expect(body.profile[2]![0]).toBe(body.profile[3]![0]);
+    expect(floorplate.profile[0]![1]).not.toBe(floorplate.profile[1]![1]);
+  });
+
+  it.each(['S', 'L', '5-round', '10-round'])(
+    'reports a structure issue for a straight STANAG at %s length',
+    (length) => {
+      const resolved = resolve(
+        {
+          name: 'invalid straight STANAG length',
+          root: 'magazine',
+          parts: { magazine: { family: 'magazine', params: { length, profile: 'stanag-straight' } } },
+          connections: [],
+        },
+        gunDomain,
+      );
+      expect(
+        resolved.issues.some(
+          ({ rule, message, parts }) =>
+            rule === 'structure' && parts.includes('magazine') && message.includes('only at M length'),
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it('fits each curated STANAG prefab to its nominal 5.56 column capacity', () => {
+    const prefabs = GUN_PREFABS.filter(({ fixedParams }) => fixedParams.profile?.startsWith('stanag-'));
+    expect(prefabs.length).toBeGreaterThan(0);
+    for (const prefab of prefabs) {
+      const part = magazine.build(prefab.fixedParams);
+      const { column } = magazineRoundColumn(
+        part.displaySolids ?? part.solids,
+        natoCartridge,
+        prefab.fixedParams,
+        part.solids,
+      );
+      const nominalCapacity = nominalCapacityForMagazine(prefab.fixedParams);
+      if (nominalCapacity === undefined) {
+        throw new Error(`${prefab.id} has no sourced nominal magazine capacity.`);
+      }
+      expect(column.capacity, prefab.id).toBe(nominalCapacity);
+      expect(column.rounds).toHaveLength(column.capacity);
+      expect(column.rounds.every(({ position, z }) => position.every(Number.isFinite) && Number.isFinite(z))).toBe(
+        true,
+      );
+    }
   });
 
   it('refuses a generated magazine body whose actual depth cannot contain the round profile', () => {

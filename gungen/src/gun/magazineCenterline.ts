@@ -5,6 +5,8 @@ export interface MagazineCenterline {
   readonly points: readonly Vec2[];
   /** Width across the magazine's side walls (the extrusion depth). */
   readonly width: number;
+  /** Side-wall separation at each centreline point, including body transitions. */
+  readonly sectionWidths: readonly number[];
   /** Actual front-to-back body section span at each centreline point, from its source solid. */
   readonly sectionDepths: readonly number[];
   /** Rear face of the body, where feed lips start. */
@@ -32,16 +34,23 @@ export const magazineCenterline = (solids: readonly Solid[]): MagazineCenterline
         return aIndex - bIndex;
       });
     // Upper body is [top-back, top-front, face-front, face-back]; sectors start at the next rear/front pair.
+    const straightBody = solids.find((solid) => solid.id === 'straight-body');
     const sectionPairs: readonly [Vec2, Vec2][] = [
       [upper.profile[2]!, upper.profile[3]!],
       [upper.profile[0]!, upper.profile[1]!],
+      ...(straightBody?.kind === 'extruded-polygon'
+        ? [[straightBody.profile[2]!, straightBody.profile[1]!] as [Vec2, Vec2]]
+        : []),
       ...sectors.map((sector): [Vec2, Vec2] => [sector.profile[0]!, sector.profile[1]!]),
     ];
     const points = sectionPairs.map(([rear, front]) => midpoint(rear, front));
     const sectionDepths = sectionPairs.map(([rear, front]) => Math.hypot(front[0] - rear[0], front[1] - rear[1]));
+    const upperWidth = upper.z[1] - upper.z[0];
+    const bodyWidth = straightBody?.kind === 'extruded-polygon' ? straightBody.z[1] - straightBody.z[0] : upperWidth;
     return {
       points,
-      width: upper.z[1] - upper.z[0],
+      width: upperWidth,
+      sectionWidths: sectionPairs.map((_, index) => (index < 2 ? upperWidth : bodyWidth)),
       sectionDepths,
       rearX: Math.min(...upper.profile.map(([x]) => x)),
     };
@@ -55,6 +64,7 @@ export const magazineCenterline = (solids: readonly Solid[]): MagazineCenterline
         [center[0], center[1] - half[1]],
       ],
       width: half[2] * 2,
+      sectionWidths: [half[2] * 2, half[2] * 2],
       sectionDepths: [half[0] * 2, half[0] * 2],
       rearX: center[0] - half[0],
     };

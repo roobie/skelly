@@ -39,6 +39,34 @@
       ]
     },
     {
+      "id": "magazine_stanag_20",
+      "file": "assets/models/magazine_stanag_20.glb",
+      "calibre": "5.56x45",
+      "capacity": 20,
+      "rounds": [
+        { "at": [0, 0.007185, 0.0067], "tilt": 0 },
+        { "at": [0, 0.002385, -0.0067], "tilt": 0 },
+        { "at": [0, -0.002415, 0.0067], "tilt": 0 },
+        { "at": [0, -0.007215, -0.0067], "tilt": 0 },
+        { "at": [0, -0.012015, 0.0067], "tilt": 0 },
+        { "at": [0, -0.016815, -0.0067], "tilt": 0 },
+        { "at": [0, -0.021615, 0.0067], "tilt": 0 },
+        { "at": [0, -0.026415, -0.0067], "tilt": 0 },
+        { "at": [0, -0.031215, 0.0067], "tilt": 0 },
+        { "at": [0, -0.036015, -0.0067], "tilt": 0 },
+        { "at": [0, -0.040815, 0.0067], "tilt": 0 },
+        { "at": [0, -0.045615, -0.0067], "tilt": 0 },
+        { "at": [0, -0.050415, 0.0067], "tilt": 0 },
+        { "at": [0, -0.055215, -0.0067], "tilt": 0 },
+        { "at": [0, -0.060015, 0.0067], "tilt": 0 },
+        { "at": [0, -0.064815, -0.0067], "tilt": 0 },
+        { "at": [0, -0.069615, 0.0067], "tilt": 0 },
+        { "at": [0, -0.074415, -0.0067], "tilt": 0 },
+        { "at": [0, -0.079215, 0.0067], "tilt": 0 },
+        { "at": [0, -0.084015, -0.0067], "tilt": 0 }
+      ]
+    },
+    {
       "id": "magazine_akm_30",
       "file": "assets/models/magazine_akm_30.glb",
       "calibre": "7.62x39",
@@ -142,6 +170,15 @@
       "size": [1, 2],
       "description": "A 30-round 5.56×45 box magazine for AR-pattern rifles, from gungen's stanag-30 prefab. Holds loose 5.56×45 cartridges. Empty mass 117 g is a gameplay estimate.",
       "model": "magazine_stanag_30"
+    },
+    {
+      "id": "magazine_stanag_20",
+      "name": "20-round STANAG magazine",
+      "category": "ammo",
+      "weight": 79,
+      "size": [1, 2],
+      "description": "A 20-round 5.56×45 straight-body magazine for AR-pattern rifles, from gungen's stanag-20 prefab. Holds loose 5.56×45 cartridges. Empty mass 79 g is the Brownells listing's shipping weight.",
+      "model": "magazine_stanag_20"
     },
     {
       "id": "magazine_akm_30",

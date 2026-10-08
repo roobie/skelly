@@ -17,7 +17,7 @@ import { loadFixture } from './helpers.ts';
 
 /** A test catalogue; the real content belongs to 3.1. Two revisions of one id coexist. */
 const catalogue: PrefabCatalogue = [
-  { id: 'test-stanag', version: 1, family: 'magazine', fixedParams: { length: 'M', profile: 'stanag-curved' } },
+  { id: 'test-stanag', version: 1, family: 'magazine', fixedParams: { length: 'M', profile: 'stanag-straight' } },
   { id: 'test-stanag', version: 2, family: 'magazine', fixedParams: { length: 'L', profile: 'stanag-curved' } },
 ];
 
@@ -482,7 +482,7 @@ describe('loadDesign: change policy', () => {
   it('a prefab mismatch loads as a draft naming the mismatched param', () => {
     const assembly = withPart({
       family: 'magazine',
-      params: { length: 'S', profile: 'stanag-curved' },
+      params: { length: 'S', profile: 'stanag-straight' },
       prefab: { id: 'test-stanag', version: 1 },
     });
     const result = load(makeDesign({ assembly }));
@@ -524,7 +524,7 @@ describe('loadDesign: change policy', () => {
   it('a matching prefab loads clean', () => {
     const assembly = withPart({
       family: 'magazine',
-      params: { length: 'M', profile: 'stanag-curved' },
+      params: { length: 'M', profile: 'stanag-straight' },
       prefab: { id: 'test-stanag', version: 1 },
     });
     const result = load(makeDesign({ assembly }));

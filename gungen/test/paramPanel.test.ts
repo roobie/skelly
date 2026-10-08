@@ -73,7 +73,7 @@ describe('param panel: listing', () => {
     expect(length.values.find((value) => value.value === 'M')?.permitted).toBe(true);
     expect(magazine.prefab).toEqual({
       label: 'stanag-20 v1',
-      fixedParams: { length: 'M', profile: 'stanag-curved' },
+      fixedParams: { length: 'M', profile: 'stanag-straight' },
       stale: false,
     });
     expect(sight.optional).toBe(true);

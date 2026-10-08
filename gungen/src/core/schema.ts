@@ -188,6 +188,8 @@ export interface ParamSpec {
 export interface PartFamily {
   readonly name: string;
   readonly params: Readonly<Record<string, ParamSpec>>;
+  /** Returns a structure-issue message when resolved params cannot form this family. */
+  readonly validateParams?: (params: Readonly<Record<string, string>>) => string | undefined;
   readonly build: (params: Readonly<Record<string, string>>) => PartDef;
 }
 
