@@ -276,7 +276,7 @@ describe('watertightness (welded at 1e-5u)', () => {
     expect(() => meshForSolidGroup([thin])).toThrow(THIN_SOLID_ERROR);
   });
 
-  // Measured about 1.5 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  // Checks every solid, including display geometry, across templates and seeds.
   it('is watertight for every solid (including displaySolids) of every template at a few seeds', {
     timeout: 10_000,
   }, () => {
