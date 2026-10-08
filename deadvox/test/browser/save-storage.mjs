@@ -15,6 +15,7 @@ import { browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
+const SAVED_GENERATION_STATUS = /^Saved generation (\d+)\b/;
 const browserName = process.argv[2] ?? 'chromium';
 const autosaveOnly = process.env.SAVE_AUTOSAVE_ONLY === '1';
 const navigationOnly = process.env.SAVE_NAVIGATION_ONLY === '1';
@@ -508,35 +509,54 @@ try {
         globalThis.__d5SaveTest = { storage, namespace: identity.digest };
       }, backend);
     }
-    let lastReadFailure = '';
+    let lastReadFailure = 'none';
+    let lastGenerationSeen;
     const readGeneration = async () => {
       try {
-        return await probePage.evaluate(
+        const generation = await probePage.evaluate(
           async () => (await globalThis.__d5SaveTest.storage.load(globalThis.__d5SaveTest.namespace))?.generation,
         );
+        if (generation !== undefined) {
+          lastGenerationSeen = generation;
+        }
+        return generation;
       } catch (error) {
         lastReadFailure = String(error);
         // OPFS readers can transiently conflict with an in-flight writer handle.
       }
     };
-    const waitForGeneration = (previous, trigger = 'checkpoint') =>
-      withTimeout(
-        `wait for ${backend} generation`,
-        (async () => {
-          const deadline = Date.now() + STAGE_TIMEOUT_MS;
-          while (Date.now() < deadline) {
-            const generation = await readGeneration();
-            if (generation !== undefined && (previous === undefined || generation > previous)) {
-              return generation;
+    const waitForGeneration = async (previous, trigger = 'checkpoint') => {
+      try {
+        const result = await page.waitForFunction(
+          ({ minimum }) => {
+            const status = document.querySelector('#save-status')?.textContent ?? '';
+            if (status.startsWith('Save failed')) {
+              return { failure: status };
             }
-            await delay(100);
-          }
-          const status = await page.locator('#save-status').textContent();
-          throw new Error(
-            `${backend} ${trigger} generation did not advance; status=${status}; lastRead=${lastReadFailure}`,
-          );
-        })(),
-      );
+            const match = status.match(SAVED_GENERATION_STATUS);
+            const generation = match ? Number(match[1]) : undefined;
+            return generation !== undefined && (minimum === undefined || generation > minimum) ? { generation } : false;
+          },
+          { minimum: previous },
+          { timeout: STAGE_TIMEOUT_MS },
+        );
+        const outcome = await result.jsonValue();
+        await result.dispose();
+        if (outcome.failure) {
+          throw new Error(outcome.failure);
+        }
+        return outcome.generation;
+      } catch (error) {
+        const status = await page
+          .locator('#save-status')
+          .textContent()
+          .catch(() => 'unavailable');
+        throw new Error(
+          `${backend} ${trigger} generation did not advance from ${previous ?? 'none'}; status=${status}; lastRead=${lastReadFailure}; lastGeneration=${lastGenerationSeen ?? previous ?? 'none'}; errors=${pageErrors.join('; ')}`,
+          { cause: error },
+        );
+      }
+    };
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
     if (autosaveOnly) {
       await page.waitForFunction(() => globalThis.deadvoxSaveTest !== undefined, undefined, {
