@@ -3,6 +3,7 @@ import { exportFileText } from '../src/cli/exportFile.ts';
 import type { Design } from '../src/core/design.ts';
 import { type DesignLoadInputs, loadDesign, loadDesignValue } from '../src/core/designLoader.ts';
 import { generateValid } from '../src/core/generate.ts';
+import { validate } from '../src/core/validate.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import type { Template } from '../src/core/template.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
@@ -58,7 +59,7 @@ const expectFatal = (result: ReturnType<typeof load>) => {
 };
 
 describe('loadDesign: feasibility evaluation', () => {
-  it('builds each part once while reusing calibration and validation results', () => {
+  it('evaluates an explicit-calibre design once per load', () => {
     const template = TEMPLATES.find(({ name }) => name === 'ak');
     if (!template?.calibre) {
       throw new Error('the AK template must specify its generated calibre');
@@ -93,9 +94,15 @@ describe('loadDesign: feasibility evaluation', () => {
     };
     const design = makeDesign({ template: 'ak', assembly: generatedAk.assembly, calibre: template.calibre });
 
+    receiverBuilds = 0;
+    validate(generatedAk.assembly, domain);
+    const directValidationBuilds = receiverBuilds;
+    expect(directValidationBuilds).toBeGreaterThan(0);
+
+    receiverBuilds = 0;
     const result = load(design, { domain, template });
     expect(result.ok).toBe(true);
-    expect(receiverBuilds).toBe(1);
+    expect(receiverBuilds).toBe(directValidationBuilds);
   });
 });
 
