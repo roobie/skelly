@@ -638,80 +638,74 @@ describe('authored fixed loot', () => {
     expect(fixedCount(overrides, 'workshop_hall', 'portable_radio')).toBeGreaterThan(0);
     expect(fixedCount(overrides, 'workshop_hall', 'jerry_can')).toBeGreaterThan(0);
     expect(fixedCount(overrides, 'workshop_office', 'workshop_notes')).toBeGreaterThan(0);
-    const filler = result.registry.loot.get('workshop_filler')!;
-    expect(filler.entries.some(({ item }) => item === 'improvised_suppressor')).toBe(false);
-    expect(filler.entries.some(({ item }) => item === 'taped_flashlight_mount')).toBe(false);
-    expect(filler.entries.some(({ item }) => item === 'steel_pipe')).toBe(false);
+  });
 
-    const workshopTemplates = ['workshop_hall', 'workshop_office', 'workshop_parts_store'];
-    const workshopFixed = overrides
-      .filter(({ building }) => workshopTemplates.includes(building.template))
+  it('covers the light recipe and guarantees the quiet input at the noisy scrap pile', () => {
+    const overrides = placedOverrides(layout);
+    const garageTemplates = ['workshop_hall', 'workshop_office', 'workshop_parts_store'];
+    const garageItems = overrides
+      .filter(({ building }) => garageTemplates.includes(building.template))
       .flatMap(({ override }) => override.items);
-    const workshopCounts = new Map<string, number>();
-    for (const fixed of workshopFixed) {
-      workshopCounts.set(fixed.item, (workshopCounts.get(fixed.item) ?? 0) + (fixed.count ?? 1));
+    const itemCount = (items: typeof garageItems, item: string) =>
+      items.filter((fixed) => fixed.item === item).reduce((sum, fixed) => sum + (fixed.count ?? 1), 0);
+    const filler = result.registry.loot.get('workshop_filler')!;
+    for (const item of ['improvised_suppressor', 'taped_flashlight_mount', 'steel_pipe']) {
+      expect(filler.entries.some((entry) => entry.item === item)).toBe(false);
     }
-    const coversIngredients = (recipe: NonNullable<ReturnType<typeof result.registry.recipes.get>>) =>
-      recipe.components.every((alternatives) =>
-        alternatives.some((ingredient) => (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count),
-      );
-    const mountRecipe = [...result.registry.recipes.values()].find(
-      ({ result: recipeResult }) => recipeResult.item === 'taped_flashlight_mount',
-    );
-    const suppressorRecipe = [...result.registry.recipes.values()].find(
-      ({ result: recipeResult }) => recipeResult.item === 'improvised_suppressor',
-    );
+
+    const recipes = [...result.registry.recipes.values()];
+    const mountRecipe = recipes.find(({ result: recipeResult }) => recipeResult.item === 'taped_flashlight_mount');
+    const suppressorRecipe = recipes.find(({ result: recipeResult }) => recipeResult.item === 'improvised_suppressor');
     expect(mountRecipe).toBeDefined();
     expect(suppressorRecipe).toBeDefined();
-    expect(coversIngredients(mountRecipe!)).toBe(true);
-    const hallTemplate = compileTemplate(result.registry, result.registry.templates.get('workshop_hall')!);
-    const bench = hallTemplate.pieces.find(({ furniture }) => furniture === 'workbench');
-    const benchWorkstation = bench && result.registry.furniture.get(bench.furniture)?.workstation;
-    expect(benchWorkstation).toBeDefined();
-    expect(mountRecipe!.workstation).toBe(benchWorkstation!.id);
-    expect(suppressorRecipe!.workstation).toBe(benchWorkstation!.id);
-    const hasCraftQualities = (recipe: NonNullable<typeof mountRecipe>) =>
-      Object.entries(recipe.qualities).every(([quality, level]) =>
-        (benchWorkstation!.qualities[quality] ?? 0) >= level ||
-        workshopFixed.some(
-          (fixed) => (result.registry.items.get(fixed.item)?.tool?.qualities[quality] ?? 0) >= level,
-        ),
+    const coversIngredients = (recipe: NonNullable<typeof mountRecipe>) =>
+      recipe.components.every((alternatives) =>
+        alternatives.some((ingredient) => itemCount(garageItems, ingredient.item) >= ingredient.count),
       );
-    expect(hasCraftQualities(mountRecipe!)).toBe(true);
-    expect(hasCraftQualities(suppressorRecipe!)).toBe(true);
-    const missingSuppressorGroups = suppressorRecipe!.components.filter(
-      (alternatives) =>
-        !alternatives.some((ingredient) => (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count),
-    );
-    expect(missingSuppressorGroups).toHaveLength(1);
-    const missingInputs = missingSuppressorGroups[0]!;
-    for (const { item } of missingInputs) {
-      expect(workshopCounts.get(item) ?? 0).toBe(0);
+    expect(coversIngredients(mountRecipe!)).toBe(true);
+
+    const hall = compileTemplate(result.registry, result.registry.templates.get('workshop_hall')!);
+    const bench = hall.pieces.find(({ furniture }) => furniture === 'workbench');
+    const workstation = bench && result.registry.furniture.get(bench.furniture)?.workstation;
+    expect(workstation).toBeDefined();
+    expect(mountRecipe!.workstation).toBe(workstation!.id);
+    expect(suppressorRecipe!.workstation).toBe(workstation!.id);
+    const qualitiesAvailable = (recipe: NonNullable<typeof mountRecipe>) =>
+      Object.entries(recipe.qualities).every(([quality, level]) =>
+        (workstation!.qualities[quality] ?? 0) >= level ||
+        garageItems.some((fixed) => (result.registry.items.get(fixed.item)?.tool?.qualities[quality] ?? 0) >= level),
+      );
+    expect(qualitiesAvailable(mountRecipe!)).toBe(true);
+    expect(qualitiesAvailable(suppressorRecipe!)).toBe(true);
+
+    const workshopCounts = new Map<string, number>();
+    for (const fixed of garageItems) {
+      workshopCounts.set(fixed.item, (workshopCounts.get(fixed.item) ?? 0) + (fixed.count ?? 1));
     }
+    const missingGroups = suppressorRecipe!.components.filter(
+      (alternatives) => !alternatives.some((ingredient) => (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count),
+    );
+    expect(missingGroups).toHaveLength(1);
     const scrapPile = compileTemplate(result.registry, result.registry.templates.get('workshop_yard')!).pieces.find(
       ({ furniture }) => furniture === 'workshop_scrap_pile',
     );
     expect(scrapPile?.loot).toBeDefined();
-    const scrapPileOverride = overrides.find(
+    const pileOverride = overrides.find(
       ({ building, override }) =>
         building.template === 'workshop_yard' && override.at.join(',') === scrapPile!.pos.join(','),
     );
+    const pileItems = pileOverride?.override.items ?? [];
     expect(
-      missingInputs.some(({ item, count }) => {
-        const yieldCount = scrapPileOverride?.override.items
-          .filter((fixed) => fixed.item === item)
-          .reduce((sum, fixed) => sum + (fixed.count ?? 1), 0);
-        return (yieldCount ?? 0) >= count;
-      }),
+      missingGroups[0]!.some(({ item, count }) => itemCount(pileItems, item) >= count),
     ).toBe(true);
-    const scrapSearchNoise = result.registry.furniture.get('workshop_scrap_pile')?.searchNoise;
-    expect(scrapSearchNoise).toBeDefined();
-    expect(result.registry.sounds.get(scrapSearchNoise!.sound)?.noise.enabled).toBe(true);
-    const workshopRadio = overrides
+    const searchNoise = result.registry.furniture.get('workshop_scrap_pile')?.searchNoise;
+    expect(searchNoise).toBeDefined();
+    expect(result.registry.sounds.get(searchNoise!.sound)?.noise.enabled).toBe(true);
+    const radio = overrides
       .filter(({ building }) => building.template === 'workshop_hall')
       .flatMap(({ override }) => override.items)
       .find(({ item }) => item === 'portable_radio');
-    expect(workshopRadio?.condition).toBe(0);
+    expect(radio?.condition).toBe(0);
   });
 
   it('keeps every fixed-loot container reachable from outside at standing height', () => {

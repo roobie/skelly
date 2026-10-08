@@ -1334,7 +1334,7 @@ export const createSession = (options: SessionOptions) => {
         return undefined;
       }
       searching.add(entity);
-      const searchNoise = entities.defOf(entity).searchNoise;
+      const { searchNoise } = entities.defOf(entity);
       if (searchNoise) {
         playPlayerSound(searchNoise.sound, sim.time, { sourceLabel: `searching ${nameOf(entity)}` });
       }

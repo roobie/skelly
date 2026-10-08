@@ -529,7 +529,7 @@ const checkDoorOpenNoise = (registry: Registry, furniture: FurnitureDef, report:
 };
 
 const checkSearchNoise = (registry: Registry, furniture: FurnitureDef, report: Report) => {
-  const searchNoise = furniture.searchNoise;
+  const { searchNoise } = furniture;
   const sound = searchNoise && registry.sounds.get(searchNoise.sound);
   if (searchNoise && !sound) {
     report('furniture', furniture.id, '.searchNoise.sound', `no sound event "${searchNoise.sound}"`);
