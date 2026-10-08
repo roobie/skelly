@@ -105,6 +105,31 @@ it('actual movement and quick look turns increase isolated aim deviation', () =>
   expect(Math.abs(turnedFrame.yaw)).toBeGreaterThan(Math.abs(steadyFrame.yaw));
 });
 
+it('keeps quick-look lag symmetric across axes and independent of vertical flattening', () => {
+  const contentRatio = stanceTuning.wobbleVerticalToHorizontalRatio;
+  const alternateRatio = contentRatio < 0.5 ? contentRatio + (1 - contentRatio) / 2 : contentRatio / 2;
+  const quickLook = 0.05;
+  const response = (axis: 'yaw' | 'pitch', ratio: number) => {
+    const aim = createAim(1, stanceTuning.wobbleLimitRadians, stanceTuning.wobbleJitterShare, ratio);
+    aim.advance(step());
+    return aim.advance(
+      step({
+        yaw: axis === 'yaw' ? quickLook : 0,
+        pitch: axis === 'pitch' ? quickLook : 0,
+      }),
+    );
+  };
+  const yawAtContentRatio = response('yaw', contentRatio).yaw;
+  const pitchAtContentRatio = response('pitch', contentRatio).pitch;
+  const yawAtAlternateRatio = response('yaw', alternateRatio).yaw;
+  const pitchAtAlternateRatio = response('pitch', alternateRatio).pitch;
+
+  expect(Math.abs(yawAtContentRatio)).toBeGreaterThan(0);
+  expect(Math.abs(pitchAtContentRatio)).toBeCloseTo(Math.abs(yawAtContentRatio), 8);
+  expect(pitchAtAlternateRatio).toBeCloseTo(pitchAtContentRatio, 8);
+  expect(yawAtAlternateRatio).toBeCloseTo(yawAtContentRatio, 8);
+});
+
 it('committed recoil recovers in simulation time and equal inputs stay deterministic', () => {
   const first = createAim();
   const second = createAim();

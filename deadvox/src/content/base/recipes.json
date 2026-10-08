@@ -29,7 +29,7 @@
           },
           "wobbleSkillTenVariance": 0.05,
           "wobbleLimitRadians": 0.14,
-          "wobbleVerticalToHorizontalRatio": 0.3,
+          "wobbleVerticalToHorizontalRatio": 0.225,
           "wobbleLuneArchPower": 2,
           "wobbleLunePhaseOffsetRadians": 0.08,
           "wobbleJitterShare": 0.5,

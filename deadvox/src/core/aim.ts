@@ -45,7 +45,6 @@ export interface AimWobbleShape {
 
 const TAU = Math.PI * 2;
 const MOVE_YAW_PER_SPEED = 0.0045;
-const MOVE_PITCH_PER_SPEED = 0.003;
 const LOOK_LAG_PER_RADIAN = 0.035;
 const LOOK_SETTLE_SECONDS = 0.22;
 const RECOIL_RECOVERY_SECONDS = 0.34;
@@ -95,7 +94,7 @@ const frameFromState = ({
     : 0;
   const wobble = boundVector(
     (state.lookYaw + (gait + Math.cos(jitterAngle) * jitterScale) * speed * MOVE_YAW_PER_SPEED) * variance,
-    (state.lookPitch * MOVE_PITCH_PER_SPEED +
+    (state.lookPitch +
       (pitchArch + Math.sin(jitterAngle) * jitterScale) *
         speed *
         MOVE_YAW_PER_SPEED *

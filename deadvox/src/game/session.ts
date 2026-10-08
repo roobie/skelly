@@ -1231,6 +1231,7 @@ export const createSession = (options: SessionOptions) => {
       return sessionFirearmTargetName(registry, firearmInHands()?.type);
     },
     hasFirearmHandlingOverrides: () =>
+      options.wobbleFlatOverride !== undefined ||
       firearms.hasSkillZeroHandlingOverrides() ||
       !sameFirearmsSkillZeroHandling(
         firearmsCombatTuning.skillZeroHandling,
