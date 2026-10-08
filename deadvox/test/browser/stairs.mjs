@@ -278,28 +278,30 @@ try {
       },
       { position: fixturePosition, yaw: fixtureYaw },
     );
-    const settleFrom = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
-    await waitForSimulation(
-      page,
-      (from) => {
-        const { body, session } = globalThis.stairsWitness;
-        const elapsed = session.sim.time - from;
-        const velocity = Math.hypot(...body.vel);
-        const grounded = body.onGround;
-        const atRest = velocity < 0.1;
-        return {
-          time: session.sim.time,
-          paused: session.sim.paused,
-          reached: elapsed > 0 && grounded && atRest,
-          elapsed,
-          grounded,
-          atRest,
-          velocity,
-        };
-      },
-      settleFrom,
-      { seconds: 1, from: settleFrom, label: 'fixture placement grounded at rest', record: state },
-    );
+    if (mode === 'traversal') {
+      const settleFrom = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+      await waitForSimulation(
+        page,
+        (from) => {
+          const { body, session } = globalThis.stairsWitness;
+          const elapsed = session.sim.time - from;
+          const velocity = Math.hypot(...body.vel);
+          const grounded = body.onGround;
+          const atRest = velocity < 0.1;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: elapsed > 0 && grounded && atRest,
+            elapsed,
+            grounded,
+            atRest,
+            velocity,
+          };
+        },
+        settleFrom,
+        { seconds: 1, from: settleFrom, label: 'fixture placement grounded at rest', record: state },
+      );
+    }
   };
   const state = async (label, details) => {
     const value = await page.evaluate(() => {
@@ -353,8 +355,6 @@ try {
         },
       );
       const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
-      // Same three-second physical bound, now simulation seconds rather than renderer wall time.
-      // The outer stage remains capped at 300 s; no retry or larger stage cap.
       await waitForSimulation(
         page,
         (feet) => {

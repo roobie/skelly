@@ -157,14 +157,15 @@ upstairs position because the resident can move onto the stairs while pursuing
 the player; its live position is not a stable lower-floor target. The stage
 checks floor and stair collision support before the sprint; see
 `deadvox/test/browser/stairs.mjs`, `upperAnchor` and `walkTo`. Horizontal arrival
-and landing settlement have separate simulation-time bounds. A fixture teleport
-first waits for simulation to advance and the player to be grounded at rest, so
-each scenario starts from a supported state rather than an arbitrary wall-clock
-delay; see `deadvox/test/browser/stairs.mjs`, `stage`, and
-`deadvox/test/browser/simulation-wait.mjs`, `waitForSimulation`. Fixture,
-arrival and landing waits fail if the simulation pauses, rather than waiting for
-the outer kill. Body
-position, velocity, onGround, simulation time and pause state are written to
+and landing settlement have separate simulation-time bounds. In traversal, a
+fixture teleport waits for simulation to advance and the player to be grounded
+at rest, so each movement scenario starts supported; see
+`deadvox/test/browser/stairs.mjs`, `stage`, and
+`deadvox/test/browser/simulation-wait.mjs`, `waitForSimulation`. Lighting does
+not settle after teleports: it reads skylight at fixed points, and screenshots
+capture fresh frames. Traversal's fixture, arrival and landing waits fail if
+the simulation pauses, rather than waiting for the outer kill. Body position,
+velocity, onGround, simulation time and pause state are written to
 `states.json` before assertions and on walk/settle failure. Traversal uses a smaller
 viewport because its unasserted diagnostic rendering consumes frame time;
 lighting retains the pixel-oracle viewport.
