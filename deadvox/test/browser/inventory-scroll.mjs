@@ -426,7 +426,9 @@ try {
       const scroll = rack?.querySelector('.inv-grid-scroll');
       const grid = scroll?.querySelector('.inv-grid');
       const around = document.querySelector('#inventory [data-pane="around"]');
-      if (!(rack && section && scroll && grid && around)) throw new Error('cap-width container layout is missing');
+      if (!(rack && section && scroll && grid && around)) {
+        throw new Error('cap-width container layout is missing');
+      }
       const sectionTop = section.getBoundingClientRect().top;
       const rowSections = [...around.querySelectorAll('[data-around-section]')].filter(
         (candidate) => Math.abs(candidate.getBoundingClientRect().top - sectionTop) < 1,
@@ -437,7 +439,12 @@ try {
         aroundWidth: around.getBoundingClientRect().width,
         sections: [...around.querySelectorAll('[data-around-section]')].map((candidate) => {
           const box = candidate.getBoundingClientRect();
-          return { label: candidate.querySelector('.inv-pile-label')?.textContent, x: box.x, y: box.y, width: box.width };
+          return {
+            label: candidate.querySelector('.inv-pile-label')?.textContent,
+            x: box.x,
+            y: box.y,
+            width: box.width,
+          };
         }),
         gridWidth: grid.getBoundingClientRect().width,
         cap: globalThis.scrollFixture.containerMaxWidthCells,
@@ -470,10 +477,19 @@ try {
   await dragSplitter(0);
   const wideLayout = await aroundLayout();
   const wideCapContainer = await capContainerLayout();
-  for (const [split, layout] of [['balanced', balancedCapContainer], ['wide', wideCapContainer]]) {
+  for (const [split, layout] of [
+    ['balanced', balancedCapContainer],
+    ['wide', wideCapContainer],
+  ]) {
     assert.ok(layout.rowSections > 1, `${split} cap-width container shares a row: ${JSON.stringify(layout)}`);
-    assert.ok(layout.gridWidth <= layout.cap * layout.cell + 1, `${split} container grid stays within the cap: ${JSON.stringify(layout)}`);
-    assert.ok(layout.scrollWidth <= layout.clientWidth, `${split} shared container fits without horizontal scrolling: ${JSON.stringify(layout)}`);
+    assert.ok(
+      layout.gridWidth <= layout.cap * layout.cell + 1,
+      `${split} container grid stays within the cap: ${JSON.stringify(layout)}`,
+    );
+    assert.ok(
+      layout.scrollWidth <= layout.clientWidth,
+      `${split} shared container fits without horizontal scrolling: ${JSON.stringify(layout)}`,
+    );
   }
   assert.ok(
     wideLayout.firstRow > balancedLayout.firstRow,
