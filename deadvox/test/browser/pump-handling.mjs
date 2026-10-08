@@ -189,15 +189,15 @@ try {
     assert.ok(rows.includes(String(uid)), `selected ${uid} from visible inventory rows: ${rows.join(',')}`);
   };
   const moveTo = async (waypoint) => {
-    const currentPosition = await page.evaluate(
-      ({ axis }) => globalThis.pumpHandlingTest.session.body.pos[axis],
-      waypoint,
-    );
+    const { currentPosition, yaw } = await page.evaluate(({ axis }) => {
+      const { input, session } = globalThis.pumpHandlingTest;
+      return { currentPosition: session.body.pos[axis], yaw: input.yaw };
+    }, waypoint);
     const moveDirection = Math.sign(waypoint.target - currentPosition);
     if (!moveDirection) {
       return;
     }
-    const { action } = routeMovementInput(waypoint.axis, moveDirection > 0 ? 1 : -1);
+    const { action } = routeMovementInput(waypoint.axis, moveDirection > 0 ? 1 : -1, yaw);
     const releaseSprint = await holdAction(page, 'movement.sprint');
     const releaseMove = await holdAction(page, action);
     try {

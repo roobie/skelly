@@ -13,22 +13,32 @@ interface TestHouseRangeRoute {
 }
 
 /** Waypoint geometry shared by the unit and browser collision contracts for the debug range. */
-export const routeMovementInput = (axis: 0 | 2, direction: -1 | 1) => {
-  let actionId: string;
-  if (axis === 0) {
-    actionId = direction > 0 ? 'movement.forward' : 'movement.back';
-  } else {
-    actionId = direction > 0 ? 'movement.right' : 'movement.left';
+const movementCandidates = [
+  { actionId: 'movement.forward', forward: 1, right: 0 },
+  { actionId: 'movement.back', forward: -1, right: 0 },
+  { actionId: 'movement.right', forward: 0, right: 1 },
+  { actionId: 'movement.left', forward: 0, right: -1 },
+] as const;
+
+export const routeMovementInput = (axis: 0 | 2, direction: -1 | 1, yaw: number) => {
+  if (!Number.isFinite(yaw)) {
+    throw new Error('Test-house route movement needs a finite look yaw');
   }
-  const binding = INPUT_BINDINGS.find(({ id }) => id === actionId);
+  const sin = Math.sin(yaw);
+  const cos = Math.cos(yaw);
+  const candidate = movementCandidates
+    .map((movement) => ({
+      ...movement,
+      projection:
+        (axis === 0 ? -sin * movement.forward + cos * movement.right : -cos * movement.forward - sin * movement.right) *
+        direction,
+    }))
+    .reduce((best, movement) => (movement.projection > best.projection ? movement : best));
+  const binding = INPUT_BINDINGS.find(({ id }) => id === candidate.actionId);
   if (!binding) {
-    throw new Error(`Test-house route movement action is not bound: ${actionId}`);
+    throw new Error(`Test-house route movement action is not bound: ${candidate.actionId}`);
   }
-  return {
-    action: binding.id,
-    forward: axis === 0 ? direction : 0,
-    right: axis === 2 ? direction : 0,
-  };
+  return { action: binding.id, forward: candidate.forward, right: candidate.right };
 };
 
 export const buildTestHouseRangeRoute = ({

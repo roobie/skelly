@@ -14,7 +14,7 @@ import { makeConfig } from '../src/game/config.ts';
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
-import { GARDEN_GATE, HOUSE_OFFSET, SPAWN_YAW } from '../src/game/testHouse.ts';
+import { GARDEN_GATE, HOUSE_OFFSET } from '../src/game/testHouse.ts';
 import { isTestHouseRangeStockItem, testHouseRangeStock } from '../src/game/testHouseRange.ts';
 import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
 import { buildTestHouseRangeRoute, routeMovementInput } from './testHouseRangeRoute.ts';
@@ -153,6 +153,7 @@ const crossedWaypoint = (position: number, target: number, direction: number): b
 const movePlayerTo = (
   fixture: RangeWalkFixture,
   waypoint: RangeWalkFixture['waypoints'][number],
+  yaw: number,
 ): { reached: boolean; action?: string } => {
   const { body, blockSize, scale, isSolid, physics } = fixture;
   const { axis, target } = waypoint;
@@ -160,10 +161,10 @@ const movePlayerTo = (
   if (!direction) {
     return { reached: true };
   }
-  const movement = routeMovementInput(axis, direction > 0 ? 1 : -1);
+  const movement = routeMovementInput(axis, direction > 0 ? 1 : -1, yaw);
   const maxFrames = Math.ceil(((Math.abs(target - body.pos[axis]) * blockSize) / PLAYER.sprint + 1) * 120);
   for (let frame = 0; frame < maxFrames && !crossedWaypoint(body.pos[axis], target, direction); frame++) {
-    steer(body, scale, SPAWN_YAW, {
+    steer(body, scale, yaw, {
       forward: movement.forward,
       right: movement.right,
       jump: false,
@@ -172,7 +173,7 @@ const movePlayerTo = (
     });
     stepBody(body, 1 / 60, isSolid, physics);
   }
-  steer(body, scale, SPAWN_YAW, { forward: 0, right: 0, jump: false, sprint: false, walk: false });
+  steer(body, scale, yaw, { forward: 0, right: 0, jump: false, sprint: false, walk: false });
   for (let frame = 0; frame < 4; frame++) {
     stepBody(body, 1 / 60, isSolid, physics);
   }
@@ -216,28 +217,30 @@ describe('the debug test-house range', () => {
   });
 
   it('walks every shared route leg to a clear, reachable rack-facing stop', () => {
-    const fixture = buildRangeWalkFixture();
-    expect(fixture.waypoints).not.toHaveLength(0);
     const knownActions = new Set(INPUT_BINDINGS.map(({ id }) => id));
-    for (const waypoint of fixture.waypoints) {
-      const result = movePlayerTo(fixture, waypoint);
-      expect(result.action, `route leg ${waypoint.id} emits an action`).toBeDefined();
-      if (!result.action) {
-        throw new Error(`route leg ${waypoint.id} did not emit a movement action`);
+    for (const yaw of [0, Math.PI / 2]) {
+      const fixture = buildRangeWalkFixture();
+      expect(fixture.waypoints).not.toHaveLength(0);
+      for (const waypoint of fixture.waypoints) {
+        const result = movePlayerTo(fixture, waypoint, yaw);
+        expect(result.action, `route leg ${waypoint.id} at yaw ${yaw} emits an action`).toBeDefined();
+        if (!result.action) {
+          throw new Error(`route leg ${waypoint.id} did not emit a movement action`);
+        }
+        expect(knownActions.has(result.action), `route leg ${waypoint.id} uses a bound action`).toBe(true);
+        expect(result.reached, `route leg ${waypoint.id} at yaw ${yaw}`).toBe(true);
+        if (waypoint.id === 'centre-in-gate') {
+          expect(Math.abs(fixture.body.pos[0] - fixture.gateCentreX)).toBeLessThanOrEqual(fixture.gateClearance);
+        }
       }
-      expect(knownActions.has(result.action), `route leg ${waypoint.id} uses a bound action`).toBe(true);
-      expect(result.reached, `route leg ${waypoint.id}`).toBe(true);
-      if (waypoint.id === 'centre-in-gate') {
-        expect(Math.abs(fixture.body.pos[0] - fixture.gateCentreX)).toBeLessThanOrEqual(fixture.gateClearance);
-      }
+      expect(fixture.body.pos[2] - fixture.body.halfWidth).toBeGreaterThan(fixture.rack.pos[2] + fixture.rack.size[2]);
+      expect(
+        furnitureDistance(
+          { inventory: fixture.inventory, position: fixture.body.pos, blockSize: fixture.blockSize },
+          fixture.rack,
+        ),
+      ).toBeLessThanOrEqual(INVENTORY_REACH);
     }
-    expect(fixture.body.pos[2] - fixture.body.halfWidth).toBeGreaterThan(fixture.rack.pos[2] + fixture.rack.size[2]);
-    expect(
-      furnitureDistance(
-        { inventory: fixture.inventory, position: fixture.body.pos, blockSize: fixture.blockSize },
-        fixture.rack,
-      ),
-    ).toBeLessThanOrEqual(INVENTORY_REACH);
   });
 
   it('stocks every firearm and compatible ammunition item discovered from registry data', () => {
