@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -17,12 +17,29 @@ import {
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const { scripts } = JSON.parse(readFileSync(join(ROOT, 'deadvox/package.json'), 'utf8'));
+const { scripts: gungenScripts } = JSON.parse(readFileSync(join(ROOT, 'gungen/package.json'), 'utf8'));
 const browserStages = browserStagesOfScripts(scripts);
 const customChromiumSelection = /\b(?:executablePath|CHROME_BIN)\b|channel\s*:\s*(?!\s*['"]chromium['"])/;
 const stageScriptPathPattern = /^node (\S+\.mjs)\b/;
+const gungenBrowserStages = browserStagesOfScripts(gungenScripts);
+const gungenBrowserStagePaths = [
+  ...new Set(
+    Object.values(gungenBrowserStages)
+      .flat()
+      .map(({ command }) => {
+        const match = command.match(stageScriptPathPattern);
+        if (!match) {
+          throw new Error(`Gungen browser command has no script path: ${command}`);
+        }
+        return match[1];
+      }),
+  ),
+];
 const directChromiumLaunchPattern = /\bchromium\.launch\s*\(/;
 const sharedChromiumLaunchPattern = /\blaunchChromium\s*\(/;
 const helperChromiumLaunchPattern = /chromium\.launch\s*\(/;
+const gungenSystemBrowserPattern = /google-chrome|CHROME_BIN|--with-deps/;
+const playwrightChromiumInstallPattern = /playwright install chromium/;
 const unhandledRejectionListenerPattern = /process\.(?:once|on)\(['"]unhandledRejection['"]/;
 const expression = (body) => `\${{ ${body} }}`;
 const browserStagePaths = [
@@ -197,5 +214,43 @@ describe('deadvox browser CI coverage', () => {
         `${name} was reinstated without resolving its quarantine`,
       );
     }
+  });
+});
+
+describe('gungen browser CI', () => {
+  it('routes manifest browser scripts through the bounded managed Chromium install and one helper', () => {
+    assert.ok(gungenBrowserStagePaths.length > 0, 'gungen package manifest declares browser cases');
+    const browserFiles = readdirSync(join(ROOT, 'gungen/test/browser'))
+      .filter((path) => path.endsWith('.mjs'))
+      .map((path) => `test/browser/${path}`)
+      .sort();
+    assert.deepEqual(gungenBrowserStagePaths.slice().sort(), browserFiles);
+    for (const path of gungenBrowserStagePaths) {
+      const source = readFileSync(join(ROOT, 'gungen', path), 'utf8');
+      assert.doesNotMatch(source, customChromiumSelection, `${path} must not select a system browser`);
+      assert.doesNotMatch(source, directChromiumLaunchPattern, `${path} must use launchChromium`);
+      assert.match(source, sharedChromiumLaunchPattern, `${path} must use launchChromium`);
+    }
+
+    const helper = readFileSync(join(ROOT, 'gungen/test/chromium.mjs'), 'utf8');
+    assert.match(helper, helperChromiumLaunchPattern, 'the Gungen helper owns Chromium launch');
+    assert.doesNotMatch(helper, customChromiumSelection, 'the Gungen helper uses Playwright-managed Chromium');
+
+    const workflow = parse(readFileSync(join(ROOT, '.github/workflows/gungen.yml'), 'utf8'));
+    const {
+      jobs: {
+        check: { steps },
+      },
+    } = workflow;
+    assert.doesNotMatch(JSON.stringify(workflow), gungenSystemBrowserPattern);
+    const cache = steps.find(({ name }) => name === 'Cache Playwright Chromium');
+    const install = steps.find(({ name }) => name === 'Install Playwright Chromium');
+    assert.ok(cache && install, 'Gungen CI caches and installs managed Chromium');
+    assert.ok(cache.uses.startsWith('actions/cache@'));
+    assert.equal(cache.with.path, '~/.cache/ms-playwright');
+    assert.equal(install['working-directory'], 'deadvox');
+    assert.match(install.run, playwrightChromiumInstallPattern);
+    assert.ok(Number.isFinite(install['timeout-minutes']), 'managed-browser install has a finite bound');
+    assert.ok(install['timeout-minutes'] > 0);
   });
 });

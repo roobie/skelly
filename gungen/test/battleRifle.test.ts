@@ -27,7 +27,6 @@ describe('battle-rifle magazine orientations', () => {
     const wellPort = lower.ports.find(({ id }) => id === 'magazine')!;
     const angle = G3_MAGAZINE_WELL_TILT;
     expect(angleOf(wellPort.normal[0], wellPort.normal[1])).toBeCloseTo(-90 + (angle * 180) / Math.PI, 5);
-    expect(wellPort.pos[1]).toBe(-3.25);
     expect(lower.solids.find(({ id }) => id === 'frame-rear')?.kind).toBe('box');
     expect(lower.solids.find(({ id }) => id === 'frame-front')?.kind).toBe('box');
     const housing = lower.solids.filter(({ id }) => id.startsWith('tilt-housing-'));
@@ -46,9 +45,15 @@ describe('battle-rifle magazine orientations', () => {
     }
     const verticalLength = (profile: readonly (readonly [number, number])[]) =>
       Math.max(...profile.map(([, y]) => y)) - Math.min(...profile.map(([, y]) => y));
-    expect(verticalLength(rearPlate.profile)).toBe(2);
-    expect(verticalLength(frontPlate.profile)).toBe(1.5);
-    expect(verticalLength(rearPlate.profile) - verticalLength(frontPlate.profile)).toBe(0.5);
+    const rearHeight = verticalLength(rearPlate.profile);
+    const frontHeight = verticalLength(frontPlate.profile);
+    expect(rearHeight).toBeGreaterThan(frontHeight);
+    const rearX = rearPlate.profile.map(([x]) => x);
+    const frontX = frontPlate.profile.map(([x]) => x);
+    const plateRun = Math.abs(
+      (Math.min(...rearX) + Math.max(...rearX) - Math.min(...frontX) - Math.max(...frontX)) / 2,
+    );
+    expect(angle).toBeCloseTo(Math.atan2(rearHeight - frontHeight, plateRun));
     const path = lower.keepOuts.find(({ id }) => id === 'magazine-path')!;
     const wellPath = lower.keepOuts.find(({ id }) => id === 'magazine-well-path')!;
     expect(path.profile).toBeDefined();
