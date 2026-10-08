@@ -47,11 +47,7 @@ vocal-noise state and simulation event queue. See `src/game/inputBindings.ts`,
 `src/game/debugInterface.ts`, `DebugHooks.emitTestNoise` for the action routes.
 
 The spawn menu itself is debug-only,
-but its navigation and confirmation are ordinary modal controls. BR, 2026-10-07
-11:02, verbatim:
-
-> “in the F2+G menu, you shouldn't need F2+Enter to select”
-> “that is; simply Enter should suffice”
+but its navigation and confirmation are ordinary modal controls.
 
 Enter confirms while the spawn menu is open; native activation of debug buttons
 remains gated. Native text editing/focus stays with the browser; see `CONTROLS.md`,
@@ -82,22 +78,13 @@ games or restored saves. See `src/debug/index.ts`, `attachDebugTools`.
   NaN / Inf-or->8 / negative. It runs after fog.
 - `crackcheck=1`: the background is cleared to magenta, so holes show.
 
-BR, 2026-10-07 14:01, d131-1, verbatim:
-
-> “also, another tiny thing: in debug we show the currently-looked-at-block info”
-> “but the info is rendered too much in the center of screen, sometimes occluding too much”
-> “so if we could put the hint near the bottom of the screen, adjusting itself for whether or not the quickbar is shown, that'd be great”
-
-The verbose block hint sits above visible bottom HUD elements, following their actual bounds; with
-those hidden, it uses the quickbar's computed bottom offset. In `src/debug/index.ts`,
+The looked-at-block hint stays near the lower edge to avoid obscuring the center. It sits above
+visible bottom HUD elements, following their actual bounds; with those hidden, it uses the
+quickbar's computed bottom offset. In `src/debug/index.ts`,
 `attachDebugTools` installs `runtime.updateLookedAt`, which uses `src/debug/lookedAt.ts`,
 `describeLookedAt`, for text and calls `src/ui/hud.ts`, `positionLookedAtReadout`, for placement. The
 shorter shambler aim readout stays at the crosshair because it is target-specific, and the block hint
 yields while it is active.
-
-BR, 2026-10-07 15:48, d131-1-2, verbatim:
-
-> “aside: the debug X in center of screen should show only when crosshair is turned on”
 
 The debug centre X follows the HUD Crosshair option live, so it does not mark the view when the
 player has turned that aid off. See `src/game/play.ts`, `frame`,
@@ -199,12 +186,10 @@ Two single-case quarantines remain; a fresh pass does not establish a fix:
 Neither is in the default Firefox command. No retries or increased bounds; record a
 fixed trial plan and before/after/restored-before evidence before reinstating a case.
 
-**BR decision (br-43, 2026-10-07 22:44:58), verbatim:** “B”.
-
-The selected containment treats the system Chrome 154 + Playwright 1.63 pairing as
-unsupported: all observed launch failures used system Chrome, while managed Chromium
-had zero launch failures in the 91-run sample. The cause remains unproven; the 240-launch
-source × bus comparison did not establish one. Issue #287 stays open for the root cause.
+Treat the system Chrome 154 + Playwright 1.63 pairing as unsupported: all observed launch
+failures used system Chrome, while managed Chromium had zero launch failures in the 91-run
+sample. The cause remains unproven; the 240-launch source × bus comparison did not establish
+one. Issue #287 stays open for the root cause.
 See `test/browser/chromium.mjs`, `launchChromium`, for the shared managed launch boundary,
 and `docs/browser-ci.md` for CI evidence.
 
