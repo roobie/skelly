@@ -8,7 +8,8 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-export const INPUT_REPLAY_SCHEMA_VERSION = 15;
+// Recordings from older schemas don't resolve identically.
+export const INPUT_REPLAY_SCHEMA_VERSION = 18;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -41,6 +42,8 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'inventory.work',
   'inventory.assign',
   'inventory.cancel-handling',
+  'firearm.attachment.fit',
+  'firearm.attachment.remove',
   'craft.start',
   'craft.continue',
   'craft.stop',
@@ -60,6 +63,8 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'inventory.work',
   'inventory.assign',
   'inventory.cancel-handling',
+  'firearm.attachment.fit',
+  'firearm.attachment.remove',
   'craft.start',
   'craft.continue',
   'craft.stop',
@@ -140,12 +145,31 @@ export interface ReplayInputData {
   readonly actions: readonly ReplayAction[];
   readonly generatedColumns: readonly ReplayGeneratedColumn[];
   readonly columnChanges: readonly ReplayColumnChange[];
+  readonly startState?: ReplayStartState | undefined;
 }
+
+export interface ReplayStartState {
+  readonly throwingStance: boolean;
+  readonly readyHeld: boolean;
+  readonly aimingDownSights: boolean;
+  readonly inventoryOpen: boolean;
+}
+
+export const DEFAULT_REPLAY_START_STATE: ReplayStartState = {
+  throwingStance: false,
+  readyHeld: false,
+  aimingDownSights: false,
+  inventoryOpen: false,
+};
+
+export const restoreReplayStartState = (state?: ReplayStartState): ReplayStartState =>
+  structuredClone(state ?? DEFAULT_REPLAY_START_STATE);
 
 export interface DecodedInputReplay {
   readonly snapshot: Readonly<SaveSnapshot>;
   readonly worldOptions: SaveWorldOptions & { seed: number; clock: { ratio: number; start: number } };
   readonly inputs: ReplayInputData;
+  readonly startState: ReplayStartState;
   readonly endStateFingerprint: string;
   readonly endSimTimestamp: number;
 }
@@ -155,6 +179,7 @@ interface ReplayWire {
   magic: typeof MAGIC;
   schemaVersion: number;
   startSave: string;
+  startState: ReplayStartState;
   frames: ReplayFrame[];
   actions: ReplayAction[];
   generatedColumns: ReplayGeneratedColumn[];
@@ -341,15 +366,18 @@ export class InputReplayRecorder {
   private readonly columnChanges: ReplayColumnChange[] = [];
   private readonly pendingColumnChanges: ReplayColumnUpdate[] = [];
   readonly startSnapshot: Readonly<SaveSnapshot>;
+  readonly startState: ReplayStartState;
   readonly generatedColumns: readonly ReplayGeneratedColumn[];
 
   constructor(
     startSnapshot: Readonly<SaveSnapshot>,
     ticksPerWindow = INPUT_REPLAY_TICKS_PER_WINDOW,
     generatedColumns: readonly ReplayGeneratedColumn[] = [],
-    columnChangeEventLimit = INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW,
+    options: { readonly columnChangeEventLimit?: number; readonly startState?: ReplayStartState } = {},
   ) {
     this.ticksPerWindow = ticksPerWindow;
+    const columnChangeEventLimit = options.columnChangeEventLimit ?? INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW;
+    const startState = options.startState ?? DEFAULT_REPLAY_START_STATE;
     if (
       !Number.isSafeInteger(columnChangeEventLimit) ||
       columnChangeEventLimit < 1 ||
@@ -384,6 +412,7 @@ export class InputReplayRecorder {
       })
       .sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
     this.startSnapshot = structuredClone(startSnapshot);
+    this.startState = structuredClone(startState);
   }
 
   get tickCount(): number {
@@ -560,6 +589,7 @@ export class InputReplayRecorder {
       actions,
       generatedColumns: this.generatedColumns.map(([cx, cz]) => [cx, cz]),
       columnChanges: this.columnChanges.map(([tick, cx, cz, generated]) => [tick, cx, cz, generated]),
+      startState: this.startState,
     };
   }
 
@@ -582,13 +612,12 @@ export const rolloverInputReplayRecorder = (
   current: InputReplayRecorder,
   startSnapshot: Readonly<SaveSnapshot>,
   generatedColumns: readonly ReplayGeneratedColumn[] = current.generatedColumns,
+  startState: ReplayStartState = DEFAULT_REPLAY_START_STATE,
 ): InputReplayRecorder => {
-  const next = new InputReplayRecorder(
-    startSnapshot,
-    current.ticksPerWindow,
-    generatedColumns,
-    current.columnChangeEventLimit,
-  );
+  const next = new InputReplayRecorder(startSnapshot, current.ticksPerWindow, generatedColumns, {
+    columnChangeEventLimit: current.columnChangeEventLimit,
+    startState,
+  });
   current.resolvePendingActionsAtRollover(next);
   current.transferPendingColumnChangesTo(next);
   return next;
@@ -658,7 +687,13 @@ export function joinInputReplayWindows(
   ) {
     throw new Error('Combined replay windows exceed the supported recording bounds');
   }
-  return { frames, actions, generatedColumns: previous.generatedColumns, columnChanges };
+  return {
+    frames,
+    actions,
+    generatedColumns: previous.generatedColumns,
+    columnChanges,
+    startState: previous.startState ?? current.startState,
+  };
 }
 
 export function stashInputReplay(bytes: Uint8Array): void {
@@ -727,6 +762,7 @@ export async function encodeInputReplay(
     magic: MAGIC,
     schemaVersion: INPUT_REPLAY_SCHEMA_VERSION,
     startSave: encodeBase64(startSave),
+    startState: inputs.startState ?? DEFAULT_REPLAY_START_STATE,
     frames: inputs.frames.map((frame) => [...frame] as ReplayFrame),
     actions: inputs.actions.map((action) => ({ ...action })),
     generatedColumns: inputs.generatedColumns.map(([cx, cz]) => [cx, cz]),
@@ -762,6 +798,12 @@ export async function decodeInputReplay(
   }
   if (
     typeof value.startSave !== 'string' ||
+    !isRecord(value.startState) ||
+    typeof value.startState.throwingStance !== 'boolean' ||
+    typeof value.startState.readyHeld !== 'boolean' ||
+    typeof value.startState.aimingDownSights !== 'boolean' ||
+    typeof value.startState.inventoryOpen !== 'boolean' ||
+    Object.keys(value.startState).length !== 4 ||
     !Array.isArray(value.frames) ||
     !Array.isArray(value.actions) ||
     !Array.isArray(value.generatedColumns) ||
@@ -861,6 +903,12 @@ export async function decodeInputReplay(
     snapshot: decoded.snapshot,
     worldOptions: decoded.worldOptions,
     inputs: { frames, actions, generatedColumns, columnChanges },
+    startState: {
+      throwingStance: value.startState.throwingStance,
+      readyHeld: value.startState.readyHeld,
+      aimingDownSights: value.startState.aimingDownSights,
+      inventoryOpen: value.startState.inventoryOpen,
+    },
     endStateFingerprint: value.endStateFingerprint,
     endSimTimestamp: value.endSimTimestamp,
   };

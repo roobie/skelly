@@ -14,7 +14,6 @@
       "timedOut": 1
     },
     "bench/run.ts": {
-      "hour": 1,
       "jogMetresPerSecond": 1,
       "jogSeconds": 1,
       "loadTimeout": 2,
@@ -26,11 +25,7 @@
       "startedAt": 1,
       "time": 2
     },
-    "bench/shamblers-cpu.mjs": {
-      "hour": 1
-    },
     "bench/shamblers.ts": {
-      "hour": 1,
       "startedAt": 1,
       "time": 2
     },
@@ -55,7 +50,6 @@
     },
     "core/firearmsSkill.ts": {
       "rackDuration": 2,
-      "raiseDuration": 2,
       "reloadDuration": 2
     },
     "core/firearmState.ts": {
@@ -158,7 +152,6 @@
       "cooldown": 3,
       "expiresAt": 1,
       "hitFlinchTime": 2,
-      "hour": 6,
       "idleSoundTimer": 3,
       "lookTimer": 3,
       "lurchDuration": 3,
@@ -275,8 +268,7 @@
       "timer": 1
     },
     "game/session.ts": {
-      "expiresAt": 1,
-      "hour": 1
+      "expiresAt": 1
     },
     "game/streamer.ts": {
       "genMs": 1,

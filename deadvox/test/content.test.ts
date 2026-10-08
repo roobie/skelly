@@ -7,6 +7,7 @@ import { HAMLET_TEMPLATES } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
+import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
@@ -79,6 +80,19 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
+  it('keeps the base day cycle authoritative over mod overrides', () => {
+    const baseCycle = baseRegistry.dayCycle!;
+    const modCycle = {
+      ...baseCycle,
+      latitudeDegrees: baseCycle.latitudeDegrees > 80 ? baseCycle.latitudeDegrees - 7 : baseCycle.latitudeDegrees + 7,
+    };
+    const { registry } = buildRegistry([
+      { source: 'base/dayCycle.json', data: { dayCycle: baseCycle } },
+      { source: 'mod/dayCycle.json', data: { dayCycle: modCycle } },
+    ]);
+    expect(registry.dayCycle).toEqual(baseCycle);
+  });
+
   it('keeps input instructions out of item descriptions', () => {
     const bindingLabels = [
       ...INPUT_BINDINGS.flatMap((binding) =>
@@ -123,6 +137,16 @@ describe('content', () => {
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
       expect(registry.blockIds.has(id)).toBe(true);
     }
+  });
+
+  it('keeps the thermal optic out of loot, fitting and ADS', () => {
+    expect(
+      [...baseRegistry.loot.values()].some((table) =>
+        table.entries.some((entry) => entry.item === 'optic_digital_thermal'),
+      ),
+    ).toBe(false);
+    const thermal = baseRegistry.items.get('optic_digital_thermal')!;
+    expect(opticViewSettings(thermal, baseRegistry.models.get(thermal.model!)!)).toBeUndefined();
   });
 
   it('rejects a non-positive firearms skill-zero handling value', () => {
@@ -814,6 +838,30 @@ describe('content references', () => {
   };
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
 
+  it('requires a model material for an emissive modeled light', () => {
+    const { issues } = buildRegistry([
+      {
+        source: 'emissive-light.json',
+        data: {
+          items: [
+            {
+              id: 'glowstick',
+              name: 'Glowstick',
+              category: 'light',
+              weight: 1,
+              size: [1, 1],
+              model: 'glowstick',
+              light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, emissive: 1 },
+            },
+          ],
+          models: [{ id: 'glowstick', file: 'assets/models/glowstick.glb' }],
+        },
+      },
+    ]);
+
+    expect(issues.some((issue) => issue.message === 'an emissive light model needs an emissive material')).toBe(true);
+  });
+
   it('requires an explicit disassembly yield for a recipe result', () => {
     const missingYield = {
       ...structuredClone(recipePack),
@@ -926,7 +974,7 @@ describe('content references', () => {
       {
         source: 'military-fixture.json',
         data: {
-          models: [{ ...firearmModel, id: item }],
+          models: [{ ...firearmModel, id: item, attachments: [] }],
           items: [
             { id: item, name: 'Fixture rifle', category: 'weapon', weight: 1, size: [1, 1], firearm, model: item },
             { id: cartridge, name: 'Fixture cartridge', category: 'material', weight: 1, size: [1, 1], ammo },

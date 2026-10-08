@@ -5,6 +5,7 @@ import { type CrosshairTarget, crosshairTarget } from '../src/core/crosshairTarg
 import { makeScale } from '../src/core/scale.ts';
 import { FISTS_MELEE, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 export const farWallTarget = (origin: Vec3, direction: Vec3, blockSize: number): CrosshairTarget => {
@@ -40,7 +41,7 @@ export const zombieAimFixture = (registry: Registry, origin: Vec3, direction: Ve
     jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     player: () => ({ pos: origin, facing: direction, movement: 'still', lit: false, lightSeenFrom: 40 }),
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
   });
   const targetPosition: Vec3 = [

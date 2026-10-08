@@ -7,10 +7,15 @@ import type { Vec3 } from '../core/coords.ts';
 import { defOf, type Item } from '../core/items.ts';
 
 export interface ItemLookSlot {
-  readonly slot: 'magazine';
-  /** The slot frame in the base model's metres, with `turn` in XYZ degrees like a model's grip. */
+  readonly slot: string;
+  /** The slot frame in the base model's metres. */
   readonly at: Vec3;
-  readonly turn: Vec3;
+  /** Magazine pose in XYZ degrees; attachment slots instead use direction and up. */
+  readonly turn?: Vec3;
+  readonly direction?: Vec3;
+  readonly up?: Vec3;
+  /** The fitted model's exported connector frame, aligned to the gun-side slot frame. */
+  readonly mountFrame?: { readonly normal: Vec3; readonly up: Vec3 };
   /** The fitted item's model; absent while the slot is empty. */
   readonly model?: string;
 }
@@ -28,11 +33,37 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
   if (model === undefined) {
     return undefined;
   }
-  const slot = registry.models.get(model)?.slots?.magazine;
-  const fitted = item.slots?.magazine;
-  const fittedModel = fitted && defOf(registry, fitted.type).model;
-  const slots: ItemLookSlot[] = slot
-    ? [{ slot: 'magazine', at: slot.at, turn: slot.turn, ...(fittedModel ? { model: fittedModel } : {}) }]
+  const modelDef = registry.models.get(model);
+  const magazineSlot = modelDef?.slots?.magazine;
+  const fittedMagazine = item.slots?.magazine;
+  const magazineModel = fittedMagazine && defOf(registry, fittedMagazine.type).model;
+  const slots: ItemLookSlot[] = magazineSlot
+    ? [
+        {
+          slot: 'magazine',
+          at: magazineSlot.at,
+          turn: magazineSlot.turn,
+          ...(magazineModel ? { model: magazineModel } : {}),
+        },
+      ]
     : [];
+  for (const [slotId, child] of Object.entries(item.slots ?? {})) {
+    if (slotId === 'magazine' || slotId === 'battery' || !child) {
+      continue;
+    }
+    const mount = modelDef?.attachmentSlots?.find(({ id }) => id === slotId);
+    const attachmentModel = defOf(registry, child.type).model;
+    const mountFrame = attachmentModel ? registry.models.get(attachmentModel)?.attachment?.mountFrame : undefined;
+    if (mount && attachmentModel && mountFrame) {
+      slots.push({
+        slot: slotId,
+        at: mount.position,
+        direction: mount.direction,
+        up: mount.up,
+        mountFrame,
+        model: attachmentModel,
+      });
+    }
+  }
   return { model, slots, key: [model, ...slots.map((entry) => `${entry.slot}=${entry.model ?? ''}`)].join('+') };
 };

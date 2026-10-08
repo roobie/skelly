@@ -13,6 +13,7 @@ import {
 } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, PLAYER_ARM_REACH_M, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
@@ -53,7 +54,7 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
     }),
     isSolid: FLOOR,
     isOpaque: FLOOR,
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
     jumpSpeed: PLAYER.jump,

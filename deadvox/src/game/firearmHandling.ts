@@ -6,8 +6,10 @@ import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
+import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../core/firearmAttachments.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
 import {
+  type FirearmStanceEffects,
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroHandling,
@@ -398,7 +400,7 @@ export class FirearmMechanics {
     if (!progress) {
       progress = {
         elapsed: 0,
-        duration: firearmStanceEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).raiseDuration,
+        duration: this.stanceEffectsFor(uid).raiseDurationSimSeconds,
       };
       state.readying = progress;
       this.raising.add(uid);
@@ -414,16 +416,65 @@ export class FirearmMechanics {
     return { ...tuning, skillZeroHandling: this.firearmsSkillZeroHandling() };
   }
 
-  skillZeroHandlingFor(uid: number): FirearmsSkillZeroHandling {
+  skillZeroHandlingSettingFor(uid: number): FirearmsSkillZeroHandling {
     const item = this.inventory.itemByUid(uid);
     if (!item) {
       return this.firearmsSkillZeroHandling();
     }
     const override = this.firearmsSkillZeroOverrides.get(item.type);
     const { firearm } = defOf(this.inventory.registry, item.type);
-    return structuredClone(
-      override ?? skillZeroHandlingForFirearm(firearm?.skillZeroHandling, this.firearmsSkillZeroHandling()),
-    );
+    return override ?? skillZeroHandlingForFirearm(firearm?.skillZeroHandling, this.firearmsSkillZeroHandling());
+  }
+
+  skillZeroHandlingFor(uid: number): FirearmsSkillZeroHandling {
+    const item = this.inventory.itemByUid(uid);
+    if (!item) {
+      return this.firearmsSkillZeroHandling();
+    }
+    const source = this.skillZeroHandlingSettingFor(uid);
+    const response = firearmAttachmentResponse(this.inventory.registry, item);
+    const loadScale = this.muzzleLoadScale(item);
+    return {
+      singleShot: {
+        ...source.singleShot,
+        variance: source.singleShot.variance * loadScale * response.swayScale,
+        recoilRecoveryScale: (source.singleShot.recoilRecoveryScale * response.recoveryScale) / loadScale,
+      },
+      automaticFollowup: {
+        ...source.automaticFollowup,
+        variance: source.automaticFollowup.variance * loadScale * response.swayScale,
+        recoilRecoveryScale: (source.automaticFollowup.recoilRecoveryScale * response.recoveryScale) / loadScale,
+      },
+    };
+  }
+
+  /** Attachment load slows raising and ready movement using the same per-firearm mass moment. */
+  stanceEffectsFor(uid: number): FirearmStanceEffects {
+    const item = this.inventory.itemByUid(uid);
+    const stance = firearmStanceEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning());
+    if (!item) {
+      return stance;
+    }
+    const loadScale = this.muzzleLoadScale(item);
+    const response = firearmAttachmentResponse(this.inventory.registry, item);
+    return {
+      raiseDurationSimSeconds: stance.raiseDurationSimSeconds * loadScale * response.raiseScale,
+      readyMovementFactor: (stance.readyMovementFactor * response.swingScale) / loadScale,
+    };
+  }
+
+  recoilScaleFor(uid: number): number {
+    const item = this.inventory.itemByUid(uid);
+    return item ? firearmAttachmentResponse(this.inventory.registry, item).recoilScale : 1;
+  }
+
+  noiseFactorFor(item: Item): number {
+    return firearmAttachmentResponse(this.inventory.registry, item).noiseFactor;
+  }
+
+  private muzzleLoadScale(item: Item): number {
+    // One kg·m is the reference moment; missing exported mass leaves the existing handling unchanged.
+    return 1 + (muzzleLoad(this.inventory.registry, item) ?? 0);
   }
 
   setSkillZeroHandlingFor(uid: number, value: FirearmsSkillZeroHandling): boolean {
@@ -535,6 +586,7 @@ export class FirearmMechanics {
     this.onShot(pellets, input.simTime, item);
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: pellets.directions }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
+    wearFirearmAttachments(this.inventory.registry, item);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
@@ -577,6 +629,7 @@ export class FirearmMechanics {
     this.onShot(projectileShot(ammo, shotOrigin, [direction]), input.simTime, item);
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: [direction] }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
+    wearFirearmAttachments(this.inventory.registry, item);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }

@@ -347,7 +347,7 @@ describe('loadDesign: change policy', () => {
       });
     }
   });
-  it('a family default change leaves a design untouched: defaults are never stored', () => {
+  it('a family default change does not store the new default in a design', () => {
     const family = gunDomain.families.barrel;
     if (!family?.params.length) {
       throw new Error('barrel.length expected');
@@ -359,13 +359,28 @@ describe('loadDesign: change policy', () => {
         barrel: { ...family, params: { ...family.params, length: { ...family.params.length, default: 'L' } } },
       },
     };
+    const fixture = loadFixture('archetype-ar');
+    const handguard = fixture.parts.handguard!;
     const design = makeDesign({
-      assembly: { ...baseAssembly, parts: { ...baseAssembly.parts, barrel: { family: 'barrel' } } },
+      assembly: {
+        ...fixture,
+        parts: {
+          ...fixture.parts,
+          barrel: { family: 'barrel' },
+          handguard: { ...handguard, params: { ...handguard.params, mount: 'clamped' } },
+        },
+      },
     });
     const before = load(design);
     const after = load(design, { domain: changed });
-    expect(before.ok && after.ok && after.design).toEqual(before.ok && before.design);
-    expect(after.ok && after.design.assembly.parts.barrel).toEqual({ family: 'barrel' });
+    expect(before.ok && after.ok).toBe(true);
+    if (before.ok && after.ok) {
+      expect(after.design.assembly).toEqual(before.design.assembly);
+      expect(after.design.locks).toEqual(before.design.locks);
+      expect(after.design.origin).toEqual(before.design.origin);
+      expect(after.design.assembly.parts.barrel).toEqual({ family: 'barrel' });
+      expect(after.design.assembly.parts.handguard?.params?.length).toBeUndefined();
+    }
   });
 
   it('a default change that makes the design infeasible loads as a draft with issues', () => {
@@ -420,7 +435,17 @@ describe('loadDesign: change policy', () => {
       slots: ar.slots.map((s) => (s.id === 'barrel' ? { ...s, params: { length: 'S' } } : s)),
     };
     const design = makeDesign({
-      assembly: withPart({ family: 'barrel', params: { length: 'M' } }, 'barrel'),
+      assembly: {
+        ...baseAssembly,
+        parts: {
+          ...baseAssembly.parts,
+          barrel: { family: 'barrel', params: { length: 'M' } },
+          handguard: {
+            ...baseAssembly.parts.handguard!,
+            params: { ...baseAssembly.parts.handguard!.params, length: 'M' },
+          },
+        },
+      },
     });
     const result = load(design, { template: narrowed });
     expect(result.ok).toBe(true);

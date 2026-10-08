@@ -12,6 +12,7 @@ import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts'
 import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import {
+  DEFAULT_REPLAY_START_STATE,
   decodeInputReplay,
   encodeInputReplay,
   INPUT_REPLAY_MAX_BYTES,
@@ -23,12 +24,14 @@ import {
   type ReplayControlSample,
   type ReplayGeneratedColumn,
   type ReplayInputData,
+  type ReplayStartState,
   replayStateFingerprint,
+  restoreReplayStartState,
   rolloverInputReplayRecorder,
   sampleFromReplayFrame,
   withReplayExportGuard,
 } from '../src/game/inputReplay.ts';
-import { toggleWalking } from '../src/game/inputReplayActions.ts';
+import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
 import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
 import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
 import { inputReplayStatus } from '../src/game/play.ts';
@@ -80,6 +83,7 @@ const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Ui
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
     schemaVersion: INPUT_REPLAY_SCHEMA_VERSION,
+    startState: inputs.startState ?? DEFAULT_REPLAY_START_STATE,
     endStateFingerprint: '0'.repeat(64),
     endSimTimestamp: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
@@ -293,6 +297,7 @@ const playSession = (
   inputs: ReplayInputData,
   options: {
     endSimTimestamp?: number;
+    startState?: ReplayStartState;
     initialColumns?: readonly ReplayGeneratedColumn[];
     initialColumnSite?: Site;
     onCreated?: (runtime: ReturnType<typeof createRuntime>) => void;
@@ -304,6 +309,7 @@ const playSession = (
     ) => void;
   } = {},
 ) => {
+  const startState = restoreReplayStartState(options.startState);
   let replay!: ReturnType<typeof createRuntime>;
   const player = new InputReplayPlayer(inputs, (action) => dispatchReplayAction(replay, action, options.throwItem));
   replay = createRuntime(
@@ -316,6 +322,19 @@ const playSession = (
           ? (x, z) => player.isReady(x, z)
           : () => true,
       sampleAtPlayerTick: () => replayInputSample(replay, player),
+      readyHeld: () => startState.readyHeld,
+      useDominant: () => {
+        routeDominantUse(
+          startState.throwingStance,
+          () => {
+            const held = replay.inventory.hands[dominantSide(replay.session.character)];
+            if (held) {
+              replay.inventory.move(held, { kind: 'pile', pos: replay.player.body.pos });
+            }
+          },
+          () => undefined,
+        );
+      },
     },
   );
   const generatedColumns = new Set(replay.columns.map(([cx, cz]) => `${cx},${cz}`));
@@ -638,6 +657,99 @@ describe('input replay', () => {
     await expect(decodeInputReplay(canonicalJsonBytes(differentSchema), { contentLookup })).rejects.toThrow(
       'Unsupported replay format',
     );
+  });
+
+  it('captures and restores every play-state value across a replay rollover', async () => {
+    const start = capture(createRuntime());
+    const liveState = {
+      throwingStance: false,
+      readyHeld: false,
+      aimingDownSights: false,
+      inventoryOpen: false,
+    };
+    const binding = createReplayPlayStateBinding({
+      getThrowingStance: () => liveState.throwingStance,
+      setThrowingStance: (value) => {
+        liveState.throwingStance = value;
+      },
+      getReadyHeld: () => liveState.readyHeld,
+      setReadyHeld: (value) => {
+        liveState.readyHeld = value;
+      },
+      getAimingDownSights: () => liveState.aimingDownSights,
+      setAimingDownSights: (value) => {
+        liveState.aimingDownSights = value;
+      },
+      getInventoryOpen: () => liveState.inventoryOpen,
+      setInventoryOpen: (value) => {
+        liveState.inventoryOpen = value;
+      },
+    });
+    liveState.throwingStance = true;
+    liveState.readyHeld = true;
+    liveState.aimingDownSights = true;
+    liveState.inventoryOpen = true;
+    const startState = binding.capture();
+    const previous = new InputReplayRecorder(start);
+    previous.recordTick(replaySample);
+    const recorder = rolloverInputReplayRecorder(previous, start, [], startState);
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+
+    liveState.throwingStance = false;
+    liveState.readyHeld = false;
+    liveState.aimingDownSights = false;
+    liveState.inventoryOpen = false;
+    binding.restore(decoded.startState);
+
+    expect(decoded.startState).toEqual({
+      throwingStance: true,
+      readyHeld: true,
+      aimingDownSights: true,
+      inventoryOpen: true,
+    });
+    expect(liveState).toEqual(decoded.startState);
+  });
+
+  it('replays a held-ready stance at a standalone segment start', async () => {
+    const initial = createRuntime();
+    const backpack = initial.inventory.hands.right;
+    if (!(backpack && initial.inventory.move(backpack, { kind: 'pile', pos: initial.player.body.pos }).ok)) {
+      throw new Error('Could not clear a hand for the replay firearm');
+    }
+    const rifle = initial.inventory.create('rifle_assault');
+    if (!initial.inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the replay firearm');
+    }
+    const start = capture(initial);
+    const startState: ReplayStartState = {
+      throwingStance: false,
+      readyHeld: true,
+      aimingDownSights: false,
+      inventoryOpen: false,
+    };
+    const recorder = new InputReplayRecorder(start, 1, [], { startState });
+    const source = createRuntime(start, false, undefined, {
+      readyHeld: () => true,
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recorder.recordTick(live, compression);
+        return live;
+      },
+    });
+    source.sim.paused = false;
+    source.view.intent.forward = 1;
+    source.session.frame(1 / 60);
+    const sourceEnd = capture(source);
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const standaloneReplay = playSession(decoded.snapshot, decoded.inputs, {
+      endSimTimestamp: decoded.endSimTimestamp,
+      startState: decoded.startState,
+    });
+
+    expect(sourceEnd.character.player.firearmReadyWalking).toBe(true);
+    expect(await replayStateFingerprint(capture(standaloneReplay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
   it('constructs the replay session at the decoded recording snapshot position', async () => {
@@ -1120,7 +1232,26 @@ describe('input replay', () => {
     expect(decoded.snapshot.character.inventory.hands[side]).toMatchObject({ uid: firearm.uid, type: firearm.type });
   });
 
-  it('validates replay pickup identities and gesture modes', () => {
+  it('round-trips firearm attachment fit and removal commands from the inventory', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    const commands = [
+      { kind: 'firearm.attachment.fit', firearmUid: 1, slotId: 'handguard.rail-bottom.0', attachmentUid: 2 },
+      { kind: 'firearm.attachment.remove', firearmUid: 1, slotId: 'handguard.rail-bottom.0' },
+    ] as const;
+    for (const command of commands) {
+      recorder.queueAction(command.kind, 'down', 'inventory', { payload: command });
+      recorder.recordTick(replaySample);
+    }
+
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(decoded.inputs.actions.map(({ action, context, payload }) => ({ action, context, payload }))).toEqual(
+      commands.map((payload) => ({ action: payload.kind, context: 'inventory', payload })),
+    );
+  });
+
+  it('validates replay command identities and pickup modes', () => {
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 0 })).toBe(false);
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 1 })).toBe(true);
     expect(isReplayActionPayload({ kind: 'item.pickup', itemUid: 0, mode: 'wield', feet: [0, 0, 0] })).toBe(false);
@@ -1415,7 +1546,7 @@ describe('input replay', () => {
     const initialColumn: [number, number] = [100, 100];
     const loadedColumn: [number, number] = [101, 100];
     const start = capture(createRuntime(undefined, false, [initialColumn]));
-    let recorder = new InputReplayRecorder(start, 2, [initialColumn], 2);
+    let recorder = new InputReplayRecorder(start, 2, [initialColumn], { columnChangeEventLimit: 2 });
     const source = createRuntime(start, false, [initialColumn], {
       sampleAtPlayerTick: (_tick, live, _time, compression) => {
         recorder.recordTick(live, compression);
@@ -1582,6 +1713,61 @@ describe('input replay', () => {
     expect(previous.copyInputs().actions).toEqual([
       { tick: 1, action: 'item.throw', phase: 'down', context: 'play', payload },
     ]);
+  });
+
+  it('replays a dominant use from a standalone segment whose start is in throwing stance', async () => {
+    const initial = createRuntime();
+    const start = capture(initial);
+    const startState: ReplayStartState = {
+      throwingStance: true,
+      readyHeld: false,
+      aimingDownSights: false,
+      inventoryOpen: false,
+    };
+    const throwDominantItem = (runtime: ReturnType<typeof createRuntime>): void => {
+      const held = runtime.inventory.hands[dominantSide(runtime.session.character)];
+      if (held && !runtime.inventory.move(held, { kind: 'pile', pos: runtime.player.body.pos }).ok) {
+        throw new Error('Could not throw the dominant held item');
+      }
+    };
+    const previousRecorder = new InputReplayRecorder(start, 1);
+    previousRecorder.recordTick(replaySample);
+    previousRecorder.queueAction('throw.stance.toggle', 'down', 'play', { inSnapshot: true });
+    const recorder = rolloverInputReplayRecorder(previousRecorder, start, [], startState);
+    const throwingStance = true;
+    const source = createRuntime(start, false, undefined, {
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        const sampled = { ...live, intent: { ...live.intent, useDominant: true } };
+        recorder.recordTick(sampled, compression);
+        return sampled;
+      },
+      useDominant: () =>
+        routeDominantUse(
+          throwingStance,
+          () => throwDominantItem(source),
+          () => undefined,
+        ),
+    });
+    source.sim.paused = false;
+    source.view.intent.forward = 1;
+    source.session.frame(1 / 60);
+    const sourceEnd = capture(source);
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const standaloneReplay = playSession(decoded.snapshot, decoded.inputs, {
+      endSimTimestamp: decoded.endSimTimestamp,
+      startState: decoded.startState,
+    });
+
+    expect(previousRecorder.copyInputs().actions).toContainEqual({
+      tick: 1,
+      action: 'throw.stance.toggle',
+      phase: 'down',
+      context: 'play',
+    });
+    expect(decoded.startState).toEqual(startState);
+    expect(recorder.tickCount).toBeGreaterThan(0);
+    expect(await replayStateFingerprint(capture(standaloneReplay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
   it('rolls a deferred throw into the next segment, which verifies alone and joined', async () => {

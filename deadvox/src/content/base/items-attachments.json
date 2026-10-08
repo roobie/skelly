@@ -1,0 +1,101 @@
+{
+  "items": [
+    {
+      "id": "optic_digital_thermal",
+      "name": "Digital thermal optic",
+      "category": "misc",
+      "weight": 750,
+      "size": [2, 2],
+      "model": "optic_digital_thermal"
+    },
+    {
+      "id": "optic_fixed_prism_4x",
+      "name": "Fixed 4× prism optic",
+      "category": "misc",
+      "weight": 450,
+      "size": [1, 2],
+      "model": "optic_fixed_prism_4x"
+    },
+    {
+      "id": "optic_high_mag_5_25x",
+      "name": "5–25× magnified optic",
+      "category": "misc",
+      "weight": 900,
+      "size": [2, 2],
+      "model": "optic_high_mag_5_25x",
+      "opticMagnification": 10
+    },
+    {
+      "id": "optic_holographic",
+      "name": "Holographic sight",
+      "category": "misc",
+      "weight": 250,
+      "size": [1, 1],
+      "model": "optic_holographic"
+    },
+    {
+      "id": "optic_lpvo_1_6x",
+      "name": "1–6× variable-power optic",
+      "category": "misc",
+      "weight": 520,
+      "size": [2, 2],
+      "model": "optic_lpvo_1_6x",
+      "opticMagnification": 3
+    },
+    {
+      "id": "optic_mini_reflex",
+      "name": "Mini reflex sight",
+      "category": "misc",
+      "weight": 180,
+      "size": [1, 1],
+      "model": "optic_mini_reflex"
+    },
+    {
+      "id": "optic_tube_dot",
+      "name": "Tube red-dot sight",
+      "category": "misc",
+      "weight": 220,
+      "size": [1, 2],
+      "model": "optic_tube_dot"
+    },
+    {
+      "id": "rail_front_sight",
+      "name": "Rail-mounted front sight",
+      "category": "misc",
+      "weight": 90,
+      "size": [1, 1],
+      "model": "rail_front_sight"
+    },
+    {
+      "id": "real_suppressor",
+      "name": "Suppressor",
+      "category": "misc",
+      "weight": 300,
+      "size": [1, 2],
+      "model": "real_suppressor",
+      "firearmAttachmentEffects": { "recoilReduction": 0.15, "wearPerShot": 0.001 }
+    },
+    {
+      "id": "tactical_flashlight_mount",
+      "name": "Tactical flashlight rail mount",
+      "category": "misc",
+      "weight": 120,
+      "size": [1, 1],
+      "model": "tactical_flashlight_mount"
+    },
+    {
+      "id": "foregrip",
+      "name": "Vertical foregrip",
+      "category": "misc",
+      "weight": 160,
+      "size": [1, 1],
+      "model": "foregrip",
+      "firearmAttachmentEffects": {
+        "swayScale": 0.85,
+        "recoveryScale": 1.1,
+        "raiseScale": 0.95,
+        "swingScale": 1.1
+      }
+    }
+  ]
+}

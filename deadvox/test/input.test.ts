@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Input, nextMenuCursor } from '../src/game/input.ts';
-import { keyboardInput } from '../src/game/inputBindings.ts';
+import { keyboardInput, shouldCancelInputForViewerFocus } from '../src/game/inputBindings.ts';
 
 const fixture = (allowed: () => boolean = () => true) => {
   const targetListeners = new Map<string, (event: MouseEvent) => void>();
@@ -59,6 +59,14 @@ afterEach(() => {
 });
 
 describe('pointer input', () => {
+  it('cancels each viewer-focus reason live but not during replay', () => {
+    for (const reason of ['window-blur', 'document-hidden', 'pointer-lock-lost'] as const) {
+      expect(shouldCancelInputForViewerFocus(reason, false)).toBe(true);
+      expect(shouldCancelInputForViewerFocus(reason, true)).toBe(false);
+    }
+    expect(shouldCancelInputForViewerFocus('context-change', true)).toBe(true);
+    expect(shouldCancelInputForViewerFocus('manual', true)).toBe(true);
+  });
   it('surfaces native pointer-lock refusal without an unhandled rejection', async () => {
     const { input, target } = fixture();
     const error = new Error('Pointer lock refused');

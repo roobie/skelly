@@ -17,12 +17,12 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
+import { dayCycleFor, dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import {
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroHandling,
-  firearmStanceEffects,
   firearmsSkillEffects,
   sameFirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
@@ -72,6 +72,7 @@ import {
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
+import { FirearmAttachmentHandling } from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
@@ -107,7 +108,7 @@ const sessionFirearmsSkillZeroHandling = (
   mechanics: FirearmMechanics,
   firearmUid: number | undefined,
   shared: FirearmsSkillZeroHandling,
-): FirearmsSkillZeroHandling => (firearmUid === undefined ? shared : mechanics.skillZeroHandlingFor(firearmUid));
+): FirearmsSkillZeroHandling => (firearmUid === undefined ? shared : mechanics.skillZeroHandlingSettingFor(firearmUid));
 const sessionFirearmsShotKind = (
   mechanics: FirearmMechanics,
   firearmUid: number | undefined,
@@ -468,9 +469,11 @@ const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? o
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
+  const dayCycle = dayCycleFor(registry.dayCycle);
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
-  const isSunExposedAt = (pos: Vec3, hour: number): boolean => sunExposedAt(pos, hour, skyTop, options.isOpaque);
+  const isSunExposedAt = (pos: Vec3, hour: number): boolean =>
+    sunExposedAt({ position: pos, gameHours: hour, skyTop, isOpaque: options.isOpaque, cycle: dayCycle });
   const physics = physicsFor(scale);
   const restored = options.restore;
 
@@ -550,6 +553,7 @@ export const createSession = (options: SessionOptions) => {
       player,
       sourceLabel = null,
       listenerRelative = false,
+      noiseRadiusScale = 1,
       body: mobBody,
       noiseRadiusMetres,
     }: SoundEmissionMeta & {
@@ -565,7 +569,7 @@ export const createSession = (options: SessionOptions) => {
     const pitch = mobBody ? selected.pitch * shamblerBodyPitch(mobBody) : selected.pitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
-    const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres;
+    const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres * noiseRadiusScale;
     const sound = freezeSnapshot({
       event,
       position: [...position] as Vec3,
@@ -650,7 +654,8 @@ export const createSession = (options: SessionOptions) => {
       aim.recordShot(
         shotSeed,
         recoilKickRadians,
-        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale,
+        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale *
+          firearms.recoilScaleFor(firearmUid),
       );
     },
     onShot: (shot, time, firearm) => {
@@ -661,12 +666,17 @@ export const createSession = (options: SessionOptions) => {
       }
       // Other firearms' shot sounds are the player's presentation cue (play.ts, `firearmShotSound`).
       if (registry.items.get(firearm.type)?.firearm?.pump) {
-        playPlayerSound('shotgun_blast', time, { sourceLabel: 'pump shotgun' });
+        playPlayerSound('shotgun_blast', time, {
+          sourceLabel: 'pump shotgun',
+          noiseRadiusScale: firearms.noiseFactorFor(firearm),
+        });
       }
     },
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
   });
+
+  const firearmAttachments = new FirearmAttachmentHandling(inventory, queue, feet);
 
   const magazines = new MagazineHandling(inventory, queue, {
     feet,
@@ -825,8 +835,8 @@ export const createSession = (options: SessionOptions) => {
     jumpSpeed: PLAYER.jump,
     tuning: senseTuning,
     player: playerSense,
-    hour: () => hourOfDay(sim.calendar),
-    isSunExposedAt,
+    dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
+    isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
     hurtPlayer: (amount, area, attacker) => {
       if (
         controls.blocking?.() &&
@@ -1059,9 +1069,9 @@ export const createSession = (options: SessionOptions) => {
       canSprint(sim.needs, sprinting);
     survival.setSprinting(sprinting);
     stepStamina(sim.needs, dt, sprinting, bodyTuning.staminaRegenDelaySimSeconds);
-    const readyMovementFactor = readyGait
-      ? firearmStanceEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).readyMovementFactor
-      : 1;
+    const readyFirearm = Object.values(inventory.hands).find((item) => item && registry.items.get(item.type)?.firearm);
+    const readyMovementFactor =
+      readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
     const pacedIntent = movementPace(
       { ...intent, sprint: sprinting, crouch: crouching },
       {
@@ -1222,6 +1232,7 @@ export const createSession = (options: SessionOptions) => {
     entities,
     queue,
     firearms,
+    firearmAttachments,
     magazines,
     aim,
     get firearmsSkillZeroHandling() {
