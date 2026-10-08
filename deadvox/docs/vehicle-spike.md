@@ -25,14 +25,14 @@ and `src/vehicles/` the model. The goal these builds test is in
 
 ## Decided
 
-- **4×4:** BR approved the current 4×4 as the spike's visual direction.
-- **Noise:** Vehicle noise is mainly an engine property; the chassis and hull can
-  contribute too.
+- **4×4:** BR approved r43-5's 4×4.
+- **Noise:** BR ruled that vehicle noise is mainly an engine property; the chassis
+  and hull can contribute too.
 - **Pickup and motorbike:** BR chose to rebuild both on the part model rather
   than drop them from the spike.
 - **Sand paint:** BR approved the sand finish and asked for wear and scratches if
   they are not too difficult to add.
-- **Model changes:** BR chose the three recommended changes for this PR:
+- **Model changes:** BR chose the three recommended changes in r43:
   vehicle-owned fittings, one id per part type across one catalogue, and mirrored
   fittings stored at their own positions.
 
