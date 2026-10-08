@@ -75,7 +75,7 @@ describe('sun-owned day phases', () => {
       const hour = hours(time);
       expect(sunDirection(hour, cycle)[1] > 0, `sun at ${time}`).toBe(state.phase === 'day');
       expect(
-        sunExposedAt({ position: [0, 1, 0], hour, skyTop: 10, isOpaque: () => false, cycle }),
+        sunExposedAt({ position: [0, 1, 0], gameTimeOfDay: hour, skyTop: 10, isOpaque: () => false, cycle }),
         `exposure at ${time}`,
       ).toBe(state.phase === 'day');
       const sky = skyAt(hour, cycle);

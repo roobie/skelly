@@ -182,16 +182,16 @@ const lookAt = (state: DayPhaseState, time: number): Look => {
   const keys = KEYS.map((key) => {
     const [start, end] = phaseRange(state, key.phase);
     const duration = wrap(end - start);
-    return { time: wrap(start + duration * key.at), look: key.look };
-  }).sort((a, b) => a.time - b.time);
+    return { phasePosition: wrap(start + duration * key.at), look: key.look };
+  }).sort((a, b) => a.phasePosition - b.phasePosition);
   const now = wrap(time);
   for (let i = 0; i < keys.length; i++) {
     const a = keys[i]!;
     const b = keys[(i + 1) % keys.length]!;
-    const end = b.time > a.time ? b.time : b.time + DAY_SECONDS;
-    const current = now >= a.time ? now : now + DAY_SECONDS;
-    if (current >= a.time && current < end) {
-      return interpolate(a.look, b.look, (current - a.time) / (end - a.time));
+    const end = b.phasePosition > a.phasePosition ? b.phasePosition : b.phasePosition + DAY_SECONDS;
+    const current = now >= a.phasePosition ? now : now + DAY_SECONDS;
+    if (current >= a.phasePosition && current < end) {
+      return interpolate(a.look, b.look, (current - a.phasePosition) / (end - a.phasePosition));
     }
   }
   return NIGHT;

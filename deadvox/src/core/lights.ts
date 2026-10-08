@@ -90,18 +90,18 @@ export const lightSenseSourceFor = ({
 /** A daylight sky-exposure test for simulation senses; authored renderer skylight is not authoritative here. */
 export const sunExposedAt = ({
   position,
-  hour,
+  gameTimeOfDay,
   skyTop,
   isOpaque,
   cycle = DEFAULT_DAY_CYCLE,
 }: {
   position: readonly [number, number, number];
-  hour: number;
+  gameTimeOfDay: number;
   skyTop: number;
   isOpaque: SolidAt;
   cycle?: DayCycle;
 }): boolean => {
-  if (sunDirection(hour, cycle)[1] <= 0) {
+  if (sunDirection(gameTimeOfDay, cycle)[1] <= 0) {
     return false;
   }
   const distance = skyTop - position[1];
