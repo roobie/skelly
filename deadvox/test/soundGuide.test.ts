@@ -140,20 +140,19 @@ describe('audio listening guide', () => {
     expect(manifest.sources.flatMap(({ files }) => files)).toContain('assets/audio/melee_hit_fist-01.ogg');
   });
 
-  it('keeps approved random AKM variants active and PBS-1 alternatives preview-only', () => {
+  it('keeps the AKM reference preview-only and credits the AR M4 recordings as CC0', () => {
     const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
-    expect(definitions.get('gunshot')?.variants).toEqual([
-      'assets/audio/gunshot-akm-01.ogg',
-      'assets/audio/gunshot-akm-02.ogg',
-    ]);
-    expect(definitions.get('gunshot_pbs1_reference')?.variants).toEqual([
-      'assets/audio/gunshot-akm-pbs1-01.ogg',
-      'assets/audio/gunshot-akm-pbs1-02.ogg',
-    ]);
+    expect(definitions.get('gunshot')?.variants.length).toBeGreaterThan(0);
+    expect(definitions.get('gunshot_pbs1_reference')?.variants.length).toBeGreaterThan(0);
+    expect(SOUND_TRIGGER_GUIDE.gunshot.trigger).toContain('AK-pattern rifle');
     expect(SOUND_TRIGGER_GUIDE.gunshot_pbs1_reference.trigger).toContain('not used by gameplay');
-    expect(buildSoundGuide(sounds, manifest).find(({ id }) => id === 'gunshot_pbs1_reference')?.note).toContain(
-      'future suppressor',
-    );
+    const guide = buildSoundGuide(sounds, manifest);
+    for (const id of ['gunshot_m4', 'gunshot_m4_suppressed'] as const) {
+      const entry = guide.find((candidate) => candidate.id === id);
+      expect(entry?.variants).toHaveLength(1);
+      expect(entry?.variants[0]).toMatchObject({ author: 'BR', licence: 'CC0-1.0' });
+    }
+    expect(SOUND_TRIGGER_GUIDE.gunshot_m4_suppressed.trigger).toContain('halves the distance');
   });
 
   it('credits every listed variant from its manifest source', () => {

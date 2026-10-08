@@ -768,7 +768,10 @@ and `src/core/content.ts`, `checkItemFirearm`.
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
   (see the screamer below). Stealth is a matter of managing noise and staying
-  out of sight.
+  out of sight. A fitted real suppressor halves how far zombies hear a shot
+  because it lowers the report; keep this gameplay rule tied to the attachment rather
+  than a particular firearm's audio sample. See `src/core/firearmAttachments.ts`,
+  `firearmAttachmentResponse`, and `src/game/play.ts`, `fireWeapon`.
 - **Player-owned sound playback (d111-1):** BR: “their position in the world is
   the player, and the player is a mobile thing, so”. Character- and held-item
   sounds have the player as their source; listener-relative playback makes them

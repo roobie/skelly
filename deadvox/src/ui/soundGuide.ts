@@ -177,8 +177,16 @@ const TRIGGER_ENTRIES = [
       note: 'Stand-in recording until a better fist-hit source is found.',
     },
   ],
-  ['gunshot', { trigger: 'Fire the AR or AK; both AKM variants are selected randomly per shot.' }],
+  ['gunshot', { trigger: 'Fire the AK-pattern rifle; both AKM variants are selected randomly per shot.' }],
   ['gunshot_pbs1_reference', { trigger: 'Preview-only PBS-1 suppressed AKM alternatives; not used by gameplay.' }],
+  ['gunshot_m4', { trigger: 'Fire the AR-pattern rifle without a suppressor fitted.' }],
+  [
+    'gunshot_m4_suppressed',
+    {
+      trigger:
+        'Fire the AR-pattern rifle with a real suppressor fitted; its quieter report halves the distance at which zombies hear it.',
+    },
+  ],
   [
     'shotgun_blast',
     {
@@ -300,11 +308,13 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
     'melee_hit_fist',
     'Placeholder: BR approved this stand-in (2026-10-02); replace when a better fist-hit source is found.',
   ],
+  ['gunshot', 'AKM variants used for the AK-pattern rifle and firearms without a dedicated shot profile.'],
+  ['gunshot_pbs1_reference', 'Reserved PBS-1 suppressed AKM alternatives; not used by gameplay.'],
+  ['gunshot_m4', 'CC0 M4 recording used for the AR-pattern rifle without a suppressor.'],
   [
-    'gunshot',
-    'Approved by BR (2026-10-02); akm_1p v1/v2 are random per-shot variants used for the AR and AK. The pump uses shotgun_blast.',
+    'gunshot_m4_suppressed',
+    'CC0 suppressed M4 recording used when a real suppressor is fitted to the AR-pattern rifle.',
   ],
-  ['gunshot_pbs1_reference', 'Reserved PBS-1 suppressed alternatives for a future suppressor; not used by gameplay.'],
   ['item_drop_wood', 'Approved by BR (2026-10-02) on wood; splitting by pile surface remains future work.'],
   ['pouch_take', 'Approved by BR (2026-10-02).'],
   ['shambler_idle', 'Approved by BR (2026-10-02).'],

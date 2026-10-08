@@ -2134,7 +2134,6 @@ export const startPlay = (
   };
 
   const fireWeapon = (item: Item, time: number): boolean => {
-    const noiseRadiusScale = firearms.noiseFactorFor(item);
     const fired = firearms.fire({
       aimFrame: aim.frame,
       ready: isFirearmReady(item.uid),
@@ -2155,8 +2154,11 @@ export const startPlay = (
     if (registry.items.get(item.type)?.firearm?.pump) {
       return true;
     }
-    const shot = firearmShotSound(item.type);
-    session.playPlayerSound(shot.event, time, { ...shot, noiseRadiusScale });
+    const shot = firearmShotSound(item);
+    session.playPlayerSound(shot.event, time, {
+      ...shot,
+      noiseRadiusScale: shot.noiseRadiusScale ?? firearms.noiseFactorFor(item),
+    });
     return true;
   };
 

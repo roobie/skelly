@@ -337,8 +337,14 @@ describe('game audio playback', () => {
     const listenerAtStart = playerOrigin.map((value) => value * scale.blockSize) as Vec3;
     audio.updateListener(listenerAtStart, [0, 0, -1]);
     session.playPlayerSound('player_strain');
-    const shot = firearmShotSound('rifle_assault');
+    const ar = { uid: 1, type: 'rifle_assault', count: 1, condition: 1 };
+    const shot = firearmShotSound(ar);
     session.playPlayerSound(shot.event, session.sim.time, shot);
+    const suppressedShot = firearmShotSound({
+      ...ar,
+      slots: { muzzle: { uid: 2, type: 'real_suppressor', count: 1, condition: 1 } },
+    });
+    session.playPlayerSound(suppressedShot.event, session.sim.time, suppressedShot);
     audio.updateListener([listenerAtStart[0] + 3, listenerAtStart[1], listenerAtStart[2]], [1, 0, 0]);
     await flush();
 
@@ -367,6 +373,14 @@ describe('game audio playback', () => {
     ).toBeGreaterThan(0);
 
     const events = eventsReader.read();
+    const shotNoiseRadius = events.find((event) => event.kind === 'noise' && event.event === shot.event);
+    const suppressedNoiseRadius = events.find(
+      (event) => event.kind === 'noise' && event.event === suppressedShot.event,
+    );
+    if (shotNoiseRadius?.kind !== 'noise' || suppressedNoiseRadius?.kind !== 'noise') {
+      throw new Error('Expected both AR shot events to emit gameplay noise');
+    }
+    expect(suppressedNoiseRadius.radiusMetres / shotNoiseRadius.radiusMetres).toBe(0.5);
     expect(events.find((event) => event.kind === 'sound' && event.event === 'player_strain')).toMatchObject({
       position: playerOrigin,
       emittedAsNoise: true,

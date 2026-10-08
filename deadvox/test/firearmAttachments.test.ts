@@ -128,6 +128,7 @@ describe('muzzle load', () => {
       throw new Error('Factory-created suppressor default is missing');
     }
     const realResponse = firearmAttachmentResponse(realFixture.registry, realFixture.rifle);
+    expect(realResponse.noiseFactor).toBe(0.5);
     wearFirearmAttachments(realFixture.registry, realFixture.rifle);
     const realWear = 1 - real.condition;
     const wornRealResponse = firearmAttachmentResponse(realFixture.registry, realFixture.rifle);
