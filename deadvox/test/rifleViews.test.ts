@@ -386,10 +386,13 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
       verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,
       archPower: tuning.wobbleLuneArchPower,
       phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
-      jitterShare: tuning.wobbleJitterShare,
-      jitterAmplitudeFraction: tuning.wobbleJitterAmplitudeFraction,
     },
-    jitterSeed: Rng.stream(73, 'rifle-view-tests').int(0, 0xff_ff_ff_ff),
+    wobbleSeed: Rng.stream(73, 'rifle-view-tests').int(0, 0xff_ff_ff_ff),
+    wobbleNoise: {
+      reversionRatePerSimSecond: tuning.wobbleNoiseReversionRatePerSimSecond,
+      sigmaRadiansPerSqrtSecond: tuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+      smoothingSimSeconds: tuning.wobbleNoiseSmoothingSimSeconds,
+    },
   });
   aim.recordShot(1, 0.3);
   aim.advance({
@@ -402,7 +405,6 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
     firing: true,
     recoilRecoveryRate: 1,
     stridePhase: 0,
-    stepIndex: 0,
   });
   const viewShift = aim.pendingViewPitchShift;
   expect(viewShift).toBeGreaterThan(0);

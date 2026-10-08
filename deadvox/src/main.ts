@@ -74,6 +74,7 @@ if (bench === 'report') {
         restore: decoded.snapshot,
         replay: {
           inputs: decoded.inputs,
+          startState: decoded.startState,
           endStateFingerprint: decoded.endStateFingerprint,
           endSimTimestamp: decoded.endSimTimestamp,
         },

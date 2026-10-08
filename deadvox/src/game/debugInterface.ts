@@ -13,7 +13,14 @@ import type { Engine } from './engine.ts';
 import type { MoveIntent } from './player.ts';
 import type { SnapshotMeasurement } from './playtestTools.ts';
 
-export type InputReplayStatusState = 'idle' | 'recording' | 'playing' | 'verified' | 'diverged' | 'unavailable';
+export type InputReplayStatusState =
+  | 'idle'
+  | 'recording'
+  | 'stopped'
+  | 'playing'
+  | 'verified'
+  | 'diverged'
+  | 'unavailable';
 
 export interface DebugHooks {
   readonly engine: Engine;

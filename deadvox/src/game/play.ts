@@ -89,12 +89,13 @@ import {
   type ReplayControlSample,
   type ReplayGeneratedColumn,
   type ReplayInputData,
+  type ReplayStartState,
   replayStateFingerprint,
   rolloverInputReplayRecorder,
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
-import { toggleWalking } from './inputReplayActions.ts';
+import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
@@ -135,6 +136,10 @@ const isGestureAction = (action: string): boolean =>
   action.startsWith('quickbar.use.');
 
 type InputReplayVerification = 'matched' | 'diverged' | 'unavailable' | undefined;
+const INPUT_REPLAY_COLUMN_OVERFLOW_STOP_REASON =
+  'a streamed-column batch exceeded the recording window; the recent replay was discarded';
+const inputReplayStoppedStatus = (reason: string): string => `Recording stopped: ${reason}`;
+
 interface InputReplayStatusOptions {
   readonly replayPlayer: InputReplayPlayer | undefined;
   readonly inputRecorder: InputReplayRecorder | undefined;
@@ -142,15 +147,17 @@ interface InputReplayStatusOptions {
   readonly total: number;
   readonly verification: InputReplayVerification;
   readonly verificationTick: number | undefined;
+  readonly stoppedReason?: string | undefined;
 }
 
-const inputReplayStatus = ({
+export const inputReplayStatus = ({
   replayPlayer,
   inputRecorder,
   previousRecorder,
   total,
   verification,
   verificationTick,
+  stoppedReason,
 }: InputReplayStatusOptions): string => {
   if (replayPlayer) {
     if (verification === 'matched') {
@@ -169,15 +176,25 @@ const inputReplayStatus = ({
     const bytes = inputRecorder.retainedBufferBytes + (previousRecorder?.retainedBufferBytes ?? 0);
     return `Recording ${ticks} ticks · ${bytes} buffer bytes`;
   }
+  if (stoppedReason) {
+    return inputReplayStoppedStatus(stoppedReason);
+  }
   return 'Recording starts when play begins';
 };
 
 const encodeRecentInputReplay = (
-  previousRecorder: InputReplayRecorder | undefined,
-  recorder: InputReplayRecorder | undefined,
+  recording: {
+    readonly previousRecorder: InputReplayRecorder | undefined;
+    readonly recorder: InputReplayRecorder | undefined;
+    readonly stoppedReason: string | undefined;
+  },
   worldOptions: { blockSize: number; site: string; storeys: number; density: number | null },
   endSnapshot: Readonly<SaveSnapshot>,
 ): Promise<Uint8Array> => {
+  const { previousRecorder, recorder, stoppedReason } = recording;
+  if (stoppedReason) {
+    throw new Error(inputReplayStoppedStatus(stoppedReason));
+  }
   if (!recorder) {
     throw new Error('Input recording has not started');
   }
@@ -204,11 +221,12 @@ const createInputReplayRecorder = (
   replaying: boolean,
   snapshot: () => Readonly<SaveSnapshot>,
   generatedColumns: readonly ReplayGeneratedColumn[],
+  startState: () => ReplayStartState,
 ): InputReplayRecorder | undefined => {
   if (replaying) {
     return undefined;
   }
-  return new InputReplayRecorder(snapshot(), undefined, generatedColumns);
+  return new InputReplayRecorder(snapshot(), undefined, generatedColumns, { startState: startState() });
 };
 
 const createInputReplayDriver = (
@@ -255,6 +273,7 @@ export interface StartPlayOptions {
     readonly inputs: ReplayInputData;
     readonly endStateFingerprint: string;
     readonly endSimTimestamp: number;
+    readonly startState: ReplayStartState;
   };
 }
 
@@ -332,6 +351,7 @@ export const startPlay = (
   const firearmTrigger = new FirearmTrigger();
   let inputRecorder: InputReplayRecorder | undefined;
   let previousInputRecorder: InputReplayRecorder | undefined;
+  let inputReplayStoppedReason: string | undefined;
   let replaySample: ReplayControlSample | undefined;
   let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
   let replayVerification: 'matched' | 'diverged' | 'unavailable' | undefined;
@@ -347,7 +367,9 @@ export const startPlay = (
     compressionAtTick: number,
   ): PlayerInputSample => {
     if (!replayPlayer) {
-      inputRecorder?.recordTick(live, compressionAtTick);
+      if (inputRecorder && !inputRecorder.recordTick(live, compressionAtTick)) {
+        stopInputRecordingForColumnOverflow();
+      }
       pendingPlayerTickActions.applyAtNextTick();
       return live;
     }
@@ -411,6 +433,7 @@ export const startPlay = (
     scale,
     seed: config.seed,
     wobbleFlatOverride: config.debugWobbleFlat,
+    wobbleNoiseScaleOverride: config.debugWobbleNoiseScale,
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
@@ -428,21 +451,27 @@ export const startPlay = (
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
       consumeCrouchToggle: () => input.consumeCrouchToggle(),
-      useDominant: () => {
-        if (throwingStance) {
-          if (!replayPlayer) {
-            beginItemThrow();
-          }
-          return;
-        }
-        // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
-        const action = selectPrimaryAction(inventory);
-        if (
-          !(debugTools?.buildOn || (action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump))
-        ) {
-          performHandUse(dominantSide(inventory.character));
-        }
-      },
+      useDominant: () =>
+        routeDominantUse(
+          throwingStance,
+          () => {
+            if (!replayPlayer) {
+              beginItemThrow();
+            }
+          },
+          () => {
+            // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
+            const action = selectPrimaryAction(inventory);
+            if (
+              !(
+                debugTools?.buildOn ||
+                (action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
+              )
+            ) {
+              performHandUse(dominantSide(inventory.character));
+            }
+          },
+        ),
       heldDominantUse: (time, pressed, triggerHeld) => {
         if (throwingStance) {
           if (!(replayPlayer || triggerHeld) && itemThrowItemUid !== undefined) {
@@ -540,19 +569,16 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
+  const hasActiveFirearmInput = (): boolean =>
+    replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
   const isFirearmReady = (uid: number): boolean =>
-    input.rightMouseActionHeld &&
-    input.locked &&
-    !input.menuPointer &&
-    !compression.locksInput &&
-    firearms.isReady(uid);
+    input.rightMouseActionHeld && hasActiveFirearmInput() && !compression.locksInput && firearms.isReady(uid);
   const isAimingDownSights = (): boolean => {
     const action = selectPrimaryAction(inventory);
     return (
       input.aimingDownSights &&
       input.rightMouseActionHeld &&
-      input.locked &&
-      !input.menuPointer &&
+      hasActiveFirearmInput() &&
       action.kind === 'firearm' &&
       isFirearmReady(action.item.uid) &&
       !session.sprinting
@@ -802,6 +828,29 @@ export const startPlay = (
   const closeInventoryScreen = (): void => {
     screen.close();
   };
+  const replayPlayState = createReplayPlayStateBinding({
+    getThrowingStance: () => throwingStance,
+    setThrowingStance: (value) => {
+      throwingStance = value;
+    },
+    getReadyHeld: () => input.rightMouseHeld,
+    setReadyHeld: (value) => {
+      input.rightMouseHeld = value;
+    },
+    getAimingDownSights: () => input.aimingDownSights,
+    setAimingDownSights: (value) => {
+      input.aimingDownSights = value;
+    },
+    getInventoryOpen: () => screen.isOpen,
+    setInventoryOpen: (value) => {
+      if (value) {
+        openInventoryScreen();
+      } else {
+        closeInventoryScreen();
+      }
+    },
+  });
+  const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
 
   const spawnItem = (type: string): string => {
     const item = inventory.create(type);
@@ -820,7 +869,10 @@ export const startPlay = (
   const inputReplayHooks: DebugHooks['inputReplay'] = {
     state: (): InputReplayStatusState => {
       if (!replayPlayer) {
-        return inputRecorder ? 'recording' : 'idle';
+        if (inputRecorder) {
+          return 'recording';
+        }
+        return inputReplayStoppedReason ? 'stopped' : 'idle';
       }
       switch (replayVerification) {
         case 'matched':
@@ -840,12 +892,19 @@ export const startPlay = (
         total: options.replay?.inputs.frames.length ?? 0,
         verification: replayVerification,
         verificationTick: replayVerificationTick,
+        stoppedReason: inputReplayStoppedReason,
       }),
-    export: () =>
-      withReplayExportGuard(session.hasFirearmHandlingOverrides(), () =>
+    export: () => {
+      if (inputReplayStoppedReason) {
+        throw new Error(inputReplayStoppedStatus(inputReplayStoppedReason));
+      }
+      return withReplayExportGuard(session.hasFirearmHandlingOverrides(), () =>
         encodeRecentInputReplay(
-          previousInputRecorder,
-          inputRecorder,
+          {
+            previousRecorder: previousInputRecorder,
+            recorder: inputRecorder,
+            stoppedReason: inputReplayStoppedReason,
+          },
           {
             blockSize: s,
             site: config.site,
@@ -854,7 +913,8 @@ export const startPlay = (
           },
           captureSnapshot(),
         ),
-      ),
+      );
+    },
     import: importReplay,
   };
   debugTools = debugModule?.attachDebugTools({
@@ -1517,6 +1577,7 @@ export const startPlay = (
           action.startsWith('quickbar.assign.') ||
           action === 'handling.stop')) ||
       action === 'craft.continue';
+    // Gameplay records this press after toggling saved state; recording it here too duplicates the live press.
     const walkToggleHandledByGameplay = action === 'movement.walk-toggle' && phase === 'down';
     if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction || walkToggleHandledByGameplay)) {
       inputRecorder?.queueAction(action, phase, context);
@@ -1581,6 +1642,7 @@ export const startPlay = (
   };
   keyboardInput.install();
   keyboardInput.sync();
+  replayPlayState.restore(options.replay?.startState);
   const cycleWieldedAction = (deltaY: number): boolean => {
     const item = inventory.hands[dominantSide(inventory.character)];
     return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
@@ -1615,6 +1677,7 @@ export const startPlay = (
       direction: lookDir(),
       maxDistance: USE_REACH / s,
       blockSize: s,
+      worldSeed: config.seed,
       isSolid: engine.isOpaque,
       hasModel: (id) => view.models.has(id),
     });
@@ -1719,7 +1782,7 @@ export const startPlay = (
     throwingStance = !throwingStance;
     automaticFireUid = undefined;
     if (!replayPlayer) {
-      inputRecorder?.queueAction('throw.stance.toggle', 'down', inputContext());
+      inputRecorder?.queueAction('throw.stance.toggle', 'down', inputContext(), { inSnapshot: true });
     }
     if (!throwingStance) {
       cancelItemThrow();
@@ -2547,9 +2610,42 @@ export const startPlay = (
     verifyReplayEndState();
   };
 
+  const stopInputRecordingForColumnOverflow = (): void => {
+    inputReplayStoppedReason = INPUT_REPLAY_COLUMN_OVERFLOW_STOP_REASON;
+    inputRecorder = undefined;
+    previousInputRecorder = undefined;
+    showNotice(`Replay ${inputReplayStoppedStatus(inputReplayStoppedReason).toLowerCase()}.`);
+  };
+
+  const rollInputRecorderWindow = (): void => {
+    if (!inputRecorder) {
+      return;
+    }
+    const previousRecorder = inputRecorder;
+    previousInputRecorder = previousRecorder;
+    inputRecorder = rolloverInputReplayRecorder(
+      previousRecorder,
+      captureSnapshot(),
+      streamer.generatedColumns(),
+      captureReplayStartState(),
+    );
+  };
+
+  const handleInputRecorderColumnOverflow = (): void => {
+    if (replayPlayer || !inputRecorder?.columnChangesWouldOverflow) {
+      return;
+    }
+    if (inputRecorder.pendingColumnChangesExceedWindow) {
+      stopInputRecordingForColumnOverflow();
+    } else {
+      rollInputRecorderWindow();
+    }
+  };
+
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
     cancelItemThrowOnRightClick();
+    handleInputRecorderColumnOverflow();
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     if (replayPlayer) {
@@ -2563,8 +2659,7 @@ export const startPlay = (
       updateSkip(skipUntil);
     }
     if (!replayPlayer && inputRecorder?.full) {
-      previousInputRecorder = inputRecorder;
-      inputRecorder = rolloverInputReplayRecorder(inputRecorder, captureSnapshot(), streamer.generatedColumns());
+      rollInputRecorderWindow();
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     if (spectatorCameraEnabled && spectatorCameraBody && input.locked && !input.menuPointer) {
@@ -2768,7 +2863,12 @@ export const startPlay = (
       { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
     );
   }
-  inputRecorder = createInputReplayRecorder(Boolean(options.replay), captureSnapshot, streamer.generatedColumns());
+  inputRecorder = createInputReplayRecorder(
+    Boolean(options.replay),
+    captureSnapshot,
+    streamer.generatedColumns(),
+    captureReplayStartState,
+  );
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
