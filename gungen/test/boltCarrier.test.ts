@@ -4,6 +4,7 @@ import { distanceWorld, penetrationWorld, worldSolid } from '../src/core/geometr
 import { applyPoint, compose, extrusionPoint, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Box, Solid } from '../src/core/schema.ts';
+import { AR_ACTION_LAYOUT } from '../src/gun/arLayout.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import {
   akChargingHandleSlotWindow,
@@ -398,14 +399,20 @@ describe('procedural bolt carrier', () => {
         expect(port.width).toBeGreaterThanOrEqual(
           EJECTION_PORT_RULES.pumpShellMinimum.lengthU + 2 * EJECTION_PORT_RULES.pumpShellMinimum.endClearanceU,
         );
+      } else if (entry.pattern === 'ar') {
+        expect((port.actualX![0]! + port.actualX![1]!) / 2, 'AR port remains centered on the carrier face').toBeCloseTo(
+          (port.expectedX[0]! + port.expectedX[1]!) / 2,
+          6,
+        );
+        expect(port.width).toBe(AR_ACTION_LAYOUT.ejectionPortLengthU);
       } else {
         expect(port.actualX, `${entry.pattern} carrier face + margin`).toEqual([
           port.carrierX![0]! - EJECTION_PORT_MARGIN_U,
           port.carrierX![1]! + EJECTION_PORT_MARGIN_U,
         ]);
+        expect(port.actualX).toEqual(port.expectedX);
+        expect(port.width).toBe(entry.portWidthU);
       }
-      expect(port.actualX).toEqual(port.expectedX);
-      expect(port.width).toBe(entry.portWidthU);
       expect(port.actualY, `${entry.pattern} carrier height + margin`).toEqual([
         port.carrierY![0]! - EJECTION_PORT_MARGIN_U,
         port.carrierY![1]! + EJECTION_PORT_MARGIN_U,
@@ -921,7 +928,8 @@ describe('procedural bolt carrier', () => {
     expect(tailAtFullStrokeX).toBeCloseTo(tubeMouthX - travel, 8);
     expect(tailAtFullStrokeX).toBeLessThan(tubeMouthX);
     expect(tubeWalls.length).toBeGreaterThan(0);
-    expect(port.actualX).toEqual(port.expectedX);
+    expect((port.actualX![0]! + port.actualX![1]!) / 2).toBeCloseTo((port.expectedX[0]! + port.expectedX[1]!) / 2, 6);
+    expect(port.width).toBe(AR_ACTION_LAYOUT.ejectionPortLengthU);
     expect(port.actualY).toEqual(port.expectedY);
     expect(noCarrierReceiverIntersectionsOverTravel(resolved)).toBe(true);
     const travelSteps = Math.max(1, Math.round(travel * 4));
