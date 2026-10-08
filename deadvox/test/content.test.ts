@@ -1181,6 +1181,7 @@ describe('content references', () => {
             name: 'Clerk',
             model: 'shambler',
             spawnWeight: 1,
+            canJumpObstacles: true,
             sounds: zombieSounds,
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
