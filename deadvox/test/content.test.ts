@@ -12,8 +12,14 @@ import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDe
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 
 const BASE = 'src/content/base';
+const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
+const INPUT_GESTURE =
+  /\b(?:hold|press|tap|click|double[ -]press|wield|activate|throw|scroll|wheel|drag|rotate|snap|spawn)\b/i;
+const LMB_ALIAS = /\bLMB\b/i;
+const RMB_ALIAS = /\bRMB\b/i;
 const base = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
@@ -73,6 +79,43 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
+  it('keeps input instructions out of item descriptions', () => {
+    const bindingLabels = [
+      ...INPUT_BINDINGS.flatMap((binding) =>
+        binding.defaults.map((_, index) => inputBindings.alternativeLabel(binding.id, index).split(' + ').at(-1)!),
+      ),
+      ...POINTER_ACTIONS.map(({ label }) => label),
+    ];
+    const controlPatterns = [...new Set(bindingLabels)].map((label) => {
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replaceAll(' ', '\\s+');
+      if (CONTEXTUAL_KEY_LABEL.test(label)) {
+        return new RegExp(`(?:${INPUT_GESTURE.source}\\s+|\\b(?:key|button)\\s+)${escaped}(?![\\p{L}\\p{N}])`, 'iu');
+      }
+      return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu');
+    });
+    const buttonAliases = POINTER_ACTIONS.flatMap(({ id }) => {
+      if (id === 'hand.use-dominant') {
+        return [LMB_ALIAS];
+      }
+      if (id === 'stance.ready') {
+        return [RMB_ALIAS];
+      }
+      return [];
+    });
+    const namesInput = (description: string) =>
+      [...controlPatterns, ...buttonAliases].some((pattern) => pattern.test(description)) ||
+      INPUT_GESTURE.test(description);
+    expect(namesInput(`Hold ${inputBindings.label('firearm.reload')} to load`)).toBe(true);
+    expect(namesInput(`${inputBindings.label('ui.main-menu-toggle')} key`)).toBe(true);
+    expect(namesInput('LMB fires')).toBe(true);
+    expect(namesInput('AR-pattern rifle')).toBe(false);
+    expect(namesInput('A magazine that holds 30 rounds.')).toBe(false);
+    const offenders = [...baseRegistry.items.values()].flatMap((item) =>
+      item.description !== undefined && namesInput(item.description) ? [`${item.id}: ${item.description}`] : [],
+    );
+    expect(offenders).toEqual([]);
+  });
+
   it('base content has no issues', () => {
     const { registry, issues } = baseBuild;
     expect(issues).toEqual([]);
@@ -734,7 +777,21 @@ describe('content references', () => {
     source: 'broken-reference.json',
     data: JSON.parse(readFileSync('test/fixtures/content/broken-reference.json', 'utf8')) as unknown,
   };
-  const withBase = (...extra: { source: string; data: unknown }[]) => buildRegistry([...base, ...extra]);
+  const baseContent = (source: string) => base.find((file) => file.source === source)!.data as ContentFile;
+  const zombieSounds = {
+    idle: 'shambler_idle',
+    alert: 'shambler_alert',
+    attack: 'shambler_attack',
+    hurt: 'shambler_hurt',
+  };
+  const referenceDependencies = {
+    source: 'reference-dependencies.json',
+    data: {
+      items: baseContent('items-other.json').items!.filter(({ id }) => id === 'bandage'),
+      skills: baseContent('recipes.json').skills,
+      sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
+    },
+  };
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
 
   it('requires an explicit disassembly yield for a recipe result', () => {
@@ -1017,12 +1074,7 @@ describe('content references', () => {
             name: 'Clerk',
             model: 'shambler',
             spawnWeight: 1,
-            sounds: {
-              idle: 'shambler_idle',
-              alert: 'shambler_alert',
-              attack: 'shambler_attack',
-              hurt: 'shambler_hurt',
-            },
+            sounds: zombieSounds,
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
             stepLength: 0.6,
@@ -1088,7 +1140,7 @@ describe('content references', () => {
         ],
       },
     };
-    expect(paths(withBase(mod).issues).sort()).toEqual([
+    expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
       'furniture[0].loot',
       'furniture[0].loot',
       'furniture[1].door.prying.skill',
@@ -1138,6 +1190,40 @@ describe('templates', () => {
   });
   const check = (t: { source: string; data: unknown }) =>
     buildRegistry([...templateBase, t]).issues.map((i) => `${i.path}: ${i.message}`);
+
+  it('reports spatial template issues during registry validation', () => {
+    const wall = ['#####', '#...#', '#...#', '#...#', '#####'];
+    const sealed = {
+      source: 'sealed-entrance.json',
+      data: {
+        templates: [
+          {
+            id: 'sealed_entrance',
+            size: [5, 5, 5],
+            palette: { '#': 'brick', '.': 'air' },
+            layers: [
+              ['#####', '#####', '#####', '#####', '#####'],
+              wall,
+              wall,
+              wall,
+              ['.....', '.....', '.....', '.....', '.....'],
+            ],
+            access: {
+              ground: 'ground',
+              entrance: [2.5, 1, 2.5],
+              storeys: [{ id: 'ground', floor: 1 }],
+              stairs: [],
+            },
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([...templateBase, sealed]).issues).toContainEqual({
+      source: 'sealed-entrance.json',
+      path: 'templates[0].access.entrance',
+      message: 'entrance must reach a standing opening at the footprint edge on the ground storey',
+    });
+  });
 
   it('leaves an open air cell beside every window-frame run', () => {
     const frameRuns = [...baseRegistry.templates.values()].flatMap((definition) => {

@@ -33,7 +33,7 @@ lands. A deterministic scatter represents that count visually. This gives cases
 as recoverable world items without saving a separate physics body for every
 shot, and keeps a case with the place it actually landed. See
 `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`, and
-`src/render/spentCaseScatter.ts`, `spentCaseScatter`.
+`src/core/scatterPile.ts`, `spentCaseScatter`.
 
 Fitted attachments affect the firearm through their authored geometry and
 properties. Gungen derives suppressor mass from geometry and material. The only

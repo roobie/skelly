@@ -1,6 +1,9 @@
 ---
 id: skelly::gungen-anti-materiel
 description: The anti-materiel rifle archetype in gungen - the vocabulary it added, the rules, the modelling choices and where its proportions come from.
+read_if:
+  - you work on the anti-materiel rifle archetype
+  - you review its proportions or browser regressions
 tags: [gungen, archetype, anti-materiel, vocabulary]
 created: 2026-10-01
 status: active
@@ -323,9 +326,8 @@ either), feed lips, and the magazine's follower and rounds.
 
 ## Not verified
 
-- The look has been checked in the viewer in headless Chromium only, with BR's
-  judgement of proportions still to come.
-- deadvox has not been given the model.
+The proportions still need BR's judgement in the viewer; a headless Chromium
+check cannot judge them. Deadvox has not been given the model.
 - **How the real magazine stacks its rounds.** No source for the M82's stacking was found in what
   could be read (Wikipedia's M82 and .50 BMG articles, Barrett's model page; Wikipedia says the
   5-round Accuracy International AS50 magazine is single-stack). The double column is a deduction from
