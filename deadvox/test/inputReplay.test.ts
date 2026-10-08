@@ -30,6 +30,7 @@ import {
 import { toggleWalking } from '../src/game/inputReplayActions.ts';
 import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
 import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
+import { inputReplayStatus } from '../src/game/play.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import {
   applyReplayActionPayload,
@@ -607,6 +608,22 @@ const createRifleReplayFixture = () => {
 const REPLAY_EXPORT_OVERRIDE_MESSAGE = /debug firearm-handling overrides differ from content/;
 
 describe('input replay', () => {
+  it('reports an overflow-stopped recording as discarded', () => {
+    const status = inputReplayStatus({
+      replayPlayer: undefined,
+      inputRecorder: undefined,
+      previousRecorder: undefined,
+      total: 0,
+      verification: undefined,
+      verificationTick: undefined,
+      stoppedReason: 'a streamed-column batch exceeded the recording window; the recent replay was discarded',
+    });
+
+    const normalized = status.toLowerCase();
+    expect(normalized).toContain('stopped');
+    expect(normalized).toContain('discarded');
+  });
+
   it('rejects a replay from another schema version', async () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
