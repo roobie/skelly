@@ -25,11 +25,13 @@ Tracked files describe the project, not the machine the team happens to work on.
 tracked file must work for anyone who clones the repo and for CI. This covers code, tests,
 docs, review reports, content and credits. Never commit:
 
-- **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`;
+- **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`. A location a tool
+  defines the same way for every clone, such as Playwright's browser cache, is fine; the
+  checker allows each one by value (see `tools/zero-drift-check.mjs`,
+  `HOST_PATH_VALUE_EXEMPTIONS`), so add new locations there.
 - **addresses:** host names, LAN IPs and LAN URLs (`http://<ip>:<port>/…`), and the ports
   of this host's own services (preview servers, proxies). A port the project or its tools
-  configure, such as Vite's `localhost:5173`, is the same for every clone and is fine.
-  Paths defined identically by a project tool for every clone are allowed too;
+  configure, such as Vite's `localhost:5173`, is the same for every clone and is fine;
 - **the host's size and limits:** its CPU, RAM and disk, free-disk floors, memory caps,
   cgroup slices and scopes, lock files, and time budgets measured on it.
 

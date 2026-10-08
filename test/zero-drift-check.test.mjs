@@ -148,6 +148,7 @@ describe('zero-drift policy rules', () => {
       path: 'docs/fixture.md',
       text: [
         'BR, 2026-10-04',
+        'br, 2026-10-04',
         "BR's 2026-10-07 12:50 rulings",
         '(BR)',
         '(BR, 2026-10-04)',

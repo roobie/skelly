@@ -173,11 +173,10 @@ The slice plan leaves the tree at its retrospective, after its live content move
 git and GitHub history keep it. Closing a slice includes one deep docs pass before the
 retrospective: each tracked doc is read whole and trimmed to its current rules, reasons
 and cues, and the zero-drift baseline loses every row the pass fixes. The slice
-retrospective reports findings opened,
-completed, partially completed, carried and dropped; per-item line/site figures;
-review-caught defects, escaped regressions and review/CI rework separately; and
-standalone/folded capacity counts
-with their denominator. Distinguish a persistent finding from a reintroduced one.
+retrospective reports findings opened, completed, partially completed, carried and
+dropped; per-item line/site figures; review-caught defects, escaped regressions and
+review/CI rework separately; and standalone/folded capacity counts with their
+denominator. Distinguish a persistent finding from a reintroduced one.
 For milestones said to be unblocked, record ready/start/review-ready/merge dates
 and known waits; claim a speedup only with a defensible comparison. Unknown effort
 or time saved stays unknown. Decide whether the cadence and capacity check earned
