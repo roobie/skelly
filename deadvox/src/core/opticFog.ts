@@ -29,7 +29,7 @@ export interface MeshedSquare {
 }
 
 /** Horizontal distance in metres from `eye` along the unit direction `dir` (both x, z) to the square's edge. */
-export const distanceToMeshedEdge = (
+const distanceToMeshedEdge = (
   eye: readonly [number, number],
   dir: readonly [number, number],
   { centre, radiusChunks, chunkMetres }: MeshedSquare,
