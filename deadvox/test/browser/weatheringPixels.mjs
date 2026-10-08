@@ -111,7 +111,7 @@ void main() {
       return masks;
     };
 
-    const captureImages = ({ meshes, renderView, canvas, content }) => {
+    const captureImages = async ({ meshes, renderView, canvas, content }) => {
       const settings = [
         ['off', 0],
         ['default', content.strength],
@@ -124,6 +124,9 @@ void main() {
         meshes.setWeathering({ ...content, strength });
         renderView.render();
         uniforms[name] = meshes.weathering.value;
+        // Let Firefox present the renderer's drawing buffer before copying the canvas.
+        // biome-ignore lint/performance/noAwaitInLoops: present each uniform state before capturing it.
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         images[name] = canvas.toDataURL('image/png');
       }
       return { images, uniforms };
@@ -312,7 +315,7 @@ void main() {
       throw new Error('weathering pixel measurement needs the authored world settings');
     }
     const beforeCamera = cameraPose(activeCamera);
-    const { images, uniforms } = captureImages({
+    const { images, uniforms } = await captureImages({
       meshes: chunkMeshes,
       renderView: globalThis.firefoxUiTest.view,
       canvas: rendererCanvas,
