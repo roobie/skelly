@@ -372,14 +372,8 @@ try {
       { timeout: 5000 },
     );
     const fitResult = await page.evaluate(
-      ({
-        dispatchesBefore,
-        jobsBefore,
-        rifleUid: expectedRifleUid,
-        gripUid: expectedGripUid,
-        slotId: expectedSlotId,
-      }) => {
-        const { dispatches, session } = globalThis.foregripFitTest;
+      ({ dispatchesBefore, rifleUid: expectedRifleUid, gripUid: expectedGripUid, slotId: expectedSlotId }) => {
+        const { dispatches } = globalThis.foregripFitTest;
         const fitActions = dispatches
           .slice(dispatchesBefore)
           .filter((action) => action.kind === 'firearm.attachment.fit');
@@ -390,7 +384,6 @@ try {
             attachmentUid,
             slotId: actionSlot,
           })),
-          newJobs: session.queue.jobs.length - jobsBefore,
           expected: {
             kind: 'firearm.attachment.fit',
             firearmUid: expectedRifleUid,
@@ -399,14 +392,16 @@ try {
           },
         };
       },
-      { dispatchesBefore: before.dispatches, jobsBefore: before.jobs, rifleUid, gripUid, slotId },
+      { dispatchesBefore: before.dispatches, rifleUid, gripUid, slotId },
     );
     assert.deepEqual(
       fitResult.fitActions,
       [fitResult.expected],
       'the production fit control dispatches once for its slot',
     );
-    assert.equal(fitResult.newJobs, 1, 'the fit dispatch creates exactly one handling job');
+    await page.evaluate(() => globalThis.foregripFitTest.session.frame(0.1));
+    const fitJobs = await page.evaluate(() => globalThis.foregripFitTest.session.queue.jobs.length);
+    assert.equal(fitJobs - before.jobs, 1, 'the fit dispatch creates exactly one handling job');
     const fitSettled = await page.evaluate(
       ({ rifleUid: expectedRifleUid, gripUid: expectedGripUid, slotId: expectedSlotId }) => {
         const { session } = globalThis.foregripFitTest;
@@ -456,18 +451,17 @@ try {
       { timeout: 5000 },
     );
     const removeResult = await page.evaluate(
-      ({ dispatchesBefore, jobsBefore }) => {
-        const { dispatches, session } = globalThis.foregripFitTest;
-        return {
-          removeActions: dispatches
-            .slice(dispatchesBefore)
-            .filter((action) => action.kind === 'firearm.attachment.remove').length,
-          newJobs: session.queue.jobs.length - jobsBefore,
-        };
+      ({ dispatchesBefore }) => {
+        const { dispatches } = globalThis.foregripFitTest;
+        return dispatches.slice(dispatchesBefore).filter((action) => action.kind === 'firearm.attachment.remove')
+          .length;
       },
-      { dispatchesBefore: beforeRemove.dispatches, jobsBefore: beforeRemove.jobs },
+      { dispatchesBefore: beforeRemove.dispatches },
     );
-    assert.deepEqual(removeResult, { removeActions: 1, newJobs: 1 }, 'removal dispatches once and creates one job');
+    assert.equal(removeResult, 1, 'the production removal control dispatches once');
+    await page.evaluate(() => globalThis.foregripFitTest.session.frame(0.1));
+    const removeJobs = await page.evaluate(() => globalThis.foregripFitTest.session.queue.jobs.length);
+    assert.equal(removeJobs - beforeRemove.jobs, 1, 'the removal dispatch creates exactly one handling job');
     const removalSettled = await page.evaluate(
       ({ rifleUid: expectedRifleUid, slotId: expectedSlotId }) => {
         const { session } = globalThis.foregripFitTest;
