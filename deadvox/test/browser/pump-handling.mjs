@@ -1,15 +1,18 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone native-input browser contract
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative end-to-end assertions
-// biome-ignore-all lint/style/noProcessEnv: browser executable path is runner configuration
 // biome-ignore-all lint/performance/noAwaitInLoops: native arrow navigation is sequential
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { PLAYER } from '../../src/game/player.ts';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
+import { GARDEN_GATE, HOUSE_OFFSET } from '../../src/game/testHouse.ts';
+import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeRoute.ts';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
+import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -25,7 +28,7 @@ const observation = {
     return code.replace(
       marker,
       `
-  Object.assign(globalThis, { pumpHandlingTest: { session, input, camera, audio, screen,
+  Object.assign(globalThis, { pumpHandlingTest: { engine, session, input, camera, audio, screen,
     getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {
@@ -57,6 +60,77 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
+    const nativeRequestAnimationFrame = globalThis.requestAnimationFrame.bind(globalThis);
+    const nativeCancelAnimationFrame = globalThis.cancelAnimationFrame.bind(globalThis);
+    let manualFrames = false;
+    let nextFrameId = 0;
+    let lastDeliveredTimestamp;
+    let lastManualTimestamp;
+    const queuedFrames = [];
+    const frameWaiters = [];
+    const queueFrame = (frame) => {
+      queuedFrames.push(frame);
+      frameWaiters.shift()?.();
+    };
+    const waitForQueuedFrame = () =>
+      queuedFrames.length > 0 ? Promise.resolve() : new Promise((resolveFrame) => frameWaiters.push(resolveFrame));
+    globalThis.requestAnimationFrame = (callback) => {
+      nextFrameId += 1;
+      const id = nextFrameId;
+      if (manualFrames) {
+        queueFrame({ id, callback });
+      } else {
+        nativeRequestAnimationFrame((timestamp) => {
+          if (manualFrames) {
+            queueFrame({ id, callback });
+          } else {
+            lastDeliveredTimestamp = timestamp;
+            callback(timestamp);
+          }
+        });
+      }
+      return id;
+    };
+    globalThis.cancelAnimationFrame = (id) => {
+      const index = queuedFrames.findIndex((frame) => frame.id === id);
+      if (index >= 0) {
+        queuedFrames.splice(index, 1);
+      } else {
+        nativeCancelAnimationFrame(id);
+      }
+    };
+    globalThis.pumpManualFrames = {
+      enable: async () => {
+        manualFrames = true;
+        await waitForQueuedFrame();
+        if (lastDeliveredTimestamp === undefined) {
+          throw new Error('No native game frame was delivered before manual stepping');
+        }
+        lastManualTimestamp = lastDeliveredTimestamp;
+      },
+      step: (seconds) => {
+        const frame = queuedFrames.shift();
+        if (!frame) {
+          throw new Error('No queued game frame to step');
+        }
+        if (lastManualTimestamp === undefined) {
+          throw new Error('Manual stepping has no native timestamp baseline');
+        }
+        const timestamp = lastManualTimestamp + seconds * 1000;
+        lastManualTimestamp = timestamp;
+        frame.callback(timestamp);
+      },
+      disable: () => {
+        manualFrames = false;
+        lastManualTimestamp = undefined;
+        for (const frame of queuedFrames.splice(0)) {
+          nativeRequestAnimationFrame((timestamp) => {
+            lastDeliveredTimestamp = timestamp;
+            frame.callback(timestamp);
+          });
+        }
+      },
+    };
     globalThis.pumpDecoded = [];
     globalThis.pumpRDownAt = 0;
     globalThis.pumpRDowns = [];
@@ -183,6 +257,288 @@ try {
     }, uid);
     assert.ok(rows.includes(String(uid)), `selected ${uid} from visible inventory rows: ${rows.join(',')}`);
   };
+  const moveTo = async (waypoint) => {
+    const { currentPosition, yaw } = await page.evaluate(({ axis }) => {
+      const { input, session } = globalThis.pumpHandlingTest;
+      return { currentPosition: session.body.pos[axis], yaw: input.yaw };
+    }, waypoint);
+    const moveDirection = Math.sign(waypoint.target - currentPosition);
+    if (!moveDirection) {
+      return;
+    }
+    const { action } = routeMovementInput(waypoint.axis, moveDirection > 0 ? 1 : -1, yaw);
+    const releaseMove = await holdAction(page, action);
+    try {
+      const result = await page.evaluate(
+        ({ coordinate, goal, speedMetresPerSecond }) => {
+          const { engine, session } = globalThis.pumpHandlingTest;
+          const start = [...session.body.pos];
+          const startCoordinate = start[coordinate];
+          const direction = Math.sign(goal - startCoordinate);
+          const complete = () =>
+            direction === 0 ||
+            (direction > 0 ? session.body.pos[coordinate] >= goal : session.body.pos[coordinate] <= goal);
+          if (complete()) {
+            return { complete: true, start, current: [...session.body.pos], goal, frames: 0, frameLimit: 0 };
+          }
+
+          // Manually stepping the production RAF callback keeps live time out of the route; real
+          // held input drives the player through the normal input and simulation path.
+          const frameSeconds = 1 / 60;
+          const distanceMetres = Math.abs(goal - startCoordinate) * engine.config.scale.blockSize;
+          const expectedFrames = Math.ceil(distanceMetres / speedMetresPerSecond / frameSeconds);
+          // Authored walking pace plus margin covers load/stance slowdown and tick quantization; initial velocity is zero.
+          const frameLimit = Math.max(1, Math.ceil(expectedFrames * 4) + 2);
+          globalThis.pumpManualFrames.step(frameSeconds);
+          let frames = 1;
+          while (!complete() && frames < frameLimit) {
+            globalThis.pumpManualFrames.step(frameSeconds);
+            frames += 1;
+          }
+          return {
+            complete: complete(),
+            start,
+            current: [...session.body.pos],
+            goal,
+            speedMetresPerSecond,
+            frames,
+            frameLimit,
+          };
+        },
+        { coordinate: waypoint.axis, goal: waypoint.target, speedMetresPerSecond: PLAYER.walk },
+      );
+      assert.equal(result.complete, true, `player could not reach route leg ${waypoint.id}: ${JSON.stringify(result)}`);
+    } finally {
+      await releaseMove();
+    }
+    const settled = await page.evaluate(() => {
+      const { session } = globalThis.pumpHandlingTest;
+      const frameSeconds = 1 / 60;
+      const maxSettleFrames = 120;
+      let frames = 0;
+      const horizontalSpeed = () => Math.hypot(session.body.vel[0], session.body.vel[2]);
+      while (horizontalSpeed() > 1e-9 && frames < maxSettleFrames) {
+        globalThis.pumpManualFrames.step(frameSeconds);
+        frames += 1;
+      }
+      return {
+        position: [...session.body.pos],
+        velocity: [...session.body.vel],
+        frames,
+      };
+    });
+    assert.equal(
+      Math.hypot(settled.velocity[0], settled.velocity[2]),
+      0,
+      `player settles after route leg ${waypoint.id}: ${JSON.stringify(settled)}`,
+    );
+    return settled;
+  };
+  const routeInputs = await page.evaluate(() => {
+    const { engine, session } = globalThis.pumpHandlingTest;
+    const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
+    if (!rack) {
+      throw new Error('Test-house weapon locker is missing');
+    }
+    return {
+      lockerUid: rack.uid,
+      blockSize: engine.config.scale.blockSize,
+      playerHalfWidth: session.body.halfWidth,
+      rack: { pos: [...rack.pos], size: [...rack.size] },
+    };
+  });
+  const lockerRoute = buildTestHouseRangeRoute({
+    ...routeInputs,
+    houseOffset: HOUSE_OFFSET,
+    gardenGate: GARDEN_GATE,
+  });
+  const { lockerUid: routeLockerUid } = routeInputs;
+  assert.ok(lockerRoute.waypoints.length > 0);
+  const wasWalking = await page.evaluate(() => globalThis.pumpHandlingTest.input.walking);
+  if (!wasWalking) {
+    await pressAction(page, 'movement.walk-toggle');
+    await page.waitForFunction(() => globalThis.pumpHandlingTest.input.walking);
+  }
+  await page.evaluate(() => globalThis.pumpManualFrames.enable());
+  let routeStop;
+  for (const waypoint of lockerRoute.waypoints) {
+    const settled = await moveTo(waypoint);
+    if (waypoint.id === 'centre-in-gate') {
+      const [x] = settled.position;
+      const gatePosition = {
+        x,
+        centre: lockerRoute.gateCentreX,
+        clearance: lockerRoute.gateClearance,
+        inside: Math.abs(x - lockerRoute.gateCentreX) <= lockerRoute.gateClearance,
+      };
+      assert.ok(
+        gatePosition.inside,
+        `settled player does not fit inside garden gate opening: ${JSON.stringify(gatePosition)}`,
+      );
+    }
+    routeStop = settled;
+  }
+  await page.evaluate(() => globalThis.pumpManualFrames.disable());
+  if (!wasWalking) {
+    await pressAction(page, 'movement.walk-toggle');
+    await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.walking);
+  }
+  assert.ok(routeStop, 'route settled at the rack-facing stop');
+  const rackApproach = {
+    playerNearFace: routeStop.position[2] - routeInputs.playerHalfWidth,
+    rackFront: routeInputs.rack.pos[2] + routeInputs.rack.size[2],
+  };
+  assert.ok(
+    rackApproach.playerNearFace > rackApproach.rackFront,
+    `player stops outside the rack face: ${JSON.stringify(rackApproach)}`,
+  );
+  await page.setViewportSize({ width: 960, height: 540 });
+  await pressAction(page, 'ui.inventory-toggle');
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.screen.isOpen);
+  await page.evaluate(() => globalThis.pumpHandlingTest.screen.onAction('inventory.search'));
+  await page.waitForFunction(() => {
+    const rack = [...globalThis.pumpHandlingTest.session.entities.all].find((entity) => entity.type === 'range_rack');
+    return rack?.searched === true;
+  });
+  await page.evaluate(() => globalThis.pumpHandlingTest.screen.update());
+  const lockerGeometry = await page.evaluate((lockerUid) => {
+    const box = (node) => {
+      const { left, right, top, bottom } = node.getBoundingClientRect();
+      return { left, right, top, bottom };
+    };
+    const you = document.querySelector('#inventory [data-pane="you"]');
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    const locker = [...document.querySelectorAll('#inventory .inv-pile[data-entity-uid]')].find(
+      (node) => node.dataset.entityUid === String(lockerUid),
+    );
+    const scroll = locker?.querySelector('.inv-grid-scroll');
+    if (!(you && around && locker && scroll)) {
+      throw new Error('Open weapon locker did not render in the vicinity pane');
+    }
+    return {
+      viewport: { width: innerWidth, height: innerHeight },
+      you: box(you),
+      around: box(around),
+      locker: box(scroll),
+      lockerScroll: {
+        clientWidth: scroll.clientWidth,
+        scrollWidth: scroll.scrollWidth,
+        clientHeight: scroll.clientHeight,
+        scrollHeight: scroll.scrollHeight,
+      },
+    };
+  }, routeLockerUid);
+  assert.equal(lockerGeometry.viewport.width, 960);
+  assert.ok(
+    lockerGeometry.you.right - lockerGeometry.you.left >= 100,
+    `character inventory remains usable: ${JSON.stringify(lockerGeometry)}`,
+  );
+  for (const [name, rect] of Object.entries({
+    you: lockerGeometry.you,
+    around: lockerGeometry.around,
+    locker: lockerGeometry.locker,
+  })) {
+    assert.ok(
+      rect.left >= 0 && rect.right <= 960,
+      `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`,
+    );
+    assert.ok(
+      rect.top >= 0 && rect.bottom <= 540,
+      `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`,
+    );
+  }
+  assert.ok(
+    lockerGeometry.lockerScroll.scrollWidth > lockerGeometry.lockerScroll.clientWidth &&
+      lockerGeometry.lockerScroll.scrollHeight > lockerGeometry.lockerScroll.clientHeight,
+    `the locker grid scrolls both ways inside its region: ${JSON.stringify(lockerGeometry.lockerScroll)}`,
+  );
+  const selectInventoryTab = async (tab) => {
+    const tabButton = page.locator(`#inventory .inv-tab[data-tab="${tab}"]`);
+    const tabBox = await tabButton.boundingBox();
+    assert(tabBox, `tab ${tab} has a layout box`);
+    const target = { x: tabBox.x + tabBox.width / 2, y: tabBox.y + tabBox.height / 2 };
+    const cursor = await page.evaluate(() => ({
+      x: globalThis.pumpHandlingTest.input.cursorX,
+      y: globalThis.pumpHandlingTest.input.cursorY,
+    }));
+    await page.evaluate(dispatchMenuPointerMove, {
+      canvasSelector: '#view',
+      movementX: target.x - cursor.x,
+      movementY: target.y - cursor.y,
+    });
+    await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
+  };
+  const tabChecks = [];
+  for (const tab of ['items', 'skills', 'crafting', 'items']) {
+    await selectInventoryTab(tab);
+    tabChecks.push(
+      await page.evaluate(
+        (selected) => ({
+          active: globalThis.pumpHandlingTest.screen.activeTab,
+          selectedPanelVisible:
+            selected === 'crafting'
+              ? getComputedStyle(document.querySelector('#crafting')).display !== 'none'
+              : !document.querySelector(`#inventory [data-tab-panel="${selected}"]`).hidden,
+          viewportWidth: document.documentElement.scrollWidth,
+          panelWidth: document.querySelector('#inventory').scrollWidth,
+          content: (() => {
+            const node =
+              selected === 'crafting'
+                ? document.querySelector('#crafting')
+                : document.querySelector(`#inventory [data-tab-panel="${selected}"]`);
+            return {
+              width: node.scrollWidth,
+              clientWidth: node.clientWidth,
+              overflowX: getComputedStyle(node).overflowX,
+            };
+          })(),
+        }),
+        tab,
+      ),
+    );
+  }
+  assert.ok(
+    tabChecks.every(({ active, selectedPanelVisible }) => active && selectedPanelVisible),
+    `tab buttons show their panel: ${JSON.stringify(tabChecks)}`,
+  );
+  for (const result of tabChecks) {
+    assert.ok(
+      result.viewportWidth <= 960 && result.panelWidth <= 960,
+      `tab fits the viewport: ${JSON.stringify(result)}`,
+    );
+    assert.ok(
+      result.content.width <= result.content.clientWidth,
+      `tab content does not overflow horizontally: ${JSON.stringify(result)}`,
+    );
+    assert.ok(
+      ['auto', 'scroll'].includes(result.content.overflowX),
+      `tab content owns its overflow: ${JSON.stringify(result)}`,
+    );
+  }
+  await page.setViewportSize({ width: 880, height: 540 });
+  for (const tab of ['items', 'skills', 'crafting']) {
+    await selectInventoryTab(tab);
+    const view = await page.evaluate((selected) => {
+      const panel =
+        selected === 'crafting'
+          ? document.querySelector('#crafting')
+          : document.querySelector(`#inventory [data-tab-panel="${selected}"]`);
+      return {
+        visible: selected === 'crafting' ? getComputedStyle(panel).display !== 'none' : !panel.hidden,
+        pageWidth: document.documentElement.scrollWidth,
+        panelWidth: panel.scrollWidth,
+        clientWidth: panel.clientWidth,
+      };
+    }, tab);
+    assert.ok(view.visible, `${tab} tab remains visible below 900 CSS px: ${JSON.stringify(view)}`);
+    assert.ok(
+      view.pageWidth <= 880 && view.panelWidth <= view.clientWidth,
+      `${tab} tab fits below 900 CSS px: ${JSON.stringify(view)}`,
+    );
+  }
+  await pressAction(page, 'ui.inventory-toggle');
+  await page.waitForFunction(() => !globalThis.pumpHandlingTest.screen.isOpen);
+  await page.setViewportSize({ width: 1280, height: 900 });
   const handlingWaits = [];
   const waitForWork = async (wantedCondition, wantedUid, extraSeconds = 0) => {
     const result = await page.evaluate(
