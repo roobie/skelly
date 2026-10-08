@@ -55,14 +55,18 @@ controls remain proposals until their issue is implemented.
 - **Interaction and reserved lean inputs (2026-09-27):** F interacts; Q and E
   remain reserved. Reserve their physical positions across contexts, including
   debug, rather than inventing no-op lean commands.
-- **Loose-item pickup:** Players can grab ground items directly from the normal
-  game view, tapping F to pocket an item or holding F to wield it. This keeps
-  looting in the normal game flow, while a simple reach animation makes the action
-  visible. Doors and containers keep their tap interaction. F uses one shared
-  reach and target choice: exact ties favor furniture, while tied ground items
-  resolve by item UID. `src/game/play.ts`, `interactionTargetAt` and
-  `completeWorldInteraction`, route the gesture through the existing inventory
-  handling owner; `src/render/grabPose.ts`, `grabPose`, supplies the visual-only reach.
+- **Loose-item pickup:** Players grab ground items from the normal game view by
+  tapping F to wear a back-wearable when the back slot is free, otherwise pocket
+  it; holding F wields it. The pickup uses the inventory's ordinary handling
+  path, so wearing and pocketing retain their normal handling time. The existing
+  simple reach animation remains for either destination. Doors and containers
+  keep their tap interaction. F uses one shared reach and target choice: exact
+  ties favor furniture, while tied ground items resolve by item UID. Scatter
+  items are targetable where they are drawn; `src/core/scatterPile.ts`,
+  `pileScatterPlacements`, is shared by picking and rendering. `src/game/play.ts`,
+  `interactionTargetAt` and `completeWorldInteraction`, route the gesture through
+  the existing inventory handling owner; `src/render/grabPose.ts`, `grabPose`,
+  supplies the visual-only reach.
 - **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
   to the browser. Escape releases pointer lock and is never a game rebind.
 - **Reload, rack, remove (2026-10-07 11:20):** BR, on how R treats a rifle:
