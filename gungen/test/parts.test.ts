@@ -106,7 +106,11 @@ const sameParams = (a: Record<string, string>, b: Record<string, string>): boole
 const defaultCases = (key: string, family: PartFamily): Record<string, string>[] => {
   const params = withoutHandleStyle(family);
   if (!isArraySampled(key)) {
-    return fullProduct(params);
+    const cases = fullProduct(params);
+    // Straight STANAG only accepts M; the rejected lengths have a dedicated contract test.
+    return key === 'magazine'
+      ? cases.filter(({ profile, length }) => profile !== 'stanag-straight' || length === 'M')
+      : cases;
   }
   const cases = tWiseCases(params, ARRAY_STRENGTH);
   for (const extra of EXPLICIT_CASES[key] ?? []) {

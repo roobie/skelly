@@ -227,7 +227,7 @@ const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
   readonly pistol: MagazineBands;
   readonly 'ak-curved': Readonly<Record<'ak74' | 'akm', MagazineBands>>;
   readonly 'stanag-curved': MagazineBands;
-  readonly 'stanag-straight': MagazineBands;
+  readonly 'stanag-straight': Readonly<{ M: number }>;
 }> = {
   compact: { '5-round': 4.5, '10-round': 5.5 },
   standard: { S: 6, M: 10, L: 16 },
@@ -238,7 +238,7 @@ const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
     akm: { S: 6, M: 10, L: 16.75 },
   },
   'stanag-curved': { S: 6, M: 10, L: 15.75 },
-  'stanag-straight': { S: 6, M: STANAG20_BODY_BOX_U.length, L: 15.75 },
+  'stanag-straight': { M: STANAG20_BODY_BOX_U.length },
 };
 const magazineLengthData = (
   value: string | undefined,
@@ -249,6 +249,9 @@ const magazineLengthData = (
   const sizeClass = requested === '5-round' || requested === '10-round' ? 'S' : requested;
   if (requested === '5-round' || requested === '10-round') {
     return { size: sizeClass, length: MAGAZINE_PROFILE_LENGTHS_U.compact[requested] };
+  }
+  if (profile === 'stanag-straight') {
+    return { size: 'M', length: MAGAZINE_PROFILE_LENGTHS_U['stanag-straight'].M };
   }
   const bands =
     profile === 'ak-curved'
@@ -293,6 +296,7 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     straightBottom: 0,
     topSlopeDegrees: 6,
   },
+  // Its L length follows the traced 30-round magazine reference.
   stanag30: {
     seat: 'well',
     straightTop: 7.1,
@@ -3744,7 +3748,7 @@ const magazineGeometryFor = (
     const floorplateRise =
       Math.round((shape.depth * Math.tan((STANAG20_ESTIMATED_FLOORPLATE_ANGLE_DEGREES * Math.PI) / 180)) / GRID) * GRID;
     const bottomFrontY = bottomRearY + floorplateRise;
-    const plateThickness = 0.25;
+    const plateThickness = GRID; // One grid step, the thinnest plate the grid draws.
     const body = extrudedPolygon(
       'straight-body',
       [
@@ -3811,6 +3815,11 @@ export const magazine: PartFamily = {
   },
   build(params): PartDef {
     const profile = (params.profile ?? 'standard') as MagazineProfile;
+    if (profile === 'stanag-straight' && (params.length ?? 'M') !== 'M') {
+      throw new Error(
+        'The straight STANAG magazine is available only at M length; other capacities are deferred to issue #414.',
+      );
+    }
     const magazineLength = magazineLengthData(params.length, profile, params.variant);
     const isCompactBoltMagazine =
       profile !== 'stanag-straight' && (params.length === '5-round' || params.length === '10-round');

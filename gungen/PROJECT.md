@@ -346,18 +346,18 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | dedicated top-strapped frame, cylinder/barrel alignment, and separate grip |
 
-Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
-Family-specific magazine and hand-contact proportions remain in their builders; the listed STANAG envelope is converted to model units without changing the existing export scale. Optic references are recorded in `docs/optics.md`.
+Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`. Optic references are recorded in `docs/optics.md`.
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
-- The 20-round STANAG uses the listing's outer body envelope and keeps a straight
-  lower body. Its floorplate slant and transition into the shared upper section
-  are estimates from side-view proportions. The existing 30-round upper section
-  preserves feed and magwell fit; the 30 remains curved. See `src/gun/parts.ts`,
-  `STANAG20_BODY_BOX_U` and `magazineGeometryFor`. The AKM curved band remains
-  fitted to the AK's golden photo (g41-4).
-  Ordinary S begins at the plausible 10-round length (`6u`).
+- The 20-round STANAG uses a straight lower body based on the Brownells listing;
+  the listing gives package dimensions, not a measured body, so they only bound
+  an approximate envelope. Side-view proportions estimate the floorplate slant
+  and transition into the shared upper section, which preserves feed and magwell
+  fit. The curved STANAG-30 length follows its traced 30-round reference. Other
+  STANAG capacities are deferred to #414. See `src/gun/parts.ts`,
+  `STANAG20_BODY_BOX_U` and `magazineGeometryFor`. The AKM curved band is fitted
+  to its golden photo (g41-4).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
@@ -389,8 +389,6 @@ Family-specific magazine and hand-contact proportions remain in their builders; 
   layout instead ends at the rear face of the A2 sight collar. Free-float rails
   end behind the barrel's front-sight station and muzzle; `free-float-clearance`
   reports contact or an undersized gap.
-
-Magazine and grip proportions, plus handguard reach, are family-specific tuning choices. The 20-round STANAG uses its listing envelope; only its floorplate slant and transition into the shared upper section are photo-based estimates. See `src/gun/parts.ts`, `STANAG20_BODY_BOX_U` and `magazineGeometryFor`.
 
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
 percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.
@@ -1093,8 +1091,8 @@ ammunition interchangeability (`src/core/template.ts`, `Template`; `src/core/des
   `at` is each round centre in metres in magazine-model coordinates; `tilt` is
   degrees about +z, nose-up positive. Left/right stagger is the sign of `at[2]`.
   Geometry determines the fit, capped to the nominal count for labelled
-  5/10-round, STANAG M/L (20/30), and AK-curved L (30) profiles; other magazine
-  profiles report the dimension-derived fit.
+  5/10-round, STANAG straight M (20), STANAG curved L (30), and AK-curved L (30)
+  profiles; other magazine profiles report the dimension-derived fit.
 - Round and case cartridge entries carry the same `calibre` and use real-size
   millimetre source dimensions converted to metres for their GLBs. `5.56x45.json`
   cites NATO AOP-4172; where its reference drawing is ambiguous, C.I.P. .223 Rem
@@ -1274,9 +1272,10 @@ versioned design JSON downloads, opens those files again, and provides param and
 optional-part locks plus family-filtered prefab pickers. Editing a prefab-fixed
 param detaches its reference; loaded mismatches remain marked stale.
 
-The `stanag-20` prefab selects the straight profile; `stanag-30` remains curved.
-Their shared upper section preserves the feed and magwell interface, so the 20
-fits the same rifles without shortening the 30-round curve. See
+The `stanag-20` prefab selects the straight profile at M length; the builder
+rejects other lengths until #414 covers the deferred STANAG capacities. The
+shared upper preserves feed and magwell fit, and `stanag-30` uses the curved
+profile. See
 `src/gun/prefabs.ts`, `GUN_PREFABS`, and `src/gun/parts.ts`, `magazineGeometryFor`.
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs

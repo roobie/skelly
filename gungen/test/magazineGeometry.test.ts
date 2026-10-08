@@ -92,6 +92,10 @@ describe('generated magazine round columns', () => {
     expect(floorplate.profile[0]![1]).not.toBe(floorplate.profile[1]![1]);
   });
 
+  it.each(['S', 'L', '5-round', '10-round'])('rejects a straight STANAG magazine at %s length', (length) => {
+    expect(() => magazine.build({ length, profile: 'stanag-straight' })).toThrow(/only at M length/);
+  });
+
   it('fits each curated STANAG prefab to its nominal 5.56 column capacity', () => {
     const prefabs = GUN_PREFABS.filter(({ fixedParams }) => fixedParams.profile?.startsWith('stanag-'));
     expect(prefabs.length).toBeGreaterThan(0);

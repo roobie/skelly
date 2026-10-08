@@ -175,9 +175,9 @@
       "id": "magazine_stanag_20",
       "name": "20-round STANAG magazine",
       "category": "ammo",
-      "weight": 90,
+      "weight": 79,
       "size": [1, 2],
-      "description": "A 20-round 5.56×45 straight-body magazine for AR-pattern rifles, from gungen's stanag-20 prefab. Holds loose 5.56×45 cartridges. Empty mass 90 g is a gameplay estimate.",
+      "description": "A 20-round 5.56×45 straight-body magazine for AR-pattern rifles, from gungen's stanag-20 prefab. Holds loose 5.56×45 cartridges. Empty mass 79 g is the Brownells listing's shipping weight.",
       "model": "magazine_stanag_20"
     },
     {
