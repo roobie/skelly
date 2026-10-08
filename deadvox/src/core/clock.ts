@@ -4,7 +4,7 @@
 export const SECONDS_PER_HOUR = 3600;
 export const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
 
-import { DEFAULT_DAY_CYCLE, dayPhaseAt, type DayCycle } from './dayPhase.ts';
+import { type DayCycle, DEFAULT_DAY_CYCLE, dayPhaseAt } from './dayPhase.ts';
 
 /** Authored calendar-time boundaries for time-windowed spawn markers. */
 const defaultDay = dayPhaseAt(DEFAULT_DAY_CYCLE, 0);

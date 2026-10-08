@@ -16,8 +16,8 @@ import {
 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { CHUNK } from '../src/core/coords.ts';
+import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../src/core/sky.ts';
@@ -85,8 +85,8 @@ describe('sun shadow strength', () => {
 
 describe('shadow settings', () => {
   it('steps the distance through the allowed list and wraps', () => {
-    const cycle = [...SHADOW_DISTANCES, SHADOW_DISTANCES[0]!];
-    expect(cycle.slice(0, -1).map(nextShadowDistance)).toEqual(cycle.slice(1));
+    const distances = [...SHADOW_DISTANCES, SHADOW_DISTANCES[0]!];
+    expect(distances.slice(0, -1).map(nextShadowDistance)).toEqual(distances.slice(1));
     expect(nextShadowDistance(SHADOW_DISTANCES.at(-1)!)).toBe(SHADOW_DISTANCES[0]);
   });
 

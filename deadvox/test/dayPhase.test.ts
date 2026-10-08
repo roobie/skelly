@@ -3,13 +3,13 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { sunExposedAt } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { sunDirection, skyAt } from '../src/core/sky.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { skyAt, sunDirection } from '../src/core/sky.ts';
 import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
-import type { Vec3 } from '../src/core/coords.ts';
+import { PLAYER, physicsFor } from '../src/game/player.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -22,7 +22,13 @@ const cycle = registry.dayCycle ?? DEFAULT_DAY_CYCLE;
 const shambler = registry.zombies.get('shambler')!;
 const scale = makeScale(0.5);
 const floor = (_x: number, y: number) => y === 0;
-const player = { pos: [0, 1, 0] as Vec3, facing: [-1, 0, 0] as Vec3, movement: 'still' as const, lit: false, lightSeenFrom: 0 };
+const player = {
+  pos: [0, 1, 0] as Vec3,
+  facing: [-1, 0, 0] as Vec3,
+  movement: 'still' as const,
+  lit: false,
+  lightSeenFrom: 0,
+};
 const hours = (seconds: number): number => seconds / 3600;
 const phaseSamples = () => {
   const boundaries = dayPhaseAt(cycle, 0);
@@ -68,15 +74,20 @@ describe('sun-owned day phases', () => {
       const state = dayPhaseAt(cycle, time);
       const hour = hours(time);
       expect(sunDirection(hour, cycle)[1] > 0, `sun at ${time}`).toBe(state.phase === 'day');
-      expect(sunExposedAt([0, 1, 0], hour, 10, () => false, cycle), `exposure at ${time}`).toBe(
-        state.phase === 'day',
-      );
+      expect(
+        sunExposedAt({ position: [0, 1, 0], hour, skyTop: 10, isOpaque: () => false, cycle }),
+        `exposure at ${time}`,
+      ).toBe(state.phase === 'day');
       const sky = skyAt(hour, cycle);
       expect(sky.dayPhase, `sky at ${time}`).toBe(state.phase);
       const horizontalDot = sky.light[0] * state.sunDirection[0] + sky.light[2] * state.sunDirection[2];
       expect(horizontalDot, `light direction at ${time}`).toBeGreaterThan(0);
-      if (state.phase === 'day') dayLightIntensities.push(sky.lightIntensity);
-      if (state.phase === 'night') nightLightIntensities.push(sky.lightIntensity);
+      if (state.phase === 'day') {
+        dayLightIntensities.push(sky.lightIntensity);
+      }
+      if (state.phase === 'night') {
+        nightLightIntensities.push(sky.lightIntensity);
+      }
 
       const seesAtRange = perceivePlayer({
         zombie,

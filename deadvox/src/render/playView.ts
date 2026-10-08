@@ -2,8 +2,8 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
-import { dayCycleFor } from '../core/dayPhase.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { dayCycleFor } from '../core/dayPhase.ts';
 import type { EntityStore } from '../core/entities.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';

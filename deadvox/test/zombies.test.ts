@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
@@ -529,7 +529,8 @@ describe('shambler perception', () => {
     expect(carriedAt(0, false)).toBe('investigate');
 
     const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
-    const daylightSky = (position: Vec3, hour: number) => sunExposedAt(position, hour, 20, wallShadow);
+    const daylightSky = (position: Vec3, hour: number) =>
+      sunExposedAt({ position, hour, skyTop: 20, isOpaque: wallShadow });
     const sunlitSample: Vec3 = [0.5, 1.15, 0.5];
     expect(
       raycast([sunlitSample[0], sunlitSample[1] + 1e-4, sunlitSample[2]], sunDirection(12), 20, wallShadow),

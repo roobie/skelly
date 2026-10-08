@@ -17,8 +17,8 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
-import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { dayCycleFor, dayPhaseAt } from '../core/dayPhase.ts';
+import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import {
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
@@ -469,7 +469,7 @@ export const createSession = (options: SessionOptions) => {
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const isSunExposedAt = (pos: Vec3, hour: number): boolean =>
-    sunExposedAt(pos, hour, skyTop, options.isOpaque, dayCycle);
+    sunExposedAt({ position: pos, hour, skyTop, isOpaque: options.isOpaque, cycle: dayCycle });
   const physics = physicsFor(scale);
   const restored = options.restore;
 

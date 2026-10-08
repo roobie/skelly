@@ -28,7 +28,7 @@ export const DEFAULT_DAY_CYCLE = coreDayCycle.dayCycle as DayCycle;
 const DAY_SECONDS = 24 * 60 * 60;
 const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
 const TWILIGHT_ELEVATION = { nautical: -12 } as const;
-const radians = (degrees: number): number => (degrees * Math.PI) / 180;
+const radians = (value: number): number => (value * Math.PI) / 180;
 const degrees = (angle: number): number => (angle * 180) / Math.PI;
 const wrapSeconds = (seconds: number): number => ((seconds % DAY_SECONDS) + DAY_SECONDS) % DAY_SECONDS;
 const smoothstep = (from: number, to: number, value: number): number => {
@@ -66,23 +66,30 @@ export const dayPhaseAt = (cycle: DayCycle, timeOfDay: number): DayPhaseState =>
   const hourAngle = radians((time / 3600 - 12) * 15);
   const east = -Math.cos(declination) * Math.sin(hourAngle);
   const north =
-    Math.sin(declination) * Math.cos(latitude) -
-    Math.cos(declination) * Math.cos(hourAngle) * Math.sin(latitude);
+    Math.sin(declination) * Math.cos(latitude) - Math.cos(declination) * Math.cos(hourAngle) * Math.sin(latitude);
   const up =
-    Math.sin(latitude) * Math.sin(declination) +
-    Math.cos(latitude) * Math.cos(declination) * Math.cos(hourAngle);
+    Math.sin(latitude) * Math.sin(declination) + Math.cos(latitude) * Math.cos(declination) * Math.cos(hourAngle);
   const sunElevation = Math.asin(Math.max(-1, Math.min(1, up)));
   const length = Math.hypot(east, up, north);
-  const phase: DayPhase = inInterval(time, sunrise, sunset)
-    ? 'day'
-    : inInterval(time, dawn, sunrise)
-      ? 'dawn'
-      : inInterval(time, sunset, nightfall)
-        ? 'dusk'
-        : 'night';
+  let phase: DayPhase;
+  if (inInterval(time, sunrise, sunset)) {
+    phase = 'day';
+  } else if (inInterval(time, dawn, sunrise)) {
+    phase = 'dawn';
+  } else if (inInterval(time, sunset, nightfall)) {
+    phase = 'dusk';
+  } else {
+    phase = 'night';
+  }
   const twilightFloor = radians(TWILIGHT_ELEVATION[cycle.twilight]);
-  const sightBlend =
-    phase === 'day' ? 1 : phase === 'night' ? 0 : smoothstep(twilightFloor, 0, sunElevation);
+  let sightBlend: number;
+  if (phase === 'day') {
+    sightBlend = 1;
+  } else if (phase === 'night') {
+    sightBlend = 0;
+  } else {
+    sightBlend = smoothstep(twilightFloor, 0, sunElevation);
+  }
   return {
     phase,
     sightBlend,

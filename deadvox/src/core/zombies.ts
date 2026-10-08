@@ -571,9 +571,6 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
   return true;
 };
 
-
-
-
 export interface PerceptionInput {
   zombie: ZombieDef;
   from: Vec3;

@@ -4,7 +4,7 @@
 // with it.
 
 import type { Vec3 } from './coords.ts';
-import { DEFAULT_DAY_CYCLE, dayPhaseAt, type DayCycle, type DayPhase, type DayPhaseState } from './dayPhase.ts';
+import { type DayCycle, type DayPhase, type DayPhaseState, DEFAULT_DAY_CYCLE, dayPhaseAt } from './dayPhase.ts';
 
 /** sRGB in [0, 1], as in CSS hex colours. */
 export type Rgb = readonly [number, number, number];
@@ -124,7 +124,11 @@ const DUSK: Look = {
 
 // Look keys belong to solar phases. Their positions move with latitude and date;
 // the DAWN key is at sunrise and the DUSK key is at sunset.
-type LookKey = { phase: DayPhase; at: number; look: Look };
+interface LookKey {
+  phase: DayPhase;
+  at: number;
+  look: Look;
+}
 const KEYS: readonly LookKey[] = [
   { phase: 'night', at: 0, look: NIGHT },
   { phase: 'night', at: 0.3, look: DEEP_NIGHT },
@@ -154,6 +158,8 @@ const phaseRange = (state: DayPhaseState, phase: DayPhase): readonly [number, nu
       return [state.sunrise, state.sunset];
     case 'dusk':
       return [state.sunset, state.nightfall];
+    default:
+      throw new Error(`Unknown day phase: ${phase}`);
   }
 };
 
