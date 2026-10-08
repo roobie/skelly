@@ -27,7 +27,7 @@ describe('buildDesignViewModel', () => {
       prefabsByPart: {
         magazine: {
           label: 'stanag-20 v1',
-          fixedParams: { length: 'M', profile: 'stanag-curved' },
+          fixedParams: { length: 'M', profile: 'stanag-straight' },
           stale: false,
         },
       },
