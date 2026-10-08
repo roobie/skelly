@@ -1456,7 +1456,7 @@ export const startPlay = (
       screenOpen: screen.isOpen,
       screenAction: (command) => screen.onAction(command),
       mainMenuOpen,
-      timeKeyAction: timeKeys,
+      interruptionCommand: timeKeys,
     });
   const withUnlockedInput = (action: () => void): void => {
     if (!(replaySample?.inputLocked ?? compression.locksInput)) {

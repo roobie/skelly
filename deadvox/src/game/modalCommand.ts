@@ -7,7 +7,7 @@ export interface ModalCommandHandlers {
   screenOpen: boolean;
   screenAction: (action: string) => void;
   mainMenuOpen: boolean;
-  timeKeyAction: (action: string) => boolean;
+  interruptionCommand: (action: string) => boolean;
 }
 
 export const routeModalCommand = (action: string, handlers: ModalCommandHandlers): boolean => {
@@ -30,5 +30,5 @@ export const routeModalCommand = (action: string, handlers: ModalCommandHandlers
     handlers.screenAction(action);
     return true;
   }
-  return handlers.mainMenuOpen || handlers.timeKeyAction(action);
+  return handlers.mainMenuOpen || handlers.interruptionCommand(action);
 };

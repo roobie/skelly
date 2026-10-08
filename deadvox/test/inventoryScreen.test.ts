@@ -222,7 +222,7 @@ describe('inventory screen Lit rendering', () => {
         screen.onAction(action);
       },
       mainMenuOpen: false,
-      timeKeyAction: () => false,
+      interruptionCommand: () => false,
     });
 
     expect(handled).toBe(true);
