@@ -41,8 +41,7 @@ describe('clock', () => {
     const phase = dayPhaseAt(DEFAULT_DAY_CYCLE, start);
     expect(phase.phase).toBe('day');
     expect(phase.sunset).toBeGreaterThan(start);
-    const elapsed = 5 * HOUR;
-    expect(calendarAt(defaultClock, elapsed) - start).toBe(8 * elapsed);
+    expect(calendarAt(defaultClock, HOUR) - start).toBe(3600);
   });
 
   it('parses a time of day', () => {
@@ -197,8 +196,8 @@ describe('Simulation', () => {
     expect(realPlain).toBeCloseTo(HOUR, 0);
     expect(realFast).toBeLessThan(HOUR / 10);
     expect(fast.time).toBeCloseTo(plain.time, 9);
-    expect(fast.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(8 * fast.time, 6);
-    expect(plain.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(8 * plain.time, 6);
+    expect(fast.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * fast.time, 6);
+    expect(plain.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * plain.time, 6);
     // Needs lag by at most one grown step: 30 s, 4 game minutes.
     const tolerance = (Math.max(...Object.values(NEED_RATES).map(Math.abs)) * 4) / 60;
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {
@@ -331,7 +330,7 @@ describe('Simulation', () => {
       runUntil(sim, until);
       expect(sim.time).toBeCloseTo(until, 6);
       expect(sim.compression.interruption).toBeUndefined();
-      expect(sim.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(8 * sim.time, 6);
+      expect(sim.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * sim.time, 6);
     });
 
     it('runs the needs for the whole span, so a long skip is cut short when one turns critical', () => {
