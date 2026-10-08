@@ -7,6 +7,11 @@ const observePage = (globalName) => {
   const mark = (name) => {
     marks[name] ??= performance.now();
   };
+  const markWhenReady = (name, ready) => {
+    if (!marks[name] && ready) {
+      mark(name);
+    }
+  };
   globalThis.freshPlayerTraceMarks = marks;
   document.addEventListener(
     'click',
@@ -40,23 +45,13 @@ const observePage = (globalName) => {
     }
     mark('playRuntimeCreated');
     const position = runtime.session.body.pos;
-    if (!marks.spawnColumnsReady && runtime.streamer.isReady(position[0], position[2])) {
-      mark('spawnColumnsReady');
-    }
-    if (!marks.firstMesh && Array.from(runtime.engine.meshes.keys()).length > 0) {
-      mark('firstMesh');
-    }
+    markWhenReady('spawnColumnsReady', runtime.streamer.isReady(position[0], position[2]));
+    markWhenReady('firstMesh', Array.from(runtime.engine.meshes.keys()).length > 0);
     const progress = document.querySelector('#startup-hint-progress');
-    if (!marks.spawnColumnsMeshed && progress && progress.value === progress.max) {
-      mark('spawnColumnsMeshed');
-    }
-    if (!marks.firstRenderedFrame && runtime.engine.renderer?.info.render.frame > 0) {
-      mark('firstRenderedFrame');
-    }
+    markWhenReady('spawnColumnsMeshed', progress && progress.value === progress.max);
+    markWhenReady('firstRenderedFrame', runtime.engine.renderer?.info.render.frame > 0);
     const start = marks.playerStart;
-    if (start && Math.hypot(position[0] - start[0], position[2] - start[2]) > 0.05) {
-      mark('walking');
-    }
+    markWhenReady('walking', start && Math.hypot(position[0] - start[0], position[2] - start[2]) > 0.05);
     marks.playerStart ??= Array.from(position);
   };
   const sample = () => {
