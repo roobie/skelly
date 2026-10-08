@@ -10,7 +10,12 @@ const server = await createServer({ root, server: { host: '127.0.0.1', port: 0 }
 let browser;
 try {
   await server.listen();
-  browser = await launchChromium(['--no-sandbox', '--enable-webgl', '--use-gl=swiftshader', '--enable-unsafe-swiftshader']);
+  browser = await launchChromium([
+    '--no-sandbox',
+    '--enable-webgl',
+    '--use-gl=swiftshader',
+    '--enable-unsafe-swiftshader',
+  ]);
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));

@@ -30,7 +30,12 @@ const server = await createServer({ root: gungen, server: { host: '127.0.0.1', p
 let browser;
 try {
   await server.listen();
-  browser = await launchChromium(['--no-sandbox', '--enable-webgl', '--use-gl=swiftshader', '--enable-unsafe-swiftshader']);
+  browser = await launchChromium([
+    '--no-sandbox',
+    '--enable-webgl',
+    '--use-gl=swiftshader',
+    '--enable-unsafe-swiftshader',
+  ]);
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));

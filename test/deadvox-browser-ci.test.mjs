@@ -38,6 +38,8 @@ const customChromiumSelection = /\b(?:executablePath|channel|CHROME_BIN)\b/;
 const directChromiumLaunchPattern = /\bchromium\.launch\s*\(/;
 const sharedChromiumLaunchPattern = /\blaunchChromium\s*\(/;
 const helperChromiumLaunchPattern = /chromium\.launch\s*\(/;
+const gungenSystemBrowserPattern = /google-chrome|CHROME_BIN|--with-deps/;
+const playwrightChromiumInstallPattern = /playwright install chromium/;
 const unhandledRejectionListenerPattern = /process\.(?:once|on)\(['"]unhandledRejection['"]/;
 const expression = (body) => `\${{ ${body} }}`;
 const browserStagePaths = [
@@ -235,15 +237,19 @@ describe('gungen browser CI', () => {
     assert.doesNotMatch(helper, customChromiumSelection, 'the Gungen helper uses Playwright-managed Chromium');
 
     const workflow = parse(readFileSync(join(ROOT, '.github/workflows/gungen.yml'), 'utf8'));
-    const steps = workflow.jobs.check.steps;
-    assert.doesNotMatch(JSON.stringify(workflow), /google-chrome|CHROME_BIN|--with-deps/);
+    const {
+      jobs: {
+        check: { steps },
+      },
+    } = workflow;
+    assert.doesNotMatch(JSON.stringify(workflow), gungenSystemBrowserPattern);
     const cache = steps.find(({ name }) => name === 'Cache Playwright Chromium');
     const install = steps.find(({ name }) => name === 'Install Playwright Chromium');
     assert.ok(cache && install, 'Gungen CI caches and installs managed Chromium');
     assert.equal(cache.uses, 'actions/cache@v4');
     assert.equal(cache.with.path, '~/.cache/ms-playwright');
     assert.equal(install['working-directory'], 'deadvox');
-    assert.match(install.run, /playwright install chromium/);
+    assert.match(install.run, playwrightChromiumInstallPattern);
     assert.ok(Number.isFinite(install['timeout-minutes']), 'managed-browser install has a finite bound');
     assert.ok(install['timeout-minutes'] > 0);
   });
