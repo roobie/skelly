@@ -393,8 +393,31 @@ try {
     `player stops outside the rack face: ${JSON.stringify(rackApproach)}`,
   );
   await page.setViewportSize({ width: 960, height: 540 });
+  const inventoryTabActions = [
+    { action: 'ui.inventory-tab-items', tab: 'items' },
+    { action: 'ui.inventory-tab-skills', tab: 'skills' },
+    { action: 'ui.inventory-tab-crafting', tab: 'crafting' },
+  ];
+  for (const { action, tab } of inventoryTabActions) {
+    await pressAction(page, action);
+    await page.waitForFunction(
+      (selected) =>
+        globalThis.pumpHandlingTest.screen.isOpen && globalThis.pumpHandlingTest.screen.activeTab === selected,
+      tab,
+    );
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => !globalThis.pumpHandlingTest.screen.isOpen);
+  }
   await pressAction(page, 'ui.inventory-toggle');
-  await page.waitForFunction(() => globalThis.pumpHandlingTest.screen.isOpen);
+  await page.waitForFunction(
+    () => globalThis.pumpHandlingTest.screen.isOpen && globalThis.pumpHandlingTest.screen.activeTab === 'crafting',
+  );
+  for (const { action, tab } of inventoryTabActions) {
+    await pressAction(page, action);
+    await page.waitForFunction((selected) => globalThis.pumpHandlingTest.screen.activeTab === selected, tab);
+  }
+  await pressAction(page, 'ui.inventory-tab-items');
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.screen.activeTab === 'items');
   await page.evaluate(() => globalThis.pumpHandlingTest.screen.onAction('inventory.search'));
   await page.waitForFunction(() => {
     const rack = [...globalThis.pumpHandlingTest.session.entities.all].find((entity) => entity.type === 'range_rack');

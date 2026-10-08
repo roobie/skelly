@@ -95,6 +95,13 @@ if (bench === 'report') {
           storage: saveController.storage,
           namespace: saveController.namespace,
           controller: saveController,
+          saveState: () => {
+            const { savedGeneration, failure } = saveController as unknown as {
+              savedGeneration: number;
+              failure: string;
+            };
+            return { savedGeneration, failure };
+          },
           triggerPeriodicCheckpoint: () => {
             (saveController as unknown as { nextAutosaveAt: number }).nextAutosaveAt = 0;
             saveController.afterFrame();

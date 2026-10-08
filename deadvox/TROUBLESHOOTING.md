@@ -103,10 +103,16 @@ budget”.
 
 `SaveStorage.withLock` reports the cause and held/pending lock summary, including
 whether the holder is another client, and explains the other-page failure to the
-player. The Chromium navigation and busy-lock contracts and the autosave
-contract are in `test/browser/save-storage.mjs`, `navigationOnly`, `busyLockOnly`,
-and `testTitleAndAutosave`; the leaving-state rule is in
-`src/ui/saveController.ts`, `SaveController`.
+player. For #467, `test/browser/save-storage.mjs`, `testTitleAndAutosave`, waits
+on `SaveController`'s committed generation and failure (`save-test` hook's
+`saveState`) rather than status wording or storage reads during the write. A
+reader polling during an OPFS write takes the shared save lock against the
+writer's exclusive lock; #467 suspects this but has not shown it caused the
+failure. A wait timeout reports save status and page errors; postcondition read
+errors identify the backend and step. The
+Chromium navigation and busy-lock contracts are in `navigationOnly` and
+`busyLockOnly`; the leaving-state rule is in `src/ui/saveController.ts`,
+`SaveController`.
 
 ## Deadvox CI browser dependency stalls
 

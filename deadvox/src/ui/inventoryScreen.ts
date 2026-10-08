@@ -600,6 +600,13 @@ export class InventoryScreen {
     this.endDrag();
   }
 
+  openOnTab(tab: InventoryTab): void {
+    if (!this.isOpen) {
+      this.open();
+    }
+    this.selectTab(tab);
+  }
+
   selectTab(tab: InventoryTab): void {
     this.tabs.select(tab);
     this.root.dataset.tab = tab;
