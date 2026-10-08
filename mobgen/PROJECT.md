@@ -132,7 +132,7 @@ viewer does not apply gaze to it: its members can turn heads upside down or
 sideways, and the current humanoid gaze solver does not provide per-member head
 transforms. Amalgam gaze must handle those orientations before it is enabled;
 amalgam gait and Deadvox integration remain open for the #308 follow-up. The
-the remaining design questions from #308 are:
+remaining design questions from #308 are:
 
 - Does the procedural, full-shambler composition read as a grotesque fusion,
   or should the silhouette use partial members or a different arrangement?

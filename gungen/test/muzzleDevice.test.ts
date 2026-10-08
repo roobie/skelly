@@ -46,7 +46,7 @@ const muzzleOffFront = (resolved: Resolved, device: string, label: string): stri
 };
 
 describe('muzzle devices', () => {
-  // BR 22:51: the AKM's slant brake and the AK-74's brake.
+  // Both supported brakes must fit the AK barrel.
   it('fits every AK muzzle device on the v2 barrel, firing from its front face', () => {
     const styles = FAMILIES['ak-muzzle-device']!.params.style!.values;
     expect(styles.length).toBeGreaterThan(1);

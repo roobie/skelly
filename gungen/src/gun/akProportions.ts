@@ -47,13 +47,13 @@ export const AK_PROPORTIONS = {
   rearSightX: -2.5,
   lower: { magazineX: -7.5, gripX: -18.5, triggerX: -15 },
   barrel: { lengthU: barrelLengthU },
-  /** The muzzle devices threaded on the barrel's end (BR 22:51), each measured forward from it. */
+  /** Muzzle devices thread onto the barrel's end and are measured forward from it. */
   muzzleDevice: {
     /** The AKM's slant brake: its top lip ends `topLipU` past the barrel, the cut falls forward at 45°. */
     slant: { lengthU: 2, flatRadiusU: 0.75, topLipU: 0.75 },
     /**
-     * The AK-74's brake, from BR's reference screenshot (2026-10-06) scaled by v2's front sight ears: a
-     * body with a window through it near its front, then a narrower nose. Full widths are on the grid.
+     * The AK-74 brake scales from the v2 front sight ears: a body with a window near its front, then a
+     * narrower nose. Full widths are snapped to the grid.
      */
     ak74: {
       flatRadiusU: 1.125,
@@ -73,7 +73,7 @@ export const AK_PROPORTIONS = {
   frontSight: { behindBarrelEndU: 1.75, postBaseU: 3.5, earBottomU: 3.25, earTopU: 4.5 },
   handguard: {
     lengthU: { S: 8, M: 14, L: 22 },
-    /** Every handguard wall, the lower handguard's bottom included (BR, 2026-10-06 20:27). */
+    /** Every handguard wall has the same thickness, including the lower handguard's bottom. */
     wallU: 0.5,
     lowerBottomU: -2,
     lowerTopU: sightBase.bottomU,
@@ -93,12 +93,12 @@ export const AK_PROPORTIONS = {
     lengthU: { S: 13.25, M: 16.25, L: 19.25 },
     /** The comb runs level from behind the neck's saddle back to the heel. */
     comb: { x: -8, topU: -0.25 },
-    /** The neck's top dips into a saddle behind the receiver's tang, then rises to the comb (BR 22:42). */
+    /** The neck's top dips into a saddle behind the receiver's tang, then rises to the comb. */
     saddle: { x: -5, topU: -0.75, frontSlope: 0.15 },
-    /** The bottom's fall per u back, with no belly (BR 23:19); it puts the L stock's toe on the golden photo's. */
+    /** The lower edge slopes from receiver to toe without a belly, matching the side profile. */
     bottomSlope: 0.34,
     toeRoundU: 2.25,
-    /** About 60% of the receiver-wide stock BR saw (22:42), each full width on the grid. */
+    /** The stock remains narrower than the receiver, with each full width snapped to the grid. */
     halfWidthU: { front: 1.25, butt: 1.375 },
     buttplateU: 0.5,
     /** How far the toe sits behind the heel. */

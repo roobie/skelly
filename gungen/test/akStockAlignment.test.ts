@@ -46,14 +46,14 @@ describe('AK stock mating alignment', () => {
       expect(stockMin[1], `${label}: height min`).toBeCloseTo(rearMin[1], 9);
       expect(stockMax[1], `${label}: height max`).toBeCloseTo(rearMax[1], 9);
       expect(stockMin[2] + stockMax[2], `${label}: centred`).toBeCloseTo(rearMin[2] + rearMax[2], 9);
-      // BR 22:42 made the stock narrower than the receiver; no part of it may stick out past the receiver's sides.
+      // The stock must stay within the receiver's side faces.
       const [wholeMin, wholeMax] = boundsOfPoints(worldVertices(stock.solids, stockPlaced));
       expect(wholeMin[2], `${label}: no wider than the receiver`).toBeGreaterThanOrEqual(rearMin[2] - 1e-9);
       expect(wholeMax[2], `${label}: no wider than the receiver`).toBeLessThanOrEqual(rearMax[2] + 1e-9);
     }
   });
 
-  // BR 23:19: the bottom is one straight line from the receiver to the toe, with no belly.
+  // The bottom runs straight from the receiver to the toe without a belly.
   it('runs the stock’s bottom edge straight from its front face to the toe at every length', () => {
     const lengths = FAMILIES.stock!.params.length!.values;
     expect(lengths.length).toBeGreaterThan(1);
