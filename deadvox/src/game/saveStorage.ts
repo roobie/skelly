@@ -15,12 +15,11 @@ export type SaveBackendPreference = 'auto' | SaveBackend;
 type SlotName = 'a' | 'b';
 const SAVE_WRITE_LOCK = 'deadvox-save-storage';
 const warnSaveLockTimeout = (message: string, details: Record<string, unknown>): void => {
-  // biome-ignore lint/suspicious/noConsole: BR requires lock-timeout diagnostics in the browser console.
+  // biome-ignore lint/suspicious/noConsole: a lock timeout must name its holder in the browser console.
   console.warn(message, details);
 };
 const SAVE_READ_RETRIES = 3;
 const SAVE_READ_RETRY_MS = 50;
-const SAVE_WRITE_LOCK_HOLD_REAL_MS = 30_000;
 const STORAGE_METADATA_TIMEOUT_MS = 1000;
 type CrashStage =
   | 'before-truncate'
@@ -43,8 +42,6 @@ export interface SaveStorageOptions {
   readonly requestTimeoutMs?: number;
   /** Test-only abrupt worker termination at a named physical-write stage. */
   readonly testCrashAt?: CrashStage;
-  /** Test-only override for the maximum time one writer may hold the origin lock. */
-  readonly writeLockHoldTimeoutRealMs?: number;
 }
 export interface SaveLoadResult {
   readonly generation: number;
@@ -74,7 +71,6 @@ export class SaveStorage {
   private readonly preference: SaveBackendPreference;
   private readonly timeoutMs: number;
   private readonly crashAt: CrashStage | undefined;
-  private readonly writeLockHoldTimeoutRealMs: number;
   private worker: Worker | undefined;
   private backend: SaveBackend | undefined;
   private nextId = 0;
@@ -92,7 +88,6 @@ export class SaveStorage {
     this.preference = options.backend ?? 'auto';
     this.timeoutMs = options.requestTimeoutMs ?? 15_000;
     this.crashAt = options.testCrashAt;
-    this.writeLockHoldTimeoutRealMs = options.writeLockHoldTimeoutRealMs ?? SAVE_WRITE_LOCK_HOLD_REAL_MS;
   }
 
   status(): Promise<SaveStorageStatus> {
@@ -258,7 +253,7 @@ export class SaveStorage {
           globalThis.clearTimeout(timer);
           timer = undefined;
         }
-        return mode === 'exclusive' ? this.withWriteLockDeadline(operation) : operation();
+        return operation();
       });
     } catch (error) {
       if (timedOut) {
@@ -268,34 +263,6 @@ export class SaveStorage {
             cause: error,
           },
         );
-      }
-      throw error;
-    } finally {
-      if (timer !== undefined) {
-        globalThis.clearTimeout(timer);
-      }
-    }
-  }
-
-  private async withWriteLockDeadline<T>(operation: () => Promise<T>): Promise<T> {
-    let timer: ReturnType<typeof globalThis.setTimeout> | undefined;
-    let timedOut = false;
-    const timeoutError = new Error('Save writer exceeded its lock-hold deadline; the commit outcome is unknown');
-    const deadline = new Promise<never>((_resolve, reject) => {
-      timer = globalThis.setTimeout(() => {
-        timedOut = true;
-        this.failWorker(timeoutError);
-        reject(timeoutError);
-      }, this.writeLockHoldTimeoutRealMs);
-    });
-    try {
-      return await Promise.race([operation(), deadline]);
-    } catch (error) {
-      if (timedOut) {
-        warnSaveLockTimeout('Deadvox save writer lock hold timed out', {
-          cause: timeoutError.message,
-          lock: SAVE_WRITE_LOCK,
-        });
       }
       throw error;
     } finally {

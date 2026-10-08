@@ -619,11 +619,19 @@ try {
     if ((await readGeneration()) !== beforeContinue) {
       throw new Error(`${backend} title-screen pagehide wrote before Continue or New world was selected`);
     }
-    await page.evaluate(() => {
-      const event = new Event('pageshow');
-      Object.defineProperty(event, 'persisted', { value: true });
-      globalThis.dispatchEvent(event);
-    });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(
+      () => (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
+    await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
+    if (autosaveOnly) {
+      await page.evaluate(() => {
+        const { storage, namespace } = globalThis.deadvoxSaveTest;
+        globalThis.__d5SaveTest = { storage, namespace };
+      });
+    }
     if (autosaveScenario === 'continue') {
       await Promise.all([
         page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
@@ -856,6 +864,8 @@ try {
         locks: await navigator.locks.query(),
         pageshowPersisted: sessionStorage.getItem('d144-pageshow') === 'true',
         controllerEntered: globalThis.deadvoxSaveTest?.controller?.isEntered ?? null,
+        visibilityState: document.visibilityState,
+        generation: (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
       }));
       process.stdout.write(`${browserName}: restored after navigation ${JSON.stringify(restored)}\n`);
     }
@@ -881,6 +891,30 @@ try {
         false,
         'restoring a cached page does not leave a save lock held',
       );
+      assert.equal(restored?.visibilityState, 'visible', 'Back restores the real page to the foreground');
+      const backgroundPage = await context.newPage();
+      await backgroundPage.goto('about:blank');
+      await backgroundPage.bringToFront();
+      await page.waitForFunction(() => document.visibilityState === 'hidden', undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      await page.waitForFunction(
+        async (previousGeneration) => {
+          const { storage, namespace, controller } = globalThis.deadvoxSaveTest;
+          const record = await storage.load(namespace);
+          const locks = await navigator.locks.query();
+          const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
+          return (
+            record?.generation > previousGeneration &&
+            !controller.writing &&
+            controller.queued === undefined &&
+            !activeSaveLock
+          );
+        },
+        restored.generation,
+        { timeout: STAGE_TIMEOUT_MS },
+      );
+      await backgroundPage.close();
     } else {
       assert.equal(result.ready, true, 'saved world did not load after in-tab navigation');
       assert.equal(result.hasSavedWorld, true);
@@ -1016,40 +1050,7 @@ try {
         return { a: slots.a ? Array.from(slots.a) : null, b: slots.b ? Array.from(slots.b) : null };
       });
       assert.deepEqual(recoveredSlots, originalSlots);
-      const hungWriter = await page.evaluate(async () => {
-        const Storage = globalThis.deadvoxSaveTest.storage.constructor;
-        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('d144-hung-worker'));
-        const namespace = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-        const storage = new Storage({
-          backend: 'indexeddb',
-          requestTimeoutMs: 5000,
-          writeLockHoldTimeoutRealMs: 1000,
-          testCrashAt: 'after-commit',
-        });
-        await storage.status();
-        let message = '';
-        try {
-          await storage.save(namespace, async () => Uint8Array.of(11, 22, 33));
-        } catch (error) {
-          message = error instanceof Error ? error.message : String(error);
-        }
-        const locks = await navigator.locks.query();
-        const reader = new Storage({ backend: 'indexeddb' });
-        const record = await reader.load(namespace);
-        return {
-          message,
-          held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
-          generation: record?.generation,
-          payload: record ? Array.from(record.payload) : null,
-          warnings: globalThis.__d144LockWarnings,
-        };
-      });
-      assert.match(hungWriter.message, /lock-hold deadline/);
-      assert.deepEqual(hungWriter.held, []);
-      assert.equal(hungWriter.generation, 1);
-      assert.deepEqual(hungWriter.payload, [11, 22, 33]);
-      assert.ok(hungWriter.warnings.some(([message]) => message === 'Deadvox save writer lock hold timed out'));
-      process.stdout.write(`${browserName}: busy-lock diagnostics and hung-worker lock release passed\n`);
+      process.stdout.write(`${browserName}: busy-lock diagnostics passed\n`);
     } finally {
       await holder.evaluate(() => globalThis.deadvoxReleaseSaveLock());
       await holder.close();

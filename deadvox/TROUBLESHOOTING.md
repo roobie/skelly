@@ -108,21 +108,18 @@ Bisect a visual bug by flipping one toggle at a time before theorising.
 
 ## Save-lock timeouts
 
-Same-tab navigation to `&loadout=pump` exposed back/forward-cache lock retention: the outgoing page kept the exclusive save lock while the destination tried to read the saved world. In the production-preview probe, Chromium reported `pagehide.persisted=true`; the outgoing `SaveController` requested the exclusive save lock, and the new document's first lock snapshot showed it held while its own controller was not ready. The lock callback had not run, so the save worker had not started a write. The destination could not load the saved world. See `test/browser/save-storage.mjs`, `navigationOnly`, and `src/game/saveStorage.ts`, `SaveStorage.withLock`.
+Continue can be blocked while another page holds the origin-wide save lock. A
+live hung writer releases it when `SaveStorage.request` times out; nothing in a
+frozen page can release a lock it holds. The back/forward-cache exception and
+recovery point are in `docs/decisions/0002-saves.md`, “Snapshot timing and frame
+budget”.
 
-`SaveController` marks the document as leaving on `pagehide`, skips that capture when the page is persisted, and suppresses a later hidden-visibility capture. A persisted `pageshow` clears the leaving state; ordinary hidden tabs and non-persisted pagehide still capture. The fixed Chromium probe loads the last committed world in the destination, then restores the original running world with no lock held after Back.
-
-This does not remove a completed save from the reproduced path: the old page acquired the lock but its callback never ran, so its best-effort pagehide capture did not reach the worker write. The durable recovery point remains the last committed A/B generation, produced by periodic checkpoints, before-sleep capture, or a hidden capture that finishes while the page is active. Progress after that commit can still be lost if the browser evicts a cached page; pagehide has always been best-effort and does not wait for the worker flush. See `docs/decisions/0002-saves.md`, “Snapshot timing and frame budget”, and `src/ui/saveController.ts`, `SaveController.afterFrame`, `SaveController.beforeSleep`, and `SaveController.capture`.
-
-When a lock wait times out, `SaveStorage.withLock` logs the cause and the
-`navigator.locks.query()` held/pending summary, including whether the holder is a
-different client. Its user-facing error names another page or a page kept in the
-back/forward cache rather than assuming another tab. `withWriteLockDeadline` bounds
-a live hung worker; it cannot release a lock from a frozen event loop. The A/B
-generation and expected-slot compare in `src/game/saveStorageProtocol.ts`,
-`commitSavePayload`, remain the write-integrity boundary.
-
-The Chromium navigation stage uses Playwright's managed Chromium without its default back/forward-cache disabling argument. It samples the destination lock queue at document start, checks that the committed world is available, then goes Back and asserts a persisted `pageshow`, the running world, and an empty save-lock queue. Firefox's navigation stage checks saved-world readiness after its non-persisted navigation; the separate Firefox busy-lock relaunch stage checks that an exclusive writer disables Continue and that release restores it. These are distinct from the persisted-pagehide probe. See `test/browser/save-storage.mjs`, `navigationOnly` and `busyLockOnly`, and `src/ui/saveController.ts`, `SaveController`.
+`SaveStorage.withLock` reports the cause and held/pending lock summary, including
+whether the holder is another client, and explains the other-page failure to the
+player. The Chromium navigation and busy-lock contracts and the autosave
+contract are in `test/browser/save-storage.mjs`, `navigationOnly`, `busyLockOnly`,
+and `testTitleAndAutosave`; the leaving-state rule is in
+`src/ui/saveController.ts`, `SaveController`.
 
 ## Deadvox CI browser dependency stalls
 
