@@ -628,7 +628,15 @@ const editable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   !target.closest('[hidden]') &&
   (target.isContentEditable || Boolean(target.closest('input,textarea,select,[contenteditable="true"]')));
-type InputCancellationReason = 'manual' | 'context-change' | 'window-blur' | 'document-hidden' | 'pointer-lock-lost';
+export type InputCancellationReason =
+  | 'manual'
+  | 'context-change'
+  | 'window-blur'
+  | 'document-hidden'
+  | 'pointer-lock-lost';
+
+export const shouldCancelInputForViewerFocus = (reason: InputCancellationReason, replaying: boolean): boolean =>
+  !(replaying && (reason === 'window-blur' || reason === 'document-hidden' || reason === 'pointer-lock-lost'));
 
 export class KeyboardInput {
   private readonly down = new Set<string>();

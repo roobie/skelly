@@ -80,7 +80,14 @@ import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
-import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
+import {
+  type InputCancellationReason,
+  type InputCommand,
+  type InputContext,
+  keyboardInput,
+  labelForAction,
+  shouldCancelInputForViewerFocus,
+} from './inputBindings.ts';
 import {
   encodeInputReplay,
   InputReplayRecorder,
@@ -304,8 +311,13 @@ export const startPlay = (
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, options.restore !== undefined);
   let debugTools: DebugRuntime | undefined;
   let replayPlayer: InputReplayPlayer | undefined;
-  const shouldCancelForViewerFocus = (): boolean => replayPlayer === undefined;
-  const input = new Input(inputTarget, () => !debugTools?.buildOn, shouldCancelForViewerFocus);
+  const shouldCancelForViewerFocus = (reason: InputCancellationReason): boolean =>
+    shouldCancelInputForViewerFocus(reason, replayPlayer !== undefined);
+  const input = new Input(
+    inputTarget,
+    () => !debugTools?.buildOn,
+    () => shouldCancelForViewerFocus('window-blur'),
+  );
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
   const playerSenseTuning = registry.senses.get('player');
@@ -1387,9 +1399,7 @@ export const startPlay = (
   };
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
   keyboardInput.cancelled = (preservePointer, reason) => {
-    const viewerFocusCancellation =
-      reason === 'window-blur' || reason === 'document-hidden' || reason === 'pointer-lock-lost';
-    if (viewerFocusCancellation && !shouldCancelForViewerFocus()) {
+    if (!shouldCancelForViewerFocus(reason ?? 'manual')) {
       return;
     }
     input.cancel(preservePointer);
