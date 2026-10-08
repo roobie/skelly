@@ -68,7 +68,7 @@ const validateColumnInsideMagazine = (
 
 /** Staggered round column fitted to the generated magazine shell, in gungen units. */
 /** Curated magazine labels carry known nominal capacities; other geometries use the dimension-derived fit. */
-const nominalCapacity = (params: Readonly<Record<string, string>>): number | undefined => {
+export const nominalCapacityForMagazine = (params: Readonly<Record<string, string>>): number | undefined => {
   if (params.length === '5-round') {
     return 5;
   }
@@ -78,7 +78,7 @@ const nominalCapacity = (params: Readonly<Record<string, string>>): number | und
   if (params.length === 'L' && (params.profile === 'ak-curved' || params.profile === 'stanag-curved')) {
     return 30;
   }
-  if (params.length === 'M' && params.profile === 'stanag-curved') {
+  if (params.length === 'M' && params.profile === 'stanag-straight') {
     return 20;
   }
   return undefined;
@@ -111,7 +111,11 @@ export const magazineRoundColumn = (
   };
   const fittedColumn = layoutColumn({ ...columnInput, centerline: centerline.points });
   const physicalCapacity = layoutColumn({ ...columnInput, centerline: physicalCenterline.points }).capacity;
-  const capacity = Math.min(fittedColumn.capacity, physicalCapacity, nominalCapacity(params) ?? fittedColumn.capacity);
+  const capacity = Math.min(
+    fittedColumn.capacity,
+    physicalCapacity,
+    nominalCapacityForMagazine(params) ?? fittedColumn.capacity,
+  );
   const column =
     capacity === fittedColumn.capacity
       ? fittedColumn

@@ -107,7 +107,7 @@ export const ar: Template = {
       },
     },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
-    { id: 'magazine', family: 'magazine', params: { length: 'M', profile: 'stanag-curved' } },
+    { id: 'magazine', family: 'magazine', params: { length: 'M', profile: 'stanag-straight' } },
     { id: 'stock', family: 'stock', params: { length: 'M', style: 'm4' } },
     {
       id: 'front-sight',

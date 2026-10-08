@@ -18,7 +18,7 @@ const readDesign = (name: string): TestDesign => JSON.parse(readFileSync(designP
 const load = (design: TestDesign) => loadGunDesign(JSON.stringify(design));
 
 const expected = [
-  { id: 'stanag-20', version: 1, family: 'magazine', fixedParams: { length: 'M', profile: 'stanag-curved' } },
+  { id: 'stanag-20', version: 1, family: 'magazine', fixedParams: { length: 'M', profile: 'stanag-straight' } },
   { id: 'stanag-30', version: 1, family: 'magazine', fixedParams: { length: 'L', profile: 'stanag-curved' } },
   {
     id: 'ak74-30',
@@ -72,7 +72,7 @@ describe('gun prefab catalogue', () => {
   it('attaches only prefabs whose fixed values match the designs', () => {
     const ar = readDesign('archetype-ar');
     const arMagazine = ar.assembly.parts.magazine!;
-    expect(arMagazine.params).toMatchObject({ length: 'M', profile: 'stanag-curved' });
+    expect(arMagazine.params).toMatchObject({ length: 'M', profile: 'stanag-straight' });
     expect(arMagazine.prefab).toEqual({ id: 'stanag-20', version: 1 });
     const arLoad = load(ar);
     expect(arLoad.ok && arLoad.issues).toEqual([]);

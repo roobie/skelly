@@ -32,9 +32,13 @@ export const magazineCenterline = (solids: readonly Solid[]): MagazineCenterline
         return aIndex - bIndex;
       });
     // Upper body is [top-back, top-front, face-front, face-back]; sectors start at the next rear/front pair.
+    const straightBody = solids.find((solid) => solid.id === 'straight-body');
     const sectionPairs: readonly [Vec2, Vec2][] = [
       [upper.profile[2]!, upper.profile[3]!],
       [upper.profile[0]!, upper.profile[1]!],
+      ...(straightBody?.kind === 'extruded-polygon'
+        ? [[straightBody.profile[2]!, straightBody.profile[1]!] as [Vec2, Vec2]]
+        : []),
       ...sectors.map((sector): [Vec2, Vec2] => [sector.profile[0]!, sector.profile[1]!]),
     ];
     const points = sectionPairs.map(([rear, front]) => midpoint(rear, front));

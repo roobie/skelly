@@ -415,6 +415,7 @@
       "entries": [
         { "item": "rifle_assault", "weight": 1, "condition": [0.5, 1] },
         { "item": "rifle_ak", "weight": 1, "condition": [0.5, 1] },
+        { "item": "magazine_stanag_20", "weight": 1 },
         { "item": "magazine_stanag_30", "weight": 2 },
         { "item": "magazine_akm_30", "weight": 2 },
         { "item": "cartridge_box_5_d_56x45", "weight": 3 },

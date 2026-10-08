@@ -206,7 +206,7 @@ const magazineSection = (profile: string | undefined): { readonly depth: number;
   return { depth: MAGAZINE_DEPTH * (smg ? 0.6 : 1), width: MAGAZINE_WIDTH * (smg ? 0.8 : 1) };
 };
 type MagazineLength = '5-round' | '10-round' | SizeClass;
-type MagazineProfile = 'standard' | 'smg' | 'pistol' | 'ak-curved' | 'stanag-curved';
+type MagazineProfile = 'standard' | 'smg' | 'pistol' | 'ak-curved' | 'stanag-curved' | 'stanag-straight';
 type MagazineBands = Readonly<Record<SizeClass, number>>;
 const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
   readonly compact: Readonly<Record<'5-round' | '10-round', number>>;
@@ -215,6 +215,7 @@ const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
   readonly pistol: MagazineBands;
   readonly 'ak-curved': Readonly<Record<'ak74' | 'akm', MagazineBands>>;
   readonly 'stanag-curved': MagazineBands;
+  readonly 'stanag-straight': MagazineBands;
 }> = {
   compact: { '5-round': 4.5, '10-round': 5.5 },
   standard: { S: 6, M: 10, L: 16 },
@@ -225,6 +226,7 @@ const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
     akm: { S: 6, M: 10, L: 16.75 },
   },
   'stanag-curved': { S: 6, M: 10, L: 15.75 },
+  'stanag-straight': { S: 6, M: 10, L: 15.75 },
 };
 const magazineLengthData = (
   value: string | undefined,
@@ -261,6 +263,7 @@ interface CurvedMagazineProfile {
   readonly straightBottom: number;
   readonly topSlopeDegrees: number;
 }
+const STANAG20_FLOORPLATE_ANGLE_DEGREES = 12;
 const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', CurvedMagazineProfile>> = {
   ak74: {
     seat: 'face',
@@ -2068,7 +2071,7 @@ const lower: PartFamily = {
       from: [{ port: 'magazine', param: 'orientation' }],
     },
     magazineProfile: {
-      values: ['standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved'],
+      values: ['standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved', 'stanag-straight'],
       default: 'standard',
       from: [{ port: 'magazine', param: 'profile' }],
     },
@@ -3705,6 +3708,46 @@ const magazineGeometryFor = (
   if (params.profile === 'stanag-curved') {
     return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES.stanag30);
   }
+  if (params.profile === 'stanag-straight') {
+    const referenceShape = {
+      ...shape,
+      bodyLength: shape.length === 'M' ? MAGAZINE_PROFILE_LENGTHS_U['stanag-curved'].L : shape.bodyLength,
+    };
+    const sharedTop = curvedMagazineGeometry(referenceShape, CURVED_MAGAZINE_PROFILES.stanag30).collision[0]!;
+    if (sharedTop.kind !== 'extruded-polygon') {
+      throw new Error('the STANAG magazine top must be an extruded profile');
+    }
+    const [rearX, topRearY] = sharedTop.profile[0]!;
+    const [frontX, topFrontY] = sharedTop.profile[1]!;
+    const bottomRearY = shape.insertion - shape.bodyLength;
+    const bottomFrontY = bottomRearY + shape.depth * Math.tan((STANAG20_FLOORPLATE_ANGLE_DEGREES * Math.PI) / 180);
+    const plateThickness = 0.25;
+    const body = extrudedPolygon(
+      'straight-body',
+      [
+        [rearX, topRearY],
+        [rearX, bottomRearY + plateThickness],
+        [frontX, bottomFrontY + plateThickness],
+        [frontX, topFrontY],
+      ],
+      [-shape.width / 2, shape.width / 2],
+    );
+    const floorplate = {
+      ...extrudedPolygon(
+        'floorplate',
+        [
+          [rearX, bottomRearY],
+          [frontX, bottomFrontY],
+          [frontX, bottomFrontY + plateThickness],
+          [rearX, bottomRearY + plateThickness],
+        ],
+        [-shape.width / 2, shape.width / 2],
+      ),
+      material: 'steel-blued' as const,
+      slot: 'accent' as const,
+    };
+    return { collision: [sharedTop, body, floorplate], display: [sharedTop, body, floorplate] };
+  }
   const style = orientationParts(params.orientation ?? 'straight');
   const solids =
     style.kind === 'slant'
@@ -3739,7 +3782,7 @@ export const magazine: PartFamily = {
   name: 'magazine',
   params: {
     length: { values: ['5-round', '10-round', ...SIZE_CLASSES], default: 'M' },
-    profile: choice('standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved'),
+    profile: choice('standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved', 'stanag-straight'),
     orientation: choice(...MAGAZINE_ORIENTATIONS),
     variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
   },
