@@ -85,23 +85,43 @@ try {
     null,
     { timeout: 10_000 },
   );
-  await page.waitForFunction(
-    () => {
+  try {
+    await page.waitForFunction(
+      () => {
+        const hint = document.querySelector('#startup-hint');
+        const progress = document.querySelector('#startup-hint-progress');
+        const meshes = globalThis.firefoxUiTest?.engine?.meshes;
+        return (
+          hint &&
+          !hint.hidden &&
+          progress &&
+          progress.value < progress.max &&
+          meshes?.keys &&
+          Array.from(meshes.keys()).length === 0
+        );
+      },
+      null,
+      { timeout: 10_000 },
+    );
+  } catch (error) {
+    const state = await page.evaluate(() => {
       const hint = document.querySelector('#startup-hint');
       const progress = document.querySelector('#startup-hint-progress');
-      const meshes = globalThis.firefoxUiTest?.engine?.meshes;
-      return (
-        hint &&
-        !hint.hidden &&
-        progress &&
-        progress.value < progress.max &&
-        meshes?.keys &&
-        Array.from(meshes.keys()).length === 0
-      );
-    },
-    null,
-    { timeout: 10_000 },
-  );
+      const runtime = globalThis.firefoxUiTest;
+      return {
+        hintHidden: hint?.hidden,
+        progress: progress ? { value: progress.value, max: progress.max } : null,
+        meshes: runtime?.engine?.meshes ? Array.from(runtime.engine.meshes.keys()).length : null,
+        locked: runtime?.input?.locked,
+        menuPointer: runtime?.input?.menuPointer,
+        streamerPending: runtime?.engine?.streamer?.pending,
+      };
+    });
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(state)}`,
+      { cause: error },
+    );
+  }
   await page.waitForFunction(
     () => {
       const hint = document.querySelector('#startup-hint');
