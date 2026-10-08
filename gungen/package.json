@@ -9,7 +9,7 @@
     "typecheck": "tsc",
     "test": "vitest run",
     "test:sweeps": "GUNGEN_SWEEPS=1 vitest run",
-    "test:browser": "node test/browser/pump-pose-note.mjs && node test/browser/shotshell-viewer.mjs && node test/browser/pump-hand-cycle.mjs",
+    "test:browser": "node test/browser/pump-pose-note.mjs && node test/browser/shotshell-viewer.mjs && node test/browser/pump-hand-cycle.mjs && node test/browser/upload-error.mjs",
     "validate": "node src/cli/validate.ts",
     "check:designs": "node src/cli/checkDesigns.ts",
     "export:glb": "node src/cli/export.ts",

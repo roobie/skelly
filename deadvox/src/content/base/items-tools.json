@@ -41,7 +41,7 @@
       "category": "tool",
       "weight": 120,
       "size": [1, 2],
-      "description": "A small electronic compass with an illuminated heading display. Hold it to read it. Prototype: battery use is not yet modeled.",
+      "description": "A small electronic compass with an illuminated heading display. Prototype: battery use is not yet modeled.",
       "heldDisplay": "compass"
     },
     {
@@ -326,7 +326,7 @@
       "category": "light",
       "weight": 30,
       "size": [1, 2],
-      "description": "A sealed chemical light. Snap once to start it.",
+      "description": "A sealed chemical light.",
       "light": {
         "radius": 2,
         "seenFrom": 15,

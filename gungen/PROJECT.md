@@ -9,6 +9,8 @@ read_if:
   - you change attachment parts, mount slots or their Deadvox export
   - you change firearm design/template calibre or AK magazine selection
   - you change default sweep coverage or timeout policy
+  - you change the firearm action/ejection export contract with Deadvox
+---
 
 # gungen — low-poly firearm designer
 
@@ -1014,7 +1016,7 @@ Decisions where the plan left representation open:
   to metres and deadvox axes (`+x` forward, `+y` up) before emitting `grip.at`
   and optional anchor positions. `grip.turn` is always emitted; deadvox
   `hold` and `roll` are intentionally omitted.
-- **Firearm action/ejection export (ADR 0003, accepted 2026-10-02).** All
+- **Firearm action/ejection export (Deadvox ADR 0006).** All
   additions to `DeadvoxModelEntry` are optional. `anchors.ejection` is a plain
   `[x, y, z]` point in metres in model coordinates (`+x` forward, `+y` up,
   `+z` right). `action.ejectDirection` is a unit `[x, y, z]` vector in the same frame.
@@ -1062,7 +1064,7 @@ Decisions where the plan left representation open:
   package adds no parser, anchor values, palette migration, suggester, or
   exporter implementation.
 
-#### Firearm/ammunition export extension (ADR 0003, accepted 2026-10-02)
+#### Firearm/ammunition export extension (Deadvox ADR 0006)
 
 The firearm metadata extends the 3.0a `DeadvoxModelEntry`. New metadata fields
 are optional in the schema; byte-identical output is not a compatibility
@@ -1583,7 +1585,7 @@ not part of the export's acceptance:
   no-outline; glTF export honours no-bevel (it draws no outlines). Collision
   and rule checks ignore the metadata. This changes the
   `Solid` type in `src/core/schema.ts`, so lane A owns it;
-- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid enters; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors so Deadvox can hide the baked magazine when no magazine is fitted (d114-11, #337); see `deadvox/docs/decisions/0003-firearm-handling.md`.
+- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid enters; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors so Deadvox can hide the baked magazine when no magazine is fitted (d114-11, #337); see `deadvox/docs/decisions/0006-firearm-handling.md`.
   Gungen's attachment mass is a geometry/material estimate, not a product specification; d118-3 uses the exported model fact when reconciling inventory weight and attachment handling. BR tunes the cited density and fill assumptions before mass figures become fixed; see `src/gun/attachmentMass.ts`, `attachmentMassKg`, and `docs/deferred-assertions.md`.
   BR, 2026-10-07 11:27, verbatim: “#347 let's stick to 7.62x39 for now” and “but we will add 5.45x39 at some point”; generated AKs stay 7.62x39-only, and 5.45x39 is follow-up #362.
 - **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
@@ -1735,6 +1737,9 @@ in `docs/deferred-assertions.md`.
   `params`. `test/parts.test.ts` lists the array-sampled families in one place,
   `ARRAY_SAMPLED_KEYS`; every family not listed gets the full product. Add an
   explicit case for an interaction the array is known to miss.
+- **Browser tests.** Viewer browser tests launch managed Chromium through
+  `test/chromium.mjs`, `launchChromium`, and the Playwright install shared with
+  Deadvox; see `deadvox/TROUBLESHOOTING.md` for the shared launch-boundary rationale.
 - **Removals need a reason.** The commit says what the removed tests protected
   and which remaining test or sample still protects it, ideally with a mutation
   or coverage result as evidence.
