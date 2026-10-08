@@ -377,7 +377,29 @@
         { "template": "rickety_fence", "position": [444, 21, 237.5], "rotation": 90, "storeys": 1 },
         { "template": "rickety_fence", "position": [444, 21, 244.5], "rotation": 90, "storeys": 1 },
         { "template": "rickety_fence", "position": [444, 21, 251.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [444, 21, 258.5], "rotation": 90, "storeys": 1 }
+        { "template": "rickety_fence", "position": [444, 21, 258.5], "rotation": 90, "storeys": 1 },
+        {
+          "template": "workshop_hall",
+          "position": [410, 21, 198],
+          "rotation": 0,
+          "storeys": 1,
+          "fixedLoot": [
+            { "at": [17, 1, 9], "items": [{ "item": "shotshell_box", "count": 1 }, { "item": "bandage", "count": 1 }] },
+            {
+              "at": [17, 1, 15],
+              "items": [{ "item": "portable_radio", "count": 1 }, { "item": "jerry_can", "count": 1 }]
+            }
+          ]
+        },
+        {
+          "template": "workshop_office",
+          "position": [422, 21, 198],
+          "rotation": 0,
+          "storeys": 1,
+          "fixedLoot": [{ "at": [4, 1, 4], "items": [{ "item": "workshop_notes", "count": 1 }] }]
+        },
+        { "template": "workshop_parts_store", "position": [422, 21, 202], "rotation": 0, "storeys": 1 },
+        { "template": "workshop_yard", "position": [410, 21, 189], "rotation": 0, "storeys": 1 }
       ],
       "player": {
         "position": [92, 21.5, 85],
@@ -456,6 +478,11 @@
             [426.5, 270],
             [426.5, 252]
           ],
+          "width": 2,
+          "surface": "dirt"
+        },
+        {
+          "points": [[390, 180], [398, 184], [405, 192], [410, 196.5]],
           "width": 2,
           "surface": "dirt"
         }

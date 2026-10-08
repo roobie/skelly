@@ -36,7 +36,7 @@ describe('quickbar gesture admission', () => {
     expect(binding?.holdMs).toBe(HUD_HINTS_HOLD_MS);
     const toggles: string[] = [];
     const input = new PressHoldInput<string>({
-      holdDuration: () => binding?.holdMs ?? 0,
+      holdRealMs: () => binding?.holdMs ?? 0,
       tap: () => undefined,
       hold: (heldAction) => toggles.push(heldAction),
     });
@@ -54,7 +54,7 @@ describe('quickbar gesture admission', () => {
     const holdMs = BUNDLED_CONTENT.registry.senses.get('player')!.light.throwStanceDropHoldRealSeconds * 1000;
     const actions: string[] = [];
     const input = new PressHoldInput<string>({
-      holdDuration: () => holdMs,
+      holdRealMs: () => holdMs,
       tap: () => actions.push('stance-toggle'),
       hold: () => actions.push('drop'),
     });

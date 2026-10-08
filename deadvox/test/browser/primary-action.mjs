@@ -179,6 +179,8 @@ const observationPlugin = {
     keyboardInput,
     inventory,
     session,
+    queue,
+    view,
     streamer,
     survival,
     debugTools,
@@ -579,6 +581,205 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         mainLocation: fixture.mainSide,
       },
       'replay throws the off-hand item exactly once and leaves the main-hand item held',
+    );
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+};
+
+const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
+  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  try {
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+      let locked = false;
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+      });
+      Element.prototype.requestPointerLock = () => {
+        locked = true;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = false;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#dominant-hand').selectOption('left');
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    const fixture = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const wornContainers = [...r.inventory.items()].filter(
+        ({ item, location }) => location.kind === 'worn' && item.pockets?.length,
+      );
+      const itemDef = [...r.inventory.registry.items.values()].find(
+        (def) =>
+          def.size[0] === 1 &&
+          def.size[1] === 1 &&
+          !def.model &&
+          !def.twoHanded &&
+          def.pileDisplay !== 'scatter' &&
+          wornContainers.some(({ item }) => {
+            const container = r.inventory.registry.items.get(item.type);
+            return container?.container?.pockets?.some(({ grid }) => grid[0] >= 1 && grid[1] >= 1);
+          }),
+      );
+      const pocketOwner = wornContainers.find(({ item }) => {
+        const container = r.inventory.registry.items.get(item.type);
+        return container?.container?.pockets?.some(({ grid }) => grid[0] >= 1 && grid[1] >= 1);
+      })?.item;
+      if (!(itemDef && pocketOwner)) {
+        throw new Error('Ground pickup fixture lacks an available worn pocket or small bundled item');
+      }
+      const floor = r.feet();
+      const first = r.inventory.create(itemDef.id);
+      if (!r.inventory.add(first, { kind: 'pile', pos: floor })) {
+        throw new Error('Could not place tap-pickup fixture');
+      }
+      const aimAtPile = () => {
+        const eye = [
+          r.session.body.pos[0],
+          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+          r.session.body.pos[2],
+        ];
+        const target = [floor[0] + 0.5, floor[1] + 0.1, floor[2] + 0.5];
+        const dx = target[0] - eye[0];
+        const dy = target[1] - eye[1];
+        const dz = target[2] - eye[2];
+        r.input.yaw = Math.atan2(-dx, -dz);
+        r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      };
+      aimAtPile();
+      r.grabProgress = [];
+      const updateHeld = r.view.updateHeld.bind(r.view);
+      r.view.updateHeld = (dt, pose, light, handling) => {
+        if (handling?.grab) {
+          r.grabProgress.push(handling.grab.progress);
+        }
+        return updateHeld(dt, pose, light, handling);
+      };
+      return { ownerUid: pocketOwner.uid, itemUid: first.uid, itemType: itemDef.id, floor };
+    });
+    await pressAction(page, 'world.interact');
+    await page.waitForFunction(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+        'pocket',
+      fixture.itemUid,
+    );
+    const pocketed = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(uid);
+      const location = item && r.inventory.locate(item);
+      return {
+        location,
+        animation: r.grabProgress.some((progress) => progress > 0 && progress < 1),
+        action: r.inputRecorder.copyInputs().actions.find(({ payload }) => payload?.kind === 'item.pickup')?.payload,
+      };
+    }, fixture.itemUid);
+    assert.equal(pocketed.location.owner.uid, fixture.ownerUid, 'tap F pockets the targeted item through handling');
+    assert.equal(pocketed.animation, true, 'handling drives a visible reach-and-return pose');
+    assert.equal(pocketed.action.mode, 'pocket', 'the replay records the resolved tap gesture');
+
+    const wieldUid = await page.evaluate(
+      ({ floor, itemType }) => {
+        const r = globalThis.primaryActionTest;
+        const item = r.inventory.create(itemType);
+        if (!r.inventory.add(item, { kind: 'pile', pos: floor })) {
+          throw new Error('Could not place hold-pickup fixture');
+        }
+        return item.uid;
+      },
+      { floor: fixture.floor, itemType: fixture.itemType },
+    );
+    const release = await holdAction(page, 'world.interact');
+    await page.waitForFunction(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+        'hand',
+      wieldUid,
+    );
+    await release();
+    const wielded = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(uid);
+      return {
+        location: item && r.inventory.locate(item),
+        action: r.inputRecorder
+          .copyInputs()
+          .actions.find(({ payload }) => payload?.kind === 'item.pickup' && payload.mode === 'wield')?.payload,
+      };
+    }, wieldUid);
+    assert.equal(wielded.location.kind, 'hand', 'holding F wields the targeted item');
+    assert.equal(wielded.action.itemUid, wieldUid, 'the replay records the resolved hold gesture');
+
+    const doorUid = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const doorDef = [...r.inventory.registry.furniture.values()].find((def) => def.door);
+      if (!doorDef) {
+        throw new Error('Door fixture is missing');
+      }
+      const floor = r.feet();
+      let door;
+      for (const [dx, dz] of [
+        [2, 0],
+        [-2, 0],
+        [0, 2],
+        [0, -2],
+        [3, 0],
+        [-3, 0],
+      ]) {
+        door = r.inventory.furnish({
+          type: doorDef.id,
+          pos: [floor[0] + dx, floor[1], floor[2] + dz],
+          size: doorDef.size,
+          facing: 'n',
+        });
+        if (door) {
+          break;
+        }
+      }
+      if (!door) {
+        throw new Error('Could not place a door for the F tap regression');
+      }
+      return door.uid;
+    });
+    await page.waitForFunction(() => !globalThis.primaryActionTest.queue.busy);
+    await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const door = r.inventory.entities.byUid(uid);
+      const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
+      const eye = [
+        r.session.body.pos[0],
+        r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+        r.session.body.pos[2],
+      ];
+      const dx = target[0] - eye[0];
+      const dy = target[1] - eye[1];
+      const dz = target[2] - eye[2];
+      r.input.yaw = Math.atan2(-dx, -dz);
+      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    }, doorUid);
+    await pressAction(page, 'world.interact');
+    await page.waitForFunction(
+      (uid) => globalThis.primaryActionTest.inventory.entities.byUid(uid)?.open === true,
+      doorUid,
     );
     assert.deepEqual(pageErrors, []);
   } finally {
@@ -1207,10 +1408,6 @@ try {
     assert.ok(stanceThrowPose[side][1] > normalThrowPose[side][1], `${side} hand is raised in throwing stance`);
     assert.ok(stanceThrowPose[side][2] > normalThrowPose[side][2], `${side} hand draws back in throwing stance`);
   }
-  await page.evaluate(() => {
-    globalThis.primaryActionTest.hudOptions.interaction = false;
-  });
-  await page.waitForFunction(() => document.querySelector('#throw-stance').hidden);
   const offHandOnlyThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const offHandChargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -2169,6 +2366,7 @@ try {
     }
     return fetch(link.href).then((response) => response.text());
   });
+  await verifyGroundPickup(browser, address.port, renderOverride);
   const replayArtifact = JSON.parse(replayText);
   assert.equal(replayArtifact.magic, 'DEADVOX_REPLAY');
   assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
@@ -2184,10 +2382,20 @@ try {
   });
   await replayNavigation;
   await page.waitForFunction(() => document.querySelector('#debug-ui-root'));
-  await page.waitForFunction(() => {
-    const state = document.querySelector('#input-replay-status')?.dataset.state;
-    return state === 'verified' || state === 'diverged' || state === 'unavailable';
-  });
+  const replayCompletionTimeout = Math.ceil((replayArtifact.frames.length / 60) * 2000 + 10_000);
+  await page.waitForFunction(
+    () => {
+      const state = document.querySelector('#input-replay-status')?.dataset.state;
+      const error = document.querySelector('#errors')?.textContent ?? '';
+      return (
+        state === 'verified' || state === 'diverged' || state === 'unavailable' || error.startsWith('Replay rejected:')
+      );
+    },
+    null,
+    { timeout: replayCompletionTimeout },
+  );
+  const replayError = await page.locator('#errors').textContent();
+  assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
   assert.equal(await page.locator('#input-replay-status').getAttribute('data-state'), 'diverged');
 
   assert.deepEqual(pageErrors, []);
@@ -2197,7 +2405,7 @@ try {
   browser = undefined;
   await checkDroppedGlowstickPixel(address.port);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, glowstick and loaded-firearm throws, refusals, firearm emission, quickbar hold, held-book reading, crowbar door route and clean mouse-look sample playback.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, ground pickup and wield, door tap, grab animation, attachment, save identity, glowstick and loaded-firearm throws, refusals, firearm emission, quickbar hold, held-book reading, crowbar door route and clean mouse-look sample playback.\n',
   );
 } finally {
   await browser?.close();

@@ -12,14 +12,14 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
-import { pickFurniture } from '../core/furniturePick.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
+import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
@@ -80,7 +80,7 @@ import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
-import { type InputCommand, type InputContext, keyboardInput } from './inputBindings.ts';
+import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
 import {
   encodeInputReplay,
   InputReplayRecorder,
@@ -111,7 +111,7 @@ import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
-import { type ReloadBinding, reloadTarget } from './reloadInput.ts';
+import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
@@ -126,7 +126,10 @@ export const USE_REACH = 2;
 const SKIP_SLACK = 1e-6;
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
 const isGestureAction = (action: string): boolean =>
-  action === 'firearm.reload' || action === 'player.throw' || action.startsWith('quickbar.use.');
+  action === 'firearm.reload' ||
+  action === 'player.throw' ||
+  action === 'world.interact' ||
+  action.startsWith('quickbar.use.');
 
 type InputReplayVerification = 'matched' | 'diverged' | 'unavailable' | undefined;
 interface InputReplayStatusOptions {
@@ -303,6 +306,7 @@ export const startPlay = (
   let itemThrowStartedAt: number | undefined;
   let itemThrowItemUid: number | undefined;
   let itemThrowHand: HandSide | undefined;
+  let interactionPressTarget: InteractionTarget | undefined;
   const audio = new GameAudio({
     registry,
     blockSize: s,
@@ -1103,6 +1107,8 @@ export const startPlay = (
       const item = inventory.itemByUid(uid);
       return item ? toHands(inventory, queue, item, feetPosition) : 'The item is no longer available';
     },
+    pickup: pickupGroundItem,
+    interact: interactFurniture,
     craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
     craftContinue: () => {
       continueAction();
@@ -1205,12 +1211,17 @@ export const startPlay = (
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
   const throwStanceInput = new PressHoldInput<string>({
-    holdDuration: () => throwStanceDropHoldRealSeconds * 1000,
+    holdRealMs: () => throwStanceDropHoldRealSeconds * 1000,
     tap: () => toggleThrowingStance(),
     hold: () => dropHeldItemForThrowingStance(),
   });
+  const interactInput = new PressHoldInput<string>({
+    holdRealMs: () => RELOAD_GESTURE_MS.hold,
+    tap: () => completeWorldInteraction('pocket'),
+    hold: () => completeWorldInteraction('wield'),
+  });
   const hintToggleInput = new PressHoldInput<string>({
-    holdDuration: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
+    holdRealMs: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
     tap: () => undefined,
     hold: (action) => {
       if (action === 'hud.toggle-interaction-hints' && !sim.body.actionRefusal) {
@@ -1223,6 +1234,8 @@ export const startPlay = (
   globalThis.addEventListener('blur', () => {
     quickbarInput.cancel();
     throwStanceInput.cancel();
+    interactInput.cancel();
+    interactionPressTarget = undefined;
     hintToggleInput.cancel();
   });
 
@@ -1369,7 +1382,10 @@ export const startPlay = (
         input.reload.keyDown(at, reloadBinding());
         break;
       case 'world.interact':
-        withUnlockedInput(use);
+        withUnlockedInput(() => {
+          interactionPressTarget = interactionTargetAt();
+          interactInput.keyDown(action, at);
+        });
         break;
       case 'craft.continue':
         if (session.crafting.currentUid !== undefined) {
@@ -1391,6 +1407,10 @@ export const startPlay = (
     }
     if (action === 'firearm.reload') {
       input.reload.keyUp(at);
+    }
+    if (action === 'world.interact') {
+      interactInput.keyUp(action, at);
+      interactionPressTarget = undefined;
     }
     if (action === 'player.throw') {
       throwStanceInput.keyUp(action, at);
@@ -1424,6 +1444,8 @@ export const startPlay = (
     input.reload.cancel();
     throwStanceInput.cancel();
     quickbarInput.cancel();
+    interactInput.cancel();
+    interactionPressTarget = undefined;
   };
   const rejectRefusedInput = (): boolean => {
     const refusal = sim.body.actionRefusal;
@@ -1574,15 +1596,21 @@ export const startPlay = (
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */
-  const lookedAt = (): BlockEntity | undefined =>
-    pickFurniture({
+  const interactionTargetAt = (): InteractionTarget | undefined =>
+    pickInteractionTarget({
+      inventory,
       entities,
       origin: eye(),
       direction: lookDir(),
       maxDistance: USE_REACH / s,
       blockSize: s,
       isSolid: engine.isOpaque,
+      hasModel: (id) => view.models.has(id),
     });
+  const lookedAt = (): BlockEntity | undefined => {
+    const target = interactionTargetAt();
+    return target?.kind === 'furniture' ? target.entity : undefined;
+  };
 
   const keyLockHint = (entity: BlockEntity): string | undefined => {
     if (!entities.defOf(entity).door) {
@@ -1635,13 +1663,40 @@ export const startPlay = (
     });
   };
 
-  /** F: doors first, then readable/restable furniture, then container search/inventory. */
-  function use(): void {
-    const entity = lookedAt();
-    if (!entity || (compression.locksInput && rest.action?.furnitureUid !== entity.uid)) {
+  function completeWorldInteraction(mode: 'pocket' | 'wield'): void {
+    const target = interactionPressTarget;
+    interactionPressTarget = undefined;
+    if (!target) {
       return;
     }
+    const payload: ReplayActionPayload =
+      target.kind === 'item'
+        ? { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() }
+        : { kind: 'furniture.interact', entityUid: target.entity.uid };
+    const reason = dispatchScreenCommand(payload);
+    if (reason) {
+      showRefusal(reason, sim.time);
+    }
+  }
+
+  function pickupGroundItem(uid: number, mode: 'pocket' | 'wield', feetPosition: Vec3): string | undefined {
+    const item = inventory.itemByUid(uid);
+    if (!item) {
+      return 'The item is no longer available';
+    }
+    return mode === 'wield' ? toHands(inventory, queue, item, feetPosition) : pocketGroundItem(inventory, queue, item);
+  }
+
+  function interactFurniture(uid: number): string | undefined {
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return 'The target is no longer available';
+    }
+    if (compression.locksInput && rest.action?.furnitureUid !== entity.uid) {
+      return undefined;
+    }
     useTarget(entity);
+    return undefined;
   }
 
   function throwHandPriority(): HandSide {
@@ -2151,13 +2206,19 @@ export const startPlay = (
       visible,
     );
   const promptText = (now: number, visible: Readonly<HudOptionsState>): string => {
-    const entity = visible.interaction && input.locked && !debugTools?.buildOn ? lookedAt() : undefined;
+    const target = visible.interaction && input.locked && !debugTools?.buildOn ? interactionTargetAt() : undefined;
+    let interactionHint: string | undefined;
+    if (target?.kind === 'item') {
+      interactionHint = `${labelForAction('world.interact')}: pocket the ${inventory.name(target.item)}; hold to wield`;
+    } else if (target?.kind === 'furniture') {
+      interactionHint = useText(target.entity);
+    }
     return playPromptText(
       {
         now,
         notice,
         noticeUntil,
-        interactionHint: entity ? useText(entity) : undefined,
+        interactionHint,
         itemActionHint:
           visible.interaction && input.locked && !debugTools?.buildOn ? survival.wieldedItemActionHint() : undefined,
         interruption: compression.interruption,
@@ -2253,6 +2314,31 @@ export const startPlay = (
     };
   };
 
+  const handlingPresentation = () => {
+    const [job] = queue.jobs;
+    const item = job?.kind === 'move' ? inventory.itemByUid(job.itemUid) : undefined;
+    const location = item ? inventory.locate(item) : undefined;
+    const progress =
+      job?.kind === 'move' && location?.kind === 'pile' && job.duration > 0
+        ? Math.max(0, Math.min(1, job.elapsed / job.duration))
+        : undefined;
+    return { job, progress };
+  };
+
+  const throwingPresentation = () => {
+    if (!throwingStance) {
+      return {};
+    }
+    return {
+      throwing: {
+        chargeProgress:
+          itemThrowStartedAt === undefined
+            ? 0
+            : Math.max(0, Math.min(1, (sim.time - itemThrowStartedAt) / itemThrowTuning.chargeSimSeconds)),
+      },
+    };
+  };
+
   const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     const selectedMelee = meleeSelection();
@@ -2268,21 +2354,14 @@ export const startPlay = (
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
+    const { job: handlingJob, progress: grabProgress } = handlingPresentation();
     view.updateHeld(dt, pose, survival.lit, {
       firearms: firearms.frames(),
       ...(readiness === undefined ? {} : { readiness }),
       aim: aim.frame,
-      ...(throwingStance
-        ? {
-            throwing: {
-              chargeProgress:
-                itemThrowStartedAt === undefined
-                  ? 0
-                  : Math.max(0, Math.min(1, (sim.time - itemThrowStartedAt) / itemThrowTuning.chargeSimSeconds)),
-            },
-          }
-        : {}),
-      job: queue.jobs[0],
+      job: handlingJob,
+      ...(grabProgress === undefined ? {} : { grab: { progress: grabProgress } }),
+      ...throwingPresentation(),
     });
   };
 
@@ -2482,14 +2561,19 @@ export const startPlay = (
     if (actionRefusal) {
       input.reload.cancel();
       quickbarInput.cancel();
+      interactInput.cancel();
+      interactionPressTarget = undefined;
     } else {
       input.reload.advance(now, reloadBinding());
     }
     const inputLocked = replaySample?.inputLocked ?? compression.locksInput;
     if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead || actionRefusal) {
       quickbarInput.cancel();
+      interactInput.cancel();
+      interactionPressTarget = undefined;
     } else {
       quickbarInput.update(now);
+      interactInput.update(now);
     }
     throwStanceInput.update(now);
     hintToggleInput.update(now);

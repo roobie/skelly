@@ -25,6 +25,8 @@ export interface SoundEmissionMeta {
   sourceLabel?: string | null;
   /** Playback-only first-person routing, never a hearing-policy decision. */
   listenerRelative?: boolean;
+  /** Overrides the sound definition to emit a world noise pulse at this radius. */
+  noiseRadiusMetres?: number;
 }
 
 interface EventState {

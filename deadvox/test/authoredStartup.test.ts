@@ -4,15 +4,14 @@ import type * as Config from '../src/game/config.ts';
 
 it('starts normal sites when a malformed bundled layout file is rejected whole', async () => {
   const server = await createServer({
-    optimizeDeps: { noDiscovery: true, include: [] },
     server: { middlewareMode: true, hmr: false, watch: null },
     plugins: [
       {
         name: 'malformed-layout-startup-control',
         enforce: 'pre',
         load(id) {
-          if (id.endsWith('/src/content/base/layouts.json')) {
-            return JSON.stringify({ layouts: {} });
+          if (id.includes('/src/content/base/') && id.endsWith('.json')) {
+            return id.endsWith('/src/content/base/layouts.json') ? JSON.stringify({ layouts: {} }) : JSON.stringify({});
           }
           return null;
         },

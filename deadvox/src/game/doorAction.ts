@@ -38,7 +38,8 @@ export const registerDoorAction = ({ queue, inventory, player, others, playWorld
       if (reason) {
         return reason;
       }
-      playWorldSound('door_open', center);
+      const openNoise = entities.defOf(entity).door?.openNoise;
+      playWorldSound(openNoise?.sound ?? 'door_open', center);
       return undefined;
     }
     const blocker = entities.closeDoor(entity, player(), others());

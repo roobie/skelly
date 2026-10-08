@@ -206,6 +206,14 @@
       "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "aa_battery", "count": 1 }]
     },
     {
+      "id": "jerry_can",
+      "name": "Jerry can",
+      "category": "misc",
+      "weight": 2500,
+      "size": [3, 3],
+      "description": "A fuel-filled can."
+    },
+    {
       "id": "spent_case_5_d_56x45",
       "name": "Spent 5.56×45 case",
       "category": "material",
