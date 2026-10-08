@@ -22,6 +22,7 @@ const PRIVATE_IPV4 =
 const HOST_PATH = /\/(?:home|Users|tmp)\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*/g;
 const RUN_USER_PATH = /\/run\/user\/\d+[A-Za-z0-9_./$-]*/g;
 const HOME_SHORTCUT = /(^|[\s"'`(=])(~\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*)/gm;
+const HOST_PATH_VALUE_EXEMPTIONS = new Set(['~/.cache/ms-playwright']);
 const INLINE_CODE_SPAN = /(`+)[\s\S]*?\1/g;
 const QUOTED_TEXT = /“[^”\n]*”|"[^"\n]*"/g;
 const SUBPROJECTS = new Set(['deadvox', 'gungen', 'mobgen']);
@@ -305,8 +306,8 @@ function checkHost(path, text, failures) {
       add(failures, path, 'host', match[0]);
     }
   }
-  if (!path.startsWith('.github/workflows/')) {
-    for (const match of text.matchAll(HOME_SHORTCUT)) {
+  for (const match of text.matchAll(HOME_SHORTCUT)) {
+    if (!HOST_PATH_VALUE_EXEMPTIONS.has(match[2])) {
       add(failures, path, 'host', match[2]);
     }
   }

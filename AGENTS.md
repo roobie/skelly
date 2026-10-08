@@ -28,7 +28,8 @@ docs, review reports, content and credits. Never commit:
 - **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`;
 - **addresses:** host names, LAN IPs and LAN URLs (`http://<ip>:<port>/…`), and the ports
   of this host's own services (preview servers, proxies). A port the project or its tools
-  configure, such as Vite's `localhost:5173`, is the same for every clone and is fine;
+  configure, such as Vite's `localhost:5173`, is the same for every clone and is fine.
+  Paths defined identically by a project tool for every clone are allowed too;
 - **the host's size and limits:** its CPU, RAM and disk, free-disk floors, memory caps,
   cgroup slices and scopes, lock files, and time budgets measured on it.
 

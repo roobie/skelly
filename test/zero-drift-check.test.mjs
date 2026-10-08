@@ -159,17 +159,26 @@ describe('zero-drift policy rules', () => {
       ].join('\n'),
     });
     const source = checkPolicyRules({ path: 'src/fixture.ts', text: '// BR, 2026-10-04\n' });
-    assert.equal(
-      markdown.filter(({ check }) => check === 'citation').reduce((sum, { count }) => sum + count, 0),
-      6,
+    assert.deepEqual(
+      markdown
+        .filter(({ check }) => check === 'citation')
+        .map(({ text, count }) => ({ text, count }))
+        .sort((a, b) => a.text.localeCompare(b.text)),
+      [
+        { text: '(2026-10-05 19:52):** “', count: 1 },
+        { text: '(BR)', count: 1 },
+        { text: 'br-43', count: 1 },
+        { text: 'BR, 2026-10-04', count: 2 },
+        { text: "BR's 2026-10-07", count: 1 },
+      ].sort((a, b) => a.text.localeCompare(b.text)),
     );
     assert.equal(source.filter(({ check }) => check === 'citation').length, 1);
   });
 
-  it('flags host paths and private addresses in any tracked text, not placeholders or the CI runner home', () => {
+  it('flags host paths and private addresses, exempting the Playwright cache path by value', () => {
     const failures = checkPolicyRules({
       path: 'src/fixture.ts',
-      text: '/home/ann/notes 10.0.0.1 172.16.0.1 192.168.1.20 ~/notes; version 10.29.8',
+      text: '/home/ann/notes 10.0.0.1 172.16.0.1 192.168.1.20 ~/notes ~/.cache/ms-playwright; version 10.29.8',
     });
     assert.deepEqual(
       failures
@@ -181,9 +190,14 @@ describe('zero-drift policy rules', () => {
     assert.deepEqual(
       checkPolicyRules({
         path: '.github/workflows/ci.yml',
-        text: '/home/… /run/user/<uid>/… localhost:5173 ~/.cache',
+        text: '/home/… /run/user/<uid>/… localhost:5173',
       }),
       [],
+    );
+    assert.deepEqual(checkPolicyRules({ path: 'src/fixture.ts', text: '~/.cache/ms-playwright' }), []);
+    assert.deepEqual(
+      checkPolicyRules({ path: '.github/workflows/ci.yml', text: '~/.cache' }).map(({ text }) => text),
+      ['~/.cache'],
     );
   });
 
