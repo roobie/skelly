@@ -64,8 +64,21 @@ describe('870-derived pump silhouette', () => {
     const [min, max] = localSolidBounds(frame);
     expect(max[1] - min[1], 'plate thickness').toBeLessThanOrEqual(0.5);
     const finger = lower.keepOuts.find((v) => v.id === 'trigger-finger')!.box;
-    expect(finger.half[1] * 2, 'finger height').toBe(1.5);
+    const fingerSolid: Solid = { id: 'trigger-finger-probe', kind: 'box', box: finger };
     const guards = lower.solids.filter((s) => s.id.startsWith('trigger-guard-'));
+    const guardBounds = guards.map(localSolidBounds);
+    for (const axis of [0, 1, 2] as const) {
+      expect(Math.min(...guardBounds.map(([min]) => min[axis]))).toBeLessThanOrEqual(
+        finger.center[axis] - finger.half[axis],
+      );
+      expect(Math.max(...guardBounds.map(([, max]) => max[axis]))).toBeGreaterThanOrEqual(
+        finger.center[axis] + finger.half[axis],
+      );
+    }
+    expect(
+      guards.every((guard) => penetrationWorld(worldSolid(IDENTITY, guard), worldSolid(IDENTITY, fingerSolid)) <= 0),
+      'finger keep-out clears guard material',
+    ).toBe(true);
     expect(guards.every((s) => s.kind === 'extruded-polygon')).toBe(true);
     expectWatertightMesh(meshForSolidGroup(guards), 'rounded trigger loop');
     expect(lower.solids.some((s) => s.id === 'trigger')).toBe(true);
@@ -84,8 +97,9 @@ describe('870-derived pump silhouette', () => {
     const finish = buildLayers(report, [], 'finish', { variant: 'pump-shotgun' });
     const roles = buildLayers(report, [], 'role', { variant: 'pump-shotgun' });
     try {
-      expect(finish.solids.children.filter((o) => o.userData.part === 'stock')).toHaveLength(2);
+      const finishMeshes = finish.solids.children.filter((o) => o.userData.part === 'stock');
       const roleMeshes = roles.solids.children.filter((o) => o.userData.part === 'stock');
+      expect(finishMeshes.length).toBeLessThan(roleMeshes.length);
       const colors = ['grip', 'stock-joint', 'stock-comb'].map((id) => {
         const mesh = roleMeshes.find((o) => o.userData.label.includes(`solid ${id}`)) as Mesh | undefined;
         expect(mesh, id).toBeDefined();

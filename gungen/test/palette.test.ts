@@ -74,7 +74,7 @@ describe('palette migration', () => {
     expect(mismatches(old)).toEqual([]);
   });
 
-  // Measured about 1.5 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  // Resolves role colours across every fixture and published design.
   it('preserves ordinary family role colours across every fixture and design', {
     timeout: 10_000,
   }, () => {
@@ -130,7 +130,7 @@ describe('palette coverage', () => {
     expect(usingFallback(fixtureAssemblies())).toEqual([]);
   });
 
-  // Measured about 1.9 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  // Checks fallback appearance resolution across the full corpus.
   it('never needs the fallback for any solid of any fixture or design', { timeout: 10_000 }, () => {
     expect(usingFallback(corpusAssemblies())).toEqual([]);
   });

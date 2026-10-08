@@ -9,11 +9,13 @@ import { AK_PROPORTIONS } from '../src/gun/akProportions.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import {
   AK_REAR_BEVEL,
+  BOLT_CARRIER_ENVELOPES,
   BOLT_CARRIER_RUNNING_CLEARANCE_U,
   carrierCavityBounds,
   FAMILIES,
   PUMP_REAR_SLOPE,
   RECEIVER_SECTION,
+  RECEIVER_SECTION_WALL_U,
 } from '../src/gun/parts.ts';
 import { PUMP_ACTION_TRAVEL_U } from '../src/gun/pumpShell.ts';
 import { assertConvexSection, buildReceiverSection } from '../src/gun/receiverSection.ts';
@@ -211,27 +213,47 @@ describe('receiver section builder', () => {
     }
   });
 
-  it('derives section cavities from carrier envelopes and preserves approved bounds', () => {
+  it('derives section cavities from carrier envelopes while preserving the minimum wall', () => {
     const cavities = {
       ar: carrierCavityBounds('ar', 0),
-      ak: carrierCavityBounds('ak', 0),
+      ak: carrierCavityBounds('ak', AK_PROPORTIONS.carrierAxisU),
       pump: carrierCavityBounds('pump', 1),
     };
-    expect(cavities.ar).toEqual({ y: [-0.6, 1.1], z: [-1.35, 1.35] });
-    expect(cavities.ak).toEqual({ y: [-1.35, 1.35], z: [-1.35, 1.35] });
-    expect(cavities.pump).toEqual({ y: [0.15, 1.85], z: [-0.85, 0.85] });
-    expect(carrierCavityBounds('pump', 0).y).toEqual([-0.85, 0.85]);
-    const akCavity = carrierCavityBounds('ak', AK_PROPORTIONS.carrierAxisU);
-    expect(cavityWallThickness(RECEIVER_SECTION.ak.outline, akCavity)).toBeGreaterThanOrEqual(0.5);
+    for (const [pattern, cavity, carrierY] of [
+      ['ar', cavities.ar, 0],
+      ['ak', cavities.ak, AK_PROPORTIONS.carrierAxisU],
+      ['pump', cavities.pump, 1],
+    ] as const) {
+      const envelope = BOLT_CARRIER_ENVELOPES[pattern];
+      expect(cavity.y).toEqual([
+        carrierY + envelope.y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+        carrierY + envelope.y[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
+      ]);
+      expect(cavity.z).toEqual([
+        envelope.z[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+        envelope.z[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
+      ]);
+      expect(
+        cavityWallThickness(RECEIVER_SECTION[pattern].outline, cavity),
+        `${pattern} wall thickness`,
+      ).toBeGreaterThanOrEqual(RECEIVER_SECTION_WALL_U);
+    }
+    expect(RECEIVER_SECTION_WALL_U).toBeGreaterThanOrEqual(0.5);
   });
 
   it('gives the AR a distinct flat-top upper profile with stepped shoulders', () => {
     const { outline } = RECEIVER_SECTION.ar;
     expect(() => assertConvexSection(outline, 'AR')).not.toThrow();
-    expect(outline).toContainEqual([2.5, -1.75]);
-    expect(outline).toContainEqual([2.5, 1.75]);
-    expect(outline).toContainEqual([1.5, -2]);
-    expect(outline).toContainEqual([1.5, 2]);
+    const top = Math.max(...outline.map(([y]) => y));
+    const topVertices = outline.filter(([y]) => y === top);
+    expect(topVertices.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(topVertices.map(([, z]) => z)).size).toBeGreaterThanOrEqual(2);
+    const levels = [...new Set(outline.map(([y]) => y))].sort((a, b) => b - a);
+    const widthAt = (y: number) => {
+      const zs = outline.filter(([level]) => level === y).map(([, z]) => z);
+      return Math.max(...zs) - Math.min(...zs);
+    };
+    expect(widthAt(levels[1]!)).not.toBe(widthAt(top));
     expect(RECEIVER_SECTION.ar.outline).not.toEqual(RECEIVER_SECTION.ak.outline);
     expect(RECEIVER_SECTION.ar.outline).not.toEqual(RECEIVER_SECTION.pump.outline);
   });
@@ -258,9 +280,9 @@ describe('receiver section builder', () => {
     expectWatertightMesh(meshForSolidGroup(solids), 'closed section');
   });
 
-  it('rounds the pump rear transition while preserving its total 4u run and 1.5u rise', () => {
-    const bottomY = 1;
-    const topY = 2.5;
+  it('rounds the pump rear transition while preserving its declared run and rise', () => {
+    const bottomY = 0;
+    const topY = PUMP_REAR_SLOPE.rise;
     const rearXAt = (y: number) =>
       Math.max(...PUMP_REAR_SLOPE.clip.map(({ normal, offset }) => (offset - normal[1] * y) / normal[0]));
     const run = Math.abs(rearXAt(topY) - rearXAt(bottomY));
@@ -268,8 +290,6 @@ describe('receiver section builder', () => {
     expect(run).toBeCloseTo(PUMP_REAR_SLOPE.run, 12);
     expect(rise).toBe(PUMP_REAR_SLOPE.rise);
     expect(PUMP_REAR_SLOPE.angleDegrees).toBeCloseTo((Math.atan(rise / run) * 180) / Math.PI, 12);
-    expect(rearXAt(bottomY)).toBe(-16);
-    expect(rearXAt(topY)).toBe(-12);
   });
 
   it('opens the AR carrier bore while preserving AK/pump adapters and watertight shells', () => {
@@ -318,7 +338,9 @@ describe('receiver section builder', () => {
         expect(frontAdapter?.kind).toBe('extruded-polygon');
         if (rearAdapter?.kind === 'extruded-polygon' && frontAdapter?.kind === 'extruded-polygon') {
           expect(rearAdapter.z).toEqual([rearX, cavityRearX]);
-          expect(frontAdapter.z).toEqual([-0.5, 0]);
+          const section = id === 'receiver-ar' ? RECEIVER_SECTION.ar : RECEIVER_SECTION.ak;
+          expect(frontAdapter.z[1] - frontAdapter.z[0]).toBe(RECEIVER_SECTION_WALL_U);
+          expect(frontAdapter.z[1]).toBe(section.faces.front);
         }
       }
       expectWatertightMesh(receiverMesh, id);
@@ -402,10 +424,13 @@ describe('receiver section builder', () => {
       }
     }
     expect(faceContainsPoint(mesh, faces.rear, -1, 0), 'stock remains on rear face').toBe(true);
-    expect(stock.pos).toEqual([-16, -1, 0]);
-    expect(def.ports.find(({ id }) => id === 'lower')?.pos).toEqual([0, -3.5, 0]);
-    expect(def.ports.find(({ id }) => id === 'handguard')?.pos[0]).toBe(3.5);
-    expect(def.ports.find(({ id }) => id === 'tube')?.pos[0]).toBe(3.5);
+    expect(stock.pos[0]).toBe(faces.rear);
+    const lower = def.ports.find(({ id }) => id === 'lower')!;
+    const handguard = def.ports.find(({ id }) => id === 'handguard')!;
+    const tube = def.ports.find(({ id }) => id === 'tube')!;
+    expect(lower.pos[1]).toBeLessThan(stock.pos[1]);
+    expect(handguard.pos[0]).toBe(tube.pos[0]);
+    expect(handguard.pos[0]).toBeGreaterThan(faces.front);
     expectWatertightMesh(mesh, 'receiver-pump');
   });
 

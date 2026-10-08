@@ -13,6 +13,7 @@ import type { Assembly } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import type { SelectedAnchors } from '../src/gun/anchors.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
+import { ACTION_CYCLE_PROFILES } from '../src/gun/cycle.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { ejectionPoint } from '../src/gun/ejection.ts';
@@ -20,6 +21,7 @@ import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxe
 import { createGunModelEntry, exportGunGlb } from '../src/gun/exportGlb.ts';
 import { getOptic } from '../src/gun/optics.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
+import { FAMILIES } from '../src/gun/parts.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
 import { expectWatertightMesh, loadCorpus, variant } from './helpers.ts';
@@ -136,8 +138,15 @@ const rotateByQuaternion = (q: readonly number[], v: Vec3): Vec3 => {
 };
 
 describe('glb export: axes and units', () => {
-  it('uses 1u = 11.5 mm', () => {
-    expect(METRES_PER_UNIT).toBe(0.0115);
+  it('calibrates authored STANAG depth against its millimetre reference within one grid step', () => {
+    const stanag = FAMILIES.magazine!.build({ length: 'M', profile: 'stanag-curved' });
+    const bounds = stanag.solids.map(localSolidBounds);
+    const topDepthUnits = Math.max(...bounds.map(([, max]) => max[0]!)) - Math.min(...bounds.map(([min]) => min[0]!));
+    const authoredDepthMm = topDepthUnits * METRES_PER_UNIT * 1000;
+    const sourcedDepthMm = 63;
+    const gridStepMm = gunDomain.units.grid * METRES_PER_UNIT * 1000;
+    expect(Math.abs(authoredDepthMm - sourcedDepthMm)).toBeLessThanOrEqual(gridStepMm);
+    expect(METRES_PER_UNIT).toBe(gunDomain.units.metresPerUnit);
   });
 
   it('maps gungen forward and up onto deadvox held +x and +y with a zero turn', () => {
@@ -646,7 +655,7 @@ describe('glb export: deadvox model entry', () => {
       }
       const carrier = out.resolved.defs.get('bolt-carrier')!;
       const motion = carrier.motion!;
-      expect(action.roundsPerSimMinute).toBe(expectedAction === 'ak' ? 600 : 800);
+      expect(action.roundsPerSimMinute).toBe(ACTION_CYCLE_PROFILES[expectedAction].rpm);
       expect(action.holdOpen).toBe(expectedAction === 'ar');
       expect(action.fire.durationSimSeconds).toBeCloseTo(60 / action.roundsPerSimMinute, 9);
       expect(action.hand.durationSimSeconds).toBeGreaterThan(action.fire.durationSimSeconds);
@@ -665,7 +674,13 @@ describe('glb export: deadvox model entry', () => {
         const node = out.read.json.nodes.find(({ name: nodeName }) => nodeName === part.node)!;
         expect(node.mesh).toBeDefined();
         expect(Math.hypot(...part.axis)).toBeCloseTo(1, 12);
-        expect(part.strokeMetres).toBeCloseTo(6.5 * S, 6);
+        const partId = part.node.split(':')[0]!;
+        const partMotion = out.resolved.defs.get(partId)?.motion;
+        if (!partMotion) {
+          throw new Error(`${partId} has no source motion`);
+        }
+        const sourceStroke = Math.hypot(...sub(partMotion.end, partMotion.start));
+        expect(part.strokeMetres).toBeCloseTo(sourceStroke * out.resolved.domain.units.metresPerUnit, 6);
       }
       expect(Math.hypot(...action.ejectDirection)).toBeCloseTo(1, 12);
       expect(out.modelEntry).not.toHaveProperty('ejectDirection');

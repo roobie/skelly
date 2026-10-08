@@ -75,9 +75,7 @@ const resolveAll = (variants: BrokenVariant[]): ResolvedVariant[] =>
   });
 
 /**
- * Per-rule timeout, proportional to the number of variants. solid-overlap, the slowest rule, took
- * about 15 ms per variant on the sample and 40 ms on the full set (23 s for 587) on a host at load 6-8;
- * 100 ms leaves headroom for a loaded host without a flat, oversized limit.
+ * Per-rule timeout scales with the number of variants, keeping exhaustive runs bounded without a flat limit.
  */
 const MS_PER_VARIANT = 100;
 
