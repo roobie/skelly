@@ -717,6 +717,21 @@ describe('input replay', () => {
     ]);
   });
 
+  it('does not duplicate an explicit tick-zero load with a reconstructed window seam', () => {
+    const frame = [0, 0, 0, 0, 1, 1] as const;
+    const joined = joinInputReplayWindows(
+      { frames: [frame], actions: [], generatedColumns: [], columnChanges: [] },
+      {
+        frames: [frame],
+        actions: [],
+        generatedColumns: [[7, -4]],
+        columnChanges: [[0, 7, -4, true]],
+      },
+    );
+
+    expect(joined.columnChanges).toEqual([[1, 7, -4, true]]);
+  });
+
   it('prepares tick-zero generated columns when playback is constructed', () => {
     const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
     const column: ReplayColumnUpdate = [7, -4, true];
@@ -1322,6 +1337,81 @@ describe('input replay', () => {
 
     expect(source.player.body.pos).not.toEqual(start.character.player.body.pos);
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('rolls an overflowing column batch into the next replay segment', async () => {
+    const initialColumn: [number, number] = [100, 100];
+    const loadedColumn: [number, number] = [101, 100];
+    const start = capture(createRuntime(undefined, false, [initialColumn]));
+    let recorder = new InputReplayRecorder(start, 2, [initialColumn], 2);
+    const source = createRuntime(start, false, [initialColumn], {
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recorder.recordTick(live, compression);
+        return live;
+      },
+    });
+    source.sim.paused = false;
+    recorder.queueColumnChange(initialColumn[0], initialColumn[1], false);
+    removeFixtureColumn(source, ...initialColumn);
+    source.session.onColumnUnload(...initialColumn);
+    source.session.frame(1 / 60);
+    const previous = recorder.copyInputs();
+
+    recorder.queueColumnChange(loadedColumn[0], loadedColumn[1], true);
+    addFixtureColumn(source, ...loadedColumn);
+    source.session.onColumn(loadedColumn[0], loadedColumn[1], fixtureHamlet);
+    recorder.queueColumnChange(loadedColumn[0], loadedColumn[1], false);
+    removeFixtureColumn(source, ...loadedColumn);
+    source.session.onColumnUnload(...loadedColumn);
+    expect(recorder.columnChangesWouldOverflow).toBe(true);
+
+    const next = new InputReplayRecorder(capture(source), 2, [], 2);
+    recorder.transferPendingColumnChangesTo(next);
+    recorder = next;
+    source.session.frame(1 / 60);
+    const joined = joinInputReplayWindows(previous, recorder.copyInputs());
+    expect(joined.columnChanges).toEqual([
+      [0, initialColumn[0], initialColumn[1], false],
+      [1, loadedColumn[0], loadedColumn[1], true],
+      [1, loadedColumn[0], loadedColumn[1], false],
+    ]);
+
+    const sourceEnd = capture(source);
+    const replay = playSession(start, joined, {
+      endSimTimestamp: sourceEnd.character.simulation.time,
+      initialColumns: [initialColumn],
+    });
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('preserves ordered load and unload effects when action capacity rolls a window without a player tick', () => {
+    const start = capture(createRuntime());
+    const previous = new InputReplayRecorder(start, 2);
+    previous.recordTick(replaySample);
+    while (!previous.full) {
+      previous.queueAction('movement.walk-toggle', 'down', 'play');
+    }
+    previous.queueColumnChange(7, -4, true);
+    previous.queueColumnChange(7, -4, false);
+
+    expect(previous.full).toBe(true);
+    const next = new InputReplayRecorder(start, 2);
+    previous.transferPendingActionsTo(next);
+    previous.transferPendingColumnChangesTo(next);
+    next.recordTick(replaySample);
+
+    const joined = joinInputReplayWindows(previous.copyInputs(), next.copyInputs());
+    expect(joined.columnChanges).toEqual([
+      [1, 7, -4, true],
+      [1, 7, -4, false],
+    ]);
+    const player = new InputReplayPlayer(joined, () => undefined);
+    player.takePreparedColumnChanges();
+    player.next();
+    expect(player.takePreparedColumnChanges()).toEqual([
+      [1, 7, -4, true],
+      [1, 7, -4, false],
+    ]);
   });
 
   it('replays an action queued after a full window tick in the next segment', async () => {

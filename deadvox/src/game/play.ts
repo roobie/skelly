@@ -345,7 +345,11 @@ export const startPlay = (
     compressionAtTick: number,
   ): PlayerInputSample => {
     if (!replayPlayer) {
-      inputRecorder?.recordTick(live, compressionAtTick);
+      if (inputRecorder && !inputRecorder.recordTick(live, compressionAtTick)) {
+        inputRecorder = undefined;
+        previousInputRecorder = undefined;
+        showNotice('Replay recording stopped because a streamed-column batch exceeded the recording window.');
+      }
       pendingPlayerTickActions.applyAtNextTick();
       return live;
     }
@@ -2537,9 +2541,33 @@ export const startPlay = (
     verifyReplayEndState();
   };
 
+  const stopInputRecordingForColumnOverflow = (): void => {
+    inputRecorder = undefined;
+    previousInputRecorder = undefined;
+    showNotice('Replay recording stopped because a streamed-column batch exceeded the recording window.');
+  };
+
+  const rollInputRecorderWindow = (): void => {
+    if (!inputRecorder) {
+      return;
+    }
+    previousInputRecorder = inputRecorder;
+    const nextRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
+    inputRecorder.transferPendingActionsTo(nextRecorder);
+    inputRecorder.transferPendingColumnChangesTo(nextRecorder);
+    inputRecorder = nextRecorder;
+  };
+
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
     cancelItemThrowOnRightClick();
+    if (!replayPlayer && inputRecorder?.columnChangesWouldOverflow) {
+      if (inputRecorder.pendingColumnChangesExceedWindow) {
+        stopInputRecordingForColumnOverflow();
+      } else {
+        rollInputRecorderWindow();
+      }
+    }
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     if (replayPlayer) {
@@ -2553,10 +2581,7 @@ export const startPlay = (
       updateSkip(skipUntil);
     }
     if (!replayPlayer && inputRecorder?.full) {
-      previousInputRecorder = inputRecorder;
-      const nextRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
-      inputRecorder.transferPendingActionsTo(nextRecorder);
-      inputRecorder = nextRecorder;
+      rollInputRecorderWindow();
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     if (spectatorCameraEnabled && spectatorCameraBody && input.locked && !input.menuPointer) {
