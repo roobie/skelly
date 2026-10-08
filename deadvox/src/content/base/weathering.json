@@ -2,7 +2,11 @@
   "weathering": [
     {
       "id": "world",
-      "strength": 0.65
+      "strength": 0.65,
+      "variationScaleMetres": 12,
+      "variationStrength": 0.85,
+      "mossThreshold": 0.68,
+      "mossBias": 0.5
     }
   ]
 }

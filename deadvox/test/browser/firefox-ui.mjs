@@ -72,7 +72,6 @@ try {
     browserStageUrl(
       'firefox-ui',
       `http://127.0.0.1:${address.port}/?debug=1&actors=detailed&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
-      'pixel',
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
@@ -89,24 +88,6 @@ try {
   await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, initialTime, {
     timeout: 20_000,
   });
-  await page.waitForFunction(
-    () => globalThis.firefoxUiTest.engine.renderer && globalThis.firefoxUiTest.engine.meshes.count > 0,
-    null,
-    {
-      timeout: 60_000,
-    },
-  );
-  const renderedChunks = await page.evaluate(() => {
-    const { engine } = globalThis.firefoxUiTest;
-    engine.renderer.compile(engine.scene, engine.camera);
-    return engine.meshes.count;
-  });
-  assert.ok(renderedChunks > 0, 'Firefox loaded voxel chunk meshes with rendering enabled');
-  assert.deepEqual(
-    consoleErrors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error')),
-    [],
-    'Firefox chunk shaders compile',
-  );
   assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
   const gateCode = await page.evaluate(
     `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
@@ -363,8 +344,39 @@ try {
   );
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
+
+  pageErrors.length = 0;
+  consoleErrors.length = 0;
+  await page.goto(
+    browserStageUrl(
+      'firefox-ui',
+      `http://127.0.0.1:${address.port}/?debug=1&site=testHouse&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
+      'pixel',
+    ),
+  );
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
+    timeout: 30_000,
+  });
+  await page.locator('#go').click();
+  await page.waitForFunction(
+    () => globalThis.firefoxUiTest?.engine.renderer && globalThis.firefoxUiTest.engine.meshes.count > 0,
+    null,
+    { timeout: 60_000 },
+  );
+  const renderedChunks = await page.evaluate(() => {
+    const { engine } = globalThis.firefoxUiTest;
+    engine.renderer.compile(engine.scene, engine.camera);
+    return engine.meshes.count;
+  });
+  assert.ok(renderedChunks > 0, 'Firefox loaded voxel chunk meshes with rendering enabled');
+  assert.deepEqual(
+    consoleErrors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error')),
+    [],
+    'Firefox chunk shaders compile',
+  );
+  assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Firefox UI passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, floor pickup and pocket transfer. Native lock acquisition is NOT tested.\n',
+    'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer and rendered chunk shader compilation. Native lock acquisition is NOT tested.\n',
   );
 } finally {
   await browser?.close();

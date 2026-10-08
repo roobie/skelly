@@ -22,12 +22,24 @@ const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
 const missingSoundsRegistry = { ...baseRegistry, sounds: new Map() };
 
-it('validates the shared weathering content range', () => {
+it('validates weathering strength and world-variation settings', () => {
+  const settings = {
+    id: 'world',
+    strength: 0.5,
+    variationScaleMetres: 12,
+    variationStrength: 0.7,
+    mossThreshold: 0.68,
+    mossBias: 0.5,
+  };
+  expect(validateContent({ source: 'weathering.json', data: { weathering: [settings] } })).toEqual([]);
   expect(
-    validateContent({ source: 'weathering.json', data: { weathering: [{ id: 'world', strength: 0.5 }] } }),
-  ).toEqual([]);
+    validateContent({ source: 'weathering.json', data: { weathering: [{ ...settings, strength: 2 }] } }),
+  ).not.toEqual([]);
   expect(
-    validateContent({ source: 'weathering.json', data: { weathering: [{ id: 'world', strength: 2 }] } }),
+    validateContent({
+      source: 'weathering.json',
+      data: { weathering: [{ ...settings, variationScaleMetres: 0 }] },
+    }),
   ).not.toEqual([]);
 });
 

@@ -12,6 +12,7 @@ import {
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import type { MeshData } from '../core/mesher.ts';
+import type { WeatheringDef } from '../core/schema.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
 
@@ -64,12 +65,20 @@ const chunkMaterial = ({
   patterns,
   occlusion,
   weathering,
+  weatheringVariation,
+  variationScaleMetres,
+  mossThreshold,
+  mossBias,
 }: {
   blockSize: number;
   linearColors: { value: number };
   patterns: { value: number };
   occlusion: { value: number };
   weathering: { value: number };
+  weatheringVariation: { value: number };
+  variationScaleMetres: { value: number };
+  mossThreshold: { value: number };
+  mossBias: { value: number };
 }): MeshLambertMaterial => {
   const material = new MeshLambertMaterial({ vertexColors: true });
   material.onBeforeCompile = (shader) => {
@@ -78,6 +87,10 @@ const chunkMaterial = ({
     shader.uniforms.uPatterns = patterns;
     shader.uniforms.uOcclusion = occlusion;
     shader.uniforms.uWeathering = weathering;
+    shader.uniforms.uWeatheringVariation = weatheringVariation;
+    shader.uniforms.uWeatheringVariationScale = variationScaleMetres;
+    shader.uniforms.uMossThreshold = mossThreshold;
+    shader.uniforms.uMossBias = mossBias;
     patchHeightFog(shader, 'chunk');
     shader.vertexShader = shader.vertexShader
       .replace('#include <color_pars_vertex>', centroidColorPars(COLOR_PARS_GUARD_VERTEX))
@@ -100,7 +113,7 @@ vFaceN = normalize(normal);`,
       .replace('#include <color_pars_fragment>', centroidColorPars(COLOR_PARS_GUARD_FRAGMENT))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
+        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
       )
       .replace(
         '#include <lights_fragment_end>',
@@ -136,18 +149,29 @@ if (uWeathering > 0.0) {
   float grain = vnoise(patUV * 1.7 + vec2(patSeed));
   float weatherPatch = smoothstep(0.28, 0.76, grain);
   float sheltered = clamp(vOcclusion, 0.0, 1.0);
+  float broadNoise = vnoise(patUV / uWeatheringVariationScale);
+  float broadStrength = mix(1.0, 0.24 + 1.52 * broadNoise, uWeatheringVariation);
   float cornerGrime = (1.0 - sheltered) * (0.22 + 0.34 * weatherPatch) + vWeather.y * 0.3;
-  float grime = cornerGrime;
+  float grime = cornerGrime * broadStrength;
   float streakNoise = vnoise(vec2(patUV.x * 3.1 + patSeed, patUV.y * 0.16));
-  float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) * (1.0 - smoothstep(0.0, 0.75, fract(patUV.y * 0.42)));
+  float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) * (1.0 - smoothstep(0.0, 0.75, fract(patUV.y * 0.42))) * broadStrength;
   float northShade = 0.65 + 0.35 * step(vFaceN.z, -0.5);
-  float moss = (1.0 - sheltered) * (0.4 + 0.6 * weatherPatch) * (0.25 + 0.75 * verticalFace) * northShade;
+  float baseMoss = (1.0 - sheltered) * (0.4 + 0.6 * weatherPatch) * (0.25 + 0.75 * verticalFace) * northShade;
+  vec2 warp = (vec2(
+    vnoise(patUV / uWeatheringVariationScale + vec2(17.2, 31.7)),
+    vnoise(patUV / uWeatheringVariationScale + vec2(47.1, 11.8))
+  ) - 0.5) * 1.4;
+  float mossNoise = vnoise(patUV / (uWeatheringVariationScale * 0.28) + warp);
+  float environment = clamp(vWeather.y * 0.65 + (1.0 - vWeather.x) * 0.35, 0.0, 1.0);
+  float mossCutoff = uMossThreshold - uMossBias * environment;
+  float mossPatches = smoothstep(mossCutoff, mossCutoff + 0.18, mossNoise) * environment * uWeatheringVariation;
+  float moss = baseMoss * broadStrength + mossPatches;
   vec3 tint = vec3(0.72, 0.72 + 0.08 * moss, 0.68 - 0.06 * streak);
   diffuseColor.rgb *= mix(vec3(1.0), tint, weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78));
 }`,
       );
   };
-  material.customProgramCacheKey = () => 'deadvox-chunk-weathering';
+  material.customProgramCacheKey = () => 'deadvox-chunk-weathering-variation';
   return material;
 };
 
@@ -166,6 +190,10 @@ export class ChunkMeshes {
   private readonly patterns = { value: 1 };
   private readonly occlusion = { value: 1 };
   private readonly weathering = { value: 0 };
+  private readonly weatheringVariation = { value: 0 };
+  private readonly variationScaleMetres = { value: 1 };
+  private readonly mossThreshold = { value: 0 };
+  private readonly mossBias = { value: 0 };
   private readonly frustum = new Frustum();
   private readonly viewProjection = new Matrix4();
   private changes = 0;
@@ -180,6 +208,10 @@ export class ChunkMeshes {
       patterns: this.patterns,
       occlusion: this.occlusion,
       weathering: this.weathering,
+      weatheringVariation: this.weatheringVariation,
+      variationScaleMetres: this.variationScaleMetres,
+      mossThreshold: this.mossThreshold,
+      mossBias: this.mossBias,
     });
     this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);
@@ -227,8 +259,12 @@ export class ChunkMeshes {
   }
 
   /** Takes effect next frame without recompiling or remeshing. */
-  setWeathering(strength: number): void {
-    this.weathering.value = Math.max(0, Math.min(1, strength));
+  setWeathering(settings: WeatheringDef | undefined): void {
+    this.weathering.value = settings?.strength ?? 0;
+    this.weatheringVariation.value = settings?.variationStrength ?? 0;
+    this.variationScaleMetres.value = settings?.variationScaleMetres ?? 1;
+    this.mossThreshold.value = settings?.mossThreshold ?? 0;
+    this.mossBias.value = settings?.mossBias ?? 0;
   }
 
   get count(): number {

@@ -7,11 +7,26 @@ it('restricts handedness overrides to debug URL configuration', () => {
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=unknown')).debugHandedness).toBeUndefined();
 });
 
-it('uses content weathering by default and clamps only a debug URL override', () => {
-  const contentValue = configFromUrl(new URLSearchParams()).weathering;
-  expect(configFromUrl(new URLSearchParams('weathering=0')).weathering).toBe(contentValue);
-  expect(configFromUrl(new URLSearchParams('debug=1&weathering=0')).weathering).toBe(0);
-  expect(configFromUrl(new URLSearchParams('debug=1&weathering=2')).weathering).toBe(1);
+it('uses content weathering by default and applies only debug URL overrides', () => {
+  const content = configFromUrl(new URLSearchParams()).weathering;
+  expect(content).toBeDefined();
+  expect(configFromUrl(new URLSearchParams('weathering=0')).weathering?.strength).toBe(content?.strength);
+  expect(configFromUrl(new URLSearchParams('debug=1&weathering=0')).weathering?.strength).toBe(0);
+  expect(configFromUrl(new URLSearchParams('debug=1&weathering=2')).weathering?.strength).toBe(1);
+});
+
+it('turns off only world-scale weathering variation through a debug URL override', () => {
+  const content = configFromUrl(new URLSearchParams()).weathering;
+  expect(content).toBeDefined();
+  expect(configFromUrl(new URLSearchParams('weatheringVariation=0')).weathering?.variationStrength).toBe(
+    content?.variationStrength,
+  );
+  const variationOff = configFromUrl(new URLSearchParams('debug=1&weatheringVariation=0')).weathering;
+  expect(variationOff?.strength).toBe(content?.strength);
+  expect(variationOff?.variationStrength).toBe(0);
+  expect(configFromUrl(new URLSearchParams('debug=1&weatheringVariation=2')).weathering?.variationStrength).toBe(
+    content?.variationStrength,
+  );
 });
 
 it('limits wobble-flat ratios to debug URLs and the unit interval', () => {

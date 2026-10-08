@@ -1,6 +1,7 @@
 import { parseTimeOfDay, SPAWN_TIME } from '../core/clock.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
+import type { WeatheringDef } from '../core/schema.ts';
 import { clampWeathering } from '../core/weather.ts';
 import { BUNDLED_CONTENT } from './bundledContent.ts';
 
@@ -36,8 +37,8 @@ export interface GameConfig {
   storeys: number;
   /** Fixed occupancy override (`?density=0..1`); null selects the frozen seeded field. */
   density: number | null;
-  /** Render-only weathering strength, from the base content or the debug URL override. */
-  weathering: number;
+  /** Render-only weathering settings from content, with optional debug URL comparisons applied. */
+  weathering: WeatheringDef | undefined;
   /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
    * ZombieMeshes' six boxes instead. */
   actors: ActorRenderer;
@@ -58,7 +59,7 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
     site: 'hamlet',
     storeys: 1,
     density: null,
-    weathering: baseWeatheringStrength,
+    weathering: baseWeathering,
     actors: 'detailed',
   };
 };
@@ -87,6 +88,36 @@ const debugWobbleFlatFromUrl = (params: URLSearchParams): number | undefined => 
   return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
 };
 
+const debugWeatheringVariationFromUrl = (params: URLSearchParams): number | undefined => {
+  if (params.get('debug') !== '1') {
+    return undefined;
+  }
+  const raw = params.get('weatheringVariation');
+  if (raw === null || raw.trim() === '') {
+    return undefined;
+  }
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
+};
+
+const weatheringFromUrl = (
+  params: URLSearchParams,
+  base: WeatheringDef | undefined,
+  debug: boolean,
+): WeatheringDef | undefined => {
+  if (!(base && debug)) {
+    return base;
+  }
+  const rawStrength = params.get('weathering');
+  const strength = rawStrength === null || rawStrength.trim() === '' ? Number.NaN : Number(rawStrength);
+  let settings = Number.isFinite(strength) ? { ...base, strength: clampWeathering(strength) } : base;
+  const variation = debugWeatheringVariationFromUrl(params);
+  if (variation !== undefined) {
+    settings = { ...settings, variationStrength: variation };
+  }
+  return settings;
+};
+
 const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
   if (params.get('debug') !== '1') {
     return undefined;
@@ -109,7 +140,7 @@ const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
 // URL parsing precedes world construction; only admitted files may contribute authored ids.
 const authoredIds = new Set(BUNDLED_CONTENT.registry.layouts.keys());
 // A rejected or absent optional tuning file leaves startup usable with weathering disabled.
-const baseWeatheringStrength = BUNDLED_CONTENT.registry.weathering.get('world')?.strength ?? 0;
+const baseWeathering = BUNDLED_CONTENT.registry.weathering.get('world');
 
 const MAX_STOREYS = 20;
 
@@ -141,8 +172,7 @@ export const siteFromUrl = (
 
 /**
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
- * With `?debug=1`, `?weathering=0..1` overrides the core-content value for comparison, and the debug tools also read and write the look parameters (`?tone=`, `?exposure=`,
- * `?srgb=`, `?patterns=`), documented in src/debug/lookUrl.ts.
+ * With `?debug=1`, `?weathering=0..1` overrides the content strength and `?weatheringVariation=0..1` compares world-scale variation. The debug tools also read and write look parameters (`?tone=`, `?exposure=`, `?srgb=`, `?patterns=`), documented in src/debug/lookUrl.ts.
  */
 export const configFromUrl = (params: URLSearchParams): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
@@ -155,11 +185,7 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
   const requestedTime = params.get('time');
   config.start = requestedTime === null ? (layoutTime ?? SPAWN_TIME) : (parseTimeOfDay(requestedTime) ?? SPAWN_TIME);
   config.debug = params.get('debug') === '1';
-  const weatheringText = params.get('weathering');
-  const weathering = weatheringText === null || weatheringText.trim() === '' ? Number.NaN : Number(weatheringText);
-  if (config.debug && Number.isFinite(weathering)) {
-    config.weathering = clampWeathering(weathering);
-  }
+  config.weathering = weatheringFromUrl(params, config.weathering, config.debug);
   const debugStart = debugStartFromUrl(params);
   if (debugStart) {
     config.debugStart = debugStart;

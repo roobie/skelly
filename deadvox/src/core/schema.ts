@@ -1201,6 +1201,14 @@ const WeatheringSchema = strictObject({
   id: Id,
   /** Shared weathering strength for the rendered world. */
   strength: Fraction,
+  /** World-space wavelength for broad weathering changes, in metres. */
+  variationScaleMetres: Positive,
+  /** Strength of world-scale weathering variation, independent of the shared look strength. */
+  variationStrength: Fraction,
+  /** Noise cutoff for organic moss and damp patches. */
+  mossThreshold: Fraction,
+  /** How much shelter and ground proximity lower the organic-patch cutoff. */
+  mossBias: Fraction,
 });
 
 const BodyTuningSchema = strictObject({
@@ -1308,6 +1316,7 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;

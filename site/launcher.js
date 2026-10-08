@@ -64,6 +64,7 @@ const updateDeadvoxVisibility = () => {
   showWhen(byId('deadvox-handedness-field'), mode === '' && deadvoxForm.elements.namedItem('debug').checked);
   showWhen(byId('deadvox-wobble-flat-field'), mode === '' && deadvoxForm.elements.namedItem('debug').checked);
   showWhen(byId('deadvox-weathering-field'), mode === '' && deadvoxForm.elements.namedItem('debug').checked);
+  showWhen(byId('deadvox-weathering-variation-field'), mode === '' && deadvoxForm.elements.namedItem('debug').checked);
   showWhen(byId('deadvox-actors-field'), mode === '');
   showWhen(byId('deadvox-world-bench'), mode === '1');
   showWhen(byId('deadvox-shambler-bench'), mode === 'shamblers');
@@ -131,6 +132,12 @@ const makeDeadvoxUrl = () => {
       setUnlessDefault(params, 'handedness', deadvoxForm.elements.namedItem('handedness').value, '');
       setUnlessDefault(params, 'wobbleFlat', deadvoxForm.elements.namedItem('wobbleFlat').value.trim(), '');
       setUnlessDefault(params, 'weathering', deadvoxForm.elements.namedItem('weathering').value.trim(), '');
+      setUnlessDefault(
+        params,
+        'weatheringVariation',
+        deadvoxForm.elements.namedItem('weatheringVariation').value.trim(),
+        '',
+      );
     }
   }
 

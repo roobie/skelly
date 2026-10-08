@@ -1186,7 +1186,7 @@ something in play, not only decorate it.
   weeks since people left. Food rotting changes what's still worth scavenging.
   There is no plant-growth or dust-accumulation simulation.
 
-BR, 2026-10-08 01:17: “should we look into adding a bit of textures on buildings to add to the mood? right now it feels too \"clean\" and \"clear\"”; at 01:19: “go ahead on the spikes”. On 2026-10-07 23:49, BR said dilapidated walls are a general direction, “but maybe not apply for all the stuff we have just at the moment”, and asked to record it as an art/feel direction. Buildings should read as “a real place that was left behind, not a set” (BR, 2026-10-03). `src/content/base/weathering.json`, `weathering`, owns the shared weathering strength; `src/render/chunks.ts`, `chunkMaterial`, layers procedural weathering over the surface patterns. Dilapidated geometry for existing structures remains deferred to #396; this layer does not change their shapes.
+Buildings need signs of age so occupied spaces read as a real place left behind rather than a set. A render-only weathering layer sits over existing surface patterns; broad world-space variation and clustered moss keep the weather from reading as a uniform film. The validated values in `src/content/base/weathering.json`, `weathering`, tune the effect without changing simulation or saves. `src/render/chunks.ts`, `chunkMaterial`, samples the effect from world position and mesher-provided shelter and ground proximity. Geometry changes for existing structures remain deferred to #396.
 
 **Rendering and performance.** There will be a lot of trees (BR), so foliage gets
 a performance plan from the start rather than as a fix later:

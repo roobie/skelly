@@ -37,6 +37,12 @@ const weatherAt = (mesh: ReturnType<typeof meshFor>, position: readonly number[]
 };
 
 describe('mesher weathering attributes', () => {
+  it('emits finite weathering data for every mesh vertex', () => {
+    const mesh = meshFor((x, y, z) => x === 10 && y === 10 && z === 10);
+    expect(mesh.weathering).toHaveLength((mesh.positions.length / 3) * 2);
+    expect(mesh.weathering.every(Number.isFinite)).toBe(true);
+  });
+
   it('reduces rain exposure below an overhang', () => {
     const wall = (x: number, y: number, z: number) => x === 10 && y === 10 && z === 10;
     const [exposed] = weatherAt(meshFor(wall), [11, 10, 10]);
