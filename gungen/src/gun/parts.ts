@@ -3819,7 +3819,6 @@ export const magazine: PartFamily = {
     if (params.profile === 'stanag-straight' && (params.length ?? 'M') !== 'M') {
       return STRAIGHT_STANAG_LENGTH_REFUSAL;
     }
-    return undefined;
   },
   build(params): PartDef {
     const profile = (params.profile ?? 'standard') as MagazineProfile;
