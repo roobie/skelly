@@ -43,9 +43,13 @@ describe('resolve', () => {
     const magazineBounds = r.defs.get('magazine')!.solids.map(localSolidBounds);
     const magazineBottomY = Math.min(...magazineBounds.map(([min]) => min[1]));
     expect(muzzle[0]).toBeGreaterThan(receiverOrigin[0]);
-    expect(stockRearmostX).toBeLessThan(stockPort.pos[0]);
+    expect(at(r, 'stock', [stockRearmostX, stockPort.pos[1], stockPort.pos[2]])[0]).toBeLessThan(
+      at(r, 'stock', stockPort.pos)[0],
+    );
     expect(lower[1]).toBeLessThan(receiverOrigin[1]);
-    expect(magazineBottomY).toBeLessThan(magazinePort.pos[1]);
+    expect(at(r, 'magazine', [magazinePort.pos[0], magazineBottomY, magazinePort.pos[2]])[1]).toBeLessThan(
+      at(r, 'magazine', magazinePort.pos)[1],
+    );
   });
 
   it('gives the conventional magazine a well with material thickness', () => {
