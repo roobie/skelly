@@ -643,6 +643,39 @@ const seededFillerCounts = (
 const gapToBounds = (x: number, z: number, rect: Bounds): number =>
   Math.hypot(Math.max(rect.x0 - x, 0, x - rect.x1), Math.max(rect.z0 - z, 0, z - rect.z1));
 
+const samplePolyline = (points: readonly Point[], spacing: number): Point[] =>
+  points.slice(0, -1).flatMap((from, segment) => {
+    const to = points[segment + 1]!;
+    const steps = Math.ceil(Math.hypot(to[0] - from[0], to[1] - from[1]) / spacing);
+    const firstStep = segment === 0 ? 0 : 1;
+    return Array.from({ length: steps - firstStep + 1 }, (_, index) => {
+      const t = (firstStep + index) / steps;
+      return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+    });
+  });
+
+const northGateRoad = (): SiteLayoutDef['tracks'][number] | undefined => {
+  const outer = layout.buildings.find(({ template }) => template === 'camp_gate');
+  if (!outer) {
+    return undefined;
+  }
+  const bounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
+  const centre: Point = [(bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2];
+  return layout.tracks.find(
+    (track) =>
+      track.surface === 'dirt' &&
+      track.width >= bounds.x1 - bounds.x0 &&
+      polylineDistance(centre, track.points) <= track.width / 2,
+  );
+};
+
+const farthestEndpoint = (points: readonly Point[], origin: Point): Point =>
+  points.reduce((farther, point) =>
+    Math.hypot(point[0] - origin[0], point[1] - origin[1]) > Math.hypot(farther[0] - origin[0], farther[1] - origin[1])
+      ? point
+      : farther,
+  );
+
 const sampleRoute = (
   site: AuthoredSite,
   fixture: SiteLayoutDef,
@@ -797,6 +830,38 @@ describe('authored fixed loot', () => {
         }
       }
     }
+  });
+
+  it('keeps the full-width camp road clear of structures', () => {
+    const road = northGateRoad();
+    if (road === undefined) {
+      throw new Error('the north gate needs a full-width dirt road');
+    }
+    const buildings = layout.buildings
+      .filter(({ template }) => !['camp_gate', 'camp_gate_damaged', 'camp_gate_return'].includes(template))
+      .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
+    const minimumClearance = Math.min(
+      ...samplePolyline(road.points, 0.25).flatMap(([x, z]) => buildings.map((bounds) => gapToBounds(x, z, bounds))),
+    );
+    expect(minimumClearance).toBeGreaterThanOrEqual(road.width / 2);
+  });
+
+  it('joins the full-width camp road to the narrower medical trail', () => {
+    const road = northGateRoad();
+    const outer = layout.buildings.find(({ template }) => template === 'camp_gate');
+    if (road === undefined || outer === undefined) {
+      throw new Error('the north gate needs its full-width road');
+    }
+    const bounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
+    const gateCentre: Point = [(bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2];
+    const medicalEnd = farthestEndpoint([road.points[0]!, road.points.at(-1)!], gateCentre);
+    const trail = layout.tracks.find(
+      (track) =>
+        track.width < road.width &&
+        track.surface === road.surface &&
+        polylineDistance(medicalEnd, track.points) <= (road.width + track.width) / 2,
+    );
+    expect(trail).toBeDefined();
   });
 
   it('delivers fixed loot without replacing seed filler and is chunk-order independent', () => {

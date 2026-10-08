@@ -76,7 +76,7 @@
       "container": {
         "pockets": [
           {
-            "grid": [12, 5],
+            "grid": [10, 5],
             "handlingSimSeconds": 1.2
           }
         ]

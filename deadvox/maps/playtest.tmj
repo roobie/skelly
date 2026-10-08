@@ -2234,12 +2234,12 @@
         },
         {
           "id": 94,
-          "name": "Full-width dirt road through the north double gate",
+          "name": "Full-width dirt road from the medical compound to the north double gate",
           "type": "track",
-          "x": 476,
-          "y": 480,
-          "width": 0,
-          "height": 30,
+          "x": 428.5,
+          "y": 274.5,
+          "width": 47.5,
+          "height": 235.5,
           "rotation": 0,
           "visible": true,
           "polyline": [
@@ -2248,8 +2248,28 @@
               "y": 0
             },
             {
-              "x": 0,
-              "y": 30
+              "x": 11.5,
+              "y": 25.5
+            },
+            {
+              "x": 26.5,
+              "y": 85.5
+            },
+            {
+              "x": 41.5,
+              "y": 105.5
+            },
+            {
+              "x": 41.5,
+              "y": 155.5
+            },
+            {
+              "x": 47.5,
+              "y": 205.5
+            },
+            {
+              "x": 47.5,
+              "y": 235.5
             }
           ],
           "properties": [

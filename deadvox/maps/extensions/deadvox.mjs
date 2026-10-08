@@ -22,7 +22,11 @@ function readJson(path) {
 }
 function writeJson(path, value) {
   const file = new TextFile(path, TextFile.WriteOnly);
-  file.write(`${JSON.stringify(value, null, 2)}\n`);
+  const json = JSON.stringify(value, null, 2).replace(
+    /\[\s*((?:"(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?)(?:\s*,\s*(?:"(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?))*)\s*\]/g,
+    (_match, values) => `[${values.replace(/,\s*/g, ', ')}]`,
+  );
+  file.write(`${json}\n`);
   file.commit(); // QSaveFile: close() without commit silently cancels the write.
 }
 function content() {
@@ -199,12 +203,15 @@ function addSpawn(object, info, context) {
   if (chance < 0 || chance > 1) {
     throw new Error(`${name}: chance must be 0..1`);
   }
-  const from = optionalString(object, 'window_from');
-  const to = optionalString(object, 'window_to');
-  if (to !== undefined && from === undefined) {
+  const fromGameTimeOfDay = optionalString(object, 'window_from');
+  const toGameTimeOfDay = optionalString(object, 'window_to');
+  if (toGameTimeOfDay !== undefined && fromGameTimeOfDay === undefined) {
     throw new Error(`${name}: window_to requires window_from`);
   }
-  const window = from === undefined ? undefined : { from, ...(to === undefined ? {} : { to }) };
+  const window =
+    fromGameTimeOfDay === undefined
+      ? undefined
+      : { fromGameTimeOfDay, ...(toGameTimeOfDay === undefined ? {} : { toGameTimeOfDay }) };
   layout.shamblers.push({ type, position, chance, ...(window ? { window } : {}) });
 }
 function areaPoints(object, info) {
@@ -294,14 +301,14 @@ export function exportLayout(map) {
     terrain: [],
     buildings: [],
     player: null,
-    shamblers: [],
     woodlands: [],
     tracks: [],
   };
-  const startTime = scalar(map, 'startTime', '');
-  if (startTime) {
-    layout.startTime = startTime;
+  const startTimeGameTimeOfDay = scalar(map, 'startTime', '');
+  if (startTimeGameTimeOfDay) {
+    layout.startTimeGameTimeOfDay = startTimeGameTimeOfDay;
   }
+  layout.shamblers = [];
   const context = { layout, pack: content(), footprints: [] };
   const writers = {
     building: addBuilding,
