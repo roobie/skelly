@@ -15,6 +15,7 @@ import {
   decodeInputReplay,
   encodeInputReplay,
   INPUT_REPLAY_MAX_BYTES,
+  INPUT_REPLAY_SCHEMA_VERSION,
   InputReplayRecorder,
   joinInputReplayWindows,
   type ReplayAction,
@@ -41,6 +42,7 @@ import { PHYSICS_RATE } from '../src/game/session.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
   addFixtureColumn,
+  advance,
   capture,
   contentLookup,
   createRuntime,
@@ -77,7 +79,7 @@ const replaySample = {
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
-    schemaVersion: 12,
+    schemaVersion: INPUT_REPLAY_SCHEMA_VERSION,
     endStateFingerprint: '0'.repeat(64),
     endSimTimestamp: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
@@ -291,7 +293,6 @@ const playSession = (
   inputs: ReplayInputData,
   options: {
     endSimTimestamp?: number;
-    wobbleNoiseScaleOverride?: number;
     initialColumns?: readonly ReplayGeneratedColumn[];
     initialColumnSite?: Site;
     onCreated?: (runtime: ReturnType<typeof createRuntime>) => void;
@@ -315,9 +316,6 @@ const playSession = (
           ? (x, z) => player.isReady(x, z)
           : () => true,
       sampleAtPlayerTick: () => replayInputSample(replay, player),
-      ...(options.wobbleNoiseScaleOverride === undefined
-        ? {}
-        : { wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride }),
     },
   );
   const generatedColumns = new Set(replay.columns.map(([cx, cz]) => `${cx},${cz}`));
@@ -1234,6 +1232,32 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
+  it('verifies a replay segment that starts with active aim drift', async () => {
+    const prelude = createRuntime();
+    advance(prelude, 12);
+    const start = capture(prelude);
+    expect(
+      [start.character.aim.wobbleNoise.yaw, start.character.aim.wobbleNoise.pitch].some(
+        (axis) => axis.raw !== 0 || axis.smooth !== 0,
+      ),
+    ).toBe(true);
+
+    const recorder = new InputReplayRecorder(start);
+    const source = recordActiveSession(start, recorder);
+    const sourceEnd = capture(source);
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const replay = playSession(start, decoded.inputs);
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+
+    const startWithoutSavedDrift = structuredClone(start) as SaveSnapshot;
+    Reflect.deleteProperty(startWithoutSavedDrift.character.aim, 'wobbleNoise');
+    const replayWithoutSavedDrift = playSession(startWithoutSavedDrift, decoded.inputs);
+    expect(await replayStateFingerprint(capture(replayWithoutSavedDrift))).not.toBe(
+      await replayStateFingerprint(sourceEnd),
+    );
+  });
+
   it('replays UID-based inventory assignments to the same fingerprint', async () => {
     const runtime = createRuntime();
     const backpack = runtime.inventory.hands.right!;
@@ -1459,13 +1483,12 @@ describe('input replay', () => {
   });
 
   it('keeps a toggle already in the rollover snapshot at the previous seam, so each segment verifies', async () => {
-    const start = capture(createRuntime(undefined, false, undefined, { wobbleNoiseScaleOverride: 0 }));
+    const start = capture(createRuntime());
     const ticksPerWindow = 2;
     let recorder = new InputReplayRecorder(start, ticksPerWindow);
     let queuedAtBoundary = false;
     let source!: ReturnType<typeof createRuntime>;
     source = createRuntime(start, false, undefined, {
-      wobbleNoiseScaleOverride: 0,
       sampleAtPlayerTick: (_tick, live, _time, compression) => {
         recorder.recordTick(live, compression);
         if (recorder.tickCount === ticksPerWindow && !queuedAtBoundary) {
@@ -1509,17 +1532,14 @@ describe('input replay', () => {
 
     const previousReplay = playSession(start, previous, {
       endSimTimestamp: nextStart.character.simulation.time,
-      wobbleNoiseScaleOverride: 0,
     });
     expect(await replayStateFingerprint(capture(previousReplay))).toBe(await replayStateFingerprint(nextStart));
     const joinedReplay = playSession(start, inputs, {
       endSimTimestamp: sourceEnd.character.simulation.time,
-      wobbleNoiseScaleOverride: 0,
     });
     expect(await replayStateFingerprint(capture(joinedReplay))).toBe(await replayStateFingerprint(sourceEnd));
     const segmentReplay = playSession(nextStart, current, {
       endSimTimestamp: sourceEnd.character.simulation.time,
-      wobbleNoiseScaleOverride: 0,
     });
     expect(await replayStateFingerprint(capture(segmentReplay))).toBe(await replayStateFingerprint(sourceEnd));
   });
@@ -1565,13 +1585,12 @@ describe('input replay', () => {
   });
 
   it('rolls a deferred throw into the next segment, which verifies alone and joined', async () => {
-    const start = capture(createRuntime(undefined, false, undefined, { wobbleNoiseScaleOverride: 0 }));
+    const start = capture(createRuntime());
     const ticksPerWindow = 1;
     let recorder = new InputReplayRecorder(start, ticksPerWindow);
     let pendingThrow: ReplayActionPayload | undefined;
     let source!: ReturnType<typeof createRuntime>;
     source = createRuntime(start, false, undefined, {
-      wobbleNoiseScaleOverride: 0,
       sampleAtPlayerTick: (_tick, live, _time, compression) => {
         recorder.recordTick(live, compression);
         if (pendingThrow) {
@@ -1620,7 +1639,6 @@ describe('input replay', () => {
     const joined = joinInputReplayWindows(previous, current);
     const previousReplay = playSession(start, previous, {
       endSimTimestamp: nextStart.character.simulation.time,
-      wobbleNoiseScaleOverride: 0,
     });
     expect(await replayStateFingerprint(capture(previousReplay))).toBe(await replayStateFingerprint(nextStart));
     const discardThrownItem = (runtime: ReturnType<typeof createRuntime>, itemUid: number): void => {
@@ -1631,12 +1649,10 @@ describe('input replay', () => {
     };
     const standaloneReplay = playSession(nextStart, current, {
       endSimTimestamp: sourceEnd.character.simulation.time,
-      wobbleNoiseScaleOverride: 0,
       throwItem: (runtime, itemUid) => discardThrownItem(runtime, itemUid),
     });
     const joinedReplay = playSession(start, joined, {
       endSimTimestamp: sourceEnd.character.simulation.time,
-      wobbleNoiseScaleOverride: 0,
       throwItem: (runtime, itemUid) => discardThrownItem(runtime, itemUid),
     });
     expect(await replayStateFingerprint(capture(standaloneReplay))).toBe(await replayStateFingerprint(sourceEnd));

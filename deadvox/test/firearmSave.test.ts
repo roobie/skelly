@@ -81,7 +81,6 @@ const session = (
     readonly readyHeld?: boolean | (() => boolean);
     readonly active?: boolean;
     readonly registry?: typeof registry;
-    readonly wobbleNoiseScaleOverride?: number;
   } = {},
 ) =>
   createSession({
@@ -117,7 +116,6 @@ const session = (
     notice: () => undefined,
     onRead: () => undefined,
     onFirearmEjection: (effect) => effects.push(effect),
-    wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
     ...(restore ? { restore } : {}),
   });
 
@@ -202,7 +200,7 @@ it('committed shots use the held firearm skill-zero recoil factors', () => {
 });
 
 it('a codec save restores the immediate aim frame, recoil and next pellet rays', async () => {
-  const original = session([], undefined, undefined, { wobbleNoiseScaleOverride: 0 });
+  const original = session([]);
   const prior: AimStep = {
     dt: 1 / 60,
     velocity: [1.2, 0, -0.4],
@@ -217,18 +215,35 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
   original.aim.advance(prior);
   original.aim.recordShot(129, 0.02);
   const snapshot = original.snapshot({ worldId: 'world', characterId: 'character' });
+  expect(
+    [snapshot.character.aim.wobbleNoise.yaw, snapshot.character.aim.wobbleNoise.pitch].some(
+      (axis) => axis.raw !== 0 || axis.smooth !== 0,
+    ),
+  ).toBe(true);
   const bytes = await encodeSave(snapshot, {
     generation: 1,
     version,
     worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
-  const resumed = session([], decoded.snapshot, undefined, { wobbleNoiseScaleOverride: 0 });
+  const resumed = session([], decoded.snapshot);
   expect(resumed.aim.frame).toEqual(original.aim.frame);
   const next: AimStep = { ...prior, yaw: -Math.PI + 0.03, pitch: 0.12 };
   const originalFrame = original.aim.advance(next);
   const resumedFrame = resumed.aim.advance(next);
   expect(resumedFrame).toEqual(originalFrame);
+
+  const withoutWobbleState = structuredClone(snapshot) as SaveSnapshot;
+  Reflect.deleteProperty(withoutWobbleState.character.aim, 'wobbleNoise');
+  await expect(
+    encodeSave(withoutWobbleState, {
+      generation: 1,
+      version,
+      worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    }),
+  ).rejects.toThrow();
+  const resumedWithoutWobbleState = session([], withoutWobbleState);
+  expect(resumedWithoutWobbleState.aim.advance(next)).not.toEqual(originalFrame);
   const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
   expect(
     pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: resumedFrame, seed: 83, key: 'resume' }),

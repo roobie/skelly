@@ -1,5 +1,5 @@
 import type { Vec3 } from './coords.ts';
-import { Rng } from './random.ts';
+import { Rng, type RngState } from './random.ts';
 
 /** Camera-local angles shared by firearm presentation and ballistic direction. */
 export interface AimFrame {
@@ -51,6 +51,16 @@ export interface AimWobbleNoiseAxisState {
   readonly smooth: number;
 }
 
+export interface AimWobbleNoiseState {
+  readonly yaw: AimWobbleNoiseAxisState;
+  readonly pitch: AimWobbleNoiseAxisState;
+  readonly rng: RngState;
+}
+
+export interface AimSnapshotState extends AimState {
+  readonly wobbleNoise: AimWobbleNoiseState;
+}
+
 const assertWobbleNoiseOptions = (tuning: AimWobbleNoiseTuning, strengthScale: number): void => {
   if (
     !(
@@ -66,6 +76,19 @@ const assertWobbleNoiseOptions = (tuning: AimWobbleNoiseTuning, strengthScale: n
   }
   if (!(Number.isFinite(strengthScale) && strengthScale >= 0)) {
     throw new Error('Invalid aim wobble noise strength scale');
+  }
+};
+
+export const assertAimWobbleNoiseState = (state: AimWobbleNoiseState): void => {
+  const validAxis = (axis: AimWobbleNoiseAxisState): boolean =>
+    Boolean(axis) && Number.isFinite(axis.raw) && Number.isFinite(axis.smooth);
+  if (
+    !(state && validAxis(state.yaw) && validAxis(state.pitch)) ||
+    !Array.isArray(state.rng) ||
+    state.rng.length !== 4 ||
+    state.rng.some((word) => !Number.isInteger(word) || word < -0x8000_0000 || word > 0x7fff_ffff)
+  ) {
+    throw new Error('Invalid aim wobble noise state');
   }
 };
 
@@ -232,6 +255,7 @@ interface AimControllerOptions {
   readonly stridePhase?: number;
   readonly wobbleNoise: AimWobbleNoiseTuning;
   readonly wobbleNoiseStrengthScale?: number;
+  readonly wobbleNoiseState?: AimWobbleNoiseState;
 }
 
 export class AimController {
@@ -243,8 +267,8 @@ export class AimController {
   private readonly wobbleNoise: AimWobbleNoiseTuning;
   private readonly wobbleNoiseStrengthScale: number;
   private readonly wobbleNoiseRng: Rng;
-  private wobbleNoiseYaw: AimWobbleNoiseAxisState = { raw: 0, smooth: 0 };
-  private wobbleNoisePitch: AimWobbleNoiseAxisState = { raw: 0, smooth: 0 };
+  private wobbleNoiseYaw: AimWobbleNoiseAxisState;
+  private wobbleNoisePitch: AimWobbleNoiseAxisState;
   private stridePhase = 0;
   private viewPitchShift = 0;
 
@@ -257,6 +281,7 @@ export class AimController {
     stridePhase = 0,
     wobbleNoise,
     wobbleNoiseStrengthScale = 1,
+    wobbleNoiseState,
   }: AimControllerOptions) {
     assertAimState(state);
     if (!(Number.isFinite(variance) && variance > 0)) {
@@ -281,10 +306,25 @@ export class AimController {
     this.wobbleShape = { ...wobbleShape };
     this.wobbleNoise = { ...wobbleNoise };
     this.wobbleNoiseStrengthScale = wobbleNoiseStrengthScale;
-    this.wobbleNoiseRng = Rng.stream(wobbleSeed, 'aim-wobble-ou');
+    const initialWobbleRng = Rng.stream(wobbleSeed, 'aim-wobble-ou');
+    const savedWobbleState =
+      wobbleNoiseState ??
+      ({ yaw: { raw: 0, smooth: 0 }, pitch: { raw: 0, smooth: 0 }, rng: initialWobbleRng.state() } satisfies AimWobbleNoiseState);
+    assertAimWobbleNoiseState(savedWobbleState);
+    this.wobbleNoiseRng = new Rng(savedWobbleState.rng);
+    this.wobbleNoiseYaw = { ...savedWobbleState.yaw };
+    this.wobbleNoisePitch = { ...savedWobbleState.pitch };
     this.stridePhase = stridePhase;
-    this.state = structuredClone(state);
-    this.state.frame = Object.freeze({ ...this.state.frame });
+    this.state = {
+      lookYaw: state.lookYaw,
+      lookPitch: state.lookPitch,
+      recoilYaw: state.recoilYaw,
+      recoilPitch: state.recoilPitch,
+      lastYaw: state.lastYaw,
+      lastPitch: state.lastPitch,
+      hasLookSample: state.hasLookSample,
+      frame: Object.freeze({ ...state.frame }),
+    };
     this.variance = variance;
     this.wobbleLimitRadians = wobbleLimitRadians;
   }
@@ -333,8 +373,15 @@ export class AimController {
     this.viewPitchShift = result.viewPitchShift;
   }
 
-  snapshotState(): Readonly<AimState> {
-    return Object.freeze({ ...this.state });
+  snapshotState(): Readonly<AimSnapshotState> {
+    return Object.freeze({
+      ...this.state,
+      wobbleNoise: Object.freeze({
+        yaw: Object.freeze({ ...this.wobbleNoiseYaw }),
+        pitch: Object.freeze({ ...this.wobbleNoisePitch }),
+        rng: Object.freeze([...this.wobbleNoiseRng.state()]) as unknown as RngState,
+      }),
+    });
   }
 
   advance({

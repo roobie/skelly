@@ -187,7 +187,6 @@ describe('hamlet save/load continuation', () => {
         yaw: 0,
         active: true,
         intent: () => intent,
-        wobbleNoiseScaleOverride: 0,
       });
     const load = async (snapshot: ReturnType<typeof capture>) => {
       const bytes = await encodeFixture(snapshot);
