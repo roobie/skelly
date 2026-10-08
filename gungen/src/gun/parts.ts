@@ -325,10 +325,10 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     topSlopeDegrees: 0,
   },
 };
-// Its photo-estimated sweep brings the outer depth to the listing's 65 mm target within the model grid.
+// BR requested five more degrees of sweep by eye than the photo estimate.
 const STANAG30_BODY_PROFILE: CurvedMagazineProfile = {
   ...CURVED_MAGAZINE_PROFILES.stanag30,
-  arc: { ...CURVED_MAGAZINE_PROFILES.stanag30.arc, sweepDegrees: 2 },
+  arc: { ...CURVED_MAGAZINE_PROFILES.stanag30.arc, sweepDegrees: 7 },
 };
 const AK_MAGAZINE_CURVE_VARIANTS = ['ak74', 'akm'] as const;
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;

@@ -356,7 +356,8 @@ Scale anchor: keep the gun-domain unit calibration; the Brownells STANAG-20 prod
   listing and are snapped to the nearest grid step. This is a visible reference,
   not a claim that the 30 is a USGI aluminium magazine. The shared upper and
   feed lips use the same snapped width as both bodies. The AR frame and magwell
-  are unchanged. The curve and floorplate details remain photo estimates. The HK
+  are unchanged. At BR's visual request, the estimated STANAG-30 arc sweep
+  increased by five degrees by eye; the floorplate detail remains a photo estimate. The HK
   listing's approximate empty weight is for steel, so Deadvox retains a gameplay
   mass estimate unless an aluminium STANAG-30 mass is sourced; see
   `deadvox/src/content/base/items-ammunition.json`, `magazine_stanag_30`. See

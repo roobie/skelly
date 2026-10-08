@@ -4,7 +4,7 @@ import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import type { GunPortDef } from '../src/gun/portData.ts';
-import { loadFixture } from './helpers.ts';
+import { loadFixture, variant } from './helpers.ts';
 
 describe('AR-pattern parts', () => {
   it('places a rear-top charging handle behind the flat-top rail', () => {
@@ -94,6 +94,13 @@ describe('AR-pattern parts', () => {
     }
     expect((magazine.ports.find(({ id }) => id === 'top') as GunPortDef | undefined)?.seat).toBe('well');
     expect(validate(loadFixture('archetype-ar'), gunDomain).ok).toBe(true);
+  });
+
+  it('seats the curved STANAG 30 in the AR magwell', () => {
+    const assembly = variant('archetype-ar', (draft) => {
+      draft.parts.magazine!.params = { length: 'L', profile: 'stanag-curved' };
+    });
+    expect(validate(assembly, gunDomain).ok).toBe(true);
   });
 
   it('places the fixed AR front sight at the barrel gas-port station', () => {
