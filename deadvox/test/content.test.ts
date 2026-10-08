@@ -956,7 +956,7 @@ describe('content references', () => {
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
-  it('requires an opening-noise door to select a sound event with hearing noise', () => {
+  it('requires door and search action noise to select sound events with hearing noise', () => {
     const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
       ({ id }) => id === 'door_open',
     )!;
@@ -975,11 +975,34 @@ describe('content references', () => {
         ],
       },
     };
-    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [quietDoorOpen] } }, quietDoor]);
+    const quietPile = {
+      source: 'quiet-pile.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_quiet_pile',
+            name: 'Fixture pile',
+            size: [1, 1, 1],
+            color: '#333333',
+            searchNoise: { sound: 'door_open' },
+          },
+        ],
+      },
+    };
+    const { issues } = buildRegistry([
+      { source: 'door-sound.json', data: { sounds: [quietDoorOpen] } },
+      quietDoor,
+      quietPile,
+    ]);
     expect(issues).toContainEqual({
       source: 'quiet-door.json',
       path: 'furniture[0].door.openNoise.sound',
       message: 'opening sound must emit hearing noise',
+    });
+    expect(issues).toContainEqual({
+      source: 'quiet-pile.json',
+      path: 'furniture[0].searchNoise.sound',
+      message: 'search sound must emit hearing noise',
     });
   });
 

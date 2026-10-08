@@ -641,6 +641,77 @@ describe('authored fixed loot', () => {
     const filler = result.registry.loot.get('workshop_filler')!;
     expect(filler.entries.some(({ item }) => item === 'improvised_suppressor')).toBe(false);
     expect(filler.entries.some(({ item }) => item === 'taped_flashlight_mount')).toBe(false);
+    expect(filler.entries.some(({ item }) => item === 'steel_pipe')).toBe(false);
+
+    const workshopTemplates = ['workshop_hall', 'workshop_office', 'workshop_parts_store'];
+    const workshopFixed = overrides
+      .filter(({ building }) => workshopTemplates.includes(building.template))
+      .flatMap(({ override }) => override.items);
+    const workshopCounts = new Map<string, number>();
+    for (const fixed of workshopFixed) {
+      workshopCounts.set(fixed.item, (workshopCounts.get(fixed.item) ?? 0) + (fixed.count ?? 1));
+    }
+    const coversIngredients = (recipe: NonNullable<ReturnType<typeof result.registry.recipes.get>>) =>
+      recipe.components.every((alternatives) =>
+        alternatives.some((ingredient) => (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count),
+      );
+    const mountRecipe = [...result.registry.recipes.values()].find(
+      ({ result: recipeResult }) => recipeResult.item === 'taped_flashlight_mount',
+    );
+    const suppressorRecipe = [...result.registry.recipes.values()].find(
+      ({ result: recipeResult }) => recipeResult.item === 'improvised_suppressor',
+    );
+    expect(mountRecipe).toBeDefined();
+    expect(suppressorRecipe).toBeDefined();
+    expect(coversIngredients(mountRecipe!)).toBe(true);
+    const hallTemplate = compileTemplate(result.registry, result.registry.templates.get('workshop_hall')!);
+    const bench = hallTemplate.pieces.find(({ furniture }) => furniture === 'workbench');
+    const benchWorkstation = bench && result.registry.furniture.get(bench.furniture)?.workstation;
+    expect(benchWorkstation).toBeDefined();
+    expect(mountRecipe!.workstation).toBe(benchWorkstation!.id);
+    expect(suppressorRecipe!.workstation).toBe(benchWorkstation!.id);
+    const hasCraftQualities = (recipe: NonNullable<typeof mountRecipe>) =>
+      Object.entries(recipe.qualities).every(([quality, level]) =>
+        (benchWorkstation!.qualities[quality] ?? 0) >= level ||
+        workshopFixed.some(
+          (fixed) => (result.registry.items.get(fixed.item)?.tool?.qualities[quality] ?? 0) >= level,
+        ),
+      );
+    expect(hasCraftQualities(mountRecipe!)).toBe(true);
+    expect(hasCraftQualities(suppressorRecipe!)).toBe(true);
+    const missingSuppressorGroups = suppressorRecipe!.components.filter(
+      (alternatives) =>
+        !alternatives.some((ingredient) => (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count),
+    );
+    expect(missingSuppressorGroups).toHaveLength(1);
+    const missingInputs = missingSuppressorGroups[0]!;
+    for (const { item } of missingInputs) {
+      expect(workshopCounts.get(item) ?? 0).toBe(0);
+    }
+    const scrapPile = compileTemplate(result.registry, result.registry.templates.get('workshop_yard')!).pieces.find(
+      ({ furniture }) => furniture === 'workshop_scrap_pile',
+    );
+    expect(scrapPile?.loot).toBeDefined();
+    const scrapPileOverride = overrides.find(
+      ({ building, override }) =>
+        building.template === 'workshop_yard' && override.at.join(',') === scrapPile!.pos.join(','),
+    );
+    expect(
+      missingInputs.some(({ item, count }) => {
+        const yieldCount = scrapPileOverride?.override.items
+          .filter((fixed) => fixed.item === item)
+          .reduce((sum, fixed) => sum + (fixed.count ?? 1), 0);
+        return (yieldCount ?? 0) >= count;
+      }),
+    ).toBe(true);
+    const scrapSearchNoise = result.registry.furniture.get('workshop_scrap_pile')?.searchNoise;
+    expect(scrapSearchNoise).toBeDefined();
+    expect(result.registry.sounds.get(scrapSearchNoise!.sound)?.noise.enabled).toBe(true);
+    const workshopRadio = overrides
+      .filter(({ building }) => building.template === 'workshop_hall')
+      .flatMap(({ override }) => override.items)
+      .find(({ item }) => item === 'portable_radio');
+    expect(workshopRadio?.condition).toBe(0);
   });
 
   it('keeps every fixed-loot container reachable from outside at standing height', () => {

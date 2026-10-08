@@ -48,6 +48,21 @@ const makeSession = (play: SessionAudio['play'], content: Registry = registry) =
   });
 
 describe('simulation sound admission', () => {
+  it('searching the scrap pile emits its authored hearing noise', () => {
+    const session = makeSession(() => undefined);
+    const pile = session.inventory.furnish(
+      { type: 'workshop_scrap_pile', pos: [6, 8, 10], size: [4, 1, 3], facing: 'n' },
+      [],
+    )!;
+    const emissions = session.sim.events.reader();
+
+    session.search(pile);
+
+    const noises = emissions.read().filter((emission) => emission.kind === 'noise');
+    expect(noises).toHaveLength(1);
+    expect(noises[0]).toMatchObject({ event: 'player_strain' });
+  });
+
   it('applies the player noise radius scale to hearing and the emitted noise event', () => {
     const session = makeSession(() => undefined);
     const emissions = session.sim.events.reader();

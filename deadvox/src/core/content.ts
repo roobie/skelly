@@ -528,6 +528,16 @@ const checkDoorOpenNoise = (registry: Registry, furniture: FurnitureDef, report:
   }
 };
 
+const checkSearchNoise = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const searchNoise = furniture.searchNoise;
+  const sound = searchNoise && registry.sounds.get(searchNoise.sound);
+  if (searchNoise && !sound) {
+    report('furniture', furniture.id, '.searchNoise.sound', `no sound event "${searchNoise.sound}"`);
+  } else if (searchNoise && sound && !sound.noise.enabled) {
+    report('furniture', furniture.id, '.searchNoise.sound', 'search sound must emit hearing noise');
+  }
+};
+
 const militaryOnly = (id: string) => `"${id}" is military loot only`;
 
 const checkMilitaryTables = (registry: Registry, military: ReadonlySet<string>, report: Report) => {
@@ -576,6 +586,7 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
 const checkFurniture = (registry: Registry, report: Report) => {
   for (const furniture of registry.furniture.values()) {
     checkDoorOpenNoise(registry, furniture, report);
+    checkSearchNoise(registry, furniture, report);
     if (furniture.door?.prying && !registry.skills.has(furniture.door.prying.skill)) {
       report('furniture', furniture.id, '.door.prying.skill', `no skill "${furniture.door.prying.skill}"`);
     }

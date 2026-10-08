@@ -384,10 +384,25 @@
           "rotation": 0,
           "storeys": 1,
           "fixedLoot": [
-            { "at": [17, 1, 9], "items": [{ "item": "shotshell_box", "count": 1 }, { "item": "bandage", "count": 1 }] },
+            {
+              "at": [17, 1, 9],
+              "items": [
+                { "item": "shotshell_box", "count": 1 },
+                { "item": "bandage", "count": 1 },
+                { "item": "scrap_metal", "count": 1 },
+                { "item": "electrical_tape", "count": 1 },
+                { "item": "fastener_pack", "count": 1 },
+                { "item": "rubber_strip", "count": 1 },
+                { "item": "screwdriver", "count": 1 },
+                { "item": "wrench", "count": 1 }
+              ]
+            },
             {
               "at": [17, 1, 15],
-              "items": [{ "item": "portable_radio", "count": 1 }, { "item": "jerry_can", "count": 1 }]
+              "items": [
+                { "item": "portable_radio", "count": 1, "condition": 0 },
+                { "item": "jerry_can", "count": 1 }
+              ]
             }
           ]
         },
@@ -399,7 +414,13 @@
           "fixedLoot": [{ "at": [4, 1, 4], "items": [{ "item": "workshop_notes", "count": 1 }] }]
         },
         { "template": "workshop_parts_store", "position": [422, 21, 202], "rotation": 0, "storeys": 1 },
-        { "template": "workshop_yard", "position": [410, 21, 189], "rotation": 0, "storeys": 1 }
+        {
+          "template": "workshop_yard",
+          "position": [410, 21, 189],
+          "rotation": 0,
+          "storeys": 1,
+          "fixedLoot": [{ "at": [7, 1, 7], "items": [{ "item": "steel_pipe", "count": 1 }] }]
+        }
       ],
       "player": {
         "position": [92, 21.5, 85],
