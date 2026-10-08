@@ -4,7 +4,7 @@ import type { Resolved } from '../core/resolve.ts';
 import type { PartDef } from '../core/schema.ts';
 import { attachmentMassKg } from './attachmentMass.ts';
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
-import { getOptic, opticRailContactSolids, OPTIC_TYPE_IDS } from './optics.ts';
+import { getOptic, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
 
 type AttachmentKind = 'optic' | 'iron-sight' | 'suppressor' | 'flashlight-mount' | 'foregrip';
 

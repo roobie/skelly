@@ -27,7 +27,7 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { eulerXyzDegrees, toFileAxes } from '../src/gun/exportFrame.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
-import { opticRailContactSolids, OPTIC_CATALOG } from '../src/gun/optics.ts';
+import { OPTIC_CATALOG, opticRailContactSolids } from '../src/gun/optics.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { readGlb } from './glbReader.ts';
@@ -825,8 +825,7 @@ describe('attachment parts and export metadata', () => {
     expect(
       spans.some(
         ({ span, bodyExtent }) =>
-          bodyExtent &&
-          (bodyExtent.min < span.minOffset - 0.5 - 1e-9 || bodyExtent.max > span.maxOffset + 0.5 + 1e-9),
+          bodyExtent && (bodyExtent.min < span.minOffset - 0.5 - 1e-9 || bodyExtent.max > span.maxOffset + 0.5 + 1e-9),
       ),
     ).toBe(true);
     for (const { id, span, extent } of spans) {

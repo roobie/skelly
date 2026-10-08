@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { ModelDef, Registry } from '../src/core/content.ts';
+import type { ItemDef, ModelDef, Registry } from '../src/core/content.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -57,6 +57,26 @@ const OVERLAP_DENIED = /footprints overlap/;
 
 const fitAttachmentInFixture = (inventory: Inventory, firearm: Item, slot: string, attachment: Item): void => {
   inventory.fitSlot(firearm, slot, attachment);
+};
+
+const baseOpticFitsFirearm = (opticDefinition: ItemDef, firearmDefinition: ItemDef): boolean => {
+  const inventory = new Inventory(baseRegistry);
+  const firearm = inventory.create(firearmDefinition.id);
+  const optic = inventory.create(opticDefinition.id);
+  const firearmModel = baseRegistry.models.get(firearmDefinition.model!);
+  for (const slot of firearmModel?.attachmentSlots ?? []) {
+    if (firearm.slots?.[slot.id]) {
+      inventory.fitSlot(firearm, slot.id, undefined);
+    }
+  }
+  const pile = { kind: 'pile' as const, pos: [0, 0, 0] as [number, number, number] };
+  if (!(inventory.add(firearm, pile) && inventory.add(optic, pile))) {
+    throw new Error('Base firearm and optic could not be placed for fitting');
+  }
+  const handling = new FirearmAttachmentHandling(inventory, new HandlingQueue(inventory), () => [0, 0, 0]);
+  return (firearmModel?.attachmentSlots ?? []).some(
+    (slot) => slot.mount === 'rail-top' && handling.fitReason(firearm, slot.id, optic) === undefined,
+  );
 };
 
 describe('certified firearm fitting', () => {
@@ -206,27 +226,11 @@ describe('certified firearm fitting', () => {
       throw new Error('Base content needs firearms and optics');
     }
 
-    for (const opticDefinition of optics) {
-      const fitsSomeFirearm = firearms.some((firearmDefinition) => {
-        const inventory = new Inventory(baseRegistry);
-        const firearm = inventory.create(firearmDefinition.id);
-        const optic = inventory.create(opticDefinition.id);
-        const firearmModel = baseRegistry.models.get(firearmDefinition.model!);
-        for (const slot of firearmModel?.attachmentSlots ?? []) {
-          if (firearm.slots?.[slot.id]) {
-            inventory.fitSlot(firearm, slot.id, undefined);
-          }
-        }
-        const pile = { kind: 'pile' as const, pos: [0, 0, 0] as [number, number, number] };
-        if (!(inventory.add(firearm, pile) && inventory.add(optic, pile))) {
-          throw new Error('Base firearm and optic could not be placed for fitting');
-        }
-        const handling = new FirearmAttachmentHandling(inventory, new HandlingQueue(inventory), () => [0, 0, 0]);
-        return (firearmModel?.attachmentSlots ?? []).some(
-          (slot) => slot.mount === 'rail-top' && handling.fitReason(firearm, slot.id, optic) === undefined,
-        );
-      });
-      expect(fitsSomeFirearm, opticDefinition.id).toBe(true);
+    for (const optic of optics) {
+      expect(
+        firearms.some((firearm) => baseOpticFitsFirearm(optic, firearm)),
+        optic.id,
+      ).toBe(true);
     }
   });
 
