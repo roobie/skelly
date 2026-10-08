@@ -220,7 +220,11 @@ const placeFenceRow = (world: World): void => {
   }
 };
 
-const runObstacleCase = (kind: ObstacleKind, typeId: 'amalgam' | 'shambler'): ObstacleResult => {
+const runObstacleCase = (
+  kind: ObstacleKind,
+  typeId: 'amalgam' | 'shambler',
+  canJumpObstacles?: boolean,
+): ObstacleResult => {
   const world = new World();
   const entities = new BlockEntities(registry);
   const centerX = kind === 'fence' ? 0 : 50;
@@ -247,7 +251,9 @@ const runObstacleCase = (kind: ObstacleKind, typeId: 'amalgam' | 'shambler'): Ob
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   });
-  const id = simulation.add(registry.zombies.get(typeId)!, [centerX, 1, startZ], [0, 0, 1]);
+  const type = registry.zombies.get(typeId)!;
+  const configuredType = canJumpObstacles === undefined ? type : { ...type, canJumpObstacles };
+  const id = simulation.add(configuredType, [centerX, 1, startZ], [0, 0, 1]);
   let crossed = false;
   let leftGround = false;
   let maxZ = Number.NEGATIVE_INFINITY;
@@ -529,6 +535,9 @@ describe('amalgam body and combat seam', () => {
       expect(amalgam.leftGround).toBe(false);
       expect(runObstacleCase(kind, 'shambler').crossed).toBe(true);
     }
+    const groundedShambler = runObstacleCase('fence', 'shambler', false);
+    expect(groundedShambler.crossed).toBe(false);
+    expect(groundedShambler.leftGround).toBe(false);
   });
 
   it('routes a firearm projectile hit into the manifest-backed amalgam region', () => {
