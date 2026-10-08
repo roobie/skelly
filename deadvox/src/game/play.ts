@@ -433,6 +433,7 @@ export const startPlay = (
     scale,
     seed: config.seed,
     wobbleFlatOverride: config.debugWobbleFlat,
+    wobbleNoiseScaleOverride: config.debugWobbleNoiseScale,
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
@@ -2617,9 +2618,12 @@ export const startPlay = (
     }
     const previousRecorder = inputRecorder;
     previousInputRecorder = previousRecorder;
-    inputRecorder = rolloverInputReplayRecorder(previousRecorder, captureSnapshot(), streamer.generatedColumns(), {
-      startState: captureReplayStartState(),
-    });
+    inputRecorder = rolloverInputReplayRecorder(
+      previousRecorder,
+      captureSnapshot(),
+      streamer.generatedColumns(),
+      captureReplayStartState(),
+    );
   };
 
   const handleInputRecorderColumnOverflow = (): void => {

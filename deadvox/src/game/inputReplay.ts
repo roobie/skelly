@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 14;
+export const INPUT_REPLAY_SCHEMA_VERSION = 16;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -368,10 +368,17 @@ export class InputReplayRecorder {
     startSnapshot: Readonly<SaveSnapshot>,
     ticksPerWindow = INPUT_REPLAY_TICKS_PER_WINDOW,
     generatedColumns: readonly ReplayGeneratedColumn[] = [],
-    options: { readonly columnChangeEventLimit?: number; readonly startState?: ReplayStartState } = {},
+    limitOrOptions: number | { readonly columnChangeEventLimit?: number; readonly startState?: ReplayStartState } = {},
   ) {
     this.ticksPerWindow = ticksPerWindow;
-    const columnChangeEventLimit = options.columnChangeEventLimit ?? INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW;
+    const columnChangeEventLimit =
+      typeof limitOrOptions === 'number'
+        ? limitOrOptions
+        : (limitOrOptions.columnChangeEventLimit ?? INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW);
+    const startState =
+      typeof limitOrOptions === 'number'
+        ? DEFAULT_REPLAY_START_STATE
+        : (limitOrOptions.startState ?? DEFAULT_REPLAY_START_STATE);
     if (
       !Number.isSafeInteger(columnChangeEventLimit) ||
       columnChangeEventLimit < 1 ||
@@ -406,7 +413,7 @@ export class InputReplayRecorder {
       })
       .sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
     this.startSnapshot = structuredClone(startSnapshot);
-    this.startState = structuredClone(options.startState ?? DEFAULT_REPLAY_START_STATE);
+    this.startState = structuredClone(startState);
   }
 
   get tickCount(): number {
@@ -606,11 +613,11 @@ export const rolloverInputReplayRecorder = (
   current: InputReplayRecorder,
   startSnapshot: Readonly<SaveSnapshot>,
   generatedColumns: readonly ReplayGeneratedColumn[] = current.generatedColumns,
-  options: { readonly startState?: ReplayStartState | undefined } = {},
+  startState: ReplayStartState = DEFAULT_REPLAY_START_STATE,
 ): InputReplayRecorder => {
   const next = new InputReplayRecorder(startSnapshot, current.ticksPerWindow, generatedColumns, {
     columnChangeEventLimit: current.columnChangeEventLimit,
-    ...(options.startState === undefined ? {} : { startState: options.startState }),
+    startState,
   });
   current.resolvePendingActionsAtRollover(next);
   current.transferPendingColumnChangesTo(next);
