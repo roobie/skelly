@@ -353,8 +353,7 @@ const furnitureBodyTemplate = (
 
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
-  tab: InventoryTab,
-  splitRatio: number,
+  { tab, splitRatio }: { tab: InventoryTab; splitRatio: number },
   selectTab: (tab: InventoryTab) => void,
   {
     queue,
@@ -390,7 +389,9 @@ const inventoryTemplate = (
       `--inv-you-fr: ${splitRatio}fr`,
       `--inv-around-fr: ${1 - splitRatio}fr`,
       vm.containerMaxWidthCells === undefined ? '' : `--inv-around-width-cap: ${vm.containerMaxWidthCells * CELL}px`,
-    ].filter(Boolean).join('; ')}
+    ]
+      .filter(Boolean)
+      .join('; ')}
     ?hidden=${tab !== 'items'}
   >
     <section class="inv-pane" data-pane="you">
@@ -836,7 +837,7 @@ export class InventoryScreen {
     this.order = [];
     const vm = this.viewModel();
     render(
-      inventoryTemplate(vm, this.tabs.active, this.splitRatio, (tab) => this.selectTab(tab), {
+      inventoryTemplate(vm, { tab: this.tabs.active, splitRatio: this.splitRatio }, (tab) => this.selectTab(tab), {
         queue: (item, target, operation) => {
           const refusal = this.hooks.actionRefusal?.();
           if (refusal) {
