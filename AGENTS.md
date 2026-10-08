@@ -11,7 +11,8 @@ the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), whos
 
 ## Project stage: pre-pre-alpha, no backwards compatibility
 
-We owe no backwards compatibility (BR, 2026-10-02). Change formats, exports and
+At pre-pre-alpha, preserving old formats and behavior can obstruct simpler
+changes, so we owe no backwards compatibility. Change formats, exports and
 contracts freely when that makes the code simpler; don't add legacy paths, opt-in
 flags, compat shims or migrations to keep old output or old data working, and
 don't require byte-identical exports. What must still work: gungen exports a model
@@ -20,10 +21,9 @@ mattering at v1.0 beta.
 
 ## No host-specific information in tracked files
 
-Tracked files describe the project, not the machine the team happens to work on (BR,
-2026-10-03 and 2026-10-04). Anyone who clones the repo, and CI, must be able to use every
-tracked file as it is. This covers code, tests, docs, review reports, content and
-credits. Never commit:
+Tracked files describe the project, not the machine the team happens to work on. Every
+tracked file must work for anyone who clones the repo and for CI. This covers code, tests,
+docs, review reports, content and credits. Never commit:
 
 - **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`;
 - **addresses:** host names, LAN IPs and LAN URLs (`http://<ip>:<port>/…`), and the ports
@@ -60,6 +60,9 @@ a comment or a PR:
   "newly". When your PR completes an item, resolve every doc line that names it.
 - The final reason goes in a tracked doc or ADR before the merge, not only in the PR,
   an issue or a commit message.
+- Tracked docs state rules and reasons in plain words, without source attributions or
+  timestamps. Keep the verbatim source quote and stamp in the commit message that adds
+  or changes the rule, preserving provenance without turning the doc into a history log.
 - Write a comment only for a special why.
 - Every tracked doc starts with front matter whose `read_if` lists the reasons to read
   it. Add or update it whenever you add or change a doc.
@@ -94,10 +97,9 @@ including the push that publishes a new branch, or that push fails.
 
 ### Git: this project does not use `git-flow`
 
-Don't use the `git-flow` skill or its driver here (BR, 2026-10-02). Its single
-repo-wide pending ticket let one paused or failed operation block every agent,
-and each topic's fresh worktree needed full installs before its first push.
-Revisit when bjorn/git-kit#7, #8 and #9 are fixed.
+Don't use the `git-flow` skill or its driver here. Its single repo-wide pending
+ticket can block every agent, and fresh worktrees need full installs before their
+first push. Revisit when bjorn/git-kit#7, #8 and #9 are fixed.
 
 Use plain git, following AGENTS.md:
 
@@ -109,7 +111,7 @@ Use plain git, following AGENTS.md:
 - **After BR merges the PR:** remove the worktree (`git worktree remove`) and
   delete the local branch; the lead does this.
 
-Keep this copy aligned with `.claude/CLAUDE.md`. BR (2026-10-07 10:59): "duplicate the rule to AGENTS.md".
+Keep this copy aligned with `.claude/CLAUDE.md` so either entry point gives the same git guidance.
 
 ### Main checkout
 
@@ -120,12 +122,10 @@ Keep this copy aligned with `.claude/CLAUDE.md`. BR (2026-10-07 10:59): "duplica
 - Covers adding or upgrading any project dependency or tool: npm packages in
   `package.json` or lockfiles, Python packages, project-work CLIs, and GitHub
   Actions versions in workflows.
-- Use only versions released more than one month before they are added. Check the
-  registry or release date, and name the version and date in the PR or report.
-- If no version qualifies, stop and discuss with BR before installing. BR
-  (2026-10-05, 22:02): “yes, but find versions that are not the bleeding edge
-  (ie. use only versions older than 1 month, otherwise halt and discuss)”.
-- BR (2026-10-05, 22:03): “yes, that's a general rule”.
+- Use only versions released more than one month before they are added, avoiding
+  bleeding-edge releases. Check the registry or release date, and name the version
+  and date in the PR or report.
+- If no version qualifies, stop and discuss with BR before installing.
 
 ## Installing check dependencies
 
@@ -144,9 +144,9 @@ Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/de
 
 ## Tests
 
-Pre-pre-alpha, tests exist so we can change the game quickly and safely, not to freeze it
-(BR, 2026-10-04). More tests is not better QA; a test earns its place by catching a bug
-no other test catches. So:
+Pre-pre-alpha, tests exist so we can change the game quickly and safely, not to freeze it.
+More tests is not better QA; a test earns its place by catching a bug no other test catches.
+So:
 
 - Test behaviour and contracts that are costly to rediscover or that BR has ruled on:
   simulation rules, inventory and handling, save round-trip, and gungen exports that
@@ -156,17 +156,16 @@ no other test catches. So:
   fingerprints, tuning numbers and UI wording. Assert the property instead (validate
   reports 0 issues; every tree stands on the surface), or leave it un-asserted and record
   it in `docs/deferred-assertions.md` with how to check it and when to pin it.
-- **Test hygiene is must-fix** (BR, 2026-10-04). A test that does any of the following is
-  fixed or removed in the same round, never deferred as a nit:
+- **Test hygiene is must-fix.** A test that does any of the following is fixed or removed
+  in the same round, never deferred as a nit:
   - pins drifting data;
   - writes state past its owner, or sets state a player can't;
   - waits on wall-clock time for simulated work;
   - can pass vacuously;
   - near-duplicates another test.
-- **No flaky tests** (BR, 2026-10-03): "we shall not have them. If we can't make them
-  un-flaky, we must disable them from CI and get to the bottom of _why_ they are flakes".
-  A test that fails and then passes on a rerun is a flake. Fix it, or take it out of CI
-  with an issue for its root cause; never retry until green or raise its timeout.
+- **No flaky tests.** A test that fails and then passes on a rerun is a flake. Fix it; if
+  it cannot be made un-flaky, disable it from CI and investigate the cause. Track the issue;
+  never retry until green or raise its timeout.
 - Mutation proof is for tricky invariants only (ordering, reach, persistence, concurrency):
   show one mutant its test catches. Plain mappings and data-driven rows don't need one.
 - Browser stages stay few: a handful of smoke flows plus the stages that must check
@@ -198,8 +197,8 @@ lists them all, read from the docs when you run it; add terms to filter
 
 ## Before pushing: tiered checks
 
-Size each local run to the change (BR, 2026-10-04). CI runs everything, in
-parallel and unbilled, on every push to a PR, so don't repeat it locally.
+Size each local run to the change. CI runs everything, in parallel and unbilled, on every
+push to a PR, so don't repeat it locally.
 
 - **While coding:** only the test files that cover what you touched, plus typecheck.
 - **Before each push** (minutes, not tens of minutes):
