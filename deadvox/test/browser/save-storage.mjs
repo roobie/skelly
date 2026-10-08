@@ -886,7 +886,6 @@ try {
       assert.equal(result.warnings.length, 0);
       assert.equal(restored?.pageshowPersisted, true, 'Back restores the original world from bfcache');
       assert.equal(restored?.controllerEntered, true, 'Back restores the running world');
-      assert.equal(restored?.pageIsLeaving, false, 'pageshow clears the leaving state');
       assert.equal(
         restored?.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
         false,
@@ -898,19 +897,13 @@ try {
         document.dispatchEvent(new Event('visibilitychange'));
       });
       await page.waitForFunction(
-        async (previousGeneration) => {
-          const { storage, namespace, controller } = globalThis.deadvoxSaveTest;
-          const record = await storage.load(namespace);
+        async () => {
+          const { controller } = globalThis.deadvoxSaveTest;
           const locks = await navigator.locks.query();
           const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
-          return (
-            record?.generation > previousGeneration &&
-            !controller.writing &&
-            controller.queued === undefined &&
-            !activeSaveLock
-          );
+          return !controller.writing && controller.queued === undefined && !activeSaveLock;
         },
-        restored.generation,
+        undefined,
         { timeout: STAGE_TIMEOUT_MS },
       );
       const postBackSave = await page.evaluate(async () => ({
@@ -918,9 +911,11 @@ try {
         statusText: globalThis.deadvoxSaveTest.controller.statusText,
         generation: (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
       }));
+      process.stdout.write(`${browserName}: post-Back capture ${JSON.stringify(postBackSave)}\n`);
       await page.evaluate(() =>
         Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }),
       );
+      assert.equal(restored.pageIsLeaving, false, 'pageshow clears the leaving state');
       assert.equal(postBackSave.pageIsLeaving, false, 'the restored page remains eligible for lifecycle saves');
       assert.match(postBackSave.statusText, /^Saved generation \d+ · visibilitychange$/);
       assert.equal(postBackSave.generation > restored.generation, true);
