@@ -2,6 +2,7 @@
 read_if:
   - you change how the character screen groups inventory, skills and crafting
   - you change inventory pane sizing or container-grid scrolling
+  - you change floor-pile drop targeting or feedback
   - you diagnose an inventory item whose DOM bounds disagree with pointer hit testing
 ---
 
@@ -17,12 +18,18 @@ notably on a small zoomed screen, has room for each view. Character inventory
 and nearby piles or containers stay together on Items so drag and drop remains
 within one view. The divider between You and Around you starts at the midpoint,
 giving each column half the available width; dragging lets the player favor
-either view without collapsing the other. The Around you pane fills its column,
-and its nearby floor and container sections wrap as the divider moves. Container
-sections retain their content-owned width cap. Floor positions are saved state,
-so the display re-packs them independently in `src/ui/inventoryScreen.ts`,
-`InventoryScreen.gridViewModel`, leaving `src/core/inventory.ts`,
-`Inventory.snapshotState`, unchanged. Each pane scrolls independently.
+either view without collapsing the other. The Around you pane fills its column. Its floor and container sections wrap when
+they do not fit, so the vicinity uses whatever width the player gives it. A
+container section has room for its capped pocket grid and scroll gutter; when it
+cannot fit beside another section, it wraps rather than squeezing the grid.
+Justified wider grids scroll within the content-owned cap.
+
+Floor piles are displayed packed to the column width in
+`src/ui/inventoryScreen.ts`, `InventoryScreen.gridViewModel`. Their stored
+positions are save state, and display packing never writes them. A drop onto a
+floor pile merges into the item under the pointer when compatible; otherwise
+ordinary pile placement uses an available stack or the first free stored spot.
+Each pane scrolls independently.
 Tab selection and the split are runtime UI state, not save or replay state.
 G, V and B open the character screen on Items, Skills or Crafting, or switch to that tab
 while it is open; Tab reopens the last tab. The keys sit beside WASD so movement can

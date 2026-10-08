@@ -1,6 +1,6 @@
 // The inventory screen (DESIGN.md, "Inventory screen"): what you hold and wear, with
 // each pocket drawn as its grid, and the piles and furniture within reach. Items move
-// by drag and drop, with the cells where they'd go previewed, or by keys. Every move
+// by drag and drop with a destination preview, or by keys. Every move
 // goes through the handling queue, so it takes real seconds while the world keeps
 // running. Furniture shows its contents once it has been searched.
 
@@ -24,6 +24,28 @@ import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 /** Pixels per inventory cell. */
 const CELL = 32;
 const EMPTY_DROP_GRID: GridSize = { w: 2, h: 2 };
+
+export const targetForPackedFloorDrop = (
+  inventory: Pick<Inventory, 'locate' | 'plan'>,
+  dragged: Item,
+  pos: Vec3,
+  underPointer?: Item,
+): Target => {
+  if (underPointer && underPointer.uid !== dragged.uid) {
+    const location = inventory.locate(underPointer);
+    if (location?.kind === 'pile' && location.pile.pos.every((coordinate, index) => coordinate === pos[index])) {
+      const at = spotOf(location);
+      if (at) {
+        const target: Target = { kind: 'pile', pos, at };
+        const plan = inventory.plan(dragged, target);
+        if (plan.ok && plan.merge === underPointer) {
+          return target;
+        }
+      }
+    }
+  }
+  return { kind: 'pile', pos };
+};
 
 /** Wear slots always shown, so there's somewhere to drop clothing. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist'];
@@ -1320,10 +1342,10 @@ export class InventoryScreen {
     const drag = this.drag!;
     this.clearPreview();
     drag.hover = undefined;
-    const zone = document
-      .elementsFromPoint(px, py)
-      .map((n) => (n as HTMLElement).closest<HTMLElement>('[data-target]'))
-      .find((n) => n !== null && this.root.contains(n));
+    const hits = document.elementsFromPoint(px, py).map((node) => node as HTMLElement);
+    const zone = hits
+      .map((node) => node.closest<HTMLElement>('[data-target]'))
+      .find((node) => node !== null && this.root.contains(node));
     if (!zone) {
       return;
     }
@@ -1334,14 +1356,30 @@ export class InventoryScreen {
       y: Math.round((top - rect.top) / CELL),
       rotated: drag.rotated,
     };
-    const target = this.targetFrom(spec, spot);
+    const packedFloor = spec.startsWith('pile:') && zone.classList.contains('inv-grid-packed');
+    let target: Target | undefined;
+    if (packedFloor) {
+      const pos = spec.slice('pile:'.length).split(',').map(Number) as Vec3;
+      const underPointerNode = hits
+        .map((node) => node.closest<HTMLElement>('.inv-item[data-uid]'))
+        .find((node) => node !== null && zone.contains(node));
+      const underPointer = underPointerNode ? this.byUid.get(Number(underPointerNode.dataset.uid)) : undefined;
+      target = targetForPackedFloorDrop(this.inv, drag.item, pos, underPointer);
+    } else {
+      target = this.targetFrom(spec, spot);
+    }
     if (!target) {
       return;
     }
     const { ok, reason } = this.dropCheck(drag.item, spec, target);
     drag.hover = { target, ok, reason };
     zone.classList.add(ok ? 'drop-ok' : 'drop-no');
-    if (spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:')) {
+    if (packedFloor) {
+      zone.style.setProperty('--preview-left', '0px');
+      zone.style.setProperty('--preview-top', '0px');
+      zone.style.setProperty('--preview-width', `${zone.clientWidth}px`);
+      zone.style.setProperty('--preview-height', `${zone.clientHeight}px`);
+    } else if (spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:')) {
       const [w, h] = footprint(defOf(this.inv.registry, drag.item.type), drag.rotated);
       zone.style.setProperty('--preview-left', `${spot.x * CELL}px`);
       zone.style.setProperty('--preview-top', `${spot.y * CELL}px`);

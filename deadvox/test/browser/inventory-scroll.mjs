@@ -29,6 +29,13 @@ const content = [
           color: '#494b4e',
           container: { pockets: [{ name: 'Rack', grid: [5, 6], handlingSimSeconds: 0.1 }] },
         },
+        {
+          id: 'scroll_small_container',
+          name: '_',
+          size: [1, 1, 1],
+          color: '#494b4e',
+          container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 0.1 }] },
+        },
       ],
       items: [
         ...['legs', 'torso', 'back'].map((slot) => ({
@@ -145,6 +152,9 @@ globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions
     if (!inventory.add(inventory.create('scroll_token'), { kind: 'furniture', entity: rack, pocket: 0, at: { x: width - 1, y: 0, rotated: false } })) {
       throw Error('last-column item fixture failed');
     }
+    const small = inventory.entities.add({ type: 'scroll_small_container', pos: [1, 0, 0], size: [1, 1, 1], facing: 'n' });
+    if (!small) throw Error('small container fixture failed');
+    small.searched = true;
     screen.update();
   },
   get gameplayWheels() { return gameplayWheels; },
@@ -374,6 +384,7 @@ try {
     return {
       pane: { left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom },
       sectionWidth: rack.getBoundingClientRect().width,
+      gridWidth: grid.getBoundingClientRect().width,
       clientWidth: scroll.clientWidth,
       scrollWidth: scroll.scrollWidth,
       scrollLeft: scroll.scrollLeft,
@@ -392,8 +403,8 @@ try {
     `cap-wide vicinity stays in the 640×400 viewport: ${JSON.stringify(capWideRack)}`,
   );
   assert.ok(
-    capWideRack.sectionWidth <= capWideRack.cap * capWideRack.cell + 1,
-    `container section retains the content cap: ${JSON.stringify(capWideRack)}`,
+    capWideRack.gridWidth <= capWideRack.cap * capWideRack.cell + 1,
+    `cap-wide rack grid stays within the content cap: ${JSON.stringify(capWideRack)}`,
   );
   assert.ok(
     capWideRack.scrollWidth <= capWideRack.clientWidth,
@@ -406,7 +417,36 @@ try {
   );
   assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
+  await page.setViewportSize({ width: 720, height: 400 });
   await page.evaluate(() => globalThis.scrollFixture.populatePiles());
+  const capContainerLayout = async () =>
+    page.evaluate(() => {
+      const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
+      const section = rack?.closest('[data-around-section="container"]');
+      const scroll = rack?.querySelector('.inv-grid-scroll');
+      const grid = scroll?.querySelector('.inv-grid');
+      const around = document.querySelector('#inventory [data-pane="around"]');
+      if (!(rack && section && scroll && grid && around)) throw new Error('cap-width container layout is missing');
+      const sectionTop = section.getBoundingClientRect().top;
+      const rowSections = [...around.querySelectorAll('[data-around-section]')].filter(
+        (candidate) => Math.abs(candidate.getBoundingClientRect().top - sectionTop) < 1,
+      ).length;
+      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+      return {
+        rowSections,
+        aroundWidth: around.getBoundingClientRect().width,
+        sections: [...around.querySelectorAll('[data-around-section]')].map((candidate) => {
+          const box = candidate.getBoundingClientRect();
+          return { label: candidate.querySelector('.inv-pile-label')?.textContent, x: box.x, y: box.y, width: box.width };
+        }),
+        gridWidth: grid.getBoundingClientRect().width,
+        cap: globalThis.scrollFixture.containerMaxWidthCells,
+        cell,
+        scrollWidth: scroll.scrollWidth,
+        clientWidth: scroll.clientWidth,
+      };
+    });
+  const balancedCapContainer = await capContainerLayout();
   const aroundLayout = async () =>
     page.evaluate(() => {
       const around = document.querySelector('#inventory [data-pane="around"]');
@@ -429,6 +469,12 @@ try {
   const balancedLayout = await aroundLayout();
   await dragSplitter(0);
   const wideLayout = await aroundLayout();
+  const wideCapContainer = await capContainerLayout();
+  for (const [split, layout] of [['balanced', balancedCapContainer], ['wide', wideCapContainer]]) {
+    assert.ok(layout.rowSections > 1, `${split} cap-width container shares a row: ${JSON.stringify(layout)}`);
+    assert.ok(layout.gridWidth <= layout.cap * layout.cell + 1, `${split} container grid stays within the cap: ${JSON.stringify(layout)}`);
+    assert.ok(layout.scrollWidth <= layout.clientWidth, `${split} shared container fits without horizontal scrolling: ${JSON.stringify(layout)}`);
+  }
   assert.ok(
     wideLayout.firstRow > balancedLayout.firstRow,
     `wider Around you fits another section: ${JSON.stringify({ balancedLayout, wideLayout })}`,

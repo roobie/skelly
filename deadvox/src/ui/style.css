@@ -541,8 +541,8 @@ body.unconscious::after {
   padding-left: 12px;
 }
 #inventory .inv-around-sections {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  display: flex;
+  flex-wrap: wrap;
   align-content: start;
   gap: 10px;
   min-width: 0;
@@ -553,8 +553,12 @@ body.unconscious::after {
   gap: 4px;
   min-width: 0;
 }
+#inventory .inv-around-section[data-around-section="floor"] {
+  flex: 1 1 132px;
+}
 #inventory .inv-around-section[data-around-section="container"] {
-  max-width: min(100%, var(--inv-around-container-width-cap, 100%));
+  flex: 0 0 auto;
+  max-width: min(100%, calc(var(--inv-around-container-width-cap, 100%) + 1.25em));
 }
 #inventory .inv-pocket {
   min-width: 0;
