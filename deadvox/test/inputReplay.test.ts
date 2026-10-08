@@ -1324,6 +1324,80 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
+  it('replays an action queued after a full window tick in the next segment', async () => {
+    const start = capture(createRuntime());
+    const ticksPerWindow = 2;
+    let recorder = new InputReplayRecorder(start, ticksPerWindow);
+    let previous: ReplayInputData | undefined;
+    let queuedAtBoundary = false;
+    let source!: ReturnType<typeof createRuntime>;
+    source = createRuntime(start, false, undefined, {
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recorder.recordTick(live, compression);
+        if (recorder.tickCount === ticksPerWindow && !queuedAtBoundary) {
+          dispatchWalkToggle(source, 'down', recorder);
+          queuedAtBoundary = true;
+        }
+        return live;
+      },
+    });
+    source.sim.paused = false;
+    source.view.intent.forward = 0;
+    while (!recorder.full) {
+      source.session.frame(1 / 30);
+    }
+    previous = recorder.copyInputs();
+    const nextRecorder = new InputReplayRecorder(capture(source), ticksPerWindow);
+    recorder.transferPendingActionsTo(nextRecorder);
+    recorder = nextRecorder;
+    while (recorder.tickCount < 4) {
+      source.session.frame(1 / 30);
+    }
+
+    const inputs = joinInputReplayWindows(previous, recorder.copyInputs());
+    expect(inputs.actions).toContainEqual({
+      tick: ticksPerWindow,
+      action: 'movement.walk-toggle',
+      phase: 'down',
+      context: 'play',
+    });
+    const sourceEnd = capture(source);
+    const replay = playSession(start, inputs, { endSimTimestamp: sourceEnd.character.simulation.time });
+    expect(capture(replay)).toEqual(sourceEnd);
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('carries a deferred throw payload to tick zero of the next replay segment', () => {
+    const runtime = createRuntime();
+    const side = runtime.inventory.character.handedness;
+    const heldItem = runtime.inventory.hands[side];
+    if (!heldItem) {
+      throw new Error('Replay throw fixture needs a held item');
+    }
+    const start = capture(runtime);
+    const previous = new InputReplayRecorder(start, 1);
+    previous.recordTick(replaySample);
+    previous.queueAction('item.throw', 'down', 'play', {
+      kind: 'item.throw',
+      itemUid: heldItem.uid,
+      hand: side,
+      distance: 2.5,
+    });
+    const next = new InputReplayRecorder(start, 1);
+    previous.transferPendingActionsTo(next);
+    next.recordTick(replaySample);
+
+    expect(next.copyInputs().actions).toEqual([
+      {
+        tick: 0,
+        action: 'item.throw',
+        phase: 'down',
+        context: 'play',
+        payload: { kind: 'item.throw', itemUid: heldItem.uid, hand: side, distance: 2.5 },
+      },
+    ]);
+  });
+
   it('preserves end state when a multi-tick frame crosses the recording window seam', async () => {
     const start = capture(createRuntime());
     const ticksPerWindow = 121;

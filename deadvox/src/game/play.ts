@@ -2554,7 +2554,9 @@ export const startPlay = (
     }
     if (!replayPlayer && inputRecorder?.full) {
       previousInputRecorder = inputRecorder;
-      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
+      const nextRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
+      inputRecorder.transferPendingActionsTo(nextRecorder);
+      inputRecorder = nextRecorder;
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     if (spectatorCameraEnabled && spectatorCameraBody && input.locked && !input.menuPointer) {

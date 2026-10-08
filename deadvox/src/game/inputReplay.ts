@@ -426,6 +426,19 @@ export class InputReplayRecorder {
     });
   }
 
+  transferPendingActionsTo(next: InputReplayRecorder): void {
+    for (const pending of this.pending) {
+      const payload = pending.payload === undefined ? undefined : (JSON.parse(pending.payload) as ReplayActionPayload);
+      next.queueAction(pending.action, pending.phase, pending.context, payload);
+    }
+    const transferredPayloadBytes = this.pending.reduce(
+      (total, { payload }) => total + (payload === undefined ? 0 : new TextEncoder().encode(payload).byteLength),
+      0,
+    );
+    this.actionPayloadBytes -= transferredPayloadBytes;
+    this.pending = [];
+  }
+
   queueColumnChange(cx: number, cz: number, generated: boolean): void {
     this.pendingColumnChanges.push([cx, cz, generated]);
   }
