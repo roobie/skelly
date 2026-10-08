@@ -5,6 +5,7 @@ import { type DesignLoadInputs, loadDesign, loadDesignValue } from '../src/core/
 import { generateValid } from '../src/core/generate.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import type { Template } from '../src/core/template.ts';
+import { validate } from '../src/core/validate.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -56,6 +57,54 @@ const expectFatal = (result: ReturnType<typeof load>) => {
   }
   return result;
 };
+
+describe('loadDesign: feasibility evaluation', () => {
+  it('evaluates an explicit-calibre design once per load', () => {
+    const template = TEMPLATES.find(({ name }) => name === 'ak');
+    if (!template?.calibre) {
+      throw new Error('the AK template must specify its generated calibre');
+    }
+    const generatedAk = generateValid(template, gunDomain, 0);
+    if (!generatedAk) {
+      throw new Error('the AK template must generate a valid assembly');
+    }
+    const { receiver } = generatedAk.assembly.parts;
+    if (!receiver) {
+      throw new Error('the generated AK must have a receiver');
+    }
+    const { family: familyName } = receiver;
+    const receiverFamily = gunDomain.families[familyName];
+    if (!receiverFamily) {
+      throw new Error('the generated AK must have a registered receiver family');
+    }
+
+    let receiverBuilds = 0;
+    const domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        [familyName]: {
+          ...receiverFamily,
+          build: (params: Parameters<typeof receiverFamily.build>[0]) => {
+            receiverBuilds += 1;
+            return receiverFamily.build(params);
+          },
+        },
+      },
+    };
+    const design = makeDesign({ template: 'ak', assembly: generatedAk.assembly, calibre: template.calibre });
+
+    receiverBuilds = 0;
+    validate(generatedAk.assembly, domain);
+    const directValidationBuilds = receiverBuilds;
+    expect(directValidationBuilds).toBeGreaterThan(0);
+
+    receiverBuilds = 0;
+    const result = load(design, { domain, template });
+    expect(result.ok).toBe(true);
+    expect(receiverBuilds).toBe(directValidationBuilds);
+  });
+});
 
 describe('loadDesign: parse and round trip', () => {
   it('loads a clean design with no issues and keeps declaredStatus', () => {

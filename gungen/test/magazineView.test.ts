@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Group, InstancedMesh, Matrix4, Texture, Vector3 } from 'three';
+import { Group, InstancedMesh, Matrix4, Mesh, Texture, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { validate } from '../src/core/validate.ts';
@@ -27,12 +27,20 @@ describe('detached magazine viewer', () => {
     const detached = buildDetachedMagazine(report, layers.solids, cartridge, ammo);
     expect(detached).toBeDefined();
     expect(detached!.capacity).toBeGreaterThan(0);
-    expect(detached!.group.children).toHaveLength(2);
+    const shell = detached!.group.children.find(
+      (child) =>
+        child instanceof Group &&
+        child.children.some((inner) => inner instanceof Mesh && !(inner instanceof InstancedMesh)),
+    );
     const rounds = detached!.group.children.find(
       (child) => child instanceof Group && child.children.some((inner) => inner instanceof InstancedMesh),
-    ) as Group;
-    const instances = rounds.children.filter((child) => child instanceof InstancedMesh) as InstancedMesh[];
-    expect(instances).toHaveLength(3);
+    ) as Group | undefined;
+    expect(shell).toBeDefined();
+    expect(rounds).toBeDefined();
+    expect(rounds).not.toBe(shell);
+    const instances = rounds!.children.filter((child) => child instanceof InstancedMesh) as InstancedMesh[];
+    const ammoParts = ammo.loose.children.filter((child) => child instanceof Mesh);
+    expect(instances).toHaveLength(ammoParts.length);
     expect(instances.every((mesh) => mesh.count === detached!.capacity)).toBe(true);
 
     const caseGeometry = instances[0]!.geometry;

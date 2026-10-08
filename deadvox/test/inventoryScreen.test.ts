@@ -119,6 +119,7 @@ function setup() {
         craftContinue: () => undefined,
         craftStop: () => undefined,
         cancelItemThrow: () => undefined,
+        throwItem: () => undefined,
       }),
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),

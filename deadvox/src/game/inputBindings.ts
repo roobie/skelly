@@ -84,7 +84,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('movement.sprint', 'Sprint', moving, ['ShiftLeft', 'ShiftRight'], 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving, ['KeyZ']),
   row('player.crouch-toggle', 'Toggle crouch', ['play', 'build'], ['KeyC']),
-  row('player.throw', 'Throw the held item', ['play'], ['KeyT']),
+  row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play'], ['KeyT']),
   row('movement.jump', 'Jump', ['play', 'build'], ['Space'], 'held-state'),
   row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state'),
   row('noclip.descend', 'Descend while flying', ['noclip'], ['KeyC'], 'held-state'),
@@ -92,7 +92,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('world.interact', 'Tap to interact or pocket a ground item; hold to wield it', world, ['KeyF']),
   row(
     'firearm.reload',
-    'Hold to load; double-press to rack; tap, then hold to remove the magazine; tap does nothing',
+    'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap does nothing',
     world,
     ['KeyR'],
     'hold',
@@ -205,7 +205,11 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   ),
 ];
 export const POINTER_ACTIONS = [
-  { id: 'hand.use-dominant', description: 'Use dominant hand', label: 'Left click' },
+  {
+    id: 'hand.use-dominant',
+    description: 'Use dominant hand; hold to fire automatically when ready',
+    label: 'Left click',
+  },
   { id: 'hand.off-instant', description: 'Instant off-hand use', label: 'Mouse 5' },
   { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde', label: 'Right mouse' },
   { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready', label: 'Mouse 3' },

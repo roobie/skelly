@@ -80,9 +80,9 @@ describe('standalone cartridge GLBs', () => {
       min: Math.min(...accessors.map((accessor) => accessor.min![axis]!)),
       max: Math.max(...accessors.map((accessor) => accessor.max![axis]!)),
     }));
-    expect(bounds[0]!.max - bounds[0]!.min).toBeCloseTo(0.056, 4);
-    expect(bounds[1]!.max - bounds[1]!.min).toBeCloseTo(0.011_35, 4);
-    expect(bounds[2]!.max - bounds[2]!.min).toBeCloseTo(0.011_35, 4);
+    expect(bounds[0]!.max - bounds[0]!.min).toBeCloseTo(cartridge.overallLength.typical.value! * 0.001, 4);
+    expect(bounds[1]!.max - bounds[1]!.min).toBeCloseTo(cartridge.case.rim.diameter.value! * 0.001, 4);
+    expect(bounds[2]!.max - bounds[2]!.min).toBeCloseTo(cartridge.case.rim.diameter.value! * 0.001, 4);
 
     const validations = await Promise.all(
       Object.entries({ round, case: firedCase }).map(async ([name, model]) => ({

@@ -259,7 +259,7 @@
       "category": "ammo",
       "weight": 840,
       "size": [2, 2],
-      "description": "Sealed cardboard box of twenty 00-buck shells. Wield it and activate it to unpack; any loose shells that do not fit go into a pile at your feet. Size, 40 g cardboard and 40 g per shell are gameplay mass estimates.",
+      "description": "Sealed cardboard box of twenty 00-buck shells. Size, 40 g cardboard and 40 g per shell are gameplay mass estimates.",
       "unpack": { "item": "shell_12_gauge_00_buck", "count": 20 }
     },
     {

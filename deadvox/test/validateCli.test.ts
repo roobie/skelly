@@ -82,24 +82,26 @@ describe('validate CLI', () => {
 
   it('rejects compatible content and asset fixtures with every per-file diagnostic', () => {
     const root = makeMinimalPack('content', 'packs', 'assets');
-    const originalCwd = process.cwd();
     let stdout = '';
     try {
-      process.chdir(root);
-      const run = validate(
-        'test/fixtures/content/recipe-missing-item.json',
-        'test/fixtures/content/recipe-too-many-combinations.json',
-        'test/fixtures/content/broken-reference.json',
-        'test/fixtures/content/missing-sound-file.json',
-        'test/fixtures/content/zombie-with-model.json',
-        'test/fixtures/content/missing-model-file.json',
-        'test/fixtures/packs/stray/assets/manifest.json',
-        'test/fixtures/assets/manifest.json',
+      const output: string[] = [];
+      const status = runValidation(
+        [
+          'test/fixtures/content/recipe-missing-item.json',
+          'test/fixtures/content/recipe-too-many-combinations.json',
+          'test/fixtures/content/broken-reference.json',
+          'test/fixtures/content/missing-sound-file.json',
+          'test/fixtures/content/zombie-with-model.json',
+          'test/fixtures/content/missing-model-file.json',
+          'test/fixtures/packs/stray/assets/manifest.json',
+          'test/fixtures/assets/manifest.json',
+        ],
+        (line) => output.push(line),
+        root,
       );
-      expect(run.status).toBe(1);
-      ({ stdout } = run);
+      expect(status).toBe(1);
+      stdout = output.join('\n');
     } finally {
-      process.chdir(originalCwd);
       rmSync(root, { recursive: true, force: true });
     }
     for (const diagnostic of [
@@ -114,6 +116,7 @@ describe('validate CLI', () => {
     ]) {
       expect(stdout).toContain(diagnostic);
     }
+    expect(stdout).toContain('7 file(s):');
   });
 
   it('accepts the same unfound component when a grounded recipe makes it', () => {
@@ -132,8 +135,16 @@ describe('validate CLI', () => {
   });
 
   it('fails when an item references a missing model', () => {
-    const run = validate('test/fixtures/content/missing-model.json');
-    expect(run.status).toBe(1);
-    expect(run.stdout).toContain('FAIL  test/fixtures/content/missing-model.json items[0].model: no model "lamp"');
+    const root = makeMinimalPack('content');
+    const output: string[] = [];
+    try {
+      const status = runValidation(['test/fixtures/content/missing-model.json'], (line) => output.push(line), root);
+      expect(status).toBe(1);
+      expect(output.join('\n')).toContain(
+        'FAIL  test/fixtures/content/missing-model.json items[0].model: no model "lamp"',
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

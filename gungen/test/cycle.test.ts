@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { localSolidBounds } from '../src/core/geometry.ts';
+import { compose, scale, sub, translation } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import {
   ACTION_CYCLE_PROFILES,
@@ -27,13 +29,13 @@ const motionFor = (name: string) => {
 
 describe('firearm cycle timelines', () => {
   it('uses the action-specific cyclic rates and matches the estimated rearward speed', () => {
-    for (const [name, action, expectedRpm] of [
-      ['archetype-ak', 'ak', 600],
-      ['archetype-ar', 'ar', 800],
+    for (const [name, action] of [
+      ['archetype-ak', 'ak'],
+      ['archetype-ar', 'ar'],
     ] as const) {
       const { cycle } = motionFor(name);
-      expect(cycle.rpm).toBe(expectedRpm);
-      expect(cycle.fire.durationSeconds).toBeCloseTo(60 / expectedRpm, 9);
+      expect(cycle.rpm).toBe(ACTION_CYCLE_PROFILES[action].rpm);
+      expect(cycle.fire.durationSeconds).toBeCloseTo(60 / cycle.rpm, 9);
       expect(cycle.strokeMetres / cycle.fire.rearwardSeconds).toBeCloseTo(
         ACTION_CYCLE_PROFILES[action].rearwardSpeedMetresPerSecond,
         9,
@@ -94,6 +96,45 @@ describe('motion-derived cycle geometry', () => {
       expect(motion.end[0]).toBeGreaterThan(motion.start[0]);
     },
   );
+
+  it('keeps collision candidates at both ends of the swept envelope', () => {
+    const { resolved, motion, cycle } = motionFor('archetype-ar');
+    const carrier = resolved.defs.get('bolt-carrier')!;
+    const start = resolved.placed.get('bolt-carrier')!;
+    const limit = cycle.strokeUnits + 2.5;
+    const end = compose(start, translation(scale(sub(motion.end, motion.start), limit / cycle.strokeUnits)));
+    const carrierTail = carrier.solids.find(({ id }) => id === 'carrier-tail');
+    if (!(carrierTail?.kind === 'extruded-polygon' && carrierTail.axis === 'x')) {
+      throw new Error('AR carrier has no x-extruded carrier tail');
+    }
+    const withBlockerAt = (transform: typeof start, centerX: number) => {
+      const blocker = {
+        ...carrier,
+        solids: [
+          {
+            id: 'endpoint-blocker',
+            kind: 'box' as const,
+            box: { center: [centerX, 0, 0] as const, half: [0.1, 0.1, 0.1] as const },
+          },
+        ],
+      };
+      const defs = new Map(resolved.defs).set('sweep-blocker', blocker);
+      const placed = new Map(resolved.placed).set('sweep-blocker', transform);
+      return sweepMovingPart({ ...resolved, defs, placed }, 'bolt-carrier', limit);
+    };
+
+    const carrierRearX = Math.min(...carrier.solids.map((solid) => localSolidBounds(solid)[0][0]));
+    const atStart = withBlockerAt(start, carrierRearX + 0.25);
+    expect(atStart.clear).toBe(0);
+    expect(atStart.clashes.some(({ pair, at }) => pair.includes('sweep-blocker') && at === 0)).toBe(true);
+
+    const atEnd = withBlockerAt(end, carrierTail.z[1] - 0.25);
+    expect(
+      atEnd.clashes.some(
+        ({ pair, at }) => pair === 'carrier-tail x sweep-blocker.endpoint-blocker' && at >= cycle.strokeUnits,
+      ),
+    ).toBe(true);
+  });
 
   it('locates each case at the receiver ejection opening and transforms its throw direction', () => {
     for (const [name, action] of [

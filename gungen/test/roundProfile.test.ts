@@ -38,10 +38,10 @@ describe('5.56x45 round profile estimate', () => {
 
 describe('7.62x39 round profiles', () => {
   it('take cartridge lengths and principal diameters from sourced measurements', () => {
-    expect(maximum(profiles.loadedCase, 1) * 2).toBeCloseTo(11.35, 6);
-    expect(maximum(profiles.loadedCase, 0)).toBeCloseTo(38.7, 6);
-    expect(maximum(profiles.bullet, 1) * 2).toBeCloseTo(7.92, 6);
-    expect(maximum(profiles.bullet, 0)).toBeCloseTo(56, 6);
+    expect(maximum(profiles.loadedCase, 1) * 2).toBeCloseTo(cartridge.case.rim.diameter.value!, 6);
+    expect(maximum(profiles.loadedCase, 0)).toBeCloseTo(cartridge.case.length.value!, 6);
+    expect(maximum(profiles.bullet, 1) * 2).toBeCloseTo(cartridge.payload.diameter.value!, 6);
+    expect(maximum(profiles.bullet, 0)).toBeCloseTo(cartridge.overallLength.typical.value!, 6);
   });
 
   it('leaves the fired case open with a constant, declared wall thickness', () => {

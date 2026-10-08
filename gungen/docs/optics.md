@@ -1,3 +1,8 @@
+---
+read_if:
+  - you're changing optic envelopes, geometry or receiver mounting constraints
+---
+
 # Optic reference envelopes
 
 Optics are static, stable-ID assembly attachments. No glass, reticle, zoom, night-vision, or thermal behavior is simulated. `mini-reflex` keeps its persisted ID but now means a **closed-emitter micro dot**, not an open RMR. Dimensions are visual classes, not manufacturer CAD. `1u = 11.5mm`; catalog `envelopeU` is the **measured solid envelope**, including feet, rings and controls. The table uses **L × H × W**, unlike manufacturers' usual L × W × H.
@@ -30,7 +35,7 @@ Active generated defaults **and published designs/fixtures** use receiver rails.
 
 On a top-loaded bolt receiver the physical rail has **two bases**, rear X = -14…-9u and front X = -4…-2u, leaving the -9…-4u loading opening clear at the receiver top. Long-optic feet sit at -14…-13u and -3…-2u. On these hosts the prism also uses two separate feet, reaching its round ends without a bridge across the opening; its body and optical axis do not move. `sight.mountFeed` inherits the host's feed through its base. Other hosts retain the approved prism bridge. Receiver mounting takes precedence over chasing longitudinal eye relief; the existing cheek-line check remains.
 
-**BR's narrowed static loading contract (2026-10-02):** the roof-mouth footprint X=-9…-4u, Z=-1.5…1.5u, through the 0.5u roof up to the rail top (normally Y=2…2.5u), is closed to every family, including optic bodies. Above it (to Y=9u), only recognized optic body solids—tube, housing, turrets and controls—may bridge; feet, bases, rings, bridges and unclassified sight solids may not. The core checks the closed mouth and other families; a mandatory gun-domain refinement checks the **actual resolved sight solids** in the upper footprint. Its catalog ID allow-list identifies body roles, never substitutes nominal geometry. Floating/missing-foot and actual loading-obstruction canaries enforce both checks.
+The roof-mouth footprint X=-9…-4u, Z=-1.5…1.5u, through the 0.5u roof up to the rail top (normally Y=2…2.5u), is closed to every family, including optic bodies. Above it (to Y=9u), only recognized optic body solids—tube, housing, turrets and controls—may bridge; feet, bases, rings, bridges and unclassified sight solids may not. The core checks the closed mouth and other families; a mandatory gun-domain refinement checks the **actual resolved sight solids** in the upper footprint. Its catalog ID allow-list identifies body roles, never substitutes nominal geometry. Floating/missing-foot and actual loading-obstruction canaries enforce both checks.
 
 **Cartridge loading past the optic body is deferred to g33's tubular receiver and real port**, not claimed safe here. A conservative 45° right-side swept path, tangent to the real top-opening right lip, uses a .308 maximum head/rim diameter of 0.473in (12.0142mm; [SAAMI rifle drawings](https://saami.org/technical-information/cartridge-chamber-drawings/)) plus a 0.25u allowance, grid-ceiled to 1.5u diameter. Its center starts at Y=3.25u, Z=1.5u (bottom at the actual Y=2.5u lip), then travels 6u up/out at 45° over X=-9…-4u. Current LPVO/high-mag would require 2.25u lifts, prism 1.5u, thermal 1u, chiefly because the side controls intrude. These are measurements for g33, **not applied height changes** or a present cartridge-clearance guarantee.
 

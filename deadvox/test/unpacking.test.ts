@@ -144,5 +144,16 @@ describe('sealed ammunition package activation', () => {
       },
     };
     expect(buildRegistry([source]).issues.some((issue) => issue.path.endsWith('.unpack.count'))).toBe(true);
+
+    const exactCapacity = {
+      source: source.source,
+      data: {
+        items: [
+          source.data.items[0],
+          { ...source.data.items[1], unpack: { item: 'fixture_shell', count: stackCapacity } },
+        ],
+      },
+    };
+    expect(buildRegistry([exactCapacity]).issues.some((issue) => issue.path.endsWith('.unpack.count'))).toBe(false);
   });
 });

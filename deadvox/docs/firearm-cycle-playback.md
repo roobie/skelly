@@ -34,7 +34,7 @@ The curated `gungen/designs/archetype-ar.json` (with `--calibre 5.56x45`) and
 `archetype-ak-akm.json` (whose design carries its calibre) are exported with
 `export:glb`, and their sidecar metadata copied into
 `src/content/base/models-firearms.json`. See Gungen's
-PROJECT.md §3.5 and ADR 0003. The 7.62×39 cartridge exporter supplies the new case
+PROJECT.md §3.5 and [ADR 0006](decisions/0006-firearm-handling.md). The 7.62×39 cartridge exporter supplies the new case
 and round meshes. Asset provenance is in `src/content/base/assets/manifest.json`.
 
 Held-clone action bindings match each exact exported node name in
@@ -49,19 +49,18 @@ return timings come from the export; fire duration is capped at `60 / rpm`.
 
 ## Handling playback
 
-A rack, a magazine change, a removal and an insertion play on the held gun from
-their job alone, adding no simulation, save or replay state (DESIGN.md, "Rifles
-(3.2, d114)": BR's 12:09 and 12:11 FIX on #337). `FirearmMechanics.frames`
-reports a magazine job's progress, the share of it spent removing, and the
-incoming magazine's model. `magazineMotion` in `src/render/firearmModel.ts`
+A rack, magazine change, removal or insertion plays on the held gun from its
+job alone, adding no simulation, save or replay state. `src/game/firearmHandling.ts`,
+`FirearmMechanics.frames`, reports a magazine job's progress, the share of it
+spent removing, and the incoming magazine's model. `magazineMotion` in `src/render/firearmModel.ts`
 turns that into how far each magazine is out of the well and how far the off hand
 has reached for it. Through a rack the off hand follows `rackGrip`, from the
 exported hand cycle: it takes the handle (the part only a hand moves, else the
 carrier) as the pull starts, holds it through the dwell and lets go as it
 returns. Through either job the rifle turns so the work shows in first person: a
 rack turns it toward the player and its handle toward the off hand, a magazine
-job turns it muzzle-in; `src/render/handlingTurn.ts`, `handlingRotation`, sets how far, for the
-drawn model and the crosshair alike (DESIGN.md, "Firearms", BR's 14:55 ruling). The
+job turns it muzzle-in. `src/render/handlingTurn.ts`, `handlingRotation`, sets the
+shared turn for both the drawn model and the crosshair. The
 magazine in the well is the fitted one's own model, drawn in the
 model's magazine slot (DESIGN.md, "One item, one look").
 
