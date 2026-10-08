@@ -409,6 +409,7 @@ try {
       buildingPixels: weatheringPixels.buildingPixels,
       weatherablePixels: weatheringPixels.weatherablePixels,
       weatherableFraction: weatheringPixels.weatherableFraction,
+      uniforms: weatheringPixels.uniforms,
       differences: weatheringPixels.differences,
       maxWeatherablePixelChange: weatheringPixels.maxWeatherablePixelChange,
       maxZeroStrengthPixelChange: weatheringPixels.maxZeroStrengthPixelChange,
@@ -423,6 +424,12 @@ try {
     [],
     'Firefox measurement mask shader compiles',
   );
+  assert.deepEqual(weatheringPixels.uniforms, {
+    off: 0,
+    default: weatheringPixels.authoredStrength,
+    strong: 1,
+    'zero-control': 0,
+  });
   assert.deepEqual(
     weatheringPixels.beforeCamera,
     weatheringPixels.afterCamera,

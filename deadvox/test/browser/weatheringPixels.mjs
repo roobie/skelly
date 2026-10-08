@@ -111,7 +111,7 @@ void main() {
       return masks;
     };
 
-    const captureImages = async ({ meshes, canvas, content }) => {
+    const captureImages = ({ meshes, renderer, scene, camera, canvas, content }) => {
       const settings = [
         ['off', 0],
         ['default', content.strength],
@@ -119,13 +119,14 @@ void main() {
         ['zero-control', 0],
       ];
       const images = {};
+      const uniforms = {};
       for (const [name, strength] of settings) {
         meshes.setWeathering({ ...content, strength });
-        // biome-ignore lint/performance/noAwaitInLoops: wait for the configured value to reach a rendered frame before capture.
-        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        renderer.render(scene, camera);
+        uniforms[name] = meshes.weathering.value;
         images[name] = canvas.toDataURL('image/png');
       }
-      return images;
+      return { images, uniforms };
     };
 
     const decodeImage = async (dataUrl) => {
@@ -311,7 +312,14 @@ void main() {
       throw new Error('weathering pixel measurement needs the authored world settings');
     }
     const beforeCamera = cameraPose(activeCamera);
-    const images = await captureImages({ meshes: chunkMeshes, canvas: rendererCanvas, content: weatheringContent });
+    const { images, uniforms } = captureImages({
+      meshes: chunkMeshes,
+      renderer: webglRenderer,
+      scene: testEngine.scene,
+      camera: activeCamera,
+      canvas: rendererCanvas,
+      content: weatheringContent,
+    });
     const decodedScreenshots = Object.fromEntries(
       await Promise.all(Object.entries(images).map(async ([name, dataUrl]) => [name, await decodeImage(dataUrl)])),
     );
@@ -334,6 +342,8 @@ void main() {
       derivedPixelThreshold: 1 - srgb(1 - minimumShaderSignal),
       ...measurements,
       images,
+      uniforms,
+      authoredStrength: weatheringContent.strength,
       closeup,
       beforeCamera,
       afterCamera: cameraPose(activeCamera),
