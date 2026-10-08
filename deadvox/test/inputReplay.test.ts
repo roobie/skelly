@@ -74,7 +74,7 @@ const replaySample = {
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
-    schemaVersion: 9,
+    schemaVersion: 10,
     endStateFingerprint: '0'.repeat(64),
     endSimTimestamp: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
@@ -132,6 +132,7 @@ const applyCommand = (runtime: ReturnType<typeof createRuntime>, payload: Replay
       runtime.sim.actions.stop();
     },
     cancelItemThrow: () => undefined,
+    throwItem: () => undefined,
   });
 
 const applyColumnUpdates = (
@@ -313,6 +314,10 @@ const playSession = (
     onColumnUnload: (cx, cz) => replay.session.onColumnUnload(cx, cz),
     simulation: {
       currentSimSeconds: () => replay.sim.time,
+      nextPlayerTickEnd: () => {
+        const playerCursor = replay.sim.scheduler.snapshotState().systems.find(({ id }) => id === 'player')!;
+        return playerCursor.done + replay.sim.scheduler.stepOf('player', replay.sim.compression.c);
+      },
       compression: replay.sim.compression,
     },
     frameReplay: (realSeconds) => replay.session.frameReplay(realSeconds),
@@ -755,7 +760,11 @@ describe('input replay', () => {
       },
       onColumnLoad: (cx, cz) => loaded.add(`${cx},${cz}`),
       onColumnUnload: (cx, cz) => loaded.delete(`${cx},${cz}`),
-      simulation: { currentSimSeconds: () => sim.time, compression: sim.compression },
+      simulation: {
+        currentSimSeconds: () => sim.time,
+        nextPlayerTickEnd: () => sim.time + 1 / 60,
+        compression: sim.compression,
+      },
       frameReplay: () => {
         if (player.tickCount === 1) {
           expect(generated.has('0,0')).toBe(true);
@@ -773,6 +782,46 @@ describe('input replay', () => {
     expect(player.isReady(0.5, 0.5)).toBe(true);
     expect(driver.advanceFrame(1 / 60).kind).toBe('finished');
     expect(player.tickCount).toBe(2);
+  });
+
+  it('ends a replay on the live player-tick cursor when the start phase exceeds the end phase', () => {
+    const startTime = 0.015;
+    const endTime = 0.018;
+    const playerStep = 1 / PHYSICS_RATE;
+    const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
+    recorder.recordTick(replaySample);
+    const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
+    let simTime = startTime;
+    let playerDone = 0;
+    const driver = new InputReplayDriver({
+      player,
+      terrain: {
+        hasGeneratedColumn: () => true,
+        generateForReplay: () => true,
+        unloadForReplay: () => undefined,
+        isReady: () => true,
+      },
+      onColumnLoad: () => undefined,
+      onColumnUnload: () => undefined,
+      simulation: {
+        currentSimSeconds: () => simTime,
+        nextPlayerTickEnd: () => playerDone + playerStep,
+        compression: { c: 1, limits: { maxSimPerFrame: 1 } },
+      },
+      frameReplay: (realSeconds) => {
+        simTime += realSeconds;
+        if (player.next()) {
+          playerDone += playerStep;
+        }
+      },
+      playerPosition: () => [0, 0, 0],
+    });
+
+    expect(driver.advanceFrame(playerStep).kind).toBe('finished');
+    driver.advanceEndRemainder(endTime);
+
+    expect(simTime).toBe(endTime);
+    expect(playerDone).toBe(playerStep);
   });
 
   it('consumes replay compression and look in the shared player-tick step', () => {
@@ -821,6 +870,10 @@ describe('input replay', () => {
       onColumnUnload: () => undefined,
       simulation: {
         currentSimSeconds: () => runtime.sim.time,
+        nextPlayerTickEnd: () => {
+          const playerCursor = runtime.sim.scheduler.snapshotState().systems.find(({ id }) => id === 'player')!;
+          return playerCursor.done + runtime.sim.scheduler.stepOf('player', runtime.sim.compression.c);
+        },
         compression: runtime.sim.compression,
       },
       frameReplay: (realSeconds) => runtime.session.frameReplay(realSeconds),
@@ -974,7 +1027,7 @@ describe('input replay', () => {
     expect(recorder.retainedBufferBytes).toBeLessThanOrEqual(INPUT_REPLAY_MAX_BYTES);
   });
 
-  it('round-trips the throw range and the held firearm instance in replay', async () => {
+  it('round-trips the throw distance and exact held-item identity in replay', async () => {
     const runtime = createRuntime();
     const firearmType = [...runtime.inventory.registry.items.values()].find((def) => def.firearm)?.id;
     if (!firearmType) {
@@ -991,11 +1044,18 @@ describe('input replay', () => {
     }
     const start = capture(runtime);
     const recorder = new InputReplayRecorder(start);
-    recorder.queueAction('item.throw', 'down', 'play', 2.5);
+    recorder.queueAction('item.throw', 'down', 'play', {
+      kind: 'item.throw',
+      itemUid: firearm.uid,
+      hand: side,
+      distance: 2.5,
+    });
     recorder.recordTick(replaySample);
     const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
-    expect(decoded.inputs.actions).toMatchObject([{ action: 'item.throw', value: 2.5 }]);
+    expect(decoded.inputs.actions).toMatchObject([
+      { action: 'item.throw', payload: { kind: 'item.throw', itemUid: firearm.uid, hand: side, distance: 2.5 } },
+    ]);
     expect(decoded.snapshot.character.inventory.hands[side]).toMatchObject({ uid: firearm.uid, type: firearm.type });
   });
 
@@ -1004,6 +1064,8 @@ describe('input replay', () => {
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 1 })).toBe(true);
     expect(isReplayActionPayload({ kind: 'item.pickup', itemUid: 0, mode: 'wield', feet: [0, 0, 0] })).toBe(false);
     expect(isReplayActionPayload({ kind: 'item.pickup', itemUid: 1, mode: 'pocket', feet: [0, 0, 0] })).toBe(true);
+    expect(isReplayActionPayload({ kind: 'item.throw', itemUid: 1, hand: 'left', distance: 2 })).toBe(true);
+    expect(isReplayActionPayload({ kind: 'item.throw', itemUid: 0, hand: 'left', distance: 2 })).toBe(false);
     expect(isReplayActionPayload({ kind: 'furniture.interact', entityUid: 1 })).toBe(true);
   });
 
@@ -1291,7 +1353,7 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(capture(source)));
   });
 
-  it('replay fingerprints ignore sub-tick clock residue but retain a full-tick difference', async () => {
+  it('replay fingerprints preserve sub-tick and full-tick simulation-time differences', async () => {
     const baseline = capture(createRuntime());
     const subTick = structuredClone(baseline);
     subTick.character.simulation.time += 1 / (PHYSICS_RATE * 4);
@@ -1299,7 +1361,7 @@ describe('input replay', () => {
     nextTick.character.simulation.time += 1 / PHYSICS_RATE;
 
     const baselineFingerprint = await replayStateFingerprint(baseline);
-    expect(await replayStateFingerprint(subTick)).toBe(baselineFingerprint);
+    expect(await replayStateFingerprint(subTick)).not.toBe(baselineFingerprint);
     expect(await replayStateFingerprint(nextTick)).not.toBe(baselineFingerprint);
   });
 

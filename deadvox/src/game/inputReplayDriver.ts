@@ -15,6 +15,7 @@ export interface InputReplayDriverPorts {
   readonly onColumnUnload: (cx: number, cz: number) => void;
   readonly simulation: {
     readonly currentSimSeconds: () => number;
+    readonly nextPlayerTickEnd: () => number;
     readonly compression: { c: number; limits: { maxSimPerFrame: number } };
   };
   readonly frameReplay: (realSeconds: number) => void;
@@ -143,7 +144,8 @@ export class InputReplayDriver {
     }
     simulation.compression.c = sample.compression;
     const timeBefore = simulation.currentSimSeconds();
-    frameReplay(1 / (PHYSICS_RATE * sample.compression));
+    const tickEnd = simulation.nextPlayerTickEnd();
+    frameReplay(Math.max(0, tickEnd - timeBefore) / sample.compression);
     return { kind: 'advanced', simSeconds: simulation.currentSimSeconds() - timeBefore };
   }
 

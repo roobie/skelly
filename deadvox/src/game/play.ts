@@ -98,7 +98,7 @@ import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
 import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import type { MoveIntent } from './player.ts';
-import { PlayerTickActions } from './playerTickActions.ts';
+import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -330,7 +330,6 @@ export const startPlay = (
   const firearmTrigger = new FirearmTrigger();
   let inputRecorder: InputReplayRecorder | undefined;
   let previousInputRecorder: InputReplayRecorder | undefined;
-  let pendingScreenCommands: ReplayActionPayload[] = [];
   let replaySample: ReplayControlSample | undefined;
   let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
   let replayVerification: 'matched' | 'diverged' | 'unavailable' | undefined;
@@ -348,14 +347,6 @@ export const startPlay = (
     if (!replayPlayer) {
       inputRecorder?.recordTick(live, compressionAtTick);
       pendingPlayerTickActions.applyAtNextTick();
-      const commands = pendingScreenCommands;
-      pendingScreenCommands = [];
-      for (const payload of commands) {
-        const reason = applyScreenCommand(payload);
-        if (reason) {
-          showRefusal(reason, sim.time);
-        }
-      }
       return live;
     }
     const replayInput = nextReplayInputSample(replayPlayer, sim.compression, input);
@@ -607,7 +598,17 @@ export const startPlay = (
     terrain: streamer,
     onColumnLoad: applyColumnLoad,
     onColumnUnload: applyColumnUnload,
-    simulation: { currentSimSeconds: () => sim.time, compression: sim.compression },
+    simulation: {
+      currentSimSeconds: () => sim.time,
+      nextPlayerTickEnd: () => {
+        const player = sim.scheduler.snapshotState().systems.find(({ id }) => id === 'player');
+        if (!player) {
+          throw new Error('Replay simulation has no player scheduler cursor');
+        }
+        return player.done + sim.scheduler.stepOf('player', sim.compression.c);
+      },
+      compression: sim.compression,
+    },
     frameReplay: (realSeconds) => session.frameReplay(realSeconds),
     playerPosition: () => body.pos,
   });
@@ -1120,6 +1121,7 @@ export const startPlay = (
       stopAction();
     },
     cancelItemThrow,
+    throwItem: throwRecordedItem,
   };
   const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {
     const reason = applyReplayActionPayload(payload, replayCommandOwners);
@@ -1145,7 +1147,12 @@ export const startPlay = (
       return applyScreenCommand(payload);
     }
     inputRecorder.queueAction(payload.kind, 'down', inputContext(), payload);
-    pendingScreenCommands.push(payload);
+    pendingPlayerTickActions.enqueue(() => {
+      const reason = applyScreenCommand(payload);
+      if (reason) {
+        showRefusal(reason, sim.time);
+      }
+    });
     return undefined;
   }
 
@@ -1182,35 +1189,37 @@ export const startPlay = (
     survival,
     notice: (text) => showRefusal(text, sim.time),
   });
-  const quickbarTap = (slot: number) => {
+  const runQuickbarAction = (slot: number, held: boolean): void => {
     if (sim.body.actionRefusal) {
       showRefusal(sim.body.actionRefusal, sim.time);
       return;
-    }
-    if (!replayPlayer) {
-      inputRecorder?.queueAction(`quickbar.tap.${slot + 1}`, 'down', inputContext());
     }
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
       showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
       return;
     }
-    quickbarActions.tap(item);
+    if (held) {
+      quickbarActions.hold(item);
+    } else {
+      quickbarActions.tap(item);
+    }
+  };
+  const quickbarTap = (slot: number) => {
+    if (!replayPlayer && inputRecorder) {
+      inputRecorder.queueAction(`quickbar.tap.${slot + 1}`, 'down', inputContext());
+      pendingPlayerTickActions.enqueue(() => runQuickbarAction(slot, false));
+      return;
+    }
+    runQuickbarAction(slot, false);
   };
   const quickbarHold = (slot: number) => {
-    if (sim.body.actionRefusal) {
-      showRefusal(sim.body.actionRefusal, sim.time);
+    if (!replayPlayer && inputRecorder) {
+      inputRecorder.queueAction(`quickbar.hold.${slot + 1}`, 'down', inputContext());
+      pendingPlayerTickActions.enqueue(() => runQuickbarAction(slot, true));
       return;
     }
-    if (!replayPlayer) {
-      inputRecorder?.queueAction(`quickbar.hold.${slot + 1}`, 'down', inputContext());
-    }
-    const item = quickbar.resolve(slot, inventory);
-    if (!item) {
-      showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
-      return;
-    }
-    quickbarActions.hold(item);
+    runQuickbarAction(slot, true);
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
   const throwStanceInput = new PressHoldInput<string>({
@@ -1535,15 +1544,6 @@ export const startPlay = (
       case 'firearm.remove':
         reloadBinding()?.remove();
         return true;
-      case 'item.throw': {
-        const hand = throwHandPriority();
-        const item = inventory.hands[hand];
-        if (item && action.value !== undefined) {
-          throwHeldItem(item, hand, action.value);
-          syncThrowingStance();
-        }
-        return true;
-      }
       case 'throw.stance.toggle':
         toggleThrowingStance();
         return true;
@@ -1813,13 +1813,17 @@ export const startPlay = (
     const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
     const chargeProgress = Math.min(1, heldSimSeconds / itemThrowTuning.chargeSimSeconds);
     if (!replayPlayer) {
-      inputRecorder?.queueAction('item.throw', 'down', inputContext(), distance);
+      inputRecorder?.queueAction('item.throw', 'down', inputContext(), {
+        kind: 'item.throw',
+        itemUid: uid,
+        hand,
+        distance,
+      });
       pendingPlayerTickActions.enqueue(() => {
-        if (inventory.hands[hand] !== item) {
-          throw new Error('Recorded item.throw lost its held item before the next player sample');
-        }
-        throwHeldItem(item, hand, distance, chargeProgress);
-        syncThrowingStance();
+        applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
+          throwHeldItem(heldItem, hand, distance, chargeProgress);
+          syncThrowingStance();
+        });
       });
     }
   }
@@ -1848,6 +1852,13 @@ export const startPlay = (
     }
     itemThrowStartedAt = sim.time;
     showNotice('');
+  }
+
+  function throwRecordedItem(itemUid: number, hand: HandSide, distanceMetres: number): void {
+    applyToHeldItem(inventory.hands, hand, itemUid, (item) => {
+      throwHeldItem(item, hand, distanceMetres);
+      syncThrowingStance();
+    });
   }
 
   function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number, chargeProgress = 0): void {

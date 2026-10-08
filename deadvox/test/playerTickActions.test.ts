@@ -1,7 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { PlayerTickActions } from '../src/game/playerTickActions.ts';
+import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 
 describe('PlayerTickActions', () => {
+  it('does not throw an item put away earlier in the same sampled gesture order', () => {
+    const execute = (): {
+      events: string[];
+      hands: { left: { uid: number } | undefined; right: { uid: number } | undefined };
+    } => {
+      const hands: { left: { uid: number } | undefined; right: { uid: number } | undefined } = {
+        left: { uid: 41 },
+        right: undefined,
+      };
+      const events: string[] = [];
+      const actions = new PlayerTickActions();
+      actions.enqueue(() => {
+        hands.left = undefined;
+        events.push('put-away:41');
+      });
+      actions.enqueue(() => {
+        applyToHeldItem(hands, 'left', 41, (item) => events.push(`throw:${item.uid}`));
+      });
+      actions.applyAtNextTick();
+      return { events, hands };
+    };
+
+    const live = execute();
+    const replay = execute();
+
+    expect(live).toEqual(replay);
+    expect(live.events).toEqual(['put-away:41']);
+  });
   it('applies a deferred throw before a same-sample drop selects the remaining hand', () => {
     const actions = new PlayerTickActions();
     const hands: { left: string | undefined; right: string | undefined } = {
