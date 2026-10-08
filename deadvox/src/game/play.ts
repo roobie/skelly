@@ -849,7 +849,6 @@ export const startPlay = (
       }
     },
   });
-  replayPlayState.restore(options.replay?.startState);
   const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
 
   const spawnItem = (type: string): string => {
@@ -1386,7 +1385,7 @@ export const startPlay = (
   };
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
   keyboardInput.cancelled = (preservePointer) => {
-    input.cancel(preservePointer || Boolean(replayPlayer));
+    input.cancel(preservePointer);
     cancelItemThrow();
     throwStanceInput.cancel();
     quickbarInput.cancel();
@@ -1639,6 +1638,7 @@ export const startPlay = (
   };
   keyboardInput.install();
   keyboardInput.sync();
+  replayPlayState.restore(options.replay?.startState);
   const cycleWieldedAction = (deltaY: number): boolean => {
     const item = inventory.hands[dominantSide(inventory.character)];
     return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));

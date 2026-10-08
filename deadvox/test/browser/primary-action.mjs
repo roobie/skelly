@@ -568,6 +568,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const hands = globalThis.primaryActionTest.view.held.heldByHand;
       return hands.has('left') && hands.has('right');
     });
+    await pressAction(page, 'player.throw');
+    await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.evaluate((slot) => {
       const r = globalThis.primaryActionTest;
       r.startInputReplayRecording();
@@ -577,8 +579,6 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.quickbarTapCommitObservation = undefined;
       r.quickbarTapTickObservation = undefined;
     }, fixture.quickbarSlot);
-    await pressAction(page, 'player.throw');
-    await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     const releaseThrow = await mouseCharge(page);
     await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
     const chargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -652,7 +652,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     const artifact = JSON.parse(replayText);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
-    assert(artifact.actions.some(({ action }) => action === 'throw.stance.toggle'));
+    assert.equal(artifact.startState.throwingStance, true, 'the exported segment starts in throwing stance');
     const throwActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.throw');
     assert.equal(artifact.actions.filter(({ action }) => action === 'quickbar.tap.1').length, 1);
     const quickbarActionIndex = artifact.actions.findIndex(({ action }) => action === 'quickbar.tap.1');
@@ -862,6 +862,30 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         },
         { id: action, moduleUrl: inputBindingsModule },
       );
+    await command('ui.inventory-toggle');
+    await page.waitForFunction(() => globalThis.primaryActionTest.screen.isOpen);
+    await command('ui.inventory-toggle');
+    await page.waitForFunction(() => !globalThis.primaryActionTest.screen.isOpen);
+    const afterInventoryClose = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+    await page.mouse.click(640, 450);
+    await waitForSimulation(
+      page,
+      progressingSample,
+      { start: afterInventoryClose },
+      {
+        seconds: 0.35,
+        label: 'ready was cancelled by opening and closing inventory',
+        record: (line) => process.stderr.write(`${line}\n`),
+      },
+    );
+    const liveCasesAfterCancel = await page.evaluate((caseType) => {
+      const r = globalThis.primaryActionTest;
+      return [...r.inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .filter(({ item }) => item.type === caseType)
+        .reduce((sum, { item }) => sum + item.count, 0);
+    }, firearm.caseType);
+    assert.equal(liveCasesAfterCancel, firearm.cases + 1, 'live does not fire again after inventory cancels readiness');
     await command('debug.panel-toggle');
     const liveEnd = await page.evaluate(
       async ({ id, moduleUrl, uid }) => {
@@ -936,8 +960,8 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       );
     }
     assert.equal(replay.state, 'verified');
-    assert.equal(replay.aimingDownSights, true);
-    assert.equal(replay.readyHeld, true);
+    assert.equal(replay.aimingDownSights, false);
+    assert.equal(replay.readyHeld, false);
     assert.equal(replay.cases, firearm.cases + 1, 'the replayed firearm action fires a shot');
     assert.deepEqual(replay.snapshot, liveEnd.snapshot);
     assert.deepEqual(pageErrors, []);

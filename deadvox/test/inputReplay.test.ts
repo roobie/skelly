@@ -1527,7 +1527,7 @@ describe('input replay', () => {
     const initialColumn: [number, number] = [100, 100];
     const loadedColumn: [number, number] = [101, 100];
     const start = capture(createRuntime(undefined, false, [initialColumn]));
-    let recorder = new InputReplayRecorder(start, 2, [initialColumn], 2);
+    let recorder = new InputReplayRecorder(start, 2, [initialColumn], { columnChangeEventLimit: 2 });
     const source = createRuntime(start, false, [initialColumn], {
       sampleAtPlayerTick: (_tick, live, _time, compression) => {
         recorder.recordTick(live, compression);

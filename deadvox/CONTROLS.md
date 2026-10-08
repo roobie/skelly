@@ -238,7 +238,7 @@ order follows `src/game/playerTickActions.ts`, `PlayerTickActions`. Export and r
 are handled by `src/game/inputReplay.ts`, `withReplayExportGuard`, `InputReplayRecorder`,
 and `replayStateFingerprint`.
 
-For #442, each replay segment starts with the play state that changes recorded-action
+Each replay segment starts with the play state that changes recorded-action
 routing or shot resolution but is not part of the save snapshot: throwing stance, held
 readiness, ADS and whether the inventory modal is open. `src/game/play.ts`,
 `captureReplayStartState`, captures that state at each window boundary, and

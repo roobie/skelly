@@ -368,17 +368,11 @@ export class InputReplayRecorder {
     startSnapshot: Readonly<SaveSnapshot>,
     ticksPerWindow = INPUT_REPLAY_TICKS_PER_WINDOW,
     generatedColumns: readonly ReplayGeneratedColumn[] = [],
-    limitOrOptions: number | { readonly columnChangeEventLimit?: number; readonly startState?: ReplayStartState } = {},
+    options: { readonly columnChangeEventLimit?: number; readonly startState?: ReplayStartState } = {},
   ) {
     this.ticksPerWindow = ticksPerWindow;
-    const columnChangeEventLimit =
-      typeof limitOrOptions === 'number'
-        ? limitOrOptions
-        : (limitOrOptions.columnChangeEventLimit ?? INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW);
-    const startState =
-      typeof limitOrOptions === 'number'
-        ? DEFAULT_REPLAY_START_STATE
-        : (limitOrOptions.startState ?? DEFAULT_REPLAY_START_STATE);
+    const columnChangeEventLimit = options.columnChangeEventLimit ?? INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW;
+    const startState = options.startState ?? DEFAULT_REPLAY_START_STATE;
     if (
       !Number.isSafeInteger(columnChangeEventLimit) ||
       columnChangeEventLimit < 1 ||
@@ -903,18 +897,7 @@ export async function decodeInputReplay(
   return {
     snapshot: decoded.snapshot,
     worldOptions: decoded.worldOptions,
-    inputs: {
-      frames,
-      actions,
-      generatedColumns,
-      columnChanges,
-      startState: {
-        throwingStance: value.startState.throwingStance,
-        readyHeld: value.startState.readyHeld,
-        aimingDownSights: value.startState.aimingDownSights,
-        inventoryOpen: value.startState.inventoryOpen,
-      },
-    },
+    inputs: { frames, actions, generatedColumns, columnChanges },
     startState: {
       throwingStance: value.startState.throwingStance,
       readyHeld: value.startState.readyHeld,
