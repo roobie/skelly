@@ -30,10 +30,16 @@ export class DebugWeatheringTestSite implements Site {
       { id: 'brick' as const, block: brick, minY: 1.8, maxY: 3.1 },
       { id: 'planks' as const, block: planks, minY: 3.1, maxY: 4.5 },
     ];
-    this.weatheringMaterialBoxes = bands.map(({ id, minY, maxY }) => ({
+    const rasterizedLower = (height: number): number => Math.floor((floor + height) / blockSize) * blockSize;
+    const visibleBands = [
+      { id: 'concrete' as const, minY: rasterizedLower(0.5), maxY: rasterizedLower(1.8) },
+      { id: 'brick' as const, minY: rasterizedLower(1.8), maxY: rasterizedLower(3.1) },
+      { id: 'planks' as const, minY: rasterizedLower(3.1), maxY: rasterizedLower(4) },
+    ];
+    this.weatheringMaterialBoxes = visibleBands.map(({ id, minY, maxY }) => ({
       id,
-      min: [-8, Math.floor((floor + minY) / blockSize) * blockSize, 0] as const,
-      max: [8, Math.ceil((floor + maxY) / blockSize) * blockSize, Math.ceil(0.35 / blockSize) * blockSize] as const,
+      min: [-8, minY, 0] as const,
+      max: [8, maxY, Math.ceil(0.35 / blockSize) * blockSize] as const,
     }));
     const boxes: MetreBox[] = [
       { min: [-10, floor, -2], max: [10, floor + 0.5, 1], block: concrete },

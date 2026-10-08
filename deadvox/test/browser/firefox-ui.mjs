@@ -23,9 +23,9 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\n${exposed}`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\nimport { SURFACE_PATTERN_GLSL as FirefoxSurfacePatternsGlsl } from '../render/surfacePatterns.ts';\n${exposed}\n`;
   },
 };
 const vite = await createServer({
@@ -399,6 +399,8 @@ try {
       weatherablePixels: weatheringPixels.weatherablePixels,
       weatherableFraction: weatheringPixels.weatherableFraction,
       materialPixels: weatheringPixels.materialPixels,
+      materialPixelTotal: weatheringPixels.materialPixelTotal,
+      nearFullReplacementShares: weatheringPixels.nearFullReplacementShares,
       profileStrengths: weatheringPixels.profileStrengths,
       strengthCeiling: weatheringPixels.strengthCeiling,
       uniforms: weatheringPixels.uniforms,

@@ -41,7 +41,9 @@ void main() {
   bool building = false;
   bool selectedBuilding = false;
   for (int i = 0; i < ${count}; i++) {
-    bool inside = all(greaterThanEqual(vWorld, uBuildingMin[i])) && all(lessThanEqual(vWorld, uBuildingMax[i]));
+    bool inside = vWorld.x >= uBuildingMin[i].x && vWorld.x <= uBuildingMax[i].x &&
+      vWorld.y >= uBuildingMin[i].y && vWorld.y < uBuildingMax[i].y &&
+      vWorld.z >= uBuildingMin[i].z && vWorld.z <= uBuildingMax[i].z;
     bool wall = abs(vNormal.y) < 0.5;
     building = building || (inside && wall);
     selectedBuilding = selectedBuilding || (i == uSelectedBuilding && inside && wall);
@@ -102,6 +104,132 @@ void main() {
         material.dispose();
       }
       return masks;
+    };
+
+    const makeMixMaterial = ({ THREE: threeLib, profile, weatherablePatternGlsl, surfacePatternsGlsl }) =>
+      new threeLib.ShaderMaterial({
+        uniforms: {
+          uStrength: { value: profile.strength },
+          uVariationScale: { value: profile.variationScaleMetres },
+          uVariation: { value: profile.variationStrength },
+          uMossThreshold: { value: profile.mossThreshold },
+          uMossBias: { value: profile.mossBias },
+          uTintDarkness: { value: profile.tintDarkness },
+          uStreakStrength: { value: profile.streakStrength },
+          uStreakLength: { value: profile.streakLengthMetres },
+          uMossStrength: { value: profile.mossStrength },
+          uMixCeiling: { value: profile.mixCeiling },
+        },
+        vertexShader: `
+attribute float pattern;
+attribute float occlusion;
+attribute vec2 weather;
+varying vec3 vWorld;
+varying vec3 vFaceN;
+varying float vPattern;
+varying float vOcclusion;
+varying vec2 vWeather;
+void main() {
+  vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+  vFaceN = normalize(normal);
+  vPattern = pattern;
+  vOcclusion = occlusion;
+  vWeather = weather;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`,
+        fragmentShader: `
+precision highp float;
+uniform float uStrength;
+uniform float uVariationScale;
+uniform float uVariation;
+uniform float uMossThreshold;
+uniform float uMossBias;
+uniform float uTintDarkness;
+uniform float uStreakStrength;
+uniform float uStreakLength;
+uniform float uMossStrength;
+uniform float uMixCeiling;
+varying vec3 vWorld;
+varying vec3 vFaceN;
+varying float vPattern;
+varying float vOcclusion;
+varying vec2 vWeather;
+${surfacePatternsGlsl}
+void main() {
+  vec2 patUV = surfaceUV(vWorld, vFaceN);
+  float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
+  float verticalFace = 1.0 - abs(vFaceN.y);
+  float weatherable = (${weatherablePatternGlsl('vPattern')}) ? 1.0 : 0.0;
+  float grain = vnoise(patUV * 1.7 + vec2(patSeed));
+  float weatherPatch = smoothstep(0.28, 0.76, grain);
+  float sheltered = clamp(vOcclusion, 0.0, 1.0);
+  float broadNoise = vnoise(patUV / uVariationScale);
+  float broadStrength = mix(1.0, 0.24 + 1.52 * broadNoise, uVariation);
+  float cornerGrime = (1.0 - sheltered) * (0.22 + 0.34 * weatherPatch) + vWeather.y * 0.3;
+  float grime = cornerGrime * broadStrength;
+  float streakNoise = vnoise(vec2(patUV.x * 3.1 + patSeed, patUV.y * 0.381 / uStreakLength));
+  float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) *
+    (1.0 - smoothstep(0.0, 0.75, fract(patUV.y / uStreakLength))) * broadStrength;
+  float northShade = 0.65 + 0.35 * step(vFaceN.z, -0.5);
+  float baseMoss = (1.0 - sheltered) * (0.4 + 0.6 * weatherPatch) * (0.25 + 0.75 * verticalFace) * northShade;
+  vec2 warp = (vec2(
+    vnoise(patUV / uVariationScale + vec2(17.2, 31.7)),
+    vnoise(patUV / uVariationScale + vec2(47.1, 11.8))
+  ) - 0.5) * 1.4;
+  float mossNoise = vnoise(patUV / (uVariationScale * 0.28) + warp);
+  float environment = clamp(vWeather.y * 0.65 + (1.0 - vWeather.x) * 0.35, 0.0, 1.0);
+  float mossCutoff = uMossThreshold - uMossBias * environment;
+  float mossPatches = smoothstep(mossCutoff, mossCutoff + 0.18, mossNoise) * environment * uVariation;
+  float moss = baseMoss * broadStrength + mossPatches;
+  float mixAmount = clamp(weatherable * uStrength * clamp(
+    uTintDarkness * grime + uStreakStrength * streak + uMossStrength * moss, 0.0, uMixCeiling
+  ), 0.0, 1.0);
+  gl_FragColor = vec4(vec3(mixAmount), 1.0);
+}`,
+        side: threeLib.DoubleSide,
+        depthTest: true,
+        depthWrite: true,
+        toneMapped: false,
+      });
+
+    const renderMixAmounts = ({ THREE: threeLib, renderer: maskRenderer, group, camera, width, height, profile }) => {
+      const material = makeMixMaterial({
+        THREE: threeLib,
+        profile,
+        weatherablePatternGlsl: globalThis.firefoxUiTest.weatherablePatternGlsl,
+        surfacePatternsGlsl: globalThis.firefoxUiTest.surfacePatternsGlsl,
+      });
+      const scene = new threeLib.Scene();
+      const measurementGroup = group.clone(true);
+      measurementGroup.traverse((object) => {
+        if (object.isMesh) {
+          object.material = material;
+        }
+      });
+      scene.add(measurementGroup);
+      const target = new threeLib.WebGLRenderTarget(width, height, {
+        format: threeLib.RGBAFormat,
+        type: threeLib.UnsignedByteType,
+        depthBuffer: true,
+        stencilBuffer: false,
+      });
+      const pixels = new Uint8Array(width * height * 4);
+      const previousTarget = maskRenderer.getRenderTarget();
+      const clearColor = maskRenderer.getClearColor(new threeLib.Color()).clone();
+      const clearAlpha = maskRenderer.getClearAlpha();
+      try {
+        maskRenderer.setRenderTarget(target);
+        maskRenderer.setClearColor(0x00_00_00, 1);
+        maskRenderer.clear(true, true, true);
+        maskRenderer.render(scene, camera);
+        maskRenderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
+      } finally {
+        maskRenderer.setRenderTarget(previousTarget);
+        maskRenderer.setClearColor(clearColor, clearAlpha);
+        target.dispose();
+        material.dispose();
+      }
+      return pixels;
     };
 
     const cameraPose = (camera) => ({ position: camera.position.toArray(), quaternion: camera.quaternion.toArray() });
@@ -230,6 +358,22 @@ void main() {
         buildingPixels.filter(([x, y]) => mask(x, y) && weatherableMask(x, y)),
       ]),
     );
+    const mixPixels = renderMixAmounts({
+      THREE: Three,
+      renderer: webglRenderer,
+      group: engine.meshes.group,
+      camera: activeCamera,
+      width: canvas.width,
+      height: canvas.height,
+      profile: overgrown,
+    });
+    const nearFullReplacementShares = Object.fromEntries(
+      Object.entries(materialPixels).map(([id, pixels]) => [
+        id,
+        pixels.filter(([x, y]) => (mixPixels[(y * canvas.width + x) * 4] / 255) * overgrown.weatheringBlend >= 0.85)
+          .length / pixels.length,
+      ]),
+    );
     const materialDifferences = (imageName, baselineName) =>
       Object.fromEntries(
         Object.entries(materialPixels).map(([id, pixels]) => [
@@ -274,6 +418,8 @@ void main() {
       weatherablePixels: weatherablePixels.length,
       weatherableFraction: weatherablePixels.length / buildingPixels.length,
       materialPixels: Object.fromEntries(Object.entries(materialPixels).map(([id, pixels]) => [id, pixels.length])),
+      nearFullReplacementShares,
+      materialPixelTotal: Object.values(materialPixels).reduce((total, pixels) => total + pixels.length, 0),
       diagnostics: {
         maskPixelCounts,
         camera: cameraPose(activeCamera),
@@ -304,6 +450,15 @@ export const measureWeatheringMaterials = async (page) => {
         weatherablePixels: result.weatherablePixels,
         materialPixels: result.materialPixels,
         diagnostics: result.diagnostics,
+      })}`,
+    );
+  }
+  if (result.materialPixelTotal !== result.buildingPixels) {
+    throw new Error(
+      `comparison pad material masks must partition the building pixels: ${JSON.stringify({
+        buildingPixels: result.buildingPixels,
+        materialPixelTotal: result.materialPixelTotal,
+        materialPixels: result.materialPixels,
       })}`,
     );
   }
