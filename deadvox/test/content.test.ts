@@ -1191,6 +1191,40 @@ describe('templates', () => {
   const check = (t: { source: string; data: unknown }) =>
     buildRegistry([...templateBase, t]).issues.map((i) => `${i.path}: ${i.message}`);
 
+  it('reports spatial template issues during registry validation', () => {
+    const wall = ['#####', '#...#', '#...#', '#...#', '#####'];
+    const sealed = {
+      source: 'sealed-entrance.json',
+      data: {
+        templates: [
+          {
+            id: 'sealed_entrance',
+            size: [5, 5, 5],
+            palette: { '#': 'brick', '.': 'air' },
+            layers: [
+              ['#####', '#####', '#####', '#####', '#####'],
+              wall,
+              wall,
+              wall,
+              ['.....', '.....', '.....', '.....', '.....'],
+            ],
+            access: {
+              ground: 'ground',
+              entrance: [2.5, 1, 2.5],
+              storeys: [{ id: 'ground', floor: 1 }],
+              stairs: [],
+            },
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([...templateBase, sealed]).issues).toContainEqual({
+      source: 'sealed-entrance.json',
+      path: 'templates[0].access.entrance',
+      message: 'entrance must reach a standing opening at the footprint edge on the ground storey',
+    });
+  });
+
   it('leaves an open air cell beside every window-frame run', () => {
     const frameRuns = [...baseRegistry.templates.values()].flatMap((definition) => {
       const frame = Object.entries(definition.palette).find(([, value]) => value === 'window_frame')?.[0];
