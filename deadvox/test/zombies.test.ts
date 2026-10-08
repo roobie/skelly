@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
-import { InstancedMesh, Matrix4, Vector3 } from 'three';
+import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
@@ -2036,7 +2036,7 @@ describe('shambler scenarios', () => {
   });
 
   // biome-ignore lint/style/noProcessEnv: this benchmark is explicitly opt-in.
-  describe.runIf(process.env.DEADVOX_SWEEPS === '1')('shambler CPU benchmark', () => {
+  describe.runIf(process.env.DEADVOX_BENCH === '1')('shambler CPU benchmark', () => {
     it('stays within its per-tick budget', () => {
       const system = new ZombieSystem(senses(() => player([0, 2, 0])));
       for (let i = 0; i < 10; i++) {
@@ -2051,17 +2051,50 @@ describe('shambler scenarios', () => {
     });
   });
 
-  it('builds a shared figure with every required part joined to its mesh group', () => {
+  it('renders required figure parts with anatomical joints', () => {
     const requiredParts = ['body', 'head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
     expect(FIGURE_PARTS).toEqual(expect.arrayContaining(requiredParts));
     expect(new Set(FIGURE_PARTS).size).toBe(FIGURE_PARTS.length);
     expect(Object.keys(FIGURE_BOXES)).toEqual(expect.arrayContaining(requiredParts));
 
+    const ranges = (part: keyof typeof FIGURE_BOXES) =>
+      FIGURE_BOXES[part].size.map((size, axis) => {
+        const center = FIGURE_BOXES[part].at[axis]!;
+        return [center - size / 2, center + size / 2] as const;
+      });
+    const gap = (a: readonly [number, number], b: readonly [number, number]) =>
+      Math.max(0, a[0] - b[1], b[0] - a[1]);
+    const bodyRanges = ranges('body');
+    const jointTolerance = 0.02;
+    const touchesBody = (part: keyof typeof FIGURE_BOXES) =>
+      ranges(part).every((partRange, axis) => gap(partRange, bodyRanges[axis]!) <= jointTolerance);
+
+    expect(FIGURE_BOXES.head.at[1]).toBeGreaterThan(FIGURE_BOXES.body.at[1]);
+    expect(touchesBody('head')).toBe(true);
+    expect(FIGURE_BOXES.leftArm.at[0]).toBeLessThan(FIGURE_BOXES.body.at[0]);
+    expect(FIGURE_BOXES.rightArm.at[0]).toBeGreaterThan(FIGURE_BOXES.body.at[0]);
+    expect(touchesBody('leftArm')).toBe(true);
+    expect(touchesBody('rightArm')).toBe(true);
+    expect(FIGURE_BOXES.leftLeg.at[1]).toBeLessThan(FIGURE_BOXES.body.at[1]);
+    expect(FIGURE_BOXES.rightLeg.at[1]).toBeLessThan(FIGURE_BOXES.body.at[1]);
+    expect(touchesBody('leftLeg')).toBe(true);
+    expect(touchesBody('rightLeg')).toBe(true);
+
     const meshes = new ZombieMeshes(BLOCK_SIZE);
     const parts = meshes.group.children;
     expect(parts).toHaveLength(FIGURE_PARTS.length);
     expect(parts.every((part) => part instanceof InstancedMesh)).toBe(true);
-    expect(parts.every((part) => part.parent === meshes.group)).toBe(true);
+    expect(parts.every((part) => part instanceof InstancedMesh && part.material instanceof MeshLambertMaterial)).toBe(
+      true,
+    );
+    expect(
+      parts.every(
+        (part) =>
+          part instanceof InstancedMesh &&
+          part.material instanceof MeshLambertMaterial &&
+          part.material.emissive.getHex() === 0,
+      ),
+    ).toBe(true);
   });
 
   it('smooths a shambler stepping up while keeping its physics and horizontal render position exact', () => {

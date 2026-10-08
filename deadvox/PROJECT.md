@@ -120,12 +120,12 @@ npm install
 npm run dev        # http://localhost:5173
 npm run dev:https  # https://<this-machine-lan-ip>:5173 (self-signed, dev-only cert)
 npm test
-npm run test:sweeps   # opt into the host-sensitive shambler CPU-budget check
-npm run validate      # base content; add paths to validate a mod on top
+npm run bench:shambler-budget  # opt into the host-sensitive shambler CPU-budget check
+npm run validate               # base content; add paths to validate a mod on top
 ```
 
-The default suite skips the host-sensitive CPU budget check. `npm run test:sweeps` sets
-`DEADVOX_SWEEPS` and runs that benchmark alone; its budget is defined by
+The default suite skips the host-sensitive CPU budget check. `npm run bench:shambler-budget`
+sets `DEADVOX_BENCH` and runs that benchmark alone; its budget is defined by
 `test/zombies.test.ts`, `SHAMBLER_CPU_BUDGET_MS`. Pin the budget only when a supported-host
 performance target is agreed.
 
