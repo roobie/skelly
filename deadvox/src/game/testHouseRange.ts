@@ -4,7 +4,7 @@ import type { Rolled } from '../core/loot.ts';
 import { ammoMatchesCalibre, firearmModelForType } from './firearmHandling.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from './testHouse.ts';
 
-export interface TestHouseRangeWaypoint {
+interface TestHouseRangeWaypoint {
   readonly id: string;
   readonly axis: 0 | 2;
   readonly target: number;
