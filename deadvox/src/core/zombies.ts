@@ -928,6 +928,55 @@ const visibleLightTarget = ({
 export const perceivePlayer = (input: PerceptionInput): boolean =>
   seesPlayer(input) || hearingTier(input) !== undefined;
 
+const snapshotZombie = (id: number, zombie: Zombie): { id: number; zombie: ZombieState } => {
+  const {
+    type,
+    behaviorRng,
+    soundRng,
+    dismemberRng,
+    tier: _tier,
+    renderPrevious: _renderPrevious,
+    searchAnchor,
+    obstacleWanderHeading,
+    lastPerceived,
+    investigationTier,
+    stanceWeight,
+    hitFlinchTime,
+    hordeId,
+    stimulusAt,
+    stepOffset,
+    ...state
+  } = zombie;
+  return {
+    id,
+    zombie: {
+      ...state,
+      regions: { ...zombie.regions },
+      type: type.id,
+      behaviorRng: [...behaviorRng.state()] as RngState,
+      soundRng: [...soundRng.state()] as RngState,
+      dismemberRng: [...dismemberRng.state()] as RngState,
+      lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
+      ...(investigationTier === undefined ? {} : { investigationTier }),
+      ...(stanceWeight === undefined ? {} : { stanceWeight }),
+      ...(hitFlinchTime === undefined ? {} : { hitFlinchTime }),
+      ...(hordeId === undefined ? {} : { hordeId }),
+      ...(stimulusAt === undefined ? {} : { stimulusAt }),
+      ...(stepOffset === undefined ? {} : { stepOffset }),
+      body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
+      facing: [...zombie.facing],
+      home: [...zombie.home],
+      ...(searchAnchor === undefined ? {} : { searchAnchor: [...searchAnchor] }),
+      searchHeading: [...zombie.searchHeading],
+      strollHeading: [...zombie.strollHeading],
+      ...(lastPerceived === undefined ? {} : { lastPerceived: [...lastPerceived] }),
+      ...(obstacleWanderHeading === undefined ? {} : { obstacleWanderHeading: [...obstacleWanderHeading] as Vec3 }),
+      ...(zombie.hordeOffset === undefined ? {} : { hordeOffset: [...zombie.hordeOffset] as Vec3 }),
+      severed: [...zombie.severed],
+    },
+  };
+};
+
 export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
@@ -973,56 +1022,17 @@ export class ZombieSystem {
   snapshotState(): Readonly<ZombieSystemState> {
     return freezeSnapshot({
       nextEntityId: this.store.nextId,
-      zombies: [...this.store.entries()].map(([id, zombie]) => {
-        const {
-          type,
-          behaviorRng,
-          soundRng,
-          dismemberRng,
-          tier: _tier,
-          renderPrevious: _renderPrevious,
-          searchAnchor,
-          obstacleWanderHeading,
-          lastPerceived,
-          investigationTier,
-          stanceWeight,
-          hitFlinchTime,
-          ...state
-        } = zombie;
+      zombies: [...this.store.entries()].map(([id, zombie]) => snapshotZombie(id, zombie)),
+      hordes: [...this.hordes.values()].map(({ state: horde, rng }) => {
+        const { stimulusAt, ...state } = horde;
         return {
-          id,
-          zombie: {
-            ...state,
-            regions: { ...zombie.regions },
-            type: type.id,
-            behaviorRng: [...behaviorRng.state()] as RngState,
-            soundRng: [...soundRng.state()] as RngState,
-            dismemberRng: [...dismemberRng.state()] as RngState,
-            lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
-            ...(investigationTier === undefined ? {} : { investigationTier }),
-            ...(stanceWeight === undefined ? {} : { stanceWeight }),
-            ...(hitFlinchTime === undefined ? {} : { hitFlinchTime }),
-            body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
-            facing: [...zombie.facing],
-            home: [...zombie.home],
-            ...(searchAnchor === undefined ? {} : { searchAnchor: [...searchAnchor] }),
-            searchHeading: [...zombie.searchHeading],
-            strollHeading: [...zombie.strollHeading],
-            ...(lastPerceived === undefined ? {} : { lastPerceived: [...lastPerceived] }),
-            ...(obstacleWanderHeading === undefined
-              ? {}
-              : { obstacleWanderHeading: [...obstacleWanderHeading] as Vec3 }),
-            ...(zombie.hordeOffset === undefined ? {} : { hordeOffset: [...zombie.hordeOffset] as Vec3 }),
-            severed: [...zombie.severed],
-          },
+          ...state,
+          home: [...horde.home],
+          target: [...horde.target],
+          ...(stimulusAt === undefined ? {} : { stimulusAt }),
+          rng: [...rng.state()] as RngState,
         };
       }),
-      hordes: [...this.hordes.values()].map(({ state: horde, rng }) => ({
-        ...horde,
-        home: [...horde.home],
-        target: [...horde.target],
-        rng: [...rng.state()] as RngState,
-      })),
     });
   }
 
