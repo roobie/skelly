@@ -637,7 +637,8 @@ it('readied-walk wobble shrinks with firearms skill at equal movement for pump a
     expect(wobble[1]).toBeLessThan(wobble[0]!);
     expect(wobble[2]).toBeLessThan(wobble[1]!);
     const firearm = BUNDLED_CONTENT.registry.items.get(firearmType)!.firearm!;
-    const noviceVariance = firearm.skillZeroHandling?.singleShot.variance ?? stanceTuning.skillZeroHandling.singleShot.variance;
+    const noviceVariance =
+      firearm.skillZeroHandling?.singleShot.variance ?? stanceTuning.skillZeroHandling.singleShot.variance;
     const configuredExpertFraction = stanceTuning.wobbleSkillTenVariance / noviceVariance;
     expect(wobble[2]! / wobble[0]!).toBeCloseTo(configuredExpertFraction, 4);
   }
