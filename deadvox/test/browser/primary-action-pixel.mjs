@@ -9,20 +9,10 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
-import { observationPlugin } from './primary-action-observation.mjs';
+import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
-const timePhase = async (phase, action) => {
-  const start = performance.now();
-  try {
-    return await action();
-  } finally {
-    process.stdout.write(
-      `PRIMARY_ACTION_TIMING ${JSON.stringify({ phase, milliseconds: Math.round(performance.now() - start) })}\n`,
-    );
-  }
-};
 const measureGlowstickFloor = async (page, uid, label) => {
   const screenshot = await page.locator('#view canvas').screenshot();
   const artifacts = resolve(projectRoot, 'test-results/primary-action');

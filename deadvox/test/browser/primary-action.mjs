@@ -10,24 +10,11 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
-import { observationPlugin } from './primary-action-observation.mjs';
+import { logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
-const logPhase = (phase, start) => {
-  process.stdout.write(
-    `PRIMARY_ACTION_TIMING ${JSON.stringify({ phase, milliseconds: Math.round(performance.now() - start) })}\n`,
-  );
-};
-const timePhase = async (phase, action) => {
-  const start = performance.now();
-  try {
-    return await action();
-  } finally {
-    logPhase(phase, start);
-  }
-};
 const inputBindingsModule = '/src/game/inputBindings.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
@@ -2619,7 +2606,7 @@ try {
       {
         seconds: 0.5,
         label: 'locked-door F action enters the simulation',
-        record: (line) => process.stderr.write(`${line}\\n`),
+        record: (line) => process.stderr.write(`${line}\n`),
       },
     );
     const pryAction = await lockedPage.evaluate((uid) => {
@@ -2648,7 +2635,7 @@ try {
       {
         seconds: 1.5,
         label: 'locked-door prying remains active',
-        record: (line) => process.stderr.write(`${line}\\n`),
+        record: (line) => process.stderr.write(`${line}\n`),
       },
     );
     assert.equal(
@@ -2673,7 +2660,7 @@ try {
       {
         seconds: 0.5,
         label: 'prying interruption reaches the simulation',
-        record: (line) => process.stderr.write(`${line}\\n`),
+        record: (line) => process.stderr.write(`${line}\n`),
       },
     );
     const interruptedPry = await lockedPage.evaluate(() => {
@@ -2701,7 +2688,7 @@ try {
         {
           seconds: 0.5,
           label: 'movement after a prying interruption',
-          record: (line) => process.stderr.write(`${line}\\n`),
+          record: (line) => process.stderr.write(`${line}\n`),
           stop: releaseAfterInterruption,
         },
       );
@@ -2716,7 +2703,7 @@ try {
       ) > 0,
       'movement remains available after an interrupted carried-tool pry',
     );
-    process.stdout.write(`Locked-door input reproduction: ${JSON.stringify({ pryAction, interruptedPry })}\\n`);
+    process.stdout.write(`Locked-door input reproduction: ${JSON.stringify({ pryAction, interruptedPry })}\n`);
   } finally {
     await lockedPage.close();
     logPhase('locked-door-input-case', lockedDoorStart);
@@ -2794,30 +2781,95 @@ try {
   assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
   assert(replayArtifact.actions.some((action) => action.action === 'item.drop'));
   assert.match(replayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
-  const replayNavigation = page.waitForNavigation();
-  await command('debug.input-replay-import');
-  await page.locator('#input-replay-file').setInputFiles({
-    name: 'input-replay.json',
-    mimeType: 'application/json',
-    buffer: Buffer.from(replayText),
+  await timePhase('full-replay-import-accepted', async () => {
+    const replayNavigation = page.waitForNavigation();
+    await command('debug.input-replay-import');
+    await page.locator('#input-replay-file').setInputFiles({
+      name: 'input-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(replayText),
+    });
+    await replayNavigation;
+    await page.waitForFunction(() => document.querySelector('#input-replay-status')?.dataset.state === 'playing');
+    const replayError = await page.locator('#errors').textContent();
+    assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
   });
-  await replayNavigation;
-  await page.waitForFunction(() => document.querySelector('#debug-ui-root'));
-  const replayCompletionTimeout = Math.ceil((replayArtifact.frames.length / 60) * 2000 + 10_000);
-  await page.waitForFunction(
-    () => {
-      const state = document.querySelector('#input-replay-status')?.dataset.state;
-      const error = document.querySelector('#errors')?.textContent ?? '';
-      return (
-        state === 'verified' || state === 'diverged' || state === 'unavailable' || error.startsWith('Replay rejected:')
-      );
-    },
-    null,
-    { timeout: replayCompletionTimeout },
+
+  await page.goto(
+    browserStageUrl(
+      'primary-action',
+      `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=hamlet&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      renderOverride,
+    ),
   );
-  const replayError = await page.locator('#errors').textContent();
-  assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
-  assert.equal(await page.locator('#input-replay-status').getAttribute('data-state'), 'diverged');
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
+  await page.waitForFunction(
+    () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+  );
+  const shortReplay = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.startInputReplayRecording();
+    const fixture = r.inventory.create('glowstick');
+    return { uid: fixture.uid, start: r.session.sim.time };
+  });
+  await waitForSimulation(
+    page,
+    progressingSample,
+    { start: shortReplay.start },
+    {
+      seconds: 0.35,
+      label: 'fixture-write replay recording advances',
+      record: (line) => process.stdout.write(`${line}\n`),
+    },
+  );
+  await command('debug.panel-toggle');
+  await command('debug.input-replay-export');
+  await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+  const shortReplayText = await page.evaluate(() => {
+    const link = document.querySelector('#replay-download');
+    if (!link?.href.startsWith('blob:')) {
+      throw new Error('Fixture-write replay export did not create a downloadable artifact');
+    }
+    return fetch(link.href).then((response) => response.text());
+  });
+  const shortReplayArtifact = JSON.parse(shortReplayText);
+  assert.equal(shortReplayArtifact.magic, 'DEADVOX_REPLAY');
+  assert(shortReplayArtifact.frames.length > 0, 'fixture-write replay includes captured player ticks');
+  assert.match(shortReplayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
+  assert.equal(
+    await page.evaluate((uid) => Boolean(globalThis.primaryActionTest.inventory.itemByUid(uid)), shortReplay.uid),
+    true,
+    'fixture write changes the recorded end state',
+  );
+  await timePhase('fixture-write-replay-divergence', async () => {
+    const shortReplayNavigation = page.waitForNavigation();
+    await command('debug.input-replay-import');
+    await page.locator('#input-replay-file').setInputFiles({
+      name: 'fixture-write-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(shortReplayText),
+    });
+    await shortReplayNavigation;
+    const replayCompletionTimeout = Math.ceil((shortReplayArtifact.frames.length / 60) * 2000 + 10_000);
+    await page.waitForFunction(
+      () => {
+        const state = document.querySelector('#input-replay-status')?.dataset.state;
+        const error = document.querySelector('#errors')?.textContent ?? '';
+        return (
+          state === 'verified' ||
+          state === 'diverged' ||
+          state === 'unavailable' ||
+          error.startsWith('Replay rejected:')
+        );
+      },
+      null,
+      { timeout: replayCompletionTimeout },
+    );
+    const replayError = await page.locator('#errors').textContent();
+    assert(!replayError?.startsWith('Replay rejected:'), `fixture-write replay import failed: ${replayError}`);
+    assert.equal(await page.locator('#input-replay-status').getAttribute('data-state'), 'diverged');
+  });
 
   assert.deepEqual(pageErrors, []);
   await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));

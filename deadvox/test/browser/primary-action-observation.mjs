@@ -1,5 +1,21 @@
 // biome-ignore-all lint/correctness/noNodejsModules: the Vite transform asserts the browser-test observation contract
 import assert from 'node:assert/strict';
+import process from 'node:process';
+
+export const logPhase = (phase, start) => {
+  process.stdout.write(
+    `PRIMARY_ACTION_TIMING ${JSON.stringify({ phase, milliseconds: Math.round(performance.now() - start) })}\n`,
+  );
+};
+
+export const timePhase = async (phase, action) => {
+  const start = performance.now();
+  try {
+    return await action();
+  } finally {
+    logPhase(phase, start);
+  }
+};
 
 export const observationPlugin = {
   name: 'primary-action-test-observation',
