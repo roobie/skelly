@@ -2,33 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 
 describe('PlayerTickActions', () => {
-  it('does not throw an item put away earlier in the same sampled gesture order', () => {
-    const execute = (): {
-      events: string[];
-      hands: { left: { uid: number } | undefined; right: { uid: number } | undefined };
-    } => {
-      const hands: { left: { uid: number } | undefined; right: { uid: number } | undefined } = {
-        left: { uid: 41 },
-        right: undefined,
-      };
-      const events: string[] = [];
-      const actions = new PlayerTickActions();
-      actions.enqueue(() => {
-        hands.left = undefined;
-        events.push('put-away:41');
-      });
-      actions.enqueue(() => {
-        applyToHeldItem(hands, 'left', 41, (item) => events.push(`throw:${item.uid}`));
-      });
-      actions.applyAtNextTick();
-      return { events, hands };
+  it('does not throw a different item drawn into the recorded hand', () => {
+    const hands: { left: { uid: number } | undefined; right: { uid: number } | undefined } = {
+      left: { uid: 41 },
+      right: undefined,
     };
+    const events: string[] = [];
+    const actions = new PlayerTickActions();
+    actions.enqueue(() => {
+      hands.left = { uid: 42 };
+      events.push('draw:42');
+    });
+    actions.enqueue(() => {
+      applyToHeldItem(hands, 'left', 41, (item) => events.push(`throw:${item.uid}`));
+    });
 
-    const live = execute();
-    const replay = execute();
+    actions.applyAtNextTick();
 
-    expect(live).toEqual(replay);
-    expect(live.events).toEqual(['put-away:41']);
+    expect(events).toEqual(['draw:42']);
+    expect(hands.left?.uid).toBe(42);
   });
   it('applies a deferred throw before a same-sample drop selects the remaining hand', () => {
     const actions = new PlayerTickActions();

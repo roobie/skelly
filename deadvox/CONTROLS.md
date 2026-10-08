@@ -217,11 +217,12 @@ becoming controls; see `BindingRegistry` in `src/game/inputBindings.ts`.
 Replay samples controls at fixed player ticks so action order does not depend on browser
 event timing. Hand-changing gestures apply at the sample that records them, in recorded
 order. A throw and a following hand gesture therefore use the same pose and remaining items
-in live play and replay. Replay fingerprints in `src/game/inputReplay.ts`,
+in live play and replay. The replay rationale remains in
+[SLICE-3.md](SLICE-3.md), 3.10. Replay fingerprints in `src/game/inputReplay.ts`,
 `replayStateFingerprint`, compare simulation times exactly. Playback in
 `src/game/inputReplayDriver.ts`, `InputReplayDriver`, advances to the next restored player
 scheduler cursor and then to the recorded end time, so live and replay share the same tick
-boundaries without weakening the fingerprint.
+boundaries.
 
 Replay covers inventory and crafting because those player flows should be reproducible,
 not just movement. Its starting save and compatibility identity keep the recording separate

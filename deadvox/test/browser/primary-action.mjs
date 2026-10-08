@@ -181,6 +181,11 @@ const observationPlugin = {
     const observedCode = code.replace(
       throwQueueMarker,
       `${throwQueueMarker}
+      if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
+        const slot = proof.quickbarTapAfterNextThrowCommit;
+        proof.quickbarTapAfterNextThrowCommit = undefined;
+        quickbarTap(slot);
+      }
       if (proof.dropAfterNextThrowCommit) {
         proof.dropAfterNextThrowCommit = false;
         dropHeldItemForThrowingStance();
@@ -214,6 +219,7 @@ const observationPlugin = {
     get inputRecorder() { return inputRecorder; },
     captureSnapshot,
     dropAfterNextThrowCommit: false,
+    quickbarTapAfterNextThrowCommit: undefined,
     startInputReplayRecording: () => {
       previousInputRecorder = undefined;
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
@@ -507,17 +513,20 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.setHand(r.dominant, mainItem);
       r.setHand(r.off, offItem);
       const minimumHoldSimSeconds = r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds;
-      return { mainUid: mainItem.uid, offUid: offItem.uid, minimumHoldSimSeconds };
+      const quickbarSlot = 0;
+      r.quickbar.assign(quickbarSlot, offItem);
+      return { mainUid: mainItem.uid, offUid: offItem.uid, minimumHoldSimSeconds, quickbarSlot };
     });
     await page.waitForFunction(() => {
       const hands = globalThis.primaryActionTest.view.held.heldByHand;
       return hands.has('left') && hands.has('right');
     });
-    await page.evaluate(() => {
+    await page.evaluate((slot) => {
       const r = globalThis.primaryActionTest;
       r.startInputReplayRecording();
       r.dropAfterNextThrowCommit = true;
-    });
+      r.quickbarTapAfterNextThrowCommit = slot;
+    }, fixture.quickbarSlot);
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     const releaseThrow = await mouseCharge(page);
@@ -542,6 +551,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         offLocation?.kind === 'pile' &&
         r.inventory.locate(r.inventory.itemByUid(ids.mainUid))?.kind === 'pile' &&
         r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw') &&
+        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'quickbar.tap.1') &&
         r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.drop')
       );
     }, fixture);
@@ -556,6 +566,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
         bodyPosition: [...r.session.body.pos],
         look: [r.input.yaw, r.input.pitch],
+        hands: Object.values(r.inventory.hands).filter(Boolean).map(({ uid }) => uid).sort((a, b) => a - b),
       };
     }, fixture);
     const command = async (action) =>
@@ -590,8 +601,13 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
     assert(artifact.actions.some(({ action }) => action === 'throw.stance.toggle'));
     const throwActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.throw');
+    assert.equal(artifact.actions.filter(({ action }) => action === 'quickbar.tap.1').length, 1);
+    const quickbarActionIndex = artifact.actions.findIndex(({ action }) => action === 'quickbar.tap.1');
     const dropActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.drop');
-    assert(dropActionIndex > throwActionIndex, 'the same-sample drop follows the throw in recorded order');
+    assert(quickbarActionIndex > throwActionIndex, 'the same-sample quickbar action follows the throw');
+    assert(dropActionIndex > quickbarActionIndex, 'the same-sample drop follows the quickbar action');
+    assert.equal(artifact.actions[quickbarActionIndex].tick, artifact.actions[throwActionIndex].tick);
+    assert.equal(artifact.actions[dropActionIndex].tick, artifact.actions[throwActionIndex].tick);
     const replayNavigation = page.waitForNavigation();
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
@@ -621,6 +637,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
           mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
           bodyPosition: [...r.session.body.pos],
           look: [r.input.yaw, r.input.pitch],
+          hands: Object.values(r.inventory.hands).filter(Boolean).map(({ uid }) => uid).sort((a, b) => a - b),
         },
       };
     }, fixture);
@@ -668,6 +685,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       'replay lands the throw in the same cell',
     );
     assert.deepEqual(replayThrowOutcome.mainLocation, liveThrowOutcome.mainLocation);
+    assert.deepEqual(replayThrowOutcome.hands, liveThrowOutcome.hands, 'live and replay hands match');
     assert.equal(replayState, 'verified', `replay end state differs: ${JSON.stringify(endSnapshotDifference)}`);
     assert.deepEqual(pageErrors, []);
   } finally {
