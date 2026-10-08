@@ -925,6 +925,7 @@ body.resting #handling {
   max-width: 38ch;
   min-width: 0;
   color: var(--muted);
+  white-space: pre;
   font:
     11px / 1.3 ui-monospace,
     monospace;

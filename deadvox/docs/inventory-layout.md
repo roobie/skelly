@@ -23,9 +23,10 @@ container cannot expand the nearby pane and push other useful contents out of
 view. The pane scrolls among its contents, and the Items body can also scroll
 to bring its pane rows into view on short screens. Since this leaves nested
 scroll regions, `deadvox/src/ui/inventoryScreen.ts`,
-`InventoryScreen.scrollSelectedItemIntoView`, reveals a selected row through
-every scrollable ancestor. The reading consumer stage verifies the selected note
-is visible and topmost at its centre.
+`InventoryScreen.scrollSelectedItemIntoView`, reveals a newly selected row
+through every scrollable ancestor. Routine redraws leave the player's browsing
+position alone. The reading consumer stage verifies the selected note is visible
+and topmost at its centre.
 
 See `deadvox/src/ui/style.css`, `.inv-body` and `.inv-grid-scroll`, for the
 sizing and scroll regions, and `deadvox/src/ui/inventoryScreen.ts`,

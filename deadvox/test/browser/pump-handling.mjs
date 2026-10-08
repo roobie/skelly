@@ -1,9 +1,7 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone native-input browser contract
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative end-to-end assertions
-// biome-ignore-all lint/style/noProcessEnv: browser executable path is runner configuration
 // biome-ignore-all lint/performance/noAwaitInLoops: native arrow navigation is sequential
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -66,6 +64,7 @@ try {
     const nativeCancelAnimationFrame = globalThis.cancelAnimationFrame.bind(globalThis);
     let manualFrames = false;
     let nextFrameId = 0;
+    let lastDeliveredTimestamp;
     let lastManualTimestamp;
     const queuedFrames = [];
     const frameWaiters = [];
@@ -83,8 +82,9 @@ try {
       } else {
         nativeRequestAnimationFrame((timestamp) => {
           if (manualFrames) {
-            queueFrame({ id, callback, timestamp });
+            queueFrame({ id, callback });
           } else {
+            lastDeliveredTimestamp = timestamp;
             callback(timestamp);
           }
         });
@@ -103,13 +103,20 @@ try {
       enable: async () => {
         manualFrames = true;
         await waitForQueuedFrame();
+        if (lastDeliveredTimestamp === undefined) {
+          throw new Error('No native game frame was delivered before manual stepping');
+        }
+        lastManualTimestamp = lastDeliveredTimestamp;
       },
       step: (seconds) => {
         const frame = queuedFrames.shift();
         if (!frame) {
           throw new Error('No queued game frame to step');
         }
-        const timestamp = frame.timestamp ?? (lastManualTimestamp ?? performance.now()) + seconds * 1000;
+        if (lastManualTimestamp === undefined) {
+          throw new Error('Manual stepping has no native timestamp baseline');
+        }
+        const timestamp = lastManualTimestamp + seconds * 1000;
         lastManualTimestamp = timestamp;
         frame.callback(timestamp);
       },
@@ -117,7 +124,10 @@ try {
         manualFrames = false;
         lastManualTimestamp = undefined;
         for (const frame of queuedFrames.splice(0)) {
-          nativeRequestAnimationFrame(frame.callback);
+          nativeRequestAnimationFrame((timestamp) => {
+            lastDeliveredTimestamp = timestamp;
+            frame.callback(timestamp);
+          });
         }
       },
     };
@@ -391,8 +401,6 @@ try {
     return rack?.searched === true;
   });
   await page.evaluate(() => globalThis.pumpHandlingTest.screen.update());
-  const screenshotDirectory = process.env.D161_SCREENSHOTS ?? resolve(projectRoot, 'test-results/d161-1');
-  await mkdir(screenshotDirectory, { recursive: true });
   const lockerGeometry = await page.evaluate((lockerUid) => {
     const box = (node) => {
       const { left, right, top, bottom } = node.getBoundingClientRect();
@@ -507,12 +515,6 @@ try {
       `tab content owns its overflow: ${JSON.stringify(result)}`,
     );
   }
-  await selectInventoryTab('crafting');
-  await page.screenshot({ path: resolve(screenshotDirectory, 'crafting.png') });
-  await selectInventoryTab('items');
-  await page.screenshot({ path: resolve(screenshotDirectory, 'locker-items.png') });
-  await selectInventoryTab('skills');
-  await page.screenshot({ path: resolve(screenshotDirectory, 'skills.png') });
   await page.setViewportSize({ width: 880, height: 540 });
   for (const tab of ['items', 'skills', 'crafting']) {
     await selectInventoryTab(tab);

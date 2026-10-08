@@ -492,6 +492,7 @@ export class InventoryScreen {
   private readonly entityByUid = new Map<number, BlockEntity>();
   private order: Item[] = [];
   private drawn = '';
+  private revealedSelectionUid: number | undefined;
   private drag: Drag | undefined;
 
   constructor(
@@ -544,6 +545,7 @@ export class InventoryScreen {
 
   close(): void {
     this.tabs.close();
+    this.revealedSelectionUid = undefined;
     this.root.hidden = true;
     document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
     this.endDrag();
@@ -784,24 +786,30 @@ export class InventoryScreen {
       this.root,
     );
     this.renderQueue();
-    this.scrollSelectedItemIntoView();
+    const selectedUid = this.selected?.uid;
+    if (selectedUid === undefined) {
+      this.revealedSelectionUid = undefined;
+    } else if (selectedUid !== this.revealedSelectionUid && this.scrollSelectedItemIntoView()) {
+      this.revealedSelectionUid = selectedUid;
+    }
   }
 
-  private scrollSelectedItemIntoView(): void {
+  private scrollSelectedItemIntoView(): boolean {
     if (!this.selected) {
-      return;
+      return false;
     }
     const selectedUid = String(this.selected.uid);
     const row = [...this.root.querySelectorAll<HTMLElement>('.inv-item[data-uid]')].find(
       (candidate) => candidate.dataset.uid === selectedUid,
     );
     if (!row?.getClientRects().length) {
-      return;
+      return false;
     }
     for (let parent = row.parentElement; parent; parent = parent.parentElement) {
       scrollItemWithinAncestor(row, parent, 'x');
       scrollItemWithinAncestor(row, parent, 'y');
     }
+    return true;
   }
 
   private viewModel(): InventoryScreenViewModel {
