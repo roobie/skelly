@@ -25,6 +25,7 @@ import {
   placedPieces,
   placedSpawns,
 } from '../src/core/templates.ts';
+import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { WORKSHOP_DISPLAY_CAR, workshopCar, workshopLift } from '../src/render/workshopVehicle.ts';
 import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
@@ -136,10 +137,15 @@ const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
     const index = x + template.size[0] * (z + template.size[2] * y);
     return result.registry.blocks[template.blocks[index]!]?.solid === true;
   };
-  for (let x = 0; x < compiledHq.size[0]; x++) {
-    for (let y = 1; y < compiledArmoury.size[1]; y++) {
-      expect(sharedWallSolid(compiledHq, x, y, compiledHq.size[2] - 1)).toBe(true);
-      expect(sharedWallSolid(compiledArmoury, x, y, 0)).toBe(true);
+  const hqXOffset = Math.round((hqBuilding.position[0] - armouryBuilding.position[0]) / scale.blockSize);
+  const sharedXStart = Math.max(0, -hqXOffset);
+  const sharedXEnd = Math.min(compiledHq.size[0], compiledArmoury.size[0] - hqXOffset);
+  expect(sharedXEnd).toBeGreaterThan(sharedXStart);
+  for (let hqX = sharedXStart; hqX < sharedXEnd; hqX++) {
+    const armouryX = hqX + hqXOffset;
+    for (let y = 1; y < Math.min(compiledHq.size[1], compiledArmoury.size[1]); y++) {
+      expect(sharedWallSolid(compiledHq, hqX, y, compiledHq.size[2] - 1)).toBe(true);
+      expect(sharedWallSolid(compiledArmoury, armouryX, y, 0)).toBe(true);
     }
   }
 };
@@ -246,6 +252,81 @@ const bodyClearOfSolids = (template: CompiledTemplate, [x, feet, z]: readonly [n
     }
   }
   return true;
+};
+
+const expectGroundedPlacement = (site: AuthoredSite, placement: AuthoredSite['placements'][number]): void => {
+  const [x0, y0, z0] = placement.origin;
+  const [width, depth] = footprint(placement);
+  const groundY = y0 + (placement.template.groundLayer ?? 0);
+  let foundationCells = 0;
+  for (let x = x0; x < x0 + width; x++) {
+    for (let z = z0; z < z0 + depth; z++) {
+      const block = placedBlockAt(placement, [x, groundY, z]);
+      if (block === undefined || !result.registry.blocks[block]?.solid) {
+        continue;
+      }
+      foundationCells += 1;
+      expect(site.surface.height(x, z, layout.ground / scale.blockSize), `${placement.template.id} at ${x},${z}`).toBe(
+        groundY,
+      );
+    }
+  }
+  expect(foundationCells, `${placement.template.id} has ground-layer support`).toBeGreaterThan(0);
+};
+
+const solidTopAboveWalk = (
+  placement: AuthoredSite['placements'][number],
+  x: number,
+  z: number,
+  walkY: number,
+): number | undefined => {
+  const [, originY] = placement.origin;
+  const [, height] = placement.template.size;
+  const blocksTop = Array.from({ length: height }, (_, localY) => originY + localY)
+    .filter((y) => y > walkY)
+    .reduce((highest, y) => {
+      const block = placedBlockAt(placement, [x, y, z]);
+      return block !== undefined && result.registry.blocks[block]?.solid ? Math.max(highest, y + 1) : highest;
+    }, Number.NEGATIVE_INFINITY);
+  const piecesTop = placedPieces(placement)
+    .filter((piece) => {
+      const furniture = result.registry.furniture.get(piece.furniture)!;
+      return (
+        !furniture.door &&
+        furniture.solid !== false &&
+        x >= piece.pos[0] &&
+        x < piece.pos[0] + piece.size[0] &&
+        z >= piece.pos[2] &&
+        z < piece.pos[2] + piece.size[2] &&
+        piece.pos[1] + piece.size[1] > walkY
+      );
+    })
+    .reduce((highest, piece) => Math.max(highest, piece.pos[1] + piece.size[1]), Number.NEGATIVE_INFINITY);
+  const top = Math.max(blocksTop, piecesTop);
+  return Number.isFinite(top) ? top : undefined;
+};
+
+const expectWallClearance = (
+  site: AuthoredSite,
+  placement: AuthoredSite['placements'][number],
+  jumpReachMeters: number,
+): void => {
+  const [x0, , z0] = placement.origin;
+  const [width, depth] = footprint(placement);
+  let checkedColumns = 0;
+  for (let x = x0; x < x0 + width; x++) {
+    for (let z = z0; z < z0 + depth; z++) {
+      const walkY = site.surface.height(x, z, layout.ground / scale.blockSize);
+      const topY = solidTopAboveWalk(placement, x, z, walkY);
+      if (topY === undefined) {
+        continue;
+      }
+      checkedColumns += 1;
+      const clearance = (topY - walkY) * scale.blockSize;
+      expect(clearance, `${placement.template.id} at ${x},${z}`).toBeGreaterThan(jumpReachMeters);
+    }
+  }
+  expect(checkedColumns, `${placement.template.id} has solid barrier columns`).toBeGreaterThan(0);
 };
 
 const columnsFor = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
@@ -589,22 +670,23 @@ const nearestAreaDistance = (
 };
 
 describe('authored fixed loot', () => {
-  it('grounds every authored camp building on solid terrain', () => {
-    const campSite = new AuthoredSite(73, result.registry, scale, layout);
-    const campPlacements = layout.buildings.flatMap((building, index) =>
-      building.template.startsWith('camp_') ? [campSite.placements[index]!] : [],
+  it('grounds every authored building on solid terrain', () => {
+    const site = new AuthoredSite(73, result.registry, scale, layout);
+    expect(site.placements.length).toBeGreaterThan(0);
+    for (const placement of site.placements) {
+      expectGroundedPlacement(site, placement);
+    }
+  });
+
+  it('keeps FOB wall and gate solid columns above jump reach', () => {
+    const site = new AuthoredSite(73, result.registry, scale, layout);
+    const jumpReachMeters = PLAYER.jump ** 2 / (2 * physicsFor(scale).gravity * scale.blockSize);
+    const wallPlacements = site.placements.filter(({ template }) =>
+      ['camp_wall_run', 'camp_gate'].includes(template.id),
     );
-    expect(campPlacements.length).toBeGreaterThan(0);
-    for (const placement of campPlacements) {
-      const [x0, y0, z0] = placement.origin;
-      const [width, depth] = footprint(placement);
-      for (let x = x0; x < x0 + width; x++) {
-        for (let z = z0; z < z0 + depth; z++) {
-          const block = placedBlockAt(placement, [x, y0, z]);
-          expect(result.registry.blocks[block!]?.solid, `${placement.template.id} foundation is solid`).toBe(true);
-          expect(campSite.surface.height(x, z, layout.ground / scale.blockSize)).toBe(y0);
-        }
-      }
+    expect(wallPlacements.length).toBeGreaterThan(0);
+    for (const placement of wallPlacements) {
+      expectWallClearance(site, placement, jumpReachMeters);
     }
   });
 
@@ -828,27 +910,19 @@ describe('authored fixed loot', () => {
     expectCampHqProperties(compiledArmoury);
   });
 
-  it('lets a player walk from inside every placed sandbag post to the compound', () => {
-    const posts = layout.buildings.filter(({ template }) => template === 'camp_sandbag_post');
-    expect(posts.length).toBeGreaterThan(0);
+  it('lets a player walk from inside the camp sandbag post template to its exit', () => {
     const definition = result.registry.templates.get('camp_sandbag_post')!;
     const post = compileTemplate(result.registry, definition);
     expect(templateSpatialIssues(result.registry, post)).toEqual([]);
     const [width, , depth] = post.size;
-    for (const placement of posts) {
-      expect(templateSpatialIssues(result.registry, post), `${placement.template} at ${placement.position}`).toEqual(
-        [],
-      );
-      const reachable = templateReachableStandingPositions(result.registry, post);
-      expect(
-        reachable.some(
-          ([x, feet, z]) =>
-            feet === post.access?.storeys.find(({ id }) => id === post.access?.ground)?.floor &&
-            (x <= 1 || x >= width - 1 || z <= 1 || z >= depth - 1),
-        ),
-        `${placement.template} at ${placement.position} has a reachable exit`,
-      ).toBe(true);
-    }
+    const reachable = templateReachableStandingPositions(result.registry, post);
+    expect(
+      reachable.some(
+        ([x, feet, z]) =>
+          feet === post.access?.storeys.find(({ id }) => id === post.access?.ground)?.floor &&
+          (x <= 1 || x >= width - 1 || z <= 1 || z >= depth - 1),
+      ),
+    ).toBe(true);
   });
 
   it('keeps every fixed-loot container reachable from outside at standing height', () => {

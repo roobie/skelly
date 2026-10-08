@@ -7,7 +7,7 @@ read_if:
   - you're changing crawler gait, hit response or generation validation
   - you're preparing the end-of-slice playtest or its authored map
   - you're detailing the military site's armoury access and its noisy fallback
-  - you're authoring the military compound, its buildings or its routes
+  - you're authoring the military compound, its buildings or perimeter walls
   - you're changing or measuring input-replay capture and playback
 ---
 
@@ -59,9 +59,7 @@ The eleven milestones are:
 - Shared flow fields: dropped by BR in the 3.9 ruling. Background zombies use the beeline in big, cheap steps instead; d84 (#279) is the carried-in attention brain. The remaining route follow-up in #244 is obsolete under that direction.
 - Legendary effects beyond vanity. BR's direction is “mostly vanity thing, but we might come up with something along the way” (2026-10-05 21:29).
 
-- **Military compound:** guard posts keep their floors at walking height and exits open; the separate three-storey HQ shares a solid wall with the armoury without opening into its locked interior. `src/content/base/camp.json` defines the interiors, `maps/playtest.tmj` places them, and `test/authoredFixedLoot.test.ts` checks post exits, HQ access and the shared wall.
-- **Grounding and camp scale:** layer-zero foundations prevent template air from carving the terrain beneath structures. The raised lookout stands on ground-supported legs and has a cabin floor with an authored stair flight; the expanded compound keeps its existing buildings and armoury route around a larger three-storey HQ, with open ground for the later amalgam encounter. `src/content/base/camp.json` defines the structures and access; `maps/extensions/deadvox.mjs`, `exportLayout`, exports their placements from `maps/playtest.tmj`.
-- **FOB perimeter:** ground-standing walls make the camp defensible without sealing its approaches. The northern gate stays operable, while the named southern breach route remains passable; uneven top courses show the perimeter's abandonment. New structures follow this dilapidation direction starting with the camp walls in #385; retrofits to existing structures are tracked in #396. `src/content/base/camp.json`, `camp_wall_run` and `camp_gate`, define the perimeter; `test/authoredFixedLoot.test.ts` checks grounding, access and the breach route.
+Beat details in #181 are settled one turn at a time before their dependent map rounds. The approved schematic v2 is the basis for the medical-site pass. BR ruled on pharmacy access for d122-6, “to keep it simple, we'll go for 1:(b) , 2:front counter” (2026-10-07 11:13): use #309's existing key-or-crowbar door lock and put the pharmacy key in the front counter. The military site follows its own map round.
 
 ## How this slice runs
 
@@ -290,12 +288,18 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 > 2. yes
 > 3. press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse
 
+**BR, 2026-10-07 14:27:**
+
+> "T only throws a lit glowstick :D / it should of course throw whatever it is is wielded in primary hand. It requires to be held 1 second before throwing"
+
+BR approved weight-limited range at 14:35; atmospheric drag follows its separate issue, #368. With no handling job active, charge begins on press; a throw pressed during a rack or magazine job starts charging when that job finishes. The minimum remains a release gate. See `src/game/inputBindings.ts`, `player.throw`, and `src/game/play.ts`, `finishItemThrow`.
+
 Daylight overwhelms portable light wherever the sky is open, including outdoor shade; a roof or cellar leaves light mattering at noon. Brighter glowsticks keep their existing sensing reach. A lure gets one investigation so it creates risk without holding a shambler indefinitely; a nearby sound takes priority. Charging makes throw distance a deliberate choice, and cancellation prevents a mistaken release.
 
 **In:** Lights affect detection through the existing zombie attention owner (`src/core/zombies.ts`, `ZombieSystem`). The player has a headlamp and a throwable glowstick; light sensing does not add a second pursuit system.
 **Saves:** Headlamp and glowstick state use their existing item/light owners. Any persistent zombie attention target belongs to the existing saved zombie state and fingerprint; light visibility is derived from active sources and surrounding conditions.
-**Tests:** a visible light can become the beeline target; an investigation searches and returns without re-alerting to the same lure, and near sound outranks a lure. Daylight sky exposure gates player light and world lures locally, including open noon, noon indoors, open night and outdoor shade. A dropped or thrown active glowstick appears in the renderer's fixed light set and is a zombie sense source; stored lights that do not shine into the world are excluded. A longer charge throws farther, maximum range is bounded by tuning, right-click cancels, and the world trace stops at walls and ceilings before settling on solid ground. Headlamp state survives the existing item save round trip. Do not pin tuning values, content counts or seeded positions.
-**Done when:** visible light sources affect zombie attention only where plausible, the headlamp and charged glowstick are useful without replacing sound or sight, and dropped light state remains consistent across simulation and rendering.
+**Tests:** a visible light can become the beeline target; an investigation searches and returns without re-alerting to the same lure, and near sound outranks a lure. Daylight sky exposure gates player light and world lures locally, including open noon, noon indoors, open night and outdoor shade. A dropped or thrown active glowstick appears in the renderer's fixed light set and is a zombie sense source; stored lights that do not shine into the world are excluded. A primary-hand item throws only after the minimum simulation-time hold; shorter releases leave it in hand, and the recorded throw preserves its range and item state. A longer charge throws farther, capped at full charge. Heavier items travel no farther than lighter ones at equal charge; charged range remains tuned for light items. Right-click cancels, and the world trace stops at walls and ceilings before settling on solid ground. Headlamp state survives the existing item save round trip. Do not pin tuning values, content counts or seeded positions.
+**Done when:** visible light sources affect zombie attention only where plausible, the headlamp and charged glowstick are useful without replacing sound or sight, and dropped light state remains consistent across simulation and rendering. Held-item throws retain their state, with glowstick light still shining after landing.
 
 ### 3.7 Modular weapons
 
@@ -336,7 +340,7 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
 **Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
 **Done when:** runner, crawler and apex enemy are distinct playable threats and their persistent state round-trips.
-**First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response after #325 merges); the apex enemy's size, silhouette and encounter read.
+**First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response); the apex enemy's size, silhouette and encounter read.
 
 **Work split:** d106-1 implements the runner and crawler; #308 tracks playtest 1's apex enemy as a separate work item within 3.8.
 
@@ -358,7 +362,7 @@ After seeing the stumps, BR's question was whether they read correctly despite t
 
 > “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
 
-BR approved the grounded static pose and requested camera-directed gaze for every mob (BR, 2026-10-07 10:03). The crawler's arm-drag gait and runner/crawler flinches use existing simulation state, drive posed hitboxes, add no saved state, and change the simulation fingerprint so older replays do not carry over. Crawler hitboxes follow the prone body. Gameplay stagger, slowdown and knockdown remain open for BR. Mobgen validates crawler generation using voxel-derived ground contacts through `mobgen/src/core/generate.ts`, `resolveSupportBones`.
+BR's grounded prone form and perception-directed gaze make the crawler's shape and attention readable. Gaze stays presentation-only, while the drag gait and runner/crawler flinches affect hit geometry so attacks follow the visible pose; they add no saved state but change replay compatibility. Gameplay stagger, slowdown and knockdown remain open for BR. Generated support validation protects the grounded form. See `mobgen/src/mob/crawler.ts`, `crawlerGaitPose`, `src/core/zombiePose.ts`, `posedShambler`, and `mobgen/src/core/generate.ts`, `resolveSupportBones`.
 
 **Legendary direction (BR, 2026-10-05 21:29):** “sounds about right” on the proposed cost; effects are “mostly vanity thing, but we might come up with something along the way”. The 3.1 skill work carries d83's scale/legendary contract; effects beyond vanity are out of this slice.
 
@@ -423,19 +427,29 @@ dependencies.
 > q4: i have one tester - the other two are open
 
 **In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. BR's 2026-10-05 answer confirms the 2026-10-03 ruling: the medical site's virus-sampling research is lore, not a player mission.
+
 - **Discoverable lore:** readable notes and documents, perhaps a wall notice; distinct from 2.5's recipe-teaching books (BR, 2026-10-03; confirmed 2026-10-05).
 - **Nights:** night 1 near the hunting cabins; night 2 at the medical site (preliminary, BR, 2026-10-03).
 - **Armoury access:** the camp must remain reachable if the clinic key stays on the dead officer. BR said at 19:03, “#320 the prying should take a bit longer - maybe 5 ingame seconds? Eyeballin” and at 19:05, “yeah, let's not make it a long action” / “but it should be skill dependent - starting at 15 seconds - gets faster by 'fabrication' or similar woodworking skill”. Asked whether to add `fabrication`, use `mechanics`, or use `crafting`, BR answered “1b”: use the existing `mechanics` skill. BR also answered “2 sounds like a good start” to the proposed level-10 duration of 7.5 real seconds—half the 15-second level-0 duration—with 30 strikes retained. The lead reads 15 seconds as real play time; keep prying out of compression so the crowbar's noise draws the dead at normal pace. The matching key remains the quiet route, and `lock_test` is a first-look fixture, not the authored military site. BR answered #309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door unlocked, making forced entry one-way. See `DESIGN.md`, “Base building and electricity”, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
 - **Tester prompt:** “find the military camp” (BR, 2026-10-06 13:05: “yes, confirmed”; #181).
-- **Closing note (BR, 2026-10-07 17:01:03 +02:00):** “br-24: plain readable - refer to the link in the F9 menu to get to the repo's home at github”. The military camp's closing readable tells testers to press F9 and use **Project home**, the repository link in the main menu.
+- **Military compound:** guard posts keep their floors at walking height and exits open; the separate three-storey HQ shares a solid wall with the armoury without opening into its locked interior. `src/content/base/camp.json` defines the interiors, `maps/playtest.tmj` places them, and `test/authoredFixedLoot.test.ts` checks post exits, HQ access and the shared wall.
+- **Grounding and camp scale:** solid ground-layer foundations meet the terrain surface, including templates with cellars; the raised lookout stands on ground-supported legs and its cabin is reachable. Preserve existing buildings and the armoury route as placements while keeping the expanded compound's open ground for the later amalgam encounter. `src/content/base/camp.json` defines structures and access; `maps/extensions/deadvox.mjs`, `exportLayout`, exports placements from `maps/playtest.tmj`; `test/authoredFixedLoot.test.ts`, `grounds every authored building on solid terrain`.
+- **FOB perimeter:** solid wall columns exceed jump reach, while the operable north gate and named south breach remain passable; uneven top courses show the perimeter's abandonment. New structures follow the dilapidation direction starting with the camp walls in #385; retrofits to existing structures are tracked in #396. `src/content/base/camp.json`, `camp_wall_run` and `camp_gate`, define the perimeter; `test/authoredFixedLoot.test.ts` checks wall height and the breach route.
+- The camp's closing readable directs testers to Project home through the F9 menu.
 
-For #385's br-35 iteration, guard posts keep their floor at the compound's walking height and a side opening because a recessed, fully walled post traps its occupant instead of providing cover. The HQ adjoins the armoury along a solid wall segment away from its keyed door, preserving that door as the only route to the armoury's contents. Stairs connect its three storeys; the open observation level gives the top floor a lookout role and keeps its landing clear. `src/content/base/camp.json` owns the interiors, `maps/playtest.tmj` places the HQ, and `test/authoredFixedLoot.test.ts` checks post exits, HQ floor access and the sealed shared wall.
-
-The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. BR agreed beats 4–6 in #181; their map rounds follow the dependent 3.7 and 3.8 work for beat 4, 3.4 and 3.8 for beat 5, and 3.2, 3.8 and 3.9 for beat 6. Do not block beats 1–3 on those later rounds.
+The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. BR agreed beats 4–6 in #181. The dependency-independent workshop core is in d124-2: `src/content/base/templates-workshop.json` owns its reusable interiors, `maps/playtest.tmj` owns the site and route, and `src/content/base/layouts-playtest.json` is the committed export. Its optional door `openNoise` keeps the roller entry loud while the side door stays quiet (`src/core/schema.ts`, `FurnitureSchema`; `src/game/doorAction.ts`, `registerDoorAction`). Fixed promises and seed-owned filler remain separate; the radio is loot, not an implementation decision about whether it works. The workshop's authored `r` spawn markers use the existing runner type; no scripted spawns are used. Its static stripped 4×4 comes from the vehicle-spike blueprint in `src/vehicles/rangeRover.ts`, rendered by `src/render/workshopVehicle.ts`, while furniture retains collision ownership. The main hall roof is double height by BR's 2026-10-07 16:33 request: “we will likely want to raise the roof too in the workshop main hall to double height”. Quiet/light choice loot remains deferred to 3.7. The medical and military map rounds retain their dependencies on 3.4 and 3.8, and 3.2, 3.8 and 3.9 respectively. Do not block beats 1–3 on those later rounds.
 **Saves:** The authored layout, fixed placements and seeded loot regenerate from the site and seed. Dynamic changes and looted items use the existing world/inventory save; no separate map-progress state is added.
 **Tests:** authored content validates; site generation is deterministic across chunk order; required progression and routes remain traversable; fixed key loot and seeded filler follow their separate ownership without pinning exact coordinates or complete loot lists. The playtest records consented observation notes and local metrics without changing game state.
 **Done when:** the approved map supports the end-of-slice playtest, its two nights and progression are playable, the checklist links its evidence, and the playtest findings are recorded before Slice 4 planning.
 **First look / BR approval:** the completed authored map, including the workshop/medical/military progression and night locations.
+
+#### Loose-item pickup
+
+Loose-item pickup belongs in the first Slice 3 playtest because looting is central to it. A simple grab animation pays the animation debt.
+
+**In:** From the game view, F pockets the nearest targeted ground item on tap or wields it on hold. The existing world target and reach also cover doors and containers; inventory placement and handling continue to own transfers, and the hand reach animation is presentation-only. See `src/core/interactionPick.ts`, `pickInteractionTarget`, and `src/render/grabPose.ts`, `grabPose`.
+
+**Done when:** a tap pockets a fitting item or leaves an unfit item on the ground with a reason; holding F wields the item and moves displaced hand items into pockets or onto the ground; the existing door tap still works; replay preserves the resolved gesture; and the hands visibly reach toward the item without owning its handling time.
 
 ## Dependencies and order
 
@@ -444,7 +458,7 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 - 3.5 precedes 3.6 and 3.9.
 - 3.2 precedes 3.7.
 - 3.10 starts early enough for later milestones to use replays.
-- BR agreed beats 4–6 in #181; each later map round follows its dependencies: beat 4 after 3.7 and 3.8, beat 5 after 3.4 and 3.8, and beat 6 after 3.2, 3.8 and 3.9.
+- BR agreed beats 4–6 in #181. Beat 4's choice-critical attachments remain deferred to 3.7, and its authored `r` spawn markers use the existing runner type without scripted spawns. d124-2 supplies the independent workshop core. Beat 5 follows 3.4 and 3.8, and beat 6 follows 3.2, 3.8 and 3.9.
 
 ## Carried in
 
@@ -458,7 +472,7 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 Only questions BR left open; don't infer answers from implementation or old proposals.
 
 - **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
-- **#181 beats 4–6:** detail the larger workshop, medical site and military site one beat per turn. BR's earlier answers settle the order and purpose, but not these beats' contents and layouts.
+- **#181 beat 4:** whether the radio works, and which quiet-or-light craft path fixed workshop loot should cover fully. d124-2 places the radio and defers both decisions; its attachment-dependent choice loot remains deferred to 3.7. The template's `r` spawn markers use the existing runner type without scripted spawns. Beats 5–6 retain their own dependent map rounds.
 - **#181 tester prompt:** confirm the wording when BR details beats 4–6. BR's 2026-10-05 22:17 proposal was: “Instead it could be: "find the military camp", maybe?”
 - **#308 — playtest 1 apex enemy:** the design questions remain open; see 3.8.
 
