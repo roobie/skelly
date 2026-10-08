@@ -11,7 +11,8 @@ the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), whos
 
 ## Project stage: pre-pre-alpha, no backwards compatibility
 
-We owe no backwards compatibility (BR, 2026-10-02). Change formats, exports and
+At pre-pre-alpha, preserving old formats and behavior can obstruct simpler
+changes, so we owe no backwards compatibility. Change formats, exports and
 contracts freely when that makes the code simpler; don't add legacy paths, opt-in
 flags, compat shims or migrations to keep old output or old data working, and
 don't require byte-identical exports. What must still work: gungen exports a model
@@ -60,6 +61,9 @@ a comment or a PR:
   "newly". When your PR completes an item, resolve every doc line that names it.
 - The final reason goes in a tracked doc or ADR before the merge, not only in the PR,
   an issue or a commit message.
+- Tracked docs state rules and reasons in plain words, without source attributions or
+  timestamps. Keep the verbatim source quote and stamp in the commit message that adds
+  or changes the rule, preserving provenance without turning the doc into a history log.
 - Write a comment only for a special why.
 - Every tracked doc starts with front matter whose `read_if` lists the reasons to read
   it. Add or update it whenever you add or change a doc.
@@ -94,10 +98,9 @@ including the push that publishes a new branch, or that push fails.
 
 ### Git: this project does not use `git-flow`
 
-Don't use the `git-flow` skill or its driver here (BR, 2026-10-02). Its single
-repo-wide pending ticket let one paused or failed operation block every agent,
-and each topic's fresh worktree needed full installs before its first push.
-Revisit when bjorn/git-kit#7, #8 and #9 are fixed.
+Don't use the `git-flow` skill or its driver here. Its single repo-wide pending
+ticket can block every agent, and fresh worktrees need full installs before their
+first push. Revisit when bjorn/git-kit#7, #8 and #9 are fixed.
 
 Use plain git, following AGENTS.md:
 
@@ -109,7 +112,7 @@ Use plain git, following AGENTS.md:
 - **After BR merges the PR:** remove the worktree (`git worktree remove`) and
   delete the local branch; the lead does this.
 
-Keep this copy aligned with `.claude/CLAUDE.md`. BR (2026-10-07 10:59): "duplicate the rule to AGENTS.md".
+Keep this copy aligned with `.claude/CLAUDE.md` so either entry point gives the same git guidance.
 
 ### Main checkout
 
