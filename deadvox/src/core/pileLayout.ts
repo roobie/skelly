@@ -22,6 +22,19 @@ export interface PileLayout {
   bundle: Placed[];
 }
 
+export const PILE_BUNDLE_WIDTH = 0.7;
+const PILE_BUNDLE_BASE_HEIGHT_METRES = 0.06;
+const PILE_BUNDLE_MAX_HEIGHT_METRES = 0.18;
+
+export const pileBundleHeight = (registry: Registry, bundle: readonly Placed[]): number => {
+  const cells = bundle.reduce((sum, { item }) => {
+    const [width, height] = defOf(registry, item.type).size;
+    return sum + width * height;
+  }, 0);
+  const capacity = PILE_GRID.w * PILE_GRID.h;
+  return PILE_BUNDLE_BASE_HEIGHT_METRES + PILE_BUNDLE_MAX_HEIGHT_METRES * Math.min(1, cells / capacity);
+};
+
 /**
  * Lays out a pile on its block of floor. The grid's x runs along the world's x and
  * its y along the world's z. `hasModel` says whether a model can be drawn yet.
