@@ -18,10 +18,6 @@
       "id": "wire_spool",
       "file": "assets/models/wire_spool.glb"
     },
-    {
-      "id": "improvised_suppressor",
-      "file": "assets/models/improvised_suppressor.glb"
-    },
     { "id": "lamp_oil_bottle", "file": "assets/models/lamp_oil_bottle.glb" },
     { "id": "glass_shards", "file": "assets/models/glass_shards.glb" },
     { "id": "tape_roll", "file": "assets/models/tape_roll.glb" },

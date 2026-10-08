@@ -683,7 +683,7 @@ it('firearms skill effects improve through expert level and legendary matches ex
   const noviceStance = firearmStanceEffects(0, stanceTuning);
   const experiencedStance = firearmStanceEffects(SKILL_LEVEL_MAX, stanceTuning);
   const legendaryStance = firearmStanceEffects(SKILL_LEVEL_LEGENDARY, stanceTuning);
-  expect(experiencedStance.raiseDuration).toBeLessThan(noviceStance.raiseDuration);
+  expect(experiencedStance.raiseDurationSimSeconds).toBeLessThan(noviceStance.raiseDurationSimSeconds);
   expect(experiencedStance.readyMovementFactor).toBeGreaterThan(noviceStance.readyMovementFactor);
   expect(legendary).toEqual(experienced);
   expect(legendaryStance).toEqual(experiencedStance);

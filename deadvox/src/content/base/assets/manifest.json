@@ -377,7 +377,6 @@
         "assets/models/hand_saw.glb",
         "assets/models/screwdriver.glb",
         "assets/models/wire_spool.glb",
-        "assets/models/improvised_suppressor.glb",
         "assets/models/lamp_oil_bottle.glb",
         "assets/models/glass_shards.glb",
         "assets/models/tape_roll.glb",
@@ -424,6 +423,28 @@
       "download": null,
       "files": ["assets/audio/player-nope-01.ogg"],
       "changes": "Recorded by BR for the project; converted from 48 kHz stereo PCM WAV to 48 kHz mono Opus in an Ogg container without gain processing."
+    },
+    {
+      "title": "Gungen standalone firearm attachments",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/attachmentExport.ts",
+      "author": "Skelly contributors",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": [
+        "assets/models/foregrip.glb",
+        "assets/models/improvised_suppressor.glb",
+        "assets/models/optic_digital_thermal.glb",
+        "assets/models/optic_fixed_prism_4x.glb",
+        "assets/models/optic_high_mag_5_25x.glb",
+        "assets/models/optic_holographic.glb",
+        "assets/models/optic_lpvo_1_6x.glb",
+        "assets/models/optic_mini_reflex.glb",
+        "assets/models/optic_tube_dot.glb",
+        "assets/models/rail_front_sight.glb",
+        "assets/models/real_suppressor.glb",
+        "assets/models/tactical_flashlight_mount.glb"
+      ],
+      "changes": "Exported by gungen from original project-built part geometry as standalone models at each mount base, +x forward and +y up."
     }
   ]
 }

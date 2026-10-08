@@ -3,17 +3,7 @@
 // over the origin, for piles; and held at its grip in the data-selected pose.
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
-import {
-  Box3,
-  type BufferGeometry,
-  Group,
-  type Material,
-  MathUtils,
-  type Matrix4,
-  Mesh,
-  Object3D,
-  Vector3,
-} from 'three';
+import { Box3, type BufferGeometry, Group, type Material, MathUtils, Matrix4, Mesh, Object3D, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
@@ -49,23 +39,41 @@ export interface ComposedSlot {
 }
 
 export interface ComposedHeld extends HeldModel {
-  readonly slots: Partial<Record<ItemLookSlot['slot'], ComposedSlot>>;
+  readonly slots: Partial<Record<string, ComposedSlot>>;
 }
 
 /** Hides the baked geometry of item-owned slots: an item's look draws what is really fitted there instead. */
 const hideSlotNodes = (def: ModelDef, scene: Object3D, parser: Parameters<typeof namedNodes>[1]): void => {
-  const names = Object.values(def.slots ?? {}).flatMap((slot) => (slot ? [slot.node] : []));
+  const names = [
+    ...Object.values(def.slots ?? {}).flatMap((slot) => (slot ? [slot.node] : [])),
+    ...(def.attachments ?? []).map(({ node }) => node),
+  ];
   for (const node of namedNodes(scene, parser, names)) {
     node.visible = false;
   }
 };
 
 /** The frame a slot's `at` and `turn` place a part in: the base model's file frame. */
-const slotFrame = (slot: ItemLookSlot): Group => {
+export const fittedPartFrame = (slot: ItemLookSlot): Group => {
   const frame = new Group();
   frame.position.set(...slot.at);
-  const [tx, ty, tz] = slot.turn;
-  frame.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
+  if (slot.direction && slot.up) {
+    if (!slot.mountFrame) {
+      throw new Error(`Fitted model ${slot.model ?? slot.slot} has no exported mount frame`);
+    }
+    const sourceNormal = new Vector3(...slot.mountFrame.normal).normalize();
+    const sourceUp = new Vector3(...slot.mountFrame.up).normalize();
+    const sourceSide = sourceNormal.clone().cross(sourceUp).normalize();
+    const targetNormal = new Vector3(...slot.direction).negate().normalize();
+    const targetUp = new Vector3(...slot.up).normalize();
+    const targetSide = targetNormal.clone().cross(targetUp).normalize();
+    const sourceFrame = new Matrix4().makeBasis(sourceNormal, sourceUp, sourceSide);
+    const targetFrame = new Matrix4().makeBasis(targetNormal, targetUp, targetSide);
+    frame.quaternion.setFromRotationMatrix(targetFrame.multiply(sourceFrame.invert()));
+  } else if (slot.turn) {
+    const [tx, ty, tz] = slot.turn;
+    frame.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
+  }
   return frame;
 };
 
@@ -224,7 +232,7 @@ export class ModelLibrary {
     const root = prepared.ground.clone();
     const frame = modelFrame(root, 'ground');
     const slots = Object.values(this.attachParts(frame, look));
-    if (slots.some((slot) => slot.model)) {
+    if (slots.some((slot) => slot?.model)) {
       frame.position.y -= visibleBounds(root).min.y;
     }
     if (look.slots.every((slot) => slot.model === undefined || this.ready.has(slot.model))) {
@@ -236,7 +244,7 @@ export class ModelLibrary {
   private attachParts(frame: Object3D, look: ItemLook): ComposedHeld['slots'] {
     const slots: ComposedHeld['slots'] = {};
     for (const slot of look.slots) {
-      const group = slotFrame(slot);
+      const group = fittedPartFrame(slot);
       const model = slot.model === undefined ? undefined : this.part(slot.model);
       if (model) {
         group.add(model);

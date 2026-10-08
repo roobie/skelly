@@ -20,7 +20,7 @@ export type TreeLocation<Node, Pile, Entity> =
   | { kind: 'hand'; side: HandSide }
   | { kind: 'worn'; slot: WearSlot }
   | { kind: 'work'; owner: Node }
-  | { kind: 'slot'; owner: Node; slot: 'magazine' }
+  | { kind: 'slot'; owner: Node; slot: string }
   | { kind: 'pocket'; owner: Node; pocket: number; placed: PlacedItem<Node> }
   | { kind: 'pile'; pile: Pile; placed: PlacedItem<Node> }
   | { kind: 'furniture'; entity: Entity; pocket: number; placed: PlacedItem<Node> };
@@ -30,6 +30,10 @@ export interface TreeEntry<Node, Pile, Entity> {
   readonly location: TreeLocation<Node, Pile, Entity>;
   readonly path: string;
 }
+
+/** Whether a path is inside a slot-owned subtree rooted in either held hand. */
+const HELD_ITEM_SLOT_TREE_PATH = /(?:^|\.)hands\.[^.]+\.slots\./;
+export const isInHeldItemSlotTree = (path: string): boolean => HELD_ITEM_SLOT_TREE_PATH.test(path);
 
 /** Lazy roots: lookup of a held light need not collect the world first. */
 export function* itemRoots<Node, Pile extends PileShape<Node>, Entity extends EntityShape<Node>>(
@@ -78,38 +82,40 @@ export function* itemRoots<Node, Pile extends PileShape<Node>, Entity extends En
   }
 }
 
+const slotChildren = <Node extends NodeShape<Node>, Pile, Entity>(
+  root: TreeEntry<Node, Pile, Entity>,
+): TreeEntry<Node, Pile, Entity>[] =>
+  Object.entries(root.item.slots ?? {}).flatMap(([slot, item]) =>
+    item ? [{ item, location: { kind: 'slot', owner: root.item, slot }, path: `${root.path}.slots.${slot}` }] : [],
+  );
+
+const workChildren = <Node extends NodeShape<Node>, Pile, Entity>(
+  root: TreeEntry<Node, Pile, Entity>,
+): TreeEntry<Node, Pile, Entity>[] =>
+  (root.item.work?.components ?? []).map((item, index) => ({
+    item,
+    location: { kind: 'work', owner: root.item },
+    path: `${root.path}.work.components[${index}]`,
+  }));
+
+const pocketChildren = <Node extends NodeShape<Node>, Pile, Entity>(
+  root: TreeEntry<Node, Pile, Entity>,
+): TreeEntry<Node, Pile, Entity>[] =>
+  (root.item.pockets ?? []).flatMap((grid, pocket) =>
+    grid.map((placed, index) => ({
+      item: placed.item,
+      location: { kind: 'pocket', owner: root.item, pocket, placed },
+      path: `${root.path}.pockets[${pocket}][${index}].item`,
+    })),
+  );
+
 /** Preorder, so validation sees a duplicate/cycle before following its children. */
 export function* walkItemTree<Node extends NodeShape<Node>, Pile, Entity>(
   roots: Iterable<TreeEntry<Node, Pile, Entity>>,
 ): Generator<TreeEntry<Node, Pile, Entity>> {
   for (const root of roots) {
     yield root;
-    const fitted = root.item.slots?.magazine;
-    if (fitted) {
-      yield* walkItemTree<Node, Pile, Entity>([
-        {
-          item: fitted,
-          location: { kind: 'slot', owner: root.item, slot: 'magazine' },
-          path: `${root.path}.slots.magazine`,
-        },
-      ]);
-    }
-    for (const [index, item] of (root.item.work?.components ?? []).entries()) {
-      yield* walkItemTree<Node, Pile, Entity>([
-        { item, location: { kind: 'work', owner: root.item }, path: `${root.path}.work.components[${index}]` },
-      ]);
-    }
-    for (const [pocket, grid] of (root.item.pockets ?? []).entries()) {
-      for (const [index, placed] of grid.entries()) {
-        yield* walkItemTree<Node, Pile, Entity>([
-          {
-            item: placed.item,
-            location: { kind: 'pocket', owner: root.item, pocket, placed },
-            path: `${root.path}.pockets[${pocket}][${index}].item`,
-          },
-        ]);
-      }
-    }
+    yield* walkItemTree<Node, Pile, Entity>([...slotChildren(root), ...workChildren(root), ...pocketChildren(root)]);
   }
 }
 

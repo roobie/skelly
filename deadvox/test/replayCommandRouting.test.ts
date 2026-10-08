@@ -28,6 +28,7 @@ describe('screen command routing', () => {
       'workOptions',
       'body',
       'actionRefusal',
+      'attachmentCandidates',
     ]);
     expect(inventoryCallbacks).toContain('dispatch');
     expect(inventoryCallbacks.filter((name) => name !== 'dispatch' && !readOnlyInventoryCallbacks.has(name))).toEqual(

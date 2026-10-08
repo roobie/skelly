@@ -1,6 +1,15 @@
 // A detachable box magazine (SLICE-3.md, 3.2): an item whose model carries gungen's fitted round column.
 // Its cartridges are item state in feed order: index 0 is the top round, the next one fed or stripped.
-import type { Registry } from './content.ts';
+import type { ModelDef, Registry } from './content.ts';
+import {
+  attachmentIdFor,
+  compatibilityPairCertifies,
+  footprintFitsRail,
+  isExportedSingleFit,
+  railFootprint,
+  railFootprintsOverlap,
+} from './firearmFitting.ts';
+import type { Item } from './items.ts';
 
 export interface MagazineSpec {
   readonly calibre: string;
@@ -33,12 +42,11 @@ export const magazineFits = (registry: Registry, firearmType: string, magazineTy
 };
 
 /**
- * Military loot only: the magazine-fed rifles, the magazines and cartridges of their calibres, and packages that
- * unpack into any of them, however deeply nested. BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2); their ammunition follows.
+ * The current military loot set includes magazine-fed rifles, their magazines and cartridges, and packages that
+ * unpack into military-only items. BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2); their ammunition follows.
  */
-export const militaryLootItems = (registry: Registry): ReadonlySet<string> => {
-  const calibres = new Set<string>();
-  const items = new Set<string>();
+
+const addFirearmsToMilitaryLoot = (registry: Registry, calibres: Set<string>, items: Set<string>): void => {
   for (const id of registry.items.keys()) {
     const calibre = magazineWellCalibre(registry, id);
     if (calibre !== undefined) {
@@ -46,12 +54,18 @@ export const militaryLootItems = (registry: Registry): ReadonlySet<string> => {
       items.add(id);
     }
   }
+};
+
+const addMilitaryCalibreItems = (registry: Registry, calibres: ReadonlySet<string>, items: Set<string>): void => {
   for (const [id, def] of registry.items) {
     const calibre = magazineSpec(registry, id)?.calibre ?? def.ammo?.calibre;
     if (calibre !== undefined && calibres.has(calibre)) {
       items.add(id);
     }
   }
+};
+
+const addUnpackedMilitaryItems = (registry: Registry, items: Set<string>): void => {
   // A box may hold another box; repeat until no package joins, so content order can't hide one.
   let before: number;
   do {
@@ -62,24 +76,138 @@ export const militaryLootItems = (registry: Registry): ReadonlySet<string> => {
       }
     }
   } while (items.size !== before);
+};
+
+export const militaryLootItems = (registry: Registry): ReadonlySet<string> => {
+  const calibres = new Set<string>();
+  const items = new Set<string>();
+  addFirearmsToMilitaryLoot(registry, calibres, items);
+  addMilitaryCalibreItems(registry, calibres, items);
+  addUnpackedMilitaryItems(registry, items);
   return items;
+};
+
+interface FittedAttachment {
+  readonly slotId: string;
+  readonly attachmentId: string;
+  readonly isDefault: boolean;
+  readonly rail?: ReturnType<typeof railFootprint>;
+}
+
+const fittedAttachmentFor = (
+  registry: Registry,
+  model: ModelDef | undefined,
+  slotId: string,
+  child: { readonly type: string },
+): FittedAttachment | string => {
+  const slot = model?.attachmentSlots?.find(({ id }) => id === slotId);
+  const attachmentId = attachmentIdFor(registry, child as Item);
+  const attachmentModelId = registry.items.get(child.type)?.model;
+  const attachment = attachmentModelId === undefined ? undefined : registry.models.get(attachmentModelId)?.attachment;
+  const isDefault =
+    model?.attachments?.some(
+      (defaultAttachment) => defaultAttachment.mountedAt === slotId && defaultAttachment.id === attachmentId,
+    ) ?? false;
+  if (!(slot && attachment && attachmentId) || attachment.mount !== slot.mount) {
+    return `Uncertified attachment in slot "${slotId}"`;
+  }
+  if (!(isDefault || isExportedSingleFit(model, slotId, attachmentId))) {
+    return `Gungen does not certify ${attachmentId} for slot "${slotId}"`;
+  }
+  const rail = railFootprint(registry, model, slotId, child as Item);
+  // Authored defaults are certified as a complete assembly; their anchor slots are not the occupied rail extent.
+  if (!isDefault && slot.mount !== 'muzzle' && !(rail && footprintFitsRail(model, rail))) {
+    return `Attachment footprint does not fit the exported notches for slot "${slotId}"`;
+  }
+  return { slotId, attachmentId, isDefault, ...(rail ? { rail } : {}) };
+};
+
+const fittedPairReason = (
+  model: ModelDef | undefined,
+  current: FittedAttachment,
+  other: FittedAttachment,
+): string | undefined => {
+  if (current.rail && other.rail && railFootprintsOverlap(current.rail, other.rail)) {
+    return `Attachment footprints overlap on rail at slots "${current.slotId}" and "${other.slotId}"`;
+  }
+  const bothDefaults = current.isDefault && other.isDefault;
+  const pairCertified = compatibilityPairCertifies(
+    model,
+    [current.slotId, current.attachmentId],
+    [other.slotId, other.attachmentId],
+  );
+  if (!(bothDefaults || pairCertified)) {
+    return `Gungen does not certify the combined attachment fit at slots "${current.slotId}" and "${other.slotId}"`;
+  }
+  return undefined;
+};
+
+const attachmentSlotsReason = (
+  registry: Registry,
+  model: ModelDef | undefined,
+  slots: Readonly<Record<string, { readonly type: string } | undefined>>,
+): string | undefined => {
+  const fitted: FittedAttachment[] = [];
+  for (const [slotId, child] of Object.entries(slots)) {
+    if (!child || slotId === 'magazine' || slotId === 'battery') {
+      continue;
+    }
+    const result = fittedAttachmentFor(registry, model, slotId, child);
+    if (typeof result === 'string') {
+      return result;
+    }
+    fitted.push(result);
+  }
+  for (let index = 0; index < fitted.length; index += 1) {
+    const current = fitted[index]!;
+    for (const other of fitted.slice(index + 1)) {
+      const reason = fittedPairReason(model, current, other);
+      if (reason) {
+        return reason;
+      }
+    }
+  }
+  return undefined;
+};
+
+const batterySlotReason = (
+  registry: Registry,
+  batteryType: string | undefined,
+  slots: Readonly<Record<string, { readonly type: string } | undefined>>,
+): string | undefined => {
+  if (batteryType !== undefined) {
+    return slots.battery?.type === batteryType && registry.items.get(batteryType)?.battery
+      ? undefined
+      : 'A powered light needs its matching battery';
+  }
+  return slots.battery ? 'Only a powered light has a battery slot' : undefined;
 };
 
 /** Why `slots` can't be fitted to this item, or undefined when they can. */
 export const slotsReason = (
   registry: Registry,
   type: string,
-  slots: { readonly magazine?: { readonly type: string } | undefined } | undefined,
+  slots: Readonly<Record<string, { readonly type: string } | undefined>> | undefined,
 ): string | undefined => {
-  if (magazineWellCalibre(registry, type) === undefined) {
-    return slots === undefined ? undefined : 'Only a magazine-fed firearm has slots';
+  const definition = registry.items.get(type);
+  const model = definition?.model === undefined ? undefined : registry.models.get(definition.model);
+  const magazineCalibre = magazineWellCalibre(registry, type);
+  const batteryType = definition?.light?.power?.battery;
+  const hasSlots =
+    magazineCalibre !== undefined || batteryType !== undefined || (model?.attachmentSlots?.length ?? 0) > 0;
+  if (!hasSlots) {
+    return slots === undefined ? undefined : 'This item has no fitted-item slots';
   }
   if (slots === undefined) {
-    return 'A magazine-fed firearm needs its slots';
+    return 'An item with fitted-item slots needs its slots';
   }
-  return slots.magazine === undefined || magazineFits(registry, type, slots.magazine.type)
-    ? undefined
-    : 'The fitted magazine does not fit this firearm';
+  if (magazineCalibre !== undefined && slots.magazine && !magazineFits(registry, type, slots.magazine.type)) {
+    return 'The fitted magazine does not fit this firearm';
+  }
+  if (slots.magazine && magazineCalibre === undefined) {
+    return 'Only a magazine-fed firearm has a magazine slot';
+  }
+  return batterySlotReason(registry, batteryType, slots) ?? attachmentSlotsReason(registry, model, slots);
 };
 
 /** Why `cartridges` can't be this magazine's contents, or undefined when they can. */

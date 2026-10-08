@@ -1,0 +1,291 @@
+{
+  "models": [
+    {
+      "id": "foregrip",
+      "file": "assets/models/foregrip.glb",
+      "attachment": {
+        "id": "foregrip",
+        "kind": "foregrip",
+        "massKg": 0.016938745312499996,
+        "mount": "rail-bottom",
+        "mountFrame": { "normal": [0, 1, 0], "up": [1, 0, 0] },
+        "properties": {
+          "handlingClass": "vertical",
+          "railSpanNotches": {
+            "minOffset": 0,
+            "maxOffset": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "improvised_suppressor",
+      "file": "assets/models/improvised_suppressor.glb",
+      "attachment": {
+        "id": "improvised-suppressor",
+        "kind": "suppressor",
+        "mount": "muzzle",
+        "massKg": 1.2218603437304045,
+        "mountFrame": { "normal": [-1, 0, 0], "up": [0, 1, 0] },
+        "properties": {
+          "noiseFactor": 0.7,
+          "wearClass": "improvised"
+        }
+      }
+    },
+    {
+      "id": "optic_digital_thermal",
+      "file": "assets/models/optic_digital_thermal.glb",
+      "attachment": {
+        "id": "optic-digital-thermal",
+        "kind": "optic",
+        "massKg": 0.3376618423714778,
+        "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
+        "properties": {
+          "reticleKind": "crosshair",
+          "magnification": {
+            "min": 3,
+            "max": 12
+          },
+          "railSpanNotches": {
+            "minOffset": -3,
+            "maxOffset": 3
+          }
+        },
+        "sight": {
+          "kind": "optic",
+          "eye": [-0.1725, 0.048875, 0],
+          "direction": [1, 0, 0],
+          "up": [0, 1, 0],
+          "eyeReliefMetres": 0.07475,
+          "ocularDiameterMetres": 0.043125
+        }
+      }
+    },
+    {
+      "id": "optic_fixed_prism_4x",
+      "file": "assets/models/optic_fixed_prism_4x.glb",
+      "attachment": {
+        "id": "optic-fixed-prism-4x",
+        "kind": "optic",
+        "massKg": 0.357488038040254,
+        "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
+        "properties": {
+          "reticleKind": "chevron",
+          "magnification": {
+            "min": 4,
+            "max": 4
+          },
+          "railSpanNotches": {
+            "minOffset": -3,
+            "maxOffset": 3
+          }
+        },
+        "sight": {
+          "kind": "optic",
+          "eye": [-0.07475, 0.025875, 0],
+          "direction": [1, 0, 0],
+          "up": [0, 1, 0],
+          "eyeReliefMetres": 0.04025,
+          "ocularDiameterMetres": 0.01725
+        }
+      }
+    },
+    {
+      "id": "optic_high_mag_5_25x",
+      "file": "assets/models/optic_high_mag_5_25x.glb",
+      "attachment": {
+        "id": "optic-high-mag-5-25x",
+        "kind": "optic",
+        "massKg": 0.3254916611224242,
+        "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
+        "properties": {
+          "reticleKind": "crosshair",
+          "magnification": {
+            "min": 5,
+            "max": 25
+          },
+          "railSpanNotches": {
+            "minOffset": -3,
+            "maxOffset": 3
+          }
+        },
+        "sight": {
+          "kind": "optic",
+          "eye": [-0.181125, 0.0345, 0],
+          "direction": [1, 0, 0],
+          "up": [0, 1, 0],
+          "eyeReliefMetres": 0.092,
+          "ocularDiameterMetres": 0.037375
+        }
+      }
+    },
+    {
+      "id": "optic_holographic",
+      "file": "assets/models/optic_holographic.glb",
+      "attachment": {
+        "id": "optic-holographic",
+        "kind": "optic",
+        "massKg": 0.30874713046874996,
+        "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
+        "properties": {
+          "reticleKind": "dot",
+          "railSpanNotches": {
+            "minOffset": -1,
+            "maxOffset": 1
+          }
+        },
+        "sight": {
+          "kind": "optic",
+          "eye": [-0.043125, 0.0345, 0],
+          "direction": [1, 0, 0],
+          "up": [0, 1, 0],
+          "eyeReliefMetres": 0.04025,
+          "ocularDiameterMetres": 0.031625
+        }
+      }
+    },
+    {
+      "id": "optic_lpvo_1_6x",
+      "file": "assets/models/optic_lpvo_1_6x.glb",
+      "attachment": {
+        "id": "optic-lpvo-1-6x",
+        "kind": "optic",
+        "massKg": 0.16156919783654183,
+        "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
+        "properties": {
+          "reticleKind": "crosshair",
+          "magnification": {
+            "min": 1,
+            "max": 6
+          },
+          "railSpanNotches": {
+            "minOffset": -3,
+            "maxOffset": 3
+          }
+        },
+        "sight": {
+          "kind": "optic",
+          "eye": [-0.11499999999999999, 0.023, 0],
+          "direction": [1, 0, 0],
+          "up": [0, 1, 0],
+          "eyeReliefMetres": 0.08625,
+          "ocularDiameterMetres": 0.031625
+        }
+      }
+    },
+    {
+      "id": "optic_mini_reflex",
+      "file": "assets/models/optic_mini_reflex.glb",
+      "attachment": {
+        "id": "optic-mini-reflex",
+        "kind": "optic",
+        "massKg": 0.08004009503411555,
+        "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
+        "properties": {
+          "reticleKind": "dot",
+          "railSpanNotches": {
+            "minOffset": -1,
+            "maxOffset": 1
+          }
+        },
+        "sight": {
+          "kind": "optic",
+          "eye": [-0.025875, 0.01725, 0],
+          "direction": [1, 0, 0],
+          "up": [0, 1, 0],
+          "eyeReliefMetres": 0.028749999999999998,
+          "ocularDiameterMetres": 0.028749999999999998
+        }
+      }
+    },
+    {
+      "id": "optic_tube_dot",
+      "file": "assets/models/optic_tube_dot.glb",
+      "attachment": {
+        "id": "optic-tube-dot",
+        "kind": "optic",
+        "massKg": 0.04629537375454333,
+        "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
+        "properties": {
+          "reticleKind": "dot",
+          "railSpanNotches": {
+            "minOffset": -1,
+            "maxOffset": 1
+          }
+        },
+        "sight": {
+          "kind": "optic",
+          "eye": [-0.0345, 0.023, 0],
+          "direction": [1, 0, 0],
+          "up": [0, 1, 0],
+          "eyeReliefMetres": 0.0345,
+          "ocularDiameterMetres": 0.028749999999999998
+        }
+      }
+    },
+    {
+      "id": "rail_front_sight",
+      "file": "assets/models/rail_front_sight.glb",
+      "attachment": {
+        "id": "rail-front-sight",
+        "kind": "iron-sight",
+        "massKg": 0.0257431857421875,
+        "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
+        "properties": {
+          "railSpanNotches": {
+            "minOffset": 0,
+            "maxOffset": 0
+          }
+        },
+        "sight": {
+          "kind": "iron",
+          "eye": [0, 0.020125, 0],
+          "direction": [1, 0, 0],
+          "up": [0, 1, 0],
+          "eyeReliefMetres": 0.046
+        }
+      }
+    },
+    {
+      "id": "real_suppressor",
+      "file": "assets/models/real_suppressor.glb",
+      "attachment": {
+        "id": "real-suppressor",
+        "kind": "suppressor",
+        "massKg": 0.497976429221834,
+        "mount": "muzzle",
+        "mountFrame": { "normal": [-1, 0, 0], "up": [0, 1, 0] },
+        "properties": {
+          "noiseFactor": 0.45,
+          "wearClass": "real"
+        }
+      }
+    },
+    {
+      "id": "tactical_flashlight_mount",
+      "file": "assets/models/tactical_flashlight_mount.glb",
+      "attachment": {
+        "id": "tactical-flashlight-mount",
+        "kind": "flashlight-mount",
+        "massKg": 0.015398859374999999,
+        "mount": "rail-side",
+        "mountFrame": { "normal": [0, 0, -1], "up": [0, 1, 0] },
+        "properties": {
+          "railSpanNotches": {
+            "minOffset": 0,
+            "maxOffset": 0
+          }
+        }
+      }
+    }
+  ]
+}

@@ -69,7 +69,7 @@ export interface FirearmsSkillEffects {
 }
 
 export interface FirearmStanceEffects {
-  readonly raiseDuration: number;
+  readonly raiseDurationSimSeconds: number;
   readonly readyMovementFactor: number;
 }
 
@@ -107,7 +107,7 @@ export const firearmsSkillEffects = (
 export const firearmStanceEffects = (level: number, tuning: FirearmsCombatTuning): FirearmStanceEffects => {
   const effectLevel = effectLevelFor(level);
   return {
-    raiseDuration:
+    raiseDurationSimSeconds:
       tuning.raiseMinimumSimSeconds +
       tuning.raiseRangeSimSeconds * skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels),
     readyMovementFactor:

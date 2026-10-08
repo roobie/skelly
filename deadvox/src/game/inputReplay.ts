@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-export const INPUT_REPLAY_SCHEMA_VERSION = 16;
+export const INPUT_REPLAY_SCHEMA_VERSION = 17;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -41,6 +41,8 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'inventory.work',
   'inventory.assign',
   'inventory.cancel-handling',
+  'firearm.attachment.fit',
+  'firearm.attachment.remove',
   'craft.start',
   'craft.continue',
   'craft.stop',
@@ -60,6 +62,8 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'inventory.work',
   'inventory.assign',
   'inventory.cancel-handling',
+  'firearm.attachment.fit',
+  'firearm.attachment.remove',
   'craft.start',
   'craft.continue',
   'craft.stop',

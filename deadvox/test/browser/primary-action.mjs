@@ -2547,6 +2547,32 @@ try {
     true,
     'fixture firearm is ready before firing',
   );
+  await page.mouse.click(640, 450, { button: 'middle' });
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return r.input.aimingDownSights && r.view.held.opticLensFrame;
+  });
+  const opticView = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    const previewFirearm = r.inventory.itemByUid(uid);
+    const optic = Object.values(previewFirearm.slots ?? {}).find((item) => {
+      const definition = r.inventory.registry.items.get(item.type);
+      const model = definition?.model === undefined ? undefined : r.inventory.registry.models.get(definition.model);
+      return model?.attachment?.kind === 'optic';
+    });
+    if (!optic) {
+      throw new Error('Fixture firearm has no mounted optic');
+    }
+    const definition = r.inventory.registry.items.get(optic.type);
+    const model = r.inventory.registry.models.get(definition.model);
+    const expected = {
+      magnification: definition.opticMagnification ?? model.attachment.properties.magnification?.min ?? 1,
+      reticleKind: model.attachment.properties.reticleKind,
+    };
+    const frame = r.view.held.opticLensFrame;
+    return { frame: { magnification: frame.magnification, reticleKind: frame.reticleKind }, expected };
+  }, firearm.uid);
+  assert.deepEqual(opticView.frame, opticView.expected, 'ADS lens uses the mounted optic content and export');
   await page.mouse.click(640, 450);
   await page.evaluate(() => globalThis.primaryActionTest.session.frame(0.1));
   await page.waitForFunction(({ uid, cases }) => {
