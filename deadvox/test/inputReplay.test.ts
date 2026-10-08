@@ -27,6 +27,7 @@ import {
   sampleFromReplayFrame,
   withReplayExportGuard,
 } from '../src/game/inputReplay.ts';
+import { toggleWalking } from '../src/game/inputReplayActions.ts';
 import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
 import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
@@ -90,10 +91,11 @@ const dispatchWalkToggle = (
   phase: 'down' | 'up',
   recorder?: InputReplayRecorder,
 ): void => {
-  recorder?.queueAction('movement.walk-toggle', phase, 'play');
   if (phase === 'down') {
-    runtime.view.walk = !runtime.view.walk;
+    runtime.view.walk = toggleWalking(runtime.view.walk, recorder, 'play');
     runtime.view.intent.walk = runtime.view.walk;
+  } else {
+    recorder?.queueAction('movement.walk-toggle', phase, 'play');
   }
 };
 
@@ -202,7 +204,7 @@ const recordActiveSession = (
         while (commands[nextCommand]?.tick === recorder.tickCount) {
           const { context, payload } = commands[nextCommand]!;
           nextCommand += 1;
-          recorder.queueAction(payload.kind, 'down', context, payload);
+          recorder.queueAction(payload.kind, 'down', context, { payload });
           pendingCommands.push(payload);
         }
         recorder.recordTick(live, compression);
@@ -447,7 +449,7 @@ const recordReloadSteps = (start: Readonly<SaveSnapshot>, recorder: InputReplayR
         if ('gesture' in step) {
           recorder.queueAction(step.gesture, 'down', 'play');
         } else {
-          recorder.queueAction(step.payload.kind, 'down', 'play', step.payload);
+          recorder.queueAction(step.payload.kind, 'down', 'play', { payload: step.payload });
         }
       }
       recorder.recordTick(live, compression);
@@ -1067,10 +1069,12 @@ describe('input replay', () => {
     const start = capture(runtime);
     const recorder = new InputReplayRecorder(start);
     recorder.queueAction('item.throw', 'down', 'play', {
-      kind: 'item.throw',
-      itemUid: firearm.uid,
-      hand: side,
-      distance: 2.5,
+      payload: {
+        kind: 'item.throw',
+        itemUid: firearm.uid,
+        hand: side,
+        distance: 2.5,
+      },
     });
     recorder.recordTick(replaySample);
     const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
@@ -1346,7 +1350,7 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
-  it('replays an action queued after a full window tick in the next segment', async () => {
+  it('keeps a toggle already in the rollover snapshot at the previous seam, so each segment verifies', async () => {
     const start = capture(createRuntime());
     const ticksPerWindow = 2;
     let recorder = new InputReplayRecorder(start, ticksPerWindow);
@@ -1402,6 +1406,22 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(segmentReplay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
+  it('keeps actions outside the snapshot at tick zero of the next segment', () => {
+    const start = capture(createRuntime());
+    const previous = new InputReplayRecorder(start, 1);
+    previous.recordTick(replaySample);
+    const actions = ['aim.ads-toggle', 'throw.stance.toggle', 'stance.ready', 'ui.inventory-toggle'] as const;
+    for (const action of actions) {
+      previous.queueAction(action, 'down', 'play');
+    }
+
+    const next = rolloverInputReplayRecorder(previous, start);
+    next.recordTick(replaySample);
+    expect(next.copyInputs().actions.map(({ tick, action }) => [tick, action])).toEqual(
+      actions.map((action) => [0, action]),
+    );
+  });
+
   it('rolls a deferred throw into the next segment, which verifies alone and joined', async () => {
     const start = capture(createRuntime());
     const ticksPerWindow = 1;
@@ -1442,7 +1462,7 @@ describe('input replay', () => {
       distance: 2.5,
     };
     const previousRecorder = recorder;
-    previousRecorder.queueAction(payload.kind, 'down', 'play', payload);
+    previousRecorder.queueAction(payload.kind, 'down', 'play', { payload });
     const nextStart = capture(source);
     recorder = rolloverInputReplayRecorder(previousRecorder, nextStart);
     pendingThrow = payload;
