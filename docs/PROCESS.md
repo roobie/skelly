@@ -170,7 +170,10 @@ snapshots; distinguish whole-delivery totals from refactor-only totals. If mixed
 changes cannot be isolated, say so rather than estimate.
 
 The slice plan leaves the tree at its retrospective, after its live content moves;
-git and GitHub history keep it. The slice retrospective reports findings opened,
+git and GitHub history keep it. Closing a slice includes one deep docs pass before the
+retrospective: each tracked doc is read whole and trimmed to its current rules, reasons
+and cues, and the zero-drift baseline loses every row the pass fixes. The slice
+retrospective reports findings opened,
 completed, partially completed, carried and dropped; per-item line/site figures;
 review-caught defects, escaped regressions and review/CI rework separately; and
 standalone/folded capacity counts

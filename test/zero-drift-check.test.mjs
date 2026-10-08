@@ -3,7 +3,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import { checkDocument, compare, parsePythonReadIf } from '../tools/zero-drift-check.mjs';
+import {
+  checkDocument,
+  checkPolicyRules,
+  compare,
+  comparePolicy,
+  parsePythonReadIf,
+} from '../tools/zero-drift-check.mjs';
 
 const docPath = 'docs/test.md';
 const pythonReadIf = (reasons = ['read this']) => new Map([[docPath, reasons]]);
@@ -133,6 +139,79 @@ describe('zero-drift symbol check', () => {
     assert.ok(!checks(scan(document('See `src/known.ts`, `ChunkMeshes.cull`.'))).includes('symbol'));
     assert.ok(checks(scan(document('See `src/known.ts`, `missingSymbol`.'))).includes('symbol'));
     assert.ok(checks(scan(document('[`missingSymbol`](src/known.ts).'))).includes('symbol'));
+  });
+});
+
+describe('zero-drift policy rules', () => {
+  it('flags stamped source citations, not BR as an actor', () => {
+    const markdown = checkPolicyRules({
+      path: 'docs/fixture.md',
+      text: [
+        'BR, 2026-10-04',
+        "BR's 2026-10-07 12:50 rulings",
+        '(BR)',
+        '(BR, 2026-10-04)',
+        'br-43',
+        '**Gate (2026-10-05 19:52):** “approved”',
+        'discuss with BR before installing',
+        'After BR merges',
+        'IDs from before 2026-10-02',
+      ].join('\n'),
+    });
+    const source = checkPolicyRules({ path: 'src/fixture.ts', text: '// BR, 2026-10-04\n' });
+    assert.equal(
+      markdown.filter(({ check }) => check === 'citation').reduce((sum, { count }) => sum + count, 0),
+      6,
+    );
+    assert.equal(source.filter(({ check }) => check === 'citation').length, 1);
+  });
+
+  it('flags host paths and private addresses in any tracked text, not placeholders or the CI runner home', () => {
+    const failures = checkPolicyRules({
+      path: 'src/fixture.ts',
+      text: '/home/ann/notes 10.0.0.1 172.16.0.1 192.168.1.20 ~/notes; version 10.29.8',
+    });
+    assert.deepEqual(
+      failures
+        .filter(({ check }) => check === 'host')
+        .map(({ text }) => text)
+        .sort(),
+      ['/home/ann/notes', '10.0.0.1', '172.16.0.1', '192.168.1.20', '~/notes'],
+    );
+    assert.deepEqual(
+      checkPolicyRules({
+        path: '.github/workflows/ci.yml',
+        text: '/home/… /run/user/<uid>/… localhost:5173 ~/.cache',
+      }),
+      [],
+    );
+  });
+
+  it('fails host violations even when the baseline lists them', () => {
+    const host = { path: 'src/fixture.ts', check: 'host', text: '/home/ann', count: 1 };
+    const comparison = comparePolicy([host], [host]);
+    assert.deepEqual(comparison.strictFailures, [host]);
+    assert.deepEqual(comparison.strictBaselineRows, [host]);
+    assert.deepEqual(comparison.differences, []);
+  });
+
+  it('flags today and currently in prose, not in code spans, fences, blockquotes or quotes', () => {
+    const failures = checkPolicyRules({
+      path: 'docs/fixture.md',
+      text: [
+        'Today and currently are prohibited.',
+        '`today` and `currently` are code.',
+        '> today and currently are quoted prose.',
+        '```text',
+        'today and currently are fenced.',
+        '```',
+        '"today" and “currently” are quoted.',
+      ].join('\n'),
+    });
+    assert.deepEqual(
+      failures.filter(({ check }) => check === 'when').map(({ text }) => text),
+      ['today', 'currently'],
+    );
   });
 });
 
