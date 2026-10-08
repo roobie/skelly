@@ -1,20 +1,29 @@
 // GLSL for the procedural surface patterns (schema.ts BLOCK_PATTERNS), spliced into the chunk
-// fragment shader (chunks.ts). Everything is computed from world position in metres and the
-// face normal, so the look doesn't depend on block size, and a pattern runs on across the
-// whole merged quad and across quads.
-//
-// Each pattern returns a muted multiplicative shade around 1 (about 0.7 in joints, 0.9..1.1
-// elsewhere). Anti-aliasing: `fw` is the pixel footprint in metres (fwidth of the surface
-// coordinates, taken by the caller in uniform control flow). Lines are drawn with a
-// footprint-wide edge, and the whole pattern's deviation from 1 fades out once the pixel
-// footprint nears the pattern's smallest feature, so nothing shimmers at range.
+// fragment shader (chunks.ts). Most patterns shade world-projected surface coordinates; woodland
+// camo uses 3D world-space noise so its blotches continue around corners and across merged quads.
+// Anti-aliasing: `fw` is the pixel footprint in metres, taken by the caller in uniform control
+// flow. Features fade at range so fine details do not shimmer.
 
+import baseBlocks from '../content/base/blocks.json' with { type: 'json' };
 import { BLOCK_PATTERNS } from '../core/schema.ts';
 
 const DEFINES = BLOCK_PATTERNS.map((name, i) => `#define PAT_${name.toUpperCase()} ${i}.0`).join('\n');
+const woodlandCamo = baseBlocks.blocks.find(({ pattern }) => pattern === 'camo');
+if (!woodlandCamo?.patternPalette || woodlandCamo.patternWashout === undefined) {
+  throw new Error('The camo block needs a palette and washout amount');
+}
+const camoPalette = woodlandCamo.patternPalette
+  .map((color) => {
+    const hex = color.slice(1);
+    const rgb = [0, 2, 4].map((offset) => (Number.parseInt(hex.slice(offset, offset + 2), 16) / 255).toFixed(4));
+    return `vec3(${rgb.join(', ')})`;
+  })
+  .join(', ');
+const CAMO_CONFIG_GLSL = `const vec3 CAMO_PALETTE[4] = vec3[4](${camoPalette});\nconst float CAMO_WASHOUT = ${woodlandCamo.patternWashout.toFixed(3)};`;
 
 export const SURFACE_PATTERN_GLSL = `
 ${DEFINES}
+${CAMO_CONFIG_GLSL}
 
 // Hoskins' hash without sine; cell coordinates are wrapped so large worlds keep precision.
 float hash21(vec2 p) {
@@ -101,6 +110,53 @@ vec3 voronoi(vec2 p) {
     }
   }
   return vec3(d1, d2, id);
+}
+
+float hash31(vec3 p) {
+  p = mod(p, 512.0);
+  p = fract(p * 0.1031);
+  p += dot(p, p.yxz + 33.33);
+  return fract((p.x + p.y) * p.z);
+}
+vec4 voronoi3(vec3 p) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  float d1 = 8.0;
+  float d2 = 8.0;
+  float id = 0.0;
+  for (int z = -1; z <= 1; z++) {
+    for (int y = -1; y <= 1; y++) {
+      for (int x = -1; x <= 1; x++) {
+        vec3 g = vec3(float(x), float(y), float(z));
+        vec3 cell = i + g;
+        vec3 feature = g + vec3(hash31(cell), hash31(cell + 19.19), hash31(cell + 47.47));
+        float d = length(feature - f);
+        if (d < d1) {
+          d2 = d1;
+          d1 = d;
+          id = hash31(cell + 73.73);
+        } else if (d < d2) {
+          d2 = d;
+        }
+      }
+    }
+  }
+  return vec4(d1, d2, id, 0.0);
+}
+
+// World-anchored 3D blotches continue across chunk edges and changes in face orientation.
+vec3 camoColor(vec3 world, float fw) {
+  vec4 v = voronoi3(world / 0.72);
+  float edge = 1.0 - smoothstep(0.015, 0.08, (v.y - v.x) * 0.72);
+  float paletteIndex = floor(v.z * 4.0);
+  vec3 blotch = CAMO_PALETTE[0];
+  if (paletteIndex > 0.5) blotch = CAMO_PALETTE[1];
+  if (paletteIndex > 1.5) blotch = CAMO_PALETTE[2];
+  if (paletteIndex > 2.5) blotch = CAMO_PALETTE[3];
+  blotch = mix(srgbToLinear(blotch), srgbToLinear(vec3(0.24, 0.25, 0.22)), edge * 0.16);
+  vec3 neutral = srgbToLinear(vec3(0.72, 0.71, 0.64));
+  vec3 washed = mix(blotch, neutral, CAMO_WASHOUT);
+  return mix(neutral, washed, featureFade(fw, 0.72));
 }
 
 // A pattern's shade. fw is the larger pixel footprint, fwv the footprint per axis, in metres.

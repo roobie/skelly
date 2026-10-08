@@ -148,6 +148,15 @@
       "name": "Sandbag",
       "color": "#9b8d6a",
       "solid": true
+    },
+    {
+      "id": "camo_woodland",
+      "name": "Weathered woodland camouflage",
+      "color": "#777b6a",
+      "solid": true,
+      "pattern": "camo",
+      "patternPalette": ["#53694d", "#78634d", "#9b8a6b", "#3b4039"],
+      "patternWashout": 0.42
     }
   ]
 }

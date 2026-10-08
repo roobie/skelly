@@ -84,6 +84,28 @@ const furnitureAt = ({ building, override }: OverridePlacement): string | undefi
   );
 };
 
+const expectHqMaterialsAndFloorEdges = (compiledHq: CompiledTemplate): void => {
+  const hqBlockAt = (x: number, y: number, z: number): string | undefined => {
+    const block = compiledHq.blocks[x + compiledHq.size[0] * (z + compiledHq.size[2] * y)]!;
+    return result.registry.blocks[block]?.id;
+  };
+  expect(hqBlockAt(0, 1, 1)).toBe('camo_woodland');
+  for (const floor of [6, 12]) {
+    let interiorPlanks = 0;
+    for (let z = 0; z < compiledHq.size[2]; z++) {
+      for (let x = 0; x < compiledHq.size[0]; x++) {
+        const id = hqBlockAt(x, floor, z);
+        if (x === 0 || x === compiledHq.size[0] - 1 || z === 0 || z === compiledHq.size[2] - 1) {
+          expect(id, `HQ floor ${floor} perimeter at ${x},${z}`).not.toBe('planks');
+        } else if (id === 'planks') {
+          interiorPlanks += 1;
+        }
+      }
+    }
+    expect(interiorPlanks).toBeGreaterThan(0);
+  }
+};
+
 const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
   const hqBuilding = layout.buildings.find(({ template }) => template === 'camp_hq')!;
   const armouryBuilding = layout.buildings.find(({ template }) => template === 'camp_armoury')!;
@@ -113,6 +135,7 @@ const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
   expect(entranceWorld[1]).toBeLessThan(fenceBounds.z1);
 
   const compiledHq = compileTemplate(result.registry, hqDefinition);
+  expectHqMaterialsAndFloorEdges(compiledHq);
   expect(hqDefinition.military).toBe(true);
   expect(compiledHq.pieces.some((piece) => piece.loot === 'military_armoury')).toBe(false);
   expect(hqDefinition.access?.storeys.length).toBeGreaterThanOrEqual(3);

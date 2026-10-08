@@ -126,6 +126,7 @@ export const BLOCK_PATTERNS = [
   'corrugated',
   'shingles',
   'noise',
+  'camo',
 ] as const;
 
 const BlockSchema = strictObject({
@@ -140,6 +141,10 @@ const BlockSchema = strictObject({
   rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
+  /** Pattern-specific palette, when the selected surface pattern uses one. */
+  patternPalette: optional(tuple([Color, Color, Color, Color])),
+  /** Pattern-specific washout amount in [0, 1]. */
+  patternWashout: optional(pipe(number(), minValue(0), maxValue(1))),
 });
 
 // ---- items ----

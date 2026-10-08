@@ -116,9 +116,13 @@ vec2 patUV = surfaceUV(vWorld, vFaceN);
 vec2 patFw = fwidth(patUV);
 float patId = floor(vPattern + 0.5);
 float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
-diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
-  ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
-  : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));`,
+if (uPatterns > 0.5 && patId == PAT_CAMO) {
+  diffuseColor.rgb = camoColor(vWorld, max(patFw.x, patFw.y));
+} else {
+  diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
+    ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
+    : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));
+}`,
       );
   };
   material.customProgramCacheKey = () => 'deadvox-chunk-occlusion';

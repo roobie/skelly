@@ -13,6 +13,7 @@ import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
+import { SURFACE_PATTERN_GLSL } from '../src/render/surfacePatterns.ts';
 
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -1515,6 +1516,17 @@ describe('content', () => {
       data: { blocks: [{ id: 'x', name: 'X', color: '#ffffff', solid: true, pattern: 'marble' }] },
     });
     expect(issues.map((i) => i.path)).toEqual(['blocks[0].pattern']);
+  });
+
+  it('validates the woodland camouflage palette and emits its shader pattern', () => {
+    const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
+    expect(camo.pattern).toBe('camo');
+    expect(camo.patternPalette).toHaveLength(4);
+    expect(camo.patternWashout).toBeGreaterThanOrEqual(0);
+    expect(camo.patternWashout).toBeLessThanOrEqual(1);
+    expect(SURFACE_PATTERN_GLSL).toContain('#define PAT_CAMO');
+    expect(SURFACE_PATTERN_GLSL).toContain('camoColor');
+    expect(SURFACE_PATTERN_GLSL).toContain('CAMO_PALETTE');
   });
 
   it('gives every base block a known pattern and patterns the stone work', () => {

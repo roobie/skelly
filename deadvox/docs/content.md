@@ -8,6 +8,7 @@ read_if:
   - you change static reachability checks
   - you author or validate time-windowed template spawns
   - you're authoring or changing playtest fixed loot
+  - you're authoring base surface materials or procedural pattern tuning
   - you're assigning noise to opening a door
 ---
 
@@ -57,6 +58,15 @@ uses exact integer multiplication and reports the count when refusing a file.
 - Result, every alternative item, skill, quality and workstation references are
   checked after ordered merging. Broken files are removed whole, including their
   skills/recipes/items, and references are checked again as before.
+
+Procedural surface pattern IDs are validated with `BLOCK_PATTERNS` in
+`src/core/schema.ts`; the shader implementation lives in
+`src/render/surfacePatterns.ts`. Woodland camouflage's palette and washout
+are block fields in `src/content/base/blocks.json`, alongside the pattern assignment
+to `camo_woodland`. Keeping blotches anchored
+in world coordinates avoids texture assets and repeated seams. The pattern ID
+is eligible for the render-only weathering layer from #404, whose filter excludes
+only `none` and `corrugated`; it needs no extra registration.
 
 Template spawn palette entries can specify `window: {from, to?}`.
 `src/core/schema.ts`, `PaletteThingSchema`, validates the field; named game-clock
