@@ -17,8 +17,6 @@ The playtest map links the shelter, workshop, medical site and military compound
 
 ## Military compound
 
-## Military compound
-
 The compound's perimeter should feel guarded without making entry a dead end. Its north gate and south double gate remain traversable; the damaged inner gate gives the south approach a breached, lived-in character. See `src/content/base/camp.json`, `camp_hq` and `camp_gate_damaged`, and `test/authoredFixedLoot.test.ts`, `keeps the south double gate on the route with both doors openable`.
 
 ## Fixed loot
