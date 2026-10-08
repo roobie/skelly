@@ -323,7 +323,7 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     topSlopeDegrees: 0,
   },
 };
-// The 30-round body uses a photo-estimated sweep below that unchanged shared upper.
+// Its photo-estimated sweep brings the outer depth to the listing's 65 mm target within the model grid.
 const STANAG30_BODY_PROFILE: CurvedMagazineProfile = {
   ...CURVED_MAGAZINE_PROFILES.stanag30,
   arc: { ...CURVED_MAGAZINE_PROFILES.stanag30.arc, sweepDegrees: 2 },
