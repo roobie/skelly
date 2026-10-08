@@ -35,7 +35,7 @@ the surface faces, and 8× the memory for the same area. Rough numbers for
   per block suffices. That's 16 KiB a chunk, and the total drops to around
   11 MiB.
 - **Greedy meshing,** which merges adjacent coplanar faces into larger quads.
-  Today's per-block colour jitter would stop faces merging, so the variation
+  Per-block colour jitter would stop faces merging, so the variation
   moves into the fragment shader as a hash of world position. Faces then merge
   whenever they share block type and AO.
 - **Batched draws, if measurement shows draw overhead is the bottleneck.** The
@@ -90,12 +90,10 @@ an interruption (a runner covers 30 m between two checks).
 **Plan.**
 
 - **Danger and compression:** unowned compression (such as the debug skip) is
-  admitted only while safe. Long actions fast-forward even when a hostile is
-  nearby or aware; a real interrupt event, such as a hit or critical need, still
-  ends the action. BR (2026-10-05 22:28) chose option B; the lead's wording for
-  B was "No: only a hit or another real event (hunger, thirst...) wakes you".
-  BR said "it's up to the player to make the area safe for them to do the long
-  action. We're not holding hands". In `src/core/sim.ts`, `Simulation.compress`
+  admitted only while safe. Long actions fast-forward despite nearby or aware
+  hostiles; a real interrupt event, such as a hit or critical need, still
+  ends the action. The player is responsible for making the area safe before
+  starting. In `src/core/sim.ts`, `Simulation.compress`
   retains the safety check for unowned compression; `Simulation.compressLongAction`
   does not apply it to long actions.
 - **Bigger steps, not more ticks,** for slow systems (needs, fire, power), and
@@ -130,8 +128,7 @@ invalidates cached paths.
   hordes.
 - **Beeline steering, not flow fields.** d84 makes active zombies beeline; the
   existing attention selection is unchanged. 3.9 gives the background tier the
-  same movement in larger, cheap steps, with the per-step cap above (BR,
-  2026-10-05 21:32).
+  same movement in larger, cheap steps, with the per-step cap above.
 - **Structure-of-arrays storage in a worker** once the counts need it. The
   `EntityStore` abstraction in `src/core/entities.ts` keeps a storage change from
   altering system APIs.
@@ -141,10 +138,10 @@ invalidates cached paths.
 background beelines in Slice 3. Abstract hordes remain Slice 4 work.
 
 **How we'll know.** 60 active and 300 background zombies at 60 fps on the
-reference laptop, with the simulation under 4 ms a frame. *Measure.* BR's
-2026-10-02 reference-laptop run reached 100 detailed shamblers at 60 fps, but
-the zombie tick used 11 ms p95 and 1% of frames exceeded 18 ms. That limited
-headroom is why active simulation needs a strict cap and cheaper tiers.
+reference laptop, with the simulation under 4 ms a frame. *Measure.* A run with
+100 detailed shamblers reached 60 fps, but the zombie tick used 11 ms p95 and
+1% of frames exceeded 18 ms. That limited headroom is why active simulation
+needs a strict cap and cheaper tiers.
 `src/bench/shamblers-cpu.mjs` isolates simulation cost from rendering, while
 `src/bench/shamblers.ts`, `startShamblerBench`, records browser frame, tier
 tick, actor-sync and render-submit costs. Compare the isolated simulation
