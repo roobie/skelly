@@ -98,8 +98,8 @@ describe('AR action-frame selection', () => {
   });
 
   it('uses explicit rank when two fitting envelopes are incomparable', () => {
-    const shorterWider = frame('shorter-wider', 0, 10, 4);
-    const longerNarrower = frame('longer-narrower', 1, 8, 6);
+    const shorterWider = frame('shorter-wider', 0, 8, 6);
+    const longerNarrower = frame('longer-narrower', 1, 10, 4);
 
     expect(selectFrame([longerNarrower, shorterWider], cartridge('fits-both', 8, 4))).toEqual({
       ok: true,
@@ -117,6 +117,19 @@ describe('AR action-frame selection', () => {
     }
     expect(result.issue.message).toContain('maximum overall length 9 mm');
     expect(result.issue.message).toContain('largest frame "small"');
+  });
+
+  it('reports a cartridge whose case head is too wide for its frame', () => {
+    const onlyFrame = frame('only', 0, 10, 5);
+    const result = selectFrame([onlyFrame], cartridge('too-wide', 9, 6));
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error('expected a no-fit issue');
+    }
+    expect(result.issue.rule).toBe('frame-fit');
+    expect(result.issue.message).toContain('largest frame "only"');
+    expect(result.issue.message).toContain('maximum case head diameter 6 mm');
   });
 
   it('rejects hand-edited receiver dimensions as unknown design parameters', () => {

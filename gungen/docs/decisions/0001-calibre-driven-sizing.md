@@ -74,9 +74,11 @@ A design always uses the lowest-ranked frame that fits its cartridge. It cannot 
 
 ## Consequences
 
-- Curated AR designs derive the small frame from their default 5.56×45 cartridge. Export bytes may change; no compatibility path is added solely to preserve prior bytes. Gungen exports must still produce models that deadvox validates and loads. An export diff is review evidence, not a gate.
+- From g51-3, curated AR designs derive the small frame from their default 5.56×45 cartridge.
+- Export bytes may change; no compatibility path is added solely to preserve prior bytes. Gungen exports must still produce models that deadvox validates and loads. An export diff is review evidence, not a gate.
+- The anti-materiel rifle keeps its bespoke cartridge sizing until its frame data is convenient to add.
 - Magazine bands remain for families not yet fully represented by frame data; a family leaves them when its designs use frame-based magwells and magazines.
-- Frame selection is not a generation axis. Covering arrays span family, cartridge and adjustable choices; targeted selector cases cover boundary fit, next-frame fit, no fit, one-frame families and incomparable envelopes.
+- From g51-3, frame selection stays out of the generation axis; covering arrays span family, cartridge and adjustable choices. Targeted selector cases cover boundary fit, next-frame fit, no fit, one-frame families and incomparable envelopes.
 - Canaries protect against a cartridge exceeding its frame and hand-editing derived dimensions. Full products stay behind `GUNGEN_SWEEPS`.
 
 ## Open question
