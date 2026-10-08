@@ -26,7 +26,9 @@ describe('screen command routing', () => {
       'refusal',
       'describe',
       'workOptions',
+      'character',
       'body',
+      'needs',
       'actionRefusal',
       'attachmentCandidates',
     ]);

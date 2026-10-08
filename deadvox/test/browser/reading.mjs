@@ -433,7 +433,119 @@ try {
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
     const note = page.locator('.inv-item').filter({ hasText: 'Placeholder note' });
     await note.waitFor();
+    const noteRowUid = Number(await note.getAttribute('data-uid'));
+    const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.order.length);
+    for (let step = 0; step < itemCount; step += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: selection must advance through the real keyboard action one row at a time.
+      const selectedUid = await page.evaluate(() => globalThis.readingWitness.screen.selected?.uid);
+      if (selectedUid === noteRowUid) {
+        break;
+      }
+      await pressAction(page, 'inventory.next');
+      await page.waitForFunction(
+        (previousUid) => globalThis.readingWitness.screen.selected?.uid !== previousUid,
+        selectedUid,
+      );
+    }
+    assert.equal(
+      await page.evaluate(() => globalThis.readingWitness.screen.selected?.uid),
+      noteRowUid,
+      'keyboard selection reaches the note row',
+    );
+    await page.waitForFunction((uid) => {
+      const row = [...document.querySelectorAll('.inv-item[data-uid]')].find(
+        (candidate) => candidate.dataset.uid === String(uid),
+      );
+      if (!row?.getClientRects().length) {
+        return false;
+      }
+      const rect = row.getBoundingClientRect();
+      const centre = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      if (!(centre.x >= 0 && centre.x < innerWidth && centre.y >= 0 && centre.y < innerHeight)) {
+        return false;
+      }
+      for (let parent = row.parentElement; parent; parent = parent.parentElement) {
+        const style = getComputedStyle(parent);
+        const clipsX = ['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowX);
+        const clipsY = ['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowY);
+        if (!(clipsX || clipsY)) {
+          continue;
+        }
+        const bounds = parent.getBoundingClientRect();
+        const left = bounds.left + parent.clientLeft;
+        const top = bounds.top + parent.clientTop;
+        const right = left + parent.clientWidth;
+        const bottom = top + parent.clientHeight;
+        if (
+          (clipsX && !(centre.x >= left && centre.x <= right)) ||
+          (clipsY && !(centre.y >= top && centre.y <= bottom))
+        ) {
+          return false;
+        }
+      }
+      return document.elementFromPoint(centre.x, centre.y)?.closest('.inv-item') === row;
+    }, noteRowUid);
+    const noteLayout = await note.evaluate((row) => {
+      const rect = row.getBoundingClientRect();
+      const centre = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      const clips = [];
+      for (let parent = row.parentElement; parent; parent = parent.parentElement) {
+        const style = getComputedStyle(parent);
+        const clipsX = ['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowX);
+        const clipsY = ['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowY);
+        if (!(clipsX || clipsY)) {
+          continue;
+        }
+        const bounds = parent.getBoundingClientRect();
+        const left = bounds.left + parent.clientLeft;
+        const top = bounds.top + parent.clientTop;
+        const right = left + parent.clientWidth;
+        const bottom = top + parent.clientHeight;
+        clips.push({
+          className: String(parent.className),
+          bounds: { left, top, right, bottom },
+          scroll: {
+            left: parent.scrollLeft,
+            top: parent.scrollTop,
+            width: parent.scrollWidth,
+            height: parent.scrollHeight,
+          },
+          containsCentre:
+            (!clipsX || (centre.x >= left && centre.x <= right)) &&
+            (!clipsY || (centre.y >= top && centre.y <= bottom)),
+        });
+      }
+      const hit = document.elementFromPoint(centre.x, centre.y);
+      return {
+        row: {
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        },
+        viewport: { width: innerWidth, height: innerHeight },
+        centreInViewport: centre.x >= 0 && centre.x < innerWidth && centre.y >= 0 && centre.y < innerHeight,
+        clips,
+        hit: hit && { tag: hit.tagName, className: String(hit.className) },
+        hitIsRow: hit?.closest('.inv-item') === row,
+      };
+    });
+    assert.ok(
+      noteLayout.centreInViewport && noteLayout.clips.every((clip) => clip.containsCentre) && noteLayout.hitIsRow,
+      `note row must be visible and topmost at its centre: ${JSON.stringify(noteLayout)}`,
+    );
     await uiClick(note);
+    const noteSelection = await page.evaluate(() => {
+      const { input, screen } = globalThis.readingWitness;
+      const target = document.elementFromPoint(input.cursorX, input.cursorY);
+      return {
+        selected: screen.selected?.type,
+        target: target && { tag: target.tagName, className: String(target.className), text: target.textContent },
+      };
+    });
+    assert.equal(noteSelection.selected, 'sample_note', `pointer selected the note: ${JSON.stringify(noteSelection)}`);
     const handStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     await pressAction(page, 'inventory.hands');
     await waitForSimulation(

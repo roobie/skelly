@@ -2,6 +2,8 @@
 name: Playtest feedback
 about: Share notes from a deadvox playtest
 labels: playtest
+read_if:
+  - you change what the playtest feedback form asks testers for
 ---
 
 ## What did you play?

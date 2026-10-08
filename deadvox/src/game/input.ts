@@ -42,15 +42,21 @@ export class Input {
   private readonly target: HTMLElement;
   private readonly dominantUseAllowed: () => boolean;
   private readonly cancelOnBlurAllowed: () => boolean;
+  private readonly viewerInputAllowed: () => boolean;
   constructor(
     target: HTMLElement,
     dominantUseAllowed: () => boolean = () => true,
     cancelOnBlurAllowed: () => boolean = () => true,
+    viewerInputAllowed: () => boolean = () => true,
   ) {
     this.target = target;
     this.dominantUseAllowed = dominantUseAllowed;
     this.cancelOnBlurAllowed = cancelOnBlurAllowed;
+    this.viewerInputAllowed = viewerInputAllowed;
     target.addEventListener('mousedown', (event) => {
+      if (!this.viewerInputAllowed()) {
+        return;
+      }
       const mouse = event as MouseEvent;
       if (mouse.button === 2) {
         this.rightMousePressed = true;
@@ -70,6 +76,9 @@ export class Input {
       }
     });
     globalThis.addEventListener('mouseup', (event) => {
+      if (!this.viewerInputAllowed()) {
+        return;
+      }
       const mouse = event as MouseEvent;
       const { button } = mouse;
       keyboardInput.releasePointer(button, mouse.timeStamp);
@@ -109,8 +118,12 @@ export class Input {
   setAimingDownSightsAllowed(allowed: () => boolean): void {
     this.aimingDownSightsAllowed = allowed;
   }
-  toggleAimingDownSights(): void {
-    if (this.rightMouseActionHeld && this.locked && !this.menuPointer && this.aimingDownSightsAllowed()) {
+  toggleAimingDownSights(replaying = false): void {
+    if (
+      this.rightMouseActionHeld &&
+      (replaying || (this.locked && !this.menuPointer)) &&
+      this.aimingDownSightsAllowed()
+    ) {
       this.aimingDownSights = !this.aimingDownSights;
     }
   }
