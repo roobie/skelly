@@ -177,8 +177,11 @@ describe('hamlet save/load continuation', () => {
     expect(uninterrupted.player.body.pos[2]).toBeLessThan(spawn[2]);
     const snapshotAtHedge = capture(uninterrupted);
     expect(snapshotAtHedge.character.playerAudio.footstepClock.gait).toBe('walking');
+    expect(snapshotAtHedge.character.playerAudio.footstepClock.stepIndex).toBeGreaterThan(0);
     expect(snapshotAtHedge.character.playerAudio.rustleClock.cells.length).toBeGreaterThan(0);
     expect(snapshotAtHedge.character.playerAudio.footstepClock.distanceUntilStep).toBeGreaterThan(0);
+    expect(snapshotAtHedge.character.playerAudio.footstepClock.stridePhase).toBeGreaterThanOrEqual(0);
+    expect(snapshotAtHedge.character.playerAudio.footstepClock.stridePhase).toBeLessThan(1);
 
     const soundCountAtHedge = uninterrupted.heardSounds.length;
     const loadedWalking = await load(snapshotAtHedge);
@@ -188,6 +191,8 @@ describe('hamlet save/load continuation', () => {
     expect(continuedWalkingSounds.length).toBeGreaterThan(0);
     expect(loadedWalking.heardSounds).toEqual(continuedWalkingSounds);
     expect(loadedWalking.player.body).toEqual(uninterrupted.player.body);
+    expect(loadedWalking.session.playerStridePhase).toBeCloseTo(uninterrupted.session.playerStridePhase, 8);
+    expect(loadedWalking.session.aim.frame).toEqual(uninterrupted.session.aim.frame);
 
     intent = { ...IDLE, forward: 1, walk: true, jump: true };
     advance(uninterrupted, 1);

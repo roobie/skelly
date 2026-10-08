@@ -137,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 35;
+export const SAVE_SCHEMA_VERSION = 36;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -443,6 +443,8 @@ const playerAudio = obj({
   footstepClock: obj({
     gait: enumeration(['still', 'walking', 'jogging', 'sprinting']),
     distanceUntilStep: nonNegative,
+    stridePhase: num({ min: 0, max: 0.999_999_999_999_999_9 }),
+    stepIndex: nonNegativeInt,
   }),
   airbornePeakY: nullable(finite),
   rustleClock: obj({ cells: arr(str()), nextSimTimestamp: finite }),
@@ -570,7 +572,6 @@ const playerCombat = obj({
   nextFistHand: enumeration(['right', 'left']),
 });
 const aim = obj({
-  gaitPhase: finite,
   lookYaw: finite,
   lookPitch: finite,
   recoilYaw: finite,

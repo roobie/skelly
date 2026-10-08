@@ -94,13 +94,46 @@ describe('play presentation ownership', () => {
     expect(cases).toHaveBeenCalledTimes(1);
   });
 
+  it('uses the shared stride phase for the rendered walk cycle', () => {
+    const { view } = fixture();
+    const body: Body = { pos: [2, 1, 6], vel: [0, 0, -1], halfWidth: 0.6, height: 3.6, onGround: true };
+    const sync = vi.spyOn(view.playerMeshes, 'sync');
+    const damage = { style: { opacity: '' } } as unknown as HTMLElement;
+    view.updateCamera(
+      {
+        dt: 0.1,
+        body,
+        paused: false,
+        noclip: false,
+        yaw: 0,
+        pitch: 0,
+        stridePhase: 0.25,
+        eye: [2, 4.24, 6],
+        sightImpaired: false,
+      },
+      damage,
+    );
+    expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2 }));
+    view.dispose();
+  });
+
   it('projects block-space camera/player state without advancing the body', () => {
     const { engine, view } = fixture();
     const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };
     const before = structuredClone(body);
     const damage = { style: { opacity: '' } } as unknown as HTMLElement;
     view.updateCamera(
-      { dt: 0.1, body, paused: false, noclip: false, yaw: 0, pitch: 0, eye: [2, 4.24, 6], sightImpaired: false },
+      {
+        dt: 0.1,
+        body,
+        paused: false,
+        noclip: false,
+        yaw: 0,
+        pitch: 0,
+        stridePhase: 0,
+        eye: [2, 4.24, 6],
+        sightImpaired: false,
+      },
       damage,
     );
     expect(engine.camera.position.toArray()).toEqual([1, 2.12, 3]);
