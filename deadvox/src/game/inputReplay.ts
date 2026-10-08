@@ -447,7 +447,10 @@ export class InputReplayRecorder {
   }
 
   transferPendingColumnChangesTo(next: InputReplayRecorder): void {
-    if (next.columnChanges.length + next.pendingColumnChanges.length + this.pendingColumnChanges.length > next.columnChangeEventLimit) {
+    if (
+      next.columnChanges.length + next.pendingColumnChanges.length + this.pendingColumnChanges.length >
+      next.columnChangeEventLimit
+    ) {
       throw new Error('Input replay column changes exceed the recording window');
     }
     next.pendingColumnChanges.push(...this.pendingColumnChanges);
@@ -475,7 +478,9 @@ export class InputReplayRecorder {
     if (this.frameCount >= this.bufferTicks) {
       throw new Error('Input replay tick buffer is full');
     }
-    if (!appendColumnChanges(this.columnChanges, this.frameCount, this.pendingColumnChanges, this.columnChangeEventLimit)) {
+    if (
+      !appendColumnChanges(this.columnChanges, this.frameCount, this.pendingColumnChanges, this.columnChangeEventLimit)
+    ) {
       return false;
     }
     this.pendingColumnChanges.length = 0;
