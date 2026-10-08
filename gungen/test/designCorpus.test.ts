@@ -71,7 +71,7 @@ const mustLoad = (text: string) => {
 };
 
 describe('published design corpus', () => {
-  // Measured about 3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  // Loads and compares the full published-design corpus against its fixtures.
   it('loads every published design and agrees with its source fixture', { timeout: 15_000 }, () => {
     const files = designFiles();
     expect(files.length).toBeGreaterThan(0);

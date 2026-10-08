@@ -83,8 +83,13 @@ describe('action cycle viewer', () => {
       controls['cycle-mode']!.dispatchEvent(new Event('change'));
       controls['cycle-scrub']!.value = String(action.cycle!.hand.rearwardSeconds * 1000);
       controls['cycle-scrub']!.dispatchEvent(new Event('input'));
-      expect(handle.matrix.elements[12]! - home[12]!).toBeCloseTo(-6.5, 9);
-      expect(carrier.matrix.elements[12]! - carrierHome[12]!).toBeCloseTo(-6.5, 9);
+      const motion = action.carrier.def.motion!;
+      const expectedDisplacement = -(motion.end[0] - motion.start[0]);
+      const handleDisplacement = handle.matrix.elements[12]! - home[12]!;
+      const carrierDisplacement = carrier.matrix.elements[12]! - carrierHome[12]!;
+      expect(handleDisplacement).toBeCloseTo(expectedDisplacement, 9);
+      expect(carrierDisplacement).toBeCloseTo(expectedDisplacement, 9);
+      expect(handleDisplacement).toBeCloseTo(carrierDisplacement, 9);
       const { hand } = action.cycle!;
       controls['cycle-scrub']!.value = String((hand.rearwardSeconds + hand.dwellSeconds + hand.forwardSeconds) * 1000);
       controls['cycle-scrub']!.dispatchEvent(new Event('input'));
