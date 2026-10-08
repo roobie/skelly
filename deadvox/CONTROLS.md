@@ -247,7 +247,9 @@ direction, so a replay must restore it; inventory tab selection changes presenta
 and stays outside replay state. Reading-screen state also stays out: `play.ts`,
 `samplePlayerInput`, replays whether world input is active each tick, while `modalCommand`
 routes reading navigation and close commands to the presentation-only reader. A replay need
-not reopen a particular readable or restore its scroll position.
+not reopen a particular readable or restore its scroll position. A viewer's window blur,
+visibility loss or pointer-lock change does not alter replayed input, because those events are
+not part of the recorded session; live play still cancels held input on focus loss.
 
 ## Readiness and melee (2026-10-05, #267)
 

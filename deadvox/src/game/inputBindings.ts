@@ -628,6 +628,8 @@ const editable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   !target.closest('[hidden]') &&
   (target.isContentEditable || Boolean(target.closest('input,textarea,select,[contenteditable="true"]')));
+type InputCancellationReason = 'manual' | 'context-change' | 'window-blur' | 'document-hidden' | 'pointer-lock-lost';
+
 export class KeyboardInput {
   private readonly down = new Set<string>();
   private readonly blocked = new Set<string>();
@@ -636,7 +638,7 @@ export class KeyboardInput {
   private removeListeners: (() => void) | undefined;
   context: () => KeyboardState = () => this.state;
   command: (command: InputCommand) => void = () => undefined;
-  cancelled: (preservePointer?: boolean) => void = () => undefined;
+  cancelled: (preservePointer?: boolean, reason?: InputCancellationReason) => void = () => undefined;
   escape: () => void = () => undefined;
   capture: ((chord: Chord | string | undefined) => void) | undefined;
   readonly registry: BindingRegistry;
@@ -654,11 +656,11 @@ export class KeyboardInput {
   sync(): void {
     const next = this.context();
     if (next.context !== this.state.context || next.debug !== this.state.debug) {
-      this.cancel(true);
+      this.cancel(true, false, 'context-change');
       this.state = next;
     }
   }
-  cancel(keepGate = false, preservePointer = false): void {
+  cancel(keepGate = false, preservePointer = false, reason: InputCancellationReason = 'manual'): void {
     for (const code of this.down) {
       if ((keepGate && this.active.get(code) === 'debug.gate') || (preservePointer && code.startsWith('Mouse'))) {
         continue;
@@ -666,7 +668,7 @@ export class KeyboardInput {
       this.blocked.add(code);
       this.active.delete(code);
     }
-    this.cancelled(preservePointer);
+    this.cancelled(preservePointer, reason);
   }
   release(event: KeyEvent): void {
     this.down.delete(event.code);
@@ -812,15 +814,15 @@ export class KeyboardInput {
         event.stopPropagation();
       }
     };
-    const blur = () => this.cancel();
+    const blur = () => this.cancel(false, false, 'window-blur');
     const visibility = () => {
       if (document.hidden) {
-        this.cancel();
+        this.cancel(false, false, 'document-hidden');
       }
     };
     const lock = () => {
       if (!document.pointerLockElement) {
-        this.cancel();
+        this.cancel(false, false, 'pointer-lock-lost');
       }
     };
     const focus = (event: FocusEvent) => {

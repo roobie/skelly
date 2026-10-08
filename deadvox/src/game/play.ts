@@ -303,7 +303,9 @@ export const startPlay = (
 
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, options.restore !== undefined);
   let debugTools: DebugRuntime | undefined;
-  const input = new Input(inputTarget, () => !debugTools?.buildOn);
+  let replayPlayer: InputReplayPlayer | undefined;
+  const shouldCancelForViewerFocus = (): boolean => replayPlayer === undefined;
+  const input = new Input(inputTarget, () => !debugTools?.buildOn, shouldCancelForViewerFocus);
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
   const playerSenseTuning = registry.senses.get('player');
@@ -357,7 +359,7 @@ export const startPlay = (
   let replayVerification: 'matched' | 'diverged' | 'unavailable' | undefined;
   let replayVerificationTick: number | undefined;
   let replayVerificationStarted = false;
-  const replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
+  replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
     dispatchReplayAction(action, sample),
   );
   const samplePlayerInput = (
@@ -1384,7 +1386,12 @@ export const startPlay = (
     return playContext();
   };
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
-  keyboardInput.cancelled = (preservePointer) => {
+  keyboardInput.cancelled = (preservePointer, reason) => {
+    const viewerFocusCancellation =
+      reason === 'window-blur' || reason === 'document-hidden' || reason === 'pointer-lock-lost';
+    if (viewerFocusCancellation && !shouldCancelForViewerFocus()) {
+      return;
+    }
     input.cancel(preservePointer);
     cancelItemThrow();
     throwStanceInput.cancel();

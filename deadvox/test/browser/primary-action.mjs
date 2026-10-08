@@ -845,6 +845,17 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.mouse.click(640, 450, { button: 'middle' });
     await page.waitForFunction(() => globalThis.primaryActionTest.input.aimingDownSights);
     await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
+    const replayPreludeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+    await waitForSimulation(
+      page,
+      progressingSample,
+      { start: replayPreludeStart },
+      {
+        seconds: 0.35,
+        label: 'ADS replay records a held-ready prelude before firing',
+        record: (line) => process.stderr.write(`${line}\n`),
+      },
+    );
     await page.mouse.click(640, 450);
     await page.waitForFunction(({ cases, caseType }) => {
       const r = globalThis.primaryActionTest;
@@ -926,6 +937,21 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     });
     await replayNavigation;
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
+    await page.waitForFunction(() => {
+      const r = globalThis.primaryActionTest;
+      return (
+        r.input.rightMouseHeld &&
+        r.input.aimingDownSights &&
+        document.querySelector('#input-replay-status')?.dataset.state === 'playing'
+      );
+    });
+    await page.evaluate(() => globalThis.dispatchEvent(new FocusEvent('blur')));
+    const replayInputAfterBlur = await page.evaluate(() => ({
+      readyHeld: globalThis.primaryActionTest.input.rightMouseHeld,
+      aimingDownSights: globalThis.primaryActionTest.input.aimingDownSights,
+    }));
+    assert.equal(replayInputAfterBlur.readyHeld, true, 'viewer blur preserves replay readiness');
+    assert.equal(replayInputAfterBlur.aimingDownSights, true, 'viewer blur preserves replay ADS');
     await page.waitForFunction(
       () =>
         ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
