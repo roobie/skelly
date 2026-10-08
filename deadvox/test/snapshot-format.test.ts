@@ -465,7 +465,7 @@ describe('canonical save format', () => {
     const interruptedDecoded = await decodeSave(interruptedBytes, { version: formatVersion, contentLookup });
     expect(interruptedDecoded.snapshot.character.simulation.pendingInterrupt).toBe('format round-trip');
     expect(interruptedDecoded.snapshot).toEqual(interruptedSnapshot);
-    const interruptedLoaded = createRuntime(interruptedDecoded.snapshot);
+    const interruptedLoaded = createRuntime(interruptedDecoded.snapshot, true, columns);
     expect(capture(interruptedLoaded).character.simulation.pendingInterrupt).toBe('format round-trip');
 
     const reversed = reverseObjectKeys(snapshot) as SaveSnapshot;

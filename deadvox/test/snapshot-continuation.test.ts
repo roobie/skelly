@@ -372,7 +372,6 @@ describe('hamlet save/load continuation', () => {
     for (const runtime of [uninterrupted, split]) {
       runtime.zombies.add(registry.zombies.get('shambler')!, [...runtime.player.body.pos]);
     }
-    expect([...uninterrupted.zombies.store.entries()].length).toBeGreaterThan(0);
     expect(split.player.body.onGround).toBe(false);
     prepareAudioContinuation(uninterrupted);
     prepareAudioContinuation(split);

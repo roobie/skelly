@@ -61,24 +61,15 @@ const differing = (a: World, b: World): string[] =>
     })
     .map(([key]) => key);
 
-const shuffled = <T>(items: T[], seed: number): T[] => {
-  const rng = Rng.stream(seed, 'test-order');
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = rng.int(0, i);
-    [out[i], out[j]] = [out[j]!, out[i]!];
-  }
-  return out;
-};
-
 describe('the hamlet', () => {
   const seed = 1;
-  // Compare two tree-seam columns and a furniture column across full-height generation orders.
-  it(`generates a hamlet sample the same in any chunk order (seed ${seed})`, () => {
-    const hamlet = new Hamlet(seed, registry, scale);
-    const allColumns = columnsOf(hamlet);
+  // Compare full-height generation for a tree seam and a separate furniture column in opposite orders.
+  it(`generates a hamlet sample the same in opposite chunk orders (seed ${seed})`, () => {
+    const hamletA = new Hamlet(seed, registry, scale);
+    const hamletB = new Hamlet(seed, registry, scale);
+    const allColumns = columnsOf(hamletA);
     const leaf = id('leaves');
-    const crossingLeaf = hamlet.trees
+    const crossingLeaf = hamletA.trees
       .flatMap((tree) => tree.boxes)
       .find((box) => box.block === leaf && toChunk(box.min[0]) !== toChunk(box.max[0] - 1));
     if (!crossingLeaf) {
@@ -88,16 +79,19 @@ describe('the hamlet', () => {
       [toChunk(crossingLeaf.min[0]), toChunk(crossingLeaf.min[2])],
       [toChunk(crossingLeaf.max[0] - 1), toChunk(crossingLeaf.min[2])],
     ];
-    const furnitureColumn = allColumns.find(([cx, cz]) => hamlet.furnitureIn(cx, cz).length > 0);
+    const seamKeys = new Set(boundaryColumns.map(([cx, cz]) => `${cx},${cz}`));
+    const furnitureColumn = allColumns.find(
+      ([cx, cz]) => !seamKeys.has(`${cx},${cz}`) && hamletA.furnitureIn(cx, cz).length > 0,
+    );
     if (!furnitureColumn) {
       throw new Error('Hamlet fixture has no furniture column');
     }
-    const columns = [
-      ...new Map([...boundaryColumns, furnitureColumn].map((column) => [`${column[0]},${column[1]}`, column])).values(),
-    ];
+    const columns = [...boundaryColumns, furnitureColumn];
+    const reversedColumns = [...columns].reverse();
+    expect(reversedColumns).not.toEqual(columns);
 
-    const a = generate(hamlet, seed, columns);
-    const b = generate(hamlet, seed, shuffled(columns, seed));
+    const a = generate(hamletA, seed, columns);
+    const b = generate(hamletB, seed, reversedColumns);
     expect(b.world.chunks.size).toBe(a.world.chunks.size);
     expect(differing(a.world, b.world)).toEqual([]);
     expect(b.furniture).toEqual(a.furniture);
