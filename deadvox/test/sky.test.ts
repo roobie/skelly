@@ -47,7 +47,9 @@ describe('sky', () => {
         const a = first[key];
         const b = second[key];
         if (Array.isArray(a) && Array.isArray(b)) {
-          a.forEach((value, index) => expect(value).toBeCloseTo(b[index]!, 8));
+          for (const [componentIndex, value] of a.entries()) {
+            expect(value).toBeCloseTo(b[componentIndex]!, 8);
+          }
         } else {
           expect(a).toBeCloseTo(b as number, 8);
         }
