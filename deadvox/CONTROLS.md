@@ -214,30 +214,20 @@ becoming controls; see `BindingRegistry` in `src/game/inputBindings.ts`.
 
 ## Input recording and replay (d101)
 
-Replay capture is sampled at the fixed player-tick boundary so timing follows simulation
-steps rather than browser event timestamps. The downloadable artifact embeds its starting
-save and compatibility identity; it is explicit and does not change world-save state.
-The debug actions make import and export available without adding another input-binding
-surface. Retaining an earlier segment preserves recent history across bounded storage
-rollover while its start snapshot keeps the exported input replayable. An end-state
-fingerprint surfaces simulation drift from uncovered input rather than silently implying
-reproduction. A live stance throw takes place on the player tick whose sample records it,
-so live and replay throws use the same body pose and aim. The scope question was whether replay
-should cover inventory and crafting screen use. BR asked on 2026-10-06:
+Replay samples controls at fixed player ticks so action order does not depend on browser
+event timing. Hand-changing gestures apply at the sample that records them, in recorded
+order. A throw and a following hand gesture therefore use the same pose and remaining items
+in live play and replay.
 
-> "how much effort is it to scope it to inventory and crafting too?"
-> "yes, do inventory and crafting in the validation too"
-
-Inventory and crafting screen actions therefore carry UID-based command payloads through
-the shared dispatcher; see `applyReplayActionPayload` in `src/game/replayCommands.ts`,
-`InventoryScreen` in `src/ui/inventoryScreen.ts`, and `startPlay` in `src/game/play.ts`.
-Replay export stays disabled after any firearm-handling slider is used in a session, even if
-set back to content values: using a slider means the session no longer uses content handling,
-and a reload clears the override. See `withReplayExportGuard` in `src/game/inputReplay.ts`.
-The replay rationale remains in [SLICE-3.md](SLICE-3.md), 3.10. See `INPUT_BINDINGS` in
-`src/game/inputBindings.ts` for the debug export and import actions, `InputReplayRecorder`
-and `replayStateFingerprint` in `src/game/inputReplay.ts`, and `PlayerTickActions` in
-`src/game/playerTickActions.ts`.
+Replay covers inventory and crafting because those player flows should be reproducible,
+not just movement. Its starting save and compatibility identity keep the recording separate
+from world-save state; end-state fingerprints reveal uncovered input. Export is disabled
+after firearm handling is overridden because the session no longer represents content
+handling. Replay payloads are applied by `src/game/replayCommands.ts`,
+`applyReplayActionPayload`, and routed by `src/game/play.ts`, `startPlay`. Hand-changing
+order follows `src/game/playerTickActions.ts`, `PlayerTickActions`. Export and replay state
+are handled by `src/game/inputReplay.ts`, `withReplayExportGuard`, `InputReplayRecorder`,
+and `replayStateFingerprint`.
 
 ## Readiness and melee (2026-10-05, #267)
 

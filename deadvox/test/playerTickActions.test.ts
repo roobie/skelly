@@ -1,33 +1,39 @@
 import { describe, expect, it } from 'vitest';
-import { traceItemLanding } from '../src/core/itemThrow.ts';
 import { PlayerTickActions } from '../src/game/playerTickActions.ts';
 
-const landingFor = (x: number) =>
-  traceItemLanding({
-    from: [x, 1.5, 0.5],
-    direction: [1, 0, 0],
-    distanceMetres: 0.02,
-    blockSize: 1,
-    minY: -5,
-    isSolid: (_x, y) => y === 0,
-  });
-
 describe('PlayerTickActions', () => {
-  it('resolves a released throw from the next player sample pose', () => {
+  it('applies a deferred throw before a same-sample drop selects the remaining hand', () => {
     const actions = new PlayerTickActions();
-    let sampledBodyX = 0.96;
-    let liveLanding: ReturnType<typeof landingFor> | undefined;
+    const hands: { left: string | undefined; right: string | undefined } = {
+      left: 'off-hand item',
+      right: 'main-hand item',
+    };
+    const events: string[] = [];
 
     actions.enqueue(() => {
-      liveLanding = landingFor(sampledBodyX);
+      const item = hands.left ?? hands.right;
+      if (!item) {
+        throw new Error('No held item to throw');
+      }
+      hands.left = undefined;
+      events.push(`throw:${item}`);
     });
-    expect(liveLanding).toBeUndefined();
+    actions.enqueue(() => {
+      const side = hands.left ? 'left' : 'right';
+      const item = hands[side];
+      if (!item) {
+        return;
+      }
+      hands[side] = undefined;
+      events.push(`drop:${item}`);
+    });
 
-    sampledBodyX = 1.02;
-    const replayLanding = landingFor(sampledBodyX);
+    expect(events).toEqual([]);
+    expect(hands).toEqual({ left: 'off-hand item', right: 'main-hand item' });
+
     actions.applyAtNextTick();
 
-    expect(landingFor(0.96)).not.toEqual(replayLanding);
-    expect(liveLanding).toEqual(replayLanding);
+    expect(events).toEqual(['throw:off-hand item', 'drop:main-hand item']);
+    expect(hands).toEqual({ left: undefined, right: undefined });
   });
 });

@@ -307,7 +307,7 @@ export const startPlay = (
   let itemThrowStartedAt: number | undefined;
   let itemThrowItemUid: number | undefined;
   let itemThrowHand: HandSide | undefined;
-  const pendingItemThrowActions = new PlayerTickActions();
+  const pendingPlayerTickActions = new PlayerTickActions();
   let interactionPressTarget: InteractionTarget | undefined;
   const audio = new GameAudio({
     registry,
@@ -347,7 +347,7 @@ export const startPlay = (
   ): PlayerInputSample => {
     if (!replayPlayer) {
       inputRecorder?.recordTick(live, compressionAtTick);
-      pendingItemThrowActions.applyAtNextTick();
+      pendingPlayerTickActions.applyAtNextTick();
       const commands = pendingScreenCommands;
       pendingScreenCommands = [];
       for (const payload of commands) {
@@ -1727,6 +1727,22 @@ export const startPlay = (
   }
 
   function dropHeldItemForThrowingStance(): void {
+    if (!replayPlayer) {
+      if (sim.body.actionRefusal) {
+        showRefusal(sim.body.actionRefusal, sim.time);
+        return;
+      }
+      if (!inventory.hands[throwHandPriority()]) {
+        return;
+      }
+      inputRecorder?.queueAction('item.drop', 'down', inputContext());
+      pendingPlayerTickActions.enqueue(dropHeldItemForThrowingStanceNow);
+      return;
+    }
+    dropHeldItemForThrowingStanceNow();
+  }
+
+  function dropHeldItemForThrowingStanceNow(): void {
     if (sim.body.actionRefusal) {
       showRefusal(sim.body.actionRefusal, sim.time);
       return;
@@ -1740,9 +1756,6 @@ export const startPlay = (
     if (!result.ok) {
       showRefusal(`Can't drop it: ${result.reason}`, sim.time);
       return;
-    }
-    if (!replayPlayer) {
-      inputRecorder?.queueAction('item.drop', 'down', inputContext());
     }
     if (itemThrowItemUid === item.uid) {
       cancelItemThrow();
@@ -1801,9 +1814,9 @@ export const startPlay = (
     const chargeProgress = Math.min(1, heldSimSeconds / itemThrowTuning.chargeSimSeconds);
     if (!replayPlayer) {
       inputRecorder?.queueAction('item.throw', 'down', inputContext(), distance);
-      pendingItemThrowActions.enqueue(() => {
+      pendingPlayerTickActions.enqueue(() => {
         if (inventory.hands[hand] !== item) {
-          return;
+          throw new Error('Recorded item.throw lost its held item before the next player sample');
         }
         throwHeldItem(item, hand, distance, chargeProgress);
         syncThrowingStance();

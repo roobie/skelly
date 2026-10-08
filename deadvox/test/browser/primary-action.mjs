@@ -170,8 +170,24 @@ const observationPlugin = {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
+    const throwQueueMarker = `      pendingPlayerTickActions.enqueue(() => {
+        if (inventory.hands[hand] !== item) {
+          throw new Error('Recorded item.throw lost its held item before the next player sample');
+        }
+        throwHeldItem(item, hand, distance, chargeProgress);
+        syncThrowingStance();
+      });`;
     assert(code.includes(marker), 'game-loop observation point exists');
-    return code.replace(
+    assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
+    const observedCode = code.replace(
+      throwQueueMarker,
+      `${throwQueueMarker}
+      if (proof.dropAfterNextThrowCommit) {
+        proof.dropAfterNextThrowCommit = false;
+        dropHeldItemForThrowingStance();
+      }`,
+    );
+    return observedCode.replace(
       marker,
       `
   const proof = {
@@ -198,6 +214,7 @@ const observationPlugin = {
     dispatchScreenCommand,
     get inputRecorder() { return inputRecorder; },
     captureSnapshot,
+    dropAfterNextThrowCommit: false,
     startInputReplayRecording: () => {
       previousInputRecorder = undefined;
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
@@ -491,13 +508,17 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.setHand(r.dominant, mainItem);
       r.setHand(r.off, offItem);
       const minimumHoldSimSeconds = r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds;
-      return { mainUid: mainItem.uid, offUid: offItem.uid, mainSide: r.dominant, minimumHoldSimSeconds };
+      return { mainUid: mainItem.uid, offUid: offItem.uid, minimumHoldSimSeconds };
     });
     await page.waitForFunction(() => {
       const hands = globalThis.primaryActionTest.view.held.heldByHand;
       return hands.has('left') && hands.has('right');
     });
-    await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
+    await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.startInputReplayRecording();
+      r.dropAfterNextThrowCommit = true;
+    });
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     const releaseThrow = await mouseCharge(page);
@@ -520,16 +541,20 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const offLocation = off && r.inventory.locate(off);
       return (
         offLocation?.kind === 'pile' &&
-        r.inventory.hands[r.dominant]?.uid === ids.mainUid &&
-        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw')
+        r.inventory.locate(r.inventory.itemByUid(ids.mainUid))?.kind === 'pile' &&
+        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw') &&
+        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.drop')
       );
     }, fixture);
     const liveThrowOutcome = await page.evaluate((ids) => {
       const r = globalThis.primaryActionTest;
-      const item = r.inventory.itemByUid(ids.offUid);
-      const location = item && r.inventory.locate(item);
+      const off = r.inventory.itemByUid(ids.offUid);
+      const main = r.inventory.itemByUid(ids.mainUid);
+      const offLocation = off && r.inventory.locate(off);
+      const mainLocation = main && r.inventory.locate(main);
       return {
-        itemLocation: location?.kind === 'pile' ? location.pos : location?.kind,
+        offLocation: offLocation?.kind === 'pile' ? offLocation.pos : offLocation?.kind,
+        mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
         bodyPosition: [...r.session.body.pos],
         look: [r.input.yaw, r.input.pitch],
       };
@@ -563,7 +588,11 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     });
     const artifact = JSON.parse(replayText);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
+    assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
     assert(artifact.actions.some(({ action }) => action === 'throw.stance.toggle'));
+    const throwActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.throw');
+    const dropActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.drop');
+    assert(dropActionIndex > throwActionIndex, 'the same-sample drop follows the throw in recorded order');
     const replayNavigation = page.waitForNavigation();
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
@@ -583,11 +612,14 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     const { replayEndSnapshot, replayThrowOutcome } = await page.evaluate((ids) => {
       const r = globalThis.primaryActionTest;
       const off = r.inventory.itemByUid(ids.offUid);
-      const location = off && r.inventory.locate(off);
+      const main = r.inventory.itemByUid(ids.mainUid);
+      const offLocation = off && r.inventory.locate(off);
+      const mainLocation = main && r.inventory.locate(main);
       return {
         replayEndSnapshot: r.captureSnapshot(),
         replayThrowOutcome: {
-          itemLocation: location?.kind === 'pile' ? location.pos : location?.kind,
+          offLocation: offLocation?.kind === 'pile' ? offLocation.pos : offLocation?.kind,
+          mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
           bodyPosition: [...r.session.body.pos],
           look: [r.input.yaw, r.input.pitch],
         },
@@ -616,24 +648,27 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const mainLocation = main && r.inventory.locate(main);
       return {
         offKind: offLocation?.kind,
-        mainHandUid: r.inventory.hands[r.dominant]?.uid,
-        mainLocation: mainLocation?.kind === 'hand' ? mainLocation.side : mainLocation?.kind,
+        mainKind: mainLocation?.kind,
+        hands: Object.values(r.inventory.hands)
+          .filter(Boolean)
+          .map(({ uid }) => uid),
       };
     }, fixture);
     assert.deepEqual(
       items,
       {
         offKind: 'pile',
-        mainHandUid: fixture.mainUid,
-        mainLocation: fixture.mainSide,
+        mainKind: 'pile',
+        hands: [],
       },
-      'replay throws the off-hand item exactly once and leaves the main-hand item held',
+      'replay throws the off-hand item before dropping the remaining held item',
     );
     assert.deepEqual(
-      replayThrowOutcome.itemLocation,
-      liveThrowOutcome.itemLocation,
+      replayThrowOutcome.offLocation,
+      liveThrowOutcome.offLocation,
       'replay lands the throw in the same cell',
     );
+    assert.deepEqual(replayThrowOutcome.mainLocation, liveThrowOutcome.mainLocation);
     assert.equal(replayState, 'verified', `replay end state differs: ${JSON.stringify(endSnapshotDifference)}`);
     assert.deepEqual(pageErrors, []);
   } finally {
