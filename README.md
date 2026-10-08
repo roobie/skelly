@@ -32,22 +32,9 @@ Prefer a maintainable design over minimizing short-term churn, unless the churn 
 
 ### Zero drift
 
-BR, 2026-10-04: "Code shows what and how (and github can show this too - but the lifecycle of an issue or PR terminates) / Docs describe why and when"
+Code owns what and how; docs preserve why and, when useful, the trigger. This keeps tracked explanations from duplicating implementation or accumulating obsolete history. Cue code by path and symbol, replace superseded text instead of appending amendments, and keep the settled reason in a tracked doc. Design docs may state intent before implementation; implementation trims them to the reason and code cues.
 
-BR, 2026-10-07 17:05:55 +02:00:
-
-> specifically, we shall trim all the fat that is 'what' and 'how' and only keep 'why' and when needed 'when'
-> docs are _not_ for historical followup nor a place for accumulating amendments
->
-> this is already a core pillar, but we must execute it incrementally, continuously and periodically
-
-Docs explain why and name a trigger only when it matters; code owns what and how. Cue code by path and symbol, replace superseded text instead of appending amendments, and keep the final reason in a tracked doc. Design docs may state intent before implementation, but the implementing change trims them to the reason and code cues.
-
-A review that finds an amendment trail returns FIX, not a nit. BR, 2026-10-07 20:27:13 +02:00: "FIX".
-
-Superseded ADRs, reviews and retros belong in git history, not as current records in the working tree. BR, 2026-10-07 22:51:19 +02:00: "obsoleted or superseded ADRs are deleted, confined to git history. We should make reviews and retros too live in historical layers only - not in-repo as current records."
-
-The deep docs pass runs once per slice during closure. BR, 2026-10-07 20:27:13 +02:00: "Once per slice, in the process of closing it".
+Reviews that find an amendment trail return FIX. Superseded ADRs, reviews and retros belong in git history, not in the working tree. Run the deep docs pass once when closing each slice.
 
 ## Run and check
 
