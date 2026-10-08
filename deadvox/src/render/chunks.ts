@@ -173,6 +173,10 @@ if (uWeathering > 0.0) {
   if (weatherable > 0.5) diffuseColor.rgb = vec3(1.0, 0.0, 0.0);
 }`,
       );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <opaque_fragment>',
+      '#include <opaque_fragment>\ngl_FragColor = uWeathering > 0.0 ? vec4(1.0, 0.0, 0.0, 1.0) : gl_FragColor;',
+    );
   };
   material.customProgramCacheKey = () => 'deadvox-chunk-weathering-variation';
   return material;
