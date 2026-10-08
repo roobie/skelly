@@ -337,6 +337,8 @@ body.unconscious::after {
 #inventory {
   --inv-pane-padding-inline: 12px;
   --inv-pane-border-width: 1px;
+  /* Bound tall nearby grids so their scrollports don't expand the pane. */
+  --inv-around-grid-max-height: max(96px, 40vh);
   position: fixed;
   z-index: 20;
   inset: 24px;
@@ -436,6 +438,7 @@ body.unconscious::after {
       var(--inv-pane-padding-inline) +
       var(--inv-pane-border-width) +
       var(--inv-pane-border-width) +
+      1.25em +
       1.25em
     )
   );
@@ -555,7 +558,7 @@ body.unconscious::after {
 }
 #inventory .inv-pane[data-pane="around"] .inv-grid-scroll {
   flex: 0 1 auto;
-  max-height: max(96px, 40vh);
+  max-height: var(--inv-around-grid-max-height);
 }
 .inv-grid {
   position: relative;
