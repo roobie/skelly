@@ -26,7 +26,7 @@ import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
-import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
+import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
@@ -2803,6 +2803,7 @@ export const startPlay = (
       calendar: sim.calendar,
       time: sim.time,
       playerEye: eye().map((coordinate) => coordinate * s) as Vec3,
+      playerChest: [body.pos[0] * s, body.pos[1] * s + PLAYER_CHEST_METRES, body.pos[2] * s],
       lastZombieStep: session.lastZombieStep,
       lastBackgroundStep: session.lastBackgroundStep,
       dt,

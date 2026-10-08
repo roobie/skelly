@@ -1,5 +1,10 @@
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
-import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigureForType } from './amalgamFigure.ts';
+import {
+  AMALGAM_FIGURE_SEED,
+  amalgamCollisionEnvelope,
+  amalgamFigureForType,
+  amalgamStrikeOrigin,
+} from './amalgamFigure.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
@@ -580,30 +585,64 @@ const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
   headingAt(approachAngle(angleOf(current), angleOf(target), radians));
 const inRange = (rng: Rng, range: { min: number; max: number }): number => rng.range(range.min, range.max);
 
+/** The player point every zombie attack aims at, in metres above the feet: the chest. */
+export const PLAYER_CHEST_METRES = 1;
+
 interface AttackReachProbe {
+  zombie: Zombie;
   zombiePos: Vec3;
   playerPos: Vec3;
-  reachMetres: number;
   blockSize: number;
   isSolid: SolidAt;
 }
 
-/** Shared by both attack start (telegraph) and attack resolve (after the windup elapses): horizontal
- * reach, a vertical band matching a standing player, and clear chest-to-chest line of sight. Used
- * identically at both times so "still in reach" at resolve means exactly what "in reach" meant at start. */
-const withinAttackReach = ({ zombiePos, playerPos, reachMetres, blockSize, isSolid }: AttackReachProbe): boolean => {
-  if (reachMetres <= 0 || horizontalDistance(playerPos, zombiePos) * blockSize > reachMetres) {
+/** A grab reaches horizontally from the body, within a vertical band matching a standing player, chest to chest. */
+const grabOrigin = (
+  { zombiePos, playerPos, blockSize }: AttackReachProbe,
+  reachMetres: number,
+  chestOffset: number,
+): Vec3 | undefined =>
+  horizontalDistance(playerPos, zombiePos) * blockSize > reachMetres ||
+  Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= 1.7
+    ? undefined
+    : [zombiePos[0], zombiePos[1] + chestOffset, zombiePos[2]];
+
+/** An amalgam's tentacle strikes in a straight line from its core, at any height, as far as its reach. */
+const strikeOrigin = (
+  { zombie, zombiePos, blockSize }: AttackReachProbe,
+  reachMetres: number,
+  playerChest: Vec3,
+): Vec3 | undefined => {
+  const offset = amalgamStrikeOrigin(amalgamFigureForType(zombie.type, zombie.figureSeed), zombie.facing);
+  const origin: Vec3 = [
+    zombiePos[0] + offset[0] / blockSize,
+    zombiePos[1] + offset[1] / blockSize,
+    zombiePos[2] + offset[2] / blockSize,
+  ];
+  return Math.hypot(...sub(playerChest, origin)) * blockSize > reachMetres ? undefined : origin;
+};
+
+/** Shared by both attack start (telegraph) and attack resolve (after the windup elapses): the attack's
+ * reach rule, then a clear line from its origin to the player's chest. Used identically at both times so
+ * "still in reach" at resolve means exactly what "in reach" meant at start. */
+const withinAttackReach = (probe: AttackReachProbe): boolean => {
+  const { zombie, playerPos, blockSize, isSolid } = probe;
+  const reachMetres = zombieAttackReachMetres(zombie);
+  if (reachMetres <= 0) {
     return false;
   }
-  if (Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= 1.7) {
-    return false;
-  }
-  const chestOffset = 1 / blockSize;
-  const zombieChest: Vec3 = [zombiePos[0], zombiePos[1] + chestOffset, zombiePos[2]];
+  const chestOffset = PLAYER_CHEST_METRES / blockSize;
   const playerChest: Vec3 = [playerPos[0], playerPos[1] + chestOffset, playerPos[2]];
-  const toPlayer = sub(playerChest, zombieChest);
-  const chestDistance = Math.hypot(...toPlayer);
-  return chestDistance > 0 && raycast(zombieChest, unit(toPlayer), chestDistance, isSolid) === undefined;
+  const origin =
+    zombie.type.model === 'amalgam'
+      ? strikeOrigin(probe, reachMetres, playerChest)
+      : grabOrigin(probe, reachMetres, chestOffset);
+  if (!origin) {
+    return false;
+  }
+  const toPlayer = sub(playerChest, origin);
+  const lineDistance = Math.hypot(...toPlayer);
+  return lineDistance > 0 && raycast(origin, unit(toPlayer), lineDistance, isSolid) === undefined;
 };
 
 // ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
@@ -2190,13 +2229,7 @@ export class ZombieSystem {
     scratch.seeking = zombie.mode === 'chase' || zombie.mode === 'investigate';
     scratch.inReach =
       zombie.mode === 'chase' &&
-      withinAttackReach({
-        zombiePos: pos,
-        playerPos: scratch.target,
-        reachMetres: zombieAttackReachMetres(zombie),
-        blockSize,
-        isSolid,
-      });
+      withinAttackReach({ zombie, zombiePos: pos, playerPos: scratch.target, blockSize, isSolid });
     scratch.direction = obstacleDirection ?? unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
     if (scratch.moving) {
@@ -2403,13 +2436,7 @@ export class ZombieSystem {
       zombie.attackWindup = Math.max(0, zombie.attackWindup - dt);
       if (
         zombie.attackWindup <= 0 &&
-        withinAttackReach({
-          zombiePos: pos,
-          playerPos: player.pos,
-          reachMetres: zombieAttackReachMetres(zombie),
-          blockSize,
-          isSolid,
-        })
+        withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
       ) {
         this.options.hurtPlayer(type.attack.damage, type.attack.hitRegion ?? 'torso', scratch.id);
       }
@@ -2417,13 +2444,7 @@ export class ZombieSystem {
       zombie.mode === 'chase' &&
       zombie.attackWait <= 0 &&
       (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie.severed)) &&
-      withinAttackReach({
-        zombiePos: pos,
-        playerPos: player.pos,
-        reachMetres: zombieAttackReachMetres(zombie),
-        blockSize,
-        isSolid,
-      })
+      withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
       zombie.attackWindup = type.attack.windupSimSeconds;
