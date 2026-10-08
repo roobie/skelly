@@ -10,6 +10,7 @@ import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
   BindingRegistry,
   INPUT_BINDINGS,
@@ -129,7 +130,7 @@ function setup(contentRegistry = registry) {
     workOptions: (_uid: number): WorkOption[] => [],
     body: () => body.snapshotState(),
     actionRefusal: () => body.actionRefusal,
-    attachmentCandidates: () => [beans],
+    attachmentCandidates: (_firearmUid: number, _slotId: string) => [beans],
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
@@ -188,6 +189,58 @@ describe('inventory screen Lit rendering', () => {
 
     const battery = root.querySelector<HTMLElement>(`[data-attachment-slot="${mounted.fitted.mountedAt}.battery"]`);
     expect(battery?.dataset.occupied).toBe('true');
+  });
+
+  it('fits a foregrip from an inventory pocket onto the held AR through the inventory control', () => {
+    const test = setup();
+    const firearm = test.inv.create('rifle_assault');
+    const foregrip = test.inv.create('foregrip');
+    const pocketOwner = test.inv.worn.legs;
+    const model = registry.models.get('rifle_assault')!;
+    const slot = model.attachmentSlots!.find(
+      (candidate) => candidate.mount === 'rail-bottom' && model.compatibility?.[candidate.id]?.includes('foregrip'),
+    );
+    if (!(pocketOwner && slot && test.inv.consume(test.beans))) {
+      throw new Error('Fixture could not prepare the foregrip and held-firearm path');
+    }
+    if (
+      !(
+        test.inv.add(firearm, { kind: 'hand', side: 'right' }) &&
+        test.inv.add(foregrip, { kind: 'pocket', owner: pocketOwner, pocket: 0 })
+      )
+    ) {
+      throw new Error('Fixture could not place the AR in hand and foregrip in an inventory pocket');
+    }
+    const handling = new FirearmAttachmentHandling(test.inv, test.queue, () => [0, 0, 0]);
+    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.candidates(firearmUid, slotId);
+    test.hooks.dispatch = (payload) =>
+      applyReplayActionPayload(payload, {
+        inventory: test.inv,
+        queue: test.queue,
+        quickbar: { assign: () => undefined },
+        search: () => undefined,
+        work: () => undefined,
+        fitAttachment: (uid, targetSlot, attachmentUid) => handling.fit(uid, targetSlot, attachmentUid),
+        removeAttachment: (uid, targetSlot) => handling.remove(uid, targetSlot),
+        toHands: () => undefined,
+        craftStart: () => undefined,
+        craftContinue: () => undefined,
+        craftStop: () => undefined,
+        cancelItemThrow: () => undefined,
+      });
+    test.screen.selected = firearm;
+    test.screen.update();
+
+    expect(test.inv.hands.right).toBe(firearm);
+    expect(test.inv.locate(foregrip)?.kind).toBe('pocket');
+    const fit = test.root.querySelector<HTMLButtonElement>(`[data-attachment-slot="${slot.id}"] button.inv-option`);
+    expect(fit).not.toBeNull();
+    fit!.click();
+
+    expect(test.queue.jobs).toHaveLength(1);
+    expect(firearm.slots?.[slot.id]).toBeUndefined();
+    test.queue.tick(test.queue.remaining);
+    expect(firearm.slots?.[slot.id]).toBe(foregrip);
   });
 
   it('shows exported slots and dispatches fitting and removal for held and ground firearms', () => {

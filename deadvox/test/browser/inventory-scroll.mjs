@@ -39,12 +39,9 @@ const content = [
 const fixture = `
 import '/src/ui/style.css';
 import { buildRegistry } from '/src/core/content.ts';
-import { BUNDLED_CONTENT } from '/src/game/bundledContent.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
-import { FirearmAttachmentHandling } from '/src/game/firearmAttachmentHandling.ts';
-import { InputReplayRecorder } from '/src/game/inputReplay.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
@@ -92,42 +89,6 @@ screen.open();
 screen.onAction('inventory.next');
 screen.selected = rag;
 screen.update();
-const firearmRegistry = BUNDLED_CONTENT.registry;
-const firearmInventory = new Inventory(firearmRegistry);
-const firearmQueue = new HandlingQueue(firearmInventory);
-const firearmHandling = new FirearmAttachmentHandling(firearmInventory, firearmQueue, () => [0, 0, 0]);
-const firearmNotices = [];
-const firearmDispatches = [];
-const replayRecorder = new InputReplayRecorder({});
-const rifle = firearmInventory.create('rifle_assault');
-const foregrip = firearmInventory.create('foregrip');
-const jeans = firearmInventory.create('jeans');
-const rifleModelId = firearmRegistry.items.get(rifle.type).model;
-const rifleModel = firearmRegistry.models.get(rifleModelId);
-const slot = rifleModel.attachmentSlots.find((candidate) => candidate.mount === 'rail-bottom' && rifleModel.compatibility[candidate.id].includes('foregrip'));
-if (!slot) throw Error('No exported foregrip fixture slot');
-if (
-  !(
-    firearmInventory.add(jeans, { kind: 'worn' }) &&
-    firearmInventory.add(rifle, { kind: 'hand', side: 'right' }) &&
-    firearmInventory.add(foregrip, { kind: 'pocket', owner: jeans, pocket: 0 })
-  )
-) throw Error('Could not place held AR and pocketed foregrip');
-const firearmScreen = new InventoryScreen(document.querySelector('#inventory'), firearmInventory, firearmQueue, {
-  reach: bindReach({ inventory: firearmInventory, position: [0, 0, 0], blockSize: 0.5 }),
-  feet: () => [0, 0, 0], nearby: () => [...firearmInventory.piles.values()], distance: () => 0,
-  containers: () => [], entityDistance: () => 0,
-  dispatch: (payload) => {
-    replayRecorder.queueAction(payload.kind, 'down', 'inventory', payload);
-    firearmDispatches.push(payload);
-    return payload.kind === 'firearm.attachment.fit'
-      ? firearmHandling.fit(payload.firearmUid, payload.slotId, payload.attachmentUid)
-      : payload.kind === 'firearm.attachment.remove' ? firearmHandling.remove(payload.firearmUid, payload.slotId) : undefined;
-  },
-  searching: () => false, notice: (message) => firearmNotices.push(message), describe: () => [], workOptions: () => [], body: () => body.snapshotState(),
-  attachmentCandidates: (firearmUid, slotId) => firearmHandling.candidates(firearmUid, slotId),
-});
-firearmScreen.selected = rifle;
 const inputState = { locked: false, menuPointer: false };
 const input = {
   get locked() { return inputState.locked; },
@@ -147,42 +108,6 @@ target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions: BODY_REGIONS,
   get gameplayWheels() { return gameplayWheels; },
   resetWheels() { gameplayWheels = 0; },
-  prepareAttachmentAction() {
-    screen.close();
-    firearmScreen.open();
-    const selector = '#inventory [data-attachment-slot="' + slot.id + '"] button';
-    const button = document.querySelector(selector);
-    if (!button) throw Error('Inspect view did not offer the certified foregrip fit');
-    return {
-      selector,
-      label: button.textContent.trim(),
-      queuedBefore: firearmQueue.jobs.length,
-      firearmLocation: firearmInventory.locate(rifle)?.kind,
-      foregripLocation: firearmInventory.locate(foregrip)?.kind,
-      selected: firearmScreen.selected?.uid,
-      rifleUid: rifle.uid,
-    };
-  },
-  finishAttachmentFit(queuedBefore) {
-    if (firearmQueue.jobs.length !== queuedBefore + 1) throw Error('Fit control did not queue handling: ' + JSON.stringify({ dispatches: firearmDispatches, notices: firearmNotices }));
-    const fitResult = firearmQueue.tick(1);
-    firearmScreen.update();
-    if (fitResult.failed.length > 0) throw Error('Fit handling failed: ' + fitResult.failed.map(({ reason }) => reason).join('; '));
-    if (rifle.slots?.[slot.id] !== foregrip) throw Error('Inspect view did not fit the accessory');
-  },
-  prepareAttachmentRemove() {
-    const selector = '#inventory [data-attachment-slot="' + slot.id + '"] button';
-    const button = document.querySelector(selector);
-    if (!button) throw Error('Inspect view did not offer removal');
-    return { selector, label: button.textContent.trim(), queuedBefore: firearmQueue.jobs.length };
-  },
-  finishAttachmentRemove(queuedBefore) {
-    if (firearmQueue.jobs.length !== queuedBefore + 1) throw Error('Remove control did not queue handling: ' + JSON.stringify({ dispatches: firearmDispatches, notices: firearmNotices }));
-    const removeResult = firearmQueue.tick(1);
-    firearmScreen.update();
-    if (removeResult.failed.length > 0) throw Error('Remove handling failed: ' + removeResult.failed.map(({ reason }) => reason).join('; '));
-    if (rifle.slots?.[slot.id] !== undefined) throw Error('Inspect view did not remove the accessory');
-  },
   redraw() {
     if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [0, 0, 0] })) throw Error('redraw fixture failed');
     screen.update();
@@ -334,51 +259,6 @@ try {
   }
   assert.deepEqual(errors, []);
   assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
-  const fit = await page.evaluate(() => globalThis.scrollFixture.prepareAttachmentAction());
-  process.stdout.write(`${engine}: attachment action control ${JSON.stringify(fit)}\n`);
-  assert.equal(fit.firearmLocation, 'hand');
-  assert.equal(fit.foregripLocation, 'pocket');
-  assert.equal(fit.selected, fit.rifleUid);
-  await page.locator(fit.selector).scrollIntoViewIfNeeded();
-  const fitBounds = await page.locator(fit.selector).boundingBox();
-  assert.ok(fitBounds);
-  const fitPoint = { x: fitBounds.x + fitBounds.width / 2, y: fitBounds.y + fitBounds.height / 2 };
-  const menuCursor = await page.evaluate(() => {
-    globalThis.scrollFixture.input.setPointerModeForTest(true);
-    const { input } = globalThis.scrollFixture;
-    return { x: input.cursorX, y: input.cursorY };
-  });
-  await page.evaluate(dispatchMenuPointerMove, {
-    canvasSelector: '#view',
-    movementX: fitPoint.x - menuCursor.x,
-    movementY: fitPoint.y - menuCursor.y,
-  });
-  assert.equal(
-    await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('button')?.textContent.trim(), fitPoint),
-    fit.label,
-  );
-  await page.mouse.click(fitPoint.x, fitPoint.y);
-  await page.evaluate((queuedBefore) => globalThis.scrollFixture.finishAttachmentFit(queuedBefore), fit.queuedBefore);
-  const remove = await page.evaluate(() => globalThis.scrollFixture.prepareAttachmentRemove());
-  process.stdout.write(`${engine}: attachment removal control ${JSON.stringify(remove)}\n`);
-  await page.locator(remove.selector).scrollIntoViewIfNeeded();
-  const removeBounds = await page.locator(remove.selector).boundingBox();
-  assert.ok(removeBounds);
-  const removePoint = { x: removeBounds.x + removeBounds.width / 2, y: removeBounds.y + removeBounds.height / 2 };
-  const currentCursor = await page.evaluate(() => {
-    const { input } = globalThis.scrollFixture;
-    return { x: input.cursorX, y: input.cursorY };
-  });
-  await page.evaluate(dispatchMenuPointerMove, {
-    canvasSelector: '#view',
-    movementX: removePoint.x - currentCursor.x,
-    movementY: removePoint.y - currentCursor.y,
-  });
-  await page.mouse.click(removePoint.x, removePoint.y);
-  await page.evaluate(
-    (queuedBefore) => globalThis.scrollFixture.finishAttachmentRemove(queuedBefore),
-    remove.queuedBefore,
-  );
   if (engine === 'chromium') {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.addInitScript(() => {
@@ -474,52 +354,54 @@ try {
     const fitButtons = page.locator('#inventory button.inv-option').filter({ hasText: /Fit .*foregrip/i });
     await fitButtons.first().scrollIntoViewIfNeeded();
     assert.equal(await fitButtons.count(), 1, 'held AR offers the pocketed foregrip as a fit action');
-    const before = await page.evaluate(() => globalThis.foregripFitTest.dispatches.length);
-    const fitText = (await fitButtons.first().textContent())?.trim();
+    const before = await page.evaluate(() => ({
+      dispatches: globalThis.foregripFitTest.dispatches.length,
+      jobs: globalThis.foregripFitTest.session.queue.jobs.length,
+    }));
     await clickThroughMenuCursor(fitButtons.first());
     await page.waitForFunction(
-      ({ beforeCount }) => globalThis.foregripFitTest.dispatches.length > beforeCount,
-      { beforeCount: before },
+      ({ dispatchCount }) => globalThis.foregripFitTest.dispatches.length > dispatchCount,
+      { dispatchCount: before.dispatches },
       { timeout: 5000 },
     );
     const fitResult = await page.evaluate(
-      ({ uid }) => {
+      ({ uid, jobsBefore }) => {
         const { dispatches, session } = globalThis.foregripFitTest;
         const firearm = Object.values(session.inventory.hands).find((item) => item?.type === 'rifle_assault');
         return {
           fitActions: dispatches.filter((action) => action.kind === 'firearm.attachment.fit').length,
           attached: firearm && Object.values(firearm.slots ?? {}).some((slot) => slot?.uid === uid),
-          queuedHandling: session.queue.jobs.some((job) => job.label.toLowerCase().includes('fit')),
+          queuedHandling: session.queue.jobs.length > jobsBefore,
         };
       },
-      { uid: gripUid },
+      { uid: gripUid, jobsBefore: before.jobs },
     );
-    assert.ok(fitResult.fitActions > 0, `${fitText} dispatches through the live inventory controller`);
+    assert.ok(fitResult.fitActions > 0, 'the production inventory screen dispatches the fit action');
     await page.waitForFunction(
-      ({ uid }) => {
+      ({ uid, jobsBefore }) => {
         const { session } = globalThis.foregripFitTest;
         const firearm = Object.values(session.inventory.hands).find((item) => item?.type === 'rifle_assault');
         return (
           (firearm && Object.values(firearm.slots ?? {}).some((slot) => slot?.uid === uid)) ||
-          session.queue.jobs.some((job) => job.label.toLowerCase().includes('fit'))
+          session.queue.jobs.length > jobsBefore
         );
       },
-      { uid: gripUid },
+      { uid: gripUid, jobsBefore: before.jobs },
       { timeout: 5000 },
     );
     const finalFit = await page.evaluate(
-      ({ uid }) => {
+      ({ uid, jobsBefore }) => {
         const { session } = globalThis.foregripFitTest;
         const firearm = Object.values(session.inventory.hands).find((item) => item?.type === 'rifle_assault');
         return {
           attached: firearm && Object.values(firearm.slots ?? {}).some((slot) => slot?.uid === uid),
-          queuedHandling: session.queue.jobs.some((job) => job.label.toLowerCase().includes('fit')),
+          queuedHandling: session.queue.jobs.length > jobsBefore,
         };
       },
-      { uid: gripUid },
+      { uid: gripUid, jobsBefore: before.jobs },
     );
     process.stdout.write(
-      `${engine}: live held-AR pocketed-foregrip fit via locked menu click ${JSON.stringify({ ...fitResult, ...finalFit })}\\n`,
+      `${engine}: live held-AR pocketed-foregrip fit via locked menu click ${JSON.stringify({ ...fitResult, ...finalFit })}\n`,
     );
   }
   process.stdout.write(
