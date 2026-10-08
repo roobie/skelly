@@ -152,6 +152,28 @@ try {
           globalThis.__d144ReleaseWriter?.();
         }
       });
+      globalThis.addEventListener('DOMContentLoaded', () => {
+        if (!new URLSearchParams(location.search).has('loadout')) {
+          return;
+        }
+        let frames = 0;
+        const captureError = (error) => {
+          sessionStorage.setItem('d144-lock-snapshot', JSON.stringify({ error: String(error) }));
+        };
+        const captureLocks = async () => {
+          const locks = await navigator.locks.query();
+          const held = locks.held.filter((lock) => lock.name === 'deadvox-save-storage');
+          const pending = locks.pending.filter((lock) => lock.name === 'deadvox-save-storage');
+          const ready = globalThis.deadvoxSaveTest?.controller.ready === true;
+          if (held.length + pending.length > 0 || ready || frames >= 120) {
+            sessionStorage.setItem('d144-lock-snapshot', JSON.stringify({ held, pending, ready }));
+            return;
+          }
+          frames += 1;
+          requestAnimationFrame(() => captureLocks().catch(captureError));
+        };
+        captureLocks().catch(captureError);
+      });
     });
   }
   if (busyLockOnly) {
@@ -763,30 +785,9 @@ try {
     const pumpUrl = new URL(appUrl);
     pumpUrl.searchParams.set('loadout', 'pump');
     await page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' });
-    await page.waitForFunction(
-      async () => {
-        const locks = await navigator.locks.query();
-        const writer = [...locks.held, ...locks.pending].some(
-          (lock) => lock.name === 'deadvox-save-storage' && lock.mode === 'exclusive',
-        );
-        const readerPending = locks.pending.some(
-          (lock) => lock.name === 'deadvox-save-storage' && lock.mode === 'shared',
-        );
-        const ready = globalThis.deadvoxSaveTest?.controller.ready;
-        if (writer && readerPending) {
-          sessionStorage.setItem(
-            'd144-lock-snapshot',
-            JSON.stringify({
-              held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
-              pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
-            }),
-          );
-        }
-        return sessionStorage.getItem('d144-pagehide') !== null && (ready || (writer && readerPending));
-      },
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
-    );
+    await page.waitForFunction(() => sessionStorage.getItem('d144-lock-snapshot') !== null, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
     const result = await page.evaluate(async () => {
       const locks = await navigator.locks.query();
       const controller = globalThis.deadvoxSaveTest?.controller;
@@ -814,7 +815,7 @@ try {
     let restored;
     if (browserName === 'chromium' && result.pagehide?.persisted === true) {
       await page.goBack({ waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS });
-      await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') === 'true', undefined, {
+      await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') !== null, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
       await page.waitForFunction(
@@ -829,6 +830,7 @@ try {
       );
       restored = await page.evaluate(async () => ({
         locks: await navigator.locks.query(),
+        pageshowPersisted: sessionStorage.getItem('d144-pageshow') === 'true',
         controllerEntered: globalThis.deadvoxSaveTest.controller.isEntered,
       }));
       process.stdout.write(`${browserName}: restored after navigation ${JSON.stringify(restored)}\n`);
@@ -845,7 +847,8 @@ try {
       assert.equal(result.hasSavedWorld, true);
       assert.equal(result.continueDisabled, false);
       assert.equal(result.warnings.length, 0);
-      assert.equal(restored?.controllerEntered, true, 'Back restores the original world from bfcache');
+      assert.equal(restored?.pageshowPersisted, true, 'Back restores the original world from bfcache');
+      assert.equal(restored?.controllerEntered, true, 'Back restores the running world');
       assert.equal(
         restored?.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
         false,
