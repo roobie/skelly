@@ -225,6 +225,36 @@ describe('keyboard registry', () => {
     expect(craft.contexts).toEqual(['play']);
     expect(interruption.contexts).toEqual(['interrupted']);
   });
+  it('routes G/V/B to the inventory tabs in play and inventory contexts', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    let context: InputContext = 'play';
+    keyboard.context = () => ({ context, debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+    const tabs = [
+      { code: 'KeyG', action: 'ui.inventory-tab-items' },
+      { code: 'KeyV', action: 'ui.inventory-tab-skills' },
+      { code: 'KeyB', action: 'ui.inventory-tab-crafting' },
+    ];
+
+    for (const tab of tabs) {
+      expect(keyboard.press(event(tab.code))).toBe(true);
+      expect(commands.at(-1)?.action).toBe(tab.action);
+      keyboard.release(event(tab.code));
+    }
+    context = 'inventory';
+    keyboard.sync();
+    for (const tab of tabs) {
+      expect(keyboard.press(event(tab.code))).toBe(true);
+      expect(commands.at(-1)?.action).toBe(tab.action);
+      keyboard.release(event(tab.code));
+    }
+    for (const [index, tab] of tabs.entries()) {
+      const registry = new BindingRegistry(INPUT_BINDINGS, storage());
+      expect(registry.binding(tab.action)?.contexts).toEqual(expect.arrayContaining(['play', 'inventory']));
+      expect(registry.rebind(tab.action, [{ code: `Numpad${4 + index}` }])).toBeUndefined();
+    }
+  });
   it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.binding('debug.gate')?.defaults[0]?.code).toBe('F2');
@@ -321,17 +351,18 @@ describe('keyboard registry', () => {
     validated.setLayout(new Map([['KeyF', 'φ']]));
     expect(validated.label('fixture.inventory')).toBe('φ');
   });
-  it('refuses browser modifiers without forbidding Alt or native text shortcuts', () => {
-    for (const extra of [{ ctrlKey: true }, { metaKey: true }]) {
+  it('refuses browser modifiers for bindings and rebinding capture', () => {
+    for (const extra of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }]) {
       expect(typeof capturedChord(event('KeyJ', extra))).toBe('string');
     }
     expect(capturedChord(event('ControlLeft', { ctrlKey: true }))).toEqual(expect.any(String));
-    expect(capturedChord(event('KeyJ', { altKey: true }))).toEqual({ code: 'KeyJ', modifier: 'alt' });
+    expect(capturedChord(event('AltLeft', { altKey: true }))).toEqual(expect.any(String));
     const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
     keyboard.context = () => ({ context: 'play', debug: true });
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
     expect(keyboard.press(event('KeyF', { ctrlKey: true }), true)).toBe(false);
+    expect(keyboard.press(event('KeyF', { altKey: true }), true)).toBe(false);
     expect(commands).toEqual([]);
   });
   it('routes a gate chord exclusively, suppresses repeats, and requires release after an owner transition', () => {

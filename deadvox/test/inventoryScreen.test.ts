@@ -187,15 +187,26 @@ const holdQuickGate = () => {
 };
 
 describe('inventory screen Lit rendering', () => {
-  it('keeps the selected tab across closing and reopening the screen', () => {
+  it('opens directly on a requested tab and remembers it across toggles', () => {
     const { screen, root } = setup();
-    screen.selectTab('skills');
+    screen.close();
+    screen.openOnTab('skills');
+    expect(screen.isOpen).toBe(true);
     screen.close();
     screen.open();
 
     expect(screen.activeTab).toBe('skills');
     expect(root.querySelector<HTMLElement>('[data-tab-panel="skills"]')?.hidden).toBe(false);
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
+  });
+
+  it('switches tabs without closing an already-open screen', () => {
+    const { screen } = setup();
+    screen.openOnTab('crafting');
+
+    expect(screen.isOpen).toBe(true);
+    expect(screen.activeTab).toBe('crafting');
+    expect(document.body.classList.contains('inventory-tab-crafting')).toBe(true);
   });
 
   it('keeps live needs in the character-screen header on every tab', () => {

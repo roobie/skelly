@@ -83,6 +83,7 @@ import {
   type InputCancellationReason,
   type InputCommand,
   type InputContext,
+  inventoryTabForAction,
   keyboardInput,
   labelForAction,
   shouldCancelInputForViewerFocus,
@@ -1430,6 +1431,15 @@ export const startPlay = (
     if (action === 'ui.inventory-toggle') {
       if (!compression.locksInput) {
         toggleInventory();
+      }
+      return true;
+    }
+    const tab = inventoryTabForAction(action);
+    if (tab) {
+      if (!compression.locksInput) {
+        screen.openOnTab(tab);
+        mainMenuOpen = false;
+        syncMenuState();
       }
       return true;
     }

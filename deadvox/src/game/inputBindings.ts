@@ -71,6 +71,13 @@ const debugModifiedRow = (id: string, description: string, code: string, modifie
   ...debugRow(id, description, code),
   defaults: [{ code, modifier }],
 });
+export const INVENTORY_TAB_BINDINGS = [
+  { action: 'ui.inventory-tab-items', description: 'Open / select Items tab', tab: 'items', code: 'KeyG' },
+  { action: 'ui.inventory-tab-skills', description: 'Open / select Skills tab', tab: 'skills', code: 'KeyV' },
+  { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting', code: 'KeyB' },
+] as const;
+export const inventoryTabForAction = (action: string) =>
+  INVENTORY_TAB_BINDINGS.find((binding) => binding.action === action)?.tab;
 
 export const INPUT_BINDINGS: readonly Binding[] = [
   row('stance.ready', 'Hold to ready a firearm or enter en-garde', world, ['Mouse2'], 'held-state', {
@@ -105,6 +112,9 @@ export const INPUT_BINDINGS: readonly Binding[] = [
     },
   ),
   row('ui.inventory-toggle', 'Open / close inventory', [...moving, 'inventory'], ['Tab']),
+  ...INVENTORY_TAB_BINDINGS.map(({ action, description, code }) =>
+    row(action, description, [...moving, 'inventory'], [code]),
+  ),
   row('ui.main-menu-toggle', 'Main menu', entered, ['F9'], 'press', { text: true }),
   row('hud.toggle-interaction-hints', 'Hold to toggle interaction hints', entered, ['Backquote'], 'hold', {
     holdMs: HUD_HINTS_HOLD_MS,
@@ -155,7 +165,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('debug.gate', 'Hold for debug commands', all, ['F2'], 'held-state', { debug: true, text: true }),
   debugRow('debug.panel-toggle', 'Debug panel', 'Backquote', all),
   debugModifiedRow('debug.input-replay-export', 'Export input replay', 'Backquote', 'shift'),
-  debugModifiedRow('debug.input-replay-import', 'Import input replay', 'Backquote', 'alt'),
+  debugModifiedRow('debug.input-replay-import', 'Import input replay', 'KeyI', 'shift'),
   debugRow('debug.performance-toggle', 'Performance overlay', 'F4', all),
   debugRow('debug.build-toggle', 'Build tools', 'KeyB'),
   debugRow('debug.impact-laser', 'Impact laser', 'KeyC'),
@@ -224,8 +234,8 @@ export const NATIVE_INPUTS = [
   { code: 'F12', description: 'Browser developer tools' },
 ] as const;
 export const NATIVE_EDITING =
-  'Text entry, composition, selection, clipboard, focus traversal and ordinary form activation use native browser controls. Ctrl/Cmd/Meta browser shortcuts are fixed, not game bindings.';
-export const REFUSED_MODIFIERS: readonly Modifier[] = ['ctrl', 'meta'];
+  'Text entry, composition, selection, clipboard, focus traversal and ordinary form activation use native browser controls. Ctrl/Cmd/Meta and Alt browser shortcuts are fixed, not game bindings.';
+export const REFUSED_MODIFIERS: readonly Modifier[] = ['ctrl', 'meta', 'alt'];
 const modifierName: Readonly<Record<Modifier, string>> = { ctrl: 'Ctrl', meta: 'Cmd/Meta', alt: 'Alt', shift: 'Shift' };
 const modifierRefusal = (modifier: Modifier): string =>
   `${modifierName[modifier]} is browser-owned, not a game binding`;

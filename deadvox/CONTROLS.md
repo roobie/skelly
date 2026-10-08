@@ -35,17 +35,13 @@ controls remain proposals until their issue is implemented.
   a key need it readily available”. The noclip flight keys are that special
   circumstance; see `noclip.ascend` and `noclip.descend` in
   `src/game/inputBindings.ts`.
-- **No Ctrl, Cmd or Meta, ever (2026-10-04):** “due to the browser being the
-  browser, we cannot use Ctrl or Cmd for anything, ever.” Ctrl, Cmd and Meta are
-  never a game modifier, for keys, clicks or the wheel: Ctrl+click is a plain
-  click, Ctrl+scroll is plain scroll, and quick move stays T+click (below). One
-  rule with no exceptions keeps it simple, and plain scroll is enough for
-  everything the wheel does. The binding registry refuses Ctrl and Meta, so a key
-  or pointer-button binding pressed with either does nothing; see
-  `src/game/inputBindings.ts`, `REFUSED_MODIFIERS` and `KeyboardInput.press`.
-  Clicks outside the registry and the wheel ignore modifiers; see
-  `src/game/input.ts`, `Input`, and `src/game/play.ts`, `startPlay` and
-  `cycleWieldedAction`. Native text editing and browser shortcuts stay native.
+- **No Ctrl, Cmd/Meta or Alt as game modifiers (br-94, br-97; #435):**
+  BR chose one refusal rule for browser-owned keyboard modifiers. Alt is browser-owned
+  too: Alt+Left/Right are Back and Forward, and on Windows/Linux tapping Alt or
+  Alt+letter opens Firefox's menu bar. The binding registry refuses Ctrl, Cmd/Meta and Alt; see
+  `src/game/inputBindings.ts`, `REFUSED_MODIFIERS` and `KeyboardInput.press`. Outside
+  that registry, Ctrl+click is a plain click, Ctrl+scroll is plain scroll, and quick
+  move stays T+click (below). Native text editing and browser shortcuts stay native.
   - **Where the wheel goes:** with the pointer locked in play it steps the
     wielded item's action. In a menu it scrolls the pane under the cursor, even
     at the pane's edge and with Ctrl held (`src/ui/menuPointer.ts`,
@@ -207,12 +203,6 @@ authoring. Keyboard confirmation is available only while that debug-only menu ow
 input; native activation of debug buttons still requires the gate. Mouse authoring
 remains available without it. The debug menu's type-spawn actions add no player
 bindings; see `src/debug/index.ts`, `createDebugActions`.
-
-Alt is not refused, so a binding may use it. `REFUSED_MODIFIERS` in
-`src/game/inputBindings.ts` is the one place to extend refusal; it also drives
-capture diagnostics. A deliverable key does not prove immunity from desktop OS
-interception. Chromium/Firefox native input and pointer-lock checks do not imply
-Safari or macOS acceptance.
 
 ## Preferences, not save identity
 
