@@ -134,14 +134,14 @@ if (uWeathering > 0.0) {
   float verticalFace = 1.0 - abs(vFaceN.y);
   float weatherable = step(0.5, patId) * (1.0 - step(0.5, abs(patId - PAT_CORRUGATED)));
   float grain = vnoise(patUV * 1.7 + vec2(patSeed));
-  float patch = smoothstep(0.28, 0.76, grain);
+  float weatherPatch = smoothstep(0.28, 0.76, grain);
   float sheltered = clamp(vOcclusion, 0.0, 1.0);
-  float cornerGrime = (1.0 - sheltered) * (0.22 + 0.34 * patch) + vWeather.y * 0.3;
+  float cornerGrime = (1.0 - sheltered) * (0.22 + 0.34 * weatherPatch) + vWeather.y * 0.3;
   float grime = cornerGrime;
   float streakNoise = vnoise(vec2(patUV.x * 3.1 + patSeed, patUV.y * 0.16));
   float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) * (1.0 - smoothstep(0.0, 0.75, fract(patUV.y * 0.42)));
   float northShade = 0.65 + 0.35 * step(vFaceN.z, -0.5);
-  float moss = (1.0 - sheltered) * (0.4 + 0.6 * patch) * (0.25 + 0.75 * verticalFace) * northShade;
+  float moss = (1.0 - sheltered) * (0.4 + 0.6 * weatherPatch) * (0.25 + 0.75 * verticalFace) * northShade;
   vec3 tint = vec3(0.72, 0.72 + 0.08 * moss, 0.68 - 0.06 * streak);
   diffuseColor.rgb *= mix(vec3(1.0), tint, weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78));
 }`,

@@ -22,7 +22,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
     );
   },
 };
@@ -72,6 +72,7 @@ try {
     browserStageUrl(
       'firefox-ui',
       `http://127.0.0.1:${address.port}/?debug=1&actors=detailed&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
+      'pixel',
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
@@ -79,6 +80,24 @@ try {
   });
   await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view')));
+  await page.waitForFunction(
+    () => globalThis.firefoxUiTest.engine.renderer && globalThis.firefoxUiTest.engine.meshes.count > 0,
+    null,
+    {
+      timeout: 60_000,
+    },
+  );
+  const renderedChunks = await page.evaluate(() => {
+    const { engine } = globalThis.firefoxUiTest;
+    engine.renderer.compile(engine.scene, engine.camera);
+    return engine.meshes.count;
+  });
+  assert.ok(renderedChunks > 0, 'Firefox loaded voxel chunk meshes with rendering enabled');
+  assert.deepEqual(
+    consoleErrors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error')),
+    [],
+    'Firefox chunk shaders compile',
+  );
   const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
   await page.waitForFunction(
     () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
