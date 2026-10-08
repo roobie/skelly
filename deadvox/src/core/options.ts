@@ -135,7 +135,10 @@ export const pocketGroundItem = (inv: Inventory, queue: HandlingQueue, item: Ite
   if (inv.locate(item)?.kind !== 'pile') {
     return 'The item is no longer on the ground';
   }
-  const target = bestPocket(inv, item)?.target;
+  const target: Target | undefined =
+    defOf(inv.registry, item.type).wearable?.slot === 'back' && inv.worn.back === undefined
+      ? { kind: 'worn' }
+      : bestPocket(inv, item)?.target;
   if (!target) {
     return 'No room on you';
   }

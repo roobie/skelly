@@ -6,6 +6,7 @@ import { PILE_GRID } from './inventory.ts';
 import type { Item } from './items.ts';
 import { footprint } from './items.ts';
 import { PILE_BUNDLE_WIDTH, pileBundleHeight, pileLayout } from './pileLayout.ts';
+import { pileScatterPlacements } from './scatterPile.ts';
 import { PILE_DISPLAY_KIND } from './schema.ts';
 
 export type InteractionTarget =
@@ -27,6 +28,7 @@ interface RayBox {
 
 interface InteractionPickOptions extends FurniturePickOptions {
   readonly inventory: Pick<Inventory, 'registry' | 'piles'>;
+  readonly worldSeed: number;
   readonly hasModel: (id: string) => boolean;
 }
 
@@ -122,6 +124,8 @@ const bundleHit = (options: {
   return distanceBlocks === undefined || !item ? undefined : { item, distanceBlocks };
 };
 
+const SCATTER_PICK_HALF_EXTENTS_METRES: Vec3 = [0.025, 0.006, 0.025];
+
 const hitPile = (options: {
   readonly inventory: Pick<Inventory, 'registry'>;
   readonly pile: Pile;
@@ -129,9 +133,10 @@ const hitPile = (options: {
   readonly direction: Vec3;
   readonly maxDistance: number;
   readonly blockSize: number;
+  readonly worldSeed: number;
   readonly hasModel: (id: string) => boolean;
 }): ItemHit | undefined => {
-  const { inventory, pile, origin, direction, maxDistance, blockSize, hasModel } = options;
+  const { inventory, pile, origin, direction, maxDistance, blockSize, worldSeed, hasModel } = options;
   const regularPile = {
     ...pile,
     items: pile.items.filter(
@@ -143,10 +148,26 @@ const hitPile = (options: {
   for (const { placed } of layout.models) {
     nearest = nearerItem(nearest, modelHit({ inventory, pile, placed, origin, direction, maxDistance }));
   }
-  return nearerItem(
+  nearest = nearerItem(
     nearest,
     bundleHit({ inventory, pile, bundle: layout.bundle, origin, direction, maxDistance, blockSize }),
   );
+  for (const { item, position } of pileScatterPlacements({
+    registry: inventory.registry,
+    pile,
+    worldSeed,
+    blockSize,
+  })) {
+    const low = position.map(
+      (coordinate, axis) => coordinate / blockSize - SCATTER_PICK_HALF_EXTENTS_METRES[axis]! / blockSize,
+    ) as Vec3;
+    const high = position.map(
+      (coordinate, axis) => coordinate / blockSize + SCATTER_PICK_HALF_EXTENTS_METRES[axis]! / blockSize,
+    ) as Vec3;
+    const distanceBlocks = rayBoxDistance({ origin, direction, low, high, maxDistance });
+    nearest = nearerItem(nearest, distanceBlocks === undefined ? undefined : { item, distanceBlocks });
+  }
+  return nearest;
 };
 
 const nearestGroundItem = (options: InteractionPickOptions, direction: Vec3): ItemHit | undefined => {
@@ -161,6 +182,7 @@ const nearestGroundItem = (options: InteractionPickOptions, direction: Vec3): It
         direction,
         maxDistance: options.maxDistance,
         blockSize: options.blockSize,
+        worldSeed: options.worldSeed,
         hasModel: options.hasModel,
       }),
     );
