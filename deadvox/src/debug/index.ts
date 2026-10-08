@@ -446,7 +446,7 @@ const emptyReadout: DebugReadout = {
   meshingQueueMs: 0,
   entities: 0,
   memoryBytes: 0,
-  clock: '19:30',
+  clock: '10:00',
   compression: 1,
   snapshotLastMs: 0,
   snapshotP95Ms: 0,

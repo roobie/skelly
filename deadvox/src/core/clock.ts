@@ -27,7 +27,8 @@ export type SpawnTimeWindowField = { [Property in 'window']?: SpawnTimeWindow };
 /** Calendar seconds per simulation second. 1:8 makes a game day 3 real hours. */
 export const CLOCK_RATIO = 8;
 
-export const SPAWN_TIME = 19.5 * SECONDS_PER_HOUR;
+// Default to a time when lighting is good and there's time before it becoming dark, because most of the time during development an evaluation looks at something, in which case good lighting conditions are useful.
+export const SPAWN_TIME = 10 * SECONDS_PER_HOUR;
 
 export interface ClockSettings {
   /** Calendar seconds per simulation second. */
@@ -66,7 +67,7 @@ export const nextTimeOfDay = (calendar: number, timeOfDay: number): number => {
 /** Day number, starting at 1. */
 const dayOf = (calendar: number): number => Math.floor(calendar / SECONDS_PER_DAY) + 1;
 
-/** "Day 1, 19:30". */
+/** "Day 1, 10:00". */
 export const formatClock = (calendar: number): string => {
   // A millisecond of slack, so float drift in summed steps doesn't show 20:29 for 20:30.
   const t = calendar + 1e-3;

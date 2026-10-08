@@ -33,10 +33,10 @@ const runUntil = (sim: Simulation, until: number): number => {
 };
 
 describe('clock', () => {
-  it('starts at dusk and runs 8 calendar seconds per simulation second', () => {
-    expect(formatClock(calendarAt(defaultClock, 0))).toBe('Day 1, 19:30');
+  it('starts at 10:00 and runs 8 calendar seconds per simulation second', () => {
+    expect(formatClock(calendarAt(defaultClock, 0))).toBe('Day 1, 10:00');
     expect(HOUR).toBe(450);
-    expect(formatClock(calendarAt(defaultClock, 5 * HOUR))).toBe('Day 2, 00:30');
+    expect(formatClock(calendarAt(defaultClock, 5 * HOUR))).toBe('Day 1, 15:00');
   });
 
   it('parses a time of day', () => {
@@ -191,8 +191,8 @@ describe('Simulation', () => {
     expect(realPlain).toBeCloseTo(HOUR, 0);
     expect(realFast).toBeLessThan(HOUR / 10);
     expect(fast.time).toBeCloseTo(plain.time, 9);
-    expect(formatClock(fast.calendar)).toBe('Day 1, 20:30');
-    expect(formatClock(plain.calendar)).toBe('Day 1, 20:30');
+    expect(formatClock(fast.calendar)).toBe('Day 1, 11:00');
+    expect(formatClock(plain.calendar)).toBe('Day 1, 11:00');
     // Needs lag by at most one grown step: 30 s, 4 game minutes.
     const tolerance = (Math.max(...Object.values(NEED_RATES).map(Math.abs)) * 4) / 60;
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {
@@ -325,7 +325,7 @@ describe('Simulation', () => {
       runUntil(sim, until);
       expect(sim.time).toBeCloseTo(until, 6);
       expect(sim.compression.interruption).toBeUndefined();
-      expect(formatClock(sim.calendar)).toBe('Day 1, 20:30');
+      expect(formatClock(sim.calendar)).toBe('Day 1, 11:00');
     });
 
     it('runs the needs for the whole span, so a long skip is cut short when one turns critical', () => {

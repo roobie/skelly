@@ -1,6 +1,10 @@
 import { expect, it, vi } from 'vitest';
 import { configFromUrl } from '../src/game/config.ts';
 
+it('uses the development-friendly start time when the URL has no time', () => {
+  expect(configFromUrl(new URLSearchParams()).start).toBe(10 * 60 * 60);
+});
+
 it('restricts handedness overrides to debug URL configuration', () => {
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=left')).debugHandedness).toBe('left');
   expect(configFromUrl(new URLSearchParams('handedness=left')).debugHandedness).toBeUndefined();
