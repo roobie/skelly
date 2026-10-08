@@ -170,12 +170,11 @@ if (uWeathering > 0.0) {
   float moss = baseMoss * broadStrength + mossPatches;
   vec3 tint = vec3(${WEATHERING_MIN_RED_TINT}, ${WEATHERING_MIN_RED_TINT} + 0.08 * moss, 0.68 - 0.06 * streak);
   diffuseColor.rgb *= mix(vec3(1.0), tint, weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78));
-  if (weatherable > 0.5) diffuseColor.rgb = vec3(1.0, 0.0, 0.0);
 }`,
       );
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <opaque_fragment>',
-      '#include <opaque_fragment>\ngl_FragColor = uWeathering > 0.0 ? vec4(1.0, 0.0, 0.0, 1.0) : gl_FragColor;',
+      '#include <opaque_fragment>\ngl_FragColor = (uWeathering > 0.0 && weatherable > 0.5) ? vec4(1.0, 0.0, 0.0, 1.0) : gl_FragColor;',
     );
   };
   material.customProgramCacheKey = () => 'deadvox-chunk-weathering-variation';
