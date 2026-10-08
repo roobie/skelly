@@ -6,7 +6,9 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
+import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
 const { firefox } = await loadPlaywright();
 
@@ -219,6 +221,21 @@ const vite = await createServer({
         }
       },
     },
+    {
+      name: 'foregrip-fit-game-observer',
+      enforce: 'pre',
+      transform(code, id) {
+        if (!id.split('?')[0].endsWith('/src/game/play.ts')) {
+          return;
+        }
+        const marker = '  const onForwardPress = (e: MouseEvent) => {';
+        assert.ok(code.includes(marker), 'game instrumentation marker still exists');
+        return code.replace(
+          marker,
+          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [] };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
+        );
+      },
+    },
   ],
 });
 let browser;
@@ -362,6 +379,149 @@ try {
     (queuedBefore) => globalThis.scrollFixture.finishAttachmentRemove(queuedBefore),
     remove.queuedBefore,
   );
+  if (engine === 'chromium') {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.addInitScript(() => {
+      let locked = null;
+      Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+      Element.prototype.requestPointerLock = function () {
+        locked = this;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = null;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'inventory-scroll',
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&post=0&sunshadow=0&torchshadow=0`,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
+      timeout: 30_000,
+    });
+    await page.locator('#go').click();
+    await page.waitForFunction(() => globalThis.foregripFitTest && document.querySelector('#overlay')?.hidden, null, {
+      timeout: 20_000,
+    });
+    const clickThroughMenuCursor = async (selector) => {
+      const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
+      const bounds = await targetLocator.boundingBox();
+      assert.ok(bounds, `visible target: ${selector}`);
+      const target = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+      await page.mouse.move(target.x, target.y);
+      const current = await page.evaluate(() => ({
+        x: globalThis.foregripFitTest.input.cursorX,
+        y: globalThis.foregripFitTest.input.cursorY,
+      }));
+      if (Math.abs(current.x - target.x) > 1 || Math.abs(current.y - target.y) > 1) {
+        await page.evaluate(dispatchMenuPointerMove, {
+          canvasSelector: '#view',
+          movementX: target.x - current.x,
+          movementY: target.y - current.y,
+          centerClient: true,
+          alsoDispatchMouseMove: true,
+        });
+      }
+      await page.mouse.click(target.x, target.y);
+    };
+    const spawn = async (type) => {
+      await pressAction(page, 'debug.spawn-menu-toggle');
+      await page.locator('#spawn input').fill(type);
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => document.querySelector('#spawn')?.hidden, null, { timeout: 5000 });
+      await page.waitForFunction(
+        (itemType) =>
+          [...globalThis.foregripFitTest.session.inventory.items()].some(({ item }) => item.type === itemType),
+        type,
+        { timeout: 5000 },
+      );
+    };
+    await spawn('foregrip');
+    await spawn('rifle_assault');
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
+    const uidFor = (type) =>
+      page.evaluate(
+        (itemType) =>
+          [...globalThis.foregripFitTest.session.inventory.items()].find(({ item }) => item.type === itemType)?.item
+            .uid,
+        type,
+      );
+    const gripUid = await uidFor('foregrip');
+    const rifleUid = await uidFor('rifle_assault');
+    assert.ok(Number.isSafeInteger(gripUid) && Number.isSafeInteger(rifleUid));
+    await clickThroughMenuCursor(`#inventory [data-uid="${gripUid}"]`);
+    await pressAction(page, 'inventory.best-pocket');
+    await page.waitForFunction(
+      (uid) =>
+        globalThis.foregripFitTest.session.inventory.locate(globalThis.foregripFitTest.session.inventory.itemByUid(uid))
+          ?.kind === 'pocket',
+      gripUid,
+      { timeout: 10_000 },
+    );
+    await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
+    await pressAction(page, 'inventory.hands');
+    await page.waitForFunction(
+      (uid) => Object.values(globalThis.foregripFitTest.session.inventory.hands).some((item) => item?.uid === uid),
+      rifleUid,
+      { timeout: 10_000 },
+    );
+    await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
+    const fitButtons = page.locator('#inventory button.inv-option').filter({ hasText: /Fit .*foregrip/i });
+    await fitButtons.first().scrollIntoViewIfNeeded();
+    assert.equal(await fitButtons.count(), 1, 'held AR offers the pocketed foregrip as a fit action');
+    const before = await page.evaluate(() => globalThis.foregripFitTest.dispatches.length);
+    const fitText = (await fitButtons.first().textContent())?.trim();
+    await clickThroughMenuCursor(fitButtons.first());
+    await page.waitForFunction(
+      ({ beforeCount }) => globalThis.foregripFitTest.dispatches.length > beforeCount,
+      { beforeCount: before },
+      { timeout: 5000 },
+    );
+    const fitResult = await page.evaluate(
+      ({ uid }) => {
+        const { dispatches, session } = globalThis.foregripFitTest;
+        const firearm = Object.values(session.inventory.hands).find((item) => item?.type === 'rifle_assault');
+        return {
+          fitActions: dispatches.filter((action) => action.kind === 'firearm.attachment.fit').length,
+          attached: firearm && Object.values(firearm.slots ?? {}).some((slot) => slot?.uid === uid),
+          queuedHandling: session.queue.jobs.some((job) => job.label.toLowerCase().includes('fit')),
+        };
+      },
+      { uid: gripUid },
+    );
+    assert.ok(fitResult.fitActions > 0, `${fitText} dispatches through the live inventory controller`);
+    await page.waitForFunction(
+      ({ uid }) => {
+        const { session } = globalThis.foregripFitTest;
+        const firearm = Object.values(session.inventory.hands).find((item) => item?.type === 'rifle_assault');
+        return (
+          (firearm && Object.values(firearm.slots ?? {}).some((slot) => slot?.uid === uid)) ||
+          session.queue.jobs.some((job) => job.label.toLowerCase().includes('fit'))
+        );
+      },
+      { uid: gripUid },
+      { timeout: 5000 },
+    );
+    const finalFit = await page.evaluate(
+      ({ uid }) => {
+        const { session } = globalThis.foregripFitTest;
+        const firearm = Object.values(session.inventory.hands).find((item) => item?.type === 'rifle_assault');
+        return {
+          attached: firearm && Object.values(firearm.slots ?? {}).some((slot) => slot?.uid === uid),
+          queuedHandling: session.queue.jobs.some((job) => job.label.toLowerCase().includes('fit')),
+        };
+      },
+      { uid: gripUid },
+    );
+    process.stdout.write(
+      `${engine}: live held-AR pocketed-foregrip fit via locked menu click ${JSON.stringify({ ...fitResult, ...finalFit })}\\n`,
+    );
+  }
   process.stdout.write(
     `${engine}: inventory/vicinity/details wheel and redraw contract passed (free pointer + synthetic locked cursor)\n`,
   );
