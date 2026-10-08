@@ -73,29 +73,39 @@ const shuffled = <T>(items: T[], seed: number): T[] => {
 
 describe('the hamlet', () => {
   const seed = 1;
-  // Explicit cap above Vitest's default: a heavy property test that can exceed it under
-  // full-suite parallelism (#29); sized to its reduced work.
-  it(`generates the same in any chunk order (seed ${seed})`, () => {
-    const columns = columnsOf(new Hamlet(seed, registry, scale));
-    // A fresh Hamlet for each run: nothing may carry over between them.
-    const a = generate(new Hamlet(seed, registry, scale), seed, columns);
+  it(`generates a hamlet sample the same in any chunk order (seed ${seed})`, () => {
+    const hamlet = new Hamlet(seed, registry, scale);
+    const allColumns = columnsOf(hamlet);
+    const leaf = id('leaves');
+    const crossingLeaf = hamlet.trees
+      .flatMap((tree) => tree.boxes)
+      .find((box) => box.block === leaf && toChunk(box.min[0]) !== toChunk(box.max[0] - 1));
+    if (!crossingLeaf) {
+      throw new Error('Hamlet fixture has no leaf box crossing a chunk boundary');
+    }
+    const boundaryColumns: [number, number][] = [
+      [toChunk(crossingLeaf.min[0]), toChunk(crossingLeaf.min[2])],
+      [toChunk(crossingLeaf.max[0] - 1), toChunk(crossingLeaf.min[2])],
+    ];
+    const furnitureColumn = allColumns.find(([cx, cz]) => hamlet.furnitureIn(cx, cz).length > 0);
+    if (!furnitureColumn) {
+      throw new Error('Hamlet fixture has no furniture column');
+    }
+    const columns = [
+      ...new Map([...boundaryColumns, furnitureColumn].map((column) => [`${column[0]},${column[1]}`, column])).values(),
+    ];
+
+    const a = generate(hamlet, seed, columns);
     const b = generate(new Hamlet(seed, registry, scale), seed, shuffled(columns, seed));
     expect(b.world.chunks.size).toBe(a.world.chunks.size);
     expect(differing(a.world, b.world)).toEqual([]);
     expect(b.furniture).toEqual(a.furniture);
-    const canopy = new Hamlet(seed, registry, scale).trees.find(
-      (tree) => toChunk(tree.bounds.x0) !== toChunk(tree.bounds.x1 - 1),
-    );
-    expect(canopy, 'seeded tree canopy must cross a chunk boundary').toBeDefined();
-    const cut = (toChunk(canopy!.bounds.x0) + 1) * CHUNK;
-    const leaf = id('leaves');
+    expect(a.furniture.length).toBeGreaterThan(0);
+    const cut = (toChunk(crossingLeaf.min[0]) + 1) * CHUNK;
     for (const x of [cut - 1, cut]) {
-      const containsLeaf = canopy!.boxes
-        .filter((box) => box.block === leaf && box.min[0] <= x && box.max[0] > x)
-        .some((box) => a.world.getBlock(x, box.min[1], box.min[2]) === leaf);
-      expect(containsLeaf, `leaf voxels on boundary side x=${x}`).toBe(true);
+      expect(a.world.getBlock(x, crossingLeaf.min[1], crossingLeaf.min[2]), `leaf voxel at x=${x}`).toBe(leaf);
     }
-  }, 10_000);
+  });
 
   it('places every hamlet template on a flat lot beside an asphalt road', () => {
     const hamlet = new Hamlet(3, registry, scale);

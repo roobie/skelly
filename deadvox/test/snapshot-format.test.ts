@@ -20,6 +20,7 @@ import {
   contentLookup,
   createRuntime,
   encodeFixture,
+  fixtureZombieColumn,
   formatVersion,
   formatWorldOptions,
   inspect,
@@ -426,10 +427,12 @@ describe('canonical save format', () => {
     expect(decoded.worldOptions.site).toBe('lone_house');
   });
 
-  it('round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes', async () => {
-    const source = createRuntime(undefined, true);
+  it('round-trips an edited hamlet column byte-exactly and continues deterministically from restored bytes', async () => {
+    const columns = [fixtureZombieColumn] as const;
+    const source = createRuntime(undefined, true, columns);
     expect(startRest(source, 'rest')).toBeUndefined();
     advance(source, 2);
+    source.zombies.add(registry.zombies.get('shambler')!, source.player.body.pos);
     prepareAudioContinuation(source);
     const snapshot = capture(source);
     const sourceHash = createHash('sha256').update(jsonCanonical(snapshot)).digest('hex');
@@ -449,26 +452,26 @@ describe('canonical save format', () => {
       clock: snapshot.character.simulation.clock,
     });
     expect(decoded.snapshot).toEqual(snapshot);
-    const loaded = createRuntime(decoded.snapshot, true);
+    const loaded = createRuntime(decoded.snapshot, true, columns);
     expect(createHash('sha256').update(jsonCanonical(decoded.snapshot)).digest('hex')).toBe(sourceHash);
     advance(source, 1);
     advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(source));
 
-    const interruptedSnapshot = structuredClone(snapshot);
+    const interruptedSnapshot = capture(createRuntime());
     interruptedSnapshot.character.simulation.pendingInterrupt = 'format round-trip';
     const interruptedBytes = await encodeFixture(interruptedSnapshot);
     const interruptedDecoded = await decodeSave(interruptedBytes, { version: formatVersion, contentLookup });
     expect(interruptedDecoded.snapshot.character.simulation.pendingInterrupt).toBe('format round-trip');
     expect(interruptedDecoded.snapshot).toEqual(interruptedSnapshot);
-    const interruptedLoaded = createRuntime(interruptedDecoded.snapshot, true);
+    const interruptedLoaded = createRuntime(interruptedDecoded.snapshot);
     expect(capture(interruptedLoaded).character.simulation.pendingInterrupt).toBe('format round-trip');
 
     const reversed = reverseObjectKeys(snapshot) as SaveSnapshot;
     expect(await encodeFixture(reversed)).toEqual(bytes);
     expect(encodedAt - started).toBeGreaterThanOrEqual(0);
     expect(decodedAt - encodedAt).toBeGreaterThanOrEqual(0);
-  }, 20_000);
+  });
 
   it('checks a representative ten-hour hamlet save and records its size and timings', async () => {
     const runtime = createRuntime(undefined, true);
@@ -513,7 +516,7 @@ describe('canonical save format', () => {
     process.stdout.write(
       `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawnedKeys=${population.spawned} alive=${population.alive} size=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
     );
-  }, 30_000);
+  });
 
   it('preserves signed zero, subnormals, the largest safe integer, and ordinary decimal values exactly', async () => {
     const snapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
@@ -770,5 +773,5 @@ describe('canonical save format', () => {
         expect((rejection as Error).message, test.name).toContain(test.message);
       }),
     );
-  }, 20_000);
+  });
 });

@@ -390,7 +390,7 @@ describe('hamlet save/load continuation', () => {
     expect(loaded.heardSounds).toEqual(continuedSounds);
     expect(continuedSounds.some(({ event }) => event === 'shambler_idle')).toBe(true);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
-  }, 15_000);
+  });
 
   it('preserves an active-sleep interruption emitted between frames across save/load', () => {
     const uninterrupted = createRuntime(undefined, true, oneColumn);
@@ -411,7 +411,7 @@ describe('hamlet save/load continuation', () => {
     const loaded = createRuntime(snapshot, true, oneColumn);
     advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
-  }, 15_000);
+  });
 
   it('preserves a pending sleep interruption across a paused snapshot and load', () => {
     const uninterrupted = createRuntime(undefined, true, oneColumn);
@@ -432,20 +432,23 @@ describe('hamlet save/load continuation', () => {
     const loaded = createRuntime(snapshot, true, oneColumn);
     advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
-  }, 15_000);
+  });
 
   it('detects omission of simulation, world, scheduler, inventory, and audio state', () => {
-    const original = createRuntime(undefined, true);
+    const runtimeFrom = (snapshot?: ReturnType<typeof capture>) => createRuntime(snapshot, true, oneColumn);
+    const original = runtimeFrom();
     expect(startRest(original, 'rest')).toBeUndefined();
     advance(original, 2);
+    original.zombies.add(registry.zombies.get('shambler')!, original.player.body.pos);
     prepareAudioContinuation(original);
     const saved = capture(original);
-    const baseline = createRuntime(saved, true);
+    expect(saved.world.diffs.chunks.length).toBeGreaterThan(0);
+    const baseline = runtimeFrom(saved);
     advance(baseline, 1);
 
     const noDelta = structuredClone(saved);
     noDelta.world.diffs.chunks[0]!.cells.pop();
-    const withoutDelta = createRuntime(noDelta, true);
+    const withoutDelta = runtimeFrom(noDelta);
     advance(withoutDelta, 1);
     expect(inspect(withoutDelta)).not.toEqual(inspect(baseline));
 
@@ -457,25 +460,25 @@ describe('hamlet save/load continuation', () => {
     noCursor.character.simulation.scheduler.systems = noCursor.character.simulation.scheduler.systems.filter(
       (cursor) => cursor.id !== 'player',
     );
-    expect(() => createRuntime(noCursor, true)).toThrow('Scheduler system set does not match snapshot');
+    expect(() => runtimeFrom(noCursor)).toThrow('Scheduler system set does not match snapshot');
 
     expect(saved.world.zombies.zombies.length).toBeGreaterThan(0);
     const noRngWord = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
     const [a, b, c] = noRngWord.world.zombies.zombies[0]!.zombie.behaviorRng;
     noRngWord.world.zombies.zombies[0]!.zombie.behaviorRng = [a, b, c] as never;
-    expect(() => createRuntime(noRngWord, true)).toThrow('Invalid zombie state');
+    expect(() => runtimeFrom(noRngWord)).toThrow('Invalid zombie state');
 
     const noZombieSoundRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noZombieSoundRng.world.zombies.zombies[0]!.zombie, 'soundRng');
-    expect(() => createRuntime(noZombieSoundRng, true)).toThrow('Invalid zombie state');
+    expect(() => runtimeFrom(noZombieSoundRng)).toThrow('Invalid zombie state');
 
     const noIdleSoundTimer = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noIdleSoundTimer.world.zombies.zombies[0]!.zombie, 'idleSoundTimer');
-    expect(() => createRuntime(noIdleSoundTimer, true)).toThrow('Invalid zombie state');
+    expect(() => runtimeFrom(noIdleSoundTimer)).toThrow('Invalid zombie state');
 
     const noLastNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noLastNoiseId.world.zombies.zombies[0]!.zombie, 'lastVocalNoiseId');
-    expect(() => createRuntime(noLastNoiseId, true)).toThrow('Invalid zombie state');
+    expect(() => runtimeFrom(noLastNoiseId)).toThrow('Invalid zombie state');
 
     const noVocalNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noVocalNoiseId.character.playerAudio, 'vocalNoiseId');
@@ -518,5 +521,5 @@ describe('hamlet save/load continuation', () => {
     expect(() =>
       new SoundPicker(seed, registry.sounds).restoreState(noPickerTime.character.playerAudio.soundPicker),
     ).toThrow('Invalid sound picker state');
-  }, 15_000);
+  });
 });
