@@ -95,6 +95,7 @@ interface GridViewModel {
   readonly width: number;
   readonly height: number;
   readonly items: readonly ItemViewModel[];
+  readonly packed?: boolean | undefined;
 }
 
 interface PocketViewModel {
@@ -253,7 +254,11 @@ const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
 `;
 
 const gridTemplate = (vm: GridViewModel): TemplateResult => html`
-  <div class="inv-grid" data-target=${vm.target} style=${`width: ${vm.width}px; height: ${vm.height}px`}>
+  <div
+    class=${vm.packed ? 'inv-grid inv-grid-packed' : 'inv-grid'}
+    data-target=${vm.target}
+    style=${vm.packed ? `--inv-grid-max-width: ${vm.width}px` : `width: ${vm.width}px; height: ${vm.height}px`}
+  >
     ${vm.items.map(itemTemplate)}
   </div>
 `;
@@ -262,6 +267,13 @@ const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
   <div class="inv-pocket">
     <span class="inv-pocket-label">${vm.label}</span>
     ${gridTemplate(vm.grid)}
+  </div>
+`;
+
+const aroundPocketTemplate = (vm: PocketViewModel): TemplateResult => html`
+  <div class="inv-pocket">
+    <span class="inv-pocket-label">${vm.label}</span>
+    <div class="inv-grid-scroll">${gridTemplate(vm.grid)}</div>
   </div>
 `;
 
@@ -388,7 +400,9 @@ const inventoryTemplate = (
     style=${[
       `--inv-you-fr: ${splitRatio}fr`,
       `--inv-around-fr: ${1 - splitRatio}fr`,
-      vm.containerMaxWidthCells === undefined ? '' : `--inv-around-width-cap: ${vm.containerMaxWidthCells * CELL}px`,
+      vm.containerMaxWidthCells === undefined
+        ? ''
+        : `--inv-around-container-width-cap: ${vm.containerMaxWidthCells * CELL}px`,
     ]
       .filter(Boolean)
       .join('; ')}
@@ -428,39 +442,41 @@ const inventoryTemplate = (
     ></div>
     <section class="inv-pane" data-pane="around">
       <h3>Around you</h3>
-      ${vm.piles.map(
-        (pile) => html`
-        <div class="inv-pile">
-          <div class="inv-pile-label">${pile.label}</div>
-          ${pile.grids.map(gridTemplate)}
+      <div class="inv-around-sections">
+        ${vm.piles.map(
+          (pile) => html`
+          <div class="inv-around-section inv-around-floor" data-around-section="floor">
+            <div class="inv-pile-label">${pile.label}</div>
+            ${pile.grids.map((grid) => html`<div class="inv-grid-scroll inv-floor-grid-scroll">${gridTemplate(grid)}</div>`)}
+          </div>
           ${pile.bags.map(
             (bag) => html`
-            <div class="inv-bag">
+            <div class="inv-around-section inv-around-container" data-around-section="container">
               <div class="inv-pile-label">${bag.name}, on the floor</div>
-              <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
+              <div class="inv-pockets">${bag.pockets.map(aroundPocketTemplate)}</div>
             </div>
           `,
           )}
-        </div>
-      `,
-      )}
-      ${
-        vm.hasFeetPile
-          ? nothing
-          : html`
-        <div class="inv-pile">
-          <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL, height: EMPTY_DROP_GRID.h * CELL, items: [] })}
-        </div>
-      `
-      }
-      ${vm.furniture.map(
-        (furniture) => html`
-        <div class="inv-pile" data-entity-uid=${furniture.uid}>
-          <div class="inv-pile-label">${furniture.label}</div>
-          ${furnitureBodyTemplate(furniture, search)}
-        </div>
-      `,
-      )}
+        `,
+        )}
+        ${
+          vm.hasFeetPile
+            ? nothing
+            : html`
+          <div class="inv-around-section inv-around-floor" data-around-section="floor">
+            <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL, height: EMPTY_DROP_GRID.h * CELL, items: [] })}
+          </div>
+        `
+        }
+        ${vm.furniture.map(
+          (furniture) => html`
+          <div class="inv-around-section inv-around-container inv-pile" data-around-section="container" data-entity-uid=${furniture.uid}>
+            <div class="inv-pile-label">${furniture.label}</div>
+            ${furnitureBodyTemplate(furniture, search)}
+          </div>
+        `,
+        )}
+      </div>
     </section>
     ${detailsTemplate(vm.details, queue, attachmentAction)}
   </div>
@@ -931,7 +947,7 @@ export class InventoryScreen {
     const piles = this.hooks.nearby().map(
       (pile): PileViewModel => ({
         label: `On the floor · ${this.hooks.distance(pile).toFixed(1)} m`,
-        grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`)],
+        grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
           .map(({ item }) => ({ name: this.inv.name(item), pockets: this.pocketsViewModel(item) })),
@@ -1004,19 +1020,26 @@ export class InventoryScreen {
     }));
   }
 
-  private gridViewModel(size: GridSize, placed: readonly Placed[], target: string): GridViewModel {
+  private gridViewModel(size: GridSize, placed: readonly Placed[], target: string, packed = false): GridViewModel {
     return {
       target,
       width: size.w * CELL,
       height: size.h * CELL,
+      packed,
       items: placed.map(({ item, x, y, rotated }) => {
         const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated);
-        return this.itemViewModel(item, h > w ? 'inv-item inv-item-tall' : 'inv-item', {
-          left: `${x * CELL + 1}px`,
-          top: `${y * CELL + 1}px`,
-          width: `${w * CELL - 2}px`,
-          height: `${h * CELL - 2}px`,
-        });
+        return this.itemViewModel(
+          item,
+          h > w ? 'inv-item inv-item-tall' : 'inv-item',
+          packed
+            ? { 'grid-column': `span ${w}`, 'grid-row': `span ${h}` }
+            : {
+                left: `${x * CELL + 1}px`,
+                top: `${y * CELL + 1}px`,
+                width: `${w * CELL - 2}px`,
+                height: `${h * CELL - 2}px`,
+              },
+        );
       }),
     };
   }

@@ -432,18 +432,7 @@ body.unconscious::after {
 #inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
   align-self: start;
   width: 100%;
-  max-width: min(
-    100%,
-    calc(
-      var(--inv-around-width-cap, 100%) +
-      var(--inv-pane-padding-inline) +
-      var(--inv-pane-padding-inline) +
-      var(--inv-pane-border-width) +
-      var(--inv-pane-border-width) +
-      1.25em +
-      1.25em
-    )
-  );
+  max-width: none;
   max-height: 100%;
   scrollbar-gutter: stable;
 }
@@ -551,6 +540,26 @@ body.unconscious::after {
   gap: 10px 14px;
   padding-left: 12px;
 }
+#inventory .inv-around-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+#inventory .inv-around-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+#inventory .inv-around-section[data-around-section="container"] {
+  max-width: min(100%, var(--inv-around-container-width-cap, 100%));
+}
+#inventory .inv-pocket {
+  min-width: 0;
+  max-width: 100%;
+}
 .inv-pocket-label,
 .inv-pile-label {
   font:
@@ -574,6 +583,15 @@ body.unconscious::after {
   max-height: var(--inv-around-grid-max-height);
   scrollbar-gutter: stable;
 }
+#inventory .inv-grid-packed {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 32px);
+  grid-auto-rows: 32px;
+  grid-auto-flow: row;
+  align-content: start;
+  width: min(100%, var(--inv-grid-max-width));
+  height: auto;
+}
 .inv-grid {
   position: relative;
   background-color: #111317;
@@ -595,6 +613,9 @@ body.unconscious::after {
 .inv-item {
   position: absolute;
   cursor: grab;
+}
+.inv-grid-packed > .inv-item {
+  position: relative;
 }
 .inv-item-slot {
   position: relative;

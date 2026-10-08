@@ -40,6 +40,19 @@ const content = [
           wearable: { slot, encumbrance: 0, warmth: 0 },
           container: { pockets: [{ grid: [1, 12], handlingSimSeconds: 0.1 }] },
         })),
+        {
+          id: 'scroll_bag',
+          name: 'Scroll bag',
+          category: 'clothing',
+          weight: 1,
+          size: [1, 1],
+          container: {
+            pockets: [
+              { name: 'Main', grid: [2, 2], handlingSimSeconds: 0.1 },
+              { name: 'Lid', grid: [1, 2], handlingSimSeconds: 0.1 },
+            ],
+          },
+        },
         { id: 'scroll_token', name: 'Scroll token', category: 'tool', weight: 1, size: [1, 1] },
         { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
       ],
@@ -86,6 +99,7 @@ const populatePiles = () => {
   for (let i = 0; i < 12; i++) {
     if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [i % 3, 0, Math.floor(i / 3)] })) throw Error('pile fixture failed');
   }
+  if (!inventory.add(inventory.create('scroll_bag'), { kind: 'pile', pos: [0, 0, 0] })) throw Error('floor container fixture failed');
   screen.update();
 };
 let needsText = 'health 100% · stamina 100%';
@@ -244,8 +258,8 @@ try {
   assert.equal(splitAtOpen.ratio, 50, `Items panes start at half: ${JSON.stringify(splitAtOpen)}`);
   assert.ok(Math.abs(splitAtOpen.center - 0.5) < 0.03, `divider starts at half: ${JSON.stringify(splitAtOpen)}`);
   assert.ok(
-    splitAtOpen.aroundWidth <= splitAtOpen.aroundColumnWidth + 1,
-    `Around you fits inside its column: ${JSON.stringify(splitAtOpen)}`,
+    Math.abs(splitAtOpen.aroundWidth - splitAtOpen.aroundColumnWidth) <= 1,
+    `Around you fills its column: ${JSON.stringify(splitAtOpen)}`,
   );
   const dragSplitter = async (fraction) => {
     const geometry = await page.evaluate(() => {
@@ -293,7 +307,8 @@ try {
     `right drag reaches the JavaScript clamp: ${JSON.stringify(splitAtRightClamp)}`,
   );
   await dragSplitter(0.5);
-  assert.equal(await page.locator('#inventory [data-inventory-splitter]').getAttribute('aria-valuenow'), '50');
+  const middleRatio = Number(await page.locator('#inventory [data-inventory-splitter]').getAttribute('aria-valuenow'));
+  assert.ok(Math.abs(middleRatio - 50) <= 1, `divider returns to centre within pixel rounding: ${middleRatio}`);
   const emptyAround = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
     const you = document.querySelector('#inventory [data-pane="you"]');
@@ -355,6 +370,7 @@ try {
     const hit = document.elementFromPoint(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
     return {
       pane: { left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom },
+      sectionWidth: rack.getBoundingClientRect().width,
       clientWidth: scroll.clientWidth,
       scrollWidth: scroll.scrollWidth,
       scrollLeft: scroll.scrollLeft,
@@ -373,6 +389,10 @@ try {
     `cap-wide vicinity stays in the 640×400 viewport: ${JSON.stringify(capWideRack)}`,
   );
   assert.ok(
+    capWideRack.sectionWidth <= capWideRack.cap * capWideRack.cell + 1,
+    `container section retains the content cap: ${JSON.stringify(capWideRack)}`,
+  );
+  assert.ok(
     capWideRack.scrollWidth <= capWideRack.clientWidth,
     `cap-wide rack needs no horizontal scrolling: ${JSON.stringify(capWideRack)}`,
   );
@@ -383,6 +403,44 @@ try {
   );
   assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
+  await page.evaluate(() => globalThis.scrollFixture.populatePiles());
+  const aroundLayout = async () =>
+    page.evaluate(() => {
+      const around = document.querySelector('#inventory [data-pane="around"]');
+      const sections = [...document.querySelectorAll('#inventory [data-pane="around"] [data-around-section]')];
+      const floor = document.querySelector('#inventory .inv-grid-packed');
+      if (!(around && floor && sections.length > 0)) {
+        throw new Error('responsive vicinity sections are missing');
+      }
+      const aroundBox = around.getBoundingClientRect();
+      const sectionBoxes = sections.map((section) => section.getBoundingClientRect());
+      const firstTop = Math.min(...sectionBoxes.map((box) => box.top));
+      return {
+        firstRow: sectionBoxes.filter((box) => Math.abs(box.top - firstTop) < 1).length,
+        overflow: sectionBoxes.some((box) => box.left < aroundBox.left || box.right > aroundBox.right),
+        floorWidth: floor.getBoundingClientRect().width,
+        floorColumns: getComputedStyle(floor).gridTemplateColumns.trim().split(' ').length,
+        pileState: JSON.stringify(globalThis.scrollFixture.inventory.snapshotState().piles),
+      };
+    });
+  const balancedLayout = await aroundLayout();
+  await dragSplitter(0);
+  const wideLayout = await aroundLayout();
+  assert.ok(
+    wideLayout.firstRow > balancedLayout.firstRow,
+    `wider Around you fits another section: ${JSON.stringify({ balancedLayout, wideLayout })}`,
+  );
+  assert.equal(wideLayout.overflow, false, `Around-you sections stay in their column: ${JSON.stringify(wideLayout)}`);
+  assert.equal(
+    wideLayout.pileState,
+    balancedLayout.pileState,
+    'responsive floor packing leaves saved pile positions unchanged',
+  );
+  assert.ok(
+    wideLayout.floorWidth !== balancedLayout.floorWidth && wideLayout.floorColumns !== balancedLayout.floorColumns,
+    `floor pile display packing follows its available width: ${JSON.stringify({ balancedLayout, wideLayout })}`,
+  );
+  await dragSplitter(0.5);
   await page.setViewportSize({ width: 960, height: 540 });
   const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
   assert.ok(
