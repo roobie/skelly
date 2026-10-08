@@ -1136,6 +1136,7 @@ export class MobActorMeshes implements ZombieRenderer {
       angularMomentum: [0, 0, 0],
       inertiaBody: partData.inertiaBody,
       corners: partData.corners,
+      remainderRealSeconds: 0,
       elapsed: 0,
       quietTime: 0,
       asleep: false,
