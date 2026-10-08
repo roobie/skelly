@@ -21,32 +21,104 @@
   "primarySource": "cip308",
   "relatedTo": [],
   "case": {
-    "length": { "value": 51.18, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L3", "verbatim": "L3 1) = 51.18" } },
-    "bodyStart": { "value": 3.85, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E", "verbatim": "E = 3.85" }, "note": "Read from the C.I.P. drawing; the sheet has no symbol legend" },
+    "length": {
+      "value": 51.18,
+      "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L3", "verbatim": "L3 1) = 51.18" }
+    },
+    "bodyStart": {
+      "value": 3.85,
+      "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E", "verbatim": "E = 3.85" },
+      "note": "Read from the C.I.P. drawing; the sheet has no symbol legend"
+    },
     "rim": {
-      "diameter": { "value": 12.01, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R1", "verbatim": "R1 = 12.01" } },
-      "thickness": { "value": 1.37, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R", "verbatim": "R = 1.37" }, "note": "Read from the C.I.P. drawing; the sheet has no symbol legend" }
+      "diameter": {
+        "value": 12.01,
+        "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R1", "verbatim": "R1 = 12.01" }
+      },
+      "thickness": {
+        "value": 1.37,
+        "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R", "verbatim": "R = 1.37" },
+        "note": "Read from the C.I.P. drawing; the sheet has no symbol legend"
+      }
     },
     "head": {
       "type": "rimless",
       "extractorGroove": {
-        "diameter": { "value": 10.39, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E1", "verbatim": "E1 = 10.39" } },
-        "width": { "value": 1.4, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: e min", "verbatim": "e min = 1.40" } },
-        "bevelAngle": { "value": 36, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: δ", "verbatim": "δ = 36°" }, "note": "Read from the C.I.P. drawing; the sheet has no symbol legend" }
+        "diameter": {
+          "value": 10.39,
+          "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E1", "verbatim": "E1 = 10.39" }
+        },
+        "width": {
+          "value": 1.4,
+          "cite": {
+            "source": "cip308",
+            "locator": "Tab. I, CARTRIDGE MAXI, Case Head: e min",
+            "verbatim": "e min = 1.40"
+          }
+        },
+        "bevelAngle": {
+          "value": 36,
+          "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: δ", "verbatim": "δ = 36°" },
+          "note": "Read from the C.I.P. drawing; the sheet has no symbol legend"
+        }
       }
     },
     "body": {
       "type": "bottleneck",
-      "diameterAtHead": { "value": 11.96, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P1", "verbatim": "P1 = 11.96" } },
-      "diameterAtShoulderStart": { "value": 11.53, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P2", "verbatim": "P2 1)* = 11.53 -0.20" }, "tolerance": { "minus": 0.2 }, "basic": true },
+      "diameterAtHead": {
+        "value": 11.96,
+        "cite": {
+          "source": "cip308",
+          "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P1",
+          "verbatim": "P1 = 11.96"
+        }
+      },
+      "diameterAtShoulderStart": {
+        "value": 11.53,
+        "cite": {
+          "source": "cip308",
+          "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P2",
+          "verbatim": "P2 1)* = 11.53 -0.20"
+        },
+        "tolerance": { "minus": 0.2 },
+        "basic": true
+      },
       "shoulder": {
-        "startPosition": { "value": 39.62, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L1", "verbatim": "L1 1) = 39.62 -0.20" }, "tolerance": { "minus": 0.2 } },
-        "endPosition": { "value": 43.48, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L2", "verbatim": "L2 1) = 43.48 -0.20" }, "tolerance": { "minus": 0.2 } },
-        "angle": { "value": 40, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Junction Cone: α", "verbatim": "α* = 40°" }, "basic": true, "note": "Read from the C.I.P. drawing; the sheet has no symbol legend" }
+        "startPosition": {
+          "value": 39.62,
+          "cite": {
+            "source": "cip308",
+            "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L1",
+            "verbatim": "L1 1) = 39.62 -0.20"
+          },
+          "tolerance": { "minus": 0.2 }
+        },
+        "endPosition": {
+          "value": 43.48,
+          "cite": {
+            "source": "cip308",
+            "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L2",
+            "verbatim": "L2 1) = 43.48 -0.20"
+          },
+          "tolerance": { "minus": 0.2 }
+        },
+        "angle": {
+          "value": 40,
+          "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Junction Cone: α", "verbatim": "α* = 40°" },
+          "basic": true,
+          "note": "Read from the C.I.P. drawing; the sheet has no symbol legend"
+        }
       },
       "neck": {
-        "diameterAtBase": { "value": 8.72, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Collar: H1", "verbatim": "H1* = 8.72" }, "basic": true },
-        "diameterAtMouth": { "value": 8.72, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Collar: H2", "verbatim": "H2 1) = 8.72" } }
+        "diameterAtBase": {
+          "value": 8.72,
+          "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Collar: H1", "verbatim": "H1* = 8.72" },
+          "basic": true
+        },
+        "diameterAtMouth": {
+          "value": 8.72,
+          "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Collar: H2", "verbatim": "H2 1) = 8.72" }
+        }
       }
     },
     "materials": [],
@@ -58,7 +130,10 @@
   },
   "payload": {
     "type": "bullet",
-    "diameter": { "value": 7.85, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Projectile: G1", "verbatim": "G1 1) = 7.85" } },
+    "diameter": {
+      "value": 7.85,
+      "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Projectile: G1", "verbatim": "G1 1) = 7.85" }
+    },
     "length": {
       "min": { "value": null, "cite": null, "note": "The C.I.P. sheet does not give bullet length" },
       "max": { "value": null, "cite": null, "note": "The C.I.P. sheet does not give bullet length" }
@@ -66,8 +141,15 @@
     "variants": []
   },
   "overallLength": {
-    "max": { "value": 71.12, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L6", "verbatim": "L6 = 71.12" } },
-    "typical": { "value": 71.12, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L6", "verbatim": "L6 = 71.12" }, "note": "The sheet gives a maximum, not a typical loaded length; the maximum is used as the representative model length" }
+    "max": {
+      "value": 71.12,
+      "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L6", "verbatim": "L6 = 71.12" }
+    },
+    "typical": {
+      "value": 71.12,
+      "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L6", "verbatim": "L6 = 71.12" },
+      "note": "The sheet gives a maximum, not a typical loaded length; the maximum is used as the representative model length"
+    }
   },
   "notes": [
     "The C.I.P. 308 Win. sheet lists 7,62 x 51 as an alternative name. This file records the C.I.P. cartridge-maximum profile for the frame-sizing pilot; it does not claim NATO interchangeability or chamber compatibility.",

@@ -118,15 +118,31 @@ describe('sealed ammunition package activation', () => {
   });
 
   it('content admission rejects a payload larger than the stack reserved by unpack spill preflight', () => {
-    const bad = sources.map((source) => {
-      const data = structuredClone(source.data) as { items?: { id: string; unpack?: { count: number } }[] };
-      const box = data.items?.find((item) => item.id === 'shotshell_box');
-      if (box?.unpack) {
-        const payload = registry.items.get(registry.items.get('shotshell_box')!.unpack!.item)!;
-        box.unpack.count = (payload.stack ?? 1) + 1;
-      }
-      return { ...source, data };
-    });
-    expect(buildRegistry(bad).issues.some((issue) => issue.path.endsWith('.unpack.count'))).toBe(true);
+    const payload = registry.items.get(shellType)!;
+    const box = registry.items.get('shotshell_box')!;
+    const source = {
+      source: 'invalid-package.json',
+      data: {
+        items: [
+          {
+            id: 'fixture_shell',
+            name: payload.name,
+            category: payload.category,
+            weight: payload.weight,
+            size: payload.size,
+            stack: stackCapacity,
+          },
+          {
+            id: 'fixture_box',
+            name: box.name,
+            category: box.category,
+            weight: box.weight,
+            size: box.size,
+            unpack: { item: 'fixture_shell', count: stackCapacity + 1 },
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([source]).issues.some((issue) => issue.path.endsWith('.unpack.count'))).toBe(true);
   });
 });
