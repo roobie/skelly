@@ -16,6 +16,7 @@ import { grow } from '../src/core/site.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import {
+  FOREST_DENSITY_FIELD,
   forestDensityAt,
   leafLitterAt,
   placeTree,
@@ -370,12 +371,27 @@ describe('passable but opaque vegetation', () => {
   it('keeps the seeded forest-density field smooth and seed-dependent', () => {
     const heading = [-0.9, 0.44];
     const unit = heading.map((value) => value / Math.hypot(...heading));
+    const sampleStepMetres = 0.5;
+    const stretchStartMetres = 48;
+    const stretchEndMetres = 56;
+    const sampleCount = Math.floor((stretchEndMetres - stretchStartMetres) / sampleStepMetres) + 1;
+    const samples = Array.from({ length: sampleCount }, (_, index) => {
+      const distance = stretchStartMetres + index * sampleStepMetres;
+      return forestDensityAt(1, unit[0]! * distance, unit[1]! * distance);
+    });
+    const { gain, wavelengthMetres } = FOREST_DENSITY_FIELD;
+    const maxStepDifference = (3 * gain * sampleStepMetres) / wavelengthMetres;
+
+    expect(samples.every((density) => density >= 0 && density <= 1)).toBe(true);
+    for (let index = 1; index < samples.length; index += 1) {
+      expect(Math.abs(samples[index]! - samples[index - 1]!)).toBeLessThanOrEqual(maxStepDifference);
+    }
+
     const x = unit[0]! * 96;
     const z = unit[1]! * 96;
     const density = forestDensityAt(1, x, z);
     expect(density).toBeGreaterThanOrEqual(0);
     expect(density).toBeLessThanOrEqual(1);
-    expect(forestDensityAt(1, x + 0.01, z)).toBeCloseTo(density, 3);
     expect(forestDensityAt(2, x, z)).not.toBe(density);
   });
 
