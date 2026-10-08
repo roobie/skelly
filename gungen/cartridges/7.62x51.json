@@ -1,0 +1,76 @@
+{
+  "format": 1,
+  "kind": "metallic",
+  "id": "7.62x51",
+  "designation": "7.62×51mm",
+  "aliases": [
+    { "name": "308 Winchester", "cite": { "source": "cip308", "locator": "Tab. I, sheet title; Alternative Names" } },
+    { "name": "7,62 x 51", "cite": { "source": "cip308", "locator": "Tab. I, Alternative Names" } }
+  ],
+  "sources": {
+    "cip308": {
+      "body": "C.I.P.",
+      "reliability": "standard",
+      "title": "C.I.P. TDCC Tab. I, 308 Win.: cartridge maximum dimensions",
+      "url": "https://bobp.cip-bobp.org/uploads/tdcc/tab-i/tabical-en-page125.pdf",
+      "retrieved": "2026-10-08",
+      "revision": "sheet Date 84-06-14, Revision 08-09-23",
+      "sha256": "428efd5c2ffdda8fd7844d870523fa2df40f60a1810b3a2f175eba0c26ccadef"
+    }
+  },
+  "primarySource": "cip308",
+  "relatedTo": [],
+  "case": {
+    "length": { "value": 51.18, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L3", "verbatim": "L3 1) = 51.18" } },
+    "bodyStart": { "value": 3.85, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E", "verbatim": "E = 3.85" }, "note": "Read from the C.I.P. drawing; the sheet has no symbol legend" },
+    "rim": {
+      "diameter": { "value": 12.01, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R1", "verbatim": "R1 = 12.01" } },
+      "thickness": { "value": 1.37, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R", "verbatim": "R = 1.37" }, "note": "Read from the C.I.P. drawing; the sheet has no symbol legend" }
+    },
+    "head": {
+      "type": "rimless",
+      "extractorGroove": {
+        "diameter": { "value": 10.39, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E1", "verbatim": "E1 = 10.39" } },
+        "width": { "value": 1.4, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: e min", "verbatim": "e min = 1.40" } },
+        "bevelAngle": { "value": 36, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: δ", "verbatim": "δ = 36°" }, "note": "Read from the C.I.P. drawing; the sheet has no symbol legend" }
+      }
+    },
+    "body": {
+      "type": "bottleneck",
+      "diameterAtHead": { "value": 11.96, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P1", "verbatim": "P1 = 11.96" } },
+      "diameterAtShoulderStart": { "value": 11.53, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P2", "verbatim": "P2 1)* = 11.53 -0.20" }, "tolerance": { "minus": 0.2 }, "basic": true },
+      "shoulder": {
+        "startPosition": { "value": 39.62, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L1", "verbatim": "L1 1) = 39.62 -0.20" }, "tolerance": { "minus": 0.2 } },
+        "endPosition": { "value": 43.48, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L2", "verbatim": "L2 1) = 43.48 -0.20" }, "tolerance": { "minus": 0.2 } },
+        "angle": { "value": 40, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Junction Cone: α", "verbatim": "α* = 40°" }, "basic": true, "note": "Read from the C.I.P. drawing; the sheet has no symbol legend" }
+      },
+      "neck": {
+        "diameterAtBase": { "value": 8.72, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Collar: H1", "verbatim": "H1* = 8.72" }, "basic": true },
+        "diameterAtMouth": { "value": 8.72, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Collar: H2", "verbatim": "H2 1) = 8.72" } }
+      }
+    },
+    "materials": [],
+    "primer": {
+      "options": [],
+      "diameter": { "value": null, "cite": null, "note": "The C.I.P. sheet does not give primer-pocket dimensions" },
+      "designation": { "value": null, "cite": null, "note": "The C.I.P. sheet does not specify a primer designation" }
+    }
+  },
+  "payload": {
+    "type": "bullet",
+    "diameter": { "value": 7.85, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Projectile: G1", "verbatim": "G1 1) = 7.85" } },
+    "length": {
+      "min": { "value": null, "cite": null, "note": "The C.I.P. sheet does not give bullet length" },
+      "max": { "value": null, "cite": null, "note": "The C.I.P. sheet does not give bullet length" }
+    },
+    "variants": []
+  },
+  "overallLength": {
+    "max": { "value": 71.12, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L6", "verbatim": "L6 = 71.12" } },
+    "typical": { "value": 71.12, "cite": { "source": "cip308", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L6", "verbatim": "L6 = 71.12" }, "note": "The sheet gives a maximum, not a typical loaded length; the maximum is used as the representative model length" }
+  },
+  "notes": [
+    "The C.I.P. 308 Win. sheet lists 7,62 x 51 as an alternative name. This file records the C.I.P. cartridge-maximum profile for the frame-sizing pilot; it does not claim NATO interchangeability or chamber compatibility.",
+    "The C.I.P. sheet has no symbol legend. Mapped dimensions are read from its drawing and callouts; unmapped values, including primer details, bullet length and case materials, remain unspecified. The C.I.P. footnote 1) says to check marked dimensions for safety reasons; the CHAMBER MINI column is not modelled."
+  ]
+}

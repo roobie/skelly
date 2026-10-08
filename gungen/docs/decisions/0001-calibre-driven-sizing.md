@@ -2,8 +2,11 @@
 id: gungen::adr-0001-calibre-driven-sizing
 description: Decision that a gun design starts from its cartridge, which picks a discrete action frame that sizes the action, barrel and magazine, while the family look and human-scale parts stay put
 tags: [gungen, adr, calibre, cartridges, frames, templates, sizing]
+read_if:
+  - changing cartridge data or firearm sizing
+  - implementing or reviewing family frames and selectors
 created: 2026-10-02
-status: proposed
+status: accepted
 ---
 
 # 1. Calibre-driven sizing: the cartridge picks the frame
@@ -12,18 +15,11 @@ status: proposed
 [[THIS is_grounded_by: ../../cartridges/README.md]]
 [[THIS relates_to: ../../../deadvox/docs/decisions/0003-firearm-handling.md]]
 
-**Status:** proposed (2026-10-02). BR's rulings so far are recorded under [Rulings](#rulings-2026-10-02).
+**Status:** accepted.
 
 ## Context
 
-In real guns, a platform's look and its size are separate things. An HK416 (5.56×45) and an HK417 (7.62×51) read as the same rifle, but the bolt carrier and receiver, the barrel, and the magazine and magwell are sized for different cartridges. An AR-pattern .338 Lapua Magnum DMR is bigger again and still reads as an AR. The size follows the calibre; the look follows the family.
-
-What gungen does today:
-
-- **The shared receiver is a fixed length** (16u; 1u = 11.5 mm, `src/gun/units.ts#GUN_UNITS`), whatever the gun fires.
-- **Magazines pick a length from bands** per profile (`src/gun/parts.ts`, `MagazineBands`: `standard` 6/10/16u, `stanag-curved` 6/10/15.75u, AK-74 and AKM curved), not from a cartridge.
-- **One exception, the anti-materiel rifle**, is sized from its cartridge: its receiver and magazine follow the .50 BMG case (`src/gun/antiMateriel/heavyReceiver.ts`, `heavyMagazine.ts`, `cartridge.ts`). That's the pattern this decision generalises.
-- **Sourced cartridge data** exists for 7.62×39 (`cartridges/7.62x39.json`, #112) with its parser and rules (`src/ammo/`). g34 adds 5.56×45 and builds round profiles and magazine columns from the data (deadvox ADR 0003).
+A platform's family look and action size are separate. Cartridges with different overall lengths and head diameters can share a recognizable family layout while requiring different action and receiver envelopes. Cartridge dimensions therefore choose a discrete family frame; the family template preserves the look.
 
 ## Decision
 
@@ -42,7 +38,7 @@ A frame is an **action and receiver envelope with its interfaces**, not a cartri
 - A family's frames are **ordered by an explicit rank**, so "smallest" and "largest" are never ambiguous, even if two envelopes are incomparable dimension by dimension.
 - The cartridge's frame is **derived** (the lowest-ranked frame of the family that fits), never a separate setting, so frame and cartridge can't disagree. A cartridge that fits no frame of the family is a validation error naming the largest frame and the cartridge's measures. A family with one frame either fits or refuses.
 
-Inside the frame's envelope, the **cartridge itself** drives the cartridge-specific geometry: the chamber, bore and inner barrel extension, and the round and column geometry (g34's round profile and magazine column).
+Inside the frame's envelope, the **cartridge itself** drives the cartridge-specific geometry: the chamber, bore and inner barrel extension, and the round and magazine-column geometry.
 
 ### 3. What follows the cartridge, what defaults from it, what stays human-sized
 
@@ -68,31 +64,21 @@ The first implementation is the AR family with three frames:
 | large (AR-10) | 7.62×51 | SR-25, HK417 |
 | magnum | .338 Lapua Magnum | proprietary AR-pattern rifles, e.g. the side-charging Noreen Bad News .338 LM; there is no standardised magnum AR frame |
 
-Each needs sourced cartridge data and frame dimensions with a source or a stated estimate, the same standard as `cartridges/`. **G34 prerequisite met:** `cartridges/5.56x45.json` cites NATO AOP-4172; its ambiguous external case callouts use cited C.I.P. .223 Rem values only as marked visual-profile proxies, not as chamber-interchangeability data. 7.62×51 and .338 LM remain new; missing dimensions are never invented.
+Each needs sourced cartridge data and frame dimensions with a source or a clearly stated estimate. `cartridges/5.56x45.json` cites NATO AOP-4172 and marks C.I.P. .223 Rem values as visual-profile proxies, not chamber-interchangeability data. The 7.62×51 and .338 Lapua Magnum entries cite their C.I.P. sheets; the 7.62×51 entry makes no NATO chamber-interchangeability claim. Unsourced cartridge dimensions remain null.
 
-## Rulings (2026-10-02)
+### 6. Family scope and adjustable parts
 
-1. **The design starts with the calibre** (BR: "Yes, I'd say it starts with the caliber").
-2. **Scale beyond the action, but adjustably.** Parts beyond the action, barrel and magazine scale "somewhat", and stay adjustable: there's no hard line, e.g. "free-floating barrels on bipod mounted firearms don't really need a handguard at all".
-3. **AK later, with the SVD.** The AK family gets the same treatment, tied to an SVD archetype BR wants modelled. **Deferred**: this decision must not block it, but no AK frames are planned now.
+The design starts with the calibre. Parts beyond the action, barrel and magazine scale with the frame as defaults but remain adjustable; for example, a free-floating bipod rifle may omit its handguard. AK frames and the SVD remain deferred under #333.
+
+A design always uses the lowest-ranked frame that fits its cartridge. It cannot pin a larger frame unless a real case establishes that need.
 
 ## Consequences
 
-- **Ordering:** after g34 (round profiles and magazine columns from cartridge data), because magwells and magazines come from those. g35's cycle travel should then come from the frame's action length instead of a per-gun number.
-- **Deadvox:** gets `calibre` in the export (ADR 0003, g34), so a 7.62 AR differs in game data as well as in looks.
-- **Existing designs and exports:** the curated AR designs take the small frame through their default cartridge (5.56×45).
-  - There are no external consumers yet, so **byte-identical exports are not a requirement** (BR, 2026-10-02). Keeping them identical is an anti-requirement when it would contort the code: no legacy export paths or opt-in flags only to preserve old bytes.
-  - What must hold: gungen can still export a model that deadvox validates and loads.
-  - A before/after export diff remains a useful review aid: the PR names which exports change and why. It isn't a gate.
-- **The anti-materiel rifle:** its bespoke cartridge sizing becomes one family's frame data when convenient; until then it stays as it is.
-- **Bands retire gradually:** magazine bands remain for families without frames; a family moves off them when it gets frames.
-- **Tests (#120):**
-  - The frame is a derived outcome, not a generation axis. So the covering array spans family × cartridge × the adjustable choices (magazine, barrel, handguard), and the frame selector gets its own targeted cases: an exact-boundary fit, the first cartridge that needs the next frame, no fit, a single-frame family, and incomparable envelopes resolved by rank.
-  - Fail-before canaries for "cartridge too long for its frame" and "derived dimension edited by hand".
-  - Full products behind `GUNGEN_SWEEPS`.
+- Curated AR designs derive the small frame from their default 5.56×45 cartridge. Export bytes may change; no compatibility path is added solely to preserve prior bytes. Gungen exports must still produce models that deadvox validates and loads. An export diff is review evidence, not a gate.
+- Magazine bands remain for families not yet fully represented by frame data; a family leaves them when its designs use frame-based magwells and magazines.
+- Frame selection is not a generation axis. Covering arrays span family, cartridge and adjustable choices; targeted selector cases cover boundary fit, next-frame fit, no fit, one-frame families and incomparable envelopes.
+- Canaries protect against a cartridge exceeding its frame and hand-editing derived dimensions. Full products stay behind `GUNGEN_SWEEPS`.
 
-## Open questions
+## Open question
 
-- Frame dimensions for the large and magnum AR frames: which sources (manufacturer drawings, mil-specs) and how much estimation is acceptable.
-- Whether a design may pin a larger frame than its cartridge needs (e.g. a 6.5 Creedmoor in an AR-10 is the default anyway; a 5.56 in an AR-10 frame is rare). Proposed: no, until a real case asks for it.
-- How the SVD and AK frames relate (shared long-stroke family, or separate families).
+- Frame-dimension sourcing and estimation method; use the ruling recorded for br-75 before adding real AR frame dimensions.
