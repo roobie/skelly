@@ -4,6 +4,7 @@ import type * as Config from '../src/game/config.ts';
 
 it('starts normal sites when a malformed bundled layout file is rejected whole', async () => {
   const server = await createServer({
+    optimizeDeps: { noDiscovery: true, include: [] },
     server: { middlewareMode: true, hmr: false, watch: null },
     plugins: [
       {

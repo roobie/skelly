@@ -429,7 +429,9 @@ export const startPlay = (
       consumeCrouchToggle: () => input.consumeCrouchToggle(),
       useDominant: () => {
         if (throwingStance) {
-          beginItemThrow();
+          if (!replayPlayer) {
+            beginItemThrow();
+          }
           return;
         }
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
@@ -442,7 +444,7 @@ export const startPlay = (
       },
       heldDominantUse: (time, pressed, triggerHeld) => {
         if (throwingStance) {
-          if (!triggerHeld && itemThrowItemUid !== undefined) {
+          if (!(replayPlayer || triggerHeld) && itemThrowItemUid !== undefined) {
             finishItemThrow();
           }
           return;

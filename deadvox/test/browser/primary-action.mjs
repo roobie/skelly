@@ -17,6 +17,7 @@ const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new
 const inputBindingsModule = '/src/game/inputBindings.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
+const reloadInputModule = '/src/game/reloadInput.ts';
 const magazineModule = '/src/core/magazine.ts';
 const optionsModule = '/src/core/options.ts';
 const itemLookModule = '/src/render/itemLook.ts';
@@ -436,6 +437,147 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       replayState,
       'verified',
       'a clean look, movement, inventory and crafting recording reproduces its end state',
+    );
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+};
+
+const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) => {
+  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  try {
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+      let locked = false;
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+      });
+      Element.prototype.requestPointerLock = () => {
+        locked = true;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = false;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#dominant-hand').selectOption('left');
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    const fixture = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      const mainItem = r.inventory.create('glowstick');
+      const offItem = r.inventory.create('glowstick');
+      r.setHand(r.dominant, mainItem);
+      r.setHand(r.off, offItem);
+      const minimumHoldSimSeconds = r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds;
+      return { mainUid: mainItem.uid, offUid: offItem.uid, mainSide: r.dominant, minimumHoldSimSeconds };
+    });
+    await page.waitForFunction(() => {
+      const hands = globalThis.primaryActionTest.view.held.heldByHand;
+      return hands.has('left') && hands.has('right');
+    });
+    await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
+    await pressAction(page, 'player.throw');
+    await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+    const releaseThrow = await mouseCharge(page);
+    await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+    const chargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+    await waitForSimulation(
+      page,
+      throwChargeSample,
+      { start: chargeStart, seconds: fixture.minimumHoldSimSeconds },
+      {
+        seconds: fixture.minimumHoldSimSeconds + 0.1,
+        label: 'two-hand replay fixture reaches the minimum throw charge',
+      },
+    );
+    await releaseThrow();
+    await page.waitForFunction((ids) => {
+      const r = globalThis.primaryActionTest;
+      const off = r.inventory.itemByUid(ids.offUid);
+      const offLocation = off && r.inventory.locate(off);
+      return (
+        offLocation?.kind === 'pile' &&
+        r.inventory.hands[r.dominant]?.uid === ids.mainUid &&
+        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw')
+      );
+    }, fixture);
+    const command = async (action) =>
+      page.evaluate(
+        async ({ id, moduleUrl }) => {
+          const { keyboardInput } = await import(moduleUrl);
+          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+        },
+        { id: action, moduleUrl: inputBindingsModule },
+      );
+    await command('debug.panel-toggle');
+    await command('debug.input-replay-export');
+    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    const replayText = await page.evaluate(() => {
+      const link = document.querySelector('#replay-download');
+      if (!link?.href.startsWith('blob:')) {
+        throw new Error('Throw replay export did not create a downloadable artifact');
+      }
+      return fetch(link.href).then((response) => response.text());
+    });
+    const artifact = JSON.parse(replayText);
+    assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
+    assert(artifact.actions.some(({ action }) => action === 'throw.stance.toggle'));
+    const replayNavigation = page.waitForNavigation();
+    await command('debug.input-replay-import');
+    await page.locator('#input-replay-file').setInputFiles({
+      name: 'two-hand-throw-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(replayText),
+    });
+    await replayNavigation;
+    await page.waitForFunction(() => document.querySelector('#input-replay-status'));
+    await page.waitForFunction(
+      () =>
+        ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
+      undefined,
+      { timeout: 20_000 },
+    );
+    const replayState = await page.locator('#input-replay-status').getAttribute('data-state');
+    const items = await page.evaluate((ids) => {
+      const r = globalThis.primaryActionTest;
+      const off = r.inventory.itemByUid(ids.offUid);
+      const main = r.inventory.itemByUid(ids.mainUid);
+      const offLocation = off && r.inventory.locate(off);
+      const mainLocation = main && r.inventory.locate(main);
+      return {
+        offKind: offLocation?.kind,
+        mainHandUid: r.inventory.hands[r.dominant]?.uid,
+        mainLocation: mainLocation?.kind === 'hand' ? mainLocation.side : mainLocation?.kind,
+      };
+    }, fixture);
+    assert.equal(replayState, 'verified', 'stance throw replays to its recorded end state');
+    assert.deepEqual(
+      items,
+      {
+        offKind: 'pile',
+        mainHandUid: fixture.mainUid,
+        mainLocation: fixture.mainSide,
+      },
+      'replay throws the off-hand item exactly once and leaves the main-hand item held',
     );
     assert.deepEqual(pageErrors, []);
   } finally {
@@ -1044,6 +1186,13 @@ try {
   });
   await pressAction(page, 'player.throw');
   await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+  await page.waitForFunction((normal) => {
+    const r = globalThis.primaryActionTest;
+    return ['right', 'left'].every((side) => {
+      const pose = r.view.held.arms.get(side).position;
+      return pose.y > normal[side][1] && pose.z > normal[side][2];
+    });
+  }, normalThrowPose);
   assert.equal(await page.locator('#throw-stance').evaluate((node) => node.hidden), true);
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.interaction = true;
@@ -1057,6 +1206,10 @@ try {
     assert.ok(stanceThrowPose[side][1] > normalThrowPose[side][1], `${side} hand is raised in throwing stance`);
     assert.ok(stanceThrowPose[side][2] > normalThrowPose[side][2], `${side} hand draws back in throwing stance`);
   }
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.interaction = false;
+  });
+  await page.waitForFunction(() => document.querySelector('#throw-stance').hidden);
   const offHandOnlyThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const offHandChargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -1433,9 +1586,18 @@ try {
   }
   const chargeSpareShell = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  const reloadHoldMs = await page.evaluate(async (moduleUrl) => {
+    const { RELOAD_GESTURE_MS } = await import(moduleUrl);
+    return RELOAD_GESTURE_MS.hold;
+  }, reloadInputModule);
   const blockedReload = await holdAction(page, 'firearm.reload');
   const reloadPressAt = await page.evaluate(() => performance.now());
-  await page.waitForFunction((started) => performance.now() - started >= 300, reloadPressAt);
+  await page.waitForFunction(({ started, holdMs }) => performance.now() - started >= holdMs, {
+    started: reloadPressAt,
+    holdMs: reloadHoldMs,
+  });
+  const framesAfterReloadHold = await page.evaluate(() => globalThis.primaryActionTest.frames);
+  await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, framesAfterReloadHold);
   assert.equal(
     await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
@@ -1951,10 +2113,6 @@ try {
     r.session.sim.body.impact(3, 'rightArm', { bleeding: true });
     return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
   });
-  await page.evaluate(() => {
-    globalThis.primaryActionTest.hudOptions.interaction = false;
-  });
-  await page.waitForFunction(() => document.querySelector('#prompt').hidden);
   assert.equal(await page.locator('#prompt').evaluate((node) => node.hidden), true);
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.interaction = true;
@@ -2033,6 +2191,7 @@ try {
 
   assert.deepEqual(pageErrors, []);
   await verifyCleanLookReplay(browser, address.port, renderOverride);
+  await verifyStanceThrowReplay(browser, address.port, renderOverride);
   await browser.close();
   browser = undefined;
   await checkDroppedGlowstickPixel(address.port);

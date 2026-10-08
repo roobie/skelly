@@ -839,7 +839,7 @@ not baked into chunks; voxel sunlight can then join AO in vertex colour. See
 
 A throw preserves the held item's identity and state through flight and landing, so fitted parts, loaded ammunition and a lit glowstick remain the same item rather than a throw-specific copy. Item mass limits its range through arm speed and energy. The flight presentation uses the ground item's look, keeping firearm attachments and light markers visible; the handling HUD makes force and the release minimum legible. See `src/core/itemThrow.ts`, `throwDistanceForItem` and `traceItemLanding`, `src/render/itemThrows.ts`, `ItemThrows.spawn`, `src/ui/hud.ts`, `handlingViewModel`, and `src/game/play.ts`, `throwHeldItem`.
 
-When #368 adds atmospheric drag, it can further limit light items without replacing the mass-based range limit. Throwing adds no hit damage or landing lure.
+Mass limits range so a light item does not fly as far as a heavy one; when #368 adds atmospheric drag, it can further limit light items without replacing that mass-based limit. Throwing adds no hit damage or landing lure.
 
 ## Zombies
 
