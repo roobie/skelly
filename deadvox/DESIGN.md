@@ -1320,7 +1320,8 @@ decoration.
   you can read it; play stays as diegetic as possible (see INTERFACE.md).
 - **The UI only shows what your character knows.** No enemy markers, no
   minimap of zombies, no threat meter. A rest interruption says what you
-  heard, not what it was.
+  heard, not what it was. The in-game map is a paper map (#470); top-down
+  renders are review tools, not UI.
 - **Aim for full diegesis (BR, 2026-10-03):** "we should _aim_ for full
   diegesis - that's why the HUD is default off, but we can't always with voxel
   graphics". Utilities such as the compass and the wristwatch are items the

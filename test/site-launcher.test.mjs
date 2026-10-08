@@ -1,14 +1,19 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { TEMPLATES } from '../gungen/src/gun/templates.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
-const page = read('site/index.html');
-const JSON_FILE = /\.json$/;
+const page = read('site/launcher.js');
+const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
+const SELECT_PATTERN = /<select\b/;
+const WEATHERING_SITE_OPTION_PATTERN =
+  /state\.deadvox\.debug && state\.deadvox\.bench === ''[\s\S]*value="weatheringTest"/;
+const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
+const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
+
 const intentionallyUnofferedDeadvoxParams = {
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
@@ -20,13 +25,20 @@ const intentionallyUnofferedGungenParams = {
   facets:
     'Facet count of revolved solids (3-128; default 6, 24 for close-ups). A display detail with no model to choose, so the launcher has nothing to offer; no gun design has a revolved solid yet.',
   pose: 'A fixed, view-only pump action-open presentation; not an editable design parameter.',
+  template: 'The launcher uses its default template without a picker.',
+  fixture: 'The launcher uses its default fixture without a picker.',
+  design: 'The launcher uses its default design without a picker.',
+  colors: 'The launcher does not offer a color-mode picker.',
+  ammo: 'The launcher does not offer an ammunition-model picker.',
+  ammoCase: 'The launcher does not offer a case-finish picker.',
+  mag: 'The launcher does not offer a detached-magazine picker.',
 };
 
 const paramsReadBy = (sources) => {
   const found = new Set();
   for (const source of sources) {
     for (const match of read(source).matchAll(
-      /\b(?:params|query|initialQuery)\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g,
+      /(?:\b(?:params|query|initialQuery)|new URLSearchParams\([^)]*\))\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g,
     )) {
       found.add(match[1]);
     }
@@ -40,14 +52,6 @@ const paramsOfferedBy = (formId) => {
     throw new Error(`launcher form ${formId} is missing`);
   }
   return [...new Set([...form.matchAll(/data-url-param="([^"]+)"/g)].map((match) => match[1]))].sort();
-};
-
-const optionValues = (selectId) => {
-  const select = page.match(new RegExp(`<select\\b[^>]*id="${selectId}"[^>]*>([\\s\\S]*?)<\\/select>`))?.[1];
-  if (!select) {
-    throw new Error(`launcher select ${selectId} is missing`);
-  }
-  return [...select.matchAll(/<option\s+value="([^"]+)"/g)].map((match) => match[1]);
 };
 
 const coverageFailures = (description, supportedValues, offeredValues, intentionallyOmitted = new Set()) => {
@@ -70,12 +74,31 @@ describe('site launchers track the games’ URL parameters', () => {
       'deadvox/src/game/config.ts',
       'deadvox/src/bench/run.ts',
       'deadvox/src/bench/shamblers.ts',
+      'deadvox/src/debug/debugLoadout.ts',
     ]);
     const omitted = new Set(Object.keys(intentionallyUnofferedDeadvoxParams));
     for (const name of omitted) {
       assert.ok(supported.includes(name), `${name} has a documented omission reason`);
     }
     assert.deepEqual(coverageFailures('deadvox parameter', supported, paramsOfferedBy('deadvox-form'), omitted), []);
+  });
+
+  it('offers weathering overrides only in debug play and matches the game strength ceiling', () => {
+    assert.match(page, WEATHERING_SITE_OPTION_PATTERN);
+    for (const [id, parameter] of [
+      ['deadvox-weathering-field', 'weathering'],
+      ['deadvox-weathering-variation-field', 'weatheringVariation'],
+      ['deadvox-weathering-split-field', 'weatheringSplit'],
+    ]) {
+      assert.match(page, new RegExp(`'${id}': \\(d\\) => d\\.bench === '' && d\\.debug`));
+      assert.match(page, new RegExp(`name="${parameter}" data-url-param="${parameter}"`));
+    }
+
+    const gameMax = read('deadvox/src/core/weather.ts').match(GAME_WEATHERING_MAX_PATTERN);
+    const launcherMax = page.match(LAUNCHER_WEATHERING_MAX_PATTERN);
+    assert.ok(gameMax, 'game weathering ceiling is declared');
+    assert.ok(launcherMax, 'static launcher weathering ceiling is declared');
+    assert.equal(launcherMax[1], gameMax[1]);
   });
 
   it('offers every launcher-editable gungen URL parameter except documented omissions', () => {
@@ -94,24 +117,12 @@ describe('site launchers track the games’ URL parameters', () => {
     );
   });
 
-  it('offers current gungen templates, fixtures and designs without stale options', () => {
-    assert.deepEqual(
-      coverageFailures(
-        'gungen template',
-        TEMPLATES.map(({ name }) => name),
-        optionValues('gungen-template'),
-      ),
-      [],
-    );
-
-    const fixtureNames = readdirSync(join(ROOT, 'gungen/fixtures'))
-      .filter((name) => name.endsWith('.json'))
-      .map((name) => JSON.parse(read(`gungen/fixtures/${name}`)).name);
-    assert.deepEqual(coverageFailures('gungen fixture', fixtureNames, optionValues('gungen-fixture')), []);
-
-    const designNames = readdirSync(join(ROOT, 'gungen/designs'))
-      .filter((name) => name.endsWith('.json') && !name.startsWith('look-'))
-      .map((name) => name.replace(JSON_FILE, ''));
-    assert.deepEqual(coverageFailures('gungen design', designNames, optionValues('gungen-design')), []);
+  it('omits the removed Gungen option controls', () => {
+    const form = page.match(GUNGEN_FORM_PATTERN)?.[1];
+    assert.ok(form, 'gungen form is present');
+    assert.doesNotMatch(form, SELECT_PATTERN);
+    for (const name of ['template', 'fixture', 'design', 'colors', 'ammo', 'ammoCase', 'mag']) {
+      assert.doesNotMatch(form, new RegExp(`data-url-param="${name}"`));
+    }
   });
 });
