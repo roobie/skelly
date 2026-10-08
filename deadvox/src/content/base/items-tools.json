@@ -331,7 +331,7 @@
       "category": "light",
       "weight": 30,
       "size": [1, 2],
-      "description": "A sealed chemical light. Snap once to start it.",
+      "description": "A sealed chemical light.",
       "model": "glowstick",
       "light": {
         "radius": 2,
