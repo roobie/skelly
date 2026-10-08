@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  BoxGeometry,
   Euler,
   Frustum,
   Group,
@@ -9,6 +10,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   type MeshLambertMaterial,
+  MeshStandardMaterial,
   PerspectiveCamera,
   Quaternion,
   Raycaster,
@@ -91,6 +93,49 @@ describe('held light presentation', () => {
     expect(visibleBody, `${id} in ${side} hand`).toBe(true);
     expect(flame, `${id} in ${side} hand`).toBe(definition.light!.burning?.ignition === 'firestarter');
     held.dispose();
+  });
+
+  it.each([
+    { state: 'off', on: false },
+    { state: 'on', on: true },
+  ])('shows a modeled glowstick $state on its tube in hand', ({ on }) => {
+    const inventory = new Inventory(registry);
+    const glowstick = inventory.create('glowstick');
+    if (on) {
+      expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+    }
+    expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
+    const geometry = new BoxGeometry(1, 0.1, 0.1);
+    const tubeMaterial = new MeshStandardMaterial({ color: '#62ff81' });
+    tubeMaterial.name = 'chemical-light tube';
+    const modelRoot = new Group();
+    modelRoot.add(new Mesh(geometry, tubeMaterial));
+    const models = {
+      version: 0,
+      heldLook: () => ({ root: modelRoot.clone(), parts: [], slots: {} }),
+    } as unknown as import('../src/render/models.ts').ModelLibrary;
+    const held = new HeldItems(inventory, models, palette);
+    held.update(new PerspectiveCamera());
+    const { shown } = held as unknown as { shown: Map<number, Group> };
+    let tube: Mesh | undefined;
+    shown.get(glowstick.uid)?.traverse((object) => {
+      if (object instanceof Mesh && object.material instanceof MeshStandardMaterial) {
+        tube = object;
+      }
+    });
+
+    expect(tube?.visible).toBe(true);
+    const material = tube!.material as MeshStandardMaterial;
+    if (on) {
+      expect(material.emissive.getHexString()).not.toBe('000000');
+      expect(material.emissiveIntensity).toBe(registry.items.get('glowstick')!.light!.emissive);
+      expect(material.toneMapped).toBe(false);
+    } else {
+      expect(material.emissive.getHexString()).toBe('000000');
+    }
+    held.dispose();
+    geometry.dispose();
+    tubeMaterial.dispose();
   });
 });
 

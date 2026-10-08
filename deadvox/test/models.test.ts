@@ -1,13 +1,24 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { Box3, type Loader, LoadingManager, Mesh, Vector3 } from 'three';
+import {
+  Box3,
+  InstancedMesh,
+  type Loader,
+  LoadingManager,
+  Mesh,
+  type MeshBasicMaterial,
+  type MeshStandardMaterial,
+  Vector3,
+} from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory, PILE_GRID, type Pile } from '../src/core/inventory.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { fittedPartFrame, prepareModel } from '../src/render/models.ts';
+import { PileMeshes } from '../src/render/piles.ts';
 
 const BASE = 'src/content/base';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
@@ -85,6 +96,84 @@ describe('piles with models', () => {
       S,
     );
     expect(layout.models.map((m) => m.yaw)).toEqual([Math.PI / 2, 0]);
+  });
+
+  it('keeps a glowstick’s lit look on its model, and uses a marker only for the bundle fallback', async () => {
+    const definition = registry.items.get('glowstick')!;
+    expect(definition.model).toBeDefined();
+    const modelDefinition = registry.models.get(definition.model!)!;
+    expect(modelDefinition.emissiveMaterial).toBeDefined();
+    const { scene } = await parseGlb(readFileSync(`${BASE}/${modelDefinition.file}`));
+    const { ground } = prepareModel(modelDefinition, scene);
+    expect(new Box3().setFromObject(ground).isEmpty()).toBe(false);
+    let authoredTube = false;
+    ground.traverse((object) => {
+      if (!(object instanceof Mesh)) {
+        return;
+      }
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      authoredTube ||= materials.some((material) => material.name === modelDefinition.emissiveMaterial);
+    });
+    expect(authoredTube).toBe(true);
+
+    const models = {
+      version: 1,
+      has: (id: string) => id === modelDefinition.id,
+      groundLook: () => ground.clone(),
+    } as unknown as import('../src/render/models.ts').ModelLibrary;
+    const render = (on: boolean, withModel = true) => {
+      const source = withModel
+        ? registry
+        : {
+            ...registry,
+            items: new Map(registry.items).set('glowstick', { ...definition, model: undefined }),
+          };
+      const items = new Inventory(source);
+      const glowstick = items.create('glowstick');
+      if (on) {
+        expect(toggleLight(source, glowstick, 0)).toBeUndefined();
+      }
+      expect(items.add(glowstick, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+      const piles = new PileMeshes(S, withModel ? models : undefined);
+      piles.sync(items);
+      return piles;
+    };
+
+    const unlit = render(false);
+    expect(unlit.group.children.some((child) => child instanceof InstancedMesh)).toBe(false);
+    unlit.dispose();
+
+    const lit = render(true);
+    const itemModel = lit.group.children.find((child) => !(child instanceof InstancedMesh))!;
+    const modelBounds = new Box3().setFromObject(itemModel);
+    let litTube: Mesh | undefined;
+    itemModel.traverse((object) => {
+      if (!(object instanceof Mesh)) {
+        return;
+      }
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      if (materials.some((material) => material.name === modelDefinition.emissiveMaterial)) {
+        litTube = object;
+      }
+    });
+    expect(litTube).toBeDefined();
+    const tubeBounds = new Box3().setFromObject(litTube!);
+    expect(modelBounds.containsPoint(tubeBounds.min)).toBe(true);
+    expect(modelBounds.containsPoint(tubeBounds.max)).toBe(true);
+    const litMaterial = (Array.isArray(litTube!.material) ? litTube!.material : [litTube!.material]).find(
+      (material) => material.name === modelDefinition.emissiveMaterial,
+    ) as MeshStandardMaterial;
+    expect(litMaterial.emissive.getHexString()).not.toBe('000000');
+    expect(litMaterial.toneMapped).toBe(false);
+    expect(lit.group.children.some((child) => child instanceof InstancedMesh)).toBe(false);
+    lit.dispose();
+
+    const bundle = render(true, false);
+    const marker = bundle.group.children.find((child) => child instanceof InstancedMesh) as InstancedMesh;
+    expect(marker).toBeDefined();
+    expect((marker.material as MeshBasicMaterial).toneMapped).toBe(false);
+    expect((marker.material as MeshBasicMaterial).vertexColors).toBe(false);
+    bundle.dispose();
   });
 });
 

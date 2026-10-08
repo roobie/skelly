@@ -80,7 +80,14 @@ import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
-import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
+import {
+  type InputCancellationReason,
+  type InputCommand,
+  type InputContext,
+  keyboardInput,
+  labelForAction,
+  shouldCancelInputForViewerFocus,
+} from './inputBindings.ts';
 import {
   encodeInputReplay,
   InputReplayRecorder,
@@ -303,7 +310,14 @@ export const startPlay = (
 
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, options.restore !== undefined);
   let debugTools: DebugRuntime | undefined;
-  const input = new Input(inputTarget, () => !debugTools?.buildOn);
+  let replayPlayer: InputReplayPlayer | undefined;
+  const shouldCancelForViewerFocus = (reason: InputCancellationReason): boolean =>
+    shouldCancelInputForViewerFocus(reason, replayPlayer !== undefined);
+  const input = new Input(
+    inputTarget,
+    () => !debugTools?.buildOn,
+    () => shouldCancelForViewerFocus('window-blur'),
+  );
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
   const playerSenseTuning = registry.senses.get('player');
@@ -357,7 +371,7 @@ export const startPlay = (
   let replayVerification: 'matched' | 'diverged' | 'unavailable' | undefined;
   let replayVerificationTick: number | undefined;
   let replayVerificationStarted = false;
-  const replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
+  replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
     dispatchReplayAction(action, sample),
   );
   const samplePlayerInput = (
@@ -1388,7 +1402,10 @@ export const startPlay = (
     return playContext();
   };
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
-  keyboardInput.cancelled = (preservePointer) => {
+  keyboardInput.cancelled = (preservePointer, reason) => {
+    if (!shouldCancelForViewerFocus(reason ?? 'manual')) {
+      return;
+    }
     input.cancel(preservePointer);
     cancelItemThrow();
     throwStanceInput.cancel();

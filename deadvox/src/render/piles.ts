@@ -20,6 +20,7 @@ import { pileScatterPlacements, SPENT_CASE_SCATTER_CAP } from '../core/scatterPi
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
+import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
 import type { GroundModelPart, ModelLibrary } from './models.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -46,7 +47,7 @@ export class PileMeshes {
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly material = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }), 'piles');
   private readonly glowstickGeometry: BoxGeometry;
-  private readonly glowstickMaterial = new MeshBasicMaterial({ color: 0xff_ff_ff, vertexColors: true });
+  private readonly glowstickMaterial = new MeshBasicMaterial({ color: 0xff_ff_ff, toneMapped: false });
   private glowsticks: InstancedMesh;
   private readonly blockSize: number;
   private readonly models: ModelLibrary | undefined;
@@ -69,6 +70,7 @@ export class PileMeshes {
       return;
     }
     this.drawn = version;
+    disposeItemEmissiveMaterials(this.group);
     this.group.clear();
     const casePlans = new Map<string, CasePlan>();
     for (const pile of inventory.piles.values()) {
@@ -97,6 +99,7 @@ export class PileMeshes {
       this.releaseCaseVisual(visual);
     }
     this.caseVisuals.clear();
+    disposeItemEmissiveMaterials(this.group);
     this.group.clear();
     this.geometry.dispose();
     this.material.dispose();
@@ -121,13 +124,22 @@ export class PileMeshes {
   /** Each item as its own look, so a rifle on the ground shows the magazine it really has. */
   private drawModels(inventory: Inventory, models: ReturnType<typeof pileLayout>['models']): void {
     for (const piled of models) {
-      const look = itemLook(inventory.registry, piled.placed.item);
+      const { placed, at, yaw } = piled;
+      const { item } = placed;
+      const definition = defOf(inventory.registry, item.type);
+      const look = itemLook(inventory.registry, item);
       const model = look && this.models?.groundLook(look);
       if (!model) {
         continue;
       }
-      model.position.set(...piled.at);
-      model.rotation.y = piled.yaw;
+      applyItemEmissive(
+        model,
+        item,
+        definition,
+        definition.model ? inventory.registry.models.get(definition.model) : undefined,
+      );
+      model.position.set(...at);
+      model.rotation.y = yaw;
       this.group.add(castsAndReceives(model));
     }
   }
@@ -226,8 +238,12 @@ export class PileMeshes {
   private drawEmissiveLights(inventory: Inventory): void {
     const sources = [...inventory.piles.values()].flatMap((pile) =>
       pile.items.flatMap(({ item }) => {
-        const { light } = defOf(inventory.registry, item.type);
-        return item.on && light?.emissive !== undefined && light.burning?.drop === 'stay' ? [{ pile, light }] : [];
+        const definition = defOf(inventory.registry, item.type);
+        const { light } = definition;
+        const bundleVisible = definition.model === undefined || !this.models?.has(definition.model);
+        return item.on && bundleVisible && light?.emissive !== undefined && light.burning?.drop === 'stay'
+          ? [{ pile, light }]
+          : [];
       }),
     );
     if (sources.length > this.glowsticks.count) {

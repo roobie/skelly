@@ -401,9 +401,10 @@
         "assets/models/flashlight_mount.glb",
         "assets/models/scrap_foregrip.glb",
         "assets/models/hinge_set.glb",
-        "assets/models/glass_bulb.glb"
+        "assets/models/glass_bulb.glb",
+        "assets/models/glowstick.glb"
       ],
-      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used."
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps; no external asset source or texture is used."
     },
     {
       "title": "Heartbeat Sounds",

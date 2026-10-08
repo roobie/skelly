@@ -622,6 +622,8 @@ const ModelSchema = pipe(
     id: Id,
     /** The `.glb` file, as a path within the pack. */
     file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
+    /** Material to light from the item's light component while this model is drawn. */
+    emissiveMaterial: optional(Name),
     /** Cartridge-data id (not a display designation); punctuation is normalized only in model slugs. */
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
