@@ -16,10 +16,14 @@ status: accepted
 
 ## Context
 
-Deadvox is a browser game for one player. The important work is a deep simulation
-and a moddable, text-dense interface, not networked play. Without multiplayer,
-there is no netcode or server authority to build. A project-owned voxel engine is
-small enough to keep the world and its simulation under our control.
+Single-player is the decision this one follows from. While multiplayer was a
+requirement, Godot 4's built-in networking made it the stronger choice. Dropping
+that requirement removes netcode and server authority; it also makes a small
+voxel engine of our own realistic.
+
+The important work is a deep simulation and a moddable, text-dense interface, not
+networked play. A project-owned voxel engine keeps the world and its simulation
+under our control.
 
 The project needs a browser-native interface and a simulation whose state can be
 paused, advanced at different rates, caught up after areas are unloaded, and
@@ -35,25 +39,26 @@ to GitHub Pages.
 
 - Single-player removes networking and server authority as engine requirements;
   chunk storage, meshing and simulation rules can stay under project control.
-- The interface is moddable and text-dense, like Cataclysm: DDA. HTML and CSS
-  provide the needed interface without putting the simulation in a UI framework.
-  The screen boundary and rendering contract are in
+- The interface must be moddable and text-dense, like Cataclysm: DDA. HTML and
+  CSS over the canvas make body-part wounds, nested containers, crafting trees,
+  dense tooltips and logs far easier than any game UI toolkit. Moddable UI is also
+  why Luanti fell out. The screen boundary and rendering contract are in
   [ADR 0001](0001-ui-rendering-with-lit-html.md).
 - Simulation state remains plain data, separate from rendering. This supports
   pause, time compression, unloaded-area catch-up and exact saves; see
   `DESIGN.md`, `Simulation architecture`, and [ADR 0002](0002-saves.md).
-- Authored content is data that systems compose into the game, rather than
-  mechanics duplicated in a UI or engine library. The content direction is in
-  [ADR 0004](0004-content-language.md).
-- GitHub Actions builds the game for the static Pages deployment described by
-  `.github/workflows/pages.yml`.
+- Content data files for items, materials, recipes, body parts, loot and zombie
+  types merge with mod folders, giving moddability for free. The content
+  direction is in [ADR 0004](0004-content-language.md).
+- Building on GitHub and deploying to Pages is easy, and every commit is playable
+  at a URL; see `.github/workflows/pages.yml`.
 
 ## Alternatives considered
 
 - **Luanti and minetest-wasm:** Wasm does not change Luanti's server-driven formspec UI, which limits client-side UI modding.
-- **noa:** It supplies voxel systems on Babylon.js; that replaces the chosen three.js renderer and takes control of systems the game can keep project-owned.
+- **noa:** It supplies voxel systems on Babylon.js; adopting it hands control of systems the game can keep project-owned to a library.
 - **Voxelize:** Its authoritative server and network chunk streaming solve multiplayer requirements this game does not have.
-- **Divine Voxel Engine:** Its Babylon.js worker engine adds a second voxel-engine stack instead of the small project-owned chunk pipeline.
+- **Divine Voxel Engine:** Its TypeScript/Babylon.js engine uses worker-based world generation and meshing; like noa, it hands meshing to a library instead of keeping a small engine under project control.
 - **Godot 4 with godot_voxel:** Its networking no longer decides the choice; its web export and text-dense UI are a poorer fit than the browser stack.
 - **Bevy:** It brings a Rust-to-Wasm toolchain with fewer built-in game systems than the other engine options.
 
