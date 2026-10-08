@@ -346,7 +346,7 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | dedicated top-strapped frame, cylinder/barrel alignment, and separate grip |
 
-Scale anchor: keep the gun-domain unit calibration; the Brownells STANAG-20 product box's 64.5 mm cross-section corroborates the authored magazine top within one grid step, but remains package rather than body data. The listing's stated body dimensions govern body sizing. Optic references are recorded in `docs/optics.md`.
+Scale anchor: keep the gun-domain unit calibration; the Brownells listing's stated 2.54 in (64.5 mm) STANAG-20 body depth corroborates the authored magazine top within one grid step. Its 127 × 66 × 25 mm delivery dimensions are package data, not body data. The listing's other stated body dimensions govern body sizing. Optic references are recorded in `docs/optics.md`.
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
@@ -355,10 +355,10 @@ Scale anchor: keep the gun-domain unit calibration; the Brownells STANAG-20 prod
   its width, while its length and depth follow the HK SA80-compatible steel
   listing and are snapped to the nearest grid step. This is a visible reference,
   not a claim that the 30 is a USGI aluminium magazine. The shared upper and
-  feed lips use the same snapped width as both bodies. The AR frame and magwell
-  are unchanged. At BR's visual request, the estimated STANAG-30 arc sweep
-  increased by five degrees by eye; the floorplate detail remains a photo estimate. The HK
-  listing's approximate empty weight is for steel, so Deadvox retains a gameplay
+  feed lips use the same snapped width as both bodies. Both STANAG bodies fit
+  the AR magwell as modelled. The STANAG-30 arc includes BR's five-degree
+  eyeballed adjustment; the floorplate detail is a photo estimate. The HK
+  listing's approximate empty weight is for steel, so Deadvox uses a gameplay
   mass estimate unless an aluminium STANAG-30 mass is sourced; see
   `deadvox/src/content/base/items-ammunition.json`, `magazine_stanag_30`. See
   `src/gun/parts.ts`, `STANAG20_SOURCED_WIDTH_MM`, `STANAG20_BODY_BOX_U`,
@@ -1371,10 +1371,10 @@ deadvox holds a model with +x forward and +y up
   its own copy of the special, role, fallback lookup, since core can't import
   `src/gun/palette.ts#solidColor`; a test checks the two agree.
 - Units: `METRES_PER_UNIT = 0.0115` (1u = 11.5 mm) is the gun domain's chosen
-  calibration; its 5.5u magazine top is 63.25 mm. The Brownells STANAG-20
-  product-box cross-section of 64.5 mm corroborates that scale within one grid
-  step, but is package rather than body data. The writer scales by the resolved
-  domain's `units.metresPerUnit`. Vertices are `mesh.ts` positions times that;
+  calibration; its 5.5u magazine top is 63.25 mm. The Brownells listing's stated
+  2.54 in (64.5 mm) STANAG-20 body depth corroborates that scale within one grid
+  step; the 127 × 66 × 25 mm delivery dimensions are package data. The writer
+  scales by the resolved domain's `units.metresPerUnit`. Vertices are `mesh.ts` positions times that;
   normals are unscaled. `conventions.ts` still says "roughly a centimetre" for
   `u`; the export uses 11.5 mm.
 - Axes. gungen is right-handed, +X forward, +Y up, +Z right; glTF is

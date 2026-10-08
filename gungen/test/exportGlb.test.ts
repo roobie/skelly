@@ -189,15 +189,15 @@ const rotateByQuaternion = (q: readonly number[], v: Vec3): Vec3 => {
 };
 
 describe('glb export: axes and units', () => {
-  it('calibrates authored STANAG depth against its millimetre reference within one grid step', () => {
+  it('calibrates the shared STANAG top against Brownells listed body depth within one grid step', () => {
     const stanag = FAMILIES.magazine!.build({ length: 'M', profile: 'stanag-curved' });
     const upperBody = stanag.solids.find(({ id }) => id === 'upper-body')!;
     const [min, max] = localSolidBounds(upperBody);
     const topDepthUnits = max[0]! - min[0]!;
     const authoredDepthMm = topDepthUnits * METRES_PER_UNIT * 1000;
-    const referenceDepthMm = 64.5;
+    const listedBodyDepthMm = 64.5;
     const gridStepMm = gunDomain.units.grid * METRES_PER_UNIT * 1000;
-    expect(Math.abs(authoredDepthMm - referenceDepthMm)).toBeLessThanOrEqual(gridStepMm);
+    expect(Math.abs(authoredDepthMm - listedBodyDepthMm)).toBeLessThanOrEqual(gridStepMm);
     expect(METRES_PER_UNIT).toBe(gunDomain.units.metresPerUnit);
   });
 
