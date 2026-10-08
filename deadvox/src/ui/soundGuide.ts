@@ -318,7 +318,10 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ),
   ...(['idle', 'alert', 'attack', 'hurt'] as const).map(
     (action) =>
-      [`amalgam_${action}`, 'Stand-in mapping: reuses shambler recordings pitched down; bespoke amalgam recordings remain future work.'] as const,
+      [
+        `amalgam_${action}`,
+        'Stand-in mapping: reuses shambler recordings pitched down; bespoke amalgam recordings remain future work.',
+      ] as const,
   ),
   ['door_open', 'Approved by BR (2026-10-02) with door-open-03 only; more variants are future work.'],
   [
