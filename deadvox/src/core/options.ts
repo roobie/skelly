@@ -3,7 +3,7 @@
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
-import type { HandlingQueue } from './handling.ts';
+import type { HandlingQueue, MoveJob } from './handling.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
@@ -129,6 +129,19 @@ export const bestPocket = (
     })
     .filter((o) => o.plan.ok)
     .sort((a, b) => (a.plan.ok && b.plan.ok ? a.plan.time - b.plan.time : 0))[0];
+
+/** Queues an ordinary ground pickup into the quickest player pocket that can carry it. */
+export const pocketGroundItem = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {
+  if (inv.locate(item)?.kind !== 'pile') {
+    return 'The item is no longer on the ground';
+  }
+  const target = bestPocket(inv, item)?.target;
+  if (!target) {
+    return 'No room on you';
+  }
+  const move = queue.enqueue(item, target);
+  return move.ok ? undefined : move.reason;
+};
 
 /** Quick move uses worn inventory only: back, other containers, then clothing pockets. */
 const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
@@ -377,8 +390,95 @@ export const quickbarPutAway = (inv: Inventory, queue: HandlingQueue, item: Item
   return result.ok ? undefined : result.reason;
 };
 
+const cancelStows = (queue: HandlingQueue, jobs: readonly MoveJob[]): void => {
+  for (const job of jobs) {
+    queue.cancelJob(job);
+  }
+};
+
+const plannedStowTarget = (inv: Inventory, item: Item, feet: Vec3): Target | undefined => {
+  const pocket = bestPocket(inv, item)?.target;
+  if (pocket) {
+    return pocket;
+  }
+  const drop = dropTarget(inv, item, feet);
+  return drop.plan.ok ? drop.target : undefined;
+};
+
+const liveTargetFor = (inv: Inventory, target: Target): Target | undefined => {
+  if (target.kind !== 'pocket') {
+    return target;
+  }
+  const owner = inv.itemByUid(target.owner.uid);
+  return owner ? { ...target, owner } : undefined;
+};
+
+const stowTwoHandDisplacements = (args: {
+  readonly inv: Inventory;
+  readonly queue: HandlingQueue;
+  readonly item: Item;
+  readonly feet: Vec3;
+  readonly displaced: readonly Item[];
+  readonly target: Target;
+}): string | undefined => {
+  const { inv, queue, item, feet, displaced, target } = args;
+  const planned = Inventory.restoreState(inv.registry, inv.snapshotState());
+  const stows: MoveJob[] = [];
+  for (const held of displaced) {
+    const plannedHeld = planned.itemByUid(held.uid);
+    const plannedTarget = plannedHeld && plannedStowTarget(planned, plannedHeld, feet);
+    const liveTarget = plannedTarget && liveTargetFor(inv, plannedTarget);
+    if (!(plannedHeld && plannedTarget && liveTarget)) {
+      cancelStows(queue, stows);
+      return 'Could not make room in your hands';
+    }
+    const stow = queue.enqueue(held, liveTarget, held.count, stows.length > 0);
+    if (!stow.ok) {
+      cancelStows(queue, stows);
+      return stow.reason;
+    }
+    stows.push(stow.job);
+    if (!planned.move(plannedHeld, plannedTarget).ok) {
+      cancelStows(queue, stows);
+      return 'Could not make room in your hands';
+    }
+  }
+  const plannedItem = planned.itemByUid(item.uid);
+  const plan = plannedItem && planned.plan(plannedItem, target);
+  if (!plan?.ok) {
+    cancelStows(queue, stows);
+    return plan?.reason ?? 'The item is no longer available';
+  }
+  const take = queue.enqueue(item, target, item.count, true);
+  if (!take.ok) {
+    cancelStows(queue, stows);
+    return take.reason;
+  }
+  return undefined;
+};
+
+const wieldTwoHanded = (inv: Inventory, queue: HandlingQueue, item: Item, feet: Vec3): string | undefined => {
+  const preferred = dominantSide(inv.character);
+  const secondary = offSide(inv.character);
+  const target: Target = { kind: 'hand', side: preferred };
+  const direct = queue.enqueue(item, target);
+  if (direct.ok || direct.reason === 'Already queued') {
+    return direct.ok ? undefined : direct.reason;
+  }
+  if (inv.hands[preferred] === item && inv.hands[secondary] === item) {
+    return undefined;
+  }
+  const displaced = [...new Set([inv.hands[preferred], inv.hands[secondary]])].filter(
+    (held): held is Item => held !== undefined && held !== item,
+  );
+  return displaced.length > 0 ? stowTwoHandDisplacements({ inv, queue, item, feet, displaced, target }) : direct.reason;
+};
+
 /** Ordinary to-hands behavior, including moving an occupied hand away first. */
 export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: Vec3): string | undefined => {
+  if (defOf(inv.registry, item.type).twoHanded) {
+    return wieldTwoHanded(inv, queue, item, feet);
+  }
   const preferred = dominantSide(inv.character);
   const secondary = offSide(inv.character);
   for (const side of [preferred, secondary]) {

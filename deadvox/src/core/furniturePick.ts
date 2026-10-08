@@ -137,18 +137,24 @@ const resolvePick = ({
   return undefined;
 };
 
-/** Picks the nearest visible furniture cell or visible door panel along a block-space ray. */
-export const pickFurnitureHit = ({
+export interface FurnitureAndObstructionHit {
+  readonly furniture: FurniturePickHit | undefined;
+  /** First blocking cell on the same normalized ray, in blocks. */
+  readonly obstructionDistanceBlocks: number | undefined;
+}
+
+/** Resolves furniture and the first blocking cell from one shared interaction ray. */
+export const pickFurnitureAndObstruction = ({
   entities,
   origin,
   direction,
   maxDistance,
   blockSize,
   isSolid,
-}: FurniturePickOptions): FurniturePickHit | undefined => {
+}: FurniturePickOptions): FurnitureAndObstructionHit => {
   const magnitude = Math.hypot(...direction);
   if (magnitude === 0 || maxDistance < 0 || blockSize <= 0) {
-    return undefined;
+    return { furniture: undefined, obstructionDistanceBlocks: undefined };
   }
   const dir: Vec3 = direction.map((component) => component / magnitude) as Vec3;
   const maxMetres = maxDistance * blockSize;
@@ -161,8 +167,15 @@ export const pickFurnitureHit = ({
     blockSize,
   });
   const cellHit = firstPickCell({ entities, origin, direction: dir, maxDistance, isSolid });
-  return resolvePick({ entities, panelHit, cellHit, blockSize });
+  return {
+    furniture: resolvePick({ entities, panelHit, cellHit, blockSize }),
+    obstructionDistanceBlocks: cellHit?.distance,
+  };
 };
+
+/** Picks the nearest visible furniture cell or visible door panel along a block-space ray. */
+export const pickFurnitureHit = (options: FurniturePickOptions): FurniturePickHit | undefined =>
+  pickFurnitureAndObstruction(options).furniture;
 
 export const pickFurniture = (options: FurniturePickOptions): BlockEntity | undefined =>
   pickFurnitureHit(options)?.entity;
