@@ -3815,11 +3815,10 @@ export const magazine: PartFamily = {
     orientation: choice(...MAGAZINE_ORIENTATIONS),
     variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
   },
-  validateParams(params) {
-    if (params.profile === 'stanag-straight' && (params.length ?? 'M') !== 'M') {
-      return STRAIGHT_STANAG_LENGTH_REFUSAL;
-    }
-  },
+  validateParams: (params) =>
+    params.profile === 'stanag-straight' && (params.length ?? 'M') !== 'M'
+      ? STRAIGHT_STANAG_LENGTH_REFUSAL
+      : undefined,
   build(params): PartDef {
     const profile = (params.profile ?? 'standard') as MagazineProfile;
     if (profile === 'stanag-straight' && (params.length ?? 'M') !== 'M') {
