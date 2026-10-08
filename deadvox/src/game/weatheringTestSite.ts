@@ -32,8 +32,8 @@ export class DebugWeatheringTestSite implements Site {
     ];
     this.weatheringMaterialBoxes = bands.map(({ id, minY, maxY }) => ({
       id,
-      min: [-8, floor + minY, 0] as const,
-      max: [8, floor + maxY, 0.35] as const,
+      min: [-8, Math.floor((floor + minY) / blockSize) * blockSize, 0] as const,
+      max: [8, Math.ceil((floor + maxY) / blockSize) * blockSize, Math.ceil(0.35 / blockSize) * blockSize] as const,
     }));
     const boxes: MetreBox[] = [
       { min: [-10, floor, -2], max: [10, floor + 0.5, 1], block: concrete },
