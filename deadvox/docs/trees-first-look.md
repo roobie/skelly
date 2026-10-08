@@ -1,10 +1,15 @@
-# Slice 2.13 trees — approved shapes and frozen workload (d24-2)
+---
+read_if:
+  - you're changing tree or hedge movement, sight, sound or rendering rules
+  - you're revisiting the frozen forest workload or its performance evidence
+---
 
-BR approved the three shapes and the hedges on **2026-10-03**. The same ruling
-replaces the first look's solid foliage: leaves and hedges are passable but opaque.
-Neither geometry, density nor view distance is reduced for performance.
+# Slice 2.13 trees — shapes and frozen workload (d24-2)
 
-## Declared rules and lead defaults
+Leaves and hedges are passable but opaque, replacing the first look's solid
+foliage. Geometry, density and view distance are not reduced for performance.
+
+## Declared rules
 
 | Blocks | Movement / physics / melee / bites / acoustics | Sight / aim / LOS / picking |
 | --- | --- | --- |
@@ -19,7 +24,7 @@ and zombie attacks use movement blockers; aim, debug/furniture picking, zombie
 sight and benchmark placement rays use opacity. Placement bodies use movement.
 `isLit` still only checks daylight/flashlight; renderer non-air occupancy is unchanged.
 
-Hedges default to leaf behavior, per the lead's interpretation; BR can override.
+Hedges use leaf behavior by default; BR may override.
 The player brushing an actual leaf/hedge body-overlap cell admits a positioned
 rustle through F4, committing hearing and seeded sound before output. Entry and
 continued-motion cooldown, not every frame; stillness makes no rustle. Gentle/fast
@@ -76,25 +81,16 @@ culls internal non-air faces and runs in workers.
 
 ## Measurement status
 
-Pre-feature uniform-0.75 profiling identified whole-site litter lookups: about
-165 ms per generated column on the coder host, versus worker meshing p95 about
-7 ms. BR's frozen `603a64a` real-GPU Firefox run independently measured jog/sprint
-main-thread work p95 **310/467 ms**, while look achieved **60 fps**. The coder's
-SwiftShader GPU is not BR's laptop; its render timings cannot establish the
-reference budget. Frozen-field **`8abee65` → `b2072af`** full day/night measurements
-are recorded separately in Slice 2 Results: generation median about 129–132 ms
-→ **1.3 ms**, while software-GPU frames remain about one second and sprint
-holes remain. All 13 functional Chromium browser gates passed.
+Whole-site litter lookups measured about 165 ms per generated column, compared
+with worker meshing p95 of about 7 ms. On SwiftShader, generation improved from
+about 129–132 ms to 1.3 ms, while frames remained about one second and sprint
+holes persisted. Those software-rendering results do not establish reference-GPU
+performance. All functional Chromium browser gates passed.
 
-The same-workload unshipped cut-out experiment applies the same alpha mask to
-camera and depth shadows, retaining about 63.6% of each leaf face. It changes
-neither voxel rules nor geometry, draw-call totals or peak mesh payload bytes;
-one ordered run per variant shows no reliable budget advantage. Approved opaque
-drawing is retained. Normal Hamlet was also rechecked, without load timeout.
-These are host observations, not proof the reference laptop meets the budget.
-The Slice 1 budget is unchanged: 60 fps, at most 1% of frames above 18 ms in every
-phase, and no sprint holes. The host observations remain failed measurements.
-**BR's later reference verdict (2026-10-03, relayed at 17:14):** fixed 0.75 by day,
-the frozen field by day and by night all hold 60 fps, 0% slow, zero holes.
-Performance is met on the reference GPU; feel is “good enough!”. Semi-occluding
-leaves and ground-level foliage are follow-ups in #187, not this implementation.
+The same-workload cut-out experiment applied an alpha mask to camera and depth
+shadows, retaining about 63.6% of each leaf face. It changed neither voxel rules
+nor geometry, draw-call totals or peak mesh payload bytes; ordered runs showed
+no reliable budget advantage. Opaque drawing remains. The reference-GPU runs
+met the frame budget for fixed density and the frozen field by day and night:
+60 fps, no slow frames and no sprint holes. Semi-occluding leaves and
+ground-level foliage remain follow-ups in #187.

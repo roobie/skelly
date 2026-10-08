@@ -7,7 +7,7 @@ read_if:
   - you change how paint wear is placed or drawn
   - you model a vehicle that isn't a car, such as a motorbike
   - you change what a vehicle owns, or how part types are named, coloured and shared
-  - you pick up a deferred vehicle item or one of BR's open vehicle questions
+  - you pick up a deferred vehicle item or one of BR's open vehicle decisions
 ---
 
 # Vehicle spike: vehicles built from parts (r43)
@@ -204,19 +204,18 @@ None of these is built, and each waits for the event that needs it:
   vehicles enter the save.
 - **A baked mesh per parked vehicle, and a distance level of detail:** when several
   vehicles share a view in the game.
-- **The content schema, pack loading and validation of the baked voxel grids:** once BR
-  answers the source-of-truth question below. The workshop's TypeScript blueprint reference is an
-  interim placement, following BR's 2026-10-07 16:32 request, "can't we use the example from the
-  vehicle spike?" It does not establish the vehicle-content source of truth.
+- **The content schema, pack loading and validation of the baked voxel grids:** after
+  choosing the source of truth below. The workshop's TypeScript blueprint reference is an
+  interim placement based on the spike. It does not establish the vehicle-content source of truth.
 - **Cargo as items in storage rather than fittings** (the 4×4's spare wheel is a fitting):
   when storage is built.
 
 Derived stats take one route: mass, centre of mass and noise come from the fitted parts
 (`measure`, `noiseRadius`), and handling, power and fuel would too.
 
-## Open (BR)
+## Open decisions for BR
 
-Questions the design review raised that are BR's to decide, by topic:
+Questions the design review raised for BR to decide, by topic:
 
 1. **Reach of building:** how far "build things the designers didn't foresee" goes.
 2. **Welded structure:** whether a factory car's welded structure is one thing to the
