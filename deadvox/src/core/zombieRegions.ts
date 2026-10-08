@@ -212,7 +212,7 @@ const regionBoxesForContext = (context: PoseBoxContext): Readonly<Record<string,
 };
 
 /** All manifest-region boxes for one actor pose, including amalgam member IDs. */
-export const posedAllRegionBoxes = (input: ShamblerPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> =>
+const posedAllRegionBoxes = (input: ShamblerPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> =>
   regionBoxesForContext(poseContextFor(input));
 
 /** Bone boxes for one shambler-compatible pose. The caller builds them once per nearby zombie. */
