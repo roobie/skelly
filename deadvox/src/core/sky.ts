@@ -126,7 +126,7 @@ const DUSK: Look = {
 // the DAWN key is at sunrise and the DUSK key is at sunset.
 type LookKey = { phase: DayPhase; at: number; look: Look };
 const KEYS: readonly LookKey[] = [
-  { phase: 'night', at: 0.08, look: NIGHT },
+  { phase: 'night', at: 0, look: NIGHT },
   { phase: 'night', at: 0.3, look: DEEP_NIGHT },
   { phase: 'night', at: 0.7, look: DEEP_NIGHT },
   { phase: 'night', at: 0.9, look: NIGHT },

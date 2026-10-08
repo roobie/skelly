@@ -15,6 +15,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
@@ -50,7 +51,7 @@ const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
     jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     player: () => player,
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
     onFootstep: (position: Vec3) => played.push([...position]),
   });

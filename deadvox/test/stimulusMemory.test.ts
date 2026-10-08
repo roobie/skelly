@@ -8,6 +8,7 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { type PlayerSense, type VocalNoise, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
@@ -33,7 +34,7 @@ const senses = (playerFn: () => PlayerSense, isSolid: SolidAt = FLOOR, hour = 12
   player: playerFn,
   isSolid,
   isOpaque: isSolid,
-  hour: () => hour,
+  dayPhase: () => dayStateAtHour(hour),
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
   jumpSpeed: PLAYER.jump,

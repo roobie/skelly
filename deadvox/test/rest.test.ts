@@ -16,6 +16,7 @@ import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
@@ -63,7 +64,7 @@ const zombieHooks = (player: PlayerSense, hour = 23) => ({
   jumpSpeed: PLAYER.jump,
   tuning: TEST_SENSE_TUNING,
   player: () => player,
-  hour: () => hour,
+  dayPhase: () => dayStateAtHour(hour),
   hurtPlayer: () => undefined,
 });
 

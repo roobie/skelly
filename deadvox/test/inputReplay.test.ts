@@ -76,7 +76,7 @@ const replaySample = {
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
-    schemaVersion: 12,
+    schemaVersion: 13,
     endStateFingerprint: '0'.repeat(64),
     endSimTimestamp: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),

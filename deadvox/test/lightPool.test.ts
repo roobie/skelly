@@ -10,6 +10,7 @@ import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
@@ -108,7 +109,7 @@ describe('made-light point pool', () => {
       }),
       isSolid: floor,
       isOpaque: floor,
-      hour: () => 0,
+      dayPhase: () => dayStateAtHour(0),
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
@@ -167,7 +168,7 @@ describe('made-light point pool', () => {
   });
 
   it('uses daytime sky exposure for light gating, not direct sun angle', () => {
-    const wallShadow: SolidAt = (_x, y, z) => y >= 2 && z === -1;
+    const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
     const open = sunExposedAt([0.5, 1, 0.5], 12, 20, () => false);
     const roofed = sunExposedAt([0.5, 1, 0.5], 12, 20, (_x, y) => y === 2);
     const shadow = sunExposedAt([0.5, 1, 0.5], 12, 20, wallShadow);

@@ -9,6 +9,7 @@ read_if:
   - you're recording or reconciling BR's crawler silhouette rulings
   - you're changing crawler gait, hit response or generation validation
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
+  - you're changing the derived day phases that drive the sky, zombie sight, hordes or spawn words
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
@@ -827,8 +828,9 @@ is not a substitute for the pool: tune item light content against the ground and
 walls under the shared near-field falloff. Source colour, intensity, radius and
 burn rules belong to item content. The zombie light check keeps sky visibility
 separate from carried light, so adding voxel sky light
-won't change the carried-light rule. Keep time of day in the sky/fog renderer,
-not baked into chunks; voxel sunlight can then join AO in vertex colour. See
+won't change the carried-light rule. The sun-derived day phase also owns simulation
+sun exposure, but time-of-day lighting remains in the sky and fog rather than being
+baked into chunks; voxel sunlight can then join AO in vertex colour. See
 `src/render/flashlight.ts`, `Flashlight.update`, `src/render/lightPool.ts`,
 `LightPool.update`, `src/core/zombies.ts`, `isLit`, `src/render/sky.ts`,
 `applySky`, and `src/core/mesher.ts`, `buildMesh`.
@@ -954,19 +956,24 @@ worse the world gets.
 
 ### Senses and AI
 
-- **Senses:** sight (a view cone and range, worse at night and when you
-  crouch), hearing (noise events) and smell (a trail the player leaves, which
-  rain washes out). Terrain height alone should not end a clear pursuit; sight
+- **Senses:** sight (a view cone and range, blended smoothly from day range to
+  night range through twilight and reduced when you crouch), hearing (noise events)
+  and smell (a trail the player leaves, which rain washes out). The base pack's
+  latitude, fixed date and nautical-twilight choice own the sun-derived day phases;
+  the date and any seasonal change remain BR's decision. Hordes roam from sunset
+  through dusk, night and dawn until sunrise, and spawn words resolve from those
+  same boundaries. Terrain height alone should not end a clear pursuit; sight
   over a rise is bounded by occlusion, not by spending range on vertical distance.
-  See `src/core/zombies.ts`, `seesPlayer`.
+  See `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/zombies.ts`, `seesPlayer`
+  and `ZombieSystem.updateHordes`; and `src/core/clock.ts`, `parseSpawnTime`.
 - **Movement (BR, 2026-10-05 20:27–20:33):** “also, it's still the case that the shamblers are stalling when the player moves”; “i think we should greatly simplify how the shamblers brains work”; “they aren't smart creatures”; “they beeline towards whatever grabs their attention”; and at 20:33, “yes, I think we should make them primarily beeline and slide off of obstacles like walls / if low enough, they prefer jumping over / but they should have some randomness in that even if they normally beeline, when they hit an obstacle they might just randomly wander a bit - e.g. pick an open direction and try to walk 10 meters (for example) / but if something bashable is in the way, they would tend to bash it (e.g. doors) / (what is bashable is depending on the strength of the mob - but we haven't modelled this, right? I mean a 2nd evolution brute might breach a brick wall, for example)”. A shambler moves directly toward its current attention target in the horizontal plane. Collision resolution preserves available tangential motion; when a head-on intent has none, `ZombieSystem.tick` uses the seeded `obstacleSlideSide` to supply it. `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the distance configured in `src/content/base/zombies.json`, then resumes toward its current target. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
 - **Height (BR, 2026-10-05 20:29):** “but yeah, heightwise (Y axis) it may be a bit difficult. Maybe we should just let them wander at some point, rather than intelligently traverse Y-levels”. Shamblers do not gain stair knowledge from an attention target on another floor.
 - **Seen prey (BR, 2026-10-05 21:52–21:53; #281):** “well, when i stood there high on the slope, the shamblers tracked and pursued, but since it's steep, they'd stop and wander off for a bit, even though they'd reasonably would "see" me (given that there were no obstacles, other than the steep climb)”; “i'd lean (A) because it feels most reasonable for the shambler mentality that if they _see_ their prey, they just go after it straight”; “but still sliding”. For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - **Simulation structure (BR, 2026-10-06 06:14; d93-1):** “Start with a refactoring trial on the worst offender”. The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `deadvox/src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background movement (BR, 2026-10-05 21:32):** “yes”: background zombies beeline in big, cheap steps.
-- **Distant attention and noise persistence (d104-4):** Daylight changes a horde's roaming choice, not its response to a heard event; a daytime home preference cannot replace a noise target before arrival. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
-- **Stimulus memory (d104-5):** The question for BR was how long a zombie or horde should retain an unreachable stimulus instead of resuming its hour-driven wandering. BR answered, “after some time, they should forget about what drew them there (or anywhere) so they'd resume drifting and roaming after 3 minutes”. The real-time versus game-time interpretation remains open; the shared content duration is counted in simulation seconds, so compression affects elapsed wall time. Both tiers use that duration, and the stimulus timestamp is saved so loading does not restart the wait. See `src/core/schema.ts`, `ZombieSchema`; and `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.forgetIndividualStimulus`.
+- **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
+- **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration, counted in simulation seconds, so compression affects elapsed wall time. The stimulus timestamp is saved so loading does not restart the wait. A horde resumes the sun-derived roam or home behavior after forgetting. See `src/core/schema.ts`, `ZombieSchema`; and `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.forgetIndividualStimulus`.
 - **Background cadence persistence (d104-4):** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `src/game/session.ts`, `zombie-background`.
 
 - **Level of detail:**
@@ -1181,9 +1188,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   occlusion and fog. Textures only if colour alone can't carry the look. The
   palette is muted and grey; the saturated colours are the ones that mean
   something: warning signs, blood, fire and the glow of hot zombies.
-- **Day and night** from sun and sky colour and fog. Nights are dark enough
-  that a flashlight matters, and darkest in the dead of night (about 23:00 to
-  03:30).
+- **Day and night** follow one sun model derived from the base pack's latitude,
+  fixed date and nautical twilight. The sky and fog follow the resulting phases;
+  light and night looks blend through dusk and dawn, and a flashlight matters
+  most in full night.
 - **The night sky:** the moon and stars show on clear nights. The moon goes
   through its phases over about a month of game days. On a clear night near
   full moon you can see shapes and find your way outdoors without a light; on

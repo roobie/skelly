@@ -1,4 +1,4 @@
-import coreDayCycle from '../content/base/dayCycle.json';
+import coreDayCycle from '../content/base/dayCycle.json' with { type: 'json' };
 import type { Vec3 } from './coords.ts';
 
 export type DayPhase = 'night' | 'dawn' | 'day' | 'dusk';
@@ -23,7 +23,7 @@ export interface DayPhaseState {
   readonly nightfall: number;
 }
 
-export const DEFAULT_DAY_CYCLE: DayCycle = coreDayCycle.dayCycle;
+export const DEFAULT_DAY_CYCLE = coreDayCycle.dayCycle as DayCycle;
 
 const DAY_SECONDS = 24 * 60 * 60;
 const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
