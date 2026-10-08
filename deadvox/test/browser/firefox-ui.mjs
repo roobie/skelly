@@ -80,6 +80,15 @@ try {
   });
   await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view')));
+  const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
+  await page.waitForFunction(
+    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
+    null,
+    { timeout: 10_000 },
+  );
+  await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, initialTime, {
+    timeout: 20_000,
+  });
   await page.waitForFunction(
     () => globalThis.firefoxUiTest.engine.renderer && globalThis.firefoxUiTest.engine.meshes.count > 0,
     null,
@@ -98,15 +107,6 @@ try {
     [],
     'Firefox chunk shaders compile',
   );
-  const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
-  await page.waitForFunction(
-    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
-    null,
-    { timeout: 10_000 },
-  );
-  await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, initialTime, {
-    timeout: 20_000,
-  });
   assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
   const gateCode = await page.evaluate(
     `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
