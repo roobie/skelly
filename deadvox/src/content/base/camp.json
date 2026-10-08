@@ -5,10 +5,7 @@
       "name": "Military armoury key",
       "category": "tool",
       "weight": 10,
-      "size": [
-        1,
-        1
-      ],
+      "size": [1, 1],
       "key": {
         "lock": "camp_armoury"
       },
@@ -19,10 +16,7 @@
       "name": "Military supply manifest",
       "category": "book",
       "weight": 5,
-      "size": [
-        1,
-        1
-      ],
+      "size": [1, 1],
       "readable": {
         "title": "Clinic supply manifest",
         "text": "SUPPLY RECORD — COMMUNITY HEALTH SITE\n\nAntibiotics, sampling kits and dressings were sent to the clinic. Keep the ward stocked and the pharmacy secured. The road remains under military protection."
@@ -32,10 +26,7 @@
   "loot": [
     {
       "id": "camp_supplies",
-      "rolls": [
-        1,
-        2
-      ],
+      "rolls": [1, 2],
       "entries": [
         {
           "item": "canned_beans",
@@ -64,11 +55,7 @@
     {
       "id": "container_door",
       "name": "Steel container door",
-      "size": [
-        2,
-        4,
-        1
-      ],
+      "size": [2, 4, 1],
       "color": "#718087",
       "door": {
         "handlingSimSeconds": 0.6,
@@ -84,19 +71,12 @@
     {
       "id": "rifle_rack",
       "name": "Rifle rack",
-      "size": [
-        4,
-        3,
-        1
-      ],
+      "size": [4, 3, 1],
       "color": "#69716f",
       "container": {
         "pockets": [
           {
-            "grid": [
-              12,
-              5
-            ],
+            "grid": [12, 5],
             "handlingSimSeconds": 1.2
           }
         ]
@@ -106,19 +86,12 @@
     {
       "id": "ammo_crate",
       "name": "Ammunition crate",
-      "size": [
-        2,
-        2,
-        2
-      ],
+      "size": [2, 2, 2],
       "color": "#77725a",
       "container": {
         "pockets": [
           {
-            "grid": [
-              6,
-              5
-            ],
+            "grid": [6, 5],
             "handlingSimSeconds": 1.2
           }
         ]
@@ -128,19 +101,12 @@
     {
       "id": "footlocker",
       "name": "Footlocker",
-      "size": [
-        2,
-        2,
-        1
-      ],
+      "size": [2, 2, 1],
       "color": "#6b756f",
       "container": {
         "pockets": [
           {
-            "grid": [
-              6,
-              4
-            ],
+            "grid": [6, 4],
             "handlingSimSeconds": 1
           }
         ]
@@ -150,11 +116,7 @@
     {
       "id": "camp_cot",
       "name": "Folding cot",
-      "size": [
-        2,
-        1,
-        4
-      ],
+      "size": [2, 1, 4],
       "color": "#677a82",
       "rest": {
         "quality": 0.6,
@@ -164,19 +126,12 @@
     {
       "id": "field_desk",
       "name": "Field desk",
-      "size": [
-        3,
-        2,
-        2
-      ],
+      "size": [3, 2, 2],
       "color": "#71674f",
       "container": {
         "pockets": [
           {
-            "grid": [
-              6,
-              4
-            ],
+            "grid": [6, 4],
             "handlingSimSeconds": 1
           }
         ]
@@ -186,11 +141,7 @@
     {
       "id": "camp_closing_note",
       "name": "Playtest closing note",
-      "size": [
-        2,
-        2,
-        1
-      ],
+      "size": [2, 2, 1],
       "color": "#b8b5a5",
       "solid": false,
       "readable": {
@@ -201,11 +152,7 @@
     {
       "id": "camp_orders",
       "name": "Camp orders board",
-      "size": [
-        2,
-        2,
-        1
-      ],
+      "size": [2, 2, 1],
       "color": "#a6936f",
       "solid": false,
       "readable": {
@@ -216,11 +163,7 @@
     {
       "id": "camp_sandbag_barricade",
       "name": "Sandbag barricade",
-      "size": [
-        2,
-        2,
-        2
-      ],
+      "size": [2, 2, 2],
       "color": "#9b8d6a",
       "solid": true
     }
@@ -229,11 +172,7 @@
     {
       "id": "camp_armoury",
       "military": true,
-      "size": [
-        20,
-        6,
-        12
-      ],
+      "size": [20, 6, 12],
       "palette": {
         ".": "air",
         "=": "concrete",
@@ -345,11 +284,7 @@
     },
     {
       "id": "camp_command_tent",
-      "size": [
-        16,
-        5,
-        10
-      ],
+      "size": [16, 5, 10],
       "palette": {
         ".": "air",
         "T": "fabric",
@@ -435,11 +370,7 @@
     },
     {
       "id": "camp_container",
-      "size": [
-        18,
-        6,
-        10
-      ],
+      "size": [18, 6, 10],
       "palette": {
         ".": "air",
         "=": "concrete",
@@ -530,11 +461,7 @@
     },
     {
       "id": "camp_tent",
-      "size": [
-        12,
-        4,
-        8
-      ],
+      "size": [12, 4, 8],
       "palette": {
         ".": "air",
         "T": "fabric",
@@ -596,11 +523,7 @@
     },
     {
       "id": "camp_watchtower",
-      "size": [
-        12,
-        11,
-        12
-      ],
+      "size": [12, 11, 12],
       "palette": {
         ".": "air",
         "=": "dirt",
@@ -765,11 +688,7 @@
       ],
       "access": {
         "ground": "ground",
-        "entrance": [
-          2,
-          1,
-          1.5
-        ],
+        "entrance": [2, 1, 1.5],
         "storeys": [
           {
             "id": "ground",
@@ -784,16 +703,8 @@
           {
             "from": "ground",
             "to": "lookout",
-            "lower": [
-              5,
-              1,
-              2
-            ],
-            "upper": [
-              5,
-              7,
-              9
-            ],
+            "lower": [5, 1, 2],
+            "upper": [5, 7, 9],
             "width": 2,
             "block": "planks"
           }
@@ -802,109 +713,37 @@
     },
     {
       "id": "camp_wall_run",
-      "size": [
-        32,
-        5,
-        2
-      ],
+      "size": [32, 5, 2],
       "palette": {
         ".": "air",
         "=": "sandbag"
       },
       "layers": [
-        [
-          "================================",
-          "================================"
-        ],
-        [
-          "================================",
-          "================================"
-        ],
-        [
-          "================================",
-          "================================"
-        ],
-        [
-          "================================",
-          "================================"
-        ],
-        [
-          "====.=======.=======.=======.===",
-          "=.=======.=======.=======.======"
-        ]
+        ["================================", "================================"],
+        ["================================", "================================"],
+        ["================================", "================================"],
+        ["================================", "================================"],
+        ["====.=======.=======.=======.===", "=.=======.=======.=======.======"]
       ]
     },
     {
       "id": "camp_sandbag_post",
-      "size": [
-        8,
-        5,
-        8
-      ],
+      "size": [8, 5, 8],
       "palette": {
         ".": "air",
         "=": "planks",
         "S": "sandbag"
       },
       "layers": [
-        [
-          "========",
-          "========",
-          "========",
-          "========",
-          "========",
-          "========",
-          "========",
-          "========"
-        ],
-        [
-          "SSS..SSS",
-          "S......S",
-          "S......S",
-          "S......S",
-          "S......S",
-          "S......S",
-          "S......S",
-          "SSSSSSSS"
-        ],
-        [
-          "SSS..SSS",
-          "S......S",
-          "S......S",
-          "S......S",
-          "S......S",
-          "S......S",
-          "S......S",
-          "SSSSSSSS"
-        ],
-        [
-          "........",
-          "........",
-          "........",
-          "........",
-          "........",
-          "........",
-          "........",
-          "........"
-        ],
-        [
-          "........",
-          "........",
-          "........",
-          "........",
-          "........",
-          "........",
-          "........",
-          "........"
-        ]
+        ["========", "========", "========", "========", "========", "========", "========", "========"],
+        ["SSS..SSS", "S......S", "S......S", "S......S", "S......S", "S......S", "S......S", "SSSSSSSS"],
+        ["SSS..SSS", "S......S", "S......S", "S......S", "S......S", "S......S", "S......S", "SSSSSSSS"],
+        ["........", "........", "........", "........", "........", "........", "........", "........"],
+        ["........", "........", "........", "........", "........", "........", "........", "........"]
       ],
       "access": {
         "ground": "ground",
-        "entrance": [
-          3.5,
-          1,
-          3.5
-        ],
+        "entrance": [3.5, 1, 3.5],
         "storeys": [
           {
             "id": "ground",
@@ -917,11 +756,7 @@
     {
       "id": "camp_hq",
       "military": true,
-      "size": [
-        8,
-        17,
-        18
-      ],
+      "size": [8, 17, 18],
       "palette": {
         ".": "air",
         "=": "concrete",
@@ -1286,11 +1121,7 @@
       ],
       "access": {
         "ground": "ground",
-        "entrance": [
-          4,
-          1,
-          1.5
-        ],
+        "entrance": [4, 1, 1.5],
         "storeys": [
           {
             "id": "ground",
@@ -1309,32 +1140,16 @@
           {
             "from": "ground",
             "to": "operations",
-            "lower": [
-              2,
-              1,
-              2
-            ],
-            "upper": [
-              2,
-              7,
-              9
-            ],
+            "lower": [2, 1, 2],
+            "upper": [2, 7, 9],
             "width": 2,
             "block": "planks"
           },
           {
             "from": "operations",
             "to": "observation",
-            "lower": [
-              5,
-              7,
-              10
-            ],
-            "upper": [
-              5,
-              13,
-              3
-            ],
+            "lower": [5, 7, 10],
+            "upper": [5, 13, 3],
             "width": 2,
             "block": "planks"
           }
@@ -1343,11 +1158,7 @@
     },
     {
       "id": "camp_gate",
-      "size": [
-        16,
-        5,
-        2
-      ],
+      "size": [16, 5, 2],
       "palette": {
         ".": "air",
         "=": "dirt",
@@ -1358,26 +1169,11 @@
         }
       },
       "layers": [
-        [
-          "================",
-          "================"
-        ],
-        [
-          "#######DD#######",
-          "................"
-        ],
-        [
-          "#######DD#######",
-          "................"
-        ],
-        [
-          "#######DD#######",
-          "................"
-        ],
-        [
-          "#######DD#######",
-          "................"
-        ]
+        ["================", "================"],
+        ["#######DD#######", "................"],
+        ["#######DD#######", "................"],
+        ["#######DD#######", "................"],
+        ["#######DD#######", "................"]
       ]
     }
   ]

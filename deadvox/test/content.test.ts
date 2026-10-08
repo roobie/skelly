@@ -994,9 +994,11 @@ describe('content references', () => {
   it('limits military tables to military templates and forbids them on zombie types', () => {
     const source = 'military-site.json';
     const lootId = 'fixture_military_table';
-    const furniture = structuredClone(baseRegistry.furniture.get('crate')!);
-    furniture.id = 'fixture_crate';
-    delete furniture.loot;
+    const furniture = {
+      ...structuredClone(baseRegistry.furniture.get('crate')!),
+      id: 'fixture_crate',
+      loot: undefined,
+    };
     const [width, height, depth] = furniture.size;
     const template = {
       id: 'fixture_nonmilitary_site',
@@ -1013,7 +1015,9 @@ describe('content references', () => {
         source,
         data: {
           items: [{ id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] }],
-          loot: [{ id: lootId, military: true, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] }],
+          loot: [
+            { id: lootId, military: true, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] },
+          ],
           furniture: [furniture],
           templates: [template],
           zombies: [zombie],

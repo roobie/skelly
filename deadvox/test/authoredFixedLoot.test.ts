@@ -596,12 +596,13 @@ describe('authored fixed loot', () => {
     );
     expect(campPlacements.length).toBeGreaterThan(0);
     for (const placement of campPlacements) {
+      const [x0, y0, z0] = placement.origin;
       const [width, depth] = footprint(placement);
-      for (let x = placement.origin[0]; x < placement.origin[0] + width; x++) {
-        for (let z = placement.origin[2]; z < placement.origin[2] + depth; z++) {
-          const block = placedBlockAt(placement, [x, placement.origin[1], z]);
+      for (let x = x0; x < x0 + width; x++) {
+        for (let z = z0; z < z0 + depth; z++) {
+          const block = placedBlockAt(placement, [x, y0, z]);
           expect(result.registry.blocks[block!]?.solid, `${placement.template.id} foundation is solid`).toBe(true);
-          expect(campSite.surface.height(x, z, layout.ground / scale.blockSize)).toBe(placement.origin[1]);
+          expect(campSite.surface.height(x, z, layout.ground / scale.blockSize)).toBe(y0);
         }
       }
     }
@@ -636,8 +637,10 @@ describe('authored fixed loot', () => {
     const door = gate.pieces.find((piece) => result.registry.furniture.get(piece.furniture)?.door);
     expect(door).toBeDefined();
     expect(door && result.registry.furniture.get(door.furniture)?.door).toBeDefined();
-    for (let y = door!.pos[1]; y < door!.pos[1] + door!.size[1]; y++) {
-      for (let x = door!.pos[0]; x < door!.pos[0] + door!.size[0]; x++) {
+    const [doorX, doorY] = door!.pos;
+    const [doorWidth, doorHeight] = door!.size;
+    for (let y = doorY; y < doorY + doorHeight; y++) {
+      for (let x = doorX; x < doorX + doorWidth; x++) {
         const block = gate.blocks[x + gate.size[0] * (1 + gate.size[2] * y)]!;
         expect(result.registry.blocks[block]?.solid).toBe(false);
       }
