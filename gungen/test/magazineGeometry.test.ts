@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { roundProfiles } from '../src/ammo/roundProfile.ts';
+import { resolve } from '../src/core/resolve.ts';
 import type { Solid } from '../src/core/schema.ts';
+import { gunDomain } from '../src/gun/domain.ts';
 import { magazineCenterline } from '../src/gun/magazineCenterline.ts';
 import { exportMagazineGlb } from '../src/gun/magazineExport.ts';
 import {
@@ -19,7 +21,6 @@ const cartridge = loadCartridgeFile('7.62x39.json') as MetallicCartridge;
 const natoCartridge = loadCartridgeFile('5.56x45.json') as MetallicCartridge;
 const NARROW_MAGAZINE_ERROR = /narrower than.*round diameter/;
 const NARROW_BODY_DEPTH_ERROR = /body section.*round length/;
-const STRAIGHT_STANAG_LENGTH_ERROR = /only at M length/;
 
 describe('generated magazine round columns', () => {
   it.each([
@@ -93,9 +94,26 @@ describe('generated magazine round columns', () => {
     expect(floorplate.profile[0]![1]).not.toBe(floorplate.profile[1]![1]);
   });
 
-  it.each(['S', 'L', '5-round', '10-round'])('rejects a straight STANAG magazine at %s length', (length) => {
-    expect(() => magazine.build({ length, profile: 'stanag-straight' })).toThrow(STRAIGHT_STANAG_LENGTH_ERROR);
-  });
+  it.each(['S', 'L', '5-round', '10-round'])(
+    'reports a structure issue for a straight STANAG at %s length',
+    (length) => {
+      const resolved = resolve(
+        {
+          name: 'invalid straight STANAG length',
+          root: 'magazine',
+          parts: { magazine: { family: 'magazine', params: { length, profile: 'stanag-straight' } } },
+          connections: [],
+        },
+        gunDomain,
+      );
+      expect(
+        resolved.issues.some(
+          ({ rule, message, parts }) =>
+            rule === 'structure' && parts.includes('magazine') && message.includes('only at M length'),
+        ),
+      ).toBe(true);
+    },
+  );
 
   it('fits each curated STANAG prefab to its nominal 5.56 column capacity', () => {
     const prefabs = GUN_PREFABS.filter(({ fixedParams }) => fixedParams.profile?.startsWith('stanag-'));

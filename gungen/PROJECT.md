@@ -350,11 +350,12 @@ Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`. 
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
-- The 20-round STANAG uses a straight lower body based on the Brownells listing;
-  the listing gives package dimensions, not a measured body, so they only bound
-  an approximate envelope. Side-view proportions estimate the floorplate slant
-  and transition into the shared upper section, which preserves feed and magwell
-  fit. The curved STANAG-30 length follows its traced 30-round reference. Other
+- The 20-round STANAG body uses the Brownells listing's outer box, snapped to
+  the model grid. The listing's delivery dimensions (127 × 66 × 25 mm) are
+  package dimensions that corroborate that box. Side-view proportions estimate
+  the floorplate slant and transition into the shared upper section, which
+  preserves feed and magwell fit. The curved STANAG-30 length follows its traced
+  30-round reference. Other
   STANAG capacities are deferred to #414. See `src/gun/parts.ts`,
   `STANAG20_BODY_BOX_U` and `magazineGeometryFor`. The AKM curved band is fitted
   to its golden photo (g41-4).
@@ -1272,11 +1273,11 @@ versioned design JSON downloads, opens those files again, and provides param and
 optional-part locks plus family-filtered prefab pickers. Editing a prefab-fixed
 param detaches its reference; loaded mismatches remain marked stale.
 
-The `stanag-20` prefab selects the straight profile at M length; the builder
-rejects other lengths until #414 covers the deferred STANAG capacities. The
-shared upper preserves feed and magwell fit, and `stanag-30` uses the curved
-profile. See
-`src/gun/prefabs.ts`, `GUN_PREFABS`, and `src/gun/parts.ts`, `magazineGeometryFor`.
+The `stanag-20` prefab selects the straight profile at M length. Resolving a
+non-M straight profile reports a structure issue that points to #414 for the
+deferred capacities. The shared upper preserves feed and magwell fit, and
+`stanag-30` uses the curved profile. See `src/gun/prefabs.ts`, `GUN_PREFABS`,
+`src/gun/parts.ts`, `magazine`, and `src/core/resolve.ts`, `resolveParams`.
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
   are the curated product.
