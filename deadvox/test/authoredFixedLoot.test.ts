@@ -14,7 +14,7 @@ import { rollLoot } from '../src/core/loot.ts';
 import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
 import { Rng } from '../src/core/random.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
-import type { SiteLayoutDef } from '../src/core/schema.ts';
+import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
 import { planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import {
@@ -84,26 +84,33 @@ const furnitureAt = ({ building, override }: OverridePlacement): string | undefi
   );
 };
 
+const hasInteriorPlankCourse = (rows: readonly string[], width: number): boolean =>
+  rows.slice(1, -1).some((row) => [...row.slice(1, width - 1)].includes('p'));
+
+const expectHqFloorCourseEdges = (template: Pick<TemplateDef, 'layers' | 'size'>): void => {
+  let courseCount = 0;
+  for (const [y, rows] of template.layers.entries()) {
+    if (!hasInteriorPlankCourse(rows, template.size[0]!)) {
+      continue;
+    }
+    courseCount += 1;
+    expect(rows[0], `HQ course ${y} front edge`).toBe('#'.repeat(template.size[0]));
+    expect(rows.at(-1), `HQ course ${y} back edge`).toBe('#'.repeat(template.size[0]));
+    for (const row of rows.slice(1, -1)) {
+      expect(row[0], `HQ course ${y} side edge`).toBe('#');
+      expect(row.at(-1), `HQ course ${y} side edge`).toBe('#');
+    }
+  }
+  expect(courseCount).toBeGreaterThan(0);
+};
+
 const expectHqMaterialsAndFloorEdges = (compiledHq: CompiledTemplate): void => {
   const hqBlockAt = (x: number, y: number, z: number): string | undefined => {
     const block = compiledHq.blocks[x + compiledHq.size[0] * (z + compiledHq.size[2] * y)]!;
     return result.registry.blocks[block]?.id;
   };
   expect(hqBlockAt(0, 1, 1)).toBe('camo_woodland');
-  for (const floor of [6, 12]) {
-    let interiorPlanks = 0;
-    for (let z = 0; z < compiledHq.size[2]; z++) {
-      for (let x = 0; x < compiledHq.size[0]; x++) {
-        const id = hqBlockAt(x, floor, z);
-        if (x === 0 || x === compiledHq.size[0] - 1 || z === 0 || z === compiledHq.size[2] - 1) {
-          expect(id, `HQ floor ${floor} perimeter at ${x},${z}`).not.toBe('planks');
-        } else if (id === 'planks') {
-          interiorPlanks += 1;
-        }
-      }
-    }
-    expect(interiorPlanks).toBeGreaterThan(0);
-  }
+  expectHqFloorCourseEdges(result.registry.templates.get('camp_hq')!);
 };
 
 const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
