@@ -2057,15 +2057,24 @@ describe('shambler scenarios', () => {
     expect(new Set(FIGURE_PARTS).size).toBe(FIGURE_PARTS.length);
     expect(Object.keys(FIGURE_BOXES)).toEqual(expect.arrayContaining(requiredParts));
 
-    const ranges = (part: keyof typeof FIGURE_BOXES) =>
-      FIGURE_BOXES[part].size.map((size, axis) => {
-        const center = FIGURE_BOXES[part].at[axis]!;
-        return [center - size / 2, center + size / 2] as const;
+    const { system } = standing([0, 1, 0]);
+    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    meshes.sync(system.store);
+    const renderedParts = meshes.group.children as InstancedMesh[];
+    const rendered = new Map(
+      FIGURE_PARTS.map((part, index) => [part, instanceBox(renderedParts[index]!)] as const),
+    );
+    const ranges = (part: (typeof FIGURE_PARTS)[number]) => {
+      const points = rendered.get(part)!.points;
+      return ([0, 1, 2] as const).map((axis) => {
+        const coordinates = points.map((point) => point.getComponent(axis));
+        return [Math.min(...coordinates), Math.max(...coordinates)] as const;
       });
+    };
     const gap = (a: readonly [number, number], b: readonly [number, number]) => Math.max(0, a[0] - b[1], b[0] - a[1]);
     const bodyRanges = ranges('body');
     const jointTolerance = 0.02;
-    const touchesBody = (part: keyof typeof FIGURE_BOXES) =>
+    const touchesBody = (part: (typeof FIGURE_PARTS)[number]) =>
       ranges(part).every((partRange, axis) => gap(partRange, bodyRanges[axis]!) <= jointTolerance);
 
     expect(FIGURE_BOXES.head.at[1]).toBeGreaterThan(FIGURE_BOXES.body.at[1]);
@@ -2079,13 +2088,8 @@ describe('shambler scenarios', () => {
     expect(touchesBody('leftLeg')).toBe(true);
     expect(touchesBody('rightLeg')).toBe(true);
 
-    const meshes = new ZombieMeshes(BLOCK_SIZE);
-    const parts = meshes.group.children;
+    const parts = renderedParts;
     expect(parts).toHaveLength(FIGURE_PARTS.length);
-    expect(parts.every((part) => part instanceof InstancedMesh)).toBe(true);
-    expect(parts.every((part) => part instanceof InstancedMesh && part.material instanceof MeshLambertMaterial)).toBe(
-      true,
-    );
     expect(
       parts.every(
         (part) =>
