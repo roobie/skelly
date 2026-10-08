@@ -31,7 +31,7 @@ const observation = {
       marker,
       `
   Object.assign(globalThis, { pumpHandlingTest: { engine, session, input, camera, audio, screen,
-    getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
+    getNotice: () => notice, getFramePacing: () => frameInterval.summary(), getGameFrozen: () => debugTools?.frozen } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {
     globalThis.pumpCurrentAudioEvent = source.event;
@@ -198,7 +198,6 @@ try {
       return;
     }
     const { action } = routeMovementInput(waypoint.axis, moveDirection > 0 ? 1 : -1, yaw);
-    const releaseSprint = await holdAction(page, 'movement.sprint');
     const releaseMove = await holdAction(page, action);
     try {
       const result = await page.evaluate(
@@ -214,8 +213,8 @@ try {
             return { complete: true, start, current: [...session.body.pos], goal, frames: 0, frameLimit: 0 };
           }
 
-          // This synchronous loop blocks the live RAF loop; as in waitForWork, these are the only
-          // frames advancing the session while the actual held input drives the player.
+          // The debug freeze keeps the live RAF from advancing simulation between these bounded
+          // frames; the actual held input drives the player inside this synchronous loop.
           const frameSeconds = 1 / 60;
           const distanceMetres = Math.abs(goal - startCoordinate) * engine.config.scale.blockSize;
           const expectedFrames = Math.ceil(distanceMetres / speedMetresPerSecond / frameSeconds);
@@ -242,7 +241,34 @@ try {
       assert.equal(result.complete, true, `player could not reach route leg ${waypoint.id}: ${JSON.stringify(result)}`);
     } finally {
       await releaseMove();
-      await releaseSprint();
+    }
+    const settled = await page.evaluate(() => {
+      const { session } = globalThis.pumpHandlingTest;
+      const frameSeconds = 1 / 60;
+      const maxSettleFrames = 120;
+      let frames = 0;
+      const horizontalSpeed = () => Math.hypot(session.body.vel[0], session.body.vel[2]);
+      while (horizontalSpeed() > 1e-9 && frames < maxSettleFrames) {
+        session.frame(frameSeconds);
+        frames += 1;
+      }
+      return {
+        position: [...session.body.pos],
+        velocity: [...session.body.vel],
+        frames,
+      };
+    });
+    assert.equal(
+      Math.hypot(settled.velocity[0], settled.velocity[2]),
+      0,
+      `player settles after route leg ${waypoint.id}: ${JSON.stringify(settled)}`,
+    );
+    return settled;
+  };
+  const setGameFrozen = async (frozen) => {
+    if ((await page.evaluate(() => globalThis.pumpHandlingTest.getGameFrozen())) !== frozen) {
+      await pressAction(page, 'debug.freeze-game');
+      await page.waitForFunction((expected) => globalThis.pumpHandlingTest.getGameFrozen() === expected, frozen);
     }
   };
   const routeInputs = await page.evaluate(() => {
@@ -265,27 +291,40 @@ try {
   });
   const { lockerUid: routeLockerUid } = routeInputs;
   assert.ok(lockerRoute.waypoints.length > 0);
-  for (const waypoint of lockerRoute.waypoints) {
-    await moveTo(waypoint);
-    if (waypoint.id === 'centre-in-gate') {
-      const gatePosition = await page.evaluate(
-        ({ centre, clearance }) => {
-          const [x] = globalThis.pumpHandlingTest.session.body.pos;
-          return { x, centre, clearance, inside: Math.abs(x - centre) <= clearance };
-        },
-        { centre: lockerRoute.gateCentreX, clearance: lockerRoute.gateClearance },
-      );
-      assert.ok(gatePosition.inside, `player does not fit inside garden gate opening: ${JSON.stringify(gatePosition)}`);
-    }
+  const wasWalking = await page.evaluate(() => globalThis.pumpHandlingTest.input.walking);
+  if (!wasWalking) {
+    await pressAction(page, 'movement.walk-toggle');
+    await page.waitForFunction(() => globalThis.pumpHandlingTest.input.walking);
   }
-  const rackApproach = await page.evaluate((wantedLockerUid) => {
-    const { session } = globalThis.pumpHandlingTest;
-    const rack = [...session.entities.all].find((entity) => entity.uid === wantedLockerUid);
-    return {
-      playerNearFace: session.body.pos[2] - session.body.halfWidth,
-      rackFront: rack.pos[2] + rack.size[2],
-    };
-  }, routeLockerUid);
+  await setGameFrozen(true);
+  let routeStop;
+  for (const waypoint of lockerRoute.waypoints) {
+    const settled = await moveTo(waypoint);
+    if (waypoint.id === 'centre-in-gate') {
+      const [x] = settled.position;
+      const gatePosition = {
+        x,
+        centre: lockerRoute.gateCentreX,
+        clearance: lockerRoute.gateClearance,
+        inside: Math.abs(x - lockerRoute.gateCentreX) <= lockerRoute.gateClearance,
+      };
+      assert.ok(
+        gatePosition.inside,
+        `settled player does not fit inside garden gate opening: ${JSON.stringify(gatePosition)}`,
+      );
+    }
+    routeStop = settled;
+  }
+  await setGameFrozen(false);
+  if (!wasWalking) {
+    await pressAction(page, 'movement.walk-toggle');
+    await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.walking);
+  }
+  assert.ok(routeStop, 'route settled at the rack-facing stop');
+  const rackApproach = {
+    playerNearFace: routeStop.position[2] - routeInputs.playerHalfWidth,
+    rackFront: routeInputs.rack.pos[2] + routeInputs.rack.size[2],
+  };
   assert.ok(
     rackApproach.playerNearFace > rackApproach.rackFront,
     `player stops outside the rack face: ${JSON.stringify(rackApproach)}`,

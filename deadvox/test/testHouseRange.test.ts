@@ -154,30 +154,37 @@ const movePlayerTo = (
   fixture: RangeWalkFixture,
   waypoint: RangeWalkFixture['waypoints'][number],
   yaw: number,
-): { reached: boolean; action?: string } => {
+): { reached: boolean; action?: string; settled: boolean } => {
   const { body, blockSize, scale, isSolid, physics } = fixture;
   const { axis, target } = waypoint;
   const direction = Math.sign(target - body.pos[axis]);
   if (!direction) {
-    return { reached: true };
+    return { reached: true, settled: Math.hypot(body.vel[0], body.vel[2]) <= 1e-9 };
   }
   const movement = routeMovementInput(axis, direction > 0 ? 1 : -1, yaw);
-  const maxFrames = Math.ceil(((Math.abs(target - body.pos[axis]) * blockSize) / PLAYER.sprint + 1) * 120);
+  const maxFrames = Math.ceil(((Math.abs(target - body.pos[axis]) * blockSize) / PLAYER.walk + 1) * 120);
   for (let frame = 0; frame < maxFrames && !crossedWaypoint(body.pos[axis], target, direction); frame++) {
     steer(body, scale, yaw, {
       forward: movement.forward,
       right: movement.right,
       jump: false,
-      sprint: true,
-      walk: false,
+      sprint: false,
+      walk: true,
     });
     stepBody(body, 1 / 60, isSolid, physics);
   }
-  steer(body, scale, yaw, { forward: 0, right: 0, jump: false, sprint: false, walk: false });
-  for (let frame = 0; frame < 4; frame++) {
+  const stopped = { forward: 0, right: 0, jump: false, sprint: false, walk: true };
+  let settleFrames = 0;
+  while (Math.hypot(body.vel[0], body.vel[2]) > 1e-9 && settleFrames < 120) {
+    steer(body, scale, yaw, stopped);
     stepBody(body, 1 / 60, isSolid, physics);
+    settleFrames += 1;
   }
-  return { reached: crossedWaypoint(body.pos[axis], target, direction), action: movement.action };
+  return {
+    reached: crossedWaypoint(body.pos[axis], target, direction),
+    action: movement.action,
+    settled: Math.hypot(body.vel[0], body.vel[2]) <= 1e-9,
+  };
 };
 
 describe('the debug test-house range', () => {
@@ -228,6 +235,7 @@ describe('the debug test-house range', () => {
           throw new Error(`route leg ${waypoint.id} did not emit a movement action`);
         }
         expect(knownActions.has(result.action), `route leg ${waypoint.id} uses a bound action`).toBe(true);
+        expect(result.settled, `route leg ${waypoint.id} settles at yaw ${yaw}`).toBe(true);
         expect(result.reached, `route leg ${waypoint.id} at yaw ${yaw}`).toBe(true);
         if (waypoint.id === 'centre-in-gate') {
           expect(Math.abs(fixture.body.pos[0] - fixture.gateCentreX)).toBeLessThanOrEqual(fixture.gateClearance);
