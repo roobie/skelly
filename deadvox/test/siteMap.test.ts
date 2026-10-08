@@ -1,5 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { marchingSquares } from '../src/render/siteMap.ts';
+import { yawFromBearing } from '../src/core/coords.ts';
+import { marchingSquares, siteMapWorldToRaster } from '../src/render/siteMap.ts';
+
+const forwardFromBearing = (bearing: number): [number, number] => {
+  const yaw = yawFromBearing(bearing);
+  return [-Math.sin(yaw), -Math.cos(yaw)];
+};
+
+describe('site map orientation', () => {
+  it('places compass north above and east right in raster coordinates', () => {
+    const grid = { originX: 0, originZ: 0, cellSize: 1 };
+    const origin = siteMapWorldToRaster(12, 18, grid);
+    const [northX, northZ] = forwardFromBearing(0);
+    const northPoint = siteMapWorldToRaster(12 + northX, 18 + northZ, grid);
+    const [eastX, eastZ] = forwardFromBearing(90);
+    const eastPoint = siteMapWorldToRaster(12 + eastX, 18 + eastZ, grid);
+
+    expect(northPoint.row).toBeLessThan(origin.row);
+    expect(eastPoint.column).toBeGreaterThan(origin.column);
+  });
+});
 
 describe('site map contours', () => {
   it('traces a closed ring around an interior cone', () => {

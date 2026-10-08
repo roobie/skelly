@@ -10,4 +10,4 @@ read_if:
 
 The page samples terrain and authored-site shaping through the same world-generation modules as play, and gets block colours from the content registry. See `src/siteMapPage.ts`, `generateMap`, and `src/render/siteMap.ts`, `marchingSquares`.
 
-The top-down render is a review tool, not player knowledge. The in-game map remains the paper map the player finds in #470; see `DESIGN.md`, “UI principles”.
+The top-down render is a review tool, not player knowledge. The in-game map is a paper map (#470); see `DESIGN.md`, “UI principles”.

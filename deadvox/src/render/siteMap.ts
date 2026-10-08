@@ -1,6 +1,32 @@
 export type SiteMapView = 'topographic' | 'satellite';
 export type ContourSegments = Float32Array;
 
+export interface SiteMapGrid {
+  originX: number;
+  originZ: number;
+  cellSize: number;
+}
+
+export interface SiteMapRasterPoint {
+  column: number;
+  row: number;
+}
+
+export interface SiteMapWorldPoint {
+  x: number;
+  z: number;
+}
+
+export const siteMapWorldToRaster = (x: number, z: number, grid: SiteMapGrid): SiteMapRasterPoint => ({
+  column: (x - grid.originX) / grid.cellSize,
+  row: (z - grid.originZ) / grid.cellSize,
+});
+
+export const siteMapRasterToWorld = (column: number, row: number, grid: SiteMapGrid): SiteMapWorldPoint => ({
+  x: grid.originX + column * grid.cellSize,
+  z: grid.originZ + row * grid.cellSize,
+});
+
 const PAIRS: readonly (readonly number[] | undefined)[] = [
   undefined,
   [0, 3],
@@ -114,9 +140,9 @@ export const hillshade = (
 ): Float32Array => {
   const shades = new Float32Array(width * height);
   const lightX = -Math.SQRT1_2 * 0.72;
-  const lightY = 0.69;
-  const lightZ = -Math.SQRT1_2 * 0.72;
-  const lightLength = Math.hypot(lightX, lightY, lightZ);
+  const lightScreenY = -Math.SQRT1_2 * 0.72;
+  const lightUp = 0.69;
+  const lightLength = Math.hypot(lightX, lightScreenY, lightUp);
   for (let y = 0; y < height; y += 1) {
     const above = Math.max(0, y - 1);
     const below = Math.min(height - 1, y + 1);
@@ -124,9 +150,9 @@ export const hillshade = (
       const left = Math.max(0, x - 1);
       const right = Math.min(width - 1, x + 1);
       const dx = (heights[right + y * width]! - heights[left + y * width]!) / (Math.max(1, right - left) * cellSize);
-      const dz = (heights[x + above * width]! - heights[x + below * width]!) / (Math.max(1, below - above) * cellSize);
-      const normalLength = Math.hypot(dx, dz, 1);
-      const dot = (-dx * lightX + lightY - dz * lightZ) / normalLength / lightLength;
+      const dy = (heights[x + below * width]! - heights[x + above * width]!) / (Math.max(1, below - above) * cellSize);
+      const normalLength = Math.hypot(dx, dy, 1);
+      const dot = (-dx * lightX - dy * lightScreenY + lightUp) / normalLength / lightLength;
       shades[x + y * width] = 0.62 + 0.42 * Math.max(0, dot);
     }
   }

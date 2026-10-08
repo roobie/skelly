@@ -14,7 +14,7 @@ import type { Scale } from '../core/scale.ts';
 import type { FurnitureSpawn, Rect, Site } from '../core/site.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
-import { type Surface, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
+import { type Surface, terrainBlockIds, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import { BUNDLED_CONTENT } from './bundledContent.ts';
 import type { DebugStart, GameConfig } from './config.ts';
@@ -228,7 +228,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     world,
     meshes,
     seed,
-    terrain: { grass: id('grass'), dirt: id('dirt'), stone: id('stone'), sand: id('sand') },
+    terrain: terrainBlockIds(id),
     colors: blockColors(registry),
     patterns: blockPatterns(registry),
     scale,

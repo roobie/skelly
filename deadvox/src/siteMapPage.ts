@@ -4,9 +4,16 @@ import type { Chunk } from './core/chunk.ts';
 import { blockColors, blockId } from './core/content.ts';
 import { CHUNK, toChunk, toLocal } from './core/coords.ts';
 import { BLOCK_SIZE, makeScale } from './core/scale.ts';
-import { generateColumn, worldGroundAt } from './core/worldgen.ts';
+import { generateColumn, terrainBlockIds, worldGroundAt } from './core/worldgen.ts';
 import { BUNDLED_CONTENT } from './game/bundledContent.ts';
-import { hillshade, marchingSquares, type SiteMapView, siteMapPixels } from './render/siteMap.ts';
+import {
+  hillshade,
+  marchingSquares,
+  type SiteMapView,
+  siteMapPixels,
+  siteMapRasterToWorld,
+  siteMapWorldToRaster,
+} from './render/siteMap.ts';
 
 const CELL_SIZE = BLOCK_SIZE;
 const OUTSIDE_MARGIN_METRES = 24;
@@ -23,16 +30,24 @@ const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
 const selectedView = (params.get('view') === 'satellite' ? 'satellite' : 'topographic') as SiteMapView;
 const scale = makeScale(BLOCK_SIZE);
 const site = new AuthoredSite(seed, registry, scale, layout);
-const bounds = {
+const requestedBounds = {
   minX: layout.bounds.x0 - OUTSIDE_MARGIN_METRES,
   maxX: layout.bounds.x1 + OUTSIDE_MARGIN_METRES,
   minZ: layout.bounds.z0 - OUTSIDE_MARGIN_METRES,
   maxZ: layout.bounds.z1 + OUTSIDE_MARGIN_METRES,
 };
-const minBlockX = Math.floor(bounds.minX / CELL_SIZE);
-const maxBlockX = Math.round(bounds.maxX / CELL_SIZE);
-const minBlockZ = Math.floor(bounds.minZ / CELL_SIZE);
-const maxBlockZ = Math.round(bounds.maxZ / CELL_SIZE);
+const minBlockX = Math.floor(requestedBounds.minX / CELL_SIZE);
+const maxBlockX = Math.round(requestedBounds.maxX / CELL_SIZE);
+const minBlockZ = Math.floor(requestedBounds.minZ / CELL_SIZE);
+const maxBlockZ = Math.round(requestedBounds.maxZ / CELL_SIZE);
+const bounds = {
+  minX: minBlockX * CELL_SIZE,
+  maxX: maxBlockX * CELL_SIZE,
+  minZ: minBlockZ * CELL_SIZE,
+  maxZ: maxBlockZ * CELL_SIZE,
+};
+const mapGrid = { originX: bounds.minX, originZ: bounds.minZ, cellSize: CELL_SIZE };
+const blockGrid = { originX: minBlockX, originZ: minBlockZ, cellSize: 1 };
 const width = maxBlockX - minBlockX;
 const height = maxBlockZ - minBlockZ;
 const heights = new Float32Array(width * height);
@@ -40,12 +55,7 @@ const blockIds = new Uint16Array(width * height);
 const terrain = {
   seed,
   scale,
-  blocks: {
-    grass: blockId(registry, 'grass'),
-    dirt: blockId(registry, 'dirt'),
-    stone: blockId(registry, 'stone'),
-    sand: blockId(registry, 'sand'),
-  },
+  blocks: terrainBlockIds((name) => blockId(registry, name)),
   surface: site.surface,
   stamp: (chunk: Chunk) => site.stamp(chunk),
 };
@@ -135,11 +145,9 @@ const sampleGround = async () => {
     height,
     24,
     (row) => {
-      const blockZ = maxBlockZ - 1 - row;
-      const zm = (blockZ + 0.5) * CELL_SIZE;
+      const { z: zm } = siteMapRasterToWorld(0, row + 0.5, mapGrid);
       for (let column = 0; column < width; column += 1) {
-        const blockX = minBlockX + column;
-        const xm = (blockX + 0.5) * CELL_SIZE;
+        const { x: xm } = siteMapRasterToWorld(column + 0.5, row + 0.5, mapGrid);
         heights[column + row * width] = worldGroundAt({ seed, scale, surface: site.surface, xm, zm });
       }
     },
@@ -170,10 +178,9 @@ const sampleTopBlocks = async (): Promise<{ columns: number; realSeconds: number
       const z0 = Math.max(minBlockZ, cz * CHUNK);
       const z1 = Math.min(maxBlockZ, (cz + 1) * CHUNK);
       for (let blockZ = z0; blockZ < z1; blockZ += 1) {
-        const row = maxBlockZ - 1 - blockZ;
         const localZ = toLocal(blockZ);
         for (let blockX = x0; blockX < x1; blockX += 1) {
-          const column = blockX - minBlockX;
+          const { column, row } = siteMapWorldToRaster(blockX, blockZ, blockGrid);
           blockIds[column + row * width] = topSolidBlock(chunks, toLocal(blockX), localZ);
         }
       }
@@ -273,10 +280,13 @@ const fitToBounds = () => {
   draw();
 };
 
-const screenPoint = (x: number, z: number): [number, number] => [
-  viewport!.x + (x - bounds.minX) * viewport!.scale,
-  viewport!.y + (bounds.maxZ - z) * viewport!.scale,
-];
+const screenPoint = (x: number, z: number): [number, number] => {
+  const rasterPoint = siteMapWorldToRaster(x, z, mapGrid);
+  return [
+    viewport!.x + rasterPoint.column * CELL_SIZE * viewport!.scale,
+    viewport!.y + rasterPoint.row * CELL_SIZE * viewport!.scale,
+  ];
+};
 
 interface VisibleBounds {
   minX: number;
@@ -290,8 +300,8 @@ const visibleBounds = (rect: DOMRect): VisibleBounds => {
   return {
     minX: Math.max(bounds.minX, bounds.minX - v.x / v.scale),
     maxX: Math.min(bounds.maxX, bounds.minX + (rect.width - v.x) / v.scale),
-    maxZ: Math.min(bounds.maxZ, bounds.maxZ + v.y / v.scale),
-    minZ: Math.max(bounds.minZ, bounds.maxZ - (rect.height - v.y) / v.scale),
+    minZ: Math.max(bounds.minZ, bounds.minZ - v.y / v.scale),
+    maxZ: Math.min(bounds.maxZ, bounds.minZ + (rect.height - v.y) / v.scale),
   };
 };
 
@@ -330,7 +340,7 @@ const drawHorizontalGrid = (ctx: CanvasRenderingContext2D, rect: DOMRect, area: 
     ctx.lineTo(screenPoint(area.maxX, z)[0], sy);
     ctx.stroke();
     if (major && sy >= 0 && sy <= rect.height) {
-      const text = `N ${z} m`;
+      const text = `N ${-z} m`;
       ctx.font = '10px system-ui, sans-serif';
       const textWidth = ctx.measureText(text).width;
       ctx.fillStyle = '#f4f1e7dc';
@@ -404,7 +414,7 @@ const drawBuildings = (ctx: CanvasRenderingContext2D) => {
       continue;
     }
     const rect = buildingBounds(building, template.size);
-    const [x, y] = screenPoint(rect.x0, rect.z1);
+    const [x, y] = screenPoint(rect.x0, rect.z0);
     const w = (rect.x1 - rect.x0) * mapScale;
     const h = (rect.z1 - rect.z0) * mapScale;
     ctx.fillStyle = '#e8dfc4d9';
@@ -434,7 +444,7 @@ const drawLayout = (ctx: CanvasRenderingContext2D) => {
   drawBuildings(ctx);
   ctx.strokeStyle = '#15201b';
   ctx.lineWidth = 1.5;
-  const [left, top] = screenPoint(layout.bounds.x0, layout.bounds.z1);
+  const [left, top] = screenPoint(layout.bounds.x0, layout.bounds.z0);
   ctx.strokeRect(
     left,
     top,
@@ -482,16 +492,14 @@ const draw = () => {
 const selectAt = (clientX: number, clientY: number) => {
   const rect = canvas.getBoundingClientRect();
   const worldX = bounds.minX + (clientX - rect.left - viewport!.x) / viewport!.scale;
-  const worldZ = bounds.maxZ - (clientY - rect.top - viewport!.y) / viewport!.scale;
-  if (worldX < bounds.minX || worldX >= bounds.maxX || worldZ <= bounds.minZ || worldZ > bounds.maxZ) {
+  const worldZ = bounds.minZ + (clientY - rect.top - viewport!.y) / viewport!.scale;
+  if (worldX < bounds.minX || worldX >= bounds.maxX || worldZ < bounds.minZ || worldZ >= bounds.maxZ) {
     return;
   }
-  const column = Math.min(width - 1, Math.floor((worldX - bounds.minX) / CELL_SIZE));
-  const row = Math.min(height - 1, Math.floor((bounds.maxZ - worldZ) / CELL_SIZE));
-  const blockX = minBlockX + column;
-  const blockZ = maxBlockZ - 1 - row;
-  const x = (blockX + 0.5) * CELL_SIZE;
-  const z = (blockZ + 0.5) * CELL_SIZE;
+  const rasterPoint = siteMapWorldToRaster(worldX, worldZ, mapGrid);
+  const column = Math.min(width - 1, Math.floor(rasterPoint.column));
+  const row = Math.min(height - 1, Math.floor(rasterPoint.row));
+  const { x, z } = siteMapRasterToWorld(column + 0.5, row + 0.5, mapGrid);
   const index = column + row * width;
   const y = heights[index]!;
   selected = { x, y, z };
@@ -563,15 +571,16 @@ canvas.addEventListener(
     const rect = canvas.getBoundingClientRect();
     const sx = event.clientX - rect.left;
     const sy = event.clientY - rect.top;
-    const anchorX = bounds.minX + (sx - viewport.x) / viewport.scale;
-    const anchorZ = bounds.maxZ - (sy - viewport.y) / viewport.scale;
+    const anchorRasterColumn = (sx - viewport.x) / (viewport.scale * CELL_SIZE);
+    const anchorRasterRow = (sy - viewport.y) / (viewport.scale * CELL_SIZE);
+    const anchor = siteMapRasterToWorld(anchorRasterColumn, anchorRasterRow, mapGrid);
     const nextScale = Math.max(
       viewport.fitScale * 0.25,
       Math.min(viewport.fitScale * 24, viewport.scale * Math.exp(-event.deltaY * 0.001)),
     );
     viewport.scale = nextScale;
-    viewport.x = sx - (anchorX - bounds.minX) * nextScale;
-    viewport.y = sy - (bounds.maxZ - anchorZ) * nextScale;
+    viewport.x = sx - (anchor.x - bounds.minX) * nextScale;
+    viewport.y = sy - (anchor.z - bounds.minZ) * nextScale;
     draw();
   },
   { passive: false },
