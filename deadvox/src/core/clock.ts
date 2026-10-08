@@ -4,12 +4,15 @@
 export const SECONDS_PER_HOUR = 3600;
 export const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
 
+import { DEFAULT_DAY_CYCLE, dayPhaseAt, type DayCycle } from './dayPhase.ts';
+
 /** Authored calendar-time boundaries for time-windowed spawn markers. */
+const defaultDay = dayPhaseAt(DEFAULT_DAY_CYCLE, 0);
 export const SPAWN_TIMES = {
   midnight: 0,
-  dawn: 6 * SECONDS_PER_HOUR,
+  dawn: defaultDay.dawn,
   noon: 12 * SECONDS_PER_HOUR,
-  dusk: 18 * SECONDS_PER_HOUR,
+  dusk: defaultDay.sunset,
 } as const;
 
 import { type GameTimeOfDay, simTimestamp, simToGameTimestamp } from './time.ts';
@@ -87,8 +90,15 @@ export const parseTimeOfDay = (text: string): number | undefined => {
 };
 
 /** Named or numeric game-clock time used by authored spawn windows. */
-export const parseSpawnTime = (text: string): number | undefined =>
-  Object.hasOwn(SPAWN_TIMES, text) ? SPAWN_TIMES[text as keyof typeof SPAWN_TIMES] : parseTimeOfDay(text);
+export const parseSpawnTime = (text: string, cycle: DayCycle = DEFAULT_DAY_CYCLE): number | undefined => {
+  if (text === 'dawn') {
+    return dayPhaseAt(cycle, 0).dawn;
+  }
+  if (text === 'dusk') {
+    return dayPhaseAt(cycle, 0).sunset;
+  }
+  return Object.hasOwn(SPAWN_TIMES, text) ? SPAWN_TIMES[text as keyof typeof SPAWN_TIMES] : parseTimeOfDay(text);
+};
 
 /** Time-of-day windows recur daily; an open-ended window stays eligible after its first start. */
 export const spawnWindowOpen = (calendar: number, timeWindow: SpawnTimeWindow): boolean => {

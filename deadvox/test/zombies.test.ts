@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { dayCycleFor, dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -52,6 +53,8 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
+const DAY_CYCLE = dayCycleFor(registry.dayCycle);
+const dayStateAtHour = (hour: number) => dayPhaseAt(DAY_CYCLE, hour * 3600);
 const SHAMBLER = registry.zombies.get('shambler')!;
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
@@ -85,7 +88,7 @@ const senses = (
   player: playerFn,
   isSolid,
   isOpaque: isSolid,
-  hour: hourFn,
+  dayPhase: () => dayStateAtHour(hourFn()),
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
   jumpSpeed: PLAYER.jump,
@@ -96,7 +99,7 @@ const sensesWithLocalSun = (
   playerFn: () => PlayerSense,
   hour: number,
   isSunExposedAt: (position: Vec3, hour: number) => boolean,
-) => ({ ...senses(playerFn, FLOOR, () => hour), isSunExposedAt });
+) => ({ ...senses(playerFn, FLOOR, () => hour), isSunExposedAt: (position: Vec3) => isSunExposedAt(position, hour) });
 const run = (system: ZombieSystem, seconds: number, onStep?: () => void) => {
   const frames = Math.ceil(seconds * 60);
   for (let frame = 0; frame < frames; frame++) {

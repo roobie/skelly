@@ -2,6 +2,7 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
+import { dayCycleFor } from '../core/dayPhase.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -82,6 +83,7 @@ export const createPlayView = (
   page: Pick<EventTarget, 'addEventListener'> = globalThis,
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
+  const dayCycle = dayCycleFor(registry.dayCycle);
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
@@ -171,7 +173,7 @@ export const createPlayView = (
     }: PlayWorldFrame) => {
       itemThrows.update(dt);
       const hour = hourOfDay(calendar);
-      const sky = skyInWeather(skyAt(hour), weather);
+      const sky = skyInWeather(skyAt(hour, dayCycle), weather);
       applySky(engine.sky, sky);
       engine.mood?.setSky(sky);
       piles.sync(inventory);
@@ -192,7 +194,7 @@ export const createPlayView = (
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (hour: number, sky: ReturnType<typeof skyInWeather>) => {
-      engine.shadows?.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
+      engine.shadows?.update(sunShadowStrength(sunDirection(hour, dayCycle)[1], sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
       const { dt, body, paused, noclip, yaw, pitch, stridePhase, eye, spectator, sightImpaired } = frame;

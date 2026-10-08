@@ -11,6 +11,7 @@ import type { Inventory, Location, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
+import { DEFAULT_DAY_CYCLE, type DayCycle } from './dayPhase.ts';
 import { sunDirection } from './sky.ts';
 import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
@@ -92,8 +93,9 @@ export const sunExposedAt = (
   hour: number,
   skyTop: number,
   isOpaque: SolidAt,
+  cycle: DayCycle = DEFAULT_DAY_CYCLE,
 ): boolean => {
-  if (sunDirection(hour)[1] <= 0) {
+  if (sunDirection(hour, cycle)[1] <= 0) {
     return false;
   }
   const distance = skyTop - position[1];

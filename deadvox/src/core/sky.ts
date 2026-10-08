@@ -4,11 +4,13 @@
 // with it.
 
 import type { Vec3 } from './coords.ts';
+import { DEFAULT_DAY_CYCLE, dayPhaseAt, type DayCycle, type DayPhase, type DayPhaseState } from './dayPhase.ts';
 
 /** sRGB in [0, 1], as in CSS hex colours. */
 export type Rgb = readonly [number, number, number];
 
 export interface Sky {
+  dayPhase: DayPhase;
   /** Background colour; the fog fades to it. */
   sky: Rgb;
   /** Unit vector towards the main light: the sun by day, the moon by night. */
@@ -39,7 +41,7 @@ export interface Sky {
   tone: number;
 }
 
-type Look = Omit<Sky, 'light'>;
+type Look = Omit<Sky, 'light' | 'dayPhase'>;
 
 const hex = (n: number): Rgb => [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 
@@ -120,80 +122,91 @@ const DUSK: Look = {
   tone: 0.85,
 };
 
-// The `tone` weights come from looking at the game (bright day: Neutral; dawn and dusk: ACES or AgX; night with
-// the flashlight: ACES). Full day is 0 and night 1; the low-sun keyframes sit at 0.85, mostly ACES, not quite.
-// The ramps are the keyframe interpolation: 05:00 night (1) falls to 0.85 at 06:30 and to 0 at 08:30, so the
-// blend moves steadily through sunrise with no step; dusk mirrors it, 0 at 17:30 up to 0.85 at 19:30 and 1 at 21:00.
-
-/** Keyframes by hour; the look is interpolated between them and wraps at midnight. */
-const KEYS: readonly (readonly [number, Look])[] = [
-  [3.5, DEEP_NIGHT],
-  [5, NIGHT],
-  [6.5, DAWN],
-  [8.5, DAY],
-  [17.5, DAY],
-  [19.5, DUSK],
-  [21, NIGHT],
-  [23, DEEP_NIGHT],
+// Look keys belong to solar phases. Their positions move with latitude and date;
+// the DAWN key is at sunrise and the DUSK key is at sunset.
+type LookKey = { phase: DayPhase; at: number; look: Look };
+const KEYS: readonly LookKey[] = [
+  { phase: 'night', at: 0.08, look: NIGHT },
+  { phase: 'night', at: 0.3, look: DEEP_NIGHT },
+  { phase: 'night', at: 0.7, look: DEEP_NIGHT },
+  { phase: 'night', at: 0.9, look: NIGHT },
+  { phase: 'dawn', at: 0, look: NIGHT },
+  { phase: 'dawn', at: 1, look: DAWN },
+  { phase: 'day', at: 0.12, look: DAY },
+  { phase: 'day', at: 0.85, look: DAY },
+  { phase: 'day', at: 0.95, look: DUSK },
+  { phase: 'dusk', at: 0, look: DUSK },
+  { phase: 'dusk', at: 0.72, look: NIGHT },
 ];
 
+const DAY_SECONDS = 24 * 60 * 60;
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
 const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t)];
+const wrap = (value: number): number => ((value % DAY_SECONDS) + DAY_SECONDS) % DAY_SECONDS;
 
-const lookAt = (hour: number): Look => {
-  const n = KEYS.length;
-  for (let i = 0; i < n; i++) {
-    const [h0, a] = KEYS[i]!;
-    const [h1raw, b] = KEYS[(i + 1) % n]!;
-    const h1 = h1raw > h0 ? h1raw : h1raw + 24;
-    const h = hour >= h0 ? hour : hour + 24;
-    if (h >= h0 && h < h1) {
-      const t = (h - h0) / (h1 - h0);
-      return {
-        sky: mixRgb(a.sky, b.sky, t),
-        lightColor: mixRgb(a.lightColor, b.lightColor, t),
-        lightIntensity: mix(a.lightIntensity, b.lightIntensity, t),
-        ambientSky: mixRgb(a.ambientSky, b.ambientSky, t),
-        ambientGround: mixRgb(a.ambientGround, b.ambientGround, t),
-        ambientIntensity: mix(a.ambientIntensity, b.ambientIntensity, t),
-        fogNear: mix(a.fogNear, b.fogNear, t),
-        fogFar: mix(a.fogFar, b.fogFar, t),
-        heightFog: mix(a.heightFog, b.heightFog, t),
-        heightFogColor: mixRgb(a.heightFogColor, b.heightFogColor, t),
-        bloom: mix(a.bloom, b.bloom, t),
-        tone: mix(a.tone, b.tone, t),
-      };
+const phaseRange = (state: DayPhaseState, phase: DayPhase): readonly [number, number] => {
+  switch (phase) {
+    case 'night':
+      return [state.nightfall, state.dawn];
+    case 'dawn':
+      return [state.dawn, state.sunrise];
+    case 'day':
+      return [state.sunrise, state.sunset];
+    case 'dusk':
+      return [state.sunset, state.nightfall];
+  }
+};
+
+const interpolate = (a: Look, b: Look, t: number): Look => ({
+  sky: mixRgb(a.sky, b.sky, t),
+  lightColor: mixRgb(a.lightColor, b.lightColor, t),
+  lightIntensity: mix(a.lightIntensity, b.lightIntensity, t),
+  ambientSky: mixRgb(a.ambientSky, b.ambientSky, t),
+  ambientGround: mixRgb(a.ambientGround, b.ambientGround, t),
+  ambientIntensity: mix(a.ambientIntensity, b.ambientIntensity, t),
+  fogNear: mix(a.fogNear, b.fogNear, t),
+  fogFar: mix(a.fogFar, b.fogFar, t),
+  heightFog: mix(a.heightFog, b.heightFog, t),
+  heightFogColor: mixRgb(a.heightFogColor, b.heightFogColor, t),
+  bloom: mix(a.bloom, b.bloom, t),
+  tone: mix(a.tone, b.tone, t),
+});
+
+const lookAt = (state: DayPhaseState, time: number): Look => {
+  const keys = KEYS.map((key) => {
+    const [start, end] = phaseRange(state, key.phase);
+    const duration = wrap(end - start);
+    return { time: wrap(start + duration * key.at), look: key.look };
+  }).sort((a, b) => a.time - b.time);
+  const now = wrap(time);
+  for (let i = 0; i < keys.length; i++) {
+    const a = keys[i]!;
+    const b = keys[(i + 1) % keys.length]!;
+    const end = b.time > a.time ? b.time : b.time + DAY_SECONDS;
+    const current = now >= a.time ? now : now + DAY_SECONDS;
+    if (current >= a.time && current < end) {
+      return interpolate(a.look, b.look, (current - a.time) / (end - a.time));
     }
   }
   return NIGHT;
 };
 
-/** How far the sun's path tilts towards the south (−z), so noon light isn't straight down. */
-const TILT = 0.35;
-
-/**
- * Unit vector towards the sun. It rises in the east (+x) at 06:00, is highest at
- * 12:00 and sets in the west at 18:00; at night it's below the horizon.
- */
-export const sunDirection = (hour: number): Vec3 => {
-  const angle = ((hour - 6) / 12) * Math.PI;
-  const x = Math.cos(angle);
-  const y = Math.sin(angle);
-  const len = Math.hypot(x, y, TILT);
-  return [x / len, y / len, -TILT / len];
-};
+/** Sun direction from the single latitude/date model, with east/up/north axes. */
+export const sunDirection = (hour: number, cycle: DayCycle = DEFAULT_DAY_CYCLE): Vec3 =>
+  dayPhaseAt(cycle, hour * 3600).sunDirection;
 
 /** Lowest elevation of the main light, so it never grazes the ground at sunrise and sunset. */
 const MIN_LIGHT_Y = 0.2;
 
-/** The sky, light and fog at an hour of the day in [0, 24). */
-export const skyAt = (hour: number): Sky => {
-  const sun = sunDirection(hour);
-  // By night the moon lights the scene from the opposite side of the sky.
-  const dir: Vec3 = sun[1] >= 0 ? sun : [-sun[0], -sun[1], sun[2]];
-  const y = Math.max(dir[1], MIN_LIGHT_Y);
-  const len = Math.hypot(dir[0], y, dir[2]);
-  return { ...lookAt(hour), light: [dir[0] / len, y / len, dir[2] / len] };
+/** The sky, light and fog at a local solar hour in [0, 24). */
+export const skyAt = (hour: number, cycle: DayCycle = DEFAULT_DAY_CYCLE): Sky => {
+  const time = hour * 3600;
+  const state = dayPhaseAt(cycle, time);
+  // The light follows the sun's continuous arc; the night palette supplies the moon-like light.
+  const [x, , z] = state.sunDirection;
+  const y = Math.max(state.sunDirection[1], MIN_LIGHT_Y);
+  const len = Math.hypot(x, y, z);
+  return { ...lookAt(state, time), dayPhase: state.phase, light: [x / len, y / len, z / len] };
 };
 
 /** Sun elevation (the sine of its angle above the horizon) at which its shadows are at full strength: the lighting clamp's `MIN_LIGHT_Y`, where the light is the sun's real direction. */
