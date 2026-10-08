@@ -552,6 +552,25 @@ describe('base pack shotshells', () => {
   });
 });
 
+it('loads both exported STANAG magazine GLBs with the same body width', async () => {
+  const sizes = await Promise.all(
+    ['magazine_stanag_20', 'magazine_stanag_30'].map(async (id) => {
+      const definition = registry.models.get(id);
+      expect(definition).toBeDefined();
+      const { scene } = await parseGlb(readFileSync(`${BASE}/${definition!.file}`));
+      scene.updateMatrixWorld(true);
+      const size = new Box3().setFromObject(scene).getSize(new Vector3());
+      expect(size.x).toBeGreaterThan(0);
+      expect(size.y).toBeGreaterThan(0);
+      expect(size.z).toBeGreaterThan(0);
+      expect(size.z).toBeLessThan(size.x);
+      expect(size.z).toBeLessThan(size.y);
+      return size;
+    }),
+  );
+  expect(sizes[0]!.z).toBeCloseTo(sizes[1]!.z, 7);
+});
+
 describe('base pack guns', () => {
   const firearms = registry;
   const { models } = firearms;

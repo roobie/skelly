@@ -32,11 +32,14 @@ import { loadFixture } from './helpers.ts';
 const isPresent = (entry: { present: boolean }): entry is PanelPart => entry.present;
 
 describe('initial viewer overrides', () => {
-  it('restores saved overrides only when opening without a model URL', () => {
+  it('restores saved overrides for a bare viewer URL', () => {
+    const saved = { params: { barrel: { length: 'L' } }, presence: { handguard: false } };
+    expect(initialOverrides(saved, undefined, false)).toBe(saved);
+  });
+
+  it('starts model URLs empty unless they specify `set=` overrides', () => {
     const saved = { params: { barrel: { length: 'L' } }, presence: { handguard: false } };
     const fromUrl = { params: { barrel: { length: 'M' } }, presence: {} };
-
-    expect(initialOverrides(saved, undefined, false)).toBe(saved);
     expect(initialOverrides(saved, undefined, true)).toBe(EMPTY_OVERRIDES);
     expect(initialOverrides(saved, fromUrl, true)).toBe(fromUrl);
     expect(initialOverrides(saved, EMPTY_OVERRIDES, true)).toBe(EMPTY_OVERRIDES);
