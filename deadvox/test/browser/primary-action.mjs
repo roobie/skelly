@@ -535,10 +535,19 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.clearHand(r.off);
       const mainItem = r.inventory.create('glowstick');
       const offItem = r.inventory.create('glowstick');
-      const backpack = r.inventory.create('hiking_backpack');
-      if (!r.inventory.add(backpack, { kind: 'worn' })) {
-        throw new Error('Could not wear replay fixture backpack');
+      const hasFreeWornPocket = () =>
+        Object.values(r.inventory.worn).some((owner) =>
+          owner?.pockets?.some((_, pocket) => r.inventory.plan(offItem, { kind: 'pocket', owner, pocket }).ok),
+        );
+      if (!hasFreeWornPocket()) {
+        for (const type of ['fanny_pack', 'hiking_backpack', 'school_backpack', 'utility_vest', 'hoodie', 'jacket']) {
+          const slot = r.inventory.registry.items.get(type)?.wearable?.slot;
+          if (!slot || r.inventory.worn[slot]) continue;
+          const container = r.inventory.create(type);
+          if (r.inventory.add(container, { kind: 'worn' }) && hasFreeWornPocket()) break;
+        }
       }
+      if (!hasFreeWornPocket()) throw new Error('Could not provide a worn pocket for the replay fixture');
       r.setHand(r.dominant, mainItem);
       r.setHand(r.off, offItem);
       const minimumHoldSimSeconds = r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds;
