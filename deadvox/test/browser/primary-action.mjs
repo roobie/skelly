@@ -1001,12 +1001,19 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     );
     const viewerBlurInput = await page.evaluate(() => {
       const { input } = globalThis.primaryActionTest;
-      const read = () => ({ readyHeld: input.rightMouseHeld, aimingDownSights: input.aimingDownSights });
+      const read = () => ({
+        readyHeld: input.rightMouseHeld,
+        aimingDownSights: input.aimingDownSights,
+      });
       const before = read();
       globalThis.dispatchEvent(new FocusEvent('blur'));
       return { before, after: read() };
     });
-    assert.equal(viewerBlurInput.after.readyHeld, viewerBlurInput.before.readyHeld, 'viewer blur preserves replay readiness');
+    assert.equal(
+      viewerBlurInput.after.readyHeld,
+      viewerBlurInput.before.readyHeld,
+      'viewer blur preserves replay readiness',
+    );
     assert.equal(
       viewerBlurInput.after.aimingDownSights,
       viewerBlurInput.before.aimingDownSights,

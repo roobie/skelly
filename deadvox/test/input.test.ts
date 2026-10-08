@@ -93,8 +93,9 @@ describe('pointer input', () => {
         dominantUsePressed: input.intent().useDominant,
         dominantUseDown: input.dominantUseHeld,
       });
+      type MouseState = ReturnType<typeof read>;
       const initial = read();
-      const transitions = [];
+      const transitions: MouseState[] = [];
       for (const button of [0, 1, 2]) {
         targetListeners.get('mousedown')!({ button } as MouseEvent);
         transitions.push(read());
