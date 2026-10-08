@@ -336,20 +336,30 @@ body.unconscious::after {
 /* ---- inventory screen ---- */
 #inventory {
   position: fixed;
+  z-index: 20;
   inset: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 18px;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgb(16 18 22 / 94%);
+  background: rgb(16 18 22 / 96%);
   user-select: none;
 }
 .inv-head {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  min-width: 0;
+}
+.inv-title {
+  display: flex;
   align-items: baseline;
-  gap: 16px;
+  gap: 12px;
 }
 .inv-head h2 {
   margin: 0;
@@ -362,19 +372,59 @@ body.unconscious::after {
 }
 .inv-help {
   margin-left: auto;
+  max-width: 100%;
   color: var(--muted);
   font-size: 12px;
 }
+.inv-help summary {
+  cursor: pointer;
+}
+.inv-help span {
+  display: block;
+  max-width: min(72ch, calc(100vw - 64px));
+  padding-top: 6px;
+}
+.inv-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.inv-tab {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #22262c;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.inv-tab[aria-selected="true"] {
+  border-color: var(--accent);
+  color: var(--text);
+}
 .inv-body {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   display: grid;
-  /* Packing changes must not put item click points beyond the pane's clipped hit-test area. */
-  grid-template-columns: minmax(140px, 0.7fr) minmax(0, 1.2fr) minmax(min-content, 1fr) minmax(180px, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  overflow: auto;
+}
+.inv-body[hidden] {
+  display: none;
+}
+.inv-body[data-tab-panel="items"] .inv-details {
+  grid-column: 1 / -1;
+}
+.inv-skills {
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 .inv-pane,
 .inv-details {
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   display: flex;
@@ -468,6 +518,11 @@ body.unconscious::after {
     11px ui-monospace,
     monospace;
   color: var(--muted);
+}
+.inv-grid-scroll {
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .inv-grid {
   position: relative;
@@ -788,6 +843,36 @@ button.inv-option.game-cursor-hover {
   font-size: 12px;
   color: var(--accent);
 }
+.inv-skill-list {
+  gap: 8px;
+}
+.inv-skill {
+  padding: 8px 0;
+  border-top: 1px solid #2a3038;
+}
+.inv-skill-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.inv-skill-heading span,
+.inv-skill-practice {
+  color: var(--muted);
+  font-size: 12px;
+}
+.inv-skill-progress {
+  height: 5px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #262a30;
+}
+.inv-skill-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
 /* The inventory screen covers the play HUD. */
 body.inventory-open #hud,
 body.inventory-open #quickbar,
@@ -1048,19 +1133,25 @@ body.bench #quickbar {
     monospace;
 }
 
-/* ---- rough crafting panel, beside inventory (2.4) ---- */
-body.inventory-open #inventory {
-  right: 372px;
+/* ---- crafting tab ---- */
+body.inventory-open:not(.inventory-tab-crafting) #crafting,
+#crafting[hidden] {
+  display: none;
 }
-body.inventory-open #inventory-stats {
-  right: 388px;
+body.inventory-open.inventory-tab-crafting #crafting {
+  position: fixed;
+  z-index: 21;
+  top: 126px;
+  right: 40px;
+  bottom: 106px;
+  left: 40px;
+  width: auto;
+  min-width: 0;
+  padding: 14px;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 #crafting {
-  position: fixed;
-  top: 24px;
-  bottom: 24px;
-  right: 24px;
-  width: 336px;
   padding: 16px;
   overflow-y: auto;
   border: 1px solid var(--line);

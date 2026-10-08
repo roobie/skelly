@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { mkdir } from 'node:fs/promises';
 import { createServer } from 'vite';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { launchChromium } from './chromium.mjs';
@@ -25,7 +26,7 @@ const observation = {
     return code.replace(
       marker,
       `
-  Object.assign(globalThis, { pumpHandlingTest: { session, input, camera, audio, screen,
+  Object.assign(globalThis, { pumpHandlingTest: { engine, session, input, camera, audio, screen,
     getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {
@@ -183,6 +184,133 @@ try {
     }, uid);
     assert.ok(rows.includes(String(uid)), `selected ${uid} from visible inventory rows: ${rows.join(',')}`);
   };
+  const moveTo = async (action, axis, target) => {
+    const start = await page.evaluate((coordinate) => globalThis.pumpHandlingTest.session.body.pos[coordinate], axis);
+    const direction = Math.sign(target - start);
+    if (!direction) return;
+    const releaseSprint = await holdAction(page, 'movement.sprint');
+    const releaseMove = await holdAction(page, action);
+    try {
+      await page.waitForFunction(
+        ({ coordinate, goal, sign }) => {
+          const position = globalThis.pumpHandlingTest.session.body.pos[coordinate];
+          return sign > 0 ? position >= goal : position <= goal;
+        },
+        { coordinate: axis, goal: target, sign: direction },
+        { timeout: 20000 },
+      );
+    } finally {
+      await releaseMove();
+      await releaseSprint();
+    }
+  };
+  const lockerRoute = await page.evaluate(async () => {
+    const { HOUSE_OFFSET, GARDEN_GATE } = await import('/src/game/testHouse.ts');
+    const { engine, session } = globalThis.pumpHandlingTest;
+    const blockSize = engine.config.scale.blockSize;
+    const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
+    if (!rack) throw new Error('Test-house weapon locker is missing');
+    return {
+      corridorZ: (HOUSE_OFFSET[1] + GARDEN_GATE.approachZ) / blockSize,
+      gateX: (HOUSE_OFFSET[0] + GARDEN_GATE.centreX) / blockSize,
+      beyondGateZ: (HOUSE_OFFSET[1] + GARDEN_GATE.exitZ) / blockSize,
+      enterX: rack.pos[0] - 1,
+      rackZ: rack.pos[2] + rack.size[2] / 2,
+    };
+  });
+  await moveTo('movement.right', 2, lockerRoute.corridorZ);
+  await moveTo('movement.forward', 0, lockerRoute.gateX);
+  await moveTo('movement.right', 2, lockerRoute.beyondGateZ);
+  await moveTo('movement.forward', 0, lockerRoute.enterX);
+  await moveTo('movement.left', 2, lockerRoute.rackZ);
+  await page.setViewportSize({ width: 960, height: 540 });
+  await pressAction(page, 'ui.inventory-toggle');
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.screen.isOpen);
+  await page.evaluate(() => globalThis.pumpHandlingTest.screen.onAction('inventory.search'));
+  await page.waitForFunction(() => {
+    const rack = [...globalThis.pumpHandlingTest.session.entities.all].find((entity) => entity.type === 'range_rack');
+    return rack?.searched === true;
+  });
+  await page.evaluate(() => globalThis.pumpHandlingTest.screen.update());
+  const screenshotDirectory = process.env.D161_SCREENSHOTS ?? resolve(projectRoot, 'test-results/d161-1');
+  await mkdir(screenshotDirectory, { recursive: true });
+  const legacyLayout = await page.addStyleTag({
+    content: `
+      body.inventory-open #inventory { right: 372px !important; }
+      body.inventory-open #crafting { display: block !important; position: fixed !important; inset: 24px 24px 24px auto !important; width: 336px !important; }
+      #inventory .inv-body[data-tab-panel="items"] { grid-template-columns: minmax(140px, .7fr) minmax(0, 1.2fr) minmax(min-content, 1fr) minmax(180px, 1fr) !important; overflow: visible !important; }
+      #inventory .inv-body[data-tab-panel="items"]::before { content: ""; display: block; }
+      #inventory .inv-grid-scroll { overflow: visible !important; }
+    `,
+  });
+  const legacyGeometry = await page.evaluate(() => ({
+    you: document.querySelector('#inventory [data-pane="you"]').getBoundingClientRect().toJSON(),
+    around: document.querySelector('#inventory [data-pane="around"]').getBoundingClientRect().toJSON(),
+  }));
+  await page.screenshot({ path: resolve(screenshotDirectory, 'locker-before-fix.png') });
+  assert.ok(
+    legacyGeometry.you.width < 100 || legacyGeometry.around.right > 960,
+    `legacy narrow-panel layout loses the character pane or clips the locker: ${JSON.stringify(legacyGeometry)}`,
+  );
+  await legacyLayout.evaluate((style) => style.remove());
+  const lockerGeometry = await page.evaluate(() => {
+    const box = (node) => {
+      const { left, right, top, bottom } = node.getBoundingClientRect();
+      return { left, right, top, bottom };
+    };
+    const you = document.querySelector('#inventory [data-pane="you"]');
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    const locker = [...document.querySelectorAll('#inventory .inv-pile')].find((node) => node.textContent.includes('Gun rack'));
+    const scroll = locker?.querySelector('.inv-grid-scroll');
+    if (!(you && around && locker && scroll)) throw new Error('Open weapon locker did not render in the vicinity pane');
+    return {
+      viewport: { width: innerWidth, height: innerHeight },
+      you: box(you),
+      around: box(around),
+      locker: box(scroll),
+      lockerScroll: { clientWidth: scroll.clientWidth, scrollWidth: scroll.scrollWidth },
+    };
+  });
+  assert.equal(lockerGeometry.viewport.width, 960);
+  assert.ok(lockerGeometry.you.right - lockerGeometry.you.left >= 100, `character inventory remains usable: ${JSON.stringify(lockerGeometry)}`);
+  for (const [name, rect] of Object.entries({ you: lockerGeometry.you, around: lockerGeometry.around, locker: lockerGeometry.locker })) {
+    assert.ok(rect.left >= 0 && rect.right <= 960, `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`);
+    assert.ok(rect.top >= 0 && rect.bottom <= 540, `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`);
+  }
+  assert.ok(lockerGeometry.lockerScroll.scrollWidth > lockerGeometry.lockerScroll.clientWidth, 'the locker grid scrolls inside its region');
+  const tabChecks = [];
+  for (const tab of ['items', 'skills', 'crafting', 'items']) {
+    await page.locator(`#inventory .inv-tab[data-tab="${tab}"]`).click();
+    tabChecks.push(await page.evaluate((selected) => ({
+      active: globalThis.pumpHandlingTest.screen.activeTab,
+      selectedPanelVisible: selected === 'crafting'
+        ? getComputedStyle(document.querySelector('#crafting')).display !== 'none'
+        : !document.querySelector(`#inventory [data-tab-panel="${selected}"]`).hidden,
+      viewportWidth: document.documentElement.scrollWidth,
+      panelWidth: document.querySelector('#inventory').scrollWidth,
+      content: (() => {
+        const node = selected === 'crafting'
+          ? document.querySelector('#crafting')
+          : document.querySelector(`#inventory [data-tab-panel="${selected}"]`);
+        return { width: node.scrollWidth, clientWidth: node.clientWidth, overflowX: getComputedStyle(node).overflowX };
+      })(),
+    }), tab));
+  }
+  assert.ok(tabChecks.every(({ active, selectedPanelVisible }) => active && selectedPanelVisible), `tab buttons show their panel: ${JSON.stringify(tabChecks)}`);
+  for (const result of tabChecks) {
+    assert.ok(result.viewportWidth <= 960 && result.panelWidth <= 960, `tab fits the viewport: ${JSON.stringify(result)}`);
+    assert.ok(result.content.width <= result.content.clientWidth, `tab content does not overflow horizontally: ${JSON.stringify(result)}`);
+    assert.ok(['auto', 'scroll'].includes(result.content.overflowX), `tab content owns its overflow: ${JSON.stringify(result)}`);
+  }
+  await page.locator('#inventory .inv-tab[data-tab="crafting"]').click();
+  await page.screenshot({ path: resolve(screenshotDirectory, 'crafting.png') });
+  await page.locator('#inventory .inv-tab[data-tab="items"]').click();
+  await page.screenshot({ path: resolve(screenshotDirectory, 'locker-items.png') });
+  await page.locator('#inventory .inv-tab[data-tab="skills"]').click();
+  await page.screenshot({ path: resolve(screenshotDirectory, 'skills.png') });
+  await pressAction(page, 'ui.inventory-toggle');
+  await page.waitForFunction(() => !globalThis.pumpHandlingTest.screen.isOpen);
+  await page.setViewportSize({ width: 1280, height: 900 });
   const handlingWaits = [];
   const waitForWork = async (wantedCondition, wantedUid, extraSeconds = 0) => {
     const result = await page.evaluate(

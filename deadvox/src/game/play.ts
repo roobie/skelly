@@ -758,6 +758,7 @@ export const startPlay = (
     refusal: (text) => showRefusal(text, sim.time),
     describe: (item) => [...survival.describe(item), ...firearms.describe(item), ...magazines.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
+    character: () => session.character,
     body: () => sim.body.snapshotState(),
     actionRefusal: () => sim.body.actionRefusal,
   });

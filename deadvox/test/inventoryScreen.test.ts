@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
-import { Character } from '../src/core/character.ts';
+import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
@@ -85,6 +85,7 @@ function setup() {
   }
   const searching = new Set<typeof entity>();
   const body = new Body(BODY_TUNING_FIXTURE);
+  const character = new Character(registry);
   queue.registerAction('furniture.search', () => {
     searching.delete(entity);
     inv.entities.markSearched(entity);
@@ -126,6 +127,7 @@ function setup() {
     refusal: (text: string) => refusals.push(text),
     describe: (_item: typeof beans) => ['test description'],
     workOptions: (_uid: number): WorkOption[] => [],
+    character: () => character,
     body: () => body.snapshotState(),
     actionRefusal: () => body.actionRefusal,
   };
@@ -144,6 +146,7 @@ function setup() {
     refusals,
     hooks,
     body,
+    character,
     setWorkHandler: (handler: typeof workHandler) => {
       workHandler = handler;
     },
@@ -172,6 +175,33 @@ const holdQuickGate = () => {
 };
 
 describe('inventory screen Lit rendering', () => {
+  it('keeps the selected tab across closing and reopening the screen', () => {
+    const { screen, root } = setup();
+    screen.selectTab('skills');
+    screen.close();
+    screen.open();
+
+    expect(screen.activeTab).toBe('skills');
+    expect(root.querySelector<HTMLElement>('[data-tab-panel="skills"]')?.hidden).toBe(false);
+    expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
+  });
+
+  it('renders a skill level from the live character progression', () => {
+    const { screen, root, character } = setup();
+    const skill = [...registry.skills.values()][0];
+    if (!skill) {
+      throw new Error('The skill screen needs a registry skill fixture');
+    }
+    screen.selectTab('skills');
+    const initialLevel = character.skills[skill.id]!;
+    const row = () => root.querySelector<HTMLElement>(`[data-skill="${skill.id}"]`);
+    expect(row()?.dataset.level).toBe(String(initialLevel));
+
+    character.awardPractice(skill.id, practiceForNextLevel(initialLevel), SKILL_LEVEL_LEGENDARY);
+    screen.update();
+
+    expect(row()?.dataset.level).toBe(String(character.skills[skill.id]));
+  });
   it('refuses inventory actions while unconscious and permits them after waking', () => {
     const { screen, queue, body, beans, refusals } = setup();
     screen.selected = beans;

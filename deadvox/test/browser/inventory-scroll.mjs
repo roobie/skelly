@@ -78,7 +78,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [], entityDistance: () => 0, search: () => undefined, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {}, workOptions: () => [], work: () => undefined,
-  body: () => body.snapshotState(),
+  body: () => body.snapshotState(), character: () => ({ skills: {}, practice: {} }),
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
@@ -166,12 +166,17 @@ try {
   );
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
   const failures = [];
-  for (const selector of [
-    '#inventory [data-pane="body"]',
-    '#inventory [data-pane="you"]',
-    '#inventory [data-pane="around"]',
-    '#inventory .inv-details',
+  let activeTab;
+  for (const { tab, selector } of [
+    { tab: 'skills', selector: '#inventory [data-pane="body"]' },
+    { tab: 'items', selector: '#inventory [data-pane="you"]' },
+    { tab: 'items', selector: '#inventory [data-pane="around"]' },
+    { tab: 'items', selector: '#inventory .inv-details' },
   ]) {
+    if (activeTab !== tab) {
+      await page.locator(`#inventory .inv-tab[data-tab="${tab}"]`).click();
+      activeTab = tab;
+    }
     const size = await page
       .locator(selector)
       .evaluate((pane) => ({ height: pane.clientHeight, scroll: pane.scrollHeight }));
