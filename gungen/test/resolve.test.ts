@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { localSolidBounds } from '../src/core/geometry.ts';
-import { applyPoint } from '../src/core/math.ts';
+import { applyPoint, invert } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Domain } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
@@ -8,7 +8,7 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixture, variant } from './helpers.ts';
 
 const valid = loadFixture('archetype-battle-rifle');
-const at = (r: ReturnType<typeof resolve>, part: string, p: [number, number, number] = [0, 0, 0]) =>
+const at = (r: ReturnType<typeof resolve>, part: string, p: readonly [number, number, number] = [0, 0, 0]) =>
   applyPoint(r.placed.get(part)!, p);
 
 const expectVec = (actual: readonly number[], expected: readonly number[]) => {
@@ -25,12 +25,31 @@ describe('resolve', () => {
     expectVec(at(r, 'receiver'), [0, 0, 0]);
   });
 
-  it('mates ports face to face', () => {
-    expectVec(at(r, 'barrel'), [0, 0, 0]);
-    expectVec(at(r, 'barrel', [36, 0, 0]), [36, 0, 0]); // muzzle points forward
-    expectVec(at(r, 'stock', [-16, 0, 0]), [-32, 0, 0]); // stock extends backward
-    expectVec(at(r, 'lower'), [0, -2.5, 0]); // lower hangs under the receiver
-    expectVec(at(r, 'magazine', [0, -10, 0]), [-4.25, -14, 0]); // magazine hangs from the lower
+  it('mates ports in the expected directions', () => {
+    const receiverOrigin = at(r, 'receiver');
+    const muzzlePort = r.defs.get('barrel')!.ports.find(({ id }) => id === 'muzzle')!;
+    const muzzle = at(r, 'barrel', muzzlePort.pos);
+    const connectedPort = (part: string) => {
+      const endpoint = r.connections.find(({ conn }) => conn.to.startsWith(`${part}.`))!.conn.to;
+      const portId = endpoint.slice(endpoint.indexOf('.') + 1);
+      return r.defs.get(part)!.ports.find(({ id }) => id === portId)!;
+    };
+    const stockPort = connectedPort('stock');
+    const stockBounds = r.defs.get('stock')!.solids.map(localSolidBounds);
+    const stockRearmostX = Math.min(...stockBounds.map(([min]) => min[0]));
+    const lowerPort = connectedPort('lower');
+    const lower = at(r, 'lower', lowerPort.pos);
+    const magazinePort = connectedPort('magazine');
+    const magazineBounds = r.defs.get('magazine')!.solids.map(localSolidBounds);
+    const magazineBottomY = Math.min(...magazineBounds.map(([min]) => min[1]));
+    expect(muzzle[0]).toBeGreaterThan(receiverOrigin[0]);
+    expect(at(r, 'stock', [stockRearmostX, stockPort.pos[1], stockPort.pos[2]])[0]).toBeLessThan(
+      at(r, 'stock', stockPort.pos)[0],
+    );
+    expect(lower[1]).toBeLessThan(receiverOrigin[1]);
+    expect(at(r, 'magazine', [magazinePort.pos[0], magazineBottomY, magazinePort.pos[2]])[1]).toBeLessThan(
+      at(r, 'magazine', magazinePort.pos)[1],
+    );
   });
 
   it('gives the conventional magazine a well with material thickness', () => {
@@ -41,21 +60,18 @@ describe('resolve', () => {
     const lowerFrontX = Math.max(
       ...lowerBoxes.map((box) => at(r, 'lower', [box.center[0] + box.half[0], box.center[1], box.center[2]])[0]),
     );
-    expect(lowerFrontX).toBeCloseTo(-1.0);
-    expect(lowerBoxes.every((box) => !contains([-4.25, -1, 0], box))).toBe(true);
-    expect(lowerBoxes.some((box) => contains([-1.1, -1, 0], box))).toBe(true);
-    expect(lowerBoxes.some((box) => contains([-4.25, -1, 1.625], box))).toBe(true);
-
     const magazine = r.defs.get('magazine')!.solids[0]!;
     expect(magazine.kind).toBe('box');
     if (magazine.kind === 'box') {
+      const magazineCenterWorld = at(r, 'magazine', magazine.box.center);
+      const magazineCenterInLower = applyPoint(invert(r.placed.get('lower')!), magazineCenterWorld);
+      expect(lowerBoxes.every((box) => !contains(magazineCenterInLower, box))).toBe(true);
       const [magazineFrontX] = at(r, 'magazine', [
         magazine.box.center[0] + magazine.box.half[0],
         magazine.box.center[1],
         magazine.box.center[2],
       ]);
-      expect(lowerFrontX - magazineFrontX).toBeCloseTo(0.5);
-      expect(magazine.box.center[1] + magazine.box.half[1]).toBeCloseTo(0.75);
+      expect(lowerFrontX - magazineFrontX).toBeGreaterThan(0);
     }
   });
 

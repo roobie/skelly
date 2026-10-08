@@ -58,7 +58,7 @@ describe('fixtures', () => {
     });
   }
 
-  // Measured about 4.5 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  // Resolves every fixture and checks all of its parts.
   it('places every part of every fixture', { timeout: 25_000 }, () => {
     for (const fixture of fixtures) {
       const { resolved } = validate(fixture, gunDomain);

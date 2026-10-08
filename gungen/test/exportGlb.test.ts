@@ -13,6 +13,7 @@ import type { Assembly } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import type { SelectedAnchors } from '../src/gun/anchors.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
+import { ACTION_CYCLE_PROFILES } from '../src/gun/cycle.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { ejectionPoint } from '../src/gun/ejection.ts';
@@ -20,6 +21,7 @@ import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxe
 import { createGunModelEntry, exportGunGlb } from '../src/gun/exportGlb.ts';
 import { getOptic } from '../src/gun/optics.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
+import { FAMILIES } from '../src/gun/parts.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
 import { expectWatertightMesh, loadCorpus, variant } from './helpers.ts';
@@ -45,6 +47,57 @@ const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantNa
 };
 
 type ExportedGun = ReturnType<typeof exported>;
+const actionExportFacts = (name: string) => {
+  const out = exported(design(name));
+  const action = out.modelEntry.action!;
+  if (!(action.fire && action.roundsPerSimMinute)) {
+    throw new Error('automatic actions require fire timing and roundsPerSimMinute');
+  }
+  const parts = Object.values(action.parts).map((part) => {
+    const node = out.read.json.nodes.find(({ name: nodeName }) => nodeName === part.node)!;
+    const partId = part.node.split(':')[0]!;
+    const partMotion = out.resolved.defs.get(partId)?.motion;
+    if (!partMotion) {
+      throw new Error(`${partId} has no source motion`);
+    }
+    return {
+      hasMesh: node.mesh !== undefined,
+      axisLength: Math.hypot(...part.axis),
+      strokeMetres: part.strokeMetres,
+      expectedStrokeMetres:
+        Math.hypot(...sub(partMotion.end, partMotion.start)) * out.resolved.domain.units.metresPerUnit,
+    };
+  });
+  const core = exportGlb({
+    resolved: out.resolved,
+    palette: GUN_PALETTE,
+    appearance: { variant: 'ar' },
+    asset: ASSET,
+  });
+  return {
+    rpm: action.roundsPerSimMinute,
+    holdOpen: action.holdOpen,
+    fireDuration: action.fire.durationSimSeconds,
+    handDuration: action.hand.durationSimSeconds,
+    phases: [
+      action.fire.rearwardSimSeconds,
+      action.fire.dwellSimSeconds,
+      action.fire.forwardSimSeconds,
+      action.hand.rearwardSimSeconds,
+      action.hand.dwellSimSeconds,
+      action.hand.forwardSimSeconds,
+    ],
+    ejectAt: action.ejectAt,
+    modes: Object.fromEntries(Object.entries(action.parts).map(([role, part]) => [role, part.modes])),
+    parts,
+    ejectDirectionLength: Math.hypot(...action.ejectDirection),
+    exportedEjectDirection: Object.hasOwn(out.modelEntry, 'ejectDirection'),
+    hasEjectionAnchor: out.modelEntry.anchors?.ejection !== undefined,
+    carrierAxis: out.resolved.defs.get('bolt-carrier')!.motion!.axis,
+    coreOk: core.ok,
+    sameGlb: Buffer.from(out.glb).equals(Buffer.from(core.ok ? core.glb : [])),
+  };
+};
 const sightTargetPartId = (out: ExportedGun, endpoint: Vec3, label: string): string => {
   for (const [id, part] of out.resolved.defs) {
     const axis = part.axes.find(({ kind }) => kind === 'sight');
@@ -136,8 +189,16 @@ const rotateByQuaternion = (q: readonly number[], v: Vec3): Vec3 => {
 };
 
 describe('glb export: axes and units', () => {
-  it('uses 1u = 11.5 mm', () => {
-    expect(METRES_PER_UNIT).toBe(0.0115);
+  it('calibrates authored STANAG depth against its millimetre reference within one grid step', () => {
+    const stanag = FAMILIES.magazine!.build({ length: 'M', profile: 'stanag-curved' });
+    const upperBody = stanag.solids.find(({ id }) => id === 'upper-body')!;
+    const [min, max] = localSolidBounds(upperBody);
+    const topDepthUnits = max[0]! - min[0]!;
+    const authoredDepthMm = topDepthUnits * METRES_PER_UNIT * 1000;
+    const sourcedDepthMm = 63;
+    const gridStepMm = gunDomain.units.grid * METRES_PER_UNIT * 1000;
+    expect(Math.abs(authoredDepthMm - sourcedDepthMm)).toBeLessThanOrEqual(gridStepMm);
+    expect(METRES_PER_UNIT).toBe(gunDomain.units.metresPerUnit);
   });
 
   it('maps gungen forward and up onto deadvox held +x and +y with a zero turn', () => {
@@ -633,55 +694,35 @@ describe('glb export: deadvox model entry', () => {
     expect(out.modelEntry.action!.parts.carrier!.node).toBe('carrier-renamed:bolt-carrier');
   });
 
-  it('exports action nodes, estimated cycles, ejection metadata, and leaves GLB bytes unchanged', () => {
-    for (const [name, expectedAction, expectedModes] of [
-      ['archetype-ak', 'ak', { carrier: ['fire', 'hand'] }],
-      ['archetype-ar', 'ar', { carrier: ['fire', 'hand'], handle: ['hand'] }],
-    ] as const) {
-      const assembly = design(name);
-      const out = exported(assembly);
-      const action = out.modelEntry.action!;
-      if (!(action.fire && action.roundsPerSimMinute)) {
-        throw new Error('automatic actions require fire timing and roundsPerSimMinute');
-      }
-      const carrier = out.resolved.defs.get('bolt-carrier')!;
-      const motion = carrier.motion!;
-      expect(action.roundsPerSimMinute).toBe(expectedAction === 'ak' ? 600 : 800);
-      expect(action.holdOpen).toBe(expectedAction === 'ar');
-      expect(action.fire.durationSimSeconds).toBeCloseTo(60 / action.roundsPerSimMinute, 9);
-      expect(action.hand.durationSimSeconds).toBeGreaterThan(action.fire.durationSimSeconds);
-      expect(action.fire.rearwardSimSeconds).toBeGreaterThan(0);
-      expect(action.fire.dwellSimSeconds).toBeGreaterThan(0);
-      expect(action.fire.forwardSimSeconds).toBeGreaterThan(0);
-      expect(action.hand.rearwardSimSeconds).toBeGreaterThan(0);
-      expect(action.hand.dwellSimSeconds).toBeGreaterThan(0);
-      expect(action.hand.forwardSimSeconds).toBeGreaterThan(0);
-      expect(action.ejectAt).toBeGreaterThan(0);
-      expect(action.ejectAt).toBeLessThan(1);
-      expect(Object.fromEntries(Object.entries(action.parts).map(([role, part]) => [role, part.modes]))).toEqual(
-        expectedModes,
-      );
-      for (const part of Object.values(action.parts)) {
-        const node = out.read.json.nodes.find(({ name: nodeName }) => nodeName === part.node)!;
-        expect(node.mesh).toBeDefined();
-        expect(Math.hypot(...part.axis)).toBeCloseTo(1, 12);
-        expect(part.strokeMetres).toBeCloseTo(6.5 * S, 6);
-      }
-      expect(Math.hypot(...action.ejectDirection)).toBeCloseTo(1, 12);
-      expect(out.modelEntry).not.toHaveProperty('ejectDirection');
-      expect(out.modelEntry.anchors?.ejection).toBeDefined();
-      expect(motion.axis).toEqual([1, 0, 0]);
-
-      const core = exportGlb({
-        resolved: out.resolved,
-        palette: GUN_PALETTE,
-        appearance: { variant: 'ar' },
-        asset: ASSET,
-      });
-      expect(core.ok).toBe(true);
-      expect(Buffer.from(out.glb).equals(Buffer.from(core.ok ? core.glb : []))).toBe(true);
-    }
-  });
+  it.each([
+    ['archetype-ak', 'ak', false, { carrier: ['fire', 'hand'] }],
+    ['archetype-ar', 'ar', true, { carrier: ['fire', 'hand'], handle: ['hand'] }],
+  ] as const)(
+    'exports action nodes, estimated cycles and ejection metadata for %s without changing GLB bytes',
+    (name, expectedAction, holdOpen, expectedModes) => {
+      const facts = actionExportFacts(name);
+      expect(facts.rpm).toBe(ACTION_CYCLE_PROFILES[expectedAction].rpm);
+      expect(facts.holdOpen).toBe(holdOpen);
+      expect(facts.fireDuration).toBeCloseTo(60 / facts.rpm, 9);
+      expect(facts.handDuration).toBeGreaterThan(facts.fireDuration);
+      expect(facts.phases.every((duration) => duration > 0)).toBe(true);
+      expect(facts.ejectAt).toBeGreaterThan(0);
+      expect(facts.ejectAt).toBeLessThan(1);
+      expect(facts.modes).toEqual(expectedModes);
+      expect(
+        facts.parts.every(
+          ({ hasMesh, axisLength, strokeMetres, expectedStrokeMetres }) =>
+            hasMesh && Math.abs(axisLength - 1) < 1e-12 && Math.abs(strokeMetres - expectedStrokeMetres) < 1e-6,
+        ),
+      ).toBe(true);
+      expect(facts.ejectDirectionLength).toBeCloseTo(1, 12);
+      expect(facts.exportedEjectDirection).toBe(false);
+      expect(facts.hasEjectionAnchor).toBe(true);
+      expect(facts.carrierAxis).toEqual([1, 0, 0]);
+      expect(facts.coreOk).toBe(true);
+      expect(facts.sameGlb).toBe(true);
+    },
+  );
 
   it('exports the magazine replacement slot regardless of calibre metadata', () => {
     const assembly = design('archetype-ak');

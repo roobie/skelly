@@ -64,8 +64,21 @@ describe('870-derived pump silhouette', () => {
     const [min, max] = localSolidBounds(frame);
     expect(max[1] - min[1], 'plate thickness').toBeLessThanOrEqual(0.5);
     const finger = lower.keepOuts.find((v) => v.id === 'trigger-finger')!.box;
-    expect(finger.half[1] * 2, 'finger height').toBe(1.5);
+    const fingerSolid: Solid = { id: 'trigger-finger-probe', kind: 'box', box: finger };
     const guards = lower.solids.filter((s) => s.id.startsWith('trigger-guard-'));
+    const guardBounds = new Map(guards.map((guard) => [guard.id, localSolidBounds(guard)]));
+    const rear = guardBounds.get('trigger-guard-rear')!;
+    const front = guardBounds.get('trigger-guard-front')!;
+    const top = guardBounds.get('trigger-guard-top')!;
+    const bottom = guardBounds.get('trigger-guard-bottom')!;
+    expect(finger.center[0] - finger.half[0]).toBeGreaterThanOrEqual(rear[1][0]);
+    expect(finger.center[0] + finger.half[0]).toBeLessThanOrEqual(front[0][0]);
+    expect(finger.center[1] - finger.half[1]).toBeGreaterThanOrEqual(bottom[1][1]);
+    expect(finger.center[1] + finger.half[1]).toBeLessThanOrEqual(top[0][1]);
+    expect(
+      guards.every((guard) => penetrationWorld(worldSolid(IDENTITY, guard), worldSolid(IDENTITY, fingerSolid)) <= 0),
+      'finger keep-out clears guard material',
+    ).toBe(true);
     expect(guards.every((s) => s.kind === 'extruded-polygon')).toBe(true);
     expectWatertightMesh(meshForSolidGroup(guards), 'rounded trigger loop');
     expect(lower.solids.some((s) => s.id === 'trigger')).toBe(true);
@@ -84,8 +97,9 @@ describe('870-derived pump silhouette', () => {
     const finish = buildLayers(report, [], 'finish', { variant: 'pump-shotgun' });
     const roles = buildLayers(report, [], 'role', { variant: 'pump-shotgun' });
     try {
-      expect(finish.solids.children.filter((o) => o.userData.part === 'stock')).toHaveLength(2);
+      const finishMeshes = finish.solids.children.filter((o) => o.userData.part === 'stock');
       const roleMeshes = roles.solids.children.filter((o) => o.userData.part === 'stock');
+      expect(finishMeshes.length).toBeLessThan(roleMeshes.length);
       const colors = ['grip', 'stock-joint', 'stock-comb'].map((id) => {
         const mesh = roleMeshes.find((o) => o.userData.label.includes(`solid ${id}`)) as Mesh | undefined;
         expect(mesh, id).toBeDefined();

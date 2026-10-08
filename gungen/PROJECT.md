@@ -1737,6 +1737,9 @@ in `docs/deferred-assertions.md`.
   `params`. `test/parts.test.ts` lists the array-sampled families in one place,
   `ARRAY_SAMPLED_KEYS`; every family not listed gets the full product. Add an
   explicit case for an interaction the array is known to miss.
+- **Browser tests.** Viewer browser tests launch managed Chromium through
+  `test/chromium.mjs`, `launchChromium`, and the Playwright install shared with
+  Deadvox; see `deadvox/TROUBLESHOOTING.md` for the shared launch-boundary rationale.
 - **Removals need a reason.** The commit says what the removed tests protected
   and which remaining test or sample still protects it, ideally with a mutation
   or coverage result as evidence.

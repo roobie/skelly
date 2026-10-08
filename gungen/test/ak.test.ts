@@ -253,11 +253,10 @@ describe('AK-pattern archetype', () => {
         },
       },
     };
-    expect(
-      validate(akFixture, domain)
-        .issues.filter(({ rule }) => rule === 'axis-alignment')
-        .map(({ message }) => message),
-    ).toEqual(['The gas-cylinder axis of gas-cylinder is 90° off the main axis.']);
+    const issues = validate(akFixture, domain).issues.filter(({ rule }) => rule === 'axis-alignment');
+    expect(issues.map(({ rule, parts }) => ({ rule, parts }))).toEqual([
+      { rule: 'axis-alignment', parts: ['gas-cylinder'] },
+    ]);
   });
 
   // BR 22:47: both magazine types must work with the v2 AK.

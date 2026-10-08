@@ -269,12 +269,6 @@
     { "path": "gungen/cartridges/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "core/resolve.ts", "count": 1 },
     { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "viewer/scene.ts", "count": 1 },
-    {
-      "path": "gungen/docs/anti-materiel.md",
-      "check": "read_if",
-      "text": "read_if must be a non-empty list of non-empty strings",
-      "count": 1
-    },
     { "path": "gungen/docs/anti-materiel.md", "check": "symbol", "text": "viewer/scene.ts, glb.ts", "count": 1 },
     { "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md", "check": "citation", "text": "br-75", "count": 1 },
     { "path": "gungen/docs/pump-action-export.md", "check": "path", "text": "gun/tubeCapacity.ts", "count": 1 },
