@@ -608,20 +608,21 @@ const createRifleReplayFixture = () => {
 const REPLAY_EXPORT_OVERRIDE_MESSAGE = /debug firearm-handling overrides differ from content/;
 
 describe('input replay', () => {
-  it('reports an overflow-stopped recording as discarded', () => {
-    const status = inputReplayStatus({
+  it('reports the supplied stop reason instead of an idle recording', () => {
+    const options = {
       replayPlayer: undefined,
       inputRecorder: undefined,
       previousRecorder: undefined,
       total: 0,
       verification: undefined,
       verificationTick: undefined,
-      stoppedReason: 'a streamed-column batch exceeded the recording window; the recent replay was discarded',
-    });
+    };
+    const stoppedReason = 'test-owned stop reason';
+    const status = inputReplayStatus({ ...options, stoppedReason });
+    const idleStatus = inputReplayStatus(options);
 
-    const normalized = status.toLowerCase();
-    expect(normalized).toContain('stopped');
-    expect(normalized).toContain('discarded');
+    expect.soft(status).toContain(stoppedReason);
+    expect.soft(status).not.toBe(idleStatus);
   });
 
   it('rejects a replay from another schema version', async () => {
