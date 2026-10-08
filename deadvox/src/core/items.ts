@@ -50,15 +50,12 @@ export interface ItemFields<Node> {
   firearm?: FirearmState;
   /** A magazine's cartridge item types in feed order, top round first (core/magazine.ts). */
   cartridges?: string[];
-  /** Items fitted to this one, owned by it like work components (core/magazine.ts). */
+  /** Items fitted to this one, owned by it like work components. Keys are exported mount IDs or named device slots. */
   slots?: ItemSlots<Node>;
   work?: CraftWork<Node> | undefined;
 }
 
-/** One entry per slot kind; a magazine-fed firearm has the magazine slot. */
-interface ItemSlots<Node> {
-  magazine?: Node | undefined;
-}
+type ItemSlots<Node> = Record<string, Node>;
 
 export interface Item extends ItemFields<Item> {
   /** Unique per world; never reused. */
@@ -99,7 +96,11 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.slots === undefined
       ? {}
       : {
-          slots: item.slots.magazine === undefined ? {} : { magazine: snapshotItem(item.slots.magazine) as ItemState },
+          slots: Object.fromEntries(
+            Object.entries(item.slots)
+              .filter((entry): entry is [string, Item] => entry[1] !== undefined)
+              .map(([slot, child]) => [slot, snapshotItem(child) as ItemState]),
+          ),
         }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
     ...(item.work === undefined
@@ -193,7 +194,9 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.slots === undefined
       ? {}
       : {
-          slots: state.slots.magazine === undefined ? {} : { magazine: restoreItem(registry, state.slots.magazine) },
+          slots: Object.fromEntries(
+            Object.entries(state.slots).map(([slot, child]) => [slot, restoreItem(registry, child)]),
+          ),
         }),
     ...(state.pockets === undefined
       ? {}
@@ -228,6 +231,42 @@ export interface SpotCheck {
   ignore?: Item | undefined;
 }
 
+const addDefaultAttachments = (
+  factory: ItemFactory,
+  registry: Registry,
+  item: Item,
+  modelId: string | undefined,
+): void => {
+  const model = modelId === undefined ? undefined : registry.models.get(modelId);
+  for (const attachment of model?.attachments ?? []) {
+    const attachmentType = [...registry.items.values()].find((candidate) => {
+      const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
+      return attachmentModel?.attachment?.id === attachment.id;
+    });
+    if (!attachmentType?.model) {
+      throw new Error(`No item registered for default attachment "${attachment.id}"`);
+    }
+    item.slots = {
+      ...(item.slots ?? {}),
+      [attachment.mountedAt]: factory.create(registry, attachmentType.id),
+    };
+  }
+};
+
+const initializeFittedSlots = (factory: ItemFactory, registry: Registry, item: Item, def: ItemDef): void => {
+  const model = def.model === undefined ? undefined : registry.models.get(def.model);
+  if (magazineWellCalibre(registry, def.id) !== undefined) {
+    item.firearm = { chamber: 'empty' };
+    item.slots = {};
+  } else if (def.firearm && (model?.attachmentSlots?.length ?? 0) > 0) {
+    item.slots = {};
+  }
+  if (def.light?.power) {
+    item.slots = { ...(item.slots ?? {}), battery: factory.create(registry, def.light.power.battery) };
+  }
+  addDefaultAttachments(factory, registry, item, def.model);
+};
+
 /** Makes item instances, handing out uids. */
 export class ItemFactory {
   private nextUid: number;
@@ -251,10 +290,7 @@ export class ItemFactory {
     if (def.firearm?.pump) {
       item.firearm = { chamber: 'empty', tube: [] };
     }
-    if (magazineWellCalibre(registry, type) !== undefined) {
-      item.firearm = { chamber: 'empty' };
-      item.slots = {};
-    }
+    initializeFittedSlots(this, registry, item, def);
     if (magazineSpec(registry, type)) {
       item.cartridges = [];
     }
@@ -338,7 +374,10 @@ export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
 export const cellCount = (def: ItemDef): number => def.size[0] * def.size[1];
 
 /** True when the item has no pockets, or they're all empty. */
-export const isEmpty = (item: Item): boolean => !item.work && (item.pockets ?? []).every((grid) => grid.length === 0);
+export const isEmpty = (item: Item): boolean =>
+  !item.work &&
+  Object.values(item.slots ?? {}).every((child) => child === undefined) &&
+  (item.pockets ?? []).every((grid) => grid.length === 0);
 
 /** Condition as a word (DESIGN.md, "The item model"). */
 export const conditionWord = (condition: number): string => {
@@ -423,12 +462,18 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
     return x >= p.x && x < p.x + w && y >= p.y && y < p.y + h;
   });
 
+const itemWeightGrams = (registry: Registry, item: Item): number => {
+  const def = defOf(registry, item.type);
+  const model = def.model ? registry.models.get(def.model) : undefined;
+  return model?.attachment ? model.attachment.massKg * 1000 : def.weight;
+};
+
 /** Grams, counting the stack, ammunition and everything in its pockets. */
 export const weightOf = (registry: Registry, item: Item): number =>
-  defOf(registry, item.type).weight * item.count +
+  itemWeightGrams(registry, item) * item.count +
   ammunitionWeight(registry, item) +
   (item.cartridges ?? []).reduce((sum, round) => sum + defOf(registry, round).weight, 0) +
-  (item.slots?.magazine ? weightOf(registry, item.slots.magazine) : 0) +
+  Object.values(item.slots ?? {}).reduce((sum, child) => sum + (child ? weightOf(registry, child) : 0), 0) +
   (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
   (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);
 

@@ -27,6 +27,7 @@ import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { handlingRotation } from '../src/render/handlingTurn.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
+import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
@@ -216,6 +217,48 @@ it('draws the magazine a rifle really has, in hand and on the ground: its own mo
   }
 });
 
+it('replaces a baked default attachment with its owned model and leaves the baked node hidden when removed', async () => {
+  expect(issues).toEqual([]);
+  const rifleModel = content.models.get(modelOf(RIFLE))!;
+  const [defaultAttachment] = rifleModel.attachments ?? [];
+  const opticDef =
+    defaultAttachment &&
+    [...content.items.values()].find((item) => {
+      const model = item.model === undefined ? undefined : content.models.get(item.model);
+      return model?.attachment?.id === defaultAttachment.id;
+    });
+  if (!(defaultAttachment && opticDef)) {
+    throw new Error('generated rifle has no registered default attachment');
+  }
+  const inventory = new Inventory(content);
+  const rifle = inventory.create(RIFLE);
+  const slotId = defaultAttachment.mountedAt;
+  const optic = rifle.slots?.[slotId];
+  if (!optic) {
+    throw new Error('generated rifle has no default attachment child');
+  }
+  const opticModel = modelOf(optic.type);
+  const models = await library([modelOf(RIFLE), opticModel]);
+  const findNode = (root: Object3D) => {
+    let found: Object3D | undefined;
+    root.traverse((node) => {
+      if (node.userData.name === defaultAttachment.node) {
+        found = node;
+      }
+    });
+    return found;
+  };
+  const fitted = models.heldLook(itemLook(content, rifle)!)!;
+  expect(fitted.slots[slotId]?.modelId).toBe(opticModel);
+  expect(fitted.slots[slotId]?.model?.visible).toBe(true);
+  expect(findNode(fitted.root)?.visible).toBe(false);
+
+  expect(inventory.fitSlot(rifle, slotId, undefined)).toBe(optic);
+  const removed = models.heldLook(itemLook(content, rifle)!)!;
+  expect(removed.slots[slotId]).toBeUndefined();
+  expect(findNode(removed.root)?.visible).toBe(false);
+});
+
 it('animates a change from the job alone: the fitted magazine leaves the well, then the new one seats', async () => {
   const { inventory, queue, mechanics, rifle, magazine, spare, inHand, dispose } = await rig();
   const state = () =>
@@ -343,10 +386,13 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
       verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,
       archPower: tuning.wobbleLuneArchPower,
       phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
-      jitterShare: tuning.wobbleJitterShare,
-      jitterAmplitudeFraction: tuning.wobbleJitterAmplitudeFraction,
     },
-    jitterSeed: Rng.stream(73, 'rifle-view-tests').int(0, 0xff_ff_ff_ff),
+    wobbleSeed: Rng.stream(73, 'rifle-view-tests').int(0, 0xff_ff_ff_ff),
+    wobbleNoise: {
+      reversionRatePerSimSecond: tuning.wobbleNoiseReversionRatePerSimSecond,
+      sigmaRadiansPerSqrtSecond: tuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+      smoothingSimSeconds: tuning.wobbleNoiseSmoothingSimSeconds,
+    },
   });
   aim.recordShot(1, 0.3);
   aim.advance({
@@ -359,7 +405,6 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
     firing: true,
     recoilRecoveryRate: 1,
     stridePhase: 0,
-    stepIndex: 0,
   });
   const viewShift = aim.pendingViewPitchShift;
   expect(viewShift).toBeGreaterThan(0);

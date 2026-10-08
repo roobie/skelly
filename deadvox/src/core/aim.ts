@@ -1,5 +1,5 @@
 import type { Vec3 } from './coords.ts';
-import { hash3 } from './random.ts';
+import { Rng, type RngState } from './random.ts';
 
 /** Camera-local angles shared by firearm presentation and ballistic direction. */
 export interface AimFrame {
@@ -32,16 +32,96 @@ export interface AimStep {
   readonly recoilRecoveryRate: number;
   /** Fraction of the shared two-step footfall stride. */
   readonly stridePhase: number;
-  readonly stepIndex: number;
 }
 
 export interface AimWobbleShape {
   readonly verticalToHorizontalRatio: number;
   readonly archPower: number;
   readonly phaseOffsetRadians: number;
-  readonly jitterShare: number;
-  readonly jitterAmplitudeFraction: number;
 }
+
+export interface AimWobbleNoiseTuning {
+  readonly reversionRatePerSimSecond: number;
+  readonly sigmaRadiansPerSqrtSecond: number;
+  readonly smoothingSimSeconds: number;
+}
+
+export interface AimWobbleNoiseAxisState {
+  readonly raw: number;
+  readonly smooth: number;
+}
+
+export interface AimWobbleNoiseState {
+  readonly yaw: AimWobbleNoiseAxisState;
+  readonly pitch: AimWobbleNoiseAxisState;
+  readonly rng: RngState;
+}
+
+export interface AimSnapshotState extends AimState {
+  readonly wobbleNoise: AimWobbleNoiseState;
+}
+
+const assertWobbleNoiseOptions = (tuning: AimWobbleNoiseTuning, strengthScale: number): void => {
+  if (
+    !(
+      Number.isFinite(tuning.reversionRatePerSimSecond) &&
+      tuning.reversionRatePerSimSecond > 0 &&
+      Number.isFinite(tuning.sigmaRadiansPerSqrtSecond) &&
+      tuning.sigmaRadiansPerSqrtSecond >= 0 &&
+      Number.isFinite(tuning.smoothingSimSeconds) &&
+      tuning.smoothingSimSeconds > 0
+    )
+  ) {
+    throw new Error('Invalid aim wobble noise tuning');
+  }
+  if (!(Number.isFinite(strengthScale) && strengthScale >= 0)) {
+    throw new Error('Invalid aim wobble noise strength scale');
+  }
+};
+
+export const assertAimWobbleNoiseState = (state: AimWobbleNoiseState): void => {
+  const validAxis = (axis: AimWobbleNoiseAxisState): boolean =>
+    Boolean(axis) && Number.isFinite(axis.raw) && Number.isFinite(axis.smooth);
+  if (
+    !(state && validAxis(state.yaw) && validAxis(state.pitch) && Array.isArray(state.rng)) ||
+    state.rng.length !== 4 ||
+    state.rng.some((word) => !Number.isInteger(word) || word < -0x80_00_00_00 || word > 0x7f_ff_ff_ff)
+  ) {
+    throw new Error('Invalid aim wobble noise state');
+  }
+};
+
+export const advanceOrnsteinUhlenbeckAxis = (
+  state: AimWobbleNoiseAxisState,
+  dt: number,
+  tuning: AimWobbleNoiseTuning,
+  normalSample: number,
+): AimWobbleNoiseAxisState => {
+  if (
+    !(
+      Number.isFinite(state.raw) &&
+      Number.isFinite(state.smooth) &&
+      Number.isFinite(dt) &&
+      dt > 0 &&
+      Number.isFinite(tuning.reversionRatePerSimSecond) &&
+      tuning.reversionRatePerSimSecond > 0 &&
+      Number.isFinite(tuning.sigmaRadiansPerSqrtSecond) &&
+      tuning.sigmaRadiansPerSqrtSecond >= 0 &&
+      Number.isFinite(tuning.smoothingSimSeconds) &&
+      tuning.smoothingSimSeconds > 0 &&
+      Number.isFinite(normalSample)
+    )
+  ) {
+    throw new Error('Invalid aim wobble noise step');
+  }
+  const boundedSample = Math.max(-3, Math.min(3, normalSample));
+  const raw =
+    state.raw -
+    tuning.reversionRatePerSimSecond * state.raw * dt +
+    tuning.sigmaRadiansPerSqrtSecond * Math.sqrt(dt) * boundedSample;
+  const smoothing = 1 - Math.exp(-dt / tuning.smoothingSimSeconds);
+  return { raw, smooth: state.smooth + smoothing * (raw - state.smooth) };
+};
 
 const TAU = Math.PI * 2;
 const MOVE_YAW_PER_SPEED = 0.0045;
@@ -52,6 +132,12 @@ const MAX_OFFSET = 0.12;
 
 const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
 const bounded = (value: number): number => Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, value));
+
+const boundedNormalPair = (rng: Rng): readonly [number, number] => {
+  const radius = Math.sqrt(-2 * Math.log(Math.max(Number.MIN_VALUE, rng.next())));
+  const angle = TAU * rng.next();
+  return [Math.max(-3, Math.min(3, radius * Math.cos(angle))), Math.max(-3, Math.min(3, radius * Math.sin(angle)))];
+};
 
 const boundVector = (yaw: number, pitch: number, limit: number): AimFrame => {
   const magnitude = Math.hypot(yaw, pitch);
@@ -66,9 +152,9 @@ interface FrameFromStateOptions {
   readonly variance: number;
   readonly wobbleLimitRadians: number;
   readonly shape: AimWobbleShape;
-  readonly jitterSeed: number;
   readonly stridePhase: number;
-  readonly stepIndex: number;
+  readonly wobbleNoise: { readonly yaw: number; readonly pitch: number };
+  readonly wobbleNoiseStrengthScale: number;
 }
 
 const frameFromState = ({
@@ -77,29 +163,19 @@ const frameFromState = ({
   variance,
   wobbleLimitRadians,
   shape,
-  jitterSeed,
   stridePhase,
-  stepIndex,
+  wobbleNoise,
+  wobbleNoiseStrengthScale,
 }: FrameFromStateOptions): { frame: AimFrame; viewPitchShift: number } => {
   const phase = stridePhase * TAU;
   const gait = Math.sin(phase);
   const archPhase = phase + shape.phaseOffsetRadians * Math.sin(2 * phase) ** 2;
   const pitchArch = 1 - 2 * Math.abs(Math.sin(archPhase)) ** shape.archPower;
-  const stepProgress = ((stridePhase + 0.25) * 2) % 1;
-  const jitterEnvelope = Math.sin(Math.PI * stepProgress) ** 2;
-  const carriesJitter = hash3(jitterSeed, stepIndex, 0, 0) < shape.jitterShare;
-  const jitterAngle = hash3(jitterSeed, stepIndex, 1, 0) * TAU;
-  const jitterScale = carriesJitter
-    ? shape.jitterAmplitudeFraction * (0.5 + hash3(jitterSeed, stepIndex, 2, 0) * 0.5) * jitterEnvelope
-    : 0;
   const wobble = boundVector(
-    (state.lookYaw + (gait + Math.cos(jitterAngle) * jitterScale) * speed * MOVE_YAW_PER_SPEED) * variance,
-    (state.lookPitch +
-      (pitchArch + Math.sin(jitterAngle) * jitterScale) *
-        speed *
-        MOVE_YAW_PER_SPEED *
-        shape.verticalToHorizontalRatio) *
-      variance,
+    (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED) * variance +
+      wobbleNoise.yaw * variance * wobbleNoiseStrengthScale,
+    (state.lookPitch + pitchArch * speed * MOVE_YAW_PER_SPEED * shape.verticalToHorizontalRatio) * variance +
+      wobbleNoise.pitch * variance * wobbleNoiseStrengthScale,
     wobbleLimitRadians,
   );
   const recoilYaw = bounded(state.recoilYaw);
@@ -129,12 +205,7 @@ const isValidWobbleShape = (shape: AimWobbleShape): boolean =>
   shape.archPower > 0 &&
   Number.isFinite(shape.phaseOffsetRadians) &&
   shape.phaseOffsetRadians >= 0 &&
-  shape.phaseOffsetRadians <= 0.45 &&
-  Number.isFinite(shape.jitterShare) &&
-  shape.jitterShare >= 0 &&
-  shape.jitterShare <= 1 &&
-  Number.isFinite(shape.jitterAmplitudeFraction) &&
-  shape.jitterAmplitudeFraction > 0;
+  shape.phaseOffsetRadians <= 0.45;
 
 const initialAimState = (): AimState => ({
   lookYaw: 0,
@@ -177,11 +248,13 @@ export const assertAimState = (state: AimState): void => {
 interface AimControllerOptions {
   readonly wobbleLimitRadians: number;
   readonly wobbleShape: AimWobbleShape;
-  readonly jitterSeed: number;
+  readonly wobbleSeed: number;
   readonly state?: AimState;
   readonly variance?: number;
   readonly stridePhase?: number;
-  readonly stepIndex?: number;
+  readonly wobbleNoise: AimWobbleNoiseTuning;
+  readonly wobbleNoiseStrengthScale?: number;
+  readonly wobbleNoiseState?: AimWobbleNoiseState;
 }
 
 export class AimController {
@@ -190,19 +263,24 @@ export class AimController {
   private speed = 0;
   private readonly wobbleLimitRadians: number;
   private readonly wobbleShape: AimWobbleShape;
-  private readonly jitterSeed: number;
+  private readonly wobbleNoise: AimWobbleNoiseTuning;
+  private readonly wobbleNoiseStrengthScale: number;
+  private readonly wobbleNoiseRng: Rng;
+  private wobbleNoiseYaw: AimWobbleNoiseAxisState;
+  private wobbleNoisePitch: AimWobbleNoiseAxisState;
   private stridePhase = 0;
-  private stepIndex = 0;
   private viewPitchShift = 0;
 
   constructor({
     wobbleLimitRadians,
     wobbleShape,
-    jitterSeed,
+    wobbleSeed,
     state = initialAimState(),
     variance = 1,
     stridePhase = 0,
-    stepIndex = 0,
+    wobbleNoise,
+    wobbleNoiseStrengthScale = 1,
+    wobbleNoiseState,
   }: AimControllerOptions) {
     assertAimState(state);
     if (!(Number.isFinite(variance) && variance > 0)) {
@@ -217,21 +295,39 @@ export class AimController {
     if (!isValidWobbleShape(wobbleShape)) {
       throw new Error('Invalid aim wobble shape or stride phase');
     }
-    if (!Number.isSafeInteger(jitterSeed) || jitterSeed < 0 || jitterSeed > 0xff_ff_ff_ff) {
-      throw new Error('Invalid aim jitter seed');
+    if (!Number.isSafeInteger(wobbleSeed) || wobbleSeed < 0 || wobbleSeed > 0xff_ff_ff_ff) {
+      throw new Error('Invalid aim wobble seed');
     }
     if (!Number.isFinite(stridePhase) || stridePhase < 0 || stridePhase >= 1) {
       throw new Error('Invalid aim stride phase');
     }
-    if (!Number.isSafeInteger(stepIndex) || stepIndex < 0) {
-      throw new Error('Invalid aim step index');
-    }
+    assertWobbleNoiseOptions(wobbleNoise, wobbleNoiseStrengthScale);
     this.wobbleShape = { ...wobbleShape };
-    this.jitterSeed = jitterSeed;
+    this.wobbleNoise = { ...wobbleNoise };
+    this.wobbleNoiseStrengthScale = wobbleNoiseStrengthScale;
+    const initialWobbleRng = Rng.stream(wobbleSeed, 'aim-wobble-ou');
+    const savedWobbleState =
+      wobbleNoiseState ??
+      ({
+        yaw: { raw: 0, smooth: 0 },
+        pitch: { raw: 0, smooth: 0 },
+        rng: initialWobbleRng.state(),
+      } satisfies AimWobbleNoiseState);
+    assertAimWobbleNoiseState(savedWobbleState);
+    this.wobbleNoiseRng = new Rng(savedWobbleState.rng);
+    this.wobbleNoiseYaw = { ...savedWobbleState.yaw };
+    this.wobbleNoisePitch = { ...savedWobbleState.pitch };
     this.stridePhase = stridePhase;
-    this.stepIndex = stepIndex;
-    this.state = structuredClone(state);
-    this.state.frame = Object.freeze({ ...this.state.frame });
+    this.state = {
+      lookYaw: state.lookYaw,
+      lookPitch: state.lookPitch,
+      recoilYaw: state.recoilYaw,
+      recoilPitch: state.recoilPitch,
+      lastYaw: state.lastYaw,
+      lastPitch: state.lastPitch,
+      hasLookSample: state.hasLookSample,
+      frame: Object.freeze({ ...state.frame }),
+    };
     this.variance = variance;
     this.wobbleLimitRadians = wobbleLimitRadians;
   }
@@ -259,6 +355,12 @@ export class AimController {
     this.recomputeFrame();
   }
 
+  private advanceWobbleNoise(dt: number): void {
+    const [yawSample, pitchSample] = boundedNormalPair(this.wobbleNoiseRng);
+    this.wobbleNoiseYaw = advanceOrnsteinUhlenbeckAxis(this.wobbleNoiseYaw, dt, this.wobbleNoise, yawSample);
+    this.wobbleNoisePitch = advanceOrnsteinUhlenbeckAxis(this.wobbleNoisePitch, dt, this.wobbleNoise, pitchSample);
+  }
+
   private recomputeFrame(): void {
     const result = frameFromState({
       state: this.state,
@@ -266,16 +368,23 @@ export class AimController {
       variance: this.variance,
       wobbleLimitRadians: this.wobbleLimitRadians,
       shape: this.wobbleShape,
-      jitterSeed: this.jitterSeed,
       stridePhase: this.stridePhase,
-      stepIndex: this.stepIndex,
+      wobbleNoise: { yaw: this.wobbleNoiseYaw.smooth, pitch: this.wobbleNoisePitch.smooth },
+      wobbleNoiseStrengthScale: this.wobbleNoiseStrengthScale,
     });
     this.state.frame = result.frame;
     this.viewPitchShift = result.viewPitchShift;
   }
 
-  snapshotState(): Readonly<AimState> {
-    return Object.freeze({ ...this.state });
+  snapshotState(): Readonly<AimSnapshotState> {
+    return Object.freeze({
+      ...this.state,
+      wobbleNoise: Object.freeze({
+        yaw: Object.freeze({ ...this.wobbleNoiseYaw }),
+        pitch: Object.freeze({ ...this.wobbleNoisePitch }),
+        rng: Object.freeze([...this.wobbleNoiseRng.state()]) as unknown as RngState,
+      }),
+    });
   }
 
   advance({
@@ -288,7 +397,6 @@ export class AimController {
     firing,
     recoilRecoveryRate,
     stridePhase,
-    stepIndex,
   }: AimStep): AimFrame {
     if (
       !(
@@ -302,8 +410,6 @@ export class AimController {
         [yaw, pitch, recoilRecoveryRate, stridePhase].every(Number.isFinite) &&
         stridePhase >= 0 &&
         stridePhase < 1 &&
-        Number.isSafeInteger(stepIndex) &&
-        stepIndex >= 0 &&
         typeof firing === 'boolean' &&
         recoilRecoveryRate > 0
       )
@@ -315,7 +421,6 @@ export class AimController {
     this.variance = variance;
     this.speed = speed;
     this.stridePhase = stridePhase;
-    this.stepIndex = stepIndex;
 
     if (state.hasLookSample) {
       const yawRate = wrapAngle(yaw - state.lastYaw) / dt;
@@ -334,6 +439,7 @@ export class AimController {
     state.recoilYaw *= recoilDecay;
     state.recoilPitch *= recoilDecay;
 
+    this.advanceWobbleNoise(dt);
     this.recomputeFrame();
     return state.frame;
   }

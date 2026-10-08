@@ -23,6 +23,8 @@ export interface SoundEmission {
 
 export interface SoundEmissionMeta {
   sourceLabel?: string | null;
+  /** Gameplay hearing radius scale for a source-specific modifier such as a suppressor. */
+  noiseRadiusScale?: number;
   /** Playback-only first-person routing, never a hearing-policy decision. */
   listenerRelative?: boolean;
   /** Overrides the sound definition to emit a world noise pulse at this radius. */

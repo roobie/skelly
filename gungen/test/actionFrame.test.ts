@@ -7,7 +7,9 @@ import {
   type FrameMeasure,
   selectFrame,
   validateActionFrames,
+  validateFrameCartridgeClearances,
 } from '../src/gun/actionFrame.ts';
+import { AR_ACTION_FRAMES, SMALL_AR_CARTRIDGE, SMALL_AR_FRAME } from '../src/gun/arFrames.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { variant } from './helpers.ts';
 
@@ -46,9 +48,42 @@ const cartridge = (
   id: string,
   maximumOverallLengthMm: number | null,
   maximumHeadDiameterMm: number | null,
-): CartridgeFrameMeasures => ({ id, maximumOverallLengthMm, maximumHeadDiameterMm });
+): CartridgeFrameMeasures => ({ id, maximumOverallLengthMm, maximumHeadDiameterMm, caseLengthMm: null });
+
+const sourceCartridge = (id: string, caseLengthMm: number): CartridgeFrameMeasures => ({
+  ...SMALL_AR_CARTRIDGE,
+  id,
+  caseLengthMm,
+});
 
 describe('AR action-frame selection', () => {
+  it('keeps every cartridge-bound small-frame measure beyond its stated 5.56 clearance', () => {
+    expect(
+      AR_ACTION_FRAMES.flatMap((candidate) => validateFrameCartridgeClearances(candidate, SMALL_AR_CARTRIDGE)),
+    ).toEqual([]);
+    const carrier = SMALL_AR_FRAME.dimensions.carrierLengthMm;
+    const basis = carrier.cartridgeClearance;
+    const { caseLengthMm } = SMALL_AR_CARTRIDGE;
+    if (!basis || caseLengthMm === null) {
+      throw new Error('small AR carrier length needs sourced case-length clearance data');
+    }
+    const tooShort = {
+      ...SMALL_AR_FRAME,
+      dimensions: {
+        ...SMALL_AR_FRAME.dimensions,
+        carrierLengthMm: {
+          ...carrier,
+          value: caseLengthMm * (basis.multiplier ?? 1) + basis.clearanceMm - 0.1,
+        },
+      },
+    };
+    expect(
+      validateFrameCartridgeClearances(tooShort, sourceCartridge('short-case', caseLengthMm)).some(
+        (issue) => issue.rule === 'frame-clearance' && issue.message.includes('carrierLengthMm'),
+      ),
+    ).toBe(true);
+  });
+
   it('validates frame data evidence and unique ranks', () => {
     const first = frame('first', 0, 10, 5);
     const invalid = {

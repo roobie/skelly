@@ -25,8 +25,12 @@ const { registry } = buildRegistry(
     'items-other.json',
     'items-tools.json',
     'items-wearables.json',
+    'items-ammunition.json',
+    'items-attachments.json',
+    'models-items.json',
     'models-melee.json',
     'models-firearms.json',
+    'models-attachments.json',
   ].map(base),
 );
 

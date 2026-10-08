@@ -354,8 +354,10 @@ describe('hamlet save/load continuation', () => {
     }
     expect(source.sim.compression.active).toBe(true);
     expect(loaded.sim.compression.active).toBe(true);
-    expect(source.inventory.hands.left?.charges).toBeDefined();
-    expect(loaded.inventory.hands.left?.charges).toBe(source.inventory.hands.left?.charges);
+    const sourceBattery = source.inventory.hands.left?.slots?.battery;
+    const loadedBattery = loaded.inventory.hands.left?.slots?.battery;
+    expect(sourceBattery?.charges).toBeDefined();
+    expect(loadedBattery?.charges).toBe(sourceBattery?.charges);
     expect(loaded.sim.needs).toEqual(source.sim.needs);
     expect(loaded.sim.needs).not.toEqual(savedNeeds);
     expect(loaded.sim.actions.snapshotState()).toEqual(source.sim.actions.snapshotState());

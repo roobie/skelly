@@ -48,6 +48,18 @@ const makeSession = (play: SessionAudio['play'], content: Registry = registry) =
   });
 
 describe('simulation sound admission', () => {
+  it('applies the player noise radius scale to hearing and the emitted noise event', () => {
+    const session = makeSession(() => undefined);
+    const emissions = session.sim.events.reader();
+    const event = 'player_strain';
+    const radiusScale = 0.25;
+    const expectedRadius = registry.sounds.get(event)!.noise.radiusMetres * radiusScale;
+
+    expect(session.playPlayerSound(event, 0, { noiseRadiusScale: radiusScale })).toBe(true);
+    expect(session.playerAudio.vocalNoise?.radiusMetres).toBe(expectedRadius);
+    expect(emissions.read().find((emission) => emission.kind === 'noise')?.radiusMetres).toBe(expectedRadius);
+  });
+
   it('commits hearing and the seeded choice once even when the output rejects it', () => {
     const selected: Readonly<SoundEmission>[] = [];
     const audible = makeSession((sound) => {

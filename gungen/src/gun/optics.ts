@@ -2,6 +2,9 @@ import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, Solid, Vec2 } from '../core/schema.ts';
 import type { MountRequirement } from './mounts.ts';
 
+export const opticRailContactSolids = (solids: readonly Solid[]): readonly Solid[] =>
+  solids.filter((solid) => solid.kind === 'box' && solid.id.endsWith('foot'));
+
 /** 1U is 11.5mm; source dimensions are rounded to the model's 0.25u grid. IDs are persisted assembly values. */
 export const OPTIC_TYPE_IDS = [
   'mini-reflex',

@@ -291,6 +291,18 @@ const LightSchema = strictObject({
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
 
+const FirearmAttachmentEffectsSchema = strictObject({
+  /** Fraction of the firearm's committed recoil kick removed at full condition. */
+  recoilReduction: optional(Fraction),
+  /** Condition lost per committed shot. */
+  wearPerShot: optional(Fraction),
+  /** Multipliers applied to the existing aim and stance response. */
+  swayScale: optional(Positive),
+  recoveryScale: optional(Positive),
+  raiseScale: optional(Positive),
+  swingScale: optional(Positive),
+});
+
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
   capacity: Positive,
@@ -391,6 +403,10 @@ const ItemSchema = strictObject({
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
+  /** Fixed ADS power for a variable-power optic; constrained by its exported range. */
+  opticMagnification: optional(Positive),
+  /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
+  firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
@@ -527,9 +543,11 @@ const AttachmentSightSchema = strictObject({
 });
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
+  /** Geometry-derived gungen mass, explicitly in kilograms. */
+  massKg: Positive,
   kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
-  massKg: Positive,
+  mountFrame: strictObject({ normal: UnitVector, up: UnitVector }),
   properties: AttachmentPropertiesSchema,
   sight: optional(AttachmentSightSchema),
 });
@@ -604,6 +622,8 @@ const ModelSchema = pipe(
     id: Id,
     /** The `.glb` file, as a path within the pack. */
     file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
+    /** Material to light from the item's light component while this model is drawn. */
+    emissiveMaterial: optional(Name),
     /** Cartridge-data id (not a display designation); punctuation is normalized only in model slugs. */
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
@@ -1131,8 +1151,9 @@ const SkillSchema = pipe(
             wobbleVerticalToHorizontalRatio: pipe(Positive, maxValue(1)),
             wobbleLuneArchPower: pipe(Positive, maxValue(4)),
             wobbleLunePhaseOffsetRadians: pipe(NonNegative, maxValue(0.45)),
-            wobbleJitterShare: Fraction,
-            wobbleJitterAmplitudeFraction: pipe(Positive, maxValue(1)),
+            wobbleNoiseReversionRatePerSimSecond: pipe(Positive, maxValue(30)),
+            wobbleNoiseSigmaRadiansPerSqrtSecond: pipe(NonNegative, maxValue(1)),
+            wobbleNoiseSmoothingSimSeconds: pipe(Positive, maxValue(1)),
             reloadFactorFloor: Fraction,
             reloadFactorHalfLifeLevels: Positive,
             rackFactorFloor: Fraction,
