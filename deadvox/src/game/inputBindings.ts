@@ -71,7 +71,7 @@ const debugModifiedRow = (id: string, description: string, code: string, modifie
   ...debugRow(id, description, code),
   defaults: [{ code, modifier }],
 });
-export const INVENTORY_TAB_BINDINGS = [
+const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-items', description: 'Open / select Items tab', tab: 'items', code: 'KeyG' },
   { action: 'ui.inventory-tab-skills', description: 'Open / select Skills tab', tab: 'skills', code: 'KeyV' },
   { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting', code: 'KeyB' },
