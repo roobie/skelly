@@ -480,7 +480,6 @@ const inventoryTemplate = (
       `,
       )}
     </section>
-
   </div>
   <footer class="inv-queue"></footer>
 `;

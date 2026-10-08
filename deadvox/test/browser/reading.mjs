@@ -452,6 +452,39 @@ try {
       noteRowUid,
       'keyboard selection reaches the note row',
     );
+    await page.waitForFunction((uid) => {
+      const row = [...document.querySelectorAll('.inv-item[data-uid]')].find(
+        (candidate) => candidate.dataset.uid === String(uid),
+      );
+      if (!row?.getClientRects().length) {
+        return false;
+      }
+      const rect = row.getBoundingClientRect();
+      const centre = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      if (!(centre.x >= 0 && centre.x < innerWidth && centre.y >= 0 && centre.y < innerHeight)) {
+        return false;
+      }
+      for (let parent = row.parentElement; parent; parent = parent.parentElement) {
+        const style = getComputedStyle(parent);
+        const clipsX = ['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowX);
+        const clipsY = ['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowY);
+        if (!(clipsX || clipsY)) {
+          continue;
+        }
+        const bounds = parent.getBoundingClientRect();
+        const left = bounds.left + parent.clientLeft;
+        const top = bounds.top + parent.clientTop;
+        const right = left + parent.clientWidth;
+        const bottom = top + parent.clientHeight;
+        if (
+          (clipsX && !(centre.x >= left && centre.x <= right)) ||
+          (clipsY && !(centre.y >= top && centre.y <= bottom))
+        ) {
+          return false;
+        }
+      }
+      return document.elementFromPoint(centre.x, centre.y)?.closest('.inv-item') === row;
+    }, noteRowUid);
     const noteLayout = await note.evaluate((row) => {
       const rect = row.getBoundingClientRect();
       const centre = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
