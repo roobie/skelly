@@ -80,6 +80,18 @@ const furnitureAt = ({ building, override }: OverridePlacement): string | undefi
   );
 };
 
+const possibleLootItems = (tableId: string): Set<string> => {
+  const table = result.registry.loot.get(tableId);
+  if (!table) {
+    throw new Error(`Unknown loot table: ${tableId}`);
+  }
+  return new Set(
+    table.entries.flatMap((entry) =>
+      entry.item !== undefined ? [entry.item] : entry.table !== undefined ? [...possibleLootItems(entry.table)] : [],
+    ),
+  );
+};
+
 const withTestEntrance = (template: CompiledTemplate, target: readonly [number, number, number]): CompiledTemplate => {
   if (template.access) {
     return template;
@@ -643,15 +655,12 @@ describe('authored fixed loot', () => {
   it('covers the light recipe and guarantees the quiet input at the noisy scrap pile', () => {
     const overrides = placedOverrides(layout);
     const garageTemplates = ['workshop_hall', 'workshop_office', 'workshop_parts_store'];
+    const garageTemplateIds = [...garageTemplates, 'workshop_yard'];
     const garageItems = overrides
       .filter(({ building }) => garageTemplates.includes(building.template))
       .flatMap(({ override }) => override.items);
     const itemCount = (items: typeof garageItems, item: string) =>
       items.filter((fixed) => fixed.item === item).reduce((sum, fixed) => sum + (fixed.count ?? 1), 0);
-    const filler = result.registry.loot.get('workshop_filler')!;
-    for (const item of ['improvised_suppressor', 'taped_flashlight_mount', 'steel_pipe']) {
-      expect(filler.entries.some((entry) => entry.item === item)).toBe(false);
-    }
 
     const recipes = [...result.registry.recipes.values()];
     const mountRecipe = recipes.find(({ result: recipeResult }) => recipeResult.item === 'taped_flashlight_mount');
@@ -688,6 +697,18 @@ describe('authored fixed loot', () => {
         !alternatives.some((ingredient) => (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count),
     );
     expect(missingGroups).toHaveLength(1);
+    const garageRandomTables = garageTemplateIds.flatMap((templateId) =>
+      compileTemplate(result.registry, result.registry.templates.get(templateId)!).pieces.flatMap((piece) =>
+        piece.loot ? [piece.loot] : [],
+      ),
+    );
+    expect(garageRandomTables.length).toBeGreaterThan(0);
+    const garageRandomItems = new Set(garageRandomTables.flatMap((tableId) => [...possibleLootItems(tableId)]));
+    expect(garageRandomItems.size).toBeGreaterThan(0);
+    expect(missingGroups[0]!.some(({ item }) => garageRandomItems.has(item))).toBe(false);
+    expect(garageRandomItems.has(mountRecipe!.result.item)).toBe(false);
+    expect(garageRandomItems.has(suppressorRecipe!.result.item)).toBe(false);
+
     const scrapPile = compileTemplate(result.registry, result.registry.templates.get('workshop_yard')!).pieces.find(
       ({ furniture }) => furniture === 'workshop_scrap_pile',
     );

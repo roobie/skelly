@@ -61,6 +61,9 @@ describe('simulation sound admission', () => {
     const noises = emissions.read().filter((emission) => emission.kind === 'noise');
     expect(noises).toHaveLength(1);
     expect(noises[0]).toMatchObject({ event: 'player_strain' });
+
+    session.search(pile);
+    expect(emissions.read().filter((emission) => emission.kind === 'noise')).toHaveLength(0);
   });
 
   it('applies the player noise radius scale to hearing and the emitted noise event', () => {
