@@ -12,6 +12,7 @@ import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../../src/game/testHouse.ts';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
+import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -295,7 +296,20 @@ try {
   );
   const tabChecks = [];
   for (const tab of ['items', 'skills', 'crafting', 'items']) {
-    await page.locator(`#inventory .inv-tab[data-tab="${tab}"]`).click();
+    const tabButton = page.locator(`#inventory .inv-tab[data-tab="${tab}"]`);
+    const tabBox = await tabButton.boundingBox();
+    assert(tabBox, `tab ${tab} has a layout box`);
+    const target = { x: tabBox.x + tabBox.width / 2, y: tabBox.y + tabBox.height / 2 };
+    const cursor = await page.evaluate(() => ({
+      x: globalThis.pumpHandlingTest.input.cursorX,
+      y: globalThis.pumpHandlingTest.input.cursorY,
+    }));
+    await page.evaluate(dispatchMenuPointerMove, {
+      canvasSelector: '#view',
+      movementX: target.x - cursor.x,
+      movementY: target.y - cursor.y,
+    });
+    await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
     tabChecks.push(
       await page.evaluate(
         (selected) => ({
