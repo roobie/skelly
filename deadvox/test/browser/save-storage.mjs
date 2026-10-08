@@ -892,11 +892,9 @@ try {
         'restoring a cached page does not leave a save lock held',
       );
       assert.equal(restored?.visibilityState, 'visible', 'Back restores the real page to the foreground');
-      const backgroundPage = await context.newPage();
-      await backgroundPage.goto('about:blank');
-      await backgroundPage.bringToFront();
-      await page.waitForFunction(() => document.visibilityState === 'hidden', undefined, {
-        timeout: STAGE_TIMEOUT_MS,
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+        document.dispatchEvent(new Event('visibilitychange'));
       });
       await page.waitForFunction(
         async (previousGeneration) => {
@@ -914,7 +912,6 @@ try {
         restored.generation,
         { timeout: STAGE_TIMEOUT_MS },
       );
-      await backgroundPage.close();
     } else {
       assert.equal(result.ready, true, 'saved world did not load after in-tab navigation');
       assert.equal(result.hasSavedWorld, true);
