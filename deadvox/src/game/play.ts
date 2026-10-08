@@ -1418,6 +1418,19 @@ export const startPlay = (
     hintToggleInput.cancel();
   };
   keyboardInput.escape = () => reading.close();
+  const inventoryTabCommand = (action: string): boolean => {
+    const tab = inventoryTabForAction(action);
+    if (!tab) {
+      return false;
+    }
+    if (compression.locksInput) {
+      return true;
+    }
+    screen.openOnTab(tab);
+    mainMenuOpen = false;
+    syncMenuState();
+    return true;
+  };
   const modalCommand = (action: string): boolean => {
     if (action === 'ui.main-menu-toggle') {
       mainMenuOpen = !mainMenuOpen;
@@ -1434,20 +1447,11 @@ export const startPlay = (
       }
       return true;
     }
-    const tab = inventoryTabForAction(action);
-    if (tab) {
-      if (!compression.locksInput) {
-        screen.openOnTab(tab);
-        mainMenuOpen = false;
-        syncMenuState();
-      }
-      return true;
-    }
     if (screen.isOpen) {
       screen.onAction(action);
       return true;
     }
-    return mainMenuOpen || timeKeys(action);
+    return inventoryTabCommand(action) || mainMenuOpen || timeKeys(action);
   };
   const withUnlockedInput = (action: () => void): void => {
     if (!(replaySample?.inputLocked ?? compression.locksInput)) {
