@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 8;
+const INPUT_REPLAY_SCHEMA_VERSION = 10;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -35,6 +35,8 @@ const PENDING_REPLAY_KEY = 'deadvox.pending-replay';
 const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'inventory.move',
   'inventory.to-hands',
+  'item.pickup',
+  'furniture.interact',
   'inventory.search',
   'inventory.work',
   'inventory.assign',
@@ -51,6 +53,8 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'item.throw.cancel',
   'inventory.move',
   'inventory.to-hands',
+  'item.pickup',
+  'furniture.interact',
   'inventory.search',
   'inventory.work',
   'inventory.assign',
