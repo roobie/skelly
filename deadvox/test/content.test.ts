@@ -79,6 +79,19 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
+  it('keeps the base day cycle authoritative over mod overrides', () => {
+    const baseCycle = baseRegistry.dayCycle!;
+    const modCycle = {
+      ...baseCycle,
+      latitudeDegrees: baseCycle.latitudeDegrees > 80 ? baseCycle.latitudeDegrees - 7 : baseCycle.latitudeDegrees + 7,
+    };
+    const { registry } = buildRegistry([
+      { source: 'base/dayCycle.json', data: { dayCycle: baseCycle } },
+      { source: 'mod/dayCycle.json', data: { dayCycle: modCycle } },
+    ]);
+    expect(registry.dayCycle).toEqual(baseCycle);
+  });
+
   it('keeps input instructions out of item descriptions', () => {
     const bindingLabels = [
       ...INPUT_BINDINGS.flatMap((binding) =>

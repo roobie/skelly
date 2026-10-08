@@ -75,7 +75,7 @@ describe('sun-owned day phases', () => {
       const hour = hours(time);
       expect(sunDirection(hour, cycle)[1] > 0, `sun at ${time}`).toBe(state.phase === 'day');
       expect(
-        sunExposedAt({ position: [0, 1, 0], gameTimeOfDay: hour, skyTop: 10, isOpaque: () => false, cycle }),
+        sunExposedAt({ position: [0, 1, 0], gameHours: hour, skyTop: 10, isOpaque: () => false, cycle }),
         `exposure at ${time}`,
       ).toBe(state.phase === 'day');
       const sky = skyAt(hour, cycle);
@@ -107,6 +107,36 @@ describe('sun-owned day phases', () => {
     expect(Math.max(...nightLightIntensities)).toBeLessThan(Math.min(...dayLightIntensities));
     expect(parseSpawnTime('dawn', cycle)).toBe(dayPhaseAt(cycle, 0).dawn);
     expect(parseSpawnTime('dusk', cycle)).toBe(dayPhaseAt(cycle, 0).sunset);
+  });
+
+  it('lets twilight sight reach the quarter-range target but not the three-quarter target', () => {
+    const twilight = Array.from({ length: 24 * 60 }, (_, minute) => {
+      const time = minute * 60;
+      return { time, state: dayPhaseAt(cycle, time) };
+    }).filter(({ state }) => state.phase === 'dawn' || state.phase === 'dusk');
+    const lowBlend = twilight.find(({ state }) => state.sightBlend > 0.3 && state.sightBlend < 0.5)!;
+    const highBlend = twilight.find(({ state }) => state.sightBlend > 0.5 && state.sightBlend < 0.7)!;
+    const zombie = { ...shambler, hearing: 0 };
+    const rangeAt = (fraction: number) => zombie.nightSight + (zombie.sight - zombie.nightSight) * fraction;
+    const seesAt = (distance: number, time: number) => {
+      const state = dayPhaseAt(cycle, time);
+      return perceivePlayer({
+        zombie,
+        from: [0, 1, 0],
+        facing: [1, 0, 0],
+        player: { ...player, pos: [distance / scale.blockSize, 1, 0] },
+        dayPhase: state.phase,
+        sightBlend: state.sightBlend,
+        blockSize: scale.blockSize,
+        isSolid: () => false,
+        tuning: registry.senses.get('player')!,
+      });
+    };
+
+    for (const { time } of [lowBlend, highBlend]) {
+      expect(seesAt(rangeAt(0.25), time)).toBe(true);
+      expect(seesAt(rangeAt(0.75), time)).toBe(false);
+    }
   });
 
   it('blends zombie sight monotonically through the authored dusk and dawn', () => {

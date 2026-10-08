@@ -530,7 +530,7 @@ describe('shambler perception', () => {
 
     const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
     const daylightSky = (position: Vec3, hour: number) =>
-      sunExposedAt({ position, gameTimeOfDay: hour, skyTop: 20, isOpaque: wallShadow });
+      sunExposedAt({ position, gameHours: hour, skyTop: 20, isOpaque: wallShadow });
     const sunlitSample: Vec3 = [0.5, 1.15, 0.5];
     expect(
       raycast([sunlitSample[0], sunlitSample[1] + 1e-4, sunlitSample[2]], sunDirection(12), 20, wallShadow),

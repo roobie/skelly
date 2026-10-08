@@ -469,7 +469,7 @@ export const createSession = (options: SessionOptions) => {
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const isSunExposedAt = (pos: Vec3, hour: number): boolean =>
-    sunExposedAt({ position: pos, gameTimeOfDay: hour, skyTop, isOpaque: options.isOpaque, cycle: dayCycle });
+    sunExposedAt({ position: pos, gameHours: hour, skyTop, isOpaque: options.isOpaque, cycle: dayCycle });
   const physics = physicsFor(scale);
   const restored = options.restore;
 

@@ -169,15 +169,15 @@ describe('made-light point pool', () => {
 
   it('uses daytime sky exposure for light gating, not direct sun angle', () => {
     const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
-    const open = sunExposedAt({ position: [0.5, 1, 0.5], gameTimeOfDay: 12, skyTop: 20, isOpaque: () => false });
+    const open = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: () => false });
     const roofed = sunExposedAt({
       position: [0.5, 1, 0.5],
-      gameTimeOfDay: 12,
+      gameHours: 12,
       skyTop: 20,
       isOpaque: (_x, y) => y === 2,
     });
-    const shadow = sunExposedAt({ position: [0.5, 1, 0.5], gameTimeOfDay: 12, skyTop: 20, isOpaque: wallShadow });
-    const night = sunExposedAt({ position: [0.5, 1, 0.5], gameTimeOfDay: 0, skyTop: 20, isOpaque: () => false });
+    const shadow = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: wallShadow });
+    const night = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 0, skyTop: 20, isOpaque: () => false });
 
     expect(open).toBe(true);
     expect(roofed).toBe(false);

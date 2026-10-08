@@ -217,7 +217,9 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     origins.set(`${section}:${id}`, { source, path: `${section}[${i}]` });
 
   for (const { source, file } of files) {
-    if (file.dayCycle !== undefined) {
+    // Named spawn times are resolved during schema parsing against the authored base cycle.
+    // Keep that cycle authoritative so later mods cannot make parsed dawn/dusk values drift.
+    if (file.dayCycle !== undefined && registry.dayCycle === undefined) {
       registry.dayCycle = file.dayCycle;
     }
     (file.blocks ?? []).forEach((block, i) => {
