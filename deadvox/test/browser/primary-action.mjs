@@ -560,6 +560,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       { timeout: 20_000 },
     );
     const replayState = await page.locator('#input-replay-status').getAttribute('data-state');
+    const replayStatusText = await page.locator('#input-replay-status').textContent();
+    const replayClock = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
     const items = await page.evaluate((ids) => {
       const r = globalThis.primaryActionTest;
       const off = r.inventory.itemByUid(ids.offUid);
@@ -572,7 +574,6 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         mainLocation: mainLocation?.kind === 'hand' ? mainLocation.side : mainLocation?.kind,
       };
     }, fixture);
-    assert.equal(replayState, 'verified', 'stance throw replays to its recorded end state');
     assert.deepEqual(
       items,
       {
@@ -581,6 +582,11 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         mainLocation: fixture.mainSide,
       },
       'replay throws the off-hand item exactly once and leaves the main-hand item held',
+    );
+    assert.equal(
+      replayState,
+      'verified',
+      `stance throw replays to its recorded end state (${replayStatusText}; replay time ${replayClock}, recorded end ${artifact.endSimTimestamp}; actions ${JSON.stringify(artifact.actions)})`,
     );
     assert.deepEqual(pageErrors, []);
   } finally {
