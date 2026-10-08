@@ -113,7 +113,9 @@ The live-checklist mechanism for proposal 1 is documented in the [Slice checklis
   `<subproject>/docs/decisions/` (e.g. deadvox 0002, saves). Its context explains the
   situation, and its decision records the rule, reason and alternatives. Code cues the
   specification instead of copying it. Keep source quotes and stamps in the commit
-  message, not the ADR.
+  message, not the ADR. When a decision changes, rewrite the ADR's decision to the
+  current rule, or replace it with a superseding one and delete the old; the changing
+  commit carries the source.
 - **Mail and chat are transport, not the record.** A ruling that only exists in a thread isn't
   recorded. PRs, issues and commit messages are history: the final reason goes in a tracked
   doc before the merge.
