@@ -827,7 +827,11 @@ look stays on its own model in hand, on the ground and in flight; a separate
 emissive marker is used only when the model cannot be drawn and the item is shown
 as a fallback. This keeps the glow attached to the thing the player sees without
 changing the light pool or zombie sensing reach, or merging render and sense
-heights. Source colour, intensity, radius and burn rules belong to item content. See
+heights. Source colour, intensity, radius and burn rules belong to item content.
+Tune item light content against the ground and walls under the pool's shared
+near-field falloff, not against the glow. The zombie light check keeps sky
+visibility separate from carried light, so adding voxel sky light won't change the
+carried-light rule. See `src/core/zombies.ts`, `seesPlayer`; and
 `src/render/itemEmissive.ts`, `applyItemEmissive`, `src/render/piles.ts`,
 `PileMeshes.drawModels` and `drawEmissiveLights`, `src/render/itemThrows.ts`,
 `ItemThrows.spawn`, `src/render/lightPool.ts`, `LightPool.update`, and
