@@ -894,7 +894,7 @@ try {
       assert.equal(result.heldWriter, null, 'the cached page has not entered a lock-holding save');
       assert.equal(result.lockSnapshot.writerWaiting, false, 'no exclusive writer holds or blocks the new page');
       assert.equal(result.lockSnapshot.ready, true);
-      assert.equal(result.held.length, 0, 'the cached page leaves no exclusive writer lock');
+      assert.equal(result.held.length, 0, 'the save storage has no held lock');
       assert.equal(result.pending.length, 0, 'the new page has no shared request waiting on a cached writer');
       assert.equal(result.storageUnavailable, false);
       assert.equal(result.ready, true);
@@ -940,7 +940,9 @@ try {
       );
       assert.equal(restored.pageIsLeaving, false, 'pageshow clears the leaving state');
       assert.equal(postBackSave.pageIsLeaving, false, 'the restored page remains eligible for lifecycle saves');
-      assert.match(postBackSave.statusText, /^Saved generation \d+ · visibilitychange$/);
+      assert.equal(postBackSave.captures.length, 1, 'Back produces only the intended lifecycle capture');
+      assert.equal(postBackSave.captures[0].reason, 'visibilitychange');
+      assert.equal(postBackSave.captures[0].pageIsLeaving, false);
       assert.equal(postBackSave.generation > restored.generation, true);
     } else {
       assert.equal(result.ready, true, 'saved world did not load after in-tab navigation');
