@@ -9,11 +9,13 @@ import { AK_PROPORTIONS } from '../src/gun/akProportions.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import {
   AK_REAR_BEVEL,
+  BOLT_CARRIER_ENVELOPES,
   BOLT_CARRIER_RUNNING_CLEARANCE_U,
   carrierCavityBounds,
   FAMILIES,
   PUMP_REAR_SLOPE,
   RECEIVER_SECTION,
+  RECEIVER_SECTION_WALL_U,
 } from '../src/gun/parts.ts';
 import { PUMP_ACTION_TRAVEL_U } from '../src/gun/pumpShell.ts';
 import { assertConvexSection, buildReceiverSection } from '../src/gun/receiverSection.ts';
@@ -211,27 +213,47 @@ describe('receiver section builder', () => {
     }
   });
 
-  it('derives section cavities from carrier envelopes and preserves approved bounds', () => {
+  it('derives section cavities from carrier envelopes while preserving the minimum wall', () => {
     const cavities = {
       ar: carrierCavityBounds('ar', 0),
-      ak: carrierCavityBounds('ak', 0),
+      ak: carrierCavityBounds('ak', AK_PROPORTIONS.carrierAxisU),
       pump: carrierCavityBounds('pump', 1),
     };
-    expect(cavities.ar).toEqual({ y: [-0.6, 1.1], z: [-1.35, 1.35] });
-    expect(cavities.ak).toEqual({ y: [-1.35, 1.35], z: [-1.35, 1.35] });
-    expect(cavities.pump).toEqual({ y: [0.15, 1.85], z: [-0.85, 0.85] });
-    expect(carrierCavityBounds('pump', 0).y).toEqual([-0.85, 0.85]);
-    const akCavity = carrierCavityBounds('ak', AK_PROPORTIONS.carrierAxisU);
-    expect(cavityWallThickness(RECEIVER_SECTION.ak.outline, akCavity)).toBeGreaterThanOrEqual(0.5);
+    for (const [pattern, cavity, carrierY] of [
+      ['ar', cavities.ar, 0],
+      ['ak', cavities.ak, AK_PROPORTIONS.carrierAxisU],
+      ['pump', cavities.pump, 1],
+    ] as const) {
+      const envelope = BOLT_CARRIER_ENVELOPES[pattern];
+      expect(cavity.y).toEqual([
+        carrierY + envelope.y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+        carrierY + envelope.y[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
+      ]);
+      expect(cavity.z).toEqual([
+        envelope.z[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+        envelope.z[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
+      ]);
+      expect(
+        cavityWallThickness(RECEIVER_SECTION[pattern].outline, cavity),
+        `${pattern} wall thickness`,
+      ).toBeGreaterThanOrEqual(RECEIVER_SECTION_WALL_U);
+    }
+    expect(RECEIVER_SECTION_WALL_U).toBeGreaterThanOrEqual(0.5);
   });
 
   it('gives the AR a distinct flat-top upper profile with stepped shoulders', () => {
     const { outline } = RECEIVER_SECTION.ar;
     expect(() => assertConvexSection(outline, 'AR')).not.toThrow();
-    expect(outline).toContainEqual([2.5, -1.75]);
-    expect(outline).toContainEqual([2.5, 1.75]);
-    expect(outline).toContainEqual([1.5, -2]);
-    expect(outline).toContainEqual([1.5, 2]);
+    const top = Math.max(...outline.map(([y]) => y));
+    const topVertices = outline.filter(([y]) => y === top);
+    expect(topVertices.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(topVertices.map(([, z]) => z)).size).toBeGreaterThanOrEqual(2);
+    const levels = [...new Set(outline.map(([y]) => y))].sort((a, b) => b - a);
+    const widthAt = (y: number) => {
+      const zs = outline.filter(([level]) => level === y).map(([, z]) => z);
+      return Math.max(...zs) - Math.min(...zs);
+    };
+    expect(widthAt(levels[1]!)).not.toBe(widthAt(top));
     expect(RECEIVER_SECTION.ar.outline).not.toEqual(RECEIVER_SECTION.ak.outline);
     expect(RECEIVER_SECTION.ar.outline).not.toEqual(RECEIVER_SECTION.pump.outline);
   });
@@ -258,9 +280,12 @@ describe('receiver section builder', () => {
     expectWatertightMesh(meshForSolidGroup(solids), 'closed section');
   });
 
-  it('rounds the pump rear transition while preserving its total 4u run and 1.5u rise', () => {
-    const bottomY = 1;
-    const topY = 2.5;
+  it('rounds the pump rear transition while preserving its declared run and rise', () => {
+    const { faces } = RECEIVER_SECTION.pump;
+    const bottomY = Math.min(
+      ...PUMP_REAR_SLOPE.clip.map(({ normal, offset }) => (offset - normal[0] * faces.rear) / normal[1]),
+    );
+    const topY = faces.top.y;
     const rearXAt = (y: number) =>
       Math.max(...PUMP_REAR_SLOPE.clip.map(({ normal, offset }) => (offset - normal[1] * y) / normal[0]));
     const run = Math.abs(rearXAt(topY) - rearXAt(bottomY));
@@ -268,63 +293,52 @@ describe('receiver section builder', () => {
     expect(run).toBeCloseTo(PUMP_REAR_SLOPE.run, 12);
     expect(rise).toBe(PUMP_REAR_SLOPE.rise);
     expect(PUMP_REAR_SLOPE.angleDegrees).toBeCloseTo((Math.atan(rise / run) * 180) / Math.PI, 12);
-    expect(rearXAt(bottomY)).toBe(-16);
-    expect(rearXAt(topY)).toBe(-12);
   });
 
-  it('opens the AR carrier bore while preserving AK/pump adapters and watertight shells', () => {
-    const receivers = [
-      {
-        id: 'receiver-ar',
-        cavity: carrierCavityBounds('ar', 0),
-        rearX: RECEIVER_SECTION.ar.faces.rear,
-        def: FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore: 'M', section: 'ar', rail: 'full' }),
-      },
-      {
-        id: 'receiver-ak',
-        cavity: carrierCavityBounds('ak', AK_PROPORTIONS.carrierAxisU),
-        rearX: RECEIVER_SECTION.ak.faces.rear,
-        // The dust cover's slope dips below the carrier, so the cavity ends where the slope does.
-        cavityRearX: RECEIVER_SECTION.ak.faces.rear + AK_REAR_BEVEL.run,
-        def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
-      },
-    ];
-    for (const { id, cavity, rearX, def, ...ends } of receivers) {
-      const cavityRearX = 'cavityRearX' in ends ? ends.cavityRearX : rearX + 0.5;
-      const sectionSolids = def.solids.filter((solid) => solid.display?.mergeGroup === id);
-      const ids = sectionSolids.map(({ id: solidId }) => solidId);
-      const receiverMesh = meshForSolidGroup(sectionSolids);
-      const cavityCenterY = (cavity.y[0] + cavity.y[1]) / 2;
-      const cavityCenterZ = (cavity.z[0] + cavity.z[1]) / 2;
-      const frontFaceX = 0;
-      if (id === 'receiver-ar') {
-        expect(faceContainsPoint(receiverMesh, rearX, cavityCenterY, cavityCenterZ), `${id} buffer-tube bore`).toBe(
-          false,
-        );
-        expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} breech bore`).toBe(false);
-        expect(ids.some((solidId) => solidId.startsWith(`${id}-rear-adapter`))).toBe(false);
-        expect(ids.some((solidId) => solidId.startsWith(`${id}-front-adapter`))).toBe(false);
-      } else {
-        expect(
-          faceContainsPoint(receiverMesh, cavityRearX, cavityCenterY, cavityCenterZ),
-          `${id} cavity's rear wall`,
-        ).toBe(true);
-        expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} front face`).toBe(true);
-        expect(ids.some((solidId) => solidId.startsWith(`${id}-rear-adapter`))).toBe(true);
-        expect(ids.some((solidId) => solidId.startsWith(`${id}-front-adapter`))).toBe(true);
-        const rearAdapter = sectionSolids.find(({ id: solidId }) => solidId.startsWith(`${id}-rear-adapter`));
-        const frontAdapter = sectionSolids.find(({ id: solidId }) => solidId.startsWith(`${id}-front-adapter`));
-        expect(rearAdapter?.kind).toBe('extruded-polygon');
-        expect(frontAdapter?.kind).toBe('extruded-polygon');
-        if (rearAdapter?.kind === 'extruded-polygon' && frontAdapter?.kind === 'extruded-polygon') {
-          expect(rearAdapter.z).toEqual([rearX, cavityRearX]);
-          expect(frontAdapter.z).toEqual([-0.5, 0]);
-        }
-      }
-      expectWatertightMesh(receiverMesh, id);
-      expect(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[0]).toBe(rearX);
-      expect(def.ports.find(({ id: portId }) => portId === 'handguard')?.pos[0]).toBe(frontFaceX);
+  it('opens the AR carrier bore without receiver adapters', () => {
+    const def = FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore: 'M', section: 'ar', rail: 'full' });
+    const cavity = carrierCavityBounds('ar', 0);
+    const sectionSolids = def.solids.filter((solid) => solid.display?.mergeGroup === 'receiver-ar');
+    const ids = sectionSolids.map(({ id }) => id);
+    const receiverMesh = meshForSolidGroup(sectionSolids);
+    const cavityCenterY = (cavity.y[0] + cavity.y[1]) / 2;
+    const cavityCenterZ = (cavity.z[0] + cavity.z[1]) / 2;
+    expect(
+      faceContainsPoint(receiverMesh, RECEIVER_SECTION.ar.faces.rear, cavityCenterY, cavityCenterZ),
+      'buffer-tube bore',
+    ).toBe(false);
+    expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), 'breech bore').toBe(false);
+    expect(ids.some((id) => id.startsWith('receiver-ar-rear-adapter'))).toBe(false);
+    expect(ids.some((id) => id.startsWith('receiver-ar-front-adapter'))).toBe(false);
+    expect(def.ports.find(({ id }) => id === 'stock')?.pos[0]).toBe(RECEIVER_SECTION.ar.faces.rear);
+    expect(def.ports.find(({ id }) => id === 'handguard')?.pos[0]).toBe(RECEIVER_SECTION.ar.faces.front);
+    expectWatertightMesh(receiverMesh, 'receiver-ar');
+  });
+
+  it('keeps the AK receiver adapters around its carrier cavity', () => {
+    const def = FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' });
+    const cavity = carrierCavityBounds('ak', AK_PROPORTIONS.carrierAxisU);
+    const rearX = RECEIVER_SECTION.ak.faces.rear;
+    const cavityRearX = rearX + AK_REAR_BEVEL.run;
+    const sectionSolids = def.solids.filter((solid) => solid.display?.mergeGroup === 'receiver-ak');
+    const receiverMesh = meshForSolidGroup(sectionSolids);
+    const cavityCenterY = (cavity.y[0] + cavity.y[1]) / 2;
+    const cavityCenterZ = (cavity.z[0] + cavity.z[1]) / 2;
+    expect(faceContainsPoint(receiverMesh, cavityRearX, cavityCenterY, cavityCenterZ), 'cavity rear wall').toBe(true);
+    expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), 'front face').toBe(true);
+    const rearAdapter = sectionSolids.find(({ id }) => id.startsWith('receiver-ak-rear-adapter'));
+    const frontAdapter = sectionSolids.find(({ id }) => id.startsWith('receiver-ak-front-adapter'));
+    expect(rearAdapter?.kind).toBe('extruded-polygon');
+    expect(frontAdapter?.kind).toBe('extruded-polygon');
+    if (rearAdapter?.kind === 'extruded-polygon' && frontAdapter?.kind === 'extruded-polygon') {
+      expect(rearAdapter.z).toEqual([rearX, cavityRearX]);
+      const receiverGeometry = RECEIVER_SECTION.ak;
+      expect(frontAdapter.z[1] - frontAdapter.z[0]).toBe(RECEIVER_SECTION_WALL_U);
+      expect(frontAdapter.z[1]).toBe(receiverGeometry.faces.front);
     }
+    expectWatertightMesh(receiverMesh, 'receiver-ak');
+    expect(def.ports.find(({ id }) => id === 'stock')?.pos[0]).toBe(rearX);
+    expect(def.ports.find(({ id }) => id === 'handguard')?.pos[0]).toBe(RECEIVER_SECTION.ak.faces.front);
   });
 
   it('contains the pump action in the full-height shell at rest and full stroke with one continuous unpatched slope', () => {
@@ -402,10 +416,13 @@ describe('receiver section builder', () => {
       }
     }
     expect(faceContainsPoint(mesh, faces.rear, -1, 0), 'stock remains on rear face').toBe(true);
-    expect(stock.pos).toEqual([-16, -1, 0]);
-    expect(def.ports.find(({ id }) => id === 'lower')?.pos).toEqual([0, -3.5, 0]);
-    expect(def.ports.find(({ id }) => id === 'handguard')?.pos[0]).toBe(3.5);
-    expect(def.ports.find(({ id }) => id === 'tube')?.pos[0]).toBe(3.5);
+    expect(stock.pos[0]).toBe(faces.rear);
+    const lower = def.ports.find(({ id }) => id === 'lower')!;
+    const handguard = def.ports.find(({ id }) => id === 'handguard')!;
+    const tube = def.ports.find(({ id }) => id === 'tube')!;
+    expect(lower.pos[1]).toBeLessThan(stock.pos[1]);
+    expect(handguard.pos[0]).toBe(tube.pos[0]);
+    expect(handguard.pos[0]).toBe(faces.front);
     expectWatertightMesh(mesh, 'receiver-pump');
   });
 

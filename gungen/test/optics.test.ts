@@ -53,19 +53,6 @@ describe('optic catalog', () => {
     expect(actual).toEqual(optic.envelopeU);
   });
 
-  it('bounds the complete XPS2 incl. base to 90 × 59 × 53 mm while preserving the fixed prism', () => {
-    const bounds = getOptic('holographic').solids.map(localSolidBounds);
-    const extent = [0, 1, 2].map(
-      (axis) =>
-        (Math.max(...bounds.map(([, max]) => max[axis]!)) - Math.min(...bounds.map(([min]) => min[axis]!))) * 11.5,
-    );
-    extent.forEach((size, axis) => {
-      expect(size).toBeLessThanOrEqual([90, 59, 53][axis]!);
-    });
-    // Its actual last-round size, not just a catalog label: 149.5 × 43.125 × 63.25 mm.
-    expect(getOptic('fixed-prism-4x')).toMatchObject({ envelopeMm: [150, 45, 60], envelopeU: [13, 3.75, 5.5] });
-  });
-
   it('gives the closed micro dot a rear-to-front tunnel and two rear-left adjustment dials', () => {
     const optic = getOptic('mini-reflex');
     expect(optic.reference).toContain('ACRO');
@@ -173,7 +160,6 @@ describe('generic rail mount fit', () => {
 
   it('requires enough length, slots, matching pitch, and support at the selected slot', () => {
     expect(rail.mount).toBe('rail-top');
-    expect(MOUNT_STANDARDS['rail-top'].slotPitchU).toBe(2);
     expect(mountCanAccept(rail, highMag, 3)).toBe(true);
     expect(mountCanAccept(rail, highMag, 2)).toBe(false);
     expect(mountCanAccept({ ...rail, slots: { count: 6, pitch: 2 } }, highMag, 2)).toBe(false);

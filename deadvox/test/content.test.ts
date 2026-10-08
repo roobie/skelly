@@ -11,8 +11,14 @@ import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDe
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 
 const BASE = 'src/content/base';
+const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
+const INPUT_GESTURE =
+  /\b(?:hold|press|tap|click|double[ -]press|wield|activate|throw|scroll|wheel|drag|rotate|snap|spawn)\b/i;
+const LMB_ALIAS = /\bLMB\b/i;
+const RMB_ALIAS = /\bRMB\b/i;
 const base = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
@@ -72,6 +78,43 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
+  it('keeps input instructions out of item descriptions', () => {
+    const bindingLabels = [
+      ...INPUT_BINDINGS.flatMap((binding) =>
+        binding.defaults.map((_, index) => inputBindings.alternativeLabel(binding.id, index).split(' + ').at(-1)!),
+      ),
+      ...POINTER_ACTIONS.map(({ label }) => label),
+    ];
+    const controlPatterns = [...new Set(bindingLabels)].map((label) => {
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replaceAll(' ', '\\s+');
+      if (CONTEXTUAL_KEY_LABEL.test(label)) {
+        return new RegExp(`(?:${INPUT_GESTURE.source}\\s+|\\b(?:key|button)\\s+)${escaped}(?![\\p{L}\\p{N}])`, 'iu');
+      }
+      return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu');
+    });
+    const buttonAliases = POINTER_ACTIONS.flatMap(({ id }) => {
+      if (id === 'hand.use-dominant') {
+        return [LMB_ALIAS];
+      }
+      if (id === 'stance.ready') {
+        return [RMB_ALIAS];
+      }
+      return [];
+    });
+    const namesInput = (description: string) =>
+      [...controlPatterns, ...buttonAliases].some((pattern) => pattern.test(description)) ||
+      INPUT_GESTURE.test(description);
+    expect(namesInput(`Hold ${inputBindings.label('firearm.reload')} to load`)).toBe(true);
+    expect(namesInput(`${inputBindings.label('ui.main-menu-toggle')} key`)).toBe(true);
+    expect(namesInput('LMB fires')).toBe(true);
+    expect(namesInput('AR-pattern rifle')).toBe(false);
+    expect(namesInput('A magazine that holds 30 rounds.')).toBe(false);
+    const offenders = [...baseRegistry.items.values()].flatMap((item) =>
+      item.description !== undefined && namesInput(item.description) ? [`${item.id}: ${item.description}`] : [],
+    );
+    expect(offenders).toEqual([]);
+  });
+
   it('base content has no issues', () => {
     const { registry, issues } = baseBuild;
     expect(issues).toEqual([]);

@@ -210,6 +210,45 @@ describe('handling move admission', () => {
     expect(t.queue.busy).toBe(false);
   });
 
+  it('wears a ground backpack through the ordinary worn-slot handling path when the back is free', () => {
+    const t = setup();
+    const backpack = t.add('school_backpack', { kind: 'pile', pos: [0, 0, 0] });
+    const target = { kind: 'worn' } as const;
+    const plan = t.inventory.plan(backpack, target);
+    if (!plan.ok) {
+      throw new Error(plan.reason);
+    }
+
+    expect(pocketGroundItem(t.inventory, t.queue, backpack)).toBeUndefined();
+    expect(t.queue.jobs[0]).toMatchObject({
+      kind: 'move',
+      itemUid: backpack.uid,
+      target: t.inventory.targetState(target),
+      duration: plan.time,
+    });
+    t.queue.tick(plan.time);
+    expect(t.inventory.worn.back).toBe(backpack);
+  });
+
+  it('pockets a ground backpack when the back slot is occupied', () => {
+    const t = setup();
+    const worn = t.add('hiking_backpack', { kind: 'worn' });
+    const backpack = t.add('school_backpack', { kind: 'pile', pos: [0, 0, 0] });
+    expect(pocketGroundItem(t.inventory, t.queue, backpack)).toBeUndefined();
+    const [job] = t.queue.jobs;
+    if (!job) {
+      throw new Error('Backpack pocketing did not queue a handling job');
+    }
+    if (job.kind !== 'move') {
+      throw new Error('Backpack pocketing queued a non-move handling job');
+    }
+    expect(job.itemUid).toBe(backpack.uid);
+    expect(job.target).toMatchObject({ kind: 'pocket', ownerUid: worn.uid });
+    t.queue.tick(job.duration);
+    expect(t.inventory.worn.back).toBe(worn);
+    expect(t.inventory.locate(backpack)).toMatchObject({ kind: 'pocket', owner: worn });
+  });
+
   it('stows both occupied hands in a backpack before wielding a two-handed item', () => {
     const t = setup();
     const leading = dominantSide(t.inventory.character);
