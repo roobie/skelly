@@ -5,12 +5,12 @@ export interface FrameMeasure {
     | { readonly kind: 'estimate'; readonly method: string };
 }
 
-export interface CartridgeFrameFit {
+interface CartridgeFrameFit {
   readonly maximumOverallLengthMm: FrameMeasure;
   readonly maximumHeadDiameterMm: FrameMeasure;
 }
 
-export interface ActionFrameDimensions {
+interface ActionFrameDimensions {
   readonly carrierLengthMm: FrameMeasure;
   readonly carrierTravelMm: FrameMeasure;
   readonly receiverLengthMm: FrameMeasure;
@@ -94,7 +94,7 @@ export const validateActionFrames = (frames: readonly ActionFrame[]): ActionFram
   return frames.flatMap((frame) => frameIssues(frame, ids, ranks));
 };
 
-export const frameFits = (frame: ActionFrame, cartridge: CartridgeFrameMeasures): boolean =>
+const frameFits = (frame: ActionFrame, cartridge: CartridgeFrameMeasures): boolean =>
   cartridge.maximumOverallLengthMm !== null &&
   cartridge.maximumHeadDiameterMm !== null &&
   cartridge.maximumOverallLengthMm <= frame.fit.maximumOverallLengthMm.value &&
