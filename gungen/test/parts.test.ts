@@ -198,9 +198,9 @@ describe('part library', () => {
     if (guardTop.kind === 'box') {
       const frameBounds = frame.solids.map(localSolidBounds);
       const frameHalfWidth = Math.max(...frameBounds.map(([min, max]) => Math.max(Math.abs(min[2]), Math.abs(max[2]))));
-      const boreY = frame.ports.find(({ id }) => id === 'barrel')!.pos[1];
+      const [, boreY] = frame.ports.find(({ id }) => id === 'barrel')!.pos;
       const guardMaxY = guardTop.box.center[1] + guardTop.box.half[1];
-      expect(guardTop.box.half[2]).toBeLessThan(frameHalfWidth);
+      expect(Math.abs(guardTop.box.center[2]) + guardTop.box.half[2]).toBeLessThanOrEqual(frameHalfWidth);
       expect(guardMaxY).toBeLessThanOrEqual(boreY);
     }
   });

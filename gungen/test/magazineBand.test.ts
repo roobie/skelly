@@ -74,15 +74,14 @@ describe('magazine length bands', () => {
     }
   });
 
-  it('keeps the short box-magazine body shorter than the longer variant', () => {
-    const short = FAMILIES.magazine!.build({ length: '5-round' }).solids[0]!;
-    const long = FAMILIES.magazine!.build({ length: '10-round' }).solids[0]!;
-    expect(short.kind).toBe('box');
-    expect(long.kind).toBe('box');
-    if (short.kind !== 'box' || long.kind !== 'box') {
-      throw new Error('Expected straight box magazines.');
+  it('keeps the five-round box-magazine body at 4.5u (about 52mm)', () => {
+    const magazine = FAMILIES.magazine!.build({ length: '5-round' });
+    const body = magazine.solids[0]!;
+    expect(body.kind).toBe('box');
+    if (body.kind !== 'box') {
+      throw new Error('Expected a straight box magazine.');
     }
-    expect(short.box.half[1]).toBeLessThan(long.box.half[1]);
+    expect(body.box.center[1] + body.box.half[1] - (body.box.center[1] - body.box.half[1])).toBeCloseTo(4.5);
   });
 
   it('seats both bolt magazines deep and limits protrusion below the well line', () => {
@@ -113,14 +112,18 @@ describe('magazine length bands', () => {
           }),
       );
       const protrusion = lowerBottom - (magWorld.center[1] - magWorld.half[1]);
-      const insertionDepth = magWorld.center[1] + magWorld.half[1] - lowerBottom;
-      return { protrusion, insertionDepth, bodyLength: magWorld.half[1] * 2 };
+      const insertionDepth = magWorld.center[1] + magWorld.half[1] - -2.5;
+      return { protrusion, insertionDepth };
     };
 
     const five = measure('5-round');
     const ten = measure('10-round');
+    expect(five.protrusion).toBeCloseTo(0.25);
+    expect(five.protrusion).toBeLessThanOrEqual(0.25);
+    expect(ten.protrusion).toBeCloseTo(1.25);
+    expect(ten.protrusion).toBeLessThanOrEqual(1.5);
     expect(ten.protrusion).toBeGreaterThan(five.protrusion);
-    expect(five.insertionDepth).toBeCloseTo(ten.insertionDepth);
-    expect(ten.bodyLength).toBeGreaterThan(five.bodyLength);
+    expect(five.insertionDepth).toBeCloseTo(2.75);
+    expect(ten.insertionDepth).toBeCloseTo(2.75);
   });
 });

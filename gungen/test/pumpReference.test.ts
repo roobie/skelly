@@ -68,10 +68,10 @@ describe('870-derived pump silhouette', () => {
     const guards = lower.solids.filter((s) => s.id.startsWith('trigger-guard-'));
     const guardBounds = guards.map(localSolidBounds);
     for (const axis of [0, 1, 2] as const) {
-      expect(Math.min(...guardBounds.map(([min]) => min[axis]))).toBeLessThanOrEqual(
+      expect(Math.min(...guardBounds.map(([guardMin]) => guardMin[axis]))).toBeLessThanOrEqual(
         finger.center[axis] - finger.half[axis],
       );
-      expect(Math.max(...guardBounds.map(([, max]) => max[axis]))).toBeGreaterThanOrEqual(
+      expect(Math.max(...guardBounds.map(([, guardMax]) => guardMax[axis]))).toBeGreaterThanOrEqual(
         finger.center[axis] + finger.half[axis],
       );
     }

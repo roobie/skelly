@@ -27,12 +27,17 @@ describe('detached magazine viewer', () => {
     const detached = buildDetachedMagazine(report, layers.solids, cartridge, ammo);
     expect(detached).toBeDefined();
     expect(detached!.capacity).toBeGreaterThan(0);
-    const shell = detached!.group.children.find((child) => child instanceof Group && child.children.length > 0);
+    const shell = detached!.group.children.find(
+      (child) =>
+        child instanceof Group &&
+        child.children.some((inner) => inner instanceof Mesh && !(inner instanceof InstancedMesh)),
+    );
     const rounds = detached!.group.children.find(
       (child) => child instanceof Group && child.children.some((inner) => inner instanceof InstancedMesh),
     ) as Group | undefined;
     expect(shell).toBeDefined();
     expect(rounds).toBeDefined();
+    expect(rounds).not.toBe(shell);
     const instances = rounds!.children.filter((child) => child instanceof InstancedMesh) as InstancedMesh[];
     const ammoParts = ammo.loose.children.filter((child) => child instanceof Mesh);
     expect(instances).toHaveLength(ammoParts.length);

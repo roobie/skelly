@@ -22,7 +22,11 @@ describe('generated magazine round columns', () => {
     const part = magazine.build(params);
     const { column } = magazineRoundColumn(part.displaySolids ?? part.solids, cartridge, params, part.solids);
     const poses = magazineRoundPoses(column);
-    expect(column.capacity).toBeGreaterThan(0);
+    if (_label.startsWith('AK')) {
+      expect(column.capacity).toBe(30);
+    } else {
+      expect(column.capacity).toBeGreaterThan(0);
+    }
     expect(column.rounds).toHaveLength(column.capacity);
     expect(poses).toHaveLength(column.capacity);
     expect(poses.every(({ at, tilt }) => at.every(Number.isFinite) && Number.isFinite(tilt))).toBe(true);
@@ -59,21 +63,21 @@ describe('generated magazine round columns', () => {
     }
     expect(new TextDecoder().decode(result.glb.slice(0, 4))).toBe('glTF');
     expect(result.modelEntry.calibre).toBe('7.62x39');
-    expect(result.modelEntry.capacity).toBeGreaterThan(0);
+    expect(result.modelEntry.capacity).toBe(30);
     expect(result.modelEntry.rounds).toHaveLength(result.modelEntry.capacity!);
     expect(result.modelEntry.rounds?.[0]?.at[2]).toBeGreaterThan(0);
     expect(result.modelEntry.rounds?.[1]?.at[2]).toBeLessThan(0);
   });
 
-  it('fits and exports the source-profile rounds in a STANAG L magazine', () => {
+  it('fits and exports 30 source-profile 5.56 rounds in a STANAG L magazine', () => {
     const params = { length: 'L', profile: 'stanag-curved' };
     const part = magazine.build(params);
     const { column } = magazineRoundColumn(part.displaySolids ?? part.solids, natoCartridge, params, part.solids);
-    expect(column.capacity).toBeGreaterThan(0);
-    expect(column.rounds).toHaveLength(column.capacity);
+    expect(column.capacity).toBe(30);
+    expect(column.rounds).toHaveLength(30);
     expect(column.rounds.every(({ position, z }) => position.every(Number.isFinite) && Number.isFinite(z))).toBe(true);
     const result = exportMagazineGlb({
-      asset: { id: 'magazine_stanag', file: 'assets/models/magazine-stanag.glb' },
+      asset: { id: 'magazine_stanag_30', file: 'assets/models/magazine-stanag-30.glb' },
       params,
       cartridge: natoCartridge,
     });
@@ -82,8 +86,8 @@ describe('generated magazine round columns', () => {
       return;
     }
     expect(result.modelEntry.calibre).toBe('5.56x45');
-    expect(result.modelEntry.capacity).toBe(column.capacity);
-    expect(result.modelEntry.rounds).toHaveLength(column.capacity);
+    expect(result.modelEntry.capacity).toBe(30);
+    expect(result.modelEntry.rounds).toHaveLength(30);
   });
 
   it('refuses a generated magazine body whose actual depth cannot contain the round profile', () => {
