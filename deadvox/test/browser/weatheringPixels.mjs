@@ -111,7 +111,7 @@ void main() {
       return masks;
     };
 
-    const captureImages = ({ meshes, renderer, scene, camera, canvas, content }) => {
+    const captureImages = ({ meshes, renderView, canvas, content }) => {
       const settings = [
         ['off', 0],
         ['default', content.strength],
@@ -122,7 +122,7 @@ void main() {
       const uniforms = {};
       for (const [name, strength] of settings) {
         meshes.setWeathering({ ...content, strength });
-        renderer.render(scene, camera);
+        renderView.render();
         uniforms[name] = meshes.weathering.value;
         images[name] = canvas.toDataURL('image/png');
       }
@@ -314,9 +314,7 @@ void main() {
     const beforeCamera = cameraPose(activeCamera);
     const { images, uniforms } = captureImages({
       meshes: chunkMeshes,
-      renderer: webglRenderer,
-      scene: testEngine.scene,
-      camera: activeCamera,
+      renderView: globalThis.firefoxUiTest.view,
       canvas: rendererCanvas,
       content: weatheringContent,
     });

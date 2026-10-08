@@ -350,7 +350,11 @@ try {
   pageErrors.length = 0;
   consoleErrors.length = 0;
   await page.goto(
-    browserStageUrl('firefox-ui', `http://127.0.0.1:${address.port}/?debug=1&site=hamlet&seed=73&radius=64`, 'pixel'),
+    browserStageUrl(
+      'firefox-ui',
+      `http://127.0.0.1:${address.port}/?debug=1&site=hamlet&seed=73&radius=64&post=0`,
+      'pixel',
+    ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
     timeout: 30_000,
