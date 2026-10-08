@@ -64,6 +64,11 @@ const isTargetState = (value: unknown): value is TargetState => {
   }
 };
 
+const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.firearmUid) &&
+  typeof payload.slotId === 'string' &&
+  (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
+
 export const isReplayActionPayload = (value: unknown): value is ReplayActionPayload => {
   if (!(value && typeof value === 'object' && !Array.isArray(value))) {
     return false;
@@ -105,9 +110,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         isUid(payload.itemUid)
       );
     case 'firearm.attachment.fit':
-      return isUid(payload.firearmUid) && isUid(payload.attachmentUid) && typeof payload.slotId === 'string';
     case 'firearm.attachment.remove':
-      return isUid(payload.firearmUid) && typeof payload.slotId === 'string';
+      return isAttachmentPayload(payload);
     case 'inventory.cancel-handling':
     case 'craft.continue':
     case 'craft.stop':
