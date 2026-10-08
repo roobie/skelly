@@ -63,7 +63,6 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
-import { updateStartupHintLatch } from '../ui/startupHint.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
@@ -128,6 +127,7 @@ import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInp
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
+import { updateStartupHintLatch } from './startupHint.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';

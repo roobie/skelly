@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { updateStartupHintLatch } from '../src/ui/startupHint.ts';
+import { updateStartupHintLatch } from '../src/game/startupHint.ts';
 
 describe('updateStartupHintLatch', () => {
   it('does not reopen the startup hint for later dirty columns', () => {
