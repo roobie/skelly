@@ -2102,7 +2102,7 @@
         "dispersionRadians": 0.012,
         "skillZeroHandling": {
           "singleShot": {
-            "variance": 1.5,
+            "variance": 15,
             "recoilKickScale": 3,
             "recoilRecoveryScale": 0.75
           },
@@ -2128,7 +2128,7 @@
         "dispersionRadians": 0.018,
         "skillZeroHandling": {
           "singleShot": {
-            "variance": 2,
+            "variance": 20,
             "recoilKickScale": 6,
             "recoilRecoveryScale": 0.5
           },

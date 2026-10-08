@@ -385,11 +385,12 @@ it('composes the camera-local aim basis like the held firearm at non-zero pitch'
   expect(basis.forward.reduce((sum, value, index) => sum + value * basis.up[index]!, 0)).toBeCloseTo(0, 6);
 });
 
-it('skill-zero handling is worse for automatic follow-ups than single shots, and both improve by expert', () => {
+it('skill-zero handling uses separate shot variances and heavier follow-up recoil', () => {
   const single = skillEffects(0, 'singleShot');
   const followup = skillEffects(0, 'automaticFollowup');
   const expert = skillEffects(SKILL_LEVEL_MAX, 'singleShot');
-  expect(followup.variance).toBeGreaterThan(single.variance);
+  expect(single.variance).toBe(stanceTuning.skillZeroHandling.singleShot.variance);
+  expect(followup.variance).toBe(stanceTuning.skillZeroHandling.automaticFollowup.variance);
   expect(followup.recoilKickScale).toBeGreaterThan(single.recoilKickScale);
   expect(followup.recoilRecoveryRate).toBeLessThan(single.recoilRecoveryRate);
   expect(single.variance).toBeGreaterThan(expert.variance);
@@ -457,8 +458,13 @@ it('expert recovery scale decays the same released recoil faster', () => {
   );
 });
 
-const readiedWalkWobble = (level: number): number => {
-  const effects = pumpSkillEffects(level);
+const readiedWalkWobble = (level: number, firearmType = 'pump_shotgun'): number => {
+  const firearm = BUNDLED_CONTENT.registry.items.get(firearmType)!.firearm!;
+  const tuning = {
+    ...stanceTuning,
+    skillZeroHandling: firearm.skillZeroHandling ?? stanceTuning.skillZeroHandling,
+  };
+  const effects = firearmsSkillEffects(level, tuning);
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
   const { blockSize } = step();
   const aim = createAim(effects.variance);
@@ -624,13 +630,17 @@ it('wobble can use its larger content bound without merging it into recoil', () 
   expect(peak).toBeCloseTo(stanceTuning.wobbleLimitRadians, 8);
 });
 
-it('readied-walk wobble shrinks with firearms skill at equal movement', () => {
+it('readied-walk wobble shrinks with firearms skill at equal movement for pump and rifle', () => {
   const levels = [0, Math.floor(SKILL_LEVEL_MAX / 2), SKILL_LEVEL_MAX];
-  const wobble = levels.map(readiedWalkWobble);
-  expect(wobble[1]).toBeLessThan(wobble[0]!);
-  expect(wobble[2]).toBeLessThan(wobble[1]!);
-  const configuredExpertFraction = stanceTuning.wobbleSkillTenVariance / pumpHandling.singleShot.variance;
-  expect(wobble[2]! / wobble[0]!).toBeCloseTo(configuredExpertFraction, 4);
+  for (const firearmType of ['pump_shotgun', 'rifle_assault']) {
+    const wobble = levels.map((level) => readiedWalkWobble(level, firearmType));
+    expect(wobble[1]).toBeLessThan(wobble[0]!);
+    expect(wobble[2]).toBeLessThan(wobble[1]!);
+    const firearm = BUNDLED_CONTENT.registry.items.get(firearmType)!.firearm!;
+    const noviceVariance = firearm.skillZeroHandling?.singleShot.variance ?? stanceTuning.skillZeroHandling.singleShot.variance;
+    const configuredExpertFraction = stanceTuning.wobbleSkillTenVariance / noviceVariance;
+    expect(wobble[2]! / wobble[0]!).toBeCloseTo(configuredExpertFraction, 4);
+  }
 });
 
 it('quick-look lag follows the skill-scaled wobble endpoint', () => {
