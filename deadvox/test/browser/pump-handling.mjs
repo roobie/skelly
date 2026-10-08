@@ -200,7 +200,7 @@ try {
     }
     const { count: payload, item: payloadType } = inv.registry.items.get(box.type).unpack;
     const { capacity } = inv.registry.models.get(inv.registry.items.get(gun.type).model).tube;
-    // The loadout's own loose shells (BR, 2026-10-07 15:54), before the box adds its payload.
+    // Count the initial loadout separately from the box payload.
     const carried = [...inv.items()]
       .filter(
         ({ item, location }) => item.type === payloadType && location.kind !== 'furniture' && location.kind !== 'pile',

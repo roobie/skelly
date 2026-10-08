@@ -128,7 +128,7 @@ describe('stimulus memory', () => {
     expect(zombie.lastPerceived).toBeUndefined();
   });
 
-  it('saves a zombie that forgot its stimulus', () => {
+  it('round-trips forgotten zombie and horde state with a fresh zombie', () => {
     const noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
     const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
@@ -136,19 +136,23 @@ describe('stimulus memory', () => {
     const options = { ...senses(target, wall), seed: 113 };
     const system = new ZombieSystem(options);
     const zombie = system.store.get(system.add(type, [20, 1, 0]))!;
+    system.addHorde('forgotten-memory-fixture', type, [200, 1, 0], 1);
     zombie.body.onGround = true;
     const dt = 1 / 20;
     let time = dt;
     system.tickActive(dt, time);
+    system.tickBackground(dt, time);
     expect(zombie.mode).toBe('investigate');
     expect(zombie.stimulusAt).toBeDefined();
     expect(zombie.lastPerceived).toBeDefined();
     expect(zombie.investigationTier).toBeDefined();
+    expect(system.snapshotState().hordes[0]?.stimulusAt).toBe(time);
     const stimulusAt = zombie.stimulusAt!;
     const deadline = stimulusAt + type.stimulusMemorySimSeconds;
     while (time < deadline + dt) {
       time += dt;
       system.tickActive(dt, time);
+      system.tickBackground(dt, time);
     }
 
     expect(zombie.mode).toBe('return');
@@ -156,11 +160,13 @@ describe('stimulus memory', () => {
     expect(zombie.lastPerceived).toBeUndefined();
     expect(zombie.investigationTier).toBeUndefined();
     expect(zombie.searchAnchor).toBeUndefined();
-    const snapshot = system.snapshotState();
-    expect(() => canonicalJsonBytes(snapshot)).not.toThrow();
+    expect(system.snapshotState().hordes[0]?.stimulusAt).toBeUndefined();
 
+    system.add(type, [40, 1, 0]);
+    const snapshot = system.snapshotState();
+    const canonical = canonicalJsonBytes(snapshot);
     const restored = new ZombieSystem(options);
     restored.restoreState(snapshot, (id) => registry.zombies.get(id));
-    expect(restored.snapshotState()).toEqual(snapshot);
+    expect(canonicalJsonBytes(restored.snapshotState())).toEqual(canonical);
   });
 });

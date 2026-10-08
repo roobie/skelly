@@ -1,8 +1,17 @@
+export type CartridgeClearanceMeasure = 'maximumOverallLengthMm' | 'maximumHeadDiameterMm' | 'caseLengthMm';
+
+interface CartridgeClearance {
+  readonly measure: CartridgeClearanceMeasure;
+  readonly multiplier?: number;
+  readonly clearanceMm: number;
+}
+
 export interface FrameMeasure {
   readonly value: number;
   readonly evidence:
     | { readonly kind: 'source'; readonly url: string; readonly locator: string }
     | { readonly kind: 'estimate'; readonly method: string };
+  readonly cartridgeClearance?: CartridgeClearance;
 }
 
 interface CartridgeFrameFit {
@@ -34,10 +43,11 @@ export interface CartridgeFrameMeasures {
   readonly id: string;
   readonly maximumOverallLengthMm: number | null;
   readonly maximumHeadDiameterMm: number | null;
+  readonly caseLengthMm: number | null;
 }
 
 export interface ActionFrameIssue {
-  readonly rule: 'frame-data' | 'frame-fit';
+  readonly rule: 'frame-data' | 'frame-fit' | 'frame-clearance';
   readonly message: string;
 }
 
@@ -67,6 +77,14 @@ const measureIssues = (frameId: string, name: string, measure: FrameMeasure): Ac
   if (!hasEvidence) {
     issues.push({ rule: 'frame-data', message: `${path} needs a source citation or an estimate method` });
   }
+  if (
+    measure.cartridgeClearance &&
+    (!(Number.isFinite(measure.cartridgeClearance.clearanceMm) && measure.cartridgeClearance.clearanceMm > 0) ||
+      (measure.cartridgeClearance.multiplier !== undefined &&
+        !(Number.isFinite(measure.cartridgeClearance.multiplier) && measure.cartridgeClearance.multiplier > 0)))
+  ) {
+    issues.push({ rule: 'frame-data', message: `${path} has invalid cartridge clearance metadata` });
+  }
   return issues;
 };
 
@@ -80,11 +98,11 @@ const frameIssues = (frame: ActionFrame, ids: Set<string>, ranks: Set<number>): 
     issues.push({ rule: 'frame-data', message: `frame "${frame.id}" rank must be a unique integer` });
   }
   ranks.add(frame.rank);
-  const measures = [
+  const measures: readonly (readonly [string, FrameMeasure])[] = [
     ['fit.maximumOverallLengthMm', frame.fit.maximumOverallLengthMm],
     ['fit.maximumHeadDiameterMm', frame.fit.maximumHeadDiameterMm],
     ...Object.entries(frame.dimensions),
-  ] as const;
+  ];
   return [...issues, ...measures.flatMap(([name, measure]) => measureIssues(frame.id, name, measure))];
 };
 
@@ -92,6 +110,38 @@ export const validateActionFrames = (frames: readonly ActionFrame[]): ActionFram
   const ids = new Set<string>();
   const ranks = new Set<number>();
   return frames.flatMap((frame) => frameIssues(frame, ids, ranks));
+};
+
+export const validateFrameCartridgeClearances = (
+  frame: ActionFrame,
+  cartridge: CartridgeFrameMeasures,
+): ActionFrameIssue[] => {
+  const measures: readonly (readonly [string, FrameMeasure])[] = [
+    ['fit.maximumOverallLengthMm', frame.fit.maximumOverallLengthMm],
+    ['fit.maximumHeadDiameterMm', frame.fit.maximumHeadDiameterMm],
+    ...Object.entries(frame.dimensions),
+  ];
+  return measures.flatMap(([name, measure]) => {
+    const basis = measure.cartridgeClearance;
+    if (!basis) {
+      return [];
+    }
+    const sourceValue = cartridge[basis.measure];
+    if (sourceValue === null) {
+      return [
+        { rule: 'frame-clearance' as const, message: `cartridge "${cartridge.id}" lacks ${basis.measure} for ${name}` },
+      ];
+    }
+    const required = sourceValue * (basis.multiplier ?? 1) + basis.clearanceMm;
+    return measure.value >= required
+      ? []
+      : [
+          {
+            rule: 'frame-clearance' as const,
+            message: `frame "${frame.id}" ${name} (${measure.value} mm) is below ${cartridge.id} ${basis.measure} plus ${basis.clearanceMm} mm clearance (${required} mm)`,
+          },
+        ];
+  });
 };
 
 const frameFits = (frame: ActionFrame, cartridge: CartridgeFrameMeasures): boolean =>

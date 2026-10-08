@@ -26,10 +26,9 @@ may tell the player, and in what voice**. Read it with:
 [[THIS is_grounded_by: DESIGN.md]]
 [[THIS is_grounded_by: INTERACTIONS.md]]
 [[THIS is_grounded_by: docs/decisions/0001-ui-rendering-with-lit-html.md]]
-**Status:** active. The rules below come from BR's direction on 2026-09-27: "the
-end state should be as diegetic as possible", and the quickbar's "set it in the
-inventory" is the kind of thing that should be afforded, not typed out. BR ruled
-on the open questions on 2026-09-28; the rulings are at the end.
+**Status:** active. The shipped interface favors information carried by the
+world, the character's body and held items; development-only instructions remain
+separate from the shipped profile.
 
 ## The goal
 
@@ -62,8 +61,8 @@ that adds it says why the kind above it wasn't enough.
 
 ## Bodily cues: the body tells, the HUD doesn't
 
-**The damage vignette is the reference example** (BR, 2026-09-27: "good diegetic
-affordance"). A hit shows as a red edge and a quick tilt of the view, scaled by
+**The damage vignette is the reference example.** A hit shows as a red edge
+and a quick tilt of the view, scaled by
 how hard it was, gone within a second. There's no number and no text, and the
 player still knows exactly what happened and roughly how bad it was. Every need
 and bodily state gets cues of that kind, **seen and heard**, so the HUD stats
@@ -83,7 +82,7 @@ The rules for a cue:
 - **It's tunable data** (thresholds, intervals, strengths) in the content pack,
   like the other tunables, and judged by BR in game.
 
-Cues per state (a starting set; BR's list is the sound column):
+Cues per state (a starting set; the sound column is BR's choice):
 
 | State | Seen | Heard |
 |---|---|---|
@@ -92,12 +91,14 @@ Cues per state (a starting set; BR's list is the sound column):
 | Thirst | a dry, washed-out edge when it's bad | lip smacking, a dry swallow |
 | Fatigue | slow blinks (the view darkening and returning), heavier head bob | yawning |
 | Low health, pain | desaturation and a slower view settle | moaning, pained breathing |
-| Injured leg (BR: "limping too!") | a limp: an uneven head bob, one step short and dipping, at a slower pace | uneven footsteps, a hiss on the bad step |
+| Injured leg | a limp: an uneven head bob, one step short and dipping, at a slower pace | uneven footsteps, a hiss on the bad step |
 | Low stamina | a pulse of narrowed view after a sprint | panting, heavy breathing |
 | Illness (food poisoning) | a nauseous drift of the view | coughing, retching |
 | Refusal or interruption | reason text on the world prompt, rest card and craft status box only when messages are on | the avatar's “nope” sound for refusals, regardless of messages/hints; not heard by shamblers |
 
-BR's 2026-10-05 11:31 direction: “i've added nope1_clean.wav / it's the diegetic sound (the avatar makes a nope sound) for when something doesn't work (when UI is off, and any hints are hidden)”. BR's 11:32 answer was “i recorded it myself 10 minutes ago / yes, CC0” and “no, this one is not heard by shamblers (but if it were a multiplayer game, it'd be heard by other players)”. The 11:46 ruling quoted under class 3 requires the sound regardless of whether messages/hints are on. See `src/game/play.ts`, `showRefusal`, and `src/game/audioPresentation.ts`, `createRefusalPresenter`: the cue is player-only presentation and does not emit a simulation noise event.
+The refusal sound is player-only presentation and emits no simulation noise.
+See `src/game/play.ts`, `showRefusal`, and
+`src/game/audioPresentation.ts`, `createRefusalPresenter`.
 
 The limp is also movement, not only a look: the pace really drops, so it belongs
 with the body model. Wounds per body part come in Slice 3 ([EPIC.md](EPIC.md#3-flesh-and-noise));
@@ -122,12 +123,8 @@ Text on screen falls into four classes, and only three of them ship:
    heft it. Ships, on the meta surfaces that need them (the inventory).
 3. **The character's voice, when something is refused or noticed:** "You're not
    tired", "Something's in the way", "You hear something outside". Short, first
-   person, about the world, never about keys or menus. Ships. BR ruled on
-   2026-10-05: "our overarching goal is: diegesis / which means 0 synthetic UI
-   elements / this cannot hold for exactly 100% of the time / but it does mean /
-   if the checkbox for messages/hints is off ,then no messages or hints should
-   come from a syntheitic UI element / but the 'nope' sound shall play regardless
-   of UI hints being on or off". Class-3 reason text on the world prompt, rest
+   person, about the world, never about keys or menus. Ships. Class-3 reason
+   text on the world prompt, rest
    card and craft status box follows the same `hudVisibility` projection from
    `src/ui/hudOptions.ts`; it appears only when the `messages` option is on. See
    `src/ui/playHud.ts`, `playPromptText`, `src/ui/rest.ts`, `restViewModel`, and
@@ -160,18 +157,13 @@ so class 4 is made mechanical:
 - **Review asks one question:** could the player learn this from the world or
   their hands? If yes, the text goes.
 
-## Readying before acting (BR, 2026-09-27; refined by #267 and implemented for Slice 3.1)
+## Readying before acting (#267; Slice 3.1)
 
-**Combat is modal, as in DayZ.** Holding a weapon is not the same as being ready
-to use it. BR's 2026-10-05 direction for #267 was:
-
-> "well, at some point, we should make it like dayz in that you don't run around ready to fire by default. Instead it's modal such that gun ready is e.g. press-and-hold rightbutton, and only then can you fire/attack"
->
-> "and by that, I mean that you never fire while sprinting, but instead when holding right mouse, you 'duck walk' (which also can be a skill-dependent thing in that you duck walk faster with higher skill)"
-
-Firearms fire only while ready and never while sprinting; the ready movement
-factor stacks with crouch pace. Firearms combat governs ready movement and related
-handling; melee combat governs block success. The tiered practice contract is in
+**Combat is modal, as in DayZ.** Holding a weapon is not the same as being
+ready to use it.
+Firearms fire only while ready and never while sprinting; ready movement stacks
+with crouch pace. Firearms combat governs ready movement and related handling;
+melee combat governs block success. The tiered practice contract is in
 [SLICE-3.md](SLICE-3.md), 3.1.
 
 - **Right mouse sets the combat stance:** holding it raises a melee weapon into
@@ -197,7 +189,7 @@ handling; melee combat governs block success. The tiered practice contract is in
   `shouldBlockFromEnGarde`, owns the stance gate.
 - **Unready firearm left-click is an exception to refusal:** it produces no shot
   and no nope sound; this deliberate no-op does not use the ordinary refusal cue.
-- **Hand activation follows actor roles (BR, 2026-10-04):** dominance is
+- **Hand activation follows actor roles:** dominance is
   identity, not a remapping of physical inventory slots. A held item cannot
   become an unarmed attack, and a two-handed hold's support must not activate
   the other hand's item. See `src/game/inputBindings.ts`, `INPUT_BINDINGS` and `POINTER_ACTIONS`, and
@@ -222,30 +214,23 @@ second widget or key instruction. See `src/ui/hud.ts`,
 ## Development and playtest
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in
-  `src/debug` and load only there (ui.2's split). They can say anything. BR said on
-  2026-10-05: "and the paper target with debug mode that 'pings' to make it real
-  obvious where it was hit / maybe if we can make a debug-laser pointer too - ie.
-  a magenta line from the muzzle that marks the trajectory exactly". The target
-  ping and F2+L laser are debug-profile tools; see `src/game/worldSetup.ts`,
+  `src/debug` and load only there (ui.2's split). They can say anything. The
+  target ping and F2+L laser are debug-profile tools; see `src/game/worldSetup.ts`,
   `DebugTestHouseSite`, `src/debug/index.ts`, `createDebugActions`, and
-  `src/render/impactEffects.ts`, `ImpactEffects`. BR also said on 2026-10-05:
-  "also: in debug mode we should render the rage to target down by the direction
-  gizmo so that i can say which range i'm at". The readout is beside the
-  gizmo in `src/debug/index.ts`, `attachDebugTools`. BR's 2026-10-07 verdict
-  supersedes the earlier hip-fire convergence: shots follow the visible firearm's
+  `src/render/impactEffects.ts`, `ImpactEffects`. The target-range readout sits
+  beside the gizmo in `src/debug/index.ts`, `attachDebugTools`. Shots follow the visible firearm's
   bore plus spread, while the optional crosshair reports where that bore line
-  meets the world. BR's 12:16 and 13:30 rulings in `DESIGN.md`, "Firearms",
-  allow the mark to follow a wielded firearm's bore at its current raise
-  progress and disappear when its projected point leaves the viewport. BR's 14:55
-  ruling there turns the mark with the rifle while a rack or a magazine job turns
-  it (`src/render/handlingTurn.ts`, `handlingRotation`).
+  meets the world. The mark follows a wielded firearm's bore at its raise
+  progress and disappears when its projected point leaves the viewport. The
+  mark turns with the rifle during a rack or magazine job; see
+  `src/render/handlingTurn.ts`, `handlingRotation`.
   `src/game/firearmAim.ts`, `firearmBoreRay` and
   `firearmBoreTarget`, share the shot ray and its reported hit; the crosshair
   itself is projected by `src/ui/playHud.ts`, `projectCrosshairScreenPosition`.
-  The pose defect came from applying the melee-ready wrist rotation to the whole
-  firearm; `src/core/heldPose.ts`, `readyFirearmPose`, retains the hand placement
-  without that gun-angle offset. BR also asked for an X at exact screen centre
-  in debug mode; the mark lives in `src/debug/index.ts`, and is separate from
+  The firearm's ready pose uses the melee-ready hand placement without its wrist
+  rotation, so the gun keeps its own angle; see `src/core/heldPose.ts`,
+  `readyFirearmPose`.
+  A separate X at screen centre lives in `src/debug/index.ts`, apart from
   the optional crosshair. In ADS the undeviated sight aligns to the fixed view;
   recoil and handling then move the firearm, its optic window and its bore
   together, and the optional crosshair reports that bore rather than random
@@ -269,7 +254,7 @@ second widget or key instruction. See `src/ui/hud.ts`,
 | Clock readout | meta, opt-in | diegetic | a watch, when you look at your wrist or hold one |
 | Crosshair | meta, opt-in | none | shipped: none, ever; the optional development mark follows a wielded firearm's bore at its current raise progress, disappearing when its projected point leaves the viewport |
 | Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
-| Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text (the fix just requested) |
+| Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; key names come from the hint channel |
@@ -280,50 +265,36 @@ second widget or key instruction. See `src/ui/hud.ts`,
 
 ## Numbers and diegesis
 
-DESIGN.md's "UI principles" said every number the simulation uses can be seen
-somewhere in the UI, which pulls the other way from "as diegetic as possible".
-BR ruled on 2026-09-28 to keep both by where the number appears, not whether:
-**numbers are available on request, on meta surfaces the player opens**
-(inspecting an item, the inventory), and never pushed at the player during play.
-DESIGN.md's line is amended to say so.
+Numbers are available on request, on meta surfaces the player opens (such as an
+item inspection or inventory), and are not pushed during play. This keeps
+simulation facts accessible without undermining diegesis.
 
-## Rulings (formerly open questions)
+## Interface decisions
 
-1. **Crosshair (BR, 2026-09-28): none in the shipped game.** Aiming down the
-   sights uses the weapon's own sights; hip fire and melee have no reticle. The
-   opt-in dot remains a development setting.
-2. **Interaction affordance (BR, 2026-09-28): a subtle outline** on the one usable
-   thing you look at within reach. No text and no key name; the outline is the
-   affordance.
-3. **Numbers (BR, 2026-09-28): on request only,** on meta surfaces, as above.
-4. **Onboarding (BR, 2026-09-28): diegetic, designed after the playtest.** The
-   shipped first run gets a diegetic introduction (a note, a radio), shaped by
-   where playtesters get stuck; hints remain a fallback setting in the F9 menu,
-   off by default.
-5. **Playtest profile (BR, 2026-09-28): a URL flag, `?playtest=1`,** which turns
-   the hint channel on and loads nothing from `src/debug`.
-6. ~~Are the character's own sounds noise events?~~ **BR, 2026-09-27: "Let's
-   try"**, with OpenGameArt packs to curate from (vocal pain and strain, creature,
-   RPG, zombie and hit sounds) and "variation is nice - random, but curated picks
-   for the events we have". The first audio item makes the player's vocal sounds
-   (pain now, coughs and groans with the bodily cues) noise events with a radius
-   in data, so the effect can be judged in game and tuned or turned off.
-7. **Ready-firearm crosshair (BR, 2026-10-07):** “the crosshair (when wielding a
-   readied firearm) should point where the muzzle is pointing” and BR chose the
-   bore-line hit instead of the random spread. It reports the firearm's direction;
-   it does not steer the shot. With `?debug=1`, the separate X marks screen centre.
-   While a rack or a magazine job turns the drawn rifle, the mark follows the
-   turned muzzle (BR, 2026-10-07 14:55: “as recommended: Follow the turned
-   muzzle”).
+1. **Crosshair:** none in the shipped game. Aiming uses the weapon's own sights;
+   hip fire and melee have no reticle. The opt-in dot remains development-only.
+2. **Interaction affordance:** a subtle outline on the one usable thing in reach;
+   no text or key name.
+3. **Numbers:** available on request through meta surfaces, not pushed at the
+   player during play.
+4. **Onboarding:** the shipped first run gets a diegetic introduction, shaped by
+   where playtesters get stuck. Hints remain an off-by-default fallback in the
+   F9 menu.
+5. **Playtest profile:** `?playtest=1` turns on the hint channel and loads nothing
+   from `src/debug`.
+6. **Character sounds:** vocal pain and strain sounds are noise events with a
+   radius in data, so BR can judge their effect in play and tune or disable them.
+   Variation comes from random but curated picks for the events we have.
+7. **Ready-firearm crosshair:** the optional mark reports where the bore line
+   meets the world, not the random spread, and does not steer the shot. With
+   `?debug=1`, a separate X marks screen centre. During a rack or magazine job,
+   the mark follows the turned muzzle.
 
 ## Order of work
 
-1. ~~BR rules on the open questions; this document goes to `status: active`.~~
-   Done 2026-09-28.
-2. The hint channel, the bindings-sourced key labels and the guard test (one
-   item, the way ADR 0001's guard landed), moving today's instructional strings
-   into the table.
-3. The playtest profile.
-4. The player-sound system (Web Audio, sounds as content, CC0 sources).
-5. The bodily cues, one state at a time (seen and heard together), each judged
-   by BR in game before the HUD line it replaces is retired.
+1. Add the spatial outline for the one usable thing within reach.
+2. Move remaining procedural notices into the hint table.
+3. Shape the diegetic first-run introduction from playtest findings.
+4. Make the clock diegetic through a watch the player can inspect or hold.
+5. Develop bodily cues one state at a time; retire a HUD line only after BR has
+   judged its replacement cue in play.

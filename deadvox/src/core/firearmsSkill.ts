@@ -51,8 +51,9 @@ export interface FirearmsCombatTuning {
   readonly wobbleVerticalToHorizontalRatio: number;
   readonly wobbleLuneArchPower: number;
   readonly wobbleLunePhaseOffsetRadians: number;
-  readonly wobbleJitterShare: number;
-  readonly wobbleJitterAmplitudeFraction: number;
+  readonly wobbleNoiseReversionRatePerSimSecond: number;
+  readonly wobbleNoiseSigmaRadiansPerSqrtSecond: number;
+  readonly wobbleNoiseSmoothingSimSeconds: number;
   readonly reloadFactorFloor: number;
   readonly reloadFactorHalfLifeLevels: number;
   readonly rackFactorFloor: number;
@@ -68,7 +69,7 @@ export interface FirearmsSkillEffects {
 }
 
 export interface FirearmStanceEffects {
-  readonly raiseDuration: number;
+  readonly raiseDurationSimSeconds: number;
   readonly readyMovementFactor: number;
 }
 
@@ -106,7 +107,7 @@ export const firearmsSkillEffects = (
 export const firearmStanceEffects = (level: number, tuning: FirearmsCombatTuning): FirearmStanceEffects => {
   const effectLevel = effectLevelFor(level);
   return {
-    raiseDuration:
+    raiseDurationSimSeconds:
       tuning.raiseMinimumSimSeconds +
       tuning.raiseRangeSimSeconds * skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels),
     readyMovementFactor:

@@ -15,6 +15,7 @@ import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
+import { slotsReason } from '../src/core/magazine.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
@@ -29,6 +30,7 @@ import {
 import { FirearmTrigger } from '../src/game/firearmTrigger.ts';
 import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
+import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
@@ -138,6 +140,19 @@ const shot = (simTime = 1, prepare: (inventory: Inventory) => void = () => undef
 };
 
 describe('rifle firearm handling', () => {
+  it('wears a fitted suppressor on each committed shot', () => {
+    const fitted = withDefaultAttachment(registry, 'rifle_assault', 'improvised_suppressor');
+    const { mechanics, rifle } = armed({}, { content: fitted.registry });
+    const suppressor = rifle.slots?.[fitted.fitted.mountedAt];
+    if (!suppressor) {
+      throw new Error('Factory-created suppressor default is missing');
+    }
+    expect(slotsReason(fitted.registry, rifle.type, rifle.slots)).toBeUndefined();
+
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
+    expect(suppressor.condition).toBeLessThan(1);
+  });
+
   it('uses per-gun skill-zero factors, shared fallback and the common expert endpoint', () => {
     const inventory = new Inventory(skillZeroRegistry);
     const light = inventory.create('fixture_light_gun');

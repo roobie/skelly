@@ -7,7 +7,7 @@ import { add, applyDir, applyPoint, dot as dotProduct, IDENTITY, invert, length,
 import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
 import type { Box, PartDef, Rule, Solid } from '../core/schema.ts';
 import { mountCanAccept } from './mounts.ts';
-import { getOptic } from './optics.ts';
+import { getOptic, opticRailContactSolids } from './optics.ts';
 import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS, TRIGGER_GUARD } from './parts.ts';
 
 /**
@@ -496,8 +496,8 @@ const magazineAxisError = (
 };
 
 const opticContactPoints = (solids: readonly Solid[]): readonly Vec3[] =>
-  solids.flatMap((solid) => {
-    if (solid.kind !== 'box' || !solid.id.endsWith('foot')) {
+  opticRailContactSolids(solids).flatMap((solid) => {
+    if (solid.kind !== 'box') {
       return [];
     }
     const { center, half } = solid.box;

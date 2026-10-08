@@ -7,6 +7,7 @@ import { HAMLET_TEMPLATES } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
+import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
@@ -125,6 +126,16 @@ describe('content', () => {
     }
   });
 
+  it('keeps the thermal optic out of loot, fitting and ADS', () => {
+    expect(
+      [...baseRegistry.loot.values()].some((table) =>
+        table.entries.some((entry) => entry.item === 'optic_digital_thermal'),
+      ),
+    ).toBe(false);
+    const thermal = baseRegistry.items.get('optic_digital_thermal')!;
+    expect(opticViewSettings(thermal, baseRegistry.models.get(thermal.model!)!)).toBeUndefined();
+  });
+
   it('rejects a non-positive firearms skill-zero handling value', () => {
     const source = base.find((file) => file.source === 'recipes.json')!;
     const data = structuredClone(source.data) as {
@@ -152,6 +163,26 @@ describe('content', () => {
     const { issues } = buildRegistry([{ source: source.source, data }]);
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.reloadFactorFloor'))).toBe(true);
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.rackFactorHalfLifeLevels'))).toBe(true);
+  });
+
+  it('rejects invalid OU wobble tuning', () => {
+    const source = base.find((file) => file.source === 'recipes.json')!;
+    const data = structuredClone(source.data) as {
+      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+    };
+    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
+    firearms.wobbleNoiseReversionRatePerSimSecond = 0;
+    firearms.wobbleNoiseSigmaRadiansPerSqrtSecond = -0.01;
+    firearms.wobbleNoiseSmoothingSimSeconds = 0;
+    const { issues } = buildRegistry([{ source: source.source, data }]);
+
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseReversionRatePerSimSecond'))).toBe(
+      true,
+    );
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSigmaRadiansPerSqrtSecond'))).toBe(
+      true,
+    );
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
   });
 
   it('rejects incomplete per-firearm skill-zero factors', () => {
@@ -777,8 +808,46 @@ describe('content references', () => {
     source: 'broken-reference.json',
     data: JSON.parse(readFileSync('test/fixtures/content/broken-reference.json', 'utf8')) as unknown,
   };
-  const withBase = (...extra: { source: string; data: unknown }[]) => buildRegistry([...base, ...extra]);
+  const baseContent = (source: string) => base.find((file) => file.source === source)!.data as ContentFile;
+  const zombieSounds = {
+    idle: 'shambler_idle',
+    alert: 'shambler_alert',
+    attack: 'shambler_attack',
+    hurt: 'shambler_hurt',
+  };
+  const referenceDependencies = {
+    source: 'reference-dependencies.json',
+    data: {
+      items: baseContent('items-other.json').items!.filter(({ id }) => id === 'bandage'),
+      skills: baseContent('recipes.json').skills,
+      sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
+    },
+  };
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
+
+  it('requires a model material for an emissive modeled light', () => {
+    const { issues } = buildRegistry([
+      {
+        source: 'emissive-light.json',
+        data: {
+          items: [
+            {
+              id: 'glowstick',
+              name: 'Glowstick',
+              category: 'light',
+              weight: 1,
+              size: [1, 1],
+              model: 'glowstick',
+              light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, emissive: 1 },
+            },
+          ],
+          models: [{ id: 'glowstick', file: 'assets/models/glowstick.glb' }],
+        },
+      },
+    ]);
+
+    expect(issues.some((issue) => issue.message === 'an emissive light model needs an emissive material')).toBe(true);
+  });
 
   it('requires an explicit disassembly yield for a recipe result', () => {
     const missingYield = {
@@ -892,7 +961,7 @@ describe('content references', () => {
       {
         source: 'military-fixture.json',
         data: {
-          models: [{ ...firearmModel, id: item }],
+          models: [{ ...firearmModel, id: item, attachments: [] }],
           items: [
             { id: item, name: 'Fixture rifle', category: 'weapon', weight: 1, size: [1, 1], firearm, model: item },
             { id: cartridge, name: 'Fixture cartridge', category: 'material', weight: 1, size: [1, 1], ammo },
@@ -1060,12 +1129,7 @@ describe('content references', () => {
             name: 'Clerk',
             model: 'shambler',
             spawnWeight: 1,
-            sounds: {
-              idle: 'shambler_idle',
-              alert: 'shambler_alert',
-              attack: 'shambler_attack',
-              hurt: 'shambler_hurt',
-            },
+            sounds: zombieSounds,
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
             stepLength: 0.6,
@@ -1131,7 +1195,7 @@ describe('content references', () => {
         ],
       },
     };
-    expect(paths(withBase(mod).issues).sort()).toEqual([
+    expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
       'furniture[0].loot',
       'furniture[0].loot',
       'furniture[1].door.prying.skill',
@@ -1181,6 +1245,40 @@ describe('templates', () => {
   });
   const check = (t: { source: string; data: unknown }) =>
     buildRegistry([...templateBase, t]).issues.map((i) => `${i.path}: ${i.message}`);
+
+  it('reports spatial template issues during registry validation', () => {
+    const wall = ['#####', '#...#', '#...#', '#...#', '#####'];
+    const sealed = {
+      source: 'sealed-entrance.json',
+      data: {
+        templates: [
+          {
+            id: 'sealed_entrance',
+            size: [5, 5, 5],
+            palette: { '#': 'brick', '.': 'air' },
+            layers: [
+              ['#####', '#####', '#####', '#####', '#####'],
+              wall,
+              wall,
+              wall,
+              ['.....', '.....', '.....', '.....', '.....'],
+            ],
+            access: {
+              ground: 'ground',
+              entrance: [2.5, 1, 2.5],
+              storeys: [{ id: 'ground', floor: 1 }],
+              stairs: [],
+            },
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([...templateBase, sealed]).issues).toContainEqual({
+      source: 'sealed-entrance.json',
+      path: 'templates[0].access.entrance',
+      message: 'entrance must reach a standing opening at the footprint edge on the ground storey',
+    });
+  });
 
   it('leaves an open air cell beside every window-frame run', () => {
     const frameRuns = [...baseRegistry.templates.values()].flatMap((definition) => {
