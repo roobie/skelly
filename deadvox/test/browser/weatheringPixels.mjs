@@ -111,7 +111,7 @@ void main() {
       return masks;
     };
 
-    const captureImages = async ({ meshes, canvas, content }) => {
+    const captureImages = ({ meshes, canvas, content, renderer, scene, camera }) => {
       const settings = [
         ['off', 0],
         ['default', content.strength],
@@ -121,8 +121,7 @@ void main() {
       const images = {};
       for (const [name, strength] of settings) {
         meshes.setWeathering({ ...content, strength });
-        // biome-ignore lint/performance/noAwaitInLoops: each uniform setting needs a rendered frame before its PNG is captured.
-        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        renderer.render(scene, camera);
         images[name] = canvas.toDataURL('image/png');
       }
       return images;
@@ -177,8 +176,8 @@ void main() {
       let weatherablePixels = 0;
       const isBuilding = maskReader(masks[0], frameWidth, frameHeight);
       const isWeatherable = maskReader(masks[1], frameWidth, frameHeight);
-      let maxRelativeWeatherableChange = 0;
-      let maxRelativeZeroStrengthChange = 0;
+      let maxWeatherablePixelChange = 0;
+      let maxZeroStrengthPixelChange = 0;
       const measurePixel = (x, y) => {
         if (!isBuilding(x, y)) {
           return;
@@ -192,14 +191,13 @@ void main() {
           return;
         }
         weatherablePixels += 1;
-        const denominator = Math.max(off, 1 / 255);
-        maxRelativeWeatherableChange = Math.max(
-          maxRelativeWeatherableChange,
-          Math.abs(pixelLuminance(decoded.strong.data, offset) - off) / denominator,
+        maxWeatherablePixelChange = Math.max(
+          maxWeatherablePixelChange,
+          Math.abs(pixelLuminance(decoded.strong.data, offset) - off),
         );
-        maxRelativeZeroStrengthChange = Math.max(
-          maxRelativeZeroStrengthChange,
-          Math.abs(pixelLuminance(decoded['zero-control'].data, offset) - off) / denominator,
+        maxZeroStrengthPixelChange = Math.max(
+          maxZeroStrengthPixelChange,
+          Math.abs(pixelLuminance(decoded['zero-control'].data, offset) - off),
         );
       };
       for (let y = 0; y < frameHeight; y += 1) {
@@ -220,8 +218,8 @@ void main() {
         weatherableFraction: weatherablePixels / buildingPixels,
         ...analyzeGroundWallBounds(masks[2], frameWidth, frameHeight),
         differences: { default: summarize(deltas.default), strong: summarize(deltas.strong) },
-        maxRelativeWeatherableChange,
-        maxRelativeZeroStrengthChange,
+        maxWeatherablePixelChange,
+        maxZeroStrengthPixelChange,
       };
     };
 
@@ -312,7 +310,14 @@ void main() {
       throw new Error('weathering pixel measurement needs the authored world settings');
     }
     const beforeCamera = cameraPose(activeCamera);
-    const images = await captureImages({ meshes: chunkMeshes, canvas: rendererCanvas, content: weatheringContent });
+    const images = captureImages({
+      meshes: chunkMeshes,
+      canvas: rendererCanvas,
+      content: weatheringContent,
+      renderer: webglRenderer,
+      scene: testEngine.scene,
+      camera: activeCamera,
+    });
     const decodedScreenshots = Object.fromEntries(
       await Promise.all(Object.entries(images).map(async ([name, dataUrl]) => [name, await decodeImage(dataUrl)])),
     );
@@ -332,7 +337,7 @@ void main() {
     return {
       size: [canvasWidth, canvasHeight],
       metric: 'absolute Rec. 709 luminance difference on sRGB screenshot pixels, normalized to [0,1]',
-      derivedRelativeThreshold: 1 - srgb(1 - minimumShaderSignal),
+      derivedPixelThreshold: 1 - srgb(1 - minimumShaderSignal),
       ...measurements,
       images,
       closeup,

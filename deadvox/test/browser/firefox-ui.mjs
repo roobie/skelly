@@ -410,10 +410,10 @@ try {
       weatherablePixels: weatheringPixels.weatherablePixels,
       weatherableFraction: weatheringPixels.weatherableFraction,
       differences: weatheringPixels.differences,
-      maxRelativeWeatherableChange: weatheringPixels.maxRelativeWeatherableChange,
-      maxRelativeZeroStrengthChange: weatheringPixels.maxRelativeZeroStrengthChange,
-      zeroStrengthWouldPass: weatheringPixels.maxRelativeZeroStrengthChange > weatheringPixels.derivedRelativeThreshold,
-      derivedRelativeThreshold: weatheringPixels.derivedRelativeThreshold,
+      maxWeatherablePixelChange: weatheringPixels.maxWeatherablePixelChange,
+      maxZeroStrengthPixelChange: weatheringPixels.maxZeroStrengthPixelChange,
+      zeroStrengthWouldPass: weatheringPixels.maxZeroStrengthPixelChange > weatheringPixels.derivedPixelThreshold,
+      derivedPixelThreshold: weatheringPixels.derivedPixelThreshold,
       closeupPixels: weatheringPixels.groundWallPixels,
       artifactDirectory: 'test-results/weathering/',
     })}\n`,
@@ -429,13 +429,13 @@ try {
     'weathering states share one paused camera',
   );
   assert.equal(
-    weatheringPixels.maxRelativeZeroStrengthChange > weatheringPixels.derivedRelativeThreshold,
+    weatheringPixels.maxZeroStrengthPixelChange > weatheringPixels.derivedPixelThreshold,
     false,
     'the positive pixel assertion fails for the zero-strength control',
   );
   assert.ok(
-    weatheringPixels.maxRelativeWeatherableChange > weatheringPixels.derivedRelativeThreshold,
-    `full-strength weathering changes a weatherable building pixel by ${weatheringPixels.maxRelativeWeatherableChange.toFixed(5)} relative luminance; shader-derived minimum is ${weatheringPixels.derivedRelativeThreshold.toFixed(5)}`,
+    weatheringPixels.maxWeatherablePixelChange > weatheringPixels.derivedPixelThreshold,
+    `full-strength weathering changes a weatherable building pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance; shader-derived minimum is ${weatheringPixels.derivedPixelThreshold.toFixed(5)}`,
   );
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
