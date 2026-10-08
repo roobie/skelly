@@ -15,10 +15,10 @@ describe('amalgam attack tentacle pose', () => {
         facing: [0, 0, -1],
         reachMetres,
         anchorOffsetMetres: 1,
-        attackWindup,
-        attackWindupSeconds: windupSeconds,
-        attackWait,
-        attackCooldownSeconds: cooldownSeconds,
+        attackWindupSimSeconds: attackWindup,
+        attackWindupDurationSimSeconds: windupSeconds,
+        attackWaitSimSeconds: attackWait,
+        attackCooldownDurationSimSeconds: cooldownSeconds,
       });
 
     const idle = pose(0, 0);
@@ -47,10 +47,10 @@ describe('amalgam attack tentacle pose', () => {
       facing: [1, 0, 0],
       reachMetres: 0,
       anchorOffsetMetres: 1,
-      attackWindup: 0.1,
-      attackWindupSeconds: 0.4,
-      attackWait: 0.3,
-      attackCooldownSeconds: 1.8,
+      attackWindupSimSeconds: 0.1,
+      attackWindupDurationSimSeconds: 0.4,
+      attackWaitSimSeconds: 0.3,
+      attackCooldownDurationSimSeconds: 1.8,
     });
 
     expect(pose.extension).toBe(0);

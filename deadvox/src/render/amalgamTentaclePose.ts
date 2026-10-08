@@ -6,10 +6,10 @@ export interface AmalgamTentaclePoseInput {
   readonly facing: Vec3;
   readonly reachMetres: number;
   readonly anchorOffsetMetres: number;
-  readonly attackWindup: number;
-  readonly attackWindupSeconds: number;
-  readonly attackWait: number;
-  readonly attackCooldownSeconds: number;
+  readonly attackWindupSimSeconds: number;
+  readonly attackWindupDurationSimSeconds: number;
+  readonly attackWaitSimSeconds: number;
+  readonly attackCooldownDurationSimSeconds: number;
 }
 
 export interface AmalgamTentaclePose {
@@ -28,18 +28,22 @@ export const amalgamTentaclePose = ({
   facing,
   reachMetres,
   anchorOffsetMetres,
-  attackWindup,
-  attackWindupSeconds,
-  attackWait,
-  attackCooldownSeconds,
+  attackWindupSimSeconds,
+  attackWindupDurationSimSeconds,
+  attackWaitSimSeconds,
+  attackCooldownDurationSimSeconds,
 }: AmalgamTentaclePoseInput): AmalgamTentaclePose => {
   let extension = 0;
-  if (reachMetres > 0 && attackWindup > 0 && attackWindupSeconds > 0) {
-    extension = smoothstep(1 - clamp01(attackWindup / attackWindupSeconds));
-  } else if (reachMetres > 0 && attackWait > 0 && attackCooldownSeconds > attackWindupSeconds) {
-    const waitAtStrike = attackCooldownSeconds - attackWindupSeconds;
-    const sinceStrike = Math.max(0, waitAtStrike - attackWait);
-    extension = 1 - smoothstep(clamp01(sinceStrike / attackWindupSeconds));
+  if (reachMetres > 0 && attackWindupSimSeconds > 0 && attackWindupDurationSimSeconds > 0) {
+    extension = smoothstep(1 - clamp01(attackWindupSimSeconds / attackWindupDurationSimSeconds));
+  } else if (
+    reachMetres > 0 &&
+    attackWaitSimSeconds > 0 &&
+    attackCooldownDurationSimSeconds > attackWindupDurationSimSeconds
+  ) {
+    const waitAtStrike = attackCooldownDurationSimSeconds - attackWindupDurationSimSeconds;
+    const sinceStrike = Math.max(0, waitAtStrike - attackWaitSimSeconds);
+    extension = 1 - smoothstep(clamp01(sinceStrike / attackWindupDurationSimSeconds));
   }
 
   const delta: Vec3 = [target[0] - start[0], target[1] - start[1], target[2] - start[2]];

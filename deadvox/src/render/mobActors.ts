@@ -1101,10 +1101,10 @@ export class MobActorMeshes implements ZombieRenderer {
       facing,
       reachMetres,
       anchorOffsetMetres,
-      attackWindup: zombie.attackWindup,
-      attackWindupSeconds: zombie.type.attack.windupSimSeconds,
-      attackWait: zombie.attackWait,
-      attackCooldownSeconds: zombie.type.attack.cooldownSimSeconds,
+      attackWindupSimSeconds: zombie.attackWindup,
+      attackWindupDurationSimSeconds: zombie.type.attack.windupSimSeconds,
+      attackWaitSimSeconds: zombie.attackWait,
+      attackCooldownDurationSimSeconds: zombie.type.attack.cooldownSimSeconds,
     });
     const deltaX = pose.end[0] - pose.start[0];
     const deltaY = pose.end[1] - pose.start[1];
