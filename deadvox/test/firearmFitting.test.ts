@@ -5,6 +5,7 @@ import type { ItemDef, ModelDef, Registry } from '../src/core/content.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { opticViewSettings } from '../src/core/opticView.ts';
 import { defOf, type Item } from '../src/core/items.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 
@@ -217,11 +218,12 @@ describe('certified firearm fitting', () => {
     expect(queue.jobs).toHaveLength(0);
   });
 
-  it('lets every base optic fit at least one base firearm', () => {
+  it('lets every base optic with a supported view fit at least one base firearm', () => {
     const firearms = [...baseRegistry.items.values()].filter((item) => item.firearm && item.model);
-    const optics = [...baseRegistry.items.values()].filter(
-      (item) => item.model && baseRegistry.models.get(item.model)?.attachment?.kind === 'optic',
-    );
+    const optics = [...baseRegistry.items.values()].filter((item) => {
+      const model = item.model === undefined ? undefined : baseRegistry.models.get(item.model);
+      return model?.attachment?.kind === 'optic' && opticViewSettings(item, model) !== undefined;
+    });
     if (!(firearms.length > 0 && optics.length > 0)) {
       throw new Error('Base content needs firearms and optics');
     }

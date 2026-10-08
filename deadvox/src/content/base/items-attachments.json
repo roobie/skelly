@@ -6,8 +6,7 @@
       "category": "misc",
       "weight": 750,
       "size": [2, 2],
-      "model": "optic_digital_thermal",
-      "opticMagnification": 3
+      "model": "optic_digital_thermal"
     },
     {
       "id": "optic_fixed_prism_4x",
