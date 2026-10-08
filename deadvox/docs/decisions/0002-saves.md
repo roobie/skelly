@@ -25,7 +25,11 @@ Exactness matters because a restored scheduler, random stream or action must
 continue as if saving and loading had not changed the simulation.
 
 Persist every future-affecting owner state in the same change that introduces
-it. Keep input, rendering and external playback out of the snapshot. God mode,
+it. At entity boundaries such as `src/core/zombies.ts`, `ZombieSystem.snapshotState`,
+export through an explicit projection whose exhaustive key check forces every
+added state field to receive a save decision. This prevents optional runtime
+fields from leaking into canonical saves when they are unset. Keep input,
+rendering and external playback out of the snapshot. God mode,
 noclip and build toggles are debug state: they are not saved and are off after
 load, while world changes made with them remain saved. Presentation changes leave
 save identity stable only when their modules stay outside the simulation
