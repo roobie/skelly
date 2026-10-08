@@ -17,7 +17,7 @@ import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inpu
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
 const INPUT_GESTURE =
-  /\b(?:hold|press|tap|click|double[ -]press|wield|activate|scroll|wheel|drag|rotate|snap|spawn)\b/i;
+  /\b(?:hold|press|tap|click|double[ -]press|wield|activate|throw|scroll|wheel|drag|rotate|snap|spawn)\b/i;
 const LMB_ALIAS = /\bLMB\b/i;
 const RMB_ALIAS = /\bRMB\b/i;
 const base = readdirSync(BASE)
