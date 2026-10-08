@@ -327,7 +327,7 @@ export class Simulation {
     const action = this.actions.job;
     if (!(compression.active || compression.c > 1)) {
       if (action?.jobType === 'pry' && emitted) {
-        compression.interrupt(emitted.reason);
+        this.actions.interruptPrying(emitted.reason);
         return true;
       }
       return false;
