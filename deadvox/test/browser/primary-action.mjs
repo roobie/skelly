@@ -507,6 +507,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       {
         seconds: fixture.minimumHoldSimSeconds + 0.1,
         label: 'two-hand replay fixture reaches the minimum throw charge',
+        record: (line) => process.stderr.write(`${line}\n`),
       },
     );
     await releaseThrow();
