@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { localSolidBounds } from '../src/core/geometry.ts';
 import { compose, scale, sub, translation } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import {
@@ -122,7 +123,8 @@ describe('motion-derived cycle geometry', () => {
       return sweepMovingPart({ ...resolved, defs, placed }, 'bolt-carrier', limit);
     };
 
-    const atStart = withBlockerAt(start, carrierTail.z[0] + 0.25);
+    const carrierRearX = Math.min(...carrier.solids.map((solid) => localSolidBounds(solid)[0][0]));
+    const atStart = withBlockerAt(start, carrierRearX + 0.25);
     expect(atStart.clear).toBe(0);
     expect(atStart.clashes.some(({ pair, at }) => pair.includes('sweep-blocker') && at === 0)).toBe(true);
 
