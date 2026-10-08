@@ -8,9 +8,9 @@ import { AuthoredSite } from '../src/core/authoredSite.ts';
 import {
   buildingBounds,
   defaultFoundation,
-  layoutHeight,
   LOT_APRON_M,
   LOT_BLEND_M,
+  layoutHeight,
   lotOf,
   polylineDistance,
   profileHeight,
@@ -77,6 +77,60 @@ const layoutValidationBase = [
   },
 ];
 const scale = makeScale(0.5);
+interface AuthoredTerrainCase {
+  site: AuthoredSite;
+  sourceLayout: SiteLayoutDef;
+  lots: ReturnType<typeof lotOf>[];
+  natural: number;
+}
+const authoredSiteHeight = ({ sourceLayout, lots, natural }: AuthoredTerrainCase, x: number, z: number): number =>
+  Math.round(
+    layoutHeight(
+      sourceLayout,
+      lots,
+      [(x + 0.5) * scale.blockSize, (z + 0.5) * scale.blockSize],
+      natural * scale.blockSize,
+    ) / scale.blockSize,
+  );
+const expectAuthoredSiteHeight = (terrain: AuthoredTerrainCase, x: number, z: number): void =>
+  expect(terrain.site.surface.height(x, z, terrain.natural)).toBe(authoredSiteHeight(terrain, x, z));
+const expectBuildingFootprintsUnnoised = (terrain: AuthoredTerrainCase): void => {
+  for (const building of terrain.sourceLayout.buildings) {
+    const bounds = buildingBounds(building, registry.templates.get(building.template)!.size);
+    for (let x = Math.floor(bounds.x0 / scale.blockSize); x < Math.ceil(bounds.x1 / scale.blockSize); x++) {
+      for (let z = Math.floor(bounds.z0 / scale.blockSize); z < Math.ceil(bounds.z1 / scale.blockSize); z++) {
+        expectAuthoredSiteHeight(terrain, x, z);
+      }
+    }
+  }
+};
+const expectTracksUnnoised = (terrain: AuthoredTerrainCase): void => {
+  for (const track of terrain.sourceLayout.tracks) {
+    for (let segment = 1; segment < track.points.length; segment++) {
+      const [x0, z0] = track.points[segment - 1]!;
+      const [x1, z1] = track.points[segment]!;
+      const length = Math.hypot(x1 - x0, z1 - z0);
+      for (let step = 0; step <= Math.ceil(length / scale.blockSize); step++) {
+        const t = Math.min(1, (step * scale.blockSize) / length);
+        const x = Math.floor((x0 + (x1 - x0) * t) / scale.blockSize);
+        const z = Math.floor((z0 + (z1 - z0) * t) / scale.blockSize);
+        expectAuthoredSiteHeight(terrain, x, z);
+      }
+    }
+  }
+};
+const openGroundHasNoise = (terrain: AuthoredTerrainCase): boolean => {
+  for (let x = Math.ceil(terrain.sourceLayout.bounds.x0 / 16) * 16; x < terrain.sourceLayout.bounds.x1; x += 16) {
+    for (let z = Math.ceil(terrain.sourceLayout.bounds.z0 / 16) * 16; z < terrain.sourceLayout.bounds.z1; z += 16) {
+      const cellX = Math.floor(x / scale.blockSize);
+      const cellZ = Math.floor(z / scale.blockSize);
+      if (terrain.site.surface.height(cellX, cellZ, terrain.natural) !== authoredSiteHeight(terrain, cellX, cellZ)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
 const minimalLayoutBaselineIssues = buildRegistry([
   ...layoutValidationBase,
   { source: 'layout-test.json', data: { layouts: [layout] } },
@@ -452,53 +506,23 @@ describe('authored layout acceptance', () => {
 
 it('fades authored terrain noise around structures, tracks and spawn while varying open ground', () => {
   const ridge = registry.layouts.get('hunting_cabins')!;
-  const site = new AuthoredSite(73, registry, makeScale(0.5), ridge);
-  const scale = makeScale(0.5);
-  const s = scale.blockSize;
-  const lots = ridge.buildings.map((building) =>
-    lotOf(building, buildingBounds(building, registry.templates.get(building.template)!.size)),
+  const site = new AuthoredSite(73, registry, scale, ridge);
+  const terrain: AuthoredTerrainCase = {
+    site,
+    sourceLayout: ridge,
+    lots: ridge.buildings.map((building) =>
+      lotOf(building, buildingBounds(building, registry.templates.get(building.template)!.size)),
+    ),
+    natural: ridge.ground / scale.blockSize,
+  };
+  expectBuildingFootprintsUnnoised(terrain);
+  expectTracksUnnoised(terrain);
+  expectAuthoredSiteHeight(
+    terrain,
+    Math.floor(ridge.player.position[0] / scale.blockSize),
+    Math.floor(ridge.player.position[2] / scale.blockSize),
   );
-  const natural = ridge.ground / s;
-  const authoredHeight = (x: number, z: number) =>
-    Math.round(layoutHeight(ridge, lots, [(x + 0.5) * s, (z + 0.5) * s], natural * s) / s);
-  const matchesAuthoredHeight = (x: number, z: number) =>
-    expect(site.surface.height(x, z, natural)).toBe(authoredHeight(x, z));
-
-  for (const building of ridge.buildings) {
-    const bounds = buildingBounds(building, registry.templates.get(building.template)!.size);
-    for (let x = Math.floor(bounds.x0 / s); x < Math.ceil(bounds.x1 / s); x++) {
-      for (let z = Math.floor(bounds.z0 / s); z < Math.ceil(bounds.z1 / s); z++) {
-        matchesAuthoredHeight(x, z);
-      }
-    }
-  }
-  for (const track of ridge.tracks) {
-    for (let segment = 1; segment < track.points.length; segment++) {
-      const [x0, z0] = track.points[segment - 1]!;
-      const [x1, z1] = track.points[segment]!;
-      const length = Math.hypot(x1 - x0, z1 - z0);
-      for (let step = 0; step <= Math.ceil(length / s); step++) {
-        const t = Math.min(1, (step * s) / length);
-        const x = Math.floor((x0 + (x1 - x0) * t) / s);
-        const z = Math.floor((z0 + (z1 - z0) * t) / s);
-        matchesAuthoredHeight(x, z);
-      }
-    }
-  }
-  const [spawnX, , spawnZ] = ridge.player.position;
-  matchesAuthoredHeight(Math.floor(spawnX / s), Math.floor(spawnZ / s));
-
-  let variedOpenGround = false;
-  for (let x = Math.ceil(ridge.bounds.x0 / 16) * 16; x < ridge.bounds.x1; x += 16) {
-    for (let z = Math.ceil(ridge.bounds.z0 / 16) * 16; z < ridge.bounds.z1; z += 16) {
-      const cellX = Math.floor(x / s);
-      const cellZ = Math.floor(z / s);
-      if (site.surface.height(cellX, cellZ, natural) !== authoredHeight(cellX, cellZ)) {
-        variedOpenGround = true;
-      }
-    }
-  }
-  expect(variedOpenGround).toBe(true);
+  expect(openGroundHasNoise(terrain)).toBe(true);
 });
 
 it('keeps authored trees grounded and clear of buildings, roads and spawn', () => {

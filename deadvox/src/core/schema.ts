@@ -1382,7 +1382,6 @@ export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
-export type SiteGenerationDef = InferOutput<typeof SiteGenerationSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof typeof SECTION_DESCRIPTOR;
