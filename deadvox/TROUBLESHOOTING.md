@@ -60,10 +60,10 @@ games or restored saves. See `src/debug/index.ts`, `attachDebugTools`.
 
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
-- `at=x,y,z`: start a new debug session at explicit world coordinates in metres. It makes a site
-  look URL reproducible without changing saved or replayed state: loading a save keeps its saved
-  position and view, and a replay starts from its recorded snapshot. See `src/game/config.ts`,
-  `configFromUrl`, and `src/game/worldSetup.ts`, `playerStartFromWorld`.
+- `at=x,z[,yaw]`: start a new debug session at x/z metres on the site's ground, optionally facing
+  yaw degrees. It makes a site look URL reproducible without changing saved or replayed state:
+  loading a save keeps its saved position and view, and a replay starts from its recorded snapshot.
+  See `src/game/config.ts`, `configFromUrl`, and `src/game/worldSetup.ts`, `playerStartFromWorld`.
 - The debug bindings for spectator camera, perception labels, hidden-shambler spawn, and test noise
   are listed by action in `src/game/inputBindings.ts`, `INPUT_BINDINGS`; their active keys remain
   rebindable. Use them together to watch a shambler remain unaware behind a wall, emit a near test

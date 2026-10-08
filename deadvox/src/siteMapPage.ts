@@ -502,7 +502,7 @@ const selectAt = (clientX: number, clientY: number) => {
   game.searchParams.set('site', siteId);
   game.searchParams.set('seed', String(seed));
   game.searchParams.set('debug', '1');
-  game.searchParams.set('at', `${x},${y},${z}`);
+  game.searchParams.set('at', `${x},${z}`);
   link.href = game.href;
   link.textContent = 'Open a fresh debug game here';
   link.target = '_blank';
