@@ -422,7 +422,11 @@ try {
     weatheringPixels.afterCamera,
     'weathering states share one paused camera',
   );
-  assert.equal(weatheringPixels.maxZeroStrengthPixelChange, 0, 'zero-strength control leaves building pixels unchanged');
+  assert.equal(
+    weatheringPixels.maxZeroStrengthPixelChange,
+    0,
+    'zero-strength control leaves building pixels unchanged',
+  );
   assert.ok(
     weatheringPixels.maxWeatherablePixelChange > 0,
     `full-strength weathering changes a weatherable building pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
