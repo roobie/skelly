@@ -161,6 +161,18 @@ const regionsInsideBounds = (
   return true;
 };
 
+const stepHeadingAlignment = (before: Vec3, after: Vec3, target: Vec3): number | undefined => {
+  const moveX = after[0] - before[0];
+  const moveZ = after[2] - before[2];
+  const movementLength = Math.hypot(moveX, moveZ);
+  if (movementLength <= 1e-8) {
+    return undefined;
+  }
+  const dx = target[0] - after[0];
+  const dz = target[2] - after[2];
+  return (moveX * dx + moveZ * dz) / (movementLength * Math.hypot(dx, dz));
+};
+
 const boundsOfPosedRegions = (regions: ReturnType<typeof posedAmalgamRegionBoxes>) => {
   const bounds = {
     min: [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY],
@@ -182,6 +194,73 @@ const boundsOfPosedRegions = (regions: ReturnType<typeof posedAmalgamRegionBoxes
   return bounds;
 };
 
+type ObstacleKind = 'fence' | 'crates';
+interface ObstacleResult {
+  barrierSolid: boolean;
+  crossed: boolean;
+  leftGround: boolean;
+  maxZ: number;
+  mode: string;
+}
+
+const placeFenceRow = (world: World): void => {
+  const fence = compileTemplate(registry, registry.templates.get('rickety_fence')!);
+  const [sx, sy, sz] = fence.size;
+  for (let originX = -70; originX <= 70; originX += sx) {
+    for (let y = 0; y < sy; y++) {
+      for (let z = 0; z < sz; z++) {
+        for (let x = 0; x < sx; x++) {
+          const block = fence.blocks[x + sx * (z + sz * y)]!;
+          if (registry.blocks[block]?.solid) {
+            world.setBlock(originX + x, y, z, block);
+          }
+        }
+      }
+    }
+  }
+};
+
+const runObstacleCase = (kind: ObstacleKind, typeId: 'amalgam' | 'shambler'): ObstacleResult => {
+  const world = new World();
+  const entities = new BlockEntities(registry);
+  const centerX = kind === 'fence' ? 0 : 50;
+  const startZ = -30;
+  if (kind === 'fence') {
+    placeFenceRow(world);
+  } else {
+    for (let x = centerX - 50; x <= centerX + 50; x += 2) {
+      entities.add({ type: 'crate', pos: [x, 0, 0], size: [2, 2, 2], facing: 'n' });
+    }
+  }
+  const isSolid = (x: number, y: number, z: number): boolean =>
+    y === 0 || Boolean(registry.blocks[world.getBlock(x, y, z)]?.solid) || entities.isSolid(x, y, z);
+  const barrierSolid = isSolid(centerX, 1, 0);
+  const seenPlayer: PlayerSense = { ...player(), pos: [centerX, 1, 18] };
+  const simulation = new ZombieSystem({
+    player: () => seenPlayer,
+    isSolid,
+    isOpaque: () => false,
+    hour: () => 12,
+    blockSize: BLOCK_SIZE,
+    physics: physicsFor(makeScale(0.5)),
+    jumpSpeed: PLAYER.jump,
+    tuning: TEST_SENSE_TUNING,
+    hurtPlayer: () => undefined,
+  });
+  const id = simulation.add(registry.zombies.get(typeId)!, [centerX, 1, startZ], [0, 0, 1]);
+  let crossed = false;
+  let leftGround = false;
+  let maxZ = Number.NEGATIVE_INFINITY;
+  for (let tick = 0; tick < 1200; tick++) {
+    simulation.tick(1 / 60);
+    const { body } = simulation.store.get(id)!;
+    crossed ||= body.pos[2] > 2.5;
+    leftGround ||= !body.onGround;
+    maxZ = Math.max(maxZ, body.pos[2]);
+  }
+  return { barrierSolid, crossed, leftGround, maxZ, mode: simulation.store.get(id)!.mode };
+};
+
 describe('amalgam body and combat seam', () => {
   it('authors a slow beeline and delayed heavier strike', () => {
     const amalgam = registry.zombies.get('amalgam')!;
@@ -200,17 +279,9 @@ describe('amalgam body and combat seam', () => {
         simulation.tick(1 / 60);
         const chasing = simulation.store.get(id)!;
         if (type.id === 'amalgam' && chasing.mode === 'chase') {
-          const dx = seenPlayer.pos[0] - chasing.body.pos[0];
-          const dz = seenPlayer.pos[2] - chasing.body.pos[2];
-          const distance = Math.hypot(dx, dz);
-          const moveX = chasing.body.pos[0] - before[0];
-          const moveZ = chasing.body.pos[2] - before[2];
-          const movementLength = Math.hypot(moveX, moveZ);
-          if (movementLength > 1e-8) {
-            const alignment = (moveX * dx + moveZ * dz) / (movementLength * distance);
-            expect(alignment).toBeGreaterThan(Math.cos(Math.PI / 12));
-            checkedAmalgamHeading = true;
-          }
+          const alignment = stepHeadingAlignment(before, chasing.body.pos, seenPlayer.pos);
+          expect(alignment ?? 1).toBeGreaterThan(Math.cos(Math.PI / 12));
+          checkedAmalgamHeading ||= alignment !== undefined;
         }
       }
       const zombie = simulation.store.get(id)!;
@@ -449,69 +520,14 @@ describe('amalgam body and combat seam', () => {
   });
 
   it('keeps amalgams grounded behind a fence or crate row while shamblers cross it', () => {
-    const fence = compileTemplate(registry, registry.templates.get('rickety_fence')!);
-    const obstacleCase = (kind: 'fence' | 'crates', typeId: 'amalgam' | 'shambler') => {
-      const world = new World();
-      const entities = new BlockEntities(registry);
-      const centerX = kind === 'fence' ? 0 : 50;
-      const startZ = -30;
-      if (kind === 'fence') {
-        const [sx, sy, sz] = fence.size;
-        for (let originX = -70; originX <= 70; originX += sx) {
-          for (let y = 0; y < sy; y++) {
-            for (let z = 0; z < sz; z++) {
-              for (let x = 0; x < sx; x++) {
-                const block = fence.blocks[x + sx * (z + sz * y)]!;
-                if (registry.blocks[block]?.solid) {
-                  world.setBlock(originX + x, y, z, block);
-                }
-              }
-            }
-          }
-        }
-      } else {
-        for (let x = centerX - 50; x <= centerX + 50; x += 2) {
-          entities.add({ type: 'crate', pos: [x, 0, 0], size: [2, 2, 2], facing: 'n' });
-        }
-      }
-      const isSolid = (x: number, y: number, z: number): boolean =>
-        y === 0 ||
-        Boolean(registry.blocks[world.getBlock(x, y, z)]?.solid) ||
-        entities.isSolid(x, y, z);
-      expect(isSolid(centerX, 1, 0)).toBe(true);
-      const seenPlayer: PlayerSense = { ...player(), pos: [centerX, 1, 18] };
-      const simulation = new ZombieSystem({
-        player: () => seenPlayer,
-        isSolid,
-        isOpaque: () => false,
-        hour: () => 12,
-        blockSize: BLOCK_SIZE,
-        physics: physicsFor(makeScale(0.5)),
-        jumpSpeed: PLAYER.jump,
-        tuning: TEST_SENSE_TUNING,
-        hurtPlayer: () => undefined,
-      });
-      const id = simulation.add(registry.zombies.get(typeId)!, [centerX, 1, startZ], [0, 0, 1]);
-      let crossed = false;
-      let leftGround = false;
-      let maxZ = Number.NEGATIVE_INFINITY;
-      for (let tick = 0; tick < 1200; tick++) {
-        simulation.tick(1 / 60);
-        const body = simulation.store.get(id)!.body;
-        crossed ||= body.pos[2] > 2.5;
-        leftGround ||= !body.onGround;
-        maxZ = Math.max(maxZ, body.pos[2]);
-      }
-      return { crossed, leftGround, maxZ, mode: simulation.store.get(id)!.mode };
-    };
-
     for (const kind of ['fence', 'crates'] as const) {
-      const amalgam = obstacleCase(kind, 'amalgam');
+      const amalgam = runObstacleCase(kind, 'amalgam');
+      expect(amalgam.barrierSolid).toBe(true);
       expect(amalgam.mode).toBe('chase');
       expect(amalgam.maxZ).toBeGreaterThan(-30);
       expect(amalgam.crossed).toBe(false);
       expect(amalgam.leftGround).toBe(false);
-      expect(obstacleCase(kind, 'shambler').crossed).toBe(true);
+      expect(runObstacleCase(kind, 'shambler').crossed).toBe(true);
     }
   });
 

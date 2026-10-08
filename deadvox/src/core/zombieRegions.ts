@@ -1,8 +1,9 @@
 // Detailed melee hit geometry shares the seeded, posed mobgen figures with MobActorMeshes. FIGURE_BOXES below
 // remains only for the optional blocky renderer; it is deliberately not used by the hit test.
 
-import { type Mat3, mulMM, transpose } from '@mobgen/core/math.ts';
-import { boneTransforms } from '@mobgen/core/pose.ts';
+import type { Mat3 } from '@mobgen/core/math.ts';
+import { mulMM, transpose } from '@mobgen/core/math.ts';
+import type { boneTransforms } from '@mobgen/core/pose.ts';
 import { type BoneVoxelBox, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { AmalgamFigure } from './amalgamFigure.ts';
 import type { ZombieHitRegion, ZombieRegion } from './schema.ts';
@@ -211,9 +212,8 @@ const regionBoxesForContext = (context: PoseBoxContext): Readonly<Record<string,
 };
 
 /** All manifest-region boxes for one actor pose, including amalgam member IDs. */
-export const posedAllRegionBoxes = (
-  input: ShamblerPoseInput,
-): Readonly<Record<string, readonly PosedBoneBox[]>> => regionBoxesForContext(poseContextFor(input));
+export const posedAllRegionBoxes = (input: ShamblerPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> =>
+  regionBoxesForContext(poseContextFor(input));
 
 /** Bone boxes for one shambler-compatible pose. The caller builds them once per nearby zombie. */
 export const posedShamblerRegionBoxes = (
@@ -226,7 +226,9 @@ export const posedShamblerRegionBoxes = (
 };
 
 /** Manifest-region boxes from the same posed transforms used by the living actor renderer. */
-export const posedAmalgamRegionBoxes = (input: ShamblerPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> => {
+export const posedAmalgamRegionBoxes = (
+  input: ShamblerPoseInput,
+): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const context = poseContextFor(input);
   if (input.model !== 'amalgam' || !('manifest' in context.figure)) {
     throw new Error('Amalgam region boxes require an amalgam pose input');
