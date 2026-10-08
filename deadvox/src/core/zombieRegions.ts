@@ -1,9 +1,8 @@
 // Detailed melee hit geometry shares the seeded, posed mobgen figures with MobActorMeshes. FIGURE_BOXES below
 // remains only for the optional blocky renderer; it is deliberately not used by the hit test.
 
-import { type Mat3, mulMM, rotY, transpose } from '@mobgen/core/math.ts';
-import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { type Mat3, mulMM, transpose } from '@mobgen/core/math.ts';
+import { boneTransforms } from '@mobgen/core/pose.ts';
 import { type BoneVoxelBox, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { AmalgamFigure } from './amalgamFigure.ts';
 import type { ZombieHitRegion, ZombieRegion } from './schema.ts';
@@ -198,49 +197,8 @@ const poseContextFor = (input: ShamblerPoseInput): PoseBoxContext => {
   };
 };
 
-/** Bone boxes for one swing pose. The caller builds them once per nearby zombie, then tests every region. */
-export const posedShamblerRegionBoxes = (
-  input: ShamblerPoseInput,
-): Readonly<Record<ZombieRegion, readonly PosedBoneBox[]>> => {
-  const context = poseContextFor(input);
-  const worldBoxes = (region: ZombieHitRegion, boxes: readonly BoneVoxelBox[]): PosedBoneBox[] =>
-    boxes.flatMap((box) => {
-      const posedBox = makePosedBoneBox(region, box, context);
-      return posedBox ? [posedBox] : [];
-    });
+const regionBoxesForContext = (context: PoseBoxContext): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const boxesByRegion = context.figure.boxes as Readonly<Record<string, readonly BoneVoxelBox[]>>;
-  return Object.fromEntries(
-    ZOMBIE_REGION_NAMES.map((region) => [region, worldBoxes(region, boxesByRegion[region] ?? [])]),
-  ) as unknown as Readonly<Record<ZombieRegion, readonly PosedBoneBox[]>>;
-};
-
-/** Rest-pose hit boxes for an amalgam; the member tree is translated and yawed as one body. */
-export const posedAmalgamRegionBoxes = (
-  figure: AmalgamFigure,
-  input: {
-    readonly position: Vec3;
-    readonly facing: Vec3;
-    readonly blockSize: number;
-    readonly severed: readonly string[];
-  },
-): Readonly<Record<string, readonly PosedBoneBox[]>> => {
-  const pose: Pose = {
-    root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
-    rotations: {},
-  };
-  const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
-  const cuts = input.severed.map((part) => partRoots.get(part) ?? part);
-  const context: PoseBoxContext = {
-    transforms: boneTransforms(figure.realized.body.bones, pose),
-    figure,
-    voxelSummaries: voxelSummaryFor(`amalgam:${figure.seed}`, figure),
-    hidden: severedBoneSet(figure.realized.body.bones, cuts),
-    yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
-    position: input.position,
-    blockSize: input.blockSize,
-    geometryScale: figure.scale,
-  };
-  const boxesByRegion = figure.boxes as Readonly<Record<string, readonly BoneVoxelBox[]>>;
   return Object.fromEntries(
     Object.entries(boxesByRegion).map(([region, boxes]) => [
       region,
@@ -250,6 +208,30 @@ export const posedAmalgamRegionBoxes = (
       }),
     ]),
   );
+};
+
+/** All manifest-region boxes for one actor pose, including amalgam member IDs. */
+export const posedAllRegionBoxes = (
+  input: ShamblerPoseInput,
+): Readonly<Record<string, readonly PosedBoneBox[]>> => regionBoxesForContext(poseContextFor(input));
+
+/** Bone boxes for one shambler-compatible pose. The caller builds them once per nearby zombie. */
+export const posedShamblerRegionBoxes = (
+  input: ShamblerPoseInput,
+): Readonly<Record<ZombieRegion, readonly PosedBoneBox[]>> => {
+  const all = posedAllRegionBoxes(input);
+  return Object.fromEntries(ZOMBIE_REGION_NAMES.map((region) => [region, all[region] ?? []])) as Readonly<
+    Record<ZombieRegion, readonly PosedBoneBox[]>
+  >;
+};
+
+/** Manifest-region boxes from the same posed transforms used by the living actor renderer. */
+export const posedAmalgamRegionBoxes = (input: ShamblerPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> => {
+  const context = poseContextFor(input);
+  if (input.model !== 'amalgam' || !('manifest' in context.figure)) {
+    throw new Error('Amalgam region boxes require an amalgam pose input');
+  }
+  return regionBoxesForContext(context);
 };
 
 /** Actual posed voxel centres owned by the requested bones (for visible-hit-point proofs/tools). */

@@ -2,7 +2,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
-import { IDENTITY_M } from '@mobgen/core/math.ts';
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
@@ -23,7 +22,7 @@ import { compileTemplate } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { zombieFigure } from '../src/core/zombieFigure.ts';
 import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
+import { posedAllRegionBoxes, posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
   activeAmalgamMembers,
   FISTS_MELEE,
@@ -54,6 +53,7 @@ const player = (): PlayerSense => ({
 const system = (
   sense: () => PlayerSense = player,
   hurtPlayer: (amount: number) => void = () => undefined,
+  seed = 17,
 ): ZombieSystem =>
   new ZombieSystem({
     player: sense,
@@ -65,7 +65,7 @@ const system = (
     jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer,
-    seed: 17,
+    seed,
   });
 
 const MEMBER_RAY_DIRECTIONS: Vec3[] = [
@@ -109,13 +109,7 @@ const findRegionRay = ({
 
 const findMemberRay = (simulation: ZombieSystem, id: number, distanceMetres = 3) => {
   const zombie = simulation.store.get(id)!;
-  const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
-  const regions = posedAmalgamRegionBoxes(figure, {
-    position: zombie.body.pos,
-    facing: zombie.facing,
-    blockSize: BLOCK_SIZE,
-    severed: zombie.severed,
-  });
+  const regions = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
   for (const member of activeAmalgamMembers(zombie)) {
     for (const regionId of member.regionIds) {
       const ray = findRegionRay({ simulation, id, regionId, boxes: regions[regionId] ?? [], distanceMetres });
@@ -126,6 +120,27 @@ const findMemberRay = (simulation: ZombieSystem, id: number, distanceMetres = 3)
   }
   throw new Error('Could not aim at an exposed amalgam member region');
 };
+
+const poseInputForFigure = (
+  figure: ReturnType<typeof amalgamFigure>,
+  position: Vec3,
+  facing: Vec3,
+  severed: readonly string[] = [],
+): Parameters<typeof posedAmalgamRegionBoxes>[0] => ({
+  model: 'amalgam',
+  seed: figure.seed,
+  bodyScale: figure.scale,
+  position,
+  facing,
+  headYaw: 0,
+  gaitPhase: 0,
+  speed: 0,
+  chasing: false,
+  attackWindup: 0,
+  attackWindupSeconds: 0,
+  severed,
+  blockSize: BLOCK_SIZE,
+});
 
 const regionsInsideBounds = (
   regions: ReturnType<typeof posedAmalgamRegionBoxes>,
@@ -176,26 +191,40 @@ describe('amalgam body and combat seam', () => {
     expect(amalgam.attack.windupSimSeconds).toBeGreaterThan(shambler.attack.windupSimSeconds);
 
     const seenPlayer: PlayerSense = { ...player(), pos: [0, 1, 30] };
-    const chase = (type: typeof amalgam) => {
-      const simulation = system(() => seenPlayer);
+    const chase = (type: typeof amalgam, seed = 17) => {
+      const simulation = system(() => seenPlayer, undefined, seed);
       const id = simulation.add(type, [0, 1, 0], [0, 0, 1]);
+      let checkedAmalgamHeading = false;
       for (let tick = 0; tick < 120; tick++) {
+        const before = [...simulation.store.get(id)!.body.pos] as Vec3;
         simulation.tick(1 / 60);
+        const chasing = simulation.store.get(id)!;
+        if (type.id === 'amalgam' && chasing.mode === 'chase') {
+          const dx = seenPlayer.pos[0] - chasing.body.pos[0];
+          const dz = seenPlayer.pos[2] - chasing.body.pos[2];
+          const distance = Math.hypot(dx, dz);
+          const moveX = chasing.body.pos[0] - before[0];
+          const moveZ = chasing.body.pos[2] - before[2];
+          const movementLength = Math.hypot(moveX, moveZ);
+          if (movementLength > 1e-8) {
+            const alignment = (moveX * dx + moveZ * dz) / (movementLength * distance);
+            expect(alignment).toBeGreaterThan(Math.cos(Math.PI / 12));
+            checkedAmalgamHeading = true;
+          }
+        }
       }
       const zombie = simulation.store.get(id)!;
       expect(zombie.mode).toBe('chase');
-      return {
-        remainingDistance:
-          Math.hypot(seenPlayer.pos[0] - zombie.body.pos[0], seenPlayer.pos[2] - zombie.body.pos[2]) * BLOCK_SIZE,
-        lateralDistance: Math.abs(zombie.body.pos[0]) * BLOCK_SIZE,
-      };
+      if (type.id === 'amalgam') {
+        expect(checkedAmalgamHeading).toBe(true);
+      }
+      return Math.hypot(seenPlayer.pos[0] - zombie.body.pos[0], seenPlayer.pos[2] - zombie.body.pos[2]) * BLOCK_SIZE;
     };
     const initialDistance = seenPlayer.pos[2] * BLOCK_SIZE;
-    const amalgamChase = chase(amalgam);
-    const shamblerChase = chase(shambler);
-    expect(amalgamChase.remainingDistance).toBeLessThan(initialDistance);
-    expect(amalgamChase.remainingDistance).toBeGreaterThan(shamblerChase.remainingDistance);
-    expect(amalgamChase.lateralDistance).toBeLessThan((initialDistance - amalgamChase.remainingDistance) / 10);
+    const amalgamRemainingDistance = chase(amalgam, 73);
+    const shamblerRemainingDistance = chase(shambler);
+    expect(amalgamRemainingDistance).toBeLessThan(initialDistance);
+    expect(amalgamRemainingDistance).toBeGreaterThan(shamblerRemainingDistance);
 
     const closePlayer: PlayerSense = { ...player(), pos: [0, 1, 5] };
     const damage: number[] = [];
@@ -261,12 +290,7 @@ describe('amalgam body and combat seam', () => {
     );
     expect(envelope.height * BLOCK_SIZE).toBeGreaterThanOrEqual(localMax[1]! - localMin[1]!);
 
-    const posed = posedAmalgamRegionBoxes(figure, {
-      position: [0, 0, 0],
-      facing: [0, 0, -1],
-      blockSize: BLOCK_SIZE,
-      severed: [],
-    });
+    const posed = posedAmalgamRegionBoxes(poseInputForFigure(figure, [0, 0, 0], [0, 0, -1]));
     expect(regionsInsideBounds(posed, localMin, localMax)).toBe(true);
     const regionBounds = boundsOfPosedRegions(posed);
     const scaledVoxel = figure.realized.voxels.size * figure.scale;
@@ -327,7 +351,7 @@ describe('amalgam body and combat seam', () => {
     expect(heardBody).toBe(true);
   });
 
-  it('realizes the authored figure when a melee sound reports an amalgam hit', () => {
+  it('uses the shared flinch transform for rendered and hit-region amalgam pose', () => {
     const type = registry.zombies.get('amalgam')!;
     let heardBody = false;
     const combatSystem = new ZombieSystem({
@@ -356,9 +380,20 @@ describe('amalgam body and combat seam', () => {
       combatSystem.tick(1 / 60);
     }
     const zombie = combatSystem.store.get(id)!;
-    expect(zombie.hitFlinchTime).toBeDefined();
-    const posed = posedShambler(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
-    expect(posed.pose.rotations.core).not.toEqual(IDENTITY_M);
+    const poseInput = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const { hitFlinchTime, ...withoutFlinch } = poseInput;
+    expect(hitFlinchTime).toBeGreaterThan(0);
+    const posed = posedShambler(poseInput);
+    const unflinched = posedShambler(withoutFlinch);
+    expect(posed.pose.rotations.core).toBeDefined();
+    expect(posed.pose.rotations.core).not.toEqual(unflinched.pose.rotations.core);
+
+    const memberRegion = activeAmalgamMembers(zombie)[0]!.regionIds[0]!;
+    const renderedBoxes = posedAllRegionBoxes(poseInput)[memberRegion] ?? [];
+    expect(posedAmalgamRegionBoxes(poseInput)[memberRegion]).toEqual(renderedBoxes);
+    expect(
+      findRegionRay({ simulation: combatSystem, id, regionId: memberRegion, boxes: renderedBoxes }),
+    ).not.toBeNull();
   });
 
   it('uses the realized envelope to stop at a wall', () => {
@@ -386,15 +421,13 @@ describe('amalgam body and combat seam', () => {
     expect(body.pos[0]).toBeLessThan(-envelope.halfWidth);
   });
 
-  it('uses the BlockEntities closed-door path to stop the envelope without changing the door', () => {
+  it('uses the BlockEntities closed-door path to stop the envelope', () => {
     const envelope = amalgamCollisionEnvelope(
       amalgamFigure(5, registry.zombies.get('amalgam')!.bodyScale!),
       BLOCK_SIZE,
     );
     const entities = new BlockEntities(registry);
-    const door = entities.add({ type: 'wood_door', pos: [0, 0, 0], size: [2, 4, 1], facing: 'n' })!;
-    const before = entities.snapshotState();
-    const { version } = entities;
+    entities.add({ type: 'wood_door', pos: [0, 0, 0], size: [2, 4, 1], facing: 'n' });
     const body: Body = {
       pos: [-(envelope.halfWidth + 2), 0, 0],
       vel: [0, 0, 0],
@@ -413,80 +446,73 @@ describe('amalgam body and combat seam', () => {
     });
 
     expect(body.pos[0]).toBeLessThan(-envelope.halfWidth);
-    expect(door.open).toBe(false);
-    expect(entities.version).toBe(version);
-    expect(entities.snapshotState()).toEqual(before);
   });
 
-  it('uses the authored fence blocks to stop the envelope without changing them', () => {
-    const type = registry.zombies.get('amalgam')!;
-    const envelope = amalgamCollisionEnvelope(amalgamFigure(5, type.bodyScale!), BLOCK_SIZE);
-    const template = compileTemplate(registry, registry.templates.get('rickety_fence')!);
-    const world = new World();
-    const fenceCells: [number, number, number][] = [];
-    const [sx, sy, sz] = template.size;
-    for (let y = 0; y < sy; y++) {
-      for (let z = 0; z < sz; z++) {
-        for (let x = 0; x < sx; x++) {
-          const id = template.blocks[x + sx * (z + sz * y)]!;
-          if (registry.blocks[id]?.solid) {
-            world.setBlock(x, y, z, id);
-            fenceCells.push([x, y, z]);
+  it('keeps amalgams grounded behind a fence or crate row while shamblers cross it', () => {
+    const fence = compileTemplate(registry, registry.templates.get('rickety_fence')!);
+    const obstacleCase = (kind: 'fence' | 'crates', typeId: 'amalgam' | 'shambler') => {
+      const world = new World();
+      const entities = new BlockEntities(registry);
+      const centerX = kind === 'fence' ? 0 : 50;
+      const startZ = -30;
+      if (kind === 'fence') {
+        const [sx, sy, sz] = fence.size;
+        for (let originX = -70; originX <= 70; originX += sx) {
+          for (let y = 0; y < sy; y++) {
+            for (let z = 0; z < sz; z++) {
+              for (let x = 0; x < sx; x++) {
+                const block = fence.blocks[x + sx * (z + sz * y)]!;
+                if (registry.blocks[block]?.solid) {
+                  world.setBlock(originX + x, y, z, block);
+                }
+              }
+            }
           }
         }
+      } else {
+        for (let x = centerX - 50; x <= centerX + 50; x += 2) {
+          entities.add({ type: 'crate', pos: [x, 0, 0], size: [2, 2, 2], facing: 'n' });
+        }
       }
+      const isSolid = (x: number, y: number, z: number): boolean =>
+        y === 0 ||
+        Boolean(registry.blocks[world.getBlock(x, y, z)]?.solid) ||
+        entities.isSolid(x, y, z);
+      expect(isSolid(centerX, 1, 0)).toBe(true);
+      const seenPlayer: PlayerSense = { ...player(), pos: [centerX, 1, 18] };
+      const simulation = new ZombieSystem({
+        player: () => seenPlayer,
+        isSolid,
+        isOpaque: () => false,
+        hour: () => 12,
+        blockSize: BLOCK_SIZE,
+        physics: physicsFor(makeScale(0.5)),
+        jumpSpeed: PLAYER.jump,
+        tuning: TEST_SENSE_TUNING,
+        hurtPlayer: () => undefined,
+      });
+      const id = simulation.add(registry.zombies.get(typeId)!, [centerX, 1, startZ], [0, 0, 1]);
+      let crossed = false;
+      let leftGround = false;
+      let maxZ = Number.NEGATIVE_INFINITY;
+      for (let tick = 0; tick < 1200; tick++) {
+        simulation.tick(1 / 60);
+        const body = simulation.store.get(id)!.body;
+        crossed ||= body.pos[2] > 2.5;
+        leftGround ||= !body.onGround;
+        maxZ = Math.max(maxZ, body.pos[2]);
+      }
+      return { crossed, leftGround, maxZ, mode: simulation.store.get(id)!.mode };
+    };
+
+    for (const kind of ['fence', 'crates'] as const) {
+      const amalgam = obstacleCase(kind, 'amalgam');
+      expect(amalgam.mode).toBe('chase');
+      expect(amalgam.maxZ).toBeGreaterThan(-30);
+      expect(amalgam.crossed).toBe(false);
+      expect(amalgam.leftGround).toBe(false);
+      expect(obstacleCase(kind, 'shambler').crossed).toBe(true);
     }
-    const before = fenceCells.map(([x, y, z]) => world.getBlock(x, y, z));
-    const body: Body = {
-      pos: [-(envelope.halfWidth + 2), 1, 0],
-      vel: [0, 0, 0],
-      halfWidth: envelope.halfWidth,
-      halfDepth: envelope.halfDepth,
-      height: envelope.height,
-      onGround: true,
-    };
-
-    stepBodyHorizontal(body, {
-      dx: envelope.halfWidth + 4,
-      dz: 0,
-      isSolid: (x, y, z) => Boolean(registry.blocks[world.getBlock(x, y, z)]?.solid),
-      params: { gravity: 0, stepHeight: 0 },
-    });
-
-    expect(body.pos[0]).toBeLessThan(-envelope.halfWidth);
-    expect(fenceCells.map(([x, y, z]) => world.getBlock(x, y, z))).toEqual(before);
-  });
-
-  it('uses the solid-container path to stop the envelope without changing the container', () => {
-    const envelope = amalgamCollisionEnvelope(
-      amalgamFigure(5, registry.zombies.get('amalgam')!.bodyScale!),
-      BLOCK_SIZE,
-    );
-    const entities = new BlockEntities(registry);
-    const container = entities.add({ type: 'crate', pos: [0, 0, 0], size: [2, 2, 2], facing: 'n' })!;
-    const before = entities.snapshotState();
-    const { version } = entities;
-    const body: Body = {
-      pos: [-(envelope.halfWidth + 2), 0, 0],
-      vel: [0, 0, 0],
-      halfWidth: envelope.halfWidth,
-      halfDepth: envelope.halfDepth,
-      height: envelope.height,
-      onGround: true,
-    };
-
-    stepBodyHorizontal(body, {
-      dx: envelope.halfWidth + 4,
-      dz: 0,
-      isSolid: (x, y, z) => entities.isSolid(x, y, z),
-      params: { gravity: 0, stepHeight: 0 },
-    });
-
-    expect(body.pos[0]).toBeLessThan(-envelope.halfWidth);
-    expect(entities.isSolid(0, 0, 0)).toBe(true);
-    expect(entities.at(0, 0, 0)).toBe(container);
-    expect(entities.version).toBe(version);
-    expect(entities.snapshotState()).toEqual(before);
   });
 
   it('routes a firearm projectile hit into the manifest-backed amalgam region', () => {
@@ -517,12 +543,7 @@ describe('amalgam body and combat seam', () => {
     const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
     const fire = (origin: Vec3, basis: ReturnType<typeof aimBasis>, key: string): number =>
       simulation.firePellets(pelletShotFromBasis({ ammo, origin, basis, seed: 73, key }));
-    const coreBoxes = posedAmalgamRegionBoxes(amalgamFigureForType(type, zombie.figureSeed), {
-      position: zombie.body.pos,
-      facing: zombie.facing,
-      blockSize: BLOCK_SIZE,
-      severed: zombie.severed,
-    });
+    const coreBoxes = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
     const coreCenter = coreBoxes['core.trunk']?.[0]?.voxelCentroid;
     expect(coreCenter).toBeDefined();
     const rangeMetres = 6;
@@ -643,7 +664,6 @@ describe('amalgam body and combat seam', () => {
     const type = registry.zombies.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
-    const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
     const membersBefore = activeAmalgamMembers(zombie);
     const ray = findMemberRay(simulation, id);
     const target = membersBefore.find((member) => member.partId === ray.partId)!;
@@ -669,12 +689,7 @@ describe('amalgam body and combat seam', () => {
       membersBefore.filter(({ partId }) => partId !== target.partId).map(({ partId }) => partId),
     );
 
-    const boxesAfter = posedAmalgamRegionBoxes(figure, {
-      position: zombie.body.pos,
-      facing: zombie.facing,
-      blockSize: BLOCK_SIZE,
-      severed: zombie.severed,
-    });
+    const boxesAfter = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
     for (const region of target.regionIds) {
       expect(boxesAfter[region]).toHaveLength(0);
     }

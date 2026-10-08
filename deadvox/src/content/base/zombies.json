@@ -4,6 +4,7 @@
       "id": "shambler",
       "name": "Shambler",
       "model": "shambler",
+      "canJumpObstacles": true,
       "spawnWeight": 1,
       "sounds": {
         "idle": "shambler_idle",
@@ -88,6 +89,7 @@
       "id": "runner",
       "name": "Runner",
       "model": "runner",
+      "canJumpObstacles": true,
       "spawnWeight": 0.12,
       "sounds": {
         "idle": "runner_idle",
@@ -152,6 +154,7 @@
       "id": "crawler",
       "name": "Crawler",
       "model": "shambler",
+      "canJumpObstacles": true,
       "spawnWeight": 0.08,
       "sounds": {
         "idle": "crawler_idle",
@@ -216,6 +219,7 @@
       "id": "amalgam",
       "name": "Amalgam",
       "model": "amalgam",
+      "canJumpObstacles": false,
       "bodyScale": 4,
       "soundPitchMultiplier": 0.5,
       "spawnWeight": 1,

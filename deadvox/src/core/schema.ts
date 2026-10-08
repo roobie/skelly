@@ -975,7 +975,7 @@ const ZombieSchema = strictObject({
   model: ZOMBIE_MODEL,
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
-  /** Overrides body-height pitch scaling for this type's mob sounds. */
+  /** Overrides body-height pitch scaling for this type's voice cues. */
   soundPitchMultiplier: optional(Positive),
   /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
@@ -995,6 +995,8 @@ const ZombieSchema = strictObject({
   speed: strictObject({ wanderMetresPerSimSecond: SimRate, chaseMetresPerSimSecond: SimRate }),
   /** Metres advanced by one half-cycle of the leg gait. */
   stepLength: Positive,
+  /** Whether this type tries to jump low obstacles when grounded. */
+  canJumpObstacles: vBoolean(),
   /** Metres by day. */
   sight: Positive,
   /** Metres by night. */

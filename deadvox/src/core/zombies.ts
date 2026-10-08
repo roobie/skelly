@@ -468,15 +468,9 @@ const posedRegionsForZombie = ({
   if (cached) {
     return cached;
   }
+  const poseInput = zombiePoseInputFor(zombie, id, blockSize);
   const posed =
-    zombie.type.model === 'amalgam'
-      ? posedAmalgamRegionBoxes(amalgamFigureForType(zombie.type, zombie.figureSeed), {
-          position: [zombie.body.pos[0], zombie.body.pos[1] + (zombie.stepOffset ?? 0) / blockSize, zombie.body.pos[2]],
-          facing: zombie.facing,
-          blockSize,
-          severed: zombie.severed,
-        })
-      : posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize));
+    zombie.type.model === 'amalgam' ? posedAmalgamRegionBoxes(poseInput) : posedShamblerRegionBoxes(poseInput);
   poseCache?.set(id, posed);
   return posed;
 };
@@ -2122,6 +2116,7 @@ export class ZombieSystem {
     zombie.body.vel[0] = (direction[0] * zombie.horizontalSpeed) / blockSize;
     zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
     scratch.jumpAttempted =
+      zombie.type.canJumpObstacles &&
       zombie.horizontalSpeed > 0.01 &&
       zombie.body.onGround &&
       canJumpObstacle({
