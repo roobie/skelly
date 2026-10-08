@@ -132,6 +132,8 @@ import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const STARTUP_MESH_RADIUS = 1;
+const STARTUP_COLUMN_COUNT = (STARTUP_MESH_RADIUS * 2 + 1) ** 2;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 export const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
@@ -298,6 +300,8 @@ export const startPlay = (
 ): { enter: () => void } => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const inputTarget = renderer?.domElement ?? $('view');
+  const startupHint = $('startup-hint');
+  const startupProgress = $('startup-hint-progress') as HTMLProgressElement;
   if (options.saveController) {
     streamer.onGenerationError = (error) => {
       if (!options.saveController?.refuseRestore(error)) {
@@ -1030,6 +1034,16 @@ export const startPlay = (
       $('go').textContent = state.goLabel;
     }
     return state;
+  };
+  const updateStartupHint = () => {
+    if (options.replay || !started || mainMenuOpen || screen.isOpen || reading.isOpen || debugTools?.menuOpen) {
+      startupHint.hidden = true;
+      return;
+    }
+    const unmeshed = streamer.unmeshedColumns(body.pos[0], body.pos[2], STARTUP_MESH_RADIUS);
+    startupProgress.max = STARTUP_COLUMN_COUNT;
+    startupProgress.value = STARTUP_COLUMN_COUNT - unmeshed;
+    startupHint.hidden = unmeshed === 0;
   };
   const resume = () => {
     if (replayPlayer) {
@@ -2771,6 +2785,7 @@ export const startPlay = (
     const visible = hudVisibility(hudOptions);
     let mark = realNow();
     streamer.update(body.pos[0], body.pos[2]);
+    updateStartupHint();
     meshingQueueMs = realNow() - mark;
     updateActionInputs(now);
     playtestObserver?.beforeFrame(queue, inventory);

@@ -46,6 +46,10 @@ const observePage = (globalName) => {
     if (!marks.firstMesh && Array.from(runtime.engine.meshes.keys()).length > 0) {
       mark('firstMesh');
     }
+    const progress = document.querySelector('#startup-hint-progress');
+    if (!marks.spawnColumnsMeshed && progress && progress.value === progress.max) {
+      mark('spawnColumnsMeshed');
+    }
     if (!marks.firstRenderedFrame && runtime.engine.renderer?.info.render.frame > 0) {
       mark('firstRenderedFrame');
     }
@@ -85,6 +89,11 @@ export async function traceFreshPlayer({ browser, stage, url, browserName, runti
         player: position,
         spawnReady: runtime ? runtime.streamer.isReady(position[0], position[2]) : null,
         meshes: runtime ? Array.from(runtime.engine.meshes.keys()).length : null,
+        startupHintHidden: document.querySelector('#startup-hint')?.hidden ?? null,
+        startupProgress: (() => {
+          const progress = document.querySelector('#startup-hint-progress');
+          return progress ? { value: progress.value, max: progress.max } : null;
+        })(),
       };
     }, runtimeName);
     process.stdout.write(
@@ -110,6 +119,19 @@ export async function traceFreshPlayer({ browser, stage, url, browserName, runti
         Boolean(globalThis[globalName] && document.querySelector('#overlay')?.hidden && document.pointerLockElement),
       runtimeName,
     );
+    await page.waitForFunction((globalName) => {
+      const runtime = globalThis[globalName];
+      const hint = document.querySelector('#startup-hint');
+      const progress = document.querySelector('#startup-hint-progress');
+      return (
+        runtime &&
+        hint &&
+        !hint.hidden &&
+        progress &&
+        progress.value < progress.max &&
+        Array.from(runtime.engine.meshes.keys()).length === 0
+      );
+    }, runtimeName);
     await mark('pointer-lock-and-play-entry');
 
     await page.waitForFunction((globalName) => {
@@ -122,6 +144,12 @@ export async function traceFreshPlayer({ browser, stage, url, browserName, runti
       return meshes?.keys && Array.from(meshes.keys()).length > 0;
     }, runtimeName);
     await mark('first-chunk-meshed');
+    await page.waitForFunction(() => {
+      const hint = document.querySelector('#startup-hint');
+      const progress = document.querySelector('#startup-hint-progress');
+      return hint?.hidden && progress && progress.value === progress.max;
+    });
+    await mark('spawn-columns-meshed');
 
     const before = await page.evaluate(
       (globalName) => Array.from(globalThis[globalName].session.body.pos),
