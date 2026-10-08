@@ -11,6 +11,7 @@ export interface RigidBody {
   inertiaBody: Tensor3;
   /** Vertices of the body's local-space OBB, relative to its COM (metres). */
   corners: readonly Vec3[];
+  remainderRealSeconds: number;
   elapsed: number;
   quietTime: number;
   asleep: boolean;
@@ -304,7 +305,7 @@ const stepFixed = (body: RigidBody, fixedStep: number, world: RigidWorld | undef
     stepFreeFlight(body, fixedStep, gravity);
   }
 };
-/** Deterministic 1/120 s steps; world-backed steps split into at most eight collision parts, then excess frame time drops after 16 fixed steps. */
+/** Accumulates frame time into deterministic 1/120 s steps; splits world steps into at most eight collision parts. After 16 fixed steps, whole-step backlog drops while the fractional remainder is kept. */
 export const stepRigidBody = (body: RigidBody, dt: number, world?: RigidWorld, gravity = 9.8): void => {
   if (body.asleep || dt <= 0) {
     return;
@@ -313,8 +314,17 @@ export const stepRigidBody = (body: RigidBody, dt: number, world?: RigidWorld, g
   if (world && !(blockSize! > 0)) {
     throw new RangeError('blockSize must be positive');
   }
-  const count = Math.min(16, Math.floor(dt * 120 + 1e-10));
   const fixedStep = 1 / 120;
+  body.remainderRealSeconds += dt;
+  const availableSteps = Math.floor(body.remainderRealSeconds / fixedStep + 1e-10);
+  const count = Math.min(16, availableSteps);
+  body.remainderRealSeconds -= count * fixedStep;
+  if (availableSteps > 16) {
+    body.remainderRealSeconds %= fixedStep;
+  }
+  if (body.remainderRealSeconds < 0 && body.remainderRealSeconds > -fixedStep * 1e-10) {
+    body.remainderRealSeconds = 0;
+  }
   for (let step = 0; step < count && !body.asleep; step++) {
     stepFixed(body, fixedStep, world, gravity);
   }

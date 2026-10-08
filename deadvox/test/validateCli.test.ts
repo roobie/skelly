@@ -1,4 +1,7 @@
 import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { validate as runValidation } from '../src/cli/validate.ts';
@@ -9,12 +12,39 @@ const validate = (...files: string[]) => {
   return { status, stdout: output.join('\n') };
 };
 
+const makeMinimalPack = (...fixtureDirs: string[]): string => {
+  const root = mkdtempSync(join(tmpdir(), 'deadvox-validate-'));
+  try {
+    const base = join(root, 'src/content/base');
+    mkdirSync(join(base, 'assets'), { recursive: true });
+    writeFileSync(join(base, 'sounds.json'), JSON.stringify({ sounds: [] }));
+    writeFileSync(join(base, 'assets/manifest.json'), JSON.stringify({ sources: [] }));
+    const fixtures = join(root, 'test/fixtures');
+    mkdirSync(fixtures, { recursive: true });
+    for (const dir of fixtureDirs) {
+      symlinkSync(resolve(`test/fixtures/${dir}`), join(fixtures, dir), 'dir');
+    }
+    return root;
+  } catch (error) {
+    rmSync(root, { recursive: true, force: true });
+    throw error;
+  }
+};
+
 describe('validate CLI', () => {
   it('maps a parsed content argument to the real process exit code', () => {
-    const run = spawnSync(process.execPath, ['src/cli/validate.ts', 'test/fixtures/content/missing-model.json'], {
-      encoding: 'utf8',
-    });
-    expect(run.status).toBe(1);
+    const root = makeMinimalPack('content');
+    try {
+      const run = spawnSync(
+        process.execPath,
+        [resolve('src/cli/validate.ts'), 'test/fixtures/content/missing-model.json'],
+        { cwd: root, encoding: 'utf8' },
+      );
+      expect(run.status).toBe(1);
+      expect(run.stdout).toContain('FAIL  test/fixtures/content/missing-model.json items[0].model: no model "lamp"');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('passes on the base pack', () => {
@@ -51,17 +81,29 @@ describe('validate CLI', () => {
   });
 
   it('rejects compatible content and asset fixtures with every per-file diagnostic', () => {
-    const run = validate(
-      'test/fixtures/content/recipe-missing-item.json',
-      'test/fixtures/content/recipe-too-many-combinations.json',
-      'test/fixtures/content/broken-reference.json',
-      'test/fixtures/content/missing-sound-file.json',
-      'test/fixtures/content/zombie-with-model.json',
-      'test/fixtures/content/missing-model-file.json',
-      'test/fixtures/packs/stray/assets/manifest.json',
-      'test/fixtures/assets/manifest.json',
-    );
-    expect(run.status).toBe(1);
+    const root = makeMinimalPack('content', 'packs', 'assets');
+    let stdout = '';
+    try {
+      const output: string[] = [];
+      const status = runValidation(
+        [
+          'test/fixtures/content/recipe-missing-item.json',
+          'test/fixtures/content/recipe-too-many-combinations.json',
+          'test/fixtures/content/broken-reference.json',
+          'test/fixtures/content/missing-sound-file.json',
+          'test/fixtures/content/zombie-with-model.json',
+          'test/fixtures/content/missing-model-file.json',
+          'test/fixtures/packs/stray/assets/manifest.json',
+          'test/fixtures/assets/manifest.json',
+        ],
+        (line) => output.push(line),
+        root,
+      );
+      expect(status).toBe(1);
+      stdout = output.join('\n');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
     for (const diagnostic of [
       'FAIL  test/fixtures/content/recipe-missing-item.json recipes[0].components[0][0].item: no item "golden_toilet"',
       'FAIL  test/fixtures/content/recipe-too-many-combinations.json recipes[0].components: 2048 component combinations exceeds maximum 1024',
@@ -72,8 +114,9 @@ describe('validate CLI', () => {
       'FAIL  test/fixtures/packs/stray/assets/manifest.json sources: "assets/models/stray.glb" is in the pack but no source lists it',
       'FAIL  test/fixtures/assets/manifest.json sources[0].author: CC-BY-4.0 needs an author',
     ]) {
-      expect(run.stdout).toContain(diagnostic);
+      expect(stdout).toContain(diagnostic);
     }
+    expect(stdout).toContain('7 file(s):');
   });
 
   it('accepts the same unfound component when a grounded recipe makes it', () => {

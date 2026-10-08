@@ -7,7 +7,7 @@
 // come from a listed source.
 
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
-import { basename, dirname, join, relative } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
@@ -18,8 +18,12 @@ import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 const BASE = 'src/content/base';
 
 /** Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. */
-export const validate = (args: readonly string[], write: (line: string) => void = console.log): number => {
-  const base = readdirSync(BASE)
+export const validate = (
+  args: readonly string[],
+  write: (line: string) => void = console.log,
+  root = process.cwd(),
+): number => {
+  const base = readdirSync(resolve(root, BASE))
     .filter((f) => f.endsWith('.json'))
     .sort()
     .map((f) => join(BASE, f));
@@ -29,14 +33,14 @@ export const validate = (args: readonly string[], write: (line: string) => void 
 
   /** Every file under a pack's `assets/`, as paths within the pack. */
   const assetFiles = (pack: string): string[] =>
-    readdirSync(join(pack, 'assets'), { recursive: true, withFileTypes: true })
+    readdirSync(resolve(root, pack, 'assets'), { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile())
-      .map((entry) => relative(pack, join(entry.parentPath, entry.name)).split('\\').join('/'));
+      .map((entry) => relative(resolve(root, pack), join(entry.parentPath, entry.name)).split('\\').join('/'));
 
   let broken = 0;
   const read = (source: string): unknown => {
     try {
-      return JSON.parse(readFileSync(source, 'utf8')) as unknown;
+      return JSON.parse(readFileSync(resolve(root, source), 'utf8')) as unknown;
     } catch (e) {
       write(`FAIL  ${source}: ${e instanceof Error ? e.message : String(e)}`);
       broken += 1;
@@ -73,8 +77,12 @@ export const validate = (args: readonly string[], write: (line: string) => void 
       );
     }
   }
-  issues.push(...modelFileIssues(registry, (contentFile, file) => existsSync(join(dirname(contentFile), file))));
-  issues.push(...soundFileIssues(registry, (contentFile, file) => existsSync(join(dirname(contentFile), file))));
+  issues.push(
+    ...modelFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
+  );
+  issues.push(
+    ...soundFileIssues(registry, (contentFile, file) => existsSync(resolve(root, dirname(contentFile), file))),
+  );
 
   for (const issue of issues) {
     write(`FAIL  ${issue.source} ${issue.path}: ${issue.message}`);
