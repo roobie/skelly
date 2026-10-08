@@ -145,11 +145,9 @@ diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
   ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
   : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));
 // Keep the zero-strength comparison on the pre-weathering colour path exactly.
-float dbgWeatherable = 0.0;
 if (uWeathering > 0.0) {
   float verticalFace = 1.0 - abs(vFaceN.y);
   float weatherable = step(0.5, patId) * (1.0 - step(0.5, abs(patId - PAT_CORRUGATED)));
-  dbgWeatherable = weatherable;
   float grain = vnoise(patUV * 1.7 + vec2(patSeed));
   float weatherPatch = smoothstep(0.28, 0.76, grain);
   float sheltered = clamp(vOcclusion, 0.0, 1.0);
@@ -174,10 +172,6 @@ if (uWeathering > 0.0) {
   diffuseColor.rgb *= mix(vec3(1.0), tint, weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78));
 }`,
       );
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <opaque_fragment>',
-      '#include <opaque_fragment>\ngl_FragColor = dbgWeatherable > 0.5 ? vec4(1.0, 0.0, 0.0, 1.0) : gl_FragColor;',
-    );
   };
   material.customProgramCacheKey = () => 'deadvox-chunk-weathering-variation';
   return material;
