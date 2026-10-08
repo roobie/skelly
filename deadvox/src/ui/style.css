@@ -530,7 +530,7 @@ body.unconscious::after {
 .inv-grid-scroll {
   flex: 1;
   min-width: 0;
-  min-height: 0;
+  min-height: 96px;
   max-width: 100%;
   overflow: auto;
   overscroll-behavior: contain;

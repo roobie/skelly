@@ -18,11 +18,14 @@ and nearby piles or containers stay together on Items so drag and drop remains
 within one view. Tab selection is runtime UI state, not save or replay state.
 Per-tab hotkeys are pending BR's choice on #435.
 
-A wide container grid scrolls inside its own region; it must not widen the
-screen or push the character's inventory out of view. This is a layout
-constraint, not an inventory-selection or use-option exception. Redirecting
-selection to compensate would conceal a failed hit test rather than restore
-access to the rendered item. Keyboard selection alone does not verify it.
+Container grids scroll in their bounded region on both axes so a large or wide
+container cannot expand the nearby pane and push other useful contents out of
+view. The pane scrolls among its contents, and the Items body can also scroll
+to bring its pane rows into view on short screens. Since this leaves nested
+scroll regions, `deadvox/src/ui/inventoryScreen.ts`,
+`InventoryScreen.scrollSelectedItemIntoView`, reveals a selected row through
+every scrollable ancestor. The reading consumer stage verifies the selected note
+is visible and topmost at its centre.
 
 See `deadvox/src/ui/style.css`, `.inv-body` and `.inv-grid-scroll`, for the
 sizing and scroll regions, and `deadvox/src/ui/inventoryScreen.ts`,

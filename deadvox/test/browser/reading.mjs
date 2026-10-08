@@ -433,7 +433,25 @@ try {
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
     const note = page.locator('.inv-item').filter({ hasText: 'Placeholder note' });
     await note.waitFor();
-    await note.scrollIntoViewIfNeeded();
+    const noteRowUid = Number(await note.getAttribute('data-uid'));
+    const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.order.length);
+    for (let step = 0; step < itemCount; step += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: selection must advance through the real keyboard action one row at a time.
+      const selectedUid = await page.evaluate(() => globalThis.readingWitness.screen.selected?.uid);
+      if (selectedUid === noteRowUid) {
+        break;
+      }
+      await pressAction(page, 'inventory.next');
+      await page.waitForFunction(
+        (previousUid) => globalThis.readingWitness.screen.selected?.uid !== previousUid,
+        selectedUid,
+      );
+    }
+    assert.equal(
+      await page.evaluate(() => globalThis.readingWitness.screen.selected?.uid),
+      noteRowUid,
+      'keyboard selection reaches the note row',
+    );
     const noteLayout = await note.evaluate((row) => {
       const rect = row.getBoundingClientRect();
       const centre = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };

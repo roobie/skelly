@@ -199,6 +199,39 @@ const optionAction = (option: Option | WorkOption): Pick<OptionViewModel, 'targe
   return { operation: option.operation };
 };
 
+const addScrollOffset = (parent: HTMLElement, axis: 'x' | 'y', offset: number): void => {
+  if (axis === 'x') {
+    parent.scrollLeft += offset;
+  } else {
+    parent.scrollTop += offset;
+  }
+};
+
+const scrollItemWithinAncestor = (row: HTMLElement, parent: HTMLElement, axis: 'x' | 'y'): void => {
+  const style = parent.ownerDocument.defaultView?.getComputedStyle(parent);
+  if (!style) {
+    return;
+  }
+  const overflow = axis === 'x' ? style.overflowX : style.overflowY;
+  if (!['auto', 'scroll', 'hidden'].includes(overflow)) {
+    return;
+  }
+  const bounds = parent.getBoundingClientRect();
+  const viewportStart = axis === 'x' ? bounds.left + parent.clientLeft : bounds.top + parent.clientTop;
+  const viewportSize = axis === 'x' ? parent.clientWidth : parent.clientHeight;
+  if (viewportSize <= 0) {
+    return;
+  }
+  const rect = row.getBoundingClientRect();
+  const itemStart = axis === 'x' ? rect.left : rect.top;
+  const itemEnd = axis === 'x' ? rect.right : rect.bottom;
+  if (itemStart < viewportStart) {
+    addScrollOffset(parent, axis, itemStart - viewportStart);
+  } else if (itemEnd > viewportStart + viewportSize) {
+    addScrollOffset(parent, axis, itemEnd - viewportStart - viewportSize);
+  }
+};
+
 const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
   <div class=${vm.className} data-uid=${vm.uid} title=${vm.title} style=${vm.style ?? ''}>
     <span class="inv-item-name">${vm.name}</span>
@@ -751,6 +784,24 @@ export class InventoryScreen {
       this.root,
     );
     this.renderQueue();
+    this.scrollSelectedItemIntoView();
+  }
+
+  private scrollSelectedItemIntoView(): void {
+    if (!this.selected) {
+      return;
+    }
+    const selectedUid = String(this.selected.uid);
+    const row = [...this.root.querySelectorAll<HTMLElement>('.inv-item[data-uid]')].find(
+      (candidate) => candidate.dataset.uid === selectedUid,
+    );
+    if (!row?.getClientRects().length) {
+      return;
+    }
+    for (let parent = row.parentElement; parent; parent = parent.parentElement) {
+      scrollItemWithinAncestor(row, parent, 'x');
+      scrollItemWithinAncestor(row, parent, 'y');
+    }
   }
 
   private viewModel(): InventoryScreenViewModel {
