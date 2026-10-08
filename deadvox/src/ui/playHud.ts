@@ -84,11 +84,6 @@ export const renderPlayHud = (roots: PlayHudRoots, frame: PlayHudFrame): void =>
   roots.prompt.hidden = frame.prompt === '';
 };
 
-export const renderPlayInventoryStats = (root: HTMLElement, open: boolean, needs: string): void => {
-  root.hidden = !open;
-  render(needs, root);
-};
-
 export const renderPlayHandling = (root: HTMLElement, queue: HandlingPresentationSource, visible: boolean): void => {
   if (!visible) {
     root.hidden = true;
