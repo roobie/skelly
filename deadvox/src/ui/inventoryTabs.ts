@@ -1,4 +1,4 @@
-export const INVENTORY_TABS = ['items', 'skills', 'crafting'] as const;
+const INVENTORY_TABS = ['items', 'skills', 'crafting'] as const;
 export type InventoryTab = (typeof INVENTORY_TABS)[number];
 
 /** Last-used tab belongs to this runtime screen, not to saved or replayed game state. */

@@ -8,6 +8,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { GARDEN_GATE, HOUSE_OFFSET } from '../../src/game/testHouse.ts';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
@@ -206,23 +207,24 @@ try {
       await releaseSprint();
     }
   };
-  const lockerRoute = await page.evaluate(async () => {
-    // biome-ignore lint/correctness/noUnresolvedImports: resolved by Vite in the browser fixture
-    const { HOUSE_OFFSET, GARDEN_GATE } = await import('/src/game/testHouse.ts');
-    const { engine, session } = globalThis.pumpHandlingTest;
-    const { blockSize } = engine.config.scale;
-    const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
-    if (!rack) {
-      throw new Error('Test-house weapon locker is missing');
-    }
-    return {
-      corridorZ: (HOUSE_OFFSET[1] + GARDEN_GATE.approachZ) / blockSize,
-      gateX: (HOUSE_OFFSET[0] + GARDEN_GATE.centreX) / blockSize,
-      beyondGateZ: (HOUSE_OFFSET[1] + GARDEN_GATE.exitZ) / blockSize,
-      enterX: rack.pos[0] - 1,
-      rackZ: rack.pos[2] + rack.size[2] / 2,
-    };
-  });
+  const lockerRoute = await page.evaluate(
+    ({ houseOffset, gardenGate }) => {
+      const { engine, session } = globalThis.pumpHandlingTest;
+      const { blockSize } = engine.config.scale;
+      const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
+      if (!rack) {
+        throw new Error('Test-house weapon locker is missing');
+      }
+      return {
+        corridorZ: (houseOffset[1] + gardenGate.approachZ) / blockSize,
+        gateX: (houseOffset[0] + gardenGate.centreX) / blockSize,
+        beyondGateZ: (houseOffset[1] + gardenGate.exitZ) / blockSize,
+        enterX: rack.pos[0] - 1,
+        rackZ: rack.pos[2] + rack.size[2] / 2,
+      };
+    },
+    { houseOffset: HOUSE_OFFSET, gardenGate: GARDEN_GATE },
+  );
   await moveTo('movement.right', 2, lockerRoute.corridorZ);
   await moveTo('movement.forward', 0, lockerRoute.gateX);
   await moveTo('movement.right', 2, lockerRoute.beyondGateZ);
