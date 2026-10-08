@@ -50,7 +50,7 @@ void main() {
     building = building || (inside && verticalWall);
     groundWall = groundWall || (i == uSelectedBuilding && inside && verticalWall && vWorld.y <= uBuildingMinY[i] + uGroundBand);
   }
-  bool weatherable = vPattern > 0.5 && abs(vPattern - uCorrugatedPattern) > 0.5;
+  bool weatherable = vPattern > 0.5 && abs(vPattern - uCorrugatedPattern) < 0.5;
   bool selected = uMode == 0 ? building : (uMode == 1 ? building && weatherable : groundWall && weatherable);
   gl_FragColor = selected ? vec4(1.0) : vec4(0.0, 0.0, 0.0, 1.0);
 }`,
