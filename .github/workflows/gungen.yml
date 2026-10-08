@@ -5,9 +5,9 @@ name: gungen
 on:
   push:
     branches: [main]
-    paths: ['gungen/**', '!**/*.md', 'gungen/PROJECT.md', 'testPool.ts', '.github/workflows/gungen.yml']
+    paths: ['gungen/**', '!**/*.md', 'gungen/PROJECT.md', 'deadvox/package-lock.json', 'testPool.ts', '.github/workflows/gungen.yml']
   pull_request:
-    paths: ['gungen/**', '!**/*.md', 'gungen/PROJECT.md', 'testPool.ts', '.github/workflows/gungen.yml']
+    paths: ['gungen/**', '!**/*.md', 'gungen/PROJECT.md', 'deadvox/package-lock.json', 'testPool.ts', '.github/workflows/gungen.yml']
 
 # PR updates replace this PR's checks; main/manual groups always remain unique.
 concurrency:

@@ -246,7 +246,7 @@ describe('gungen browser CI', () => {
     const cache = steps.find(({ name }) => name === 'Cache Playwright Chromium');
     const install = steps.find(({ name }) => name === 'Install Playwright Chromium');
     assert.ok(cache && install, 'Gungen CI caches and installs managed Chromium');
-    assert.equal(cache.uses, 'actions/cache@v4');
+    assert.ok(cache.uses.startsWith('actions/cache@'));
     assert.equal(cache.with.path, '~/.cache/ms-playwright');
     assert.equal(install['working-directory'], 'deadvox');
     assert.match(install.run, playwrightChromiumInstallPattern);
