@@ -6,8 +6,9 @@ const decodeDataUrl = (dataUrl) => Buffer.from(dataUrl.slice(dataUrl.indexOf(','
 
 const measureInPage = async (page) =>
   page.evaluate(async () => {
-    const makeMaskMaterial = ({ THREE, boxes, minBuildingY, corrugatedPattern, groundBand }) => {
+    const makeMaskMaterial = ({ THREE, boxes, minBuildingY, weatherablePatternIds, groundBand }) => {
       const count = boxes.length;
+      const weatherablePattern = weatherablePatternIds.map((id) => `abs(vPattern - ${id}.0) < 0.5`).join(' || ');
       return new THREE.ShaderMaterial({
         uniforms: {
           uBuildingMin: { value: boxes.map(({ min }) => new THREE.Vector3(...min)) },
@@ -15,7 +16,6 @@ const measureInPage = async (page) =>
           uBuildingMinY: { value: minBuildingY },
           uMode: { value: 0 },
           uSelectedBuilding: { value: 0 },
-          uCorrugatedPattern: { value: corrugatedPattern },
           uGroundBand: { value: groundBand },
         },
         vertexShader: `
@@ -36,7 +36,6 @@ uniform vec3 uBuildingMax[${count}];
 uniform float uBuildingMinY[${count}];
 uniform int uMode;
 uniform int uSelectedBuilding;
-uniform float uCorrugatedPattern;
 uniform float uGroundBand;
 varying vec3 vWorld;
 varying vec3 vNormal;
@@ -50,7 +49,7 @@ void main() {
     building = building || (inside && verticalWall);
     groundWall = groundWall || (i == uSelectedBuilding && inside && verticalWall && vWorld.y <= uBuildingMinY[i] + uGroundBand);
   }
-  bool weatherable = vPattern > 0.5 && abs(vPattern - uCorrugatedPattern) > 0.5;
+  bool weatherable = ${weatherablePattern};
   bool selected = uMode == 0 ? building : (uMode == 1 ? building && weatherable : groundWall && weatherable);
   gl_FragColor = selected ? vec4(1.0) : vec4(0.0, 0.0, 0.0, 1.0);
 }`,
@@ -250,12 +249,7 @@ void main() {
       return crop.toDataURL('image/png');
     };
 
-    const {
-      engine: testEngine,
-      THREE: three,
-      corrugatedPattern: authoredCorrugatedPattern,
-      minimumShaderSignal,
-    } = globalThis.firefoxUiTest;
+    const { engine: testEngine, THREE: three, minimumShaderSignal } = globalThis.firefoxUiTest;
     const {
       site: generatedSite,
       config: gameConfig,
@@ -289,7 +283,7 @@ void main() {
       THREE: three,
       boxes: lotBounds,
       minBuildingY: buildingFloorHeights,
-      corrugatedPattern: authoredCorrugatedPattern,
+      weatherablePatternIds: globalThis.firefoxUiTest.weatherablePatternIds,
       groundBand: blockSize * 4,
     });
     const maskGroup = chunkMeshes.group.clone(true);

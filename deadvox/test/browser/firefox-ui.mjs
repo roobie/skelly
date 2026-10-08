@@ -23,9 +23,9 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, corrugatedPattern: FirefoxBlockPatterns.indexOf('corrugated'), minimumShaderSignal: FirefoxGrimeFloor * (1 - FirefoxMinRedTint) } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternIds: FirefoxWeatherablePatternIds, minimumShaderSignal: FirefoxGrimeFloor * (1 - FirefoxMinRedTint) } });\n${marker}`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { BLOCK_PATTERNS as FirefoxBlockPatterns } from '../core/schema.ts';\nimport { WEATHERING_BASE_GRIME_FLOOR as FirefoxGrimeFloor, WEATHERING_MIN_RED_TINT as FirefoxMinRedTint } from '../render/chunks.ts';\n${exposed}`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERABLE_PATTERN_IDS as FirefoxWeatherablePatternIds } from '../render/weatherablePatterns.ts';\nimport { WEATHERING_BASE_GRIME_FLOOR as FirefoxGrimeFloor, WEATHERING_MIN_RED_TINT as FirefoxMinRedTint } from '../render/chunks.ts';\n${exposed}`;
   },
 };
 const vite = await createServer({

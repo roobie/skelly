@@ -15,6 +15,7 @@ import type { MeshData } from '../core/mesher.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
+import { weatherablePatternGlsl } from './weatherablePatterns.ts';
 
 // Per-block brightness variation stands in for textures. It's computed in the
 // fragment shader from the block each fragment belongs to, so the mesher can merge
@@ -147,7 +148,7 @@ diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
 // Keep the zero-strength comparison on the pre-weathering colour path exactly.
 if (uWeathering > 0.0) {
   float verticalFace = 1.0 - abs(vFaceN.y);
-  float weatherable = step(0.5, patId) * (1.0 - step(0.5, abs(patId - PAT_CORRUGATED)));
+  float weatherable = (${weatherablePatternGlsl('patId')}) ? 1.0 : 0.0;
   float grain = vnoise(patUV * 1.7 + vec2(patSeed));
   float weatherPatch = smoothstep(0.28, 0.76, grain);
   float sheltered = clamp(vOcclusion, 0.0, 1.0);
