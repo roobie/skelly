@@ -111,7 +111,7 @@ void main() {
       return masks;
     };
 
-    const captureImages = ({ meshes, canvas, content, renderer, scene, camera }) => {
+    const captureImages = async ({ meshes, canvas, content }) => {
       const settings = [
         ['off', 0],
         ['default', content.strength],
@@ -121,7 +121,8 @@ void main() {
       const images = {};
       for (const [name, strength] of settings) {
         meshes.setWeathering({ ...content, strength });
-        renderer.render(scene, camera);
+        // biome-ignore lint/performance/noAwaitInLoops: wait for the configured value to reach a rendered frame before capture.
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         images[name] = canvas.toDataURL('image/png');
       }
       return images;
@@ -310,14 +311,7 @@ void main() {
       throw new Error('weathering pixel measurement needs the authored world settings');
     }
     const beforeCamera = cameraPose(activeCamera);
-    const images = captureImages({
-      meshes: chunkMeshes,
-      canvas: rendererCanvas,
-      content: weatheringContent,
-      renderer: webglRenderer,
-      scene: testEngine.scene,
-      camera: activeCamera,
-    });
+    const images = await captureImages({ meshes: chunkMeshes, canvas: rendererCanvas, content: weatheringContent });
     const decodedScreenshots = Object.fromEntries(
       await Promise.all(Object.entries(images).map(async ([name, dataUrl]) => [name, await decodeImage(dataUrl)])),
     );
