@@ -205,7 +205,13 @@ try {
   let page = await withTimeout('initial page creation', context.newPage());
   const pageErrors = [];
   const recordRequestFailure = (request) => {
-    pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`);
+    const failure = request.failure()?.errorText;
+    const { pathname } = new URL(request.url());
+    // Same-tab navigation may cancel the old page's renderer-worker module fetch.
+    if (navigationOnly && failure === 'NS_BINDING_ABORTED' && pathname.startsWith('/assets/mesh.worker-')) {
+      return;
+    }
+    pageErrors.push(`${request.url()} failed: ${failure}`);
   };
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('requestfailed', recordRequestFailure);
