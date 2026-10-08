@@ -17,8 +17,8 @@ extra executions. Quarantines remain explicit: repartitioning must not silently
 restore a flaky case or remove its reinstatement obligation.
 
 Managed-browser containment keeps browser-launch failures bounded without
-claiming a root cause. `deadvox/TROUBLESHOOTING.md` records the evidence, and #287
-tracks establishing the launch cause.
+claiming a root cause. Its evidence and trigger are recorded in
+`deadvox/TROUBLESHOOTING.md`; #287 tracks establishing the launch cause.
 
 The required `check` in `.github/workflows/deadvox.yml` uses
 `tools/browser-ci-result.mjs`, `assertBrowserResult`. A selected layout's jobs

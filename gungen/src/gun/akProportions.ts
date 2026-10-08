@@ -95,10 +95,10 @@ export const AK_PROPORTIONS = {
     comb: { x: -8, topU: -0.25 },
     /** The neck's top dips into a saddle behind the receiver's tang, then rises to the comb. */
     saddle: { x: -5, topU: -0.75, frontSlope: 0.15 },
-    /** The lower edge slopes from receiver to toe without a belly, matching the side profile. */
+    /** The bottom's fall per u back, with no belly; it puts the L stock's toe on the golden reference photo's. */
     bottomSlope: 0.34,
     toeRoundU: 2.25,
-    /** The stock remains narrower than the receiver, with each full width snapped to the grid. */
+    /** About 60% of a receiver-wide stock, each full width on the grid. */
     halfWidthU: { front: 1.25, butt: 1.375 },
     buttplateU: 0.5,
     /** How far the toe sits behind the heel. */

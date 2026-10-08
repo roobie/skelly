@@ -69,9 +69,9 @@ allows the arms to reach behind the shoulders, with elbows moving beside or
 along the ground; `test/crawler.test.ts` guards that pull-end reach. In the
 viewer, `src/viewer/main.ts`, `applyLookAt`, keeps gaze directed at the camera
 because the viewer has no perception state. The crawler is a prone
-ground-crawler dragging itself on its arms with trailing legs, not a humanoid
-form. Gameplay stagger, slowdown, knockdown and per-type clip tuning remain
-open design questions.
+ground-crawler dragging itself on its arms with trailing legs; the other proposed
+forms are separate future mobs, not crawler variants. Gameplay stagger, slowdown,
+knockdown and per-type clip tuning remain open decisions for BR.
 
 ## Playtest 1 apex enemy: amalgam (m1)
 
@@ -93,10 +93,10 @@ template amalgam.
 Issue [#378](https://github.com/roobie/skelly/issues/378) tracks the pass to make the amalgam even better after #363.
 
 The first-look generator samples three to five complete shambler members per
-seed. This is an initial range rather than a budget ceiling: at least three
-distinct bodies give the car-scale apex enemy the requested mass and grotesque
-multiplicity, while five is a first-look cap rather than a limit imposed by the
-budget math. Members are independently scaled,
+seed. This is an initial range for BR to tune, not a budget ceiling: at least
+three distinct bodies give the car-scale apex enemy the requested mass and
+grotesque multiplicity in the manner of The Thing, while five is a first-look
+cap for BR to tune, not a limit imposed by the budget math. Members are independently scaled,
 anchored around the core, lifted by seeded gaps, and turned in quarter-turn
 orientations on all three axes, so a head or hand may bear weight and other
 members may hang. The first look keeps each module a complete shambler rather
@@ -132,7 +132,7 @@ viewer does not apply gaze to it: its members can turn heads upside down or
 sideways, and the current humanoid gaze solver does not provide per-member head
 transforms. Amalgam gaze must handle those orientations before it is enabled;
 amalgam gait and Deadvox integration remain open for the #308 follow-up. The
-remaining design questions from #308 are:
+other open design questions from #308 remain open until BR decides them:
 
 - Does the procedural, full-shambler composition read as a grotesque fusion,
   or should the silhouette use partial members or a different arrangement?
