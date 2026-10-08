@@ -308,7 +308,10 @@ try {
   );
   await dragSplitter(0.5);
   const middleRatio = Number(await page.locator('#inventory [data-inventory-splitter]').getAttribute('aria-valuenow'));
-  assert.ok(Math.abs(middleRatio - 50) <= 1, `divider returns to centre within pixel rounding: ${middleRatio}`);
+  assert.ok(
+    Math.abs(middleRatio - 50) <= 1,
+    `integer clientX rounding can shift the divider by one percentage point: ${middleRatio}`,
+  );
   const emptyAround = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
     const you = document.querySelector('#inventory [data-pane="you"]');
