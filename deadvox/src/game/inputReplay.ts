@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 10;
+const INPUT_REPLAY_SCHEMA_VERSION = 12;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -247,7 +247,7 @@ const isReplayActionRecord = (
   const { action } = candidate;
   return (
     tick >= 0 &&
-    tick < frameCount &&
+    tick <= frameCount &&
     tick >= lastTick &&
     ACTION_INDEX.has(action) &&
     (candidate.phase === 'down' || candidate.phase === 'up') &&
@@ -316,7 +316,7 @@ export class InputReplayRecorder {
   private readonly movement: Int8Array;
   private readonly flags: Uint16Array;
   private readonly bufferTicks: number;
-  private readonly ticksPerWindow: number;
+  readonly ticksPerWindow: number;
   private readonly actionTicks = new Uint16Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionIds = new Uint16Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionPhases = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
@@ -326,6 +326,7 @@ export class InputReplayRecorder {
     action: string;
     phase: 'down' | 'up';
     context: InputContext;
+    inSnapshot: boolean;
     payload?: string;
   }[] = [];
   private actionPayloadBytes = 0;
@@ -402,17 +403,23 @@ export class InputReplayRecorder {
     );
   }
 
-  queueAction(action: string, phase: 'down' | 'up', context: InputContext, payload?: ReplayActionPayload): void {
+  queueAction(
+    action: string,
+    phase: 'down' | 'up',
+    context: InputContext,
+    options: { payload?: ReplayActionPayload; inSnapshot?: boolean } = {},
+  ): void {
     if (
       this.frameCount >= this.bufferTicks ||
       this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW
     ) {
       return;
     }
-    if (!isValidQueuedAction(action, context, payload)) {
+    if (!isValidQueuedAction(action, context, options.payload)) {
       throw new Error(`Input replay cannot encode ${action} in ${context}`);
     }
-    const payloadText = payload === undefined ? undefined : new TextDecoder().decode(canonicalJsonBytes(payload));
+    const payloadText =
+      options.payload === undefined ? undefined : new TextDecoder().decode(canonicalJsonBytes(options.payload));
     const payloadBytes = payloadText === undefined ? 0 : new TextEncoder().encode(payloadText).byteLength;
     if (payloadBytes + this.actionPayloadBytes > INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES) {
       throw new Error('Input replay action payloads exceed the supported size');
@@ -422,8 +429,34 @@ export class InputReplayRecorder {
       action,
       phase,
       context,
+      inSnapshot: options.inSnapshot ?? false,
       ...(payloadText === undefined ? {} : { payload: payloadText }),
     });
+  }
+
+  resolvePendingActionsAtRollover(next: InputReplayRecorder): void {
+    let transferredPayloadBytes = 0;
+    for (const pending of this.pending) {
+      if (pending.inSnapshot) {
+        const index = this.actionCount;
+        this.actionCount += 1;
+        this.actionTicks[index] = this.frameCount;
+        this.actionIds[index] = ACTION_INDEX.get(pending.action)!;
+        this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
+        this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
+        continue;
+      }
+      const payload = pending.payload === undefined ? undefined : (JSON.parse(pending.payload) as ReplayActionPayload);
+      next.queueAction(pending.action, pending.phase, pending.context, {
+        ...(payload === undefined ? {} : { payload }),
+        inSnapshot: pending.inSnapshot,
+      });
+      if (pending.payload !== undefined) {
+        transferredPayloadBytes += new TextEncoder().encode(pending.payload).byteLength;
+      }
+    }
+    this.actionPayloadBytes -= transferredPayloadBytes;
+    this.pending = [];
   }
 
   queueColumnChange(cx: number, cz: number, generated: boolean): void {
@@ -505,6 +538,16 @@ export class InputReplayRecorder {
     };
   }
 }
+
+export const rolloverInputReplayRecorder = (
+  current: InputReplayRecorder,
+  startSnapshot: Readonly<SaveSnapshot>,
+  generatedColumns: readonly ReplayGeneratedColumn[] = current.generatedColumns,
+): InputReplayRecorder => {
+  const next = new InputReplayRecorder(startSnapshot, current.ticksPerWindow, generatedColumns);
+  current.resolvePendingActionsAtRollover(next);
+  return next;
+};
 
 const applyColumnChanges = (generated: Set<string>, changes: readonly ReplayColumnChange[]): void => {
   for (const [, cx, cz, isGenerated] of changes) {
