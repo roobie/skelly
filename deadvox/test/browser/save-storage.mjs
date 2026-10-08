@@ -119,6 +119,15 @@ try {
       if (typeof navigator.locks?.request !== 'function') {
         return;
       }
+      globalThis.__d144LifecycleEvent = 'none';
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          globalThis.__d144LifecycleEvent = 'visibilitychange';
+        }
+      });
+      globalThis.addEventListener('pagehide', () => {
+        globalThis.__d144LifecycleEvent = 'pagehide';
+      });
       const request = navigator.locks.request.bind(navigator.locks);
       navigator.locks.request = (name, options, callback) => {
         if (
@@ -128,6 +137,7 @@ try {
         ) {
           globalThis.__d144HoldNextSave = false;
           sessionStorage.setItem('d144-writer-requested', 'true');
+          sessionStorage.setItem('d144-writer-trigger', globalThis.__d144LifecycleEvent);
           return request(name, options, async (lock) => {
             sessionStorage.setItem('d144-held-writer', 'true');
             await new Promise((resolve) => {
@@ -773,6 +783,7 @@ try {
     await page.evaluate(() => {
       sessionStorage.removeItem('d144-held-writer');
       sessionStorage.removeItem('d144-writer-requested');
+      sessionStorage.removeItem('d144-writer-trigger');
       sessionStorage.removeItem('d144-lock-snapshot');
       sessionStorage.removeItem('d144-pagehide');
       sessionStorage.removeItem('d144-pageshow');
@@ -794,6 +805,7 @@ try {
       return {
         pagehide: JSON.parse(sessionStorage.getItem('d144-pagehide') ?? 'null'),
         writerRequested: sessionStorage.getItem('d144-writer-requested'),
+        writerTrigger: sessionStorage.getItem('d144-writer-trigger'),
         lockSnapshot: JSON.parse(sessionStorage.getItem('d144-lock-snapshot') ?? 'null'),
         heldWriter: sessionStorage.getItem('d144-held-writer'),
         ready: controller?.ready ?? null,
@@ -831,13 +843,14 @@ try {
       restored = await page.evaluate(async () => ({
         locks: await navigator.locks.query(),
         pageshowPersisted: sessionStorage.getItem('d144-pageshow') === 'true',
-        controllerEntered: globalThis.deadvoxSaveTest.controller.isEntered,
+        controllerEntered: globalThis.deadvoxSaveTest?.controller?.isEntered ?? null,
       }));
       process.stdout.write(`${browserName}: restored after navigation ${JSON.stringify(restored)}\n`);
     }
     if (browserName === 'chromium') {
       assert.equal(result.pagehide?.persisted, true, 'Chromium keeps the outgoing world in bfcache');
-      assert.equal(result.writerRequested, null, 'pagehide must not request a save lock for a cached document');
+      assert.equal(result.writerRequested, null, 'leaving for bfcache must not request a save lock');
+      assert.equal(result.writerTrigger, null);
       assert.equal(result.heldWriter, null, 'the cached page has not entered a lock-holding save');
       assert.equal(result.lockSnapshot, null, 'the new page has no reader queued behind a cached writer');
       assert.equal(result.held.length, 0, 'the cached page leaves no exclusive writer lock');
@@ -868,69 +881,74 @@ try {
         timeout: STAGE_TIMEOUT_MS,
       });
     }
-    await page.evaluate(() => {
-      sessionStorage.removeItem('d144-held-writer');
-      globalThis.__d144HoldNextSave = true;
-    });
-    const hiddenPage = await withTimeout('hidden-tab reader creation', context.newPage());
-    hiddenPage.on('pageerror', (error) => pageErrors.push(error.message));
-    hiddenPage.on('requestfailed', recordRequestFailure);
-    await hiddenPage.bringToFront();
-    await page.waitForFunction(() => document.visibilityState === 'hidden', undefined, {
-      timeout: STAGE_TIMEOUT_MS,
-    });
-    await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
-    await page.waitForFunction(() => sessionStorage.getItem('d144-held-writer') === 'true', undefined, {
-      timeout: STAGE_TIMEOUT_MS,
-    });
-    const frozenPage = browserName === 'chromium' ? await context.newCDPSession(page) : undefined;
-    if (frozenPage) {
-      await frozenPage.send('Page.setWebLifecycleState', { state: 'frozen' });
+    if (browserName === 'chromium') {
+      // Firefox visibility state is not reliable for this multi-tab harness; its separate busy-lock stage covers reader contention.
+      await page.evaluate(() => {
+        sessionStorage.removeItem('d144-held-writer');
+        globalThis.__d144HoldNextSave = true;
+      });
+      const hiddenPage = await withTimeout('hidden-tab reader creation', context.newPage());
+      hiddenPage.on('pageerror', (error) => pageErrors.push(error.message));
+      hiddenPage.on('requestfailed', recordRequestFailure);
+      await hiddenPage.bringToFront();
+      await page.waitForFunction(() => document.visibilityState === 'hidden', undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
+      await page.waitForFunction(() => sessionStorage.getItem('d144-held-writer') === 'true', undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      const frozenPage = browserName === 'chromium' ? await context.newCDPSession(page) : undefined;
+      if (frozenPage) {
+        await frozenPage.send('Page.setWebLifecycleState', { state: 'frozen' });
+      }
+      await hiddenPage.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
+      await hiddenPage.waitForFunction(
+        () => (document.querySelector('#save-status')?.textContent ?? '').includes('Save storage unavailable'),
+        undefined,
+        { timeout: STAGE_TIMEOUT_MS },
+      );
+      const hiddenFailure = await hiddenPage.evaluate(async () => ({
+        status: document.querySelector('#save-status')?.textContent ?? '',
+        continueDisabled: document.querySelector('#continue')?.disabled,
+        locks: await navigator.locks.query(),
+        warnings: globalThis.__d144LockWarnings,
+      }));
+      assert.match(hiddenFailure.status, /World is still open or saving in another tab/);
+      assert.equal(hiddenFailure.continueDisabled, true);
+      const hiddenWarning = hiddenFailure.warnings.find(
+        ([message]) => message === 'Deadvox save lock request timed out',
+      );
+      assert.ok(hiddenWarning);
+      assert.equal(hiddenWarning[1].requestedMode, 'shared');
+      assert.ok(hiddenWarning[1].held.some((lock) => lock.mode === 'exclusive'));
+      assert.ok(hiddenWarning[1].pending.some((lock) => lock.mode === 'shared'));
+      assert.equal(hiddenWarning[1].holderIsAnotherClient, true);
+      assert.ok(
+        hiddenFailure.locks.held.some((lock) => lock.name === 'deadvox-save-storage' && lock.mode === 'exclusive'),
+        'hidden game tab holds the writer lock while the new tab cannot load the saved world',
+      );
+      if (frozenPage) {
+        await frozenPage.send('Page.setWebLifecycleState', { state: 'active' });
+        await frozenPage.detach();
+      }
+      await page.evaluate(() => globalThis.__d144ReleaseWriter?.());
+      await page.waitForFunction(() => !globalThis.deadvoxSaveTest?.controller.writing, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      await Promise.all([
+        hiddenPage.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+        hiddenPage.click('#save-rescan', { timeout: STAGE_TIMEOUT_MS }),
+      ]);
+      await hiddenPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      assert.equal(await hiddenPage.locator('#continue').isEnabled(), true);
+      const hiddenStatus = await hiddenPage.locator('#save-status').textContent();
+      assert.match(hiddenStatus ?? '', /Saved world available/);
+      await hiddenPage.close();
+      process.stdout.write(`${browserName}: hidden-tab save blocks a second tab until its writer settles\n`);
     }
-    await hiddenPage.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
-    await hiddenPage.waitForFunction(
-      () => (document.querySelector('#save-status')?.textContent ?? '').includes('Save storage unavailable'),
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
-    );
-    const hiddenFailure = await hiddenPage.evaluate(async () => ({
-      status: document.querySelector('#save-status')?.textContent ?? '',
-      continueDisabled: document.querySelector('#continue')?.disabled,
-      locks: await navigator.locks.query(),
-      warnings: globalThis.__d144LockWarnings,
-    }));
-    assert.match(hiddenFailure.status, /World is still open or saving in another tab/);
-    assert.equal(hiddenFailure.continueDisabled, true);
-    const hiddenWarning = hiddenFailure.warnings.find(([message]) => message === 'Deadvox save lock request timed out');
-    assert.ok(hiddenWarning);
-    assert.equal(hiddenWarning[1].requestedMode, 'shared');
-    assert.ok(hiddenWarning[1].held.some((lock) => lock.mode === 'exclusive'));
-    assert.ok(hiddenWarning[1].pending.some((lock) => lock.mode === 'shared'));
-    assert.equal(hiddenWarning[1].holderIsAnotherClient, true);
-    assert.ok(
-      hiddenFailure.locks.held.some((lock) => lock.name === 'deadvox-save-storage' && lock.mode === 'exclusive'),
-      'hidden game tab holds the writer lock while the new tab cannot load the saved world',
-    );
-    if (frozenPage) {
-      await frozenPage.send('Page.setWebLifecycleState', { state: 'active' });
-      await frozenPage.detach();
-    }
-    await page.evaluate(() => globalThis.__d144ReleaseWriter?.());
-    await page.waitForFunction(() => !globalThis.deadvoxSaveTest?.controller.writing, undefined, {
-      timeout: STAGE_TIMEOUT_MS,
-    });
-    await Promise.all([
-      hiddenPage.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
-      hiddenPage.click('#save-rescan', { timeout: STAGE_TIMEOUT_MS }),
-    ]);
-    await hiddenPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
-      timeout: STAGE_TIMEOUT_MS,
-    });
-    assert.equal(await hiddenPage.locator('#continue').isEnabled(), true);
-    const hiddenStatus = await hiddenPage.locator('#save-status').textContent();
-    assert.match(hiddenStatus ?? '', /Saved world available/);
-    await hiddenPage.close();
-    process.stdout.write(`${browserName}: hidden-tab save blocks a second tab until its writer settles\n`);
   } else if (busyLockOnly) {
     assert.equal(requestedAutosaveBackend, 'indexeddb', 'isolated busy-lock regression uses IndexedDB');
   } else if (autosaveOnly && requestedAutosaveBackend) {
