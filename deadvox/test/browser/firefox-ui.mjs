@@ -23,9 +23,9 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternIds: FirefoxWeatherablePatternIds, minimumShaderSignal: FirefoxGrimeFloor * (1 - FirefoxMinRedTint) } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, minimumShaderSignal: FirefoxGrimeFloor * (1 - FirefoxMinRedTint) } });\n${marker}`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERABLE_PATTERN_IDS as FirefoxWeatherablePatternIds } from '../render/weatherablePatterns.ts';\nimport { WEATHERING_BASE_GRIME_FLOOR as FirefoxGrimeFloor, WEATHERING_MIN_RED_TINT as FirefoxMinRedTint } from '../render/chunks.ts';\n${exposed}`;
+    return `import * as FirefoxTHREE from 'three';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\nimport { WEATHERING_BASE_GRIME_FLOOR as FirefoxGrimeFloor, WEATHERING_MIN_RED_TINT as FirefoxMinRedTint } from '../render/chunks.ts';\n${exposed}`;
   },
 };
 const vite = await createServer({
@@ -377,34 +377,6 @@ try {
   await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
   await pressAction(page, 'ui.main-menu-toggle');
   await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
-  const weatheringRenders = await page.evaluate(() => {
-    const { engine } = globalThis.firefoxUiTest;
-    const content = engine.config.weathering;
-    if (!content) {
-      throw new Error('Firefox shader probe needs the authored weathering settings');
-    }
-    engine.renderer.compile(engine.scene, engine.camera);
-    return [
-      { strength: 0, variationStrength: content.variationStrength },
-      { strength: content.strength, variationStrength: content.variationStrength },
-      { strength: 1, variationStrength: content.variationStrength },
-      { strength: content.strength, variationStrength: 0 },
-    ].map((settings) => {
-      engine.meshes.setWeathering({ ...content, ...settings });
-      engine.renderer.render(engine.scene, engine.camera);
-      return { chunks: engine.meshes.count, drawCalls: engine.renderer.info.render.calls };
-    });
-  });
-  assert.equal(weatheringRenders.length, 4, 'Firefox renders each weathering comparison state');
-  assert.ok(
-    weatheringRenders.every(({ chunks, drawCalls }) => chunks > 0 && drawCalls > 0),
-    'Firefox renders voxel chunks with weathering off, at content strength, at full strength, and with variation off',
-  );
-  assert.deepEqual(
-    consoleErrors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error')),
-    [],
-    'Firefox chunk shaders compile',
-  );
   const weatheringPixels = await measureHamletWeathering(page);
   process.stdout.write(
     `Weathering pixel measurement: ${JSON.stringify({
@@ -426,7 +398,7 @@ try {
   assert.deepEqual(
     consoleErrors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error')),
     [],
-    'Firefox measurement mask shader compiles',
+    'Firefox chunk and mask shaders compile',
   );
   assert.deepEqual(weatheringPixels.uniforms, {
     off: 0,

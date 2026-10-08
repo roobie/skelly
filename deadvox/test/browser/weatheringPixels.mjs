@@ -6,9 +6,10 @@ const decodeDataUrl = (dataUrl) => Buffer.from(dataUrl.slice(dataUrl.indexOf(','
 
 const measureInPage = async (page) =>
   page.evaluate(async () => {
-    const makeMaskMaterial = ({ THREE, boxes, minBuildingY, weatherablePatternIds, groundBand }) => {
+    const makeMaskMaterial = ({ THREE, boxes, minBuildingY, weatherablePatternGlsl, groundBand }) => {
       const count = boxes.length;
-      const weatherablePattern = weatherablePatternIds.map((id) => `abs(vPattern - ${id}.0) < 0.5`).join(' || ');
+      // Restrict evidence to lot walls and the shader's weatherable patterns, not the surrounding terrain.
+      const weatherablePattern = weatherablePatternGlsl('vPattern');
       return new THREE.ShaderMaterial({
         uniforms: {
           uBuildingMin: { value: boxes.map(({ min }) => new THREE.Vector3(...min)) },
@@ -283,7 +284,7 @@ void main() {
       THREE: three,
       boxes: lotBounds,
       minBuildingY: buildingFloorHeights,
-      weatherablePatternIds: globalThis.firefoxUiTest.weatherablePatternIds,
+      weatherablePatternGlsl: globalThis.firefoxUiTest.weatherablePatternGlsl,
       groundBand: blockSize * 4,
     });
     const maskGroup = chunkMeshes.group.clone(true);
