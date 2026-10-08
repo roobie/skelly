@@ -21,6 +21,84 @@ export interface AmalgamTentaclePose {
   readonly extension: number;
 }
 
+type VoxelPoint = readonly [number, number, number];
+
+const coreRayOrigin = (centers: readonly VoxelPoint[], halfVoxel: number): VoxelPoint => {
+  const centroid = centers.reduce(
+    (sum, center) => [
+      sum[0] + center[0] / centers.length,
+      sum[1] + center[1] / centers.length,
+      sum[2] + center[2] / centers.length,
+    ],
+    [0, 0, 0] as Vec3,
+  );
+  if (
+    centers.some(
+      (center) =>
+        Math.abs(center[0] - centroid[0]) <= halfVoxel &&
+        Math.abs(center[1] - centroid[1]) <= halfVoxel &&
+        Math.abs(center[2] - centroid[2]) <= halfVoxel,
+    )
+  ) {
+    return centroid;
+  }
+  return centers.reduce((nearest, center) => {
+    const distance = (center[0] - centroid[0]) ** 2 + (center[1] - centroid[1]) ** 2 + (center[2] - centroid[2]) ** 2;
+    const nearestDistance =
+      (nearest[0] - centroid[0]) ** 2 + (nearest[1] - centroid[1]) ** 2 + (nearest[2] - centroid[2]) ** 2;
+    return distance < nearestDistance ? center : nearest;
+  }, centers[0]!);
+};
+
+const rayVoxelInterval = (
+  origin: VoxelPoint,
+  direction: VoxelPoint,
+  center: VoxelPoint,
+  halfVoxel: number,
+): [number, number] | undefined => {
+  let entry = Number.NEGATIVE_INFINITY;
+  let exit = Number.POSITIVE_INFINITY;
+  for (let axis = 0; axis < 3; axis++) {
+    const component = direction[axis]!;
+    const minimum = center[axis]! - halfVoxel;
+    const maximum = center[axis]! + halfVoxel;
+    if (Math.abs(component) <= 1e-12) {
+      if (origin[axis]! < minimum - 1e-9 || origin[axis]! > maximum + 1e-9) {
+        return undefined;
+      }
+      continue;
+    }
+    const first = (minimum - origin[axis]!) / component;
+    const second = (maximum - origin[axis]!) / component;
+    entry = Math.max(entry, Math.min(first, second));
+    exit = Math.min(exit, Math.max(first, second));
+    if (entry > exit + 1e-9) {
+      return undefined;
+    }
+  }
+  return exit >= Math.max(0, entry) - 1e-9 ? [Math.max(0, entry), exit] : undefined;
+};
+
+const rayExitDistance = (
+  origin: VoxelPoint,
+  direction: VoxelPoint,
+  centers: readonly VoxelPoint[],
+  halfVoxel: number,
+): number => {
+  const intervals = centers
+    .map((center) => rayVoxelInterval(origin, direction, center, halfVoxel))
+    .filter((interval): interval is [number, number] => interval !== undefined)
+    .sort((a, b) => a[0] - b[0]);
+  let distance = 0;
+  for (const [entry, exit] of intervals) {
+    if (entry > distance + 1e-8) {
+      break;
+    }
+    distance = Math.max(distance, exit);
+  }
+  return distance;
+};
+
 /** Surface anchor on the posed core voxels, expressed in world metres. */
 export const amalgamCoreSurfaceAnchor = ({
   figure,
@@ -52,20 +130,16 @@ export const amalgamCoreSurfaceAnchor = ({
     length <= 1e-9
       ? [0, 0, -1]
       : [projectedDirection[0] / length, projectedDirection[1] / length, projectedDirection[2] / length];
-  let surfaceCenter = centers[0]!;
-  let furthest = Number.NEGATIVE_INFINITY;
-  for (const center of centers) {
-    const projection = center[0] * localDirection[0] + center[1] * localDirection[1] + center[2] * localDirection[2];
-    if (projection > furthest) {
-      furthest = projection;
-      surfaceCenter = center;
-    }
-  }
   const halfVoxel = figure.realized.voxels.size / 2;
+  const rayOrigin = coreRayOrigin(centers, halfVoxel);
+  const exitDistance = rayExitDistance(rayOrigin, localDirection, centers, halfVoxel);
+  if (exitDistance <= 0) {
+    throw new Error('Amalgam tentacle bearing does not cross the posed core surface');
+  }
   const localSurface: Vec3 = [
-    surfaceCenter[0] + Math.sign(localDirection[0]) * halfVoxel,
-    surfaceCenter[1] + Math.sign(localDirection[1]) * halfVoxel,
-    surfaceCenter[2] + Math.sign(localDirection[2]) * halfVoxel,
+    rayOrigin[0] + localDirection[0] * exitDistance,
+    rayOrigin[1] + localDirection[1] * exitDistance,
+    rayOrigin[2] + localDirection[2] * exitDistance,
   ];
   const posedLocal = mulMV(core.r, localSurface.map((coordinate) => coordinate * figure.scale) as Vec3);
   const worldOffset = mulMV(yaw, [

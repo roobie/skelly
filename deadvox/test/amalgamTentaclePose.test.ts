@@ -131,6 +131,36 @@ describe('amalgam attack tentacle pose', () => {
     }
   });
 
+  it('keeps the core surface anchor continuous across nearby bearings', () => {
+    const figure = amalgamFigure(AMALGAM_FIGURE_SEED, 1);
+    const pose: Pose = {
+      root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
+      rotations: {},
+    };
+    const transforms = boneTransforms(figure.realized.body.bones, pose);
+    const voxelMetres = figure.realized.voxels.size * figure.scale;
+    const anchors = Array.from({ length: 21 }, (_, sample) => {
+      const bearing = ((sample - 10) * Math.PI) / 180;
+      const target: Vec3 = [Math.sin(bearing), 0, -Math.cos(bearing)];
+      return amalgamCoreSurfaceAnchor({
+        figure,
+        transforms,
+        hidden: new Set<string>(),
+        yaw: rotY(0),
+        position: [0, 0, 0],
+        target,
+      });
+    });
+
+    for (let index = 1; index < anchors.length; index++) {
+      const before = anchors[index - 1]!;
+      const after = anchors[index]!;
+      expect(Math.hypot(after[0] - before[0], after[1] - before[1], after[2] - before[2])).toBeLessThanOrEqual(
+        voxelMetres,
+      );
+    }
+  });
+
   it('stays retracted when the amalgam has no remaining attack reach', () => {
     const pose = amalgamTentaclePose({
       start: [0, 0, 0],
