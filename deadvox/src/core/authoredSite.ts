@@ -7,12 +7,13 @@ import {
   layoutHeight,
   lotOf,
   polylineDistance,
+  polylineDistanceAt,
   rectDistance,
   smoothstep,
 } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
+import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { fixedItems, type Rolled } from './loot.ts';
 import { Rng, simplexNoise2 } from './random.ts';
@@ -88,41 +89,140 @@ export class AuthoredSite implements Site {
         };
       });
     this.spawn = { pos: [...layout.player.position], yaw: yawFromBearing(layout.player.bearing) };
-    const spawnPoints = [
+    const spawnPoints: [number, number][] = [
       [layout.player.position[0], layout.player.position[2]],
-      ...layout.shamblers.map((spawn) => [spawn.position[0], spawn.position[2]]),
-      ...this.placements.flatMap(placedSpawns).map((marker) => [marker.pos[0] * s, marker.pos[2] * s]),
+      ...layout.shamblers.map((spawn): [number, number] => [spawn.position[0], spawn.position[2]]),
+      ...this.placements
+        .flatMap(placedSpawns)
+        .map((marker): [number, number] => [marker.pos[0] * s, marker.pos[2] * s]),
     ];
     const protectedBuildings = layout.buildings.map((building) =>
       buildingBounds(building, registry.templates.get(building.template)!.size),
     );
-    const noiseWeight = (xm: number, zm: number): number => {
-      const { topography } = tuning;
-      const buildingWeight = Math.min(
-        ...protectedBuildings.map((rect) => {
-          const distance = rectDistance(rect, xm, zm, s);
-          return topography.buildingMarginMetres === 0
+    type NoiseTrack = SiteLayoutDef['tracks'][number];
+    interface NoiseInfluences {
+      buildings: Rect[];
+      tracks: NoiseTrack[];
+      spawns: [number, number][];
+    }
+    const noiseColumns = new Map<number, Map<number, NoiseInfluences>>();
+    const columnSpanMetres = CHUNK * s;
+    const addNoiseInfluence = <K extends keyof NoiseInfluences>(
+      bounds: Rect,
+      kind: K,
+      value: NoiseInfluences[K][number],
+    ): void => {
+      const cx0 = Math.floor(bounds.x0 / columnSpanMetres);
+      const cx1 = Math.floor(bounds.x1 / columnSpanMetres);
+      const cz0 = Math.floor(bounds.z0 / columnSpanMetres);
+      const cz1 = Math.floor(bounds.z1 / columnSpanMetres);
+      for (let cx = cx0; cx <= cx1; cx++) {
+        let row = noiseColumns.get(cx);
+        if (!row) {
+          row = new Map();
+          noiseColumns.set(cx, row);
+        }
+        for (let cz = cz0; cz <= cz1; cz++) {
+          let column = row.get(cz);
+          if (!column) {
+            column = { buildings: [], tracks: [], spawns: [] };
+            row.set(cz, column);
+          }
+          (column[kind] as NoiseInfluences[K][number][]).push(value);
+        }
+      }
+    };
+    const { topography } = tuning;
+    const buildingReach = topography.buildingMarginMetres + s;
+    for (const rect of protectedBuildings) {
+      addNoiseInfluence(
+        {
+          x0: rect.x0 - buildingReach,
+          x1: rect.x1 + buildingReach,
+          z0: rect.z0 - buildingReach,
+          z1: rect.z1 + buildingReach,
+        },
+        'buildings',
+        rect,
+      );
+    }
+    const roadReach = topography.roadShoulderMetres + s;
+    for (const track of layout.tracks) {
+      let x0 = Number.POSITIVE_INFINITY;
+      let x1 = Number.NEGATIVE_INFINITY;
+      let z0 = Number.POSITIVE_INFINITY;
+      let z1 = Number.NEGATIVE_INFINITY;
+      for (const [x, z] of track.points) {
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        z0 = Math.min(z0, z);
+        z1 = Math.max(z1, z);
+      }
+      const reach = track.width / 2 + roadReach;
+      addNoiseInfluence({ x0: x0 - reach, x1: x1 + reach, z0: z0 - reach, z1: z1 + reach }, 'tracks', track);
+    }
+    const spawnReach = topography.spawnMarginMetres + s;
+    for (const [x, z] of spawnPoints) {
+      addNoiseInfluence({ x0: x - spawnReach, x1: x + spawnReach, z0: z - spawnReach, z1: z + spawnReach }, 'spawns', [
+        x,
+        z,
+      ]);
+    }
+    const buildingWeight = (buildings: readonly Rect[], xm: number, zm: number): number => {
+      let weight = 1;
+      for (const rect of buildings) {
+        const distance = rectDistance(rect, xm, zm, s);
+        const candidate =
+          topography.buildingMarginMetres === 0
             ? Number(distance > 0)
             : smoothstep(Math.min(1, distance / topography.buildingMarginMetres));
-        }),
-      );
-      const roadWeight = Math.min(
-        ...layout.tracks.map((track) => {
-          const distance = polylineDistance([xm, zm], track.points) - track.width / 2;
-          return topography.roadShoulderMetres === 0
+        weight = Math.min(weight, candidate);
+        if (weight === 0) {
+          return 0;
+        }
+      }
+      return weight;
+    };
+    const trackWeight = (tracks: readonly NoiseTrack[], xm: number, zm: number): number => {
+      let weight = 1;
+      for (const track of tracks) {
+        const distance = polylineDistanceAt(xm, zm, track.points) - track.width / 2;
+        const candidate =
+          topography.roadShoulderMetres === 0
             ? Number(distance > 0)
             : smoothstep(Math.min(1, Math.max(0, distance) / topography.roadShoulderMetres));
-        }),
-      );
-      const spawnWeight = Math.min(
-        ...spawnPoints.map(([x, z]) => {
-          const distance = Math.hypot(xm - x!, zm - z!);
-          return topography.spawnMarginMetres === 0
+        weight = Math.min(weight, candidate);
+        if (weight === 0) {
+          return 0;
+        }
+      }
+      return weight;
+    };
+    const spawnWeight = (spawns: readonly [number, number][], xm: number, zm: number): number => {
+      let weight = 1;
+      for (const [spawnX, spawnZ] of spawns) {
+        const distance = Math.hypot(xm - spawnX, zm - spawnZ);
+        const candidate =
+          topography.spawnMarginMetres === 0
             ? Number(distance > 0)
             : smoothstep(Math.min(1, distance / topography.spawnMarginMetres));
-        }),
+        weight = Math.min(weight, candidate);
+        if (weight === 0) {
+          return 0;
+        }
+      }
+      return weight;
+    };
+    const noiseWeight = (x: number, z: number, xm: number, zm: number): number => {
+      const column = noiseColumns.get(toChunk(x))?.get(toChunk(z));
+      if (!column) {
+        return 1;
+      }
+      return Math.min(
+        buildingWeight(column.buildings, xm, zm),
+        trackWeight(column.tracks, xm, zm),
+        spawnWeight(column.spawns, xm, zm),
       );
-      return Math.min(buildingWeight, roadWeight, spawnWeight);
     };
     const height = (x: number, z: number, natural: number): number => {
       const xm = (x + 0.5) * s;
@@ -133,7 +233,7 @@ export class AuthoredSite implements Site {
         xm / tuning.topography.wavelengthMetres,
         zm / tuning.topography.wavelengthMetres,
       );
-      return Math.round((profile + noise * tuning.topography.amplitudeMetres * noiseWeight(xm, zm)) / s);
+      return Math.round((profile + noise * tuning.topography.amplitudeMetres * noiseWeight(x, z, xm, zm)) / s);
     };
     const trackAt = (x: number, z: number) =>
       layout.tracks.find((track) => polylineDistance([(x + 0.5) * s, (z + 0.5) * s], track.points) <= track.width / 2);

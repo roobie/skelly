@@ -262,7 +262,7 @@ own:
    entities and item piles. Structures that span chunks are written from the
    region and settlement data, never by looking at neighbouring chunks.
 
-Authored sites need restrained terrain variation so their shaped ground and vegetation do not read as flat platforms with polygon-cut tree borders. `src/core/authoredSite.ts`, `AuthoredSite`, applies seeded simplex texture while fading it out around structures, routes and spawn; the authored-site generation tuning stays in base content so layout geometry remains about authored places, not generator settings. The same seed and coordinates determine the result, independent of chunk request order.
+Authored sites need restrained terrain variation so their shaped ground and vegetation do not read as flat platforms with polygon-cut tree borders. `src/core/authoredSite.ts`, `AuthoredSite`, applies seeded simplex texture while fading it out around structures, routes and spawn, varies woodland edges, and sparsely admits young trees on open ground; the authored-site generation tuning stays in base content so layout geometry remains about authored places, not generator settings. The same seed and coordinates determine the result, independent of chunk request order.
 
 **Template format.** ASCII layers in JSON, one layer per block height, with a
 palette mapping characters to blocks, shapes, block entities and loot tags. It
