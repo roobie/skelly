@@ -24,6 +24,8 @@ const BAT_DEF = registry.items.get('baseball_bat')!.weapon!.melee!;
 const BAT = { ...BAT_DEF, cooldown: BAT_DEF.cooldownSimSeconds };
 const HEALTHY_REGIONS = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
 const ROLLED_CUT_SEEDS = [3, 11, 19, 23, 29] as const;
+// Keep the four renderer pools identical; these cases vary severing paths, not figure seeds.
+const CUT_FIXTURE_SEED = 5;
 const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   isSolid,
   isOpaque: isSolid,
@@ -260,12 +262,9 @@ const bounceApexesAndFreeFlightEnergyRise = (harness: Harness) => {
 
 describe('severed limb energy', () => {
   it('clamps application points inside region, random-roll, and head-cut debris', () => {
-    const reports = [
-      createSeveredHit(31, 'region'),
-      createSeveredHit(37, 'rolled'),
-      createSeveredHit(41, 'head'),
-      createSeveredHit(43, 'offRay'),
-    ];
+    const reports = (['region', 'rolled', 'head', 'offRay'] as const).map((mode) =>
+      createSeveredHit(CUT_FIXTURE_SEED, mode),
+    );
     try {
       const offRay = reports[3]!;
       expect(offRay.targetRayHitsRegion).toBe(true);
