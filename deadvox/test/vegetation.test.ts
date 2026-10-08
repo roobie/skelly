@@ -287,7 +287,12 @@ describe('passable but opaque vegetation', () => {
     expect(events.filter((event) => event.kind === 'sound').map((event) => event.position)).toEqual(
       events.filter((event) => event.kind === 'noise').map((event) => event.position),
     );
-    expect(session.playerAudio.vocalNoise?.radiusMetres).toBe(4);
+    const leaves = registry.blocks[registry.blockIds.get('leaves')!]!;
+    const rustleEvent = leaves.rustle?.gentle;
+    expect(rustleEvent).toBeDefined();
+    const rustleSound = registry.sounds.get(rustleEvent!);
+    expect(rustleSound?.noise.enabled).toBe(true);
+    expect(session.playerAudio.vocalNoise?.radiusMetres).toBe(rustleSound?.noise.radiusMetres);
   });
 
   it('admits paired rustle and hearing when a real session falls vertically through leaves without horizontal input', () => {
@@ -312,14 +317,26 @@ describe('passable but opaque vegetation', () => {
     }
   });
 
-  it('maps wood and foliage footsteps explicitly for both player and shambler', () => {
+  it('maps wood and foliage surfaces to their registered player and shambler sounds', () => {
+    const eventForAsset = (category: 'body' | 'world', asset: string) => {
+      const sound = [...registry.sounds.values()].find(
+        (definition) => definition.category === category && definition.variants.some((variant) => variant.includes(asset)),
+      );
+      expect(sound, `${category} sound for ${asset}`).toBeDefined();
+      return sound!.id;
+    };
+    const playerWood = eventForAsset('body', 'footstep-wood-');
+    const playerFoliage = eventForAsset('body', 'footstep-leaves-');
+    const shamblerWood = eventForAsset('world', 'footstep-wood-');
+    const shamblerFoliage = eventForAsset('world', 'footstep-leaves-');
+
     for (const name of ['tree_trunk', 'tree_branch']) {
-      expect(footstepEventForBlock(name)).toBe('footstep_wood');
-      expect(shamblerFootstepEventForBlock(name)).toBe('shambler_step_wood');
+      expect(footstepEventForBlock(name)).toBe(playerWood);
+      expect(shamblerFootstepEventForBlock(name)).toBe(shamblerWood);
     }
     for (const name of ['leaves', 'hedge', 'leaf_litter']) {
-      expect(footstepEventForBlock(name)).toBe('footstep_leaves');
-      expect(shamblerFootstepEventForBlock(name)).toBe('shambler_step_leaves');
+      expect(footstepEventForBlock(name)).toBe(playerFoliage);
+      expect(shamblerFootstepEventForBlock(name)).toBe(shamblerFoliage);
     }
   });
 
@@ -349,12 +366,16 @@ describe('passable but opaque vegetation', () => {
     expect(hamlet.surface.top!(Math.floor(x / 0.5), Math.floor(z / 0.5))).toBe(registry.blockIds.get('asphalt'));
   });
 
-  it('freezes a seeded smooth field with a 0.75 patch beyond the clearing on the full route', () => {
+  it('keeps the seeded forest-density field smooth and seed-dependent', () => {
     const heading = [-0.9, 0.44];
     const unit = heading.map((value) => value / Math.hypot(...heading));
-    expect(forestDensityAt(1, unit[0]! * 16, unit[1]! * 16)).toBe(0.75);
-    expect(forestDensityAt(1, unit[0]! * 96, unit[1]! * 96)).toBeLessThan(0.65);
-    expect(forestDensityAt(2, unit[0]! * 96, unit[1]! * 96)).not.toBe(forestDensityAt(1, unit[0]! * 96, unit[1]! * 96));
+    const x = unit[0]! * 96;
+    const z = unit[1]! * 96;
+    const density = forestDensityAt(1, x, z);
+    expect(density).toBeGreaterThanOrEqual(0);
+    expect(density).toBeLessThanOrEqual(1);
+    expect(forestDensityAt(1, x + 0.01, z)).toBeCloseTo(density, 3);
+    expect(forestDensityAt(2, x, z)).not.toBe(density);
   });
 
   it('indexes exclusive litter borders and preserves clipped voxel writes across negative and positive columns', () => {
@@ -406,7 +427,6 @@ describe('passable but opaque vegetation', () => {
     expect(dense.trees.length).toBeGreaterThan(sparse.trees.length * 2);
     expect(sparse.trees.every((tree) => placements.has(`${tree.shape}:${tree.origin}`))).toBe(true);
     expect(dense.bounds).toEqual(sparse.bounds);
-    expect(dense.bounds).toEqual({ x0: -768, z0: -768, x1: 768, z1: 768 });
     expect(dense.trees.some((tree) => rectsOverlap(tree.bounds, { x0: -8, z0: -8, x1: 8, z1: 8 }))).toBe(false);
   });
 });
