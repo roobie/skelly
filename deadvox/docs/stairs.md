@@ -86,9 +86,8 @@ requires:
   openable doors and flights, with player/shambler-sized bounds and step-up clearance.
 
 An upper-storey floor opening may not reach beyond its incoming flights' footprint
-and headroom, because a wider one leaves a gap at the top of the stairs (BR,
-2026-10-04: "as for the dad's hunting cabin, it got this gap by the top of the
-stairs"). Only openings under reachable standing floor count, so a storey that
+and headroom, because a wider opening leaves a gap at the top of the stairs.
+Only openings under reachable standing floor count, so a storey that
 doesn't fill its box passes. See `deadvox/src/core/templateSpatial.ts`,
 `upperFloorOpeningIssues`.
 
@@ -146,7 +145,8 @@ GPU/performance acceptance is implied by the headless functional test.
 upstairs bedroom door and resident) and `stairs_cabin` (ground floor, root cellar
 and a cupboard containing ammunition). `layouts-stairs.json`
 places them in `?site=stair_demo`. These are small fixtures, **not** the final beat-1
-house or Dad's beat-3 cabin/woodshed/terrain. The lead authors those later.
+house or Dad's beat-3 cabin/woodshed/terrain; those final scenes are separate
+from these fixtures.
 
 Walk toward the lower landing in the house, up/down with ordinary movement. In the
 cabin, the ground landing leads down; take a flashlight. The maintained
@@ -172,7 +172,14 @@ override exist only in the lighting test's Vite plugin, not the demo or build. B
 stages keep the existing outer cap; neither retries to green. Traversal witnesses
 actual floor following; screenshots are secondary to its simulation observations.
 
-Shamblers do not traverse authored flights or otherwise navigate between storeys. BR's ruling is to “beeline towards whatever grabs their attention,” move horizontally toward it, let collision physics slide along obstacles, and prefer jumping low obstacles; some obstacle hits trigger an open-direction wander before pursuit resumes. A target on another floor does not give the shambler stair knowledge. Closed doors block it like walls; BR deferred bashing for #273 until mob and obstacle strength exist. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`, and `deadvox/DESIGN.md`, “Senses and AI.”
+Shamblers do not traverse authored flights or otherwise navigate between
+storeys. They beeline toward their attention target, move horizontally, slide
+along obstacles through collision physics, and prefer jumping low obstacles;
+some obstacle hits trigger an open-direction wander before pursuit resumes. A
+target on another floor does not give the shambler stair knowledge. Closed doors
+block it like walls. BR deferred door bashing for #273 until mob and obstacle
+strength exist. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and
+`openWanderHeadings`, and `deadvox/DESIGN.md`, “Senses and AI.”
 
 The browser stage checks player traversal, not shambler navigation.
 

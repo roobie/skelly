@@ -17,6 +17,7 @@ const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new
 const inputBindingsModule = '/src/game/inputBindings.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
+const reloadInputModule = '/src/game/reloadInput.ts';
 const magazineModule = '/src/core/magazine.ts';
 const optionsModule = '/src/core/options.ts';
 const itemLookModule = '/src/render/itemLook.ts';
@@ -27,6 +28,10 @@ const progressingSample = ({ start }) => {
 const throwChargeSample = ({ start, seconds }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
+};
+const mouseCharge = async (page) => {
+  await page.mouse.down({ button: 'left' });
+  return async () => page.mouse.up({ button: 'left' });
 };
 const measureGlowstickFloor = async (page, uid, label) => {
   const screenshot = await page.locator('#view canvas').screenshot();
@@ -165,8 +170,50 @@ const observationPlugin = {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
+    const throwQueueMarker = `      pendingPlayerTickActions.enqueue(() => {
+        applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
+          throwHeldItem(heldItem, hand, distance, chargeProgress);
+          syncThrowingStance();
+        });
+      });`;
+    const playerTickMarker = '      pendingPlayerTickActions.applyAtNextTick();';
     assert(code.includes(marker), 'game-loop observation point exists');
-    return code.replace(
+    assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
+    assert(code.includes(playerTickMarker), 'player tick action observation point exists');
+    let observedCode = code.replace(
+      throwQueueMarker,
+      `${throwQueueMarker}
+      if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
+        const slot = proof.quickbarTapAfterNextThrowCommit;
+        proof.quickbarTapAfterNextThrowCommit = undefined;
+        quickbarTap(slot);
+        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
+        proof.quickbarTapCommitObservation = {
+          itemMoveQueued: queue.jobs.some(
+            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
+          ),
+          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
+        };
+      }
+      if (proof.dropAfterNextThrowCommit) {
+        proof.dropAfterNextThrowCommit = false;
+        dropHeldItemForThrowingStance();
+      }`,
+    );
+    observedCode = observedCode.replace(
+      playerTickMarker,
+      `${playerTickMarker}
+      if (proof.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
+        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
+        proof.quickbarTapTickObservation = {
+          itemMoveQueued: queue.jobs.some(
+            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
+          ),
+          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
+        };
+      }`,
+    );
+    return observedCode.replace(
       marker,
       `
   const proof = {
@@ -180,6 +227,7 @@ const observationPlugin = {
     survival,
     debugTools,
     engine,
+    view,
     caseEffects,
     itemThrows,
     audio,
@@ -191,6 +239,16 @@ const observationPlugin = {
     screen,
     dispatchScreenCommand,
     get inputRecorder() { return inputRecorder; },
+    captureSnapshot,
+    dropAfterNextThrowCommit: false,
+    quickbarTapAfterNextThrowCommit: undefined,
+    quickbarTapItemUid: undefined,
+    quickbarTapCommitObservation: undefined,
+    quickbarTapTickObservation: undefined,
+    startInputReplayRecording: () => {
+      previousInputRecorder = undefined;
+      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
+    },
     hudOptions,
     beginItemThrow,
     selectPrimaryAction,
@@ -201,6 +259,7 @@ const observationPlugin = {
     initialPlayerPosition: [...session.body.pos],
     getNotice: () => notice,
     isChargingItemThrow: () => itemThrowStartedAt !== undefined,
+    isThrowingStance: () => throwingStance,
     clearNotice: () => showNotice(''),
     clearHand: (side) => {
       const held = inventory.hands[side];
@@ -429,6 +488,255 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       'verified',
       'a clean look, movement, inventory and crafting recording reproduces its end state',
     );
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+};
+
+const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) => {
+  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  try {
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+      let locked = false;
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+      });
+      Element.prototype.requestPointerLock = () => {
+        locked = true;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = false;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#dominant-hand').selectOption('left');
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    const fixture = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      const mainItem = r.inventory.create('glowstick');
+      const offItem = r.inventory.create('glowstick');
+      r.setHand(r.dominant, mainItem);
+      r.setHand(r.off, offItem);
+      const minimumHoldSimSeconds = r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds;
+      const quickbarSlot = 0;
+      r.quickbar.assign(quickbarSlot, offItem);
+      return { mainUid: mainItem.uid, offUid: offItem.uid, minimumHoldSimSeconds, quickbarSlot };
+    });
+    await page.evaluate((offUid) => {
+      const r = globalThis.primaryActionTest;
+      const offItem = r.inventory.itemByUid(offUid);
+      const hasFreeWornPocket = () =>
+        Object.values(r.inventory.worn).some((owner) =>
+          owner?.pockets?.some((_, pocket) => r.inventory.plan(offItem, { kind: 'pocket', owner, pocket }).ok),
+        );
+      if (!offItem) {
+        throw new Error('The replay fixture off-hand item is missing');
+      }
+      const freeSlot = ['waist', 'back', 'torso'].find((slot) => !r.inventory.worn[slot]);
+      if (!hasFreeWornPocket() && freeSlot) {
+        const type = { waist: 'fanny_pack', back: 'hiking_backpack', torso: 'utility_vest' }[freeSlot];
+        r.inventory.add(r.inventory.create(type), { kind: 'worn' });
+      }
+      if (!hasFreeWornPocket()) {
+        throw new Error('Could not provide a worn pocket for the replay fixture');
+      }
+    }, fixture.offUid);
+    await page.waitForFunction(() => {
+      const hands = globalThis.primaryActionTest.view.held.heldByHand;
+      return hands.has('left') && hands.has('right');
+    });
+    await page.evaluate((slot) => {
+      const r = globalThis.primaryActionTest;
+      r.startInputReplayRecording();
+      r.dropAfterNextThrowCommit = true;
+      r.quickbarTapAfterNextThrowCommit = slot;
+      r.quickbarTapItemUid = r.quickbar.slots[slot];
+      r.quickbarTapCommitObservation = undefined;
+      r.quickbarTapTickObservation = undefined;
+    }, fixture.quickbarSlot);
+    await pressAction(page, 'player.throw');
+    await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+    const releaseThrow = await mouseCharge(page);
+    await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+    const chargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+    await waitForSimulation(
+      page,
+      throwChargeSample,
+      { start: chargeStart, seconds: fixture.minimumHoldSimSeconds },
+      {
+        seconds: fixture.minimumHoldSimSeconds + 0.1,
+        label: 'two-hand replay fixture reaches the minimum throw charge',
+        record: (line) => process.stderr.write(`${line}\n`),
+      },
+    );
+    await releaseThrow();
+    await page.waitForFunction((ids) => {
+      const r = globalThis.primaryActionTest;
+      const off = r.inventory.itemByUid(ids.offUid);
+      const offLocation = off && r.inventory.locate(off);
+      return (
+        offLocation?.kind === 'pile' &&
+        r.inventory.locate(r.inventory.itemByUid(ids.mainUid))?.kind === 'pile' &&
+        r.quickbarTapCommitObservation &&
+        r.quickbarTapTickObservation &&
+        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw') &&
+        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'quickbar.tap.1') &&
+        r.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.drop')
+      );
+    }, fixture);
+    const liveThrowOutcome = await page.evaluate((ids) => {
+      const r = globalThis.primaryActionTest;
+      const off = r.inventory.itemByUid(ids.offUid);
+      const main = r.inventory.itemByUid(ids.mainUid);
+      const offLocation = off && r.inventory.locate(off);
+      const mainLocation = main && r.inventory.locate(main);
+      return {
+        offLocation: offLocation?.kind === 'pile' ? offLocation.pos : offLocation?.kind,
+        mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
+        bodyPosition: [...r.session.body.pos],
+        look: [r.input.yaw, r.input.pitch],
+        quickbarTapCommit: r.quickbarTapCommitObservation,
+        quickbarTapTick: r.quickbarTapTickObservation,
+      };
+    }, fixture);
+    const command = async (action) =>
+      page.evaluate(
+        async ({ id, moduleUrl }) => {
+          const { keyboardInput } = await import(moduleUrl);
+          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+        },
+        { id: action, moduleUrl: inputBindingsModule },
+      );
+    await command('debug.panel-toggle');
+    const liveEndSnapshot = await page.evaluate(
+      async ({ id, moduleUrl }) => {
+        const { keyboardInput } = await import(moduleUrl);
+        const r = globalThis.primaryActionTest;
+        const snapshot = r.captureSnapshot();
+        keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+        return snapshot;
+      },
+      { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule },
+    );
+    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    const replayText = await page.evaluate(() => {
+      const link = document.querySelector('#replay-download');
+      if (!link?.href.startsWith('blob:')) {
+        throw new Error('Throw replay export did not create a downloadable artifact');
+      }
+      return fetch(link.href).then((response) => response.text());
+    });
+    const artifact = JSON.parse(replayText);
+    assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
+    assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
+    assert(artifact.actions.some(({ action }) => action === 'throw.stance.toggle'));
+    const throwActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.throw');
+    assert.equal(artifact.actions.filter(({ action }) => action === 'quickbar.tap.1').length, 1);
+    const quickbarActionIndex = artifact.actions.findIndex(({ action }) => action === 'quickbar.tap.1');
+    const dropActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.drop');
+    assert(quickbarActionIndex > throwActionIndex, 'the same-sample quickbar action follows the throw');
+    assert(dropActionIndex > quickbarActionIndex, 'the same-sample drop follows the quickbar action');
+    assert.equal(artifact.actions[quickbarActionIndex].tick, artifact.actions[throwActionIndex].tick);
+    assert.equal(artifact.actions[dropActionIndex].tick, artifact.actions[throwActionIndex].tick);
+    const replayNavigation = page.waitForNavigation();
+    await command('debug.input-replay-import');
+    await page.locator('#input-replay-file').setInputFiles({
+      name: 'two-hand-throw-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(replayText),
+    });
+    await replayNavigation;
+    await page.waitForFunction(() => document.querySelector('#input-replay-status'));
+    await page.waitForFunction(
+      () =>
+        ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
+      undefined,
+      { timeout: 20_000 },
+    );
+    const replayState = await page.locator('#input-replay-status').getAttribute('data-state');
+    const { replayEndSnapshot, replayThrowOutcome } = await page.evaluate((ids) => {
+      const r = globalThis.primaryActionTest;
+      const off = r.inventory.itemByUid(ids.offUid);
+      const main = r.inventory.itemByUid(ids.mainUid);
+      const offLocation = off && r.inventory.locate(off);
+      const mainLocation = main && r.inventory.locate(main);
+      return {
+        replayEndSnapshot: r.captureSnapshot(),
+        replayThrowOutcome: {
+          offLocation: offLocation?.kind === 'pile' ? offLocation.pos : offLocation?.kind,
+          mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
+          bodyPosition: [...r.session.body.pos],
+          look: [r.input.yaw, r.input.pitch],
+        },
+      };
+    }, fixture);
+    let endSnapshotDifference = '';
+    try {
+      assert.deepEqual(replayEndSnapshot, liveEndSnapshot);
+    } catch (error) {
+      endSnapshotDifference = error.message;
+    }
+    if (replayState !== 'verified') {
+      process.stderr.write(
+        `Throw replay ${replayState}: ${JSON.stringify({
+          snapshotDifference: endSnapshotDifference,
+          liveThrowOutcome,
+          replayThrowOutcome,
+        })}\n`,
+      );
+    }
+    const items = await page.evaluate((ids) => {
+      const r = globalThis.primaryActionTest;
+      const off = r.inventory.itemByUid(ids.offUid);
+      const main = r.inventory.itemByUid(ids.mainUid);
+      const offLocation = off && r.inventory.locate(off);
+      const mainLocation = main && r.inventory.locate(main);
+      return {
+        offKind: offLocation?.kind,
+        mainKind: mainLocation?.kind,
+        hands: Object.values(r.inventory.hands)
+          .filter(Boolean)
+          .map(({ uid }) => uid),
+      };
+    }, fixture);
+    assert.deepEqual(
+      items,
+      {
+        offKind: 'pile',
+        mainKind: 'pile',
+        hands: [],
+      },
+      'replay throws the off-hand item before dropping the remaining held item',
+    );
+    assert.deepEqual(
+      replayThrowOutcome.offLocation,
+      liveThrowOutcome.offLocation,
+      'replay lands the throw in the same cell',
+    );
+    assert.deepEqual(replayThrowOutcome.mainLocation, liveThrowOutcome.mainLocation);
+    assert.deepEqual(liveThrowOutcome.quickbarTapCommit, { itemMoveQueued: false, location: 'hand' });
+    assert.deepEqual(liveThrowOutcome.quickbarTapTick, { itemMoveQueued: false, location: 'pile' });
+    assert.equal(replayState, 'verified', `replay end state differs: ${JSON.stringify(endSnapshotDifference)}`);
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
@@ -1203,13 +1511,21 @@ try {
   assert.equal(roundTrip.restoredOn, true);
   assert.equal(roundTrip.restoredHand, 'left');
   await toggleLight('hand.use-off', false);
+  await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
+  const interactionHintsBeforeThrowStance = await page.evaluate(
+    () => globalThis.primaryActionTest.hudOptions.interaction,
+  );
   const throwFixture = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);
+    r.clearHand(r.off);
     const glowstick = r.inventory.create('glowstick');
-    r.setHand(r.off, glowstick);
+    const offHandItem = r.inventory.create('glowstick');
+    r.setHand(r.dominant, glowstick);
+    r.setHand(r.off, offHandItem);
     return {
       uid: glowstick.uid,
+      offHandUid: offHandItem.uid,
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
       distance: r.inventory.registry.senses.get('player').light.throwMaxDistanceMetres,
@@ -1217,21 +1533,97 @@ try {
       minimumHoldSimSeconds: r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds,
     };
   });
-  const offHandOnlyThrow = await holdAction(page, 'player.throw');
-  await offHandOnlyThrow();
-  const offHandResult = await page.evaluate((uid) => {
+  await page.waitForFunction(() => {
+    const hands = globalThis.primaryActionTest.view.held.heldByHand;
+    return hands.has('right') && hands.has('left');
+  });
+  const normalThrowPose = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
-    return { location: r.inventory.locate(r.inventory.itemByUid(uid)), expectedSide: r.off };
-  }, throwFixture.uid);
-  assert.equal(offHandResult.location?.kind, 'hand', 'an off-hand item stays held');
-  assert.equal(offHandResult.location?.side, offHandResult.expectedSide, 'T does not throw from the off hand');
-  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount), 0);
+    return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
+  });
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.interaction = false;
+  });
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+  await page.waitForFunction((normal) => {
+    const r = globalThis.primaryActionTest;
+    return ['right', 'left'].every((side) => {
+      const pose = r.view.held.arms.get(side).position;
+      return pose.y > normal[side][1] && pose.z > normal[side][2];
+    });
+  }, normalThrowPose);
+  assert.equal(await page.locator('#throw-stance').evaluate((node) => node.hidden), true);
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.interaction = true;
+  });
+  await page.waitForFunction(() => !document.querySelector('#throw-stance').hidden);
+  const stanceThrowPose = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
+  });
+  for (const side of ['right', 'left']) {
+    assert.ok(stanceThrowPose[side][1] > normalThrowPose[side][1], `${side} hand is raised in throwing stance`);
+    assert.ok(stanceThrowPose[side][2] > normalThrowPose[side][2], `${side} hand draws back in throwing stance`);
+  }
+  const offHandOnlyThrow = await mouseCharge(page);
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  const offHandChargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+  await waitForSimulation(
+    page,
+    throwChargeSample,
+    { start: offHandChargeStart, seconds: throwFixture.minimumHoldSimSeconds },
+    {
+      seconds: throwFixture.minimumHoldSimSeconds + 0.1,
+      label: 'off-hand throw reaches its minimum charge',
+      record: (line) => process.stderr.write(`${line}\n`),
+      stop: offHandOnlyThrow,
+    },
+  );
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'pile',
+    throwFixture.offHandUid,
+  );
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount > 0), true);
+  assert.equal(
+    await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return r.isThrowingStance() && r.inventory.hands[r.dominant]?.uid === uid && !r.inventory.hands[r.off];
+    }, throwFixture.uid),
+    true,
+    'a throw prioritizes the off-hand item and leaves the main-hand item held in stance',
+  );
   await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.dominant, r.inventory.itemByUid(uid));
+    const offHandDrop = r.inventory.create('glowstick');
+    r.setHand(r.off, offHandDrop);
     r.hudOptions.handling = true;
   }, throwFixture.uid);
-  const meterThrow = await holdAction(page, 'player.throw');
+  const holdToDrop = await holdAction(page, 'player.throw');
+  const droppedOffHandUid = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return r.inventory.hands[r.off]?.uid;
+  });
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'pile',
+    droppedOffHandUid,
+  );
+  await holdToDrop();
+  assert.equal(
+    await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return r.inventory.hands[r.dominant]?.uid === uid;
+    }, throwFixture.uid),
+    true,
+    'holding T drops the off-hand item before leaving the main-hand item held',
+  );
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.isThrowingStance()), true);
+  const meterThrow = await mouseCharge(page);
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
     const root = document.querySelector('#handling');
@@ -1281,10 +1673,45 @@ try {
     'hand',
     'right-click cancellation hides the throw meter without releasing the item',
   );
+  const stanceCancelThrow = await mouseCharge(page);
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return !(r.isThrowingStance() || r.isChargingItemThrow());
+  });
+  await page.waitForFunction((normal) => {
+    const r = globalThis.primaryActionTest;
+    return ['right', 'left'].every((side) =>
+      r.view.held.arms
+        .get(side)
+        .position.toArray()
+        .every((value, axis) => Math.abs(value - normal[side][axis]) < 0.001),
+    );
+  }, normalThrowPose);
+  const restoredThrowPose = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
+  });
+  for (const side of ['right', 'left']) {
+    assert.ok(restoredThrowPose[side].every((value, axis) => Math.abs(value - normalThrowPose[side][axis]) < 0.001));
+  }
+  await stanceCancelThrow();
+  assert.equal(
+    await page.evaluate(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind,
+      throwFixture.uid,
+    ),
+    'hand',
+    'tapping T exits stance and cancels the active charge without throwing',
+  );
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.handling = true;
   });
-  const interruptedThrow = await holdAction(page, 'player.throw');
+  const interruptedThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   assert.equal(
     await page.evaluate((uid) => Boolean(globalThis.primaryActionTest.inventory.itemByUid(uid)?.on), throwFixture.uid),
@@ -1305,7 +1732,7 @@ try {
     'knockout cancels an active item throw',
   );
   await interruptedThrow();
-  const rejectedThrow = await holdAction(page, 'player.throw');
+  const rejectedThrow = await mouseCharge(page);
   assert.equal(
     await page.evaluate(() => globalThis.primaryActionTest.isChargingItemThrow()),
     false,
@@ -1335,7 +1762,7 @@ try {
     body.advance(body.tuning.knockoutSimSeconds);
   });
   await page.waitForFunction(() => !globalThis.primaryActionTest.session.sim.body.unconscious);
-  const cancelThrow = await holdAction(page, 'player.throw');
+  const cancelThrow = await mouseCharge(page);
   await page.mouse.down({ button: 'right' });
   await cancelThrow();
   await page.mouse.up({ button: 'right' });
@@ -1345,8 +1772,13 @@ try {
       'hand',
     throwFixture.uid,
   );
+  const throwsBeforeShortRelease = await page.evaluate(
+    () =>
+      globalThis.primaryActionTest.inputRecorder.copyInputs().actions.filter((action) => action.action === 'item.throw')
+        .length,
+  );
   const shortStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
-  const shortRelease = await holdAction(page, 'player.throw');
+  const shortRelease = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   await waitForSimulation(
     page,
@@ -1366,10 +1798,13 @@ try {
   assert.equal(shortThrowResult.location?.kind, 'hand', 'a short throw release leaves the item held');
   assert.equal(shortThrowResult.location?.side, shortThrowResult.expectedSide, 'the primary-hand item stays held');
   assert.equal(
-    await page.evaluate(() =>
-      globalThis.primaryActionTest.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw'),
+    await page.evaluate(
+      () =>
+        globalThis.primaryActionTest.inputRecorder
+          .copyInputs()
+          .actions.filter((action) => action.action === 'item.throw').length,
     ),
-    false,
+    throwsBeforeShortRelease,
     'a short release records no throw',
   );
   const glowstickUseRefusal = await page.evaluate((uid) => {
@@ -1377,7 +1812,7 @@ try {
     return r.survival.use(r.inventory.itemByUid(uid));
   }, throwFixture.uid);
   assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
-  const releaseThrow = await holdAction(page, 'player.throw');
+  const releaseThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
   await waitForSimulation(
@@ -1411,6 +1846,7 @@ try {
   }, throwFixture.uid);
   assert.equal(thrownGlowstick.on, true, 'the thrown glowstick stays lit');
   assert.equal(thrownGlowstick.sameInstance, true, 'the same glowstick instance lands in the pile');
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.isThrowingStance()), false);
   const thrown = await page.evaluate(({ uid, start, blockSize }) => {
     const r = globalThis.primaryActionTest;
     const location = r.inventory.locate(r.inventory.itemByUid(uid));
@@ -1449,6 +1885,7 @@ try {
     }
     const firearm = r.inventory.create(definition.id);
     const shell = r.inventory.create(cartridge.id);
+    const spareShell = r.inventory.create(cartridge.id);
     r.setHand(r.dominant, firearm);
     r.setHand(r.off, shell);
     const { SHELL_LOAD_SECONDS } = await import(moduleUrl);
@@ -1463,8 +1900,10 @@ try {
     if (!firearmState?.tube?.length) {
       throw new Error('Firearm throw fixture did not load its ammunition');
     }
+    r.setHand(r.off, spareShell);
     return {
       uid: firearm.uid,
+      spareShellUid: spareShell.uid,
       modelId: definition.model,
       firearmState,
       start: [...r.session.body.pos],
@@ -1472,7 +1911,72 @@ try {
       chargeSimSeconds: registry.senses.get('player').light.throwChargeSimSeconds,
     };
   }, firearmHandlingModule);
-  const releaseFirearmThrow = await holdAction(page, 'player.throw');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return r.view.held.heldByHand.has(r.dominant);
+  });
+  const firearmRestPose = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return {
+      hand: r.view.held.arms.get(r.dominant).position.toArray(),
+      item: r.view.held.heldByHand.get(r.dominant).position.toArray(),
+    };
+  });
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+  await page.waitForFunction((rest) => {
+    const r = globalThis.primaryActionTest;
+    const hand = r.view.held.arms.get(r.dominant).position;
+    return hand.y > rest.hand[1] && hand.z > rest.hand[2];
+  }, firearmRestPose);
+  const firearmThrowPose = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return {
+      hand: r.view.held.arms.get(r.dominant).position.toArray(),
+      item: r.view.held.heldByHand.get(r.dominant).position.toArray(),
+    };
+  });
+  for (const key of ['hand', 'item']) {
+    assert.ok(firearmThrowPose[key][1] > firearmRestPose[key][1], `main-hand firearm ${key} is raised to throw`);
+    assert.ok(firearmThrowPose[key][2] > firearmRestPose[key][2], `main-hand firearm ${key} is drawn back to throw`);
+  }
+  const chargeSpareShell = await mouseCharge(page);
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  const reloadHoldMs = await page.evaluate(async (moduleUrl) => {
+    const { RELOAD_GESTURE_MS } = await import(moduleUrl);
+    return RELOAD_GESTURE_MS.hold;
+  }, reloadInputModule);
+  const blockedReload = await holdAction(page, 'firearm.reload');
+  const reloadPressAt = await page.evaluate(() => performance.now());
+  await page.waitForFunction(({ started, holdMs }) => performance.now() - started >= holdMs, {
+    started: reloadPressAt,
+    holdMs: reloadHoldMs,
+  });
+  const framesAfterReloadHold = await page.evaluate(() => globalThis.primaryActionTest.frames);
+  await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, framesAfterReloadHold);
+  assert.equal(
+    await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return !(r.session.queue.busy || r.session.firearms.busy) && r.inventory.hands[r.off]?.uid === uid;
+    }, loadedFirearm.spareShellUid),
+    true,
+    'R during an active throw charge starts no reload job and remains unqueued',
+  );
+  await page.mouse.down({ button: 'right' });
+  await page.waitForFunction(() => !globalThis.primaryActionTest.isChargingItemThrow());
+  await page.mouse.up({ button: 'right' });
+  await chargeSpareShell();
+  await blockedReload();
+  assert.equal(
+    await page.evaluate(() => !globalThis.primaryActionTest.session.queue.busy),
+    true,
+    'an R press consumed during charging is not deferred until charge cancellation',
+  );
+  const reloadAfterCancel = await holdAction(page, 'firearm.reload');
+  await page.waitForFunction(() => globalThis.primaryActionTest.session.queue.busy);
+  await reloadAfterCancel();
+  await page.evaluate(() => globalThis.primaryActionTest.clearHand(globalThis.primaryActionTest.off));
+  const releaseFirearmThrow = await mouseCharge(page);
   const firearmThrowStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
   await waitForSimulation(
     page,
@@ -1506,7 +2010,10 @@ try {
   }, loadedFirearm.uid);
   assert.equal(landedFirearm.locationKind, 'pile', 'the loaded firearm lands in a pile');
   assert.equal(landedFirearm.sameInstance, true, 'throw moves the same firearm instance');
-  assert.deepEqual(landedFirearm.firearmState, loadedFirearm.firearmState, 'throw preserves loaded firearm state');
+  const definedFirearmState = Object.fromEntries(
+    Object.entries(landedFirearm.firearmState ?? {}).filter(([, value]) => value !== undefined),
+  );
+  assert.deepEqual(definedFirearmState, loadedFirearm.firearmState, 'throw preserves loaded firearm state');
   const rifleFixture = await page.evaluate(
     async ({ magazineUrl, optionsUrl }) => {
       const r = globalThis.primaryActionTest;
@@ -1563,12 +2070,14 @@ try {
     },
     { magazineUrl: magazineModule, optionsUrl: optionsModule },
   );
-  const releaseRifleThrow = await holdAction(page, 'player.throw');
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+  const releaseRifleThrow = await mouseCharge(page);
   const throwWait = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     return { handling: r.session.queue.busy, charging: r.isChargingItemThrow() };
   });
-  assert.equal(throwWait.handling, true, 'rifle rack is still being handled when T is pressed');
+  assert.equal(throwWait.handling, true, 'rifle rack is still being handled when mouse-1 is pressed');
   assert.equal(throwWait.charging, false, 'throw charge waits for the rifle rack to finish');
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
@@ -1635,6 +2144,9 @@ try {
     'throw keeps the fitted magazine rounds',
   );
   assert.equal(landedRifle.duplicateItemUids, false, 'throw does not duplicate the nested magazine item');
+  await page.evaluate((enabled) => {
+    globalThis.primaryActionTest.hudOptions.interaction = enabled;
+  }, interactionHintsBeforeThrowStance);
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.off, r.inventory.itemByUid(r.lightUid));
@@ -2019,6 +2531,8 @@ try {
   const replayArtifact = JSON.parse(replayText);
   assert.equal(replayArtifact.magic, 'DEADVOX_REPLAY');
   assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
+  assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
+  assert(replayArtifact.actions.some((action) => action.action === 'item.drop'));
   assert.match(replayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
   const replayNavigation = page.waitForNavigation();
   await command('debug.input-replay-import');
@@ -2047,6 +2561,7 @@ try {
 
   assert.deepEqual(pageErrors, []);
   await verifyCleanLookReplay(browser, address.port, renderOverride);
+  await verifyStanceThrowReplay(browser, address.port, renderOverride);
   await browser.close();
   browser = undefined;
   await checkDroppedGlowstickPixel(address.port);

@@ -51,8 +51,8 @@ ordinary inventory access. The shared block does not change door ownership.
 
 Take a readable-only note into a hand and hold its assigned quickbar slot. An
 item with a book component also supports its held primary action; see
-`src/game/primaryAction.ts`, `primaryActionForDefinition`. The inventory Read command was removed under BR's
-interaction ruling in `CONTROLS.md`. A quickbar tap only takes or puts away;
+`src/game/primaryAction.ts`, `primaryActionForDefinition`. The inventory has no
+Read command (`CONTROLS.md`). A quickbar tap only takes or puts away;
 holding its slot uses the note while it is in hand (`src/game/quickbarActions.ts`,
 `QuickbarActions.hold`).
 `src/core/options.ts`, `useOption`, describes the capability;
@@ -71,9 +71,9 @@ uses the existing scroll-pane/menu-pointer implementation. **Esc, Tab or Put awa
 close it and restore previous focus. F9 opens the main menu and puts it away;
 pointer-lock loss and death also close it. Other gameplay, inventory, quickbar and
 primary-action keys do not leak through. The world **keeps moving**, just as with
-inventory; movement/action input is inactive. BR's d73-2 long-action ruling is "long
-actions disable all actions"; `src/core/longAction.ts`, `LongActions`, owns the
-timed book action that may continue while its separate paper surface is open.
+inventory; movement/action input is inactive. `src/core/longAction.ts`,
+`LongActions`, owns the timed book action that may continue while its separate
+paper surface is open.
 `src/ui/reading.ts`, `mountReading`, retains the surface's close and scroll keys.
 Main-menu/pointer-loss pause rules are unchanged. This does not add or enable the
 HUD: existing HUD preferences and compass/watch item plans remain unchanged.
@@ -103,23 +103,21 @@ fallback, not a bespoke paper mesh.
 
 The samples loudly say **PLACEHOLDER / NOT PLAYTEST LORE** and remain separate
 from the authored progression. `items-playtest.json` and `furniture-playtest.json`
-provide d99-1's evacuation note, two signs and hunter's logbook. BR approved the
-note and logbook texts as written on 2026-10-06 at 14:43 (#181); those two signs
-also have approved text. The medical sampling log and notice remain beat-5 lore
-drafts; they explain the site's purpose and military resupply, not a player
-mission. BR's 2026-10-07 11:05 wall-board ruling was: “right not the medical
-research notice is full on block (which looks like a cabinet) it'd make more
-sense for the message to hang on a board on the wall”. `layouts-playtest.json`
-places these readings in their authored scenes.
+provide d99-1's evacuation note, two signs and hunter's logbook. The note,
+logbook and signs have approved text for #181. The medical sampling log and
+notice remain beat-5 lore drafts; they explain the site's purpose and military
+resupply, not a player mission. The medical research notice hangs on a wall
+board rather than a cabinet-shaped block. `layouts-playtest.json` places these
+readings in their authored scenes.
 
 ## Reading in darkness: report-only
 
-**Yes for a cheap, coarse gate; no for accurate local illumination already today.**
+**Yes for a cheap, coarse gate; no for accurate local illumination.**
 A domain-owned predicate could combine core sky visibility at the player's eye,
 core sky intensity and charged/on held-light state. It must build/cache the core
 volume on the simulation side and fingerprint those inputs, not call the renderer's
 camera-residency-dependent `Skylight.at()`. Outside authored fields, fail open. That is an approximation, not photometric lux
 or a flashlight-beam/occlusion test; direct sun and arbitrary scene lights need more
 work. Current daylight-only adaptation cannot reliably recognize buried darkness.
-No darkness gate is implemented here. BR still chooses a threshold and how the
+No darkness gate is implemented here. BR still chooses the threshold and how
 crafted light should pay off in beat 3.

@@ -1,13 +1,12 @@
 // Actual DOM regression: identity-only pump renames must not hide the at-rest validation/export warning.
-// Uses Deadvox's Playwright install, like upload-error.mjs. CHROME_BIN selects an installed Chromium.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { launchChromium } from '../chromium.mjs';
 
 const gungen = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const { chromium } = await import(resolve(gungen, '../deadvox/node_modules/playwright/index.mjs'));
 const rename = (id) => ({ receiver: 'housing', 'bolt-carrier': 'slide', forend: 'pump-grip' })[id] ?? id;
 const endpoint = (value) =>
   value
@@ -31,11 +30,12 @@ const server = await createServer({ root: gungen, server: { host: '127.0.0.1', p
 let browser;
 try {
   await server.listen();
-  browser = await chromium.launch({
-    headless: true,
-    ...(process.env.CHROME_BIN ? { executablePath: process.env.CHROME_BIN } : {}),
-    args: ['--no-sandbox', '--enable-webgl', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'],
-  });
+  browser = await launchChromium([
+    '--no-sandbox',
+    '--enable-webgl',
+    '--use-gl=swiftshader',
+    '--enable-unsafe-swiftshader',
+  ]);
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));

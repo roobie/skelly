@@ -52,6 +52,7 @@ const senseTuning = {
     throwMaxDistanceMetres: 8,
     throwChargeSimSeconds: simSeconds(1.25),
     throwMinimumHoldSimSeconds: simSeconds(0.8),
+    throwStanceDropHoldRealSeconds: 1,
     throwArmSpeedMetresPerRealSecond: 6,
     throwArmEnergyJoules: 20,
   },

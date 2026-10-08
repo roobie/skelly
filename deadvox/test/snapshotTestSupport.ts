@@ -344,7 +344,7 @@ export const inspect = (runtime: Runtime): unknown => {
   return {
     chunks: [...runtime.world.chunks.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, chunk]) => [key, [...chunk.toArray()], chunk.edited]),
+      .map(([key, chunk]) => [key, chunk.toArray(), chunk.edited]),
     deltas: [...deltas.entries()].sort(([a], [b]) => a.localeCompare(b)),
     simulation: {
       seed: runtime.sim.seed,

@@ -23,6 +23,7 @@ const bodies = Array.from({ length: 16 }, (_, index) => ({
     [0, 0.2, 4],
   ],
   corners,
+  remainderRealSeconds: 0,
   elapsed: 0,
   quietTime: 0,
   asleep: false,
@@ -41,6 +42,7 @@ const reset = () => {
     body.orientation = [...state.orientation];
     body.velocity = [...state.velocity];
     body.angularMomentum = [...state.angularMomentum];
+    body.remainderRealSeconds = 0;
     body.elapsed = 0;
     body.quietTime = 0;
     body.asleep = false;
