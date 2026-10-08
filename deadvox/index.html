@@ -34,7 +34,8 @@
     <div id="errors"></div>
     <div id="death" hidden></div>
     <div id="overlay">
-      <div class="card">
+      <div class="card-scroll-shell">
+        <section class="card" aria-label="Game information">
         <div id="about">
           <h1>deadvox</h1>
           <p>Singleplayer voxel survival prototype.</p>
@@ -73,6 +74,9 @@
           <p class="scale"><a href="#credits" id="show-credits">Credits</a> · <a href="./sounds.html" target="_blank" rel="noreferrer">Audio listening sheet</a> · <a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md" target="_blank" rel="noopener">Send feedback</a></p>
         </div>
         <div id="credits" hidden></div>
+        </section>
+        <div id="card-scroll-up" class="card-scroll-cue" hidden aria-hidden="true">↑ More above</div>
+        <div id="card-scroll-down" class="card-scroll-cue" hidden aria-hidden="true">More below ↓</div>
       </div>
     </div>
     <script type="module" src="./src/main.ts"></script>

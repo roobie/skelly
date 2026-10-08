@@ -24,6 +24,21 @@ const startupScreen = document.getElementById('startup-screen')!;
 const hideStartupScreen = () => {
   startupScreen.hidden = true;
 };
+const menuCard = document.querySelector<HTMLElement>('#overlay .card');
+const scrollUpCue = document.getElementById('card-scroll-up');
+const scrollDownCue = document.getElementById('card-scroll-down');
+if (menuCard && scrollUpCue && scrollDownCue) {
+  const updateScrollCues = () => {
+    const overflows = menuCard.scrollHeight > menuCard.clientHeight + 1;
+    scrollUpCue.hidden = !overflows || menuCard.scrollTop <= 1;
+    scrollDownCue.hidden = !overflows || menuCard.scrollTop + menuCard.clientHeight >= menuCard.scrollHeight - 1;
+  };
+  menuCard.addEventListener('scroll', updateScrollCues, { passive: true });
+  window.addEventListener('resize', updateScrollCues);
+  new ResizeObserver(updateScrollCues).observe(menuCard);
+  new MutationObserver(updateScrollCues).observe(menuCard, { attributes: true, childList: true, subtree: true });
+  updateScrollCues();
+}
 const menuKeyLabel = document.querySelector<HTMLElement>('[data-key-binding="mainMenu"]');
 const drawMenuLabel = () => {
   if (menuKeyLabel) {

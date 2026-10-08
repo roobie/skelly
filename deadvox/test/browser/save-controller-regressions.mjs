@@ -200,6 +200,25 @@ try {
       1,
       'the start hint has one text node',
     );
+    const card = page.locator('#overlay .card');
+    await card.evaluate((element) => {
+      element.style.maxHeight = '120px';
+    });
+    await page.waitForFunction(() => document.querySelector('#card-scroll-down')?.hidden === false);
+    await card.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+      element.dispatchEvent(new Event('scroll'));
+    });
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#card-scroll-up')?.hidden === false &&
+        document.querySelector('#card-scroll-down')?.hidden === true,
+    );
+    await card.evaluate((element) => {
+      element.scrollTop = 0;
+      element.dispatchEvent(new Event('scroll'));
+      element.style.removeProperty('max-height');
+    });
     const before = await page.evaluate(() => ({
       hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
       entered: deadvoxSaveTest.controller.isEntered,
