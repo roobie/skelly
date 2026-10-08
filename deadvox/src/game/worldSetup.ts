@@ -265,11 +265,8 @@ export function playerStartFromWorld(
 ): { position: Vec3; yaw: number } {
   const { blockSize } = scale;
   if (debugStart && !restoring) {
-    const { x, z, yawDegrees } = debugStart;
-    return {
-      position: [x / blockSize, setup.groundAt(x, z) / blockSize + 0.01, z / blockSize],
-      yaw: yawDegrees === undefined ? setup.spawn.yaw : (yawDegrees * Math.PI) / 180,
-    };
+    const { x, y, z } = debugStart;
+    return { position: [x / blockSize, y / blockSize + 0.01, z / blockSize], yaw: setup.spawn.yaw };
   }
   const [x, y, z] = setup.spawn.pos;
   return { position: [x / blockSize, y / blockSize + 0.01, z / blockSize], yaw: setup.spawn.yaw };

@@ -26,7 +26,7 @@ export interface GameConfig {
   debugWobbleFlat?: number;
   /** Debug-only OU noise strength multiplier (`?wobbleNoiseScale=0..8`). */
   debugWobbleNoiseScale?: number;
-  /** Debug-only fresh-session start in metres (`?at=x,z[,yawDegrees]`). */
+  /** Debug-only fresh-session start in metres (`?at=x,y,z`). */
   debugStart?: DebugStart;
   /**
    * What stands near spawn: the hamlet, milestone 1.0's test house (the benchmark's
@@ -69,8 +69,8 @@ export type SiteName = string;
 
 export interface DebugStart {
   x: number;
+  y: number;
   z: number;
-  yawDegrees?: number;
 }
 
 const debugWobbleFlatFromUrl = (params: URLSearchParams): number | undefined => {
@@ -107,13 +107,13 @@ const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
   }
   const fields = raw.split(',');
   const values = fields.map((field) => (field.trim() === '' ? Number.NaN : Number(field)));
-  if ((values.length !== 2 && values.length !== 3) || values.some((value) => !Number.isFinite(value))) {
+  if (values.length !== 3 || values.some((value) => !Number.isFinite(value))) {
     // biome-ignore lint/suspicious/noConsole: a malformed debug URL needs a visible fallback warning.
-    console.warn(`Ignoring invalid debug start position "${raw}"; expected at=x,z[,yaw] in metres/degrees.`);
+    console.warn(`Ignoring invalid debug start position "${raw}"; expected at=x,y,z in metres.`);
     return undefined;
   }
-  const [x, z, yawDegrees] = values;
-  return { x: x!, z: z!, ...(yawDegrees === undefined ? {} : { yawDegrees }) };
+  const [x, y, z] = values;
+  return { x: x!, y: y!, z: z! };
 };
 
 // URL parsing precedes world construction; only admitted files may contribute authored ids.
