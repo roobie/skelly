@@ -181,6 +181,12 @@ try {
     );
     assert(radiusLinks.length > 0, 'view-distance links are present');
     assert(radiusLinks.every(Boolean), 'each view-distance link preserves the current URL parameters');
+    await page.click('#show-credits');
+    assert.equal(await page.locator('#about').isVisible(), false, 'the About card is replaced by credits');
+    assert.equal(await page.locator('#credits').isVisible(), true, 'credits open from the title screen');
+    await page.locator('#credits a[href="#"]').click();
+    assert.equal(await page.locator('#about').isVisible(), true, 'Back returns to the About card');
+    assert.equal(await page.locator('#credits').isVisible(), false);
     assert.equal(
       await page.locator('#startup-screen').isVisible(),
       false,

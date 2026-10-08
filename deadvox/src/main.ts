@@ -5,6 +5,8 @@ import { loadRecord } from './bench/plan.ts';
 import { showReport } from './bench/report.ts';
 import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
+import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
+import { validateManifest } from './core/assets.ts';
 import { parseTimeOfDay } from './core/clock.ts';
 import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
@@ -15,6 +17,7 @@ import { startPlay } from './game/play.ts';
 import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
+import { mountCredits } from './ui/credits.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
 import { contentLookup, SaveController } from './ui/saveController.ts';
 
@@ -51,6 +54,18 @@ drawMenuLabel();
 const bench = params.get('bench');
 const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
 if (bench === null) {
+  const credits = validateManifest('assets/manifest.json', assetManifest);
+  document.getElementById('errors')!.textContent = credits.issues
+    .map((issue) => `${issue.source} ${issue.path}: ${issue.message}`)
+    .join('\n');
+  mountCredits(
+    {
+      about: document.getElementById('about')!,
+      box: document.getElementById('credits')!,
+      show: document.getElementById('show-credits')!,
+    },
+    credits.manifest,
+  );
   for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-view-distance]')) {
     const radius = link.dataset.viewDistance;
     if (radius) {
