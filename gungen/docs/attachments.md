@@ -10,7 +10,11 @@ Gungen owns the compatibility decision because `opticMountFit` and `keepOut` in
 `src/gun/rules.ts` are the geometry authority. `src/gun/attachmentCompatibility.ts`
 places each exported standalone attachment at each firearm slot and exports a
 complete allowlist; consumers must deny dynamic fits when that certificate is
-absent. The fitted defaults remain in the firearm's `attachments` metadata. Each standalone attachment also exports the local normal and up axes of its male mount connector. On br-42, BR's FIX showed that deriving a fitted transform from the slot's direction/up alone stood the optic upright; exporting the connector frame lets Deadvox align every attachment against the same resolved mount contract instead of adding per-kind rotations.
+absent. The fitted defaults remain in the firearm's `attachments` metadata. Each
+standalone attachment also exports the local normal and up axes of its male mount
+connector. A fitted transform derived from the slot's direction and up alone can
+leave a scope upright; exporting the connector frame lets Deadvox align every
+attachment to the same mount contract without per-kind rotation guesses.
 
 `src/gun/attachmentMass.ts` derives `massKg` from each part's solid geometry,
 palette material assignment and part-kind fill treatment. Its cited density rows

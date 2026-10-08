@@ -352,56 +352,141 @@ try {
     );
     await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
     const fitButtons = page.locator('#inventory .inv-details button.inv-option').filter({ hasText: /Fit .*foregrip/i });
-    await fitButtons.first().scrollIntoViewIfNeeded();
     assert.ok((await fitButtons.count()) > 0, 'held AR offers the pocketed foregrip as a fit action');
+    const fitButton = fitButtons.first();
+    await fitButton.scrollIntoViewIfNeeded();
+    const slotId = await fitButton.evaluate((button) =>
+      button.closest('[data-attachment-slot]')?.getAttribute('data-attachment-slot'),
+    );
+    assert.ok(slotId, 'the fit control identifies its attachment slot');
     const before = await page.evaluate(() => ({
       dispatches: globalThis.foregripFitTest.dispatches.length,
       jobs: globalThis.foregripFitTest.session.queue.jobs.length,
     }));
-    await clickThroughMenuCursor(fitButtons.first());
+    assert.equal(before.jobs, 0, 'the fit begins with an idle handling queue');
+    const pageErrorsBeforeFit = errors.length;
+    await clickThroughMenuCursor(fitButton);
     await page.waitForFunction(
-      ({ dispatchCount }) => globalThis.foregripFitTest.dispatches.length > dispatchCount,
-      { dispatchCount: before.dispatches },
+      (dispatchCount) => globalThis.foregripFitTest.dispatches.length > dispatchCount,
+      before.dispatches,
       { timeout: 5000 },
     );
     const fitResult = await page.evaluate(
-      ({ uid, jobsBefore }) => {
+      ({
+        dispatchesBefore,
+        jobsBefore,
+        rifleUid: expectedRifleUid,
+        gripUid: expectedGripUid,
+        slotId: expectedSlotId,
+      }) => {
         const { dispatches, session } = globalThis.foregripFitTest;
-        const firearm = Object.values(session.inventory.hands).find((item) => item?.type === 'rifle_assault');
+        const fitActions = dispatches
+          .slice(dispatchesBefore)
+          .filter((action) => action.kind === 'firearm.attachment.fit');
         return {
-          fitActions: dispatches.filter((action) => action.kind === 'firearm.attachment.fit').length,
-          attached: firearm && Object.values(firearm.slots ?? {}).some((slot) => slot?.uid === uid),
-          queuedHandling: session.queue.jobs.length > jobsBefore,
+          fitActions: fitActions.map(({ kind, firearmUid, attachmentUid, slotId: actionSlot }) => ({
+            kind,
+            firearmUid,
+            attachmentUid,
+            slotId: actionSlot,
+          })),
+          newJobs: session.queue.jobs.length - jobsBefore,
+          expected: {
+            kind: 'firearm.attachment.fit',
+            firearmUid: expectedRifleUid,
+            attachmentUid: expectedGripUid,
+            slotId: expectedSlotId,
+          },
         };
       },
-      { uid: gripUid, jobsBefore: before.jobs },
+      { dispatchesBefore: before.dispatches, jobsBefore: before.jobs, rifleUid, gripUid, slotId },
     );
-    assert.ok(fitResult.fitActions > 0, 'the production inventory screen dispatches the fit action');
-    await page.waitForFunction(
-      ({ uid, jobsBefore }) => {
+    assert.deepEqual(
+      fitResult.fitActions,
+      [fitResult.expected],
+      'the production fit control dispatches once for its slot',
+    );
+    assert.equal(fitResult.newJobs, 1, 'the fit dispatch creates exactly one handling job');
+    const fitSettled = await page.evaluate(
+      ({ rifleUid: expectedRifleUid, gripUid: expectedGripUid, slotId: expectedSlotId }) => {
         const { session } = globalThis.foregripFitTest;
-        const firearm = Object.values(session.inventory.hands).find((item) => item?.type === 'rifle_assault');
-        return (
-          (firearm && Object.values(firearm.slots ?? {}).some((slot) => slot?.uid === uid)) ||
-          session.queue.jobs.length > jobsBefore
-        );
+        const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
+        let frames = 0;
+        while (session.queue.jobs.length > 0 && frames < maxFrames) {
+          session.frame(0.1);
+          frames += 1;
+        }
+        const rifle = session.inventory.itemByUid(expectedRifleUid);
+        const grip = session.inventory.itemByUid(expectedGripUid);
+        const location = grip && session.inventory.locate(grip);
+        return {
+          frames,
+          queueJobs: session.queue.jobs.length,
+          attachedUid: rifle?.slots?.[expectedSlotId]?.uid,
+          gripLocation:
+            location?.kind === 'slot'
+              ? { kind: location.kind, ownerUid: location.owner.uid, slot: location.slot }
+              : { kind: location?.kind },
+        };
       },
-      { uid: gripUid, jobsBefore: before.jobs },
+      { rifleUid, gripUid, slotId },
+    );
+    assert.equal(fitSettled.queueJobs, 0, 'simulation frames finish the fit handling job');
+    assert.equal(fitSettled.attachedUid, gripUid, 'the grip is fitted in the clicked slot');
+    assert.deepEqual(fitSettled.gripLocation, { kind: 'slot', ownerUid: rifleUid, slot: slotId });
+    assert.deepEqual(errors.slice(pageErrorsBeforeFit), [], 'fitting does not raise a page error');
+
+    const removeButton = page.locator(`#inventory [data-attachment-slot="${slotId}"] button.inv-option`).filter({
+      hasText: /^Remove\b/,
+    });
+    await removeButton.waitFor({ state: 'visible', timeout: 5000 });
+    assert.equal(await removeButton.count(), 1, 'the fitted slot offers its production removal control');
+    const beforeRemove = await page.evaluate(() => ({
+      dispatches: globalThis.foregripFitTest.dispatches.length,
+      jobs: globalThis.foregripFitTest.session.queue.jobs.length,
+    }));
+    const pageErrorsBeforeRemove = errors.length;
+    await clickThroughMenuCursor(removeButton);
+    await page.waitForFunction(
+      (dispatchCount) =>
+        globalThis.foregripFitTest.dispatches
+          .slice(dispatchCount)
+          .some((action) => action.kind === 'firearm.attachment.remove'),
+      beforeRemove.dispatches,
       { timeout: 5000 },
     );
-    const finalFit = await page.evaluate(
-      ({ uid, jobsBefore }) => {
-        const { session } = globalThis.foregripFitTest;
-        const firearm = Object.values(session.inventory.hands).find((item) => item?.type === 'rifle_assault');
+    const removeResult = await page.evaluate(
+      ({ dispatchesBefore, jobsBefore }) => {
+        const { dispatches, session } = globalThis.foregripFitTest;
         return {
-          attached: firearm && Object.values(firearm.slots ?? {}).some((slot) => slot?.uid === uid),
-          queuedHandling: session.queue.jobs.length > jobsBefore,
+          removeActions: dispatches
+            .slice(dispatchesBefore)
+            .filter((action) => action.kind === 'firearm.attachment.remove').length,
+          newJobs: session.queue.jobs.length - jobsBefore,
         };
       },
-      { uid: gripUid, jobsBefore: before.jobs },
+      { dispatchesBefore: beforeRemove.dispatches, jobsBefore: beforeRemove.jobs },
     );
+    assert.deepEqual(removeResult, { removeActions: 1, newJobs: 1 }, 'removal dispatches once and creates one job');
+    const removalSettled = await page.evaluate(
+      ({ rifleUid: expectedRifleUid, slotId: expectedSlotId }) => {
+        const { session } = globalThis.foregripFitTest;
+        const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
+        let frames = 0;
+        while (session.queue.jobs.length > 0 && frames < maxFrames) {
+          session.frame(0.1);
+          frames += 1;
+        }
+        const rifle = session.inventory.itemByUid(expectedRifleUid);
+        return { frames, queueJobs: session.queue.jobs.length, attachedUid: rifle?.slots?.[expectedSlotId]?.uid };
+      },
+      { rifleUid, slotId },
+    );
+    assert.equal(removalSettled.queueJobs, 0, 'simulation frames finish the removal handling job');
+    assert.equal(removalSettled.attachedUid, undefined, 'the production removal control empties the clicked slot');
+    assert.deepEqual(errors.slice(pageErrorsBeforeRemove), [], 'removal does not raise a page error');
     process.stdout.write(
-      `${engine}: live held-AR pocketed-foregrip fit via locked menu click ${JSON.stringify({ ...fitResult, ...finalFit })}\n`,
+      `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );
   }
   process.stdout.write(

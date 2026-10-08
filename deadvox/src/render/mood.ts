@@ -247,9 +247,6 @@ export class Mood {
       this.scene.background = this.crackColor;
     }
     try {
-      if (opticFrame) {
-        this.opticLens.prepare(this.renderer, this.scene, this.camera, opticFrame);
-      }
       this.draw(drawHands, opticFrame);
     } finally {
       this.scene.background = background;
@@ -303,6 +300,9 @@ export class Mood {
     fogColor?.multiplyScalar(scale);
     mist.multiplyScalar(scale);
     try {
+      if (opticFrame) {
+        this.opticLens.prepare(this.renderer, this.scene, this.camera, opticFrame);
+      }
       composer.render(0);
     } finally {
       if (fogColor && savedFog) {

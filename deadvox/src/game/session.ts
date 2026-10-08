@@ -561,7 +561,7 @@ export const createSession = (options: SessionOptions) => {
     const pitch = mobBody ? selected.pitch * shamblerBodyPitch(mobBody) : selected.pitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
-    const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres;
+    const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres * noiseRadiusScale;
     const sound = freezeSnapshot({
       event,
       position: [...position] as Vec3,
@@ -583,7 +583,7 @@ export const createSession = (options: SessionOptions) => {
       playerAudio.vocalNoise = {
         id: noiseId!,
         pos: noisePosition,
-        radiusMetres: noiseRadiusMetres ?? definition.noise.radiusMetres * noiseRadiusScale,
+        radiusMetres: emittedNoiseRadius,
         expiresAt: time + VOCAL_NOISE_LIFETIME,
       };
     }
