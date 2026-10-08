@@ -67,10 +67,13 @@ describe('loadDesign: feasibility evaluation', () => {
     if (!generatedAk) {
       throw new Error('the AK template must generate a valid assembly');
     }
-    const receiver = generatedAk.assembly.parts.receiver;
-    const familyName = receiver?.family;
-    const receiverFamily = familyName && gunDomain.families[familyName];
-    if (!familyName || !receiverFamily) {
+    const { receiver } = generatedAk.assembly.parts;
+    if (!receiver) {
+      throw new Error('the generated AK must have a receiver');
+    }
+    const { family: familyName } = receiver;
+    const receiverFamily = gunDomain.families[familyName];
+    if (!receiverFamily) {
       throw new Error('the generated AK must have a registered receiver family');
     }
 
