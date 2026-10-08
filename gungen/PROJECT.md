@@ -347,16 +347,16 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-revolver` | Revolver | dedicated top-strapped frame, cylinder/barrel alignment, and separate grip |
 
 Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
-The lengths below remain abstract units on the existing grid. Optic reference sources and modeled envelopes are recorded in `docs/optics.md`.
+Family-specific magazine and hand-contact proportions remain in their builders; the listed STANAG envelope is converted to model units without changing the existing export scale. Optic references are recorded in `docs/optics.md`.
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
-- Magazine length bands follow their traced profile references. The 20-round
-  STANAG is a straight body with a slanted floorplate; its upper body, feed lips
-  and magwell interface are shared with the curved 30-round profile. The 30
-  remains curved. See `src/gun/parts.ts`, `MAGAZINE_PROFILE_LENGTHS_U` and
-  `magazineGeometryFor`, and the [Brownells USGI 20-round magazine reference](https://www.brownells.com/gun-parts/magazines/rifle-magazines/ar-15-2235.56mm-straight-20-round-magazine-aluminum/).
-  The AKM curved band remains fitted to the AK's golden photo (g41-4).
+- The 20-round STANAG uses the listing's outer body envelope and keeps a straight
+  lower body. Its floorplate slant and transition into the shared upper section
+  are estimates from side-view proportions. The existing 30-round upper section
+  preserves feed and magwell fit; the 30 remains curved. See `src/gun/parts.ts`,
+  `STANAG20_BODY_BOX_U` and `magazineGeometryFor`. The AKM curved band remains
+  fitted to the AK's golden photo (g41-4).
   Ordinary S begins at the plausible 10-round length (`6u`).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
@@ -390,14 +390,7 @@ The lengths below remain abstract units on the existing grid. Optic reference so
   end behind the barrel's front-sight station and muzzle; `free-float-clearance`
   reports contact or an undersized gap.
 
-| Family/profile | S (u / mm) | M (u / mm) | L (u / mm) | Measurement basis |
-| --- | ---: | ---: | ---: | --- |
-| Grip | 7.5 / 86 | 8.5 / 98 | 9.5 / 109 | Hand-sized bands, along grip axis; pistol-integrated grip uses the same bands |
-| Standard, SMG, pistol magazine | 6 / 69 | 10 / 115 | 16 / 184 | Abstract length bands; STANAG top depth anchors 1u ≈ 11.5mm |
-| AK-74 curved magazine | 6 / 69 | 10 / 115 | 16.5 / 190 | Pixel-traced body centreline ratio, `br-ref-ak74-mag.jpg` |
-| STANAG profiles | Straight 20-round body; curved 30-round body | Shared upper section preserves the feed and magwell interface; the 20-round side profile follows the [USGI reference](https://www.brownells.com/gun-parts/magazines/rifle-magazines/ar-15-2235.56mm-straight-20-round-magazine-aluminum/) | — | — |
-| Standard and free-float AR handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
-| Fixed AR handguard | 18.75 / 216 | 25.75 / 296 | 33 / 380 | Rear face meets the A2 collar at the existing gas-port station |
+Magazine and grip proportions, plus handguard reach, are family-specific tuning choices. The 20-round STANAG uses its listing envelope; only its floorplate slant and transition into the shared upper section are photo-based estimates. See `src/gun/parts.ts`, `STANAG20_BODY_BOX_U` and `magazineGeometryFor`.
 
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
 percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.
@@ -1281,13 +1274,10 @@ versioned design JSON downloads, opens those files again, and provides param and
 optional-part locks plus family-filtered prefab pickers. Editing a prefab-fixed
 param detaches its reference; loaded mismatches remain marked stale.
 
-The `stanag-20` prefab uses the straight body and slanted floorplate traced
-from the [USGI 20-round magazine side view](https://www.brownells.com/gun-parts/magazines/rifle-magazines/ar-15-2235.56mm-straight-20-round-magazine-aluminum/).
-Its upper body, feed lips and top port are reused from the 30-round profile, so
-both sizes keep the same rifle interface without shortening the 30-round curve.
-The separate profile uses the same magazine builder and export path for its
-round-column fit; see `src/gun/parts.ts`, `magazineGeometryFor`, and
-`src/gun/magazineCenterline.ts`, `magazineCenterline`.
+The `stanag-20` prefab selects the straight profile; `stanag-30` remains curved.
+Their shared upper section preserves the feed and magwell interface, so the 20
+fits the same rifles without shortening the 30-round curve. See
+`src/gun/prefabs.ts`, `GUN_PREFABS`, and `src/gun/parts.ts`, `magazineGeometryFor`.
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
   are the curated product.
