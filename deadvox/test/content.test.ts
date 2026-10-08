@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { HAMLET_TEMPLATES } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
@@ -776,6 +777,21 @@ describe('content references', () => {
     source: 'broken-reference.json',
     data: JSON.parse(readFileSync('test/fixtures/content/broken-reference.json', 'utf8')) as unknown,
   };
+  const baseContent = (source: string) => base.find((file) => file.source === source)!.data as ContentFile;
+  const zombieSounds = {
+    idle: 'shambler_idle',
+    alert: 'shambler_alert',
+    attack: 'shambler_attack',
+    hurt: 'shambler_hurt',
+  };
+  const referenceDependencies = {
+    source: 'reference-dependencies.json',
+    data: {
+      items: baseContent('items-other.json').items!.filter(({ id }) => id === 'bandage'),
+      skills: baseContent('recipes.json').skills,
+      sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
+    },
+  };
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
 
   it('requires an explicit disassembly yield for a recipe result', () => {
@@ -996,60 +1012,33 @@ describe('content references', () => {
     ]);
   });
 
-  it('limits military tables to military templates and forbids them on zombie types', () => {
-    const source = 'military-site.json';
-    const lootId = 'fixture_military_table';
-    const furniture = {
-      ...structuredClone(baseRegistry.furniture.get('crate')!),
-      id: 'fixture_crate',
-      loot: undefined,
-    };
-    const [width, height, depth] = furniture.size;
-    const template = {
-      id: 'fixture_nonmilitary_site',
-      size: [width, height, depth],
-      palette: { C: { furniture: furniture.id, loot: lootId } },
-      layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => 'C'.repeat(width))),
-    };
-    const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
-    zombie.id = 'fixture_military_looter';
-    zombie.loot = lootId;
-    const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
-    const result = buildRegistry([
-      {
-        source,
-        data: {
-          items: [{ id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] }],
-          loot: [
-            { id: lootId, military: true, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] },
-          ],
-          furniture: [furniture],
-          templates: [template],
-          zombies: [zombie],
-          sounds,
-        },
-      },
-    ]);
-    expect(result.issues).toEqual([
-      {
-        source,
-        path: 'templates[0].palette["C"].loot',
-        message: 'military loot tables may only appear in a military template',
-      },
-      {
-        source,
-        path: 'zombies[0].loot',
-        message: 'zombie loot may not use a military table',
-      },
-    ]);
-  });
-
-  it('makes every military-only item reachable from the playtest layout', () => {
-    const playtest = baseRegistry.layouts.get('playtest');
-    if (playtest === undefined) {
-      throw new Error('base content needs the playtest layout');
+  it('makes every military-only item reachable once an authored site rolls a military table', () => {
+    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
+    // Demo layouts aren't world sources (`worldSources`), so the site must come from a played layout.
+    const authoredOnly = [...baseRegistry.layouts.values()]
+      .filter((layout) => !layout.demo)
+      .flatMap((layout) => layout.buildings.map(({ template }) => baseRegistry.templates.get(template)!))
+      .filter((definition) => !HAMLET_TEMPLATES.includes(definition.id));
+    const site = authoredOnly
+      .map((definition) => structuredClone(definition))
+      .find((definition) =>
+        Object.values(definition.palette).some((entry) => typeof entry === 'object' && 'loot' in entry),
+      );
+    if (armoury === undefined || site === undefined) {
+      throw new Error('base content needs a military table and an authored-only template with a loot container');
     }
-    const registry = { ...baseRegistry, layouts: new Map([[playtest.id, playtest]]) };
+    const baseFound = checkReachability(baseRegistry).found;
+    const baseMilitaryItems = [...militaryLootItems(baseRegistry)];
+    expect(baseMilitaryItems.some((id) => !baseFound.has(id))).toBe(true);
+    for (const [key, entry] of Object.entries(site.palette)) {
+      if (typeof entry === 'object' && 'loot' in entry) {
+        site.palette[key] = { ...entry, loot: armoury.id };
+      }
+    }
+    // Reuse the already validated base registry; this scenario only changes a known loot table on an existing template.
+    const templates = new Map(baseRegistry.templates);
+    templates.set(site.id, site);
+    const registry = { ...baseRegistry, templates };
     const { found } = checkReachability(registry);
     const military = [...militaryLootItems(registry)];
     expect(military.length).toBeGreaterThan(0);
@@ -1057,55 +1046,101 @@ describe('content references', () => {
   });
 
   it('checks furniture, prying-skill, zombie and light references', () => {
-    const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
-    zombie.id = 'clerk';
-    zombie.loot = 'till';
-    const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
-    const result = buildRegistry([
-      {
-        source: 'mod.json',
-        data: {
-          furniture: [
-            { id: 'safe', name: 'Safe', size: [1, 1, 1], color: '#333333', loot: 'vault' },
-            {
-              id: 'pry_door',
-              name: 'Pry door',
-              size: [1, 1, 1],
-              color: '#333333',
-              door: {
-                handlingSimSeconds: 0.4,
-                prying: {
-                  quality: 1,
-                  skill: 'missing_skill',
-                  timeSimSeconds: 2,
-                  fastestTimeSimSeconds: 1,
-                  strikeIntervalSimSeconds: 1,
-                },
+    const mod = {
+      source: 'mod.json',
+      data: {
+        furniture: [
+          { id: 'safe', name: 'Safe', size: [1, 1, 1], color: '#333333', loot: 'vault' },
+          {
+            id: 'pry_door',
+            name: 'Pry door',
+            size: [1, 1, 1],
+            color: '#333333',
+            door: {
+              handlingSimSeconds: 0.4,
+              prying: {
+                quality: 1,
+                skill: 'missing_skill',
+                timeSimSeconds: 2,
+                fastestTimeSimSeconds: 1,
+                strikeIntervalSimSeconds: 1,
               },
             },
-          ],
-          zombies: [zombie],
-          items: [
-            {
-              id: 'torch_lamp',
-              name: 'Lamp',
-              category: 'light',
-              weight: 300,
-              size: [1, 2],
-              light: {
-                radius: 5,
-                seenFrom: 30,
-                color: '#ffffff',
-                intensity: 1,
-                power: { battery: 'bandage', chargePerGameHour: 1 },
-              },
+          },
+        ],
+        zombies: [
+          {
+            id: 'clerk',
+            name: 'Clerk',
+            model: 'shambler',
+            spawnWeight: 1,
+            sounds: zombieSounds,
+            regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
+            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
+            stepLength: 0.6,
+            wander: {
+              obstacleWanderChance: 0.25,
+              obstacleWanderDistanceMetres: 10,
+              idleSimSeconds: { min: 3, max: 10 },
+              strollSimSeconds: { min: 3, max: 12 },
+              leashMetres: 12,
+              lookIntervalSimSeconds: { min: 0.8, max: 1.8 },
+              bodyLookArcDegrees: 150,
+              headLookArcDegrees: 100,
+              bodyTurnDegreesPerSimSecond: 90,
+              headTurnDegreesPerSimSecond: 120,
+              movementAccelerationMetresPerSimSecondSquared: 4,
             },
-          ],
-          sounds,
-        },
+            sight: 20,
+            nightSight: 10,
+            stimulusMemorySimSeconds: 1,
+            sightCone: 60,
+            hearing: 1,
+            hearingRange: { walk: 3, jog: 8, sprint: 15 },
+            hearingModel: {
+              farMultiplier: 2,
+              bearingErrorRadians: 0.61,
+              investigationDistanceMetres: 8,
+              searchSimSeconds: { min: 40, max: 50 },
+              searchRadiusMetres: 4,
+              searchStrollSimSeconds: { min: 1, max: 3 },
+            },
+            chaseMotion: {
+              swayDegrees: 25,
+              swayIntervalSimSeconds: { min: 0.7, max: 1.1 },
+              speedMultiplier: { min: 0.6, max: 1.2 },
+              lurchSimSeconds: 1,
+              stumbleChancePerSimSecond: 0.16,
+              stumbleDurationSimSeconds: { min: 0.55, max: 0.75 },
+              stumbleEaseSimSeconds: 0.2,
+              stumbleSpeedFraction: 0.04,
+              stumbleDecelerationMetresPerSimSecondSquared: 14,
+            },
+            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
+            dismember: { chance: 0.15, headOnKillChance: 0.25 },
+            abilities: [],
+            loot: 'till',
+          },
+        ],
+        items: [
+          {
+            id: 'torch_lamp',
+            name: 'Lamp',
+            category: 'light',
+            weight: 300,
+            size: [1, 2],
+            light: {
+              radius: 5,
+              seenFrom: 30,
+              color: '#ffffff',
+              intensity: 1,
+              power: { battery: 'bandage', chargePerGameHour: 1 },
+            },
+          },
+        ],
       },
-    ]);
-    expect(paths(result.issues).sort()).toEqual([
+    };
+    expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
       'furniture[0].loot',
       'furniture[0].loot',
       'furniture[1].door.prying.skill',
@@ -1155,6 +1190,40 @@ describe('templates', () => {
   });
   const check = (t: { source: string; data: unknown }) =>
     buildRegistry([...templateBase, t]).issues.map((i) => `${i.path}: ${i.message}`);
+
+  it('reports spatial template issues during registry validation', () => {
+    const wall = ['#####', '#...#', '#...#', '#...#', '#####'];
+    const sealed = {
+      source: 'sealed-entrance.json',
+      data: {
+        templates: [
+          {
+            id: 'sealed_entrance',
+            size: [5, 5, 5],
+            palette: { '#': 'brick', '.': 'air' },
+            layers: [
+              ['#####', '#####', '#####', '#####', '#####'],
+              wall,
+              wall,
+              wall,
+              ['.....', '.....', '.....', '.....', '.....'],
+            ],
+            access: {
+              ground: 'ground',
+              entrance: [2.5, 1, 2.5],
+              storeys: [{ id: 'ground', floor: 1 }],
+              stairs: [],
+            },
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([...templateBase, sealed]).issues).toContainEqual({
+      source: 'sealed-entrance.json',
+      path: 'templates[0].access.entrance',
+      message: 'entrance must reach a standing opening at the footprint edge on the ground storey',
+    });
+  });
 
   it('leaves an open air cell beside every window-frame run', () => {
     const frameRuns = [...baseRegistry.templates.values()].flatMap((definition) => {
