@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { traceFreshPlayer } from './fresh-player-trace.mjs';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -22,7 +23,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view, camera, engine, streamer, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
     );
   },
 };
@@ -39,6 +40,14 @@ try {
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
   browser = await firefox.launch({ headless: false });
+  await traceFreshPlayer({
+    browser,
+    stage: 'firefox-ui',
+    url: `http://127.0.0.1:${address.port}/`,
+    browserName: 'firefox',
+    runtimeName: 'firefoxUiTest',
+    renderMode: 'pixel',
+  });
   const page = await browser.newPage();
   const pageErrors = [];
   const consoleErrors = [];

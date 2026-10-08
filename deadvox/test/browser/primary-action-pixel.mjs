@@ -9,6 +9,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { traceFreshPlayer } from './fresh-player-trace.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
@@ -84,6 +85,14 @@ try {
       renderMode: 'pixel',
     }),
   );
+  await traceFreshPlayer({
+    browser,
+    stage: 'primary-action-pixel',
+    url: `http://127.0.0.1:${address.port}/`,
+    browserName: 'chromium',
+    runtimeName: 'primaryActionTest',
+    renderMode: 'pixel',
+  });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
