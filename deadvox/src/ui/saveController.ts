@@ -126,6 +126,7 @@ export class SaveController {
   private checkpointInterval = SAVE_CHECKPOINT_GAME_HOURS * 450;
   private writing = false;
   private requestingPersistence = false;
+  private pageIsLeaving = false;
 
   constructor(backend: SaveBackendPreference = 'auto') {
     this.environmentProblem = saveEnvironmentProblem();
@@ -162,11 +163,21 @@ export class SaveController {
       $('save-confirmation').hidden = true;
     });
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
+      if (document.visibilityState === 'hidden' && !this.pageIsLeaving) {
         this.capture('visibilitychange');
       }
     });
-    globalThis.addEventListener('pagehide', () => this.capture('pagehide'));
+    globalThis.addEventListener('pagehide', (event) => {
+      this.pageIsLeaving = true;
+      if (!event.persisted) {
+        this.capture('pagehide');
+      }
+    });
+    globalThis.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        this.pageIsLeaving = false;
+      }
+    });
   }
 
   /** Reads the current namespace and diagnoses, but never opens or overwrites, old versions. */

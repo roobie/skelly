@@ -236,7 +236,7 @@ describe('wide occlusion in the mesh', () => {
       wrong += mesh.occlusion[v] === expected ? 0 : 1;
     }
     expect(wrong).toBe(0);
-  }, 30_000); // a brute-force count per vertex; 30s absorbs CI parallelism
+  });
 
   it('stops faces merging across a change in occlusion that the 3-neighbour AO cannot see', () => {
     const topQuads = (m: MeshData) =>

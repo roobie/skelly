@@ -33,7 +33,11 @@ share a file with presentation code. See `tools/simulationFingerprint.ts`,
 
 Write snapshots through crash-safe A/B records. Disk work is asynchronous and
 must not block a simulation frame; a failed write leaves the previous valid
-record available. These safeguards reduce corruption risk but are not backups.
+record available. A back/forward-cache transition does not require a new save:
+a frozen page can hold the origin lock and block the next page, so the last
+committed generation remains the recovery point. See
+`src/ui/saveController.ts`, `SaveController`, and `test/browser/save-storage.mjs`.
+These safeguards reduce corruption risk but are not backups.
 
 ## Compatibility
 
