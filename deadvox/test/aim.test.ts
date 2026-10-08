@@ -462,6 +462,7 @@ const readiedWalkWobble = (
   level: number,
   firearmType = 'pump_shotgun',
   shotKind: FirearmsSkillShotKind = 'singleShot',
+  wobbleLimitRadians = stanceTuning.wobbleLimitRadians,
 ): number => {
   const firearm = BUNDLED_CONTENT.registry.items.get(firearmType)!.firearm!;
   const tuning = {
@@ -471,7 +472,7 @@ const readiedWalkWobble = (
   const effects = firearmsSkillEffects(level, tuning, shotKind);
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
   const { blockSize } = step();
-  const aim = createAim(effects.variance);
+  const aim = createAim(effects.variance, wobbleLimitRadians);
   let clock = initialFootstepClock();
   let peak = 0;
   for (let tick = 0; tick < 240; tick++) {
@@ -644,7 +645,10 @@ it('readied-walk wobble follows skill without dropping during automatic follow-u
     const noviceVariance =
       firearm.skillZeroHandling?.singleShot.variance ?? stanceTuning.skillZeroHandling.singleShot.variance;
     const configuredExpertFraction = stanceTuning.wobbleSkillTenVariance / noviceVariance;
-    expect(wobble[2]! / wobble[0]!).toBeCloseTo(configuredExpertFraction, 4);
+    const unclampedWobbleLimit = Number.MAX_SAFE_INTEGER;
+    const unclampedNovice = readiedWalkWobble(0, firearmType, 'singleShot', unclampedWobbleLimit);
+    const unclampedExpert = readiedWalkWobble(SKILL_LEVEL_MAX, firearmType, 'singleShot', unclampedWobbleLimit);
+    expect(unclampedExpert / unclampedNovice).toBeCloseTo(configuredExpertFraction, 4);
     expect(readiedWalkWobble(0, firearmType, 'automaticFollowup')).toBeGreaterThanOrEqual(wobble[0]!);
   }
 });
