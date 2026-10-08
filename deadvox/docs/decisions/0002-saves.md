@@ -25,7 +25,11 @@ Exactness matters because a restored scheduler, random stream or action must
 continue as if saving and loading had not changed the simulation.
 
 Persist every future-affecting owner state in the same change that introduces
-it. Keep input, rendering and external playback out of the snapshot. God mode,
+it. At entity boundaries such as `src/core/zombies.ts`, `ZombieSystem.snapshotState`,
+export through an explicit projection whose exhaustive key check forces every
+added state field to receive a save decision. This prevents optional runtime
+fields from leaking into canonical saves when they are unset. Keep input,
+rendering and external playback out of the snapshot. God mode,
 noclip and build toggles are debug state: they are not saved and are off after
 load, while world changes made with them remain saved. Presentation changes leave
 save identity stable only when their modules stay outside the simulation
@@ -35,7 +39,11 @@ file with presentation code. See `tools/simulationFingerprint.ts`,
 
 Write snapshots through crash-safe A/B records. Disk work is asynchronous and
 must not block a simulation frame; a failed write leaves the previous valid
-record available. A back/forward-cache transition does not require a new save:
+record available. IndexedDB save writes request strict durability, so a save is
+flushed to disk before it is acknowledged, as the OPFS path flushes before it
+acknowledges; see `src/game/indexedDbCommit.ts`,
+`createDurableWriteTransaction`, and `src/worker/save.worker.ts`, `writeOpfs`.
+A back/forward-cache transition does not require a new save:
 a frozen page can hold the origin lock and block the next page, so the last
 committed generation remains the recovery point. See
 `src/ui/saveController.ts`, `SaveController`, and `test/browser/save-storage.mjs`.

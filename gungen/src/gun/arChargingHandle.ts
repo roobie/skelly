@@ -52,6 +52,6 @@ export const arChargingHandle: PartFamily = {
       { id: 'charging-handle', kind: 'clearance', box: { center: [rear - 4.4, 1.975, 0], half: [3.25, 0.425, 2.75] } },
     ],
     axes: [],
-    motion: { kind: 'linear', axis: [-1, 0, 0], start: [0, 0, 0], end: [-6.5, 0, 0] },
+    motion: { kind: 'linear', axis: [-1, 0, 0], start: [0, 0, 0], end: [-AR_ACTION_LAYOUT.carrierTravelU, 0, 0] },
   }),
 };

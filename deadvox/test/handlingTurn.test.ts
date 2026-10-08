@@ -1,5 +1,3 @@
-// How a rack turns a held rifle (BR, 2026-10-07 15:34, DESIGN.md "Rifles (3.2, d114)"): toward the player, the
-// handle toward the off hand, more for a handle on the far side, mirrored for a left-hander.
 import { Euler, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { ModelDef } from '../src/core/content.ts';

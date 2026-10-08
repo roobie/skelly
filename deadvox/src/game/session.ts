@@ -6,7 +6,7 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
-import { AimController } from '../core/aim.ts';
+import { AimController, type AimWobbleNoiseTuning } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bodyRegionForHitArea } from '../core/body.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -123,29 +123,34 @@ const createSessionAim = ({
   restored,
   character,
   wobbleFlatOverride,
+  wobbleNoiseScaleOverride,
 }: {
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
   character: Character;
   wobbleFlatOverride: number | undefined;
+  wobbleNoiseScaleOverride: number | undefined;
 }): AimController => {
   const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
-  const jitterSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
+  const wobbleSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
   return new AimController({
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: wobbleFlatOverride ?? tuning.wobbleVerticalToHorizontalRatio,
       archPower: tuning.wobbleLuneArchPower,
       phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
-      jitterShare: tuning.wobbleJitterShare,
-      jitterAmplitudeFraction: tuning.wobbleJitterAmplitudeFraction,
     },
-    jitterSeed,
-    ...(restored ? { state: restored.character.aim } : {}),
+    wobbleSeed,
+    wobbleNoise: {
+      reversionRatePerSimSecond: tuning.wobbleNoiseReversionRatePerSimSecond,
+      sigmaRadiansPerSqrtSecond: tuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+      smoothingSimSeconds: tuning.wobbleNoiseSmoothingSimSeconds,
+    } satisfies AimWobbleNoiseTuning,
+    wobbleNoiseStrengthScale: wobbleNoiseScaleOverride ?? 1,
+    ...(restored ? { state: restored.character.aim, wobbleNoiseState: restored.character.aim.wobbleNoise } : {}),
     variance: firearmsSkillEffects(firearmsSkillLevel(character), tuning).variance,
     stridePhase: footstepClock.stridePhase,
-    stepIndex: footstepClock.stepIndex,
   });
 };
 
@@ -164,7 +169,6 @@ const advanceSessionAim = ({
   aimSway,
   firing,
   stridePhase,
-  stepIndex,
 }: {
   aim: AimController;
   firearms: FirearmMechanics;
@@ -180,7 +184,6 @@ const advanceSessionAim = ({
   aimSway: number;
   firing: boolean;
   stridePhase: number;
-  stepIndex: number;
 }): void => {
   const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
   const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
@@ -194,7 +197,6 @@ const advanceSessionAim = ({
     firing,
     recoilRecoveryRate: skill.recoilRecoveryRate,
     stridePhase,
-    stepIndex,
   });
 };
 const setSessionFirearmsSkillZeroHandling = (
@@ -330,8 +332,10 @@ export interface SessionOptions {
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
-  /** Debug-only wobble vertical/horizontal ratio override. */
+  /** Debug-only vertical/horizontal ratio override for the walking lune. */
   wobbleFlatOverride?: number | undefined;
+  /** Debug-only multiplier for authored OU noise strength. */
+  wobbleNoiseScaleOverride?: number | undefined;
   /**
    * Continue from a save. Inventory and block-entity state are restored into the
    * game's shared `entities` object. Re-streamed columns are safe: entity anchors and
@@ -500,6 +504,7 @@ export const createSession = (options: SessionOptions) => {
     restored,
     character,
     wobbleFlatOverride: options.wobbleFlatOverride,
+    wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
   const { entities } = inventory;
   const quickbar = new Quickbar();
@@ -735,7 +740,6 @@ export const createSession = (options: SessionOptions) => {
       aimSway: sim.body.consequences.aimSway,
       firing,
       stridePhase: footstepClock.stridePhase,
-      stepIndex: footstepClock.stepIndex,
     });
   };
   const applyAimViewPitchShift = (): void => {
@@ -1235,6 +1239,7 @@ export const createSession = (options: SessionOptions) => {
     },
     hasFirearmHandlingOverrides: () =>
       options.wobbleFlatOverride !== undefined ||
+      options.wobbleNoiseScaleOverride !== undefined ||
       firearms.hasSkillZeroHandlingOverrides() ||
       !sameFirearmsSkillZeroHandling(
         firearmsCombatTuning.skillZeroHandling,

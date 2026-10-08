@@ -247,12 +247,15 @@ const observationPlugin = {
     quickbarTapTickObservation: undefined,
     startInputReplayRecording: () => {
       previousInputRecorder = undefined;
-      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
+      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
+        startState: captureReplayStartState(),
+      });
     },
     hudOptions,
     beginItemThrow,
     selectPrimaryAction,
     ignitionTargetForHand,
+    interactionTargetAt,
     useTarget,
     useText,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
@@ -565,6 +568,8 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       const hands = globalThis.primaryActionTest.view.held.heldByHand;
       return hands.has('left') && hands.has('right');
     });
+    await pressAction(page, 'player.throw');
+    await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.evaluate((slot) => {
       const r = globalThis.primaryActionTest;
       r.startInputReplayRecording();
@@ -574,8 +579,6 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.quickbarTapCommitObservation = undefined;
       r.quickbarTapTickObservation = undefined;
     }, fixture.quickbarSlot);
-    await pressAction(page, 'player.throw');
-    await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     const releaseThrow = await mouseCharge(page);
     await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
     const chargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -649,7 +652,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     const artifact = JSON.parse(replayText);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.throw').length, 1);
     assert.equal(artifact.actions.filter(({ action }) => action === 'item.drop').length, 1);
-    assert(artifact.actions.some(({ action }) => action === 'throw.stance.toggle'));
+    assert.equal(artifact.startState.throwingStance, true, 'the exported segment starts in throwing stance');
     const throwActionIndex = artifact.actions.findIndex(({ action }) => action === 'item.throw');
     assert.equal(artifact.actions.filter(({ action }) => action === 'quickbar.tap.1').length, 1);
     const quickbarActionIndex = artifact.actions.findIndex(({ action }) => action === 'quickbar.tap.1');
@@ -737,6 +740,256 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     assert.deepEqual(liveThrowOutcome.quickbarTapCommit, { itemMoveQueued: false, location: 'hand' });
     assert.deepEqual(liveThrowOutcome.quickbarTapTick, { itemMoveQueued: false, location: 'pile' });
     assert.equal(replayState, 'verified', `replay end state differs: ${JSON.stringify(endSnapshotDifference)}`);
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+};
+
+const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
+  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  try {
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+      let locked = false;
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+      });
+      Element.prototype.requestPointerLock = () => {
+        locked = true;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = false;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#dominant-hand').selectOption('left');
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    const firearm = await page.evaluate(
+      async ({ firearmModule, magazineModuleUrl, optionsModuleUrl }) => {
+        const { firearmHandlingFor, spentCaseItemId } = await import(firearmModule);
+        const { magazineSpec, magazineWellCalibre } = await import(magazineModuleUrl);
+        const { stowTarget } = await import(optionsModuleUrl);
+        const r = globalThis.primaryActionTest;
+        const { registry } = r.inventory;
+        const { firearms, magazines, queue, sim } = r.session;
+        const must = (refusal) => {
+          if (refusal) {
+            throw new Error(`Could not ready the replay firearm: ${refusal}`);
+          }
+        };
+        const settle = () => {
+          for (let step = 0; queue.busy; step += 1) {
+            if (step > 600) {
+              throw new Error('Replay firearm handling did not finish');
+            }
+            r.session.frame(1 / 20);
+          }
+        };
+        const gunType = 'rifle_assault';
+        const calibre = magazineWellCalibre(registry, gunType);
+        const ids = [...registry.items.keys()].sort();
+        const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
+        r.placePocketed(r.inventory.create(ids.find((id) => registry.items.get(id).ammo?.calibre === calibre)));
+        r.clearHand('right');
+        r.setHand('left', magazine);
+        must(magazines.loadNext(magazine.uid, sim.time));
+        settle();
+        const pocket = stowTarget(r.inventory, magazine, r.feet());
+        if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
+          throw new Error('Could not pocket the loaded replay magazine');
+        }
+        const gun = r.inventory.create(gunType);
+        r.setHand('left', gun);
+        must(firearms.loadNext(gun.uid, sim.time));
+        settle();
+        must(firearms.cock(gun.uid, sim.time));
+        settle();
+        const caseType = spentCaseItemId(firearmHandlingFor(gun, registry).calibre);
+        const cases = [...r.inventory.piles.values()]
+          .flatMap((pile) => pile.items)
+          .filter(({ item }) => item.type === caseType)
+          .reduce((sum, { item }) => sum + item.count, 0);
+        return { uid: gun.uid, caseType, cases };
+      },
+      {
+        firearmModule: firearmHandlingModule,
+        magazineModuleUrl: magazineModule,
+        optionsModuleUrl: optionsModule,
+      },
+    );
+    await page.mouse.down({ button: 'right' });
+    const raiseDuration = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      r.session.frame(1 / 60);
+      return r.inventory.itemByUid(uid).firearm.readying.duration;
+    }, firearm.uid);
+    await page.evaluate((duration) => globalThis.primaryActionTest.session.frame(duration), raiseDuration);
+    await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid);
+    await page.mouse.click(640, 450, { button: 'middle' });
+    await page.waitForFunction(() => globalThis.primaryActionTest.input.aimingDownSights);
+    await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
+    const replayPreludeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+    await waitForSimulation(
+      page,
+      progressingSample,
+      { start: replayPreludeStart },
+      {
+        seconds: 0.35,
+        label: 'ADS replay records a held-ready prelude before firing',
+        record: (line) => process.stderr.write(`${line}\n`),
+      },
+    );
+    await page.mouse.click(640, 450);
+    await page.waitForFunction(({ cases, caseType }) => {
+      const r = globalThis.primaryActionTest;
+      const count = [...r.inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .filter(({ item }) => item.type === caseType)
+        .reduce((sum, { item }) => sum + item.count, 0);
+      return count === cases + 1 && r.inputRecorder.copyInputs().frames.length > 0;
+    }, firearm);
+    const command = async (action) =>
+      page.evaluate(
+        async ({ id, moduleUrl }) => {
+          const { keyboardInput } = await import(moduleUrl);
+          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+        },
+        { id: action, moduleUrl: inputBindingsModule },
+      );
+    await command('ui.inventory-toggle');
+    await page.waitForFunction(() => globalThis.primaryActionTest.screen.isOpen);
+    await command('ui.inventory-toggle');
+    await page.waitForFunction(() => !globalThis.primaryActionTest.screen.isOpen);
+    const afterInventoryClose = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+    await page.mouse.click(640, 450);
+    await waitForSimulation(
+      page,
+      progressingSample,
+      { start: afterInventoryClose },
+      {
+        seconds: 0.35,
+        label: 'ready was cancelled by opening and closing inventory',
+        record: (line) => process.stderr.write(`${line}\n`),
+      },
+    );
+    const liveCasesAfterCancel = await page.evaluate((caseType) => {
+      const r = globalThis.primaryActionTest;
+      return [...r.inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .filter(({ item }) => item.type === caseType)
+        .reduce((sum, { item }) => sum + item.count, 0);
+    }, firearm.caseType);
+    assert.equal(liveCasesAfterCancel, firearm.cases + 1, 'live does not fire again after inventory cancels readiness');
+    await command('debug.panel-toggle');
+    const liveEnd = await page.evaluate(
+      async ({ id, moduleUrl, uid }) => {
+        const { keyboardInput } = await import(moduleUrl);
+        const r = globalThis.primaryActionTest;
+        const result = {
+          snapshot: r.captureSnapshot(),
+          startState: r.inputRecorder.copyInputs().startState,
+          firearm: r.inventory.itemByUid(uid)?.firearm,
+        };
+        keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+        return result;
+      },
+      { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule, uid: firearm.uid },
+    );
+    assert.deepEqual(liveEnd.startState, {
+      throwingStance: false,
+      readyHeld: true,
+      aimingDownSights: true,
+      inventoryOpen: false,
+    });
+    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    const replayText = await page.evaluate(() => {
+      const link = document.querySelector('#replay-download');
+      if (!link?.href.startsWith('blob:')) {
+        throw new Error('ADS replay export did not create a downloadable artifact');
+      }
+      return fetch(link.href).then((response) => response.text());
+    });
+    const artifact = JSON.parse(replayText);
+    assert.deepEqual(artifact.startState, liveEnd.startState);
+    const replayNavigation = page.waitForNavigation();
+    await command('debug.input-replay-import');
+    await page.locator('#input-replay-file').setInputFiles({
+      name: 'ads-fire-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(replayText),
+    });
+    await replayNavigation;
+    await page.waitForFunction(() => document.querySelector('#input-replay-status'));
+    await page.waitForFunction(() => {
+      const r = globalThis.primaryActionTest;
+      return (
+        r.input.rightMouseHeld &&
+        r.input.aimingDownSights &&
+        document.querySelector('#input-replay-status')?.dataset.state === 'playing'
+      );
+    });
+    await page.evaluate(() => globalThis.dispatchEvent(new FocusEvent('blur')));
+    const replayInputAfterBlur = await page.evaluate(() => ({
+      readyHeld: globalThis.primaryActionTest.input.rightMouseHeld,
+      aimingDownSights: globalThis.primaryActionTest.input.aimingDownSights,
+    }));
+    assert.equal(replayInputAfterBlur.readyHeld, true, 'viewer blur preserves replay readiness');
+    assert.equal(replayInputAfterBlur.aimingDownSights, true, 'viewer blur preserves replay ADS');
+    await page.waitForFunction(
+      () =>
+        ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
+      undefined,
+      { timeout: 20_000 },
+    );
+    const replay = await page.evaluate((fixture) => {
+      const r = globalThis.primaryActionTest;
+      const count = [...r.inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .filter(({ item }) => item.type === fixture.caseType)
+        .reduce((sum, { item }) => sum + item.count, 0);
+      return {
+        state: document.querySelector('#input-replay-status')?.dataset.state,
+        snapshot: r.captureSnapshot(),
+        aimingDownSights: r.input.aimingDownSights,
+        readyHeld: r.input.rightMouseHeld,
+        cases: count,
+        firearm: r.inventory.itemByUid(fixture.uid)?.firearm,
+      };
+    }, firearm);
+    if (replay.state !== 'verified') {
+      process.stderr.write(
+        `ADS replay diagnostic: ${JSON.stringify({
+          state: replay.state,
+          liveFirearm: liveEnd.firearm,
+          replayFirearm: replay.firearm,
+          aimingDownSights: replay.aimingDownSights,
+          readyHeld: replay.readyHeld,
+          cases: replay.cases,
+        })}\n`,
+      );
+    }
+    assert.equal(replay.state, 'verified');
+    assert.equal(replay.aimingDownSights, false);
+    assert.equal(replay.readyHeld, false);
+    assert.equal(replay.cases, firearm.cases + 1, 'the replayed firearm action fires a shot');
+    assert.deepEqual(replay.snapshot, liveEnd.snapshot);
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
@@ -2462,6 +2715,196 @@ try {
   await page.screenshot({ path: pryingScreenshot });
   await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.cancel());
 
+  const lockedPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await lockedPage.addInitScript(() => {
+    let locked = false;
+    Object.defineProperty(document, 'pointerLockElement', {
+      configurable: true,
+      get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+    });
+    Element.prototype.requestPointerLock = () => {
+      locked = true;
+      document.dispatchEvent(new Event('pointerlockchange'));
+      return Promise.resolve();
+    };
+    document.exitPointerLock = () => {
+      locked = false;
+      document.dispatchEvent(new Event('pointerlockchange'));
+    };
+  });
+  try {
+    await lockedPage.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=lock_test&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await lockedPage.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await lockedPage.locator('#go').click();
+    await lockedPage.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    await lockedPage.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const door = [...r.inventory.entities.all].find((entity) => entity.lock?.locked);
+      if (!door) {
+        throw new Error('lock_test did not instantiate its locked door');
+      }
+      const aimAtDoor = () => {
+        const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
+        const eye = [
+          r.session.body.pos[0],
+          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+          r.session.body.pos[2],
+        ];
+        const dx = target[0] - eye[0];
+        const dy = target[1] - eye[1];
+        const dz = target[2] - eye[2];
+        r.input.yaw = Math.atan2(-dx, -dz);
+        r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      };
+      aimAtDoor();
+      const target = r.interactionTargetAt();
+      if (target?.kind !== 'furniture' || target.entity.uid !== door.uid) {
+        throw new Error(`lock_test locked door is not the F target: ${JSON.stringify(target)}`);
+      }
+      r.clearNotice();
+    });
+    const toolDoor = await lockedPage.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const door = [...r.inventory.entities.all].find((entity) => entity.lock?.locked);
+      if (!door) {
+        throw new Error('Could not find the locked-door prying fixture');
+      }
+      const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
+      const eye = [
+        r.session.body.pos[0],
+        r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+        r.session.body.pos[2],
+      ];
+      const dx = target[0] - eye[0];
+      const dy = target[1] - eye[1];
+      const dz = target[2] - eye[2];
+      r.input.yaw = Math.atan2(-dx, -dz);
+      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      const picked = r.interactionTargetAt();
+      if (picked?.kind !== 'furniture' || picked.entity.uid !== door.uid) {
+        throw new Error(`lock_test tool door is not the F target: ${JSON.stringify(picked)}`);
+      }
+      r.clearNotice();
+      return { uid: door.uid, start: r.session.sim.time };
+    });
+    await pressAction(lockedPage, 'world.interact');
+    await waitForSimulation(
+      lockedPage,
+      progressingSample,
+      { start: toolDoor.start },
+      {
+        seconds: 0.5,
+        label: 'locked-door F action enters the simulation',
+        record: (line) => process.stderr.write(`${line}\\n`),
+      },
+    );
+    const pryAction = await lockedPage.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return {
+        job: r.session.sim.actions.job?.jobType,
+        targetUid: r.interactionTargetAt()?.entity?.uid,
+        fixtureUid: uid,
+        inputLocked: r.session.sim.compression.locksInput,
+        interruption: r.session.sim.compression.interruption,
+      };
+    }, toolDoor.uid);
+    assert.equal(pryAction.targetUid, toolDoor.uid, 'real F input targets the locked door with its tool');
+    assert.equal(
+      pryAction.job,
+      'pry',
+      `F starts the available locked-door prying action: ${JSON.stringify(pryAction)}`,
+    );
+    await waitForSimulation(
+      lockedPage,
+      ({ start }) => {
+        const { session } = globalThis.primaryActionTest;
+        return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 1 };
+      },
+      { start: toolDoor.start },
+      {
+        seconds: 1.5,
+        label: 'locked-door prying remains active',
+        record: (line) => process.stderr.write(`${line}\\n`),
+      },
+    );
+    assert.equal(
+      await lockedPage.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job?.jobType),
+      'pry',
+      'the prying action remains active until interrupted',
+    );
+    const interruptionAt = await lockedPage.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const { session } = r;
+      const { job } = session.sim.actions;
+      if (job?.jobType !== 'pry') {
+        throw new Error('The carried-tool pry disappeared before interruption');
+      }
+      r.session.sim.emit({ kind: 'interrupt', reason: 'You hear something outside' });
+      return { start: r.session.sim.time, elapsed: job.elapsed };
+    });
+    await waitForSimulation(
+      lockedPage,
+      progressingSample,
+      { start: interruptionAt.start },
+      {
+        seconds: 0.5,
+        label: 'prying interruption reaches the simulation',
+        record: (line) => process.stderr.write(`${line}\\n`),
+      },
+    );
+    const interruptedPry = await lockedPage.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      return {
+        job: r.session.sim.actions.job,
+        inputLocked: r.session.sim.compression.locksInput,
+        interruption: r.session.sim.compression.interruption,
+        notice: r.getNotice(),
+      };
+    });
+    assert.equal(interruptedPry.job?.jobType, 'pry', 'an interruption keeps the prying job for resumption');
+    assert.equal(interruptedPry.job?.stopped, true, 'an interruption stops prying without discarding its cursor');
+    assert.ok(interruptedPry.job?.elapsed >= interruptionAt.elapsed, 'interruption time does not erase pry progress');
+    assert.equal(interruptedPry.inputLocked, false, 'an interrupted prying action does not lock movement');
+    assert.equal(interruptedPry.interruption, undefined, 'a prying interruption does not retain a blocking prompt');
+    assert.match(interruptedPry.notice, /You hear something outside/, 'the interrupt reason remains visible');
+    const positionBeforeMovement = await lockedPage.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]);
+    const releaseAfterInterruption = await holdAction(lockedPage, 'movement.right');
+    try {
+      await waitForSimulation(
+        lockedPage,
+        progressingSample,
+        { start: await lockedPage.evaluate(() => globalThis.primaryActionTest.session.sim.time) },
+        {
+          seconds: 0.5,
+          label: 'movement after a prying interruption',
+          record: (line) => process.stderr.write(`${line}\\n`),
+          stop: releaseAfterInterruption,
+        },
+      );
+    } finally {
+      await releaseAfterInterruption();
+    }
+    const positionAfterMovement = await lockedPage.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]);
+    assert.ok(
+      Math.hypot(
+        positionAfterMovement[0] - positionBeforeMovement[0],
+        positionAfterMovement[2] - positionBeforeMovement[2],
+      ) > 0,
+      'movement remains available after an interrupted carried-tool pry',
+    );
+    process.stdout.write(`Locked-door input reproduction: ${JSON.stringify({ pryAction, interruptedPry })}\\n`);
+  } finally {
+    await lockedPage.close();
+  }
+
   const treatment = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);
@@ -2562,11 +3005,12 @@ try {
   assert.deepEqual(pageErrors, []);
   await verifyCleanLookReplay(browser, address.port, renderOverride);
   await verifyStanceThrowReplay(browser, address.port, renderOverride);
+  await verifyAdsFireReplay(browser, address.port, renderOverride);
   await browser.close();
   browser = undefined;
   await checkDroppedGlowstickPixel(address.port);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, ground pickup and wield, door tap, grab animation, attachment, save identity, glowstick and loaded-firearm throws, refusals, firearm emission, quickbar hold, held-book reading, crowbar door route and clean mouse-look sample playback.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, ground pickup and wield, door tap, grab animation, attachment, save identity, glowstick and loaded-firearm throws, refusals, firearm emission, quickbar hold, held-book reading, crowbar door route, clean mouse-look sample playback, and replayed ADS firearm fire.\n',
   );
 } finally {
   await browser?.close();

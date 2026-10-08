@@ -717,13 +717,9 @@ and `src/core/content.ts`, `checkItemFirearm`.
   each is about half the previous curve's duration; legendary remains clamped to skill 10.
   BR, 2026-10-07 10:23: “yep, feels good” on the handling comparison for PR #343.
 
-  Readied-gait sway and look lag scale with firearms skill, while dispersion and recoil remain separate. The per-firearm novice endpoint and shared expert endpoint and wobble bound are content-owned in `src/content/base/models-firearms.json` and `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, selects the skill scale. `src/core/aim.ts`, `frameFromState`, bounds wobble separately from recoil so enlarging the former does not retune the latter. Hip and ADS share this aim frame; ADS sight/view rules and firearm spread do not change. This makes an unskilled readied walk visibly unsteady without making recoil or dispersion a skill-scaled substitute.
+  Aim sway remains separate from dispersion and recoil so firearms skill affects steadiness without changing weapon accuracy or kick. Sharing `src/core/footsteps.ts`, `FootstepClock`, keeps the stride-synced path aligned with gait; content-owned shape settings allow a shallower path without changing cadence. See `src/core/aim.ts`, `frameFromState`, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`.
 
-  `src/core/footsteps.ts`, `FootstepClock`, owns the shared stride phase read by footfall emission, `src/render/playView.ts`, and `src/core/aim.ts`, `AimController`; a single cadence keeps the sway and rendered gait synchronized rather than running a second oscillator. The lune's arch and pass offset are content tunings in `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`, so the concave-down path can be adjusted without changing the established amplitude endpoints.
-
-  `FootstepClock.stepIndex` in `src/core/footsteps.ts` selects deterministic per-step deviations from the simulation-seeded stream, and `AimController` eases each deviation across its step. The content share is the fraction of steps that carry jitter; easing means the visible off-lune time is lower. Share and relative size belong to `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`, so the path varies without twitching or changing gait cadence and skill-scaled amplitude.
-
-  The vertical-to-horizontal wobble ratio is content-owned in `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/aim.ts`, `frameFromState`, applies it to the lune depth and vertical jitter without changing horizontal swing, cadence, or jitter share. A shallower trajectory feels less circular while preserving the established timing and skill-scaled amplitude. The debug-only `?wobbleFlat=` comparison supports tuning the ratio without a rebuild.
+  Mean-reverting Brownian drift replaces stride-eased jitter; the shared walking lune remains separate, and firearms skill continues to scale sway. Mean reversion avoids unbounded drift, while smoothing keeps fixed-tick noise from reading as frame-level twitch. Content owns the noise tuning. Saving the running state lets Continue and replay segments preserve the exact path, avoiding a motion discontinuity in the drift chosen by feel. The vertical/horizontal lune ratio remains independently tunable for BR's shape comparisons; it does not change the OU drift. See `src/core/aim.ts`, `advanceOrnsteinUhlenbeckAxis` and `AimController.snapshotState`, `src/core/saveState.ts`, `snapshotSession`, `src/game/inputReplay.ts`, `encodeInputReplay`, `src/game/config.ts`, `configFromUrl`, and `src/content/base/recipes.json`, `firearms_combat`.
 
   BR's earlier 2026-10-05 report on the skill scale
   before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
@@ -828,16 +824,23 @@ arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
 A carried beam remains a three.js light because it moves every frame, unlike
 block light. All-around carried and dropped sources use a fixed pool of
 shadowless point lights; unused slots stay at zero intensity, and surplus
-emissive glowsticks remain visible without lighting the world. An emissive marker
-is not a substitute for the pool: tune item light content against the ground and
-walls under the shared near-field falloff. Source colour, intensity, radius and
-burn rules belong to item content. The zombie light check keeps sky visibility
-separate from carried light, so adding voxel sky light
-won't change the carried-light rule. The sun-derived day phase also owns simulation
-sun exposure, but time-of-day lighting remains in the sky and fog rather than being
-baked into chunks; voxel sunlight can then join AO in vertex colour. See
-`src/render/flashlight.ts`, `Flashlight.update`, `src/render/lightPool.ts`,
-`LightPool.update`, `src/core/zombies.ts`, `isLit`, `src/render/sky.ts`,
+emissive glowsticks remain visible without lighting the world. An item's lit look
+stays on its own model in hand, on the ground and in flight; an emissive marker is
+only a fallback when the model cannot be drawn. This keeps glow attached to the
+visible item without changing the light pool or zombie sensing reach, or merging
+render and sense heights. The marker does not replace pool lighting. Source
+colour, intensity, radius and burn rules belong to item content. Tune that content
+against the ground and walls under the pool's shared near-field falloff, not
+against the glow. The zombie light check keeps sky visibility separate from
+carried light. The sun-derived day phase blends zombie sight through twilight,
+while time-of-day lighting stays in the sky and fog rather than being baked into
+chunks; voxel sunlight can then join
+AO in vertex colour. See `src/render/flashlight.ts`, `Flashlight.update`,
+`src/render/itemEmissive.ts`, `applyItemEmissive`, `src/render/piles.ts`,
+`PileMeshes.drawModels`, `drawEmissiveLights`, `src/render/itemThrows.ts`,
+`ItemThrows.spawn`, `src/render/lightPool.ts`, `LightPool.update`,
+`src/core/lights.ts`, `lightSenseSourceFor`, `src/core/dayPhase.ts`,
+`dayPhaseAt`, `src/core/zombies.ts`, `seesPlayer`, `src/render/sky.ts`,
 `applySky`, and `src/core/mesher.ts`, `buildMesh`.
 
 - **Sources you carry** (the numbers are starting points):
@@ -1026,7 +1029,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** The armoury needs a fallback if its key stays on the clinic corpse; the crowbar trades time and noise for entry, while the matching key remains quiet. BR said at 19:03, “#320 the prying should take a bit longer - maybe 5 ingame seconds? Eyeballin” and at 19:05, “yeah, let's not make it a long action” / “but it should be skill dependent - starting at 15 seconds - gets faster by 'fabrication' or similar woodworking skill”. Asked whether to add `fabrication`, use `mechanics`, or use `crafting`, BR answered “1b”: use the existing `mechanics` skill. BR also answered “2 sounds like a good start” to the proposed level-10 duration of 7.5 real seconds—half the 15-second level-0 duration—with 30 strikes retained. The lead reads the starting duration as real play time; keep prying out of time compression so attracted shamblers approach at normal pace. The speed curve follows the saturation shape of `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, through `src/core/character.ts`, `skillSaturation`; both endpoint durations are authored in content. See `src/core/prying.ts`, `pryPlan`, and `src/core/longAction.ts`, `LongActions.beginPrying`. BR answered #309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door unlocked, making the forced route one-way. See `src/core/blockEntities.ts`, `BlockEntities.breakLock`. On the #320 first look at 19:33, BR said “prying is better now, but doesn't show a progress bar when they are enabled”; use the existing handling-progress option and bar, not another HUD control, so resumable work remains visible when requested. See `src/game/play.ts`, `renderPlayHandling`, `src/ui/playHud.ts`, `renderPlayHandling`, and `src/ui/hudOptions.ts`, `handling`. BR said “defer the bashing” for #273 because mob and obstacle strength are not modeled. Closed doors block a shambler like other solids; see `src/core/zombies.ts`, `ZombieSystem.tick`.
+- **Doors and locks.** A matching key opens a locked door quietly; a crowbar is the noisy fallback. Prying takes 15 seconds of simulation time at mechanics 0 and 7.5 seconds at mechanics 10, with 30 strikes. It uses the existing mechanics skill, runs outside time compression, and destroys the padlock when complete. The handling-progress option shows its progress. A normal-speed interruption stops the pry with progress kept and input free. Bashing is deferred because mob and obstacle strength are not modeled; closed doors block shamblers like other solids. See `src/core/prying.ts`, `pryPlan`, `src/core/longAction.ts`, `LongActions.beginPrying`, `LongActions.interruptPrying`, `src/core/sim.ts`, `Simulation.checkInterruptions`, `src/game/play.ts`, `renderPlayHandling`, and `src/ui/hudOptions.ts`, `handling`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,
