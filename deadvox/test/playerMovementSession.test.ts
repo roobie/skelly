@@ -22,6 +22,8 @@ const makeRuntime = () => {
   const scale = makeScale(0.5);
   let intent: MoveIntent = { ...IDLE };
   let crouchToggle = false;
+  let readyHeld = false;
+  const footfalls: string[] = [];
   const session = createSession({
     registry,
     world: new World(),
@@ -35,6 +37,7 @@ const makeRuntime = () => {
     controls: {
       active: () => true,
       intent: () => intent,
+      readyHeld: () => readyHeld,
       consumeCrouchToggle: () => {
         const pressed = crouchToggle;
         crouchToggle = false;
@@ -45,7 +48,13 @@ const makeRuntime = () => {
       walking: () => intent.walk,
       descending: () => false,
     },
-    audio: { play: () => undefined },
+    audio: {
+      play: ({ event }) => {
+        if (event.startsWith('footstep_')) {
+          footfalls.push(event);
+        }
+      },
+    },
     notice: () => undefined,
     onRead: () => undefined,
   });
@@ -56,12 +65,18 @@ const makeRuntime = () => {
   };
   return {
     session,
+    get footfallCount() {
+      return footfalls.length;
+    },
     advance,
     setIntent: (next: MoveIntent) => {
       intent = next;
     },
     toggleCrouch: () => {
       crouchToggle = true;
+    },
+    setReadyHeld: (value: boolean) => {
+      readyHeld = value;
     },
   };
 };
@@ -89,6 +104,31 @@ describe('session movement consequences', () => {
     const injuredDistance = horizontalDistance(injuredStart, injured.session.body.pos);
     expect(healthyDistance).toBeGreaterThan(0);
     expect(injuredDistance).toBeLessThan(healthyDistance);
+  });
+
+  it('feeds the session step clock to the readied-walk aim once per stride', () => {
+    const runtime = makeRuntime();
+    const firearm = runtime.session.inventory.create('pump_shotgun');
+    expect(runtime.session.inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
+    runtime.setReadyHeld(true);
+    runtime.setIntent({ ...IDLE, forward: 1, walk: true });
+    runtime.advance(120);
+    expect(runtime.session.firearms.isReady(firearm.uid)).toBe(true);
+
+    let observedFootfalls = runtime.footfallCount;
+    const signs: number[] = [];
+    for (let tick = 0; tick < 480 && signs.length < 4; tick++) {
+      runtime.advance(1);
+      while (observedFootfalls < runtime.footfallCount) {
+        signs.push(Math.sign(runtime.session.aim.frame.yaw));
+        observedFootfalls += 1;
+      }
+    }
+
+    expect(signs.length).toBeGreaterThanOrEqual(4);
+    for (let index = 1; index < signs.length; index++) {
+      expect(signs[index]).toBe(-signs[index - 1]!);
+    }
   });
 
   it('does not sprint or drain stamina while crouched with sprint held', () => {

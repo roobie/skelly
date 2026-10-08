@@ -210,6 +210,8 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
     variance: 1,
     firing: false,
     recoilRecoveryRate: 1,
+    stridePhase: 0,
+    stepIndex: 0,
   };
   original.aim.advance(prior);
   original.aim.recordShot(129, 0.02);

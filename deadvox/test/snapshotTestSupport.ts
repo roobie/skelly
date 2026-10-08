@@ -133,6 +133,7 @@ export function createRuntime(
     intent?: () => MoveIntent;
     ready?: (x: number, z: number) => boolean;
     zombieReady?: (x: number, z: number) => boolean;
+    wobbleFlatOverride?: number;
     sampleAtPlayerTick?: (
       tick: number,
       live: PlayerInputSample,
@@ -196,6 +197,7 @@ export function createRuntime(
     seed,
     start: options.start ?? defaultClock.start,
     spawn,
+    wobbleFlatOverride: options.wobbleFlatOverride,
     ready: options.ready ?? (() => true),
     ...(options.zombieReady ? { zombieReady: options.zombieReady } : {}),
     controls: {

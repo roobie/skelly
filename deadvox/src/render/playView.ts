@@ -38,6 +38,7 @@ export interface PlayCameraFrame {
   readonly noclip: boolean;
   readonly yaw: number;
   readonly pitch: number;
+  readonly stridePhase: number;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly sightImpaired: boolean;
@@ -137,7 +138,6 @@ export const createPlayView = (
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
   const damageFeedback = new DamageFeedback();
   let cameraRoll = 0;
-  let gaitPhase = 0;
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
 
@@ -201,7 +201,7 @@ export const createPlayView = (
       engine.shadows?.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
-      const { dt, body, paused, noclip, yaw, pitch, eye, spectator, sightImpaired } = frame;
+      const { dt, body, paused, noclip, yaw, pitch, stridePhase, eye, spectator, sightImpaired } = frame;
       const offset = cameraStepOffset.update(
         [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
         body.onGround,
@@ -210,9 +210,7 @@ export const createPlayView = (
       );
       const travel = Math.hypot(body.vel[0], body.vel[2]) * s * dt;
       const moving = travel > 0.001 && !paused;
-      if (moving) {
-        gaitPhase += (travel / 0.6) * Math.PI;
-      }
+      const gaitPhase = stridePhase * Math.PI * 2;
       playerMeshes.sync({ body, yaw, stepOffset: offset, gaitPhase, moving, inventory });
       const [ex, ey, ez] = spectator?.position ?? eye;
       camera.position.set(ex * s, ey * s + (spectator ? 0 : offset), ez * s);

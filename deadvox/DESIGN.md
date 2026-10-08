@@ -711,6 +711,14 @@ and `src/core/content.ts`, `checkItemFirearm`.
   each is about half the previous curve's duration; legendary remains clamped to skill 10.
   BR, 2026-10-07 10:23: “yep, feels good” on the handling comparison for PR #343.
 
+  Readied-gait sway and look lag scale with firearms skill, while dispersion and recoil remain separate. The per-firearm novice endpoint and shared expert endpoint and wobble bound are content-owned in `src/content/base/models-firearms.json` and `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, selects the skill scale. `src/core/aim.ts`, `frameFromState`, bounds wobble separately from recoil so enlarging the former does not retune the latter. Hip and ADS share this aim frame; ADS sight/view rules and firearm spread do not change. This makes an unskilled readied walk visibly unsteady without making recoil or dispersion a skill-scaled substitute.
+
+  `src/core/footsteps.ts`, `FootstepClock`, owns the shared stride phase read by footfall emission, `src/render/playView.ts`, and `src/core/aim.ts`, `AimController`; a single cadence keeps the sway and rendered gait synchronized rather than running a second oscillator. The lune's arch and pass offset are content tunings in `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`, so the concave-down path can be adjusted without changing the established amplitude endpoints.
+
+  `FootstepClock.stepIndex` in `src/core/footsteps.ts` selects deterministic per-step deviations from the simulation-seeded stream, and `AimController` eases each deviation across its step. The content share is the fraction of steps that carry jitter; easing means the visible off-lune time is lower. Share and relative size belong to `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`, so the path varies without twitching or changing gait cadence and skill-scaled amplitude.
+
+  The vertical-to-horizontal wobble ratio is content-owned in `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/aim.ts`, `frameFromState`, applies it to the lune depth and vertical jitter without changing horizontal swing, cadence, or jitter share. A shallower trajectory feels less circular while preserving the established timing and skill-scaled amplitude. The debug-only `?wobbleFlat=` comparison supports tuning the ratio without a rebuild.
+
   BR's earlier 2026-10-05 report on the skill scale
   before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
   led to d62-4 (#262); the later ruling
