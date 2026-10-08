@@ -734,7 +734,6 @@ describe('content references', () => {
     source: 'broken-reference.json',
     data: JSON.parse(readFileSync('test/fixtures/content/broken-reference.json', 'utf8')) as unknown,
   };
-  const withBase = (...extra: { source: string; data: unknown }[]) => buildRegistry([...base, ...extra]);
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
 
   it('requires an explicit disassembly yield for a recipe result', () => {
@@ -820,101 +819,133 @@ describe('content references', () => {
   });
 
   it('lets only a military table hold military-only loot, boxed at any depth, and no salvage or recipe make it', () => {
-    const military = [...militaryLootItems(baseRegistry)];
-    const [item] = military;
-    const cartridge = military.find((id) => baseRegistry.items.get(id)?.ammo);
-    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
-    if (item === undefined || cartridge === undefined || armoury === undefined) {
-      throw new Error('base content needs a military-only item, a military cartridge and a military table');
+    const military = militaryLootItems(baseRegistry);
+    const baseFirearm = [...military]
+      .map((id) => baseRegistry.items.get(id))
+      .find((candidate) => candidate?.firearm !== undefined && candidate.model !== undefined);
+    const baseCartridge = [...military]
+      .map((id) => baseRegistry.items.get(id))
+      .find((candidate) => candidate?.ammo !== undefined);
+    const firearm = baseFirearm?.firearm;
+    const firearmModel = baseFirearm?.model === undefined ? undefined : baseRegistry.models.get(baseFirearm.model);
+    const ammo = baseCartridge?.ammo;
+    if (firearm === undefined || firearmModel === undefined || ammo === undefined) {
+      throw new Error('base content needs a magazine-fed firearm and matching cartridge for the fixture');
     }
+    const item = 'fixture_rifle';
+    const cartridge = 'fixture_cartridge';
+    const armoury = {
+      id: 'fixture_armoury',
+      military: true,
+      rolls: [1, 1],
+      entries: [
+        { item, weight: 1 },
+        { item: cartridge, weight: 1 },
+      ],
+    };
     const source = 'military-sources.json';
-    const { issues } = withBase({
-      source,
-      data: {
-        loot: [
-          {
-            id: 'fixture_shed_crate',
-            rolls: [1, 1],
-            entries: [
-              { item, weight: 1 },
-              { table: armoury.id, weight: 1 },
-              { item: 'rag', weight: 1 },
-              { item: 'fixture_ammo_case', weight: 1 },
-            ],
-          },
-          {
-            id: 'fixture_ammo_crate',
-            military: true,
-            rolls: [1, 1],
-            entries: [
-              { item, weight: 1 },
-              { table: armoury.id, weight: 1 },
-            ],
-          },
-        ],
-        items: [
-          {
-            id: 'fixture_scrap',
-            name: 'Scrap',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            salvage: [{ item, count: 1 }],
-          },
-          {
-            id: 'fixture_parts',
-            name: 'Parts',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            disassembly: {
-              timeGameMinutes: gameMinutes(1),
-              skill: 'crafting',
-              yields: [{ item, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
-            },
-          },
-          // Listed before the box it holds, so finding boxes in one pass would miss it.
-          {
-            id: 'fixture_ammo_case',
-            name: 'Case',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            unpack: { item: 'fixture_box', count: 1 },
-          },
-          {
-            id: 'fixture_box',
-            name: 'Box',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            unpack: { item: cartridge, count: 1 },
-            disassembly: {
-              timeGameMinutes: gameMinutes(1),
-              skill: 'crafting',
-              yields: [{ item: 'rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
-            },
-          },
-        ],
-        recipes: [
-          {
-            id: 'fixture_box_press',
-            result: { item: 'fixture_box', count: 1 },
-            timeGameMinutes: gameMinutes(1),
-            components: [[{ item: 'rag', count: 1 }]],
-            qualities: {},
-            skills: {},
-          },
-        ],
+    const { issues } = buildRegistry([
+      {
+        source: 'military-fixture.json',
+        data: {
+          models: [{ ...firearmModel, id: item }],
+          items: [
+            { id: item, name: 'Fixture rifle', category: 'weapon', weight: 1, size: [1, 1], firearm, model: item },
+            { id: cartridge, name: 'Fixture cartridge', category: 'material', weight: 1, size: [1, 1], ammo },
+          ],
+        },
       },
-    });
-    const only = (id: string) => `"${id}" is military loot only`;
-    expect(issues).toEqual([
-      { source, path: 'loot[0].entries[0].item', message: `${only(item)}; only a "military" table may hold it` },
-      { source, path: 'loot[0].entries[1].table', message: `only a "military" table may nest "${armoury.id}"` },
       {
         source,
-        path: 'loot[0].entries[3].item',
+        data: {
+          loot: [
+            armoury,
+            {
+              id: 'fixture_shed_crate',
+              rolls: [1, 1],
+              entries: [
+                { item, weight: 1 },
+                { table: armoury.id, weight: 1 },
+                { item: 'fixture_rag', weight: 1 },
+                { item: 'fixture_ammo_case', weight: 1 },
+              ],
+            },
+            {
+              id: 'fixture_ammo_crate',
+              military: true,
+              rolls: [1, 1],
+              entries: [
+                { item, weight: 1 },
+                { table: armoury.id, weight: 1 },
+              ],
+            },
+          ],
+          skills: [{ id: 'fixture_crafting', name: 'Fixture crafting' }],
+          items: [
+            {
+              id: 'fixture_scrap',
+              name: 'Scrap',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              salvage: [{ item, count: 1 }],
+            },
+            {
+              id: 'fixture_parts',
+              name: 'Parts',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              disassembly: {
+                timeGameMinutes: gameMinutes(1),
+                skill: 'fixture_crafting',
+                yields: [{ item, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+              },
+            },
+            // Listed before the box it holds, so finding boxes in one pass would miss it.
+            {
+              id: 'fixture_ammo_case',
+              name: 'Case',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              unpack: { item: 'fixture_box', count: 1 },
+            },
+            {
+              id: 'fixture_box',
+              name: 'Box',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              unpack: { item: cartridge, count: 1 },
+              disassembly: {
+                timeGameMinutes: gameMinutes(1),
+                skill: 'fixture_crafting',
+                yields: [{ item: 'fixture_rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+              },
+            },
+            { id: 'fixture_rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
+          ],
+          recipes: [
+            {
+              id: 'fixture_box_press',
+              result: { item: 'fixture_box', count: 1 },
+              timeGameMinutes: gameMinutes(1),
+              components: [[{ item: 'fixture_rag', count: 1 }]],
+              qualities: {},
+              skills: {},
+            },
+          ],
+        },
+      },
+    ]);
+    const only = (id: string) => `"${id}" is military loot only`;
+    expect(issues).toEqual([
+      { source, path: 'loot[1].entries[0].item', message: `${only(item)}; only a "military" table may hold it` },
+      { source, path: 'loot[1].entries[1].table', message: `only a "military" table may nest "${armoury.id}"` },
+      {
+        source,
+        path: 'loot[1].entries[3].item',
         message: `${only('fixture_ammo_case')}; only a "military" table may hold it`,
       },
       { source, path: 'items[0].salvage[0].item', message: `${only(item)}; salvage may not yield it` },
@@ -950,11 +981,10 @@ describe('content references', () => {
         site.palette[key] = { ...entry, loot: allMilitaryLoot.id };
       }
     }
-    const { registry, issues } = withBase({
-      source: 'armoury-site.json',
-      data: { templates: [site], loot: [allMilitaryLoot] },
-    });
-    expect(issues).toEqual([]);
+    // Reuse the already validated base registry; this scenario only changes a known loot table on an existing template.
+    const templates = new Map(baseRegistry.templates);
+    templates.set(site.id, site);
+    const registry = { ...baseRegistry, templates };
     const { found } = checkReachability(registry);
     const military = [...militaryLootItems(registry)];
     expect(military.length).toBeGreaterThan(0);
@@ -962,39 +992,47 @@ describe('content references', () => {
   });
 
   it('limits military tables to military templates and forbids them on zombie types', () => {
-    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
-    if (armoury === undefined) {
-      throw new Error('base content needs a military loot table');
-    }
-    const template = {
-      size: [2, 2, 2],
-      palette: { C: { furniture: 'crate', loot: armoury.id } },
-      layers: [
-        ['CC', 'CC'],
-        ['CC', 'CC'],
-      ],
-    };
     const source = 'military-site.json';
+    const lootId = 'fixture_military_table';
+    const furniture = structuredClone(baseRegistry.furniture.get('crate')!);
+    furniture.id = 'fixture_crate';
+    delete furniture.loot;
+    const [width, height, depth] = furniture.size;
+    const template = {
+      id: 'fixture_nonmilitary_site',
+      size: [width, height, depth],
+      palette: { C: { furniture: furniture.id, loot: lootId } },
+      layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => 'C'.repeat(width))),
+    };
     const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
     zombie.id = 'fixture_military_looter';
-    zombie.loot = armoury.id;
-    const result = withBase({
-      source,
-      data: {
-        templates: [{ ...template, id: 'fixture_nonmilitary_site', military: false }],
-        zombies: [zombie],
+    zombie.loot = lootId;
+    const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
+    const result = buildRegistry([
+      {
+        source,
+        data: {
+          items: [{ id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] }],
+          loot: [{ id: lootId, military: true, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] }],
+          furniture: [furniture],
+          templates: [template],
+          zombies: [zombie],
+          sounds,
+        },
       },
-    });
-    expect(result.issues).toContainEqual({
-      source,
-      path: 'templates[0].palette["C"].loot',
-      message: 'military loot tables may only appear in a military template',
-    });
-    expect(result.issues).toContainEqual({
-      source,
-      path: 'zombies[0].loot',
-      message: 'zombie loot may not use a military table',
-    });
+    ]);
+    expect(result.issues).toEqual([
+      {
+        source,
+        path: 'templates[0].palette["C"].loot',
+        message: 'military loot tables may only appear in a military template',
+      },
+      {
+        source,
+        path: 'zombies[0].loot',
+        message: 'zombie loot may not use a military table',
+      },
+    ]);
   });
 
   it('makes every military-only item reachable from the playtest layout', () => {
@@ -1010,106 +1048,55 @@ describe('content references', () => {
   });
 
   it('checks furniture, prying-skill, zombie and light references', () => {
-    const mod = {
-      source: 'mod.json',
-      data: {
-        furniture: [
-          { id: 'safe', name: 'Safe', size: [1, 1, 1], color: '#333333', loot: 'vault' },
-          {
-            id: 'pry_door',
-            name: 'Pry door',
-            size: [1, 1, 1],
-            color: '#333333',
-            door: {
-              handlingSimSeconds: 0.4,
-              prying: {
-                quality: 1,
-                skill: 'missing_skill',
-                timeSimSeconds: 2,
-                fastestTimeSimSeconds: 1,
-                strikeIntervalSimSeconds: 1,
+    const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
+    zombie.id = 'clerk';
+    zombie.loot = 'till';
+    const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
+    const result = buildRegistry([
+      {
+        source: 'mod.json',
+        data: {
+          furniture: [
+            { id: 'safe', name: 'Safe', size: [1, 1, 1], color: '#333333', loot: 'vault' },
+            {
+              id: 'pry_door',
+              name: 'Pry door',
+              size: [1, 1, 1],
+              color: '#333333',
+              door: {
+                handlingSimSeconds: 0.4,
+                prying: {
+                  quality: 1,
+                  skill: 'missing_skill',
+                  timeSimSeconds: 2,
+                  fastestTimeSimSeconds: 1,
+                  strikeIntervalSimSeconds: 1,
+                },
               },
             },
-          },
-        ],
-        zombies: [
-          {
-            id: 'clerk',
-            name: 'Clerk',
-            model: 'shambler',
-            spawnWeight: 1,
-            sounds: {
-              idle: 'shambler_idle',
-              alert: 'shambler_alert',
-              attack: 'shambler_attack',
-              hurt: 'shambler_hurt',
+          ],
+          zombies: [zombie],
+          items: [
+            {
+              id: 'torch_lamp',
+              name: 'Lamp',
+              category: 'light',
+              weight: 300,
+              size: [1, 2],
+              light: {
+                radius: 5,
+                seenFrom: 30,
+                color: '#ffffff',
+                intensity: 1,
+                power: { battery: 'bandage', chargePerGameHour: 1 },
+              },
             },
-            regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
-            stepLength: 0.6,
-            wander: {
-              obstacleWanderChance: 0.25,
-              obstacleWanderDistanceMetres: 10,
-              idleSimSeconds: { min: 3, max: 10 },
-              strollSimSeconds: { min: 3, max: 12 },
-              leashMetres: 12,
-              lookIntervalSimSeconds: { min: 0.8, max: 1.8 },
-              bodyLookArcDegrees: 150,
-              headLookArcDegrees: 100,
-              bodyTurnDegreesPerSimSecond: 90,
-              headTurnDegreesPerSimSecond: 120,
-              movementAccelerationMetresPerSimSecondSquared: 4,
-            },
-            sight: 20,
-            nightSight: 10,
-            stimulusMemorySimSeconds: 1,
-            sightCone: 60,
-            hearing: 1,
-            hearingRange: { walk: 3, jog: 8, sprint: 15 },
-            hearingModel: {
-              farMultiplier: 2,
-              bearingErrorRadians: 0.61,
-              investigationDistanceMetres: 8,
-              searchSimSeconds: { min: 40, max: 50 },
-              searchRadiusMetres: 4,
-              searchStrollSimSeconds: { min: 1, max: 3 },
-            },
-            chaseMotion: {
-              swayDegrees: 25,
-              swayIntervalSimSeconds: { min: 0.7, max: 1.1 },
-              speedMultiplier: { min: 0.6, max: 1.2 },
-              lurchSimSeconds: 1,
-              stumbleChancePerSimSecond: 0.16,
-              stumbleDurationSimSeconds: { min: 0.55, max: 0.75 },
-              stumbleEaseSimSeconds: 0.2,
-              stumbleSpeedFraction: 0.04,
-              stumbleDecelerationMetresPerSimSecondSquared: 14,
-            },
-            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
-            dismember: { chance: 0.15, headOnKillChance: 0.25 },
-            abilities: [],
-            loot: 'till',
-          },
-        ],
-        items: [
-          {
-            id: 'torch_lamp',
-            name: 'Lamp',
-            category: 'light',
-            weight: 300,
-            size: [1, 2],
-            light: {
-              radius: 5,
-              seenFrom: 30,
-              color: '#ffffff',
-              intensity: 1,
-              power: { battery: 'bandage', chargePerGameHour: 1 },
-            },
-          },
-        ],
+          ],
+          sounds,
+        },
       },
-    };
-    expect(paths(withBase(mod).issues).sort()).toEqual([
+    ]);
+    expect(paths(result.issues).sort()).toEqual([
       'furniture[0].loot',
       'furniture[0].loot',
       'furniture[1].door.prying.skill',
