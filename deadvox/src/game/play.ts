@@ -411,6 +411,7 @@ export const startPlay = (
     isOpaque: engine.isOpaque,
     scale,
     seed: config.seed,
+    wobbleFlatOverride: config.debugWobbleFlat,
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
@@ -2158,6 +2159,7 @@ export const startPlay = (
         noclip: debugTools?.noclip ?? false,
         yaw: input.yaw,
         pitch: input.pitch,
+        stridePhase: session.playerStridePhase,
         eye: eye(),
         ...(spectatorCameraEnabled && spectatorCameraBody
           ? { spectator: { position: [...spectatorCameraBody.pos], yaw: input.yaw, pitch: input.pitch } }

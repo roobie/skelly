@@ -23,6 +23,8 @@ export interface GameConfig {
   debug: boolean;
   /** Fresh debug games may override the start-card hand (`?handedness=left`). */
   debugHandedness?: HandSide;
+  /** Debug-only vertical/horizontal wobble ratio comparison (`?wobbleFlat=0..1`). */
+  debugWobbleFlat?: number;
   /** Debug-only fresh-session start in metres (`?at=x,z[,yawDegrees]`). */
   debugStart?: DebugStart;
   /**
@@ -72,6 +74,18 @@ export interface DebugStart {
   z: number;
   yawDegrees?: number;
 }
+
+const debugWobbleFlatFromUrl = (params: URLSearchParams): number | undefined => {
+  if (params.get('debug') !== '1') {
+    return undefined;
+  }
+  const raw = params.get('wobbleFlat');
+  if (raw === null || raw.trim() === '') {
+    return undefined;
+  }
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
+};
 
 const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
   if (params.get('debug') !== '1') {
@@ -152,6 +166,10 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
   }
   if (config.debug && params.get('handedness') === 'left') {
     config.debugHandedness = 'left';
+  }
+  const debugWobbleFlat = debugWobbleFlatFromUrl(params);
+  if (debugWobbleFlat !== undefined) {
+    config.debugWobbleFlat = debugWobbleFlat;
   }
   config.actors = actorRendererFromUrl(params);
   return config;
