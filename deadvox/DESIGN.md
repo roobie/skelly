@@ -23,6 +23,7 @@ read_if:
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
+  - you're changing player-facing item descriptions or their boundary with control guidance
 ---
 
 # deadvox — design
@@ -333,6 +334,10 @@ chunks can generate in any order.
   slows you down and costs stamina.
 - **Condition** reads as a word: pristine, worn, damaged, badly damaged or
   ruined. Inspecting an item shows the exact numbers.
+- Item descriptions describe the item, not how to operate it. Bindings can change,
+  so operating instructions belong in the binding table and its displayed controls
+  list (`src/game/inputBindings.ts`, `INPUT_BINDINGS` and `POINTER_ACTIONS`), not
+  in the description.
 
 ### Hands: what you see is what's there
 
@@ -752,7 +757,7 @@ and `src/core/content.ts`, `checkItemFirearm`.
   without saving an individual physics body for every shot. A deterministic
   scatter represents the pile visually. See
   `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
-  `FirearmMechanics.ejectionDrop`, and `src/render/spentCaseScatter.ts`,
+  `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`,
   `spentCaseScatter`.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.

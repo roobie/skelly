@@ -30,6 +30,7 @@ import {
 import { toggleWalking } from '../src/game/inputReplayActions.ts';
 import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
 import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
+import { inputReplayStatus } from '../src/game/play.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import {
   applyReplayActionPayload,
@@ -607,6 +608,23 @@ const createRifleReplayFixture = () => {
 const REPLAY_EXPORT_OVERRIDE_MESSAGE = /debug firearm-handling overrides differ from content/;
 
 describe('input replay', () => {
+  it('reports the supplied stop reason instead of an idle recording', () => {
+    const options = {
+      replayPlayer: undefined,
+      inputRecorder: undefined,
+      previousRecorder: undefined,
+      total: 0,
+      verification: undefined,
+      verificationTick: undefined,
+    };
+    const stoppedReason = 'test-owned stop reason';
+    const status = inputReplayStatus({ ...options, stoppedReason });
+    const idleStatus = inputReplayStatus(options);
+
+    expect.soft(status).toContain(stoppedReason);
+    expect.soft(status).not.toBe(idleStatus);
+  });
+
   it('rejects a replay from another schema version', async () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
@@ -739,6 +757,21 @@ describe('input replay', () => {
       [1, 7, -4, true],
       [1, 7, -4, false],
     ]);
+  });
+
+  it('does not duplicate an explicit tick-zero load with a reconstructed window seam', () => {
+    const frame = [0, 0, 0, 0, 1, 1] as const;
+    const joined = joinInputReplayWindows(
+      { frames: [frame], actions: [], generatedColumns: [], columnChanges: [] },
+      {
+        frames: [frame],
+        actions: [],
+        generatedColumns: [[7, -4]],
+        columnChanges: [[0, 7, -4, true]],
+      },
+    );
+
+    expect(joined.columnChanges).toEqual([[1, 7, -4, true]]);
   });
 
   it('prepares tick-zero generated columns when playback is constructed', () => {
@@ -1350,6 +1383,77 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
+  it('rolls an overflowing column batch into the next replay segment', async () => {
+    const initialColumn: [number, number] = [100, 100];
+    const loadedColumn: [number, number] = [101, 100];
+    const start = capture(createRuntime(undefined, false, [initialColumn]));
+    let recorder = new InputReplayRecorder(start, 2, [initialColumn], 2);
+    const source = createRuntime(start, false, [initialColumn], {
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recorder.recordTick(live, compression);
+        return live;
+      },
+    });
+    source.sim.paused = false;
+    recorder.queueColumnChange(initialColumn[0], initialColumn[1], false);
+    removeFixtureColumn(source, ...initialColumn);
+    source.session.onColumnUnload(...initialColumn);
+    source.session.frame(1 / 60);
+    const previous = recorder.copyInputs();
+
+    recorder.queueColumnChange(loadedColumn[0], loadedColumn[1], true);
+    addFixtureColumn(source, ...loadedColumn);
+    source.session.onColumn(loadedColumn[0], loadedColumn[1], fixtureHamlet);
+    recorder.queueColumnChange(loadedColumn[0], loadedColumn[1], false);
+    removeFixtureColumn(source, ...loadedColumn);
+    source.session.onColumnUnload(...loadedColumn);
+    expect(recorder.columnChangesWouldOverflow).toBe(true);
+
+    recorder = rolloverInputReplayRecorder(recorder, capture(source), []);
+    source.session.frame(1 / 60);
+    const joined = joinInputReplayWindows(previous, recorder.copyInputs());
+    expect(joined.columnChanges).toEqual([
+      [0, initialColumn[0], initialColumn[1], false],
+      [1, loadedColumn[0], loadedColumn[1], true],
+      [1, loadedColumn[0], loadedColumn[1], false],
+    ]);
+
+    const sourceEnd = capture(source);
+    const replay = playSession(start, joined, {
+      endSimTimestamp: sourceEnd.character.simulation.time,
+      initialColumns: [initialColumn],
+    });
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('preserves ordered load and unload effects when action capacity rolls a window without a player tick', () => {
+    const start = capture(createRuntime());
+    const previous = new InputReplayRecorder(start, 2);
+    previous.recordTick(replaySample);
+    while (!previous.full) {
+      previous.queueAction('movement.walk-toggle', 'down', 'play');
+    }
+    previous.queueColumnChange(7, -4, true);
+    previous.queueColumnChange(7, -4, false);
+
+    expect(previous.full).toBe(true);
+    const next = rolloverInputReplayRecorder(previous, start);
+    next.recordTick(replaySample);
+
+    const joined = joinInputReplayWindows(previous.copyInputs(), next.copyInputs());
+    expect(joined.columnChanges).toEqual([
+      [1, 7, -4, true],
+      [1, 7, -4, false],
+    ]);
+    const player = new InputReplayPlayer(joined, () => undefined);
+    player.takePreparedColumnChanges();
+    player.next();
+    expect(player.takePreparedColumnChanges()).toEqual([
+      [1, 7, -4, true],
+      [1, 7, -4, false],
+    ]);
+  });
+
   it('keeps a toggle already in the rollover snapshot at the previous seam, so each segment verifies', async () => {
     const start = capture(createRuntime());
     const ticksPerWindow = 2;
@@ -1420,6 +1524,30 @@ describe('input replay', () => {
     expect(next.copyInputs().actions.map(({ tick, action }) => [tick, action])).toEqual(
       actions.map((action) => [0, action]),
     );
+  });
+
+  it('preserves a payload on an action declared in the rollover snapshot', () => {
+    const runtime = createRuntime();
+    const hand = runtime.inventory.character.handedness;
+    const heldItem = runtime.inventory.hands[hand];
+    if (!heldItem) {
+      throw new Error('Snapshot action fixture needs a held item');
+    }
+    const payload: ReplayActionPayload = {
+      kind: 'item.throw',
+      itemUid: heldItem.uid,
+      hand,
+      distance: 2.5,
+    };
+    const start = capture(runtime);
+    const previous = new InputReplayRecorder(start, 1);
+    previous.recordTick(replaySample);
+    previous.queueAction('item.throw', 'down', 'play', { payload, inSnapshot: true });
+
+    rolloverInputReplayRecorder(previous, start);
+    expect(previous.copyInputs().actions).toEqual([
+      { tick: 1, action: 'item.throw', phase: 'down', context: 'play', payload },
+    ]);
   });
 
   it('rolls a deferred throw into the next segment, which verifies alone and joined', async () => {
