@@ -9,6 +9,7 @@ import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } f
 import { type HitImpulse, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BLOCK = 0.5;
@@ -40,7 +41,7 @@ const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
     lit: false,
     lightSeenFrom: 40,
   }),
-  hour: () => 12,
+  dayPhase: () => dayStateAtHour(12),
   hurtPlayer: () => undefined,
 });
 

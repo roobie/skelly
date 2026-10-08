@@ -1,6 +1,7 @@
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import type { DayPhase, DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import { lightSenseRangeScale } from './lights.ts';
@@ -353,8 +354,8 @@ export interface ZombieSystemOptions {
   jumpSpeed: number;
   tuning: SenseDef;
   player: () => PlayerSense;
-  hour: () => number;
-  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  dayPhase: () => DayPhaseState;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
   hurtPlayer: (amount: number, area: PlayerHitArea, attacker: EntityId) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
@@ -570,18 +571,16 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
   return true;
 };
 
-/** Daylight follows the sky's 06:30 dawn and 19:30 dusk keys. */
-const isDaylight = (hour: number): boolean => hour >= 6.5 && hour < 19.5;
-
 export interface PerceptionInput {
   zombie: ZombieDef;
   from: Vec3;
   facing: Vec3;
   player: PlayerSense;
-  hour: number;
+  dayPhase: DayPhase;
+  sightBlend: number;
   blockSize: number;
   isSolid: SolidAt;
-  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
   tuning: SenseDef;
 }
 
@@ -601,7 +600,7 @@ interface ZombieTickScratch {
   dt: number;
   time: number;
   player: PlayerSense;
-  hour: number;
+  dayState: DayPhaseState;
   blockSize: number;
   isSolid: SolidAt;
   isOpaque: SolidAt;
@@ -645,7 +644,7 @@ const createZombieTickScratch = (): ZombieTickScratch => ({
   dt: 0,
   time: 0,
   player: undefined as unknown as PlayerSense,
-  hour: 0,
+  dayState: undefined as unknown as DayPhaseState,
   blockSize: 0,
   isSolid: undefined as unknown as SolidAt,
   isOpaque: undefined as unknown as SolidAt,
@@ -814,7 +813,8 @@ const seesPlayer = ({
   from,
   facing,
   player,
-  hour,
+  dayPhase,
+  sightBlend,
   blockSize,
   isSolid,
   isSunExposedAt,
@@ -839,8 +839,8 @@ const seesPlayer = ({
   };
   const clear = clearAtHeight(eyeHeight);
   const lightClear = !player.lit || clearAtHeight(lightHeight);
-  let sightRange = isDaylight(hour) ? zombie.sight : zombie.nightSight;
-  const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos, hour) ?? isDaylight(hour);
+  let sightRange = zombie.nightSight + (zombie.sight - zombie.nightSight) * sightBlend;
+  const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos) ?? dayPhase === 'day';
   const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
   if (player.lit && lightClear && playerLightScale > 0) {
     sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale);
@@ -855,7 +855,7 @@ const canSeeLight = ({
   from,
   look,
   source,
-  hour,
+  dayPhase,
   blockSize,
   isOpaque,
   isSunExposedAt,
@@ -865,15 +865,15 @@ const canSeeLight = ({
   from: Vec3;
   look: Vec3;
   source: ZombieLightSource;
-  hour: number;
+  dayPhase: DayPhase;
   blockSize: number;
   isOpaque: SolidAt;
-  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
   tuning: SenseDef;
 }): number | undefined => {
   const delta = sub(source.pos, from);
   const distance = Math.hypot(delta[0], delta[2]) * blockSize;
-  const sunlit = source.sunlit ?? isSunExposedAt?.(source.pos, hour) ?? isDaylight(hour);
+  const sunlit = source.sunlit ?? isSunExposedAt?.(source.pos) ?? dayPhase === 'day';
   const exposure = source.carried ? 'carried' : 'world';
   if (distance <= 0 || distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light)) {
     return undefined;
@@ -895,7 +895,7 @@ const visibleLightTarget = ({
   from,
   facing,
   player,
-  hour,
+  dayPhase,
   blockSize,
   isOpaque,
   isSunExposedAt,
@@ -905,17 +905,17 @@ const visibleLightTarget = ({
   from: Vec3;
   facing: Vec3;
   player: PlayerSense;
-  hour: number;
+  dayPhase: DayPhase;
   blockSize: number;
   isOpaque: SolidAt;
-  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
   tuning: SenseDef;
 }): Vec3 | undefined => {
   const look = unit(facing);
   let nearest: ZombieLightSource | undefined;
   let nearestDistance = Number.POSITIVE_INFINITY;
   for (const source of player.lightSources ?? []) {
-    const distance = canSeeLight({ zombie, from, look, source, hour, blockSize, isOpaque, isSunExposedAt, tuning });
+    const distance = canSeeLight({ zombie, from, look, source, dayPhase, blockSize, isOpaque, isSunExposedAt, tuning });
     if (distance !== undefined && distance < nearestDistance) {
       nearest = source;
       nearestDistance = distance;
@@ -1584,7 +1584,7 @@ export class ZombieSystem {
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, and night-roam transitions together as one horde state machine.
-  private updateHordes(dt: number, time: number, player: PlayerSense): void {
+  private updateHordes(dt: number, time: number, player: PlayerSense, dayPhase: DayPhase): void {
     const { blockSize, isSolid } = this.options;
     for (const { state: horde, rng } of this.hordes.values()) {
       const center = this.hordeCenter(horde.id);
@@ -1611,7 +1611,7 @@ export class ZombieSystem {
           horde.stimulusAt = time;
         }
       }
-      const night = this.options.hour() >= 20 || this.options.hour() < 6;
+      const night = dayPhase !== 'day';
       const arrived = horizontalDistance(center, horde.target) * blockSize <= 3;
       if (
         horde.mode === 'noise' &&
@@ -1651,8 +1651,9 @@ export class ZombieSystem {
       return;
     }
     const player = this.options.player();
+    const dayState = this.options.dayPhase();
     if (sliceIndex === 0) {
-      this.updateHordes(dt, time, player);
+      this.updateHordes(dt, time, player, dayState.phase);
     }
     const { blockSize, isSolid } = this.options;
     const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [] };
@@ -1660,7 +1661,7 @@ export class ZombieSystem {
     scratch.dt = dt;
     scratch.time = time;
     scratch.player = player;
-    scratch.hour = this.options.hour();
+    scratch.dayState = dayState;
     scratch.blockSize = blockSize;
     scratch.isSolid = isSolid;
     scratch.isOpaque = this.options.isOpaque;
@@ -1747,12 +1748,13 @@ export class ZombieSystem {
 
   private updatePerception(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, pos, player, hour, blockSize, isOpaque, isSolid, time, rng, perception } = scratch;
+    const { zombie, type, pos, player, dayState, blockSize, isOpaque, isSolid, time, rng, perception } = scratch;
     perception.zombie = type;
     perception.from = pos;
     perception.facing = zombie.facing;
     perception.player = player;
-    perception.hour = hour;
+    perception.dayPhase = dayState.phase;
+    perception.sightBlend = dayState.sightBlend;
     perception.blockSize = blockSize;
     perception.isSolid = isOpaque;
     perception.isSunExposedAt = this.options.isSunExposedAt;
@@ -1763,7 +1765,7 @@ export class ZombieSystem {
       from: pos,
       facing: zombie.facing,
       player,
-      hour,
+      dayPhase: dayState.phase,
       blockSize,
       isOpaque,
       isSunExposedAt: this.options.isSunExposedAt,
@@ -2343,14 +2345,14 @@ export class ZombieSystem {
       this.tickFrozen(dt, entries);
       return;
     }
-    const hour = this.options.hour();
+    const dayState = this.options.dayPhase();
     const { blockSize, isSolid } = this.options;
     const groundedAtTickStart = new Map<Zombie, boolean>();
     const scratch = this.tickScratch;
     scratch.dt = dt;
     scratch.time = time;
     scratch.player = player;
-    scratch.hour = hour;
+    scratch.dayState = dayState;
     scratch.blockSize = blockSize;
     scratch.isSolid = isSolid;
     scratch.isOpaque = this.options.isOpaque;
