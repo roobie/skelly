@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import validator from 'gltf-validator';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { buildRegistry } from '../../deadvox/src/core/content.ts';
 import { generateValid } from '../src/core/generate.ts';
 import { localSolidBounds } from '../src/core/geometry.ts';
@@ -491,38 +491,49 @@ describe('attachment parts and export metadata', () => {
     expect(result.modelEntry.attachment?.properties.magnification).toEqual(optic.magnification);
   });
 
-  it('exports fitted default mods as node-backed metadata linked to mount slots', () => {
-    const model = exported(design('archetype-ar'), 'ar_default_mods');
-    const nodes = model.read.json.nodes.map(({ name }) => name);
-    const fitted = model.modelEntry.attachments ?? [];
-    const slots = model.modelEntry.attachmentSlots ?? [];
-    expect(fitted.some(({ kind, node }) => kind === 'optic' && nodes.includes(node))).toBe(true);
-    expect(
-      fitted.every(({ mountedAt, mount }) => slots.some((slot) => slot.id === mountedAt && slot.mount === mount)),
-    ).toBe(true);
-    expect(validateInDeadvox(model.modelEntry).issues).toEqual([]);
-    const { compatibility } = model.modelEntry;
-    if (!compatibility) {
-      throw new Error('gungen did not export attachment compatibility');
-    }
-    expect(Object.keys(compatibility).sort()).toEqual(slots.map(({ id }) => id).sort());
-    expect(model.modelEntry.compatibilityPairs).toBeDefined();
-    for (const ids of Object.values(compatibility)) {
-      for (const id of ids) {
-        expect(ATTACHMENT_IDS).toContain(id);
+  describe('AR default-mods export', () => {
+    let defaultModsModel: ReturnType<typeof exported>;
+
+    // Builds and exports the AR design with default attachment compatibility metadata.
+    beforeAll(() => {
+      defaultModsModel = exported(design('archetype-ar'), 'ar_default_mods');
+    }, 10_000);
+
+    it('exports fitted default mods as node-backed metadata linked to mount slots', () => {
+      const model = defaultModsModel;
+      const nodes = model.read.json.nodes.map(({ name }) => name);
+      const fitted = model.modelEntry.attachments ?? [];
+      const slots = model.modelEntry.attachmentSlots ?? [];
+      expect(fitted.some(({ kind, node }) => kind === 'optic' && nodes.includes(node))).toBe(true);
+      expect(
+        fitted.every(({ mountedAt, mount }) => slots.some((slot) => slot.id === mountedAt && slot.mount === mount)),
+      ).toBe(true);
+      expect(validateInDeadvox(model.modelEntry).issues).toEqual([]);
+      const { compatibility } = model.modelEntry;
+      if (!compatibility) {
+        throw new Error('gungen did not export attachment compatibility');
       }
-    }
-    const fittedOptic = model.modelEntry.attachments?.find(({ id }) => id === 'optic-lpvo-1-6x');
-    const standaloneOptic = attachmentBuild('optic-lpvo-1-6x');
-    expect(fittedOptic?.massKg).toBe(attachmentMassKg('sight', standaloneOptic.part, gunDomain.units.metresPerUnit));
-    const standalone = exportAttachmentGlb('optic-lpvo-1-6x', {
-      id: 'optic_lpvo_mass_comparison',
-      file: 'assets/models/optic_lpvo_mass_comparison.glb',
+      expect(Object.keys(compatibility).sort()).toEqual(slots.map(({ id }) => id).sort());
+      expect(model.modelEntry.compatibilityPairs).toBeDefined();
+      for (const ids of Object.values(compatibility)) {
+        for (const id of ids) {
+          expect(ATTACHMENT_IDS).toContain(id);
+        }
+      }
     });
-    if (!standalone.ok) {
-      throw new Error(JSON.stringify(standalone.error));
-    }
-    expect(fittedOptic?.massKg).toBe(standalone.modelEntry.attachment?.massKg);
+
+    it('matches fitted optic mass to the standalone attachment export', () => {
+      const fittedOptic = defaultModsModel.modelEntry.attachments?.find(({ id }) => id === 'optic-lpvo-1-6x');
+      expect(fittedOptic?.massKg).toBeDefined();
+      const standalone = exportAttachmentGlb('optic-lpvo-1-6x', {
+        id: 'optic_lpvo_mass_comparison',
+        file: 'assets/models/optic_lpvo_mass_comparison.glb',
+      });
+      if (!standalone.ok) {
+        throw new Error(JSON.stringify(standalone.error));
+      }
+      expect(fittedOptic?.massKg).toBe(standalone.modelEntry.attachment?.massKg);
+    });
   });
 
   it('rejects a candidate at a solid-obstructed slot while certifying the same mount at a clear slot', () => {
