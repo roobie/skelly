@@ -571,7 +571,7 @@
         },
         {
           "template": "camp_hq",
-          "position": [470, 21, 517],
+          "position": [476, 21, 517],
           "rotation": 0,
           "storeys": 1
         },
@@ -784,6 +784,18 @@
         {
           "template": "camp_gate",
           "position": [472, 21, 494],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_gate",
+          "position": [472, 21, 559],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_gate_damaged",
+          "position": [472, 21, 551],
           "rotation": 0,
           "storeys": 1
         }

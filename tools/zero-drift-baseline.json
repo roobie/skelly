@@ -79,7 +79,6 @@
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/menuPointer.ts", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/playHud.ts", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/playReadout.ts", "count": 1 },
-    { "path": "deadvox/maps/README.md", "check": "citation", "text": "br-31", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "citation", "text": "BR, 2026-10-07", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "citation", "text": "BR's 2026-10-07", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "assets/", "count": 1 },

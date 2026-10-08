@@ -10,7 +10,7 @@
   "tileheight": 1,
   "infinite": false,
   "nextlayerid": 7,
-  "nextobjectid": 76,
+  "nextobjectid": 95,
   "properties": [
     {
       "name": "id",
@@ -1082,9 +1082,9 @@
           "id": 70,
           "name": "Three-storey camp HQ",
           "type": "building",
-          "x": 470,
+          "x": 476,
           "y": 517,
-          "width": 4,
+          "width": 8,
           "height": 9,
           "rotation": 0,
           "visible": true,
@@ -1642,6 +1642,54 @@
               "type": "string",
               "propertytype": "template_id",
               "value": "camp_gate"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 93,
+          "name": "South outer gate 1",
+          "type": "building",
+          "x": 472,
+          "y": 559,
+          "width": 8,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_gate"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 94,
+          "name": "South inner gate 2 — damaged",
+          "type": "building",
+          "x": 472,
+          "y": 551,
+          "width": 8,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_gate_damaged"
             },
             {
               "name": "fixed_loot",

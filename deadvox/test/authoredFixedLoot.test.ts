@@ -708,7 +708,7 @@ describe('authored fixed loot', () => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
     const jumpReachMeters = PLAYER.jump ** 2 / (2 * physicsFor(scale).gravity * scale.blockSize);
     const wallPlacements = site.placements.filter(({ template }) =>
-      ['camp_wall_run', 'camp_gate'].includes(template.id),
+      ['camp_wall_run', 'camp_gate', 'camp_gate_damaged'].includes(template.id),
     );
     expect(wallPlacements.length).toBeGreaterThan(0);
     for (const placement of wallPlacements) {
@@ -716,7 +716,7 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('keeps the named southern breach passable and the northern gate openable', () => {
+  it('keeps the south double gate on the route with both doors openable', () => {
     const campSite = new AuthoredSite(73, result.registry, scale, layout);
     const wallRects = layout.buildings
       .filter(({ template }) => template === 'camp_wall_run')
@@ -730,27 +730,50 @@ describe('authored fixed loot', () => {
     });
     expect(gaps.length).toBeGreaterThan(0);
     const [gapStart, gapEnd] = gaps.sort((a, b) => b[1] - b[0] - (a[1] - a[0]))[0]!;
-    const routeX = (gapStart + gapEnd) / 2;
-    expect(layout.tracks.some((track) => polylineDistance([routeX, southEdge], track.points) <= track.width / 2)).toBe(
-      true,
+    const gateObjects = layout.buildings.filter(({ template }) =>
+      ['camp_gate', 'camp_gate_damaged'].includes(template),
     );
-    const routeHeights = Array.from({ length: 9 }, (_, index) =>
-      campSite.surface.height(routeX, southEdge - 2 + index * 0.5, layout.ground / scale.blockSize),
+    const outer = gateObjects.find(
+      (building) =>
+        building.template === 'camp_gate' &&
+        buildingBounds(building, result.registry.templates.get(building.template)!.size).z1 === southEdge,
+    );
+    const inner = gateObjects.find(({ template }) => template === 'camp_gate_damaged');
+    const north = gateObjects.find((building) => building.template === 'camp_gate' && building !== outer);
+    if (!outer || !inner || !north) throw new Error('the camp needs north, south outer, and south inner gates');
+    const outerBounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
+    const innerBounds = buildingBounds(inner, result.registry.templates.get(inner.template)!.size);
+    const routeX = (gapStart + gapEnd) / 2;
+    expect(outerBounds.z1).toBe(southEdge);
+    expect(outerBounds.x0).toBeGreaterThanOrEqual(gapStart);
+    expect(outerBounds.x1).toBeLessThanOrEqual(gapEnd);
+    expect([innerBounds.x0, innerBounds.x1]).toEqual([outerBounds.x0, outerBounds.x1]);
+    expect(innerBounds.z1).toBeLessThan(outerBounds.z0);
+    for (const bounds of [outerBounds, innerBounds]) {
+      const centreZ = (bounds.z0 + bounds.z1) / 2;
+      expect(layout.tracks.some((track) => polylineDistance([routeX, centreZ], track.points) <= track.width / 2)).toBe(
+        true,
+      );
+    }
+    const routeHeights = Array.from({ length: 17 }, (_, index) =>
+      campSite.surface.height(routeX, outerBounds.z1 + 1 - index * 0.5, layout.ground / scale.blockSize),
     );
     expect(routeHeights.every((height, index) => index === 0 || Math.abs(height - routeHeights[index - 1]!) <= 1)).toBe(
       true,
     );
 
-    const gate = compileTemplate(result.registry, result.registry.templates.get('camp_gate')!);
-    const door = gate.pieces.find((piece) => result.registry.furniture.get(piece.furniture)?.door);
-    expect(door).toBeDefined();
-    expect(door && result.registry.furniture.get(door.furniture)?.door).toBeDefined();
-    const [doorX, doorY] = door!.pos;
-    const [doorWidth, doorHeight] = door!.size;
-    for (let y = doorY; y < doorY + doorHeight; y++) {
-      for (let x = doorX; x < doorX + doorWidth; x++) {
-        const block = gate.blocks[x + gate.size[0] * (1 + gate.size[2] * y)]!;
-        expect(result.registry.blocks[block]?.solid).toBe(false);
+    for (const building of [north, outer, inner]) {
+      const gate = compileTemplate(result.registry, result.registry.templates.get(building.template)!);
+      const door = gate.pieces.find((piece) => result.registry.furniture.get(piece.furniture)?.door);
+      expect(door).toBeDefined();
+      expect(door && result.registry.furniture.get(door.furniture)?.door).toBeDefined();
+      const [doorX, doorY] = door!.pos;
+      const [doorWidth, doorHeight] = door!.size;
+      for (let y = doorY; y < doorY + doorHeight; y++) {
+        for (let x = doorX; x < doorX + doorWidth; x++) {
+          const block = gate.blocks[x + gate.size[0] * (1 + gate.size[2] * y)]!;
+          expect(result.registry.blocks[block]?.solid).toBe(false);
+        }
       }
     }
   });
@@ -1254,7 +1277,7 @@ describe('authored fixed loot', () => {
     );
     const track = fixture.tracks[0]!;
     const routeClearanceRects = fixture.buildings
-      .filter(({ template }) => template !== 'camp_gate')
+      .filter(({ template }) => !['camp_gate', 'camp_gate_damaged'].includes(template))
       .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
     const route = sampleRoute(site, fixture, routeClearanceRects);
     expect(route.samples.length).toBeGreaterThan(0);
