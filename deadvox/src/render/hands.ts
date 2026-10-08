@@ -40,6 +40,7 @@ import {
   heldGripOffset,
   modelToView,
   readyFirearmPose,
+  throwStanceHandOffset,
 } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -93,6 +94,7 @@ interface HeldReadiness {
 export interface HeldHandlingFrame {
   readonly firearms: readonly HeldFirearmPose[];
   readonly readiness?: HeldReadiness;
+  readonly throwing?: { readonly chargeProgress: number };
   readonly aim?: AimFrame;
   readonly job?: Readonly<Job> | undefined;
   readonly grab?: { readonly progress: number };
@@ -334,6 +336,12 @@ export class HeldItems {
       this.poseRotation.multiply(this.rackRotation);
     }
     const strength = Math.max(0, Math.min(1, recoil));
+    const throwOffset = throwStanceHandOffset(
+      side,
+      handling.throwing !== undefined,
+      handling.throwing?.chargeProgress ?? 0,
+    );
+    transform.offset = transform.offset.map((value, axis) => value + throwOffset[axis]!) as Vec3;
     transform.offset[1] += 0.012 * strength;
     transform.offset[2] += 0.025 * strength;
     this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));

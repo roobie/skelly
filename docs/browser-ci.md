@@ -16,25 +16,21 @@ full reusable workflow and enabled package scripts. Package aliases do not add
 extra executions. Quarantines remain explicit: repartitioning must not silently
 restore a flaky case or remove its reinstatement obligation.
 
-BR's br-43 decision (2026-10-07 22:44:58) selects the managed-browser containment
-without claiming a root cause. Its evidence and trigger are recorded in
-`deadvox/TROUBLESHOOTING.md`; #287 remains open until the launch cause is established.
+Managed-browser containment keeps browser-launch failures bounded without
+claiming a root cause. Its evidence and trigger are recorded in
+`deadvox/TROUBLESHOOTING.md`; #287 tracks establishing the launch cause.
 
 The required `check` in `.github/workflows/deadvox.yml` uses
 `tools/browser-ci-result.mjs`, `assertBrowserResult`. A selected layout's jobs
 must succeed; only the unselected layout's jobs may skip (the control jobs on a
 sharded run, `fast` and `browser` on a control run). Matrix fail-fast is disabled
-so one failure cannot erase sibling evidence. Earlier attempts in the same run
-are queried before rerun acceptance because GitHub's latest green alone can
-conceal the first failed attempt. A failed, cancelled or unobservable earlier
-attempt requires disposition, not an unchanged retry into green, and failure in
-this within-run history query fails the gate.
+so one failure cannot erase sibling evidence. `checkBrowserWorkflow` queries
+prior attempts in the same run before accepting a rerun because GitHub's latest
+green alone can conceal a failed first attempt. Its prior-attempt check keeps
+the run red after any failed, cancelled or unobservable attempt until it is
+disposed; failure in the history query also fails the gate.
 
-BR's 2026-10-05 condition-3 ruling on #255: “Doesn't hide a failed first
-attempt” stays per run: `checkBrowserWorkflow`'s prior-attempt check keeps the
-result red within a run. In addition, the aggregate makes earlier failures
-visible without blocking. `reportEarlierRuns` in
-`tools/browser-ci-result.mjs`, called by `check` in
+`reportEarlierRuns` in `tools/browser-ci-result.mjs`, called by `check` in
 `.github/workflows/deadvox.yml`, reports completed unsuccessful attempts from
 other runs at the same head SHA as warning annotations and a job-summary note.
 It excludes the current run and runs still in progress. If the cross-run history
