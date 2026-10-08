@@ -852,8 +852,9 @@ baked into chunks; voxel sunlight can then join AO in vertex colour. See
 `src/render/itemEmissive.ts`, `applyItemEmissive`, `src/render/piles.ts`,
 `PileMeshes.drawModels`, `drawEmissiveLights`, `src/render/itemThrows.ts`,
 `ItemThrows.spawn`, `src/render/lightPool.ts`, `LightPool.update`,
-`src/core/lights.ts`, `lightSenseSourceFor`, `sunExposedAt`,
-`src/core/dayPhase.ts`, `dayPhaseAt`, `src/game/session.ts`, `createSession`,
+`src/core/lights.ts`, `lightSenseSourceFor`, `SunExposureCache`,
+`sunExposedAt`, `src/core/dayPhase.ts`, `dayPhaseAt`, `src/game/session.ts`,
+`createSession`,
 `isSunExposedAt`, `src/core/zombies.ts`, `seesPlayer`, `src/render/sky.ts`,
 `applySky`, and `src/core/mesher.ts`, `buildMesh`.
 
