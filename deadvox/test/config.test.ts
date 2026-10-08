@@ -7,6 +7,13 @@ it('restricts handedness overrides to debug URL configuration', () => {
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=unknown')).debugHandedness).toBeUndefined();
 });
 
+it('limits wobble-flat ratios to debug URLs and the unit interval', () => {
+  expect(configFromUrl(new URLSearchParams('debug=1&wobbleFlat=0.18')).debugWobbleFlat).toBe(0.18);
+  expect(configFromUrl(new URLSearchParams('wobbleFlat=0.18')).debugWobbleFlat).toBeUndefined();
+  expect(configFromUrl(new URLSearchParams('debug=1&wobbleFlat=1.01')).debugWobbleFlat).toBeUndefined();
+  expect(configFromUrl(new URLSearchParams('debug=1&wobbleFlat=0')).debugWobbleFlat).toBe(0);
+});
+
 it('warns and falls back when a debug start position is malformed', () => {
   const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   try {

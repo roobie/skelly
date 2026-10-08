@@ -43,6 +43,7 @@ import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import { pryPlan } from '../core/prying.ts';
+import { Rng } from '../core/random.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import { bindReach, pileDistance as distanceToPile, furnitureDistance, INVENTORY_CHEST } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
@@ -115,6 +116,38 @@ const sessionFirearmsShotKind = (
   firearmUid === undefined ? 'singleShot' : mechanics.handlingShotKind(firearmUid, timeSimSeconds);
 const sessionFirearmTargetName = (registry: Registry, firearmType: string | undefined): string | undefined =>
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
+const createSessionAim = ({
+  tuning,
+  seed,
+  restored,
+  character,
+  wobbleFlatOverride,
+}: {
+  tuning: FirearmsCombatTuning;
+  seed: number;
+  restored: SaveSnapshot | undefined;
+  character: Character;
+  wobbleFlatOverride: number | undefined;
+}): AimController => {
+  const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
+  const jitterSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
+  return new AimController({
+    wobbleLimitRadians: tuning.wobbleLimitRadians,
+    wobbleShape: {
+      verticalToHorizontalRatio: wobbleFlatOverride ?? tuning.wobbleVerticalToHorizontalRatio,
+      archPower: tuning.wobbleLuneArchPower,
+      phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
+      jitterShare: tuning.wobbleJitterShare,
+      jitterAmplitudeFraction: tuning.wobbleJitterAmplitudeFraction,
+    },
+    jitterSeed,
+    ...(restored ? { state: restored.character.aim } : {}),
+    variance: firearmsSkillEffects(firearmsSkillLevel(character), tuning).variance,
+    stridePhase: footstepClock.stridePhase,
+    stepIndex: footstepClock.stepIndex,
+  });
+};
+
 const advanceSessionAim = ({
   aim,
   firearms,
@@ -129,6 +162,8 @@ const advanceSessionAim = ({
   pitch,
   aimSway,
   firing,
+  stridePhase,
+  stepIndex,
 }: {
   aim: AimController;
   firearms: FirearmMechanics;
@@ -143,6 +178,8 @@ const advanceSessionAim = ({
   pitch: number;
   aimSway: number;
   firing: boolean;
+  stridePhase: number;
+  stepIndex: number;
 }): void => {
   const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
   const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
@@ -155,6 +192,8 @@ const advanceSessionAim = ({
     variance: skill.variance * aimSway,
     firing,
     recoilRecoveryRate: skill.recoilRecoveryRate,
+    stridePhase,
+    stepIndex,
   });
 };
 const setSessionFirearmsSkillZeroHandling = (
@@ -290,6 +329,8 @@ export interface SessionOptions {
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
+  /** Debug-only wobble vertical/horizontal ratio override. */
+  wobbleFlatOverride?: number | undefined;
   /**
    * Continue from a save. Inventory and block-entity state are restored into the
    * game's shared `entities` object. Re-streamed columns are safe: entity anchors and
@@ -450,10 +491,13 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
-  const aim = new AimController(
-    restored?.character.aim,
-    firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).variance,
-  );
+  const aim = createSessionAim({
+    tuning: currentFirearmsCombatTuning(),
+    seed,
+    restored,
+    character,
+    wobbleFlatOverride: options.wobbleFlatOverride,
+  });
   const { entities } = inventory;
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
@@ -687,6 +731,8 @@ export const createSession = (options: SessionOptions) => {
       pitch: sampledInput().pitch,
       aimSway: sim.body.consequences.aimSway,
       firing,
+      stridePhase: footstepClock.stridePhase,
+      stepIndex: footstepClock.stepIndex,
     });
   };
   const applyAimViewPitchShift = (): void => {
@@ -1024,7 +1070,7 @@ export const createSession = (options: SessionOptions) => {
     );
     const tools = debug?.();
     if (tools?.noclip) {
-      footstepClock = initialFootstepClock();
+      footstepClock = advanceFootsteps(footstepClock, 'still', 0).clock;
       airbornePeakY = undefined;
       tools.stepNoclip({
         body,
@@ -1185,6 +1231,7 @@ export const createSession = (options: SessionOptions) => {
       return sessionFirearmTargetName(registry, firearmInHands()?.type);
     },
     hasFirearmHandlingOverrides: () =>
+      options.wobbleFlatOverride !== undefined ||
       firearms.hasSkillZeroHandlingOverrides() ||
       !sameFirearmsSkillZeroHandling(
         firearmsCombatTuning.skillZeroHandling,
@@ -1230,6 +1277,9 @@ export const createSession = (options: SessionOptions) => {
     },
     get lastPlayerStep() {
       return lastPlayerStep;
+    },
+    get playerStridePhase() {
+      return footstepClock.stridePhase;
     },
     get sprinting() {
       return sprinting;
