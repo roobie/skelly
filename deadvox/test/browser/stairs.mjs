@@ -418,12 +418,17 @@ try {
     try {
       await waitForSimulation(
         page,
-        (destination) => {
+        ({ target: destination, deadline }) => {
           const { body, session, input, engine } = globalThis.stairsWitness;
           const dx = destination[0] - body.pos[0];
           const dz = destination[2] - body.pos[2];
           input.yaw = Math.atan2(-dx, -dz);
           const distance = Math.hypot(dx, dz);
+          const reached = distance < 0.5;
+          const terminal = reached || session.sim.paused || session.sim.time >= deadline;
+          if (!terminal) {
+            return { time: session.sim.time, paused: session.sim.paused, reached, distance };
+          }
           const supportCell = (position) => [
             Math.floor(position[0]),
             Math.floor(position[1] - 1),
@@ -435,7 +440,7 @@ try {
           return {
             time: session.sim.time,
             paused: session.sim.paused,
-            reached: distance < 0.5,
+            reached,
             distance,
             position: [...body.pos],
             target: [...destination],
@@ -457,27 +462,33 @@ try {
               targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
               targetSupport: engine.isSolid(...targetSupport),
             },
-            residents: [...session.zombieStore.values()].map((resident) => ({
+            residents: [...session.zombieStore.entries()].map(([, resident]) => ({
               position: [...resident.body.pos],
               mode: resident.mode,
             })),
           };
         },
-        target,
+        { target, deadline: start + 12 },
         { seconds: 12, from: start, label, record: state, stop: releaseForward },
       );
     } finally {
       await releaseForward();
     }
+    const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await waitForSimulation(
       page,
-      (destination) => {
+      ({ target: destination, deadline }) => {
         const { body, session, engine } = globalThis.stairsWitness;
+        const reached = body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01;
+        const terminal = reached || session.sim.paused || session.sim.time >= deadline;
+        if (!terminal) {
+          return { time: session.sim.time, paused: session.sim.paused, reached };
+        }
         const supportCell = [Math.floor(destination[0]), Math.floor(destination[1] - 1), Math.floor(destination[2])];
         return {
           time: session.sim.time,
           paused: session.sim.paused,
-          reached: body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01,
+          reached,
           position: [...body.pos],
           target: [...destination],
           feet: body.pos[1],
@@ -490,8 +501,13 @@ try {
           },
         };
       },
-      target,
-      { seconds: 4, label: `${label}: settle after releasing forward input`, record: state },
+      { target, deadline: settleStart + 4 },
+      {
+        seconds: 4,
+        from: settleStart,
+        label: `${label}: settle after releasing forward input`,
+        record: state,
+      },
     );
   };
   let lightProof;
@@ -622,41 +638,62 @@ try {
     const houseUpper = await state('house upstairs walked');
     const residentAtUpper = houseUpper.zombies.find(({ id }) => id === residentId);
     assert.ok(residentAtUpper && residentAtUpper.pos[1] > houseLower.position[1]);
-    const upperAnchor = await page
-      .waitForFunction(
-        ({ id, lowerLanding, upperLanding }) => {
-          const { engine, session } = globalThis.stairsWitness;
-          const resident = session.zombieStore.get(id);
-          if (!resident?.body.onGround || Math.abs(resident.body.pos[1] - upperLanding[1]) >= 0.01) {
-            return false;
-          }
-          const supportCell = (position) => [
-            Math.floor(position[0]),
-            Math.floor(position[1] - 1),
-            Math.floor(position[2]),
-          ];
-          const lowerTarget = [resident.body.pos[0], lowerLanding[1], resident.body.pos[2]];
-          const middleStair = [
-            Math.floor((lowerLanding[0] + upperLanding[0]) / 2),
-            Math.floor((lowerLanding[1] + upperLanding[1]) / 2 - 1),
-            Math.floor((lowerLanding[2] + upperLanding[2]) / 2),
-          ];
-          const collisionCells = [lowerLanding, middleStair, upperLanding, lowerTarget].map(supportCell);
-          const collisionReady = collisionCells.map((cell) => engine.isSolid(...cell));
-          return collisionReady.every(Boolean)
+    const upperAnchorStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    const upperAnchor = await waitForSimulation(
+      page,
+      ({ id, lowerLanding, upperLanding, deadline }) => {
+        const { engine, session } = globalThis.stairsWitness;
+        const resident = session.zombieStore.get(id);
+        const residentPosition = resident ? [...resident.body.pos] : null;
+        const residentGroundedAtUpper = Boolean(
+          resident?.body.onGround && Math.abs(resident.body.pos[1] - upperLanding[1]) < 0.01,
+        );
+        const lowerTarget = resident ? [resident.body.pos[0], lowerLanding[1], resident.body.pos[2]] : null;
+        const supportCell = (position) => [
+          Math.floor(position[0]),
+          Math.floor(position[1] - 1),
+          Math.floor(position[2]),
+        ];
+        const middleStair = [
+          Math.floor((lowerLanding[0] + upperLanding[0]) / 2),
+          Math.floor((lowerLanding[1] + upperLanding[1]) / 2 - 1),
+          Math.floor((lowerLanding[2] + upperLanding[2]) / 2),
+        ];
+        const collisionCells = [lowerLanding, middleStair, upperLanding, ...(lowerTarget ? [lowerTarget] : [])].map(
+          supportCell,
+        );
+        const collisionReady = collisionCells.map((cell) => engine.isSolid(...cell));
+        const reached = residentGroundedAtUpper && collisionReady.every(Boolean);
+        const terminal = reached || session.sim.paused || session.sim.time >= deadline;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached,
+          ...(terminal
             ? {
-                residentPosition: [...resident.body.pos],
+                residentPosition,
+                residentGroundedAtUpper,
                 target: lowerTarget,
                 collisionCells,
                 collisionReady,
-                terrainGenerated: engine.streamer.isReady(lowerTarget[0], lowerTarget[2]),
+                terrainGenerated: lowerTarget ? engine.streamer.isReady(lowerTarget[0], lowerTarget[2]) : false,
               }
-            : false;
-        },
-        { id: residentId, lowerLanding: houseLower.position, upperLanding: houseUpper.position },
-        { timeout: 60_000, polling: 50 },
-      )
-      .then((handle) => handle.jsonValue());
+            : {}),
+        };
+      },
+      {
+        id: residentId,
+        lowerLanding: houseLower.position,
+        upperLanding: houseUpper.position,
+        deadline: upperAnchorStart + 8,
+      },
+      {
+        seconds: 8,
+        from: upperAnchorStart,
+        label: 'upper resident and lower-floor/stair collision ready',
+        record: state,
+      },
+    );
     await state('upper resident and lower-floor/stair collision ready', { upperAnchor });
     await openResidentDoor(residentId);
     const approachStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);

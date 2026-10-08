@@ -177,9 +177,10 @@ override exist only in the lighting test's Vite plugin, not the demo or build. B
 stages keep the existing outer cap; neither retries to green. Traversal witnesses
 actual floor following; screenshots are secondary to its simulation observations.
 
-Shamblers do not traverse authored flights or otherwise navigate between
-storeys. They beeline toward their attention target, move horizontally, slide
-along obstacles through collision physics, and prefer jumping low obstacles;
+Shamblers do not navigate between storeys or follow authored flights as routes,
+though a resident can drift onto the flight while beelining. They move
+horizontally toward their attention target, slide along obstacles through
+collision physics, and prefer jumping low obstacles;
 some obstacle hits trigger an open-direction wander before pursuit resumes. A
 target on another floor does not give the shambler stair knowledge. Closed doors
 block it like walls. BR deferred door bashing for #273 until mob and obstacle
