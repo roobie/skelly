@@ -434,6 +434,15 @@ try {
     const note = page.locator('.inv-item').filter({ hasText: 'Placeholder note' });
     await note.waitFor();
     await uiClick(note);
+    const noteSelection = await page.evaluate(() => {
+      const { input, screen } = globalThis.readingWitness;
+      const target = document.elementFromPoint(input.cursorX, input.cursorY);
+      return {
+        selected: screen.selected?.type,
+        target: target && { tag: target.tagName, className: String(target.className), text: target.textContent },
+      };
+    });
+    assert.equal(noteSelection.selected, 'sample_note', `pointer selected the note: ${JSON.stringify(noteSelection)}`);
     const handStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     await pressAction(page, 'inventory.hands');
     await waitForSimulation(
