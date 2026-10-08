@@ -20,7 +20,7 @@ From the 2026-10-01 discussion, ranked by mood gained per cost:
 | 2 | Sun shadows (dawn to dusk) and flashlight shadows | done |
 | 3 | Colour grading, film (vignette, grain), bloom, height fog driven by fogginess | done |
 | 4 | Wider-radius ambient occlusion from the voxel grid, computed while meshing | done |
-| 5 | Procedural weathering layered over block surface patterns | d150-1 spike; BR look judgment pending |
+| 5 | Procedural weathering layered over block surface patterns | d150-1 spike; visual judgment pending |
 | 6 | Skylight: light flooding in from the sky, so interiors are dark (planned for Slice 4 in [CHALLENGES.md](CHALLENGES.md#9-lighting)) | later |
 
 Also done along the way: block colours decoded from sRGB (they were rendered as if linear,
@@ -88,7 +88,7 @@ part of the greedy-merge key, so a merged quad shades as its separate faces woul
   and quads per chunk by 15% (hamlet) to 47% (city). Not yet measured on a real GPU,
   where the extra vertex attribute and quads also cost.
 
-BR's dilapidation direction is recorded in [DESIGN.md](DESIGN.md#a-world-that-feels-real). Procedural weathering is render-only; changing existing building geometry remains deferred to #396.
+The weathering rationale and geometry scope are in [DESIGN.md](DESIGN.md#a-world-that-feels-real). Procedural weathering is render-only; changing existing building geometry remains deferred to #396.
 
 ## Open
 
