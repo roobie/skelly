@@ -91,12 +91,11 @@ import {
   type ReplayInputData,
   type ReplayStartState,
   replayStateFingerprint,
-  restoreReplayStartState,
   rolloverInputReplayRecorder,
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
-import { openInventoryAtReplayStart, routeDominantUse, toggleWalking } from './inputReplayActions.ts';
+import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
@@ -325,10 +324,7 @@ export const startPlay = (
     armSpeedMetresPerRealSecond: throwArmSpeedMetresPerRealSecond,
     armEnergyJoules: throwArmEnergyJoules,
   };
-  const initialReplayStartState = restoreReplayStartState(options.replay?.startState);
-  const { throwingStance: initialThrowingStance, readyHeld, inventoryOpen } = initialReplayStartState;
-  input.rightMouseHeld = readyHeld;
-  let throwingStance = initialThrowingStance;
+  let throwingStance = false;
   let itemThrowStartedAt: number | undefined;
   let itemThrowItemUid: number | undefined;
   let itemThrowHand: HandSide | undefined;
@@ -572,19 +568,16 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
+  const hasActiveFirearmInput = (): boolean =>
+    replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
   const isFirearmReady = (uid: number): boolean =>
-    input.rightMouseActionHeld &&
-    input.locked &&
-    !input.menuPointer &&
-    !compression.locksInput &&
-    firearms.isReady(uid);
+    input.rightMouseActionHeld && hasActiveFirearmInput() && !compression.locksInput && firearms.isReady(uid);
   const isAimingDownSights = (): boolean => {
     const action = selectPrimaryAction(inventory);
     return (
       input.aimingDownSights &&
       input.rightMouseActionHeld &&
-      input.locked &&
-      !input.menuPointer &&
+      hasActiveFirearmInput() &&
       action.kind === 'firearm' &&
       isFirearmReady(action.item.uid) &&
       !session.sprinting
@@ -833,12 +826,30 @@ export const startPlay = (
   const closeInventoryScreen = (): void => {
     screen.close();
   };
-  const captureReplayStartState = (): ReplayStartState => ({
-    throwingStance,
-    readyHeld: input.rightMouseHeld,
-    inventoryOpen: screen.isOpen,
+  const replayPlayState = createReplayPlayStateBinding({
+    getThrowingStance: () => throwingStance,
+    setThrowingStance: (value) => {
+      throwingStance = value;
+    },
+    getReadyHeld: () => input.rightMouseHeld,
+    setReadyHeld: (value) => {
+      input.rightMouseHeld = value;
+    },
+    getAimingDownSights: () => input.aimingDownSights,
+    setAimingDownSights: (value) => {
+      input.aimingDownSights = value;
+    },
+    getInventoryOpen: () => screen.isOpen,
+    setInventoryOpen: (value) => {
+      if (value) {
+        openInventoryScreen();
+      } else {
+        closeInventoryScreen();
+      }
+    },
   });
-  openInventoryAtReplayStart(inventoryOpen, openInventoryScreen);
+  replayPlayState.restore(options.replay?.startState);
+  const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
 
   const spawnItem = (type: string): string => {
     const item = inventory.create(type);
@@ -1374,7 +1385,7 @@ export const startPlay = (
   };
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
   keyboardInput.cancelled = (preservePointer) => {
-    input.cancel(preservePointer);
+    input.cancel(preservePointer || Boolean(replayPlayer));
     cancelItemThrow();
     throwStanceInput.cancel();
     quickbarInput.cancel();
@@ -1766,7 +1777,7 @@ export const startPlay = (
     throwingStance = !throwingStance;
     automaticFireUid = undefined;
     if (!replayPlayer) {
-      inputRecorder?.queueAction('throw.stance.toggle', 'down', inputContext());
+      inputRecorder?.queueAction('throw.stance.toggle', 'down', inputContext(), { inSnapshot: true });
     }
     if (!throwingStance) {
       cancelItemThrow();

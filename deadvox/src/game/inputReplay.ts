@@ -146,12 +146,14 @@ export interface ReplayInputData {
 export interface ReplayStartState {
   readonly throwingStance: boolean;
   readonly readyHeld: boolean;
+  readonly aimingDownSights: boolean;
   readonly inventoryOpen: boolean;
 }
 
 export const DEFAULT_REPLAY_START_STATE: ReplayStartState = {
   throwingStance: false,
   readyHeld: false,
+  aimingDownSights: false,
   inventoryOpen: false,
 };
 
@@ -793,8 +795,9 @@ export async function decodeInputReplay(
     !isRecord(value.startState) ||
     typeof value.startState.throwingStance !== 'boolean' ||
     typeof value.startState.readyHeld !== 'boolean' ||
+    typeof value.startState.aimingDownSights !== 'boolean' ||
     typeof value.startState.inventoryOpen !== 'boolean' ||
-    Object.keys(value.startState).length !== 3 ||
+    Object.keys(value.startState).length !== 4 ||
     !Array.isArray(value.frames) ||
     !Array.isArray(value.actions) ||
     !Array.isArray(value.generatedColumns) ||
@@ -901,12 +904,14 @@ export async function decodeInputReplay(
       startState: {
         throwingStance: value.startState.throwingStance,
         readyHeld: value.startState.readyHeld,
+        aimingDownSights: value.startState.aimingDownSights,
         inventoryOpen: value.startState.inventoryOpen,
       },
     },
     startState: {
       throwingStance: value.startState.throwingStance,
       readyHeld: value.startState.readyHeld,
+      aimingDownSights: value.startState.aimingDownSights,
       inventoryOpen: value.startState.inventoryOpen,
     },
     endStateFingerprint: value.endStateFingerprint,

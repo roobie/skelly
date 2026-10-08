@@ -30,7 +30,7 @@ import {
   sampleFromReplayFrame,
   withReplayExportGuard,
 } from '../src/game/inputReplay.ts';
-import { openInventoryAtReplayStart, routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
+import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
 import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
 import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
 import { inputReplayStatus } from '../src/game/play.ts';
@@ -657,25 +657,57 @@ describe('input replay', () => {
     );
   });
 
-  it('round-trips held-ready and open-inventory state at a replay segment start', async () => {
+  it('captures and restores every play-state value across a replay rollover', async () => {
     const start = capture(createRuntime());
-    const startState: ReplayStartState = {
+    const liveState = {
       throwingStance: false,
-      readyHeld: true,
-      inventoryOpen: true,
+      readyHeld: false,
+      aimingDownSights: false,
+      inventoryOpen: false,
     };
-    const recorder = new InputReplayRecorder(start, undefined, [], { startState });
+    const binding = createReplayPlayStateBinding({
+      getThrowingStance: () => liveState.throwingStance,
+      setThrowingStance: (value) => {
+        liveState.throwingStance = value;
+      },
+      getReadyHeld: () => liveState.readyHeld,
+      setReadyHeld: (value) => {
+        liveState.readyHeld = value;
+      },
+      getAimingDownSights: () => liveState.aimingDownSights,
+      setAimingDownSights: (value) => {
+        liveState.aimingDownSights = value;
+      },
+      getInventoryOpen: () => liveState.inventoryOpen,
+      setInventoryOpen: (value) => {
+        liveState.inventoryOpen = value;
+      },
+    });
+    liveState.throwingStance = true;
+    liveState.readyHeld = true;
+    liveState.aimingDownSights = true;
+    liveState.inventoryOpen = true;
+    const startState = binding.capture();
+    const previous = new InputReplayRecorder(start);
+    previous.recordTick(replaySample);
+    const recorder = rolloverInputReplayRecorder(previous, start, [], { startState });
     recorder.recordTick(replaySample);
     const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, start);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
 
-    let inventoryOpen = false;
-    openInventoryAtReplayStart(decoded.startState.inventoryOpen, () => {
-      inventoryOpen = true;
-    });
+    liveState.throwingStance = false;
+    liveState.readyHeld = false;
+    liveState.aimingDownSights = false;
+    liveState.inventoryOpen = false;
+    binding.restore(decoded.startState);
 
-    expect(decoded.startState).toEqual(startState);
-    expect(inventoryOpen).toBe(true);
+    expect(decoded.startState).toEqual({
+      throwingStance: true,
+      readyHeld: true,
+      aimingDownSights: true,
+      inventoryOpen: true,
+    });
+    expect(liveState).toEqual(decoded.startState);
   });
 
   it('replays a held-ready stance at a standalone segment start', async () => {
@@ -692,6 +724,7 @@ describe('input replay', () => {
     const startState: ReplayStartState = {
       throwingStance: false,
       readyHeld: true,
+      aimingDownSights: false,
       inventoryOpen: false,
     };
     const recorder = new InputReplayRecorder(start, 1, [], { startState });
@@ -1635,6 +1668,7 @@ describe('input replay', () => {
     const startState: ReplayStartState = {
       throwingStance: true,
       readyHeld: false,
+      aimingDownSights: false,
       inventoryOpen: false,
     };
     const throwDominantItem = (runtime: ReturnType<typeof createRuntime>): void => {

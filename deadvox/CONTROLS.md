@@ -238,12 +238,16 @@ order follows `src/game/playerTickActions.ts`, `PlayerTickActions`. Export and r
 are handled by `src/game/inputReplay.ts`, `withReplayExportGuard`, `InputReplayRecorder`,
 and `replayStateFingerprint`.
 
-For #432, each replay segment also starts with the play state that changes recorded-action
-routing but is not part of the save snapshot: throwing stance, held readiness and whether the
-inventory modal is open. `src/game/play.ts`, `captureReplayStartState`, captures those values
-at each window boundary and `startPlay` restores them before replay. ADS changes firearm
-presentation rather than simulation action resolution, and inventory tab selection only
-changes presentation, so neither belongs in replay state.
+For #442, each replay segment starts with the play state that changes recorded-action
+routing or shot resolution but is not part of the save snapshot: throwing stance, held
+readiness, ADS and whether the inventory modal is open. `src/game/play.ts`,
+`captureReplayStartState`, captures that state at each window boundary, and
+`createReplayPlayStateBinding` restores it before replay. ADS changes a shot's origin and
+direction, so a replay must restore it; inventory tab selection changes presentation only
+and stays outside replay state. Reading-screen state also stays out: `play.ts`,
+`samplePlayerInput`, replays whether world input is active each tick, while `modalCommand`
+routes reading navigation and close commands to the presentation-only reader. A replay need
+not reopen a particular readable or restore its scroll position.
 
 ## Readiness and melee (2026-10-05, #267)
 
