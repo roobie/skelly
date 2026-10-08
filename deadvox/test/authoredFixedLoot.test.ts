@@ -740,7 +740,9 @@ describe('authored fixed loot', () => {
     );
     const inner = gateObjects.find(({ template }) => template === 'camp_gate_damaged');
     const north = gateObjects.find((building) => building.template === 'camp_gate' && building !== outer);
-    if (!outer || !inner || !north) throw new Error('the camp needs north, south outer, and south inner gates');
+    if (!(outer && inner && north)) {
+      throw new Error('the camp needs north, south outer, and south inner gates');
+    }
     const outerBounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
     const innerBounds = buildingBounds(inner, result.registry.templates.get(inner.template)!.size);
     const routeX = (gapStart + gapEnd) / 2;
