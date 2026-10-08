@@ -92,7 +92,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('world.interact', 'Tap to interact or pocket a ground item; hold to wield it', world, ['KeyF']),
   row(
     'firearm.reload',
-    'Hold to load; double-press to rack; tap, then hold to remove the magazine; tap does nothing',
+    'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap does nothing',
     world,
     ['KeyR'],
     'hold',
