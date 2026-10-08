@@ -468,7 +468,6 @@ Only questions BR left open; don't infer answers from implementation or old prop
 
 - **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
 - **#181 beat 4:** whether the radio works, and which quiet-or-light craft path fixed workshop loot should cover fully. d124-2 places the radio and defers both decisions; its attachment-dependent choice loot remains deferred to 3.7. The template's `r` spawn markers use the existing runner type without scripted spawns. Beats 5–6 retain their own dependent map rounds.
-- **#181 tester prompt:** confirm the wording when BR details beats 4–6. BR's 2026-10-05 22:17 proposal was: “Instead it could be: "find the military camp", maybe?”
 - **#308 — playtest 1 apex enemy:** the design questions remain open; see 3.8.
 
 ## Definition of done

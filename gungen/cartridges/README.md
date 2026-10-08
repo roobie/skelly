@@ -1,3 +1,10 @@
+---
+read_if:
+  - you add or change a cartridge's data file
+  - you change the cartridge format, its sourcing rule or its consistency checks
+  - you need a real cartridge dimension and where it was sourced
+---
+
 # Cartridge data
 
 One JSON file per cartridge, named `<id>.json`, where `id` is the slug other cartridges

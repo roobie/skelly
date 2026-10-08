@@ -318,7 +318,7 @@ chunks can generate in any order.
   - `tool` (qualities such as `cutting: 2`, `prying: 1`)
   - `weapon` (melee or ranged stats)
   - `fuel`, `battery`, `light`, `book`
-  - `vehiclePart` (after Slice 1)
+  - `vehiclePart` (with vehicles, #322)
 
   Behaviour comes only from components; the game never checks an item's id. For d59-1, BR ruled (BR, 2026-10-05), "yes, rule covers drawing too": first-person displays and ground-pile presentation follow declared components as well; see `src/render/hands.ts`, `HeldItems.syncHand` and `HeldItems.shape`, and `src/render/piles.ts`, `PileMeshes.drawPile` and `PileMeshes.planSpentCases`.
 - **Space is a grid**, as in DayZ. An item takes w × h cells and can be
@@ -540,7 +540,8 @@ and `src/core/content.ts`, `checkItemFirearm`.
 ## Character
 
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
-  are per game hour. Temperature comes after Slice 1.
+  are per game hour. Body temperature isn't simulated; #366's heat property
+  could later serve it.
 - **Body.** BR (2026-10-06 07:23) approved the five defaults: “yes, take the five
   defaults”. The model makes injury decisions consequential beyond a single
   health value: see `src/core/body.ts`, `Body`; `src/core/needs.ts`, `stepNeeds`;
@@ -802,7 +803,8 @@ without modeling armour now.
     little around it.
 - **Blocks and block entities get materials.** Soil, wood, brick, concrete and
   steel, each with durability and a resistance per damage type, as content-pack
-  data (today a block has only an id and `solid`). A destroyed block is removed
+  data; a block has no material or durability fields (`src/core/schema.ts`,
+  `BlockSchema`). A destroyed block is removed
   with `World.setBlock`. Saves already store changed cells as an overlay on the
   regenerated base chunks (`src/core/saveState.ts`, `SaveSnapshot`), so destruction
   persists without new save machinery; saves grow with the damage done.
@@ -831,8 +833,10 @@ Nights should be dark, and voxel-lit interiors pitch black, so you have to
 bring light. Light is the visual side of noise: it lets you see, and it lets
 them see you.
 
-Interiors need voxel light to become darker than the outdoors. Until that
-arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
+Interiors become darker than the outdoors through voxel light. Diffuse sky light
+already goes through the grid; light from sources inside, such as torches and
+lamps, doesn't. Until that arrives in Slice 4, don't fake the gap with a
+separate interior-darkness rule.
 A carried beam remains a three.js light because it moves every frame, unlike
 block light. All-around carried and dropped sources use a fixed pool of
 shadowless point lights; unused slots stay at zero intensity, and surplus
@@ -844,7 +848,7 @@ render and sense heights. The marker does not replace pool lighting. Source
 colour, intensity, radius and burn rules belong to item content. Tune that content
 against the ground and walls under the pool's shared near-field falloff, not
 against the glow. The zombie light check keeps sky visibility separate from
-carried light, so adding voxel sky light won't change the carried-light rule. The
+carried light, so voxel sky light doesn't change the carried-light rule. The
 sun-derived day phase owns simulation sun exposure and blends zombie sight through
 twilight, while time-of-day lighting stays in the sky and fog rather than being
 baked into chunks; voxel sunlight can then join AO in vertex colour. See
@@ -1160,9 +1164,10 @@ something in play, not only decorate it.
     and `hearingTier`, own the stance's visibility and hearing effects.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
-    moving faster. Leaf litter changes footsteps (`footstep_leaves`). Lead
-    defaults pending BR override: leaves do not muffle either simulation hearing
-    or WebAudio, and do not obstruct melee/bites; they still obstruct ray picks.
+    moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do
+    not muffle either simulation hearing or WebAudio, and do not obstruct
+    melee/bites; they still obstruct ray picks. These are the lead's defaults,
+    which BR may override.
   - **Materials:** branches and felled trees give sticks and wood, the same
     materials loot gives in Slice 2.
   - **Movement and landmarks:** solid trunks channel movement for you and the
@@ -1218,10 +1223,14 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   through its phases over about a month of game days. On a clear night near
   full moon you can see shapes and find your way outdoors without a light; on
   a new moon, or when it's overcast, you can't. Clouds hide the moon and stars.
-- **Voxel light**: sunlight, plus light from torches, lamps and hot zombies,
-  spread through the block grid. Inside buildings it's pitch black at night and
-  dim by day, lit only by what comes in through doors and windows. It comes
-  after Slice 1.
+- **Voxel light**: light spread through the block grid, so that inside buildings
+  it's pitch black at night and dim by day, lit only by what comes in through
+  doors and windows. Only diffuse sky light goes through the grid
+  (`src/core/skylight.ts`, `buildSkylight`). The sun and the carried beam are lit
+  on their own, and carried or dropped sources are the pool's shadowless point
+  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). Light from
+  torches, lamps and hot zombies through the grid is planned for Slice 4, with
+  the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.

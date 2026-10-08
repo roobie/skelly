@@ -177,7 +177,11 @@ const observationPlugin = {
         });
       });`;
     const playerTickMarker = '      pendingPlayerTickActions.applyAtNextTick();';
+    const adsToggleMarker = `      case 'aim.ads-toggle':
+        input.toggleAimingDownSights(replayPlayer !== undefined);
+        break;`;
     assert(code.includes(marker), 'game-loop observation point exists');
+    assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
     assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
     assert(code.includes(playerTickMarker), 'player tick action observation point exists');
     let observedCode = code.replace(
@@ -201,6 +205,16 @@ const observationPlugin = {
       }`,
     );
     observedCode = observedCode.replace(
+      adsToggleMarker,
+      `      case 'aim.ads-toggle': {
+        const before = input.aimingDownSights;
+        const replaying = replayPlayer !== undefined;
+        input.toggleAimingDownSights(replaying);
+        proof.adsToggleObservations.push({ before, after: input.aimingDownSights, replaying, locked: input.locked });
+        break;
+      }`,
+    );
+    observedCode = observedCode.replace(
       playerTickMarker,
       `${playerTickMarker}
       if (proof.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
@@ -218,6 +232,7 @@ const observationPlugin = {
       `
   const proof = {
     input,
+    inputTarget,
     keyboardInput,
     inventory,
     session,
@@ -245,6 +260,7 @@ const observationPlugin = {
     quickbarTapItemUid: undefined,
     quickbarTapCommitObservation: undefined,
     quickbarTapTickObservation: undefined,
+    adsToggleObservations: [],
     startInputReplayRecording: () => {
       previousInputRecorder = undefined;
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
@@ -865,6 +881,11 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         .reduce((sum, { item }) => sum + item.count, 0);
       return count === cases + 1 && r.inputRecorder.copyInputs().frames.length > 0;
     }, firearm);
+    await page.mouse.click(640, 450, { button: 'middle' });
+    await page.waitForFunction(() =>
+      globalThis.primaryActionTest.inputRecorder.copyInputs().actions.some(({ action }) => action === 'aim.ads-toggle'),
+    );
+    assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.aimingDownSights), false);
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -928,6 +949,10 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     });
     const artifact = JSON.parse(replayText);
     assert.deepEqual(artifact.startState, liveEnd.startState);
+    assert(
+      artifact.actions.some(({ action }) => action === 'aim.ads-toggle'),
+      'the replay records the mid-segment ADS toggle',
+    );
     const replayNavigation = page.waitForNavigation();
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
@@ -945,13 +970,60 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         document.querySelector('#input-replay-status')?.dataset.state === 'playing'
       );
     });
-    await page.evaluate(() => globalThis.dispatchEvent(new FocusEvent('blur')));
-    const replayInputAfterBlur = await page.evaluate(() => ({
-      readyHeld: globalThis.primaryActionTest.input.rightMouseHeld,
-      aimingDownSights: globalThis.primaryActionTest.input.aimingDownSights,
-    }));
-    assert.equal(replayInputAfterBlur.readyHeld, true, 'viewer blur preserves replay readiness');
-    assert.equal(replayInputAfterBlur.aimingDownSights, true, 'viewer blur preserves replay ADS');
+    const viewerMouseInput = await page.evaluate(() => {
+      const { input, inputTarget } = globalThis.primaryActionTest;
+      const read = () => ({
+        rightMousePressed: input.rightMousePressed,
+        rightMouseSuppressed: input.rightMouseSuppressed,
+        rightMouseHeld: input.rightMouseHeld,
+        aimingDownSights: input.aimingDownSights,
+        dominantUseDown: input.dominantUseDown,
+      });
+      const click = (button) => {
+        const before = read();
+        inputTarget.dispatchEvent(new MouseEvent('mousedown', { button, bubbles: true }));
+        globalThis.dispatchEvent(new MouseEvent('mouseup', { button, bubbles: true }));
+        return { before, after: read() };
+      };
+      const unlocked = [click(1), click(0)];
+      input.lock();
+      const locked = [click(1), click(0)];
+      const pointerLocked = input.locked;
+      input.unlock();
+      return { unlocked, locked, pointerLocked };
+    });
+    assert.equal(viewerMouseInput.pointerLocked, true);
+    assert(
+      [...viewerMouseInput.unlocked, ...viewerMouseInput.locked].every(
+        ({ before, after }) => JSON.stringify(before) === JSON.stringify(after),
+      ),
+      'viewer clicks during replay cannot change readiness, ADS or dominant-use mouse state',
+    );
+    const viewerBlurInput = await page.evaluate(() => {
+      const { input } = globalThis.primaryActionTest;
+      const read = () => ({
+        readyHeld: input.rightMouseHeld,
+        aimingDownSights: input.aimingDownSights,
+      });
+      const before = read();
+      globalThis.dispatchEvent(new FocusEvent('blur'));
+      return { before, after: read() };
+    });
+    assert.deepEqual(
+      viewerBlurInput.before,
+      { readyHeld: true, aimingDownSights: true },
+      'viewer blur lands while the replay holds readiness and ADS',
+    );
+    assert.equal(
+      viewerBlurInput.after.readyHeld,
+      viewerBlurInput.before.readyHeld,
+      'viewer blur preserves replay readiness',
+    );
+    assert.equal(
+      viewerBlurInput.after.aimingDownSights,
+      viewerBlurInput.before.aimingDownSights,
+      'viewer blur preserves replay ADS',
+    );
     await page.waitForFunction(
       () =>
         ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
@@ -990,6 +1062,10 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     assert.equal(replay.readyHeld, false);
     assert.equal(replay.cases, firearm.cases + 1, 'the replayed firearm action fires a shot');
     assert.deepEqual(replay.snapshot, liveEnd.snapshot);
+    const recordedAdsToggle = await page.evaluate(() =>
+      globalThis.primaryActionTest.adsToggleObservations.find(({ replaying }) => replaying),
+    );
+    assert.deepEqual(recordedAdsToggle, { before: true, after: false, replaying: true, locked: false });
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
