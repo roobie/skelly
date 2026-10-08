@@ -90,6 +90,7 @@ import {
   type ReplayGeneratedColumn,
   type ReplayInputData,
   replayStateFingerprint,
+  rolloverInputReplayRecorder,
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
@@ -2554,9 +2555,7 @@ export const startPlay = (
     }
     if (!replayPlayer && inputRecorder?.full) {
       previousInputRecorder = inputRecorder;
-      const nextRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
-      inputRecorder.transferPendingActionsTo(nextRecorder);
-      inputRecorder = nextRecorder;
+      inputRecorder = rolloverInputReplayRecorder(inputRecorder, captureSnapshot(), streamer.generatedColumns());
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     if (spectatorCameraEnabled && spectatorCameraBody && input.locked && !input.menuPointer) {
