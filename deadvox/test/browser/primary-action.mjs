@@ -3,13 +3,14 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract uses Node assertions
 // biome-ignore-all lint/style/noProcessEnv: runner controls the executable and source checkout for A/B tests
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
+import { logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
@@ -32,313 +33,6 @@ const throwChargeSample = ({ start, seconds }) => {
 const mouseCharge = async (page) => {
   await page.mouse.down({ button: 'left' });
   return async () => page.mouse.up({ button: 'left' });
-};
-const measureGlowstickFloor = async (page, uid, label) => {
-  const screenshot = await page.locator('#view canvas').screenshot();
-  const artifacts = resolve(projectRoot, 'test-results/primary-action');
-  await mkdir(artifacts, { recursive: true });
-  await writeFile(resolve(artifacts, `dropped-glowstick-${label}.png`), screenshot);
-  return page.evaluate(
-    async ({ base64, itemUid }) => {
-      const r = globalThis.primaryActionTest;
-      const item = r.inventory.itemByUid(itemUid);
-      const location = item && r.inventory.locate(item);
-      if (location?.kind !== 'pile') {
-        throw new Error('Glowstick pixel fixture is not on the ground');
-      }
-      const { camera } = r.engine;
-      camera.updateMatrixWorld(true);
-      const forward = camera.getWorldDirection(camera.position.clone());
-      forward.y = 0;
-      forward.normalize();
-      const { blockSize } = r.scale;
-      const point = camera.position
-        .clone()
-        .set(
-          (location.pile.pos[0] + 0.5) * blockSize + forward.x * 0.8,
-          location.pile.pos[1] * blockSize + 0.015,
-          (location.pile.pos[2] + 0.5) * blockSize + forward.z * 0.8,
-        )
-        .project(camera);
-      const decoded = new Image();
-      decoded.src = `data:image/png;base64,${base64}`;
-      await decoded.decode();
-      const x = Math.round(((point.x + 1) / 2) * decoded.naturalWidth);
-      const y = Math.round(((1 - point.y) / 2) * decoded.naturalHeight);
-      const radius = 6;
-      if (x < radius || y < radius || x + radius >= decoded.naturalWidth || y + radius >= decoded.naturalHeight) {
-        throw new Error(`Floor sample projects outside the canvas: ${x},${y}`);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = decoded.naturalWidth;
-      canvas.height = decoded.naturalHeight;
-      const context = canvas.getContext('2d');
-      context.drawImage(decoded, 0, 0);
-      const pixels = context.getImageData(x - radius, y - radius, radius * 2 + 1, radius * 2 + 1).data;
-      let sum = 0;
-      for (let index = 0; index < pixels.length; index += 4) {
-        sum += pixels[index] + pixels[index + 1] + pixels[index + 2];
-      }
-      return { x, y, luminance: sum / ((pixels.length / 4) * 3), on: item.on };
-    },
-    { base64: screenshot.toString('base64'), itemUid: uid },
-  );
-};
-const checkDroppedGlowstickPixel = async (port) => {
-  const browser = await launchChromium('primary-action', {
-    headless: true,
-    args: ['--enable-webgl'],
-    renderMode: 'pixel',
-  });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    await page.addInitScript(() => {
-      let locked = false;
-      Object.defineProperty(document, 'pointerLockElement', {
-        configurable: true,
-        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
-      });
-      Element.prototype.requestPointerLock = () => {
-        locked = true;
-        document.dispatchEvent(new Event('pointerlockchange'));
-        return Promise.resolve();
-      };
-      document.exitPointerLock = () => {
-        locked = false;
-        document.dispatchEvent(new Event('pointerlockchange'));
-      };
-    });
-    await page.goto(
-      browserStageUrl(
-        'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=21:00&post=0&sunshadow=0&torchshadow=0`,
-        'pixel',
-      ),
-    );
-    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    await page.locator('#dominant-hand').selectOption('left');
-    await page.locator('#go').click();
-    await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-    );
-    const fixture = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.input.pitch = -0.55;
-      const item = r.inventory.create('glowstick');
-      if (!r.inventory.add(item, { kind: 'pile', pos: r.feet() })) {
-        throw new Error('Could not place dropped-glowstick pixel fixture');
-      }
-      return { uid: item.uid, frame: r.frames };
-    });
-    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, fixture.frame);
-    const off = await measureGlowstickFloor(page, fixture.uid, 'off');
-    assert.notEqual(off.on, true);
-    const onFrame = await page.evaluate((uid) => {
-      const r = globalThis.primaryActionTest;
-      const item = r.inventory.itemByUid(uid);
-      r.setHand(r.dominant, item);
-      const reason = r.survival.use(item);
-      if (reason) {
-        throw new Error(`Could not light dropped glowstick fixture: ${reason}`);
-      }
-      const dropped = r.inventory.move(item, { kind: 'pile', pos: r.feet() });
-      if (!dropped.ok) {
-        throw new Error(`Could not drop lit glowstick fixture: ${dropped.reason}`);
-      }
-      return r.frames;
-    }, fixture.uid);
-    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, onFrame);
-    const on = await measureGlowstickFloor(page, fixture.uid, 'on');
-    assert.equal(on.on, true);
-    process.stdout.write(`Dropped glowstick floor luminance: ${JSON.stringify({ off, on })}\n`);
-    assert.ok(
-      on.luminance > off.luminance + 3,
-      'a dropped lit glowstick visibly brightens nearby floor pixels at night',
-    );
-    assert.deepEqual(pageErrors, []);
-  } finally {
-    await browser.close();
-  }
-};
-const observationPlugin = {
-  name: 'primary-action-test-observation',
-  enforce: 'pre',
-  transform(code, id) {
-    if (!id.endsWith('/src/game/play.ts')) {
-      return;
-    }
-    const marker = '  const onForwardPress = (e: MouseEvent) => {';
-    const throwQueueMarker = `      pendingPlayerTickActions.enqueue(() => {
-        applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
-          throwHeldItem(heldItem, hand, distance, chargeProgress);
-          syncThrowingStance();
-        });
-      });`;
-    const playerTickMarker = '      pendingPlayerTickActions.applyAtNextTick();';
-    const adsToggleMarker = `      case 'aim.ads-toggle':
-        input.toggleAimingDownSights(replayPlayer !== undefined);
-        break;`;
-    assert(code.includes(marker), 'game-loop observation point exists');
-    assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
-    assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
-    assert(code.includes(playerTickMarker), 'player tick action observation point exists');
-    let observedCode = code.replace(
-      throwQueueMarker,
-      `${throwQueueMarker}
-      if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
-        const slot = proof.quickbarTapAfterNextThrowCommit;
-        proof.quickbarTapAfterNextThrowCommit = undefined;
-        quickbarTap(slot);
-        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
-        proof.quickbarTapCommitObservation = {
-          itemMoveQueued: queue.jobs.some(
-            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
-          ),
-          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
-        };
-      }
-      if (proof.dropAfterNextThrowCommit) {
-        proof.dropAfterNextThrowCommit = false;
-        dropHeldItemForThrowingStance();
-      }`,
-    );
-    observedCode = observedCode.replace(
-      adsToggleMarker,
-      `      case 'aim.ads-toggle': {
-        const before = input.aimingDownSights;
-        const replaying = replayPlayer !== undefined;
-        input.toggleAimingDownSights(replaying);
-        proof.adsToggleObservations.push({ before, after: input.aimingDownSights, replaying, locked: input.locked });
-        break;
-      }`,
-    );
-    observedCode = observedCode.replace(
-      playerTickMarker,
-      `${playerTickMarker}
-      if (proof.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
-        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
-        proof.quickbarTapTickObservation = {
-          itemMoveQueued: queue.jobs.some(
-            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
-          ),
-          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
-        };
-      }`,
-    );
-    return observedCode.replace(
-      marker,
-      `
-  const proof = {
-    input,
-    inputTarget,
-    keyboardInput,
-    inventory,
-    session,
-    queue,
-    view,
-    streamer,
-    survival,
-    debugTools,
-    engine,
-    view,
-    caseEffects,
-    itemThrows,
-    audio,
-    feet,
-    scale,
-    performHandUse,
-    quickbarActions,
-    quickbar,
-    screen,
-    dispatchScreenCommand,
-    get inputRecorder() { return inputRecorder; },
-    captureSnapshot,
-    dropAfterNextThrowCommit: false,
-    quickbarTapAfterNextThrowCommit: undefined,
-    quickbarTapItemUid: undefined,
-    quickbarTapCommitObservation: undefined,
-    quickbarTapTickObservation: undefined,
-    adsToggleObservations: [],
-    startInputReplayRecording: () => {
-      previousInputRecorder = undefined;
-      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
-        startState: captureReplayStartState(),
-      });
-    },
-    hudOptions,
-    beginItemThrow,
-    selectPrimaryAction,
-    ignitionTargetForHand,
-    interactionTargetAt,
-    useTarget,
-    useText,
-    dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
-    initialPlayerPosition: [...session.body.pos],
-    getNotice: () => notice,
-    isChargingItemThrow: () => itemThrowStartedAt !== undefined,
-    isThrowingStance: () => throwingStance,
-    clearNotice: () => showNotice(''),
-    clearHand: (side) => {
-      const held = inventory.hands[side];
-      if (held) {
-        const result = inventory.move(held, { kind: 'pile', pos: feet() });
-        if (!result.ok) throw new Error('Could not drop fixture hand: ' + result.reason);
-      }
-    },
-    setHand: (side, item) => {
-      if (inventory.hands[side] === item) return;
-      proof.clearHand(side);
-      const from = inventory.locate(item);
-      const result = from ? inventory.move(item, { kind: 'hand', side }) : inventory.add(item, { kind: 'hand', side });
-      if (from ? !result.ok : !result) throw new Error('Could not place fixture hand');
-    },
-    placePocketed: (item) => {
-      const definitions = inventory.registry.items;
-      const { size } = definitions.get(item.type);
-      const fits = (grid) =>
-        (grid[0] >= size[0] && grid[1] >= size[1]) || (grid[0] >= size[1] && grid[1] >= size[0]);
-      for (const { item: container, location } of inventory.items()) {
-        if (location.kind !== 'worn' || !container.pockets) continue;
-        const definition = definitions.get(container.type);
-        for (let pocket = 0; pocket < definition.container.pockets.length; pocket += 1) {
-          if (fits(definition.container.pockets[pocket].grid)) {
-            if (inventory.add(item, { kind: 'pocket', owner: container, pocket })) return;
-          }
-        }
-      }
-      throw new Error('No worn pocket fits ' + item.type);
-    },
-  };
-  Object.assign(globalThis, { primaryActionTest: proof });
-  const proofFrame = session.frame.bind(session);
-  session.frame = (...args) => { const result = proofFrame(...args); proof.frames++; return result; };
-  const proofSwing = session.playerCombat.beginMeleeSwing.bind(session.playerCombat);
-  session.playerCombat.beginMeleeSwing = (start) => {
-    const result = proofSwing(start);
-    proof.swings.push({ result, profile: start.profile, hand: session.playerCombat.activeMeleeAction?.hand ?? start.hand });
-    return result;
-  };
-  const proofHeldUpdate = view.held.update.bind(view.held);
-  view.held.update = (...args) => {
-    proofHeldUpdate(...args);
-    if (!proof.trackAttachment) return;
-    const pose = args[1];
-    const arm = view.held.arms.get(proof.off);
-    const item = view.held.heldByHand.get(proof.off);
-    const anchor = arm?.getObjectByName('grip-anchor');
-    if (!anchor || !item) return;
-    proof.attachments.push({
-      gap: item.getWorldPosition(camera.position.clone()).distanceTo(anchor.getWorldPosition(camera.position.clone())),
-      angle: item.getWorldQuaternion(camera.quaternion.clone()).angleTo(anchor.getWorldQuaternion(camera.quaternion.clone())),
-      torsoYaw: pose?.torsoYaw ?? 0,
-      movedOff: [...(pose?.[proof.off]?.offset ?? []), ...(pose?.[proof.off]?.rotation ?? [])].some(value => value !== 0),
-    });
-  };
-${marker}`,
-    );
-  },
 };
 const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
@@ -1280,16 +974,18 @@ const vite = await createServer({
 });
 let browser;
 try {
-  await vite.listen();
+  await timePhase('vite-listen', () => vite.listen());
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
   const renderOverride = process.env.DEADVOX_TEST_RENDER_MODE;
   const renderMode = browserStageMode('primary-action', renderOverride);
-  browser = await launchChromium('primary-action', {
-    headless: true,
-    args: renderMode === 'pixel' ? ['--enable-webgl'] : [],
-    renderMode: renderOverride,
-  });
+  browser = await timePhase('browser-launch', () =>
+    launchChromium('primary-action', {
+      headless: true,
+      args: renderMode === 'pixel' ? ['--enable-webgl'] : [],
+      renderMode: renderOverride,
+    }),
+  );
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -1335,24 +1031,28 @@ try {
       };
     });
   }
-  await page.goto(
-    browserStageUrl(
-      'primary-action',
-      `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
-      renderOverride,
-    ),
-  );
-  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await timePhase('initial-testHouse-boot', async () => {
+    await page.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  });
   await page.locator('#dominant-hand').selectOption('left');
   assert.equal(
     await page.evaluate(() => Boolean(globalThis.primaryActionTest)),
     false,
     'selecting Left does not construct an actor',
   );
-  await page.locator('#go').click();
-  await page.waitForFunction(
-    () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
-  );
+  await timePhase('initial-testHouse-start', async () => {
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+  });
   const identity = await page.evaluate(() => {
     const { inventory, session } = globalThis.primaryActionTest;
     return {
@@ -2817,6 +2517,7 @@ try {
   await page.screenshot({ path: pryingScreenshot });
   await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.cancel());
 
+  const lockedDoorStart = performance.now();
   const lockedPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   await lockedPage.addInitScript(() => {
     let locked = false;
@@ -2905,7 +2606,7 @@ try {
       {
         seconds: 0.5,
         label: 'locked-door F action enters the simulation',
-        record: (line) => process.stderr.write(`${line}\\n`),
+        record: (line) => process.stderr.write(`${line}\n`),
       },
     );
     const pryAction = await lockedPage.evaluate((uid) => {
@@ -2934,7 +2635,7 @@ try {
       {
         seconds: 1.5,
         label: 'locked-door prying remains active',
-        record: (line) => process.stderr.write(`${line}\\n`),
+        record: (line) => process.stderr.write(`${line}\n`),
       },
     );
     assert.equal(
@@ -2959,7 +2660,7 @@ try {
       {
         seconds: 0.5,
         label: 'prying interruption reaches the simulation',
-        record: (line) => process.stderr.write(`${line}\\n`),
+        record: (line) => process.stderr.write(`${line}\n`),
       },
     );
     const interruptedPry = await lockedPage.evaluate(() => {
@@ -2987,7 +2688,7 @@ try {
         {
           seconds: 0.5,
           label: 'movement after a prying interruption',
-          record: (line) => process.stderr.write(`${line}\\n`),
+          record: (line) => process.stderr.write(`${line}\n`),
           stop: releaseAfterInterruption,
         },
       );
@@ -3002,9 +2703,10 @@ try {
       ) > 0,
       'movement remains available after an interrupted carried-tool pry',
     );
-    process.stdout.write(`Locked-door input reproduction: ${JSON.stringify({ pryAction, interruptedPry })}\\n`);
+    process.stdout.write(`Locked-door input reproduction: ${JSON.stringify({ pryAction, interruptedPry })}\n`);
   } finally {
     await lockedPage.close();
+    logPhase('locked-door-input-case', lockedDoorStart);
   }
 
   const treatment = await page.evaluate(() => {
@@ -3072,49 +2774,116 @@ try {
     }
     return fetch(link.href).then((response) => response.text());
   });
-  await verifyGroundPickup(browser, address.port, renderOverride);
+  await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, address.port, renderOverride));
   const replayArtifact = JSON.parse(replayText);
   assert.equal(replayArtifact.magic, 'DEADVOX_REPLAY');
   assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
   assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
   assert(replayArtifact.actions.some((action) => action.action === 'item.drop'));
   assert.match(replayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
-  const replayNavigation = page.waitForNavigation();
-  await command('debug.input-replay-import');
-  await page.locator('#input-replay-file').setInputFiles({
-    name: 'input-replay.json',
-    mimeType: 'application/json',
-    buffer: Buffer.from(replayText),
+  await timePhase('full-replay-import-accepted', async () => {
+    const replayNavigation = page.waitForNavigation();
+    await command('debug.input-replay-import');
+    await page.locator('#input-replay-file').setInputFiles({
+      name: 'input-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(replayText),
+    });
+    await replayNavigation;
+    await page.waitForFunction(() => document.querySelector('#input-replay-status')?.dataset.state === 'playing');
+    const replayError = await page.locator('#errors').textContent();
+    assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
   });
-  await replayNavigation;
-  await page.waitForFunction(() => document.querySelector('#debug-ui-root'));
-  const replayCompletionTimeout = Math.ceil((replayArtifact.frames.length / 60) * 2000 + 10_000);
-  await page.waitForFunction(
-    () => {
-      const state = document.querySelector('#input-replay-status')?.dataset.state;
-      const error = document.querySelector('#errors')?.textContent ?? '';
-      return (
-        state === 'verified' || state === 'diverged' || state === 'unavailable' || error.startsWith('Replay rejected:')
-      );
-    },
-    null,
-    { timeout: replayCompletionTimeout },
+
+  await page.goto(
+    browserStageUrl(
+      'primary-action',
+      `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=hamlet&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      renderOverride,
+    ),
   );
-  const replayError = await page.locator('#errors').textContent();
-  assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
-  assert.equal(await page.locator('#input-replay-status').getAttribute('data-state'), 'diverged');
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
+  await page.waitForFunction(
+    () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+  );
+  const shortReplay = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.startInputReplayRecording();
+    const fixture = r.inventory.create('glowstick');
+    r.setHand(r.dominant, fixture);
+    return { uid: fixture.uid, start: r.session.sim.time };
+  });
+  await waitForSimulation(
+    page,
+    progressingSample,
+    { start: shortReplay.start },
+    {
+      seconds: 0.35,
+      label: 'fixture-write replay recording advances',
+      record: (line) => process.stdout.write(`${line}\n`),
+    },
+  );
+  await command('debug.panel-toggle');
+  await command('debug.input-replay-export');
+  await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+  const shortReplayText = await page.evaluate(() => {
+    const link = document.querySelector('#replay-download');
+    if (!link?.href.startsWith('blob:')) {
+      throw new Error('Fixture-write replay export did not create a downloadable artifact');
+    }
+    return fetch(link.href).then((response) => response.text());
+  });
+  const shortReplayArtifact = JSON.parse(shortReplayText);
+  assert.equal(shortReplayArtifact.magic, 'DEADVOX_REPLAY');
+  assert(shortReplayArtifact.frames.length > 0, 'fixture-write replay includes captured player ticks');
+  assert.match(shortReplayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
+  assert.equal(
+    await page.evaluate((uid) => Boolean(globalThis.primaryActionTest.inventory.itemByUid(uid)), shortReplay.uid),
+    true,
+    'fixture write changes the recorded end state',
+  );
+  await timePhase('fixture-write-replay-divergence', async () => {
+    const shortReplayNavigation = page.waitForNavigation();
+    await command('debug.input-replay-import');
+    await page.locator('#input-replay-file').setInputFiles({
+      name: 'fixture-write-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(shortReplayText),
+    });
+    await shortReplayNavigation;
+    const replayCompletionTimeout = Math.ceil((shortReplayArtifact.frames.length / 60) * 2000 + 10_000);
+    await page.waitForFunction(
+      () => {
+        const state = document.querySelector('#input-replay-status')?.dataset.state;
+        const error = document.querySelector('#errors')?.textContent ?? '';
+        return (
+          state === 'verified' ||
+          state === 'diverged' ||
+          state === 'unavailable' ||
+          error.startsWith('Replay rejected:')
+        );
+      },
+      null,
+      { timeout: replayCompletionTimeout },
+    );
+    const replayError = await page.locator('#errors').textContent();
+    assert(!replayError?.startsWith('Replay rejected:'), `fixture-write replay import failed: ${replayError}`);
+    assert.equal(await page.locator('#input-replay-status').getAttribute('data-state'), 'diverged');
+  });
 
   assert.deepEqual(pageErrors, []);
-  await verifyCleanLookReplay(browser, address.port, renderOverride);
-  await verifyStanceThrowReplay(browser, address.port, renderOverride);
-  await verifyAdsFireReplay(browser, address.port, renderOverride);
-  await browser.close();
+  await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
+  await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
+  await timePhase('ads-fire-replay-case', () => verifyAdsFireReplay(browser, address.port, renderOverride));
+  await timePhase('flow-browser-close', () => browser.close());
   browser = undefined;
-  await checkDroppedGlowstickPixel(address.port);
   process.stdout.write(
     'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, ground pickup and wield, door tap, grab animation, attachment, save identity, glowstick and loaded-firearm throws, refusals, firearm emission, quickbar hold, held-book reading, crowbar door route, clean mouse-look sample playback, and replayed ADS firearm fire.\n',
   );
 } finally {
-  await browser?.close();
-  await vite.close();
+  if (browser) {
+    await timePhase('browser-final-close', () => browser.close());
+  }
+  await timePhase('vite-close', () => vite.close());
 }

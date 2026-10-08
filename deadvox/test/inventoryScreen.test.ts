@@ -15,9 +15,11 @@ import {
   BindingRegistry,
   INPUT_BINDINGS,
   inputBindings,
+  inventoryTabForAction,
   KeyboardInput,
   keyboardInput,
 } from '../src/game/inputBindings.ts';
+import { routeModalCommand } from '../src/game/modalCommand.ts';
 import { applyReplayActionPayload, type ReplayActionPayload } from '../src/game/replayCommands.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
@@ -187,15 +189,44 @@ const holdQuickGate = () => {
 };
 
 describe('inventory screen Lit rendering', () => {
-  it('keeps the selected tab across closing and reopening the screen', () => {
+  it('opens directly on a requested tab and remembers it across toggles', () => {
     const { screen, root } = setup();
-    screen.selectTab('skills');
+    screen.close();
+    screen.openOnTab('skills');
+    expect(screen.isOpen).toBe(true);
     screen.close();
     screen.open();
 
     expect(screen.activeTab).toBe('skills');
     expect(root.querySelector<HTMLElement>('[data-tab-panel="skills"]')?.hidden).toBe(false);
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
+  });
+
+  it('routes a hotkey to an open screen before its generic action handler', () => {
+    const { screen } = setup();
+    const handled = routeModalCommand('ui.inventory-tab-skills', {
+      toggleMainMenu: () => undefined,
+      readingOpen: false,
+      readingAction: () => undefined,
+      toggleInventory: () => undefined,
+      inventoryTabAction: (action) => {
+        const tab = inventoryTabForAction(action);
+        if (!tab) {
+          return false;
+        }
+        screen.openOnTab(tab);
+        return true;
+      },
+      screenOpen: screen.isOpen,
+      screenAction: (action) => {
+        screen.onAction(action);
+      },
+      mainMenuOpen: false,
+      interruptionCommand: () => false,
+    });
+
+    expect(handled).toBe(true);
+    expect(screen.activeTab).toBe('skills');
   });
 
   it('keeps live needs in the character-screen header on every tab', () => {

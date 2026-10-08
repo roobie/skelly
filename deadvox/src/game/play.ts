@@ -83,6 +83,7 @@ import {
   type InputCancellationReason,
   type InputCommand,
   type InputContext,
+  inventoryTabForAction,
   keyboardInput,
   labelForAction,
   shouldCancelInputForViewerFocus,
@@ -106,6 +107,7 @@ import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample }
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
 import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
+import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
@@ -1256,15 +1258,24 @@ export const startPlay = (
     return false;
   };
 
-  const toggleInventory = () => {
+  const openInventory = (tab?: NonNullable<ReturnType<typeof inventoryTabForAction>>) => {
     quickbarInput.cancel();
-    if (screen.isOpen) {
-      closeInventoryScreen();
+    if (tab) {
+      screen.openOnTab(tab);
     } else {
       openInventoryScreen();
-      mainMenuOpen = false;
     }
+    mainMenuOpen = false;
     syncMenuState();
+  };
+  const toggleInventory = () => {
+    if (screen.isOpen) {
+      quickbarInput.cancel();
+      closeInventoryScreen();
+      syncMenuState();
+    } else {
+      openInventory();
+    }
   };
 
   const quickbarActions = new QuickbarActions({
@@ -1417,28 +1428,36 @@ export const startPlay = (
     hintToggleInput.cancel();
   };
   keyboardInput.escape = () => reading.close();
-  const modalCommand = (action: string): boolean => {
-    if (action === 'ui.main-menu-toggle') {
-      mainMenuOpen = !mainMenuOpen;
-      syncMenuState();
+  const inventoryTabCommand = (action: string): boolean => {
+    const tab = inventoryTabForAction(action);
+    if (!tab) {
+      return false;
+    }
+    if (compression.locksInput) {
       return true;
     }
-    if (reading.isOpen) {
-      reading.onAction(action);
-      return true;
-    }
-    if (action === 'ui.inventory-toggle') {
-      if (!compression.locksInput) {
-        toggleInventory();
-      }
-      return true;
-    }
-    if (screen.isOpen) {
-      screen.onAction(action);
-      return true;
-    }
-    return mainMenuOpen || timeKeys(action);
+    openInventory(tab);
+    return true;
   };
+  const modalCommand = (action: string): boolean =>
+    routeModalCommand(action, {
+      toggleMainMenu: () => {
+        mainMenuOpen = !mainMenuOpen;
+        syncMenuState();
+      },
+      readingOpen: reading.isOpen,
+      readingAction: (command) => reading.onAction(command),
+      toggleInventory: () => {
+        if (!compression.locksInput) {
+          toggleInventory();
+        }
+      },
+      inventoryTabAction: inventoryTabCommand,
+      screenOpen: screen.isOpen,
+      screenAction: (command) => screen.onAction(command),
+      mainMenuOpen,
+      interruptionCommand: timeKeys,
+    });
   const withUnlockedInput = (action: () => void): void => {
     if (!(replaySample?.inputLocked ?? compression.locksInput)) {
       action();

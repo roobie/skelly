@@ -12,6 +12,7 @@ read_if:
   - you're choosing render-free or pixel mode for a browser stage
   - you diagnose keyboard rebinding, debug gates or native browser interception
   - you investigate save-lock timeouts
+  - you investigate navigation-aborted save-test requests (#474)
 ---
 
 # deadvox — troubleshooting
@@ -104,10 +105,23 @@ budget”.
 
 `SaveStorage.withLock` reports the cause and held/pending lock summary, including
 whether the holder is another client, and explains the other-page failure to the
-player. The Chromium navigation and busy-lock contracts and the autosave
-contract are in `test/browser/save-storage.mjs`, `navigationOnly`, `busyLockOnly`,
-and `testTitleAndAutosave`; the leaving-state rule is in
-`src/ui/saveController.ts`, `SaveController`.
+player. A save checkpoint is proved by the controller's committed generation and failure
+state, not by UI wording or a competing storage read. In
+`test/browser/save-storage.mjs`, `testTitleAndAutosave` reads the `save-test`
+hook's `saveState`. A reader polling during an OPFS write takes the shared save
+lock against the writer's exclusive lock; the reported timeout has not shown
+that contention caused the failure. Wait timeouts report save status and page
+errors; postcondition read errors identify the backend and step.
+
+Firefox cancels outstanding module fetches when a navigation replaces their
+document; that cancellation is not a save failure. The destination document must
+still load and pass its save checks. In `test/browser/save-storage.mjs`,
+`trackPageNavigation` advances the document generation only when a main-frame
+navigation request commits, and `recordRequestFailure` ignores only an aborted
+request attributed to a generation during an explicit test navigation.
+`navigatePage` records that navigation's source state. The leaving-state rule is
+in `src/ui/saveController.ts`, `SaveController`; navigation and busy-lock
+contracts are in `navigationOnly` and `busyLockOnly`.
 
 ## Deadvox CI browser dependency stalls
 
