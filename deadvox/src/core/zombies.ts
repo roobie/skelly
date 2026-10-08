@@ -970,9 +970,7 @@ const snapshotZombie = (id: number, zombie: Zombie): { id: number; zombie: Zombi
       searchHeading: [...zombie.searchHeading],
       strollHeading: [...zombie.strollHeading],
       ...(lastPerceived === undefined ? {} : { lastPerceived: [...lastPerceived] }),
-      ...(obstacleWanderHeading === undefined
-        ? {}
-        : { obstacleWanderHeading: [...obstacleWanderHeading] as Vec3 }),
+      ...(obstacleWanderHeading === undefined ? {} : { obstacleWanderHeading: [...obstacleWanderHeading] as Vec3 }),
       ...(zombie.hordeOffset === undefined ? {} : { hordeOffset: [...zombie.hordeOffset] as Vec3 }),
       severed: [...zombie.severed],
     },
