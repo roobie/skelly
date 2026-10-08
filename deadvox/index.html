@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="./src/ui/style.css" />
   </head>
   <body>
+    <div id="startup-screen" role="status" aria-label="Loading game">
+      <div id="startup-progress" aria-hidden="true"><span></span></div>
+    </div>
     <main id="view"></main>
     <div id="damage" aria-hidden="true"></div>
     <div id="game-cursor-root"></div>
@@ -57,7 +60,7 @@
               <option value="left">Left</option>
             </select>
           </fieldset>
-          <p class="go" id="go">Click to play</p>
+          <p class="go" id="go"></p>
           <div id="hud-options"></div>
           <div id="audio-options"></div>
           <div id="input-options"></div>

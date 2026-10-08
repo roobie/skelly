@@ -20,6 +20,39 @@ body {
     14px / 1.4 system-ui,
     sans-serif;
 }
+#startup-screen {
+  position: fixed;
+  z-index: 3000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #000;
+}
+#startup-screen[hidden] {
+  display: none;
+}
+#startup-progress {
+  width: min(240px, 60vw);
+  height: 3px;
+  overflow: hidden;
+  background: #30343a;
+}
+#startup-progress span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: #b8bcc2;
+  animation: startup-progress 1.2s ease-in-out infinite;
+}
+@keyframes startup-progress {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(260%);
+  }
+}
+
 #view {
   position: fixed;
   inset: 0;
@@ -274,6 +307,20 @@ body.unconscious::after {
   color: var(--text);
   font-weight: 600;
   margin: 0;
+}
+#overlay.startup-ready {
+  background: #000;
+}
+#overlay.startup-ready .go {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  color: #b8bcc2;
+  cursor: pointer;
+  font-weight: 400;
+  white-space: nowrap;
 }
 #save-status {
   overflow-wrap: anywhere;

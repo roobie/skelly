@@ -131,12 +131,17 @@ try {
       const page = await context.newPage();
       await page.goto(url);
       await page.waitForFunction(() => typeof globalThis.releasePersistenceIdentity === 'function');
+      assert.equal(
+        await page.locator('#startup-screen').isVisible(),
+        true,
+        'the startup indicator stays up while loading',
+      );
       const button = page.locator('#save-persist');
       assert.equal(await button.isVisible(), true, 'unknown-state action remains available during discovery');
       assert.equal(await button.isEnabled(), true);
       assert.equal(await page.evaluate(() => globalThis.persistenceQueries), 0, 'advisory status has not started');
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
-      await button.click();
+      await button.evaluate((element) => element.click());
       await page.waitForFunction(() =>
         document.querySelector('#save-status').textContent.includes('Persistent storage granted'),
       );
@@ -167,6 +172,25 @@ try {
     await page.goto(url);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(
+      await page.locator('#startup-screen').isVisible(),
+      false,
+      'loading ends when the title screen is ready',
+    );
+    assert.equal(
+      await page.locator('#overlay').evaluate((overlay) => overlay.classList.contains('startup-ready')),
+      true,
+    );
+    assert.equal(
+      await page
+        .locator('#go')
+        .evaluate(
+          (go) =>
+            [...go.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim()).length,
+        ),
+      1,
+      'the start hint has one text node',
+    );
     const before = await page.evaluate(() => ({
       hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
       entered: deadvoxSaveTest.controller.isEntered,

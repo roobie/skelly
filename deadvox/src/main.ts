@@ -20,6 +20,10 @@ import { contentLookup, SaveController } from './ui/saveController.ts';
 
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
+const startupScreen = document.getElementById('startup-screen')!;
+const hideStartupScreen = () => {
+  startupScreen.hidden = true;
+};
 const menuKeyLabel = document.querySelector<HTMLElement>('[data-key-binding="mainMenu"]');
 const drawMenuLabel = () => {
   if (menuKeyLabel) {
@@ -32,6 +36,9 @@ drawMenuLabel();
 const bench = params.get('bench');
 const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
 
+if (bench !== null) {
+  hideStartupScreen();
+}
 if (bench === 'report') {
   document.body.classList.add('bench');
   showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
@@ -79,6 +86,7 @@ if (bench === 'report') {
           endSimTimestamp: decoded.endSimTimestamp,
         },
       });
+      hideStartupScreen();
     } catch (error) {
       clearPendingInputReplay();
       document.getElementById('errors')!.textContent =
@@ -123,8 +131,21 @@ if (bench === 'report') {
     const restored = await saveController.validateContent(engine.registry);
     if (saveController.isRestored && restored) {
       startPlay(engine, debugModule, { saveController, restore: restored });
+      hideStartupScreen();
     } else {
-      saveController.setNewWorldLauncher((creation) => startPlay(engine, debugModule, { saveController, ...creation }));
+      const overlay = document.getElementById('overlay')!;
+      saveController.setNewWorldLauncher((creation) => {
+        const entry = startPlay(engine, debugModule, { saveController, ...creation });
+        return {
+          enter: () => {
+            overlay.classList.remove('startup-ready');
+            entry.enter();
+          },
+        };
+      });
+      saveController.setGoLabel('Click to start game');
+      overlay.classList.add('startup-ready');
+      hideStartupScreen();
     }
   }
 } else if (bench === 'shamblers') {
