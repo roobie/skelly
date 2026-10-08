@@ -326,7 +326,7 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
 // The 30-round body uses a photo-estimated sweep below that unchanged shared upper.
 const STANAG30_BODY_PROFILE: CurvedMagazineProfile = {
   ...CURVED_MAGAZINE_PROFILES.stanag30,
-  arc: { ...CURVED_MAGAZINE_PROFILES.stanag30.arc, sweepDegrees: 2 }
+  arc: { ...CURVED_MAGAZINE_PROFILES.stanag30.arc, sweepDegrees: 2 },
 };
 const AK_MAGAZINE_CURVE_VARIANTS = ['ak74', 'akm'] as const;
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
@@ -3807,10 +3807,10 @@ const magazineGeometryFor = (
         bodyLength: MAGAZINE_PROFILE_LENGTHS_U['stanag-curved'].L,
         upperWidth: MAGAZINE_WIDTH,
       };
-      const sharedUpper = curvedMagazineGeometry(
+      const [sharedUpper] = curvedMagazineGeometry(
         referenceShape,
         CURVED_MAGAZINE_PROFILES.stanag30,
-      ).collision[0];
+      ).collision;
       if (sharedUpper?.kind !== 'extruded-polygon') {
         throw new Error('the STANAG magazine top must be an extruded profile');
       }
