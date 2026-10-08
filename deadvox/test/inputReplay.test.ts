@@ -4,7 +4,7 @@ import { dominantSide, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../sr
 import { defaultClock } from '../src/core/clock.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import type { Item } from '../src/core/items.ts';
-import { stowTarget, toHands } from '../src/core/options.ts';
+import { pocketGroundItem, stowTarget, toHands } from '../src/core/options.ts';
 import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
@@ -73,7 +73,7 @@ const replaySample = {
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
-    schemaVersion: 8,
+    schemaVersion: 9,
     endStateFingerprint: '0'.repeat(64),
     endSimTimestamp: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
@@ -109,6 +109,19 @@ const applyCommand = (runtime: ReturnType<typeof createRuntime>, payload: Replay
       const item = runtime.inventory.itemByUid(uid);
       return item ? toHands(runtime.inventory, runtime.handling, item, feet) : 'The item is no longer available';
     },
+    pickup: (uid, mode, feet) => {
+      const item = runtime.inventory.itemByUid(uid);
+      if (!item) {
+        return 'The item is no longer available';
+      }
+      if (mode === 'wield') {
+        return toHands(runtime.inventory, runtime.handling, item, feet);
+      }
+      return pocketGroundItem(runtime.inventory, runtime.handling, item);
+    },
+    interact: () => {
+      throw new Error('Furniture interaction is not implemented in the replay test harness');
+    },
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftContinue: () => {
       const uid = runtime.session.crafting.currentUid;
@@ -117,7 +130,7 @@ const applyCommand = (runtime: ReturnType<typeof createRuntime>, payload: Replay
     craftStop: () => {
       runtime.sim.actions.stop();
     },
-    cancelGlowstick: () => undefined,
+    cancelItemThrow: () => undefined,
   });
 
 const applyColumnUpdates = (
@@ -960,19 +973,37 @@ describe('input replay', () => {
     expect(recorder.retainedBufferBytes).toBeLessThanOrEqual(INPUT_REPLAY_MAX_BYTES);
   });
 
-  it('round-trips the resolved glowstick throw distance', async () => {
-    const start = capture(createRuntime());
+  it('round-trips the throw range and the held firearm instance in replay', async () => {
+    const runtime = createRuntime();
+    const firearmType = [...runtime.inventory.registry.items.values()].find((def) => def.firearm)?.id;
+    if (!firearmType) {
+      throw new Error('Replay throw fixture needs a firearm');
+    }
+    const firearm = runtime.inventory.create(firearmType);
+    const side = runtime.inventory.character.handedness;
+    const primaryItem = runtime.inventory.hands[side];
+    if (!(primaryItem && runtime.inventory.move(primaryItem, { kind: 'worn' }).ok)) {
+      throw new Error('Could not clear the primary hand for the replay firearm');
+    }
+    if (!runtime.inventory.add(firearm, { kind: 'hand', side })) {
+      throw new Error('Could not put the replay firearm in the primary hand');
+    }
+    const start = capture(runtime);
     const recorder = new InputReplayRecorder(start);
-    recorder.queueAction('glowstick.throw', 'down', 'play', 2.5);
+    recorder.queueAction('item.throw', 'down', 'play', 2.5);
     recorder.recordTick(replaySample);
     const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
-    expect(decoded.inputs.actions).toMatchObject([{ action: 'glowstick.throw', value: 2.5 }]);
+    expect(decoded.inputs.actions).toMatchObject([{ action: 'item.throw', value: 2.5 }]);
+    expect(decoded.snapshot.character.inventory.hands[side]).toMatchObject({ uid: firearm.uid, type: firearm.type });
   });
 
-  it('rejects replay command payloads with invalid item identities', () => {
+  it('validates replay pickup identities and gesture modes', () => {
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 0 })).toBe(false);
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 1 })).toBe(true);
+    expect(isReplayActionPayload({ kind: 'item.pickup', itemUid: 0, mode: 'wield', feet: [0, 0, 0] })).toBe(false);
+    expect(isReplayActionPayload({ kind: 'item.pickup', itemUid: 1, mode: 'pocket', feet: [0, 0, 0] })).toBe(true);
+    expect(isReplayActionPayload({ kind: 'furniture.interact', entityUid: 1 })).toBe(true);
   });
 
   it('rejects an invalid inventory payload while decoding a replay', async () => {
@@ -1300,6 +1331,17 @@ describe('input replay', () => {
       }),
     ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
     expect(unheldEncoded).toBe(false);
+
+    const flatRuntime = createRuntime(undefined, false, undefined, { wobbleFlatOverride: 0 });
+    let flatEncoded = false;
+    expect(flatRuntime.session.hasFirearmHandlingOverrides()).toBe(true);
+    expect(() =>
+      withReplayExportGuard(flatRuntime.session.hasFirearmHandlingOverrides(), () => {
+        flatEncoded = true;
+        return new Uint8Array([1]);
+      }),
+    ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
+    expect(flatEncoded).toBe(false);
   });
 
   it('rejects a replay whose embedded start save has an incompatible simulation identity', async () => {

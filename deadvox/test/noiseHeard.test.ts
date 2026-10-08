@@ -274,7 +274,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   };
 
   const exerciseDoors = (scenario: NoiseScenario) => {
-    const { session, state, played, advance } = scenario;
+    const { session, state, events, played, advance } = scenario;
     const doorCell = session.feet();
     const doorOrigin: Vec3 = [Math.floor(doorCell[0]), Math.floor(doorCell[1]), Math.floor(doorCell[2])];
     const doorSize: Vec3 = [2, 4, 1];
@@ -291,7 +291,13 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       });
       advance(60);
     };
+    const sideDoorEvents = events.length;
     doorAction(false);
+    observe(
+      scenario,
+      'wood door opening stays quiet',
+      !events.slice(sideDoorEvents).some((event) => event.kind === 'noise' && event.event === 'door_open'),
+    );
     doorAction(true);
     observe(scenario, 'occupied door remains open', door.open);
     state.intent = { ...IDLE, forward: 1 };
@@ -299,7 +305,29 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     state.intent = { ...IDLE };
     doorAction(true);
     observe(scenario, 'vacated door closes', !door.open);
-    for (const event of ['door_open', 'door_blocked_close', 'door_close']) {
+    const rollerOrigin: Vec3 = [doorOrigin[0] + 4, doorOrigin[1], doorOrigin[2] + 4];
+    const rollerDoor = session.entities.add({
+      type: 'workshop_roller_door',
+      pos: rollerOrigin,
+      size: [6, 5, 1],
+      facing: 'n',
+    })!;
+    const rollerCenter: Vec3 = [rollerOrigin[0] + 3, rollerOrigin[1] + 2.5, rollerOrigin[2] + 0.5];
+    state.doorPosition = rollerCenter;
+    session.queue.enqueueAction(
+      DOOR_ACTION,
+      'Open roller door',
+      registry.furniture.get('workshop_roller_door')!.door!.handlingSimSeconds,
+      { entityUid: rollerDoor.uid, closing: false },
+    );
+    advance(120);
+    const rollerNoise = session.playerAudio.vocalNoise;
+    observe(
+      scenario,
+      'roller-door opening enters the positioned noise path',
+      rollerNoise?.pos.every((value, i) => value === rollerCenter[i]) ?? false,
+    );
+    for (const event of ['door_open', 'door_roller_open', 'door_blocked_close', 'door_close']) {
       observe(
         scenario,
         `door sound ${event}`,
@@ -493,6 +521,54 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   for (const observation of result.checks) {
     expect(observation.passed, observation.label).toBe(true);
   }
+});
+
+it('lets a roller-door noise wake a nearby shambler through hearing', () => {
+  const scale = makeScale(0.5);
+  const session = createSession({
+    registry,
+    world: new World(),
+    isSolid: (_x, y) => y === 0,
+    isOpaque: (_x, y) => y === 0,
+    scale,
+    seed: 73,
+    start: 43_200,
+    spawn: [0, 1, 0],
+    ready: () => true,
+    controls: {
+      active: () => true,
+      intent: () => ({ ...IDLE }),
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => false,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in roller-door hearing fixture');
+    },
+  });
+  session.sim.paused = false;
+  const doorOrigin: Vec3 = [0, 1, 0];
+  const door = session.entities.add({ type: 'workshop_roller_door', pos: doorOrigin, size: [6, 5, 1], facing: 'n' })!;
+  const listenerId = session.zombies.add(registry.zombies.get('shambler')!, [8, 1, 0.5]);
+  const listener = session.zombieStore.get(listenerId)!;
+  expect(listener.mode).toBe('idle');
+  const handling = registry.furniture.get('workshop_roller_door')!.door!.handlingSimSeconds;
+  session.queue.enqueueAction(DOOR_ACTION, 'Open roller door', handling, { entityUid: door.uid, closing: false });
+  for (let frame = 0; frame < 120; frame++) {
+    session.frame(1 / 60);
+  }
+  const noise = session.playerAudio.vocalNoise;
+  expect(noise).toBeDefined();
+  if (!noise) {
+    throw new Error('Roller-door opening did not commit its noise stimulus');
+  }
+  expect(listener.lastVocalNoiseId).toBe(noise.id);
+  expect(listener.mode).toBe('investigate');
+  expect(listener.investigationTier).toBe('near');
+  expect(listener.lastPerceived).toEqual(noise.pos);
 });
 
 it('debug test noise reaches a shambler behind a wall and starts its hearing gaze', () => {

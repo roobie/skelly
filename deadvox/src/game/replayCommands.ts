@@ -7,6 +7,8 @@ import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 export type ReplayActionPayload =
   | { kind: 'inventory.move'; itemUid: number; target: TargetState; count: number }
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
+  | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
+  | { kind: 'furniture.interact'; entityUid: number }
   | { kind: 'inventory.search'; entityUid: number }
   | { kind: 'inventory.work'; itemUid: number; operation: WorkOperation }
   | { kind: 'inventory.assign'; slot: number; itemUid: number }
@@ -14,7 +16,7 @@ export type ReplayActionPayload =
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
-  | { kind: 'glowstick.cancel' };
+  | { kind: 'item.throw.cancel' };
 
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 const isSpot = (value: unknown): boolean =>
@@ -80,7 +82,16 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         payload.feet.every(Number.isFinite)
       );
     case 'inventory.search':
+    case 'furniture.interact':
       return isUid(payload.entityUid);
+    case 'item.pickup':
+      return (
+        isUid(payload.itemUid) &&
+        (payload.mode === 'pocket' || payload.mode === 'wield') &&
+        Array.isArray(payload.feet) &&
+        payload.feet.length === 3 &&
+        payload.feet.every(Number.isFinite)
+      );
     case 'inventory.work':
       return isUid(payload.itemUid) && ['continue', 'apart', 'disassemble'].includes(payload.operation as string);
     case 'inventory.assign':
@@ -93,7 +104,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'inventory.cancel-handling':
     case 'craft.continue':
     case 'craft.stop':
-    case 'glowstick.cancel':
+    case 'item.throw.cancel':
       return Object.keys(payload).length === 1;
     case 'craft.start':
       return (
@@ -118,10 +129,12 @@ export interface ReplayCommandOwners {
   search: (entityUid: number) => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
+  pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
+  interact: (entityUid: number) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
-  cancelGlowstick: () => void;
+  cancelItemThrow: () => void;
 }
 
 export const applyReplayActionPayload = (
@@ -140,6 +153,10 @@ export const applyReplayActionPayload = (
     }
     case 'inventory.to-hands':
       return owners.toHands(payload.itemUid, payload.feet);
+    case 'item.pickup':
+      return owners.pickup(payload.itemUid, payload.mode, payload.feet);
+    case 'furniture.interact':
+      return owners.interact(payload.entityUid);
     case 'inventory.search':
       return owners.search(payload.entityUid);
     case 'inventory.work':
@@ -161,8 +178,8 @@ export const applyReplayActionPayload = (
       return owners.craftContinue();
     case 'craft.stop':
       return owners.craftStop();
-    case 'glowstick.cancel':
-      owners.cancelGlowstick();
+    case 'item.throw.cancel':
+      owners.cancelItemThrow();
       return undefined;
     default: {
       const exhaustive: never = payload;

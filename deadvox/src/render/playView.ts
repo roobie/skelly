@@ -18,9 +18,9 @@ import { PLAYER } from '../game/player.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
-import { GlowstickThrows } from './glowstickThrows.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { ImpactEffects } from './impactEffects.ts';
+import { ItemThrows } from './itemThrows.ts';
 import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
@@ -38,6 +38,7 @@ export interface PlayCameraFrame {
   readonly noclip: boolean;
   readonly yaw: number;
   readonly pitch: number;
+  readonly stridePhase: number;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly sightImpaired: boolean;
@@ -99,7 +100,7 @@ export const createPlayView = (
   const playerPalette = registry.figures.get('player')!.palette;
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
-  const glowstickThrows = new GlowstickThrows();
+  const itemThrows = new ItemThrows(registry, models, s);
   const targetCell = config.debug
     ? (block: Vec3) => {
         const entity = engine.entities.at(...block);
@@ -108,12 +109,12 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
   const held = new HeldItems(inventory, models, playerPalette);
-  scene.add(caseEffects.mesh, impactEffects.group, glowstickThrows.group);
+  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group);
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
     impactEffects.dispose();
-    glowstickThrows.dispose();
+    itemThrows.dispose();
     held.dispose();
   };
   page.addEventListener('pagehide', dispose);
@@ -131,7 +132,6 @@ export const createPlayView = (
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
   const damageFeedback = new DamageFeedback();
   let cameraRoll = 0;
-  let gaitPhase = 0;
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
 
@@ -139,7 +139,7 @@ export const createPlayView = (
     models,
     piles,
     caseEffects,
-    glowstickThrows,
+    itemThrows,
     impactEffects,
     furniture,
     playerMeshes,
@@ -169,7 +169,7 @@ export const createPlayView = (
       frozen,
       perceptionLabels,
     }: PlayWorldFrame) => {
-      glowstickThrows.update(dt);
+      itemThrows.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour), weather);
       applySky(engine.sky, sky);
@@ -195,7 +195,7 @@ export const createPlayView = (
       engine.shadows?.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
-      const { dt, body, paused, noclip, yaw, pitch, eye, spectator, sightImpaired } = frame;
+      const { dt, body, paused, noclip, yaw, pitch, stridePhase, eye, spectator, sightImpaired } = frame;
       const offset = cameraStepOffset.update(
         [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
         body.onGround,
@@ -204,9 +204,7 @@ export const createPlayView = (
       );
       const travel = Math.hypot(body.vel[0], body.vel[2]) * s * dt;
       const moving = travel > 0.001 && !paused;
-      if (moving) {
-        gaitPhase += (travel / 0.6) * Math.PI;
-      }
+      const gaitPhase = stridePhase * Math.PI * 2;
       playerMeshes.sync({ body, yaw, stepOffset: offset, gaitPhase, moving, inventory });
       const [ex, ey, ez] = spectator?.position ?? eye;
       camera.position.set(ex * s, ey * s + (spectator ? 0 : offset), ez * s);

@@ -10,7 +10,7 @@
   "tileheight": 1,
   "infinite": false,
   "nextlayerid": 7,
-  "nextobjectid": 51,
+  "nextobjectid": 56,
   "properties": [
     {
       "name": "id",
@@ -352,7 +352,11 @@
         {"id":47,"name":"Medical fence east 2","type":"building","x":444.5,"y":237.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
         {"id":48,"name":"Medical fence east 3","type":"building","x":444.5,"y":244.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
         {"id":49,"name":"Medical fence east 4","type":"building","x":444.5,"y":251.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":50,"name":"Medical fence east 5","type":"building","x":444.5,"y":258.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]}
+        {"id":50,"name":"Medical fence east 5","type":"building","x":444.5,"y":258.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":51,"name":"Mike's Garage — two-bay workshop hall","type":"building","x":410,"y":198,"width":12,"height":10,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"workshop_hall"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[{\"at\":[17,1,9],\"items\":[{\"item\":\"shotshell_box\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[17,1,15],\"items\":[{\"item\":\"portable_radio\",\"count\":1},{\"item\":\"jerry_can\",\"count\":1}]}]"}]},
+        {"id":52,"name":"Mike's Garage — office","type":"building","x":422,"y":198,"width":5,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"workshop_office"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[{\"at\":[4,1,4],\"items\":[{\"item\":\"workshop_notes\",\"count\":1}]}]"}]},
+        {"id":53,"name":"Mike's Garage — parts store","type":"building","x":422,"y":202,"width":5,"height":5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"workshop_parts_store"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":54,"name":"Mike's Garage — fenced yard","type":"building","x":410,"y":189,"width":9,"height":9,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"workshop_yard"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[]"}]}
       ]
     },
     {
@@ -785,6 +789,26 @@
               "type": "float",
               "value": 2
             }
+          ]
+        },
+        {
+          "id": 55,
+          "name": "Track spur to Mike's Garage",
+          "type": "track",
+          "x": 390,
+          "y": 180,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polyline": [
+            { "x": 0, "y": 0 },
+            { "x": 8, "y": 4 },
+            { "x": 15, "y": 12 },
+            { "x": 20, "y": 16.5 }
+          ],
+          "properties": [
+            { "name": "width", "type": "float", "value": 2 }
           ]
         }
       ]

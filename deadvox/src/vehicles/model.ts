@@ -3,7 +3,7 @@
  * factory build's fittings. State: a vehicle instance, which owns its fittings, made from a
  * blueprint and changed one fitting at a time.
  */
-import { BLOCK_SIZE } from '../../core/scale.ts';
+import { BLOCK_SIZE } from '../core/scale.ts';
 import {
   type Axis,
   GLASS,

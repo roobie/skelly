@@ -48,6 +48,7 @@ export const SOUND_EVENT_IDS = [
   'crawler_attack',
   'crawler_hurt',
   'door_open',
+  'door_roller_open',
   'door_close',
   'door_blocked_close',
   'lock_pry',

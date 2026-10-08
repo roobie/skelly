@@ -1,17 +1,43 @@
+import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { type Item, weightOf } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 
-export const GLOWSTICK_FLIGHT_SECONDS = 0.75;
-export const GLOWSTICK_ARC_HEIGHT_METRES = 1.1;
+export const ITEM_FLIGHT_SECONDS = 0.75;
+export const ITEM_ARC_HEIGHT_METRES = 1.1;
 
-export const chargedThrowDistance = (maximum: number, chargeSeconds: number, heldSeconds: number): number =>
-  maximum * Math.max(0, Math.min(1, heldSeconds / chargeSeconds));
+export const hasMetThrowMinimumHold = (heldSimSeconds: number, minimumHoldSimSeconds: number): boolean =>
+  heldSimSeconds >= minimumHoldSimSeconds;
 
-export const glowstickFlightPoint = (from: Vec3, to: Vec3, progress: number): Vec3 => {
+export const throwDistanceForItem = (
+  item: Item,
+  registry: Registry,
+  {
+    maximumDistanceMetres,
+    chargeSimSeconds,
+    armSpeedMetresPerRealSecond,
+    armEnergyJoules,
+  }: {
+    maximumDistanceMetres: number;
+    chargeSimSeconds: number;
+    armSpeedMetresPerRealSecond: number;
+    armEnergyJoules: number;
+  },
+  heldSimSeconds: number,
+): number => {
+  const massKg = weightOf(registry, item) / 1000;
+  const armSpeedSquared = armSpeedMetresPerRealSecond ** 2;
+  const energyLimitedSpeedSquared = massKg > 0 ? (2 * armEnergyJoules) / massKg : armSpeedSquared;
+  const rangeFactor = Math.min(1, energyLimitedSpeedSquared / armSpeedSquared);
+  const chargeFraction = Math.max(0, Math.min(1, heldSimSeconds / chargeSimSeconds));
+  return maximumDistanceMetres * rangeFactor * chargeFraction;
+};
+
+export const itemFlightPoint = (from: Vec3, to: Vec3, progress: number): Vec3 => {
   const t = Math.max(0, Math.min(1, progress));
   return [
     from[0] + (to[0] - from[0]) * t,
-    from[1] + (to[1] - from[1]) * t + Math.sin(Math.PI * t) * GLOWSTICK_ARC_HEIGHT_METRES,
+    from[1] + (to[1] - from[1]) * t + Math.sin(Math.PI * t) * ITEM_ARC_HEIGHT_METRES,
     from[2] + (to[2] - from[2]) * t,
   ];
 };
@@ -25,8 +51,8 @@ const settleOnWorld = (position: Vec3, blockSize: number, minY: number, isSolid:
   return [Math.floor(origin[0]), hit.block[1] + 1, Math.floor(origin[2])];
 };
 
-/** Sweeps the rendered arc through voxels, then settles the item on the first solid below it. */
-export const traceGlowstickLanding = ({
+/** Sweeps a thrown item's presentation arc through voxels, then settles it on the first solid below it. */
+export const traceItemLanding = ({
   from,
   direction,
   distanceMetres,
@@ -52,7 +78,7 @@ export const traceGlowstickLanding = ({
   const steps = Math.max(1, Math.ceil(distanceMetres / stepMetres));
   let lastSafe = from;
   for (let step = 0; step <= steps; step++) {
-    const point = glowstickFlightPoint(from, to, step / steps);
+    const point = itemFlightPoint(from, to, step / steps);
     if (isSolid(Math.floor(point[0] / blockSize), Math.floor(point[1] / blockSize), Math.floor(point[2] / blockSize))) {
       return step === 0 ? undefined : settleOnWorld(lastSafe, blockSize, minY, isSolid);
     }

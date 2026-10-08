@@ -55,6 +55,14 @@ controls remain proposals until their issue is implemented.
 - **Interaction and reserved lean inputs (2026-09-27):** F interacts; Q and E
   remain reserved. Reserve their physical positions across contexts, including
   debug, rather than inventing no-op lean commands.
+- **Loose-item pickup:** Players can grab ground items directly from the normal
+  game view, tapping F to pocket an item or holding F to wield it. This keeps
+  looting in the normal game flow, while a simple reach animation makes the action
+  visible. Doors and containers keep their tap interaction. F uses one shared
+  reach and target choice: exact ties favor furniture, while tied ground items
+  resolve by item UID. `src/game/play.ts`, `interactionTargetAt` and
+  `completeWorldInteraction`, route the gesture through the existing inventory
+  handling owner; `src/render/grabPose.ts`, `grabPose`, supplies the visual-only reach.
 - **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
   to the browser. Escape releases pointer lock and is never a game rebind.
 - **Reload, rack, remove (2026-10-07 11:20):** BR, on how R treats a rifle:
@@ -244,9 +252,9 @@ blocking”. See [SLICE-3.md](SLICE-3.md), 3.1,
 `src/game/inputBindings.ts` describes the mouse actions, while the registry owns
 keyboard bindings.
 
-## Charged glowstick throw (d100-2)
+## Held-item throw
 
-**BR, 2026-10-06 14:24:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. Holding the rebindable action makes throw distance a deliberate choice; right-click cancels rather than starting another held action. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginGlowstickCharge`.
+**BR, 2026-10-06 14:24:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. **BR, 2026-10-07 14:27:** “It requires to be held 1 second before throwing”. T is the rebindable `player.throw` action; it throws the primary-hand item and never falls back to the off hand. The minimum is measured in simulation time. With no rack or magazine job active, range grows from the initial press to the charged maximum. If T is pressed during either job, the throw waits until it finishes before charging; releasing while it waits cancels the throw. A shorter release throws nothing, and right-click cancels. Item weight limits range through the one item-range function; BR later approved a range reduction by weight. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginItemThrow` and `finishItemThrow`.
 
 ## Remaining questions
 

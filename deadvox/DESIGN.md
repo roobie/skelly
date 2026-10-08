@@ -3,6 +3,7 @@ read_if:
   - you decide how sunlight and shadows should read in play
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
+  - you're changing world block shapes or slab geometry
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
   - you're recording or reconciling BR's crawler silhouette rulings
@@ -20,6 +21,7 @@ read_if:
   - you're changing melee weapon contact behavior, stamina recovery timing or seeded damage variation
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
+  - you're changing held-item throwing or its range tuning
 ---
 
 # deadvox — design
@@ -109,6 +111,17 @@ slab (half height), stairs, pane (thin wall or glass), pillar and ramp. Each sha
 has its own mesher case and collision box. Blocks that need more detail than a
 shape can give (furniture, machines) are block entities (see below) with a
 voxel model.
+
+BR's 2026-10-07 12:50 rulings refine this slab plan: “right okay; well we won't
+convert to 0.25 m blocks” and “but we won't implement it prior to playtest1”.
+The size set remains under discussion in #221. BR's 2026-10-07 13:10 purposes,
+in rough priority order, are roofs and silhouettes; movement aids such as
+half-steps and low walls to climb or vault; cover behind sandbags or low walls;
+and finer building detail. Movement and cover mean slabs are simulated for
+collision, sight and shot blocking, not only drawn. BR said at 13:10, “they are
+roughly in priority order too” and “We will want to build finer detailed
+buildings, making ergonomic movement aids, hiding behind stuff that are built
+partly from half slabs.”
 
 ## Time
 
@@ -697,6 +710,14 @@ and `src/core/content.ts`, `checkItemFirearm`.
   each is about half the previous curve's duration; legendary remains clamped to skill 10.
   BR, 2026-10-07 10:23: “yep, feels good” on the handling comparison for PR #343.
 
+  Readied-gait sway and look lag scale with firearms skill, while dispersion and recoil remain separate. The per-firearm novice endpoint and shared expert endpoint and wobble bound are content-owned in `src/content/base/models-firearms.json` and `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, selects the skill scale. `src/core/aim.ts`, `frameFromState`, bounds wobble separately from recoil so enlarging the former does not retune the latter. Hip and ADS share this aim frame; ADS sight/view rules and firearm spread do not change. This makes an unskilled readied walk visibly unsteady without making recoil or dispersion a skill-scaled substitute.
+
+  `src/core/footsteps.ts`, `FootstepClock`, owns the shared stride phase read by footfall emission, `src/render/playView.ts`, and `src/core/aim.ts`, `AimController`; a single cadence keeps the sway and rendered gait synchronized rather than running a second oscillator. The lune's arch and pass offset are content tunings in `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`, so the concave-down path can be adjusted without changing the established amplitude endpoints.
+
+  `FootstepClock.stepIndex` in `src/core/footsteps.ts` selects deterministic per-step deviations from the simulation-seeded stream, and `AimController` eases each deviation across its step. The content share is the fraction of steps that carry jitter; easing means the visible off-lune time is lower. Share and relative size belong to `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`, so the path varies without twitching or changing gait cadence and skill-scaled amplitude.
+
+  The vertical-to-horizontal wobble ratio is content-owned in `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/aim.ts`, `frameFromState`, applies it to the lune depth and vertical jitter without changing horizontal swing, cadence, or jitter share. A shallower trajectory feels less circular while preserving the established timing and skill-scaled amplitude. The debug-only `?wobbleFlat=` comparison supports tuning the ratio without a rebuild.
+
   BR's earlier 2026-10-05 report on the skill scale
   before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
   led to d62-4 (#262); the later ruling
@@ -834,6 +855,48 @@ not baked into chunks; voxel sunlight can then join AO in vertex colour. See
 - **Hands:** most lights take a hand, which matters with a two-handed weapon.
   The headlamp frees them, at the cost of a weaker beam.
 
+## Held-item throws
+
+BR, 2026-10-07 14:27:
+
+> "T only throws a lit glowstick :D / it should of course throw whatever it is is wielded in primary hand. It requires to be held 1 second before throwing"
+
+BR, 2026-10-07 15:48:
+
+> "hmm, yeah holding T works for throwing - however, when throwing the AR: during flight, it looks like a lit candle (or perhaps uncolored glowstick)"
+>
+> "also: when handling progress is on: a throwing meter showing force should show based on throwing-charge"
+
+The rebindable T action throws only the primary-hand item; an empty primary hand
+refuses instead of reaching into the off hand. A release before BR's minimum held-time threshold throws nothing. With no rack
+or magazine job active, range charge starts on press and grows through the
+minimum hold, so the minimum is a release gate rather than an extra delay before
+charging. If T is pressed during a handling job, the throw waits to charge until
+the job finishes rather than interrupting the rack or magazine turn; releasing
+while it waits cancels the throw. Item weight limits launch range through arm
+speed and energy; a light item retains the existing maximum, while a heavier one
+travels no farther. A thrown item keeps its identity and state when it lands,
+including a firearm's fitted magazine, its rounds and chamber state. A lit
+glowstick remains lit at its landing pile. Flight uses the same item look as a
+ground pile, so a firearm carries its fitted magazine through the arc; ordinary
+items without a model use the same low bundle fallback as a ground pile,
+scattered cases keep the pile placeholder, and an active glowstick keeps its
+emissive marker. The optional Handling progress HUD shows charge while it is
+accumulating and marks the minimum-release point, so the release gate is visible
+without changing the throw controls. See `src/render/itemThrows.ts`, `ItemThrows.spawn`,
+`src/render/itemLook.ts`, `itemLook`, `src/ui/hud.ts`, `handlingViewModel`, and
+`src/game/play.ts`, `beginItemThrow` and `advancePendingItemThrow`.
+
+BR first ruled that holding T longer should throw farther and right-click should
+cancel (2026-10-06 14:24). BR then ruled (2026-10-07 14:35):
+
+> "yes. And at some point, likely not before playtest, atmospheric drag will affect too - i.e. a flimsy glowstick doesn't get as far as a hand grenade"
+
+Drag is deliberately absent until [#368](https://github.com/roobie/skelly/issues/368).
+The range uses the existing item `weight` and `senses` tuning; see
+`src/core/itemThrow.ts`, `throwDistanceForItem`, and `src/game/play.ts`,
+`finishItemThrow`. Throwing adds no hit damage or landing lure.
+
 ## Zombies
 
 ### Types are data
@@ -906,7 +969,8 @@ BR (2026-10-07 10:03) approved the grounded static pose. The body uses
 
 BR clarified on 2026-10-07 12:33: “as for #325: looking good, but it's important they do so only when they perceive the player”. BR answered on 2026-10-07 13:08: “I'd say yes - best case would be to add some jitter, because it's reasonable that a person/creature turns their head towards what they're hearing, but sometimes they might turn the head so that the ears are in the 'hearing direction' - but to keep things simple for now, maybe we can add a bit of jitter so that it's not exact when the perception is hearing only”. The ears-toward-sound behavior is a possible later refinement; hearing gaze uses deterministic jitter around the heard point. BR answered the br-17 lure-light question for d130 on 2026-10-07 16:29, verbatim: “d130: as recommended -> yes”. The chosen option was “they look toward any light they notice (a lure works like a sound); the label reads 'notices something'”. A visible lit light, carried or lying in a pile, shares the near state and draws the gaze. `perceptionLabelFor` distinguishes the player's position from another near source by comparing `lastPerceived` with the current player's horizontal position, without adding source state. BR reported at 13:33, verbatim: “it's kinda hard testing (#325)” / “because if i see them (good enough to make out details) they generally see me too, which defeats the test”. The spectator camera, perception labels, hidden-shambler fixture and test-noise action make that boundary observable without moving the simulated player to the camera.
 
-In `deadvox/src/core/zombies.ts`, `ZombieSystem.updateAttention` sets `mode` to `chase` for sight and uses `investigate` with a near tier and `lastPerceived` for near stimuli; far-tier and horde targets are far. `deadvox/src/render/mobActors.ts`, `MobActorMeshes.posedFrame`, aims at the player's body-eye position in chase, or at `lastPerceived` for a near investigation while `stimulusAt` is among the actor's two most recent perception timestamps (`MobActorMeshes.hasRecentNearStimulus`). Once stale, gaze eases back to the base pose, including simulation head yaw. `hearingGazeTarget` adds deterministic, id/time-based jitter, and `mobgen/src/mob/lookAt.ts`, `lookAtPose`, keeps gaze within the same rig limits and bounded turn rate from `mobgen/src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`. The debug spectator camera moves independently through `deadvox/src/render/playView.ts`, `updateCamera`, while `MobActorMeshes.setPlayerEyePosition` keeps chase gaze on the simulated body. `perceptionLabelFor` reads the stored perception state for debug labels and allows one maximum-speed player movement step between perception samples by using `deadvox/src/game/simulationRates.ts`, `ZOMBIE_RATE`. The test-noise action uses `session.playPlayerSound` with the existing `player_hurt_light` definition; because it commits `playerAudio` and a noise event, it is a debug simulation action rather than presentation-only. Gaze, labels and camera movement remain presentation-only and do not feed hit geometry, saves, replay or simulation fingerprints. The mobgen viewer has no perception state and continues to gaze at its camera in `mobgen/src/viewer/main.ts`, `applyLookAt`. `mobgen/src/mob/crawler.ts`, `crawlerGaitPose`, derives the crawler's arm-drag pose from its existing gait phase, and `deadvox/src/core/zombiePose.ts`, `posedShambler`, derives runner/crawler hit flinches from existing `hitFlinchTime`. These poses feed `posedShamblerRegionBoxes` and therefore move simulation hitboxes; the crawler now takes hits against its prone pose rather than main's upright humanoid pose. They add no saved state, but `mobgen/src/mob/crawler.ts` is in the simulation fingerprint graph, so older replays do not carry over. This changes hit geometry only: gameplay stagger, slowdown or knockdown remains open for BR. Mobgen validates crawler generation using voxel-derived ground contacts through `mobgen/src/core/generate.ts`, `resolveSupportBones`; `mobgen/test/crawler.test.ts` covers the generated support contract. `deadvox/src/render/mobActors.ts`, `MobActorMeshes`, routes every model through `mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`, so budget-failing crawler seeds cannot enter the rendered variant pool unchecked. `MobActorMeshes`, `mobFigurePoolSizeThrough`, also keeps `deadvox/test/severedEnergy.test.ts` within its fixture seed to limit renderer setup cost.
+BR's perception-directed gaze ruling makes sight, hearing and noticed lights legible without giving presentation ownership of the simulation. Gaze, labels and spectator-camera movement stay out of hit geometry, saves, replay and simulation fingerprints; the debug test-noise action is different because it deliberately enters the simulation's sound path. The mobgen viewer has no perception state, so its gaze follows its camera. A crawler's posture changes where hits land: its drag gait and runner/crawler flinches follow the posed hit regions, changing hit geometry and replay compatibility without adding saved state. Gameplay stagger, slowdown and knockdown remain open for BR. Generated support validation protects the grounded silhouette. See `src/core/zombies.ts`, `ZombieSystem.updateAttention`; `src/render/mobActors.ts`, `MobActorMeshes.posedFrame`; `src/core/zombiePose.ts`, `posedShambler`; `mobgen/src/mob/crawler.ts`, `crawlerGaitPose`; `mobgen/src/mob/lookAt.ts`, `lookAtPose`; `mobgen/src/viewer/main.ts`, `applyLookAt`; and `mobgen/src/core/generate.ts`, `resolveSupportBones`.
+
 
 Later (after playtest 1): #370 covers hesitation and pursuit decisions on non-violent sounds; #371 covers nearby shamblers taking interest in a pursuing shambler's hunting sound.
 
@@ -1015,12 +1079,12 @@ spike tests the part model against this goal, and its reasons are in
    then build things the designers didn't foresee. For that, the spike's vehicles own
    their fittings rather than switching a designer's list on and off (BR, 2026-10-06
    18:07; see [docs/vehicle-spike.md](docs/vehicle-spike.md), "Catalogue, blueprints and
-   vehicles"): `src/debug/vehicles/model.ts`, `VehicleInstance`.
+   vehicles"): `src/vehicles/model.ts`, `VehicleInstance`.
 2. **Fitting answers four separate questions:** what may go here (slot and layer); what
    holds it up (a set of supports, which also decides what can be removed); by what
    (skill, tools, materials and time to install, remove and repair, because building and
    repair are crafting); and what it's for (the capabilities it provides). The spike's
-   supports are `src/debug/vehicles/model.ts`, `Fitting.supportedBy`.
+   supports are `src/vehicles/model.ts`, `Fitting.supportedBy`.
 3. **Two layers.** A part type is immutable content that mods can extend. A fitting is
    that part on this vehicle, with its own state: condition (intact, damaged, badly
    damaged, broken) and attachment (attached or ripped off). Collisions damage the parts
@@ -1042,10 +1106,10 @@ spike tests the part model against this goal, and its reasons are in
 6. **Parts are items.** A removed part becomes an item carrying its type and condition
    (the `vehiclePart` component, see [The item model](#the-item-model)): salvage it,
    carry it, refit it. A vehicle can be pieced together from wrecks. So a part type's id
-   names one type across all vehicles: `src/debug/vehicles/catalogue.ts`, `CATALOGUE`.
+   names one type across all vehicles: `src/vehicles/catalogue.ts`, `CATALOGUE`.
 7. **Data-driven and moddable.** Part types and vehicles live in schema-validated content
    (see [Content and modding](#content-and-modding)), and a mod adds parts without code.
-   The spike keeps its part types content-shaped for that: `src/debug/vehicles/voxels.ts`,
+   The spike keeps its part types content-shaped for that: `src/vehicles/voxels.ts`,
    `ShapeOp`.
 8. **The grain is "a part a player would name and swap":** wheel, door, engine, battery,
    seat, bull bar. No bolts, wire runs or plumbing as separate things.
