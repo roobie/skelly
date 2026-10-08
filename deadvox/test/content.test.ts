@@ -820,101 +820,133 @@ describe('content references', () => {
   });
 
   it('lets only a military table hold military-only loot, boxed at any depth, and no salvage or recipe make it', () => {
-    const military = [...militaryLootItems(baseRegistry)];
-    const [item] = military;
-    const cartridge = military.find((id) => baseRegistry.items.get(id)?.ammo);
-    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
-    if (item === undefined || cartridge === undefined || armoury === undefined) {
-      throw new Error('base content needs a military-only item, a military cartridge and a military table');
+    const military = militaryLootItems(baseRegistry);
+    const baseFirearm = [...military]
+      .map((id) => baseRegistry.items.get(id))
+      .find((candidate) => candidate?.firearm !== undefined && candidate.model !== undefined);
+    const baseCartridge = [...military]
+      .map((id) => baseRegistry.items.get(id))
+      .find((candidate) => candidate?.ammo !== undefined);
+    const firearm = baseFirearm?.firearm;
+    const firearmModel = baseFirearm?.model === undefined ? undefined : baseRegistry.models.get(baseFirearm.model);
+    const ammo = baseCartridge?.ammo;
+    if (firearm === undefined || firearmModel === undefined || ammo === undefined) {
+      throw new Error('base content needs a magazine-fed firearm and matching cartridge for the fixture');
     }
+    const item = 'fixture_rifle';
+    const cartridge = 'fixture_cartridge';
+    const armoury = {
+      id: 'fixture_armoury',
+      military: true,
+      rolls: [1, 1],
+      entries: [
+        { item, weight: 1 },
+        { item: cartridge, weight: 1 },
+      ],
+    };
     const source = 'military-sources.json';
-    const { issues } = withBase({
-      source,
-      data: {
-        loot: [
-          {
-            id: 'fixture_shed_crate',
-            rolls: [1, 1],
-            entries: [
-              { item, weight: 1 },
-              { table: armoury.id, weight: 1 },
-              { item: 'rag', weight: 1 },
-              { item: 'fixture_ammo_case', weight: 1 },
-            ],
-          },
-          {
-            id: 'fixture_ammo_crate',
-            military: true,
-            rolls: [1, 1],
-            entries: [
-              { item, weight: 1 },
-              { table: armoury.id, weight: 1 },
-            ],
-          },
-        ],
-        items: [
-          {
-            id: 'fixture_scrap',
-            name: 'Scrap',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            salvage: [{ item, count: 1 }],
-          },
-          {
-            id: 'fixture_parts',
-            name: 'Parts',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            disassembly: {
-              timeGameMinutes: gameMinutes(1),
-              skill: 'crafting',
-              yields: [{ item, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
-            },
-          },
-          // Listed before the box it holds, so finding boxes in one pass would miss it.
-          {
-            id: 'fixture_ammo_case',
-            name: 'Case',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            unpack: { item: 'fixture_box', count: 1 },
-          },
-          {
-            id: 'fixture_box',
-            name: 'Box',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            unpack: { item: cartridge, count: 1 },
-            disassembly: {
-              timeGameMinutes: gameMinutes(1),
-              skill: 'crafting',
-              yields: [{ item: 'rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
-            },
-          },
-        ],
-        recipes: [
-          {
-            id: 'fixture_box_press',
-            result: { item: 'fixture_box', count: 1 },
-            timeGameMinutes: gameMinutes(1),
-            components: [[{ item: 'rag', count: 1 }]],
-            qualities: {},
-            skills: {},
-          },
-        ],
+    const { issues } = buildRegistry([
+      {
+        source: 'military-fixture.json',
+        data: {
+          models: [{ ...firearmModel, id: item }],
+          items: [
+            { id: item, name: 'Fixture rifle', category: 'weapon', weight: 1, size: [1, 1], firearm, model: item },
+            { id: cartridge, name: 'Fixture cartridge', category: 'material', weight: 1, size: [1, 1], ammo },
+          ],
+        },
       },
-    });
-    const only = (id: string) => `"${id}" is military loot only`;
-    expect(issues).toEqual([
-      { source, path: 'loot[0].entries[0].item', message: `${only(item)}; only a "military" table may hold it` },
-      { source, path: 'loot[0].entries[1].table', message: `only a "military" table may nest "${armoury.id}"` },
       {
         source,
-        path: 'loot[0].entries[3].item',
+        data: {
+          loot: [
+            armoury,
+            {
+              id: 'fixture_shed_crate',
+              rolls: [1, 1],
+              entries: [
+                { item, weight: 1 },
+                { table: armoury.id, weight: 1 },
+                { item: 'fixture_rag', weight: 1 },
+                { item: 'fixture_ammo_case', weight: 1 },
+              ],
+            },
+            {
+              id: 'fixture_ammo_crate',
+              military: true,
+              rolls: [1, 1],
+              entries: [
+                { item, weight: 1 },
+                { table: armoury.id, weight: 1 },
+              ],
+            },
+          ],
+          skills: [{ id: 'fixture_crafting', name: 'Fixture crafting' }],
+          items: [
+            {
+              id: 'fixture_scrap',
+              name: 'Scrap',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              salvage: [{ item, count: 1 }],
+            },
+            {
+              id: 'fixture_parts',
+              name: 'Parts',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              disassembly: {
+                timeGameMinutes: gameMinutes(1),
+                skill: 'fixture_crafting',
+                yields: [{ item, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+              },
+            },
+            // Listed before the box it holds, so finding boxes in one pass would miss it.
+            {
+              id: 'fixture_ammo_case',
+              name: 'Case',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              unpack: { item: 'fixture_box', count: 1 },
+            },
+            {
+              id: 'fixture_box',
+              name: 'Box',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              unpack: { item: cartridge, count: 1 },
+              disassembly: {
+                timeGameMinutes: gameMinutes(1),
+                skill: 'fixture_crafting',
+                yields: [{ item: 'fixture_rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+              },
+            },
+            { id: 'fixture_rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
+          ],
+          recipes: [
+            {
+              id: 'fixture_box_press',
+              result: { item: 'fixture_box', count: 1 },
+              timeGameMinutes: gameMinutes(1),
+              components: [[{ item: 'fixture_rag', count: 1 }]],
+              qualities: {},
+              skills: {},
+            },
+          ],
+        },
+      },
+    ]);
+    const only = (id: string) => `"${id}" is military loot only`;
+    expect(issues).toEqual([
+      { source, path: 'loot[1].entries[0].item', message: `${only(item)}; only a "military" table may hold it` },
+      { source, path: 'loot[1].entries[1].table', message: `only a "military" table may nest "${armoury.id}"` },
+      {
+        source,
+        path: 'loot[1].entries[3].item',
         message: `${only('fixture_ammo_case')}; only a "military" table may hold it`,
       },
       { source, path: 'items[0].salvage[0].item', message: `${only(item)}; salvage may not yield it` },
@@ -943,8 +975,10 @@ describe('content references', () => {
         site.palette[key] = { ...entry, loot: armoury.id };
       }
     }
-    const { registry, issues } = withBase({ source: 'armoury-site.json', data: { templates: [site] } });
-    expect(issues).toEqual([]);
+    // Reuse the already validated base registry; this scenario only changes a known loot table on an existing template.
+    const templates = new Map(baseRegistry.templates);
+    templates.set(site.id, site);
+    const registry = { ...baseRegistry, templates };
     const { found } = checkReachability(registry);
     const military = [...militaryLootItems(registry)];
     expect(military.length).toBeGreaterThan(0);
