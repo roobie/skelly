@@ -89,12 +89,13 @@ import {
   type ReplayControlSample,
   type ReplayGeneratedColumn,
   type ReplayInputData,
+  type ReplayStartState,
   replayStateFingerprint,
   rolloverInputReplayRecorder,
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
-import { toggleWalking } from './inputReplayActions.ts';
+import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
@@ -220,11 +221,12 @@ const createInputReplayRecorder = (
   replaying: boolean,
   snapshot: () => Readonly<SaveSnapshot>,
   generatedColumns: readonly ReplayGeneratedColumn[],
+  startState: () => ReplayStartState,
 ): InputReplayRecorder | undefined => {
   if (replaying) {
     return undefined;
   }
-  return new InputReplayRecorder(snapshot(), undefined, generatedColumns);
+  return new InputReplayRecorder(snapshot(), undefined, generatedColumns, { startState: startState() });
 };
 
 const createInputReplayDriver = (
@@ -271,6 +273,7 @@ export interface StartPlayOptions {
     readonly inputs: ReplayInputData;
     readonly endStateFingerprint: string;
     readonly endSimTimestamp: number;
+    readonly startState: ReplayStartState;
   };
 }
 
@@ -448,21 +451,27 @@ export const startPlay = (
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
       consumeCrouchToggle: () => input.consumeCrouchToggle(),
-      useDominant: () => {
-        if (throwingStance) {
-          if (!replayPlayer) {
-            beginItemThrow();
-          }
-          return;
-        }
-        // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
-        const action = selectPrimaryAction(inventory);
-        if (
-          !(debugTools?.buildOn || (action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump))
-        ) {
-          performHandUse(dominantSide(inventory.character));
-        }
-      },
+      useDominant: () =>
+        routeDominantUse(
+          throwingStance,
+          () => {
+            if (!replayPlayer) {
+              beginItemThrow();
+            }
+          },
+          () => {
+            // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
+            const action = selectPrimaryAction(inventory);
+            if (
+              !(
+                debugTools?.buildOn ||
+                (action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
+              )
+            ) {
+              performHandUse(dominantSide(inventory.character));
+            }
+          },
+        ),
       heldDominantUse: (time, pressed, triggerHeld) => {
         if (throwingStance) {
           if (!(replayPlayer || triggerHeld) && itemThrowItemUid !== undefined) {
@@ -560,19 +569,16 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
+  const hasActiveFirearmInput = (): boolean =>
+    replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
   const isFirearmReady = (uid: number): boolean =>
-    input.rightMouseActionHeld &&
-    input.locked &&
-    !input.menuPointer &&
-    !compression.locksInput &&
-    firearms.isReady(uid);
+    input.rightMouseActionHeld && hasActiveFirearmInput() && !compression.locksInput && firearms.isReady(uid);
   const isAimingDownSights = (): boolean => {
     const action = selectPrimaryAction(inventory);
     return (
       input.aimingDownSights &&
       input.rightMouseActionHeld &&
-      input.locked &&
-      !input.menuPointer &&
+      hasActiveFirearmInput() &&
       action.kind === 'firearm' &&
       isFirearmReady(action.item.uid) &&
       !session.sprinting
@@ -821,6 +827,29 @@ export const startPlay = (
   const closeInventoryScreen = (): void => {
     screen.close();
   };
+  const replayPlayState = createReplayPlayStateBinding({
+    getThrowingStance: () => throwingStance,
+    setThrowingStance: (value) => {
+      throwingStance = value;
+    },
+    getReadyHeld: () => input.rightMouseHeld,
+    setReadyHeld: (value) => {
+      input.rightMouseHeld = value;
+    },
+    getAimingDownSights: () => input.aimingDownSights,
+    setAimingDownSights: (value) => {
+      input.aimingDownSights = value;
+    },
+    getInventoryOpen: () => screen.isOpen,
+    setInventoryOpen: (value) => {
+      if (value) {
+        openInventoryScreen();
+      } else {
+        closeInventoryScreen();
+      }
+    },
+  });
+  const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
 
   const spawnItem = (type: string): string => {
     const item = inventory.create(type);
@@ -1609,6 +1638,7 @@ export const startPlay = (
   };
   keyboardInput.install();
   keyboardInput.sync();
+  replayPlayState.restore(options.replay?.startState);
   const cycleWieldedAction = (deltaY: number): boolean => {
     const item = inventory.hands[dominantSide(inventory.character)];
     return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
@@ -1748,7 +1778,7 @@ export const startPlay = (
     throwingStance = !throwingStance;
     automaticFireUid = undefined;
     if (!replayPlayer) {
-      inputRecorder?.queueAction('throw.stance.toggle', 'down', inputContext());
+      inputRecorder?.queueAction('throw.stance.toggle', 'down', inputContext(), { inSnapshot: true });
     }
     if (!throwingStance) {
       cancelItemThrow();
@@ -2588,7 +2618,12 @@ export const startPlay = (
     }
     const previousRecorder = inputRecorder;
     previousInputRecorder = previousRecorder;
-    inputRecorder = rolloverInputReplayRecorder(previousRecorder, captureSnapshot(), streamer.generatedColumns());
+    inputRecorder = rolloverInputReplayRecorder(
+      previousRecorder,
+      captureSnapshot(),
+      streamer.generatedColumns(),
+      captureReplayStartState(),
+    );
   };
 
   const handleInputRecorderColumnOverflow = (): void => {
@@ -2823,7 +2858,12 @@ export const startPlay = (
       { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
     );
   }
-  inputRecorder = createInputReplayRecorder(Boolean(options.replay), captureSnapshot, streamer.generatedColumns());
+  inputRecorder = createInputReplayRecorder(
+    Boolean(options.replay),
+    captureSnapshot,
+    streamer.generatedColumns(),
+    captureReplayStartState,
+  );
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
