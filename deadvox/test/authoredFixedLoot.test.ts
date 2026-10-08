@@ -852,8 +852,8 @@ describe('authored fixed loot', () => {
     if (road === undefined || outer === undefined) {
       throw new Error('the north gate needs its full-width road');
     }
-    const bounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
-    const gateCentre: Point = [(bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2];
+    const gateBounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
+    const gateCentre: Point = [(gateBounds.x0 + gateBounds.x1) / 2, (gateBounds.z0 + gateBounds.z1) / 2];
     const medicalEnd = farthestEndpoint([road.points[0]!, road.points.at(-1)!], gateCentre);
     const trail = layout.tracks.find(
       (track) =>
@@ -862,6 +862,25 @@ describe('authored fixed loot', () => {
         polylineDistance(medicalEnd, track.points) <= (road.width + track.width) / 2,
     );
     expect(trail).toBeDefined();
+
+    const nearestBuildingGap = Math.min(
+      ...layout.buildings.map((building) =>
+        gapToBounds(
+          medicalEnd[0],
+          medicalEnd[1],
+          buildingBounds(building, result.registry.templates.get(building.template)!.size),
+        ),
+      ),
+    );
+    expect(nearestBuildingGap - road.width / 2).toBeLessThanOrEqual(road.width);
+    const medicalHall = layout.buildings.find(({ template }) => template === 'medical_hall');
+    if (medicalHall === undefined) {
+      throw new Error('the medical compound needs its hall placement');
+    }
+    const medicalBounds = buildingBounds(medicalHall, result.registry.templates.get(medicalHall.template)!.size);
+    expect(gapToBounds(medicalEnd[0], medicalEnd[1], medicalBounds)).toBeLessThan(
+      gapToBounds(medicalEnd[0], medicalEnd[1], gateBounds),
+    );
   });
 
   it('delivers fixed loot without replacing seed filler and is chunk-order independent', () => {
