@@ -351,13 +351,16 @@ Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`. 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
 - The 20-round STANAG body uses the Brownells listing's outer box, snapped to
-  the model grid. The listing's delivery dimensions (127 × 66 × 25 mm) are
-  package dimensions that corroborate that box. Side-view proportions estimate
-  the floorplate slant and transition into the shared upper section, which
-  preserves feed and magwell fit. The curved STANAG-30 length follows its traced
-  30-round reference. Other
-  STANAG capacities are deferred to #414. See `src/gun/parts.ts`,
-  `STANAG20_BODY_BOX_U` and `magazineGeometryFor`. The AKM curved band is fitted
+  the model grid; its delivery dimensions corroborate that box but are package
+  dimensions. The HK SA80 listing supplies the 30-round body's outer length and
+  depth, while its body width matches the 20 so both fit the same magazine well
+  and retain the shared upper and feed lips. The curve and feed-lip details are
+  photo estimates from the HK listing. See `src/gun/parts.ts`,
+  `STANAG20_BODY_BOX_U`, `STANAG30_CENTERLINE_LENGTH_U`, `STANAG30_BODY_WIDTH_U`,
+  `magazineBodySection` and `magazineGeometryFor`.
+  Sources: [Brownells 20-round listing](https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983);
+  [HK SA80 30-round listing](https://www.meanandgreen.com/army/British_Army/SA80_5.56mm_30_Round_NATO_Magazine/3850/2876.html) (BR br-98).
+  Other STANAG capacities are deferred to #414. The AKM curved band is fitted
   to its golden photo (g41-4).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`

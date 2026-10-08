@@ -201,6 +201,8 @@ const STANAG20_BODY_BOX_U = {
   depth: snapMagazineDimension(2.54 * 25.4),
   width: snapMagazineDimension(0.975 * 25.4),
 } as const;
+const STANAG30_CENTERLINE_LENGTH_U = snapMagazineDimension(190);
+const STANAG30_BODY_WIDTH_U = STANAG20_BODY_BOX_U.width;
 const MAGAZINE_WELL_CLEARANCE = 0.25;
 const MAGAZINE_WELL_DEPTH = MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
@@ -215,8 +217,18 @@ const magazineSection = (profile: string | undefined): { readonly depth: number;
   const smg = profile === 'smg';
   return { depth: MAGAZINE_DEPTH * (smg ? 0.6 : 1), width: MAGAZINE_WIDTH * (smg ? 0.8 : 1) };
 };
-const magazineBodySection = (profile: MagazineProfile): { readonly depth: number; readonly width: number } =>
-  profile === 'stanag-straight' ? STANAG20_BODY_BOX_U : magazineSection(profile);
+const magazineBodySection = (
+  profile: MagazineProfile,
+  length: SizeClass,
+): { readonly depth: number; readonly width: number } => {
+  if (profile === 'stanag-straight') {
+    return STANAG20_BODY_BOX_U;
+  }
+  if (profile === 'stanag-curved' && length === 'L') {
+    return { depth: MAGAZINE_DEPTH, width: STANAG30_BODY_WIDTH_U };
+  }
+  return magazineSection(profile);
+};
 type MagazineLength = '5-round' | '10-round' | SizeClass;
 type MagazineProfile = 'standard' | 'smg' | 'pistol' | 'ak-curved' | 'stanag-curved' | 'stanag-straight';
 type MagazineBands = Readonly<Record<SizeClass, number>>;
@@ -255,6 +267,9 @@ const magazineLengthData = (
   if (profile === 'stanag-straight') {
     return { size: 'M', length: MAGAZINE_PROFILE_LENGTHS_U['stanag-straight'].M };
   }
+  if (profile === 'stanag-curved' && sizeClass === 'L') {
+    return { size: sizeClass, length: STANAG30_CENTERLINE_LENGTH_U };
+  }
   const bands =
     profile === 'ak-curved'
       ? MAGAZINE_PROFILE_LENGTHS_U['ak-curved'][variant === 'akm' ? 'akm' : 'ak74']
@@ -267,6 +282,7 @@ interface MagazineShape {
   readonly width: number;
   readonly insertion: number;
   readonly bodyLength: number;
+  readonly upperWidth?: number;
 }
 interface CurvedMagazineProfile {
   readonly seat: 'well' | 'face';
@@ -298,7 +314,7 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     straightBottom: 0,
     topSlopeDegrees: 6,
   },
-  // Its L length follows the traced 30-round magazine reference.
+  // Retain the existing profile for the shared upper and compact profile variants.
   stanag30: {
     seat: 'well',
     straightTop: 7.1,
@@ -306,6 +322,11 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     straightBottom: 3.11,
     topSlopeDegrees: 0,
   },
+};
+// The 30-round body uses a photo-estimated sweep below that unchanged shared upper.
+const STANAG30_BODY_PROFILE: CurvedMagazineProfile = {
+  ...CURVED_MAGAZINE_PROFILES.stanag30,
+  arc: { ...CURVED_MAGAZINE_PROFILES.stanag30.arc, sweepDegrees: 2 }
 };
 const AK_MAGAZINE_CURVE_VARIANTS = ['ak74', 'akm'] as const;
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
@@ -3689,28 +3710,44 @@ interface DerivedMagazineGeometry {
   readonly display: readonly Solid[];
 }
 
-const curvedMagazineGeometry = (shape: MagazineShape, description: CurvedMagazineProfile): DerivedMagazineGeometry => {
+const curvedMagazineGeometry = (
+  shape: MagazineShape,
+  description: CurvedMagazineProfile,
+  sharedUpper?: Extract<Solid, { kind: 'extruded-polygon' }>,
+): DerivedMagazineGeometry => {
   const sweep = (description.arc.sweepDegrees * Math.PI) / 180;
   const referenceLength = description.straightTop + description.arc.radius * sweep + description.straightBottom;
-  const scale = shape.bodyLength / referenceLength;
+  const sharedTopBack = sharedUpper?.profile[0];
+  const sharedTopFront = sharedUpper?.profile[1];
+  const sharedTopCenter: Vec2 | undefined =
+    sharedTopBack && sharedTopFront
+      ? [(sharedTopBack[0] + sharedTopFront[0]) / 2, (sharedTopBack[1] + sharedTopFront[1]) / 2]
+      : undefined;
+  const scale = sharedTopCenter
+    ? (shape.bodyLength - (shape.insertion - sharedTopCenter[1])) /
+      (description.arc.radius * sweep + description.straightBottom)
+    : shape.bodyLength / referenceLength;
   const topLength = description.straightTop * scale;
   const bottomLength = description.straightBottom * scale;
   const radius = description.arc.radius * scale;
   const topSlope = (description.topSlopeDegrees * Math.PI) / 180;
   const rise = shape.depth * Math.tan(topSlope);
-  const topBack: Vec2 = [-shape.depth / 2, shape.insertion - topLength];
-  const topFront: Vec2 = [shape.depth / 2, shape.insertion - topLength + rise];
+  const topBack: Vec2 = sharedTopBack ?? [-shape.depth / 2, shape.insertion - topLength];
+  const topFront: Vec2 = sharedTopFront ?? [shape.depth / 2, shape.insertion - topLength + rise];
   const topEdgeAngle = Math.atan2(topFront[1] - topBack[1], topFront[0] - topBack[0]);
   const topCenter: Vec2 = [(topBack[0] + topFront[0]) / 2, (topBack[1] + topFront[1]) / 2];
   const arcCenter: Vec2 = [
     topCenter[0] + radius * Math.cos(topEdgeAngle),
     topCenter[1] + radius * Math.sin(topEdgeAngle),
   ];
-  const upper = extrudedPolygon(
-    'upper-body',
-    [topBack, topFront, [shape.depth / 2, shape.insertion], [-shape.depth / 2, shape.insertion]],
-    [-shape.width / 2, shape.width / 2],
-  );
+  const upperWidth = shape.upperWidth ?? shape.width;
+  const upper =
+    sharedUpper ??
+    extrudedPolygon(
+      'upper-body',
+      [topBack, topFront, [shape.depth / 2, shape.insertion], [-shape.depth / 2, shape.insertion]],
+      [-upperWidth / 2, upperWidth / 2],
+    );
   const buildArc = (facets: number, prefix: string): Solid[] => {
     const step = sweep / facets;
     const rotate = ([x, y]: Vec2): Vec2 => {
@@ -3762,6 +3799,23 @@ const magazineGeometryFor = (
     return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES[params.variant === 'akm' ? 'akm' : 'ak74']);
   }
   if (params.profile === 'stanag-curved') {
+    if (shape.length === 'L') {
+      const referenceShape = {
+        ...shape,
+        depth: MAGAZINE_DEPTH,
+        width: MAGAZINE_WIDTH,
+        bodyLength: MAGAZINE_PROFILE_LENGTHS_U['stanag-curved'].L,
+        upperWidth: MAGAZINE_WIDTH,
+      };
+      const sharedUpper = curvedMagazineGeometry(
+        referenceShape,
+        CURVED_MAGAZINE_PROFILES.stanag30,
+      ).collision[0];
+      if (sharedUpper?.kind !== 'extruded-polygon') {
+        throw new Error('the STANAG magazine top must be an extruded profile');
+      }
+      return curvedMagazineGeometry(shape, STANAG30_BODY_PROFILE, sharedUpper);
+    }
     return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES.stanag30);
   }
   if (params.profile === 'stanag-straight') {
@@ -3859,7 +3913,7 @@ export const magazine: PartFamily = {
     const magazineLength = magazineLengthData(params.length, profile, params.variant);
     const isCompactBoltMagazine = params.length === '5-round' || params.length === '10-round';
     const len = magazineLength.length;
-    const { depth, width } = magazineBodySection(profile);
+    const { depth, width } = magazineBodySection(profile, magazineLength.size);
     let curveProfile: CurvedMagazineProfile | undefined;
     if (params.profile === 'ak-curved') {
       curveProfile = CURVED_MAGAZINE_PROFILES[params.variant === 'akm' ? 'akm' : 'ak74'];
@@ -3874,6 +3928,7 @@ export const magazine: PartFamily = {
       width,
       insertion: resolvedInsertion,
       bodyLength: len,
+      ...(profile === 'stanag-curved' ? { upperWidth: MAGAZINE_WIDTH } : {}),
     };
     const geometry = magazineGeometryFor(params, shape);
     const floorplate = isCompactBoltMagazine
