@@ -923,13 +923,17 @@ try {
         undefined,
         { timeout: STAGE_TIMEOUT_MS },
       );
-      const postBackSave = await page.evaluate(async () => ({
-        pageIsLeaving: globalThis.deadvoxSaveTest.controller.pageIsLeaving,
-        statusText: globalThis.deadvoxSaveTest.controller.statusText,
-        captures: JSON.parse(sessionStorage.getItem('d144-captures') ?? '[]'),
-        writes: JSON.parse(sessionStorage.getItem('d144-writes') ?? '[]'),
-        generation: (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
-      }));
+      const postBackSave = await page.evaluate(async () => {
+        const { controller, storage, namespace } = globalThis.deadvoxSaveTest;
+        const record = await storage.load(namespace);
+        return {
+          pageIsLeaving: controller.pageIsLeaving,
+          statusText: controller.statusText,
+          captures: JSON.parse(sessionStorage.getItem('d144-captures') ?? '[]'),
+          writes: JSON.parse(sessionStorage.getItem('d144-writes') ?? '[]'),
+          generation: record?.generation,
+        };
+      });
       process.stdout.write(`${browserName}: post-Back capture ${JSON.stringify(postBackSave)}\n`);
       await page.evaluate(() =>
         Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }),
