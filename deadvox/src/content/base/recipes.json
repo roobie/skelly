@@ -25,7 +25,7 @@
           "adsApertureFill": 0.85,
           "skillZeroHandling": {
             "singleShot": { "variance": 20, "recoilKickScale": 6, "recoilRecoveryScale": 0.5 },
-            "automaticFollowup": { "variance": 4, "recoilKickScale": 12, "recoilRecoveryScale": 0.25 }
+            "automaticFollowup": { "variance": 40, "recoilKickScale": 12, "recoilRecoveryScale": 0.25 }
           },
           "wobbleSkillTenVariance": 0.05,
           "wobbleLimitRadians": 0.14,

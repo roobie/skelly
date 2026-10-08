@@ -2071,7 +2071,7 @@
             "recoilRecoveryScale": 0.35
           },
           "automaticFollowup": {
-            "variance": 6,
+            "variance": 60,
             "recoilKickScale": 20,
             "recoilRecoveryScale": 0.18
           }
@@ -2107,7 +2107,7 @@
             "recoilRecoveryScale": 0.75
           },
           "automaticFollowup": {
-            "variance": 2.5,
+            "variance": 25,
             "recoilKickScale": 7,
             "recoilRecoveryScale": 0.4
           }
@@ -2133,7 +2133,7 @@
             "recoilRecoveryScale": 0.5
           },
           "automaticFollowup": {
-            "variance": 4,
+            "variance": 40,
             "recoilKickScale": 12,
             "recoilRecoveryScale": 0.25
           }

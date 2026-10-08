@@ -458,13 +458,17 @@ it('expert recovery scale decays the same released recoil faster', () => {
   );
 });
 
-const readiedWalkWobble = (level: number, firearmType = 'pump_shotgun'): number => {
+const readiedWalkWobble = (
+  level: number,
+  firearmType = 'pump_shotgun',
+  shotKind: FirearmsSkillShotKind = 'singleShot',
+): number => {
   const firearm = BUNDLED_CONTENT.registry.items.get(firearmType)!.firearm!;
   const tuning = {
     ...stanceTuning,
     skillZeroHandling: firearm.skillZeroHandling ?? stanceTuning.skillZeroHandling,
   };
-  const effects = firearmsSkillEffects(level, tuning);
+  const effects = firearmsSkillEffects(level, tuning, shotKind);
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
   const { blockSize } = step();
   const aim = createAim(effects.variance);
@@ -630,9 +634,9 @@ it('wobble can use its larger content bound without merging it into recoil', () 
   expect(peak).toBeCloseTo(stanceTuning.wobbleLimitRadians, 8);
 });
 
-it('readied-walk wobble shrinks with firearms skill at equal movement for pump and rifle', () => {
+it('readied-walk wobble follows skill without dropping during automatic follow-up', () => {
   const levels = [0, Math.floor(SKILL_LEVEL_MAX / 2), SKILL_LEVEL_MAX];
-  for (const firearmType of ['pump_shotgun', 'rifle_assault']) {
+  for (const firearmType of ['pump_shotgun', 'rifle_assault', 'rifle_ak']) {
     const wobble = levels.map((level) => readiedWalkWobble(level, firearmType));
     expect(wobble[1]).toBeLessThan(wobble[0]!);
     expect(wobble[2]).toBeLessThan(wobble[1]!);
@@ -641,6 +645,7 @@ it('readied-walk wobble shrinks with firearms skill at equal movement for pump a
       firearm.skillZeroHandling?.singleShot.variance ?? stanceTuning.skillZeroHandling.singleShot.variance;
     const configuredExpertFraction = stanceTuning.wobbleSkillTenVariance / noviceVariance;
     expect(wobble[2]! / wobble[0]!).toBeCloseTo(configuredExpertFraction, 4);
+    expect(readiedWalkWobble(0, firearmType, 'automaticFollowup')).toBeGreaterThanOrEqual(wobble[0]!);
   }
 });
 
