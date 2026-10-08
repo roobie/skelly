@@ -63,6 +63,7 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
+import { updateStartupHintLatch } from '../ui/startupHint.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
@@ -1001,6 +1002,7 @@ export const startPlay = (
 
   let started = options.restore !== undefined;
   let mainMenuOpen = !options.replay;
+  let startupHintPending = !options.replay;
   let resumeRequested = false;
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
@@ -1043,7 +1045,9 @@ export const startPlay = (
     const unmeshed = streamer.unmeshedColumns(body.pos[0], body.pos[2], STARTUP_MESH_RADIUS);
     startupProgress.max = STARTUP_COLUMN_COUNT;
     startupProgress.value = STARTUP_COLUMN_COUNT - unmeshed;
-    startupHint.hidden = unmeshed === 0;
+    const latch = updateStartupHintLatch(startupHintPending, unmeshed);
+    startupHintPending = latch.pending;
+    startupHint.hidden = !latch.visible;
   };
   const resume = () => {
     if (replayPlayer) {

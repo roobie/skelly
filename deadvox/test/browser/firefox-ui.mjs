@@ -5,7 +5,6 @@ import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { traceFreshPlayer } from './fresh-player-trace.mjs';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -23,7 +22,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view, camera, engine, streamer, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view, camera, engine, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
     );
   },
 };
@@ -40,14 +39,6 @@ try {
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
   browser = await firefox.launch({ headless: false });
-  await traceFreshPlayer({
-    browser,
-    stage: 'firefox-ui',
-    url: `http://127.0.0.1:${address.port}/`,
-    browserName: 'firefox',
-    runtimeName: 'firefoxUiTest',
-    renderMode: 'pixel',
-  });
   const page = await browser.newPage();
   const pageErrors = [];
   const consoleErrors = [];
@@ -93,6 +84,32 @@ try {
     () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
     null,
     { timeout: 10_000 },
+  );
+  await page.waitForFunction(
+    () => {
+      const hint = document.querySelector('#startup-hint');
+      const progress = document.querySelector('#startup-hint-progress');
+      const meshes = globalThis.firefoxUiTest?.engine?.meshes;
+      return (
+        hint &&
+        !hint.hidden &&
+        progress &&
+        progress.value < progress.max &&
+        meshes?.keys &&
+        Array.from(meshes.keys()).length === 0
+      );
+    },
+    null,
+    { timeout: 10_000 },
+  );
+  await page.waitForFunction(
+    () => {
+      const hint = document.querySelector('#startup-hint');
+      const progress = document.querySelector('#startup-hint-progress');
+      return hint?.hidden && progress && progress.value === progress.max;
+    },
+    null,
+    { timeout: 30_000 },
   );
   await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, initialTime, {
     timeout: 20_000,
