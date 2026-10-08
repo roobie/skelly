@@ -2811,6 +2811,7 @@ try {
     const r = globalThis.primaryActionTest;
     r.startInputReplayRecording();
     const fixture = r.inventory.create('glowstick');
+    r.setHand(r.dominant, fixture);
     return { uid: fixture.uid, start: r.session.sim.time };
   });
   await waitForSimulation(
