@@ -205,15 +205,23 @@ try {
   const pageErrors = [];
   const navigationDiagnostics = new WeakMap();
   const trackPageNavigation = (trackedPage) => {
-    const state = { generation: 0, requestGeneration: new WeakMap(), navigationByGeneration: new Map() };
+    const state = {
+      generation: 0,
+      newDocumentPending: false,
+      requestGeneration: new WeakMap(),
+      navigationByGeneration: new Map(),
+    };
     navigationDiagnostics.set(trackedPage, state);
     trackedPage.on('request', (request) => {
       if (!request.isNavigationRequest()) {
         state.requestGeneration.set(request, state.generation);
+      } else if (request.frame() === trackedPage.mainFrame()) {
+        state.newDocumentPending = true;
       }
     });
     trackedPage.on('framenavigated', (frame) => {
-      if (frame === trackedPage.mainFrame()) {
+      if (frame === trackedPage.mainFrame() && state.newDocumentPending) {
+        state.newDocumentPending = false;
         state.generation += 1;
       }
     });
@@ -253,7 +261,7 @@ try {
     const generation = state?.requestGeneration.get(request);
     const navigation = generation === undefined ? undefined : state?.navigationByGeneration.get(generation);
     // Firefox cancels outgoing-document module fetches during reload; destination-page failures remain errors.
-    if (failure === 'NS_BINDING_ABORTED' && !request.isNavigationRequest() && navigation) {
+    if (failure === 'NS_BINDING_ABORTED' && navigation) {
       process.stdout.write(
         `${browserName}: ignored outgoing-page request cancellation during ${navigation.label}: ${request.url()} from ${JSON.stringify(navigation.source)}\n`,
       );

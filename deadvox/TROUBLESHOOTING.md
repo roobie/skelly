@@ -104,21 +104,23 @@ budget”.
 
 `SaveStorage.withLock` reports the cause and held/pending lock summary, including
 whether the holder is another client, and explains the other-page failure to the
-player. For #467, `test/browser/save-storage.mjs`, `testTitleAndAutosave`, waits
-on `SaveController`'s committed generation and failure (`save-test` hook's
-`saveState`) rather than status wording or storage reads during the write. A
-reader polling during an OPFS write takes the shared save lock against the
-writer's exclusive lock; #467 suspects this but has not shown it caused the
-failure. Wait timeouts report save status and page errors; postcondition read
-errors identify the backend and step.
+player. A save checkpoint is proved by the controller's committed generation and failure
+state, not by UI wording or a competing storage read. In
+`test/browser/save-storage.mjs`, `testTitleAndAutosave` reads the `save-test`
+hook's `saveState`. A reader polling during an OPFS write takes the shared save
+lock against the writer's exclusive lock; the reported timeout has not shown
+that contention caused the failure. Wait timeouts report save status and page
+errors; postcondition read errors identify the backend and step.
 
-For #474, Firefox can cancel outstanding fetches as a document is replaced by
-its own navigation. That cancellation is not a save failure; the destination
-page must still load and pass its save checks. `test/browser/save-storage.mjs`,
-`recordRequestFailure` and `navigatePage`, distinguish outgoing-page requests
-from requests in the destination document. The leaving-state rule is in
-`src/ui/saveController.ts`, `SaveController`; navigation and busy-lock contracts
-are in `navigationOnly` and `busyLockOnly`.
+Firefox cancels outstanding module fetches when a navigation replaces their
+document; that cancellation is not a save failure. The destination document must
+still load and pass its save checks. In `test/browser/save-storage.mjs`,
+`trackPageNavigation` advances the document generation only when a main-frame
+navigation request commits, and `recordRequestFailure` ignores only an aborted
+request attributed to a generation during an explicit test navigation.
+`navigatePage` records that navigation's source state. The leaving-state rule is
+in `src/ui/saveController.ts`, `SaveController`; navigation and busy-lock
+contracts are in `navigationOnly` and `busyLockOnly`.
 
 ## Deadvox CI browser dependency stalls
 
