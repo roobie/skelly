@@ -58,8 +58,8 @@ controls remain proposals until their issue is implemented.
 - **Loose-item pickup:** Players grab ground items from the normal game view by
   tapping F to wear a back-wearable when the back slot is free, otherwise pocket
   it; holding F wields it. The pickup uses the inventory's ordinary handling
-  path, so wearing and pocketing retain their normal handling time. The existing
-  simple reach animation remains for either destination. Doors and containers
+  path, so wearing and pocketing retain their normal handling time. The reach
+  animation is the same for either destination. Doors and containers
   keep their tap interaction. F uses one shared reach and target choice: exact
   ties favor furniture, while tied ground items resolve by item UID. Scatter
   items are targetable where they are drawn; `src/core/scatterPile.ts`,

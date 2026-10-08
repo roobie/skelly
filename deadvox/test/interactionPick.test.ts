@@ -53,7 +53,7 @@ const options = (inventory: Inventory, origin: Vec3, direction: Vec3, isSolid: S
 });
 
 describe('F interaction target selection', () => {
-  it('targets the visible bundle and resolves overlapping bundled items by uid', () => {
+  it('targets the visible bundle', () => {
     const inventory = new Inventory(registry);
     const first = inventory.create(itemType!);
     const second = inventory.create(itemType!);
