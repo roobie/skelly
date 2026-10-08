@@ -1,0 +1,10 @@
+{
+  "dayCycle": {
+    "latitudeDegrees": 60,
+    "date": {
+      "month": 10,
+      "day": 15
+    },
+    "twilight": "nautical"
+  }
+}

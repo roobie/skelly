@@ -8,7 +8,8 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-export const INPUT_REPLAY_SCHEMA_VERSION = 17;
+// Recordings from older schemas don't resolve identically.
+export const INPUT_REPLAY_SCHEMA_VERSION = 18;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {

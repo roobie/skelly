@@ -2,6 +2,7 @@
 // real fixed-step ZombieSystem and player physics, and records frame/tick/render costs.
 
 import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
 import { type Body, stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
@@ -138,7 +139,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
         lit: true,
         lightSeenFrom: 40,
       }),
-      hour: () => hourOfDay(startTime),
+      dayPhase: () => dayPhaseAt(DEFAULT_DAY_CYCLE, startTime),
       hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),
     });
     spawnShamblerRing({

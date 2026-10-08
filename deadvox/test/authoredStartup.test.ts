@@ -11,6 +11,9 @@ it('starts normal sites when a malformed bundled layout file is rejected whole',
         enforce: 'pre',
         load(id) {
           if (id.includes('/src/content/base/') && id.endsWith('.json')) {
+            if (id.endsWith('/src/content/base/dayCycle.json')) {
+              return null;
+            }
             return id.endsWith('/src/content/base/layouts.json') ? JSON.stringify({ layouts: {} }) : JSON.stringify({});
           }
           return null;
