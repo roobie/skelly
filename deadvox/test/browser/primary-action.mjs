@@ -171,11 +171,10 @@ const observationPlugin = {
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     const throwQueueMarker = `      pendingPlayerTickActions.enqueue(() => {
-        if (inventory.hands[hand] !== item) {
-          throw new Error('Recorded item.throw lost its held item before the next player sample');
-        }
-        throwHeldItem(item, hand, distance, chargeProgress);
-        syncThrowingStance();
+        applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
+          throwHeldItem(heldItem, hand, distance, chargeProgress);
+          syncThrowingStance();
+        });
       });`;
     assert(code.includes(marker), 'game-loop observation point exists');
     assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
