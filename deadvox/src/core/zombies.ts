@@ -44,6 +44,17 @@ export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_
 const BACKGROUND_STEP_CAP_METRES = 1;
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 
+export const zombieBodyDimensions = (
+  type: ZombieDef,
+  blockSize: number,
+): { halfWidth: number; halfDepth?: number; height: number } =>
+  type.model === 'amalgam'
+    ? amalgamCollisionEnvelope(amalgamFigureForType(type, AMALGAM_FIGURE_SEED), blockSize)
+    : { halfWidth: 0.28 / blockSize, height: 1.7 / blockSize };
+
+export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
+  type.model === 'amalgam' ? type.attack.reach * amalgamFigureForType(type, figureSeed).scale : type.attack.reach;
+
 /** Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it. */
 export const PLAYER_ARM_REACH_M = 1.2;
 
@@ -276,7 +287,7 @@ export const zombieAttackReachMetres = (zombie: Pick<Zombie, 'type' | 'figureSee
   if (zombie.type.model !== 'amalgam' || activeAmalgamMembers(zombie).length === 0) {
     return zombie.type.model === 'amalgam' ? 0 : zombie.type.attack.reach;
   }
-  return zombie.type.attack.reach * amalgamFigureForType(zombie.type, zombie.figureSeed).scale;
+  return zombieAttackReachForType(zombie.type, zombie.figureSeed);
 };
 
 export type ZombieState = Omit<
@@ -469,15 +480,9 @@ const posedRegionsForZombie = ({
   if (cached) {
     return cached;
   }
+  const poseInput = zombiePoseInputFor(zombie, id, blockSize);
   const posed =
-    zombie.type.model === 'amalgam'
-      ? posedAmalgamRegionBoxes(amalgamFigureForType(zombie.type, zombie.figureSeed), {
-          position: [zombie.body.pos[0], zombie.body.pos[1] + (zombie.stepOffset ?? 0) / blockSize, zombie.body.pos[2]],
-          facing: zombie.facing,
-          blockSize,
-          severed: zombie.severed,
-        })
-      : posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize));
+    zombie.type.model === 'amalgam' ? posedAmalgamRegionBoxes(poseInput) : posedShamblerRegionBoxes(poseInput);
   poseCache?.set(id, posed);
   return posed;
 };
@@ -1571,10 +1576,7 @@ export class ZombieSystem {
               SHAMBLER_FIGURE_SEEDS.length - 1,
             )
           ]!;
-    const dimensions: { halfWidth: number; halfDepth?: number; height: number } =
-      type.model === 'amalgam'
-        ? amalgamCollisionEnvelope(amalgamFigureForType(type, figureSeed), this.options.blockSize)
-        : { halfWidth: 0.28 / this.options.blockSize, height: 1.7 / this.options.blockSize };
+    const dimensions = zombieBodyDimensions(type, this.options.blockSize);
     const zombie: Zombie = {
       type,
       tier: this.tierAt(position, this.options.player()),
@@ -2255,6 +2257,7 @@ export class ZombieSystem {
     zombie.body.vel[0] = (direction[0] * zombie.horizontalSpeed) / blockSize;
     zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
     scratch.jumpAttempted =
+      zombie.type.canJumpObstacles &&
       zombie.horizontalSpeed > 0.01 &&
       zombie.body.onGround &&
       canJumpObstacle({

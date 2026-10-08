@@ -556,6 +556,7 @@ export const createSession = (options: SessionOptions) => {
       noiseRadiusScale = 1,
       body: mobBody,
       noiseRadiusMetres,
+      soundPitchMultiplier,
     }: SoundEmissionMeta & {
       player: boolean;
       body?: MobBody;
@@ -566,7 +567,8 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const pitch = mobBody ? selected.pitch * shamblerBodyPitch(mobBody) : selected.pitch;
+    const bodyPitch = soundPitchMultiplier ?? (mobBody ? shamblerBodyPitch(mobBody) : 1);
+    const pitch = selected.pitch * bodyPitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
     const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres * noiseRadiusScale;
@@ -873,7 +875,14 @@ export const createSession = (options: SessionOptions) => {
         event,
         position,
         sim.time,
-        zombie ? { body: zombieFigure(zombie.type, zombie.figureSeed).realized.body } : {},
+        zombie
+          ? {
+              body: zombieFigure(zombie.type, zombie.figureSeed).realized.body,
+              ...(zombie.type.soundPitchMultiplier === undefined
+                ? {}
+                : { soundPitchMultiplier: zombie.type.soundPitchMultiplier }),
+            }
+          : {},
       );
     },
     onFootstep: (position, id, mode, zombie) => {

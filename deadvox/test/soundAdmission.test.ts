@@ -111,6 +111,20 @@ describe('simulation sound admission', () => {
     ).toBe(true);
   });
 
+  it('applies a zombie type’s authored pitch multiplier to its mob sound', () => {
+    const selected: Readonly<SoundEmission>[] = [];
+    const session = makeSession((emission) => selected.push(emission));
+    const type = registry.zombies.get('amalgam')!;
+    session.zombies.add(type, [6, 8, 9], [0, 0, 1]);
+    session.zombies.tick(1 / 60);
+
+    const sound = selected.find(({ event }) => event.startsWith('amalgam_'));
+    expect(sound).toBeDefined();
+    const unscaled = new SoundPicker(seed, registry.sounds).pick(sound!.event, sound!.time)!;
+    expect(sound!.pick.pitch).toBeCloseTo(unscaled.pitch * type.soundPitchMultiplier!, 10);
+    expect(sound!.pick.pitch).toBeLessThan(1);
+  });
+
   it('admits a noisy player event with an unbundled asset without hiding the playback error', () => {
     const sounds = new Map(registry.sounds);
     const definition = sounds.get('player_strain')!;
