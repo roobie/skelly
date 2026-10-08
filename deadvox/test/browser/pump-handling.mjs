@@ -3,10 +3,10 @@
 // biome-ignore-all lint/style/noProcessEnv: browser executable path is runner configuration
 // biome-ignore-all lint/performance/noAwaitInLoops: native arrow navigation is sequential
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { mkdir } from 'node:fs/promises';
 import { createServer } from 'vite';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { launchChromium } from './chromium.mjs';
@@ -187,7 +187,9 @@ try {
   const moveTo = async (action, axis, target) => {
     const start = await page.evaluate((coordinate) => globalThis.pumpHandlingTest.session.body.pos[coordinate], axis);
     const direction = Math.sign(target - start);
-    if (!direction) return;
+    if (!direction) {
+      return;
+    }
     const releaseSprint = await holdAction(page, 'movement.sprint');
     const releaseMove = await holdAction(page, action);
     try {
@@ -197,7 +199,7 @@ try {
           return sign > 0 ? position >= goal : position <= goal;
         },
         { coordinate: axis, goal: target, sign: direction },
-        { timeout: 20000 },
+        { timeout: 20_000 },
       );
     } finally {
       await releaseMove();
@@ -205,11 +207,14 @@ try {
     }
   };
   const lockerRoute = await page.evaluate(async () => {
+    // biome-ignore lint/correctness/noUnresolvedImports: resolved by Vite in the browser fixture
     const { HOUSE_OFFSET, GARDEN_GATE } = await import('/src/game/testHouse.ts');
     const { engine, session } = globalThis.pumpHandlingTest;
-    const blockSize = engine.config.scale.blockSize;
+    const { blockSize } = engine.config.scale;
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
-    if (!rack) throw new Error('Test-house weapon locker is missing');
+    if (!rack) {
+      throw new Error('Test-house weapon locker is missing');
+    }
     return {
       corridorZ: (HOUSE_OFFSET[1] + GARDEN_GATE.approachZ) / blockSize,
       gateX: (HOUSE_OFFSET[0] + GARDEN_GATE.centreX) / blockSize,
@@ -260,9 +265,13 @@ try {
     };
     const you = document.querySelector('#inventory [data-pane="you"]');
     const around = document.querySelector('#inventory [data-pane="around"]');
-    const locker = [...document.querySelectorAll('#inventory .inv-pile')].find((node) => node.textContent.includes('Gun rack'));
+    const locker = [...document.querySelectorAll('#inventory .inv-pile')].find((node) =>
+      node.textContent.includes('Gun rack'),
+    );
     const scroll = locker?.querySelector('.inv-grid-scroll');
-    if (!(you && around && locker && scroll)) throw new Error('Open weapon locker did not render in the vicinity pane');
+    if (!(you && around && locker && scroll)) {
+      throw new Error('Open weapon locker did not render in the vicinity pane');
+    }
     return {
       viewport: { width: innerWidth, height: innerHeight },
       you: box(you),
@@ -272,35 +281,74 @@ try {
     };
   });
   assert.equal(lockerGeometry.viewport.width, 960);
-  assert.ok(lockerGeometry.you.right - lockerGeometry.you.left >= 100, `character inventory remains usable: ${JSON.stringify(lockerGeometry)}`);
-  for (const [name, rect] of Object.entries({ you: lockerGeometry.you, around: lockerGeometry.around, locker: lockerGeometry.locker })) {
-    assert.ok(rect.left >= 0 && rect.right <= 960, `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`);
-    assert.ok(rect.top >= 0 && rect.bottom <= 540, `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`);
+  assert.ok(
+    lockerGeometry.you.right - lockerGeometry.you.left >= 100,
+    `character inventory remains usable: ${JSON.stringify(lockerGeometry)}`,
+  );
+  for (const [name, rect] of Object.entries({
+    you: lockerGeometry.you,
+    around: lockerGeometry.around,
+    locker: lockerGeometry.locker,
+  })) {
+    assert.ok(
+      rect.left >= 0 && rect.right <= 960,
+      `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`,
+    );
+    assert.ok(
+      rect.top >= 0 && rect.bottom <= 540,
+      `${name} stays in the small viewport: ${JSON.stringify(lockerGeometry)}`,
+    );
   }
-  assert.ok(lockerGeometry.lockerScroll.scrollWidth > lockerGeometry.lockerScroll.clientWidth, 'the locker grid scrolls inside its region');
+  assert.ok(
+    lockerGeometry.lockerScroll.scrollWidth > lockerGeometry.lockerScroll.clientWidth,
+    'the locker grid scrolls inside its region',
+  );
   const tabChecks = [];
   for (const tab of ['items', 'skills', 'crafting', 'items']) {
     await page.locator(`#inventory .inv-tab[data-tab="${tab}"]`).click();
-    tabChecks.push(await page.evaluate((selected) => ({
-      active: globalThis.pumpHandlingTest.screen.activeTab,
-      selectedPanelVisible: selected === 'crafting'
-        ? getComputedStyle(document.querySelector('#crafting')).display !== 'none'
-        : !document.querySelector(`#inventory [data-tab-panel="${selected}"]`).hidden,
-      viewportWidth: document.documentElement.scrollWidth,
-      panelWidth: document.querySelector('#inventory').scrollWidth,
-      content: (() => {
-        const node = selected === 'crafting'
-          ? document.querySelector('#crafting')
-          : document.querySelector(`#inventory [data-tab-panel="${selected}"]`);
-        return { width: node.scrollWidth, clientWidth: node.clientWidth, overflowX: getComputedStyle(node).overflowX };
-      })(),
-    }), tab));
+    tabChecks.push(
+      await page.evaluate(
+        (selected) => ({
+          active: globalThis.pumpHandlingTest.screen.activeTab,
+          selectedPanelVisible:
+            selected === 'crafting'
+              ? getComputedStyle(document.querySelector('#crafting')).display !== 'none'
+              : !document.querySelector(`#inventory [data-tab-panel="${selected}"]`).hidden,
+          viewportWidth: document.documentElement.scrollWidth,
+          panelWidth: document.querySelector('#inventory').scrollWidth,
+          content: (() => {
+            const node =
+              selected === 'crafting'
+                ? document.querySelector('#crafting')
+                : document.querySelector(`#inventory [data-tab-panel="${selected}"]`);
+            return {
+              width: node.scrollWidth,
+              clientWidth: node.clientWidth,
+              overflowX: getComputedStyle(node).overflowX,
+            };
+          })(),
+        }),
+        tab,
+      ),
+    );
   }
-  assert.ok(tabChecks.every(({ active, selectedPanelVisible }) => active && selectedPanelVisible), `tab buttons show their panel: ${JSON.stringify(tabChecks)}`);
+  assert.ok(
+    tabChecks.every(({ active, selectedPanelVisible }) => active && selectedPanelVisible),
+    `tab buttons show their panel: ${JSON.stringify(tabChecks)}`,
+  );
   for (const result of tabChecks) {
-    assert.ok(result.viewportWidth <= 960 && result.panelWidth <= 960, `tab fits the viewport: ${JSON.stringify(result)}`);
-    assert.ok(result.content.width <= result.content.clientWidth, `tab content does not overflow horizontally: ${JSON.stringify(result)}`);
-    assert.ok(['auto', 'scroll'].includes(result.content.overflowX), `tab content owns its overflow: ${JSON.stringify(result)}`);
+    assert.ok(
+      result.viewportWidth <= 960 && result.panelWidth <= 960,
+      `tab fits the viewport: ${JSON.stringify(result)}`,
+    );
+    assert.ok(
+      result.content.width <= result.content.clientWidth,
+      `tab content does not overflow horizontally: ${JSON.stringify(result)}`,
+    );
+    assert.ok(
+      ['auto', 'scroll'].includes(result.content.overflowX),
+      `tab content owns its overflow: ${JSON.stringify(result)}`,
+    );
   }
   await page.locator('#inventory .inv-tab[data-tab="crafting"]').click();
   await page.screenshot({ path: resolve(screenshotDirectory, 'crafting.png') });

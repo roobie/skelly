@@ -188,7 +188,7 @@ describe('inventory screen Lit rendering', () => {
 
   it('renders a skill level from the live character progression', () => {
     const { screen, root, character } = setup();
-    const skill = [...registry.skills.values()][0];
+    const [skill] = registry.skills.values();
     if (!skill) {
       throw new Error('The skill screen needs a registry skill fixture');
     }

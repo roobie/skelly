@@ -379,7 +379,7 @@ body.unconscious::after {
 .inv-help summary {
   cursor: pointer;
 }
-.inv-help span {
+#inventory .inv-help span {
   display: block;
   max-width: min(72ch, calc(100vw - 64px));
   padding-top: 6px;
@@ -415,15 +415,15 @@ body.unconscious::after {
 .inv-body[hidden] {
   display: none;
 }
-.inv-body[data-tab-panel="items"] .inv-details {
-  grid-column: 1 / -1;
-}
 .inv-skills {
   grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
   grid-template-rows: minmax(0, 1fr);
 }
-.inv-pane,
-.inv-details {
+.inv-body[data-tab-panel="items"] .inv-details {
+  grid-column: 1 / -1;
+}
+#inventory .inv-pane,
+#inventory .inv-details {
   min-width: 0;
   min-height: 0;
   overflow: auto;
@@ -435,7 +435,7 @@ body.unconscious::after {
   border-radius: 8px;
   background: #15171b;
 }
-.inv-details {
+#inventory .inv-details {
   gap: 6px;
   background: #1b1e23;
 }
@@ -856,8 +856,8 @@ button.inv-option.game-cursor-hover {
   justify-content: space-between;
   gap: 4px 12px;
 }
-.inv-skill-heading span,
-.inv-skill-practice {
+#inventory .inv-skill-heading span,
+#inventory .inv-skill-practice {
   color: var(--muted);
   font-size: 12px;
 }
@@ -868,7 +868,7 @@ button.inv-option.game-cursor-hover {
   border-radius: 3px;
   background: #262a30;
 }
-.inv-skill-progress span {
+#inventory .inv-skill-progress span {
   display: block;
   height: 100%;
   background: var(--accent);
@@ -1134,6 +1134,13 @@ body.bench #quickbar {
 }
 
 /* ---- crafting tab ---- */
+#crafting {
+  padding: 16px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgb(16 18 22 / 96%);
+}
 body.inventory-open:not(.inventory-tab-crafting) #crafting,
 #crafting[hidden] {
   display: none;
@@ -1150,13 +1157,6 @@ body.inventory-open.inventory-tab-crafting #crafting {
   padding: 14px;
   overflow: auto;
   overscroll-behavior: contain;
-}
-#crafting {
-  padding: 16px;
-  overflow-y: auto;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: rgb(16 18 22 / 96%);
 }
 #crafting[hidden],
 #craft-status[hidden] {

@@ -6,8 +6,8 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import type { BodyRegion, BodyState } from '../core/body.ts';
-import { BODY_REGIONS } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion, type BodyState } from '../core/body.ts';
+import { practiceForNextLevel } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import type { HandlingQueue } from '../core/handling.ts';
@@ -16,11 +16,10 @@ import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed,
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { practiceForNextLevel } from '../core/character.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
-import { InventoryTabState, type InventoryTab } from './inventoryTabs.ts';
+import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 
 /** Pixels per inventory cell. */
 const CELL = 32;
@@ -279,17 +278,24 @@ const inventoryTemplate = (
   vm: InventoryScreenViewModel,
   tab: InventoryTab,
   selectTab: (tab: InventoryTab) => void,
-  queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
-  search: (uid: number) => void,
+  {
+    queue,
+    search,
+  }: {
+    queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
+    search: (uid: number) => void;
+  },
 ): TemplateResult => html`
   <header class="inv-head">
     <div class="inv-title"><h2>Inventory</h2><span class="inv-weight">Carrying ${vm.weight}</span></div>
     <nav class="inv-tabs" aria-label="Character screen">
-      ${(['items', 'skills', 'crafting'] as const).map((name) => html`
+      ${(['items', 'skills', 'crafting'] as const).map(
+        (name) => html`
         <button type="button" class="inv-tab" data-tab=${name} aria-selected=${tab === name} @click=${() => selectTab(name)}>
-          ${name === 'items' ? 'Items' : name === 'skills' ? 'Skills' : 'Crafting'}
+          ${({ items: 'Items', skills: 'Skills', crafting: 'Crafting' } satisfies Record<InventoryTab, string>)[name]}
         </button>
-      `)}
+      `,
+      )}
     </nav>
     <details class="inv-help">
       <summary>Controls</summary>
@@ -300,46 +306,60 @@ const inventoryTemplate = (
     <section class="inv-pane" data-pane="you">
       <h3>You</h3>
       <div class="inv-hands">
-        ${vm.hands.map((slot) => html`
+        ${vm.hands.map(
+          (slot) => html`
           <div class="inv-slot" data-target=${slot.target}>
             <span class="inv-slot-label">${slot.label}</span>${handContents(slot)}
           </div>
-        `)}
+        `,
+        )}
       </div>
-      ${vm.worn.map((slot) => html`
+      ${vm.worn.map(
+        (slot) => html`
         <div class="inv-worn">
           <div class="inv-slot inv-slot-worn" data-target=${slot.target}>
             <span class="inv-slot-label">${slot.label}</span>${slot.item ? itemTemplate(slot.item) : nothing}
           </div>
           ${slot.pockets?.length ? html`<div class="inv-pockets">${slot.pockets.map(pocketTemplate)}</div>` : nothing}
         </div>
-      `)}
+      `,
+      )}
     </section>
     <section class="inv-pane" data-pane="around">
       <h3>Around you</h3>
-      ${vm.piles.map((pile) => html`
+      ${vm.piles.map(
+        (pile) => html`
         <div class="inv-pile">
           <div class="inv-pile-label">${pile.label}</div>
           ${pile.grids.map(gridTemplate)}
-          ${pile.bags.map((bag) => html`
+          ${pile.bags.map(
+            (bag) => html`
             <div class="inv-bag">
               <div class="inv-pile-label">${bag.name}, on the floor</div>
               <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
             </div>
-          `)}
+          `,
+          )}
         </div>
-      `)}
-      ${vm.hasFeetPile ? nothing : html`
+      `,
+      )}
+      ${
+        vm.hasFeetPile
+          ? nothing
+          : html`
         <div class="inv-pile">
           <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: PILE_GRID.w * CELL, height: PILE_GRID.h * CELL, items: [] })}
         </div>
-      `}
-      ${vm.furniture.map((furniture) => html`
+      `
+      }
+      ${vm.furniture.map(
+        (furniture) => html`
         <div class="inv-pile">
           <div class="inv-pile-label">${furniture.label}</div>
           ${furnitureBodyTemplate(furniture, search)}
         </div>
-      `)}
+      `,
+      )}
     </section>
     ${detailsTemplate(vm.details, queue)}
   </div>
@@ -347,30 +367,40 @@ const inventoryTemplate = (
     <section class="inv-pane inv-body-panel" data-pane="body">
       <h3>Body</h3>
       <div class="inv-body-vitals">Health ${vm.body.health} · Blood ${vm.body.blood} · Shock ${vm.body.shock}</div>
-      ${vm.body.regions.map((region) => html`
+      ${vm.body.regions.map(
+        (region) => html`
         <div class="inv-body-region" data-body-region=${region.region}>
           <span class="inv-body-region-name">${region.region.replace(/([A-Z])/g, ' $1')}</span>
           <span>${region.damage} damage</span>
           ${region.bleeding ? html`<span class="inv-body-warning">Bleeding</span>` : nothing}
           ${region.infection !== 'none' && region.infection !== 'resolved' ? html`<span class="inv-body-warning">${region.infection} infection</span>` : nothing}
         </div>
-      `)}
+      `,
+      )}
     </section>
     <section class="inv-pane inv-skill-list" aria-label="Skills">
       <h3>Skills</h3>
-      ${vm.skills.map((skill) => html`
+      ${vm.skills.map(
+        (skill) => html`
         <div class="inv-skill" data-skill=${skill.id} data-level=${skill.level}>
           <div class="inv-skill-heading"><strong>${skill.name}</strong><span>Level ${skill.level}</span></div>
-          <div class="inv-skill-practice">${Number.isFinite(skill.nextLevelPractice)
-            ? `${skill.practice} / ${skill.nextLevelPractice} practice`
-            : `${skill.practice} practice · no next level`}</div>
-          ${Number.isFinite(skill.nextLevelPractice) ? html`
+          <div class="inv-skill-practice">${
+            Number.isFinite(skill.nextLevelPractice)
+              ? `${skill.practice} / ${skill.nextLevelPractice} practice`
+              : `${skill.practice} practice · no next level`
+          }</div>
+          ${
+            Number.isFinite(skill.nextLevelPractice)
+              ? html`
             <div class="inv-skill-progress" role="progressbar" aria-label=${`${skill.name} progress`} aria-valuemin="0" aria-valuemax=${skill.nextLevelPractice} aria-valuenow=${skill.practice}>
               <span style=${`width:${skill.progress}%`}></span>
             </div>
-          ` : nothing}
+          `
+              : nothing
+          }
         </div>
-      `)}
+      `,
+      )}
     </section>
   </div>
   <footer class="inv-queue"></footer>
@@ -693,11 +723,8 @@ export class InventoryScreen {
     this.order = [];
     const vm = this.viewModel();
     render(
-      inventoryTemplate(
-        vm,
-        this.tabs.active,
-        (tab) => this.selectTab(tab),
-        (item, target, operation) => {
+      inventoryTemplate(vm, this.tabs.active, (tab) => this.selectTab(tab), {
+        queue: (item, target, operation) => {
           const refusal = this.hooks.actionRefusal?.();
           if (refusal) {
             this.refuse(refusal);
@@ -707,7 +734,7 @@ export class InventoryScreen {
             this.report(this.tryQueue(item, target));
           }
         },
-        (uid) => {
+        search: (uid) => {
           const refusal = this.hooks.actionRefusal?.();
           const entity = this.entityByUid.get(uid);
           if (refusal) {
@@ -716,7 +743,7 @@ export class InventoryScreen {
             this.report(this.hooks.dispatch({ kind: 'inventory.search', entityUid: entity.uid }));
           }
         },
-      ),
+      }),
       this.root,
     );
     this.renderQueue();
