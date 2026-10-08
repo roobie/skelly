@@ -227,24 +227,25 @@ try {
   const splitAtOpen = await page.evaluate(() => {
     const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const splitter = body?.querySelector('[data-inventory-splitter]');
-    const you = body?.querySelector('[data-pane="you"]');
     const around = body?.querySelector('[data-pane="around"]');
-    if (!(body && splitter && you && around)) {
+    if (!(body && splitter && around)) {
       throw new Error('Items pane divider is missing');
     }
     const bodyBox = body.getBoundingClientRect();
     const dividerBox = splitter.getBoundingClientRect();
+    const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
     return {
       ratio: Number(splitter.getAttribute('aria-valuenow')),
       center: (dividerBox.left + dividerBox.width / 2 - bodyBox.left) / bodyBox.width,
-      widths: [you.getBoundingClientRect().width, around.getBoundingClientRect().width],
+      aroundWidth: around.getBoundingClientRect().width,
+      aroundColumnWidth: tracks[2],
     };
   });
   assert.equal(splitAtOpen.ratio, 50, `Items panes start at half: ${JSON.stringify(splitAtOpen)}`);
   assert.ok(Math.abs(splitAtOpen.center - 0.5) < 0.03, `divider starts at half: ${JSON.stringify(splitAtOpen)}`);
   assert.ok(
-    Math.abs(splitAtOpen.widths[0] - splitAtOpen.widths[1]) < 2,
-    `panes start balanced: ${JSON.stringify(splitAtOpen)}`,
+    splitAtOpen.aroundWidth <= splitAtOpen.aroundColumnWidth + 1,
+    `Around you fits inside its column: ${JSON.stringify(splitAtOpen)}`,
   );
   const dragSplitter = async (fraction) => {
     const geometry = await page.evaluate(() => {
@@ -265,33 +266,31 @@ try {
   };
   await dragSplitter(0);
   const splitAtLeftClamp = await page.evaluate(() => {
-    const you = document.querySelector('#inventory [data-pane="you"]');
-    const around = document.querySelector('#inventory [data-pane="around"]');
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const splitter = document.querySelector('#inventory [data-inventory-splitter]');
     return {
       ratio: Number(splitter?.getAttribute('aria-valuenow')),
-      widths: [you?.getBoundingClientRect().width, around?.getBoundingClientRect().width],
+      availableWidth: body && splitter ? body.clientWidth - splitter.offsetWidth : 0,
     };
   });
-  assert.ok(splitAtLeftClamp.ratio < 50, `drag moves the divider: ${JSON.stringify(splitAtLeftClamp)}`);
-  assert.ok(
-    splitAtLeftClamp.widths.every((width) => width >= 220),
-    `left clamp preserves usable panes: ${JSON.stringify(splitAtLeftClamp)}`,
+  assert.equal(
+    splitAtLeftClamp.ratio,
+    Math.round((220 / splitAtLeftClamp.availableWidth) * 100),
+    `left drag reaches the JavaScript clamp: ${JSON.stringify(splitAtLeftClamp)}`,
   );
   await dragSplitter(1);
   const splitAtRightClamp = await page.evaluate(() => {
-    const you = document.querySelector('#inventory [data-pane="you"]');
-    const around = document.querySelector('#inventory [data-pane="around"]');
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const splitter = document.querySelector('#inventory [data-inventory-splitter]');
     return {
       ratio: Number(splitter?.getAttribute('aria-valuenow')),
-      widths: [you?.getBoundingClientRect().width, around?.getBoundingClientRect().width],
+      availableWidth: body && splitter ? body.clientWidth - splitter.offsetWidth : 0,
     };
   });
-  assert.ok(splitAtRightClamp.ratio > 50, `divider moves both ways: ${JSON.stringify(splitAtRightClamp)}`);
-  assert.ok(
-    splitAtRightClamp.widths.every((width) => width >= 220),
-    `right clamp preserves usable panes: ${JSON.stringify(splitAtRightClamp)}`,
+  assert.equal(
+    splitAtRightClamp.ratio,
+    Math.round((1 - 220 / splitAtRightClamp.availableWidth) * 100),
+    `right drag reaches the JavaScript clamp: ${JSON.stringify(splitAtRightClamp)}`,
   );
   await dragSplitter(0.5);
   assert.equal(await page.locator('#inventory [data-inventory-splitter]').getAttribute('aria-valuenow'), '50');
