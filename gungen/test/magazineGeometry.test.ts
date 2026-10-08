@@ -4,6 +4,7 @@ import { roundProfiles } from '../src/ammo/roundProfile.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import { magazineCenterline } from '../src/gun/magazineCenterline.ts';
 import { exportMagazineGlb } from '../src/gun/magazineExport.ts';
 import {
@@ -89,6 +90,10 @@ describe('generated magazine round columns', () => {
     const thirtyCenterline = magazineCenterline(thirty.solids)!;
     expect(top).toEqual(sharedTop);
     expect(new Set(thirtyCenterline.sectionWidths.slice(2))).toEqual(new Set([twentyCenterline.sectionWidths.at(-1)]));
+    const maximumWidthMm =
+      Math.max(...twentyCenterline.sectionWidths, ...thirtyCenterline.sectionWidths) * METRES_PER_UNIT * 1000;
+    expect(maximumWidthMm).toBeGreaterThan(0);
+    expect(maximumWidthMm).toBeLessThanOrEqual(24.8);
     if (!(body?.kind === 'extruded-polygon' && floorplate?.kind === 'extruded-polygon')) {
       throw new Error('Expected an extruded straight STANAG body and floorplate.');
     }

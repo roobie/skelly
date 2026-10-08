@@ -195,9 +195,9 @@ describe('glb export: axes and units', () => {
     const [min, max] = localSolidBounds(upperBody);
     const topDepthUnits = max[0]! - min[0]!;
     const authoredDepthMm = topDepthUnits * METRES_PER_UNIT * 1000;
-    const sourcedDepthMm = 63;
+    const referenceDepthMm = 64.5;
     const gridStepMm = gunDomain.units.grid * METRES_PER_UNIT * 1000;
-    expect(Math.abs(authoredDepthMm - sourcedDepthMm)).toBeLessThanOrEqual(gridStepMm);
+    expect(Math.abs(authoredDepthMm - referenceDepthMm)).toBeLessThanOrEqual(gridStepMm);
     expect(METRES_PER_UNIT).toBe(gunDomain.units.metresPerUnit);
   });
 

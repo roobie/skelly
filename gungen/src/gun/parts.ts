@@ -196,12 +196,14 @@ const mmToMagazineUnits = (millimetres: number): number => millimetres / (METRES
 const snapMagazineDimension = (millimetres: number): number => Math.round(mmToMagazineUnits(millimetres) / GRID) * GRID;
 // Brownells listing for the USGI straight 20-round magazine: https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983
 // Its delivery dimensions (127 x 66 x 25 mm) corroborate the outer box within about 3 mm; they are package dimensions, not the body envelope.
+// Round the sourced maximum width down so grid snapping cannot exceed the body envelope.
 const STANAG20_BODY_BOX_U = {
   length: snapMagazineDimension(4.895 * 25.4),
   depth: snapMagazineDimension(2.54 * 25.4),
-  width: snapMagazineDimension(0.975 * 25.4),
+  width: Math.floor(mmToMagazineUnits(24.8) / GRID) * GRID,
 } as const;
 const STANAG30_CENTERLINE_LENGTH_U = snapMagazineDimension(190);
+const STANAG30_BODY_DEPTH_U = snapMagazineDimension(65);
 const STANAG30_BODY_WIDTH_U = STANAG20_BODY_BOX_U.width;
 const MAGAZINE_WELL_CLEARANCE = 0.25;
 const MAGAZINE_WELL_DEPTH = MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
@@ -225,7 +227,7 @@ const magazineBodySection = (
     return STANAG20_BODY_BOX_U;
   }
   if (profile === 'stanag-curved' && length === 'L') {
-    return { depth: MAGAZINE_DEPTH, width: STANAG30_BODY_WIDTH_U };
+    return { depth: STANAG30_BODY_DEPTH_U, width: STANAG30_BODY_WIDTH_U };
   }
   return magazineSection(profile);
 };
@@ -3803,9 +3805,9 @@ const magazineGeometryFor = (
       const referenceShape = {
         ...shape,
         depth: MAGAZINE_DEPTH,
-        width: MAGAZINE_WIDTH,
+        width: STANAG30_BODY_WIDTH_U,
         bodyLength: MAGAZINE_PROFILE_LENGTHS_U['stanag-curved'].L,
-        upperWidth: MAGAZINE_WIDTH,
+        upperWidth: STANAG20_BODY_BOX_U.width,
       };
       const [sharedUpper] = curvedMagazineGeometry(referenceShape, CURVED_MAGAZINE_PROFILES.stanag30).collision;
       if (sharedUpper?.kind !== 'extruded-polygon') {
@@ -3819,8 +3821,9 @@ const magazineGeometryFor = (
     const referenceShape = {
       ...shape,
       depth: MAGAZINE_DEPTH,
-      width: MAGAZINE_WIDTH,
+      width: STANAG30_BODY_WIDTH_U,
       bodyLength: MAGAZINE_PROFILE_LENGTHS_U['stanag-curved'].L,
+      upperWidth: STANAG20_BODY_BOX_U.width,
     };
     const sharedTop = curvedMagazineGeometry(referenceShape, CURVED_MAGAZINE_PROFILES.stanag30).collision[0]!;
     if (sharedTop.kind !== 'extruded-polygon') {
@@ -3925,7 +3928,7 @@ export const magazine: PartFamily = {
       width,
       insertion: resolvedInsertion,
       bodyLength: len,
-      ...(profile === 'stanag-curved' ? { upperWidth: MAGAZINE_WIDTH } : {}),
+      ...(profile === 'stanag-curved' ? { upperWidth: STANAG20_BODY_BOX_U.width } : {}),
     };
     const geometry = magazineGeometryFor(params, shape);
     const floorplate = isCompactBoltMagazine

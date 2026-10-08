@@ -346,21 +346,22 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | dedicated top-strapped frame, cylinder/barrel alignment, and separate grip |
 
-Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`. Optic references are recorded in `docs/optics.md`.
+Scale anchor: keep the gun-domain unit calibration; the Brownells STANAG-20 product box's 64.5 mm cross-section corroborates the authored magazine top within one grid step, but remains package rather than body data. The listing's stated body dimensions govern body sizing. Optic references are recorded in `docs/optics.md`.
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
-- The 20-round STANAG body uses the Brownells listing's outer box, snapped to
-  the model grid; its delivery dimensions corroborate that box but are package
-  dimensions. The HK SA80 listing supplies the 30-round body's outer length and
-  depth, while its body is as wide as the 20's. The shared upper and feed lips
-  preserve magazine-well fit. The curve and feed-lip details are photo estimates
-  from the HK listing. Its approximate 250 g empty weight is for a steel
-  magazine, so Deadvox retains a gameplay mass estimate unless an aluminium
-  STANAG-30 mass is sourced; see `deadvox/src/content/base/items-ammunition.json`,
-  `magazine_stanag_30`. See `src/gun/parts.ts`, `STANAG20_BODY_BOX_U`,
-  `STANAG30_CENTERLINE_LENGTH_U`, `STANAG30_BODY_WIDTH_U`, `magazineBodySection`
-  and `magazineGeometryFor`.
+- The 20-round STANAG body follows the Brownells listing, including its sourced
+  side-to-side envelope. The 30-round body shares that width, while its length
+  and depth follow the HK SA80-compatible steel listing. This is a visible
+  reference, not a claim that the 30 is a USGI aluminium magazine; its length
+  remains an open BR confirmation. The shared upper and feed lips fit within
+  the narrower body envelope, and the AR magwell is assessed without changing
+  the frame. The curve and floorplate details remain photo estimates. The HK
+  listing's approximate empty weight is for steel, so Deadvox retains a gameplay
+  mass estimate unless an aluminium STANAG-30 mass is sourced; see
+  `deadvox/src/content/base/items-ammunition.json`, `magazine_stanag_30`. See
+  `src/gun/parts.ts`, `STANAG20_BODY_BOX_U`, `STANAG30_CENTERLINE_LENGTH_U`,
+  `STANAG30_BODY_WIDTH_U`, `magazineBodySection` and `magazineGeometryFor`.
   Sources: [Brownells 20-round listing](https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983);
   [HK SA80 30-round listing](https://www.meanandgreen.com/army/British_Army/SA80_5.56mm_30_Round_NATO_Magazine/3850/2876.html).
   Other STANAG capacities are deferred to #414. The AKM curved band is fitted
