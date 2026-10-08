@@ -12,7 +12,21 @@ it('uses content weathering by default and applies only debug URL overrides', ()
   expect(content).toBeDefined();
   expect(configFromUrl(new URLSearchParams('weathering=0')).weathering?.strength).toBe(content?.strength);
   expect(configFromUrl(new URLSearchParams('debug=1&weathering=0')).weathering?.strength).toBe(0);
-  expect(configFromUrl(new URLSearchParams('debug=1&weathering=2')).weathering?.strength).toBe(1);
+  expect(configFromUrl(new URLSearchParams('debug=1&weathering=2')).weathering?.strength).toBe(2);
+  expect(configFromUrl(new URLSearchParams('debug=1&weathering=3')).weathering?.strength).toBe(3);
+  expect(configFromUrl(new URLSearchParams('debug=1&weathering=30')).weathering?.strength).toBe(3);
+  expect(configFromUrl(new URLSearchParams('debug=1&weathering=-0.1')).weathering?.strength).toBe(0);
+});
+
+it('accepts bounded weathering splits only in debug URLs and defaults the comparison site split', () => {
+  expect(configFromUrl(new URLSearchParams('debug=1&weatheringSplit=12.5')).weatheringSplit).toBe(12.5);
+  expect(configFromUrl(new URLSearchParams('weatheringSplit=12.5')).weatheringSplit).toBeUndefined();
+  expect(configFromUrl(new URLSearchParams('debug=1&weatheringSplit=257')).weatheringSplit).toBeUndefined();
+  expect(configFromUrl(new URLSearchParams('debug=1&weatheringSplit=-257')).weatheringSplit).toBeUndefined();
+  const comparison = configFromUrl(new URLSearchParams('debug=1&site=weatheringTest'));
+  expect(comparison.weatheringSplit).toBe(0);
+  expect(comparison.start).toBe(12 * 60 * 60);
+  expect(configFromUrl(new URLSearchParams('site=weatheringTest')).site).toBe('hamlet');
 });
 
 it('turns off only world-scale weathering variation through a debug URL override', () => {

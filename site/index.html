@@ -112,6 +112,7 @@
                 <option id="deadvox-default-site" value="">Hamlet (default)</option>
                 <option value="city">Stress-test city</option>
                 <option value="forest">Forest (tree first look)</option>
+                <option id="deadvox-weathering-test-site" value="weatheringTest">Debug weathering comparison</option>
               </select>
             </label>
             <label id="deadvox-storeys-field" hidden>Tallest city building (storeys)
@@ -142,10 +143,13 @@
               <input name="wobbleFlat" data-url-param="wobbleFlat" type="number" min="0" max="1" step="any" placeholder="content default" />
             </label>
             <label id="deadvox-weathering-field" hidden>Debug weathering strength (blank: content default)
-              <input name="weathering" data-url-param="weathering" type="number" min="0" max="1" step="any" placeholder="content default" />
+              <input name="weathering" data-url-param="weathering" type="number" min="0" max="3" step="any" placeholder="content default" />
             </label>
             <label id="deadvox-weathering-variation-field" hidden>Debug world-scale weathering variation (blank: content default)
               <input name="weatheringVariation" data-url-param="weatheringVariation" type="number" min="0" max="1" step="any" placeholder="content default" />
+            </label>
+            <label id="deadvox-weathering-split-field" hidden>Debug weathering split (world x in metres; comparison site defaults to 0)
+              <input name="weatheringSplit" data-url-param="weatheringSplit" type="number" min="-256" max="256" step="any" placeholder="comparison site default" />
             </label>
           </div>
 

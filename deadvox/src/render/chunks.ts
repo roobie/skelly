@@ -68,6 +68,8 @@ const chunkMaterial = ({
   patterns,
   occlusion,
   weathering,
+  weatheringSplit,
+  weatheringSplitEnabled,
   weatheringVariation,
   variationScaleMetres,
   mossThreshold,
@@ -78,6 +80,8 @@ const chunkMaterial = ({
   patterns: { value: number };
   occlusion: { value: number };
   weathering: { value: number };
+  weatheringSplit: { value: number };
+  weatheringSplitEnabled: { value: number };
   weatheringVariation: { value: number };
   variationScaleMetres: { value: number };
   mossThreshold: { value: number };
@@ -90,6 +94,8 @@ const chunkMaterial = ({
     shader.uniforms.uPatterns = patterns;
     shader.uniforms.uOcclusion = occlusion;
     shader.uniforms.uWeathering = weathering;
+    shader.uniforms.uWeatheringSplit = weatheringSplit;
+    shader.uniforms.uWeatheringSplitEnabled = weatheringSplitEnabled;
     shader.uniforms.uWeatheringVariation = weatheringVariation;
     shader.uniforms.uWeatheringVariationScale = variationScaleMetres;
     shader.uniforms.uMossThreshold = mossThreshold;
@@ -116,7 +122,7 @@ vFaceN = normalize(normal);`,
       .replace('#include <color_pars_fragment>', centroidColorPars(COLOR_PARS_GUARD_FRAGMENT))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
+        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringSplit;\nuniform float uWeatheringSplitEnabled;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
       )
       .replace(
         '#include <lights_fragment_end>',
@@ -146,7 +152,7 @@ diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
   ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
   : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));
 // Keep the zero-strength comparison on the pre-weathering colour path exactly.
-if (uWeathering > 0.0) {
+if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheringSplit)) {
   float verticalFace = 1.0 - abs(vFaceN.y);
   float weatherable = (${weatherablePatternGlsl('patId')}) ? 1.0 : 0.0;
   float grain = vnoise(patUV * 1.7 + vec2(patSeed));
@@ -170,7 +176,8 @@ if (uWeathering > 0.0) {
   float mossPatches = smoothstep(mossCutoff, mossCutoff + 0.18, mossNoise) * environment * uWeatheringVariation;
   float moss = baseMoss * broadStrength + mossPatches;
   vec3 tint = vec3(${WEATHERING_MIN_RED_TINT}, ${WEATHERING_MIN_RED_TINT} + 0.08 * moss, 0.68 - 0.06 * streak);
-  diffuseColor.rgb *= mix(vec3(1.0), tint, weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78));
+  float weatheringMix = clamp(weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78), 0.0, 1.0);
+diffuseColor.rgb *= mix(vec3(1.0), tint, weatheringMix);
 }`,
       );
   };
@@ -193,6 +200,8 @@ export class ChunkMeshes {
   private readonly patterns = { value: 1 };
   private readonly occlusion = { value: 1 };
   private readonly weathering = { value: 0 };
+  private readonly weatheringSplit = { value: 0 };
+  private readonly weatheringSplitEnabled = { value: 0 };
   private readonly weatheringVariation = { value: 0 };
   private readonly variationScaleMetres = { value: 0 };
   private readonly mossThreshold = { value: 0 };
@@ -211,6 +220,8 @@ export class ChunkMeshes {
       patterns: this.patterns,
       occlusion: this.occlusion,
       weathering: this.weathering,
+      weatheringSplit: this.weatheringSplit,
+      weatheringSplitEnabled: this.weatheringSplitEnabled,
       weatheringVariation: this.weatheringVariation,
       variationScaleMetres: this.variationScaleMetres,
       mossThreshold: this.mossThreshold,
@@ -262,8 +273,10 @@ export class ChunkMeshes {
   }
 
   /** Takes effect next frame without recompiling or remeshing. */
-  setWeathering(settings: WeatheringDef | undefined): void {
+  setWeathering(settings: WeatheringDef | undefined, split?: number): void {
     this.weathering.value = settings?.strength ?? 0;
+    this.weatheringSplit.value = split ?? 0;
+    this.weatheringSplitEnabled.value = split === undefined ? 0 : 1;
     this.weatheringVariation.value = settings?.variationStrength ?? 0;
     this.variationScaleMetres.value = settings?.variationScaleMetres ?? 0;
     this.mossThreshold.value = settings?.mossThreshold ?? 0;

@@ -21,6 +21,7 @@ import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
 import { testHouseRangeStock } from './testHouseRange.ts';
+import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
 export interface WorldSetup {
   config: GameConfig;
@@ -189,7 +190,7 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
   if (layout) {
     return new AuthoredSite(config.seed, registry, config.scale, layout);
   }
-  if (!['hamlet', 'city', 'forest', 'testHouse'].includes(config.site)) {
+  if (!['hamlet', 'city', 'forest', 'testHouse', 'weatheringTest'].includes(config.site)) {
     throw new Error(`Content does not define site "${config.site}"`);
   }
   if (config.site === 'forest') {
@@ -214,7 +215,10 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const id = (name: string) => blockId(registry, name);
 
   const house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined;
-  const built = buildDebugTestHouseSite(config, registry, house) ?? buildSite(config, registry);
+  const built =
+    buildDebugWeatheringTestSite(config, registry) ??
+    buildDebugTestHouseSite(config, registry, house) ??
+    buildSite(config, registry);
   const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: FurnitureSpawn[] } = built
     ? { structures: [], spawn: built.spawn, furniture: house?.furniture ?? [] }
     : (house ?? testHouseScene(config, registry));

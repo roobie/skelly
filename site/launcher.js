@@ -46,6 +46,9 @@ const showWhen = (element, visible) => {
 };
 
 const defaultTime = () => {
+  if (deadvoxMode.value === '' && deadvoxSite.value === 'weatheringTest') {
+    return '12:00';
+  }
   if (deadvoxMode.value === 'shamblers') {
     return '23:30';
   }
@@ -63,8 +66,11 @@ const updateDeadvoxVisibility = () => {
   showWhen(byId('deadvox-at-field'), mode === '' && deadvoxForm.elements.namedItem('debug').checked);
   showWhen(byId('deadvox-handedness-field'), mode === '' && deadvoxForm.elements.namedItem('debug').checked);
   showWhen(byId('deadvox-wobble-flat-field'), mode === '' && deadvoxForm.elements.namedItem('debug').checked);
-  showWhen(byId('deadvox-weathering-field'), mode === '' && deadvoxForm.elements.namedItem('debug').checked);
-  showWhen(byId('deadvox-weathering-variation-field'), mode === '' && deadvoxForm.elements.namedItem('debug').checked);
+  const debug = mode === '' && deadvoxForm.elements.namedItem('debug').checked;
+  showWhen(byId('deadvox-weathering-field'), debug);
+  showWhen(byId('deadvox-weathering-variation-field'), debug);
+  showWhen(byId('deadvox-weathering-split-field'), debug);
+  byId('deadvox-weathering-test-site').disabled = !deadvoxForm.elements.namedItem('debug').checked;
   showWhen(byId('deadvox-actors-field'), mode === '');
   showWhen(byId('deadvox-world-bench'), mode === '1');
   showWhen(byId('deadvox-shambler-bench'), mode === 'shamblers');
@@ -138,9 +144,13 @@ const makeDeadvoxUrl = () => {
         deadvoxForm.elements.namedItem('weatheringVariation').value.trim(),
         '',
       );
+      setUnlessDefault(params, 'weatheringSplit', deadvoxForm.elements.namedItem('weatheringSplit').value.trim(), '');
     }
   }
 
+  if (mode === '' && deadvoxForm.elements.namedItem('debug').checked && deadvoxSite.value === 'weatheringTest') {
+    params.set('site', 'weatheringTest');
+  }
   if ((mode === '' || mode === '1') && deadvoxSite.value === 'city') {
     params.set('site', 'city');
     setUnlessDefault(params, 'storeys', deadvoxForm.elements.namedItem('storeys').value, '1');
