@@ -11,8 +11,8 @@ import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
-import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
