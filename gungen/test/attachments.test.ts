@@ -746,49 +746,50 @@ describe('attachment parts and export metadata', () => {
     }
   });
 
-  it('exports every mount pose for the design and fixture corpus', () => {
-    let checked = 0;
-    for (const { label, assembly } of loadCorpus()) {
-      const model = exported(assembly, `corpus_${assembly.name.replaceAll('-', '_')}`, false);
-      const slots = model.modelEntry.attachmentSlots ?? [];
-      const fitted = model.modelEntry.attachments ?? [];
-      expect(
-        fitted.every(({ mountedAt, mount }) => slots.some((slot) => slot.id === mountedAt && slot.mount === mount)),
+  const corpus = loadCorpus();
+
+  it('has design and fixture entries to verify', () => {
+    expect(corpus.length).toBeGreaterThan(0);
+  });
+
+  it.each(corpus)('exports mount poses for $label', ({ label, assembly }) => {
+    const model = exported(assembly, `corpus_${assembly.name.replaceAll('-', '_')}`, false);
+    const slots = model.modelEntry.attachmentSlots ?? [];
+    const fitted = model.modelEntry.attachments ?? [];
+    expect(
+      fitted.every(({ mountedAt, mount }) => slots.some((slot) => slot.id === mountedAt && slot.mount === mount)),
+      label,
+    ).toBe(true);
+    const deadvox = validateInDeadvox(model.modelEntry);
+    expect(deadvox.issues, label).toEqual([]);
+    expect(deadvox.registry.models.has(model.modelEntry.id), label).toBe(true);
+    const resolved = resolve(assembly, gunDomain);
+    for (const fittedAttachment of fitted) {
+      const { actual, expected, context } = fittedMountPose({
         label,
-      ).toBe(true);
-      const deadvox = validateInDeadvox(model.modelEntry);
-      expect(deadvox.issues, label).toEqual([]);
-      expect(deadvox.registry.models.has(model.modelEntry.id), label).toBe(true);
-      const resolved = resolve(assembly, gunDomain);
-      for (const fittedAttachment of fitted) {
-        const { actual, expected, context } = fittedMountPose({
-          label,
-          assembly,
-          resolved,
-          fitted: fittedAttachment,
-          slots,
-        });
-        expect(actual, context).toEqual(expected);
-      }
-      const expectedPorts = attachmentSlots(resolved);
-      expect(slots).toHaveLength(expectedPorts.length);
-      for (const expected of expectedPorts) {
-        expect(
-          slots.some((slot) => slot.id === expected.id),
-          `${label}: ${expected.id}`,
-        ).toBe(true);
-        if (expected.mount === 'muzzle') {
-          expect(slots.find(({ id }) => id === expected.id)).not.toHaveProperty('railId');
-        } else {
-          expect(slots.find(({ id }) => id === expected.id)).toMatchObject({
-            railId: expected.railId,
-            notchIndex: expected.notchIndex,
-          });
-        }
-      }
-      checked += expectedPorts.length;
+        assembly,
+        resolved,
+        fitted: fittedAttachment,
+        slots,
+      });
+      expect(actual, context).toEqual(expected);
     }
-    expect(checked).toBeGreaterThan(0);
+    const expectedPorts = attachmentSlots(resolved);
+    expect(slots).toHaveLength(expectedPorts.length);
+    for (const expected of expectedPorts) {
+      expect(
+        slots.some((slot) => slot.id === expected.id),
+        `${label}: ${expected.id}`,
+      ).toBe(true);
+      if (expected.mount === 'muzzle') {
+        expect(slots.find(({ id }) => id === expected.id)).not.toHaveProperty('railId');
+      } else {
+        expect(slots.find(({ id }) => id === expected.id)).toMatchObject({
+          railId: expected.railId,
+          notchIndex: expected.notchIndex,
+        });
+      }
+    }
   });
 
   it('exports tight rail spans that contain every attachment solid extent', () => {
