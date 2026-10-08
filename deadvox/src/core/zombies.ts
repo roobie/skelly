@@ -987,6 +987,9 @@ export class ZombieSystem {
           investigationTier,
           stanceWeight,
           hitFlinchTime,
+          hordeId,
+          stimulusAt,
+          stepOffset,
           ...state
         } = zombie;
         return {
@@ -1002,6 +1005,9 @@ export class ZombieSystem {
             ...(investigationTier === undefined ? {} : { investigationTier }),
             ...(stanceWeight === undefined ? {} : { stanceWeight }),
             ...(hitFlinchTime === undefined ? {} : { hitFlinchTime }),
+            ...(hordeId === undefined ? {} : { hordeId }),
+            ...(stimulusAt === undefined ? {} : { stimulusAt }),
+            ...(stepOffset === undefined ? {} : { stepOffset }),
             body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
             facing: [...zombie.facing],
             home: [...zombie.home],
@@ -1018,9 +1024,14 @@ export class ZombieSystem {
         };
       }),
       hordes: [...this.hordes.values()].map(({ state: horde, rng }) => ({
-        ...horde,
+        id: horde.id,
+        type: horde.type,
         home: [...horde.home],
         target: [...horde.target],
+        mode: horde.mode,
+        roamTimer: horde.roamTimer,
+        ...(horde.stimulusAt === undefined ? {} : { stimulusAt: horde.stimulusAt }),
+        lastNoiseId: horde.lastNoiseId,
         rng: [...rng.state()] as RngState,
       })),
     });
