@@ -25,6 +25,16 @@ const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
 };
+const lockedDoorRefusalSample = ({ start }) => {
+  const r = globalThis.primaryActionTest;
+  const notice = r.getNotice();
+  return {
+    time: r.session.sim.time,
+    paused: r.session.sim.paused,
+    reached: Boolean(notice) || r.session.sim.time - start >= 0.35,
+    notice,
+  };
+};
 const throwChargeSample = ({ start, seconds }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
@@ -253,6 +263,7 @@ const observationPlugin = {
     beginItemThrow,
     selectPrimaryAction,
     ignitionTargetForHand,
+    interactionTargetAt,
     useTarget,
     useText,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
@@ -2461,6 +2472,317 @@ try {
   await mkdir(resolve(projectRoot, 'test-results/primary-action'), { recursive: true });
   await page.screenshot({ path: pryingScreenshot });
   await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.cancel());
+
+  let lockedPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await lockedPage.addInitScript(() => {
+    let locked = false;
+    Object.defineProperty(document, 'pointerLockElement', {
+      configurable: true,
+      get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+    });
+    Element.prototype.requestPointerLock = () => {
+      locked = true;
+      document.dispatchEvent(new Event('pointerlockchange'));
+      return Promise.resolve();
+    };
+    document.exitPointerLock = () => {
+      locked = false;
+      document.dispatchEvent(new Event('pointerlockchange'));
+    };
+  });
+  try {
+    await lockedPage.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=lock_test&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await lockedPage.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await lockedPage.locator('#go').click();
+    await lockedPage.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    const lockedDoor = await lockedPage.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const door = [...r.inventory.entities.all].find((entity) => entity.lock?.locked);
+      if (!door) {
+        throw new Error('lock_test did not instantiate its locked door');
+      }
+      const aimAtDoor = () => {
+        const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
+        const eye = [
+          r.session.body.pos[0],
+          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+          r.session.body.pos[2],
+        ];
+        const dx = target[0] - eye[0];
+        const dy = target[1] - eye[1];
+        const dz = target[2] - eye[2];
+        r.input.yaw = Math.atan2(-dx, -dz);
+        r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      };
+      aimAtDoor();
+      const target = r.interactionTargetAt();
+      if (target?.kind !== 'furniture' || target.entity.uid !== door.uid) {
+        throw new Error(`lock_test locked door is not the F target: ${JSON.stringify(target)}`);
+      }
+      const requiredPrying = r.inventory.registry.furniture.get(door.type).door.prying.quality;
+      for (const { item, path } of [...r.inventory.items()]) {
+        const carried = path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.');
+        const quality = r.inventory.registry.items.get(item.type)?.tool?.qualities.prying ?? 0;
+        if (carried && quality >= requiredPrying) {
+          const dropped = r.inventory.move(item, { kind: 'pile', pos: r.feet() });
+          if (!dropped.ok) {
+            throw new Error(`Could not drop the prying tool for the refusal fixture: ${dropped.reason}`);
+          }
+        }
+      }
+      r.clearNotice();
+      r.clearHand('right');
+      r.clearHand('left');
+      return { uid: door.uid, before: [...r.session.body.pos], start: r.session.sim.time };
+    });
+    await pressAction(lockedPage, 'world.interact');
+    const refusalNotice = await waitForSimulation(
+      lockedPage,
+      lockedDoorRefusalSample,
+      { start: lockedDoor.start },
+      {
+        seconds: 0.5,
+        label: 'locked-door refusal reaches the existing hint path',
+        record: (line) => process.stderr.write(`${line}\\n`),
+      },
+    );
+    const refusal = await lockedPage.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return {
+        job: r.session.sim.actions.job?.jobType,
+        targetUid: r.interactionTargetAt()?.entity?.uid,
+        locked: r.inventory.entities.byUid(uid)?.lock?.locked,
+        inputLocked: r.session.sim.compression.locksInput,
+        notice: r.getNotice(),
+      };
+    }, lockedDoor.uid);
+    assert.equal(refusal.targetUid, lockedDoor.uid, 'real F input targets the locked door without a tool');
+    assert.equal(refusal.job, undefined, 'F without a prying tool starts no long action');
+    assert.equal(refusal.inputLocked, false, 'a refused locked-door interaction does not lock input');
+    assert.match(refusalNotice.notice, /prying quality/, 'the locked-door refusal uses its existing hint');
+    await waitForSimulation(
+      lockedPage,
+      ({ start }) => {
+        const { session } = globalThis.primaryActionTest;
+        return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 3 };
+      },
+      { start: lockedDoor.start },
+      { seconds: 3.5, label: 'locked-door refusal settles', record: (line) => process.stderr.write(`${line}\\n`) },
+    );
+    const releaseAfterRefusal = await holdAction(lockedPage, 'movement.right');
+    try {
+      await waitForSimulation(
+        lockedPage,
+        progressingSample,
+        { start: await lockedPage.evaluate(() => globalThis.primaryActionTest.session.sim.time) },
+        {
+          seconds: 0.5,
+          label: 'movement after locked-door refusal',
+          record: (line) => process.stderr.write(`${line}\\n`),
+          stop: releaseAfterRefusal,
+        },
+      );
+    } finally {
+      await releaseAfterRefusal();
+    }
+    const movedAfterRefusal = await lockedPage.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]);
+    assert.ok(
+      Math.hypot(movedAfterRefusal[0] - lockedDoor.before[0], movedAfterRefusal[2] - lockedDoor.before[2]) > 0,
+      'movement remains available after a refused locked-door interaction',
+    );
+    await lockedPage.close();
+    lockedPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    await lockedPage.addInitScript(() => {
+      let locked = false;
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+      });
+      Element.prototype.requestPointerLock = () => {
+        locked = true;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = false;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await lockedPage.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=lock_test&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await lockedPage.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await lockedPage.locator('#go').click();
+    await lockedPage.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    const toolDoor = await lockedPage.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const door = [...r.inventory.entities.all].find((entity) => entity.lock?.locked);
+      if (!door) {
+        throw new Error('Could not find the locked-door prying fixture');
+      }
+      const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
+      const eye = [
+        r.session.body.pos[0],
+        r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+        r.session.body.pos[2],
+      ];
+      const dx = target[0] - eye[0];
+      const dy = target[1] - eye[1];
+      const dz = target[2] - eye[2];
+      r.input.yaw = Math.atan2(-dx, -dz);
+      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      const picked = r.interactionTargetAt();
+      if (picked?.kind !== 'furniture' || picked.entity.uid !== door.uid) {
+        throw new Error(`lock_test tool door is not the F target: ${JSON.stringify(picked)}`);
+      }
+      r.clearNotice();
+      return { uid: door.uid, start: r.session.sim.time };
+    });
+    await pressAction(lockedPage, 'world.interact');
+    await waitForSimulation(
+      lockedPage,
+      progressingSample,
+      { start: toolDoor.start },
+      {
+        seconds: 0.5,
+        label: 'locked-door F action enters the simulation',
+        record: (line) => process.stderr.write(`${line}\\n`),
+      },
+    );
+    const pryAction = await lockedPage.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return {
+        job: r.session.sim.actions.job?.jobType,
+        targetUid: r.interactionTargetAt()?.entity?.uid,
+        fixtureUid: uid,
+        inputLocked: r.session.sim.compression.locksInput,
+        interruption: r.session.sim.compression.interruption,
+      };
+    }, toolDoor.uid);
+    assert.equal(pryAction.targetUid, toolDoor.uid, 'real F input targets the locked door with its tool');
+    assert.equal(
+      pryAction.job,
+      'pry',
+      `F starts the available locked-door prying action: ${JSON.stringify(pryAction)}`,
+    );
+    await waitForSimulation(
+      lockedPage,
+      ({ start }) => {
+        const { session } = globalThis.primaryActionTest;
+        return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 5 };
+      },
+      { start: toolDoor.start },
+      { seconds: 5.5, label: 'locked-door prying settles', record: (line) => process.stderr.write(`${line}\\n`) },
+    );
+    const interruptionAt = await lockedPage.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.session.sim.emit({ kind: 'interrupt', reason: 'You hear something outside' });
+      return r.session.sim.time;
+    });
+    await waitForSimulation(
+      lockedPage,
+      progressingSample,
+      { start: interruptionAt },
+      {
+        seconds: 0.5,
+        label: 'prying interruption reaches the simulation',
+        record: (line) => process.stderr.write(`${line}\\n`),
+      },
+    );
+    const interruptedPry = await lockedPage.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      return {
+        job: r.session.sim.actions.job,
+        inputLocked: r.session.sim.compression.locksInput,
+        interruption: r.session.sim.compression.interruption,
+      };
+    });
+    assert.equal(interruptedPry.job, undefined, 'an interruption cancels the prying action');
+    assert.equal(interruptedPry.inputLocked, false, 'an interrupted prying action does not lock movement');
+    assert.equal(interruptedPry.interruption, undefined, 'a prying interruption does not retain a blocking prompt');
+    await lockedPage.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const door = r.inventory.entities.byUid(uid);
+      const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
+      const eye = [
+        r.session.body.pos[0],
+        r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+        r.session.body.pos[2],
+      ];
+      const dx = target[0] - eye[0];
+      const dy = target[1] - eye[1];
+      const dz = target[2] - eye[2];
+      r.input.yaw = Math.atan2(-dx, -dz);
+      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    }, toolDoor.uid);
+    const secondPryStart = await lockedPage.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+    await pressAction(lockedPage, 'world.interact');
+    await waitForSimulation(
+      lockedPage,
+      progressingSample,
+      { start: secondPryStart },
+      {
+        seconds: 0.5,
+        label: 'second locked-door F action enters the simulation',
+        record: (line) => process.stderr.write(`${line}\\n`),
+      },
+    );
+    assert.equal(
+      await lockedPage.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job?.jobType),
+      'pry',
+      'the tool can start a new prying action after the interruption is dismissed',
+    );
+    const beforePryMovement = await lockedPage.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]);
+    const releaseAfterPry = await holdAction(lockedPage, 'movement.back');
+    try {
+      await waitForSimulation(
+        lockedPage,
+        progressingSample,
+        { start: await lockedPage.evaluate(() => globalThis.primaryActionTest.session.sim.time) },
+        {
+          seconds: 0.5,
+          label: 'movement after locked-door prying',
+          record: (line) => process.stderr.write(`${line}\\n`),
+          stop: releaseAfterPry,
+        },
+      );
+    } finally {
+      await releaseAfterPry();
+    }
+    const afterPry = await lockedPage.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      return {
+        pos: [...r.session.body.pos],
+        job: r.session.sim.actions.job,
+        inputLocked: r.session.sim.compression.locksInput,
+        interruption: r.session.sim.compression.interruption,
+      };
+    });
+    assert.ok(
+      Math.hypot(afterPry.pos[0] - beforePryMovement[0], afterPry.pos[2] - beforePryMovement[2]) > 0,
+      'movement remains available after the locked-door prying action',
+    );
+    assert.equal(afterPry.job, undefined, 'movement cancels the active prying action');
+    process.stdout.write(
+      `Locked-door input reproduction: ${JSON.stringify({ refusal, pryAction, interruptedPry, afterPry })}\\n`,
+    );
+  } finally {
+    await lockedPage.close();
+  }
 
   const treatment = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;

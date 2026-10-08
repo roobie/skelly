@@ -148,29 +148,23 @@ it('prying advances at normal simulation speed without compression', () => {
   expect(runtime.sim.actions.job.elapsed).toBeGreaterThan(0);
 });
 
-it('an interruption pauses normal-speed prying and resume preserves its cursor', () => {
+it('an interruption cancels normal-speed prying without locking input', () => {
   const runtime = makePryRuntime();
   const door = makeDoor(runtime);
   const crowbar = carryCrowbar(runtime);
   expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
   runtime.sim.frame(1);
-  const elapsed = runtime.sim.actions.job?.jobType === 'pry' ? runtime.sim.actions.job.elapsed : 0;
+  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false });
   const reason = 'A test interruption';
 
   runtime.sim.emit({ kind: 'interrupt', reason });
   runtime.sim.frame(0.1);
 
-  const stopped = runtime.sim.actions.job;
-  expect(stopped).toMatchObject({ jobType: 'pry', stopped: true, elapsed });
-  expect(runtime.sim.compression.interruption).toBe(reason);
+  expect(runtime.sim.actions.job).toBeUndefined();
+  expect(runtime.sim.compression.interruption).toBeUndefined();
   expect(runtime.sim.compression.c).toBe(1);
   expect(runtime.sim.compression.active).toBe(false);
-
-  expect(runtime.sim.actions.resume()).toBeUndefined();
-  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false, elapsed });
-  expect(runtime.sim.compression.interruption).toBeUndefined();
   expect(runtime.sim.compression.locksInput).toBe(false);
-  expect(runtime.sim.compression.active).toBe(false);
 });
 
 it('the matching key still unlocks a pryable door silently', () => {
