@@ -13,8 +13,9 @@ export interface ShamblerPlacementWorld {
 }
 
 export const bodyIsClear = (body: Body, isSolid: SolidAt): boolean => {
+  const halfDepth = body.halfDepth ?? body.halfWidth;
   for (let y = Math.floor(body.pos[1]); y < Math.ceil(body.pos[1] + body.height); y++) {
-    for (let z = Math.floor(body.pos[2] - body.halfWidth); z < Math.ceil(body.pos[2] + body.halfWidth); z++) {
+    for (let z = Math.floor(body.pos[2] - halfDepth); z < Math.ceil(body.pos[2] + halfDepth); z++) {
       for (let x = Math.floor(body.pos[0] - body.halfWidth); x < Math.ceil(body.pos[0] + body.halfWidth); x++) {
         if (isSolid(x, y, z) && bodyOverlapsBlock(body, [x, y, z])) {
           return false;
@@ -35,6 +36,26 @@ const rayIsClear = (from: Body, to: Body, isSolid: SolidAt, blockSize: number): 
   }
   const unit = direction.map((value) => value / distance) as Vec3;
   return raycast(origin, unit, distance, isSolid) === undefined;
+};
+
+const placementBody = (
+  engine: ShamblerPlacementWorld,
+  x: number,
+  z: number,
+  bodyDimensions: { readonly halfWidth: number; readonly halfDepth?: number; readonly height: number } | undefined,
+): Body => {
+  const {
+    scale,
+    scale: { blockSize },
+  } = engine.config;
+  const body = createPlayerBody(scale, x / blockSize, engine.groundAt(x, z) / blockSize, z / blockSize);
+  body.halfWidth = bodyDimensions?.halfWidth ?? 0.28 / blockSize;
+  if (bodyDimensions?.halfDepth !== undefined) {
+    body.halfDepth = bodyDimensions.halfDepth;
+  }
+  body.height = bodyDimensions?.height ?? 1.7 / blockSize;
+  body.onGround = true;
+  return body;
 };
 
 /** Finds the same clear player foothold near the hamlet spawn for browser and CPU runs. */
@@ -65,6 +86,7 @@ export const placeShamblerRing = ({
   player,
   engine,
   occupied: existing = [],
+  bodyDimensions,
   allowPartial = false,
   minRadiusMetres = 8,
   maxRadiusMetres = 20,
@@ -75,6 +97,7 @@ export const placeShamblerRing = ({
   player: Body;
   engine: ShamblerPlacementWorld;
   occupied?: readonly Body[];
+  bodyDimensions?: { readonly halfWidth: number; readonly halfDepth?: number; readonly height: number };
   allowPartial?: boolean;
   minRadiusMetres?: number;
   maxRadiusMetres?: number;
@@ -94,14 +117,12 @@ export const placeShamblerRing = ({
       const angle = fract(Math.sin(key + 19.19) * 19_349.123) * Math.PI * 2;
       const x = player.pos[0] * s + radius * Math.cos(angle);
       const z = player.pos[2] * s + radius * Math.sin(angle);
-      const candidate = createPlayerBody(engine.config.scale, x / s, engine.groundAt(x, z) / s, z / s);
-      candidate.halfWidth = 0.28 / s;
-      candidate.height = 1.7 / s;
-      candidate.onGround = true;
+      const candidate = placementBody(engine, x, z, bodyDimensions);
       const overlaps = occupied.some(
         (other) =>
           Math.abs(candidate.pos[0] - other.pos[0]) < candidate.halfWidth + other.halfWidth &&
-          Math.abs(candidate.pos[2] - other.pos[2]) < candidate.halfWidth + other.halfWidth,
+          Math.abs(candidate.pos[2] - other.pos[2]) <
+            (candidate.halfDepth ?? candidate.halfWidth) + (other.halfDepth ?? other.halfWidth),
       );
       if (
         overlaps ||

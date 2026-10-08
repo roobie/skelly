@@ -1,9 +1,16 @@
 // Detailed melee hit geometry shares the seeded, posed mobgen figures with MobActorMeshes. FIGURE_BOXES below
 // remains only for the optional blocky renderer; it is deliberately not used by the hit test.
 
-import { type Mat3, mulMM, transpose } from '@mobgen/core/math.ts';
+import type { Mat3 } from '@mobgen/core/math.ts';
+import { mulMM, transpose } from '@mobgen/core/math.ts';
 import type { boneTransforms } from '@mobgen/core/pose.ts';
-import { type BoneVoxelBox, type ShamblerHitRegion, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { type BoneVoxelBox, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import type { AmalgamFigure } from './amalgamFigure.ts';
+import type { ZombieHitRegion, ZombieRegion } from './schema.ts';
+import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
+
+export type { ZombieHitRegion, ZombieRegion, ZombieRegions } from './schema.ts';
+
 import type { Vec3 } from './coords.ts';
 import { posedShambler, type ShamblerPoseInput } from './zombiePose.ts';
 
@@ -20,17 +27,6 @@ export const FIGURE_BOXES: Readonly<Record<FigurePart, FigureBox>> = {
   leftLeg: { size: [0.18, 0.62, 0.2], at: [-0.12, 0.62, 0] },
   rightLeg: { size: [0.18, 0.62, 0.2], at: [0.12, 0.62, 0] },
 };
-export type ZombieRegion = ShamblerHitRegion;
-export type ZombieRegions = Record<ZombieRegion, number>;
-
-export const ZOMBIE_REGION_NAMES: readonly ZombieRegion[] = [
-  'head',
-  'torso',
-  'leftArm',
-  'rightArm',
-  'leftLeg',
-  'rightLeg',
-];
 export const FIGURE_PARTS: readonly FigurePart[] = ['body', 'head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
 
 const rayBoxEntry = (origin: Vec3, direction: Vec3, halfSize: readonly number[]): number | undefined => {
@@ -82,12 +78,10 @@ interface BoneVoxelSummary {
   readonly count: number;
 }
 
-const voxelSummaries = new Map<number, ReadonlyMap<string, BoneVoxelSummary>>();
-const voxelSummaryFor = (
-  seed: number,
-  figure: ReturnType<typeof shamblerFigure>,
-): ReadonlyMap<string, BoneVoxelSummary> => {
-  let summary = voxelSummaries.get(seed);
+type PoseFigure = ReturnType<typeof shamblerFigure> | AmalgamFigure;
+const voxelSummaries = new Map<string, ReadonlyMap<string, BoneVoxelSummary>>();
+const voxelSummaryFor = (key: string, figure: PoseFigure): ReadonlyMap<string, BoneVoxelSummary> => {
+  let summary = voxelSummaries.get(key);
   if (!summary) {
     summary = new Map(
       [...figure.voxelCentersByBone].map(([bone, centers]) => [
@@ -100,23 +94,24 @@ const voxelSummaryFor = (
         },
       ]),
     );
-    voxelSummaries.set(seed, summary);
+    voxelSummaries.set(key, summary);
   }
   return summary;
 };
 
 interface PoseBoxContext {
   readonly transforms: ReturnType<typeof boneTransforms>;
-  readonly figure: ReturnType<typeof shamblerFigure>;
+  readonly figure: PoseFigure;
   readonly voxelSummaries: ReadonlyMap<string, BoneVoxelSummary>;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
   readonly blockSize: number;
+  readonly geometryScale: number;
 }
 
 const makePosedBoneBox = (
-  region: ZombieRegion,
+  region: ZombieHitRegion,
   box: BoneVoxelBox,
   context: PoseBoxContext,
 ): PosedBoneBox | undefined => {
@@ -127,39 +122,47 @@ const makePosedBoneBox = (
   if (!transform) {
     return undefined;
   }
-  const localCenter = applyR(transform.r, box.center);
+  const localCenter = applyR(
+    transform.r,
+    box.center.map((coordinate) => coordinate * context.geometryScale),
+  );
   const centered = [
-    transform.t[0] + localCenter[0],
-    transform.t[1] + localCenter[1],
-    transform.t[2] + localCenter[2],
+    transform.t[0] * context.geometryScale + localCenter[0],
+    transform.t[1] * context.geometryScale + localCenter[1],
+    transform.t[2] * context.geometryScale + localCenter[2],
   ] as const;
   const worldOffset = applyR(context.yaw, centered);
   let bottomY: number | undefined;
   let topY: number | undefined;
   const voxelCenters = context.figure.voxelCentersByBone.get(box.bone) ?? [];
   const summary = context.voxelSummaries.get(box.bone)!;
-  if (region === 'head') {
+  if (region === 'head' || region.endsWith('.head')) {
     bottomY = Number.POSITIVE_INFINITY;
     topY = Number.NEGATIVE_INFINITY;
   }
   for (const point of voxelCenters) {
     const posedPoint = applyR(transform.r, point);
-    const y = context.position[1] + (transform.t[1] + posedPoint[1]) / context.blockSize;
-    if (region === 'head') {
+    const y =
+      context.position[1] +
+      (transform.t[1] * context.geometryScale + posedPoint[1] * context.geometryScale) / context.blockSize;
+    if (region === 'head' || region.endsWith('.head')) {
       bottomY = Math.min(bottomY!, y);
       topY = Math.max(topY!, y);
     }
   }
-  if (region === 'head') {
-    const margin = (context.figure.realized.voxels.size / 2 + 0.001) / context.blockSize;
+  if (region === 'head' || region.endsWith('.head')) {
+    const margin = ((context.figure.realized.voxels.size / 2) * context.geometryScale) / context.blockSize;
     bottomY! -= margin;
     topY! += margin;
   }
-  const posedCentroid = applyR(transform.r, summary.centroid);
+  const posedCentroid = applyR(
+    transform.r,
+    summary.centroid.map((coordinate) => coordinate * context.geometryScale),
+  );
   const worldCentroid = applyR(context.yaw, [
-    transform.t[0] + posedCentroid[0],
-    transform.t[1] + posedCentroid[1],
-    transform.t[2] + posedCentroid[2],
+    transform.t[0] * context.geometryScale + posedCentroid[0],
+    transform.t[1] * context.geometryScale + posedCentroid[1],
+    transform.t[2] * context.geometryScale + posedCentroid[2],
   ]);
   const voxelCentroid: Vec3 = [
     context.position[0] + worldCentroid[0] / context.blockSize,
@@ -175,7 +178,7 @@ const makePosedBoneBox = (
       context.position[2] + worldOffset[2] / context.blockSize,
     ],
     rotation: mulMM(context.yaw, transform.r),
-    halfSize: [...box.halfSize] as Vec3,
+    halfSize: box.halfSize.map((extent) => extent * context.geometryScale) as Vec3,
     voxelCentroid,
     voxelCount: summary.count,
   };
@@ -186,27 +189,51 @@ const poseContextFor = (input: ShamblerPoseInput): PoseBoxContext => {
   return {
     transforms: posed.transforms,
     figure: posed.figure,
-    voxelSummaries: voxelSummaryFor(input.seed, posed.figure),
+    voxelSummaries: voxelSummaryFor(`${input.model ?? 'shambler'}:${input.seed}`, posed.figure),
     hidden: posed.hidden,
     yaw: posed.yaw,
     position: posed.position,
     blockSize: posed.blockSize,
+    geometryScale: 'scale' in posed.figure && typeof posed.figure.scale === 'number' ? posed.figure.scale : 1,
   };
 };
 
-/** Bone boxes for one swing pose. The caller builds them once per nearby zombie, then tests every region. */
+const regionBoxesForContext = (context: PoseBoxContext): Readonly<Record<string, readonly PosedBoneBox[]>> => {
+  const boxesByRegion = context.figure.boxes as Readonly<Record<string, readonly BoneVoxelBox[]>>;
+  return Object.fromEntries(
+    Object.entries(boxesByRegion).map(([region, boxes]) => [
+      region,
+      boxes.flatMap((box) => {
+        const posed = makePosedBoneBox(region as ZombieHitRegion, box, context);
+        return posed ? [posed] : [];
+      }),
+    ]),
+  );
+};
+
+/** All manifest-region boxes for one actor pose, including amalgam member IDs. */
+const posedAllRegionBoxes = (input: ShamblerPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> =>
+  regionBoxesForContext(poseContextFor(input));
+
+/** Bone boxes for one shambler-compatible pose. The caller builds them once per nearby zombie. */
 export const posedShamblerRegionBoxes = (
   input: ShamblerPoseInput,
 ): Readonly<Record<ZombieRegion, readonly PosedBoneBox[]>> => {
+  const all = posedAllRegionBoxes(input);
+  return Object.fromEntries(ZOMBIE_REGION_NAMES.map((region) => [region, all[region] ?? []])) as Readonly<
+    Record<ZombieRegion, readonly PosedBoneBox[]>
+  >;
+};
+
+/** Manifest-region boxes from the same posed transforms used by the living actor renderer. */
+export const posedAmalgamRegionBoxes = (
+  input: ShamblerPoseInput,
+): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const context = poseContextFor(input);
-  const worldBoxes = (region: ZombieRegion, boxes: readonly BoneVoxelBox[]): PosedBoneBox[] =>
-    boxes.flatMap((box) => {
-      const posedBox = makePosedBoneBox(region, box, context);
-      return posedBox ? [posedBox] : [];
-    });
-  return Object.fromEntries(
-    ZOMBIE_REGION_NAMES.map((region) => [region, worldBoxes(region, context.figure.boxes[region])]),
-  ) as unknown as Record<ZombieRegion, readonly PosedBoneBox[]>;
+  if (input.model !== 'amalgam' || !('manifest' in context.figure)) {
+    throw new Error('Amalgam region boxes require an amalgam pose input');
+  }
+  return regionBoxesForContext(context);
 };
 
 /** Actual posed voxel centres owned by the requested bones (for visible-hit-point proofs/tools). */

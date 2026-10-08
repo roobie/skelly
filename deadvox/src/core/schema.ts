@@ -44,6 +44,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
+import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
@@ -978,7 +979,14 @@ const SiteLayoutSchema = strictObject({
 
 // ---- zombies ----
 
-const ZOMBIE_MODEL = picklist(['shambler', 'runner']);
+export type ShamblerHitRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+export type ZombieRegion = ShamblerHitRegion;
+export type ZombieHitRegion = ZombieRegion | 'core.trunk' | `member.${number}.${ShamblerHitRegion}`;
+export type ZombieRegions = Record<string, number>;
+
+const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
+
+const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'amalgam']);
 
 const ZOMBIE_ABILITIES = [
   'grab',
@@ -1007,16 +1015,16 @@ const ZombieSchema = strictObject({
   name: Name,
   /** Mobgen template selected for this type's silhouette and posed hit regions. */
   model: ZOMBIE_MODEL,
-  regions: strictObject({
-    head: Positive,
-    torso: Positive,
-    leftArm: Positive,
-    rightArm: Positive,
-    leftLeg: Positive,
-    rightLeg: Positive,
-  }),
-  /** Relative chance that a marker naming this type produces it; 1 is the common baseline. */
+  /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
+  bodyScale: optional(Positive),
+  /** Overrides body-height pitch scaling for this type's voice cues. */
+  soundPitchMultiplier: optional(Positive),
+  /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
+  regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
+  /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
+  /** Excludes debug fixtures from ordinary hamlet selection while keeping authored/debug spawns available. */
+  debugOnly: optional(vBoolean()),
   sounds: strictObject({
     idle: picklist(SOUND_EVENT_IDS),
     alert: picklist(SOUND_EVENT_IDS),
@@ -1029,6 +1037,8 @@ const ZombieSchema = strictObject({
   speed: strictObject({ wanderMetresPerSimSecond: SimRate, chaseMetresPerSimSecond: SimRate }),
   /** Metres advanced by one half-cycle of the leg gait. */
   stepLength: Positive,
+  /** Whether this type tries to jump low obstacles when grounded. */
+  canJumpObstacles: vBoolean(),
   /** Metres by day. */
   sight: Positive,
   /** Metres by night. */
@@ -1119,6 +1129,12 @@ const ZombieSchema = strictObject({
   /** What's in its pockets. */
   loot: optional(Id),
 });
+
+const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): boolean => {
+  const expected = zombie.model === 'amalgam' ? AMALGAM_REGION_KEYS : ZOMBIE_REGION_NAMES;
+  const keys = Object.keys(zombie.regions);
+  return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
+};
 
 /** Actor palettes are content so appearance doesn't live in renderer code. */
 const FigureSchema = strictObject({
@@ -1307,7 +1323,20 @@ const SECTION_DESCRIPTOR = {
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
-  zombies: { schema: optional(array(ZombieSchema)), label: 'zombie types', order: 6 },
+  zombies: {
+    schema: optional(
+      pipe(
+        array(ZombieSchema),
+        check(
+          (types) => types.every((zombie) => zombie.model !== 'amalgam' || zombie.bodyScale !== undefined),
+          'amalgam must define bodyScale',
+        ),
+        check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
+      ),
+    ),
+    label: 'zombie types',
+    order: 6,
+  },
   figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },

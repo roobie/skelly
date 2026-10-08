@@ -21,12 +21,12 @@ import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate } from '../src/core/time.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import {
   FIGURE_BOXES,
   FIGURE_PARTS,
   posedRegionHitDistance,
   posedShamblerRegionBoxes,
-  ZOMBIE_REGION_NAMES,
   type ZombieRegion,
 } from '../src/core/zombieRegions.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
@@ -136,7 +136,7 @@ const nearestRegionDistance = (zombie: import('../src/core/zombies.ts').Zombie, 
   let nearest = Number.POSITIVE_INFINITY;
   const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, 1, BLOCK_SIZE));
   for (const region of ZOMBIE_REGION_NAMES) {
-    if (zombie.regions[region] <= 0) {
+    if (zombie.regions[region]! <= 0) {
       continue;
     }
     const distance = posedRegionHitDistance(posed[region], origin, normalized(direction), BLOCK_SIZE);
@@ -1502,7 +1502,7 @@ describe('shambler scenarios', () => {
       const replayRay = regionRay(replay.store.get(replayId)!, region);
       expect(system.swing(origin, direction, FISTS_MELEE)).toBe(id);
       expect(replay.swing(replayRay.origin, replayRay.direction, FISTS_MELEE)).toBe(replayId);
-      expect(zombie.regions[region]).toBe(before[region] - FISTS_MELEE.damage);
+      expect(zombie.regions[region]).toBe(before[region]! - FISTS_MELEE.damage);
       for (const other of ZOMBIE_REGION_NAMES) {
         if (other !== region) {
           expect(zombie.regions[other]).toBe(before[other]);
@@ -1531,7 +1531,7 @@ describe('shambler scenarios', () => {
       zombie.modeTimer = 1000;
       const ray = regionRay(zombie, region);
       const weapon = { ...FISTS_MELEE, cooldown: 0 };
-      const hits = Math.ceil(zombie.regions[region] / weapon.damage);
+      const hits = Math.ceil(zombie.regions[region]! / weapon.damage);
       for (let hit = 0; hit < hits; hit++) {
         expect(system.swing(ray.origin, ray.direction, weapon), `swing while damaging ${region}, hit ${hit}`).toBe(id);
       }

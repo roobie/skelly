@@ -2,7 +2,7 @@ import { placeShamblerRing } from '../bench/shamblerPlacement.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Body } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
-import type { ZombieSystem } from '../core/zombies.ts';
+import { type ZombieSystem, zombieAttackReachForType, zombieBodyDimensions } from '../core/zombies.ts';
 import type { Engine } from '../game/engine.ts';
 
 /** Places as many requested zombies as fit, clear of the player, each other, and solid world. */
@@ -23,6 +23,8 @@ export const spawnZombieType = (
     player,
     engine,
     occupied: [...zombies.store.entries()].map(([, zombie]) => zombie.body),
+    bodyDimensions: zombieBodyDimensions(type, engine.config.scale.blockSize),
+    minRadiusMetres: Math.max(8, zombieAttackReachForType(type) + 1),
     allowPartial: true,
   });
   for (const pos of positions) {

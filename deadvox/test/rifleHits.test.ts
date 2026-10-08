@@ -11,12 +11,8 @@ import { makeScale } from '../src/core/scale.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import {
-  posedShamblerRegionBoxes,
-  ZOMBIE_REGION_NAMES,
-  type ZombieRegion,
-  type ZombieRegions,
-} from '../src/core/zombieRegions.ts';
+import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
+import { posedShamblerRegionBoxes, type ZombieRegion, type ZombieRegions } from '../src/core/zombieRegions.ts';
 import { FirearmMechanics, type FirearmShotInput, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -80,7 +76,7 @@ const expectedLoss = (ammo: AmmoData, region: ZombieRegion, before: ZombieRegion
   const shambler = registry.zombies.get('shambler')!;
   const scale = region === 'head' ? (ammo.headDamageMultiplier ?? 1) : 1;
   const resistance = shambler.meleeDamageResistance?.[region].pierce ?? 0;
-  return Math.min(before[region], ammo.damage * scale * (1 - resistance));
+  return Math.min(before[region]!, ammo.damage * scale * (1 - resistance));
 };
 
 const changedRegions = (before: ZombieRegions, after: ZombieRegions): ZombieRegion[] =>
@@ -150,12 +146,12 @@ describe('rifle hits', () => {
         damage: 0,
         reach: ammo.rangeMetres,
         cooldown: 0,
-      })?.region;
+      })?.region as ZombieRegion | undefined;
       const before = { ...zombie.regions };
       expect(session.zombies.firePellets(projectileShot(ammo, origin, [direction]))).toBe(region ? 1 : 0);
       expect(changedRegions(before, zombie.regions)).toEqual(region ? [region] : []);
       if (region) {
-        expect(before[region] - zombie.regions[region]).toBeCloseTo(expectedLoss(ammo, region, before));
+        expect(before[region]! - zombie.regions[region]!).toBeCloseTo(expectedLoss(ammo, region, before));
       }
       return region;
     };
@@ -186,7 +182,7 @@ describe('rifle hits', () => {
       expect(session.firearms.fire(shotInput(rifle))).toBe(true);
       const [region, ...others] = changedRegions(before, zombie.regions);
       expect([region !== undefined, others]).toEqual([true, []]);
-      expect(before[region!] - zombie.regions[region!]).toBeCloseTo(expectedLoss(ammo, region!, before));
+      expect(before[region!]! - zombie.regions[region!]!).toBeCloseTo(expectedLoss(ammo, region!, before));
     }
   });
 

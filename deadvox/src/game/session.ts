@@ -5,7 +5,6 @@
 // callbacks; nothing here draws or listens.
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
-import { zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController, type AimWobbleNoiseTuning } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bodyRegionForHitArea } from '../core/body.ts';
@@ -57,6 +56,7 @@ import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
+import { zombieFigure } from '../core/zombieFigure.ts';
 import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
@@ -556,6 +556,7 @@ export const createSession = (options: SessionOptions) => {
       noiseRadiusScale = 1,
       body: mobBody,
       noiseRadiusMetres,
+      soundPitchMultiplier,
     }: SoundEmissionMeta & {
       player: boolean;
       body?: MobBody;
@@ -566,7 +567,8 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const pitch = mobBody ? selected.pitch * shamblerBodyPitch(mobBody) : selected.pitch;
+    const bodyPitch = soundPitchMultiplier ?? (mobBody ? shamblerBodyPitch(mobBody) : 1);
+    const pitch = selected.pitch * bodyPitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
     const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres * noiseRadiusScale;
@@ -865,7 +867,7 @@ export const createSession = (options: SessionOptions) => {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',
-          ...(zombie ? { body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body } : {}),
+          ...(zombie ? { body: zombieFigure(zombie.type, zombie.figureSeed).realized.body } : {}),
         });
         return;
       }
@@ -873,7 +875,14 @@ export const createSession = (options: SessionOptions) => {
         event,
         position,
         sim.time,
-        zombie ? { body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body } : {},
+        zombie
+          ? {
+              body: zombieFigure(zombie.type, zombie.figureSeed).realized.body,
+              ...(zombie.type.soundPitchMultiplier === undefined
+                ? {}
+                : { soundPitchMultiplier: zombie.type.soundPitchMultiplier }),
+            }
+          : {},
       );
     },
     onFootstep: (position, id, mode, zombie) => {
@@ -883,7 +892,7 @@ export const createSession = (options: SessionOptions) => {
       });
       playWorldSound(event, position, sim.time, {
         sourceLabel: `${zombie.type.name.toLowerCase()} #${id} · ${mode}`,
-        body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body,
+        body: zombieFigure(zombie.type, zombie.figureSeed).realized.body,
       });
     },
     onSevered: (zombie, region) => {
@@ -892,7 +901,10 @@ export const createSession = (options: SessionOptions) => {
         Math.floor(zombie.body.pos[1]),
         Math.floor(zombie.body.pos[2]),
       ];
-      inventory.add(inventory.create(SEVERED_ITEM[region]), { kind: 'pile', pos });
+      const item = SEVERED_ITEM[region as keyof typeof SEVERED_ITEM];
+      if (item) {
+        inventory.add(inventory.create(item), { kind: 'pile', pos });
+      }
     },
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
     onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
