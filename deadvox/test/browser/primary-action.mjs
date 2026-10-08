@@ -2591,6 +2591,19 @@ try {
       assert.equal(refusal.job, undefined, 'F without a prying tool starts no long action');
       assert.equal(refusal.inputLocked, false, 'a refused locked-door interaction does not lock input');
       assert.match(refusalNotice.notice, pryingQualityHint, 'the locked-door refusal uses its existing hint');
+      await waitForSimulation(
+        lockedPage,
+        ({ start }) => {
+          const { session } = globalThis.primaryActionTest;
+          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 3 };
+        },
+        { start: refusalFixture.start },
+        {
+          seconds: 3.5,
+          label: 'locked-door refusal remains responsive',
+          record: (line) => process.stderr.write(`${line}\\n`),
+        },
+      );
       const releaseAfterRefusal = await holdAction(lockedPage, 'movement.right');
       try {
         await waitForSimulation(
