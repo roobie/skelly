@@ -8,7 +8,7 @@ read_if:
   - you change the AK archetype's proportions, or map them against its golden photo
   - you change attachment parts, mount slots or their Deadvox export
   - you change firearm design/template calibre or AK magazine selection
-  - you change default sweep coverage or timeout policy for issue #394
+  - you change default sweep coverage or timeout policy
 
 # gungen — low-poly firearm designer
 
@@ -1741,9 +1741,9 @@ in `docs/deferred-assertions.md`.
 - **Timeouts.** A test that takes about 1 s or more and still has the 5 s
   default gets its own timeout, about 5x its measured time, with a comment
   saying why. A sweep is split into smaller tests where it can be; one that
-  cannot gets a timeout proportional to its case count. For #394, avoid a
-  default wall-clock failure point from exhaustive variant generation or
-  unnecessary distant-solid collision checks; see `test/unplacedParts.test.ts`,
+  cannot gets a timeout proportional to its case count. Default runs build only
+  sampled variants and cull solids outside a part's swept bounds before collision
+  checks, so no default case races its timeout; see `test/unplacedParts.test.ts`,
   `defineRuleChecks`, and `src/gun/cycle.ts`, `sweepMovingPart`.
 
 ## Running it
