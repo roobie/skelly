@@ -121,17 +121,20 @@ const createSessionAim = ({
   seed,
   restored,
   character,
+  wobbleFlatOverride,
 }: {
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
   character: Character;
+  wobbleFlatOverride: number | undefined;
 }): AimController => {
   const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
   const jitterSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
   return new AimController({
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
+      verticalToHorizontalRatio: wobbleFlatOverride ?? tuning.wobbleVerticalToHorizontalRatio,
       archPower: tuning.wobbleLuneArchPower,
       phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
       jitterShare: tuning.wobbleJitterShare,
@@ -326,6 +329,8 @@ export interface SessionOptions {
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
+  /** Debug-only wobble vertical/horizontal ratio override. */
+  wobbleFlatOverride?: number | undefined;
   /**
    * Continue from a save. Inventory and block-entity state are restored into the
    * game's shared `entities` object. Re-streamed columns are safe: entity anchors and
@@ -491,6 +496,7 @@ export const createSession = (options: SessionOptions) => {
     seed,
     restored,
     character,
+    wobbleFlatOverride: options.wobbleFlatOverride,
   });
   const { entities } = inventory;
   const quickbar = new Quickbar();

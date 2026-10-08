@@ -407,6 +407,7 @@ export const startPlay = (
     isOpaque: engine.isOpaque,
     scale,
     seed: config.seed,
+    wobbleFlatOverride: config.debugWobbleFlat,
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,

@@ -340,6 +340,7 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
   const aim = new AimController({
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
+      verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,
       archPower: tuning.wobbleLuneArchPower,
       phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
       jitterShare: tuning.wobbleJitterShare,

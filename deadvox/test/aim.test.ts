@@ -18,10 +18,12 @@ const createAim = (
   variance = 1,
   wobbleLimitRadians = stanceTuning.wobbleLimitRadians,
   jitterShare = stanceTuning.wobbleJitterShare,
+  verticalToHorizontalRatio = stanceTuning.wobbleVerticalToHorizontalRatio,
 ) =>
   new AimController({
     wobbleLimitRadians,
     wobbleShape: {
+      verticalToHorizontalRatio,
       archPower: stanceTuning.wobbleLuneArchPower,
       phaseOffsetRadians: stanceTuning.wobbleLunePhaseOffsetRadians,
       jitterShare,
@@ -350,6 +352,55 @@ it('step-clock wobble forms an open, concave-down lune once per stride', () => {
   expect(leftSide.yaw).toBeLessThan(center.yaw);
   expect(outgoing.yaw).toBeCloseTo(returning.yaw, 8);
   expect(outgoing.pitch).not.toBeCloseTo(returning.pitch, 8);
+});
+
+it('sets lune vertical extent as the content fraction of its horizontal extent', () => {
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const { blockSize } = step();
+  const aim = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  const yaw: number[] = [];
+  const pitch: number[] = [];
+  for (let sample = 0; sample < 1024; sample++) {
+    const frame = aim.advance(
+      step({
+        velocity: [0, 0, -speed / blockSize],
+        stridePhase: sample / 1024,
+      }),
+    );
+    yaw.push(frame.yaw);
+    pitch.push(frame.pitch);
+  }
+  const horizontalExtent = Math.max(...yaw) - Math.min(...yaw);
+  const verticalExtent = Math.max(...pitch) - Math.min(...pitch);
+
+  expect(horizontalExtent).toBeGreaterThan(0);
+  expect(verticalExtent / horizontalExtent).toBeCloseTo(stanceTuning.wobbleVerticalToHorizontalRatio, 2);
+});
+
+it('scales the vertical jitter with the lune without changing horizontal swing', () => {
+  const ratio = stanceTuning.wobbleVerticalToHorizontalRatio;
+  const flatterRatio = ratio / 2;
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const { blockSize } = step();
+  const authored = createAim(1, stanceTuning.wobbleLimitRadians, 1, ratio);
+  const flatter = createAim(1, stanceTuning.wobbleLimitRadians, 1, flatterRatio);
+  const plainLune = createAim(1, stanceTuning.wobbleLimitRadians, 0, ratio);
+  let observedVerticalJitter = false;
+  for (let sample = 0; sample < 128; sample++) {
+    const stridePhase = sample / 128;
+    const aimStep = step({
+      velocity: [0, 0, -speed / blockSize],
+      stridePhase,
+      stepIndex: 1,
+    });
+    const authoredFrame = authored.advance(aimStep);
+    const flatterFrame = flatter.advance(aimStep);
+    const plainFrame = plainLune.advance(aimStep);
+    expect(flatterFrame.yaw).toBeCloseTo(authoredFrame.yaw, 12);
+    expect(flatterFrame.pitch).toBeCloseTo(authoredFrame.pitch * (flatterRatio / ratio), 10);
+    observedVerticalJitter ||= Math.abs(authoredFrame.pitch - plainFrame.pitch) > 1e-10;
+  }
+  expect(observedVerticalJitter).toBe(true);
 });
 
 it('seeded jitter keeps the configured share of the walking path off the lune', () => {

@@ -721,6 +721,8 @@ and `src/core/content.ts`, `checkItemFirearm`.
 
   BR, 2026-10-08 01:04 +02:00, d142-2 addendum 1: “the wobble is better. What's good is the amplitude and the timing function - but it feels too uniform - i think it'd be served well with some jitter / if we could make so that approx 50% of the path is jittered / off the uniform path, without making it too twitchy”. For d142-2, `FootstepClock.stepIndex` in `src/core/footsteps.ts` selects deterministic per-step deviations from the simulation-seeded stream, and `AimController` eases each deviation across its step. Their share and relative size belong to `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`, because BR wants an irregular path without twitching while keeping the existing gait and skill-scaled amplitude.
 
+BR, 2026-10-08 01:56 +02:00, d142-3: “can we flatten the trajectory? Right now it's very circular - if we could try making it flatter, I think that'd feel more plausible”. The vertical-to-horizontal wobble ratio is content-owned in `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/aim.ts`, `frameFromState`, applies it to the lune depth and vertical jitter without changing horizontal swing, cadence, or jitter share. The debug-only `?wobbleFlat=` comparison lets BR judge the ratio before it is tuned further.
+
   BR's earlier 2026-10-05 report on the skill scale
   before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
   led to d62-4 (#262); the later ruling

@@ -1126,6 +1126,7 @@ const SkillSchema = pipe(
             skillZeroHandling: FirearmsSkillZeroHandlingSchema,
             wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
             wobbleLimitRadians: pipe(Positive, maxValue(Math.PI / 2)),
+            wobbleVerticalToHorizontalRatio: pipe(Positive, maxValue(1)),
             wobbleLuneArchPower: pipe(Positive, maxValue(4)),
             wobbleLunePhaseOffsetRadians: pipe(NonNegative, maxValue(0.45)),
             wobbleJitterShare: Fraction,

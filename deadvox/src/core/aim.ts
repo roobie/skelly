@@ -36,6 +36,7 @@ export interface AimStep {
 }
 
 export interface AimWobbleShape {
+  readonly verticalToHorizontalRatio: number;
   readonly archPower: number;
   readonly phaseOffsetRadians: number;
   readonly jitterShare: number;
@@ -94,7 +95,12 @@ const frameFromState = ({
     : 0;
   const wobble = boundVector(
     (state.lookYaw + (gait + Math.cos(jitterAngle) * jitterScale) * speed * MOVE_YAW_PER_SPEED) * variance,
-    (state.lookPitch + (pitchArch + Math.sin(jitterAngle) * jitterScale) * speed * MOVE_PITCH_PER_SPEED) * variance,
+    (state.lookPitch * MOVE_PITCH_PER_SPEED +
+      (pitchArch + Math.sin(jitterAngle) * jitterScale) *
+        speed *
+        MOVE_YAW_PER_SPEED *
+        shape.verticalToHorizontalRatio) *
+      variance,
     wobbleLimitRadians,
   );
   const recoilYaw = bounded(state.recoilYaw);
@@ -117,6 +123,9 @@ const frameFromState = ({
 };
 
 const isValidWobbleShape = (shape: AimWobbleShape): boolean =>
+  Number.isFinite(shape.verticalToHorizontalRatio) &&
+  shape.verticalToHorizontalRatio >= 0 &&
+  shape.verticalToHorizontalRatio <= 1 &&
   Number.isFinite(shape.archPower) &&
   shape.archPower > 0 &&
   Number.isFinite(shape.phaseOffsetRadians) &&
