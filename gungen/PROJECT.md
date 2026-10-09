@@ -11,6 +11,7 @@ read_if:
   - you change STANAG magazine geometry or its Deadvox export
   - you change default sweep coverage or timeout policy
   - you change the firearm action/ejection export contract with Deadvox
+  - you author or change gungen assembly or cartridge content
 ---
 
 # gungen — low-poly firearm designer
@@ -65,7 +66,7 @@ adding shell geometry. The data format is described in `cartridges/README.md`.
 | Tests | Vitest |
 | Lint/format | Biome, repo-wide (`biome.jsonc`): every stable rule on. See the static-analysis pillar in the root README |
 | Part definitions | TypeScript code: each family is a function from size-class params to a part |
-| Assemblies | JSON files: part instances plus connections (§7) |
+| Assemblies | Jsonnet sources compile to JSON: part instances plus connections (§7); see `../docs/jsonnet.md` |
 | Loops | Loops are only *checked* for closure; there is no solver yet |
 | Layouts | Data, not code: the receiver is only the action body, and a swappable lower sets where the grip and magazine go |
 | Domain rules | Domains add their own rules next to the core ones (`Domain.rules`) |

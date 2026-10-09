@@ -4,11 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "npm --prefix .. run content:compile",
     "dev": "vite",
+    "predev:https": "npm --prefix .. run content:compile",
     "dev:https": "DEADVOX_HTTPS=1 vite --host 0.0.0.0 --port 5173",
+    "prebuild": "npm --prefix .. run content:compile",
     "build": "tsc && vite build && node tools/check-favicon.mjs",
     "typecheck": "tsc",
     "lint:time": "node tools/time-lint.mjs",
+    "pretest": "npm --prefix .. run content:compile",
     "test": "vitest run",
     "bench:shambler-budget": "DEADVOX_BENCH=1 vitest run test/zombies.test.ts -t 'shambler CPU benchmark'",
     "test:ui-browser": "timeout 300 node test/browser/inventory-scroll.mjs chromium && timeout 300 node tools/ui-browser-contract.mjs && timeout 300 node test/browser/primary-action.mjs && timeout 300 node test/browser/primary-action-pixel.mjs && timeout 300 node test/browser/pump-handling.mjs && timeout 300 node test/browser/full-auto.mjs && timeout 300 node test/browser/case-visual-pool.mjs && timeout 300 node test/browser/save-controller-regressions.mjs && timeout 300 node test/browser/save-storage.mjs chromium && SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=opfs SAVE_AUTOSAVE_SCENARIO=continue timeout 300 node test/browser/save-storage.mjs chromium && SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=opfs SAVE_AUTOSAVE_SCENARIO=replacement timeout 300 node test/browser/save-storage.mjs chromium && SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=continue timeout 300 node test/browser/save-storage.mjs chromium && SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=replacement timeout 300 node test/browser/save-storage.mjs chromium && SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=busy-lock timeout 300 node test/browser/save-storage.mjs chromium && SAVE_NAVIGATION_ONLY=1 timeout 300 node test/browser/save-storage.mjs chromium && timeout 300 node test/browser/insecure-saves.mjs && timeout 300 node test/browser/stairs.mjs traversal && timeout 300 node test/browser/stairs.mjs camo && timeout 300 node test/browser/stairs.mjs lighting && timeout 300 node test/browser/reading.mjs consumer && timeout 300 node test/browser/reading.mjs lifecycle",
@@ -20,6 +24,7 @@
     "test:browser:firefox:native": "timeout 300 node test/browser/firefox-first-click.mjs",
     "test:browser:firefox:continue": "SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=continue timeout 300 node test/browser/save-storage.mjs firefox",
     "probe:render": "node tools/render-probe.mjs",
+    "prevalidate": "npm --prefix .. run content:compile",
     "validate": "node src/cli/validate.ts",
     "lint:lit": "tools/lit-check/node_modules/.bin/lit-analyzer 'src/ui/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && tools/lit-check/node_modules/.bin/lit-analyzer 'src/debug/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && vitest run test/uiLitHtml.test.ts",
     "bench:shamblers": "node --experimental-strip-types --import ./tools/register-mobgen-alias.mjs src/bench/shamblers-cpu.mjs"

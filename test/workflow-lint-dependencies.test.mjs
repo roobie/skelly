@@ -45,15 +45,20 @@ const installPrefixes = (commands) => {
   }
   return prefixes;
 };
-const cacheDependencyPathsIn = (value) => {
-  const paths = [];
-  visitProperties(value, (key, child) => {
-    if (key === 'cache-dependency-path') {
-      paths.push(Array.isArray(child) ? child.join('\n') : String(child));
-    }
-  });
-  return paths;
-};
+const nodeCacheDependencyPathsIn = (workflow) =>
+  Object.values(workflow.jobs ?? {}).flatMap((job) =>
+    (job.steps ?? [])
+      .filter(
+        (step) =>
+          typeof step.uses === 'string' &&
+          step.uses.startsWith('actions/setup-node@') &&
+          step.with?.['cache-dependency-path'] !== undefined,
+      )
+      .map((step) => {
+        const path = step.with?.['cache-dependency-path'];
+        return Array.isArray(path) ? path.join('\n') : String(path ?? '');
+      }),
+  );
 
 const lintCommands = commandsIn(parse(read('.github/workflows/lint.yml')));
 const requiredPrefixes = installPrefixes(lintCommands);
@@ -73,7 +78,7 @@ test('every workflow running root CI installs lint workflow prefixes and caches 
       `${path} must install all npm prefixes installed by lint.yml`,
     );
 
-    for (const cachePaths of cacheDependencyPathsIn(workflow)) {
+    for (const cachePaths of nodeCacheDependencyPathsIn(workflow)) {
       const entries = new Set(cachePaths.split(CACHE_PATH_SEPARATOR).filter(Boolean));
       const missing = [...requiredPrefixes].filter((prefix) => !entries.has(`${prefix}/package-lock.json`));
       assert.deepEqual(missing, [], `${path} cache-dependency-path must include every lint prefix lockfile`);

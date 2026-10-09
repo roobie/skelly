@@ -1,0 +1,2 @@
+assert false : 'invariant failed';
+{}

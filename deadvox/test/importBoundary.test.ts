@@ -39,11 +39,12 @@ describe('deadvox stays independent of its sibling projects', () => {
     expect(files.length).toBeGreaterThan(50);
   });
 
-  it('imports nothing from sibling projects or above deadvox except the shared test utility', () => {
+  it('imports no sibling source and allows only the shared root Jsonnet compiler', () => {
+    const sharedJsonnetCompiler = '../../tools/jsonnet/index.mjs';
     const offenders = files.flatMap((file) =>
       [...readFileSync(file, 'utf8').matchAll(SPECIFIER)]
         .map((match) => match[2] ?? '')
-        .filter((specifier) => escapesProject(file, specifier))
+        .filter((specifier) => escapesProject(file, specifier) && specifier !== sharedJsonnetCompiler)
         .map((specifier) => `${file}: ${specifier}`),
     );
     expect(offenders).toEqual([]);

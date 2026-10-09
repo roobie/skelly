@@ -7,6 +7,7 @@ read_if:
   - you're integrating a mobgen figure into deadvox
   - you're changing the crawler's static silhouette, generated-body grounding, gait or hit response
   - you're adding render-only gaze tracking or rig-specific eye limits
+  - you author or change structured mobgen content
 ---
 
 # mobgen — procedural mob generator
@@ -25,6 +26,14 @@ Take a template and a seed to a detailed, connected, standing voxel humanoid
 with a walk cycle that follows its speed. It works the same way gungen takes a
 template and a seed to a firearm that fits together: the generator only makes
 choices, and a validator with named rules decides what's feasible.
+
+### Authored data
+
+Write new or touched structured mobgen data in Jsonnet, using the repository-root
+compiler and the shared authoring rules in `../docs/jsonnet.md`. Generator algorithms and
+poses remain TypeScript so content composition does not become a second implementation of
+mobgen's feasibility rules. Moving body plans into external data is a named follow-up; it
+must use the same compiler rather than a mobgen-specific evaluator.
 
 ### Creature range
 
