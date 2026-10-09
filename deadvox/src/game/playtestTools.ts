@@ -175,6 +175,32 @@ const normalizeMetrics = (value: SessionMetricsV1): SessionMetricsV1 => ({
 
 export const metricsExportJson = (metrics: SessionMetrics): string => `${JSON.stringify(metrics.toJSON(), null, 2)}\n`;
 
+/** A file a tester hands back; the F9 menu and the debug panel build the same one. */
+export interface HandBackFile {
+  readonly blob: Blob;
+  readonly name: string;
+}
+
+export const metricsFile = (metrics: SessionMetrics): HandBackFile => ({
+  blob: new Blob([metricsExportJson(metrics)], { type: 'application/json' }),
+  name: `deadvox-metrics-seed-${metrics.toJSON().seed}.json`,
+});
+
+export const replayFile = (bytes: Uint8Array, exportedAt: Date): HandBackFile => ({
+  blob: new Blob([bytes.slice().buffer], { type: 'application/json' }),
+  name: `deadvox-replay-${exportedAt.toISOString().replaceAll(':', '-')}.json`,
+});
+
+/** A download link needs no clipboard, so saving works on a plain-http preview too. */
+export const downloadFile = ({ blob, name }: HandBackFile): void => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 export interface SnapshotTimerQuantum {
   readonly browser: 'Firefox' | 'Chromium';
   readonly quantumMs: number;

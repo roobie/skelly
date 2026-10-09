@@ -25,6 +25,7 @@ import { FAMILIES } from '../src/gun/parts.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
 import { expectWatertightMesh, loadCorpus, variant } from './helpers.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const design = (name: string): Assembly => {
   const result = loadGunDesign(readFileSync(join(import.meta.dirname, '..', 'designs', `${name}.json`), 'utf8'));
@@ -606,12 +607,19 @@ describe('glb export: deadvox model entry', () => {
     expect(out.modelEntry.sight.kind).toBe('iron');
   });
 
-  it('keeps every exported sight line clear of other solids', () => {
-    const corpus = loadCorpus();
-    expect(corpus.length).toBeGreaterThan(0);
-    for (const { label, assembly } of corpus) {
-      expectSightLineClear(exported(assembly), label);
-    }
+  it('keeps the AK sight line clear of other solids', () => {
+    expectSightLineClear(exported(design('archetype-ak')), 'design archetype-ak.json');
+  });
+
+  // This exhaustive corpus check exceeds the default timeout under load. The authored AK is the default sentinel because its sight line passes closest to another solid.
+  sweepGroup('published sight-line clearance corpus', () => {
+    it('keeps every exported sight line clear of other solids', () => {
+      const corpus = loadCorpus();
+      expect(corpus.length).toBeGreaterThan(0);
+      for (const { label, assembly } of corpus) {
+        expectSightLineClear(exported(assembly), label);
+      }
+    });
   });
 
   it('aims the AK sight axis from the rear notch top edge to the front post tip', () => {

@@ -27,7 +27,7 @@ import type {
 import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
-import type { SnapshotMeasurement } from '../game/playtestTools.ts';
+import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { positionLookedAtReadout } from '../ui/hud.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
@@ -323,6 +323,7 @@ const panelTemplate = ({
   setShamblerCount,
   setTimeOfDay,
   snapshotStatus,
+  snapshotCopyStatus,
   revealZombies,
   toggleReveal,
   measureSnapshot,
@@ -365,6 +366,7 @@ const panelTemplate = ({
   setShamblerCount: (count: number) => void;
   setTimeOfDay: (hour: number, minute: number) => void;
   snapshotStatus: string;
+  snapshotCopyStatus: string;
   revealZombies: boolean;
   toggleReveal: () => void;
   measureSnapshot: () => void;
@@ -491,6 +493,7 @@ const panelTemplate = ({
     <div class="debug-snapshot-result-row">
       <p id="snapshot-measurement-result" class="debug-snapshot-result" aria-live="polite" tabindex="0">${snapshotStatus || 'No snapshot measurement yet.'}</p>
       <button id="copy-snapshot-result" type="button" ?disabled=${snapshotStatus === ''} @click=${copySnapshotResult}>Copy</button>
+      <output aria-live="polite">${snapshotCopyStatus}</output>
       <textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea>
     </div>
     <label class="debug-axis-toggle"><input type="checkbox" .checked=${axesVisible} @change=${toggleAxes} /> Show axis gizmo</label>
@@ -985,6 +988,8 @@ export const formatMeleeResult = (result: MeleeResult): string => {
 };
 
 // Debug previews may use plain HTTP, where browsers withhold the Clipboard API.
+const COPY_BLOCKED_STATUS = 'Copy blocked: the text below is selected; press Ctrl+C';
+
 export const copyTextOrSelect = async (
   text: string,
   clipboard: { writeText: (value: string) => Promise<void> } | undefined,
@@ -1023,7 +1028,6 @@ export const copyTextOrSelect = async (
     return true;
   }
 
-  doc.exitPointerLock?.();
   fallback.focus();
   fallback.select();
   return false;
@@ -1102,6 +1106,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let axisAnimation: number | undefined;
   let revealZombies = false;
   let snapshotStatus = '';
+  let snapshotCopyStatus = '';
   let aimEnabled = true;
   let lastHitText = '';
   let lastHitUntil = 0;
@@ -1201,11 +1206,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       return;
     }
     const copied = await copyTextOrSelect(content, globalThis.navigator.clipboard, fallbackHost);
-    if (copied) {
-      weatheringCopyStatus = 'Profile JSON copied';
-      shellKey = '';
-      drawShell();
-    }
+    weatheringCopyStatus = copied ? 'Profile JSON copied' : COPY_BLOCKED_STATUS;
+    shellKey = '';
+    drawShell();
   };
   const metresPerBlock = hooks.engine.config.scale.blockSize;
   /** Reused each call: the pose is read a few times a second, so no per-call allocation worth noticing. */
@@ -1413,15 +1416,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     shellKey = '';
     drawShell();
     try {
-      const bytes = await hooks.inputReplay.export();
+      const file = replayFile(await hooks.inputReplay.export(), new Date());
       if (replayDownload) {
         URL.revokeObjectURL(replayDownload.url);
       }
-      replayDownload = {
-        url: URL.createObjectURL(new Blob([bytes.slice().buffer], { type: 'application/json' })),
-        name: `deadvox-replay-${new Date().toISOString().replaceAll(':', '-')}.json`,
-      };
-      replayStatus = `Replay ready to download · ${bytes.byteLength} bytes`;
+      replayDownload = { url: URL.createObjectURL(file.blob), name: file.name };
+      replayStatus = `Replay ready to download · ${file.blob.size} bytes`;
       shellKey = '';
       drawShell();
     } catch (error) {
@@ -1489,6 +1489,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           setShamblerCount: changeShamblerCount,
           setTimeOfDay: hooks.setTimeOfDay,
           snapshotStatus,
+          snapshotCopyStatus,
           revealZombies,
           toggleReveal: () => {
             revealZombies = !revealZombies;
@@ -1508,7 +1509,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             }
             const fallbackHost = resultLine.parentElement;
             if (fallbackHost) {
-              await copyTextOrSelect(snapshotStatus, globalThis.navigator.clipboard, fallbackHost);
+              const copied = await copyTextOrSelect(snapshotStatus, globalThis.navigator.clipboard, fallbackHost);
+              snapshotCopyStatus = copied ? 'Snapshot copied' : COPY_BLOCKED_STATUS;
+              shellKey = '';
+              drawShell();
             }
           },
           exportMetrics: hooks.exportMetrics,
@@ -1548,11 +1552,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
               return;
             }
             const copied = await copyTextOrSelect(values, globalThis.navigator.clipboard, fallbackHost);
-            if (copied) {
-              firearmsSkillCopyStatus = 'Values copied';
-              shellKey = '';
-              drawShell();
-            }
+            firearmsSkillCopyStatus = copied ? 'Values copied' : COPY_BLOCKED_STATUS;
+            shellKey = '';
+            drawShell();
           },
           firearmsSkillCopyStatus,
           weatheringState: look.weatheringState,
@@ -1601,11 +1603,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       return;
     }
     const copied = await copyTextOrSelect(location.href, globalThis.navigator.clipboard, fallbackHost);
-    if (copied) {
-      copyStatus = 'View link copied';
-      shellKey = '';
-      drawShell();
-    }
+    copyStatus = copied ? 'View link copied' : COPY_BLOCKED_STATUS;
+    shellKey = '';
+    drawShell();
   }
   function dumpLook(): void {
     const { config } = hooks.engine;

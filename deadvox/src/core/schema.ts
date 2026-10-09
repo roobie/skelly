@@ -1035,8 +1035,8 @@ const ZombieSchema = strictObject({
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
   /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
-  /** Excludes debug fixtures from ordinary hamlet selection while keeping authored/debug spawns available. */
-  debugOnly: optional(vBoolean()),
+  /** Excludes this kind from ordinary hamlet selection while keeping authored/debug spawns available. */
+  authoredOnly: optional(vBoolean()),
   sounds: strictObject({
     idle: picklist(SOUND_EVENT_IDS),
     alert: picklist(SOUND_EVENT_IDS),
@@ -1049,6 +1049,8 @@ const ZombieSchema = strictObject({
   speed: strictObject({ wanderMetresPerSimSecond: SimRate, chaseMetresPerSimSecond: SimRate }),
   /** Metres advanced by one half-cycle of the leg gait. */
   stepLength: Positive,
+  /** Surface-step sound family for grounded travel; omitted types do not emit footfalls. */
+  footstepSound: optional(picklist(['shambler'])),
   /** Whether this type tries to jump low obstacles when grounded. */
   canJumpObstacles: vBoolean(),
   /** Metres by day. */

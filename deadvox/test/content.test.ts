@@ -4,6 +4,7 @@ import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type 
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
@@ -122,6 +123,36 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
+  it('keeps soldier spawns within camp authoring and preserves the shambler design', () => {
+    const soldier = baseRegistry.zombies.get('military_shambler')!;
+    const templateSpawns = [...baseRegistry.templates.values()].flatMap((template) =>
+      compileTemplate(baseRegistry, template)
+        .spawns.filter(({ zombie }) => zombie === soldier.id)
+        .map(() => template.id),
+    );
+    const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
+      layout.shamblers.some(({ type }) => type === soldier.id) ? [layout] : [],
+    );
+    expect(templateSpawns.some((id) => id.startsWith('camp_'))).toBe(true);
+    expect(templateSpawns.every((id) => id.startsWith('camp_'))).toBe(true);
+    expect(layoutSpawns.length).toBeGreaterThan(0);
+    expect(layoutSpawns.every((layout) => layout.buildings.some(({ template }) => template.startsWith('camp_')))).toBe(
+      true,
+    );
+
+    const shambler = baseRegistry.zombies.get('shambler')!;
+    const sharedShamblerData = Object.fromEntries(
+      Object.entries(shambler).filter(([key]) => !['id', 'name', 'loot'].includes(key)),
+    );
+    expect(soldier).toMatchObject({ ...sharedShamblerData, authoredOnly: true });
+    expect(soldier.loot).not.toBe(shambler.loot);
+  });
+
+  it('excludes authored-only kinds from ordinary hamlet spawn weights', () => {
+    const soldier = baseRegistry.zombies.get('military_shambler')!;
+    expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
+  });
+
   it('keeps the base day cycle authoritative over mod overrides', () => {
     const baseCycle = baseRegistry.dayCycle!;
     const modCycle = {
@@ -1702,9 +1733,10 @@ describe('content', () => {
   it('feeds registry camo overrides into the compiled chunk shader uniforms', () => {
     expect(() => camoShaderConfig([])).not.toThrow();
     const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
+    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
     const { registry, issues } = buildRegistry([
-      ...base,
+      baseBlocks,
       {
         source: 'mod-camo.json',
         data: { blocks: [{ ...camo, color: '#56789a', patternPalette: palette, patternWashout: 0.37 }] },
@@ -1735,9 +1767,9 @@ describe('content', () => {
     const noPalette = { ...withoutPalette, id: 'test_camo_no_palette' };
     const { patternWashout: _washout, ...withoutWashout } = camo;
     const noWashout = { ...withoutWashout, id: 'test_camo_no_washout' };
-    const blocksFile = base.find(({ source }) => source === 'blocks.json')!;
+    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const issues = buildRegistry([
-      blocksFile,
+      baseBlocks,
       {
         source: 'camo-contract.json',
         data: {

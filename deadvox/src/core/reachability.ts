@@ -2,7 +2,7 @@
 import { startingKnownRecipes } from './character.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
-import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
+import { HAMLET_TEMPLATES, ordinaryHamletSpawnWeights, possibleHamletZombies } from './hamlet.ts';
 import { WORK_IN_PROGRESS } from './inventory.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
@@ -180,9 +180,7 @@ const worldSources = (registry: Registry) => {
       markers.set(id, template.spawns);
     }
   }
-  const spawnWeights = new Map(
-    [...registry.zombies].filter(([, zombie]) => !zombie.debugOnly).map(([id, zombie]) => [id, zombie.spawnWeight]),
-  );
+  const spawnWeights = ordinaryHamletSpawnWeights(registry);
   for (const id of possibleHamletZombies(markers, spawnWeights)) {
     const loot = registry.zombies.get(id)?.loot;
     if (loot !== undefined) {

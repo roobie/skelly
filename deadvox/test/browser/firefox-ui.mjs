@@ -496,6 +496,7 @@ try {
     `full-strength weathering changes a weatherable comparison pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
   );
   const defaultProfileId = await page.evaluate(() => globalThis.firefoxUiTest.engine.config.weatheringDefaultProfileId);
+  assert.ok(weatheringPixels.profileStrengths[defaultProfileId] > 0, 'the default weathering profile is measured');
   for (const [profileId, profileStrength] of Object.entries(weatheringPixels.profileStrengths)) {
     if (profileStrength <= 0) {
       continue;

@@ -100,13 +100,13 @@ describe('debug snapshot result copying', () => {
     expect(host.querySelector<HTMLTextAreaElement>('textarea.debug-copy-fallback')?.hidden).toBe(true);
   });
 
-  it('shows and selects a readonly textarea if Clipboard API and execCommand both fail', async () => {
-    let unlocked = 0;
+  it('shows and selects a readonly textarea if Clipboard API and execCommand both fail without unlocking', async () => {
+    let pointerLocked = true;
     Object.defineProperty(copyDocument, 'execCommand', { configurable: true, value: () => false });
     Object.defineProperty(copyDocument, 'exitPointerLock', {
       configurable: true,
       value: () => {
-        unlocked += 1;
+        pointerLocked = false;
       },
     });
     const host = copyHost();
@@ -118,7 +118,7 @@ describe('debug snapshot result copying', () => {
     expect(fallback.value).toBe('measurement line');
     expect(copyDocument.activeElement).toBe(fallback);
     expect([fallback.selectionStart, fallback.selectionEnd]).toEqual([0, 'measurement line'.length]);
-    expect(unlocked).toBe(1);
+    expect(pointerLocked).toBe(true);
   });
 });
 

@@ -807,7 +807,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('renders visible actor meshes with bone transforms for every registered zombie type', () => {
-    const renderer = new MobActorMeshes(0.5, 2, {
+    const renderer = new MobActorMeshes(0.5, registry.zombies.size, {
       poolSize: 1,
       includeAmalgam: true,
       amalgamType: registry.zombies.get('amalgam'),
@@ -829,7 +829,7 @@ describe('MobActorMeshes', () => {
       expect(internals.group.visible).toBe(true);
       for (const { id, type } of entries) {
         const state = internals.states.get(id);
-        expect(state).toBeDefined();
+        expect(state, type.id).toBeDefined();
         if (!state) {
           continue;
         }

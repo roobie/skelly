@@ -218,19 +218,12 @@ it('committed shots use the held firearm skill-zero recoil factors', () => {
       },
     };
   };
-  const fixtureBuild = buildRegistry([
-    ...baseFiles,
-    {
-      source: 'firearm-session-fixtures.json',
-      data: {
-        items: [makeFixture('fixture_light_firearm', 1000, 2), makeFixture('fixture_heavy_firearm', 8000, 8)],
-      },
-    },
-  ]);
-  expect(fixtureBuild.issues).toEqual([]);
+  const fixtureRegistry = { ...registry, items: new Map(registry.items) };
+  fixtureRegistry.items.set('fixture_light_firearm', makeFixture('fixture_light_firearm', 1000, 2));
+  fixtureRegistry.items.set('fixture_heavy_firearm', makeFixture('fixture_heavy_firearm', 8000, 8));
 
   const recoilScales = ['fixture_light_firearm', 'fixture_heavy_firearm'].map((type) => {
-    const runtime = session([], undefined, undefined, { registry: fixtureBuild.registry });
+    const runtime = session([], undefined, undefined, { registry: fixtureRegistry });
     const firearm = chargedRifle(runtime.inventory, runtime.queue, runtime.firearms, {
       type,
       magazines: runtime.magazines,
@@ -249,7 +242,7 @@ it('committed shots use the held firearm skill-zero recoil factors', () => {
       sprinting: false,
     });
     expect(didFire).toBe(true);
-    const baseKick = firearmHandlingFor(firearm, fixtureBuild.registry).recoilKickRadians!;
+    const baseKick = firearmHandlingFor(firearm, fixtureRegistry).recoilKickRadians!;
     return runtime.aim.snapshotState().recoilPitch / baseKick;
   });
 
