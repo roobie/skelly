@@ -42,7 +42,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { config, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), firearmShotEvent: (item) => firearmShotEmission(item, firearms.noiseFactorFor(item)).event, fireWeapon: (item, time) => fireWeapon(item, time) } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { config, sim, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), firearmShotEvent: (item) => firearmShotEmission(item, firearms.noiseFactorFor(item)).event, fireWeapon: (item, time) => fireWeapon(item, time) } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
