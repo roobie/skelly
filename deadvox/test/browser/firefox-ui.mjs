@@ -23,7 +23,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, look, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     const startupHintMarker = '    updateStartupHint();';
     assert(exposed.includes(startupHintMarker), 'startup hint observation point exists');
@@ -535,7 +535,7 @@ try {
   assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
   assert.equal(
     await page.evaluate(() => {
-      const settings = globalThis.firefoxUiTest.engine.config.weathering;
+      const settings = globalThis.firefoxUiTest.look.weatheringState.settings;
       return [...document.querySelectorAll('#debug-ui-root input[id^="weathering-"]')].every((input) => {
         const field = input.id.slice('weathering-'.length);
         return input.value === String(settings[field]);
