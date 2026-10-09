@@ -9,7 +9,7 @@ describe('player start from world setup', () => {
     expect(start).toEqual({ position: [24, 12.01, -6], yaw: 1.25 });
   });
 
-  it('uses debug start only for new debug sessions and grounds it on the site', () => {
+  it('keeps debug x/z/yaw starts grounded and limited to fresh debug sessions', () => {
     const scale = makeScale(0.5);
     const setup = {
       spawn: { pos: [4, 7, 9] as [number, number, number], yaw: 0.25 },
@@ -17,12 +17,11 @@ describe('player start from world setup', () => {
     };
     const debugConfig = configFromUrl(new URLSearchParams('debug=1&at=12.5,-7.25,90'));
     const start = playerStartFromWorld(setup, scale, debugConfig.debugStart);
-    expect(start.position).toEqual([
-      12.5 / scale.blockSize,
-      setup.groundAt(12.5, -7.25) / scale.blockSize + 0.01,
-      -7.25 / scale.blockSize,
-    ]);
+    expect(start.position).toEqual([25, setup.groundAt(12.5, -7.25) / scale.blockSize + 0.01, -14.5]);
     expect(start.yaw).toBeCloseTo(Math.PI / 2);
+
+    const noYawConfig = configFromUrl(new URLSearchParams('debug=1&at=12.5,-7.25'));
+    expect(playerStartFromWorld(setup, scale, noYawConfig.debugStart).yaw).toBe(setup.spawn.yaw);
 
     const normalConfig = configFromUrl(new URLSearchParams('at=12.5,-7.25,90'));
     expect(normalConfig.debugStart).toBeUndefined();

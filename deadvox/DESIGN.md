@@ -263,6 +263,8 @@ own:
    entities and item piles. Structures that span chunks are written from the
    region and settlement data, never by looking at neighbouring chunks.
 
+Authored sites need restrained terrain variation so their shaped ground and vegetation do not read as flat platforms with polygon-cut tree borders. `src/core/authoredSite.ts`, `AuthoredSite`, applies seeded simplex texture while fading it out around structures, routes and spawn, varies woodland edges, and sparsely admits young trees on open ground; the authored-site generation tuning stays in base content so layout geometry remains about authored places, not generator settings. The same seed and coordinates determine the result, independent of chunk request order.
+
 **Template format.** ASCII layers in JSON, one layer per block height, with a
 palette mapping characters to blocks, shapes, block entities and loot tags. It
 diffs well, the validator can check it, and it's easy to write by hand for small
@@ -940,7 +942,9 @@ The amalgam reuses `ZombieSystem`'s perception, attention, movement and attack l
 
 For #424, debug-spawned amalgams start beyond their type-scaled attack reach so the preview shows the approach rather than beginning in melee range. The debug placement also uses the realized collision envelope, avoiding spawns embedded in nearby solid geometry. This changes the preview's starting distance, not the amalgam's attack reach or chase pace. See `src/debug/shamblerSpawning.ts`, `spawnZombieType`; `src/bench/shamblerPlacement.ts`, `placeShamblerRing`; and `src/core/zombies.ts`, `zombieAttackReachForType` and `zombieBodyDimensions`.
 
-A surviving amalgam signals its attack by extending a tentacle from its core toward the player through wind-up and strike, then retracting it. Its root starts at a fixed interior point of the posed core, so changing the player's bearing cannot switch attachment between concave lobes; depth occlusion reveals the shaft where it exits the body instead of letting a smoothed anchor cross an empty gap. It uses the renderer's packed pose so flinch and member loss cannot leave a separate anchor behind. The render-only extension is capped by `zombieAttackReachMetres`; it adds no collision, hit region or saved state. See `src/render/amalgamTentaclePose.ts`, `amalgamCoreInteriorAnchor` and `amalgamTentaclePose`, and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
+A surviving amalgam attacks with a tentacle that strikes in a straight line from its core to the player's chest, at any height, within its usual reach; anything solid across the line blocks it. A creature with a long tentacle should be able to reach a player standing above it, on a roof for example, and not only one level with it. The reach stays the same, so height costs distance rather than adding range. Humanoid zombies keep their grab: horizontal reach within a band matching a standing player.
+
+The line starts at a fixed interior point of the core at rest pose, so the simulation's check and the rendered tentacle start in the same place; the render follows the posed core, so the two part only during a hit flinch. A fixed point also keeps a change in the player's bearing from moving the root between the core's lobes. The tentacle extends along the line through wind-up and strike, then retracts, capped by the same reach; it adds no collision, hit region or saved state. See `src/core/zombies.ts`, `withinAttackReach`; `src/core/amalgamFigure.ts`, `amalgamStrikeOrigin`; `src/render/amalgamTentaclePose.ts`, `amalgamTentaclePose`; and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
 
 Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
 sight-driven pursuit an immediate sprint threat, while the crawler uses the body's
@@ -1328,7 +1332,8 @@ decoration.
   you can read it; play stays as diegetic as possible (see INTERFACE.md).
 - **The UI only shows what your character knows.** No enemy markers, no
   minimap of zombies, no threat meter. A rest interruption says what you
-  heard, not what it was.
+  heard, not what it was. The in-game map is a paper map (#470); top-down
+  renders are review tools, not UI.
 - **Aim for full diegesis (BR, 2026-10-03):** "we should _aim_ for full
   diegesis - that's why the HUD is default off, but we can't always with voxel
   graphics". Utilities such as the compass and the wristwatch are items the

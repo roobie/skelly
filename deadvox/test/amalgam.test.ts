@@ -10,6 +10,7 @@ import {
   amalgamCollisionEnvelope,
   amalgamFigure,
   amalgamFigureForType,
+  amalgamStrikeOrigin,
 } from '../src/core/amalgamFigure.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -26,6 +27,7 @@ import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
   activeAmalgamMembers,
   FISTS_MELEE,
+  PLAYER_CHEST_METRES,
   type PlayerSense,
   ZombieSystem,
   zombieAttackReachMetres,
@@ -727,5 +729,90 @@ describe('amalgam body and combat seam', () => {
     expect(activeAmalgamMembers(restored.store.get(id)!).map(({ partId }) => partId)).toEqual(
       activeAmalgamMembers(zombie).map(({ partId }) => partId),
     );
+  });
+});
+
+interface AttackLineCase {
+  readonly typeId: 'amalgam' | 'shambler';
+  /** The line from the attack's origin up to the player's chest: its angle above level ground. */
+  readonly elevation: number;
+  /** That line's length, as a share of the attack's reach. */
+  readonly reachShare: number;
+  /** A solid slab across the whole map, under the player's feet. */
+  readonly roof?: boolean;
+}
+
+/** Places the player at the far end of the line, then ticks once and through one windup. */
+const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLineCase) => {
+  let roofY = Number.NaN;
+  let sense = player();
+  const hits: number[] = [];
+  const simulation = new ZombieSystem({
+    player: () => sense,
+    isSolid: (_x, y) => y === 0 || y === roofY,
+    isOpaque: FLOOR,
+    dayPhase: () => dayStateAtHour(12),
+    blockSize: BLOCK_SIZE,
+    physics: physicsFor(makeScale(0.5)),
+    jumpSpeed: PLAYER.jump,
+    tuning: TEST_SENSE_TUNING,
+    hurtPlayer: (amount) => hits.push(amount),
+  });
+  const feet: Vec3 = [0, 1, 0];
+  const id = simulation.add(registry.zombies.get(typeId)!, feet, [0, 0, 1]);
+  const zombie = simulation.store.get(id)!;
+  const reachMetres = zombieAttackReachMetres(zombie);
+  const offsetMetres =
+    typeId === 'amalgam'
+      ? amalgamStrikeOrigin(amalgamFigureForType(zombie.type, zombie.figureSeed), zombie.facing)
+      : [0, PLAYER_CHEST_METRES, 0];
+  const origin = feet.map((coordinate, axis) => coordinate + offsetMetres[axis]! / BLOCK_SIZE) as Vec3;
+  const line = (reachMetres * reachShare) / BLOCK_SIZE;
+  const chest: Vec3 = [origin[0], origin[1] + line * Math.sin(elevation), origin[2] + line * Math.cos(elevation)];
+  sense = { ...player(), pos: [chest[0], chest[1] - PLAYER_CHEST_METRES / BLOCK_SIZE, chest[2]] };
+  if (roof) {
+    roofY = Math.floor(sense.pos[1]) - 1;
+  }
+  simulation.tick(1 / 60);
+  const started = zombie.attackWindup > 0;
+  for (let tick = 0; tick <= Math.ceil(zombie.type.attack.windupSimSeconds * 60); tick++) {
+    simulation.tick(1 / 60);
+  }
+  return {
+    started,
+    hit: hits.length > 0,
+    reachMetres,
+    riseMetres: (sense.pos[1] - feet[1]) * BLOCK_SIZE,
+    horizontalMetres: Math.hypot(sense.pos[0] - feet[0], sense.pos[2] - feet[2]) * BLOCK_SIZE,
+    roofClearsBody: roof && roofY > feet[1] + zombie.body.height,
+  };
+};
+
+describe('attack line', () => {
+  it('lets an amalgam strike a player higher than a standing player when the straight line is within reach', () => {
+    const strike = attackAlong({ typeId: 'amalgam', elevation: Math.PI / 4, reachShare: 0.9 });
+    expect(strike.riseMetres).toBeGreaterThan(PLAYER.height);
+    expect(strike.started).toBe(true);
+    expect(strike.hit).toBe(true);
+  });
+
+  it('keeps an amalgam from striking when the straight line exceeds reach, though the ground distance is within it', () => {
+    const strike = attackAlong({ typeId: 'amalgam', elevation: Math.acos(0.9 / 1.2), reachShare: 1.2 });
+    expect(strike.horizontalMetres).toBeLessThanOrEqual(strike.reachMetres);
+    expect(strike.started).toBe(false);
+  });
+
+  it('keeps an amalgam from striking through a roof across the line', () => {
+    const strike = attackAlong({ typeId: 'amalgam', elevation: Math.PI / 4, reachShare: 0.9, roof: true });
+    expect(strike.roofClearsBody).toBe(true);
+    expect(strike.started).toBe(false);
+    expect(strike.hit).toBe(false);
+  });
+
+  it('keeps a shambler grab horizontal: it reaches a player a step above, past its straight-line reach', () => {
+    const grab = attackAlong({ typeId: 'shambler', elevation: Math.atan2(0.6, 0.9), reachShare: Math.hypot(0.9, 0.6) });
+    expect(grab.horizontalMetres).toBeLessThanOrEqual(grab.reachMetres);
+    expect(grab.riseMetres).toBeLessThan(PLAYER.height);
+    expect(grab.started).toBe(true);
   });
 });

@@ -3,7 +3,7 @@ import { type Mat3, mulMV, rotX, rotY, transpose } from '@mobgen/core/math.ts';
 import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { describe, expect, it } from 'vitest';
-import { AMALGAM_FIGURE_SEED, amalgamFigure } from '../src/core/amalgamFigure.ts';
+import { AMALGAM_FIGURE_SEED, amalgamFigure, amalgamStrikeOrigin } from '../src/core/amalgamFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from '../src/render/amalgamTentaclePose.ts';
 
@@ -72,7 +72,6 @@ describe('amalgam attack tentacle pose', () => {
         target,
         facing: [0, 0, -1],
         reachMetres,
-        anchorOffsetMetres: 1,
         attackWindupSimSeconds: attackWindup,
         attackWindupDurationSimSeconds: windupSeconds,
         attackWaitSimSeconds: attackWait,
@@ -154,7 +153,6 @@ describe('amalgam attack tentacle pose', () => {
         target,
         facing: [0, 0, -1],
         reachMetres: 4,
-        anchorOffsetMetres: Math.hypot(start[0] - position[0], start[2] - position[2]),
         attackWindupSimSeconds: scenario.attack,
         attackWindupDurationSimSeconds: 0.4,
         attackWaitSimSeconds: 0,
@@ -165,8 +163,33 @@ describe('amalgam attack tentacle pose', () => {
       const anchorInput = { figure, transforms, yaw, position, point: tentacle.start };
       expect(coreVoxelUnionDistance(anchorInput)).toBeLessThanOrEqual(halfVoxelMetres * 1e-6);
       expect(coreVoxelInteriorMargin(anchorInput)).toBeGreaterThan(figure.realized.voxels.size * 1e-6);
-      expect(Math.hypot(tentacle.end[0] - position[0], tentacle.end[2] - position[2])).toBeLessThanOrEqual(4 + 1e-9);
+      expect(
+        Math.hypot(tentacle.end[0] - start[0], tentacle.end[1] - start[1], tentacle.end[2] - start[2]),
+      ).toBeLessThanOrEqual(4 + 1e-9);
     }
+  });
+
+  it('starts the rendered tentacle at rest where the simulation starts its strike line', () => {
+    const figure = amalgamFigure(AMALGAM_FIGURE_SEED, 4);
+    const position: Vec3 = [13, 7, -4];
+    const facing: Vec3 = [Math.sin(0.6), 0, -Math.cos(0.6)];
+    const restPose: Pose = {
+      root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
+      rotations: {},
+    };
+    const rendered = amalgamCoreInteriorAnchor({
+      figure,
+      transforms: boneTransforms(figure.realized.body.bones, restPose),
+      hidden: new Set(),
+      yaw: rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI),
+      position,
+    });
+    const offset = amalgamStrikeOrigin(figure, facing);
+    const simulated: Vec3 = [position[0] + offset[0], position[1] + offset[1], position[2] + offset[2]];
+    expect(Math.hypot(offset[0], offset[2])).toBeGreaterThan(0);
+    expect(Math.hypot(rendered[0] - simulated[0], rendered[1] - simulated[1], rendered[2] - simulated[2])).toBeLessThan(
+      1e-9,
+    );
   });
 
   it('stays retracted when the amalgam has no remaining attack reach', () => {
@@ -175,7 +198,6 @@ describe('amalgam attack tentacle pose', () => {
       target: [1, 0, 0],
       facing: [1, 0, 0],
       reachMetres: 0,
-      anchorOffsetMetres: 1,
       attackWindupSimSeconds: 0.1,
       attackWindupDurationSimSeconds: 0.4,
       attackWaitSimSeconds: 0.3,

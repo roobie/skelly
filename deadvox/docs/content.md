@@ -10,6 +10,7 @@ read_if:
   - you're authoring or changing playtest fixed loot
   - you're authoring base surface materials or procedural pattern tuning
   - you're assigning noise to opening a door
+  - you change site-generation tuning or its content schema
 ---
 
 # Content sections and recipes
@@ -32,6 +33,10 @@ when their contract depends on cross-file merging or references. This avoids
 rechecking unrelated base content while preserving those integration checks;
 see `test/content.test.ts`, `templateBase`, and `test/authoredSite.test.ts`,
 `registry`.
+
+## Site-generation tuning
+
+`siteGeneration` definitions in `src/core/schema.ts` keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into `layouts-playtest.json`. `src/content/base/site-generation.json` supplies the authored-site profile consumed by `src/core/authoredSite.ts`, `AuthoredSite`; tune that profile to balance natural variation against playable structures and routes.
 
 ## Recipe format (Slice 2.2)
 

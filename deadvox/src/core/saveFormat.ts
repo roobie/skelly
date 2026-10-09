@@ -154,7 +154,7 @@ function defaultVersion(): SaveVersionComponents {
     return {
       simulationHash: __DEADVOX_SIMULATION_HASH__,
       schemaVersion: SAVE_SCHEMA_VERSION,
-      generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+      generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
       contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
     };
   } catch (error) {

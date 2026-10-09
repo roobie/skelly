@@ -12,6 +12,13 @@ export interface TerrainBlocks {
   sand: number;
 }
 
+export const terrainBlockIds = (id: (name: string) => number): TerrainBlocks => ({
+  grass: id('grass'),
+  dirt: id('dirt'),
+  stone: id('stone'),
+  sand: id('sand'),
+});
+
 /**
  * Changes to the natural ground, such as flattened lots and roads. Both are pure
  * functions of the column, so any chunk can be generated on its own.
