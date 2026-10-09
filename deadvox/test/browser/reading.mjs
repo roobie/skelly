@@ -689,7 +689,7 @@ try {
     await advanceReading();
     const beforeClose = await readProgress();
     assert.ok(whenOpened.value !== undefined && beforeClose.value !== undefined);
-    assert.ok(beforeClose.value > whenOpened.value);
+    assert.ok(beforeClose.value > whenOpened.value, JSON.stringify({ whenOpened, beforeClose }));
     assert.ok(beforeClose.max !== undefined && beforeClose.max > beforeClose.value);
     assert.ok(beforeClose.elapsed !== undefined && beforeClose.elapsed > 0);
     assert.equal(beforeClose.value, beforeClose.elapsed);
