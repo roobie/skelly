@@ -52,6 +52,7 @@ import {
 } from './designEditor.ts';
 import { buildDesignViewModel } from './designViewModel.ts';
 import { buildDetachedMagazine } from './magazineView.ts';
+import { previewFittedAttachments } from '../gun/attachmentPreview.ts';
 import {
   buildPanelModel,
   clearParam,
@@ -104,6 +105,7 @@ const view = $<HTMLElement>('view');
 const select = $<HTMLSelectElement>('fixture');
 const fileInput = $<HTMLInputElement>('file');
 const description = $<HTMLParagraphElement>('description');
+const fitNotice = $<HTMLParagraphElement>('fit-notice');
 const designInfo = $<HTMLElement>('design-info');
 const status = $<HTMLDivElement>('status');
 const issueList = $<HTMLOListElement>('issues');
@@ -166,6 +168,9 @@ const syncUrl = () => {
   }
   if (hasOverrides(uiState.overrides)) {
     params.set('set', serializeOverrides(uiState.overrides));
+  }
+  for (const fittedAttachment of initialQuery.getAll('fit')) {
+    params.append('fit', fittedAttachment);
   }
   if (colorMode === 'role') {
     params.set('colors', 'role');
@@ -385,8 +390,12 @@ const redraw = () => {
   }
   const action = resolveGunAction(report.resolved);
   const contextTemplate = editorState?.template ?? activeTemplate;
+  const preview = previewFittedAttachments(report, initialQuery.getAll('fit'));
+  fitNotice.textContent = preview.ok ? '' : preview.message;
+  fitNotice.hidden = preview.ok;
+  const renderReport = preview.ok ? preview.report : report;
   layers = buildLayers(
-    report,
+    renderReport,
     focused ? [focused] : report.issues,
     colorMode,
     {

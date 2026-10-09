@@ -83,6 +83,21 @@ export const ATTACHMENT_IDS = [
   'foregrip',
 ] as const;
 
+export const attachmentInstanceForId = (
+  id: string,
+): { readonly family: string; readonly params: Readonly<Record<string, string>> } => {
+  if (!ATTACHMENT_IDS.includes(id as (typeof ATTACHMENT_IDS)[number])) {
+    throw new Error(`Unknown attachment id: ${id}`);
+  }
+  if (id.startsWith('optic-')) {
+    return { family: 'sight', params: { type: id.slice('optic-'.length) } };
+  }
+  if (id === 'real-suppressor' || id === 'improvised-suppressor') {
+    return { family: 'suppressor', params: { type: id } };
+  }
+  return { family: id, params: {} };
+};
+
 const MOUNT_SET = new Set<MountKind>(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']);
 
 export const attachmentMountSlot = (resolved: Resolved, partId: string, mount: MountKind): string | undefined => {
