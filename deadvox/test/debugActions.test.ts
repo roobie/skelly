@@ -181,10 +181,17 @@ const makeActions = (
       throw new Error('not exercised');
     },
   };
+  let reviewMapOpen = false;
   let spectatorCamera = false;
   let perceptionLabels = false;
   const hooks = {
     sim,
+    reviewMap: {
+      isOpen: () => reviewMapOpen,
+      toggle: () => {
+        reviewMapOpen = !reviewMapOpen;
+      },
+    },
     spectatorCamera: {
       enabled: () => spectatorCamera,
       toggle: () => {
