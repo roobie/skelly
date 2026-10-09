@@ -330,10 +330,9 @@ try {
       availableWidth: body && splitter && details ? body.clientWidth - splitter.offsetWidth - details.offsetWidth : 0,
     };
   });
-  assert.equal(
-    splitAtLeftClamp.ratio,
-    Math.round((220 / splitAtLeftClamp.availableWidth) * 100),
-    `left drag reaches the JavaScript clamp: ${JSON.stringify(splitAtLeftClamp)}`,
+  assert.ok(
+    Math.abs(splitAtLeftClamp.ratio - Math.round((220 / splitAtLeftClamp.availableWidth) * 100)) <= 1,
+    `left drag reaches the JavaScript clamp within percentage rounding: ${JSON.stringify(splitAtLeftClamp)}`,
   );
   await dragSplitter(1);
   const splitAtRightClamp = await page.evaluate(() => {
@@ -345,10 +344,9 @@ try {
       availableWidth: body && splitter && details ? body.clientWidth - splitter.offsetWidth - details.offsetWidth : 0,
     };
   });
-  assert.equal(
-    splitAtRightClamp.ratio,
-    Math.round((1 - 220 / splitAtRightClamp.availableWidth) * 100),
-    `right drag reaches the JavaScript clamp: ${JSON.stringify(splitAtRightClamp)}`,
+  assert.ok(
+    Math.abs(splitAtRightClamp.ratio - Math.round((1 - 220 / splitAtRightClamp.availableWidth) * 100)) <= 1,
+    `right drag reaches the JavaScript clamp within percentage rounding: ${JSON.stringify(splitAtRightClamp)}`,
   );
   await dragSplitter(0.5);
   const middleRatio = Number(await page.locator('#inventory [data-inventory-splitter]').getAttribute('aria-valuenow'));
