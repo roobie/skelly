@@ -310,14 +310,26 @@ try {
       if (!(body && splitter)) {
         throw new Error('Items pane divider is missing');
       }
+      const details = body.querySelector('[data-pane="details"]');
+      if (!details) {
+        throw new Error('Items details pane is missing');
+      }
       const bodyBox = body.getBoundingClientRect();
       const dividerBox = splitter.getBoundingClientRect();
-      return { body: bodyBox.toJSON(), divider: dividerBox.toJSON() };
+      const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
+      const availableWidth = tracks[0] + tracks[3];
+      return {
+        body: bodyBox.toJSON(),
+        divider: dividerBox.toJSON(),
+        ratio: tracks[0] / availableWidth,
+        availableWidth,
+      };
     });
     const y = geometry.divider.y + geometry.divider.height / 2;
-    await page.mouse.move(geometry.divider.x + geometry.divider.width / 2, y);
+    const startX = geometry.divider.x + geometry.divider.width / 2;
+    await page.mouse.move(startX, y);
     await page.mouse.down();
-    await page.mouse.move(geometry.body.x + geometry.body.width * fraction, y);
+    await page.mouse.move(startX + (fraction - geometry.ratio) * geometry.availableWidth, y);
     await page.mouse.up();
   };
   await dragSplitter(0);
