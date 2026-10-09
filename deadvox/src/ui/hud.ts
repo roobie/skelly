@@ -3,6 +3,7 @@
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Inventory, Location } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
+import type { LongJob } from '../core/longAction.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { Quickbar } from '../game/quickbar.ts';
 
@@ -124,6 +125,39 @@ export interface HandlingPresentationSource {
   readonly cancelLabel?: string;
   readonly movementLabel?: string;
 }
+
+export const handlingPresentationFor = (
+  job: Readonly<LongJob> | undefined,
+  queue: HandlingPresentationSource,
+  inventory?: Inventory,
+  throwCharge?: HandlingPresentationSource['throwCharge'],
+): HandlingPresentationSource => {
+  if (throwCharge) {
+    return { jobs: [], throwCharge };
+  }
+  if (job?.jobType === 'reading') {
+    const book = inventory?.itemByUid(job.bookUid);
+    return {
+      jobs: [
+        {
+          label: book && inventory ? `Reading ${inventory.name(book)}` : 'Reading',
+          duration: job.duration,
+          elapsed: job.elapsed,
+        },
+      ],
+      cancelLabel: 'X cancels',
+      movementLabel: '',
+    };
+  }
+  if (job?.jobType === 'pry' && !job.stopped) {
+    return {
+      jobs: [{ label: 'Prying padlock', duration: job.duration, elapsed: job.elapsed }],
+      cancelLabel: 'X pauses',
+      movementLabel: '',
+    };
+  }
+  return queue;
+};
 
 /** The current move and the next one, while the inventory is closed. */
 export const handlingViewModel = (queue: HandlingPresentationSource): HandlingViewModel => {

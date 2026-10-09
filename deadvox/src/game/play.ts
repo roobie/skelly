@@ -16,7 +16,7 @@ import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import type { LongJob, RestKind } from '../core/longAction.ts';
+import type { RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
@@ -33,7 +33,7 @@ import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
-import { type HandlingPresentationSource, quickbarKey, renderQuickbar } from '../ui/hud.ts';
+import { handlingPresentationFor, quickbarKey, renderQuickbar } from '../ui/hud.ts';
 import {
   type HudOptionsState,
   hudVisibility,
@@ -241,24 +241,6 @@ const createInputReplayDriver = (
   player: InputReplayPlayer | undefined,
   ports: Omit<InputReplayDriverPorts, 'player'>,
 ): InputReplayDriver | undefined => (player ? new InputReplayDriver({ ...ports, player }) : undefined);
-
-const handlingPresentationFor = (
-  job: Readonly<LongJob> | undefined,
-  queue: HandlingPresentationSource,
-  throwCharge?: HandlingPresentationSource['throwCharge'],
-): HandlingPresentationSource => {
-  if (throwCharge) {
-    return { jobs: [], throwCharge };
-  }
-  if (job?.jobType === 'pry' && !job.stopped) {
-    return {
-      jobs: [{ label: 'Prying padlock', duration: job.duration, elapsed: job.elapsed }],
-      cancelLabel: 'X pauses',
-      movementLabel: '',
-    };
-  }
-  return queue;
-};
 
 const createPlayRefusalPresenter = (
   registry: Engine['registry'],
@@ -2868,6 +2850,7 @@ export const startPlay = (
       handlingPresentationFor(
         sim.actions.job,
         queue,
+        inventory,
         itemThrowStartedAt === undefined
           ? undefined
           : {

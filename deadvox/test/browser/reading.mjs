@@ -174,6 +174,15 @@ try {
       await uiClick(interactionCheckbox);
     }
     assert.equal(await interactionCheckbox.isChecked(), true);
+    const handlingOption = await page.evaluate(
+      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('handling'))",
+    );
+    assert.ok(handlingOption >= 0);
+    const handlingCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(handlingOption);
+    if (!(await handlingCheckbox.isChecked())) {
+      await uiClick(handlingCheckbox);
+    }
+    assert.equal(await handlingCheckbox.isChecked(), true);
     await pressAction(page, 'ui.main-menu-toggle');
     const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
     await pressAction(page, 'player.crouch-toggle');
@@ -629,6 +638,36 @@ try {
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
     assert.equal(await previousFocus.evaluate((element) => element === document.activeElement), true);
     await previousFocus.dispose();
+    const readingBook = await page.evaluate(() => {
+      const { session } = globalThis.readingWitness;
+      const bookDefinition = [...session.inventory.registry.items.entries()].find(([, definition]) => definition.book);
+      if (!bookDefinition) {
+        throw new Error('No book definition is available for the reading HUD fixture');
+      }
+      const book = session.inventory.create(bookDefinition[0]);
+      if (!session.inventory.add(book, { kind: 'hand', side: 'left' })) {
+        throw new Error('Could not place the reading fixture in a free hand');
+      }
+      const refusal = session.sim.actions.beginReading(book.uid);
+      if (refusal) {
+        throw new Error(`Could not start the reading fixture: ${refusal}`);
+      }
+      return { uid: book.uid, name: session.inventory.name(book) };
+    });
+    await page.waitForFunction(
+      (name) =>
+        !document.querySelector('#handling').hidden &&
+        document.querySelector('#handling').textContent.includes(`Reading ${name}`),
+      readingBook.name,
+    );
+    assert.match(await page.locator('#handling').innerText(), /X cancels/);
+    assert.equal(
+      await page.evaluate((uid) => globalThis.readingWitness.session.sim.actions.job?.bookUid === uid, readingBook.uid),
+      true,
+    );
+    await pressAction(page, 'handling.stop');
+    await page.waitForFunction(() => globalThis.readingWitness.session.sim.actions.job?.stopped === true);
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
     await page.evaluate(() => {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;
