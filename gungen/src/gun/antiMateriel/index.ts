@@ -1,7 +1,7 @@
 // The anti-materiel vocabulary (docs/anti-materiel.md): families and rules. parts.ts and domain.ts each
 // register these with one line, so the rest of the work stays in this folder.
 
-import type { PartFamily, Rule } from '../../core/schema.ts';
+import type { PartFamily, Rule } from '@skelly/engine/core/schema.ts';
 import { barrelShroud } from './barrelShroud.ts';
 import { bipod } from './bipod.ts';
 import { handleBar, handleStrut, handleTrunnion } from './carryHandle.ts';

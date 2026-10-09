@@ -21,6 +21,7 @@
     "mesh-stats": "node src/cli/mesh-stats.ts"
   },
   "dependencies": {
+    "@skelly/engine": "file:../engine",
     "three": "^0.186.0"
   },
   "devDependencies": {

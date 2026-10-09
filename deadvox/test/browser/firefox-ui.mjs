@@ -6,7 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
-import { dispatchMenuPointerMove } from './menu-pointer.mjs';
+import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 
@@ -535,7 +535,17 @@ try {
     ),
   );
   assert.ok(alternateProfileId, 'a second weathering profile exists for profile-switch coverage');
-  await weatheringGroup.locator('#weathering-profile').selectOption(alternateProfileId);
+  // Choose from the game's combo box with a real press, as a player does under pointer lock. The drawn cursor
+  // can't reach below the fold, so the field is scrolled into view first.
+  await weatheringGroup.locator('#weathering-profile').scrollIntoViewIfNeeded();
+  await pressWithDrawnCursor(page, '#weathering-profile');
+  const alternateOptionId = await page.evaluate((profileId) => {
+    const field = document.querySelector('#weathering-profile');
+    const list = document.getElementById(field.getAttribute('aria-controls'));
+    return [...list.querySelectorAll('[role="option"]')].find((option) => option.textContent === profileId)?.id;
+  }, alternateProfileId);
+  assert.ok(alternateOptionId, 'the weathering combo box lists the alternate profile');
+  await pressWithDrawnCursor(page, `#${alternateOptionId}`);
   const strengthSlider = weatheringGroup.locator('#weathering-strength');
   const sliderNext = await strengthSlider.evaluate((input) => {
     input.value = String(Number(input.value) + Number(input.step));
@@ -550,7 +560,9 @@ try {
       const {
         weatheringState: { settings },
       } = globalThis.firefoxUiLook;
-      return [...document.querySelectorAll('#debug-ui-root input[id^="weathering-"]')].every((input) => {
+      // The profile combo box names the profile; the other inputs edit its settings.
+      const settingInputs = '#debug-ui-root input[id^="weathering-"]:not([role="combobox"])';
+      return [...document.querySelectorAll(settingInputs)].every((input) => {
         const field = input.id.slice('weathering-'.length);
         return input.value === String(settings[field]);
       });

@@ -7,6 +7,10 @@
     {
       "source": "deadvox/src/content/base/locks.jsonnet",
       "output": "deadvox/src/content/base/locks.json"
+    },
+    {
+      "source": "site/playtest.jsonnet",
+      "output": "site/playtest.json"
     }
   ]
 }

@@ -1,8 +1,8 @@
+import { applyPoint, invert } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Box, Solid } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { applyPoint, invert } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Box, Solid } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { loadCorpus, loadDesigns, loadFixture } from './helpers.ts';

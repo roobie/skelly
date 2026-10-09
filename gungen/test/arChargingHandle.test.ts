@@ -1,6 +1,6 @@
+import { penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
 import { describe, expect, it } from 'vitest';
-import { penetrationWorld, worldSolid } from '../src/core/geometry.ts';
-import { resolve } from '../src/core/resolve.ts';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixture } from './helpers.ts';

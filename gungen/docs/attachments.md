@@ -55,7 +55,7 @@ pinned assertions.
 An attachment's appearance belongs to its part instance, not the firearm it is
 fitted to. An item is its own instance, so its colour must not change with its
 host; two instances of the same attachment may carry unrelated finishes. See
-`src/gun/attachments.ts`, `attachmentInstanceForId`, and `src/core/glb.ts`,
+`src/gun/attachments.ts`, `attachmentInstanceForId`, and `engine/src/core/glb.ts`,
 `exportGlb`.
 
 ## Viewer previews

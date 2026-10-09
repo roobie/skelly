@@ -7,7 +7,7 @@ import { compileJsonnetFile, REPOSITORY_ROOT } from './index.mjs';
 
 const BIOME_EXECUTABLE = resolve(REPOSITORY_ROOT, 'node_modules/@biomejs/biome/bin/biome');
 const OUTPUT_MANIFEST = resolve(REPOSITORY_ROOT, 'tools/jsonnet/outputs.json');
-const SOURCE_ROOTS = ['deadvox/maps', 'deadvox/src/content/base', 'gungen/cartridges', 'gungen/designs'];
+const SOURCE_ROOTS = ['deadvox/maps', 'deadvox/src/content/base', 'gungen/cartridges', 'gungen/designs', 'site'];
 
 function jsonnetFiles(directory) {
   if (!existsSync(directory)) {

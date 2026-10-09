@@ -6,7 +6,7 @@ read_if:
   - you're changing player-facing prompts, feedback, or HUD language
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
   - you're changing how playtesters hand back metrics or replays
-  - you're changing UI layer order or overlay stacking
+  - you're changing UI layer order, overlay stacking, or in-game choice controls such as the combo box
   - you're changing the inventory layout
 tags: [deadvox, design, ui, ux, diegesis, hud]
 created: 2026-09-27
@@ -275,6 +275,8 @@ keeps its progress. See `src/ui/reading.ts`, `ReadingProgress` and `mountReading
 ## UI layers
 
 UI layers come from ordered custom properties in `src/ui/style.css`, `:root`; inline styles use the same tokens. The drag ghost stays above the inventory and crafting panels. `#game-cursor-root` tops ordinary layers because it is the only pointer while pointer lock is held with a menu, inventory or page open; `src/ui/menuPointer.ts`, `mountMenuPointer`, forwards clicks at its position, so a higher layer would hide where the player points. The startup screen is a boot curtain, and the debug review map (`src/game/play.ts`, `toggleReviewMap`) may cover the cursor because neither uses it: play takes pointer lock after startup, and opening the map unlocks input.
+
+In-game choices use the game's own combo box (`src/ui/comboBox.ts`, `comboBox`), not a native select: a native picker takes focus from the page, and play pauses on blur. Its list is fixed to the viewport so a scrolling panel can't clip it, stays in its host panel's layer under the drawn cursor, and flips above the field when there is more room there. Closing the list blurs the field, because under pointer lock no click moves focus and a focused field would keep taking the game's letter keys. While the field has focus in the inventory, keys that type stay in its filter and the inventory's other toggle and tab keys still reach the game, so the inventory stays closable while the player types; see `src/game/inputBindings.ts`, `KeyboardInput`. A native select may remain only where play isn't running, such as the dominant-hand choice on the title card.
 
 ## Where the current interface stands
 

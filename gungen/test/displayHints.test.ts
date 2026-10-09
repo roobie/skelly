@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { exportGlb, partNodeName } from '@skelly/engine/core/glb.ts';
+import { meshForSolid } from '@skelly/engine/core/mesh.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Domain } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import { exportGlb, partNodeName } from '../src/core/glb.ts';
-import { meshForSolid } from '../src/core/mesh.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Domain } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_PALETTE } from '../src/gun/palette.ts';

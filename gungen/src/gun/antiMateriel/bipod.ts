@@ -1,6 +1,6 @@
-import type { SizeClass } from '../../core/conventions.ts';
-import { boxFromMinMax } from '../../core/geometry.ts';
-import type { KeepOut, PartDef, PartFamily, Solid } from '../../core/schema.ts';
+import type { SizeClass } from '@skelly/engine/core/conventions.ts';
+import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
+import type { KeepOut, PartDef, PartFamily, Solid } from '@skelly/engine/core/schema.ts';
 import { box, choice, cls, sizeParam, X, Y } from './common.ts';
 
 /**

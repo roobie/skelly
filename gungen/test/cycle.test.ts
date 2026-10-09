@@ -1,7 +1,7 @@
+import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
+import { compose, scale, sub, translation } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
 import { describe, expect, it } from 'vitest';
-import { localSolidBounds } from '../src/core/geometry.ts';
-import { compose, scale, sub, translation } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
 import {
   ACTION_CYCLE_PROFILES,
   cycleMotion,

@@ -1,8 +1,8 @@
+import { worldBox } from '@skelly/engine/core/geometry.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { ParamChoice } from '@skelly/engine/core/template.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { worldBox } from '../src/core/geometry.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { ParamChoice } from '../src/core/template.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';

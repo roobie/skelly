@@ -1,4 +1,4 @@
-import type { PrefabReference } from '../core/schema.ts';
+import type { PrefabReference } from '@skelly/engine/core/schema.ts';
 
 /** A curated, versioned family instance. Game properties are deliberately deferred to gungen.2. */
 export interface PrefabCatalogueEntry extends PrefabReference {

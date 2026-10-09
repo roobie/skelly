@@ -1,8 +1,8 @@
+import type { Vec3 } from '@skelly/engine/core/math.ts';
+import type { Solid } from '@skelly/engine/core/schema.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import { type Column, layoutColumn, polylineLength } from '../ammo/magazineColumn.ts';
 import { roundProfiles } from '../ammo/roundProfile.ts';
-import type { Vec3 } from '../core/math.ts';
-import type { Solid } from '../core/schema.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
 import { magazineCenterline } from './magazineCenterline.ts';
 

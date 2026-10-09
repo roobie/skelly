@@ -1,9 +1,9 @@
+import { GRID } from '@skelly/engine/core/conventions.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Solid } from '@skelly/engine/core/schema.ts';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { roundProfiles } from '../src/ammo/roundProfile.ts';
-import { GRID } from '../src/core/conventions.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import { magazineCenterline } from '../src/gun/magazineCenterline.ts';

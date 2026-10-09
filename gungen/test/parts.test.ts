@@ -1,10 +1,10 @@
+import { GRID } from '@skelly/engine/core/conventions.ts';
+import { localSolidBounds, validateExtrudedPolygon } from '@skelly/engine/core/geometry.ts';
+import { cross, dot, length } from '@skelly/engine/core/math.ts';
+import { meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
+import type { PartFamily } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { GRID } from '../src/core/conventions.ts';
-import { localSolidBounds, validateExtrudedPolygon } from '../src/core/geometry.ts';
-import { cross, dot, length } from '../src/core/math.ts';
-import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
-import type { PartFamily } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import {
   BOLT_CARRIER_RUNNING_CLEARANCE_U,

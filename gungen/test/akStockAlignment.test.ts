@@ -1,9 +1,9 @@
+import type { SizeClass } from '@skelly/engine/core/conventions.ts';
+import { boundsOfPoints, obbPolyhedron, worldSolid } from '@skelly/engine/core/geometry.ts';
+import { applyPoint, type Transform, type Vec3 } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { PortDef, Solid } from '@skelly/engine/core/schema.ts';
 import { describe, expect, it } from 'vitest';
-import type { SizeClass } from '../src/core/conventions.ts';
-import { boundsOfPoints, obbPolyhedron, worldSolid } from '../src/core/geometry.ts';
-import { applyPoint, type Transform, type Vec3 } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { PortDef, Solid } from '../src/core/schema.ts';
 import { AK_PROPORTIONS } from '../src/gun/akProportions.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';

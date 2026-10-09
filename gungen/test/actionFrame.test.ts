@@ -1,5 +1,5 @@
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { validate } from '../src/core/validate.ts';
 import {
   type ActionFrame,
   AR_FRAME_RANKS,

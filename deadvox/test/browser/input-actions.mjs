@@ -33,7 +33,7 @@ export const holdAction = async (page, id, { includeGate = true } = {}) => {
     throw error;
   }
   let released = false;
-  return async () => {
+  const release = async () => {
     if (released) {
       return;
     }
@@ -42,6 +42,9 @@ export const holdAction = async (page, id, { includeGate = true } = {}) => {
       await page.keyboard.up(code);
     }
   };
+  // waitForSimulation dispatches these in the page when the hold is its stop; see simulation-wait.mjs.
+  release.keyUps = pressed.toReversed().map((code) => ({ code, key: cdpKey(code).key }));
+  return release;
 };
 export const pressAction = async (page, id, options) => {
   const release = await holdAction(page, id, options);

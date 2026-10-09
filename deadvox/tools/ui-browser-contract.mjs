@@ -13,6 +13,7 @@ import { cdpKey, pressCdpAction } from '../test/browser/input-actions.mjs';
 import {
   dispatchMenuPointerClickExpression,
   dispatchMenuPointerMoveExpression,
+  pressWithDrawnCursor,
 } from '../test/browser/menu-pointer.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
 
@@ -970,6 +971,71 @@ try {
   assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives handling completion');
   await press('Tab', 'Tab', 9);
 
+  // In-game choices use the game's own combo box: a native picker takes focus from the page, and play
+  // pauses on blur. Choose a weathering profile in the debug panel with the drawn cursor while play runs.
+  await action('debug.panel-toggle');
+  await evaluate('window.__setPointerLocked(true)');
+  await waitFor(() => evaluate("!document.querySelector('#game-cursor').hidden"), 'menu cursor over the debug panel');
+  cursor = await evaluate(`(() => {
+    const node = document.querySelector('#game-cursor');
+    const rect = node.getBoundingClientRect();
+    return { x: rect.left + (node.classList.contains('hand') ? 4 : 0), y: rect.top };
+  })()`);
+  const weatheringHeader = '.debug-group[data-group="weathering"] .debug-group-header';
+  if ((await evaluate(`document.querySelector('${weatheringHeader}').getAttribute('aria-expanded')`)) !== 'true') {
+    await clickAt(weatheringHeader);
+  }
+  const pointerExitsBeforeChoice = await evaluate(`(() => {
+    window.__windowBlurs = 0;
+    addEventListener('blur', () => { window.__windowBlurs += 1; });
+    document.querySelector('#weathering-profile').scrollIntoView({ block: 'center' });
+    return window.__pointerCalls.exit;
+  })()`);
+  await pressWithDrawnCursor(page, '#weathering-profile');
+  const openedProfiles = await evaluate(`(() => {
+    const field = document.querySelector('#weathering-profile');
+    const list = document.getElementById(field.getAttribute('aria-controls'));
+    const other = [...list.querySelectorAll('[role="option"]')].find((option) => option.textContent !== field.value);
+    return {
+      expanded: field.getAttribute('aria-expanded'),
+      focused: document.activeElement === field,
+      other: other ? { id: other.id, label: other.textContent } : undefined,
+    };
+  })()`);
+  assert.deepEqual(
+    { expanded: openedProfiles.expanded, focused: openedProfiles.focused },
+    { expanded: 'true', focused: true },
+    'a drawn-cursor click opens the weathering combo box with focus kept in the page',
+  );
+  assert.ok(openedProfiles.other, 'the weathering combo box offers another profile to choose');
+  await pressWithDrawnCursor(page, `#${openedProfiles.other.id}`);
+  await delay(300);
+  assert.deepEqual(
+    await evaluate(`(() => ({
+      shown: document.querySelector('#weathering-profile').value,
+      expanded: document.querySelector('#weathering-profile').getAttribute('aria-expanded'),
+      overlayHidden: document.querySelector('#overlay').hidden,
+      locked: document.pointerLockElement === window.__inputSurface,
+      windowBlurs: window.__windowBlurs,
+      pointerExits: window.__pointerCalls.exit,
+    }))()`),
+    {
+      shown: openedProfiles.other.label,
+      expanded: 'false',
+      overlayHidden: true,
+      locked: true,
+      windowBlurs: 0,
+      pointerExits: pointerExitsBeforeChoice,
+    },
+    'choosing with the drawn cursor applies the profile without a blur, an unlock or the pause card',
+  );
+  assert.doesNotMatch(
+    await evaluate("document.querySelector('#hud').textContent"),
+    /paused/,
+    'play keeps running through the combo box choice',
+  );
+  await action('debug.panel-toggle');
+
   // With a menu open and pointer locked, move the drawn cursor, dispatch a click to its target,
   // and verify both a button handler and input focus receive the forwarded click.
   await action('debug.spawn-menu-toggle');
@@ -1101,7 +1167,7 @@ try {
     'UI contract remains independent of WebGL rendering',
   );
   process.stdout.write(
-    'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, spawn count, V status, audio volume persistence, unlock, menu/browser keys, inventory stats.\n',
+    'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, combo box choice without blur, spawn count, V status, audio volume persistence, unlock, menu/browser keys, inventory stats.\n',
   );
 } catch (error) {
   if (viteDiagnostics.state !== 'listening') {

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { Character, type HandedCharacter } from '../src/core/character.ts';
 import type { ItemDef, ModelDef, Registry } from '../src/core/content.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -22,7 +23,7 @@ if (issues.length > 0) {
   throw new Error(`Fixture content is invalid: ${JSON.stringify(issues)}`);
 }
 
-const makeFixture = () => {
+const makeFixture = (character?: HandedCharacter) => {
   const registry: Registry = {
     ...baseRegistry,
     items: new Map(baseRegistry.items),
@@ -35,7 +36,7 @@ const makeFixture = () => {
     const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
     return attachmentModel?.attachment?.kind === 'foregrip';
   })!.id;
-  const inventory = new Inventory(registry);
+  const inventory = new Inventory(registry, undefined, undefined, character);
   const firearm = inventory.create(firearmType);
   const foregrip = inventory.create(attachmentType);
   const withModel = (change: (model: ModelDef) => ModelDef): void => {
@@ -51,6 +52,33 @@ const bottomRailSlots = (model: ModelDef): string[] =>
     .slice(0, 2);
 
 const pair = (a: Choice, b: Choice): Pair => [b, a];
+
+/** A firearm in hand or on the ground with a certified free bottom-rail slot, and a foregrip on the ground. */
+const handlingFixture = (location: 'hand' | 'pile', character?: HandedCharacter) => {
+  const fixture = makeFixture(character);
+  const slot = bottomRailSlots(fixture.model)[0]!;
+  const defaultSlot = fixture.model.attachments![0]!.mountedAt;
+  fixture.withModel((model) => ({
+    ...model,
+    compatibility: { ...model.compatibility, [slot]: ['foregrip'] },
+    compatibilityPairs: [pair([slot, 'foregrip'], [defaultSlot, fixture.model.attachments![0]!.id])],
+  }));
+  const queue = new HandlingQueue(fixture.inventory);
+  const handling = new FirearmAttachmentHandling(fixture.inventory, queue, () => [0, 0, 0]);
+  const firearmTarget =
+    location === 'hand'
+      ? { kind: 'hand' as const, side: 'right' as const }
+      : { kind: 'pile' as const, pos: [0, 0, 0] as [number, number, number] };
+  if (
+    !(
+      fixture.inventory.add(fixture.firearm, firearmTarget) &&
+      fixture.inventory.add(fixture.foregrip, { kind: 'pile', pos: [0, 0, 0] })
+    )
+  ) {
+    throw new Error('Fixture items could not be placed for handling');
+  }
+  return { ...fixture, slot, queue, handling };
+};
 const SINGLE_FIT_DENIED = /does not certify foregrip/;
 const PAIR_FIT_DENIED = /combined attachment fit/;
 const NOTCH_FIT_DENIED = /does not fit the exported notches/;
@@ -145,28 +173,7 @@ describe('certified firearm fitting', () => {
 
   it('fits and removes by handling when the firearm is held or on the ground', () => {
     for (const location of ['hand', 'pile'] as const) {
-      const fixture = makeFixture();
-      const slot = bottomRailSlots(fixture.model)[0]!;
-      const defaultSlot = fixture.model.attachments![0]!.mountedAt;
-      fixture.withModel((model) => ({
-        ...model,
-        compatibility: { ...model.compatibility, [slot]: ['foregrip'] },
-        compatibilityPairs: [pair([slot, 'foregrip'], [defaultSlot, fixture.model.attachments![0]!.id])],
-      }));
-      const queue = new HandlingQueue(fixture.inventory);
-      const handling = new FirearmAttachmentHandling(fixture.inventory, queue, () => [0, 0, 0]);
-      const firearmTarget =
-        location === 'hand'
-          ? { kind: 'hand' as const, side: 'right' as const }
-          : { kind: 'pile' as const, pos: [0, 0, 0] as [number, number, number] };
-      if (
-        !(
-          fixture.inventory.add(fixture.firearm, firearmTarget) &&
-          fixture.inventory.add(fixture.foregrip, { kind: 'pile', pos: [0, 0, 0] })
-        )
-      ) {
-        throw new Error('Fixture items could not be placed for handling');
-      }
+      const { slot, queue, handling, ...fixture } = handlingFixture(location);
 
       expect(handling.fit(fixture.firearm.uid, slot, fixture.foregrip.uid)).toBeUndefined();
       expect(fixture.firearm.slots?.[slot]).toBeUndefined();
@@ -178,6 +185,32 @@ describe('certified firearm fitting', () => {
       expect(fixture.firearm.slots?.[slot]).toBeUndefined();
       expect(fixture.inventory.locate(fixture.foregrip)?.kind).toBe('pile');
     }
+  });
+
+  it('times attachment fitting and removal by Firearms Combat, not Inventory Management', () => {
+    const durations = (firearmsCombat: number, inventoryManagement: number) => {
+      const character = new Character(baseRegistry);
+      character.skills.firearms_combat = firearmsCombat;
+      character.skills.inventory_management = inventoryManagement;
+      const { firearm, foregrip, slot, queue, handling } = handlingFixture('hand', character);
+      const fitRefusal = handling.fit(firearm.uid, slot, foregrip.uid);
+      if (fitRefusal) {
+        throw new Error(fitRefusal);
+      }
+      const fit = queue.jobs[0]!.duration;
+      queue.tick(fit);
+      const removeRefusal = handling.remove(firearm.uid, slot);
+      if (removeRefusal) {
+        throw new Error(removeRefusal);
+      }
+      return { fit, remove: queue.jobs[0]!.duration };
+    };
+    const untrained = durations(0, 0);
+    const trained = durations(10, 0);
+
+    expect(trained.fit).toBeLessThan(untrained.fit);
+    expect(trained.remove).toBeLessThan(untrained.remove);
+    expect(durations(0, 10)).toEqual(untrained);
   });
 
   it('keeps an unconfigured variable-power optic out of fitting', () => {

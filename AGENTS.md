@@ -63,7 +63,7 @@ a comment or a PR:
 
 - Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
   no lists, tables or values copied from code. A cited path is relative to the repo
-  root, the doc's subproject root (`deadvox/`, `gungen/`, `mobgen/`) when relevant,
+  root, the doc's subproject root (`deadvox/`, `engine/`, `gungen/`, `mobgen/`) when relevant,
   or the doc itself.
 - A "when" names its trigger: an item ID or an issue. No "today", "currently" or
   "newly". When your PR completes an item, resolve every doc line that names it.
@@ -87,19 +87,21 @@ a comment or a PR:
 
 ## Work item IDs
 
-Every coordinated work item (agent mail `X-Item`, branch, PR) has an ID:
+Mint every new feature, round and review ID with `agent-work mint` (for example,
+`agent-work mint d`, `agent-work mint d137` or `agent-work mint cr-d137-22`); never choose
+one by hand. Mint checks the tracker and `.agent-mail/scratch/` to prevent collisions from
+overwriting briefs and misrouting mail.
 
-- **Feature:** `<subproject><number>`, one feature that becomes one PR on one branch.
-  Subprojects: `g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide or docs. Numbers
-  count up per subproject. New work always gets a new number, even when it grows
-  out of another feature. PR titles end with it, e.g. "(g26)".
-- **Round:** each dispatched piece of work on a feature is a round, and the round
-  is the mail item: `g26-1`, `g26-2`, … The first round is always `-1`; BR's
-  feedback, review fixes or a main merge start the next one.
-- **Review:** `cr-` plus the exact round reviewed: `cr-g26-1`, `cr-g26-2`. Fixes
-  after a review are the next round, so each review has one target.
-
-IDs from before 2026-10-02 used letter suffixes (`g25b`, `g29c`) and keep them.
+- **Feature:** `<subproject><number>` (`g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide
+  or docs), one PR on one branch; engine work uses the `g` prefix because gungen is the
+  engine's only consumer. Numbers count up per subproject; new work always gets a new
+  number, even when it grows out of another feature. PR titles end with the feature ID,
+  e.g. `(g26)`.
+- **Round:** each dispatched piece of work on a feature is a round and its mail item
+  (`g26-1`, `g26-2`, …). The first round is `-1`; BR's feedback, review fixes or a
+  main merge start the next round.
+- **Review:** `cr-` plus the exact round reviewed; fixes after a review are the next round,
+  so each review has one target. Existing letter-suffix IDs remain unchanged.
 
 ## Git workflow and worktrees
 

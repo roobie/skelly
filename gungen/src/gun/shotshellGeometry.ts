@@ -1,6 +1,7 @@
 // Sourced external dimensions, in millimetres. Internal construction is visual, not cartridge data.
+
+import type { ExtrudedPolygonSolid, RevolvedSolid, Vec2 } from '@skelly/engine/core/schema.ts';
 import type { Measure, Shotshell } from '../ammo/cartridge.ts';
-import type { ExtrudedPolygonSolid, RevolvedSolid, Vec2 } from '../core/schema.ts';
 
 type ShotshellSolid = RevolvedSolid | ExtrudedPolygonSolid;
 

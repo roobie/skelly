@@ -1,6 +1,6 @@
-import type { AppearanceContext, GlbAssetIdentity } from '../core/design.ts';
-import { parseAssemblyJson } from '../core/parseAssembly.ts';
-import type { Assembly } from '../core/schema.ts';
+import type { AppearanceContext, GlbAssetIdentity } from '@skelly/engine/core/design.ts';
+import { parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
+import type { Assembly } from '@skelly/engine/core/schema.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';
 import { TEMPLATES } from '../gun/templates.ts';

@@ -1,9 +1,9 @@
 // Pure design-editor state transitions and persistence. No DOM or rendering.
-import type { Design, DesignLocks, DesignOrigin, DesignStatus } from '../core/design.ts';
-import { loadDesignValue } from '../core/designLoader.ts';
-import { resolve } from '../core/resolve.ts';
-import type { Assembly, Domain, PartInstance } from '../core/schema.ts';
-import type { ParamChoice, Template } from '../core/template.ts';
+import type { Design, DesignLocks, DesignOrigin, DesignStatus } from '@skelly/engine/core/design.ts';
+import { loadDesignValue } from '@skelly/engine/core/designLoader.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, Domain, PartInstance } from '@skelly/engine/core/schema.ts';
+import type { ParamChoice, Template } from '@skelly/engine/core/template.ts';
 import { GUN_PREFABS, type PrefabCatalogue, type PrefabCatalogueEntry } from '../gun/prefabs.ts';
 import { clearParam, type EditResult, setParam, setSlotPresent } from './paramPanel.ts';
 

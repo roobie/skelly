@@ -1,6 +1,7 @@
+import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { attachmentIdFor } from '../core/firearmFitting.ts';
-import type { HandlingQueue } from '../core/handling.ts';
+import type { HandlingQueue, Job } from '../core/handling.ts';
 import { HANDLING, type Inventory, type Location, type Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { slotsReason } from '../core/magazine.ts';
@@ -24,6 +25,20 @@ const available = (inventory: Inventory, item: Item): boolean => {
 };
 
 const rootTarget = (inventory: Inventory, location: Location): Target => inventory.targetForLocation(location);
+
+// Firearms Combat governs attachment work until Gunsmithing exists; this is the one place that names the skill.
+export const ATTACHMENT_WORK_SKILL = 'firearms_combat';
+
+export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'action' && job.jobType === ATTACHMENT_ACTION;
+
+const attachmentWorkSeconds = (inventory: Inventory): number => {
+  const tuning = inventory.registry.skills.get(ATTACHMENT_WORK_SKILL)?.combat?.firearms;
+  if (!tuning) {
+    return HANDLING.ground;
+  }
+  const level = skillEffectLevel(inventory.character.skills?.[ATTACHMENT_WORK_SKILL] ?? SKILL_LEVEL_MIN);
+  return HANDLING.ground * skillSaturation(level, tuning.attachmentFactorFloor, tuning.attachmentFactorHalfLifeLevels);
+};
 
 /** Firearm attachment changes are serialized handling actions, with all fit rules rechecked at completion. */
 export class FirearmAttachmentHandling {
@@ -102,12 +117,17 @@ export class FirearmAttachmentHandling {
     if (reason) {
       return reason;
     }
-    this.queue.enqueueAction(ATTACHMENT_ACTION, `Fit ${this.inventory.name(attachment)}`, HANDLING.ground, {
-      operation: 'fit',
-      firearmUid,
-      slotId,
-      attachmentUid,
-    });
+    this.queue.enqueueAction(
+      ATTACHMENT_ACTION,
+      `Fit ${this.inventory.name(attachment)}`,
+      attachmentWorkSeconds(this.inventory),
+      {
+        operation: 'fit',
+        firearmUid,
+        slotId,
+        attachmentUid,
+      },
+    );
     return undefined;
   }
 
@@ -121,11 +141,16 @@ export class FirearmAttachmentHandling {
       return reason;
     }
     const attachment = firearm.slots![slotId]!;
-    this.queue.enqueueAction(ATTACHMENT_ACTION, `Remove ${this.inventory.name(attachment)}`, HANDLING.ground, {
-      operation: 'remove',
-      firearmUid,
-      slotId,
-    });
+    this.queue.enqueueAction(
+      ATTACHMENT_ACTION,
+      `Remove ${this.inventory.name(attachment)}`,
+      attachmentWorkSeconds(this.inventory),
+      {
+        operation: 'remove',
+        firearmUid,
+        slotId,
+      },
+    );
     return undefined;
   }
 

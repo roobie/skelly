@@ -5,10 +5,10 @@ import {
   penetrationWorld,
   type WorldSolid,
   worldSolid,
-} from '../core/geometry.ts';
-import { compose, length, scale, sub, translation, type Vec3 } from '../core/math.ts';
-import type { Resolved } from '../core/resolve.ts';
-import type { PartMotion, Solid } from '../core/schema.ts';
+} from '@skelly/engine/core/geometry.ts';
+import { compose, length, scale, sub, translation, type Vec3 } from '@skelly/engine/core/math.ts';
+import type { Resolved } from '@skelly/engine/core/resolve.ts';
+import type { PartMotion, Solid } from '@skelly/engine/core/schema.ts';
 
 export type GunAction = 'ak' | 'ar';
 export type CycleMode = 'fire' | 'hand';

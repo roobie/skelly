@@ -1,9 +1,9 @@
+import { srgbToLinear } from '@skelly/engine/core/glb.ts';
 import validator from 'gltf-validator';
 import { Box3, Raycaster, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import type { Shotshell } from '../src/ammo/cartridge.ts';
-import { srgbToLinear } from '../src/core/glb.ts';
 import { exportCartridgeModels } from '../src/gun/cartridgeExport.ts';
 import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import { shotshellGeometry, shotshellHullColor } from '../src/gun/shotshellGeometry.ts';

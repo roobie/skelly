@@ -2,10 +2,10 @@
 // stock, monopod). They import only from core: parts.ts registers these families, so importing parts.ts
 // from here would make a cycle. Numbers are in u and sit on the 0.25u grid unless a comment says otherwise.
 
-import { SIZE_CLASSES, type SizeClass } from '../../core/conventions.ts';
-import { boxFromMinMax } from '../../core/geometry.ts';
-import type { Vec3 } from '../../core/math.ts';
-import type { BoxSolid, ParamSpec, Solid, SolidDisplayHints, SolidFinish, Vec2 } from '../../core/schema.ts';
+import { SIZE_CLASSES, type SizeClass } from '@skelly/engine/core/conventions.ts';
+import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
+import type { Vec3 } from '@skelly/engine/core/math.ts';
+import type { BoxSolid, ParamSpec, Solid, SolidDisplayHints, SolidFinish, Vec2 } from '@skelly/engine/core/schema.ts';
 
 export const X: Vec3 = [1, 0, 0];
 export const NEG_X: Vec3 = [-1, 0, 0];

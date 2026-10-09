@@ -1,4 +1,4 @@
-import type { PartDef, PartFamily } from '../../core/schema.ts';
+import type { PartDef, PartFamily } from '@skelly/engine/core/schema.ts';
 import { gunPort } from '../portData.ts';
 import { BMG_BASE_DIAMETER_U, BMG_OVERALL_LENGTH_U, ceilTo } from './cartridge.ts';
 import { RUBBER, X, Y } from './common.ts';

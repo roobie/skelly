@@ -190,6 +190,19 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
     { capture: true, passive: false },
   );
 
+  // A real press lands on the locked canvas, so Firefox's default focus handling would blur the focused field,
+  // closing an open combo box before the forwarded click reaches its option. Focus moves only when a forwarded
+  // click lands on an input.
+  document.addEventListener(
+    'mousedown',
+    (event) => {
+      if (input.locked && input.menuPointer) {
+        event.preventDefault();
+      }
+    },
+    true,
+  );
+
   let forwardingClick = false;
   let hoveredElement: Element | null = null;
   document.addEventListener(
@@ -231,7 +244,8 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       cursor.hidden = !(input.locked && input.menuPointer);
       cursor.style.transform = `translate(${input.cursorX}px, ${input.cursorY}px)`;
       const underCursor = document.elementFromPoint(input.cursorX, input.cursorY);
-      const clickable = underCursor?.closest('button, a, input, select, textarea, [role="button"]') ?? null;
+      const clickable =
+        underCursor?.closest('button, a, input, select, textarea, [role="button"], [role="option"]') ?? null;
       cursor.classList.toggle('hand', clickable !== null);
       hoveredElement?.classList.remove('game-cursor-hover');
       hoveredElement = clickable;

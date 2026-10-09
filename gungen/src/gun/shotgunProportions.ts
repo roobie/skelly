@@ -1,4 +1,4 @@
-import { GRID } from '../core/conventions.ts';
+import { GRID } from '@skelly/engine/core/conventions.ts';
 
 /**
  * Silhouette estimates, not manufacturing measurements, from the Remington 870 photo:

@@ -1,8 +1,8 @@
 // Pump-shotgun action envelope derived from the cited shotshell record, not a second set of cartridge measurements.
 
+import { GRID } from '@skelly/engine/core/conventions.ts';
 import shellJson from '../../cartridges/12-gauge-00-buck.json' with { type: 'json' };
 import { formatCartridgeParseError, parseCartridge } from '../ammo/parseCartridge.ts';
-import { GRID } from '../core/conventions.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
 
 const parsed = parseCartridge(shellJson);

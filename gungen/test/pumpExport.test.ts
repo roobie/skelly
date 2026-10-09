@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
+import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
+import { IDENTITY, sub } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, Solid } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { expect, it } from 'vitest';
 import { parseCartridgeJson } from '../src/ammo/parseCartridge.ts';
 import { exportFileText } from '../src/cli/exportFile.ts';
-import { localSolidBounds, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
-import { IDENTITY, sub } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Assembly, Solid } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { PUMP_ACTION_TRAVEL_U, PUMP_LOADING_PORT_X } from '../src/gun/pumpShell.ts';

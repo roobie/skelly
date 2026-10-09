@@ -8,6 +8,7 @@ export const TEST_SENSE_TUNING: SenseDef = {
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,
     eyeDropMetres: 0.8,
+    bodyHeightMetres: 1.2,
   },
   wall: {
     hearingRangeScale: 0.5,

@@ -1,5 +1,5 @@
-import type { Vec3 } from '../core/math.ts';
-import type { KeepOut, Solid, Vec2 } from '../core/schema.ts';
+import type { Vec3 } from '@skelly/engine/core/math.ts';
+import type { KeepOut, Solid, Vec2 } from '@skelly/engine/core/schema.ts';
 import type { MountRequirement } from './mounts.ts';
 
 export const opticRailContactSolids = (solids: readonly Solid[]): readonly Solid[] =>

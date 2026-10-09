@@ -1239,6 +1239,8 @@ const SkillSchema = pipe(
             reloadFactorHalfLifeLevels: Positive,
             rackFactorFloor: Fraction,
             rackFactorHalfLifeLevels: Positive,
+            attachmentFactorFloor: Fraction,
+            attachmentFactorHalfLifeLevels: Positive,
           }),
         ),
         melee: optional(
@@ -1261,7 +1263,8 @@ const SkillSchema = pipe(
           activity('readying', 'practicePerSimSecond') &&
           activity('handling', 'practice') &&
           activity('shot', 'practice') &&
-          activity('hit', 'practice'))) &&
+          activity('hit', 'practice') &&
+          activity('attachment', 'practice'))) &&
       (id !== 'melee_combat' || (combat?.melee !== undefined && activity('block', 'practice'))) &&
       (id !== 'inventory_management' || (inventory !== undefined && activity('handling', 'practice')));
     const firearm = combat?.firearms;
@@ -1300,6 +1303,7 @@ const SenseSchema = strictObject({
     hearingRangeScale: Fraction,
     sightRangeScale: Fraction,
     eyeDropMetres: Positive,
+    bodyHeightMetres: Positive,
   }),
   wall: strictObject({
     hearingRangeScale: Fraction,

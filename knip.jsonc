@@ -38,6 +38,13 @@
       "entry": ["index.html!"],
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
+    "engine": {
+      "project": ["src/**/*.{js,mjs,ts,tsx}!"],
+      "paths": {
+        "three": ["../gungen/node_modules/three"],
+        "three/*": ["../gungen/node_modules/three/*"]
+      }
+    },
     "mobgen": {
       "entry": ["index.html!", "stress.html!", "src/viewer/stress.ts!"],
       "paths": {

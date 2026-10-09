@@ -1,7 +1,7 @@
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import type { Mesh } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolve } from '../src/core/resolve.ts';
-import { validate } from '../src/core/validate.ts';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { createCycleView } from '../src/viewer/cycleView.ts';
