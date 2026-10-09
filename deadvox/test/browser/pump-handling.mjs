@@ -559,10 +559,44 @@ try {
     });
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
   };
+  const startWaitFromButton = async () => {
+    const noticeBefore = await page.evaluate(() => globalThis.pumpHandlingTest.getNotice());
+    await clickWaitButton();
+    await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+    try {
+      await page.waitForFunction(
+        (previousNotice) => {
+          const { session, getNotice } = globalThis.pumpHandlingTest;
+          return session.sim.actions.job?.jobType === 'wait' || getNotice() !== previousNotice;
+        },
+        noticeBefore,
+        { timeout: 5000 },
+      );
+    } catch (error) {
+      const state = await page.evaluate(() => {
+        const { session, getNotice } = globalThis.pumpHandlingTest;
+        return {
+          job: session.sim.actions.job,
+          notice: getNotice(),
+          simTime: session.sim.time,
+          paused: session.sim.paused,
+          bodyActionRefusal: session.body.actionRefusal,
+          compressionActive: session.sim.compression.active,
+          compressionInterruption: session.sim.compression.interruption,
+          unsafeReason: session.zombies.unsafeReason(),
+        };
+      });
+      throw new Error(`Wait button neither started nor refused: ${JSON.stringify(state)}`, { cause: error });
+    }
+    const jobType = await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.actions.job?.jobType);
+    assert.equal(
+      jobType,
+      'wait',
+      `Wait button was refused: ${await page.evaluate(() => globalThis.pumpHandlingTest.getNotice())}`,
+    );
+  };
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
-  await clickWaitButton();
-  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
-  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job?.jobType === 'wait');
+  await startWaitFromButton();
   assert.match(await page.locator('#rest').textContent(), /Waiting/);
   const waitStart = await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.time);
   await page.evaluate(() => globalThis.pumpManualFrames.step(1));
@@ -576,17 +610,13 @@ try {
   assert.equal(await page.locator('#rest').isVisible(), false);
 
   await pressAction(page, 'ui.inventory-tab-actions');
-  await clickWaitButton();
-  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
-  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job?.jobType === 'wait');
+  await startWaitFromButton();
   await pressAction(page, 'movement.forward');
   await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
   await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job === undefined);
 
   await pressAction(page, 'ui.inventory-tab-actions');
-  await clickWaitButton();
-  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
-  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job?.jobType === 'wait');
+  await startWaitFromButton();
   await page.evaluate(() =>
     globalThis.pumpHandlingTest.session.sim.emit({ kind: 'interrupt', reason: 'test interruption' }),
   );
