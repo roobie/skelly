@@ -5,6 +5,7 @@ import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
+import { carveAround, protectedCoreCell } from '../src/core/amalgamCarving.ts';
 import {
   AMALGAM_FIGURE_SEED,
   amalgamCollisionEnvelope,
@@ -814,5 +815,111 @@ describe('attack line', () => {
     expect(grab.horizontalMetres).toBeLessThanOrEqual(grab.reachMetres);
     expect(grab.riseMetres).toBeLessThan(PLAYER.height);
     expect(grab.started).toBe(true);
+  });
+});
+
+describe('amalgam flesh carving', () => {
+  const amalgam = registry.zombies.get('amalgam')!;
+  const carving = amalgam.carving!;
+  const { carving: _ignored, ...uncarvedAmalgam } = amalgam;
+  const buck = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
+  const figure = amalgamFigureForType(amalgam, AMALGAM_FIGURE_SEED);
+  const voxelMetres = figure.realized.voxels.size * figure.scale;
+
+  /** One amalgam, and a straight line at its core from a few metres out. */
+  const coreTarget = (simulation = system(), type: typeof amalgam = amalgam) => {
+    const id = simulation.add(type, [0, 1, 0]);
+    const zombie = simulation.store.get(id)!;
+    const core = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE))['core.trunk']![0]!.voxelCentroid;
+    const origin: Vec3 = [core[0], core[1], core[2] + 6 / BLOCK_SIZE];
+    const direction: Vec3 = [0, 0, -1];
+    const pellets = (count: number, damage: number) =>
+      simulation.firePellets(
+        projectileShot({ ...buck, pellets: count, damage }, origin, new Array(count).fill(direction)),
+      );
+    return { simulation, id, zombie, origin, direction, pellets };
+  };
+
+  it('knocks out the flesh where a hit lands, and more of it for a heavier hit', () => {
+    const light = coreTarget();
+    const heavy = coreTarget();
+    light.pellets(1, 1);
+    heavy.pellets(1, Math.min(carving.maxRadiusMetres, 2 * voxelMetres) / carving.radiusMetresPerDamage);
+    expect(light.zombie.carved.length).toBeGreaterThan(0);
+    expect(heavy.zombie.carved).toEqual(expect.arrayContaining(light.zombie.carved));
+    expect(heavy.zombie.carved.length).toBeGreaterThan(light.zombie.carved.length);
+  });
+
+  it("makes one hole from one shot's pellets instead of tunnelling along their line", () => {
+    const shot = coreTarget();
+    const slug = coreTarget();
+    shot.pellets(buck.pellets, buck.damage);
+    slug.pellets(1, buck.pellets * buck.damage);
+    expect(shot.zombie.carved.length).toBeGreaterThan(0);
+    expect(shot.zombie.carved).toEqual(slug.zombie.carved);
+  });
+
+  it('never carves the core cell the tentacle roots in, whatever is carved around it', () => {
+    const keep = protectedCoreCell(figure);
+    const core = figure.realized.body.bones.findIndex((bone) => bone.id === 'core') + 1;
+    expect(figure.realized.voxels.owner[keep]).toBe(core);
+    const around = carveAround({ figure, carving, carved: new Set(), struck: keep, damage: Number.MAX_VALUE });
+    expect(around.length).toBeGreaterThan(0);
+    expect(around).not.toContain(keep);
+  });
+
+  it('keeps its holes through the save codec and a restore', async () => {
+    const runtime = createRuntime();
+    const target = coreTarget(runtime.zombies);
+    target.pellets(buck.pellets, buck.damage);
+    expect(target.zombie.carved.length).toBeGreaterThan(0);
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { contentLookup, version: formatVersion });
+    expect(decoded.snapshot.world.zombies.zombies.find(({ id }) => id === target.id)?.zombie.carved).toEqual(
+      target.zombie.carved,
+    );
+    const restored = system();
+    restored.restoreState(runtime.zombies.snapshotState(), (typeId) => registry.zombies.get(typeId));
+    expect(restored.store.get(target.id)!.carved).toEqual(target.zombie.carved);
+  });
+
+  it('carves the same holes when the same hits replay', () => {
+    const play = () => {
+      const target = coreTarget();
+      for (const key of ['first', 'second', 'third']) {
+        target.simulation.firePellets(
+          pelletShotFromBasis({ ammo: buck, origin: target.origin, basis: aimBasis(0, 0, NEUTRAL_AIM), seed: 5, key }),
+        );
+      }
+      return target.zombie.carved;
+    };
+    const first = play();
+    expect(first.length).toBeGreaterThan(0);
+    expect(play()).toEqual(first);
+  });
+
+  it('leaves damage, region health and severing as they would be without holes', () => {
+    const play = (type: typeof amalgam) => {
+      const target = coreTarget(system(), type);
+      for (const key of ['a', 'b', 'c', 'd']) {
+        target.simulation.firePellets(
+          pelletShotFromBasis({
+            ammo: buck,
+            origin: target.origin,
+            basis: aimBasis(0.2, 0.1, NEUTRAL_AIM),
+            seed: 9,
+            key,
+          }),
+        );
+      }
+      target.simulation.swing(target.origin, target.direction, { ...FISTS_MELEE, reach: 8, impulse: 0 });
+      const { regions, severed, carved } = target.zombie;
+      const alive = target.simulation.store.get(target.id) !== undefined;
+      return { regions: { ...regions }, severed: [...severed], carved, alive };
+    };
+    const carved = play(amalgam);
+    const whole = play(uncarvedAmalgam);
+    expect(carved.carved.length).toBeGreaterThan(0);
+    expect(whole.carved).toEqual([]);
+    expect({ ...carved, carved: [] }).toEqual(whole);
   });
 });

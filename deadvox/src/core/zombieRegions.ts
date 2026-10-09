@@ -270,14 +270,14 @@ export const posedShamblerBoneVoxelCenters = (
   });
 };
 
-/** First surface of an actual, posed, unsevered voxel bone box, in block units. */
-export const posedRegionHitDistance = (
+/** First surface of an actual, posed, unsevered voxel bone box, in block units, and the box it lies on. */
+export const posedRegionHit = (
   boxes: readonly PosedBoneBox[],
   origin: Vec3,
   direction: Vec3,
   blockSize: number,
-): number | undefined => {
-  let nearest = Number.POSITIVE_INFINITY;
+): { readonly distance: number; readonly box: PosedBoneBox } | undefined => {
+  let nearest: { distance: number; box: PosedBoneBox } | undefined;
   for (const box of boxes) {
     if (
       Math.abs(direction[1]) < 1e-12 &&
@@ -298,12 +298,20 @@ export const posedRegionHitDistance = (
       localDirection,
       box.halfSize.map((size) => size / blockSize),
     );
-    if (hit !== undefined) {
-      nearest = Math.min(nearest, hit);
+    if (hit !== undefined && (nearest === undefined || hit < nearest.distance)) {
+      nearest = { distance: hit, box };
     }
   }
-  return Number.isFinite(nearest) ? nearest : undefined;
+  return nearest;
 };
+
+/** First surface of an actual, posed, unsevered voxel bone box, in block units. */
+export const posedRegionHitDistance = (
+  boxes: readonly PosedBoneBox[],
+  origin: Vec3,
+  direction: Vec3,
+  blockSize: number,
+): number | undefined => posedRegionHit(boxes, origin, direction, blockSize)?.distance;
 
 /** Return each unposed box in the chosen figure (exposed for proof and renderer parity tests). */
 export const shamblerRegionBoxes = (seed: number): Readonly<Record<ZombieRegion, readonly BoneVoxelBox[]>> =>

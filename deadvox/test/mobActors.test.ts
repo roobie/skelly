@@ -299,6 +299,7 @@ const makeZombie = (
     footstepClock: initialShamblerFootstepClock(type.stepLength),
     wanderClock: 0,
     severed,
+    carved: [],
   };
 };
 
