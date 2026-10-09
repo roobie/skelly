@@ -137,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 41;
+export const SAVE_SCHEMA_VERSION = 43;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -527,6 +527,8 @@ const zombie = obj({
   /** Part names severed so far (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS) — cumulative, never
    * shrinks; see Zombie.severed's own doc comment. */
   severed: arr(str()),
+  /** Amalgam voxel-grid cells knocked out by hits, ascending; see Zombie.carved. */
+  carved: arr(nonNegativeInt),
 });
 const playerState = obj({
   body,

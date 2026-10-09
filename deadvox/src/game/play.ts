@@ -2,9 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
-import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
@@ -33,7 +31,6 @@ import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
-import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { type HandlingPresentationSource, quickbarKey, renderQuickbar } from '../ui/hud.ts';
@@ -66,7 +63,7 @@ import type { SaveController } from '../ui/saveController.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
-  firearmShotSound,
+  firearmShotEmission,
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
@@ -127,11 +124,14 @@ import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInp
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
+import { updateStartupHintLatch } from './startupHint.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const STARTUP_MESH_RADIUS = 1;
+const STARTUP_COLUMN_COUNT = (STARTUP_MESH_RADIUS * 2 + 1) ** 2;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 export const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
@@ -298,6 +298,8 @@ export const startPlay = (
 ): { enter: () => void } => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const inputTarget = renderer?.domElement ?? $('view');
+  const startupHint = $('startup-hint');
+  const startupProgress = $('startup-hint-progress') as HTMLProgressElement;
   if (options.saveController) {
     streamer.onGenerationError = (error) => {
       if (!options.saveController?.refuseRestore(error)) {
@@ -561,6 +563,7 @@ export const startPlay = (
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
     zombieEffects: {
       onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
+      onCarve: (id, zombie, cells, hit) => zombieMeshes.zombieCarved?.(id, zombie, cells, hit),
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
@@ -701,11 +704,7 @@ export const startPlay = (
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
   const restBox = $('rest');
-  const credits = validateManifest('assets/manifest.json', assetManifest);
-  $('errors').textContent = [engine.contentErrors, ...credits.issues.map((i) => `${i.source} ${i.path}: ${i.message}`)]
-    .filter(Boolean)
-    .join('\n');
-  mountCredits({ about: $('about'), box: $('credits'), show: $('show-credits') }, credits.manifest);
+  $('errors').textContent = [$('errors').textContent, engine.contentErrors].filter(Boolean).join('\n');
   renderAudioOptions($('audio-options'), audio.settings, (category, value) => audio.setVolume(category, value));
 
   /** A message that isn't an interruption, such as why a move was refused. */
@@ -997,6 +996,7 @@ export const startPlay = (
 
   let started = options.restore !== undefined;
   let mainMenuOpen = !options.replay;
+  let startupHintPending = !options.replay;
   let resumeRequested = false;
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
@@ -1030,6 +1030,18 @@ export const startPlay = (
       $('go').textContent = state.goLabel;
     }
     return state;
+  };
+  const updateStartupHint = () => {
+    if (options.replay || !started || mainMenuOpen || screen.isOpen || reading.isOpen || debugTools?.menuOpen) {
+      startupHint.hidden = true;
+      return;
+    }
+    const unmeshed = streamer.unmeshedColumns(body.pos[0], body.pos[2], STARTUP_MESH_RADIUS);
+    startupProgress.max = STARTUP_COLUMN_COUNT;
+    startupProgress.value = STARTUP_COLUMN_COUNT - unmeshed;
+    const latch = updateStartupHintLatch(startupHintPending, unmeshed);
+    startupHintPending = latch.pending;
+    startupHint.hidden = !latch.visible;
   };
   const resume = () => {
     if (replayPlayer) {
@@ -2134,7 +2146,6 @@ export const startPlay = (
   };
 
   const fireWeapon = (item: Item, time: number): boolean => {
-    const noiseRadiusScale = firearms.noiseFactorFor(item);
     const fired = firearms.fire({
       aimFrame: aim.frame,
       ready: isFirearmReady(item.uid),
@@ -2155,8 +2166,8 @@ export const startPlay = (
     if (registry.items.get(item.type)?.firearm?.pump) {
       return true;
     }
-    const shot = firearmShotSound(item.type);
-    session.playPlayerSound(shot.event, time, { ...shot, noiseRadiusScale });
+    const shot = firearmShotEmission(item, firearms.noiseFactorFor(item));
+    session.playPlayerSound(shot.event, time, shot);
     return true;
   };
 
@@ -2771,6 +2782,7 @@ export const startPlay = (
     const visible = hudVisibility(hudOptions);
     let mark = realNow();
     streamer.update(body.pos[0], body.pos[2]);
+    updateStartupHint();
     meshingQueueMs = realNow() - mark;
     updateActionInputs(now);
     playtestObserver?.beforeFrame(queue, inventory);

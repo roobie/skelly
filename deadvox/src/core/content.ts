@@ -464,12 +464,44 @@ const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlyS
   }
 };
 
+const checkContainerWidth = ({
+  section,
+  id,
+  container,
+  registry,
+  report,
+}: {
+  section: 'items' | 'furniture';
+  id: string;
+  container: NonNullable<ItemDef['container']>;
+  registry: Registry;
+  report: Report;
+}): void => {
+  const limit = registry.inventory.get('player')?.containerMaxWidthCells;
+  if (limit === undefined || container.wideReason) {
+    return;
+  }
+  container.pockets.forEach((pocket, index) => {
+    if (pocket.grid[0] > limit) {
+      report(
+        section,
+        id,
+        `.container.pockets[${index}].grid[0]`,
+        `pocket width ${pocket.grid[0]} exceeds inventory limit ${limit}; add a wideReason for an exception`,
+      );
+    }
+  });
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
   const obtainable = obtainableItems(registry);
   const qualities = new Set(items.flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const hasIgniter = items.some((item) => item.igniter !== undefined);
   for (const item of items) {
+    if (item.container) {
+      checkContainerWidth({ section: 'items', id: item.id, container: item.container, registry, report });
+    }
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
     checkItemFirearm(item, registry, report);
@@ -585,6 +617,9 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
 
 const checkFurniture = (registry: Registry, report: Report) => {
   for (const furniture of registry.furniture.values()) {
+    if (furniture.container) {
+      checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
+    }
     checkDoorOpenNoise(registry, furniture, report);
     checkSearchNoise(registry, furniture, report);
     if (furniture.door?.prying && !registry.skills.has(furniture.door.prying.skill)) {
@@ -601,6 +636,27 @@ const checkFurniture = (registry: Registry, report: Report) => {
 
 type PaletteThing = Exclude<TemplateDef['palette'][string], string>;
 
+const militaryLootIssue = (
+  registry: Registry,
+  template: TemplateDef,
+  lootId: string | undefined,
+): string | undefined =>
+  registry.loot.get(lootId ?? '')?.military && !template.military
+    ? 'military loot tables may only appear in a military template'
+    : undefined;
+
+const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [string, string][] => {
+  const found: [string, string][] = [];
+  const furniture = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture);
+  if (entry.lock && furniture && !furniture.door) {
+    found.push(['.lock', 'only a door can have a lock']);
+  }
+  if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
+    found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
+  }
+  return found;
+};
+
 const checkPaletteThing = (registry: Registry, template: TemplateDef, char: string, entry: PaletteThing) => {
   const found: [string, string][] = [];
   const furniture = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture);
@@ -611,18 +667,18 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (problem) {
     found.push(['.furniture', problem]);
   }
+  const lootId = entry.loot ?? furniture?.loot;
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
+  }
+  const militaryIssue = militaryLootIssue(registry, template, lootId);
+  if (militaryIssue) {
+    found.push(['.loot', militaryIssue]);
   }
   if (entry.loot !== undefined && furniture && furniture.container === undefined) {
     found.push(['.loot', 'has loot but no container to put it in']);
   }
-  if (entry.lock && furniture && !furniture.door) {
-    found.push(['.lock', 'only a door can have a lock']);
-  }
-  if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
-    found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
-  }
+  found.push(...checkPaletteObjectRefs(registry, entry));
   return found;
 };
 
@@ -747,6 +803,8 @@ const checkZombies = (registry: Registry, report: Report) => {
   for (const zombie of registry.zombies.values()) {
     if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
       report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
+    } else if (registry.loot.get(zombie.loot ?? '')?.military) {
+      report('zombies', zombie.id, '.loot', 'zombie loot may not use a military table');
     }
     for (const key of ['idle', 'alert', 'attack', 'hurt'] as const) {
       const event = zombie.sounds[key];
@@ -867,12 +925,57 @@ const checkKeys = (registry: Registry, report: Report) => {
   }
 };
 
+const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {
+  if (!block.patternPalette) {
+    report('blocks', block.id, '.patternPalette', 'camo blocks require a four-colour pattern palette');
+  }
+  if (block.patternWashout === undefined) {
+    report('blocks', block.id, '.patternWashout', 'camo blocks require a pattern washout value');
+  }
+};
+
+const reportCamoSettingMismatch = (first: BlockDef, block: BlockDef, report: Report): void => {
+  if (
+    !first.patternPalette ||
+    first.patternWashout === undefined ||
+    !block.patternPalette ||
+    block.patternWashout === undefined
+  ) {
+    return;
+  }
+  const paletteDiffers = block.patternPalette.some((color, i) => color !== first.patternPalette?.[i]);
+  const washoutDiffers = block.patternWashout !== first.patternWashout;
+  if (!(paletteDiffers || washoutDiffers)) {
+    return;
+  }
+  report(
+    'blocks',
+    block.id,
+    paletteDiffers ? '.patternPalette' : '.patternWashout',
+    `camo palette and washout must match the first camo block "${first.id}"`,
+  );
+};
+
+const checkCamoBlocks = (registry: Registry, report: Report): void => {
+  const [first, ...rest] = registry.blocks.filter((block) => block.pattern === 'camo');
+  if (!first) {
+    return;
+  }
+
+  reportMissingCamoSettings(first, report);
+  for (const block of rest) {
+    reportMissingCamoSettings(block, report);
+    reportCamoSettingMismatch(first, block, report);
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
     const origin = origins.get(`${section}:${id}`)!;
     issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
   };
+  checkCamoBlocks(registry, report);
   for (const block of registry.blocks) {
     for (const [gait, event] of Object.entries(block.rustle ?? {})) {
       const sound = registry.sounds.get(event);

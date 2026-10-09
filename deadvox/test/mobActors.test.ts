@@ -21,8 +21,10 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
-import { type InstancedMesh, PerspectiveCamera } from 'three';
+import { Color, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
+import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
+import { amalgamFigureForType } from '../src/core/amalgamFigure.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
@@ -33,6 +35,7 @@ import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombi
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
+import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import {
   fallDirectionAwayFromPlayer,
   HEARING_GAZE_JITTER,
@@ -299,6 +302,7 @@ const makeZombie = (
     footstepClock: initialShamblerFootstepClock(type.stepLength),
     wanderClock: 0,
     severed,
+    carved: [],
   };
 };
 
@@ -842,6 +846,73 @@ describe('MobActorMeshes', () => {
           expect(Math.hypot(matrix![0]!, matrix![4]!, matrix![8]!)).toBeCloseTo(type.bodyScale!);
         }
       }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('draws a carved amalgam once, from a wound mesh with flesh walls, and drops it with the amalgam', () => {
+    const amalgam = registry.zombies.get('amalgam')!;
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1, includeAmalgam: true, amalgamType: amalgam });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { type: amalgam });
+      const id = store.add(zombie);
+      renderer.sync(store, 0, 1);
+      // What a light hit along +x takes: the first flesh cell of a grid row, whose neighbour further in is
+      // flesh too, so the hole has a wall.
+      const figure = amalgamFigureForType(amalgam, zombie.figureSeed);
+      const { dims, owner } = figure.realized.voxels;
+      const firstFlesh = (row: number): number => {
+        const start = row * dims[0];
+        const offset = owner.subarray(start, start + dims[0]).findIndex((value) => value > 0);
+        return offset < 0 || offset + 1 >= dims[0] ? -1 : start + offset;
+      };
+      const struck = Array.from({ length: dims[1] * dims[2] }, (_, row) => firstFlesh(row)).find(
+        (cell) => cell >= 0 && owner[cell + 1]! > 0,
+      )!;
+      expect(struck).toBeGreaterThanOrEqual(0);
+      const cells = carveAround({
+        figure,
+        carving: amalgam.carving!,
+        missing: missingFlesh(figure, zombie),
+        struck,
+        damage: 1,
+      });
+      zombie.carved = cells;
+      renderer.zombieCarved(id, zombie, cells, { point: [0, 2, 0], direction: [1, 0, 0], impulse: 0 });
+
+      const internals = renderer as unknown as {
+        wounds: Map<number, { mesh: InstancedMesh }>;
+        states: Map<number, { variantIndex: number; instanceIndex: number }>;
+        variants: readonly { crowdSlotAttr: InstancedBufferAttribute }[];
+        hiddenRow: number;
+        fleshChunks: { count: number };
+      };
+      const wound = internals.wounds.get(id)!;
+      const state = internals.states.get(id)!;
+      expect(renderer.group.children).toContain(wound.mesh);
+      expect(internals.variants[state.variantIndex]!.crowdSlotAttr.getX(state.instanceIndex)).toBe(internals.hiddenRow);
+      expect(internals.fleshChunks.count).toBe(1);
+      const neighbours = wound.mesh.geometry.getAttribute('neighbourBone');
+      const colors = wound.mesh.geometry.getAttribute('color');
+      const interior = new Color(amalgam.carving!.interiorColor);
+      const walls = Array.from({ length: neighbours.count }, (_, v) => v).filter(
+        (v) => neighbours.getX(v) === CARVED_NEIGHBOUR,
+      );
+      expect(walls.length).toBeGreaterThan(0);
+      expect(
+        walls.every((v) =>
+          [colors.getX(v), colors.getY(v), colors.getZ(v)].every(
+            (c, axis) => Math.abs(c - interior.toArray()[axis]!) < 1e-6,
+          ),
+        ),
+      ).toBe(true);
+
+      store.remove(id);
+      renderer.sync(store, 0, 1);
+      expect(internals.wounds.has(id)).toBe(false);
+      expect(renderer.group.children).not.toContain(wound.mesh);
     } finally {
       renderer.dispose();
     }

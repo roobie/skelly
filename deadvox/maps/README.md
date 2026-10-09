@@ -4,15 +4,22 @@ read_if:
   - you're changing authored-site fixed loot or playtest-map scope
   - you're extending the workshop route or its multiple approaches
   - you're authoring time-windowed Tiled spawn markers
+  - you're authoring or reviewing the playtest military compound and its routes
 ---
 
 # Authored sites
 
 Tiled `.tmj` files describe site-scale terrain, routes, building placements and spawns; interiors stay reusable ASCII templates. `maps/extensions/deadvox.mjs`, `exportLayout`, turns one map into a content layout, and `npm run validate` checks the exported file against the merged content registry. Format the exported JSON with Biome before validation so Tiled output also satisfies the repository's formatting check. Keep the authored source and its committed JSON together. Review the extension before trusting it in Tiled.
 
-`maps/playtest.tmj` authors the progression exported to `src/content/base/layouts-playtest.json`. For #181 beat 4, the garage supports the light route without noise; quiet requires a noisy yard search for the suppressor's missing input, and the medical site's second night tests the trade. The dead radio remains story-only. See `../SLICE-3.md` for the settled beat-4 choices.
+The playtest map links the shelter, Mike's place, medical site and military compound as distinct beats. A vehicle-width road runs from the camp's guarded north double gate to the medical compound, giving vehicles access to the site. It stops short of the south fence, where the narrower trail bridges the gap because the compound's fences, hall and Dad's cabin leave no room to extend the road. The camp's southern breach remains an alternate way in, so its perimeter is defended without making the site a dead end.
+
+For #181 beat 4, Mike's place supports the light route without noise; quiet requires a noisy yard search for the suppressor's missing input, and the medical site's second night tests the trade. The dead radio remains story-only. Keep the Tiled source and exported layout paired while reusable interiors remain separate templates. See `maps/playtest.tmj`, `Full-width dirt road from the medical compound to the north double gate`, `Dirt track from house through hamlet and cabins to the medical compound`, and `Track spur to Mike's place`; `maps/extensions/deadvox.mjs`, `exportLayout`; `test/authoredFixedLoot.test.ts`, `routes through the north double gate while keeping the south wall breach open`; and `../SLICE-3.md` for beat-4 choices.
 
 `lone-house.tmj` / `layouts.json` remains the small authored-site pipeline sample. `hunting_cabins.tmj` / `layouts-cabins.json` remains the terrain-and-cabin sample (`cabins_demo`). Keeping these examples separate lets them continue to demonstrate narrow editor/runtime contracts without turning them into alternate versions of the playtest progression.
+
+## Military compound
+
+The north pen makes the second gate a real threshold instead of a panel one can walk around; the breached southern wall preserves an alternate approach. The uneven wall tops carry the abandoned-site motif. See `src/content/base/camp.json`, `camp_gate_return` and `camp_gate_damaged`, and `test/campGate.test.ts`, `keeps the placed north entrance passable through gate 2 and blocks bypasses around its closed leaf`.
 
 ## Fixed loot
 

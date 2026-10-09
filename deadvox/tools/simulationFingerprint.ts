@@ -66,6 +66,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/vehicles',
   // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
   'src/core/sideButton.ts',
+  // Credits and asset-manifest validation at startup change neither simulation nor save state.
+  'src/core/assets.ts',
   'src/core/sky.ts',
   'src/core/mood.ts',
   // Optic lens projection is rendered presentation; it changes neither simulation nor save state.

@@ -143,8 +143,9 @@ describe('hamlet save/load continuation', () => {
   });
 
   it('preserves the whole sound-event stream across save and load', async () => {
-    const uninterrupted = createRuntime(undefined, false, soundColumns);
-    const split = createRuntime(undefined, false, soundColumns);
+    const nightStart = parseTimeOfDay('19:30')!;
+    const uninterrupted = createRuntime(undefined, false, soundColumns, { start: nightStart });
+    const split = createRuntime(undefined, false, soundColumns, { start: nightStart });
     const framesBeforeSave = 290;
     const framesAfterSave = 900;
     advance(uninterrupted, framesBeforeSave);
@@ -152,7 +153,7 @@ describe('hamlet save/load continuation', () => {
     const soundCountAtSave = uninterrupted.heardSounds.length;
     const bytes = await encodeFixture(capture(split));
     const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
-    const loaded = createRuntime(decoded.snapshot, false, soundColumns);
+    const loaded = createRuntime(decoded.snapshot, false, soundColumns, { start: nightStart });
 
     advance(uninterrupted, framesAfterSave);
     advance(loaded, framesAfterSave);

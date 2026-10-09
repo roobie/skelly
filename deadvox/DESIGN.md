@@ -7,6 +7,7 @@ read_if:
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
+  - you're changing the holes hits carve in the amalgam or the flesh chunks that fly off
   - you're recording or reconciling BR's crawler silhouette rulings
   - you're changing crawler gait, hit response or generation validation
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
@@ -14,7 +15,7 @@ read_if:
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
-  - you change the game's design, especially held-item feedback, body damage or treatment, or hand ownership
+  - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
@@ -25,6 +26,7 @@ read_if:
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
+  - you're authoring dilapidated structures or breached perimeters
   - you're changing player-facing item descriptions or their boundary with control guidance
 ---
 
@@ -423,8 +425,13 @@ HTML over the game view, and keyboard-first:
 
 - Two panes: **you** (hands, then each worn item with its pockets drawn as
   grids) and **around** (piles, and containers within reach, also as grids).
-  Items move by drag and drop, with the cells where the item fits highlighted,
-  or with keys. R rotates.
+  Items move by drag and drop with a destination preview, or with keys. R rotates.
+- So Items fits small zoomed screens, the compact view leaves unused cells out of
+  the empty **At your feet** target, and a content-owned width limit keeps an
+  oversized locker from dominating the nearby pane; wider containers carry a reason
+  in content.
+  See `src/ui/inventoryScreen.ts`, `InventoryScreen.viewModel`, and
+  `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
   shows its handling time. Weight, exact condition and times are in the item's
   details.
@@ -766,11 +773,21 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
   `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`,
   `spentCaseScatter`.
-- **Noise** is an event with a loudness and position. Footsteps (worse when
-  sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
-  Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
-  (see the screamer below). Stealth is a matter of managing noise and staying
-  out of sight.
+- **Noise** is an event with loudness and position. Sprinting makes footsteps
+  louder; melee, gunshots, doors, breaking glass and engines also make noise.
+  Walls reduce how far it travels. Zombies hear, investigate and pass noise on
+  (see the screamer below), so stealth means managing noise and staying out of
+  sight. Suppressor effects apply across firearms through attachment metadata;
+  the shot event selects the sample, not another radius. Near hearing ends at the
+  scaled base radius, while the far tier follows the listener's hearing model. At
+  full condition, a real suppressor brings that far tier to half the unsuppressed
+  base radius; an improvised suppressor is louder, and wear makes either louder.
+  Keep suppression local to shots so other noises retain their range. See
+  `gungen/src/gun/attachments.ts`, `suppressors`;
+  `src/core/firearmAttachments.ts`, `firearmAttachmentResponse` and
+  `wearFirearmAttachments`; `src/core/zombies.ts`, `hearVocalNoise`;
+  `src/game/audioPresentation.ts`, `firearmShotEmission`; and
+  `src/game/play.ts`, `fireWeapon`.
 - **Player-owned sound playback (d111-1):** BR: “their position in the world is
   the player, and the player is a mobile thing, so”. Character- and held-item
   sounds have the player as their source; listener-relative playback makes them
@@ -945,6 +962,12 @@ For #424, debug-spawned amalgams start beyond their type-scaled attack reach so 
 A surviving amalgam attacks with a tentacle that strikes in a straight line from its core to the player's chest, at any height, within its usual reach; anything solid across the line blocks it. A creature with a long tentacle should be able to reach a player standing above it, on a roof for example, and not only one level with it. The reach stays the same, so height costs distance rather than adding range. Humanoid zombies keep their grab: horizontal reach within a band matching a standing player.
 
 The line starts at a fixed interior point of the core at rest pose, so the simulation's check and the rendered tentacle start in the same place; the render follows the posed core, so the two part only during a hit flinch. A fixed point also keeps a change in the player's bearing from moving the root between the core's lobes. The tentacle extends along the line through wind-up and strike, then retracts, capped by the same reach; it adds no collision, hit region or saved state. See `src/core/zombies.ts`, `withinAttackReach`; `src/core/amalgamFigure.ts`, `amalgamStrikeOrigin`; `src/render/amalgamTentaclePose.ts`, `amalgamTentaclePose`; and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
+
+A damaging hit on the amalgam knocks a chunk of flesh out of it and leaves a hole. The hole starts at the first visible flesh voxel the shot reaches: the impact point from the region-box hit test maps into the figure's rest voxel grid, so there is no second hit test. A severed member's voxels went with the member, so a shot passes through where they were, as the hit test and the renderer do. Every damaging hit takes at least the struck voxel, and the type's carving rule adds every visible flesh voxel within a radius that grows with the hit's damage, up to a cap. The rule is tuned so a full close shotgun blast to the centre knocks out a chunk several voxels across, which reads on a body the amalgam's size; a lighter hit takes less, down to the struck voxel. One shot's pellets make one hole per amalgam, sized by their summed damage and centred on the struck voxel nearest their middle: one shot reads as one chunk, and pellets along one line can't tunnel through the body. The core voxel the tentacle roots in is never removed, so the core always keeps flesh. See `src/content/base/zombies.json`, the amalgam's `carving`; `src/core/schema.ts`, `ZombieSchema`; `src/core/amalgamCarving.ts`, `carveAround` and `protectedCoreCell`; and `src/core/zombies.ts`, `ZombieSystem.carve`.
+
+Holes are cosmetic: they show the damage without changing combat. Damage, region health, severing and later hit tests use the region boxes of the whole body, as they would without holes; `test/amalgam.test.ts` compares a hit sequence with and without carving. A hole is still simulation state, the amalgam's removed voxels as `Zombie.carved`, so it is deterministic, survives a save and replays, and a later rule could read which flesh is gone. A restore refuses holes no play could make: a cell outside the grid or without flesh, the protected core voxel, or any hole on a type that doesn't carve. See `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, and `src/core/zombies.ts`, `ZombieSystem.restoreState`.
+
+The renderer rebuilds a holed amalgam's mesh without its removed voxels, and the faces the hole exposes take the type's interior colour. They are marked as wound faces (`CARVED_NEIGHBOUR`) so gore can find them later; gore covers the amalgam as it does shamblers, since the amalgam is fused from them. The removed voxels fly off along the shot as a render-only rigid chunk that lands, lies, sinks and is removed, with a cap on live chunks. Neither the chunk nor the rebuilt mesh enters the simulation, and the corpse keeps the holes. See `src/render/amalgamFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
 
 Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
 sight-driven pursuit an immediate sprint threat, while the crawler uses the body's
@@ -1199,6 +1222,13 @@ something in play, not only decorate it.
   taking off, when something comes near. If adopted, it responds to an actual
   nearby cause, never to a timer or a guaranteed enemy alarm, so it stays a
   warning the world gives rather than one the UI gives.
+- **Dilapidation:** built things show abandonment through collapsed sections,
+  breaches, slumped or missing segments and rubble. A passable breach is a real
+  route, so each authored site names the gaps a player can cross. New structures
+  and reworks follow this direction, starting with the camp walls in #385;
+  retrofitting existing structures is tracked in #396. See
+  `src/content/base/camp.json`, `camp_wall_run`, `camp_gate`, and
+  `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an
   animal ecology, hunting or farming in version 1 (EPIC.md, "Not in version

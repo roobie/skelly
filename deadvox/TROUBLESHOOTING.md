@@ -12,13 +12,20 @@ read_if:
   - you're choosing render-free or pixel mode for a browser stage
   - you diagnose keyboard rebinding, debug gates or native browser interception
   - you investigate save-lock timeouts
+  - you debug startup or save discovery
   - you investigate navigation-aborted save-test requests (#474)
+  - a new-world start shows a blank canvas before nearby terrain is ready
 ---
 
 # deadvox — troubleshooting
 
 How to look at the game and narrow down a problem. Lessons from past problems are in
 [LESSONS.md](LESSONS.md).
+
+## New-world loading feedback
+
+The title overlay hides when pointer lock is granted, before the spawn neighborhood is fully meshed. Keep a centered status hint over the canvas until that neighborhood is ready; otherwise the empty view can look like a stalled start. `src/game/play.ts`, `updateStartupHint`, uses `Streamer.unmeshedColumns` to show progress and decide when the hint can hide. This covers post-start meshing; for page load through the title card, see
+[Startup and save discovery](#startup-and-save-discovery).
 
 ## Debug parameters
 
@@ -122,6 +129,16 @@ request attributed to a generation during an explicit test navigation.
 `navigatePage` records that navigation's source state. The leaving-state rule is
 in `src/ui/saveController.ts`, `SaveController`; navigation and busy-lock
 contracts are in `navigationOnly` and `busyLockOnly`.
+
+## Startup and save discovery
+
+The startup screen covers the title card until save discovery and content validation
+finish. During that wait, the controller's `#save-status` stays visible beneath the
+loading bar, so a slow or failed storage check explains itself. The persistence action
+becomes reachable on the title card only after discovery has established the storage
+state. See `src/main.ts`, `hideStartupScreen`, and `src/ui/saveController.ts`,
+`SaveController.prepare`. After starting a new world, see
+[New-world loading feedback](#new-world-loading-feedback) for the separate spawn-meshing wait.
 
 ## Deadvox CI browser dependency stalls
 

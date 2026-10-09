@@ -1,5 +1,10 @@
 import { expect, it, vi } from 'vitest';
+import { SPAWN_TIME } from '../src/core/clock.ts';
 import { configFromUrl } from '../src/game/config.ts';
+
+it('uses SPAWN_TIME when the URL has no time for a site without its own start', () => {
+  expect(configFromUrl(new URLSearchParams('site=city')).start).toBe(SPAWN_TIME);
+});
 
 it('restricts handedness overrides to debug URL configuration', () => {
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=left')).debugHandedness).toBe('left');

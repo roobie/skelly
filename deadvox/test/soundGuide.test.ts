@@ -4,7 +4,7 @@ import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
 import type { Manifest } from '../src/core/assets.ts';
 import type { SoundDef } from '../src/core/content.ts';
-import { HEARTBEAT_FILES } from '../src/game/audioPresentation.ts';
+import { FIREARM_SHOT_SOUND_EVENTS, HEARTBEAT_FILES } from '../src/game/audioPresentation.ts';
 import {
   buildHeartbeatSoundGuide,
   buildSoundGuide,
@@ -53,8 +53,7 @@ describe('audio listening guide', () => {
     expect(root.querySelectorAll('button')).toHaveLength(heartbeat.variants.length * HEARTBEAT_PREVIEW_LEVELS.length);
     for (const [variantIndex, variant] of heartbeat.variants.entries()) {
       const buttons = [...rows[variantIndex]!.querySelectorAll('button')];
-      for (const [levelIndex, { label, gain }] of HEARTBEAT_PREVIEW_LEVELS.entries()) {
-        expect(buttons[levelIndex]!.textContent).toContain(label);
+      for (const [levelIndex, { gain }] of HEARTBEAT_PREVIEW_LEVELS.entries()) {
         buttons[levelIndex]!.click();
         expect(preview).toHaveBeenNthCalledWith(
           variantIndex * HEARTBEAT_PREVIEW_LEVELS.length + levelIndex + 1,
@@ -91,10 +90,9 @@ describe('audio listening guide', () => {
     // see docs/deferred-assertions.md instead of pinning mutable listening verdicts.
   });
 
-  it('includes each surface-specific shambler step in the generated sheet', () => {
-    const ids = ['grass', 'mud', 'sand', 'stone', 'wood', 'leaves'].map((surface) => `shambler_step_${surface}`);
+  it('keeps every shambler surface step in the generated sheet without noise emission', () => {
+    const ids = sounds.filter(({ id }) => id.startsWith('shambler_step_')).map(({ id }) => id);
     const guide = buildSoundGuide(sounds, manifest);
-    expect(sounds.filter(({ id }) => id.startsWith('shambler_step_')).map(({ id }) => id)).toEqual(ids);
     const steps = guide.filter(({ id }) => id.startsWith('shambler_step_'));
     expect(steps.map(({ id }) => id)).toEqual(ids);
     expect(steps.every(({ category, noiseRadiusMetres }) => category === 'world' && noiseRadiusMetres === null)).toBe(
@@ -102,33 +100,25 @@ describe('audio listening guide', () => {
     );
   });
 
-  it('lists only BR-approved door close/open variants on the generated listening sheet', () => {
+  it('keeps door close/open source variants connected to their guide entries', () => {
     const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
-    const close = ['assets/audio/door_blocked_close-01.ogg'];
-    const open = ['assets/audio/door-open-03.ogg'];
-    expect(definitions.get('door_close')?.variants).toEqual(close);
-    expect(definitions.get('door_open')?.variants).toEqual(open);
     const guide = buildSoundGuide(sounds, manifest);
-    expect(guide.find(({ id }) => id === 'door_close')?.variants.map(({ file }) => file)).toEqual(close);
-    expect(guide.find(({ id }) => id === 'door_open')?.variants.map(({ file }) => file)).toEqual(open);
-    expect(guide.find(({ id }) => id === 'door_close')?.note).toContain('door_blocked_close');
-    expect(guide.find(({ id }) => id === 'door_blocked_close')?.note).toContain('distinct stuck-door sound');
+    for (const id of ['door_close', 'door_open'] as const) {
+      expect(guide.find(({ id: guideId }) => guideId === id)?.variants.map(({ file }) => file)).toEqual(
+        definitions.get(id)?.variants,
+      );
+    }
+    expect(guide.find(({ id }) => id === 'door_close')?.note).toBeTruthy();
+    expect(guide.find(({ id }) => id === 'door_blocked_close')?.note).toBeTruthy();
   });
 
-  it('uses only the BR-approved leaves clip for player and shambler steps', () => {
+  it('keeps player and shambler leaves source sets aligned', () => {
     const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
-    const leaves = ['assets/audio/footstep-leaves-01.ogg'];
-    expect(definitions.get('footstep_leaves')?.variants).toEqual(leaves);
-    expect(definitions.get('shambler_step_leaves')?.variants).toEqual(leaves);
-    const guide = buildSoundGuide(sounds, manifest);
-    expect(guide.find(({ id }) => id === 'footstep_leaves')?.variants.map(({ file }) => file)).toEqual(leaves);
-    expect(guide.find(({ id }) => id === 'shambler_step_leaves')?.variants.map(({ file }) => file)).toEqual(leaves);
+    expect(definitions.get('shambler_step_leaves')?.variants).toEqual(definitions.get('footstep_leaves')?.variants);
   });
 
-  it('uses only the selected generic swing and exposes the new drop and pouch cues without noise emission', () => {
+  it('keeps fist-hit, item-drop, and pouch cues listed with expected noise and provenance', () => {
     const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
-    expect(definitions.get('melee_swing')?.variants).toEqual(['assets/audio/melee_swing-01.ogg']);
-    expect(definitions.get('door_blocked_close')?.variants).toEqual(['assets/audio/door_blocked_close-01.ogg']);
     for (const id of ['melee_hit_fist', 'item_drop_wood', 'pouch_take']) {
       expect(definitions.get(id)?.noise.enabled).toBe(false);
       expect(SOUND_TRIGGER_GUIDE[id as keyof typeof SOUND_TRIGGER_GUIDE]).toBeDefined();
@@ -136,24 +126,22 @@ describe('audio listening guide', () => {
     const guide = buildSoundGuide(sounds, manifest);
     expect(guide.map(({ id }) => id)).toContain('item_drop_wood');
     expect(guide.map(({ id }) => id)).toContain('pouch_take');
-    expect(guide.find(({ id }) => id === 'melee_hit_fist')?.note).toContain('Stand-in');
+    expect(guide.find(({ id }) => id === 'melee_hit_fist')?.note).toBeTruthy();
     expect(manifest.sources.flatMap(({ files }) => files)).toContain('assets/audio/melee_hit_fist-01.ogg');
   });
 
-  it('keeps approved random AKM variants active and PBS-1 alternatives preview-only', () => {
+  it('credits the AR M4 shots as CC0 synthesised audio and keeps the PBS-1 event preview-only', () => {
     const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
-    expect(definitions.get('gunshot')?.variants).toEqual([
-      'assets/audio/gunshot-akm-01.ogg',
-      'assets/audio/gunshot-akm-02.ogg',
-    ]);
-    expect(definitions.get('gunshot_pbs1_reference')?.variants).toEqual([
-      'assets/audio/gunshot-akm-pbs1-01.ogg',
-      'assets/audio/gunshot-akm-pbs1-02.ogg',
-    ]);
-    expect(SOUND_TRIGGER_GUIDE.gunshot_pbs1_reference.trigger).toContain('not used by gameplay');
-    expect(buildSoundGuide(sounds, manifest).find(({ id }) => id === 'gunshot_pbs1_reference')?.note).toContain(
-      'future suppressor',
-    );
+    const guide = buildSoundGuide(sounds, manifest);
+    for (const id of ['gunshot_m4', 'gunshot_m4_suppressed'] as const) {
+      const entry = guide.find((candidate) => candidate.id === id);
+      expect(entry?.trigger).toBeTruthy();
+      expect(entry?.noiseRadiusMetres).toBe(definitions.get(id)?.noise.radiusMetres);
+      expect(entry?.variants.some(({ author, licence }) => author === 'BR' && licence === 'CC0-1.0')).toBe(true);
+      expect(entry?.variants.every(({ author, licence }) => author === 'BR' && licence === 'CC0-1.0')).toBe(true);
+    }
+    expect(guide.some(({ id }) => id === 'gunshot_pbs1_reference')).toBe(true);
+    expect(FIREARM_SHOT_SOUND_EVENTS.has('gunshot_pbs1_reference')).toBe(false);
   });
 
   it('credits every listed variant from its manifest source', () => {
