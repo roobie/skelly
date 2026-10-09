@@ -1,5 +1,5 @@
 // Content-side acceptance of an authored layout; shape/units are checked by schema.ts.
-import { placementOf } from './authoredPlacement.ts';
+import { blocks, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
 import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -8,10 +8,12 @@ import { militaryLootItems } from './magazine.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
+import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import {
   type CompiledTemplate,
   type Placement,
   placedBlockAt,
+  placedPieces,
   templateLockIds,
   templateResolves,
 } from './templates.ts';
@@ -162,6 +164,24 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     placements.push(placement);
   });
   const lots = footprints.map(({ rect, index }) => lotOf(layout.buildings[index]!, rect));
+  const solidFurniture = placements.flatMap(placedPieces).filter((piece) => {
+    const furniture = registry.furniture.get(piece.furniture);
+    return furniture && furniture.solid !== false;
+  });
+  const solidAt = (x: number, y: number, z: number): boolean =>
+    placements.some((placement) => {
+      const block = placedBlockAt(placement, [x, y, z]);
+      return block !== undefined && registry.blocks[block]?.solid === true;
+    }) ||
+    solidFurniture.some(
+      (piece) =>
+        x >= piece.pos[0] &&
+        x < piece.pos[0] + piece.size[0] &&
+        y >= piece.pos[1] &&
+        y < piece.pos[1] + piece.size[1] &&
+        z >= piece.pos[2] &&
+        z < piece.pos[2] + piece.size[2],
+    );
   const supported = (position: Vec3, path: string) => {
     const [x, y, z] = position;
     const below: Vec3 = [Math.floor(x * 2), Math.round(y * 2) - 1, Math.floor(z * 2)];
@@ -182,11 +202,22 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
   layout.shamblers.forEach((spawn, i) => {
-    if (!registry.zombies.has(spawn.type)) {
+    const type = registry.zombies.get(spawn.type);
+    if (!type) {
       issues.push([`.shamblers[${i}].type`, `no zombie type "${spawn.type}"`]);
     }
     checkSpawn([spawn.position[0], spawn.position[2]], `.shamblers[${i}].position`);
     supported(spawn.position, `.shamblers[${i}].position`);
+    if (type) {
+      const blocked = spawnOverlappingSolidBlock(
+        blocks(spawn.position),
+        zombieBodyDimensions(type, HAMLET_BLOCK_SIZE),
+        solidAt,
+      );
+      if (blocked) {
+        issues.push([`.shamblers[${i}].position`, `spawn body overlaps solid cell [${blocked.join(',')}]`]);
+      }
+    }
   });
   layout.terrain.forEach((feature, i) => {
     const points = feature.kind === 'ridge' ? feature.points : [feature.centre];

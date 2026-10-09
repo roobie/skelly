@@ -308,10 +308,6 @@
         "F": {
           "furniture": "footlocker",
           "loot": "camp_supplies"
-        },
-        "z": {
-          "spawn": "shambler",
-          "chance": 0.5
         }
       },
       "layers": [
@@ -329,8 +325,8 @@
         ],
         [
           "TTTTTTTTTTTTTTTT",
-          "T..z...........T",
           "T..............T",
+          "T..z...........T",
           "T.....WWW......T",
           "T.....WWW......T",
           "T...OO.........T",
