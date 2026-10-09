@@ -148,6 +148,7 @@ const applyCommand = (
     craftStop: () => {
       runtime.sim.actions.stop();
     },
+    wait: () => runtime.sim.actions.startWait(),
     cancelItemThrow: () => undefined,
     throwItem: (itemUid, hand, distance) => throwItem?.(itemUid, hand, distance),
   });

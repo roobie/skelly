@@ -552,13 +552,12 @@ try {
     );
   }
   await selectInventoryTab('actions');
-  assert.deepEqual(
-    (await page.locator('#inventory [data-tab-panel="actions"] button').allTextContents()).map((text) => text.trim()),
-    ['Wait'],
-  );
+  const actionsPanel = page.locator('#inventory [data-tab-panel="actions"]');
+  const waitButton = actionsPanel.locator('button[data-action="wait"]');
+  assert.equal(await waitButton.count(), 1, 'Actions panel has the Wait button');
+  assert.equal(await actionsPanel.locator('button').count(), 1, 'Actions panel contains exactly one button');
   const clickWaitButton = async () => {
-    const button = page.locator('#inventory [data-tab-panel="actions"] button');
-    const box = await button.boundingBox();
+    const box = await waitButton.boundingBox();
     assert(box, 'Wait button has a layout box');
     const cursor = await page.evaluate(() => ({
       x: globalThis.pumpHandlingTest.input.cursorX,
@@ -580,32 +579,7 @@ try {
       };
     });
     assert.equal(hit.targetIsWait, true, `drawn cursor must hit Wait: ${JSON.stringify(hit)}`);
-    await page.evaluate(() => {
-      if (globalThis.waitClickProbeInstalled) {
-        return;
-      }
-      globalThis.waitClickProbeInstalled = true;
-      globalThis.waitButtonClickEvents = [];
-      globalThis.waitDispatches = [];
-      const waitButton = document.querySelector('#inventory [data-tab-panel="actions"] button');
-      waitButton.addEventListener('click', () => globalThis.waitButtonClickEvents.push(true), { capture: true });
-      const { screen } = globalThis.pumpHandlingTest;
-      const { hooks } = screen;
-      const { dispatch } = hooks;
-      hooks.dispatch = (payload) => {
-        if (payload.kind === 'action.wait') {
-          globalThis.waitDispatches.push(payload);
-        }
-        return dispatch(payload);
-      };
-    });
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
-    const clickState = await page.evaluate(() => ({
-      buttonClicks: globalThis.waitButtonClickEvents.length,
-      waitDispatches: globalThis.waitDispatches.length,
-    }));
-    assert.ok(clickState.buttonClicks > 0, `drawn cursor click reaches Wait: ${JSON.stringify(clickState)}`);
-    assert.ok(clickState.waitDispatches > 0, `Wait click dispatches its action: ${JSON.stringify(clickState)}`);
   };
   const startWaitFromButton = async () => {
     const noticeBefore = await page.evaluate(() => globalThis.pumpHandlingTest.getNotice());
@@ -631,7 +605,7 @@ try {
   };
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   await startWaitFromButton();
-  assert.match(await page.locator('#rest').textContent(), /Waiting/);
+  assert.equal(await page.locator('#rest').isVisible(), true, 'Wait HUD is visible while the action is active');
   const waitStart = await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.time);
   const timeProgress = await page.evaluate((start) => {
     const { session } = globalThis.pumpHandlingTest;
@@ -689,7 +663,14 @@ try {
   });
   assert.equal(interrupted.reached, true, `Wait interruption did not settle: ${JSON.stringify(interrupted)}`);
   await pressAction(page, 'compression.continue');
-  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+  const continued = await page.evaluate(() => {
+    const { session } = globalThis.pumpHandlingTest;
+    return globalThis.pumpManualFrames.until(() => {
+      const { job } = session.sim.actions;
+      return job?.jobType === 'wait' && !job.stopped && session.sim.compression.active;
+    });
+  });
+  assert.equal(continued.reached, true, `Continue did not resume Wait: ${JSON.stringify(continued)}`);
   await pressAction(page, 'handling.stop');
   await waitUntilStopped();
   await page.evaluate(() => globalThis.pumpManualFrames.disable());

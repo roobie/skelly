@@ -162,7 +162,7 @@ export interface ReplayCommandOwners {
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
-  wait?: () => string | undefined;
+  wait: () => string | undefined;
   cancelItemThrow: () => void;
   throwItem: (itemUid: number, hand: 'left' | 'right', distance: number) => void;
 }
@@ -219,7 +219,7 @@ export const applyReplayActionPayload = (
     case 'craft.stop':
       return owners.craftStop();
     case 'action.wait':
-      return owners.wait ? owners.wait() : 'Wait is unavailable';
+      return owners.wait();
     case 'item.throw.cancel':
       owners.cancelItemThrow();
       return undefined;

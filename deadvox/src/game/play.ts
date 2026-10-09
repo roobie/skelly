@@ -74,6 +74,7 @@ import {
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
+import { continueActionResumesJob } from './continueAction.ts';
 import type { DebugHooks, DebugModule, DebugRuntime, InputReplayStatusState } from './debugInterface.ts';
 import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
@@ -1381,13 +1382,7 @@ export const startPlay = (
     if (continueWork()) {
       return;
     }
-    if (
-      rest.action ||
-      sim.actions.job?.jobType === 'wait' ||
-      sim.actions.job?.jobType === 'reading' ||
-      sim.actions.job?.jobType === 'pry' ||
-      sim.actions.job?.jobType === 'treatment'
-    ) {
+    if (rest.action || continueActionResumesJob(sim.actions.job?.jobType)) {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
         showRefusal(`Can't continue: ${reason}`, sim.time);

@@ -547,7 +547,7 @@ const inventoryTemplate = (
   <div class="inv-body inv-actions" data-tab-panel="actions" ?hidden=${tab !== 'actions'}>
     <section class="inv-pane inv-body-panel" aria-label="Actions">
       <h3>Actions</h3>
-      <button class="inv-option" type="button" @click=${wait}>Wait</button>
+      <button class="inv-option" type="button" data-action="wait" @click=${wait}>Wait</button>
     </section>
   </div>
   <footer class="inv-queue"></footer>

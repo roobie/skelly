@@ -127,6 +127,7 @@ function setup(contentRegistry = registry) {
         craftStart: () => undefined,
         craftContinue: () => undefined,
         craftStop: () => undefined,
+        wait: () => undefined,
         cancelItemThrow: () => undefined,
         throwItem: () => undefined,
       });
@@ -245,8 +246,10 @@ describe('inventory screen Lit rendering', () => {
     screen.selectTab('actions');
     expect(root.querySelector<HTMLElement>('[data-tab-panel="actions"]')?.hidden).toBe(false);
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
-    const button = [...root.querySelectorAll('button')].find((candidate) => candidate.textContent?.trim() === 'Wait');
-    expect(button).toBeDefined();
+    const panel = root.querySelector<HTMLElement>('[data-tab-panel="actions"]')!;
+    const button = panel.querySelector<HTMLButtonElement>('button[data-action="wait"]');
+    expect(button).not.toBeNull();
+    expect(panel.querySelectorAll('button')).toHaveLength(1);
     button!.click();
     expect(lastPayload()).toEqual({ kind: 'action.wait' });
   });
@@ -386,6 +389,7 @@ describe('inventory screen Lit rendering', () => {
         craftStart: () => undefined,
         craftContinue: () => undefined,
         craftStop: () => undefined,
+        wait: () => undefined,
         cancelItemThrow: () => undefined,
         throwItem: () => undefined,
       });
