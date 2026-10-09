@@ -584,7 +584,7 @@ body.unconscious::after {
   background: linear-gradient(90deg, transparent 4px, var(--accent) 4px, var(--accent) 8px, transparent 8px);
 }
 #inventory .inv-body[data-tab-panel="items"] [data-pane="details"] {
-  grid-column: 3;
+  grid-column: 1 / -1;
   grid-row: 2;
 }
 #inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
