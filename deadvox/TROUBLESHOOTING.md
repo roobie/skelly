@@ -12,6 +12,7 @@ read_if:
   - you're choosing render-free or pixel mode for a browser stage
   - you diagnose keyboard rebinding, debug gates or native browser interception
   - you investigate save-lock timeouts
+  - you debug startup or save discovery
   - you investigate navigation-aborted save-test requests (#474)
 ---
 
@@ -121,6 +122,15 @@ request attributed to a generation during an explicit test navigation.
 `navigatePage` records that navigation's source state. The leaving-state rule is
 in `src/ui/saveController.ts`, `SaveController`; navigation and busy-lock
 contracts are in `navigationOnly` and `busyLockOnly`.
+
+## Startup and save discovery
+
+The startup screen covers the title card until save discovery and content validation
+finish. During that wait, the controller's `#save-status` stays visible beneath the
+loading bar, so a slow or failed storage check explains itself. The persistence action
+becomes reachable on the title card only after discovery has established the storage
+state. See `src/main.ts`, `hideStartupScreen`, and `src/ui/saveController.ts`,
+`SaveController.prepare`.
 
 ## Deadvox CI browser dependency stalls
 

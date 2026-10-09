@@ -3,6 +3,7 @@ read_if:
   - you're running the game, its debug tools or its benchmarks
   - you're running Deadvox unit tests or the opt-in CPU benchmark
   - you're checking the present implementation and known limits
+  - you're investigating startup or save discovery
 ---
 
 # deadvox — singleplayer voxel survival
@@ -13,6 +14,12 @@ Cataclysm: DDA (detailed items, bodies, crafting). The graphics are blocky voxel
 
 This file describes the code as it is. The game's design and roadmap are in
 [DESIGN.md](DESIGN.md) and [EPIC.md](EPIC.md).
+
+The startup screen stays up while saved worlds are discovered and any candidate is
+validated. It shows the save controller's status beneath the loading bar, so slow
+storage checks remain explained. The title card and any persistence action become
+available after discovery, when storage state is known. See `src/main.ts`,
+`hideStartupScreen`, and `src/ui/saveController.ts`, `SaveController.prepare`.
 
 **Play:** <https://roobie.github.io/skelly/deadvox/>. URL parameters:
 

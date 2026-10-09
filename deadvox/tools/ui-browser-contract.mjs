@@ -174,17 +174,15 @@ try {
       const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
       const cardEl = document.querySelector('#overlay .card');
       const card = cardEl.getBoundingClientRect();
-      const style = getComputedStyle(cardEl);
-      const maxWidth = Number.parseFloat(style.maxWidth) +
-        Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      const shellWidth = Number.parseFloat(getComputedStyle(cardEl.parentElement).width);
       return rows.length > 0 && entries.length === rows.length &&
         entries.every((key, index) => key.nextElementSibling?.tagName === 'DD' &&
           key.textContent === rows[index].keys && key.nextElementSibling.textContent === rows[index].action) &&
-        columns.length === 1 && Number.isFinite(maxWidth) && card.width <= maxWidth &&
+        columns.length === 1 && Number.isFinite(shellWidth) && card.width <= shellWidth &&
         card.left >= 0 && card.right <= innerWidth;
     })()`),
     true,
-    'binding-derived controls stack in one column within the card computed maximum width and viewport',
+    'binding-derived controls stack in one column within the scroll shell width and viewport',
   );
   assert.equal(
     await evaluate(

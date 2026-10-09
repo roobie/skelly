@@ -25,7 +25,9 @@ body {
   z-index: 3000;
   inset: 0;
   display: grid;
-  place-items: center;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
   background: #000;
 }
 #startup-screen[hidden] {
@@ -43,6 +45,15 @@ body {
   height: 100%;
   background: #b8bcc2;
   animation: startup-progress 1.2s ease-in-out infinite;
+}
+#save-status {
+  overflow-wrap: anywhere;
+}
+#startup-screen #save-status {
+  max-width: min(420px, calc(100vw - 32px));
+  margin: 0;
+  color: #b8bcc2;
+  text-align: center;
 }
 @keyframes startup-progress {
   from {
@@ -356,9 +367,6 @@ body.unconscious::after {
   cursor: pointer;
   font-weight: 400;
   white-space: nowrap;
-}
-#save-status {
-  overflow-wrap: anywhere;
 }
 #continue,
 #save-persist,

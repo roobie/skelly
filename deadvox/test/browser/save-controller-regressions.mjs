@@ -46,7 +46,6 @@ const url = browserStageUrl(
 const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
-const PERSISTENT_BACKEND = /Persistent indexeddb/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
 const BASE_MISMATCH = /Generated base mismatch/;
 const REPLAY_REJECTED = /^Replay rejected:/;
@@ -112,7 +111,7 @@ try {
     }
   });
 
-  await test('explicit persistence grant survives a click before the first storage status', async () => {
+  await test('startup covers persistence action until save discovery finishes', async () => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     try {
       await context.addInitScript(() => {
@@ -149,29 +148,54 @@ try {
       const page = await context.newPage();
       await page.goto(url);
       await page.waitForFunction(() => typeof globalThis.releasePersistenceIdentity === 'function');
+      await page.waitForFunction(() => {
+        const status = document.querySelector('#startup-screen #save-status');
+        return Boolean(
+          status?.textContent.trim() &&
+            globalThis.deadvoxSaveTest?.controller &&
+            !globalThis.deadvoxSaveTest.controller.ready,
+        );
+      });
+      assert.equal(await page.locator('#startup-screen').isVisible(), true, 'startup remains visible during discovery');
       assert.equal(
-        await page.locator('#startup-screen').isVisible(),
+        await page.locator('#startup-screen #save-status').isVisible(),
         true,
-        'the startup indicator stays up while loading',
+        'discovery status is visible under the bar',
       );
       const button = page.locator('#save-persist');
-      assert.equal(await button.isVisible(), true, 'unknown-state action remains available during discovery');
+      assert.equal(await button.isVisible(), true, 'the controller still renders its action while state is unknown');
       assert.equal(await button.isEnabled(), true);
+      assert.equal(
+        await page.evaluate(() => {
+          const action = document.querySelector('#save-persist');
+          const rect = action.getBoundingClientRect();
+          return (
+            document
+              .elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+              ?.closest('#startup-screen') !== null
+          );
+        }),
+        true,
+        'startup screen covers the action until discovery finishes',
+      );
       assert.equal(await page.evaluate(() => globalThis.persistenceQueries), 0, 'advisory status has not started');
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
-      await button.evaluate((element) => element.click());
+      await page.evaluate(() => globalThis.releasePersistenceIdentity());
+      await page.waitForFunction(
+        () => globalThis.deadvoxSaveTest?.controller.ready && document.querySelector('#startup-screen').hidden,
+        undefined,
+        { timeout: 30_000 },
+      );
+      assert.equal(await button.isVisible(), true, 'action is available after discovery finishes');
+      assert.equal(await page.locator('#save-status').isVisible(), true, 'final discovery status is on the title card');
+      assert.equal(await page.evaluate(() => globalThis.persistenceQueries), 1);
+      await button.click();
       await page.waitForFunction(() =>
         document.querySelector('#save-status').textContent.includes('Persistent storage granted'),
       );
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 1);
       assert.match(await page.locator('#save-status').textContent(), PERSISTENCE_GRANTED);
-      assert.equal(await button.isVisible(), false, 'explicit grant is retained before discovery completes');
-      await page.evaluate(() => globalThis.releasePersistenceIdentity());
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-      assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 1, 'discovery never requests again');
-      assert.equal(await page.evaluate(() => globalThis.persistenceQueries), 1);
-      assert.equal(await button.isVisible(), false, 'discovery cannot make a granted action visible again');
-      assert.match(await page.locator('#save-status').textContent(), PERSISTENT_BACKEND);
+      assert.equal(await button.isVisible(), false, 'explicit grant removes the request action');
       assert.equal(await page.evaluate(() => globalThis.deadvoxSaveTest.controller.storageStatus.persistent), true);
       assert.equal(
         await page.evaluate(async () => (await globalThis.deadvoxSaveTest.storage.status()).persistent),

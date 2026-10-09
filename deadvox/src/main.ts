@@ -24,7 +24,16 @@ import { contentLookup, SaveController } from './ui/saveController.ts';
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
 const startupScreen = document.getElementById('startup-screen')!;
+const saveStatus = document.getElementById('save-status')!;
+const saveStatusHome = saveStatus.parentElement!;
+const saveStatusNextSibling = saveStatus.nextSibling;
+const restoreSaveStatus = () => {
+  if (saveStatus.parentElement === startupScreen) {
+    saveStatusHome.insertBefore(saveStatus, saveStatusNextSibling);
+  }
+};
 const hideStartupScreen = () => {
+  restoreSaveStatus();
   startupScreen.hidden = true;
 };
 const showStartupFailure = (message: string) => {
@@ -152,7 +161,7 @@ if (bench === 'report') {
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
     const saveController = new SaveController(backend);
-    const savedWorld = await saveController.prepare();
+    startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
       Object.assign(globalThis, {
         deadvoxSaveTest: {
@@ -173,6 +182,7 @@ if (bench === 'report') {
         },
       });
     }
+    const savedWorld = await saveController.prepare();
     if (savedWorld) {
       const resumed = makeConfig(savedWorld.seed, config.radiusM, savedWorld.blockSize);
       resumed.start = savedWorld.clock.start;
@@ -199,7 +209,7 @@ if (bench === 'report') {
           },
         };
       });
-      saveController.setGoLabel('Click to start game');
+      saveController.setNewWorldGoLabel('Click to start game');
       overlay.classList.add('startup-ready');
       hideStartupScreen();
     }
