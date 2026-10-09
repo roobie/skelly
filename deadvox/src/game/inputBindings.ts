@@ -676,7 +676,16 @@ export class KeyboardInput {
   sync(): void {
     const next = this.context();
     if (next.context !== this.state.context || next.debug !== this.state.debug) {
+      const continuingMovement = [...this.active].filter(
+        ([, action]) =>
+          action.startsWith('movement.') && this.registry.binding(action)?.contexts.includes(next.context),
+      );
       this.cancel(true, false, 'context-change');
+      // Movement remains valid across the reading-to-play transition, so its initiating key must pass through.
+      for (const [code, action] of continuingMovement) {
+        this.blocked.delete(code);
+        this.active.set(code, action);
+      }
       this.state = next;
     }
   }

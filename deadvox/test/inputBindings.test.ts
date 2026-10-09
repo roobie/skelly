@@ -146,6 +146,24 @@ describe('keyboard registry', () => {
     expect(keyboard.press(event('KeyY'))).toBe(false);
     expect(commands).toEqual([]);
   });
+  it('passes held movement through the reading-to-play context change', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    let context: InputContext = 'reading';
+    keyboard.context = () => ({ context, debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+
+    expect(keyboard.press(event('KeyW'))).toBe(true);
+    expect(keyboard.held('movement.forward')).toBe(true);
+    context = 'play';
+    keyboard.sync();
+    expect(keyboard.held('movement.forward')).toBe(true);
+    keyboard.release(event('KeyW'));
+    expect(commands.map(({ action, phase }) => [action, phase])).toEqual([
+      ['movement.forward', 'down'],
+      ['movement.forward', 'up'],
+    ]);
+  });
   it('rebinds the ADS pointer action to another mouse button or a key', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     const keyboard = new KeyboardInput(bindings);
