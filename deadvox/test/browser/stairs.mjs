@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { performance } from 'node:perf_hooks';
 
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
@@ -15,9 +16,25 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
-assert.ok(mode === 'traversal' || mode === 'lighting' || mode === 'camo', 'choose traversal, lighting or camo');
+assert.ok(
+  mode === 'traversal' || mode === 'lighting-cellar' || mode === 'lighting-atlas' || mode === 'camo',
+  'choose traversal, lighting-cellar, lighting-atlas or camo',
+);
+const isLightingMode = mode === 'lighting-cellar' || mode === 'lighting-atlas';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
+const pixelCrop = { x: 480, y: 260, width: 240, height: 240 };
+const timePhase = async (phase, action) => {
+  const start = performance.now();
+  try {
+    return await action();
+  } finally {
+    process.stdout.write(
+      `STAIRS_TIMING ${JSON.stringify({ phase, milliseconds: Math.round(performance.now() - start) })}\n`,
+    );
+  }
+};
+const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, action) : action());
 const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
 // Keep the witness near the stairs lighting route; the remote wall incurred chunk streaming before its captures.
 const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [75, 21, 60], rotation: 0 };
@@ -56,13 +73,13 @@ const vite = await createServer({
         if (mode !== 'traversal' && id.endsWith('/src/core/authoredSite.ts')) {
           const anchor = '    const s = scale.blockSize;';
           assert.equal(code.split(anchor).length, 2);
-          const fixtureName = mode === 'lighting' ? 'raisedCabin' : 'camoWitness';
-          const fixture = mode === 'lighting' ? RAISED_CABIN : CAMO_WITNESS;
+          const fixtureName = isLightingMode ? 'raisedCabin' : 'camoWitness';
+          const fixture = isLightingMode ? RAISED_CABIN : CAMO_WITNESS;
           let transformed = code.replace(
             anchor,
             `${anchor}\n    const ${fixtureName} = ${JSON.stringify(fixture)};\n    layout = {...layout, buildings: [...layout.buildings, ${fixtureName}]};`,
           );
-          if (mode === 'lighting') {
+          if (isLightingMode) {
             const lot = 'lotOf(building, rect)';
             assert.equal(code.split(lot).length, 2);
             transformed = transformed.replace(
@@ -72,7 +89,7 @@ const vite = await createServer({
           }
           return transformed;
         }
-        if (mode === 'lighting' && id.endsWith('/src/render/skylight.ts')) {
+        if (isLightingMode && id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.
           assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
           assert.ok(code.includes('float skyVisibility() {'));
@@ -102,19 +119,22 @@ const vite = await createServer({
 let browser;
 let page;
 try {
-  await vite.listen();
+  await timeIfLighting('vite-listen', () => vite.listen());
   const { port } = vite.httpServer.address();
   const stageName = {
     traversal: 'stairs-traversal',
     camo: 'stairs-camo',
-    lighting: 'stairs-lighting',
+    'lighting-cellar': 'stairs-lighting-cellar',
+    'lighting-atlas': 'stairs-lighting-atlas',
   }[mode];
-  browser = await launchChromium(stageName, {
-    headless: process.env.BROWSER_HEADED !== '1',
-  });
+  browser = await timeIfLighting('browser-launch', () =>
+    launchChromium(stageName, {
+      headless: process.env.BROWSER_HEADED !== '1',
+    }),
+  );
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
   page = await browser.newPage({
-    viewport: mode === 'lighting' ? { width: 1280, height: 800 } : { width: 640, height: 400 },
+    viewport: isLightingMode ? { width: 1280, height: 800 } : { width: 640, height: 400 },
   });
   const errors = [];
   const states = [];
@@ -145,18 +165,18 @@ try {
     }
   });
   const stageId = stageName;
-  await page.goto(
-    browserStageUrl(stageId, `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`),
-  );
-  await page.waitForFunction(
-    () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
-    undefined,
-    {
-      timeout: 60_000,
-    },
-  );
-  await page.locator('#go').click();
-  await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
+  await timeIfLighting('game-boot', async () => {
+    await page.goto(
+      browserStageUrl(stageId, `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`),
+    );
+    await page.waitForFunction(
+      () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
+      undefined,
+      { timeout: 60_000 },
+    );
+    await page.locator('#go').click();
+    await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
+  });
   if (mode === 'traversal') {
     await page.waitForFunction(() => Boolean(document.pointerLockElement));
     const verifyGate = async (locked) => {
@@ -215,17 +235,19 @@ try {
     }
     assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode), true);
   }
-  await page.waitForFunction(
-    (lighting) =>
-      [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
-        globalThis.stairsWitness.engine.meshes.group.children.some(
-          (mesh) => mesh.position.x === x && mesh.position.y === y && mesh.position.z === z,
+  await timeIfLighting('initial-mesh-ready', () =>
+    page.waitForFunction(
+      (lighting) =>
+        [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
+          globalThis.stairsWitness.engine.meshes.group.children.some(
+            (mesh) => mesh.position.x === x && mesh.position.y === y && mesh.position.z === z,
+          ),
         ),
-      ),
-    mode === 'lighting',
-    { timeout: 60_000 },
+      isLightingMode,
+      { timeout: 60_000 },
+    ),
   );
-  if (mode === 'lighting') {
+  if (isLightingMode) {
     const shaderErrors = errors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error'));
     assert.deepEqual(shaderErrors, [], 'chunk shaders compile before the lighting pixel checks');
     await page.evaluate(() => {
@@ -366,7 +388,31 @@ try {
     assert.equal(value.contentErrors, '');
     return value;
   };
-  const shot = (label) => page.screenshot({ path: resolve(artifacts, `${label}.png`) });
+  const shot = (label, crop = false) =>
+    page.screenshot({
+      path: resolve(artifacts, `${label}.png`),
+      ...(crop ? { clip: pixelCrop } : {}),
+    });
+  const luminance = async (png, cropHeight = 240) =>
+    page.evaluate(
+      async ({ data, height }) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${data}`;
+        await image.decode();
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0, 240, height, 0, 0, 240, height);
+        const pixels = ctx.getImageData(0, 0, 240, height).data;
+        let sum = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+        }
+        return sum / (240 * height * 3);
+      },
+      { data: png.toString('base64'), height: cropHeight },
+    );
   const camoWallPixels = async (png) =>
     page.evaluate(async (data) => {
       const image = new Image();
@@ -418,6 +464,111 @@ try {
         middle: luminance([151, 43.5, 121.5]),
       };
     }, png.toString('base64'));
+  const lightingCellarProofs = async () => {
+    await stage([134, 35.0001, 115]);
+    const residents = () =>
+      page.evaluate(() => {
+        const { engine } = globalThis.stairsWitness;
+        return [engine.skylight.at([67, 17.6, 57.5]), engine.skylight.at([83, 23.6, 57.5])];
+      });
+    const first = await timePhase('cellar-resident-samples', residents);
+    assert.deepEqual(first, [0, 0]);
+    const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
+    assert.equal(raisedOutdoor, 1);
+    const lightProof = await timePhase('cellar-dark-beam-pixels', async () => {
+      const dark = await shot('cellar-dark', true);
+      await page.evaluate(() => {
+        const { session } = globalThis.stairsWitness;
+        for (const side of ['left', 'right']) {
+          const held = session.inventory.hands[side];
+          if (held && !session.inventory.consume(held, held.count)) {
+            throw new Error(`Could not clear ${side} fixture hand`);
+          }
+        }
+        const flashlight = session.inventory.create('flashlight');
+        if (!session.inventory.add(flashlight, { kind: 'hand', side: 'left' })) {
+          throw new Error('Could not place fixture flashlight in hand');
+        }
+      });
+      const mouse5 = () =>
+        page.evaluate(() =>
+          document
+            .querySelector('#view canvas')
+            .dispatchEvent(
+              new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
+            ),
+        );
+      await mouse5();
+      await page.waitForTimeout(700);
+      assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left.on), true);
+      const lit = await shot('cellar-beam', true);
+      const proof = { dark: await luminance(dark), beam: await luminance(lit) };
+      assert.ok(proof.dark < 15, JSON.stringify(proof));
+      assert.ok(proof.beam > proof.dark + 10, JSON.stringify(proof));
+      return { proof, mouse5 };
+    });
+    const residentProof = await timePhase('resident-field-switch', async () => {
+      await lightProof.mouse5();
+      await stage([166, 47.0001, 115]);
+      const second = await residents();
+      assert.deepEqual(second, first);
+      const secondDark = await luminance(await shot('second-cellar-dark', true));
+      assert.ok(secondDark < 15, JSON.stringify({ secondDark }));
+      return { first, second, secondDark, raisedOutdoor };
+    });
+    return { lightProof: lightProof.proof, residentProof };
+  };
+  const lightingAtlasProofs = async () => {
+    const outdoorProof = await timePhase('outdoor-sky-equivalence', async () => {
+      await stage([125, 43.0001, 118]);
+      await page.evaluate(() => {
+        globalThis.stairsWitness.input.pitch = -0.3;
+      });
+      await page.waitForTimeout(700);
+      const outdoor = await shot('outdoor-normal', true);
+      await page.evaluate(() => {
+        globalThis.skyProofControl.value = 1;
+      });
+      await page.waitForTimeout(200);
+      const outdoorReference = await shot('outdoor-sky-one', true);
+      await page.evaluate(() => {
+        globalThis.skyProofControl.value = 0;
+      });
+      const proof = { normal: await luminance(outdoor, 160), reference: await luminance(outdoorReference, 160) };
+      assert.ok(Math.abs(proof.normal - proof.reference) < 1.5, JSON.stringify(proof));
+      return proof;
+    });
+    const secondSlotProof = await timePhase('atlas-slot-wall-equivalence', async () => {
+      const contrast = await page.evaluate(() => {
+        const { engine } = globalThis.stairsWitness;
+        return [engine.skylight.at([65.75, 18.75, 59.25]), engine.skylight.at([81.75, 24.75, 59.25])];
+      });
+      assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
+      await stage([157, 43.0001, 118]);
+      await page.evaluate(() => {
+        globalThis.stairsWitness.input.pitch = Math.atan2(3.25, 7);
+      });
+      await page.waitForTimeout(700);
+      const secondWall = await shot('second-slot-wall-normal', true);
+      await page.evaluate(() => {
+        globalThis.skyProofControl.value = 1;
+      });
+      await page.waitForTimeout(200);
+      const secondWallReference = await shot('second-slot-wall-sky-one', true);
+      await page.evaluate(() => {
+        globalThis.skyProofControl.value = 0;
+      });
+      const proof = {
+        contrast,
+        normal: await luminance(secondWall, 160),
+        reference: await luminance(secondWallReference, 160),
+      };
+      await writeFile(resolve(artifacts, 'second-slot.json'), JSON.stringify(proof, null, 2));
+      assert.ok(Math.abs(proof.normal - proof.reference) < 1.5, JSON.stringify(proof));
+      return proof;
+    });
+    return { outdoorProof, secondSlotProof };
+  };
   if (mode === 'camo') {
     await stage([155, 43.0001, 122], Math.PI / 2, -0.2);
     const originalModes = await page.evaluate(() => {
@@ -914,128 +1065,19 @@ try {
 
     await walk('movement.forward', 143, true, 43);
     assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
-  } else if (mode === 'lighting') {
-    await stage([134, 35.0001, 115]);
-    const residents = () =>
-      page.evaluate(() => {
-        const { engine } = globalThis.stairsWitness;
-        return [engine.skylight.at([67, 17.6, 57.5]), engine.skylight.at([83, 23.6, 57.5])];
-      });
-    const first = await residents();
-    assert.deepEqual(first, [0, 0]);
-    // This cabin's padded top is 64, in an all-air chunk: only real data events clear its load-time cache.
-    const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
-    assert.equal(raisedOutdoor, 1);
-    const dark = await shot('cellar-dark');
-    await page.evaluate(() => {
-      const { session } = globalThis.stairsWitness;
-      for (const side of ['left', 'right']) {
-        const held = session.inventory.hands[side];
-        if (held && !session.inventory.consume(held, held.count)) {
-          throw new Error(`Could not clear ${side} fixture hand`);
-        }
-      }
-      const flashlight = session.inventory.create('flashlight');
-      if (!session.inventory.add(flashlight, { kind: 'hand', side: 'left' })) {
-        throw new Error('Could not place fixture flashlight in hand');
-      }
-    });
-    const mouse5 = () =>
-      page.evaluate(() =>
-        document
-          .querySelector('#view canvas')
-          .dispatchEvent(
-            new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
-          ),
-      );
-    await mouse5();
-    await page.waitForTimeout(700);
-    assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left.on), true);
-    const lit = await shot('cellar-beam');
-    const luminance = async (png, cropHeight = 240) =>
-      page.evaluate(
-        async ({ data, height }) => {
-          const image = new Image();
-          image.src = `data:image/png;base64,${data}`;
-          await image.decode();
-          const canvas = document.createElement('canvas');
-          canvas.width = 240;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(image, 480, 260, 240, height, 0, 0, 240, height);
-          const pixels = ctx.getImageData(0, 0, 240, height).data;
-          let sum = 0;
-          for (let i = 0; i < pixels.length; i += 4) {
-            sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
-          }
-          return sum / (240 * height * 3);
-        },
-        { data: png.toString('base64'), height: cropHeight },
-      );
-    lightProof = { dark: await luminance(dark), beam: await luminance(lit) };
-    assert.ok(lightProof.dark < 15, JSON.stringify(lightProof));
-    assert.ok(lightProof.beam > lightProof.dark + 10, JSON.stringify(lightProof));
-    await mouse5();
-    await stage([166, 47.0001, 115]);
-    const second = await residents();
-    assert.deepEqual(second, first);
-    const secondDark = await luminance(await shot('second-cellar-dark'));
-    assert.ok(secondDark < 15, JSON.stringify({ secondDark }));
-    residentProof = { first, second, secondDark, raisedOutdoor };
-    await stage([125, 43.0001, 118]);
-    await page.evaluate(() => {
-      globalThis.stairsWitness.input.pitch = -0.3;
-    });
-    await page.waitForTimeout(700);
-    const outdoor = await shot('outdoor-normal');
-    await page.evaluate(() => {
-      globalThis.skyProofControl.value = 1;
-    });
-    await page.waitForTimeout(200);
-    const outdoorReference = await shot('outdoor-sky-one');
-    await page.evaluate(() => {
-      globalThis.skyProofControl.value = 0;
-    });
-    // The west-wall window excludes the floor/wall AO corner and hands scene.
-    outdoorProof = { normal: await luminance(outdoor, 160), reference: await luminance(outdoorReference, 160) };
-    assert.ok(Math.abs(outdoorProof.normal - outdoorProof.reference) < 1.5, JSON.stringify(outdoorProof));
-
-    // Same local field cell: first cabin's west side is buried, raised cabin's west side is exposed.
-    // A missing atlas offset reads the dark first-slot cell despite the CPU sample being lit.
-    const contrast = await page.evaluate(() => {
-      const { engine } = globalThis.stairsWitness;
-      return [engine.skylight.at([65.75, 18.75, 59.25]), engine.skylight.at([81.75, 24.75, 59.25])];
-    });
-    assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
-    await stage([157, 43.0001, 118]);
-    await page.evaluate(() => {
-      globalThis.stairsWitness.input.pitch = Math.atan2(3.25, 7);
-    });
-    await page.waitForTimeout(700);
-    const secondWall = await shot('second-slot-wall-normal');
-    await page.evaluate(() => {
-      globalThis.skyProofControl.value = 1;
-    });
-    await page.waitForTimeout(200);
-    const secondWallReference = await shot('second-slot-wall-sky-one');
-    await page.evaluate(() => {
-      globalThis.skyProofControl.value = 0;
-    });
-    secondSlotProof = {
-      contrast,
-      normal: await luminance(secondWall, 160),
-      reference: await luminance(secondWallReference, 160),
-    };
-    await writeFile(resolve(artifacts, 'second-slot.json'), JSON.stringify(secondSlotProof, null, 2));
-    assert.ok(Math.abs(secondSlotProof.normal - secondSlotProof.reference) < 1.5, JSON.stringify(secondSlotProof));
+  } else if (mode === 'lighting-cellar') {
+    ({ lightProof, residentProof } = await timePhase('lighting-cellar-proofs', lightingCellarProofs));
+  } else if (mode === 'lighting-atlas') {
+    ({ outdoorProof, secondSlotProof } = await timePhase('lighting-atlas-proofs', lightingAtlasProofs));
   }
   assert.deepEqual(errors, []);
+  const resultFile = isLightingMode ? `result-${mode}.json` : 'result.json';
   await writeFile(
-    resolve(artifacts, 'result.json'),
+    resolve(artifacts, resultFile),
     JSON.stringify({ mode, states, lightProof, outdoorProof, residentProof, secondSlotProof, errors }, null, 2),
   );
 } finally {
-  await page?.close();
-  await browser?.close();
-  await vite.close();
+  await timeIfLighting('page-close', async () => page?.close());
+  await timeIfLighting('browser-close', async () => browser?.close());
+  await timeIfLighting('vite-close', () => vite.close());
 }
