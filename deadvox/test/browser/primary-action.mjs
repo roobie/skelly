@@ -32,7 +32,8 @@ const throwChargeSample = ({ start, seconds }) => {
 };
 const mouseCharge = async (page) => {
   await page.mouse.down({ button: 'left' });
-  return async () => page.mouse.up({ button: 'left' });
+  // A mouse hold has no key for waitForSimulation to release in the page.
+  return Object.assign(async () => page.mouse.up({ button: 'left' }), { keyUps: [] });
 };
 const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
