@@ -23,7 +23,7 @@ import {
 } from './snapshotTestSupport.ts';
 
 describe('snapshot state components', () => {
-  it('keeps a crouch toggle through an inactive long action and deterministic save continuation', () => {
+  it('keeps a crouch toggle and its body height through an inactive long action and deterministic save continuation', () => {
     const uninterrupted = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'rest')).toBeUndefined();
     uninterrupted.toggleCrouch();
@@ -32,6 +32,7 @@ describe('snapshot state components', () => {
 
     const restored = createRuntime(capture(uninterrupted), true);
     expect(restored.session.crouching).toBe(true);
+    expect(restored.session.body.height).toBe(uninterrupted.session.body.height);
     for (let frame = 0; frame < 30; frame++) {
       uninterrupted.session.frame(1 / 60);
       restored.session.frame(1 / 60);
