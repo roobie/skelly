@@ -97,6 +97,7 @@ try {
     }));
     throw new Error(
       `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
+      { cause: error },
     );
   }
   await page.locator('#go').click();
