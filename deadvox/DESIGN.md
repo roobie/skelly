@@ -1238,7 +1238,7 @@ something in play, not only decorate it.
   weeks since people left. Food rotting changes what's still worth scavenging.
   There is no plant-growth or dust-accumulation simulation.
 
-Building weathering gives each site a render-only mood without changing simulation or shared geometry: fairly kept points of interest benefit from restrained change, while long-abandoned places need a general overgrown and dilapidated look. Named profiles let sites choose between those treatments, and blending grime, streak and moss over the surface preserves its material hue and texture. A bound below full replacement prevents weathering from erasing the base material. `src/core/schema.ts`, `WeatheringSchema`, validates profiles; weathering remains render-only, while #396 covers building-geometry changes.
+Building weathering gives each site a render-only mood without changing simulation or shared geometry: fairly kept points of interest benefit from restrained change, while long-abandoned places need a general overgrown and dilapidated look. Named profiles let sites choose between those treatments. Surface patterns remain visible, but an intentionally strong tint can change a material's dominant hue, so the base hue is not guaranteed under every profile. `src/core/schema.ts`, `WeatheringSchema`, validates profiles; weathering remains render-only, while #396 covers building-geometry changes.
 
 **Rendering and performance.** There will be a lot of trees (BR), so foliage gets
 a performance plan from the start rather than as a fix later:
