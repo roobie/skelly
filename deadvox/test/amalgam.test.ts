@@ -346,7 +346,7 @@ describe('amalgam body and combat seam', () => {
   });
 
   it('derives a tight collision envelope and region boxes from the realized body manifest', () => {
-    expect(registry.zombies.get('amalgam')?.debugOnly).toBe(true);
+    expect(registry.zombies.get('amalgam')?.authoredOnly).toBe(true);
     const amalgamType = registry.zombies.get('amalgam')!;
     const figure = amalgamFigure(3, amalgamType.bodyScale!);
     const envelope = amalgamCollisionEnvelope(figure, BLOCK_SIZE);

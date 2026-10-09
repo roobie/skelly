@@ -949,12 +949,12 @@
           }
         },
         {
-          "type": "runner",
+          "type": "military_shambler",
           "position": [474, 21.5, 486],
           "chance": 1
         },
         {
-          "type": "runner",
+          "type": "military_shambler",
           "position": [520, 21.5, 534],
           "chance": 1
         }
