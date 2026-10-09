@@ -463,11 +463,12 @@ try {
     report: () => {},
   }).settings)`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
+  const hudOptionBeforeClick = await evaluate("document.querySelectorAll('#hud-options input')[1].checked");
   await clickAt('#hud-options label:nth-of-type(2)');
   assert.equal(
     await evaluate("document.querySelectorAll('#hud-options input')[1].checked"),
-    true,
-    'drawn cursor toggles F9 menu controls',
+    !hudOptionBeforeClick,
+    'drawn cursor toggles F9 menu controls from either default state',
   );
   await delay(300);
   assert.match(
