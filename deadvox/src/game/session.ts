@@ -57,7 +57,7 @@ import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core
 import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { zombieFigure } from '../core/zombieFigure.ts';
-import type { ZombieRegion } from '../core/zombieRegions.ts';
+import { SEVERED_ITEM } from '../core/zombieRegionNames.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
   BACKGROUND_ZOMBIE_RATE,
@@ -215,16 +215,6 @@ const setSessionFirearmsSkillZeroHandling = (
 /** Seconds a player's noise stays audible to shamblers. */
 const VOCAL_NOISE_LIFETIME = 0.5;
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
-
-/** The item a severed shambler region leaves behind. */
-const SEVERED_ITEM: Readonly<Record<ZombieRegion, string>> = {
-  head: 'shambler_head',
-  torso: 'shambler_torso',
-  leftArm: 'shambler_left_arm',
-  rightArm: 'shambler_right_arm',
-  leftLeg: 'shambler_left_leg',
-  rightLeg: 'shambler_right_leg',
-};
 
 /** What the player is doing with the keyboard and mouse, read each tick. */
 export interface PlayerInputSample {
