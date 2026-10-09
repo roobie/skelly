@@ -85,7 +85,9 @@ section 1 still holds.
 **Why it's hard.** During a long action the whole simulation runs up to 30×
 faster. Running every system 30 times per frame is too expensive. Making each
 step 30 times larger breaks physics (entities skip through walls) and can miss
-an interruption (a runner covers 30 m between two checks).
+an interruption (a runner covers 30 m between two checks). Daylight sensing can
+multiply the cost when repeated perception asks whether the same vertical block
+column is open.
 
 **Plan.**
 
@@ -105,6 +107,10 @@ an interruption (a runner covers 30 m between two checks).
   navigation-field approach.
 - **Interruption checks every step,** and they drop straight back to 1× before
   the next step runs.
+- Reuse vertical-column sunlight visibility across perception calls, invalidating
+  it when block or block-entity geometry changes. See `src/core/lights.ts`,
+  `SunExposureCache`, `src/core/world.ts`, `World.version`, and
+  `src/core/blockEntities.ts`, `BlockEntities.version`.
 - **Readability:** a clock that spins visibly, a progress bar, and an edge
   effect on screen. The Continue/Stop prompt is the only UI during compression.
 

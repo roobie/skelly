@@ -328,8 +328,8 @@ describe('hamlet save/load continuation', () => {
         runtime.session.frame(planRealFrame(runtime.sim.compression, realSeconds(1 / 60)));
       }
     };
-    const nightStart = parseTimeOfDay('19:30')!;
-    const source = createRuntime(undefined, true, oneColumn, { start: nightStart });
+    const start = parseTimeOfDay('10:00')!;
+    const source = createRuntime(undefined, true, oneColumn, { start });
     expect(startRest(source, 'sleep')).toBeUndefined();
     advanceReal(source, 120);
     expect(source.sim.compression.active).toBe(true);
@@ -338,7 +338,7 @@ describe('hamlet save/load continuation', () => {
 
     const savedNeeds = { ...source.sim.needs };
     const snapshot = capture(source);
-    const loaded = createRuntime(snapshot, true, oneColumn, { start: nightStart });
+    const loaded = createRuntime(snapshot, true, oneColumn, { start });
     expect(loaded.sim.compression.active).toBe(true);
     expect(loaded.sim.compression.c).toBeGreaterThan(1);
     expect(loaded.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
@@ -363,6 +363,7 @@ describe('hamlet save/load continuation', () => {
     expect(loaded.sim.needs).toEqual(source.sim.needs);
     expect(loaded.sim.needs).not.toEqual(savedNeeds);
     expect(loaded.sim.actions.snapshotState()).toEqual(source.sim.actions.snapshotState());
+    expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
   });
 
   // Two one-column runtimes are compared across active-rest save/load, including full world bytes.

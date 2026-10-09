@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
+import { authoredLayoutIssues, inPolygon } from '../src/core/authoredLayout.ts';
 import { placementOf } from '../src/core/authoredPlacement.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import {
@@ -10,7 +10,11 @@ import {
   defaultFoundation,
   LOT_APRON_M,
   LOT_BLEND_M,
+  layoutHeight,
+  lotOf,
+  polylineDistance,
   profileHeight,
+  rectDistance,
   standingHeight,
 } from '../src/core/authoredTerrain.mjs';
 import { SPAWN_TIMES } from '../src/core/clock.ts';
@@ -20,6 +24,7 @@ import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
+import { rectsOverlap } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
@@ -73,6 +78,118 @@ const layoutValidationBase = [
   },
 ];
 const scale = makeScale(0.5);
+interface AuthoredTerrainCase {
+  site: AuthoredSite;
+  sourceLayout: SiteLayoutDef;
+  lots: ReturnType<typeof lotOf>[];
+  natural: number;
+}
+const authoredSiteHeight = ({ sourceLayout, lots, natural }: AuthoredTerrainCase, x: number, z: number): number =>
+  Math.round(
+    layoutHeight(
+      sourceLayout,
+      lots,
+      [(x + 0.5) * scale.blockSize, (z + 0.5) * scale.blockSize],
+      natural * scale.blockSize,
+    ) / scale.blockSize,
+  );
+const expectAuthoredSiteHeight = (terrain: AuthoredTerrainCase, x: number, z: number): void =>
+  expect(terrain.site.surface.height(x, z, terrain.natural)).toBe(authoredSiteHeight(terrain, x, z));
+const expectBuildingApronsUnnoised = (terrain: AuthoredTerrainCase): void => {
+  let checked = 0;
+  for (const building of terrain.sourceLayout.buildings) {
+    const bounds = buildingBounds(building, registry.templates.get(building.template)!.size);
+    for (
+      let x = Math.floor((bounds.x0 - LOT_APRON_M) / scale.blockSize);
+      x < Math.ceil((bounds.x1 + LOT_APRON_M) / scale.blockSize);
+      x++
+    ) {
+      for (
+        let z = Math.floor((bounds.z0 - LOT_APRON_M) / scale.blockSize);
+        z < Math.ceil((bounds.z1 + LOT_APRON_M) / scale.blockSize);
+        z++
+      ) {
+        const centreX = (x + 0.5) * scale.blockSize;
+        const centreZ = (z + 0.5) * scale.blockSize;
+        if (rectDistance(bounds, centreX, centreZ, scale.blockSize) <= LOT_APRON_M) {
+          expectAuthoredSiteHeight(terrain, x, z);
+          checked += 1;
+        }
+      }
+    }
+  }
+  expect(checked).toBeGreaterThan(0);
+};
+const expectTracksUnnoised = (terrain: AuthoredTerrainCase): void => {
+  let checked = 0;
+  for (const track of terrain.sourceLayout.tracks) {
+    const halfWidth = track.width / 2;
+    const xs = track.points.map(([x]) => x);
+    const zs = track.points.map(([, z]) => z);
+    for (
+      let x = Math.floor((Math.min(...xs) - halfWidth) / scale.blockSize);
+      x < Math.ceil((Math.max(...xs) + halfWidth) / scale.blockSize);
+      x++
+    ) {
+      for (
+        let z = Math.floor((Math.min(...zs) - halfWidth) / scale.blockSize);
+        z < Math.ceil((Math.max(...zs) + halfWidth) / scale.blockSize);
+        z++
+      ) {
+        const centre: [number, number] = [(x + 0.5) * scale.blockSize, (z + 0.5) * scale.blockSize];
+        if (polylineDistance(centre, track.points) <= halfWidth) {
+          expectAuthoredSiteHeight(terrain, x, z);
+          checked += 1;
+        }
+      }
+    }
+  }
+  expect(checked).toBeGreaterThan(0);
+};
+const expectSpawnMarginsUnnoised = (terrain: AuthoredTerrainCase): void => {
+  const spawnClearanceRadiusMetres = 2;
+  const spawnPoints = [
+    [terrain.sourceLayout.player.position[0], terrain.sourceLayout.player.position[2]],
+    ...terrain.sourceLayout.shamblers.map((spawn) => [spawn.position[0], spawn.position[2]]),
+    ...terrain.site.placements
+      .flatMap(placedSpawns)
+      .map((marker) => [marker.pos[0] * scale.blockSize, marker.pos[2] * scale.blockSize]),
+  ];
+  let checked = 0;
+  for (const [spawnX, spawnZ] of spawnPoints) {
+    for (
+      let x = Math.floor((spawnX! - spawnClearanceRadiusMetres) / scale.blockSize);
+      x < Math.ceil((spawnX! + spawnClearanceRadiusMetres) / scale.blockSize);
+      x++
+    ) {
+      for (
+        let z = Math.floor((spawnZ! - spawnClearanceRadiusMetres) / scale.blockSize);
+        z < Math.ceil((spawnZ! + spawnClearanceRadiusMetres) / scale.blockSize);
+        z++
+      ) {
+        const centreX = (x + 0.5) * scale.blockSize;
+        const centreZ = (z + 0.5) * scale.blockSize;
+        if (Math.hypot(centreX - spawnX!, centreZ - spawnZ!) <= spawnClearanceRadiusMetres) {
+          expectAuthoredSiteHeight(terrain, x, z);
+          checked += 1;
+        }
+      }
+    }
+  }
+  expect(checked).toBeGreaterThan(0);
+};
+const openGroundHasNoise = (terrain: AuthoredTerrainCase): boolean => {
+  for (let x = Math.ceil(terrain.sourceLayout.bounds.x0 / 16) * 16; x < terrain.sourceLayout.bounds.x1; x += 16) {
+    for (let z = Math.ceil(terrain.sourceLayout.bounds.z0 / 16) * 16; z < terrain.sourceLayout.bounds.z1; z += 16) {
+      const cellX = Math.floor(x / scale.blockSize);
+      const cellZ = Math.floor(z / scale.blockSize);
+      if (terrain.site.surface.height(cellX, cellZ, terrain.natural) !== authoredSiteHeight(terrain, cellX, cellZ)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
 const minimalLayoutBaselineIssues = buildRegistry([
   ...layoutValidationBase,
   { source: 'layout-test.json', data: { layouts: [layout] } },
@@ -444,6 +561,110 @@ describe('authored layout acceptance', () => {
   it('rejects a layout that shadows a built-in site', () => {
     invalid({ ...layout, id: 'hamlet' }, 'reserved built-in site id');
   });
+});
+
+it('fades authored terrain noise around structures, tracks and spawn while varying open ground', () => {
+  const ridge = registry.layouts.get('hunting_cabins')!;
+  const site = new AuthoredSite(73, registry, scale, ridge);
+  const terrain: AuthoredTerrainCase = {
+    site,
+    sourceLayout: ridge,
+    lots: ridge.buildings.map((building) =>
+      lotOf(building, buildingBounds(building, registry.templates.get(building.template)!.size)),
+    ),
+    natural: ridge.ground / scale.blockSize,
+  };
+  expectBuildingApronsUnnoised(terrain);
+  expectTracksUnnoised(terrain);
+  expectSpawnMarginsUnnoised(terrain);
+  expect(openGroundHasNoise(terrain)).toBe(true);
+});
+
+it('keeps authored trees grounded and clear of buildings, roads and spawn', () => {
+  const ridge = registry.layouts.get('hunting_cabins')!;
+  const site = new AuthoredSite(73, registry, makeScale(0.5), ridge);
+  const s = makeScale(0.5).blockSize;
+  const natural = ridge.ground / s;
+  const buildingsInBlocks = ridge.buildings.map((building) => {
+    const rect = buildingBounds(building, registry.templates.get(building.template)!.size);
+    return { x0: rect.x0 / s, x1: rect.x1 / s, z0: rect.z0 / s, z1: rect.z1 / s };
+  });
+  const spawnPoints = [
+    [ridge.player.position[0], ridge.player.position[2]],
+    ...ridge.shamblers.map((spawn) => [spawn.position[0], spawn.position[2]]),
+    ...site.placements.flatMap(placedSpawns).map((marker) => [marker.pos[0] * s, marker.pos[2] * s]),
+  ];
+  const spawnMargin = registry.siteGeneration.get('authored')!.vegetation.obstacleMarginMetres;
+  expect(site.trees.length).toBeGreaterThan(0);
+  expect(
+    site.trees.some(
+      (tree) =>
+        tree.shape === 'young' &&
+        !ridge.woodlands.some((wood) => inPolygon([tree.origin[0] * s, tree.origin[2] * s], wood.polygon)),
+    ),
+  ).toBe(true);
+  for (const tree of site.trees) {
+    const [x, y, z] = tree.origin;
+    expect(y).toBe(site.surface.height(x, z, natural) + 1);
+    expect(buildingsInBlocks.some((rect) => rectsOverlap(rect, tree.bounds))).toBe(false);
+    const centreX = ((tree.bounds.x0 + tree.bounds.x1) / 2) * s;
+    const centreZ = ((tree.bounds.z0 + tree.bounds.z1) / 2) * s;
+    const radius = (Math.hypot(tree.bounds.x1 - tree.bounds.x0, tree.bounds.z1 - tree.bounds.z0) * s) / 2;
+    expect(
+      ridge.tracks.some((track) => polylineDistance([centreX, centreZ], track.points) <= track.width / 2 + radius),
+    ).toBe(false);
+    for (const [spawnX, spawnZ] of spawnPoints) {
+      expect(Math.hypot(centreX - spawnX!, centreZ - spawnZ!)).toBeGreaterThan(radius + spawnMargin);
+    }
+  }
+});
+
+it('keeps trees out of an authored building covered by woodland', () => {
+  const ridge = registry.layouts.get('hunting_cabins')!;
+  const { bounds } = ridge;
+  const woodlandLayout: SiteLayoutDef = {
+    ...ridge,
+    id: 'building-in-woodland-fixture',
+    buildings: [],
+    tracks: [],
+    shamblers: [],
+    woodlands: [
+      {
+        polygon: [
+          [bounds.x0, bounds.z0],
+          [bounds.x1, bounds.z0],
+          [bounds.x1, bounds.z1],
+          [bounds.x0, bounds.z1],
+        ],
+        density: 1,
+      },
+    ],
+  };
+  const seed = 73;
+  const woodlandSite = new AuthoredSite(seed, registry, scale, woodlandLayout);
+  const [witness] = woodlandSite.trees;
+  if (!witness) {
+    throw new Error('woodland fixture needs an unprotected tree witness');
+  }
+  const sourceBuilding = ridge.buildings[0]!;
+  const building: SiteLayoutDef['buildings'][number] = {
+    ...sourceBuilding,
+    position: [witness.bounds.x0 * scale.blockSize, ridge.ground, witness.bounds.z0 * scale.blockSize],
+    rotation: 0,
+    storeys: 1,
+  };
+  const clearanceLayout: SiteLayoutDef = { ...woodlandLayout, buildings: [building] };
+  const site = new AuthoredSite(seed, registry, scale, clearanceLayout);
+  const metres = buildingBounds(building, registry.templates.get(building.template)!.size);
+  const buildingInBlocks = {
+    x0: metres.x0 / scale.blockSize,
+    x1: metres.x1 / scale.blockSize,
+    z0: metres.z0 / scale.blockSize,
+    z1: metres.z1 / scale.blockSize,
+  };
+  expect(rectsOverlap(buildingInBlocks, witness.bounds)).toBe(true);
+  expect(site.trees.length).toBeGreaterThan(0);
+  expect(site.trees.some((tree) => rectsOverlap(buildingInBlocks, tree.bounds))).toBe(false);
 });
 
 it('grounds the exported ridge lots, track and slope trees with order-independent overlapping profiles', () => {

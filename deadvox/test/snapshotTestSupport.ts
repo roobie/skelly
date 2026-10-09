@@ -143,6 +143,7 @@ export function createRuntime(
       time: number,
       compression: number,
     ) => PlayerInputSample;
+    onOpaque?: () => void;
   } = {},
 ) {
   const { sampleAtPlayerTick } = options;
@@ -194,7 +195,10 @@ export function createRuntime(
     registry,
     world,
     isSolid: worldSolid(world, registry, sharedEntities),
-    isOpaque: (x, y, z) => world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z),
+    isOpaque: (x, y, z) => {
+      options.onOpaque?.();
+      return world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z);
+    },
     entities: sharedEntities,
     scale,
     seed,
@@ -504,7 +508,7 @@ export const prepareAudioContinuation = (runtime: Runtime): void => {
 export const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
-  generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+  generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 export const formatWorldOptions = { blockSize: 0.5, site: 'forest' as const, storeys: 1, density: 0.75 };
