@@ -383,6 +383,7 @@ try {
     const hit = document.elementFromPoint(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
     return {
       around: { width: aroundBox.width, height: aroundBox.height, right: aroundBox.right, bottom: aroundBox.bottom },
+      viewport: { width: window.innerWidth, height: window.innerHeight },
       you: { width: youBox.width, height: youBox.height },
       target: { width: targetBox.width, height: targetBox.height },
       cell,
@@ -391,8 +392,8 @@ try {
     };
   });
   assert.ok(
-    emptyAround.around.right <= 640 && emptyAround.around.bottom <= 400,
-    `vicinity fits 640×400: ${JSON.stringify(emptyAround)}`,
+    emptyAround.around.right <= emptyAround.viewport.width && emptyAround.around.bottom <= emptyAround.viewport.height,
+    `vicinity stays inside its viewport: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(
     emptyAround.target.width < emptyAround.around.width,
@@ -424,6 +425,7 @@ try {
     const hit = document.elementFromPoint(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
     return {
       pane: { left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom },
+      viewport: { width: window.innerWidth, height: window.innerHeight },
       sectionWidth: rack.getBoundingClientRect().width,
       gridWidth: grid.getBoundingClientRect().width,
       clientWidth: scroll.clientWidth,
@@ -438,10 +440,10 @@ try {
   });
   assert.ok(
     capWideRack.pane.left >= 0 &&
-      capWideRack.pane.right <= 640 &&
+      capWideRack.pane.right <= capWideRack.viewport.width &&
       capWideRack.pane.top >= 0 &&
-      capWideRack.pane.bottom <= 400,
-    `cap-wide vicinity stays in the 640×400 viewport: ${JSON.stringify(capWideRack)}`,
+      capWideRack.pane.bottom <= capWideRack.viewport.height,
+    `cap-wide vicinity stays inside its viewport: ${JSON.stringify(capWideRack)}`,
   );
   assert.ok(
     capWideRack.gridWidth <= capWideRack.cap * capWideRack.cell + 1,
