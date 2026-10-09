@@ -23,7 +23,7 @@ import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
-import { protectedCoreCell } from '../src/core/amalgamCarving.ts';
+import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { amalgamFigureForType } from '../src/core/amalgamFigure.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -859,15 +859,28 @@ describe('MobActorMeshes', () => {
       const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { type: amalgam });
       const id = store.add(zombie);
       renderer.sync(store, 0, 1);
-      // A cell buried in flesh on all six sides, so knocking it out opens walls on every side.
+      // What a light hit along +x takes: the first flesh cell of a grid row, whose neighbour further in is
+      // flesh too, so the hole has a wall.
       const figure = amalgamFigureForType(amalgam, zombie.figureSeed);
       const { dims, owner } = figure.realized.voxels;
-      const buried = (index: number): boolean =>
-        [1, -1, dims[0], -dims[0], dims[0] * dims[1], -dims[0] * dims[1]].every((step) => owner[index + step]);
-      const cell = owner.findIndex((value, index) => value > 0 && index !== protectedCoreCell(figure) && buried(index));
-      expect(cell).toBeGreaterThanOrEqual(0);
-      zombie.carved = [cell];
-      renderer.zombieCarved(id, zombie, [cell], { point: [0, 2, 0], direction: [0, 0, -1], impulse: 0 });
+      const firstFlesh = (row: number): number => {
+        const start = row * dims[0];
+        const offset = owner.subarray(start, start + dims[0]).findIndex((value) => value > 0);
+        return offset < 0 || offset + 1 >= dims[0] ? -1 : start + offset;
+      };
+      const struck = Array.from({ length: dims[1] * dims[2] }, (_, row) => firstFlesh(row)).find(
+        (cell) => cell >= 0 && owner[cell + 1]! > 0,
+      )!;
+      expect(struck).toBeGreaterThanOrEqual(0);
+      const cells = carveAround({
+        figure,
+        carving: amalgam.carving!,
+        missing: missingFlesh(figure, zombie),
+        struck,
+        damage: 1,
+      });
+      zombie.carved = cells;
+      renderer.zombieCarved(id, zombie, cells, { point: [0, 2, 0], direction: [1, 0, 0], impulse: 0 });
 
       const internals = renderer as unknown as {
         wounds: Map<number, { mesh: InstancedMesh }>;

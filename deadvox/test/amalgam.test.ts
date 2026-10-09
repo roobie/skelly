@@ -5,7 +5,7 @@ import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
-import { carveAround, protectedCoreCell } from '../src/core/amalgamCarving.ts';
+import { carveAround, missingFlesh, protectedCoreCell } from '../src/core/amalgamCarving.ts';
 import {
   AMALGAM_FIGURE_SEED,
   amalgamCollisionEnvelope,
@@ -23,7 +23,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { zombieFigure } from '../src/core/zombieFigure.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
   activeAmalgamMembers,
@@ -850,20 +850,28 @@ describe('amalgam flesh carving', () => {
     expect(heavy.zombie.carved.length).toBeGreaterThan(light.zombie.carved.length);
   });
 
-  it("makes one hole from one shot's pellets instead of tunnelling along their line", () => {
+  it("makes one hole from one shot's pellets, sized by their summed damage, instead of one per pellet", () => {
     const shot = coreTarget();
     const slug = coreTarget();
+    const pellet = coreTarget();
     shot.pellets(buck.pellets, buck.damage);
     slug.pellets(1, buck.pellets * buck.damage);
-    expect(shot.zombie.carved.length).toBeGreaterThan(0);
+    pellet.pellets(1, buck.damage);
     expect(shot.zombie.carved).toEqual(slug.zombie.carved);
+    expect(shot.zombie.carved.length).toBeGreaterThan(pellet.zombie.carved.length);
   });
 
   it('never carves the core cell the tentacle roots in, whatever is carved around it', () => {
     const keep = protectedCoreCell(figure);
     const core = figure.realized.body.bones.findIndex((bone) => bone.id === 'core') + 1;
     expect(figure.realized.voxels.owner[keep]).toBe(core);
-    const around = carveAround({ figure, carving, carved: new Set(), struck: keep, damage: Number.MAX_VALUE });
+    const around = carveAround({
+      figure,
+      carving,
+      missing: missingFlesh(figure, { carved: [], severed: [] }),
+      struck: keep,
+      damage: Number.MAX_VALUE,
+    });
     expect(around.length).toBeGreaterThan(0);
     expect(around).not.toContain(keep);
   });
@@ -880,6 +888,55 @@ describe('amalgam flesh carving', () => {
     const restored = system();
     restored.restoreState(runtime.zombies.snapshotState(), (typeId) => registry.zombies.get(typeId));
     expect(restored.store.get(target.id)!.carved).toEqual(target.zombie.carved);
+  });
+
+  it.each([
+    { hole: 'a cell outside the grid', typeId: 'amalgam', carved: [figure.realized.voxels.owner.length] },
+    { hole: 'a cell with no flesh', typeId: 'amalgam', carved: [figure.realized.voxels.owner.indexOf(0)] },
+    { hole: 'the protected core cell', typeId: 'amalgam', carved: [protectedCoreCell(figure)] },
+    { hole: 'a hole on a type that does not carve', typeId: 'shambler', carved: [0] },
+  ])('refuses a save with $hole', ({ typeId, carved }) => {
+    const simulation = system();
+    const id = simulation.add(registry.zombies.get(typeId)!, [0, 1, 0]);
+    const state = structuredClone(simulation.snapshotState());
+    state.zombies.find((entry) => entry.id === id)!.zombie.carved = carved;
+    expect(() => system().restoreState(state, (type) => registry.zombies.get(type))).toThrow(
+      `Invalid carved cells for entity ${id}`,
+    );
+  });
+
+  it("opens holes where shots land after its members are severed, never in a lost member's hidden flesh", () => {
+    const simulation = system();
+    const id = simulation.add(amalgam, [0, 1, 0]);
+    const state = structuredClone(simulation.snapshotState());
+    state.zombies.find((entry) => entry.id === id)!.zombie.severed = figure.manifest.parts
+      .filter((part) => part.severable)
+      .map((part) => part.id);
+    const target = system();
+    target.restoreState(state, (type) => registry.zombies.get(type));
+    const zombie = target.store.get(id)!;
+    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const { hidden } = posedShambler(input);
+    const { owner } = figure.realized.voxels;
+    const { bones } = figure.realized.body;
+    let holes = 0;
+    // A ring of single pellets at each core box, as the hit test sees it with the members gone.
+    for (const box of posedAmalgamRegionBoxes(input)['core.trunk']!) {
+      for (let step = 0; step < 16; step++) {
+        for (const lift of [-0.4, 0, 0.4]) {
+          const angle = (step / 16) * 2 * Math.PI;
+          const length = Math.hypot(1, lift);
+          const direction: Vec3 = [Math.cos(angle) / length, lift / length, Math.sin(angle) / length];
+          const origin = box.voxelCentroid.map((value, axis) => value - (direction[axis]! * 4) / BLOCK_SIZE) as Vec3;
+          const before = new Set(zombie.carved);
+          target.firePellets(projectileShot({ ...buck, pellets: 1, damage: 1 }, origin, [direction]));
+          const opened = zombie.carved.filter((cell) => !before.has(cell));
+          holes += opened.length > 0 ? 1 : 0;
+          expect(opened.filter((cell) => hidden.has(bones[owner[cell]! - 1]!.id))).toEqual([]);
+        }
+      }
+    }
+    expect(holes).toBeGreaterThan(0);
   });
 
   it('carves the same holes when the same hits replay', () => {

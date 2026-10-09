@@ -1,5 +1,12 @@
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
-import { carveAround, centralCell, gridRayForHit, struckCell } from './amalgamCarving.ts';
+import {
+  carveAround,
+  centralCell,
+  gridRayForHit,
+  missingFlesh,
+  protectedCoreCell,
+  struckCell,
+} from './amalgamCarving.ts';
 import {
   AMALGAM_FIGURE_SEED,
   amalgamCollisionEnvelope,
@@ -348,6 +355,16 @@ const validZombieEventState = (zombie: ZombieState): boolean =>
     (cell, index) => Number.isSafeInteger(cell) && cell >= 0 && (index === 0 || cell > zombie.carved[index - 1]!),
   ) &&
   validShamblerFootstepClock(zombie.footstepClock);
+/** Holes play could make: only a type that carves has any, each on flesh in its grid, never the core cell. */
+const validCarvedCells = (type: ZombieDef, figureSeed: number, carved: readonly number[]): boolean => {
+  if (!type.carving) {
+    return carved.length === 0;
+  }
+  const figure = amalgamFigureForType(type, figureSeed);
+  const { owner } = figure.realized.voxels;
+  const keep = protectedCoreCell(figure);
+  return carved.every((cell) => cell < owner.length && owner[cell]! > 0 && cell !== keep);
+};
 const validHordeMemberState = (zombie: ZombieState): boolean =>
   (zombie.hordeId === undefined && zombie.hordeOffset === undefined) ||
   (typeof zombie.hordeId === 'string' &&
@@ -1406,6 +1423,9 @@ export class ZombieSystem {
           ) {
             throw new Error(`Invalid amalgam severed parts for entity ${id}`);
           }
+        }
+        if (!validCarvedCells(type, zombie.figureSeed, zombie.carved)) {
+          throw new Error(`Invalid carved cells for entity ${id}`);
         }
         const { type: _type, behaviorRng, soundRng, dismemberRng, lastVocalNoiseId, ...fields } = zombie;
         const restored: Zombie = {
@@ -2867,13 +2887,13 @@ export class ZombieSystem {
     return cell === undefined ? undefined : { cell, damage, hit };
   }
 
-  /** The first flesh cell the hit's ray meets inside the box it struck, for a type that carves. */
+  /** The first visible flesh cell the hit's ray meets from the box it struck, for a type that carves. */
   private struckFlesh(zombie: Zombie, hitBox: PosedBoneBox, hit: HitImpulse): number | undefined {
     if (!zombie.type.carving) {
       return undefined;
     }
     const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
-    return struckCell(figure, new Set(zombie.carved), gridRayForHit(figure, hitBox, hit, this.options.blockSize));
+    return struckCell(figure, missingFlesh(figure, zombie), gridRayForHit(figure, hitBox, hit, this.options.blockSize));
   }
 
   /** Knocks out the flesh around one hole: the strikes' central cell, sized by their summed damage. */
@@ -2890,7 +2910,7 @@ export class ZombieSystem {
     const cells = carveAround({
       figure,
       carving,
-      carved: new Set(zombie.carved),
+      missing: missingFlesh(figure, zombie),
       struck,
       damage: strikes.reduce((total, strike) => total + strike.damage, 0),
     });

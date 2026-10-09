@@ -297,7 +297,7 @@
         "windupSimSeconds": 1,
         "hitRegion": "torso"
       },
-      "carving": { "radiusMetresPerDamage": 0.0006, "maxRadiusMetres": 0.5, "interiorColor": "#7a1e22" },
+      "carving": { "radiusMetresPerDamage": 0.0023, "maxRadiusMetres": 0.75, "interiorColor": "#7a1e22" },
       "dismember": { "chance": 0.15, "headOnKillChance": 0.25 },
       "abilities": [],
       "loot": "shambler_pockets"

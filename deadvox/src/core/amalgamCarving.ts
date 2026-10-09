@@ -1,6 +1,6 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import { cellIndex } from '@mobgen/core/voxelize.ts';
-import type { AmalgamFigure } from './amalgamFigure.ts';
+import { type AmalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import { raycast } from './raycast.ts';
 import type { ZombieDef } from './schema.ts';
@@ -72,22 +72,46 @@ export const gridRayForHit = (
   };
 };
 
-/** The cell's index if it holds flesh that hasn't been carved, else undefined. */
-const fleshAt = (figure: AmalgamFigure, carved: ReadonlySet<number>, [i, j, k]: Vec3): number | undefined => {
+/**
+ * The flesh a hit can no longer take: cells already carved, and the voxels of severed members, which the
+ * hit test and the renderer no longer show.
+ */
+export interface MissingFlesh {
+  readonly carved: ReadonlySet<number>;
+  /** Voxel owners (bone index + 1) of the severed bones. */
+  readonly severedOwners: ReadonlySet<number>;
+}
+
+export const missingFlesh = (
+  figure: AmalgamFigure,
+  zombie: { readonly carved: readonly number[]; readonly severed: readonly string[] },
+): MissingFlesh => {
+  const hidden = amalgamSeveredBones(figure, zombie.severed);
+  return {
+    carved: new Set(zombie.carved),
+    severedOwners: new Set(
+      figure.realized.body.bones.flatMap((bone, index) => (hidden.has(bone.id) ? [index + 1] : [])),
+    ),
+  };
+};
+
+/** The cell's index if it holds visible flesh that hasn't been carved, else undefined. */
+const fleshAt = (figure: AmalgamFigure, missing: MissingFlesh, [i, j, k]: Vec3): number | undefined => {
   const { dims, owner } = figure.realized.voxels;
   const inside = i >= 0 && j >= 0 && k >= 0 && i < dims[0] && j < dims[1] && k < dims[2];
   const index = inside ? cellIndex(dims, i, j, k) : -1;
-  return inside && owner[index] && !carved.has(index) ? index : undefined;
+  const bone = inside ? owner[index]! : 0;
+  return bone > 0 && !missing.severedOwners.has(bone) && !missing.carved.has(index) ? index : undefined;
 };
 
-/** The first flesh cell along the ray, or undefined where it only crosses a gap inside the region box. */
-export const struckCell = (figure: AmalgamFigure, carved: ReadonlySet<number>, ray: GridRay): number | undefined => {
+/** The first visible flesh cell along the ray, or undefined when the line meets none in the grid. */
+export const struckCell = (figure: AmalgamFigure, missing: MissingFlesh, ray: GridRay): number | undefined => {
   const { dims } = figure.realized.voxels;
   const hit = raycast(
     ray.origin,
     ray.direction,
     Math.hypot(...dims),
-    (i, j, k) => fleshAt(figure, carved, [i, j, k]) !== undefined,
+    (i, j, k) => fleshAt(figure, missing, [i, j, k]) !== undefined,
   );
   return hit && cellIndex(dims, hit.block[0], hit.block[1], hit.block[2]);
 };
@@ -154,19 +178,19 @@ export const centralCell = (figure: AmalgamFigure, cells: readonly number[]): nu
 };
 
 /**
- * The cells a hit of `damage` knocks out: the struck cell and every flesh cell whose centre lies within
- * the carving radius of it, never the protected core cell. Ascending.
+ * The cells a hit of `damage` knocks out: the struck cell and every visible flesh cell whose centre lies
+ * within the carving radius of it, never the protected core cell. Ascending.
  */
 export const carveAround = ({
   figure,
   carving,
-  carved,
+  missing,
   struck,
   damage,
 }: {
   readonly figure: AmalgamFigure;
   readonly carving: AmalgamCarving;
-  readonly carved: ReadonlySet<number>;
+  readonly missing: MissingFlesh;
   readonly struck: number;
   readonly damage: number;
 }): number[] => {
@@ -182,7 +206,7 @@ export const carveAround = ({
         if (di * di + dj * dj + dk * dk > radius * radius) {
           continue;
         }
-        const index = fleshAt(figure, carved, [i0 + di, j0 + dj, k0 + dk]);
+        const index = fleshAt(figure, missing, [i0 + di, j0 + dj, k0 + dk]);
         if (index !== undefined && index !== keep) {
           removed.push(index);
         }
