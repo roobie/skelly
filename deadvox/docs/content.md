@@ -69,7 +69,8 @@ Procedural surface pattern IDs are validated with `BLOCK_PATTERNS` in
 `src/render/surfacePatterns.ts`. Woodland camouflage's palette and washout
 are block fields in `src/content/base/blocks.json`, alongside the pattern assignment
 to `camo_woodland`. Keeping blotches anchored in world coordinates avoids texture
-assets and repeated seams; the tunable palette and washout stay on the block.
+assets and repeated seams; the tunable palette and washout live on the block.
+All camo blocks share one palette and washout; distinct looks need per-block shader lookup.
 
 Template spawn palette entries can specify `window: {from, to?}`.
 `src/core/schema.ts`, `PaletteThingSchema`, validates the field; named game-clock

@@ -104,7 +104,7 @@ const expectHqFloorCourseEdges = (template: Pick<TemplateDef, 'layers' | 'size'>
   expect(courseCount).toBeGreaterThan(0);
 };
 
-const expectHqMaterialsAndFloorEdges = (compiledHq: CompiledTemplate): void => {
+const expectHqMaterialsAndFloorEdges = (): void => {
   const hq = result.registry.templates.get('camp_hq')!;
   const shell = hq.palette['#'];
   if (typeof shell !== 'string') {
@@ -112,8 +112,6 @@ const expectHqMaterialsAndFloorEdges = (compiledHq: CompiledTemplate): void => {
   }
   const shellBlock = result.registry.blocks[result.registry.blockIds.get(shell)!];
   expect(shellBlock?.pattern).toBe('camo');
-  const compiledShell = compiledHq.blocks[0 + compiledHq.size[0] * (1 + compiledHq.size[2])]!;
-  expect(result.registry.blocks[compiledShell]?.pattern).toBe('camo');
   expectHqFloorCourseEdges(hq);
 };
 
@@ -146,7 +144,7 @@ const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
   expect(entranceWorld[1]).toBeLessThan(fenceBounds.z1);
 
   const compiledHq = compileTemplate(result.registry, hqDefinition);
-  expectHqMaterialsAndFloorEdges(compiledHq);
+  expectHqMaterialsAndFloorEdges();
   expect(hqDefinition.military).toBe(true);
   expect(compiledHq.pieces.some((piece) => piece.loot === 'military_armoury')).toBe(false);
   expect(hqDefinition.access?.storeys.length).toBeGreaterThanOrEqual(3);

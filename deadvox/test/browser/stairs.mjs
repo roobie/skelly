@@ -19,6 +19,7 @@ assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or ligh
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
 const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
+const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [90, 21, 82], rotation: 0 };
 await mkdir(artifacts, { recursive: true });
 const vite = await createServer({
   root,
@@ -32,18 +33,23 @@ const vite = await createServer({
       transform(code, id) {
         if (mode === 'lighting' && id.endsWith('/src/content/base/templates-stairs.json')) {
           const content = JSON.parse(code);
-          const cabin = content.templates.find(({ id: templateId }) => templateId === 'stairs_cabin');
-          assert.ok(cabin);
-          cabin.palette.s = 'camo_woodland';
+          const floor = Array(8).fill('########');
+          const walls = ['########', ...Array(6).fill('c......#'), '########'];
+          content.templates.push({
+            id: 'stairs_camo_witness',
+            size: [8, 4, 8],
+            palette: { '#': 'stone', c: 'camo_woodland', '.': 'air' },
+            layers: [floor, walls, walls, Array(8).fill('........')],
+          });
           return `export default ${JSON.stringify(content)};`;
         }
         if (mode === 'lighting' && id.endsWith('/src/content/base/blocks.json')) {
           const content = JSON.parse(code);
           const camo = content.blocks.find(({ pattern }) => pattern === 'camo');
           assert.ok(camo);
-          camo.color = '#777777';
-          camo.patternPalette = ['#777777', '#777777', '#777777', '#777777'];
-          camo.patternWashout = 0;
+          camo.color = '#b8b5a3';
+          camo.patternPalette = ['#b8b5a3', '#b8b5a3', '#b8b5a3', '#b8b5a3'];
+          camo.patternWashout = 1;
           return `export default ${JSON.stringify(content)};`;
         }
         if (mode === 'lighting' && id.endsWith('/src/core/authoredSite.ts')) {
@@ -56,7 +62,7 @@ const vite = await createServer({
           return code
             .replace(
               anchor,
-              `${anchor}\n    const raisedCabin = ${JSON.stringify(RAISED_CABIN)};\n    layout = {...layout, buildings: [...layout.buildings, raisedCabin]};`,
+              `${anchor}\n    const raisedCabin = ${JSON.stringify(RAISED_CABIN)};\n    const camoWitness = ${JSON.stringify(CAMO_WITNESS)};\n    layout = {...layout, buildings: [...layout.buildings, raisedCabin, camoWitness]};`,
             )
             .replace(lot, '{...lotOf(building, rect), ...(building === raisedCabin ? {floor: layout.ground} : {})}');
         }
@@ -394,16 +400,48 @@ try {
         return { x, y, luminance: sum / ((pixels.length / 4) * 3) };
       };
       return {
-        innerCorner: luminance([133, 43.15, 111.3]),
-        openWall: luminance([133, 45.5, 115.3]),
+        corner: luminance([181, 43.1, 165.1]),
+        middle: luminance([181, 43.5, 165.5]),
       };
     }, png.toString('base64'));
   if (mode === 'lighting') {
-    await stage([140, 44, 114], Math.PI / 2, -0.25);
-    const camoAo = await camoWallPixels(await shot('camo-inner-corner-ao'));
+    await stage([185, 43.0001, 166], Math.PI / 2, -0.2);
+    const originalModes = await page.evaluate(() => {
+      const { engine } = globalThis.stairsWitness;
+      return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn };
+    });
+    const setShaderLook = async (linear, patterns) => {
+      const before = await page.evaluate(() => globalThis.stairsWitness.engine.renderer.info.render.frame);
+      await page.evaluate(
+        ({ linear: useLinearColors, patterns: usePatterns }) => {
+          const { engine } = globalThis.stairsWitness;
+          engine.meshes.setLinearColors(useLinearColors);
+          engine.meshes.setPatterns(usePatterns);
+        },
+        { linear, patterns },
+      );
+      await page.waitForFunction((frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame, before);
+    };
+    let camoAo;
+    try {
+      await setShaderLook(true, true);
+      const patterned = await camoWallPixels(await shot('camo-ao-patterned'));
+      await setShaderLook(true, false);
+      const plain = await camoWallPixels(await shot('camo-ao-plain'));
+      const ratio = ({ corner, middle }) => corner.luminance / middle.luminance;
+      camoAo = {
+        patterned,
+        plain,
+        patternedRatio: ratio(patterned),
+        plainRatio: ratio(plain),
+      };
+    } finally {
+      await setShaderLook(originalModes.linear, originalModes.patterns);
+    }
     await writeFile(resolve(artifacts, 'camo-inner-corner-ao.json'), JSON.stringify(camoAo, null, 2));
-    await test('inner-corner camo pixel is darker than the same wall open middle', () => {
-      assert.ok(camoAo.innerCorner.luminance + 5 < camoAo.openWall.luminance, JSON.stringify(camoAo));
+    await test('camo preserves corner AO relative to the same plain block face', () => {
+      assert.ok(camoAo.plainRatio < 0.9, JSON.stringify(camoAo));
+      assert.ok(Math.abs(camoAo.patternedRatio - camoAo.plainRatio) < 0.08, JSON.stringify(camoAo));
     });
   }
   const walk = async (actionId, targetX, ascending, targetFeet) => {

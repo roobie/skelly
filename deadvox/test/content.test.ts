@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { ShaderLib, Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
@@ -13,6 +14,7 @@ import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
+import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 
 const BASE = 'src/content/base';
@@ -1518,7 +1520,7 @@ describe('content', () => {
     expect(issues.map((i) => i.path)).toEqual(['blocks[0].pattern']);
   });
 
-  it('feeds registry camo palette and washout overrides to shader uniforms', () => {
+  it('feeds registry camo overrides into the compiled chunk shader uniforms', () => {
     expect(() => camoShaderConfig([])).not.toThrow();
     const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
@@ -1530,16 +1532,49 @@ describe('content', () => {
       },
     ]);
     expect(issues).toEqual([]);
-    expect(camoShaderConfig(registry.blocks)).toEqual({
-      palette: [
-        [18 / 255, 52 / 255, 86 / 255],
-        [35 / 255, 69 / 255, 103 / 255],
-        [52 / 255, 86 / 255, 120 / 255],
-        [69 / 255, 103 / 255, 137 / 255],
-      ],
-      washout: 0.37,
-      baseColor: [86 / 255, 120 / 255, 154 / 255],
-    });
+    const meshes = new ChunkMeshes(0.5, registry);
+    const shader = {
+      uniforms: {},
+      vertexShader: ShaderLib.lambert.vertexShader,
+      fragmentShader: ShaderLib.lambert.fragmentShader,
+    } as WebGLProgramParametersWithUniforms;
+    meshes.material.onBeforeCompile(shader, {} as WebGLRenderer);
+    const paletteInput = shader.uniforms.uCamoPalette!.value as Vector3[];
+    expect(paletteInput.map((color) => color.toArray())).toEqual([
+      [18 / 255, 52 / 255, 86 / 255],
+      [35 / 255, 69 / 255, 103 / 255],
+      [52 / 255, 86 / 255, 120 / 255],
+      [69 / 255, 103 / 255, 137 / 255],
+    ]);
+    expect(shader.uniforms.uCamoWashout!.value).toBe(0.37);
+    expect((shader.uniforms.uCamoBaseColor!.value as Vector3).toArray()).toEqual([86 / 255, 120 / 255, 154 / 255]);
+  });
+
+  it('rejects camo blocks with missing shader settings or a conflicting second palette', () => {
+    const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
+    const noPalette = { ...camo, id: 'test_camo_no_palette' };
+    delete noPalette.patternPalette;
+    const noWashout = { ...camo, id: 'test_camo_no_washout' };
+    delete noWashout.patternWashout;
+    const issues = buildRegistry([
+      ...base,
+      {
+        source: 'camo-contract.json',
+        data: {
+          blocks: [
+            noPalette,
+            noWashout,
+            { ...camo, id: 'test_camo_palette_variant', patternPalette: ['#123456', '#123456', '#123456', '#123456'] },
+            { ...camo, id: 'test_camo_washout_variant', patternWashout: 0.1 },
+          ],
+        },
+      },
+    ]).issues.filter(({ source }) => source === 'camo-contract.json');
+    expect(issues).toHaveLength(4);
+    expect(new Set(issues.map(({ path }) => path.split('.').at(-1)))).toEqual(
+      new Set(['patternPalette', 'patternWashout']),
+    );
+    expect(issues.filter(({ message }) => message.includes('must match the first camo block'))).toHaveLength(2);
   });
 
   it('gives every base block a known pattern and patterns the stone work', () => {

@@ -20,6 +20,7 @@ import { CHUNK } from '../src/core/coords.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, SHADOW_DISTANCES } from '../src/core/mood.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../src/core/sky.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
@@ -196,7 +197,7 @@ describe('choosing shadow casters', () => {
   });
 
   it('makes only the selected chunk meshes cast, shows them for the pass, and lets every chunk receive', () => {
-    const meshes = new ChunkMeshes(0.5);
+    const meshes = new ChunkMeshes(0.5, BUNDLED_CONTENT.registry);
     const versionBefore = meshes.version;
     meshes.set('near', [0, 0, 0], floor);
     meshes.set('far', [400, 0, 0], floor); // 200 m away
@@ -247,7 +248,7 @@ describe('Shadows', () => {
     const rig = new Group();
     rig.add(light, light.target);
     scene.add(rig);
-    const meshes = new ChunkMeshes(0.5);
+    const meshes = new ChunkMeshes(0.5, BUNDLED_CONTENT.registry);
     scene.add(meshes.group);
     meshes.set('under', [-4, 0, -4], floor);
     meshes.set('behind', [-4, 0, 60], floor); // 30 m away, behind a player looking down -z
@@ -278,7 +279,7 @@ describe('Shadows', () => {
       renderer,
       new Scene(),
       { light: new DirectionalLight(), rig: new Group() },
-      new ChunkMeshes(0.5),
+      new ChunkMeshes(0.5, BUNDLED_CONTENT.registry),
     ).settings;
     expect(idle.sun).toBe(false);
     expect(idle.torch).toBe(false);

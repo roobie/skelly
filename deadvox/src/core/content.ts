@@ -786,12 +786,42 @@ const checkKeys = (registry: Registry, report: Report) => {
   }
 };
 
+const checkCamoBlocks = (registry: Registry, report: Report): void => {
+  const camoBlocks = registry.blocks.filter((block) => block.pattern === 'camo');
+  const [first, ...rest] = camoBlocks;
+  if (!first) return;
+
+  for (const block of camoBlocks) {
+    if (!block.patternPalette) {
+      report('blocks', block.id, '.patternPalette', 'camo blocks require a four-colour pattern palette');
+    }
+    if (block.patternWashout === undefined) {
+      report('blocks', block.id, '.patternWashout', 'camo blocks require a pattern washout value');
+    }
+  }
+  if (!first.patternPalette || first.patternWashout === undefined) return;
+  for (const block of rest) {
+    if (!block.patternPalette || block.patternWashout === undefined) continue;
+    const paletteDiffers = block.patternPalette.some((color, i) => color !== first.patternPalette?.[i]);
+    const washoutDiffers = block.patternWashout !== first.patternWashout;
+    if (paletteDiffers || washoutDiffers) {
+      report(
+        'blocks',
+        block.id,
+        paletteDiffers ? '.patternPalette' : '.patternWashout',
+        `camo palette and washout must match the first camo block "${first.id}"`,
+      );
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
     const origin = origins.get(`${section}:${id}`)!;
     issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
   };
+  checkCamoBlocks(registry, report);
   for (const block of registry.blocks) {
     for (const [gait, event] of Object.entries(block.rustle ?? {})) {
       const sound = registry.sounds.get(event);

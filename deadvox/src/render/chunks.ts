@@ -70,10 +70,10 @@ const chunkMaterial = ({
   linearColors: { value: number };
   patterns: { value: number };
   occlusion: { value: number };
-  registry?: Registry | undefined;
+  registry: Registry;
 }): MeshLambertMaterial => {
   const material = new MeshLambertMaterial({ vertexColors: true });
-  const camo = camoShaderConfig(registry?.blocks ?? []);
+  const camo = camoShaderConfig(registry.blocks);
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uBlockSize = { value: blockSize };
     shader.uniforms.uLinearColors = linearColors;
@@ -125,14 +125,15 @@ vFaceN = normalize(normal);`,
         // guard for drivers without proper centroid.
         `#include <color_fragment>
 diffuseColor.rgb = clamp(diffuseColor.rgb, 0.0, 1.0);
-vec3 camoVertexColor = diffuseColor.rgb;
-if (uLinearColors > 0.5) diffuseColor.rgb = srgbToLinear(diffuseColor.rgb);
+vec3 diffuseLinear = srgbToLinear(diffuseColor.rgb);
+if (uLinearColors > 0.5) diffuseColor.rgb = diffuseLinear;
+vec3 camoBaseLinear = srgbToLinear(uCamoBaseColor);
 vec2 patUV = surfaceUV(vWorld, vFaceN);
 vec2 patFw = fwidth(patUV);
 float patId = floor(vPattern + 0.5);
 float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
 if (uPatterns > 0.5 && patId == PAT_CAMO) {
-  float camoAO = min(camoVertexColor.r / max(uCamoBaseColor.r, 1e-4), min(camoVertexColor.g / max(uCamoBaseColor.g, 1e-4), camoVertexColor.b / max(uCamoBaseColor.b, 1e-4)));
+  float camoAO = min(diffuseLinear.r / max(camoBaseLinear.r, 1e-4), min(diffuseLinear.g / max(camoBaseLinear.g, 1e-4), diffuseLinear.b / max(camoBaseLinear.b, 1e-4)));
   diffuseColor.rgb = camoColor(vWorld, max(patFw.x, patFw.y)) * clamp(camoAO, 0.0, 1.0);
 } else {
   diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
@@ -154,7 +155,7 @@ export class ChunkMeshes {
   private readonly meshes = new Map<string, Mesh>();
   /** Each mesh's tight box, in metres. */
   private readonly boxes = new Map<Mesh, Box3>();
-  private readonly material: MeshLambertMaterial;
+  readonly material: MeshLambertMaterial;
   private readonly blockSize: number;
   private readonly linearColors = { value: 0 };
   private readonly patterns = { value: 1 };
@@ -166,7 +167,7 @@ export class ChunkMeshes {
   onChange?: (origin: Vec3) => void;
 
   /** Meshes are in blocks; the group scales them to metres. */
-  constructor(blockSize: number, registry?: Registry) {
+  constructor(blockSize: number, registry: Registry) {
     this.material = chunkMaterial({
       blockSize,
       linearColors: this.linearColors,
