@@ -37,6 +37,7 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
   const capturedRanges = new Map<number, { input: HTMLInputElement; initialValue: string }>();
   let forwardingPointer = false;
   const isInputElement = (element: Element): element is HTMLInputElement => element.tagName === 'INPUT';
+  const isSelectElement = (element: Element): element is HTMLSelectElement => element.tagName === 'SELECT';
   const liveRangeInput = (rangeInput: HTMLInputElement): HTMLInputElement => {
     const current = rangeInput.id ? document.getElementById(rangeInput.id) : null;
     return current && isInputElement(current) && current.type === 'range' ? current : rangeInput;
@@ -204,6 +205,16 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       if (target && target !== canvas && target.id !== 'game-cursor') {
         forwardingClick = true;
         try {
+          const select = target instanceof Element ? target.closest('select') : null;
+          if (select && isSelectElement(select)) {
+            select.focus();
+            try {
+              select.showPicker();
+            } catch {
+              // A browser may not support showPicker or may refuse it; keep keyboard focus as the fallback.
+            }
+            return;
+          }
           if (isInputElement(target)) {
             target.focus();
           }
