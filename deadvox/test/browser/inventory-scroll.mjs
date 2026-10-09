@@ -365,8 +365,14 @@ try {
         youMin: Number.parseFloat(getComputedStyle(you).minWidth),
         aroundMin: Number.parseFloat(getComputedStyle(around).minWidth),
         aroundWidth: around.getBoundingClientRect().width,
+        gutter: Number.parseFloat(
+          getComputedStyle(document.querySelector('#inventory')).getPropertyValue('--inv-scrollbar-width'),
+        ),
       };
     });
+  // Resize handlers run with the next frame, so observe two frames, not an arbitrary delay.
+  const nextFrames = async () =>
+    page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   const emptyAround = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
     const you = document.querySelector('#inventory [data-pane="you"]');
@@ -418,6 +424,14 @@ try {
     vicinityAtFloor.aroundMin > 0 && Math.abs(vicinityAtFloor.aroundWidth - vicinityAtFloor.aroundMin) <= 1,
     `the right clamp leaves the vicinity at its CSS floor: ${JSON.stringify(vicinityAtFloor)}`,
   );
+  process.stdout.write(`${engine}: stable scroll gutter ${vicinityAtFloor.gutter}px\n`);
+  if (engine === 'chromium') {
+    // With overlay scrollbars both gutters are 0, and the cap-wide check below would pass vacuously.
+    assert.ok(
+      vicinityAtFloor.gutter > 0,
+      `Chromium has classic scrollbars (launched without --hide-scrollbars), so the cap-wide rack meets both scroll gutters: ${JSON.stringify(vicinityAtFloor)}`,
+    );
+  }
   await page.evaluate(() => globalThis.scrollFixture.addCapRack());
   const capWideRack = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
@@ -486,6 +500,23 @@ try {
       splitAtRightClamp.ratio - Math.round(100 * (1 - splitAtRightClamp.aroundMin / splitAtRightClamp.availableWidth)),
     ) <= 1,
     `right drag stops at the vicinity's floor: ${JSON.stringify(splitAtRightClamp)}`,
+  );
+  // The chosen split is a preference: a narrower window clamps only what it applies, and widening restores it.
+  await page.setViewportSize({ width: 800, height: 400 });
+  await nextFrames();
+  const narrowedSplit = await splitState();
+  assert.ok(
+    narrowedSplit.ratio < splitAtRightClamp.ratio - 1 &&
+      Math.abs(narrowedSplit.ratio - Math.round(100 * (1 - narrowedSplit.aroundMin / narrowedSplit.availableWidth))) <=
+        1,
+    `a narrower window applies its own clamp: ${JSON.stringify({ splitAtRightClamp, narrowedSplit })}`,
+  );
+  await page.setViewportSize({ width: 1280, height: 400 });
+  await nextFrames();
+  const restoredSplit = await splitState();
+  assert.ok(
+    Math.abs(restoredSplit.ratio - splitAtRightClamp.ratio) <= 1,
+    `widening the window restores the chosen split: ${JSON.stringify({ splitAtRightClamp, restoredSplit })}`,
   );
   await dragSplitter(0.5);
   const middleSplit = await splitState();
