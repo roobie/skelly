@@ -607,11 +607,11 @@ describe('glb export: deadvox model entry', () => {
     expect(out.modelEntry.sight.kind).toBe('iron');
   });
 
-  it('keeps the pump shotgun sight line clear of other solids', () => {
-    expectSightLineClear(exported(design('archetype-pump-shotgun')), 'design archetype-pump-shotgun.json');
+  it('keeps the AK sight line clear of other solids', () => {
+    expectSightLineClear(exported(design('archetype-ak')), 'design archetype-ak.json');
   });
 
-  // This exhaustive corpus check exceeds the default timeout under load. The authored pump shotgun is the default sentinel because its sight line passes closest to another solid.
+  // This exhaustive corpus check exceeds the default timeout under load. The authored AK is the default sentinel because its sight line passes closest to another solid.
   sweepGroup('published sight-line clearance corpus', () => {
     it('keeps every exported sight line clear of other solids', () => {
       const corpus = loadCorpus();
