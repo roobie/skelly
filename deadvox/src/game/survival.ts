@@ -190,6 +190,20 @@ export class Survival {
     );
   }
 
+  private readItem(item: Item, readable: Readonly<Readable> | undefined): string | undefined {
+    const hasBook = defOf(this.inventory.registry, item.type).book !== undefined;
+    if (hasBook && this.hooks.bookRead?.(item.uid) !== true) {
+      const reason = this.sim.actions.beginReading(item.uid);
+      if (reason) {
+        return reason;
+      }
+    }
+    if (readable) {
+      this.hooks.read(readable, hasBook ? item.uid : undefined);
+    }
+    return undefined;
+  }
+
   /** Executes the live core option; this owner retains effects and serializable queue actions. */
   use(item: Item): string | undefined {
     if (this.sim.body.actionRefusal) {
@@ -218,19 +232,8 @@ export class Survival {
         return undefined;
       case 'switch':
         return this.switchLight(item);
-      case 'read': {
-        const bookRead = definition.book && this.hooks.bookRead?.(item.uid) === true;
-        if (definition.book && !bookRead) {
-          const reason = this.sim.actions.beginReading(item.uid);
-          if (reason) {
-            return reason;
-          }
-        }
-        if (option.readable) {
-          this.hooks.read(option.readable, definition.book ? item.uid : undefined);
-        }
-        return undefined;
-      }
+      case 'read':
+        return this.readItem(item, option.readable);
       default:
         throw new Error('Invalid usable core option');
     }

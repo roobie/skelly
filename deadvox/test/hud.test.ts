@@ -5,13 +5,13 @@ import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { cellCount, defOf } from '../src/core/items.ts';
-import { Quickbar } from '../src/game/quickbar.ts';
 import { labelForAction } from '../src/game/inputBindings.ts';
+import { Quickbar } from '../src/game/quickbar.ts';
 import {
-  type TimedActionPresentation,
   handlingViewModel,
   quickbarKey,
   quickbarViewModel,
+  type TimedActionPresentation,
   timedActionHandlingPresentation,
 } from '../src/ui/hud.ts';
 
@@ -219,9 +219,9 @@ describe('handlingViewModel', () => {
       expect(vm.cancelLabel).toContain(labelForAction('handling.stop'));
     }
     const stopped = { ...jobs[1]!, stopped: true };
-    expect(
-      handlingViewModel(timedActionHandlingPresentation(stopped, labelForAction('handling.stop'))).visible,
-    ).toBe(false);
+    expect(handlingViewModel(timedActionHandlingPresentation(stopped, labelForAction('handling.stop'))).visible).toBe(
+      false,
+    );
   });
   it('has no next-job text when nothing is queued after the current one', () => {
     const inv = new Inventory(registry);

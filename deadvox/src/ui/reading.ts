@@ -33,7 +33,7 @@ const scrollText = (text: HTMLElement, action: string): void => {
       break;
   }
 };
-export const mountReading = (host: HTMLElement, changed: () => void, closing: () => void = () => {}) => {
+export const mountReading = (host: HTMLElement, changed: () => void, closing: () => void = () => undefined) => {
   let current: Readonly<Readable> | undefined;
   let currentBookUid: number | undefined;
   let progress: ReadingProgress | undefined;

@@ -722,7 +722,7 @@ export const createSession = (options: SessionOptions) => {
     bookRead: (bookUid) => {
       const item = inventory.itemByUid(bookUid);
       const book = item && registry.items.get(item.type)?.book;
-      return Boolean(book && book.recipes.every((recipe) => character.knownRecipes.has(recipe)));
+      return Boolean(book?.recipes.every((recipe) => character.knownRecipes.has(recipe)));
     },
   });
   sim.actions.craft = craftActionHooks(inventory, character, reach, feet);

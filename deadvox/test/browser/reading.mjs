@@ -674,11 +674,11 @@ try {
     };
     const readProgress = () =>
       page.evaluate(() => {
-        const progress = document.querySelector('.reading-progress');
-        const job = globalThis.readingWitness.session.sim.actions.job;
+        const { value, max } = document.querySelector('.reading-progress') ?? {};
+        const { job } = globalThis.readingWitness.session.sim.actions;
         return {
-          value: progress?.value,
-          max: progress?.max,
+          value,
+          max,
           elapsed: job?.jobType === 'reading' ? job.elapsed : undefined,
           duration: job?.jobType === 'reading' ? job.duration : undefined,
           stopped: job?.stopped,
@@ -701,9 +701,9 @@ try {
     assert.equal(stoppedOnClose.elapsed, beforeClose.elapsed);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
     await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
-    const resumed = await readProgress();
-    assert.equal(resumed.elapsed, stoppedOnClose.elapsed);
-    assert.equal(resumed.value, beforeClose.value);
+    const reopened = await readProgress();
+    assert.equal(reopened.elapsed, stoppedOnClose.elapsed);
+    assert.equal(reopened.value, beforeClose.value);
     const beforeMove = await page.evaluate(() => ({
       position: [...globalThis.readingWitness.body.pos],
       time: globalThis.readingWitness.session.sim.time,
@@ -725,7 +725,9 @@ try {
       stopped: globalThis.readingWitness.session.sim.actions.job?.stopped,
       compression: globalThis.readingWitness.session.sim.compression.active,
     }));
-    assert.ok(Math.hypot(afterMove.position[0] - beforeMove.position[0], afterMove.position[2] - beforeMove.position[2]) > 0.01);
+    assert.ok(
+      Math.hypot(afterMove.position[0] - beforeMove.position[0], afterMove.position[2] - beforeMove.position[2]) > 0.01,
+    );
     assert.equal(afterMove.stopped, true);
     assert.equal(afterMove.compression, false);
     await page.evaluate(() => {
@@ -752,9 +754,9 @@ try {
     assert.equal(await page.locator('#reading').isVisible(), false);
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => !globalThis.readingWitness.session.sim.paused);
-    const resumed = await record('resume with reading hidden');
-    assert.equal(resumed.readingOpen, false);
-    assert.equal(resumed.menuPointer, false);
+    const pageResumed = await record('resume with reading hidden');
+    assert.equal(pageResumed.readingOpen, false);
+    assert.equal(pageResumed.menuPointer, false);
     assert.equal(await page.locator('#reading').isVisible(), false);
     // A hidden reading surface must not capture F after resume.
     await pressAction(page, 'world.interact');
@@ -768,7 +770,7 @@ try {
       overlayHidden: document.querySelector('#overlay').hidden,
     }));
     assert.equal(escaped.overlayHidden, escaped.locked);
-    proof = { before, during, escaped, menu, resumed };
+    proof = { before, during, escaped, menu, resumed: pageResumed };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';

@@ -36,9 +36,9 @@ import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import {
   type HandlingPresentationSource,
-  type TimedActionPresentation,
   quickbarKey,
   renderQuickbar,
+  type TimedActionPresentation,
   timedActionHandlingPresentation,
 } from '../ui/hud.ts';
 import {
@@ -248,6 +248,22 @@ const createInputReplayDriver = (
   player: InputReplayPlayer | undefined,
   ports: Omit<InputReplayDriverPorts, 'player'>,
 ): InputReplayDriver | undefined => (player ? new InputReplayDriver({ ...ports, player }) : undefined);
+
+const syncReadingProgress = (
+  bookUid: number | undefined,
+  action: TimedActionPresentation | undefined,
+  setProgress: (progress: { readonly value: number; readonly max: number } | undefined) => void,
+  bookIsComplete: (bookUid: number) => boolean,
+): void => {
+  if (bookUid === undefined) {
+    return;
+  }
+  if (action?.kind === 'reading' && action.ownerUid === bookUid) {
+    setProgress({ value: action.elapsed, max: action.duration });
+    return;
+  }
+  setProgress(bookIsComplete(bookUid) ? { value: 1, max: 1 } : undefined);
+};
 
 const handlingPresentationFor = (
   job: Readonly<LongJob> | undefined,
@@ -716,7 +732,16 @@ export const startPlay = (
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
   let stopReadingOnClose = () => undefined;
-  const reading = mountReading($('reading'), () => syncMenuState(), () => stopReadingOnClose());
+  const reading = mountReading(
+    $('reading'),
+    () => syncMenuState(),
+    () => stopReadingOnClose(),
+  );
+  const isBookComplete = (bookUid: number): boolean => {
+    const book = inventory.itemByUid(bookUid);
+    const definition = book && registry.items.get(book.type);
+    return Boolean(definition?.book?.recipes.every((recipe) => session.character.knownRecipes.has(recipe)));
+  };
   const hud = $('hud');
   const hudOptions = readHudOptions();
   const drawHudOptions = () =>
@@ -2928,7 +2953,7 @@ export const startPlay = (
       sim,
       messagesVisible: visible.messages,
     });
-    const handlingPresentation = handlingPresentationFor(
+    const currentPresentation = handlingPresentationFor(
       sim.actions.job,
       queue,
       inventory,
@@ -2941,23 +2966,11 @@ export const startPlay = (
           },
     );
     screen.update();
-    const readingBookUid = reading.bookUid;
-    if (readingBookUid !== undefined) {
-      const action = handlingPresentation.longAction;
-      const book = inventory.itemByUid(readingBookUid);
-      const definition = book && registry.items.get(book.type);
-      if (action?.kind === 'reading' && action.ownerUid === readingBookUid) {
-        reading.setProgress({ value: action.elapsed, max: action.duration });
-      } else if (definition?.book?.recipes.every((recipe) => session.character.knownRecipes.has(recipe))) {
-        reading.setProgress({ value: 1, max: 1 });
-      } else {
-        reading.setProgress(undefined);
-      }
-    }
+    syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
-    renderPlayHandling(handlingBox, handlingPresentation, !screen.isOpen && visible.handling);
+    renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling);
     view.prepareLighting(sky);
     view.updateShadows(hour, sky);
     renderMs = view.render();
