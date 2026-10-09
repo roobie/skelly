@@ -5,6 +5,10 @@
       "output": "deadvox/src/content/base/locks.json"
     },
     {
+      "source": "deadvox/src/content/base/saves.jsonnet",
+      "output": "deadvox/src/content/base/saves.json"
+    },
+    {
       "source": "site/playtest.jsonnet",
       "output": "site/playtest.json"
     }
