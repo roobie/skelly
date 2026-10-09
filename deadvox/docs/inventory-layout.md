@@ -44,7 +44,11 @@ The pane scrolls among its contents, and the Items body can also scroll to bring
 its pane rows into view on short screens. Since this leaves nested
 scroll regions, `deadvox/src/ui/inventoryScreen.ts`,
 `InventoryScreen.scrollSelectedItemIntoView`, reveals a newly selected row
-through every scrollable ancestor. Routine redraws leave the player's browsing
+through every scrollable ancestor. A wheel scrolls the nearest region with
+something to scroll along it, even one already at its edge, so a grid that fits
+never swallows the wheel meant for the pane around it. When none has anything to
+scroll, the nearest region still takes the wheel, so it reaches neither the page
+nor the game. See `deadvox/src/ui/wheel.ts`, `wheelPane`. Routine redraws leave the player's browsing
 position alone. The reading consumer stage verifies the selected note is visible
 and topmost at its centre.
 

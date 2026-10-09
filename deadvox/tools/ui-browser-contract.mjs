@@ -715,8 +715,8 @@ try {
   await press('Tab', 'Tab', 9);
 
   await action('debug.spawn-menu-toggle');
-  // Bags first: after the divider is narrowed below, their pockets make the nearby pane scroll; the
-  // pile at the feet would otherwise fill with whichever small items sort first.
+  // Bags first: once the divider is dragged to narrow Around you (below), their pockets make the nearby
+  // pane scroll; the pile at the feet would otherwise fill with whichever small items sort first.
   const spawnNames = await evaluate(`(() => {
     const entries = Array.from(document.querySelectorAll('#spawn .spawn-list button'))
       .map((button, index) => ({
@@ -858,12 +858,11 @@ try {
   assert.equal(transfer.hitUid, transfer.sourceUid, `container item is the topmost hit: ${JSON.stringify(transfer)}`);
   await moveCursorTo({ x: transfer.source.x + 16, y: transfer.source.y + 16 });
   await evaluate(dispatchMenuPointerClickExpression());
-  await delay(120);
-  const selectedContainerItem = await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent");
-  assert.equal(
-    selectedContainerItem,
-    'Can of beans',
-    `drawn-cursor click selects an item in a container: ${JSON.stringify({ transfer, selectedContainerItem })}`,
+  await waitFor(
+    async () =>
+      (await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent")) === 'Can of beans',
+    `drawn-cursor click selects an item in a container: ${JSON.stringify(transfer)}`,
+    2000,
   );
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives selecting a container item');

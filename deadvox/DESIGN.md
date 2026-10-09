@@ -425,9 +425,10 @@ HTML over the game view, and keyboard-first:
 - Two panes: **you** (hands, then each worn item with its pockets drawn as
   grids) and **around** (piles, and containers within reach, also as grids).
   Items move by drag and drop with a destination preview, or with keys. R rotates.
-- The compact view leaves unused cells out of the empty **At your feet** target.
-  On small zoomed screens, a content-owned width limit keeps an oversized locker
-  from dominating the nearby pane; wider containers carry a reason in content.
+- So Items fits small zoomed screens, the compact view leaves unused cells out of
+  the empty **At your feet** target, and a content-owned width limit keeps an
+  oversized locker from dominating the nearby pane; wider containers carry a reason
+  in content.
   See `src/ui/inventoryScreen.ts`, `InventoryScreen.viewModel`, and
   `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
