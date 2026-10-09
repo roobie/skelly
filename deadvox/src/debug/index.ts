@@ -29,6 +29,7 @@ import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
 import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
+import { comboBox } from '../ui/comboBox.ts';
 import { positionLookedAtReadout } from '../ui/hud.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
@@ -409,10 +410,13 @@ const panelTemplate = ({
     weathering: weatheringState
       ? html`
           <label for="weathering-profile">Weathering profile</label>
-          <select id="weathering-profile"
-            @change=${(event: Event) => selectWeatheringProfile((event.currentTarget as HTMLSelectElement).value)}>
-            ${weatheringProfiles.map(({ id }) => html`<option value=${id} ?selected=${id === weatheringState.profileId}>${id}</option>`)}
-          </select>
+          ${comboBox({
+            id: 'weathering-profile',
+            label: 'Weathering profile',
+            options: weatheringProfiles.map(({ id }) => ({ value: id, label: id })),
+            value: weatheringState.profileId,
+            choose: selectWeatheringProfile,
+          })}
           ${Object.keys(WEATHERING_RANGES).map((field) =>
             weatheringSlider(weatheringState, field as WeatheringNumberField, changeWeatheringNumber),
           )}

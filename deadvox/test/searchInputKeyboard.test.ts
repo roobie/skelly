@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
-import { BindingRegistry, KeyboardInput } from '../src/game/inputBindings.ts';
+import { BindingRegistry, INPUT_BINDINGS, KeyboardInput } from '../src/game/inputBindings.ts';
 
 it('keeps native text codes and defaults intact without emitting gameplay intents', () => {
   const keyboard = new KeyboardInput(
@@ -93,5 +93,73 @@ it('gates native debug-checkbox activation but leaves text editing native', () =
   } finally {
     remove();
     panel.remove();
+  }
+});
+
+it('routes inventory toggle and tab keys from a focused combo box unless they type into its filter', () => {
+  const bindings = new BindingRegistry(INPUT_BINDINGS, undefined);
+  const keyboard = new KeyboardInput(bindings);
+  keyboard.context = () => ({ context: 'inventory', debug: false });
+  const commands: string[] = [];
+  keyboard.command = ({ action, phase }) => {
+    if (phase === 'down') {
+      commands.push(action);
+    }
+  };
+  const remove = keyboard.install();
+  const inventory = document.createElement('section');
+  const field = document.createElement('input');
+  field.setAttribute('role', 'combobox');
+  const textInput = document.createElement('input');
+  inventory.append(field, textInput);
+  document.body.append(inventory);
+  // A KeyG code types "g"; named keys such as Tab and ArrowDown carry their code as their key.
+  const keyOf = (code: string) => (code.startsWith('Key') ? code.slice('Key'.length).toLowerCase() : code);
+  const press = (target: HTMLElement, code: string) => {
+    const init = { bubbles: true, cancelable: true, code, key: keyOf(code) };
+    const down = new KeyboardEvent('keydown', init);
+    target.dispatchEvent(down);
+    target.dispatchEvent(new KeyboardEvent('keyup', init));
+    return down;
+  };
+  try {
+    field.focus();
+    const inventoryActions = [
+      'ui.inventory-toggle',
+      'ui.inventory-tab-items',
+      'ui.inventory-tab-skills',
+      'ui.inventory-tab-crafting',
+    ];
+    const routed = inventoryActions.map((action) => {
+      const { code } = bindings.chords(action)[0]!;
+      commands.length = 0;
+      const down = press(field, code);
+      return { action, typed: keyOf(code).length === 1, prevented: down.defaultPrevented, commands: [...commands] };
+    });
+    // Both kinds must be present, or the test would pass without exercising the rule.
+    expect(routed.some(({ typed }) => typed)).toBe(true);
+    expect(routed.some(({ typed }) => !typed)).toBe(true);
+    for (const { action, typed, prevented, commands: sent } of routed) {
+      expect({ action, prevented, sent }).toEqual(
+        typed ? { action, prevented: false, sent: [] } : { action, prevented: true, sent: [action] },
+      );
+    }
+
+    commands.length = 0;
+    const listActions = ['inventory.previous', 'inventory.next', 'inventory.best-pocket'];
+    const listCodes = new Set(listActions.flatMap((action) => bindings.chords(action).map(({ code }) => code)));
+    expect(listCodes.size).toBeGreaterThan(0);
+    for (const code of listCodes) {
+      expect(press(field, code).defaultPrevented).toBe(false);
+    }
+    expect(commands).toEqual([]);
+
+    textInput.focus();
+    const toggleCode = bindings.chords('ui.inventory-toggle')[0]!.code;
+    expect(press(textInput, toggleCode).defaultPrevented).toBe(false);
+    expect(commands).toEqual([]);
+  } finally {
+    remove();
+    inventory.remove();
   }
 });

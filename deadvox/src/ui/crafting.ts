@@ -1,6 +1,8 @@
 // Lit view of completed projections. Commands and preferences arrive as explicit callbacks.
 import { html, nothing, render } from 'lit-html';
+import { repeat } from 'lit-html/directives/repeat.js';
 import { labelForAction } from '../game/inputBindings.ts';
+import { comboBox } from './comboBox.ts';
 import type { CraftRow, CraftStatus } from './craftReadout.ts';
 
 const REPAIR_PREFIX = /^Repair: /;
@@ -12,7 +14,10 @@ export interface CraftPanelActions {
 export const renderCrafting = (root: HTMLElement, rows: readonly CraftRow[], actions: CraftPanelActions): void => {
   render(
     html`<header><h2>Crafting</h2><p>Known recipes · clear both hands to start.</p></header>
-    ${rows.map(
+    ${repeat(
+      // Keyed by recipe so an open combo box stays with its own recipe when rows change.
+      rows,
+      (row) => row.id,
       (row) => html`<article class="craft-recipe" data-recipe=${row.id}>
       <h3>${row.name}</h3><div class="craft-time">${row.time} game time</div>
       ${row.components.map(
@@ -20,10 +25,15 @@ export const renderCrafting = (root: HTMLElement, rows: readonly CraftRow[], act
         ${group.alternatives.map((a) => html`<div class=${a.found < a.needed ? 'craft-gap' : ''}>${a.name}: ${a.found} found / ${a.needed} needed</div>`)}
         ${
           group.alternatives.length > 1
-            ? html`<label>Use <select aria-label=${`${row.name} material group ${group.group + 1}`} @change=${(event: Event) => actions.prefer(row.id, group.group, (event.target as HTMLSelectElement).value)}>
-          <option value="" ?selected=${group.preferred === ''}>Cheapest available</option>
-          ${group.alternatives.map((a) => html`<option value=${a.id} ?selected=${group.preferred === a.id}>${a.name}</option>`)}
-        </select></label>`
+            ? html`<div class="craft-use">Use ${comboBox({
+                label: `${row.name} material group ${group.group + 1}`,
+                options: [
+                  { value: '', label: 'Cheapest available' },
+                  ...group.alternatives.map((a) => ({ value: a.id, label: a.name })),
+                ],
+                value: group.preferred,
+                choose: (item) => actions.prefer(row.id, group.group, item),
+              })}</div>`
             : nothing
         }
       </div>`,
