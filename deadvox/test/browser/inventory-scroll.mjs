@@ -264,6 +264,11 @@ try {
     return {
       between: youBox.right <= detailsBox.left && detailsBox.right <= aroundBox.left,
       sideBySide: Math.abs(youBox.top - detailsBox.top) <= 1 && Math.abs(detailsBox.top - aroundBox.top) <= 1,
+      boxes: {
+        you: { left: youBox.left, right: youBox.right },
+        details: { left: detailsBox.left, right: detailsBox.right },
+        around: { left: aroundBox.left, right: aroundBox.right },
+      },
       detailsUid: details.getAttribute('data-selected-uid'),
       selectedUid: selected.getAttribute('data-uid'),
     };
@@ -370,10 +375,21 @@ try {
     `right drag reaches the JavaScript clamp within percentage rounding: ${JSON.stringify(splitAtRightClamp)}`,
   );
   await dragSplitter(0.5);
-  const middleRatio = Number(await page.locator('#inventory [data-inventory-splitter]').getAttribute('aria-valuenow'));
+  const middleSplit = await page.evaluate(() => {
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
+    const details = body?.querySelector('[data-pane="details"]');
+    return {
+      ratio: Number(splitter?.getAttribute('aria-valuenow')),
+      availableWidth: body && splitter && details ? body.clientWidth - splitter.offsetWidth - details.offsetWidth : 0,
+    };
+  });
+  const minRatio = Math.min(0.5, 220 / middleSplit.availableWidth);
+  const maxRatio = Math.max(minRatio, Math.min(0.5, 1 - 362 / middleSplit.availableWidth));
+  const expectedMiddleRatio = Math.max(minRatio, Math.min(maxRatio, 0.5));
   assert.ok(
-    Math.abs(middleRatio - 50) <= 1,
-    `integer clientX rounding can shift the divider by one percentage point: ${middleRatio}`,
+    Math.abs(middleSplit.ratio - Math.round(expectedMiddleRatio * 100)) <= 1,
+    `divider settles at the nearest feasible midpoint: ${JSON.stringify(middleSplit)}`,
   );
   const emptyAround = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
