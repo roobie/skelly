@@ -1706,9 +1706,10 @@ describe('content', () => {
   it('feeds registry camo overrides into the compiled chunk shader uniforms', () => {
     expect(() => camoShaderConfig([])).not.toThrow();
     const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
+    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
     const { registry, issues } = buildRegistry([
-      ...base,
+      baseBlocks,
       {
         source: 'mod-camo.json',
         data: { blocks: [{ ...camo, color: '#56789a', patternPalette: palette, patternWashout: 0.37 }] },
@@ -1739,8 +1740,9 @@ describe('content', () => {
     const noPalette = { ...withoutPalette, id: 'test_camo_no_palette' };
     const { patternWashout: _washout, ...withoutWashout } = camo;
     const noWashout = { ...withoutWashout, id: 'test_camo_no_washout' };
+    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const issues = buildRegistry([
-      ...base,
+      baseBlocks,
       {
         source: 'camo-contract.json',
         data: {
