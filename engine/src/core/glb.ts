@@ -26,7 +26,7 @@ import { portFrame } from './resolve.ts';
 import type { PartDef, PartInstance, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
-/** glTF node name of a part: its id and its registry key (`PartInstance.family`), e.g. `barrel:barrel`. */
+/** glTF node name of a part: its id and registry key (`PartInstance.family`), e.g. `part-1:family-a`. */
 export const partNodeName = (id: string, family: string): string => `${id}:${family}`;
 
 /** The standard sRGB electro-optical transfer: one normalized channel to linear light. */

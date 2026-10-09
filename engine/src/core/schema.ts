@@ -124,7 +124,7 @@ export interface KeepOut {
   readonly z?: readonly [number, number];
   /** The part attached at this port of the owner may occupy the volume. */
   readonly allowPort?: string;
-  /** Parts from these families may occupy the volume (e.g. a front sight in a rear sight's sightline). */
+  /** Parts from these families may occupy the volume (e.g. an attached part inside a designated clearance volume). */
   readonly allowFamilies?: readonly string[];
 }
 

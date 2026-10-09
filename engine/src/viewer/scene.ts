@@ -158,7 +158,7 @@ export function buildLayers(
       ? { r: placed.r, t: [placed.t[0] + offset[0], placed.t[1] + offset[1], placed.t[2] + offset[2]] }
       : placed;
     const def = resolved.defs.get(part)!;
-    // e.g. "length M ← barrel.length, inner M"
+    // e.g. "length M ← part-1.length, inner M"
     const params = Object.entries(resolved.params.get(part) ?? {})
       .map(([name, p]) => `${name} ${p.value}${p.from ? ` ← ${p.from}` : ''}`)
       .join(', ');

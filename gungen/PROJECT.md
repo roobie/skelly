@@ -193,8 +193,9 @@ is not permission to model a visible gap: the revolver's frame/grip/trigger-guar
 junction is a zero-gap shared-solid contract checked by `revolver-grip-joint`.
 The shared frame between domains is metres; an assembly belongs to one domain,
 so a scene that shows two domains is two assemblies placed in metres, with no
-rule checks between them. The tolerance defaults in `conventions.ts` are
-shared across domains.
+rule checks between them. The generic defaults in
+`../engine/src/core/conventions.ts#TOLERANCE` were tuned against Gungen's u-scale;
+a new domain should assess their magnitudes against its own units.
 
 **Revolved solids.** `RevolvedSolid` (`../engine/src/core/schema.ts#RevolvedSolid`) is a
 third kind of solid: a profile of (axial, radial) points turned about an axis

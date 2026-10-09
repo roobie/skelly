@@ -9,6 +9,7 @@ type ParsedImport = ReturnType<typeof parse>[0][number];
 const sourceExtensions = new Set(['.ts', '.tsx', '.mts', '.js', '.jsx', '.mjs', '.cjs']);
 const forbiddenDomainIdentifiers = new Set(['calibre', 'bore', 'gungen']);
 const domainIdentifierAllowlist: ReadonlySet<string> = new Set();
+const identifierPartSeparators = /[_$\d\s]+/;
 
 const sourceFiles = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -59,13 +60,22 @@ const importProblem = (file: string, imported: ParsedImport, engineSrc: string):
   return undefined;
 };
 
+const identifierParts = (identifier: string): string[] =>
+  identifier
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+    .split(identifierPartSeparators)
+    .filter(Boolean)
+    .map((part) => part.toLowerCase());
+
 const findDomainIdentifierViolations = (files: readonly string[]): string[] =>
   files.flatMap((file) => {
     const source = readFileSync(file, 'utf8');
-    return [...source.matchAll(/\b(?:calibre|bore|gungen)\b/gi)]
-      .map(([identifier]) => identifier.toLowerCase())
-      .filter((identifier) => forbiddenDomainIdentifiers.has(identifier) && !domainIdentifierAllowlist.has(identifier))
-      .map((identifier) => `${file}: forbidden domain identifier ${identifier}`);
+    return [...source.matchAll(/[A-Za-z_$][A-Za-z0-9_$]*/g)].flatMap(([identifier]) =>
+      identifierParts(identifier)
+        .filter((part) => forbiddenDomainIdentifiers.has(part) && !domainIdentifierAllowlist.has(part))
+        .map((part) => `${file}: forbidden domain identifier ${part}`),
+    );
   });
 
 const findBoundaryViolations = async (files: readonly string[], engineSrc: string): Promise<string[]> => {
@@ -113,14 +123,17 @@ describe('engine import boundary', () => {
       writeFileSync(packageCanary, "import 'gungen/src/gun/palette.ts';\n");
       // biome-ignore lint/suspicious/noTemplateCurlyInString: this fixture writes dynamic import source.
       writeFileSync(globCanary, 'const modules = import(`./parts/${name}.ts`);\n');
-      writeFileSync(identifierCanary, 'export const calibre = 5; export const bore = 1; export const gungen = true;\n');
+      writeFileSync(
+        identifierCanary,
+        'export const calibre = 5; export const bore = 1; export const gungen = true; export const calibreParams = []; export const byCalibre = {}; export const boreAxis = []; export const gungenId = "";\n',
+      );
 
       const violations = await findBoundaryViolations([relativeCanary, packageCanary, globCanary], fixtureEngineSrc);
       expect(violations).toHaveLength(3);
       expect(violations[0]).toContain('relative import leaves engine/src');
       expect(violations[1]).toContain('imports gungen/src/gun/palette.ts');
       expect(violations[2]).toContain('import cannot be resolved statically');
-      expect(findDomainIdentifierViolations([identifierCanary])).toHaveLength(3);
+      expect(findDomainIdentifierViolations([identifierCanary])).toHaveLength(7);
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }
