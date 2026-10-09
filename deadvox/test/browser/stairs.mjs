@@ -261,70 +261,72 @@ try {
   if (isLightingMode) {
     const shaderErrors = errors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error'));
     assert.deepEqual(shaderErrors, [], 'chunk shaders compile before the lighting pixel checks');
-    await page.evaluate(() => {
-      const runtime = globalThis.d7Review;
-      globalThis.d7Observed = { frames: [], outsideMood: 0, initialPost: runtime.engine.mood.post };
-      const renderMood = runtime.engine.mood.render.bind(runtime.engine.mood);
-      const renderHands = runtime.held.render.bind(runtime.held);
-      const render = runtime.engine.renderer.render.bind(runtime.engine.renderer);
-      let active;
-      runtime.engine.mood.render = (callback) => {
-        active = { post: runtime.engine.mood.post, hands: 0, targets: [], sequence: [] };
-        try {
-          return renderMood(callback);
-        } finally {
-          globalThis.d7Observed.frames.push(active);
-          globalThis.d7Observed.frames = globalThis.d7Observed.frames.slice(-12);
-          active = undefined;
-        }
-      };
-      runtime.held.render = (...args) => {
-        if (active) {
-          active.hands += 1;
-        } else {
-          globalThis.d7Observed.outsideMood += 1;
-        }
-        return renderHands(...args);
-      };
-      runtime.engine.renderer.render = (scene, camera) => {
-        if (active) {
-          let sceneKind = 'post';
-          if (scene === runtime.held.scene) {
-            sceneKind = 'hands';
-          } else if (scene === runtime.engine.scene) {
-            sceneKind = 'world';
+    if (mode === 'lighting-residents') {
+      await page.evaluate(() => {
+        const runtime = globalThis.d7Review;
+        globalThis.d7Observed = { frames: [], outsideMood: 0, initialPost: runtime.engine.mood.post };
+        const renderMood = runtime.engine.mood.render.bind(runtime.engine.mood);
+        const renderHands = runtime.held.render.bind(runtime.held);
+        const render = runtime.engine.renderer.render.bind(runtime.engine.renderer);
+        let active;
+        runtime.engine.mood.render = (callback) => {
+          active = { post: runtime.engine.mood.post, hands: 0, targets: [], sequence: [] };
+          try {
+            return renderMood(callback);
+          } finally {
+            globalThis.d7Observed.frames.push(active);
+            globalThis.d7Observed.frames = globalThis.d7Observed.frames.slice(-12);
+            active = undefined;
           }
-          active.sequence.push(sceneKind);
-          if (scene === runtime.held.scene) {
-            active.targets.push(Boolean(runtime.engine.renderer.getRenderTarget()));
+        };
+        runtime.held.render = (...args) => {
+          if (active) {
+            active.hands += 1;
+          } else {
+            globalThis.d7Observed.outsideMood += 1;
           }
-        }
-        return render(scene, camera);
-      };
-    });
-    for (const post of [true, false]) {
-      // biome-ignore lint/performance/noAwaitInLoops: Post modes need ordered measurements from the same renderer.
-      await page.evaluate((enabled) => {
-        globalThis.d7Observed.frames = [];
-        globalThis.d7Review.engine.mood.setPost(enabled);
-      }, post);
-      await page.waitForFunction(() => globalThis.d7Observed.frames.length >= 3);
-      const proof = await page.evaluate(() => ({
-        frames: globalThis.d7Observed.frames.slice(-3),
-        outsideMood: globalThis.d7Observed.outsideMood,
-      }));
-      await test(`Post=${post}: one held draw inside Mood with the correct render target`, () => {
-        assert.equal(proof.outsideMood, 0);
-        for (const frame of proof.frames) {
-          assert.equal(frame.post, post);
-          assert.equal(frame.hands, 1);
-          assert.deepEqual(frame.targets, [post]);
-          assert.equal(frame.sequence[0], 'world');
-          assert.equal(frame.sequence[1], 'hands');
-        }
+          return renderHands(...args);
+        };
+        runtime.engine.renderer.render = (scene, camera) => {
+          if (active) {
+            let sceneKind = 'post';
+            if (scene === runtime.held.scene) {
+              sceneKind = 'hands';
+            } else if (scene === runtime.engine.scene) {
+              sceneKind = 'world';
+            }
+            active.sequence.push(sceneKind);
+            if (scene === runtime.held.scene) {
+              active.targets.push(Boolean(runtime.engine.renderer.getRenderTarget()));
+            }
+          }
+          return render(scene, camera);
+        };
       });
+      for (const post of [true, false]) {
+        // biome-ignore lint/performance/noAwaitInLoops: Post modes need ordered measurements from the same renderer.
+        await page.evaluate((enabled) => {
+          globalThis.d7Observed.frames = [];
+          globalThis.d7Review.engine.mood.setPost(enabled);
+        }, post);
+        await page.waitForFunction(() => globalThis.d7Observed.frames.length >= 3);
+        const proof = await page.evaluate(() => ({
+          frames: globalThis.d7Observed.frames.slice(-3),
+          outsideMood: globalThis.d7Observed.outsideMood,
+        }));
+        await test(`Post=${post}: one held draw inside Mood with the correct render target`, () => {
+          assert.equal(proof.outsideMood, 0);
+          for (const frame of proof.frames) {
+            assert.equal(frame.post, post);
+            assert.equal(frame.hands, 1);
+            assert.deepEqual(frame.targets, [post]);
+            assert.equal(frame.sequence[0], 'world');
+            assert.equal(frame.sequence[1], 'hands');
+          }
+        });
+      }
+      await page.evaluate(() => globalThis.d7Review.engine.mood.setPost(globalThis.d7Observed.initialPost));
     }
-    await page.evaluate(() => globalThis.d7Review.engine.mood.setPost(globalThis.d7Observed.initialPost));
   }
   // The contrast witnesses measure only the world, never the debug hover label or HUD.
   await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
@@ -559,6 +561,10 @@ try {
       });
       assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
       await stage([157, 43.0001, 118]);
+      const raisedCabinVisibility = await page.evaluate(() =>
+        globalThis.stairsWitness.engine.skylight.at([83, 23.6, 57.5]),
+      );
+      assert.equal(raisedCabinVisibility, 0, 'raised cabin field is resident at the atlas stage');
       await page.evaluate(() => {
         globalThis.stairsWitness.input.pitch = Math.atan2(3.25, 7);
       });
@@ -1085,9 +1091,9 @@ try {
   } else if (mode === 'lighting-residents') {
     ({ residentProof } = await timePhase('lighting-resident-proofs', lightingResidentProofs));
   } else if (mode === 'lighting-outdoor') {
-    ({ outdoorProof } = await timePhase('lighting-outdoor-proofs', lightingOutdoorProofs));
+    ({ outdoorProof } = await lightingOutdoorProofs());
   } else if (mode === 'lighting-atlas') {
-    ({ secondSlotProof } = await timePhase('lighting-atlas-proofs', lightingAtlasProofs));
+    ({ secondSlotProof } = await lightingAtlasProofs());
   }
   assert.deepEqual(errors, []);
   const resultFile = isLightingMode ? `result-${mode}.json` : 'result.json';

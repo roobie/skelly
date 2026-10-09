@@ -179,15 +179,19 @@ the second field is resident rather than the visibility-1 fallback. The test-onl
 second cabin, raised so its padded top is in an all-air chunk, checks real
 Streamer-to-render cache recovery. `lighting-outdoor` compares an outdoor view
 against sky visibility forced to one. `lighting-atlas` tests the second slot
-against the first using the same local cell: the CPU values must differ, and the
-exposed wall's GPU luminance must match the sky-one reference. This contrast
-detects a wrong-slot sample; two identically dark interiors would not. The raised
+against the first using the same local cell: the CPU values must differ, the raised
+cabin's field must be resident at the stage point, and the exposed wall's GPU
+luminance must match the sky-one reference. This contrast detects a wrong-slot
+sample; two identically dark interiors would not. The raised
 cabin and terrain apron exist only in the lighting Vite plugin, not the demo or
-build. The proof sets are split into independently capped stages because their
-combined capture runtime approached the shared step cap. Captures encode only the
-viewport region their pixel assertions inspect, and `timePhase` reports startup
-and proof costs. See `deadvox/test/browser/stairs.mjs`, `lightingCellarProofs`,
-`lightingResidentProofs`, `lightingOutdoorProofs`, `lightingAtlasProofs` and
+build. The proof sets run as separately capped stages because together they cross
+the shared step cap on slower runners; each stage's cap stays proportionate to its
+work. The shared renderer's Post-mode witness runs once rather than spending
+each lighting step's cap on the same check. Captures encode only the viewport
+region their pixel assertions inspect, and `timePhase` reports startup and proof
+costs. See
+`deadvox/test/browser/stairs.mjs`, `lightingCellarProofs`, `lightingResidentProofs`,
+`lightingOutdoorProofs`, `lightingAtlasProofs` and
 `timePhase`, and `.github/workflows/deadvox-browser.yml`, `jobs.run`.
 Traversal witnesses actual floor following; screenshots are secondary to its simulation
 observations.
