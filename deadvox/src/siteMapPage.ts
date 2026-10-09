@@ -84,23 +84,28 @@ if (overlay) {
   document.querySelector<HTMLElement>('#map-label')!.textContent = `${config.site.toUpperCase()} · REVIEW MAP`;
   const requestClose = () =>
     globalThis.parent.postMessage({ type: 'deadvox-review-map-close' }, globalThis.location.origin);
+  const forwardKey = (event: Parameters<NonNullable<typeof globalThis.onkeydown>>[0], phase: 'down' | 'up') => {
+    event.preventDefault();
+    globalThis.parent.postMessage(
+      {
+        type: 'deadvox-review-map-key',
+        phase,
+        code: event.code,
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        repeat: event.repeat,
+        isComposing: event.isComposing,
+      },
+      globalThis.location.origin,
+    );
+  };
   document.querySelector<HTMLButtonElement>('#close')!.addEventListener('click', requestClose);
   document.querySelector<HTMLElement>('#hint')!.textContent =
-    'Drag to pan · wheel to zoom · click for ground coordinates · F2+M or Esc to close';
-  let debugGateHeld = false;
-  globalThis.addEventListener('keydown', (event) => {
-    if (event.code === 'F2') {
-      debugGateHeld = true;
-    } else if (event.code === 'Escape' || (debugGateHeld && event.code === 'KeyM')) {
-      event.preventDefault();
-      requestClose();
-    }
-  });
-  globalThis.addEventListener('keyup', (event) => {
-    if (event.code === 'F2') {
-      debugGateHeld = false;
-    }
-  });
+    'Drag to pan · wheel to zoom · click for ground coordinates · Esc to close';
+  globalThis.onkeydown = (event) => forwardKey(event, 'down');
+  globalThis.onkeyup = (event) => forwardKey(event, 'up');
 }
 
 interface RasterMap {
@@ -287,6 +292,7 @@ const generateMap = async (): Promise<RasterMap> => {
   const satellite = makeRaster('satellite', shades, colors);
   await addContours(topographic);
   status.textContent = `Ready · generated ${generated.columns} chunk columns in ${generated.realSeconds.toFixed(1)} s`;
+  document.documentElement.dataset.ready = 'true';
   return { topographic, satellite };
 };
 

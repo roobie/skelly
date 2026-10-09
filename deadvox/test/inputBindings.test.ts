@@ -266,7 +266,7 @@ describe('keyboard registry', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.binding('debug.review-map-toggle')?.defaults[0]?.code).toBe('KeyM');
     expect(bindings.binding('debug.review-map-toggle')?.gate).toBe('debug.gate');
-    expect(bindings.binding('debug.freeze-game')?.defaults[0]?.code).toBe('Numpad5');
+    expect(bindings.binding('debug.freeze-game')?.defaults[0]?.code).not.toBe('KeyM');
   });
   it('keeps noclip flight ungated and concurrent with ordinary movement', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));

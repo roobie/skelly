@@ -41,7 +41,6 @@ const entered: readonly InputContext[] = [
   'reading',
   'spawn',
   'debug-panel',
-  'review-map',
   ...moving,
   'interrupted',
 ];
@@ -615,6 +614,10 @@ type KeyEvent = Pick<
   KeyboardEvent,
   'code' | 'shiftKey' | 'altKey' | 'ctrlKey' | 'metaKey' | 'repeat' | 'isComposing' | 'timeStamp'
 >;
+type ForwardedKey = Pick<
+  KeyboardEvent,
+  'code' | 'shiftKey' | 'altKey' | 'ctrlKey' | 'metaKey' | 'repeat' | 'isComposing'
+>;
 const flags: Readonly<Record<Modifier, keyof Pick<KeyboardEvent, 'shiftKey' | 'altKey' | 'ctrlKey' | 'metaKey'>>> = {
   shift: 'shiftKey',
   alt: 'altKey',
@@ -691,6 +694,12 @@ export class KeyboardInput {
       this.active.delete(code);
     }
     this.cancelled(preservePointer, reason);
+  }
+  pressForwarded(event: ForwardedKey): boolean {
+    return this.press(new KeyboardEvent('keydown', event));
+  }
+  releaseForwarded(event: ForwardedKey): void {
+    this.release(new KeyboardEvent('keyup', event));
   }
   release(event: KeyEvent): void {
     this.down.delete(event.code);
