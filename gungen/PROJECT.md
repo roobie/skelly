@@ -898,11 +898,13 @@ Current limits the plan works within:
 - **3.0b Implement:** parsing, anchors for every archetype, and the palette
   migration. Done (see "3.0b (implemented)").
 
-Core stays free of gun data: every core function takes what it needs as
-explicit inputs, and the gun domain supplies them. The core `Domain` has no
-template registry (`../engine/src/core/schema.ts#Domain`), so functions that need a
-template take the resolved `Template`, and the export takes the anchors and
-palette as arguments.
+The target engine boundary is to keep firearm and domain names out of the
+shared package: core functions take domain data explicitly, and the gun domain
+supplies it. For g60, move the firearm names still in the engine—calibre params
+and selection, design calibre validation, and the GLB generator brand—behind
+Gungen adapters. The engine `Domain` has no template registry
+(`../engine/src/core/schema.ts#Domain`), so functions that need a template take
+the resolved `Template`, and the export takes anchors and palette as arguments.
 
 - **Design file.** A versioned `format` field, plus:
   - `template`: the template the design belongs to;
