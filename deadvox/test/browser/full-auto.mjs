@@ -217,6 +217,8 @@ try {
   await page.waitForFunction(() => document.querySelector('iframe[title="Current-world review map"]')?.hidden);
   await pressAction(page, 'debug.review-map-toggle');
   await page.waitForFunction(() => !document.querySelector('iframe[title="Current-world review map"]')?.hidden);
+  // Closing resets the frame to about:blank; a reopen needs the new page's key forwarder ready before Escape.
+  await reviewMapPage.locator('html[data-ready="true"]').waitFor();
   await reviewMap.evaluate((frame) => frame.contentWindow?.focus());
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => document.querySelector('iframe[title="Current-world review map"]')?.hidden);
