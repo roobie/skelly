@@ -12,8 +12,8 @@ export interface RigidBody {
   /** Vertices of the body's local-space OBB, relative to its COM (metres). */
   corners: readonly Vec3[];
   remainderRealSeconds: number;
-  elapsed: number;
-  quietTime: number;
+  elapsedRealSeconds: number;
+  quietRealSeconds: number;
   asleep: boolean;
 }
 type SolidQuery = (x: number, y: number, z: number) => boolean;
@@ -110,7 +110,7 @@ export const angularVelocity = (body: RigidBody): Vec3 =>
   matVec(inverseSymmetric(worldInertia(body)), body.angularMomentum);
 export const applyImpulse = (body: RigidBody, point: Vec3, impulse: Vec3): void => {
   body.asleep = false;
-  body.quietTime = 0;
+  body.quietRealSeconds = 0;
   body.velocity = add(body.velocity, scale(impulse, 1 / body.mass));
   body.angularMomentum = add(body.angularMomentum, cross(sub(point, body.center), impulse));
 };
@@ -259,9 +259,9 @@ const substep = (body: RigidBody, dt: number, world: RigidWorld | undefined, gra
   }
   const speed = Math.hypot(...body.velocity);
   const settledSpin = Math.hypot(...angularVelocity(body));
-  body.quietTime = speed < 0.05 && settledSpin < 0.3 ? body.quietTime + dt : 0;
-  body.elapsed += dt;
-  if (body.quietTime >= 0.25 || body.elapsed >= 8) {
+  body.quietRealSeconds = speed < 0.05 && settledSpin < 0.3 ? body.quietRealSeconds + dt : 0;
+  body.elapsedRealSeconds += dt;
+  if (body.quietRealSeconds >= 0.25 || body.elapsedRealSeconds >= 8) {
     body.velocity = [0, 0, 0];
     body.angularMomentum = [0, 0, 0];
     body.asleep = true;

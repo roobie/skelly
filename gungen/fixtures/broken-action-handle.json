@@ -1,6 +1,6 @@
 {
   "name": "broken-action-handle",
-  "description": "AR-pattern receiver with a charging handle inside its travel volume.",
+  "description": "Receiver with a charging handle inside its travel volume.",
   "expect": ["action-handle-rest"],
   "root": "receiver",
   "parts": {
@@ -14,7 +14,7 @@
         "rail": "full"
       }
     },
-    "lower": { "family": "lower", "params": { "layout": "ar" } },
+    "lower": { "family": "lower", "params": { "layout": "conventional" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "handguard": { "family": "handguard" },
     "grip": { "family": "grip", "params": { "length": "M" } },

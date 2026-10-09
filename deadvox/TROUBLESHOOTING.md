@@ -13,12 +13,17 @@ read_if:
   - you diagnose keyboard rebinding, debug gates or native browser interception
   - you investigate save-lock timeouts
   - you investigate navigation-aborted save-test requests (#474)
+  - a new-world start shows a blank canvas before nearby terrain is ready
 ---
 
 # deadvox — troubleshooting
 
 How to look at the game and narrow down a problem. Lessons from past problems are in
 [LESSONS.md](LESSONS.md).
+
+## New-world loading feedback
+
+The title overlay hides when pointer lock is granted, before the spawn neighborhood is fully meshed. Keep a centered status hint over the canvas until that neighborhood is ready; otherwise the empty view can look like a stalled start. `src/game/play.ts`, `updateStartupHint`, uses `Streamer.unmeshedColumns` to show progress and decide when the hint can hide.
 
 ## Debug parameters
 

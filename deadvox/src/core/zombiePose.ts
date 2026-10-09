@@ -9,7 +9,7 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { flinchPose, flinchPoseWithClip, HIT_FLINCH, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { zombieFigure as humanoidFigure, type ShamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
-import { amalgamFigure } from './amalgamFigure.ts';
+import { amalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import type { ZombieFigure } from './zombieFigure.ts';
 import type { Zombie } from './zombies.ts';
@@ -226,14 +226,12 @@ const posedAmalgam = (input: ShamblerPoseInput): PosedShambler => {
     input.hitFlinchTime === undefined
       ? basePose
       : amalgamHitFlinchPose(basePose, input.hitFlinchTime, input.id ?? input.seed);
-  const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
-  const cuts = input.severed.map((part) => partRoots.get(part) ?? part);
   return {
     pose,
     transforms: boneTransforms(bones, pose),
     bones,
     figure,
-    hidden: severedBoneSet(bones, cuts),
+    hidden: amalgamSeveredBones(figure, input.severed),
     yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
     position: input.position,
     blockSize: input.blockSize,

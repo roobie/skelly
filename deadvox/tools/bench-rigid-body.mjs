@@ -24,8 +24,8 @@ const bodies = Array.from({ length: 16 }, (_, index) => ({
   ],
   corners,
   remainderRealSeconds: 0,
-  elapsed: 0,
-  quietTime: 0,
+  elapsedRealSeconds: 0,
+  quietRealSeconds: 0,
   asleep: false,
 }));
 const initial = bodies.map((body) => ({
@@ -43,8 +43,8 @@ const reset = () => {
     body.velocity = [...state.velocity];
     body.angularMomentum = [...state.angularMomentum];
     body.remainderRealSeconds = 0;
-    body.elapsed = 0;
-    body.quietTime = 0;
+    body.elapsedRealSeconds = 0;
+    body.quietRealSeconds = 0;
     body.asleep = false;
   }
 };
