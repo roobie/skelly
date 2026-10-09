@@ -42,7 +42,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), firearmShotEvent: (item) => firearmShotEmission(item, firearms.noiseFactorFor(item)).event, fireWeapon: (item, time) => fireWeapon(item, time) } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { config, sim, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), firearmShotEvent: (item) => firearmShotEmission(item, firearms.noiseFactorFor(item)).event, fireWeapon: (item, time) => fireWeapon(item, time) } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -190,6 +190,38 @@ try {
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
+  const reviewMap = page.locator('iframe[title="Current-world review map"]');
+  await pressAction(page, 'debug.review-map-toggle');
+  await page.waitForFunction(() => {
+    const frame = document.querySelector('iframe[title="Current-world review map"]');
+    return frame && !frame.hidden && frame.src.includes('overlay=1');
+  });
+  const reviewMapPage = page.frameLocator('iframe[title="Current-world review map"]');
+  await reviewMapPage.locator('html[data-ready="true"]').waitFor();
+  const mapParams = await reviewMap.evaluate((frame) => Object.fromEntries(new URL(frame.src).searchParams));
+  assert.equal(mapParams.seed, '73', 'review map receives the active world seed');
+  assert.equal(
+    mapParams.site,
+    await page.evaluate(() => globalThis.fullAutoRuntime.config.site),
+    'review map receives the active site',
+  );
+  assert.equal(mapParams.centerX, mapParams.playerX, 'map centers on the player');
+  assert.equal(mapParams.centerZ, mapParams.playerZ, 'map centers on the player');
+  assert.equal(Number.isFinite(Number(mapParams.playerYaw)), true, 'map receives player facing');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoRuntime.sim.paused),
+    false,
+    'map matches the debug panel pause rule',
+  );
+  await pressAction(page, 'debug.review-map-toggle');
+  await page.waitForFunction(() => document.querySelector('iframe[title="Current-world review map"]')?.hidden);
+  await pressAction(page, 'debug.review-map-toggle');
+  await page.waitForFunction(() => !document.querySelector('iframe[title="Current-world review map"]')?.hidden);
+  // Closing resets the frame to about:blank; a reopen needs the new page's key forwarder ready before Escape.
+  await reviewMapPage.locator('html[data-ready="true"]').waitFor();
+  await reviewMap.evaluate((frame) => frame.contentWindow?.focus());
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.querySelector('iframe[title="Current-world review map"]')?.hidden);
   const setHudOption = async (labelText, key, selector, visible) => {
     await page.evaluate(
       ({ label, nextVisibility }) => {

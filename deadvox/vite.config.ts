@@ -206,7 +206,7 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000, // three.js
-    rollupOptions: { input: ['index.html', 'sounds.html'] },
+    rollupOptions: { input: ['index.html', 'sounds.html', 'map.html'] },
   },
   worker: { format: 'es' },
   test: {
