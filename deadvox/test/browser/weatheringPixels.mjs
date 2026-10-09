@@ -113,8 +113,22 @@ void main() {
       return masks;
     };
 
-    const makeMixMaterial = ({ THREE: threeLib, profile, weatherablePatternGlsl, surfacePatternsGlsl }) =>
-      new threeLib.ShaderMaterial({
+    const makeMixMaterial = ({
+      THREE: threeLib,
+      profile,
+      legacyFormula,
+      weatherablePatternGlsl,
+      surfacePatternsGlsl,
+    }) => {
+      const mixFormula = legacyFormula
+        ? `float mixAmount = clamp(weatherable * uStrength * clamp(
+    uTintDarkness * grime + uStreakStrength * streak + uMossStrength * moss, 0.0, uMixCeiling
+  ), 0.0, 1.0);`
+        : `float mixAmount = clamp(
+    weatherable * uStrength * (uTintDarkness * grime + uStreakStrength * streak + uMossStrength * moss),
+    0.0, uMixCeiling
+  );`;
+      return new threeLib.ShaderMaterial({
         uniforms: {
           uStrength: { value: profile.strength },
           uVariationScale: { value: profile.variationScaleMetres },
@@ -188,10 +202,7 @@ void main() {
   float mossCutoff = uMossThreshold - uMossBias * environment;
   float mossPatches = smoothstep(mossCutoff, mossCutoff + 0.18, mossNoise) * environment * uVariation;
   float moss = baseMoss * broadStrength + mossPatches;
-  float mixAmount = clamp(
-    weatherable * uStrength * (uTintDarkness * grime + uStreakStrength * streak + uMossStrength * moss),
-    0.0, uMixCeiling
-  );
+  ${mixFormula}
   gl_FragColor = vec4(vec3(mixAmount), 1.0);
 }`,
         side: threeLib.DoubleSide,
@@ -199,11 +210,22 @@ void main() {
         depthWrite: true,
         toneMapped: false,
       });
+    };
 
-    const renderMixAmounts = ({ THREE: threeLib, renderer: maskRenderer, group, camera, width, height, profile }) => {
+    const renderMixAmounts = ({
+      THREE: threeLib,
+      renderer: maskRenderer,
+      group,
+      camera,
+      width,
+      height,
+      profile,
+      legacyFormula = false,
+    }) => {
       const material = makeMixMaterial({
         THREE: threeLib,
         profile,
+        legacyFormula,
         weatherablePatternGlsl: globalThis.firefoxUiTest.weatherablePatternGlsl,
         surfacePatternsGlsl: globalThis.firefoxUiTest.surfacePatternsGlsl,
       });
@@ -396,6 +418,28 @@ void main() {
     const mixPixelsAfter = renderProfileMix(weatheringProfile);
     // Reconstruct the d150-11 defaults, which differ only in these two authored values.
     const mixPixelsBefore = renderProfileMix({ ...weatheringProfile, mixCeiling: 1 });
+    const properProfile = profiles.find(({ weatheringBlend, strength }) => weatheringBlend === 0 && strength > 0);
+    if (!properProfile) {
+      throw new Error('weathering pixel equality needs a multiplicative-only profile');
+    }
+    const currentProperMix = renderProfileMix(properProfile);
+    const legacyProperMix = renderMixAmounts({
+      THREE: Three,
+      renderer: webglRenderer,
+      group: engine.meshes.group,
+      camera: activeCamera,
+      width: canvas.width,
+      height: canvas.height,
+      profile: { ...properProfile, mixCeiling: 1 / properProfile.strength },
+      legacyFormula: true,
+    });
+    let properMixPixelMaxDifference = 0;
+    for (let offset = 0; offset < currentProperMix.length; offset += 4) {
+      properMixPixelMaxDifference = Math.max(
+        properMixPixelMaxDifference,
+        Math.abs(currentProperMix[offset] - legacyProperMix[offset]),
+      );
+    }
     const replacementShares = (mixPixels, blend) =>
       Object.fromEntries(
         Object.entries(materialHalves).map(([id, { weathered: pixels }]) => [
@@ -516,6 +560,7 @@ void main() {
       materialPixels: Object.fromEntries(Object.entries(materialPixels).map(([id, pixels]) => [id, pixels.length])),
       nearFullReplacementShares,
       boundedNearFullReplacementShares,
+      properMixPixelMaxDifference,
       materialPixelTotal: Object.values(materialPixels).reduce((total, pixels) => total + pixels.length, 0),
       diagnostics: {
         maskPixelCounts,

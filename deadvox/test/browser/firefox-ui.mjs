@@ -402,6 +402,7 @@ try {
       materialPixelTotal: weatheringPixels.materialPixelTotal,
       nearFullReplacementShares: weatheringPixels.nearFullReplacementShares,
       boundedNearFullReplacementShares: weatheringPixels.boundedNearFullReplacementShares,
+      properMixPixelMaxDifference: weatheringPixels.properMixPixelMaxDifference,
       materialReadability: weatheringPixels.materialReadability,
       baselineMaterialReadability: weatheringPixels.baselineMaterialReadability,
       profileStrengths: weatheringPixels.profileStrengths,
@@ -419,6 +420,11 @@ try {
     'Firefox chunk and mask shaders compile',
   );
   assert.equal(weatheringPixels.uniforms.off, 0);
+  assert.equal(
+    weatheringPixels.properMixPixelMaxDifference,
+    0,
+    'the proper shader mix is pixel-identical to the prior formula',
+  );
   for (const [profileId, strength] of Object.entries(weatheringPixels.profileStrengths)) {
     assert.equal(weatheringPixels.uniforms[profileId], strength);
   }
