@@ -61,10 +61,7 @@ const placementStyle = (placement: Placement | undefined): Record<string, string
     : {};
 
 /** Case-insensitive substring match on labels; a blank filter keeps every option. */
-export const filterComboBoxOptions = (
-  options: readonly ComboBoxOption[],
-  filter: string,
-): readonly ComboBoxOption[] => {
+const filterComboBoxOptions = (options: readonly ComboBoxOption[], filter: string): readonly ComboBoxOption[] => {
   const needle = filter.trim().toLocaleLowerCase();
   return needle ? options.filter(({ label }) => label.toLocaleLowerCase().includes(needle)) : options;
 };
