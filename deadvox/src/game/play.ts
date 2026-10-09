@@ -1288,6 +1288,8 @@ export const startPlay = (
   stopReadingOnClose = () => {
     if (sim.actions.job?.jobType === 'reading' && !sim.actions.job.stopped) {
       sim.actions.stop();
+      // Closing the page must return movement input immediately, not after compression ramps down.
+      sim.compression.snap();
     }
   };
 

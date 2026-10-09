@@ -698,7 +698,7 @@ try {
     const stoppedOnClose = await readProgress();
     assert.equal(stoppedOnClose.stopped, true);
     assert.ok(stoppedOnClose.elapsed >= beforeClose.value);
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.locksInput), false);
     try {
       await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
     } catch (error) {
