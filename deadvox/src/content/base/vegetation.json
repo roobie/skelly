@@ -1,13 +1,22 @@
 {
   "blocks": [
-    { "id": "tree_trunk", "name": "Tree trunk", "color": "#62503b", "solid": true, "opaque": true, "pattern": "rough" },
+    {
+      "id": "tree_trunk",
+      "name": "Tree trunk",
+      "color": "#62503b",
+      "solid": true,
+      "opaque": true,
+      "pattern": "rough",
+      "weatherable": false
+    },
     {
       "id": "tree_branch",
       "name": "Tree branch",
       "color": "#705941",
       "solid": true,
       "opaque": true,
-      "pattern": "rough"
+      "pattern": "rough",
+      "weatherable": false
     },
     {
       "id": "leaves",
@@ -16,7 +25,8 @@
       "solid": false,
       "opaque": true,
       "rustle": { "gentle": "foliage_rustle", "fast": "foliage_rustle_fast" },
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": false
     },
     {
       "id": "hedge",
@@ -25,7 +35,8 @@
       "solid": false,
       "opaque": true,
       "rustle": { "gentle": "foliage_rustle", "fast": "foliage_rustle_fast" },
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": false
     },
     {
       "id": "leaf_litter",
@@ -33,7 +44,8 @@
       "color": "#766047",
       "solid": true,
       "opaque": true,
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": false
     }
   ],
   "sounds": [

@@ -7,9 +7,8 @@ const decodeDataUrl = (dataUrl) => Buffer.from(dataUrl.slice(dataUrl.indexOf(','
 const measureInPage = async (page) =>
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The browser-side measurement is self-contained because Playwright serializes this single evaluate callback.
   page.evaluate(async () => {
-    const makeMaskMaterial = ({ THREE: threeLib, boxes: materialBoxes, weatherablePatternGlsl }) => {
+    const makeMaskMaterial = ({ THREE: threeLib, boxes: materialBoxes }) => {
       const count = materialBoxes.length;
-      const weatherablePattern = weatherablePatternGlsl('vPattern');
       return new threeLib.ShaderMaterial({
         uniforms: {
           uBuildingMin: { value: materialBoxes.map(({ min }) => new threeLib.Vector3(...min)) },
@@ -20,14 +19,14 @@ const measureInPage = async (page) =>
           uWeatheringSplit: { value: 0 },
         },
         vertexShader: `
-attribute float pattern;
+attribute float weatherable;
 varying vec3 vWorld;
 varying vec3 vNormal;
-varying float vPattern;
+varying float vWeatherable;
 void main() {
   vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
   vNormal = normalize(normal);
-  vPattern = pattern;
+  vWeatherable = weatherable;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`,
         fragmentShader: `
@@ -40,7 +39,7 @@ uniform int uSide;
 uniform float uWeatheringSplit;
 varying vec3 vWorld;
 varying vec3 vNormal;
-varying float vPattern;
+varying float vWeatherable;
 void main() {
   bool building = false;
   bool selectedBuilding = false;
@@ -53,7 +52,7 @@ void main() {
     bool side = uSide == 0 || (uSide == 1 ? vWorld.x >= uWeatheringSplit : vWorld.x < uWeatheringSplit);
     selectedBuilding = selectedBuilding || (i == uSelectedBuilding && inside && wall && side);
   }
-  bool weatherable = ${weatherablePattern};
+  bool weatherable = vWeatherable > 0.5;
   bool selected = uMode == 0 ? building : (uMode == 1 ? building && weatherable : selectedBuilding && weatherable);
   gl_FragColor = selected ? vec4(1.0) : vec4(0.0, 0.0, 0.0, 1.0);
 }`,
@@ -113,7 +112,7 @@ void main() {
       return masks;
     };
 
-    const makeMixMaterial = ({ THREE: threeLib, profile, weatherablePatternGlsl, surfacePatternsGlsl }) =>
+    const makeMixMaterial = ({ THREE: threeLib, profile, surfacePatternsGlsl }) =>
       new threeLib.ShaderMaterial({
         uniforms: {
           uStrength: { value: profile.strength },
@@ -129,17 +128,20 @@ void main() {
         },
         vertexShader: `
 attribute float pattern;
+attribute float weatherable;
 attribute float occlusion;
 attribute vec2 weather;
 varying vec3 vWorld;
 varying vec3 vFaceN;
 varying float vPattern;
+varying float vWeatherable;
 varying float vOcclusion;
 varying vec2 vWeather;
 void main() {
   vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
   vFaceN = normalize(normal);
   vPattern = pattern;
+  vWeatherable = weatherable;
   vOcclusion = occlusion;
   vWeather = weather;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -159,6 +161,7 @@ uniform float uMixCeiling;
 varying vec3 vWorld;
 varying vec3 vFaceN;
 varying float vPattern;
+varying float vWeatherable;
 varying float vOcclusion;
 varying vec2 vWeather;
 ${surfacePatternsGlsl}
@@ -166,7 +169,7 @@ void main() {
   vec2 patUV = surfaceUV(vWorld, vFaceN);
   float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
   float verticalFace = 1.0 - abs(vFaceN.y);
-  float weatherable = (${weatherablePatternGlsl('vPattern')}) ? 1.0 : 0.0;
+  float weatherable = vWeatherable;
   float grain = vnoise(patUV * 1.7 + vec2(patSeed));
   float weatherPatch = smoothstep(0.28, 0.76, grain);
   float sheltered = clamp(vOcclusion, 0.0, 1.0);
@@ -204,7 +207,6 @@ void main() {
       const material = makeMixMaterial({
         THREE: threeLib,
         profile,
-        weatherablePatternGlsl: globalThis.firefoxUiTest.weatherablePatternGlsl,
         surfacePatternsGlsl: globalThis.firefoxUiTest.surfacePatternsGlsl,
       });
       const scene = new threeLib.Scene();
@@ -314,7 +316,6 @@ void main() {
     const maskMaterial = makeMaskMaterial({
       THREE: Three,
       boxes,
-      weatherablePatternGlsl: globalThis.firefoxUiTest.weatherablePatternGlsl,
     });
     const maskGroup = engine.meshes.group.clone(true);
     maskGroup.traverse((object) => {

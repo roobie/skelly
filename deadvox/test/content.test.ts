@@ -7,7 +7,7 @@ import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
-import { blockPatterns } from '../src/core/meshInput.ts';
+import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
@@ -15,6 +15,7 @@ import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
+import { terrainBlockIds } from '../src/core/worldgen.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
@@ -59,6 +60,21 @@ it('validates weathering profile bounds without pinning authored tuning', () => 
     expect(validate({ ...profile, [field]: range.max + 1 } as typeof profile)).not.toEqual([]);
   }
   expect(validate({ ...profile, tintColor: 'blue' })).not.toEqual([]);
+});
+
+it('weathering applies to authored construction, not terrain or vegetation', () => {
+  const vegetation = base.find(({ source }) => source === 'vegetation.json')!.data as ContentFile;
+  const vegetationIds = (vegetation.blocks ?? []).map(({ id }) => baseRegistry.blockIds.get(id)!);
+  const terrainIds = Object.values(terrainBlockIds((id) => baseRegistry.blockIds.get(id)!));
+  const naturalIds = [...vegetationIds, ...terrainIds];
+  const naturalIdSet = new Set(naturalIds);
+  const builtIds = baseRegistry.blocks.map((_, id) => id).filter((id) => id !== 0 && !naturalIdSet.has(id));
+  const weatherability = blockWeatherability(baseRegistry);
+
+  expect(naturalIds.length).toBeGreaterThan(0);
+  expect(naturalIds.every((id) => weatherability[id] === 0)).toBe(true);
+  expect(builtIds.length).toBeGreaterThan(0);
+  expect(builtIds.some((id) => weatherability[id] === 1)).toBe(true);
 });
 
 it('rejects a layout that names an unknown weathering profile', () => {

@@ -142,6 +142,8 @@ const BlockSchema = strictObject({
   rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
+  /** Whether render-only site weathering may affect this built material. */
+  weatherable: optional(vBoolean()),
   /** Four-colour palette read only by the `camo` surface pattern. */
   patternPalette: optional(tuple([Color, Color, Color, Color])),
   /** Washout amount in [0, 1], read only by the `camo` surface pattern. */
@@ -936,6 +938,8 @@ const FixedLootItem = strictObject({
   item: Id,
   count: optional(pipe(Count, minValue(1))),
   condition: optional(Fraction),
+  /** Observation only: playtest metrics record when the player first loots or reads this item. */
+  key: optional(vBoolean()),
 });
 const FixedLootOverride = strictObject({
   /** Template-local furniture anchor in half-metre block cells. */
@@ -949,6 +953,10 @@ const LayoutBuilding = strictObject({
   storeys: optional(pipe(Count, minValue(1), maxValue(8))),
   fixedLoot: optional(array(FixedLootOverride)),
 });
+const LayoutRect = pipe(
+  strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
+  check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'must have positive area'),
+);
 
 const SiteLayoutSchema = strictObject({
   id: Id,
@@ -956,10 +964,7 @@ const SiteLayoutSchema = strictObject({
   demo: optional(vBoolean()),
   /** The render-only weathering profile for this site; absent layouts use the default profile. */
   weatheringProfile: optional(Id),
-  bounds: pipe(
-    strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
-    check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'bounds must have positive area'),
-  ),
+  bounds: LayoutRect,
   /** Foundation elevation: lower face of the top ground block, in metres. */
   ground: HalfMetres,
   /** Calendar time on day 1 when this site is selected without an explicit ?time=. */
@@ -987,6 +992,8 @@ const SiteLayoutSchema = strictObject({
       surface: optional(picklist(['dirt', 'asphalt'])),
     }),
   ),
+  /** Observation only: playtest metrics record when the player first stands in each beat's area. */
+  beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
 });
 
 // ---- zombies ----

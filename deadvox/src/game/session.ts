@@ -305,7 +305,7 @@ export interface SessionOptions {
   /** Presentation cue for an action the handling queue refused. */
   refusal?: ((text: string) => void) | undefined;
   /** Authored text selected by a live domain command; presentation owns its view. */
-  onRead: (readable: Readonly<Readable>, bookUid?: number) => void;
+  onRead: (readable: Readonly<Readable>, bookUid?: number, itemType?: string) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   /** Output only, called after the simulation has committed the case transition. */

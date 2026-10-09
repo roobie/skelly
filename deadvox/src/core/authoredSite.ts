@@ -19,7 +19,7 @@ import { fixedItems, type Rolled } from './loot.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
-import { furnitureOf, grow, type Rect, type Site, type ZombieSpawn } from './site.ts';
+import { furnitureOf, grow, type PlaytestMarks, type Rect, type Site, type ZombieSpawn } from './site.ts';
 import { footprint, type Placement, placedPieces, placedSpawns, stampPlacement } from './templates.ts';
 import {
   forestDensityAt,
@@ -41,6 +41,7 @@ export class AuthoredSite implements Site {
   private readonly spawns: readonly ZombieSpawn[];
   private readonly treeIndex: TreeIndex;
   private readonly fixedLoot = new Map<string, Rolled[]>();
+  readonly playtestMarks: PlaytestMarks;
   readonly seed: number;
   readonly registry: Registry;
 
@@ -62,6 +63,7 @@ export class AuthoredSite implements Site {
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     this.placements = layout.buildings.map((building) => placementOf(registry, building));
+    const keyLoot = new Map<string, Set<string>>();
     this.placements.forEach((placement, buildingIndex) => {
       const building = layout.buildings[buildingIndex]!;
       const placed = placedPieces(placement);
@@ -70,11 +72,19 @@ export class AuthoredSite implements Site {
           (piece) => piece.pos.join(',') === override.at.join(','),
         );
         if (localIndex >= 0) {
-          const target = placed[localIndex]!;
-          this.fixedLoot.set(target.pos.join(','), fixedItems(registry, override.items));
+          const anchor = placed[localIndex]!.pos.join(',');
+          this.fixedLoot.set(anchor, fixedItems(registry, override.items));
+          const keys = override.items.filter((entry) => entry.key).map((entry) => entry.item);
+          if (keys.length > 0) {
+            keyLoot.set(anchor, new Set(keys));
+          }
         }
       }
     });
+    this.playtestMarks = {
+      beats: (layout.beats ?? []).map((beat) => ({ id: beat.id, area: rectBlocks(beat.area) })),
+      keyLoot,
+    };
     this.skyBounds = this.placements
       .filter((placement) => (placement.template.groundLayer ?? 0) > 0)
       .map((placement) => {

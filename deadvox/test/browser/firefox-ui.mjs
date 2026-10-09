@@ -28,7 +28,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     const startupHintMarker = '    updateStartupHint();';
     assert(exposed.includes(startupHintMarker), 'startup hint observation point exists');
@@ -36,7 +36,7 @@ const observation = {
       startupHintMarker,
       `${startupHintMarker}\n    if (!startupHint.hidden && startupProgress.value < startupProgress.max && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { meshes: Array.from(engine.meshes.keys()).length };\n    }`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\nimport { SURFACE_PATTERN_GLSL as FirefoxSurfacePatternsGlsl } from '../render/surfacePatterns.ts';\n${withStartupHint}\n`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { SURFACE_PATTERN_GLSL as FirefoxSurfacePatternsGlsl } from '../render/surfacePatterns.ts';\n${withStartupHint}\n`;
   },
 };
 const vite = await createServer({
