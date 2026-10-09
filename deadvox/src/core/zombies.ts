@@ -2537,7 +2537,7 @@ export class ZombieSystem {
   ): void {
     const footfallCandidates = entries.flatMap(([id, zombie]) => {
       if (
-        zombie.type.id !== 'shambler' ||
+        zombie.type.footstepSound !== 'shambler' ||
         !groundedAtTickStart.get(zombie) ||
         !zombie.body.onGround ||
         zombie.horizontalSpeed <= 0.01

@@ -1,32 +1,156 @@
 {
+  "furniture": [
+    {
+      "color": "#718087",
+      "door": {
+        "handlingSimSeconds": 0.59999999999999998,
+        "prying": {
+          "fastestTimeSimSeconds": 7.5,
+          "quality": 3,
+          "skill": "mechanics",
+          "strikeIntervalSimSeconds": 0.5,
+          "timeSimSeconds": 15
+        }
+      },
+      "id": "container_door",
+      "name": "Steel container door",
+      "size": [2, 4, 1]
+    },
+    {
+      "color": "#69716f",
+      "container": {
+        "pockets": [
+          {
+            "grid": [10, 5],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "id": "rifle_rack",
+      "loot": "military_armoury",
+      "name": "Rifle rack",
+      "size": [4, 3, 1]
+    },
+    {
+      "color": "#77725a",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 5],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "id": "ammo_crate",
+      "loot": "military_armoury",
+      "name": "Ammunition crate",
+      "size": [2, 2, 2]
+    },
+    {
+      "color": "#6b756f",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 4],
+            "handlingSimSeconds": 1
+          }
+        ]
+      },
+      "id": "footlocker",
+      "loot": "camp_supplies",
+      "name": "Footlocker",
+      "size": [2, 2, 1]
+    },
+    {
+      "color": "#677a82",
+      "id": "camp_cot",
+      "name": "Folding cot",
+      "rest": {
+        "quality": 0.59999999999999998,
+        "sleep": true
+      },
+      "size": [2, 1, 4]
+    },
+    {
+      "color": "#71674f",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 4],
+            "handlingSimSeconds": 1
+          }
+        ]
+      },
+      "id": "field_desk",
+      "loot": "camp_supplies",
+      "name": "Field desk",
+      "size": [3, 2, 2]
+    },
+    {
+      "color": "#b8b5a5",
+      "id": "camp_closing_note",
+      "name": "Playtest closing note",
+      "readable": {
+        "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing.",
+        "title": "A note for the next visitor"
+      },
+      "size": [2, 2, 1],
+      "solid": false
+    },
+    {
+      "color": "#a6936f",
+      "id": "camp_orders",
+      "name": "Camp orders board",
+      "readable": {
+        "text": "Hold the road and keep the clinic supplied. The medical site is under the camp's protection. Keep the armoury locked; its key stays with the officer.",
+        "title": "Orders for the road"
+      },
+      "size": [2, 2, 1],
+      "solid": false
+    },
+    {
+      "color": "#9b8d6a",
+      "id": "camp_sandbag_barricade",
+      "name": "Sandbag barricade",
+      "size": [2, 2, 2],
+      "solid": true
+    },
+    {
+      "color": "#666c70",
+      "door": {
+        "handlingSimSeconds": 1.2
+      },
+      "id": "camp_gate_leaf",
+      "name": "Camp fence-gate leaf",
+      "size": [6, 5, 1]
+    }
+  ],
   "items": [
     {
-      "id": "camp_armoury_key",
-      "name": "Military armoury key",
       "category": "tool",
-      "weight": 10,
-      "size": [1, 1],
+      "description": "A key for the locked armoury container.",
+      "id": "camp_armoury_key",
       "key": {
         "lock": "camp_armoury"
       },
-      "description": "A key for the locked armoury container."
+      "name": "Military armoury key",
+      "size": [1, 1],
+      "weight": 10
     },
     {
+      "category": "book",
       "id": "camp_supply_manifest",
       "name": "Military supply manifest",
-      "category": "book",
-      "weight": 5,
-      "size": [1, 1],
       "readable": {
-        "title": "Clinic supply manifest",
-        "text": "SUPPLY RECORD — COMMUNITY HEALTH SITE\n\nAntibiotics, sampling kits and dressings were sent to the clinic. Keep the ward stocked and the pharmacy secured. The road remains under military protection."
-      }
+        "text": "SUPPLY RECORD — COMMUNITY HEALTH SITE\n\nAntibiotics, sampling kits and dressings were sent to the clinic. Keep the ward stocked and the pharmacy secured. The road remains under military protection.",
+        "title": "Clinic supply manifest"
+      },
+      "size": [1, 1],
+      "weight": 5
     }
   ],
   "loot": [
     {
-      "id": "camp_supplies",
-      "rolls": [1, 2],
       "entries": [
         {
           "item": "canned_beans",
@@ -48,162 +172,14 @@
           "nothing": true,
           "weight": 3
         }
-      ]
-    }
-  ],
-  "furniture": [
-    {
-      "id": "container_door",
-      "name": "Steel container door",
-      "size": [2, 4, 1],
-      "color": "#718087",
-      "door": {
-        "handlingSimSeconds": 0.6,
-        "prying": {
-          "quality": 3,
-          "skill": "mechanics",
-          "timeSimSeconds": 15,
-          "fastestTimeSimSeconds": 7.5,
-          "strikeIntervalSimSeconds": 0.5
-        }
-      }
-    },
-    {
-      "id": "rifle_rack",
-      "name": "Rifle rack",
-      "size": [4, 3, 1],
-      "color": "#69716f",
-      "container": {
-        "pockets": [
-          {
-            "grid": [10, 5],
-            "handlingSimSeconds": 1.2
-          }
-        ]
-      },
-      "loot": "military_armoury"
-    },
-    {
-      "id": "ammo_crate",
-      "name": "Ammunition crate",
-      "size": [2, 2, 2],
-      "color": "#77725a",
-      "container": {
-        "pockets": [
-          {
-            "grid": [6, 5],
-            "handlingSimSeconds": 1.2
-          }
-        ]
-      },
-      "loot": "military_armoury"
-    },
-    {
-      "id": "footlocker",
-      "name": "Footlocker",
-      "size": [2, 2, 1],
-      "color": "#6b756f",
-      "container": {
-        "pockets": [
-          {
-            "grid": [6, 4],
-            "handlingSimSeconds": 1
-          }
-        ]
-      },
-      "loot": "camp_supplies"
-    },
-    {
-      "id": "camp_cot",
-      "name": "Folding cot",
-      "size": [2, 1, 4],
-      "color": "#677a82",
-      "rest": {
-        "quality": 0.6,
-        "sleep": true
-      }
-    },
-    {
-      "id": "field_desk",
-      "name": "Field desk",
-      "size": [3, 2, 2],
-      "color": "#71674f",
-      "container": {
-        "pockets": [
-          {
-            "grid": [6, 4],
-            "handlingSimSeconds": 1
-          }
-        ]
-      },
-      "loot": "camp_supplies"
-    },
-    {
-      "id": "camp_closing_note",
-      "name": "Playtest closing note",
-      "size": [2, 2, 1],
-      "color": "#b8b5a5",
-      "solid": false,
-      "readable": {
-        "title": "A note for the next visitor",
-        "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing."
-      }
-    },
-    {
-      "id": "camp_orders",
-      "name": "Camp orders board",
-      "size": [2, 2, 1],
-      "color": "#a6936f",
-      "solid": false,
-      "readable": {
-        "title": "Orders for the road",
-        "text": "Hold the road and keep the clinic supplied. The medical site is under the camp's protection. Keep the armoury locked; its key stays with the officer."
-      }
-    },
-    {
-      "id": "camp_sandbag_barricade",
-      "name": "Sandbag barricade",
-      "size": [2, 2, 2],
-      "color": "#9b8d6a",
-      "solid": true
-    },
-    {
-      "id": "camp_gate_leaf",
-      "name": "Camp fence-gate leaf",
-      "size": [6, 5, 1],
-      "color": "#666c70",
-      "door": {
-        "handlingSimSeconds": 1.2
-      }
+      ],
+      "id": "camp_supplies",
+      "rolls": [1, 2]
     }
   ],
   "templates": [
     {
       "id": "camp_armoury",
-      "military": true,
-      "size": [20, 6, 12],
-      "palette": {
-        ".": "air",
-        "=": "concrete",
-        "#": "galvanized",
-        "D": {
-          "furniture": "container_door",
-          "facing": "n",
-          "lock": {
-            "id": "camp_armoury",
-            "locked": true
-          }
-        },
-        "R": {
-          "furniture": "rifle_rack"
-        },
-        "A": {
-          "furniture": "ammo_crate"
-        },
-        "N": {
-          "furniture": "camp_closing_note"
-        }
-      },
       "layers": [
         [
           "====================",
@@ -289,27 +265,34 @@
           "####################",
           "####################"
         ]
-      ]
+      ],
+      "military": true,
+      "palette": {
+        "#": "galvanized",
+        ".": "air",
+        "=": "concrete",
+        "A": {
+          "furniture": "ammo_crate"
+        },
+        "D": {
+          "facing": "n",
+          "furniture": "container_door",
+          "lock": {
+            "id": "camp_armoury",
+            "locked": true
+          }
+        },
+        "N": {
+          "furniture": "camp_closing_note"
+        },
+        "R": {
+          "furniture": "rifle_rack"
+        }
+      },
+      "size": [20, 6, 12]
     },
     {
       "id": "camp_command_tent",
-      "size": [16, 5, 10],
-      "palette": {
-        ".": "air",
-        "T": "fabric",
-        "=": "planks",
-        "W": {
-          "furniture": "field_desk",
-          "loot": "camp_supplies"
-        },
-        "O": {
-          "furniture": "camp_orders"
-        },
-        "F": {
-          "furniture": "footlocker",
-          "loot": "camp_supplies"
-        }
-      },
       "layers": [
         [
           "================",
@@ -371,24 +354,27 @@
           "TTTTTTTTTTTTTTTT",
           "TTTTTTTTTTTTTTTT"
         ]
-      ]
-    },
-    {
-      "id": "camp_container",
-      "size": [18, 6, 10],
+      ],
       "palette": {
         ".": "air",
-        "=": "concrete",
-        "#": "galvanized",
-        "D": {
-          "furniture": "container_door",
-          "facing": "n"
-        },
+        "=": "planks",
         "F": {
           "furniture": "footlocker",
           "loot": "camp_supplies"
+        },
+        "O": {
+          "furniture": "camp_orders"
+        },
+        "T": "fabric",
+        "W": {
+          "furniture": "field_desk",
+          "loot": "camp_supplies"
         }
       },
+      "size": [16, 5, 10]
+    },
+    {
+      "id": "camp_container",
       "layers": [
         [
           "==================",
@@ -462,27 +448,24 @@
           "##################",
           "##################"
         ]
-      ]
-    },
-    {
-      "id": "camp_tent",
-      "size": [12, 4, 8],
+      ],
       "palette": {
+        "#": "galvanized",
         ".": "air",
-        "T": "fabric",
-        "B": {
-          "furniture": "camp_cot"
+        "=": "concrete",
+        "D": {
+          "facing": "n",
+          "furniture": "container_door"
         },
         "F": {
           "furniture": "footlocker",
           "loot": "camp_supplies"
-        },
-        "z": {
-          "spawn": "shambler",
-          "chance": 0.4
-        },
-        "=": "dirt"
+        }
       },
+      "size": [18, 6, 10]
+    },
+    {
+      "id": "camp_tent",
       "layers": [
         [
           "============",
@@ -524,17 +507,51 @@
           "............",
           "............"
         ]
-      ]
-    },
-    {
-      "id": "camp_watchtower",
-      "size": [12, 11, 12],
+      ],
       "palette": {
         ".": "air",
         "=": "dirt",
-        "#": "planks",
-        "S": "sandbag"
+        "B": {
+          "furniture": "camp_cot"
+        },
+        "F": {
+          "furniture": "footlocker",
+          "loot": "camp_supplies"
+        },
+        "T": "fabric",
+        "z": {
+          "chance": 0.40000000000000002,
+          "spawn": "shambler"
+        }
       },
+      "size": [12, 4, 8]
+    },
+    {
+      "access": {
+        "entrance": [2, 1, 1.5],
+        "ground": "ground",
+        "stairs": [
+          {
+            "block": "planks",
+            "from": "ground",
+            "lower": [5, 1, 2],
+            "to": "lookout",
+            "upper": [5, 7, 9],
+            "width": 2
+          }
+        ],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          },
+          {
+            "floor": 7,
+            "id": "lookout"
+          }
+        ]
+      },
+      "id": "camp_watchtower",
       "layers": [
         [
           "============",
@@ -691,54 +708,42 @@
           "............"
         ]
       ],
-      "access": {
-        "ground": "ground",
-        "entrance": [2, 1, 1.5],
-        "storeys": [
-          {
-            "id": "ground",
-            "floor": 1
-          },
-          {
-            "id": "lookout",
-            "floor": 7
-          }
-        ],
-        "stairs": [
-          {
-            "from": "ground",
-            "to": "lookout",
-            "lower": [5, 1, 2],
-            "upper": [5, 7, 9],
-            "width": 2,
-            "block": "planks"
-          }
-        ]
-      }
+      "palette": {
+        "#": "planks",
+        ".": "air",
+        "=": "dirt",
+        "S": "sandbag"
+      },
+      "size": [12, 11, 12]
     },
     {
       "id": "camp_wall_run",
-      "size": [32, 5, 2],
-      "palette": {
-        ".": "air",
-        "=": "sandbag"
-      },
       "layers": [
         ["================================", "================================"],
         ["================================", "================================"],
         ["================================", "================================"],
         ["================================", "================================"],
         ["====.=======.=======.=======.===", "=.=======.=======.=======.======"]
-      ]
-    },
-    {
-      "id": "camp_sandbag_post",
-      "size": [8, 5, 8],
+      ],
       "palette": {
         ".": "air",
-        "=": "planks",
-        "S": "sandbag"
+        "=": "sandbag"
       },
+      "size": [32, 5, 2]
+    },
+    {
+      "access": {
+        "entrance": [3.5, 1, 3.5],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "camp_sandbag_post",
       "layers": [
         ["========", "========", "========", "========", "========", "========", "========", "========"],
         ["SSS..SSS", "S......S", "S......S", "S......S", "S......S", "S......S", "S......S", "SSSSSSSS"],
@@ -746,44 +751,51 @@
         ["........", "........", "........", "........", "........", "........", "........", "........"],
         ["........", "........", "........", "........", "........", "........", "........", "........"]
       ],
-      "access": {
-        "ground": "ground",
-        "entrance": [3.5, 1, 3.5],
-        "storeys": [
-          {
-            "id": "ground",
-            "floor": 1
-          }
-        ],
-        "stairs": []
-      }
-    },
-    {
-      "id": "camp_hq",
-      "military": true,
-      "size": [16, 17, 18],
       "palette": {
         ".": "air",
-        "=": "concrete",
-        "p": "planks",
-        "#": "camo_woodland",
-        "G": "galvanized",
-        "S": "sandbag",
-        "D": {
-          "furniture": "wood_door",
-          "facing": "n"
-        },
-        "W": {
-          "furniture": "field_desk"
-        },
-        "O": {
-          "furniture": "camp_orders"
-        },
-        "z": {
-          "spawn": "shambler",
-          "chance": 0.4
-        }
+        "=": "planks",
+        "S": "sandbag"
       },
+      "size": [8, 5, 8]
+    },
+    {
+      "access": {
+        "entrance": [8, 1, 1.5],
+        "ground": "ground",
+        "stairs": [
+          {
+            "block": "planks",
+            "from": "ground",
+            "lower": [2, 1, 2],
+            "to": "operations",
+            "upper": [2, 7, 9],
+            "width": 2
+          },
+          {
+            "block": "planks",
+            "from": "operations",
+            "lower": [5, 7, 10],
+            "to": "observation",
+            "upper": [5, 13, 3],
+            "width": 2
+          }
+        ],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          },
+          {
+            "floor": 7,
+            "id": "operations"
+          },
+          {
+            "floor": 13,
+            "id": "observation"
+          }
+        ]
+      },
+      "id": "camp_hq",
       "layers": [
         [
           "================",
@@ -1051,13 +1063,13 @@
           "#..............#",
           "#..............#",
           "#..............#",
-          "GWWW.z..WWW....G",
+          "GWWW....WWW....G",
           "#WWW....WWW....#",
           "#..............#",
           "#..............#",
           "#..............#",
           "#..............#",
-          "#..............#",
+          "#.......z......#",
           "#..............#",
           "#..............#",
           "#..............#",
@@ -1126,59 +1138,33 @@
           "................"
         ]
       ],
-      "access": {
-        "ground": "ground",
-        "entrance": [8, 1, 1.5],
-        "storeys": [
-          {
-            "id": "ground",
-            "floor": 1
-          },
-          {
-            "id": "operations",
-            "floor": 7
-          },
-          {
-            "id": "observation",
-            "floor": 13
-          }
-        ],
-        "stairs": [
-          {
-            "from": "ground",
-            "to": "operations",
-            "lower": [2, 1, 2],
-            "upper": [2, 7, 9],
-            "width": 2,
-            "block": "planks"
-          },
-          {
-            "from": "operations",
-            "to": "observation",
-            "lower": [5, 7, 10],
-            "upper": [5, 13, 3],
-            "width": 2,
-            "block": "planks"
-          }
-        ]
-      }
+      "military": true,
+      "palette": {
+        "#": "camo_woodland",
+        ".": "air",
+        "=": "concrete",
+        "D": {
+          "facing": "n",
+          "furniture": "wood_door"
+        },
+        "G": "galvanized",
+        "O": {
+          "furniture": "camp_orders"
+        },
+        "S": "sandbag",
+        "W": {
+          "furniture": "field_desk"
+        },
+        "p": "planks",
+        "z": {
+          "chance": 0.40000000000000002,
+          "spawn": "military_shambler"
+        }
+      },
+      "size": [16, 17, 18]
     },
     {
       "id": "camp_gate",
-      "size": [16, 6, 2],
-      "palette": {
-        ".": "air",
-        "=": "dirt",
-        "#": "sandbag",
-        "L": {
-          "furniture": "camp_gate_leaf",
-          "facing": "n"
-        },
-        "R": {
-          "furniture": "camp_gate_leaf",
-          "facing": "s"
-        }
-      },
       "layers": [
         ["================", "================"],
         ["##LLLLLLRRRRRR##", "................"],
@@ -1186,24 +1172,24 @@
         ["##LLLLLLRRRRRR##", "................"],
         ["##LLLLLLRRRRRR##", "................"],
         ["##LLLLLLRRRRRR##", "................"]
-      ]
+      ],
+      "palette": {
+        "#": "sandbag",
+        ".": "air",
+        "=": "dirt",
+        "L": {
+          "facing": "n",
+          "furniture": "camp_gate_leaf"
+        },
+        "R": {
+          "facing": "s",
+          "furniture": "camp_gate_leaf"
+        }
+      },
+      "size": [16, 6, 2]
     },
     {
       "id": "camp_gate_damaged",
-      "size": [16, 6, 2],
-      "palette": {
-        ".": "air",
-        "=": "dirt",
-        "#": "sandbag",
-        "L": {
-          "furniture": "camp_gate_leaf",
-          "facing": "n"
-        },
-        "R": {
-          "furniture": "camp_gate_leaf",
-          "facing": "s"
-        }
-      },
       "layers": [
         ["================", "================"],
         ["##LLLLLL......##", "................"],
@@ -1211,16 +1197,24 @@
         ["##LLLLLL......##", "................"],
         ["##LLLLLL......##", "................"],
         ["##LLLLLL......##", "................"]
-      ]
+      ],
+      "palette": {
+        "#": "sandbag",
+        ".": "air",
+        "=": "dirt",
+        "L": {
+          "facing": "n",
+          "furniture": "camp_gate_leaf"
+        },
+        "R": {
+          "facing": "s",
+          "furniture": "camp_gate_leaf"
+        }
+      },
+      "size": [16, 6, 2]
     },
     {
       "id": "camp_gate_return",
-      "size": [2, 6, 16],
-      "palette": {
-        ".": "air",
-        "=": "dirt",
-        "#": "sandbag"
-      },
       "layers": [
         ["==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "=="],
         ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],
@@ -1228,7 +1222,13 @@
         ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],
         ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],
         ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"]
-      ]
+      ],
+      "palette": {
+        "#": "sandbag",
+        ".": "air",
+        "=": "dirt"
+      },
+      "size": [2, 6, 16]
     }
   ]
 }

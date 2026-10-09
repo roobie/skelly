@@ -4,12 +4,13 @@ read_if:
   - you're changing authored-site fixed loot or playtest-map scope
   - you're extending the workshop route or its multiple approaches
   - you're authoring time-windowed Tiled spawn markers
+  - you're drawing playtest beat areas or marking key fixed loot
   - you're authoring or reviewing the playtest military compound and its routes
 ---
 
 # Authored sites
 
-Tiled `.tmj` files describe site-scale terrain, routes, building placements and spawns; interiors stay reusable ASCII templates. `maps/extensions/deadvox.mjs`, `exportLayout`, turns one map into a content layout, and `npm run validate` checks the exported file against the merged content registry. Format the exported JSON with Biome before validation so Tiled output also satisfies the repository's formatting check. Keep the authored source and its committed JSON together. Review the extension before trusting it in Tiled.
+Maps edited in Tiled are authored as `.tmj` and have no sibling `.tmj.jsonnet`. Tiled saves the `.tmj`; `npm run content:compile` would overwrite edits if that file were generated. Use `.tmj.jsonnet` only for maps not edited in Tiled: compilation generates their `.tmj`, which must not be opened for editing in Tiled. `tools/jsonnet/compile.mjs`, `SOURCE_ROOTS` selects `.tmj.jsonnet` sources and `outputPath` maps them to generated `.tmj`; this mapping does not guard against pairing a Tiled-edited map with Jsonnet. Tiled-edited `.tmj` maps describe site-scale terrain, routes, building placements and spawns; `maps/extensions/deadvox.mjs`, `exportLayout`, turns them into content layouts, and `npm run validate` checks the exported file against the merged content registry. Format the exported JSON with Biome before validation so Tiled output also satisfies the repository's formatting check. Keep the authored map and its exported layout together; interiors stay reusable ASCII templates. Review the extension before trusting it in Tiled.
 
 The playtest map links the shelter, Mike's place, medical site and military compound as distinct beats. A vehicle-width road runs from the camp's guarded north double gate to the medical compound, giving vehicles access to the site. It stops short of the south fence, where the narrower trail bridges the gap because the compound's fences, hall and Dad's cabin leave no room to extend the road. The camp's southern breach remains an alternate way in, so its perimeter is defended without making the site a dead end.
 
@@ -25,9 +26,13 @@ The north pen makes the second gate a real threshold instead of a panel one can 
 
 `SiteLayoutDef` in `src/core/schema.ts` gives a building placement fixed items at a template-local container anchor. `src/core/authoredSite.ts`, `AuthoredSite.furnitureIn`, combines those with the container's ordinary seeded table, and `src/core/loot.ts`, `fixedItems`, preserves item stack limits. Fixed items are supplied first to `src/core/inventory.ts`, `Inventory.furnish`: progression and craft ingredients therefore cannot be crowded out by seed-owned filler, while the remaining capacity still receives its normal deterministic roll. The fixed source regenerates from site and seed; looted state remains owned by the existing inventory save.
 
-The contract records item, count and optional condition, not a second generic item-state format. The beats' named contents already belong to item definitions and construction defaults: `shotshell_box` owns its unpacking, `src/core/items.ts`, `ItemFactory.create`, makes a pump shotgun empty, and an unpowered flashlight needs no inserted battery. This keeps authored placement separate from the state and behavior each item already owns.
+The contract records item, count, optional condition and an optional playtest `key` flag, not a second generic item-state format. The beats' named contents already belong to item definitions and construction defaults: `shotshell_box` owns its unpacking, `src/core/items.ts`, `ItemFactory.create`, makes a pump shotgun empty, and an unpowered flashlight needs no inserted battery. This keeps authored placement separate from the state and behavior each item already owns.
 
 The scenario start belongs to its layout so a playtest begins at the authored beat's time; `src/game/config.ts`, `configFromUrl`, still lets an explicit `time` parameter override it.
+
+## Playtest beats and key loot
+
+Rectangle `beat` objects mark each beat's area by a `beat` id, and `maps/extensions/deadvox.mjs`, `exportLayout`, writes them into the layout's `beats`. A fixed-loot item's `key` flag marks what the beat hinges on. Both are observation only: the playtest metrics read them through `src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and the simulation never does, so redrawing an area or marking an item cannot change play. What the metrics record is in `docs/playtest-run.md`, "What the metrics export records".
 
 ## Time-windowed spawns
 

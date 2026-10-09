@@ -741,7 +741,12 @@ export class MobActorMeshes implements ZombieRenderer {
     if (enabled) {
       const root = document.createElement('div');
       root.dataset.perceptionLabels = 'true';
-      Object.assign(root.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '4' });
+      Object.assign(root.style, {
+        position: 'fixed',
+        inset: '0',
+        pointerEvents: 'none',
+        zIndex: 'var(--ui-layer-perception-labels)',
+      });
       document.body.append(root);
       this.perceptionLabelRoot = root;
       return;

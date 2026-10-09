@@ -53,6 +53,11 @@ float hash31(vec3 p) {
 
 export const SURFACE_PATTERN_GLSL = `
 ${DEFINES}
+// Vertex colours are authored as sRGB bytes but three.js treats them as linear; use the exact piecewise sRGB EOTF, not pow 2.2.
+// The Firefox mix probe compiles this GLSL without chunks.ts, so keep this shared decoder self-contained.
+vec3 srgbToLinear(vec3 c) {
+  return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
+}
 uniform vec3 uCamoPalette[4];
 uniform float uCamoWashout;
 uniform vec3 uCamoBaseColor;

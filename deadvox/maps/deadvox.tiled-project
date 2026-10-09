@@ -58,6 +58,7 @@
       "type": "enum",
       "storageType": "string",
       "values": [
+        "military_shambler",
         "runner",
         "shambler"
       ],
@@ -210,6 +211,23 @@
           "name": "rise",
           "type": "float",
           "value": 4
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
+    },
+    {
+      "id": 109,
+      "name": "beat",
+      "members": [
+        {
+          "name": "beat",
+          "type": "string",
+          "value": ""
         }
       ],
       "type": "class",

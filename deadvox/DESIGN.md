@@ -27,6 +27,7 @@ read_if:
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
+  - you're choosing or changing the building-weathering look and its dilapidation direction
   - you're authoring dilapidated structures or breached perimeters
   - you're changing player-facing item descriptions or their boundary with control guidance
 ---
@@ -961,11 +962,13 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 1 | Screamer | Weak, but its scream pulls in the horde |
 | 1 | Bloater | Bursts into a noxious cloud |
 | 2 | Brute | Big, knocks you back, breaks doors |
-| 2 | Soldier | Armoured (from military sites) |
+| 2 | Soldier | Armoured; carries ordinary kit at the military camp |
 | 2 | Hazmat | Resists acid and fire (from lab sites) |
 | 3 | Smoulderer | Hot to the touch; sets flammable things on fire |
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
+
+Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers and explicit camp spawns; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection. Its kit uses ordinary items; military loot remains restricted to site containers. For #487, defer the military clothing palette, armour, and body searching; the soldier first appears in civilian clothes, carries ordinary kit, and drops loot on death.
 
 ### Spawning
 
@@ -981,7 +984,7 @@ A marker's optional clock window delays its one-time spawn; `src/core/zombieSpaw
 
 The amalgam is a debug-only type until the authored camp spawn in #308 is designed. Its `amalgam_*` sound events have separate identities but reuse shambler recordings; an authored type pitch multiplier overrides the ordinary body-height rule so the fused creature can keep a distinct low voice. See `src/content/base/zombies.json`, `soundPitchMultiplier`, `src/core/schema.ts`, `ZombieSchema`, and `src/game/session.ts`, `admitSound`. Deadvox realizes its mobgen body from the saved figure seed and uses the part manifest as the authority for collision bounds, member-owned hit regions and severable roots; it does not maintain a second hand-written anatomy list. The axis-aligned collision envelope follows the realized voxel bounds, with independent X/Z extents, so walls, fences, closed doors and solid containers block the whole visible creature without relying on an arbitrary humanoid radius. Its empty corners are the deliberate broad-phase simplification; member hit boxes remain voxel-derived and independently targeted. The amalgam's no-jump rule is authored in its type data, so fence and container blocking does not depend on the jump probe's position relative to its broad collision envelope. See `src/content/base/zombies.json`, the amalgam type; `src/core/schema.ts`, `ZombieSchema`; `src/core/zombies.ts`, `ZombieSystem.stepZombieBody`; `src/core/amalgamFigure.ts`, `amalgamFigure` and `amalgamCollisionEnvelope`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/physics.ts`, `Body` and `overlapsBlock`.
 
-The amalgam's `bodyScale` is authored in `src/content/base/zombies.json` because the creature read far too small in play. The zombie section contract in `src/core/schema.ts`, `SECTION_DESCRIPTOR`, requires that authored scale for the model, following `docs/decisions/0004-content-language.md`. The same scale feeds the rendered body, collision envelope, posed hit regions and melee reach through `src/core/amalgamFigure.ts`, `amalgamFigure`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/zombies.ts`, `zombieAttackReachMetres`.
+The amalgam's `bodyScale` is authored in `src/content/base/zombies.json` because the creature read far too small in play. The zombie section contract in `src/core/schema.ts`, `SECTION_DESCRIPTOR`, requires that authored scale for the model, following `../docs/decisions/0004-content-language.md`. The same scale feeds the rendered body, collision envelope, posed hit regions and melee reach through `src/core/amalgamFigure.ts`, `amalgamFigure`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/zombies.ts`, `zombieAttackReachMetres`.
 
 Severing a shambler member removes that member's hit regions and its contribution to attacks and reach; the core and every other member continue unchanged. `activeAmalgamMembers` determines which members remain capable of attacking; `zombieAttackReachMetres` disables reach when none remain and keeps shared reach while any member survives. The save records each manifest region's health and severed member IDs, then reconstructs geometry from the saved figure seed. `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, `activeAmalgamMembers` and `zombieAttackReachMetres`, and `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, own that handoff. Initial member-health values inherit the shambler region values in `src/content/base/zombies.json`, keeping authored anatomy consistent; reviewing the realized body can identify any needed tuning.
 
@@ -1269,6 +1272,8 @@ something in play, not only decorate it.
   weeks since people left. Food rotting changes what's still worth scavenging.
   There is no plant-growth or dust-accumulation simulation.
 
+Building weathering gives each site a render-only mood without changing simulation or shared geometry: fairly kept points of interest benefit from restrained change, while long-abandoned places need a general overgrown and dilapidated look. It marks built materials, not nature's terrain or vegetation; `src/core/schema.ts`, `BlockSchema.weatherable`, lets content keep that distinction, and an absent flag means no weathering. Fabric, window frames, chain link and sandbags stay clean because moss and lichen belong on stone, concrete and wood; hazard paint keeps its warning colour, and galvanized sheet keeps its corrugated ribs legible. The overgrown tint may shift the base hue, but the surface pattern must still read; the restrained default keeps each material's base hue.
+
 **Rendering and performance.** There will be a lot of trees (BR), so foliage gets
 a performance plan from the start rather than as a fix later:
 
@@ -1290,10 +1295,7 @@ a performance plan from the start rather than as a fix later:
 
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
-- **The look:** flat colour per block, with small per-block variation, ambient
-  occlusion and fog. Textures only if colour alone can't carry the look. The
-  palette is muted and grey; the saturated colours are the ones that mean
-  something: warning signs, blood, fire and the glow of hot zombies.
+- **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
 - **Day and night** follow one sun model derived from the base pack's latitude,
   fixed date and nautical twilight. The sky and fog follow the resulting phases;
   light and night looks blend through dusk and dawn, and a flashlight matters

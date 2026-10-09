@@ -9,7 +9,7 @@ import {
 
 const root = FileInfo.path(tiled.projectFilePath);
 const ID_PATTERN = /^[a-z0-9_]+$/;
-const CLASSES = ['building', 'player_spawn', 'shambler', 'woodland', 'track', 'ridge', 'hill'];
+const CLASSES = ['building', 'player_spawn', 'shambler', 'woodland', 'track', 'ridge', 'hill', 'beat'];
 const ENUM_TYPES = { template: 'template_id', zombie: 'zombie_type' };
 
 function readJson(path) {
@@ -282,6 +282,26 @@ function addTerrain(object, info, { layout }) {
   pointInside(layout, centre, name);
   layout.terrain.push({ kind: 'hill', centre, radii, rise });
 }
+function addBeat(object, info, { layout, beats }) {
+  const { name, x, z } = info;
+  if (object.shape !== MapObject.Rectangle) {
+    throw new Error(`${name}: beat must be a rectangle`);
+  }
+  const id = scalar(object, 'beat');
+  if (!ID_PATTERN.test(id)) {
+    throw new Error(`${name}: invalid beat id`);
+  }
+  if (beats.some((beat) => beat.id === id)) {
+    throw new Error(`${name}: beat ${id} is used more than once`);
+  }
+  const area = { x0: x, z0: z, x1: x + finite(object.width, name), z1: z + finite(object.height, name) };
+  if (area.x1 <= area.x0 || area.z1 <= area.z0) {
+    throw new Error(`${name}: beat area must have positive size`);
+  }
+  pointInside(layout, [area.x0, area.z0], name);
+  pointInside(layout, [area.x1, area.z1], name);
+  beats.push({ id, area });
+}
 export function exportLayout(map) {
   if (map.tileWidth !== 1 || map.tileHeight !== 1 || map.infinite || map.orientation !== TileMap.Orthogonal) {
     throw new Error('Use a finite orthogonal map with 1x1 tiles (one pixel = one metre)');
@@ -309,7 +329,7 @@ export function exportLayout(map) {
     layout.startTimeGameTimeOfDay = startTimeGameTimeOfDay;
   }
   layout.shamblers = [];
-  const context = { layout, pack: content(), footprints: [] };
+  const context = { layout, pack: content(), footprints: [], beats: [] };
   const writers = {
     building: addBuilding,
     // biome-ignore lint/style/useNamingConvention: literal Tiled object class name.
@@ -319,10 +339,11 @@ export function exportLayout(map) {
     track: addTrack,
     ridge: addTerrain,
     hill: addTerrain,
+    beat: addBeat,
   };
   const entries = objects(map).map((object) => ({ object, info: objectInfo(object) }));
   // Contextual defaults depend on all terrain and lots, never layer/object ordering.
-  for (const classes of [['ridge', 'hill'], ['building'], ['player_spawn', 'shambler', 'woodland', 'track']]) {
+  for (const classes of [['ridge', 'hill'], ['building'], ['player_spawn', 'shambler', 'woodland', 'track', 'beat']]) {
     for (const { object, info } of entries) {
       if (classes.includes(info.cls)) {
         writers[info.cls](object, info, context);
@@ -331,6 +352,9 @@ export function exportLayout(map) {
   }
   if (!layout.player) {
     throw new Error('Exactly one player_spawn is required');
+  }
+  if (context.beats.length > 0) {
+    layout.beats = context.beats;
   }
   return { layouts: [layout] };
 }
@@ -393,6 +417,7 @@ export function generatePropertyTypes() {
     { name: 'track', members: [member('width', 'float', 3), member('surface', 'string', 'dirt')] },
     { name: 'ridge', members: [member('rise', 'float', 10), member('width', 'float', 40)] },
     { name: 'hill', members: [member('rise', 'float', 4)] },
+    { name: 'beat', members: [member('beat', 'string', '')] },
   ].map((definition) => {
     const prior = existing.find((type) => type.name === definition.name);
     const id = prior ? prior.id : nextId;

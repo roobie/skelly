@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -50,13 +49,11 @@ const campAmalgam = () => {
 };
 
 const load = (spawner: ZombieSpawner, spawned: Spawned[], cx: number, cz: number) => {
-  const zombies = zombieSystemFor(spawned);
-  spawner.onColumn({ cx, cz, site, registry, zombies });
-  spawner.advance({ calendar: SPAWN_TIMES.dusk, registry, zombies });
+  spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystemFor(spawned) });
 };
 
 describe('authored zombie spawn persistence', () => {
-  it('deduplicates the authored camp amalgam in either neighboring-column load order', () => {
+  it('spawns the authored camp amalgam on its first column load only', () => {
     const { markers, location } = campAmalgam();
     expect(markers).toHaveLength(1);
     expect(location).toBeDefined();

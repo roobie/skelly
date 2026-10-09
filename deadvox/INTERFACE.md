@@ -5,6 +5,9 @@ read_if:
   - you're deciding what the interface may tell the player and in what voice
   - you're changing player-facing prompts, feedback, or HUD language
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
+  - you're changing how playtesters hand back metrics or replays
+  - you're changing UI layer order or overlay stacking
+  - you're changing the inventory layout
 tags: [deadvox, design, ui, ux, diegesis, hud]
 created: 2026-09-27
 status: active
@@ -221,6 +224,12 @@ vanishes on release or cancellation, so the player can read force without a
 second widget or key instruction. See `src/ui/hud.ts`,
 `handlingViewModel`, and `src/game/play.ts`, `handlingPresentationFor`.
 
+A recipe book's progress is meta information embedded in the paper view, not an
+optional HUD line. The readable text cannot show how long a compressed action has
+left, and the player needs that endpoint even with every HUD option off. The
+meter is shown only while the book is open; closing it pauses the action and
+keeps its progress. See `src/ui/reading.ts`, `ReadingProgress` and `mountReading`.
+
 ## Development and playtest
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in
@@ -263,6 +272,10 @@ second widget or key instruction. See `src/ui/hud.ts`,
   crosshair follows its HUD option; a separate center X is part of `?debug=1` and
   never ships.
 
+## UI layers
+
+UI layers come from ordered custom properties in `src/ui/style.css`, `:root`; inline styles use the same tokens. The drag ghost stays above the inventory and crafting panels. `#game-cursor-root` tops ordinary layers because it is the only pointer while pointer lock is held with a menu, inventory or page open; `src/ui/menuPointer.ts`, `mountMenuPointer`, forwards clicks at its position, so a higher layer would hide where the player points. The startup screen is a boot curtain, and the debug review map (`src/game/play.ts`, `toggleReviewMap`) may cover the cursor because neither uses it: play takes pointer lock after startup, and opening the map unlocks input.
+
 ## Where the current interface stands
 
 | Element | Kind now | Target | Gap |
@@ -275,10 +288,14 @@ second widget or key instruction. See `src/ui/hud.ts`,
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; its key names come from the bindings, and it moves to the hint channel with "Order of work" item 2 |
-| Main menu (F9) | meta | meta | fine; settings and help live here |
-| Inventory screen | meta | meta | grids stay; numbers per DESIGN.md "numbers are there when you look" |
+| Main menu (F9) | meta | meta | fine; settings, help and the playtest hand-back live here |
+| Inventory screen | meta | meta | grids stay; numbers remain available on request per DESIGN.md "numbers are there when you look" |
 | Refusal notices ("Quickbar 1 is empty") | voice | voice | none: they name no key or procedure (`src/game/play.ts`, `showRefusal`) |
 | Drawn menu cursor | meta | meta | fine |
+
+### Inventory layout
+
+Selected-item details sit between the two places items move between: inspection and actions read down, not across, and the player can see both destinations while reading. The side-by-side layout keeps the nearby pane wide enough for a cap-limited locker; at narrower windows the details pane joins the vertical stack instead of squeezing the locker. See `src/ui/inventoryScreen.ts`, `inventoryTemplate` and `detailsTemplate`.
 
 ## Numbers and diegesis
 
@@ -299,7 +316,11 @@ simulation facts accessible without undermining diegesis.
    where playtesters get stuck. HUD hints start on and can be turned off
    individually in the F9 menu.
 5. **Playtest profile:** `?playtest=1` is to turn on the hint channel and load
-   nothing from `src/debug` ("Order of work" item 3).
+   nothing from `src/debug` ("Order of work" item 3). Testers hand back their
+   metrics and recent replay from the F9 menu, never through `?debug=1`: debug's
+   god mode, spawning, noclip and time controls would taint what the playtest
+   observes. The menu and the debug panel build the same files (see
+   `src/game/playtestTools.ts`, `metricsFile` and `replayFile`).
 6. **Character sounds:** vocal pain and strain sounds are noise events with a
    radius in data, so BR can judge their effect in play and tune or disable them.
    Variation comes from random but curated picks for the events we have.

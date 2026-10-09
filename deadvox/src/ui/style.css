@@ -1,4 +1,22 @@
 :root {
+  --ui-layer-startup-content: 1;
+  --ui-layer-card-scroll-cue: 2;
+  --ui-layer-perception-labels: 4;
+  --ui-layer-damage: 8;
+  --ui-layer-debug-aim-readout: 9;
+  --ui-layer-inventory: 20;
+  --ui-layer-crafting: 21;
+  --ui-layer-drag-ghost: 22;
+  --ui-layer-reading: 40;
+  --ui-layer-debug-ui: 50;
+  --ui-layer-debug-overlay: 1000;
+  --ui-layer-startup-hint: 2000;
+  --ui-layer-unconscious: 2000;
+  --ui-layer-menu-overlay: 2001;
+  --ui-layer-save-recovery: 2002;
+  --ui-layer-game-cursor: 2003;
+  --ui-layer-startup-screen: 3000;
+  --ui-layer-review-map: 10000;
   --panel: rgb(18 20 24 / 88%);
   --text: #e3e6ea;
   --muted: #98a0aa;
@@ -22,7 +40,7 @@ body {
 }
 #startup-screen {
   position: fixed;
-  z-index: 3000;
+  z-index: var(--ui-layer-startup-screen);
   inset: 0;
   display: grid;
   align-content: center;
@@ -75,7 +93,7 @@ body.unconscious::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: var(--ui-layer-unconscious);
   background: #000;
   pointer-events: none;
 }
@@ -83,7 +101,7 @@ body.unconscious::after {
 #game-cursor-root {
   position: fixed;
   inset: 0;
-  z-index: 2003;
+  z-index: var(--ui-layer-game-cursor);
   pointer-events: none;
   mix-blend-mode: difference;
 }
@@ -109,7 +127,7 @@ body.unconscious::after {
 #damage {
   position: fixed;
   inset: 0;
-  z-index: 8;
+  z-index: var(--ui-layer-damage);
   pointer-events: none;
   opacity: 0;
   background: radial-gradient(ellipse at center, transparent 45%, rgb(190 0 0 / 82%) 100%);
@@ -119,7 +137,7 @@ body.unconscious::after {
   position: fixed;
   left: 50%;
   top: calc(50% + 18px);
-  z-index: 9;
+  z-index: var(--ui-layer-debug-aim-readout);
   transform: translateX(-50%);
   padding: 2px 6px;
   border-radius: 3px;
@@ -234,7 +252,7 @@ body.unconscious::after {
 
 #save-recovery {
   position: fixed;
-  z-index: 2002;
+  z-index: var(--ui-layer-save-recovery);
   left: 12px;
   bottom: 12px;
   max-width: min(680px, calc(100vw - 24px));
@@ -257,7 +275,7 @@ body.unconscious::after {
 
 #startup-hint {
   position: fixed;
-  z-index: 2000;
+  z-index: var(--ui-layer-startup-hint);
   left: 50%;
   bottom: 24px;
   display: grid;
@@ -283,7 +301,7 @@ body.unconscious::after {
 
 #overlay {
   position: fixed;
-  z-index: 2001;
+  z-index: var(--ui-layer-menu-overlay);
   inset: 0;
   display: grid;
   /* The card is docked to the right edge, vertically centred, and the layer has no tint or blur so
@@ -322,7 +340,7 @@ body.unconscious::after {
 }
 #overlay .card-scroll-cue {
   position: absolute;
-  z-index: 2;
+  z-index: var(--ui-layer-card-scroll-cue);
   left: 1px;
   right: 1px;
   display: grid;
@@ -387,7 +405,7 @@ body.unconscious::after {
   position: fixed;
   left: 50%;
   top: 50%;
-  z-index: 1;
+  z-index: var(--ui-layer-startup-content);
   transform: translate(-50%, -50%);
   color: #b8bcc2;
   cursor: pointer;
@@ -456,7 +474,7 @@ body.unconscious::after {
   /* Bound tall nearby grids so their scrollports don't expand the pane. */
   --inv-around-grid-max-height: max(96px, 40vh);
   position: fixed;
-  z-index: 20;
+  z-index: var(--ui-layer-inventory);
   inset: 24px;
   display: flex;
   flex-direction: column;
@@ -539,23 +557,44 @@ body.unconscious::after {
   grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
   grid-template-rows: minmax(0, 1fr);
 }
-/* Keep nearby grids tall enough for a usable scrollport on short displays; the body scrolls when both rows don't fit. */
+/* Gives `scrollbarWidth` in inventoryScreen.ts a gutter like the panes' to measure. */
+#inventory .inv-gutter-probe {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* The side panes' floors are their min-widths too, so the splitter's clamp reads the same values. */
 #inventory .inv-body[data-tab-panel="items"] {
-  grid-template-columns: minmax(220px, var(--inv-you-fr, 1fr)) 12px minmax(220px, var(--inv-around-fr, 1fr));
-  grid-template-rows: minmax(160px, 3fr) minmax(96px, 1fr);
+  --inv-details-width: 20%;
+  --inv-you-min: 220px;
+  /* A cap-wide container section (its grid plus scroll gutter) beside the pane's own scroll gutter, inside the pane's padding and border. */
+  --inv-around-min: calc(
+    var(--inv-around-container-width-cap, 0px) +
+    2 *
+    var(--inv-scrollbar-width, 1em) +
+    2 *
+    var(--inv-pane-padding-inline) +
+    2 *
+    var(--inv-pane-border-width)
+  );
+  grid-template-columns:
+    minmax(var(--inv-you-min), var(--inv-you-fr, 1fr)) 12px minmax(0, var(--inv-details-width))
+    minmax(var(--inv-around-min), var(--inv-around-fr, 1fr));
+  grid-template-rows: minmax(0, 1fr);
   column-gap: 0;
 }
-#inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
-  align-self: start;
-  width: 100%;
-  max-width: none;
-  max-height: 100%;
-  scrollbar-gutter: stable;
+#inventory .inv-body[data-tab-panel="items"] [data-pane="you"] {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: var(--inv-you-min);
 }
-.inv-body[data-tab-panel="items"] .inv-details {
-  grid-column: 1 / -1;
-}
-#inventory .inv-splitter {
+#inventory .inv-body[data-tab-panel="items"] .inv-splitter {
+  grid-column: 2;
+  grid-row: 1;
   align-self: stretch;
   justify-self: center;
   width: 12px;
@@ -563,8 +602,49 @@ body.unconscious::after {
   touch-action: none;
   background: linear-gradient(90deg, transparent 5px, #39414b 5px, #39414b 7px, transparent 7px);
 }
-#inventory .inv-splitter:hover {
+#inventory .inv-body[data-tab-panel="items"] .inv-splitter:hover {
   background: linear-gradient(90deg, transparent 4px, var(--accent) 4px, var(--accent) 8px, transparent 8px);
+}
+#inventory .inv-body[data-tab-panel="items"] [data-pane="details"] {
+  grid-column: 3;
+  grid-row: 1;
+}
+#inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
+  grid-column: 4;
+  grid-row: 1;
+  width: 100%;
+  min-width: var(--inv-around-min);
+  max-width: none;
+  scrollbar-gutter: stable;
+}
+@media (max-width: 840px) {
+  #inventory .inv-body[data-tab-panel="items"] {
+    --inv-details-width: 15%;
+  }
+}
+@media (max-width: 790px) {
+  #inventory .inv-body[data-tab-panel="items"] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(3, minmax(160px, 1fr));
+    row-gap: 10px;
+  }
+  #inventory .inv-body[data-tab-panel="items"] [data-pane="you"] {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  #inventory .inv-body[data-tab-panel="items"] .inv-splitter {
+    display: none;
+  }
+  #inventory .inv-body[data-tab-panel="items"] [data-pane="details"] {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  #inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
+    grid-column: 1;
+    grid-row: 3;
+    min-width: 0;
+  }
 }
 #inventory .inv-pane,
 #inventory .inv-details {
@@ -674,6 +754,7 @@ body.unconscious::after {
 }
 #inventory .inv-around-section[data-around-section="container"] {
   flex: 0 0 auto;
+  min-width: min(100%, calc(var(--inv-around-container-width-cap, 100%) + var(--inv-scrollbar-width, 1em)));
   max-width: min(100%, calc(var(--inv-around-container-width-cap, 100%) + 1.25em));
 }
 #inventory .inv-pocket {
@@ -793,7 +874,7 @@ body.unconscious::after {
 }
 .inv-ghost {
   position: fixed;
-  z-index: 22;
+  z-index: var(--ui-layer-drag-ghost);
   pointer-events: none;
   opacity: 0.85;
   border-color: var(--accent);
@@ -1330,7 +1411,7 @@ body.inventory-open:not(.inventory-tab-crafting) #crafting,
 }
 body.inventory-open.inventory-tab-crafting #crafting {
   position: fixed;
-  z-index: 21;
+  z-index: var(--ui-layer-crafting);
   top: 126px;
   right: 40px;
   bottom: 106px;
@@ -1463,7 +1544,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #debug-ui-root {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--ui-layer-debug-ui);
   pointer-events: none;
 }
 #debug-ui-root #debug-center-x {
@@ -1551,6 +1632,27 @@ body.inventory-open.inventory-tab-crafting #crafting {
     monospace;
   user-select: text;
   -webkit-user-select: text;
+}
+#debug-ui-root .debug-copy-fallback {
+  flex-basis: 100%;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4em;
+  color: var(--text);
+  background: rgb(0 0 0 / 35%);
+  font:
+    11px / 1.4 ui-monospace,
+    monospace;
+  cursor: text;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+#debug-ui-root .debug-copy-fallback.debug-copy-temporary {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  opacity: 0;
 }
 #debug-ui-root #copy-snapshot-result {
   flex: none;
@@ -1745,7 +1847,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 
 #f3-debug-overlay {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--ui-layer-debug-overlay);
   top: 0.5rem;
   left: 0.5rem;
   max-width: min(48rem, calc(100vw - 1rem));
@@ -1779,7 +1881,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #reading {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: var(--ui-layer-reading);
   display: grid;
   place-items: center;
   background: #0003;
@@ -1821,6 +1923,12 @@ body.inventory-open.inventory-tab-crafting #crafting {
   background: #e0d1aa;
   border: 1px solid #8e7d58;
   white-space: nowrap;
+}
+.reading-progress {
+  width: 100%;
+  height: 8px;
+  margin: 0 0 14px;
+  accent-color: #735e31;
 }
 .reading-text {
   min-height: 0;

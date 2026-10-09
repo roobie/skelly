@@ -120,10 +120,27 @@ interface ThrowChargePresentation {
 
 export interface HandlingPresentationSource {
   readonly jobs: readonly { readonly label: string; readonly duration: number; readonly elapsed: number }[];
+  readonly longAction?: TimedActionPresentation;
   readonly throwCharge?: ThrowChargePresentation;
   readonly cancelLabel?: string;
   readonly movementLabel?: string;
 }
+
+export type TimedActionPresentation = HandlingPresentationSource['jobs'][number] & {
+  readonly kind: 'pry' | 'reading' | 'treatment';
+  readonly ownerUid?: number;
+  readonly stopped: boolean;
+};
+
+export const timedActionHandlingPresentation = (
+  action: TimedActionPresentation,
+  stopLabel: string,
+): HandlingPresentationSource => ({
+  jobs: [],
+  ...(action.stopped ? {} : { longAction: action }),
+  cancelLabel: action.stopped ? '' : `${stopLabel} pauses`,
+  movementLabel: '',
+});
 
 /** The current move and the next one, while the inventory is closed. */
 export const handlingViewModel = (queue: HandlingPresentationSource): HandlingViewModel => {
@@ -143,6 +160,18 @@ export const handlingViewModel = (queue: HandlingPresentationSource): HandlingVi
       movementLabel: '',
     };
   }
+  if (queue.longAction) {
+    const { label, elapsed, duration } = queue.longAction;
+    return {
+      visible: true,
+      label,
+      simSecondsLabel: `${elapsed.toFixed(1)} / ${duration.toFixed(1)} s`,
+      percent: Math.round((Math.max(0, Math.min(duration, elapsed)) / duration) * 100),
+      next: '',
+      cancelLabel: queue.cancelLabel ?? '',
+      movementLabel: queue.movementLabel ?? '',
+    };
+  }
   if (!job) {
     return { visible: false, label: '', simSecondsLabel: '', percent: 0, next: '', cancelLabel: '', movementLabel: '' };
   }
@@ -152,7 +181,7 @@ export const handlingViewModel = (queue: HandlingPresentationSource): HandlingVi
     simSecondsLabel: `${job.elapsed.toFixed(1)} / ${job.duration.toFixed(1)} s`,
     percent: Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100),
     next: next ? `Then: ${next.label}` : '',
-    cancelLabel: queue.cancelLabel ?? 'X cancels',
+    cancelLabel: queue.cancelLabel ?? '',
     movementLabel: queue.movementLabel ?? 'Half speed · no sprinting',
   };
 };

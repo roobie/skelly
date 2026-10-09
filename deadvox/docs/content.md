@@ -6,6 +6,7 @@ read_if:
   - you change content references, static reachability, or disassembly-output contracts
   - you change how content-loading tests build their registry fixtures
   - you change recipe, workstation or book reachability contracts
+  - you author weathering profiles or site weathering-profile references
   - you change static reachability checks
   - you author or validate time-windowed template spawns
   - you're authoring or changing playtest fixed loot
@@ -13,9 +14,14 @@ read_if:
   - you're authoring base surface materials or procedural pattern tuning
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
+  - you author or change Deadvox content sources or their build pipeline
 ---
 
 # Content sections and recipes
+
+## Authoring source
+
+Use the repository-wide authoring and conversion rule in `../docs/jsonnet.md`. The root `tools/jsonnet` pipeline compiles sources to the JSON consumed by `buildRegistry` in `src/core/content.ts`, so runtime validation and reference checks keep one boundary.
 
 The single section descriptor in `src/core/schema.ts` owns native Valibot schemas,
 labels and registration order. `CONTENT_SECTIONS`/`CONTENT_SECTION_KEYS` supply
@@ -27,14 +33,19 @@ origin tables remain explicit. File order, overrides and diagnostic order remain
 unchanged. See `npm run validate` for the exhaustive current section/count list,
 not a second hand-maintained section table here.
 
+## Weathering profiles
+
+Weathering is a render-only content choice rather than saved world state. `WeatheringSchema` in `src/core/schema.ts` validates named profiles, and `referenceIssues` in `src/core/content.ts` checks a layout's optional profile reference; layouts without one use the shared default in `src/game/config.ts`, `configFromUrl`. This lets sites share the shader while mod content changes the age and material response that BR can compare in the debug scene.
+
 ## Content test registries
 
-For d121, keep fixture-only template checks on a registry containing the
-content those assertions exercise; full-pack cases retain the base definitions
-when their contract depends on cross-file merging or references. This avoids
-rechecking unrelated base content while preserving those integration checks;
-see `test/content.test.ts`, `templateBase`, and `test/authoredSite.test.ts`,
-`registry`.
+Fixture builders include only the content an assertion exercises. When a contract needs
+cross-file references or reachability, share one validated full-pack registry read-only;
+a test that changes content copies each registry section it changes. This keeps unrelated
+validation work from dominating tests while preventing one assertion's changes from
+leaking into another. See `test/content.test.ts`, `templateBase`;
+`test/audioGunshot.test.ts`, `baseRegistry`; `test/disassembly.test.ts`, `fixtureBuild`;
+and `test/firearmSave.test.ts`, `fixtureRegistry`.
 
 ## Exterior shell continuity
 

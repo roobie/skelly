@@ -11,6 +11,7 @@ read_if:
   - you change STANAG magazine geometry or its Deadvox export
   - you change default sweep coverage or timeout policy
   - you change the firearm action/ejection export contract with Deadvox
+  - you author or change gungen assembly or cartridge content
 ---
 
 # gungen — low-poly firearm designer
@@ -65,7 +66,7 @@ adding shell geometry. The data format is described in `cartridges/README.md`.
 | Tests | Vitest |
 | Lint/format | Biome, repo-wide (`biome.jsonc`): every stable rule on. See the static-analysis pillar in the root README |
 | Part definitions | TypeScript code: each family is a function from size-class params to a part |
-| Assemblies | JSON files: part instances plus connections (§7) |
+| Assemblies | JSON files (a Jsonnet source compiles to the JSON beside it): part instances plus connections (§7); see `../docs/jsonnet.md` |
 | Loops | Loops are only *checked* for closure; there is no solver yet |
 | Layouts | Data, not code: the receiver is only the action body, and a swappable lower sets where the grip and magazine go |
 | Domain rules | Domains add their own rules next to the core ones (`Domain.rules`) |
@@ -948,7 +949,9 @@ palette as arguments.
 - **Appearance.** The viewer and exporter share `src/core/appearance.ts`'s
   domain-agnostic resolver. Callers pass a variant explicitly; assembly display
   names are never parsed as archetypes. Precedence is solid material, part
-  material, design finish, variant finish, then role material. Missing palette
+  material, instance appearance, design finish, variant finish, then role
+  material. An instance's own appearance replaces the host's design and variant
+  finishes for that part; see `src/core/glb.ts`, `exportGlb`. Missing palette
   material ids remain absent from metadata rather than being fabricated. Legacy
   family/special/fallback colours still support generic domains.
 - **Export metadata** (frozen here for the 3.4 export), per port: stable id

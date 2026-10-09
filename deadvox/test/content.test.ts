@@ -4,9 +4,10 @@ import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type 
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
-import { blockPatterns } from '../src/core/meshInput.ts';
+import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
@@ -14,6 +15,8 @@ import { furnitureOf } from '../src/core/site.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
+import { terrainBlockIds } from '../src/core/worldgen.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
@@ -44,6 +47,47 @@ const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: '
   }
   return validateContent({ source: zombieFile.source, data });
 };
+
+it('validates weathering profile bounds without pinning authored tuning', () => {
+  const profile = baseRegistry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+  const validate = (candidate: typeof profile) =>
+    validateContent({ source: 'weathering.json', data: { weathering: [candidate] } });
+  expect(validate(profile)).toEqual([]);
+  expect(validate({ ...profile, weatheringBlend: 1 })).not.toEqual([]);
+  for (const [field, range] of Object.entries(WEATHERING_RANGES)) {
+    expect(validate({ ...profile, [field]: range.min } as typeof profile)).toEqual([]);
+    expect(validate({ ...profile, [field]: range.max } as typeof profile)).toEqual([]);
+    expect(validate({ ...profile, [field]: range.min - 1 } as typeof profile)).not.toEqual([]);
+    expect(validate({ ...profile, [field]: range.max + 1 } as typeof profile)).not.toEqual([]);
+  }
+  expect(validate({ ...profile, tintColor: 'blue' })).not.toEqual([]);
+});
+
+it('weathering applies to authored construction, not terrain or vegetation', () => {
+  const vegetation = base.find(({ source }) => source === 'vegetation.json')!.data as ContentFile;
+  const vegetationIds = (vegetation.blocks ?? []).map(({ id }) => baseRegistry.blockIds.get(id)!);
+  const terrainIds = Object.values(terrainBlockIds((id) => baseRegistry.blockIds.get(id)!));
+  const naturalIds = [...vegetationIds, ...terrainIds];
+  const naturalIdSet = new Set(naturalIds);
+  const builtIds = baseRegistry.blocks.map((_, id) => id).filter((id) => id !== 0 && !naturalIdSet.has(id));
+  const weatherability = blockWeatherability(baseRegistry);
+
+  expect(naturalIds.length).toBeGreaterThan(0);
+  expect(naturalIds.every((id) => weatherability[id] === 0)).toBe(true);
+  expect(builtIds.length).toBeGreaterThan(0);
+  expect(builtIds.some((id) => weatherability[id] === 1)).toBe(true);
+});
+
+it('rejects a layout that names an unknown weathering profile', () => {
+  const file = base.find(({ data: candidateData }) => 'layouts' in (candidateData as Record<string, unknown>))!;
+  const layoutData = structuredClone(file.data) as { layouts: { weatheringProfile?: string }[] };
+  layoutData.layouts[0]!.weatheringProfile = 'not_a_weathering_profile';
+  const weatheringFile = base.find(({ source }) => source === 'weathering.json')!;
+  const result = buildRegistry([weatheringFile, { source: file.source, data: layoutData }]);
+  expect(result.issues).toEqual(
+    expect.arrayContaining([expect.objectContaining({ path: expect.stringContaining('.weatheringProfile') })]),
+  );
+});
 
 interface WindowFrameRun {
   y: number;
@@ -116,6 +160,36 @@ describe('content', () => {
 
     expect(templateSpawnClearanceIssues(baseRegistry, smallZombieTemplate)).toEqual([]);
     expect(templateSpawnClearanceIssues(baseRegistry, compiled).map(([path]) => path)).toEqual(['.spawns[0]']);
+  });
+
+  it('keeps soldier spawns within camp authoring and preserves the shambler design', () => {
+    const soldier = baseRegistry.zombies.get('military_shambler')!;
+    const templateSpawns = [...baseRegistry.templates.values()].flatMap((template) =>
+      compileTemplate(baseRegistry, template)
+        .spawns.filter(({ zombie }) => zombie === soldier.id)
+        .map(() => template.id),
+    );
+    const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
+      layout.shamblers.some(({ type }) => type === soldier.id) ? [layout] : [],
+    );
+    expect(templateSpawns.some((id) => id.startsWith('camp_'))).toBe(true);
+    expect(templateSpawns.every((id) => id.startsWith('camp_'))).toBe(true);
+    expect(layoutSpawns.length).toBeGreaterThan(0);
+    expect(layoutSpawns.every((layout) => layout.buildings.some(({ template }) => template.startsWith('camp_')))).toBe(
+      true,
+    );
+
+    const shambler = baseRegistry.zombies.get('shambler')!;
+    const sharedShamblerData = Object.fromEntries(
+      Object.entries(shambler).filter(([key]) => !['id', 'name', 'loot'].includes(key)),
+    );
+    expect(soldier).toMatchObject({ ...sharedShamblerData, authoredOnly: true });
+    expect(soldier.loot).not.toBe(shambler.loot);
+  });
+
+  it('excludes authored-only kinds from ordinary hamlet spawn weights', () => {
+    const soldier = baseRegistry.zombies.get('military_shambler')!;
+    expect(ordinaryHamletSpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
   });
 
   it('keeps the base day cycle authoritative over mod overrides', () => {
@@ -1698,9 +1772,10 @@ describe('content', () => {
   it('feeds registry camo overrides into the compiled chunk shader uniforms', () => {
     expect(() => camoShaderConfig([])).not.toThrow();
     const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
+    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
     const { registry, issues } = buildRegistry([
-      ...base,
+      baseBlocks,
       {
         source: 'mod-camo.json',
         data: { blocks: [{ ...camo, color: '#56789a', patternPalette: palette, patternWashout: 0.37 }] },
@@ -1731,8 +1806,9 @@ describe('content', () => {
     const noPalette = { ...withoutPalette, id: 'test_camo_no_palette' };
     const { patternWashout: _washout, ...withoutWashout } = camo;
     const noWashout = { ...withoutWashout, id: 'test_camo_no_washout' };
+    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const issues = buildRegistry([
-      ...base,
+      baseBlocks,
       {
         source: 'camo-contract.json',
         data: {

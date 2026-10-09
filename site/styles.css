@@ -28,7 +28,7 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--bg) url("assets/deadvox-backdrop.jpg") center / cover fixed no-repeat;
   color: var(--text);
   font:
     16px / 1.55 system-ui,
@@ -39,6 +39,18 @@ main {
   max-width: 820px;
   margin: 0 auto;
   padding: 40px 16px;
+}
+
+.brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.site-logo {
+  display: block;
+  width: min(100%, 680px);
+  height: auto;
 }
 
 h1 {
@@ -60,14 +72,9 @@ p {
   margin: 0 0 12px;
 }
 
-.lede,
 .muted,
 footer {
   color: var(--muted);
-}
-
-.lede {
-  margin-bottom: 24px;
 }
 
 a {
@@ -272,6 +279,10 @@ footer {
 @media (max-width: 560px) {
   main {
     padding: 24px 12px;
+  }
+
+  .brand {
+    margin-bottom: 16px;
   }
 
   .card {

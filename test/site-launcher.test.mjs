@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -9,11 +9,39 @@ const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const page = read('site/launcher.js');
 const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
 const SELECT_PATTERN = /<select\b/;
+const WEATHERING_SITE_OPTION_PATTERN =
+  /state\.deadvox\.debug && state\.deadvox\.bench === ''[\s\S]*value="weatheringTest"/;
+const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
+const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
+const PLAYTEST_LINK_PATTERN = /<a\b[^>]*\bid="deadvox-playtest"[^>]*>/;
+const PLAYTEST_CARD_PATTERN = /<section class="card" aria-labelledby="playtest-title">([\s\S]*?)<\/section>/;
+const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
+const HREF_PATTERN = /\bhref="([^"]+)"/;
+const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
+const DEADVOX_CONTENT = 'deadvox/src/content/base';
+
+const authoredLayoutIds = () =>
+  readdirSync(join(ROOT, DEADVOX_CONTENT))
+    .filter((name) => LAYOUT_FILE_PATTERN.test(name))
+    .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
 
 const intentionallyUnofferedDeadvoxParams = {
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
+  weatheringProfile: 'A profile choice owned by the in-game debug look panel, not the start launcher.',
+  weatheringTint: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringTintColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
+  weatheringStreaks: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringStreakLength: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringStreakColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
+  weatheringMoss: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMossColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
+  weatheringScale: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMossThreshold: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMossBias: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMixCeiling: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringBlend: 'A debug-panel weathering look slider, not a launch-time site option.',
 };
 const intentionallyUnofferedGungenParams = {
   camera:
@@ -33,10 +61,16 @@ const intentionallyUnofferedGungenParams = {
 const paramsReadBy = (sources) => {
   const found = new Set();
   for (const source of sources) {
-    for (const match of read(source).matchAll(
+    const text = read(source);
+    for (const match of text.matchAll(
       /(?:\b(?:params|query|initialQuery)|new URLSearchParams\([^)]*\))\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g,
     )) {
       found.add(match[1]);
+    }
+    if (source.endsWith('core/weatheringUrl.ts')) {
+      for (const match of text.matchAll(/^\s*\['(weathering[^']*)',\s*'[^']+'\],?$/gm)) {
+        found.add(match[1]);
+      }
     }
   }
   return [...found].sort();
@@ -68,6 +102,7 @@ describe('site launchers track the games’ URL parameters', () => {
     const supported = paramsReadBy([
       'deadvox/src/main.ts',
       'deadvox/src/game/config.ts',
+      'deadvox/src/core/weatheringUrl.ts',
       'deadvox/src/bench/run.ts',
       'deadvox/src/bench/shamblers.ts',
       'deadvox/src/debug/debugLoadout.ts',
@@ -77,6 +112,24 @@ describe('site launchers track the games’ URL parameters', () => {
       assert.ok(supported.includes(name), `${name} has a documented omission reason`);
     }
     assert.deepEqual(coverageFailures('deadvox parameter', supported, paramsOfferedBy('deadvox-form'), omitted), []);
+  });
+
+  it('offers weathering overrides only in debug play and matches the game strength ceiling', () => {
+    assert.match(page, WEATHERING_SITE_OPTION_PATTERN);
+    for (const [id, parameter] of [
+      ['deadvox-weathering-field', 'weathering'],
+      ['deadvox-weathering-variation-field', 'weatheringVariation'],
+      ['deadvox-weathering-split-field', 'weatheringSplit'],
+    ]) {
+      assert.match(page, new RegExp(`'${id}': \\(d\\) => d\\.bench === '' && d\\.debug`));
+      assert.match(page, new RegExp(`name="${parameter}" data-url-param="${parameter}"`));
+    }
+
+    const gameMax = read('deadvox/src/core/weather.ts').match(GAME_WEATHERING_MAX_PATTERN);
+    const launcherMax = page.match(LAUNCHER_WEATHERING_MAX_PATTERN);
+    assert.ok(gameMax, 'game weathering ceiling is declared');
+    assert.ok(launcherMax, 'static launcher weathering ceiling is declared');
+    assert.equal(launcherMax[1], gameMax[1]);
   });
 
   it('offers every launcher-editable gungen URL parameter except documented omissions', () => {
@@ -102,5 +155,32 @@ describe('site launchers track the games’ URL parameters', () => {
     for (const name of ['template', 'fixture', 'design', 'colors', 'ammo', 'ammoCase', 'mag']) {
       assert.doesNotMatch(form, new RegExp(`data-url-param="${name}"`));
     }
+  });
+});
+
+describe('site launcher playtest entry', () => {
+  it('keeps the playtest card distinct from the developer launcher', () => {
+    const card = page.match(PLAYTEST_CARD_PATTERN);
+    const deadvoxCard = page.indexOf('<section class="card" aria-labelledby="deadvox-title">');
+    const deadvoxForm = page.match(DEADVOX_FORM_PATTERN);
+    assert.ok(card, 'the playtest has its own card');
+    assert.ok(deadvoxCard > page.indexOf(card[0]), 'the playtest card appears before the developer launcher');
+    assert.ok(card[1].includes('<h1 id="playtest-title">'));
+    assert.ok(card[1].indexOf('id="deadvox-playtest"') > card[1].indexOf('</ul>'), 'the play link follows the brief');
+    assert.ok(deadvoxForm, 'the developer launch form is present');
+    assert.equal(deadvoxForm[0].includes('id="deadvox-playtest"'), false);
+  });
+
+  it('opens an authored deadvox site without development tools', () => {
+    const anchor = page.match(PLAYTEST_LINK_PATTERN)?.[0];
+    assert.ok(anchor, 'the launcher has a playtest link');
+    const href = anchor.match(HREF_PATTERN)?.[1];
+    assert.ok(href, 'the playtest link has an href');
+    const base = new URL('https://pages.example/skelly/');
+    const url = new URL(href, base);
+    assert.equal(`${url.origin}${url.pathname}`, new URL('deadvox/', base).href);
+    const site = url.searchParams.get('site');
+    assert.ok(authoredLayoutIds().includes(site), `site ${site} is an authored layout`);
+    assert.equal(url.searchParams.has('debug'), false);
   });
 });

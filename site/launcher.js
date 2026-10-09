@@ -1,10 +1,30 @@
 // biome-ignore lint/correctness/noUnresolvedImports: the browser loads this ESM module from jsDelivr.
 import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
 
-const page = (state) => html`  <main>
-      <h1>skelly</h1>
-      <p class="lede">Low poly tools and a game.</p>
+// The static launcher cannot import deadvox/src/core/weather.ts; keep its control range in sync with WEATHERING_STRENGTH_MAX.
+const WEATHERING_STRENGTH_MAX = 8;
 
+// The tester brief's wording lives only here; the organiser's sheet points at it, so a change reaches every tester.
+const playtestBrief = html`
+      <section class="card" aria-labelledby="playtest-title">
+        <h1 id="playtest-title">Playtest</h1>
+        <p>Your task: find the military camp.</p>
+        <ul>
+          <li>Play for as long as you like, in as many sittings as you like. Continue picks up where you left off.</li>
+          <li>The game records play metrics only on your machine, in this browser.</li>
+          <li>Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.</li>
+          <li>This site, the game included, loads Simple Analytics to count visits. It is anonymous, stores no cookies on your device, and gets none of your play metrics.</li>
+          <li>Send feedback through <a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">the playtest feedback form</a>. It opens a public GitHub issue and needs a GitHub account.</li>
+          <li>No GitHub account? You can email your metrics, and any feedback, to the person who sent you the link.</li>
+        </ul>
+        <p><a id="deadvox-playtest" href="deadvox/?site=playtest">Play the playtest map</a></p>
+      </section>`;
+
+const page = (state) => html`  <main>
+      <header class="brand">
+        <img class="site-logo" src="assets/deadvox-survival-logo.webp" alt="Deadvox Survival">
+      </header>
+      ${playtestBrief}
       <section class="card" aria-labelledby="deadvox-title">
         <div class="card-heading">
           <h2 id="deadvox-title"><a href="deadvox/">deadvox</a><span>(codename)</span></h2>
@@ -38,7 +58,7 @@ const page = (state) => html`  <main>
                 <option id="deadvox-default-site" value="">${state.deadvox.bench === '1' ? 'Test house (benchmark default)' : 'Hamlet (default)'}</option>
                 <option value="city">Stress-test city</option>
                 <option value="forest">Forest (tree first look)</option>
-                ${state.deadvox.debug && state.deadvox.bench === '' ? html`<option value="testHouse">Test house (debug)</option>` : ''}
+                ${state.deadvox.debug && state.deadvox.bench === '' ? html`<option value="testHouse">Test house (debug)</option><option value="weatheringTest">Debug weathering comparison</option>` : ''}
               </select>
             </label>
             <label id="deadvox-storeys-field" ?hidden=${!visible('deadvox-storeys-field', state)}>Tallest city building (storeys)
@@ -75,6 +95,15 @@ const page = (state) => html`  <main>
             </label>
             <label id="deadvox-wobble-flat-field" ?hidden=${!visible('deadvox-wobble-flat-field', state)}>Debug wobble vertical/horizontal ratio (blank: content default)
               <input name="wobbleFlat" data-url-param="wobbleFlat" type="number" min="0" max="1" step="any" placeholder="content default"  data-state-key="wobbleFlat" .value=${state.deadvox.wobbleFlat} .disabled=${!enabled('deadvox', 'wobbleFlat', state)}/>
+            </label>
+            <label id="deadvox-weathering-field" ?hidden=${!visible('deadvox-weathering-field', state)}>Debug weathering strength (blank: content default)
+              <input name="weathering" data-url-param="weathering" type="number" min="0" max="${WEATHERING_STRENGTH_MAX}" step="any" placeholder="content default" data-state-key="weathering" .value=${state.deadvox.weathering} .disabled=${!enabled('deadvox', 'weathering', state)}/>
+            </label>
+            <label id="deadvox-weathering-variation-field" ?hidden=${!visible('deadvox-weathering-variation-field', state)}>Debug world-scale weathering variation (blank: content default)
+              <input name="weatheringVariation" data-url-param="weatheringVariation" type="number" min="0" max="1" step="any" placeholder="content default" data-state-key="weatheringVariation" .value=${state.deadvox.weatheringVariation} .disabled=${!enabled('deadvox', 'weatheringVariation', state)}/>
+            </label>
+            <label id="deadvox-weathering-split-field" ?hidden=${!visible('deadvox-weathering-split-field', state)}>Debug weathering split (world x in metres; comparison site defaults to 0)
+              <input name="weatheringSplit" data-url-param="weatheringSplit" type="number" min="-256" max="256" step="any" placeholder="comparison site default" data-state-key="weatheringSplit" .value=${state.deadvox.weatheringSplit} .disabled=${!enabled('deadvox', 'weatheringSplit', state)}/>
             </label>
           </div>
 
@@ -132,7 +161,7 @@ const page = (state) => html`  <main>
           <button type="button" data-deadvox-preset="debug">Debug before dawn</button>
           <button type="button" data-deadvox-preset="benchmark">Benchmark</button>
         </fieldset>
-        <p class="status">Debug tools and their current keys are documented in-game. A playtest profile will be added when its URL flag is implemented.</p>
+        <p class="status">Debug tools and their current keys are documented in-game.</p>
       </section>
 
       <section class="card" aria-labelledby="gungen-title">
@@ -208,6 +237,9 @@ const model = {
     at: '',
     handedness: '',
     wobbleFlat: '',
+    weathering: '',
+    weatheringVariation: '',
+    weatheringSplit: '',
     plan: '0.5:64,0.5:96,0.5:128',
     worldIndex: '0',
     shamblers: '60',
@@ -242,6 +274,9 @@ const visibility = {
   'deadvox-at-field': (d) => d.bench === '' && d.debug,
   'deadvox-handedness-field': (d) => d.bench === '' && d.debug,
   'deadvox-wobble-flat-field': (d) => d.bench === '' && d.debug,
+  'deadvox-weathering-field': (d) => d.bench === '' && d.debug,
+  'deadvox-weathering-variation-field': (d) => d.bench === '' && d.debug,
+  'deadvox-weathering-split-field': (d) => d.bench === '' && d.debug,
   'deadvox-world-bench': (d) => d.bench === '1',
   'deadvox-shambler-bench': (d) => d.bench === 'shamblers',
   'gungen-template-fields': (_, g) => g.mode === 'template',
@@ -268,6 +303,9 @@ const deadvoxControlVisibility = {
   at: 'deadvox-at-field',
   handedness: 'deadvox-handedness-field',
   wobbleFlat: 'deadvox-wobble-flat-field',
+  weathering: 'deadvox-weathering-field',
+  weatheringVariation: 'deadvox-weathering-variation-field',
+  weatheringSplit: 'deadvox-weathering-split-field',
   plan: 'deadvox-world-bench',
   shamblers: 'deadvox-world-bench',
   worldIndex: 'deadvox-world-bench',
@@ -280,6 +318,9 @@ const enabled = (form, key, s) => {
   return fields[key] ? visible(fields[key], s) : true;
 };
 const defaultTime = (d) => {
+  if (d.bench === '' && d.site === 'weatheringTest') {
+    return '12:00';
+  }
   if (d.bench === 'shamblers') {
     return '23:30';
   }
@@ -316,8 +357,11 @@ const addDebugParams = (params, d) => {
   setDefault(params, 'handedness', d.handedness, '');
   setDefault(params, 'wobbleFlat', d.wobbleFlat.trim(), '');
   setDefault(params, 'loadout', d.loadout, '');
-  if (d.site === 'testHouse') {
-    params.set('site', 'testHouse');
+  setDefault(params, 'weathering', d.weathering.trim(), '');
+  setDefault(params, 'weatheringVariation', d.weatheringVariation.trim(), '');
+  setDefault(params, 'weatheringSplit', d.weatheringSplit.trim(), '');
+  if (d.site === 'testHouse' || d.site === 'weatheringTest') {
+    params.set('site', d.site);
   }
 };
 const makeDeadvox = (d) => {
@@ -381,6 +425,11 @@ const inRange = (value, min, max, integer = true) => {
     value !== '' && Number.isFinite(number) && number >= min && number <= max && (!integer || Number.isInteger(number))
   );
 };
+const validOptionalRange = (value, min, max) => value === '' || inRange(value, min, max, false);
+const validWeatheringOverrides = (d) =>
+  (!enabled('deadvox', 'weathering', model) || validOptionalRange(d.weathering, 0, WEATHERING_STRENGTH_MAX)) &&
+  (!enabled('deadvox', 'weatheringVariation', model) || validOptionalRange(d.weatheringVariation, 0, 1)) &&
+  (!enabled('deadvox', 'weatheringSplit', model) || validOptionalRange(d.weatheringSplit, -256, 256));
 const validDeadvox = (d) => {
   const plan = parsePlan(d.plan);
   const counts = parseCounts(d.n);
@@ -390,6 +439,7 @@ const validDeadvox = (d) => {
     (!enabled('deadvox', 'radius', model) || inRange(d.radius, 32, 256)) &&
     (!enabled('deadvox', 'storeys', model) || inRange(d.storeys, 1, 20)) &&
     (!enabled('deadvox', 'density', model) || d.density === '' || inRange(d.density, 0, 1, false)) &&
+    validWeatheringOverrides(d) &&
     (!enabled('deadvox', 'plan', model) || Boolean(plan)) &&
     (!enabled('deadvox', 'worldIndex', model) || inRange(d.worldIndex, 0, (plan?.length ?? 1) - 1)) &&
     (!enabled('deadvox', 'shamblers', model) || inRange(d.shamblers, 0, 500)) &&
@@ -431,7 +481,7 @@ const onInput = (e) => {
     }
   } else if (t.type === 'checkbox') {
     m[k] = t.checked;
-    if (f === 'deadvox' && k === 'debug' && !t.checked && m.site === 'testHouse') {
+    if (f === 'deadvox' && k === 'debug' && !t.checked && ['testHouse', 'weatheringTest'].includes(m.site)) {
       m.site = '';
     }
   } else {

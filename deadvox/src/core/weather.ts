@@ -16,6 +16,27 @@ export interface Weather {
 /** A light mist. At this value the height fog has exactly the time-of-day keyframes' density. */
 export const DEFAULT_FOGGINESS = 0.2;
 
+/** Weathering profiles keep place-level age coherent while allowing distinct site moods. */
+export const DEFAULT_WEATHERING_PROFILE_ID = 'proper';
+
+/** Shared ceiling leaves debug comparisons room above authored weathering without a separate cap. */
+export const WEATHERING_STRENGTH_MAX = 8;
+
+/** UI and schema bounds for profile controls; steps only affect presentation, not accepted content precision. */
+export const WEATHERING_RANGES = {
+  strength: { min: 0, max: WEATHERING_STRENGTH_MAX, step: 0.1 },
+  tintDarkness: { min: 0, max: 2, step: 0.01 },
+  streakStrength: { min: 0, max: 2, step: 0.01 },
+  streakLengthMetres: { min: 0.25, max: 12, step: 0.01 },
+  mossStrength: { min: 0, max: 2, step: 0.01 },
+  variationScaleMetres: { min: 2, max: 48, step: 0.1 },
+  variationStrength: { min: 0, max: 2, step: 0.01 },
+  mossThreshold: { min: -1, max: 2, step: 0.01 },
+  mossBias: { min: -1, max: 2, step: 0.01 },
+  mixCeiling: { min: 0, max: 1, step: 0.01 },
+  weatheringBlend: { min: 0, max: 0.75, step: 0.01 },
+} as const;
+
 /** Clamped to [0, 1] and rounded to a tenth, so repeated steps don't accumulate float error. */
 export const clampFogginess = (value: number): number => Math.min(1, Math.max(0, Math.round(value * 10) / 10));
 

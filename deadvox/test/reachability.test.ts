@@ -65,6 +65,44 @@ describe('static reachability', () => {
     expect(placed.toolReachable.has('wooden_plank')).toBe(true);
   });
 
+  it('rejects a component cycle with no loot-seeded source', () => {
+    const registry = fresh();
+    registry.recipes.clear();
+    for (const id of ['fixture_cycle_a', 'fixture_cycle_b']) {
+      registry.items.set(id, { id, name: id, category: 'material', weight: 1, size: [1, 1] });
+    }
+    for (const [id, result, input] of [
+      ['fixture_cycle_a_recipe', 'fixture_cycle_a', 'fixture_cycle_b'],
+      ['fixture_cycle_b_recipe', 'fixture_cycle_b', 'fixture_cycle_a'],
+    ] as const) {
+      registry.recipes.set(id, {
+        id,
+        result: { item: result, count: 1 },
+        timeGameMinutes: gameMinutes(1),
+        components: [[{ item: input, count: 1 }]],
+        qualities: {},
+        skills: {},
+      });
+    }
+
+    const result = checkReachability(registry, new Set(registry.recipes.keys()));
+
+    expect(result.found.has('fixture_cycle_a')).toBe(false);
+    expect(result.found.has('fixture_cycle_b')).toBe(false);
+    expect(result.components.has('fixture_cycle_a')).toBe(false);
+    expect(result.components.has('fixture_cycle_b')).toBe(false);
+    expect(result.issues).toContainEqual({
+      recipe: 'fixture_cycle_a_recipe',
+      path: '.components[0][0].item',
+      message: 'item "fixture_cycle_b" is neither found nor craftable',
+    });
+    expect(result.issues).toContainEqual({
+      recipe: 'fixture_cycle_b_recipe',
+      path: '.components[0][0].item',
+      message: 'item "fixture_cycle_a" is neither found nor craftable',
+    });
+  });
+
   it('hard-checks positive skill requirements against reachable practice sources', () => {
     const registry = fresh();
     registry.recipes.clear();

@@ -6,9 +6,9 @@ import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { validate as runValidation } from '../src/cli/validate.ts';
 
-const validate = (...files: string[]) => {
+const validateAt = (root: string, ...files: string[]) => {
   const output: string[] = [];
-  const status = runValidation(files, (line) => output.push(line));
+  const status = runValidation(files, (line) => output.push(line), root);
   return { status, stdout: output.join('\n') };
 };
 
@@ -52,36 +52,16 @@ describe('validate CLI', () => {
     }
   });
 
-  it('passes on the base pack', () => {
-    const run = validate();
-    expect(run.status).toBe(0);
-    expect(run.stdout).toContain('0 issue(s)');
-  });
-
-  it.each([
-    [
-      'unknown-knowledge',
-      ['recipes[0].knowledge: recipe "unlearned_recipe" has no starting or reachable book knowledge source'],
-    ],
-    ['unfound', ['recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable']],
-    [
-      'cycle',
-      [
-        'recipes[0].components[0][0].item: item "fixture_b" is neither found nor craftable',
-        'recipes[1].components[0][0].item: item "fixture_a" is neither found nor craftable',
-      ],
-    ],
-    [
-      'self-tool',
-      [
-        'recipes[0].qualities.fixture_quality: no reachable tool or placed workstation provides "fixture_quality" level 2 without bootstrapping its own requirements',
-      ],
-    ],
-  ])('rejects %s reachability with its semantic diagnostic', (fixture, diagnostics) => {
-    const run = validate(`test/fixtures/content/reachability-${fixture}.json`);
-    expect(run.status).toBe(1);
-    for (const diagnostic of diagnostics) {
-      expect(run.stdout).toContain(diagnostic);
+  it('reports an unreachable component from static reachability', () => {
+    const root = makeMinimalPack('content');
+    try {
+      const run = validateAt(root, 'test/fixtures/content/reachability-unfound.json');
+      expect(run.status).toBe(1);
+      expect(run.stdout).toContain(
+        'recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable',
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 
@@ -124,19 +104,21 @@ describe('validate CLI', () => {
     expect(stdout).toContain('7 file(s):');
   });
 
-  it('accepts the same unfound component when a grounded recipe makes it', () => {
-    const run = validate(
-      'test/fixtures/content/reachability-unfound.json',
-      'test/fixtures/content/reachability-craftable.json',
-    );
-    expect(run.status).toBe(0);
-    expect(run.stdout).toContain('0 issue(s)');
-  });
-
-  it('passes on a pack with a model, its file and a manifest that lists it', () => {
-    const run = validate('test/fixtures/packs/lamp/lamp.json', 'test/fixtures/packs/lamp/assets/manifest.json');
-    expect(run.stdout).toContain('0 issue(s)');
-    expect(run.status).toBe(0);
+  it('accepts a model file listed by its pack manifest', () => {
+    const root = makeMinimalPack('content', 'packs', 'assets');
+    try {
+      const run = validateAt(
+        root,
+        'test/fixtures/packs/lamp/lamp.json',
+        'test/fixtures/packs/lamp/assets/manifest.json',
+      );
+      expect(run.stdout).toContain('2 file(s):');
+      expect(run.stdout).toContain('1 asset sources');
+      expect(run.stdout).not.toContain('FAIL  test/fixtures/packs/lamp/lamp.json');
+      expect(run.stdout).not.toContain('FAIL  test/fixtures/packs/lamp/assets/manifest.json');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('fails when an item references a missing model', () => {

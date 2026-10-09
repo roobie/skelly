@@ -1,14 +1,968 @@
 {
   "layouts": [
     {
-      "id": "playtest",
+      "beats": [
+        {
+          "area": {
+            "x0": 76,
+            "x1": 130,
+            "z0": 60,
+            "z1": 95
+          },
+          "id": "lone_house"
+        },
+        {
+          "area": {
+            "x0": 160,
+            "x1": 222,
+            "z0": 42,
+            "z1": 109
+          },
+          "id": "hamlet"
+        },
+        {
+          "area": {
+            "x0": 322,
+            "x1": 362,
+            "z0": 135,
+            "z1": 170
+          },
+          "id": "hunting_cabins"
+        },
+        {
+          "area": {
+            "x0": 404,
+            "x1": 433,
+            "z0": 184,
+            "z1": 213
+          },
+          "id": "workshop"
+        },
+        {
+          "area": {
+            "x0": 400,
+            "x1": 446,
+            "z0": 228,
+            "z1": 268
+          },
+          "id": "medical_site"
+        },
+        {
+          "area": {
+            "x0": 434,
+            "x1": 518,
+            "z0": 486,
+            "z1": 566
+          },
+          "id": "military_camp"
+        }
+      ],
       "bounds": {
         "x0": 0,
-        "z0": 0,
         "x1": 700,
+        "z0": 0,
         "z1": 580
       },
+      "buildings": [
+        {
+          "fixedLoot": [
+            {
+              "at": [12, 1, 2],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "canned_beans"
+                },
+                {
+                  "count": 1,
+                  "item": "aa_battery"
+                },
+                {
+                  "count": 1,
+                  "item": "matches"
+                },
+                {
+                  "count": 1,
+                  "item": "stick"
+                },
+                {
+                  "count": 1,
+                  "item": "water_bottle"
+                },
+                {
+                  "count": 1,
+                  "item": "kitchen_knife"
+                },
+                {
+                  "count": 2,
+                  "item": "rag"
+                },
+                {
+                  "count": 1,
+                  "item": "wax"
+                }
+              ]
+            },
+            {
+              "at": [12, 1, 7],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "can_opener"
+                },
+                {
+                  "count": 1,
+                  "item": "evacuation_note",
+                  "key": true
+                },
+                {
+                  "count": 1,
+                  "item": "flashlight",
+                  "key": true
+                },
+                {
+                  "count": 1,
+                  "item": "bandage"
+                }
+              ]
+            },
+            {
+              "at": [12, 9, 11],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "school_backpack"
+                },
+                {
+                  "count": 1,
+                  "item": "baseball_cap"
+                }
+              ]
+            }
+          ],
+          "position": [100, 21, 70],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "playtest_house"
+        },
+        {
+          "position": [84, 21, 82],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "playtest_tool_shack"
+        },
+        {
+          "position": [110, 21, 82],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "hen_house"
+        },
+        {
+          "position": [115, 21, 82],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [4, 1, 13],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "home_repair_book",
+                  "key": true
+                }
+              ]
+            },
+            {
+              "at": [1, 1, 5],
+              "items": [
+                {
+                  "count": 2,
+                  "item": "rag"
+                },
+                {
+                  "count": 1,
+                  "item": "wax"
+                }
+              ]
+            },
+            {
+              "at": [14, 1, 14],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "jacket"
+                }
+              ]
+            }
+          ],
+          "position": [178, 21, 48],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "bungalow"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [1, 1, 13],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "duct_tape"
+                }
+              ]
+            },
+            {
+              "at": [8, 1, 12],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "painkillers"
+                },
+                {
+                  "count": 1,
+                  "item": "bandage"
+                }
+              ]
+            },
+            {
+              "at": [14, 1, 13],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "canned_soup"
+                },
+                {
+                  "count": 1,
+                  "item": "crackers"
+                },
+                {
+                  "count": 1,
+                  "item": "soda_can"
+                }
+              ]
+            }
+          ],
+          "position": [198, 21, 63],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "playtest_store"
+        },
+        {
+          "position": [166, 21, 56],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "small_house"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [12, 1, 13],
+              "items": [
+                {
+                  "condition": 0.20000000000000001,
+                  "count": 1,
+                  "item": "portable_radio",
+                  "key": true
+                },
+                {
+                  "count": 1,
+                  "item": "compass",
+                  "key": true
+                }
+              ]
+            },
+            {
+              "at": [1, 1, 22],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "scrap_metal"
+                }
+              ]
+            }
+          ],
+          "position": [208, 21, 90],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "playtest_gas_station"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [2, 7, 12],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "pump_shotgun",
+                  "key": true
+                }
+              ]
+            },
+            {
+              "at": [11, 7, 1],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "dad_cabin_key",
+                  "key": true
+                }
+              ]
+            },
+            {
+              "at": [4, 1, 12],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "canned_beans"
+                },
+                {
+                  "count": 1,
+                  "item": "water_bottle"
+                },
+                {
+                  "count": 1,
+                  "item": "shotshell_box",
+                  "key": true
+                }
+              ]
+            }
+          ],
+          "position": [333, 31, 142],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "playtest_dads_cabin"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [1, 1, 11],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "hunter_logbook",
+                  "key": true
+                },
+                {
+                  "count": 1,
+                  "item": "machete"
+                }
+              ]
+            },
+            {
+              "at": [5, 1, 10],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "hiking_backpack"
+                }
+              ]
+            }
+          ],
+          "position": [349, 30, 155],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "playtest_hunter_cabin"
+        },
+        {
+          "position": [329, 29.5, 158],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "woodshed"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [5, 1, 3],
+              "items": [
+                {
+                  "condition": 0.59999999999999998,
+                  "count": 1,
+                  "item": "crowbar",
+                  "key": true
+                }
+              ]
+            }
+          ],
+          "position": [194, 21, 82],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "shed"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [4, 1, 20],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "antiseptic",
+                  "key": true
+                },
+                {
+                  "count": 1,
+                  "item": "pharmacy_key",
+                  "key": true
+                }
+              ]
+            },
+            {
+              "at": [25, 1, 3],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "antibiotics",
+                  "key": true
+                }
+              ]
+            },
+            {
+              "at": [3, 1, 10],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "medical_research_log",
+                  "key": true
+                }
+              ]
+            },
+            {
+              "at": [12, 1, 1],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "camp_armoury_key",
+                  "key": true
+                }
+              ]
+            }
+          ],
+          "position": [418.5, 21, 239],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "medical_hall"
+        },
+        {
+          "position": [407, 21, 242],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "triage_tent"
+        },
+        {
+          "position": [436.5, 21, 242],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "triage_tent"
+        },
+        {
+          "position": [402, 21, 230],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [409, 21, 230],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [416, 21, 230],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [423, 21, 230],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [430, 21, 230],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [437, 21, 230],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [402, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [409, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [416, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [430, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [437, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [401.5, 21, 230.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [401.5, 21, 237.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [401.5, 21, 244.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [401.5, 21, 251.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [401.5, 21, 258.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [444, 21, 230.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [444, 21, 237.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [444, 21, 244.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [444, 21, 251.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [444, 21, 258.5],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "rickety_fence"
+        },
+        {
+          "position": [468, 21, 495],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_sandbag_post"
+        },
+        {
+          "position": [480, 21, 495],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_sandbag_post"
+        },
+        {
+          "position": [486, 21, 537],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_sandbag_post"
+        },
+        {
+          "position": [486, 21, 516],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_watchtower"
+        },
+        {
+          "position": [452, 21, 516],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_command_tent"
+        },
+        {
+          "position": [452, 21, 525],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_tent"
+        },
+        {
+          "position": [452, 21, 533],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_container"
+        },
+        {
+          "position": [476, 21, 517],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_hq"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [3, 1, 3],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "rifle_assault",
+                  "key": true
+                },
+                {
+                  "count": 1,
+                  "item": "rifle_ak",
+                  "key": true
+                }
+              ]
+            },
+            {
+              "at": [7, 1, 5],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "magazine_stanag_30"
+                },
+                {
+                  "count": 1,
+                  "item": "magazine_akm_30"
+                }
+              ]
+            },
+            {
+              "at": [13, 1, 7],
+              "items": [
+                {
+                  "count": 15,
+                  "item": "cartridge_5_d_56x45"
+                },
+                {
+                  "count": 15,
+                  "item": "cartridge_7_d_62x39"
+                }
+              ]
+            }
+          ],
+          "position": [470, 21, 526],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_armoury"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [17, 1, 9],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "shotshell_box"
+                },
+                {
+                  "count": 1,
+                  "item": "bandage"
+                },
+                {
+                  "count": 1,
+                  "item": "scrap_metal"
+                },
+                {
+                  "count": 1,
+                  "item": "electrical_tape"
+                },
+                {
+                  "count": 1,
+                  "item": "fastener_pack",
+                  "key": true
+                },
+                {
+                  "count": 1,
+                  "item": "rubber_strip",
+                  "key": true
+                },
+                {
+                  "count": 1,
+                  "item": "screwdriver"
+                },
+                {
+                  "count": 1,
+                  "item": "wrench"
+                }
+              ]
+            },
+            {
+              "at": [17, 1, 15],
+              "items": [
+                {
+                  "condition": 0,
+                  "count": 1,
+                  "item": "portable_radio"
+                },
+                {
+                  "count": 1,
+                  "item": "jerry_can"
+                }
+              ]
+            }
+          ],
+          "position": [410, 21, 198],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "workshop_hall"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [4, 1, 4],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "workshop_notes",
+                  "key": true
+                }
+              ]
+            }
+          ],
+          "position": [422, 21, 198],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "workshop_office"
+        },
+        {
+          "position": [422, 21, 202],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "workshop_parts_store"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [7, 1, 7],
+              "items": [
+                {
+                  "count": 1,
+                  "item": "steel_pipe",
+                  "key": true
+                }
+              ]
+            }
+          ],
+          "position": [410, 21, 189],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "workshop_yard"
+        },
+        {
+          "position": [440, 21, 494],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [456, 21, 494],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [480, 21, 494],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [496, 21, 494],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [440, 21, 559],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [456, 21, 559],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [480, 21, 559],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [496, 21, 559],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [440, 21, 495],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [440, 21, 511],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [440, 21, 527],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [440, 21, 543],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [511, 21, 495],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [511, 21, 511],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [511, 21, 527],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [511, 21, 543],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "camp_wall_run"
+        },
+        {
+          "position": [472, 21, 494],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_gate"
+        },
+        {
+          "position": [472, 21, 495],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_gate_return"
+        },
+        {
+          "position": [479, 21, 495],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_gate_return"
+        },
+        {
+          "position": [472, 21, 503],
+          "rotation": 0,
+          "storeys": 1,
+          "template": "camp_gate_damaged"
+        }
+      ],
       "ground": 21,
+      "id": "playtest",
+      "player": {
+        "bearing": 330,
+        "position": [92, 21.5, 85]
+      },
+      "shamblers": [
+        {
+          "chance": 1,
+          "position": [196, 21.5, 77],
+          "type": "shambler"
+        },
+        {
+          "chance": 1,
+          "position": [354, 30.5, 160],
+          "type": "shambler"
+        },
+        {
+          "chance": 1,
+          "position": [203.5, 21.5, 69],
+          "type": "shambler"
+        },
+        {
+          "chance": 1,
+          "position": [210, 21.5, 101],
+          "type": "shambler"
+        },
+        {
+          "chance": 1,
+          "position": [181, 21.5, 74],
+          "type": "shambler",
+          "window": {
+            "fromGameTimeOfDay": "dusk"
+          }
+        },
+        {
+          "chance": 1,
+          "position": [304, 30.5, 134],
+          "type": "shambler",
+          "window": {
+            "fromGameTimeOfDay": "dusk"
+          }
+        },
+        {
+          "chance": 1,
+          "position": [474, 21.5, 486],
+          "type": "military_shambler"
+        },
+        {
+          "chance": 1,
+          "position": [520, 21.5, 534],
+          "type": "military_shambler"
+        },
+        {
+          "chance": 1,
+          "position": [490, 21.5, 545],
+          "type": "amalgam"
+        }
+      ],
+      "startTimeGameTimeOfDay": "15:00",
       "terrain": [
         {
           "kind": "ridge",
@@ -17,847 +971,10 @@
           "width": 60
         },
         {
-          "kind": "hill",
           "centre": [455, 194],
+          "kind": "hill",
           "radii": [35, 24],
           "rise": 6
-        }
-      ],
-      "buildings": [
-        {
-          "template": "playtest_house",
-          "position": [100, 21, 70],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [12, 1, 2],
-              "items": [
-                {
-                  "item": "canned_beans",
-                  "count": 1
-                },
-                {
-                  "item": "aa_battery",
-                  "count": 1
-                },
-                {
-                  "item": "matches",
-                  "count": 1
-                },
-                {
-                  "item": "stick",
-                  "count": 1
-                },
-                {
-                  "item": "water_bottle",
-                  "count": 1
-                },
-                {
-                  "item": "kitchen_knife",
-                  "count": 1
-                },
-                {
-                  "item": "rag",
-                  "count": 2
-                },
-                {
-                  "item": "wax",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [12, 1, 7],
-              "items": [
-                {
-                  "item": "can_opener",
-                  "count": 1
-                },
-                {
-                  "item": "evacuation_note",
-                  "count": 1
-                },
-                {
-                  "item": "flashlight",
-                  "count": 1
-                },
-                {
-                  "item": "bandage",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [12, 9, 11],
-              "items": [
-                {
-                  "item": "school_backpack",
-                  "count": 1
-                },
-                {
-                  "item": "baseball_cap",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "playtest_tool_shack",
-          "position": [84, 21, 82],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "hen_house",
-          "position": [110, 21, 82],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [115, 21, 82],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "bungalow",
-          "position": [178, 21, 48],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [4, 1, 13],
-              "items": [
-                {
-                  "item": "home_repair_book",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [1, 1, 5],
-              "items": [
-                {
-                  "item": "rag",
-                  "count": 2
-                },
-                {
-                  "item": "wax",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [14, 1, 14],
-              "items": [
-                {
-                  "item": "jacket",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "playtest_store",
-          "position": [198, 21, 63],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [1, 1, 13],
-              "items": [
-                {
-                  "item": "duct_tape",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [8, 1, 12],
-              "items": [
-                {
-                  "item": "painkillers",
-                  "count": 1
-                },
-                {
-                  "item": "bandage",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [14, 1, 13],
-              "items": [
-                {
-                  "item": "canned_soup",
-                  "count": 1
-                },
-                {
-                  "item": "crackers",
-                  "count": 1
-                },
-                {
-                  "item": "soda_can",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "small_house",
-          "position": [166, 21, 56],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "playtest_gas_station",
-          "position": [208, 21, 90],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [12, 1, 13],
-              "items": [
-                {
-                  "item": "portable_radio",
-                  "count": 1,
-                  "condition": 0.2
-                },
-                {
-                  "item": "compass",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [1, 1, 22],
-              "items": [
-                {
-                  "item": "scrap_metal",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "playtest_dads_cabin",
-          "position": [333, 31, 142],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [2, 7, 12],
-              "items": [
-                {
-                  "item": "pump_shotgun",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [11, 7, 1],
-              "items": [
-                {
-                  "item": "dad_cabin_key",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [4, 1, 12],
-              "items": [
-                {
-                  "item": "canned_beans",
-                  "count": 1
-                },
-                {
-                  "item": "water_bottle",
-                  "count": 1
-                },
-                {
-                  "item": "shotshell_box",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "playtest_hunter_cabin",
-          "position": [349, 30, 155],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [1, 1, 11],
-              "items": [
-                {
-                  "item": "hunter_logbook",
-                  "count": 1
-                },
-                {
-                  "item": "machete",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [5, 1, 10],
-              "items": [
-                {
-                  "item": "hiking_backpack",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "woodshed",
-          "position": [329, 29.5, 158],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "shed",
-          "position": [194, 21, 82],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [5, 1, 3],
-              "items": [
-                {
-                  "item": "crowbar",
-                  "count": 1,
-                  "condition": 0.6
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "medical_hall",
-          "position": [418.5, 21, 239],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [4, 1, 20],
-              "items": [
-                {
-                  "item": "antiseptic",
-                  "count": 1
-                },
-                {
-                  "item": "pharmacy_key",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [25, 1, 3],
-              "items": [
-                {
-                  "item": "antibiotics",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [3, 1, 10],
-              "items": [
-                {
-                  "item": "medical_research_log",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [12, 1, 1],
-              "items": [
-                {
-                  "item": "camp_armoury_key",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "triage_tent",
-          "position": [407, 21, 242],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "triage_tent",
-          "position": [436.5, 21, 242],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [402, 21, 230],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [409, 21, 230],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [416, 21, 230],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [423, 21, 230],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [430, 21, 230],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [437, 21, 230],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [402, 21, 265.5],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [409, 21, 265.5],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [416, 21, 265.5],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [430, 21, 265.5],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [437, 21, 265.5],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [401.5, 21, 230.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [401.5, 21, 237.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [401.5, 21, 244.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [401.5, 21, 251.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [401.5, 21, 258.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [444, 21, 230.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [444, 21, 237.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [444, 21, 244.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [444, 21, 251.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "rickety_fence",
-          "position": [444, 21, 258.5],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "camp_sandbag_post",
-          "position": [468, 21, 495],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_sandbag_post",
-          "position": [480, 21, 495],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_sandbag_post",
-          "position": [486, 21, 537],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_watchtower",
-          "position": [486, 21, 516],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_command_tent",
-          "position": [452, 21, 516],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_tent",
-          "position": [452, 21, 525],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_container",
-          "position": [452, 21, 533],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_hq",
-          "position": [476, 21, 517],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_armoury",
-          "position": [470, 21, 526],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [3, 1, 3],
-              "items": [
-                {
-                  "item": "rifle_assault",
-                  "count": 1
-                },
-                {
-                  "item": "rifle_ak",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [7, 1, 5],
-              "items": [
-                {
-                  "item": "magazine_stanag_30",
-                  "count": 1
-                },
-                {
-                  "item": "magazine_akm_30",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [13, 1, 7],
-              "items": [
-                {
-                  "item": "cartridge_5_d_56x45",
-                  "count": 15
-                },
-                {
-                  "item": "cartridge_7_d_62x39",
-                  "count": 15
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "workshop_hall",
-          "position": [410, 21, 198],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [17, 1, 9],
-              "items": [
-                {
-                  "item": "shotshell_box",
-                  "count": 1
-                },
-                {
-                  "item": "bandage",
-                  "count": 1
-                },
-                {
-                  "item": "scrap_metal",
-                  "count": 1
-                },
-                {
-                  "item": "electrical_tape",
-                  "count": 1
-                },
-                {
-                  "item": "fastener_pack",
-                  "count": 1
-                },
-                {
-                  "item": "rubber_strip",
-                  "count": 1
-                },
-                {
-                  "item": "screwdriver",
-                  "count": 1
-                },
-                {
-                  "item": "wrench",
-                  "count": 1
-                }
-              ]
-            },
-            {
-              "at": [17, 1, 15],
-              "items": [
-                {
-                  "item": "portable_radio",
-                  "count": 1,
-                  "condition": 0
-                },
-                {
-                  "item": "jerry_can",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "workshop_office",
-          "position": [422, 21, 198],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [4, 1, 4],
-              "items": [
-                {
-                  "item": "workshop_notes",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "workshop_parts_store",
-          "position": [422, 21, 202],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "workshop_yard",
-          "position": [410, 21, 189],
-          "rotation": 0,
-          "storeys": 1,
-          "fixedLoot": [
-            {
-              "at": [7, 1, 7],
-              "items": [
-                {
-                  "item": "steel_pipe",
-                  "count": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [440, 21, 494],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [456, 21, 494],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [480, 21, 494],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [496, 21, 494],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [440, 21, 559],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [456, 21, 559],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [480, 21, 559],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [496, 21, 559],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [440, 21, 495],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [440, 21, 511],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [440, 21, 527],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [440, 21, 543],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [511, 21, 495],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [511, 21, 511],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [511, 21, 527],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "camp_wall_run",
-          "position": [511, 21, 543],
-          "rotation": 90,
-          "storeys": 1
-        },
-        {
-          "template": "camp_gate",
-          "position": [472, 21, 494],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_gate_return",
-          "position": [472, 21, 495],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_gate_return",
-          "position": [479, 21, 495],
-          "rotation": 0,
-          "storeys": 1
-        },
-        {
-          "template": "camp_gate_damaged",
-          "position": [472, 21, 503],
-          "rotation": 0,
-          "storeys": 1
-        }
-      ],
-      "player": {
-        "position": [92, 21.5, 85],
-        "bearing": 330
-      },
-      "woodlands": [
-        {
-          "polygon": [[48, 12], [150, 12], [152, 51], [48, 54]],
-          "density": 0.9
-        },
-        {
-          "polygon": [[430, 24], [540, 32], [550, 72], [452, 98]],
-          "density": 0.9
-        },
-        {
-          "polygon": [[300, 128], [321, 128], [325, 139], [304, 142]],
-          "density": 0.9
         }
       ],
       "tracks": [
@@ -891,72 +1008,37 @@
             [476, 480],
             [476, 510]
           ],
-          "width": 2,
-          "surface": "dirt"
+          "surface": "dirt",
+          "width": 2
         },
         {
           "points": [[428.5, 274.5], [440, 300], [455, 360], [470, 380], [470, 430], [476, 480], [476, 510]],
-          "width": 8,
-          "surface": "dirt"
+          "surface": "dirt",
+          "width": 8
         },
         {
           "points": [[390, 180], [398, 184], [405, 192], [410, 196.5]],
-          "width": 2,
-          "surface": "dirt"
+          "surface": "dirt",
+          "width": 2
         },
         {
           "points": [[476, 552], [476, 568]],
-          "width": 3,
-          "surface": "dirt"
+          "surface": "dirt",
+          "width": 3
         }
       ],
-      "startTimeGameTimeOfDay": "15:00",
-      "shamblers": [
+      "woodlands": [
         {
-          "type": "shambler",
-          "position": [196, 21.5, 77],
-          "chance": 1
+          "density": 0.90000000000000002,
+          "polygon": [[48, 12], [150, 12], [152, 51], [48, 54]]
         },
         {
-          "type": "shambler",
-          "position": [354, 30.5, 160],
-          "chance": 1
+          "density": 0.90000000000000002,
+          "polygon": [[430, 24], [540, 32], [550, 72], [452, 98]]
         },
         {
-          "type": "shambler",
-          "position": [203.5, 21.5, 69],
-          "chance": 1
-        },
-        {
-          "type": "shambler",
-          "position": [210, 21.5, 101],
-          "chance": 1
-        },
-        {
-          "type": "shambler",
-          "position": [181, 21.5, 74],
-          "chance": 1,
-          "window": {
-            "fromGameTimeOfDay": "dusk"
-          }
-        },
-        {
-          "type": "shambler",
-          "position": [304, 30.5, 134],
-          "chance": 1,
-          "window": {
-            "fromGameTimeOfDay": "dusk"
-          }
-        },
-        {
-          "type": "runner",
-          "position": [474, 21.5, 486],
-          "chance": 1
-        },
-        {
-          "type": "runner",
-          "position": [520, 21.5, 534],
-          "chance": 1
+          "density": 0.90000000000000002,
+          "polygon": [[300, 128], [321, 128], [325, 139], [304, 142]]
         }
       ]
     }

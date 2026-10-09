@@ -1,4 +1,5 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { live } from 'lit-html/directives/live.js';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock, SPAWN_TIME } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -11,6 +12,9 @@ import {
 } from '../core/firearmsSkill.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
+import type { WeatheringDef } from '../core/schema.ts';
+import { WEATHERING_RANGES } from '../core/weather.ts';
+import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type {
   DebugHooks,
@@ -23,7 +27,7 @@ import type {
 import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
-import type { SnapshotMeasurement } from '../game/playtestTools.ts';
+import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { positionLookedAtReadout } from '../ui/hud.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
@@ -262,6 +266,52 @@ const firearmsSkillEffectSlider = (
   `;
 };
 
+type WeatheringNumberField = keyof typeof WEATHERING_RANGES;
+type WeatheringColorField = 'tintColor' | 'streakColor' | 'mossColor';
+
+const WEATHERING_LABELS: Record<WeatheringNumberField, string> = {
+  strength: 'Strength',
+  tintDarkness: 'Tint darkness',
+  streakStrength: 'Streak strength',
+  streakLengthMetres: 'Streak length (m)',
+  mossStrength: 'Moss amount',
+  variationScaleMetres: 'Patch size (m)',
+  variationStrength: 'Patch variation',
+  mossThreshold: 'Moss threshold',
+  mossBias: 'Moss shelter bias',
+  mixCeiling: 'Mix ceiling',
+  weatheringBlend: 'Blend toward grime colours',
+};
+
+const weatheringSlider = (
+  state: WeatheringUrlState,
+  field: WeatheringNumberField,
+  change: (field: WeatheringNumberField, value: number) => void,
+): TemplateResult => {
+  const id = `weathering-${field}`;
+  const value = state.settings[field];
+  const { min, max, step } = WEATHERING_RANGES[field];
+  return html`
+    <label for=${id}>${WEATHERING_LABELS[field]}</label>
+    <input id=${id} type="range" min=${min} max=${max} step=${step} .value=${live(String(value))}
+      @input=${(event: Event) => change(field, Number((event.currentTarget as HTMLInputElement).value))} />
+  `;
+};
+
+const weatheringColorInput = (
+  state: WeatheringUrlState,
+  field: WeatheringColorField,
+  label: string,
+  change: (field: WeatheringColorField, value: string) => void,
+): TemplateResult => {
+  const id = `weathering-${field}`;
+  return html`
+    <label for=${id}>${label}</label>
+    <input id=${id} type="color" .value=${live(state.settings[field])}
+      @input=${(event: Event) => change(field, (event.currentTarget as HTMLInputElement).value)} />
+  `;
+};
+
 const panelTemplate = ({
   open,
   groups,
@@ -273,6 +323,7 @@ const panelTemplate = ({
   setShamblerCount,
   setTimeOfDay,
   snapshotStatus,
+  snapshotCopyStatus,
   revealZombies,
   toggleReveal,
   measureSnapshot,
@@ -297,6 +348,13 @@ const panelTemplate = ({
   changeFirearmsSkillZeroEffect,
   copyFirearmsSkillZeroHandling,
   firearmsSkillCopyStatus,
+  weatheringState,
+  weatheringProfiles,
+  selectWeatheringProfile,
+  changeWeatheringNumber,
+  changeWeatheringColor,
+  copyWeatheringValues,
+  weatheringCopyStatus,
 }: {
   open: boolean;
   groups: readonly GroupView[];
@@ -308,6 +366,7 @@ const panelTemplate = ({
   setShamblerCount: (count: number) => void;
   setTimeOfDay: (hour: number, minute: number) => void;
   snapshotStatus: string;
+  snapshotCopyStatus: string;
   revealZombies: boolean;
   toggleReveal: () => void;
   measureSnapshot: () => void;
@@ -337,9 +396,36 @@ const panelTemplate = ({
   ) => void;
   copyFirearmsSkillZeroHandling: () => void;
   firearmsSkillCopyStatus: string;
+  weatheringState: WeatheringUrlState | undefined;
+  weatheringProfiles: readonly WeatheringDef[];
+  selectWeatheringProfile: (profileId: string) => void;
+  changeWeatheringNumber: (field: WeatheringNumberField, value: number) => void;
+  changeWeatheringColor: (field: WeatheringColorField, value: string) => void;
+  copyWeatheringValues: () => void;
+  weatheringCopyStatus: string;
 }): TemplateResult => {
   // What each group shows besides its action buttons.
-  const extras: Partial<Record<GroupId, TemplateResult>> = {
+  const extras: Partial<Record<GroupId, TemplateResult | typeof nothing>> = {
+    weathering: weatheringState
+      ? html`
+          <label for="weathering-profile">Weathering profile</label>
+          <select id="weathering-profile"
+            @change=${(event: Event) => selectWeatheringProfile((event.currentTarget as HTMLSelectElement).value)}>
+            ${weatheringProfiles.map(({ id }) => html`<option value=${id} ?selected=${id === weatheringState.profileId}>${id}</option>`)}
+          </select>
+          ${Object.keys(WEATHERING_RANGES).map((field) =>
+            weatheringSlider(weatheringState, field as WeatheringNumberField, changeWeatheringNumber),
+          )}
+          ${weatheringColorInput(weatheringState, 'tintColor', 'Grime tint colour', changeWeatheringColor)}
+          ${weatheringColorInput(weatheringState, 'streakColor', 'Streak colour', changeWeatheringColor)}
+          ${weatheringColorInput(weatheringState, 'mossColor', 'Moss colour', changeWeatheringColor)}
+          <div class="debug-actions">
+            <button id="copy-weathering-values" type="button" @click=${copyWeatheringValues}>Copy profile as content JSON</button>
+            <output aria-live="polite">${weatheringCopyStatus}</output>
+            <textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea>
+          </div>
+        `
+      : nothing,
     tools: html`
       <fieldset class="debug-firearms-skill-tuning" ?disabled=${firearmsSkillZeroTarget === undefined}>
         <legend>${firearmsSkillZeroTarget ?? 'Hold a firearm'} · skill-0 handling · runtime only</legend>
@@ -351,6 +437,7 @@ const panelTemplate = ({
         ${firearmsSkillEffectSlider('automaticFollowup', 'recoilRecoveryScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         <button id="copy-firearms-skill-tuning" type="button" @click=${copyFirearmsSkillZeroHandling}>Copy this gun's skill values</button>
         <output aria-live="polite">${firearmsSkillCopyStatus}</output>
+        <textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea>
       </fieldset>
     `,
     shamblers: html`
@@ -406,9 +493,11 @@ const panelTemplate = ({
     <div class="debug-snapshot-result-row">
       <p id="snapshot-measurement-result" class="debug-snapshot-result" aria-live="polite" tabindex="0">${snapshotStatus || 'No snapshot measurement yet.'}</p>
       <button id="copy-snapshot-result" type="button" ?disabled=${snapshotStatus === ''} @click=${copySnapshotResult}>Copy</button>
+      <output aria-live="polite">${snapshotCopyStatus}</output>
+      <textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea>
     </div>
     <label class="debug-axis-toggle"><input type="checkbox" .checked=${axesVisible} @change=${toggleAxes} /> Show axis gizmo</label>
-    <div class="debug-readout"><button id="copy-view-link" type="button" @click=${copyViewLink}>Copy view link</button><span aria-live="polite">${copyStatus}</span></div>
+    <div class="debug-readout"><button id="copy-view-link" type="button" @click=${copyViewLink}>Copy view link</button><span aria-live="polite">${copyStatus}</span><textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea></div>
     <div id="debug-readout" class="debug-readout"></div>
     <p class="debug-last-hit" aria-live="polite" ?hidden=${lastHitText === ''}>${lastHitText}</p>
     ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
@@ -898,21 +987,50 @@ export const formatMeleeResult = (result: MeleeResult): string => {
   return `${result.region} ${result.damage} damage (${result.healthBefore}→${result.healthAfter}) · ${outcome}`;
 };
 
+// Debug previews may use plain HTTP, where browsers withhold the Clipboard API.
+const COPY_BLOCKED_STATUS = 'Copy blocked: the text below is selected; press Ctrl+C';
+
 export const copyTextOrSelect = async (
   text: string,
   clipboard: { writeText: (value: string) => Promise<void> } | undefined,
-  selectFallback: () => void,
+  fallbackHost: HTMLElement,
+  doc: Document = fallbackHost.ownerDocument,
 ): Promise<boolean> => {
-  try {
-    if (!clipboard) {
-      throw new Error('Clipboard API unavailable');
+  if (clipboard) {
+    try {
+      await clipboard.writeText(text);
+      return true;
+    } catch {
+      // Try the legacy command before asking the operator to copy the selected text manually.
     }
-    await clipboard.writeText(text);
-    return true;
-  } catch {
-    selectFallback();
+  }
+
+  const fallback = fallbackHost.querySelector<HTMLTextAreaElement>('.debug-copy-fallback');
+  if (!fallback) {
     return false;
   }
+  fallback.value = text;
+  fallback.readOnly = true;
+  fallback.hidden = false;
+  fallback.classList.add('debug-copy-temporary');
+  let copied = false;
+  try {
+    fallback.focus();
+    fallback.select();
+    copied = doc.execCommand('copy');
+  } catch {
+    // execCommand can be unavailable or refused by the browser.
+  }
+  fallback.classList.remove('debug-copy-temporary');
+  if (copied) {
+    fallback.hidden = true;
+    fallback.blur();
+    return true;
+  }
+
+  fallback.focus();
+  fallback.select();
+  return false;
 };
 
 const DEBUG_START_LIGHT = 'flashlight';
@@ -982,11 +1100,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let targetRangeText = '';
   let crosshairRay: { eye: Vec3; dir: Vec3; active: boolean } | undefined;
   let copyStatus = '';
+  let weatheringCopyStatus = '';
   let firearmsSkillCopyStatus = '';
   let cameraQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
   let axisAnimation: number | undefined;
   let revealZombies = false;
   let snapshotStatus = '';
+  let snapshotCopyStatus = '';
   let aimEnabled = true;
   let lastHitText = '';
   let lastHitUntil = 0;
@@ -1005,6 +1125,21 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     weather: hooks.weather,
     ...(shadows ? { shadows } : {}),
     flashlight: hooks.flashlight,
+    ...(hooks.engine.config.weathering
+      ? {
+          weathering: {
+            state: {
+              profileId: hooks.engine.config.weatheringProfileId,
+              defaultProfileId: hooks.engine.config.weatheringDefaultProfileId,
+              settings: hooks.engine.config.weathering,
+            },
+            profiles: hooks.engine.registry.weathering,
+            ...(hooks.engine.config.weatheringSplit === undefined
+              ? {}
+              : { split: hooks.engine.config.weatheringSplit }),
+          },
+        }
+      : {}),
   });
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
@@ -1040,12 +1175,41 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
-    const next = lookUrl(location.href, lookState());
+    const next = lookUrl(location.href, lookState(), look.weatheringState, hooks.engine.registry.weathering);
     if (next !== location.href) {
       history.replaceState(history.state, '', next);
     }
     syncCamUrl(true);
   }
+  const selectWeatheringProfile = (profileId: string): void => {
+    look.selectWeatheringProfile(profileId);
+    syncLookUrl();
+    shellKey = '';
+    drawShell();
+  };
+  const changeWeatheringNumber = (field: WeatheringNumberField, value: number): void => {
+    look.setWeatheringNumber(field, value);
+    syncLookUrl();
+  };
+  const changeWeatheringColor = (field: WeatheringColorField, value: string): void => {
+    look.setWeatheringColor(field, value);
+    syncLookUrl();
+  };
+  const copyWeatheringValues = async (): Promise<void> => {
+    const state = look.weatheringState;
+    if (!state) {
+      return;
+    }
+    const content = JSON.stringify({ weathering: [state.settings] }, null, 2);
+    const fallbackHost = host.querySelector<HTMLElement>('#copy-weathering-values')?.parentElement;
+    if (!fallbackHost) {
+      return;
+    }
+    const copied = await copyTextOrSelect(content, globalThis.navigator.clipboard, fallbackHost);
+    weatheringCopyStatus = copied ? 'Profile JSON copied' : COPY_BLOCKED_STATUS;
+    shellKey = '';
+    drawShell();
+  };
   const metresPerBlock = hooks.engine.config.scale.blockSize;
   /** Reused each call: the pose is read a few times a second, so no per-call allocation worth noticing. */
   const camNow: CamPose = { position: [0, 0, 0], yaw: 0, pitch: 0, roll: 0 };
@@ -1252,15 +1416,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     shellKey = '';
     drawShell();
     try {
-      const bytes = await hooks.inputReplay.export();
+      const file = replayFile(await hooks.inputReplay.export(), new Date());
       if (replayDownload) {
         URL.revokeObjectURL(replayDownload.url);
       }
-      replayDownload = {
-        url: URL.createObjectURL(new Blob([bytes.slice().buffer], { type: 'application/json' })),
-        name: `deadvox-replay-${new Date().toISOString().replaceAll(':', '-')}.json`,
-      };
-      replayStatus = `Replay ready to download · ${bytes.byteLength} bytes`;
+      replayDownload = { url: URL.createObjectURL(file.blob), name: file.name };
+      replayStatus = `Replay ready to download · ${file.blob.size} bytes`;
       shellKey = '';
       drawShell();
     } catch (error) {
@@ -1328,6 +1489,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           setShamblerCount: changeShamblerCount,
           setTimeOfDay: hooks.setTimeOfDay,
           snapshotStatus,
+          snapshotCopyStatus,
           revealZombies,
           toggleReveal: () => {
             revealZombies = !revealZombies;
@@ -1345,13 +1507,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             if (!resultLine || snapshotStatus === '') {
               return;
             }
-            const text = snapshotStatus;
-            await copyTextOrSelect(text, globalThis.navigator.clipboard, () => {
-              resultLine.focus();
-              const selection = globalThis.getSelection();
-              selection?.removeAllRanges();
-              selection?.selectAllChildren(resultLine);
-            });
+            const fallbackHost = resultLine.parentElement;
+            if (fallbackHost) {
+              const copied = await copyTextOrSelect(snapshotStatus, globalThis.navigator.clipboard, fallbackHost);
+              snapshotCopyStatus = copied ? 'Snapshot copied' : COPY_BLOCKED_STATUS;
+              shellKey = '';
+              drawShell();
+            }
           },
           exportMetrics: hooks.exportMetrics,
           toggleOpen: togglePanel,
@@ -1385,16 +1547,23 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           },
           copyFirearmsSkillZeroHandling: async () => {
             const values = JSON.stringify(hooks.firearmsSkillZeroHandling(), null, 2);
-            try {
-              await navigator.clipboard.writeText(values);
-              firearmsSkillCopyStatus = 'Values copied';
-            } catch {
-              firearmsSkillCopyStatus = values;
+            const fallbackHost = host.querySelector<HTMLElement>('#copy-firearms-skill-tuning')?.parentElement;
+            if (!fallbackHost) {
+              return;
             }
+            const copied = await copyTextOrSelect(values, globalThis.navigator.clipboard, fallbackHost);
+            firearmsSkillCopyStatus = copied ? 'Values copied' : COPY_BLOCKED_STATUS;
             shellKey = '';
             drawShell();
           },
           firearmsSkillCopyStatus,
+          weatheringState: look.weatheringState,
+          weatheringProfiles: look.weatheringProfileOptions,
+          selectWeatheringProfile,
+          changeWeatheringNumber,
+          changeWeatheringColor,
+          copyWeatheringValues,
+          weatheringCopyStatus,
         }),
         host,
       );
@@ -1429,12 +1598,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   }
   async function copyViewLink(): Promise<void> {
     syncCamUrl(true);
-    try {
-      await navigator.clipboard.writeText(location.href);
-      copyStatus = 'View link copied';
-    } catch {
-      copyStatus = 'Clipboard unavailable';
+    const fallbackHost = host.querySelector<HTMLElement>('#copy-view-link')?.parentElement;
+    if (!fallbackHost) {
+      return;
     }
+    const copied = await copyTextOrSelect(location.href, globalThis.navigator.clipboard, fallbackHost);
+    copyStatus = copied ? 'View link copied' : COPY_BLOCKED_STATUS;
     shellKey = '';
     drawShell();
   }

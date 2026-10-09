@@ -42,13 +42,9 @@ const contentFiles = filesUnder(contentDirectory, 'base/').sort((left, right) =>
 const baseContentHash = createHash('sha256')
   .update(
     canonicalJson(
-      contentFiles.map(({ name, path }) => {
-        const bytes = readFileSync(path);
-        const content = name.endsWith('.json')
-          ? { format: 'json', value: JSON.parse(bytes.toString('utf8')) as unknown }
-          : { format: 'bytes-sha256', value: createHash('sha256').update(bytes).digest('hex') };
-        return [name, content];
-      }),
+      contentFiles
+        .filter(({ name }) => name.endsWith('.json'))
+        .map(({ name, path }) => [name, JSON.parse(readFileSync(path, 'utf8')) as unknown]),
     ),
   )
   .digest('hex');

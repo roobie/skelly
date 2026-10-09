@@ -7,16 +7,17 @@ read_if:
 
 # Cartridge data
 
-One JSON file per cartridge, named `<id>.json`, where `id` is the slug other cartridges
-use to refer to it (`7.62x39`). Metallic cartridges and shotshells have real-size solids,
-viewer presentation and the common cartridge exporter (roobie/skelly#109).
+There is one cartridge JSON file per cartridge, named `<id>.json`, where `id` is the
+slug other cartridges use to refer to it (`7.62x39`). Files may be hand-written or
+compiled from a `.jsonnet` source beside them (`<id>.jsonnet`). The cartridge parser and
+exporter consume JSON; see `../../docs/jsonnet.md` for the repository-wide authoring rule
+and compiler contract. Metallic cartridges and shotshells have real-size solids, viewer
+presentation and the common cartridge exporter (roobie/skelly#109).
 Shotshell reproduction and explicit visual proxies: `../docs/shotshell-export.md`.
 The pump-action clearance model also consumes the sourced loaded length. The scope exception that allows real dimensions here is in
 `PROJECT.md` ("Non-goals").
 
-The files sit at the package root next to `designs/` and `fixtures/` because they are
-data, not code: tests, CLIs and later the viewer read them by path. The types, parser and
-rules are in `src/ammo/`, which, like core, imports nothing from `gun/` or `viewer/`.
+Cartridge JSON sits at the package root next to `designs/` and `fixtures/` because tests, CLIs and the viewer read it by path. New Jsonnet sources use the repository-root compiler and emit JSON beside their sources. Types, parsing and rules remain in `src/ammo/`, which, like core, imports nothing from `gun/` or `viewer/`.
 
 ## Units
 

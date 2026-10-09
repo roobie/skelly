@@ -9,7 +9,13 @@ import {
 } from '../core/rules.ts';
 import type { Assembly, Domain, PartDef } from '../core/schema.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
-import { ATTACHMENT_IDS, type AttachmentSlotMetadata, attachmentMetadata, attachmentMountSlot } from './attachments.ts';
+import {
+  ATTACHMENT_IDS,
+  type AttachmentSlotMetadata,
+  attachmentInstanceForId,
+  attachmentMetadata,
+  attachmentMountSlot,
+} from './attachments.ts';
 import { gunDomain } from './domain.ts';
 import { mountCanAccept } from './mounts.ts';
 import { getOptic } from './optics.ts';
@@ -23,20 +29,8 @@ interface Candidate {
   readonly definition: PartDef;
 }
 
-const attachmentInstance = (
-  id: string,
-): { readonly family: string; readonly params: Readonly<Record<string, string>> } => {
-  if (id.startsWith('optic-')) {
-    return { family: 'sight', params: { type: id.slice('optic-'.length) } };
-  }
-  if (id === 'real-suppressor' || id === 'improvised-suppressor') {
-    return { family: 'suppressor', params: { type: id } };
-  }
-  return { family: id, params: {} };
-};
-
 const standaloneCandidate = (id: string): Candidate => {
-  const { family, params } = attachmentInstance(id);
+  const { family, params } = attachmentInstanceForId(id);
   const familyDef = FAMILIES[family] ?? ATTACHMENT_FAMILIES[family];
   if (!familyDef) {
     throw new Error(`No part family for attachment ${id}`);
