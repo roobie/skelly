@@ -228,7 +228,6 @@ if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheri
   vec3 multiplicativeWeathering = diffuseColor.rgb * mix(vec3(1.0), tint, weatheringMix);
   vec3 blendedWeathering = mix(diffuseColor.rgb, tint, weatheringMix);
   diffuseColor.rgb = mix(multiplicativeWeathering, blendedWeathering, uWeatheringBlend);
-}
 }`,
       );
   };

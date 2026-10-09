@@ -611,6 +611,14 @@ export const measureWeatheringMaterials = async (page) => {
       throw new Error(`comparison pad material ${id} has no weatherable pixels`);
     }
   }
+  const unrenderedMaterials = Object.entries(result.materialReadability.proper)
+    .filter(([, material]) => material.cleanTextureContrast === 0)
+    .map(([id]) => id);
+  if (unrenderedMaterials.length > 0) {
+    throw new Error(
+      `comparison pad is in the geometric mask but its clean surfaces are not rendered: ${unrenderedMaterials.join(', ')}`,
+    );
+  }
   const artifactsDir = path.resolve(process.cwd(), 'test-results', 'weathering');
   await mkdir(artifactsDir, { recursive: true });
   const { images, ...metrics } = result;
