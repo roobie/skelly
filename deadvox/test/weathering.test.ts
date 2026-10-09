@@ -57,8 +57,13 @@ describe('mesher weathering attributes', () => {
     const mesh = buildMesh(padded, blockColors(registry), { weatherable: blockWeatherability(registry) });
 
     expect(mesh.weatherable).toHaveLength(mesh.positions.length / 3);
-    expect(mesh.weatherable).toContain(0);
-    expect(mesh.weatherable).toContain(1);
+    const splitX = (11 + 13) / 2;
+    const builtVertices = mesh.weatherable.filter((_, vertex) => mesh.positions[vertex * 3]! < splitX);
+    const naturalVertices = mesh.weatherable.filter((_, vertex) => mesh.positions[vertex * 3]! >= splitX);
+    expect(builtVertices.length).toBeGreaterThan(0);
+    expect(naturalVertices.length).toBeGreaterThan(0);
+    expect(builtVertices.every((weatherable) => weatherable === 1)).toBe(true);
+    expect(naturalVertices.every((weatherable) => weatherable === 0)).toBe(true);
   });
 
   it('emits finite weathering data for every mesh vertex', () => {

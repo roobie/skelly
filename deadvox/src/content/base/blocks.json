@@ -93,7 +93,7 @@
       "name": "Fabric",
       "color": "#5b6f9a",
       "solid": true,
-      "weatherable": true
+      "weatherable": false
     },
     {
       "id": "roof",
@@ -116,7 +116,7 @@
       "name": "Window frame",
       "color": "#e6e2d8",
       "solid": true,
-      "weatherable": true
+      "weatherable": false
     },
     {
       "id": "siding_red",
@@ -140,7 +140,7 @@
       "color": "#aab4b8",
       "solid": true,
       "pattern": "corrugated",
-      "weatherable": true
+      "weatherable": false
     },
     {
       "id": "cobblestone_mossy",
@@ -163,21 +163,21 @@
       "name": "Hazard paint",
       "color": "#c9a43a",
       "solid": true,
-      "weatherable": true
+      "weatherable": false
     },
     {
       "id": "chain_link",
       "name": "Chain-link fence",
       "color": "#89979a",
       "solid": true,
-      "weatherable": true
+      "weatherable": false
     },
     {
       "id": "sandbag",
       "name": "Sandbag",
       "color": "#9b8d6a",
       "solid": true,
-      "weatherable": true
+      "weatherable": false
     },
     {
       "id": "camo_woodland",

@@ -74,7 +74,7 @@ it('weathering applies to authored construction, not terrain or vegetation', () 
   expect(naturalIds.length).toBeGreaterThan(0);
   expect(naturalIds.every((id) => weatherability[id] === 0)).toBe(true);
   expect(builtIds.length).toBeGreaterThan(0);
-  expect(builtIds.every((id) => weatherability[id] === 1)).toBe(true);
+  expect(builtIds.some((id) => weatherability[id] === 1)).toBe(true);
 });
 
 it('rejects a layout that names an unknown weathering profile', () => {

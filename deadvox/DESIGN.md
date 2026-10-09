@@ -1272,7 +1272,7 @@ something in play, not only decorate it.
   weeks since people left. Food rotting changes what's still worth scavenging.
   There is no plant-growth or dust-accumulation simulation.
 
-Building weathering gives each site a render-only mood without changing simulation or shared geometry: fairly kept points of interest benefit from restrained change, while long-abandoned places need a general overgrown and dilapidated look. It marks the age of built materials, not nature's terrain or vegetation; `src/core/schema.ts`, `BlockSchema.weatherable`, lets authored content keep that distinction. The overgrown look reads as moss and grime; the restrained default keeps each material's base hue.
+Building weathering gives each site a render-only mood without changing simulation or shared geometry: fairly kept points of interest benefit from restrained change, while long-abandoned places need a general overgrown and dilapidated look. It marks built materials, not nature's terrain or vegetation; `src/core/schema.ts`, `BlockSchema.weatherable`, lets content keep that distinction, and an absent flag means no weathering. Fabric, window frames, chain link and sandbags stay clean because moss and lichen belong on stone, concrete and wood; hazard paint keeps its warning colour, and galvanized sheet keeps its corrugated ribs legible. The overgrown tint may shift the base hue, but the surface pattern must still read; the restrained default keeps each material's base hue.
 
 **Rendering and performance.** There will be a lot of trees (BR), so foliage gets
 a performance plan from the start rather than as a fix later:
