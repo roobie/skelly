@@ -90,8 +90,7 @@ it('bounds daytime opacity queries to one column scan per source in a compressed
     ({ item }) => item.on && registry.items.get(item.type)?.light !== undefined,
   ).length;
   expect(activeLightCount).toBeGreaterThan(0);
-  // Two extra calls allow for the source and sky boundary samples.
-  callBudget = (1 + activeLightCount) * ((scale.maxCy - scale.minCy + 1) * CHUNK + 2);
+  callBudget = (1 + activeLightCount) * (scale.maxCy - scale.minCy + 1) * CHUNK;
 
   runtime.sim.paused = false;
   runtime.session.frame(planRealFrame(runtime.sim.compression, realSeconds(1 / 60)));
