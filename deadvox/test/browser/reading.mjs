@@ -36,7 +36,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value)=>{proofReadCalls++;proofOpen(value);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
+          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
         );
       },
     },
@@ -179,10 +179,10 @@ try {
     );
     assert.ok(handlingOption >= 0);
     const handlingCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(handlingOption);
-    if (!(await handlingCheckbox.isChecked())) {
+    if (await handlingCheckbox.isChecked()) {
       await uiClick(handlingCheckbox);
     }
-    assert.equal(await handlingCheckbox.isChecked(), true);
+    assert.equal(await handlingCheckbox.isChecked(), false);
     await pressAction(page, 'ui.main-menu-toggle');
     const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
     await pressAction(page, 'player.crouch-toggle');
@@ -640,34 +640,94 @@ try {
     await previousFocus.dispose();
     const readingBook = await page.evaluate(() => {
       const { session } = globalThis.readingWitness;
-      const bookDefinition = [...session.inventory.registry.items.entries()].find(([, definition]) => definition.book);
+      const bookDefinition = [...session.inventory.registry.items.entries()].find(
+        ([, definition]) => definition.book && definition.readable,
+      );
       if (!bookDefinition) {
-        throw new Error('No book definition is available for the reading HUD fixture');
+        throw new Error('No readable book definition is available for the reading fixture');
       }
       const book = session.inventory.create(bookDefinition[0]);
       if (!session.inventory.add(book, { kind: 'hand', side: 'left' })) {
         throw new Error('Could not place the reading fixture in a free hand');
       }
-      const refusal = session.sim.actions.beginReading(book.uid);
-      if (refusal) {
-        throw new Error(`Could not start the reading fixture: ${refusal}`);
-      }
       return { uid: book.uid, name: session.inventory.name(book) };
     });
-    await page.waitForFunction(
-      (name) =>
-        !document.querySelector('#handling').hidden &&
-        document.querySelector('#handling').textContent.includes(`Reading ${name}`),
-      readingBook.name,
-    );
-    assert.match(await page.locator('#handling').innerText(), /X cancels/);
-    assert.equal(
-      await page.evaluate((uid) => globalThis.readingWitness.session.sim.actions.job?.bookUid === uid, readingBook.uid),
-      true,
-    );
-    await pressAction(page, 'handling.stop');
-    await page.waitForFunction(() => globalThis.readingWitness.session.sim.actions.job?.stopped === true);
+    await pressAction(page, 'ui.inventory-toggle');
+    const bookRow = page.locator(`.inv-item[data-uid="${readingBook.uid}"]`);
+    await bookRow.waitFor({ state: 'visible' });
+    await uiClick(bookRow);
+    await pressAction(page, 'quickbar.assign.2');
+    await page.waitForFunction((uid) => globalThis.readingWitness.session.quickbar.slots[1] === uid, readingBook.uid);
+    await pressAction(page, 'ui.inventory-toggle');
+    await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    const advanceReading = async () => {
+      const beforeTime = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      await waitForSimulation(
+        page,
+        (until) => {
+          const { session } = globalThis.readingWitness;
+          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
+        },
+        beforeTime + 0.2,
+        { seconds: 3, from: beforeTime, label: 'book reading progress', record },
+      );
+    };
+    const readProgress = () =>
+      page.evaluate(() => {
+        const progress = document.querySelector('.reading-progress');
+        const job = globalThis.readingWitness.session.sim.actions.job;
+        return {
+          value: progress?.value,
+          max: progress?.max,
+          elapsed: job?.jobType === 'reading' ? job.elapsed : undefined,
+          duration: job?.jobType === 'reading' ? job.duration : undefined,
+          stopped: job?.stopped,
+        };
+      });
+    await page.locator('.reading-progress').waitFor({ state: 'visible' });
+    const whenOpened = await readProgress();
+    await advanceReading();
+    const beforeClose = await readProgress();
+    assert.ok(whenOpened.value !== undefined && beforeClose.value !== undefined);
+    assert.ok(beforeClose.value > whenOpened.value);
+    assert.ok(beforeClose.max !== undefined && beforeClose.max > beforeClose.value);
+    assert.ok(beforeClose.elapsed !== undefined && beforeClose.elapsed > 0);
+    assert.equal(beforeClose.value, beforeClose.elapsed);
+    assert.equal(beforeClose.max, beforeClose.duration);
+    await pressAction(page, 'reading.close');
+    assert.equal(await page.locator('#reading').isVisible(), false);
+    const stoppedOnClose = await readProgress();
+    assert.equal(stoppedOnClose.stopped, true);
+    assert.equal(stoppedOnClose.elapsed, beforeClose.elapsed);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
+    await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    const resumed = await readProgress();
+    assert.equal(resumed.elapsed, stoppedOnClose.elapsed);
+    assert.equal(resumed.value, beforeClose.value);
+    const beforeMove = await page.evaluate(() => ({
+      position: [...globalThis.readingWitness.body.pos],
+      time: globalThis.readingWitness.session.sim.time,
+    }));
+    await holdAction('movement.forward', async () => {
+      await page.waitForFunction(() => document.querySelector('#reading').hidden);
+      await waitForSimulation(
+        page,
+        (until) => {
+          const { session } = globalThis.readingWitness;
+          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
+        },
+        beforeMove.time + 0.2,
+        { seconds: 3, from: beforeMove.time, label: 'walking away from reading', record },
+      );
+    });
+    const afterMove = await page.evaluate(() => ({
+      position: [...globalThis.readingWitness.body.pos],
+      stopped: globalThis.readingWitness.session.sim.actions.job?.stopped,
+      compression: globalThis.readingWitness.session.sim.compression.active,
+    }));
+    assert.ok(Math.hypot(afterMove.position[0] - beforeMove.position[0], afterMove.position[2] - beforeMove.position[2]) > 0.01);
+    assert.equal(afterMove.stopped, true);
+    assert.equal(afterMove.compression, false);
     await page.evaluate(() => {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;

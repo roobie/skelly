@@ -46,8 +46,10 @@ export interface SurvivalHooks {
   feet: () => Target;
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
-  /** Presents validated authored text; no time, consumption or save-state mutation. */
-  read: (readable: Readonly<Readable>) => void;
+  /** Presents validated authored text and, for books, its action owner. */
+  read: (readable: Readonly<Readable>, bookUid?: number) => void;
+  /** Whether the book has already taught every recipe it owns. */
+  bookRead?: (bookUid: number) => boolean;
 }
 
 export class Survival {
@@ -217,14 +219,15 @@ export class Survival {
       case 'switch':
         return this.switchLight(item);
       case 'read': {
-        if (definition.book) {
+        const bookRead = definition.book && this.hooks.bookRead?.(item.uid) === true;
+        if (definition.book && !bookRead) {
           const reason = this.sim.actions.beginReading(item.uid);
           if (reason) {
             return reason;
           }
         }
         if (option.readable) {
-          this.hooks.read(option.readable);
+          this.hooks.read(option.readable, definition.book ? item.uid : undefined);
         }
         return undefined;
       }

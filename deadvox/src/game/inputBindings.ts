@@ -34,6 +34,7 @@ export interface Binding {
 }
 const world: readonly InputContext[] = ['play', 'noclip'];
 const moving: readonly InputContext[] = [...world, 'build'];
+const movingWhileReading: readonly InputContext[] = [...moving, 'reading'];
 const entered: readonly InputContext[] = [
   'menu',
   'inventory',
@@ -84,10 +85,10 @@ export const INPUT_BINDINGS: readonly Binding[] = [
     device: 'pointer',
   }),
   row('aim.ads-toggle', 'Toggle sights while firearm is ready', world, ['Mouse1'], 'press', { device: 'pointer' }),
-  row('movement.forward', 'Move forward', moving, ['KeyW'], 'held-state'),
-  row('movement.back', 'Move backward', moving, ['KeyS'], 'held-state'),
-  row('movement.left', 'Move left', moving, ['KeyA'], 'held-state'),
-  row('movement.right', 'Move right', moving, ['KeyD'], 'held-state'),
+  row('movement.forward', 'Move forward', movingWhileReading, ['KeyW'], 'held-state'),
+  row('movement.back', 'Move backward', movingWhileReading, ['KeyS'], 'held-state'),
+  row('movement.left', 'Move left', movingWhileReading, ['KeyA'], 'held-state'),
+  row('movement.right', 'Move right', movingWhileReading, ['KeyD'], 'held-state'),
   row('movement.sprint', 'Sprint', moving, ['ShiftLeft', 'ShiftRight'], 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving, ['KeyZ']),
   row('player.crouch-toggle', 'Toggle crouch', ['play', 'build'], ['KeyC']),
