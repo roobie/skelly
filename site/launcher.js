@@ -1,13 +1,10 @@
 // biome-ignore lint/correctness/noUnresolvedImports: the browser loads this ESM module from jsDelivr.
 import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
+import { loadPlaytestText } from './playtestCatalog.js';
 import { applyPlaytestLanguage } from './playtestLanguage.js';
 
-const playtestLanguage = applyPlaytestLanguage(document.documentElement, navigator.languages, location.search);
-const playtestResponse = await fetch(new URL('./playtest.json', import.meta.url));
-if (!playtestResponse.ok) {
-  throw new Error(`Could not load playtest strings: ${playtestResponse.status}`);
-}
-const playtestText = (await playtestResponse.json())[playtestLanguage];
+const playtestLanguage = applyPlaytestLanguage(navigator.languages, location.search);
+const playtestText = await loadPlaytestText(fetch, new URL('./playtest.json', import.meta.url), playtestLanguage);
 
 // The static launcher cannot import deadvox/src/core/weather.ts; keep its control range in sync with WEATHERING_STRENGTH_MAX.
 const WEATHERING_STRENGTH_MAX = 8;
@@ -15,9 +12,9 @@ const WEATHERING_STRENGTH_MAX = 8;
 // force scroll to the top on load, because of big 1000px space in the middle (can get confusing otherwise)
 window.scrollTo(0, 0);
 
-// The tester brief's wording lives only here; the organiser's sheet points at it, so a change reaches every tester.
-const playtestBrief = html`
-      <section class="card" aria-labelledby="playtest-title">
+const playtestBrief = playtestText
+  ? html`
+      <section class="card" lang=${playtestLanguage} aria-labelledby="playtest-title">
         <h1 id="playtest-title">${playtestText.title}</h1>
         <p>${playtestText.task}</p>
         <ul>
@@ -29,7 +26,8 @@ const playtestBrief = html`
           <li>${playtestText.email}</li>
         </ul>
         <p><a id="deadvox-playtest" href="deadvox/?site=playtest">${playtestText.playLink}</a></p>
-      </section>`;
+      </section>`
+  : undefined;
 
 const page = (state) => html`  <main>
       <header class="brand">

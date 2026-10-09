@@ -10,8 +10,4 @@ const choosePlaytestLanguage = (languages, search) => {
   return swedishIndex >= 0 && (englishIndex < 0 || swedishIndex < englishIndex) ? 'sv' : 'en';
 };
 
-export const applyPlaytestLanguage = (documentElement, languages, search) => {
-  const language = choosePlaytestLanguage(languages, search);
-  documentElement.lang = language;
-  return language;
-};
+export const applyPlaytestLanguage = (languages, search) => choosePlaytestLanguage(languages, search);

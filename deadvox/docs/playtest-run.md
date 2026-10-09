@@ -35,9 +35,10 @@ link, not in project files.
 
 ## Consent
 
-The tester brief at the top of the landing page is the testers' consent. They
-read it before following the Playtest link; there is no separate consent step.
-The brief's wording lives only in `site/launcher.js`, `playtestBrief`.
+The localized Playtest card is the testers' consent; there is no separate
+consent step. Its wording is authored in both languages in
+`site/playtest.jsonnet`, and `site/launcher.js`, `playtestBrief`, lays it out.
+Testers read the card before following the Playtest link.
 
 ## Saving and sending metrics
 
