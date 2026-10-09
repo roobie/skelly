@@ -768,6 +768,8 @@ try {
   );
   const toggles = await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)");
   assert.deepEqual(toggles, initialHudToggles, 'HUD settings retain their initial state through gameplay');
+  // The three-column Items view uses the full body height; keep a short-screen scroll target.
+  await page.setViewportSize({ width: 1280, height: 480 });
   await press('Tab', 'Tab', 9);
   assert.equal(
     await evaluate("document.querySelector('#inventory .inv-needs') !== null"),
@@ -850,6 +852,7 @@ try {
   assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives handling completion');
 
   await dragInventoryDivider(0.5);
+  await page.setViewportSize({ width: 1280, height: 900 });
   const transfer = await evaluate(`(() => {
     const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans');
     const legs = [...document.querySelectorAll('#inventory .inv-worn')].find((node) => node.querySelector('.inv-slot-label')?.textContent === 'Legs');
