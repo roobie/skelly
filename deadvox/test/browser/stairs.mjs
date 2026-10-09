@@ -53,7 +53,7 @@ const vite = await createServer({
           camo.patternWashout = 1;
           return JSON.stringify(content);
         }
-        if ((mode === 'lighting' || mode === 'camo') && id.endsWith('/src/core/authoredSite.ts')) {
+        if (mode !== 'traversal' && id.endsWith('/src/core/authoredSite.ts')) {
           const anchor = '    const s = scale.blockSize;';
           assert.equal(code.split(anchor).length, 2);
           const fixtureName = mode === 'lighting' ? 'raisedCabin' : 'camoWitness';
@@ -103,7 +103,11 @@ let browser;
 try {
   await vite.listen();
   const { port } = vite.httpServer.address();
-  const stageName = mode === 'traversal' ? 'stairs-traversal' : mode === 'camo' ? 'stairs-camo' : 'stairs-lighting';
+  const stageName = {
+    traversal: 'stairs-traversal',
+    camo: 'stairs-camo',
+    lighting: 'stairs-lighting',
+  }[mode];
   browser = await launchChromium(stageName, {
     headless: process.env.BROWSER_HEADED !== '1',
   });
