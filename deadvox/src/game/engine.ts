@@ -14,9 +14,9 @@ import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
+import { BUNDLED_CONTENT } from './bundledContent.ts';
 import type { GameConfig } from './config.ts';
 import type { StreamerStats } from './streamer.ts';
-import { BUNDLED_CONTENT } from './bundledContent.ts';
 import { createWorldSetup, type WorldSetup } from './worldSetup.ts';
 
 export interface Engine extends WorldSetup {
