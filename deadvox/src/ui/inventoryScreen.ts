@@ -420,8 +420,8 @@ const inventoryTemplate = (
     class="inv-body"
     data-tab-panel="items"
     style=${[
-      `--inv-you-fr: ${splitRatio}fr`,
-      `--inv-around-fr: ${1 - splitRatio}fr`,
+      `--inv-you-fr: ${splitFactors(splitRatio).you}`,
+      `--inv-around-fr: ${splitFactors(splitRatio).around}`,
       vm.containerMaxWidthCells === undefined
         ? ''
         : `--inv-around-container-width-cap: ${vm.containerMaxWidthCells * CELL}px`,
@@ -594,6 +594,16 @@ const splitBounds = (body: HTMLElement): SplitBounds | undefined => {
 };
 
 const clampSplit = (ratio: number, bounds: SplitBounds): number => Math.max(bounds.min, Math.min(bounds.max, ratio));
+
+/**
+ * The side tracks' fr factors for a split, scaled so the smaller is 1. When one side sits at its floor, CSS Grid
+ * gives the other track only its factor times the rest (a factor sum below 1 counts as 1), so a factor below 1
+ * would leave an empty band and pull the split away from where the player put it.
+ */
+const splitFactors = (ratio: number): { readonly you: string; readonly around: string } => {
+  const smaller = Math.max(Math.min(ratio, 1 - ratio), 0.01);
+  return { you: `${ratio / smaller}fr`, around: `${(1 - ratio) / smaller}fr` };
+};
 
 /**
  * The width a stable scroll gutter takes here (0 for overlay scrollbars), which no CSS value reports, so the
@@ -970,8 +980,9 @@ export class InventoryScreen {
 
   private applySplit(body: HTMLElement, bounds: SplitBounds): void {
     const applied = clampSplit(this.splitRatio, bounds);
-    body.style.setProperty('--inv-you-fr', `${applied}fr`);
-    body.style.setProperty('--inv-around-fr', `${1 - applied}fr`);
+    const factors = splitFactors(applied);
+    body.style.setProperty('--inv-you-fr', factors.you);
+    body.style.setProperty('--inv-around-fr', factors.around);
     const splitter = body.querySelector<HTMLElement>('[data-inventory-splitter]');
     splitter?.setAttribute('aria-valuemin', String(Math.round(bounds.min * 100)));
     splitter?.setAttribute('aria-valuemax', String(Math.round(bounds.max * 100)));

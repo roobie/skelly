@@ -582,8 +582,8 @@ body.unconscious::after {
     var(--inv-pane-border-width)
   );
   grid-template-columns:
-    minmax(var(--inv-you-min), var(--inv-you-fr, 0.5fr)) 12px minmax(0, var(--inv-details-width))
-    minmax(var(--inv-around-min), var(--inv-around-fr, 0.5fr));
+    minmax(var(--inv-you-min), var(--inv-you-fr, 1fr)) 12px minmax(0, var(--inv-details-width))
+    minmax(var(--inv-around-min), var(--inv-around-fr, 1fr));
   grid-template-rows: minmax(0, 1fr);
   column-gap: 0;
 }

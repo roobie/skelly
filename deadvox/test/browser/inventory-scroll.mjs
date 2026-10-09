@@ -365,6 +365,9 @@ try {
         youMin: Number.parseFloat(getComputedStyle(you).minWidth),
         aroundMin: Number.parseFloat(getComputedStyle(around).minWidth),
         aroundWidth: around.getBoundingClientRect().width,
+        youWidth: you.getBoundingClientRect().width,
+        aroundRight: around.getBoundingClientRect().right,
+        bodyRight: body.getBoundingClientRect().left + body.clientLeft + body.clientWidth,
         gutter: Number.parseFloat(
           getComputedStyle(document.querySelector('#inventory')).getPropertyValue('--inv-scrollbar-width'),
         ),
@@ -518,6 +521,22 @@ try {
     Math.abs(restoredSplit.ratio - splitAtRightClamp.ratio) <= 1,
     `widening the window restores the chosen split: ${JSON.stringify({ splitAtRightClamp, restoredSplit })}`,
   );
+  // A clamp can land a sub-pixel past a floor, depending on how the details width rounds. Five consecutive widths
+  // cover every rounding residue of a 20% details column; past either clamp, the split must hold and fill the body.
+  for (let width = 1280; width < 1285; width++) {
+    await page.setViewportSize({ width, height: 400 });
+    for (const pastClamp of [-0.2, 1.2]) {
+      await dragSplitter(pastClamp);
+      await nextFrames();
+      const held = await splitState();
+      assert.ok(
+        Math.abs((100 * held.youWidth) / held.availableWidth - held.ratio) <= 1 &&
+          held.aroundRight >= held.bodyRight - 1,
+        `a drag past the clamp holds there and the columns fill the body: ${JSON.stringify({ width, pastClamp, held })}`,
+      );
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 400 });
   await dragSplitter(0.5);
   const middleSplit = await splitState();
   assert.ok(Math.abs(middleSplit.ratio - 50) <= 1, `divider returns to half: ${JSON.stringify(middleSplit)}`);
