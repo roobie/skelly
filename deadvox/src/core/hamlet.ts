@@ -67,6 +67,14 @@ export const HAMLET_TEMPLATES: readonly string[] = [...NORTH_SIDE, ...SOUTH_SIDE
 const HAMLET_WANDERER = 'shambler';
 const ZOMBIE_COUNT = [6, 10] as const;
 
+/** Keeps authored-only kinds out of ordinary spawns and their static reachability sources. */
+export const ordinaryHamletSpawnWeights = (registry: Pick<Registry, 'zombies'>): Map<string, number> =>
+  new Map(
+    [...registry.zombies]
+      .filter(([, zombie]) => !zombie.authoredOnly)
+      .map(([type, zombie]) => [type, zombie.spawnWeight]),
+  );
+
 /** Possible types before seed rolls: north rows may shuffle; south rows keep their order.
  * Certain earlier markers can consume all spawn slots; wanderers only fill remaining slots. */
 export const possibleHamletZombies = (
@@ -329,11 +337,7 @@ export class Hamlet implements Site {
     this.zombieSpawns.push(
       ...hamletZombieSpawns(this.seed, this.road, markers, {
         roadHeightAt: (worldX) => this.roadHeightAt(worldX),
-        spawnWeights: new Map(
-          [...this.registry.zombies]
-            .filter(([, zombie]) => !zombie.debugOnly)
-            .map(([type, zombie]) => [type, zombie.spawnWeight]),
-        ),
+        spawnWeights: ordinaryHamletSpawnWeights(this.registry),
       }),
     );
     const rng = Rng.stream(this.seed, 'hamlet-first-horde');

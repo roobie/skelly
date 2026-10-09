@@ -1512,6 +1512,28 @@ describe('shambler scenarios', () => {
     }
   });
 
+  it('reports wounds one way: a wound listener leaves the simulation as it is without one', () => {
+    const wounds: number[] = [];
+    const listened = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      seed: 91,
+      onWound: (_id, _zombie, _hit, damage) => wounds.push(damage),
+    });
+    const silent = new ZombieSystem({ ...senses(() => player([100, 2, 0])), seed: 91 });
+    const listenedId = listened.add(SHAMBLER, [1, 1, 0], [0, 0, -1]);
+    const silentId = silent.add(SHAMBLER, [1, 1, 0], [0, 0, -1]);
+    for (const region of ZOMBIE_REGION_NAMES) {
+      const ray = regionRay(listened.store.get(listenedId)!, region);
+      const silentRay = regionRay(silent.store.get(silentId)!, region);
+      expect(listened.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(listenedId);
+      expect(silent.swing(silentRay.origin, silentRay.direction, FISTS_MELEE)).toBe(silentId);
+    }
+    // One report per damaging hit, each with damage done.
+    expect(wounds).toHaveLength(ZOMBIE_REGION_NAMES.length);
+    expect(wounds.every((damage) => damage > 0)).toBe(true);
+    expect(listened.snapshotState()).toEqual(silent.snapshotState());
+  });
+
   it('severs every non-head region without killing; destroying the head alone kills', () => {
     for (const region of ZOMBIE_REGION_NAMES) {
       const severed: ZombieRegion[] = [];
@@ -2937,29 +2959,22 @@ describe('idle and stroll shambling', () => {
   it('uses seeded idle and straight stroll intervals during a sustained sample', () => {
     const sense = senses(() => player([1000, 1, 1000]));
     const system = new ZombieSystem({ ...sense, seed: 73 });
-    const replay = new ZombieSystem({ ...sense, seed: 73 });
     const withExtraBody = new ZombieSystem({ ...sense, seed: 73 });
     const id = system.add(SHAMBLER, [0, 1, 0]);
-    const replayId = replay.add(SHAMBLER, [0, 1, 0]);
     const independentId = withExtraBody.add(SHAMBLER, [0, 1, 0]);
     withExtraBody.add(SHAMBLER, [100, 1, 100]);
     const zombie = system.store.get(id)!;
-    const replayed = replay.store.get(replayId)!;
     const independent = withExtraBody.store.get(independentId)!;
     zombie.body.onGround = true;
-    replayed.body.onGround = true;
     independent.body.onGround = true;
     let idleTicks = 0;
     let strollTicks = 0;
     const sampleTicks = 5 * 60 * 20;
     for (let tick = 0; tick < sampleTicks; tick++) {
       system.tick(1 / 20);
-      replay.tick(1 / 20);
       withExtraBody.tick(1 / 20);
       if (tick % 100 === 0) {
-        expect(replayed.body.pos).toEqual(zombie.body.pos);
         expect(independent.body.pos).toEqual(zombie.body.pos);
-        expect(replayed.behaviorRng.state()).toEqual(zombie.behaviorRng.state());
         expect(independent.behaviorRng.state()).toEqual(zombie.behaviorRng.state());
       }
       if (String(zombie.mode) === 'idle') {

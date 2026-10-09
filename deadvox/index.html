@@ -52,6 +52,11 @@
           <p id="save-persist-note" class="scale" hidden>Asks your browser to protect saves from automatic eviction; it may show a permission prompt.</p>
           <button id="save-export" type="button" hidden>Export raw save records</button>
           <a id="save-download" href="about:blank" aria-label="Download save record" hidden>Download save record</a>
+          <div id="playtest-export" hidden>
+            <button id="playtest-metrics-export" type="button">Export playtest metrics</button>
+            <button id="playtest-replay-export" type="button">Export recent replay</button>
+            <p id="playtest-export-status" class="scale" role="status"></p>
+          </div>
           <div id="save-confirmation" hidden role="dialog" aria-modal="true" aria-labelledby="save-confirm-title">
             <p id="save-confirm-title">Replace this saved world? Its newest A/B generation remains until the new world’s first checkpoint commits.</p>
             <button id="save-replace-confirm" type="button">Replace saved world</button>

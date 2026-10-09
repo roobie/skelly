@@ -207,6 +207,12 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
     : new Hamlet(config.seed, registry, config.scale);
 };
 
+export const siteForReviewMap = (
+  config: GameConfig,
+  registry = BUNDLED_CONTENT.registry,
+  house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined,
+): Site | undefined => buildDebugTestHouseSite(config, registry, house) ?? buildSite(config, registry);
+
 export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?: StreamerStats): WorldSetup {
   const { registry, issues } = BUNDLED_CONTENT;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
@@ -214,7 +220,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const id = (name: string) => blockId(registry, name);
 
   const house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined;
-  const built = buildDebugTestHouseSite(config, registry, house) ?? buildSite(config, registry);
+  const built = siteForReviewMap(config, registry, house);
   const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: FurnitureSpawn[] } = built
     ? { structures: [], spawn: built.spawn, furniture: house?.furniture ?? [] }
     : (house ?? testHouseScene(config, registry));

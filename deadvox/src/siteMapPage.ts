@@ -1,11 +1,12 @@
-import { AuthoredSite } from './core/authoredSite.ts';
 import { buildingBounds } from './core/authoredTerrain.mjs';
 import type { Chunk } from './core/chunk.ts';
 import { blockColors, blockId } from './core/content.ts';
-import { CHUNK, toChunk, toLocal } from './core/coords.ts';
-import { BLOCK_SIZE, makeScale } from './core/scale.ts';
+import { CHUNK, compassBearing, toChunk, toLocal } from './core/coords.ts';
+import { BLOCK_SIZE } from './core/scale.ts';
 import { generateColumn, terrainBlockIds, worldGroundAt } from './core/worldgen.ts';
 import { BUNDLED_CONTENT } from './game/bundledContent.ts';
+import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
+import { siteForReviewMap } from './game/worldSetup.ts';
 import {
   hillshade,
   marchingSquares,
@@ -20,22 +21,34 @@ const OUTSIDE_MARGIN_METRES = 24;
 const DEFAULT_SEED = 73;
 const { registry } = BUNDLED_CONTENT;
 const params = new URLSearchParams(globalThis.location.search);
-const siteId = params.get('site') ?? 'playtest';
-const layout = registry.layouts.get(siteId);
-if (!layout) {
-  throw new Error(`Content does not define site layout "${siteId}"`);
-}
+const overlay = params.get('overlay') === '1';
 const rawSeed = Number(params.get('seed') ?? DEFAULT_SEED);
 const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
+const config = makeConfig(seed, DEFAULT_RADIUS_M);
+Object.assign(config, siteFromUrl(params, 'playtest'));
+config.debug = true;
+const layout = registry.layouts.get(config.site);
+const site = siteForReviewMap(config, registry);
 const selectedView = (params.get('view') === 'satellite' ? 'satellite' : 'topographic') as SiteMapView;
-const scale = makeScale(BLOCK_SIZE);
-const site = new AuthoredSite(seed, registry, scale, layout);
-const requestedBounds = {
-  minX: layout.bounds.x0 - OUTSIDE_MARGIN_METRES,
-  maxX: layout.bounds.x1 + OUTSIDE_MARGIN_METRES,
-  minZ: layout.bounds.z0 - OUTSIDE_MARGIN_METRES,
-  maxZ: layout.bounds.z1 + OUTSIDE_MARGIN_METRES,
-};
+const { scale } = config;
+const playerPosition = overlay ? { x: Number(params.get('playerX')), z: Number(params.get('playerZ')) } : undefined;
+const playerYaw = overlay ? Number(params.get('playerYaw')) : undefined;
+const centerX = overlay ? Number(params.get('centerX')) : 0;
+const centerZ = overlay ? Number(params.get('centerZ')) : 0;
+const requestedBounds =
+  layout && !overlay
+    ? {
+        minX: layout.bounds.x0 - OUTSIDE_MARGIN_METRES,
+        maxX: layout.bounds.x1 + OUTSIDE_MARGIN_METRES,
+        minZ: layout.bounds.z0 - OUTSIDE_MARGIN_METRES,
+        maxZ: layout.bounds.z1 + OUTSIDE_MARGIN_METRES,
+      }
+    : {
+        minX: centerX - 128,
+        maxX: centerX + 128,
+        minZ: centerZ - 128,
+        maxZ: centerZ + 128,
+      };
 const minBlockX = Math.floor(requestedBounds.minX / CELL_SIZE);
 const maxBlockX = Math.round(requestedBounds.maxX / CELL_SIZE);
 const minBlockZ = Math.floor(requestedBounds.minZ / CELL_SIZE);
@@ -56,8 +69,8 @@ const terrain = {
   seed,
   scale,
   blocks: terrainBlockIds((name) => blockId(registry, name)),
-  surface: site.surface,
-  stamp: (chunk: Chunk) => site.stamp(chunk),
+  surface: site?.surface,
+  ...(site ? { stamp: (chunk: Chunk) => site.stamp(chunk) } : {}),
 };
 const canvas = document.querySelector<HTMLCanvasElement>('#map')!;
 const context = canvas.getContext('2d', { alpha: false })!;
@@ -65,7 +78,35 @@ const status = document.querySelector<HTMLElement>('#map-status')!;
 const pointPanel = document.querySelector<HTMLElement>('#point')!;
 const label = document.querySelector<HTMLElement>('#map-label')!;
 const errorPanel = document.querySelector<HTMLElement>('#error')!;
-document.querySelector('#seed')!.textContent = String(seed);
+document.querySelector('#seed')!.textContent = `${seed} · ${config.site}`;
+if (overlay) {
+  document.body.classList.add('map-overlay');
+  document.querySelector<HTMLElement>('#map-label')!.textContent = `${config.site.toUpperCase()} · REVIEW MAP`;
+  const requestClose = () =>
+    globalThis.parent.postMessage({ type: 'deadvox-review-map-close' }, globalThis.location.origin);
+  const forwardKey = (event: Parameters<NonNullable<typeof globalThis.onkeydown>>[0], phase: 'down' | 'up') => {
+    event.preventDefault();
+    globalThis.parent.postMessage(
+      {
+        type: 'deadvox-review-map-key',
+        phase,
+        code: event.code,
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        repeat: event.repeat,
+        isComposing: event.isComposing,
+      },
+      globalThis.location.origin,
+    );
+  };
+  document.querySelector<HTMLButtonElement>('#close')!.addEventListener('click', requestClose);
+  document.querySelector<HTMLElement>('#hint')!.textContent =
+    'Drag to pan · wheel to zoom · click for ground coordinates · Esc to close';
+  globalThis.onkeydown = (event) => forwardKey(event, 'down');
+  globalThis.onkeyup = (event) => forwardKey(event, 'up');
+}
 
 interface RasterMap {
   topographic: HTMLCanvasElement;
@@ -148,7 +189,7 @@ const sampleGround = async () => {
       const { z: zm } = siteMapRasterToWorld(0, row + 0.5, mapGrid);
       for (let column = 0; column < width; column += 1) {
         const { x: xm } = siteMapRasterToWorld(column + 0.5, row + 0.5, mapGrid);
-        heights[column + row * width] = worldGroundAt({ seed, scale, surface: site.surface, xm, zm });
+        heights[column + row * width] = worldGroundAt({ seed, scale, surface: site?.surface, xm, zm });
       }
     },
     (rows) => {
@@ -251,6 +292,7 @@ const generateMap = async (): Promise<RasterMap> => {
   const satellite = makeRaster('satellite', shades, colors);
   await addContours(topographic);
   status.textContent = `Ready · generated ${generated.columns} chunk columns in ${generated.realSeconds.toFixed(1)} s`;
+  document.documentElement.dataset.ready = 'true';
   return { topographic, satellite };
 };
 
@@ -364,6 +406,9 @@ const drawGrid = (ctx: CanvasRenderingContext2D, rect: DOMRect) => {
 };
 
 const drawWoodlands = (ctx: CanvasRenderingContext2D) => {
+  if (!layout) {
+    return;
+  }
   for (const woodland of layout.woodlands) {
     ctx.beginPath();
     woodland.polygon.forEach(([x, z], index) => {
@@ -384,6 +429,9 @@ const drawWoodlands = (ctx: CanvasRenderingContext2D) => {
 };
 
 const drawTracks = (ctx: CanvasRenderingContext2D) => {
+  if (!layout) {
+    return;
+  }
   const mapScale = viewport!.scale;
   for (const track of layout.tracks) {
     ctx.beginPath();
@@ -407,6 +455,9 @@ const drawTracks = (ctx: CanvasRenderingContext2D) => {
 };
 
 const drawBuildings = (ctx: CanvasRenderingContext2D) => {
+  if (!layout) {
+    return;
+  }
   const mapScale = viewport!.scale;
   for (const building of layout.buildings) {
     const template = registry.templates.get(building.template);
@@ -434,6 +485,9 @@ const drawBuildings = (ctx: CanvasRenderingContext2D) => {
 };
 
 const drawLayout = (ctx: CanvasRenderingContext2D) => {
+  if (!layout) {
+    return;
+  }
   const v = viewport!;
   ctx.save();
   ctx.beginPath();
@@ -452,6 +506,29 @@ const drawLayout = (ctx: CanvasRenderingContext2D) => {
     (layout.bounds.z1 - layout.bounds.z0) * v.scale,
   );
   ctx.restore();
+};
+
+const drawPlayer = (ctx: CanvasRenderingContext2D) => {
+  if (!(playerPosition && Number.isFinite(playerPosition.x) && Number.isFinite(playerPosition.z))) {
+    return;
+  }
+  const [x, y] = screenPoint(playerPosition.x, playerPosition.z);
+  const bearing = Number.isFinite(playerYaw) ? compassBearing(playerYaw!) * (Math.PI / 180) : 0;
+  const dx = Math.sin(bearing);
+  const dy = -Math.cos(bearing);
+  ctx.beginPath();
+  ctx.moveTo(x + dx * 14, y + dy * 14);
+  ctx.lineTo(x - dx * 9 - dy * 7, y - dy * 9 + dx * 7);
+  ctx.lineTo(x - dx * 9 + dy * 7, y - dy * 9 - dx * 7);
+  ctx.closePath();
+  ctx.fillStyle = '#d52f26';
+  ctx.fill();
+  ctx.strokeStyle = '#fff8e7';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#fff8e7';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.fillText(`Player · ${Math.round(compassBearing(playerYaw ?? 0))}°`, x + 12, y - 12);
 };
 
 const draw = () => {
@@ -474,6 +551,7 @@ const draw = () => {
     );
     drawGrid(context, rect);
     drawLayout(context);
+    drawPlayer(context);
     if (selected) {
       const [x, y] = screenPoint(selected.x, selected.z);
       context.strokeStyle = '#fef8e5';
@@ -505,17 +583,21 @@ const selectAt = (clientX: number, clientY: number) => {
   selected = { x, y, z };
   const position = document.createElement('div');
   position.textContent = `x ${x.toFixed(1)} m · y ${y.toFixed(1)} m · z ${z.toFixed(1)} m`;
-  const link = document.createElement('a');
-  const game = new URL('/', globalThis.location.origin);
-  game.searchParams.set('site', siteId);
-  game.searchParams.set('seed', String(seed));
-  game.searchParams.set('debug', '1');
-  game.searchParams.set('at', `${x},${z}`);
-  link.href = game.href;
-  link.textContent = 'Open a fresh debug game here';
-  link.target = '_blank';
-  link.rel = 'noopener';
-  pointPanel.replaceChildren(position, link);
+  if (overlay) {
+    pointPanel.replaceChildren(position);
+  } else {
+    const link = document.createElement('a');
+    const game = new URL('/', globalThis.location.origin);
+    game.searchParams.set('site', config.site);
+    game.searchParams.set('seed', String(seed));
+    game.searchParams.set('debug', '1');
+    game.searchParams.set('at', `${x},${z}`);
+    link.href = game.href;
+    link.textContent = 'Open a fresh debug game here';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    pointPanel.replaceChildren(position, link);
+  }
   draw();
 };
 
@@ -593,7 +675,7 @@ for (const button of viewButtons) {
     for (const candidate of viewButtons) {
       candidate.setAttribute('aria-pressed', String(candidate === button));
     }
-    label.textContent = `PLAYTEST SITE · ${view === 'topographic' ? 'TOPOGRAPHIC' : 'BLOCK COLOURS'}`;
+    label.textContent = `${config.site.toUpperCase()} · ${view === 'topographic' ? 'TOPOGRAPHIC' : 'BLOCK COLOURS'}`;
     const url = new URL(globalThis.location.href);
     url.searchParams.set('view', view);
     globalThis.history.replaceState(null, '', url);
@@ -608,7 +690,7 @@ try {
   for (const button of viewButtons) {
     button.setAttribute('aria-pressed', String(button.dataset.view === view));
   }
-  label.textContent = `PLAYTEST SITE · ${view === 'topographic' ? 'TOPOGRAPHIC' : 'BLOCK COLOURS'}`;
+  label.textContent = `${config.site.toUpperCase()} · ${view === 'topographic' ? 'TOPOGRAPHIC' : 'BLOCK COLOURS'}`;
   resize();
 } catch (error) {
   errorPanel.hidden = false;

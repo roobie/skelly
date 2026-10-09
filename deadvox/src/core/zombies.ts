@@ -476,6 +476,9 @@ export interface ZombieSystemOptions {
   onSound?: (event: SoundEventId, position: Vec3, body?: Zombie) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
   onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode, body: Zombie) => void;
+  /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
+   * it; the system reads nothing back. */
+  onWound?: (id: EntityId, zombie: Zombie, hit: HitImpulse, damage: number) => void;
   /** Called once for every part severed (src/core/zombies.ts's swing — the melee hit path), *after*
    * `zombie.severed` already includes `part`, so a renderer reading zombie.severed at this point sees the
    * new cut too. Fires before onDeath on a killing blow that also severs the head. */
@@ -2540,7 +2543,7 @@ export class ZombieSystem {
   ): void {
     const footfallCandidates = entries.flatMap(([id, zombie]) => {
       if (
-        zombie.type.id !== 'shambler' ||
+        zombie.type.footstepSound !== 'shambler' ||
         !groundedAtTickStart.get(zombie) ||
         !zombie.body.onGround ||
         zombie.horizontalSpeed <= 0.01
@@ -2866,6 +2869,9 @@ export class ZombieSystem {
     zombie.regions[region] = healthAfter;
     if (healthAfter < healthBefore) {
       zombie.hitFlinchTime = 0;
+    }
+    if (damage > 0) {
+      this.options.onWound?.(id, zombie, hit, damage);
     }
     const killed =
       healthAfter === 0 &&

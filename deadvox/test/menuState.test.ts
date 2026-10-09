@@ -149,6 +149,27 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
     },
   },
   {
+    name: 'review map keeps the debug-menu pause behavior after releasing pointer lock',
+    input: {
+      ...base,
+      started: true,
+      mainMenuOpen: false,
+      reviewMapOpen: true,
+      pointerLockChanged: true,
+    },
+    expected: {
+      started: true,
+      mainMenuOpen: false,
+      inventoryOpen: false,
+      debugMenuOpen: false,
+      closeOtherMenus: false,
+      menuPointer: true,
+      overlayHidden: true,
+      paused: false,
+      goLabel: 'Paused. Click to continue',
+    },
+  },
+  {
     name: 'external pointer lock hides the visible pause state without a resume request',
     input: { ...base, started: true, mainMenuOpen: false, pointerLocked: true, pointerLockChanged: true },
     expected: {

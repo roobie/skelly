@@ -5,6 +5,7 @@ read_if:
   - you're deciding what the interface may tell the player and in what voice
   - you're changing player-facing prompts, feedback, or HUD language
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
+  - you're changing how playtesters hand back metrics or replays
 tags: [deadvox, design, ui, ux, diegesis, hud]
 created: 2026-09-27
 status: active
@@ -54,7 +55,7 @@ as a checklist):
 | **Diegetic** | the world, visible to the character | the flashlight's beam, a note, a door's state, the item in your hands | preferred |
 | **Bodily** | the character's senses and body | the damage vignette and tilt, blurred vision when exhausted, heavy breathing | allowed, and preferred over a number |
 | **Spatial** | drawn in the world but not part of it | an outline on the thing you look at | only where the world can't carry it |
-| **Meta** | over the screen, outside the world | the inventory grid, the main menu, a clock readout | minimal, opt-in, off by default |
+| **Meta** | over the screen, outside the world | the inventory grid, the main menu, a clock readout | HUD elements start enabled and can be turned off individually |
 
 A new element names its kind in its view model's comment, and the pull request
 that adds it says why the kind above it wasn't enough.
@@ -261,25 +262,27 @@ keeps its progress. See `src/ui/reading.ts`, `ReadingProgress` and `mountReading
   nothing from `src/debug`, so a tester sees the game close to how it ships, with
   the instructions it still needs. No such flag exists yet: `src/game/config.ts`,
   `configFromUrl`, reads none.
-- **The shipped profile** shows no debug, and its HUD options start off
-  (`src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`), so HUD hints show only if the
-  player turns them on. The inventory help line and the rest card's stop hint
-  ignore those options ("How it's encoded"). The optional crosshair remains
-  development-only; the debug center X is part of `?debug=1` and never ships.
+- **The shipped profile** shows no debug and starts with its HUD elements on;
+  each can be turned off individually. New players need the HUD to understand
+  the game, while experienced players can hide elements as diegetic affordances
+  grow. See `src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. The inventory help line
+  and the rest card's stop hint ignore those options ("How it's encoded"). The
+  crosshair follows its HUD option; a separate center X is part of `?debug=1` and
+  never ships.
 
 ## Where the current interface stands
 
 | Element | Kind now | Target | Gap |
 |---|---|---|---|
-| HUD stats (health, food, fatigue…) | meta, opt-in | bodily | the cues in "Bodily cues"; the opt-in stays for development |
-| Clock readout | meta, opt-in | diegetic | a watch, when you look at your wrist or hold one |
-| Crosshair | meta, opt-in | none | shipped: none, ever; the optional development mark follows a wielded firearm's bore at its current raise progress, disappearing when its projected point leaves the viewport |
-| Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
-| Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text |
+| HUD stats (health, food, fatigue…) | meta, on by default; individually toggleable | bodily | the cues in "Bodily cues" may eventually let players hide stats they no longer need |
+| Clock readout | meta, on by default; individually toggleable | diegetic | a watch, when you look at your wrist or hold one |
+| Crosshair | meta, on by default; individually toggleable | none | the aiming aid can be hidden when the player's sights and the world suffice |
+| Interaction hints ("looking at…", "F: open") | meta, on by default; individually toggleable | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
+| Quickbar | meta, on by default; individually toggleable | meta | fine as a frame of slots; no instructional text |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; its key names come from the bindings, and it moves to the hint channel with "Order of work" item 2 |
-| Main menu (F9) | meta | meta | fine; settings and help live here |
+| Main menu (F9) | meta | meta | fine; settings, help and the playtest hand-back live here |
 | Inventory screen | meta | meta | grids stay; numbers per DESIGN.md "numbers are there when you look" |
 | Refusal notices ("Quickbar 1 is empty") | voice | voice | none: they name no key or procedure (`src/game/play.ts`, `showRefusal`) |
 | Drawn menu cursor | meta | meta | fine |
@@ -292,17 +295,22 @@ simulation facts accessible without undermining diegesis.
 
 ## Interface decisions
 
-1. **Crosshair:** none in the shipped game. Aiming uses the weapon's own sights;
-   hip fire and melee have no reticle. The opt-in dot remains development-only.
+1. **Crosshair:** the aiming reticle is on by default, and its HUD option can
+   turn it off. Weapon sights still support aiming without it; hip fire and melee
+   do not require a reticle.
 2. **Interaction affordance:** a subtle outline on the one usable thing in reach;
    no text or key name.
 3. **Numbers:** available on request through meta surfaces, not pushed at the
    player during play.
 4. **Onboarding:** the shipped first run gets a diegetic introduction, shaped by
-   where playtesters get stuck. Hints remain an off-by-default fallback in the
-   F9 menu.
+   where playtesters get stuck. HUD hints start on and can be turned off
+   individually in the F9 menu.
 5. **Playtest profile:** `?playtest=1` is to turn on the hint channel and load
-   nothing from `src/debug` ("Order of work" item 3).
+   nothing from `src/debug` ("Order of work" item 3). Testers hand back their
+   metrics and recent replay from the F9 menu, never through `?debug=1`: debug's
+   god mode, spawning, noclip and time controls would taint what the playtest
+   observes. The menu and the debug panel build the same files (see
+   `src/game/playtestTools.ts`, `metricsFile` and `replayFile`).
 6. **Character sounds:** vocal pain and strain sounds are noise events with a
    radius in data, so BR can judge their effect in play and tune or disable them.
    Variation comes from random but curated picks for the events we have.

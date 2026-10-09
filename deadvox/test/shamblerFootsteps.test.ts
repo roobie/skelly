@@ -58,16 +58,27 @@ const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
   return { system, store, played };
 };
 
-const addWalker = (system: ZombieSystem, store: MapEntityStore<Zombie>, position: Vec3, mode: 'stroll' | 'chase') => {
-  const id = system.add(SHAMBLER, position, [1, 0, 0]);
+const addWalker = ({
+  system,
+  store,
+  position,
+  mode,
+  type = SHAMBLER,
+}: {
+  system: ZombieSystem;
+  store: MapEntityStore<Zombie>;
+  position: Vec3;
+  mode: 'stroll' | 'chase';
+  type?: Zombie['type'];
+}) => {
+  const id = system.add(type, position, [1, 0, 0]);
   const zombie = store.get(id)!;
   zombie.body.onGround = true;
   zombie.mode = mode;
   zombie.modeTimer = 100;
   zombie.lastPerceived = [40, position[1], position[2]];
   zombie.strollHeading = [1, 0, 0];
-  zombie.horizontalSpeed =
-    mode === 'stroll' ? SHAMBLER.speed.wanderMetresPerSimSecond : SHAMBLER.speed.chaseMetresPerSimSecond;
+  zombie.horizontalSpeed = mode === 'stroll' ? type.speed.wanderMetresPerSimSecond : type.speed.chaseMetresPerSimSecond;
   zombie.lurchValue = 1;
   zombie.stumbleFactor = 1;
   return zombie;
@@ -79,10 +90,10 @@ const run = (system: ZombieSystem, seconds: number): void => {
   }
 };
 
-const movedSteps = (mode: 'stroll' | 'chase', seconds: number): number => {
+const movedSteps = (mode: 'stroll' | 'chase', seconds: number, type: Zombie['type'] = SHAMBLER): number => {
   const player = mode === 'chase' ? sense([20, 1, 2], [-1, 0, 0]) : sense([100, 1, 100], [-1, 0, 0]);
   const { system, store, played } = makeWorld(player);
-  addWalker(system, store, [2, 1, 2], mode);
+  addWalker({ system, store, position: [2, 1, 2], mode, type });
   run(system, seconds);
   return played.length;
 };
@@ -128,6 +139,11 @@ describe('shambler footsteps', () => {
     expect(movedSteps('chase', 3)).toBeGreaterThan(movedSteps('stroll', 3));
   });
 
+  it('emits shambler footsteps for a kind selected by its content, not its id', () => {
+    const fixture = { ...SHAMBLER, id: 'fixture_soldier', footstepSound: 'shambler' as const };
+    expect(movedSteps('stroll', 3, fixture)).toBeGreaterThan(0);
+  });
+
   it('maps the block underfoot to the matching shambler surface event', () => {
     expect(shamblerFootstepEventForBlock('grass')).toBe('shambler_step_grass');
     expect(shamblerFootstepEventForBlock('dirt')).toBe('shambler_step_mud');
@@ -148,7 +164,7 @@ describe('shambler footsteps', () => {
   it('lets only the nearest three moving shamblers emit footsteps', () => {
     const { system, store, played } = makeWorld(sense([0, 1, 2], [1, 0, 0]));
     for (let i = 0; i < 4; i++) {
-      addWalker(system, store, [2 + i * 8, 1, 2], 'stroll');
+      addWalker({ system, store, position: [2 + i * 8, 1, 2], mode: 'stroll' });
     }
     run(system, 2);
     const walkerZones = new Set(played.map((position) => Math.floor((position[0] - 2) / 8)));
