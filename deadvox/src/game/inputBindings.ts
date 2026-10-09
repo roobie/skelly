@@ -78,6 +78,10 @@ const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-skills', description: 'Open / select Skills tab', tab: 'skills', code: 'KeyV' },
   { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting', code: 'KeyB' },
 ] as const;
+const INVENTORY_SELECT_BINDINGS: ReadonlySet<string> = new Set([
+  'ui.inventory-toggle',
+  ...INVENTORY_TAB_BINDINGS.map(({ action }) => action),
+]);
 export const inventoryTabForAction = (action: string) =>
   INVENTORY_TAB_BINDINGS.find((binding) => binding.action === action)?.tab;
 
@@ -765,7 +769,7 @@ export class KeyboardInput {
       });
     }
   }
-  press(event: KeyEvent, text = false): boolean {
+  press(event: KeyEvent, text = false, allowWhileEditing?: ReadonlySet<string>): boolean {
     this.sync();
     this.down.add(event.code);
     if (event.isComposing) {
@@ -786,7 +790,7 @@ export class KeyboardInput {
       (binding) =>
         binding.contexts.includes(this.state.context) &&
         (!binding.debug || this.state.debug) &&
-        (!text || binding.text) &&
+        (!text || binding.text || allowWhileEditing?.has(binding.id)) &&
         (binding.gate
           ? this.held(binding.gate)
           : !gate || binding.id === 'debug.gate' || binding.id === 'ui.main-menu-toggle') &&
@@ -846,7 +850,11 @@ export class KeyboardInput {
         event.preventDefault();
         return;
       }
-      if (this.press(event, editable(event.target))) {
+      const focusedInventorySelect =
+        this.context().context === 'inventory' &&
+        document.activeElement instanceof HTMLSelectElement &&
+        editable(document.activeElement);
+      if (this.press(event, editable(event.target), focusedInventorySelect ? INVENTORY_SELECT_BINDINGS : undefined)) {
         event.preventDefault();
       }
     };

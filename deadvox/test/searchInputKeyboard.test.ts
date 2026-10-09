@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
-import { BindingRegistry, KeyboardInput } from '../src/game/inputBindings.ts';
+import { BindingRegistry, INPUT_BINDINGS, KeyboardInput } from '../src/game/inputBindings.ts';
 
 it('keeps native text codes and defaults intact without emitting gameplay intents', () => {
   const keyboard = new KeyboardInput(
@@ -93,5 +93,58 @@ it('gates native debug-checkbox activation but leaves text editing native', () =
   } finally {
     remove();
     panel.remove();
+  }
+});
+
+it('routes inventory controls from a focused select but leaves picker navigation native', () => {
+  const bindings = new BindingRegistry(INPUT_BINDINGS, undefined);
+  const keyboard = new KeyboardInput(bindings);
+  keyboard.context = () => ({ context: 'inventory', debug: false });
+  const commands: string[] = [];
+  keyboard.command = ({ action, phase }) => {
+    if (phase === 'down') {
+      commands.push(action);
+    }
+  };
+  const remove = keyboard.install();
+  const inventory = document.createElement('section');
+  const select = document.createElement('select');
+  inventory.append(select);
+  document.body.append(inventory);
+  select.focus();
+  const key = (type: 'keydown' | 'keyup', code: string) =>
+    new KeyboardEvent(type, { bubbles: true, cancelable: true, code });
+  const press = (code: string) => {
+    const down = key('keydown', code);
+    select.dispatchEvent(down);
+    select.dispatchEvent(key('keyup', code));
+    return down;
+  };
+  try {
+    expect(document.activeElement).toBe(select);
+    const inventoryActions = [
+      'ui.inventory-toggle',
+      'ui.inventory-tab-items',
+      'ui.inventory-tab-skills',
+      'ui.inventory-tab-crafting',
+    ];
+    for (const action of inventoryActions) {
+      const chord = bindings.chords(action)[0]!;
+      const down = press(chord.code);
+      expect(down.defaultPrevented).toBe(true);
+      expect(commands.at(-1)).toBe(action);
+    }
+
+    commands.length = 0;
+    const pickerActions = ['inventory.previous', 'inventory.next', 'inventory.best-pocket'];
+    const pickerCodes = new Set(pickerActions.flatMap((action) => bindings.chords(action).map(({ code }) => code)));
+    for (const code of pickerCodes) {
+      expect(press(code).defaultPrevented).toBe(false);
+    }
+    expect(commands).toEqual([]);
+    expect(document.activeElement).toBe(select);
+  } finally {
+    remove();
+    inventory.remove();
   }
 });
