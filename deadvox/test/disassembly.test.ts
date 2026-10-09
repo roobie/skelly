@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
@@ -8,6 +8,33 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { gameMinutes } from '../src/core/time.ts';
+
+const base = 'src/content/base';
+const itemSource = (file: string, ids: readonly string[]) => {
+  const data = JSON.parse(readFileSync(join(base, file), 'utf8')) as {
+    items: { id: string; salvage?: unknown }[];
+  };
+  data.items = data.items.filter(({ id }) => ids.includes(id));
+  for (const item of data.items) {
+    if (item.id === 'portable_radio') {
+      item.salvage = undefined;
+    }
+  }
+  return { source: file, data };
+};
+const recipes = JSON.parse(readFileSync(join(base, 'recipes.json'), 'utf8')) as {
+  skills: { id: string; [key: string]: unknown }[];
+};
+const fixtureBuild = buildRegistry([
+  itemSource('items-tools.json', ['kitchen_knife']),
+  itemSource('items-other.json', ['portable_radio', 'scrap_metal']),
+  { source: 'models-melee.json', data: JSON.parse(readFileSync(join(base, 'models-melee.json'), 'utf8')) as unknown },
+  { source: 'recipes.json', data: { skills: recipes.skills.filter(({ id }) => id === 'crafting') } },
+]);
+if (fixtureBuild.issues.length > 0) {
+  throw new Error(`Invalid disassembly fixture: ${JSON.stringify(fixtureBuild.issues)}`);
+}
+const { registry } = fixtureBuild;
 
 const definition = (yields: NonNullable<ItemDef['disassembly']>['yields']): ItemDef =>
   ({ disassembly: { timeGameMinutes: gameMinutes(1), skill: 'crafting', yields } }) as ItemDef;
@@ -34,17 +61,10 @@ describe('authored disassembly yields', () => {
   });
 
   it('uses indexed usable tool qualities and excludes a ruined provider', () => {
-    const base = readdirSync('src/content/base')
-      .filter((file) => file.endsWith('.json'))
-      .sort()
-      .map((file) => ({
-        source: file,
-        data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-      }));
-    const { registry } = buildRegistry(base);
-    expect(registry.items.get('kitchen_knife')?.tool?.qualities.cutting).toBeGreaterThan(0);
-    const radio = registry.items.get('portable_radio')!;
-    registry.items.set('portable_radio', {
+    const testRegistry = { ...registry, items: new Map(registry.items) };
+    expect(testRegistry.items.get('kitchen_knife')?.tool?.qualities.cutting).toBeGreaterThan(0);
+    const radio = testRegistry.items.get('portable_radio')!;
+    testRegistry.items.set('portable_radio', {
       ...radio,
       salvage: undefined,
       disassembly: {
@@ -61,7 +81,7 @@ describe('authored disassembly yields', () => {
         ],
       },
     });
-    const inventory = new Inventory(registry);
+    const inventory = new Inventory(testRegistry);
     const position: [number, number, number] = [0, 0, 0];
     const reach = bindReach({ inventory, position, blockSize: 0.5 });
     const source = inventory.create('portable_radio');
@@ -70,7 +90,7 @@ describe('authored disassembly yields', () => {
     expect(inventory.add(source, { kind: 'pile', pos: position })).toBe(true);
     expect(inventory.add(ruinedKnife, { kind: 'pile', pos: position })).toBe(true);
 
-    const plan = planDisassembly(source, reach(), new Character(registry));
+    const plan = planDisassembly(source, reach(), new Character(testRegistry));
     expect(plan?.toolLevels).toEqual({ cutting: 0 });
     expect(plan?.outputs).toEqual([{ item: 'scrap_metal', count: 1 }]);
   });

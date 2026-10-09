@@ -8,6 +8,7 @@ export type InputContext =
   | 'reading'
   | 'spawn'
   | 'debug-panel'
+  | 'review-map'
   | 'build'
   | 'noclip'
   | 'play'
@@ -162,7 +163,10 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('spawn.next', 'Select next spawn item', ['spawn'], ['ArrowDown'], 'press', { repeat: true, text: true }),
   row('spawn.dismiss', 'Close spawn menu', ['spawn'], ['Tab'], 'press', { text: true }),
   row('spawn.confirm', 'Spawn selected item', ['spawn'], ['Enter'], 'press', { debug: true, text: true }),
-  row('debug.gate', 'Hold for debug commands', all, ['F2'], 'held-state', { debug: true, text: true }),
+  row('debug.gate', 'Hold for debug commands', [...all, 'review-map'], ['F2'], 'held-state', {
+    debug: true,
+    text: true,
+  }),
   debugRow('debug.panel-toggle', 'Debug panel', 'Backquote', all),
   debugModifiedRow('debug.input-replay-export', 'Export input replay', 'Backquote', 'shift'),
   debugModifiedRow('debug.input-replay-import', 'Import input replay', 'KeyI', 'shift'),
@@ -186,7 +190,8 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugRow('debug.spawn-amalgam', 'Spawn amalgam', 'Numpad4'),
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes', 'KeyY'),
   debugRow('debug.freeze-shamblers', 'Freeze shamblers', 'KeyO'),
-  debugRow('debug.freeze-game', 'Freeze game', 'KeyM'),
+  debugRow('debug.review-map-toggle', 'Review map', 'KeyM', ['play', 'noclip', 'review-map']),
+  debugRow('debug.freeze-game', 'Freeze game', 'Numpad5'),
   debugRow('debug.tone-cycle', 'Tone mapping', 'KeyJ'),
   debugRow('debug.exposure-decrease', 'Exposure −', 'Minus'),
   debugRow('debug.exposure-increase', 'Exposure +', 'Equal'),
@@ -612,6 +617,10 @@ type KeyEvent = Pick<
   KeyboardEvent,
   'code' | 'shiftKey' | 'altKey' | 'ctrlKey' | 'metaKey' | 'repeat' | 'isComposing' | 'timeStamp'
 >;
+type ForwardedKey = Pick<
+  KeyboardEvent,
+  'code' | 'shiftKey' | 'altKey' | 'ctrlKey' | 'metaKey' | 'repeat' | 'isComposing'
+>;
 const flags: Readonly<Record<Modifier, keyof Pick<KeyboardEvent, 'shiftKey' | 'altKey' | 'ctrlKey' | 'metaKey'>>> = {
   shift: 'shiftKey',
   alt: 'altKey',
@@ -688,6 +697,12 @@ export class KeyboardInput {
       this.active.delete(code);
     }
     this.cancelled(preservePointer, reason);
+  }
+  pressForwarded(event: ForwardedKey): boolean {
+    return this.press(new KeyboardEvent('keydown', event));
+  }
+  releaseForwarded(event: ForwardedKey): void {
+    this.release(new KeyboardEvent('keyup', event));
   }
   release(event: KeyEvent): void {
     this.down.delete(event.code);

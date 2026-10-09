@@ -807,7 +807,7 @@ describe('MobActorMeshes', () => {
   });
 
   it('renders visible actor meshes with bone transforms for every registered zombie type', () => {
-    const renderer = new MobActorMeshes(0.5, 2, {
+    const renderer = new MobActorMeshes(0.5, registry.zombies.size, {
       poolSize: 1,
       includeAmalgam: true,
       amalgamType: registry.zombies.get('amalgam'),
@@ -829,7 +829,7 @@ describe('MobActorMeshes', () => {
       expect(internals.group.visible).toBe(true);
       for (const { id, type } of entries) {
         const state = internals.states.get(id);
-        expect(state).toBeDefined();
+        expect(state, type.id).toBeDefined();
         if (!state) {
           continue;
         }
@@ -1058,6 +1058,27 @@ describe('MobActorMeshes reactions', () => {
       incapacitated.incapacitated = false;
       renderer.sync(store, 1 / 60, 1); // a future revive reclaims a live row
       expect(renderer.boneMatrix(ids[0]!, 'pelvis')).not.toEqual(lying);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('lets an incapacitated row lie and sink once its zombie dies, as any corpse does', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1);
+      zombie.incapacitated = true;
+      renderer.sync(store, 20, 1); // lying well past a corpse's lifetime
+      store.remove(id);
+      renderer.zombieDied(id, zombie);
+      renderer.sync(store, 1, 1);
+      expect(renderer.isTracked(id)).toBe(true); // still lies there, now as an ordinary corpse
+
+      renderer.sync(store, 20, 1);
+      expect(renderer.isTracked(id)).toBe(false);
     } finally {
       renderer.dispose();
     }

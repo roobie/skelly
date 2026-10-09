@@ -165,9 +165,11 @@ export class FleshChunks {
   private readonly chunks: FleshChunk[] = [];
   private readonly material = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
   private readonly group: Group;
+  private readonly onLanded: ((centre: Vec3) => void) | undefined;
 
-  constructor(group: Group) {
+  constructor(group: Group, onLanded?: (centre: Vec3) => void) {
     this.group = group;
+    this.onLanded = onLanded;
     this.material.customProgramCacheKey = () => 'deadvox-flesh-chunk';
     this.material.onBeforeCompile = (shader) => patchHeightFog(shader, 'mob');
   }
@@ -264,6 +266,7 @@ export class FleshChunks {
       }
       if (chunk.body.asleep && chunk.groundedAtRealSeconds === undefined) {
         chunk.groundedAtRealSeconds = chunk.ageRealSeconds;
+        this.onLanded?.([...chunk.body.center]);
       }
       const sinking =
         chunk.groundedAtRealSeconds === undefined

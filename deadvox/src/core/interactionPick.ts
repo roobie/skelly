@@ -1,20 +1,28 @@
 import type { BlockEntity } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
+import type { EntityId } from './entities.ts';
 import { type FurniturePickOptions, pickFurnitureAndObstruction } from './furniturePick.ts';
 import type { Inventory, Pile } from './inventory.ts';
 import { PILE_GRID } from './inventory.ts';
 import type { Item } from './items.ts';
 import { footprint } from './items.ts';
+import type { Body } from './physics.ts';
 import { PILE_BUNDLE_WIDTH, pileBundleHeight, pileLayout } from './pileLayout.ts';
 import { pileScatterPlacements } from './scatterPile.ts';
 import { PILE_DISPLAY_KIND } from './schema.ts';
 
 export type InteractionTarget =
   | { readonly kind: 'furniture'; readonly entity: BlockEntity; readonly distanceBlocks: number }
-  | { readonly kind: 'item'; readonly item: Item; readonly distanceBlocks: number };
+  | { readonly kind: 'item'; readonly item: Item; readonly distanceBlocks: number }
+  | { readonly kind: 'body'; readonly id: EntityId; readonly distanceBlocks: number };
 
 interface ItemHit {
   readonly item: Item;
+  readonly distanceBlocks: number;
+}
+
+interface BodyHit {
+  readonly id: EntityId;
   readonly distanceBlocks: number;
 }
 
@@ -30,6 +38,11 @@ interface InteractionPickOptions extends FurniturePickOptions {
   readonly inventory: Pick<Inventory, 'registry' | 'piles'>;
   readonly worldSeed: number;
   readonly hasModel: (id: string) => boolean;
+  /** Downed bodies, which F clears. */
+  readonly downedBodies?: Iterable<{
+    readonly id: EntityId;
+    readonly body: Pick<Body, 'pos' | 'halfWidth' | 'height'>;
+  }>;
 }
 
 const rayBoxDistance = ({ origin, direction, low, high, maxDistance }: RayBox): number | undefined => {
@@ -190,7 +203,25 @@ const nearestGroundItem = (options: InteractionPickOptions, direction: Vec3): It
   return nearest;
 };
 
-/** Picks the nearest target for F, using its furniture ray and reach for loose ground items too. */
+const nearestDownedBody = (options: InteractionPickOptions, direction: Vec3): BodyHit | undefined => {
+  let nearest: BodyHit | undefined;
+  for (const { id, body } of options.downedBodies ?? []) {
+    const { pos, halfWidth, height } = body;
+    const distanceBlocks = rayBoxDistance({
+      origin: options.origin,
+      direction,
+      low: [pos[0] - halfWidth, pos[1], pos[2] - halfWidth],
+      high: [pos[0] + halfWidth, pos[1] + height, pos[2] + halfWidth],
+      maxDistance: options.maxDistance,
+    });
+    if (distanceBlocks !== undefined && (!nearest || distanceBlocks < nearest.distanceBlocks)) {
+      nearest = { id, distanceBlocks };
+    }
+  }
+  return nearest;
+};
+
+/** Picks the nearest target for F, using its furniture ray and reach for loose ground items and downed bodies too. */
 export const pickInteractionTarget = (options: InteractionPickOptions): InteractionTarget | undefined => {
   const { furniture, obstructionDistanceBlocks } = pickFurnitureAndObstruction(options);
   const magnitude = Math.hypot(...options.direction);
@@ -199,12 +230,14 @@ export const pickInteractionTarget = (options: InteractionPickOptions): Interact
   }
   const direction = options.direction.map((component) => component / magnitude) as Vec3;
   const item = nearestGroundItem(options, direction);
-  if (
-    item &&
-    (obstructionDistanceBlocks === undefined || item.distanceBlocks <= obstructionDistanceBlocks) &&
-    (!furniture || item.distanceBlocks < furniture.distanceBlocks)
-  ) {
-    return { kind: 'item', ...item };
+  const body = nearestDownedBody(options, direction);
+  // A stable sort: an item wins a tie with a body.
+  const [loose] = [item && ({ kind: 'item', ...item } as const), body && ({ kind: 'body', ...body } as const)]
+    .filter((target) => target !== undefined)
+    .filter((target) => obstructionDistanceBlocks === undefined || target.distanceBlocks <= obstructionDistanceBlocks)
+    .sort((a, b) => a.distanceBlocks - b.distanceBlocks);
+  if (loose && (!furniture || loose.distanceBlocks < furniture.distanceBlocks)) {
+    return loose;
   }
   return furniture && { kind: 'furniture', ...furniture };
 };

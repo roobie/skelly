@@ -70,6 +70,24 @@ const layoutValidationBase = [
         zombie.loot = undefined;
         return zombie;
       }),
+      // The zombies name the tool quality that dismembers them, so one tool has to have it.
+      items: [
+        {
+          id: 'layout_blade',
+          name: 'Blade',
+          category: 'tool',
+          weight: 1,
+          size: [1, 1],
+          tool: {
+            qualities: Object.fromEntries(
+              [...layoutZombieIds].flatMap((id) => {
+                const dismember = registry.zombies.get(id)!.downed?.dismember;
+                return dismember ? [[dismember.quality, dismember.level]] : [];
+              }),
+            ),
+          },
+        },
+      ],
       sounds: [...new Set([...layoutZombieIds].flatMap((id) => Object.values(registry.zombies.get(id)!.sounds)))].map(
         (id) => structuredClone(registry.sounds.get(id)!),
       ),

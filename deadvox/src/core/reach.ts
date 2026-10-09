@@ -7,6 +7,7 @@ import type { Vec3 } from './coords.ts';
 import type { Inventory, Location, Pile } from './inventory.ts';
 import type { Item } from './items.ts';
 import { itemRoots, walkItemTree } from './itemTree.ts';
+import type { Body } from './physics.ts';
 
 export const INVENTORY_REACH = 2;
 export const INVENTORY_CHEST = 1;
@@ -53,6 +54,15 @@ export const furnitureDistance = (player: ReachPlayer, entity: BlockEntity): num
     player.position[1] + INVENTORY_CHEST / player.blockSize,
     player.position[2],
   ]) * player.blockSize;
+
+/** Chest to nearest point of a body's box, as for furniture. */
+export const bodyDistance = (player: ReachPlayer, body: Pick<Body, 'pos' | 'halfWidth' | 'height'>): number => {
+  const chest: Vec3 = [player.position[0], player.position[1] + INVENTORY_CHEST / player.blockSize, player.position[2]];
+  const low: Vec3 = [body.pos[0] - body.halfWidth, body.pos[1], body.pos[2] - body.halfWidth];
+  const high: Vec3 = [body.pos[0] + body.halfWidth, body.pos[1] + body.height, body.pos[2] + body.halfWidth];
+  const gaps = chest.map((value, axis) => value - Math.min(Math.max(value, low[axis]!), high[axis]!));
+  return Math.hypot(...gaps) * player.blockSize;
+};
 
 const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
   pileDistance(player.position, position, player.blockSize) <= INVENTORY_REACH;

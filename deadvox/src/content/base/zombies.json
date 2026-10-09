@@ -6,6 +6,7 @@
       "model": "shambler",
       "canJumpObstacles": true,
       "spawnWeight": 1,
+      "footstepSound": "shambler",
       "sounds": {
         "idle": "shambler_idle",
         "alert": "shambler_alert",
@@ -82,8 +83,103 @@
         "chance": 0.15,
         "headOnKillChance": 0.25
       },
+      "downed": {
+        "finishOff": { "simSeconds": 3 },
+        "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
+      },
       "abilities": [],
       "loot": "shambler_pockets"
+    },
+    {
+      "id": "military_shambler",
+      "name": "Soldier",
+      "model": "shambler",
+      "canJumpObstacles": true,
+      "spawnWeight": 1,
+      "authoredOnly": true,
+      "footstepSound": "shambler",
+      "sounds": {
+        "idle": "shambler_idle",
+        "alert": "shambler_alert",
+        "attack": "shambler_attack",
+        "hurt": "shambler_hurt"
+      },
+      "regions": {
+        "head": 60,
+        "torso": 60,
+        "leftArm": 24,
+        "rightArm": 24,
+        "leftLeg": 24,
+        "rightLeg": 24
+      },
+      "meleeDamageResistance": {
+        "head": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "torso": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "leftArm": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "rightArm": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "leftLeg": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "rightLeg": { "blunt": 0, "cut": 0, "pierce": 0 }
+      },
+      "speed": {
+        "wanderMetresPerSimSecond": 0.8,
+        "chaseMetresPerSimSecond": 2.8
+      },
+      "stepLength": 0.6,
+      "wander": {
+        "obstacleWanderChance": 0.25,
+        "obstacleWanderDistanceMetres": 10,
+        "idleSimSeconds": { "min": 3, "max": 10 },
+        "strollSimSeconds": { "min": 3, "max": 12 },
+        "leashMetres": 12,
+        "lookIntervalSimSeconds": { "min": 0.8, "max": 1.8 },
+        "bodyLookArcDegrees": 150,
+        "headLookArcDegrees": 100,
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "sight": 25,
+      "nightSight": 10,
+      "stimulusMemorySimSeconds": 180,
+      "sightCone": 60,
+      "hearing": 1,
+      "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
+      "hearingModel": {
+        "farMultiplier": 2,
+        "bearingErrorRadians": 0.61,
+        "investigationDistanceMetres": 8,
+        "searchSimSeconds": { "min": 40, "max": 50 },
+        "searchRadiusMetres": 4,
+        "searchStrollSimSeconds": { "min": 1, "max": 3 }
+      },
+      "chaseMotion": {
+        "swayDegrees": 25,
+        "swayIntervalSimSeconds": { "min": 0.7, "max": 1.1 },
+        "speedMultiplier": { "min": 0.6, "max": 1.2 },
+        "lurchSimSeconds": 1,
+        "stumbleChancePerSimSecond": 0.16,
+        "stumbleDurationSimSeconds": { "min": 0.55, "max": 0.75 },
+        "stumbleEaseSimSeconds": 0.2,
+        "stumbleSpeedFraction": 0.04,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14
+      },
+      "attack": {
+        "damage": 8,
+        "reach": 1.2,
+        "cooldownSimSeconds": 1.5,
+        "windupSimSeconds": 0.3,
+        "hitRegion": "torso"
+      },
+      "dismember": {
+        "chance": 0.15,
+        "headOnKillChance": 0.25
+      },
+      "downed": {
+        "finishOff": { "simSeconds": 3 },
+        "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
+      },
+      "abilities": [],
+      "loot": "soldier_pockets"
     },
     {
       "id": "runner",
@@ -147,6 +243,10 @@
       },
       "attack": { "damage": 10, "reach": 1.2, "cooldownSimSeconds": 1.3, "windupSimSeconds": 0.25 },
       "dismember": { "chance": 0.1, "headOnKillChance": 0.2 },
+      "downed": {
+        "finishOff": { "simSeconds": 3 },
+        "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
+      },
       "abilities": [],
       "loot": "shambler_pockets"
     },
@@ -212,6 +312,10 @@
       },
       "attack": { "damage": 6, "reach": 1.2, "cooldownSimSeconds": 1.7, "windupSimSeconds": 0.4, "hitRegion": "legs" },
       "dismember": { "chance": 0.05, "headOnKillChance": 0.15 },
+      "downed": {
+        "finishOff": { "simSeconds": 3 },
+        "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
+      },
       "abilities": ["grab"],
       "loot": "shambler_pockets"
     },
@@ -223,7 +327,7 @@
       "bodyScale": 4,
       "soundPitchMultiplier": 0.5,
       "spawnWeight": 1,
-      "debugOnly": true,
+      "authoredOnly": true,
       "sounds": {
         "idle": "amalgam_idle",
         "alert": "amalgam_alert",

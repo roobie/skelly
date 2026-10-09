@@ -469,12 +469,16 @@ export interface ZombieSystemOptions {
   onDeath?: (id: EntityId, zombie: Zombie) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
   onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
-  /** A region other than the head ran out of health: the game leaves the severed part behind (an item). */
-  onSevered?: (zombie: Zombie, region: Exclude<ZombieRegion, 'head'>) => void;
+  /** A whole region came off, and the game leaves it behind as an item: a limb whose health ran out, or
+   * each arm and the head of a dismembered downed body (see finishDowned). */
+  onSevered?: (zombie: Zombie, region: ZombieRegion) => void;
   /** Sound-source position is in block coordinates; body is present when the shambler made the sound. */
   onSound?: (event: SoundEventId, position: Vec3, body?: Zombie) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
   onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode, body: Zombie) => void;
+  /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
+   * it; the system reads nothing back. */
+  onWound?: (id: EntityId, zombie: Zombie, hit: HitImpulse, damage: number) => void;
   /** Called once for every part severed (src/core/zombies.ts's swing — the melee hit path), *after*
    * `zombie.severed` already includes `part`, so a renderer reading zombie.severed at this point sees the
    * new cut too. Fires before onDeath on a killing blow that also severs the head. */
@@ -2539,7 +2543,7 @@ export class ZombieSystem {
   ): void {
     const footfallCandidates = entries.flatMap(([id, zombie]) => {
       if (
-        zombie.type.id !== 'shambler' ||
+        zombie.type.footstepSound !== 'shambler' ||
         !groundedAtTickStart.get(zombie) ||
         !zombie.body.onGround ||
         zombie.horizontalSpeed <= 0.01
@@ -2866,6 +2870,9 @@ export class ZombieSystem {
     if (healthAfter < healthBefore) {
       zombie.hitFlinchTime = 0;
     }
+    if (damage > 0) {
+      this.options.onWound?.(id, zombie, hit, damage);
+    }
     const killed =
       healthAfter === 0 &&
       (region === 'core.trunk' || (zombie.type.model !== 'amalgam' && zombieRegionClass(region) === 'head'));
@@ -2948,9 +2955,35 @@ export class ZombieSystem {
       this.store.remove(id);
       this.options.onDeath?.(id, zombie);
     } else if (zombie.type.model !== 'amalgam' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
-      this.options.onSevered?.(zombie, region as Exclude<ZombieRegion, 'head'>);
+      this.options.onSevered?.(zombie, region as ZombieRegion);
     }
     return incapacitated;
+  }
+
+  /**
+   * Ends a downed zombie as a kill does: its head is destroyed, it leaves the store and onDeath fires, so its
+   * body sinks as a corpse. Dismembering first cuts off whichever arms are still on, and the head, each left
+   * behind through onSevered. Returns why not for a zombie that isn't lying downed.
+   */
+  finishDowned(id: EntityId, dismember: boolean): string | undefined {
+    const zombie = this.store.get(id);
+    if (!zombie?.incapacitated) {
+      return "It isn't lying there any more";
+    }
+    if (dismember) {
+      const hit: HitImpulse = { point: copy(zombie.body.pos), direction: [0, -1, 0], impulse: 0 };
+      for (const region of ['leftArm', 'rightArm', 'head'] as const) {
+        const part = region === 'head' ? region : ARM_REGION_PART[region];
+        if (!zombie.severed.includes(part)) {
+          this.sever(id, zombie, part, hit);
+          this.options.onSevered?.(zombie, region);
+        }
+      }
+    }
+    zombie.regions.head = 0;
+    this.store.remove(id);
+    this.options.onDeath?.(id, zombie);
+    return undefined;
   }
 
   /** Records `part` as severed (cumulative, saved) and tells the renderer; a part already cut is a no-op. */

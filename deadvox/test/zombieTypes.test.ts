@@ -44,9 +44,8 @@ describe('zombie type content', () => {
     expect(weight('runner')).toBeLessThan(weight('shambler'));
   });
 
-  it('registers distinct vocal sound events for every zombie type', () => {
+  it('references registered vocal sounds for every zombie type', () => {
     const events = zombies.flatMap(({ sounds }) => Object.values(sounds));
-    expect(new Set(events).size).toBe(events.length);
     for (const event of events) {
       expect(soundById.has(event)).toBe(true);
     }

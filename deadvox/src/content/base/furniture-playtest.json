@@ -99,7 +99,8 @@
       "container": {
         "pockets": [{ "grid": [6, 5], "handlingSimSeconds": 1.2 }]
       },
-      "loot": "workshop_filler"
+      "loot": "workshop_filler",
+      "searchNoise": { "sound": "player_strain" }
     },
     {
       "id": "workshop_map_board",

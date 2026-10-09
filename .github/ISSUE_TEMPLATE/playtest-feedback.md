@@ -4,6 +4,7 @@ about: Share notes from a deadvox playtest
 labels: playtest
 read_if:
   - you change what the playtest feedback form asks testers for
+  - you change how testers export metrics or replays
 ---
 
 ## What did you play?
@@ -24,6 +25,6 @@ Steps to reproduce, if applicable:
 2.
 3.
 
-## Metrics export
+## Metrics and replay
 
-Attach the JSON file exported from the in-game debug panel. It contains local session metrics only; review it before attaching.
+Press F9 and use "Export playtest metrics", and for a bug "Export recent replay". Attach the saved files. The metrics are local session numbers only; review them before attaching.

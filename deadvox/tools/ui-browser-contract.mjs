@@ -463,11 +463,22 @@ try {
     report: () => {},
   }).settings)`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
-  await clickAt('#hud-options label:nth-of-type(2)');
+  const initialHudToggles = await evaluate(
+    "[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)",
+  );
+  assert.ok(initialHudToggles.every(Boolean), 'HUD options start enabled');
+  const [statsOptionInitiallyChecked, clockOptionInitiallyChecked] = initialHudToggles;
+  const clockOption = "document.querySelectorAll('#hud-options input')[1]";
+  if (!(await evaluate(`${clockOption}.checked`))) {
+    await clickAt('#hud-options label:nth-of-type(2)');
+  }
+  assert.equal(await evaluate(`${clockOption}.checked`), true, 'clock is enabled for the pause readout');
+  const hudOptionBeforeClick = await evaluate("document.querySelectorAll('#hud-options input')[0].checked");
+  await clickAt('#hud-options label:nth-of-type(1)');
   assert.equal(
-    await evaluate("document.querySelectorAll('#hud-options input')[1].checked"),
-    true,
-    'drawn cursor toggles F9 menu controls',
+    await evaluate("document.querySelectorAll('#hud-options input')[0].checked"),
+    !hudOptionBeforeClick,
+    'drawn cursor toggles F9 menu controls from either default state',
   );
   await delay(300);
   assert.match(
@@ -491,11 +502,24 @@ try {
     savedWorldVolume,
     'audio volume remains selected when the menu reopens',
   );
+  const clockOptionBeforeReset = await evaluate(`${clockOption}.checked`);
   await clickAt('#hud-options label:nth-of-type(2)');
   assert.equal(
-    await evaluate("document.querySelectorAll('#hud-options input')[1].checked"),
-    false,
-    'drawn cursor can reset menu controls',
+    await evaluate(`${clockOption}.checked`),
+    !clockOptionBeforeReset,
+    'drawn cursor toggles the clock option',
+  );
+  if ((await evaluate(`${clockOption}.checked`)) !== clockOptionInitiallyChecked) {
+    await clickAt('#hud-options label:nth-of-type(2)');
+  }
+  const statsOption = "document.querySelectorAll('#hud-options input')[0]";
+  if ((await evaluate(`${statsOption}.checked`)) !== statsOptionInitiallyChecked) {
+    await clickAt('#hud-options label:nth-of-type(1)');
+  }
+  assert.deepEqual(
+    await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)"),
+    initialHudToggles,
+    'menu interactions restore the initial HUD settings',
   );
   await clickAt('#go', 'edge');
   const arrowTip = await evaluate(`(() => {
@@ -743,11 +767,7 @@ try {
     'play is resumed before inventory queue checks',
   );
   const toggles = await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)");
-  assert.equal(
-    toggles.every((checked) => !checked),
-    true,
-    'all HUD settings start off',
-  );
+  assert.deepEqual(toggles, initialHudToggles, 'HUD settings retain their initial state through gameplay');
   await press('Tab', 'Tab', 9);
   assert.equal(
     await evaluate("document.querySelector('#inventory .inv-needs') !== null"),
@@ -853,8 +873,16 @@ try {
     };
   })()`);
   assert.match(transfer.sourceTarget, /^pocket:/, 'source item is in a container pocket');
+  const dragGhost = () =>
+    evaluate(`(() => {
+      const ghost = document.querySelector('#inventory-drag-root .inv-ghost');
+      if (!ghost) return null;
+      const rect = ghost.getBoundingClientRect();
+      return { left: rect.left, top: rect.top };
+    })()`);
   assert.equal(transfer.hitUid, transfer.sourceUid, `container item is the topmost hit: ${JSON.stringify(transfer)}`);
-  await moveCursorTo({ x: transfer.source.x + 16, y: transfer.source.y + 16 });
+  const drawnSource = { x: transfer.source.x + 16, y: transfer.source.y + 16 };
+  await moveCursorTo(drawnSource);
   await evaluate(dispatchMenuPointerClickExpression());
   await waitFor(
     async () =>
@@ -865,11 +893,50 @@ try {
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives selecting a container item');
   const transferDestination = { x: transfer.destination.x + 16, y: transfer.destination.y + 16 };
-  await moveCursorTo({ x: transfer.source.x + 16, y: transfer.source.y + 16 });
-  await dispatchPointerAt('pointerdown', 0, 1, { x: transfer.source.x + 16, y: transfer.source.y + 16 });
+  const beginDrag = async () => {
+    await moveCursorTo(drawnSource);
+    await dispatchPointerAt('pointerdown', 0, 1, drawnSource);
+  };
+
+  await beginDrag();
   await moveCursorTo(transferDestination);
   await dispatchPointerAt('pointermove', -1, 1, transferDestination);
+  const ghostAtDestination = await dragGhost();
+  assert(ghostAtDestination, 'drag displays the item ghost');
+  const ghostHit = await evaluate(`(() => {
+    const ghost = document.querySelector('#inventory-drag-root .inv-ghost');
+    if (!ghost) return false;
+    const previous = ghost.style.pointerEvents;
+    ghost.style.pointerEvents = 'auto';
+    const rect = ghost.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    ghost.style.pointerEvents = previous;
+    return hit === ghost || ghost.contains(hit);
+  })()`);
+  assert.equal(ghostHit, true, 'drag ghost is topmost at its centre');
+  const movedPointer = { x: transferDestination.x + 4, y: transferDestination.y + 6 };
+  await moveCursorTo(movedPointer);
+  await dispatchPointerAt('pointermove', -1, 1, movedPointer);
+  const ghostAfterMove = await dragGhost();
+  assert.ok(ghostAfterMove, 'drag ghost remains while the pointer moves');
+  assert.ok(
+    Math.abs(ghostAfterMove.left - ghostAtDestination.left - 4) < 0.5,
+    'drag ghost follows horizontal movement',
+  );
+  assert.ok(Math.abs(ghostAfterMove.top - ghostAtDestination.top - 6) < 0.5, 'drag ghost follows vertical movement');
+  const outside = { x: 4, y: 4 };
+  await moveCursorTo(outside);
+  await dispatchPointerAt('pointermove', -1, 1, outside);
+  await dispatchPointerAt('pointerup', -1, 0, outside);
+  assert.equal(await dragGhost(), null, 'release outside removes the drag ghost');
+  assert.equal(await moveQueued(), false, 'release outside cancels the move');
+
+  await beginDrag();
+  await moveCursorTo(transferDestination);
+  await dispatchPointerAt('pointermove', -1, 1, transferDestination);
+  assert(await dragGhost(), 'drag displays the item ghost before drop');
   await dispatchPointerAt('pointerup', -1, 0, transferDestination);
+  assert.equal(await dragGhost(), null, 'drop removes the drag ghost');
   await delay(100);
   assert.ok(await moveQueued(), 'container transfer remains in the handling queue');
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');

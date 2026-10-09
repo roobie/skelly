@@ -2,21 +2,19 @@
 import { startingKnownRecipes } from './character.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
-import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
+import { HAMLET_TEMPLATES, ordinaryHamletSpawnWeights, possibleHamletZombies } from './hamlet.ts';
 import { WORK_IN_PROGRESS } from './inventory.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
+import { SEVERED_ITEM } from './zombieRegionNames.ts';
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
 const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
   WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',
   'spent_case_5_d_56x45',
-  'shambler_torso',
-  'shambler_left_arm',
-  'shambler_right_arm',
-  'shambler_left_leg',
-  'shambler_right_leg',
+  // Body parts come from cutting shamblers up, not from finding or crafting.
+  ...Object.values(SEVERED_ITEM),
 ]);
 
 interface RecipeDiagnostic {
@@ -182,9 +180,7 @@ const worldSources = (registry: Registry) => {
       markers.set(id, template.spawns);
     }
   }
-  const spawnWeights = new Map(
-    [...registry.zombies].filter(([, zombie]) => !zombie.debugOnly).map(([id, zombie]) => [id, zombie.spawnWeight]),
-  );
+  const spawnWeights = ordinaryHamletSpawnWeights(registry);
   for (const id of possibleHamletZombies(markers, spawnWeights)) {
     const loot = registry.zombies.get(id)?.loot;
     if (loot !== undefined) {

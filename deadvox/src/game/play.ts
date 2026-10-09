@@ -10,6 +10,7 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
+import type { EntityId } from '../core/entities.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
@@ -110,9 +111,12 @@ import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
+  downloadFile,
+  type HandBackFile,
   loadMetrics,
-  metricsExportJson,
+  metricsFile,
   persistMetrics,
+  replayFile,
   SessionMetrics,
 } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
@@ -147,6 +151,45 @@ type InputReplayVerification = 'matched' | 'diverged' | 'unavailable' | undefine
 const INPUT_REPLAY_COLUMN_OVERFLOW_STOP_REASON =
   'a streamed-column batch exceeded the recording window; the recent replay was discarded';
 const inputReplayStoppedStatus = (reason: string): string => `Recording stopped: ${reason}`;
+
+const createReviewMapFrame = (debug: boolean): HTMLIFrameElement | undefined => {
+  if (!debug) {
+    return;
+  }
+  const frame = document.createElement('iframe');
+  frame.title = 'Current-world review map';
+  frame.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:10000;background:#d7ddd4';
+  frame.hidden = true;
+  document.body.append(frame);
+  return frame;
+};
+
+const installReviewMapMessageListener = (
+  frame: HTMLIFrameElement | undefined,
+  onKey: (message: Record<string, unknown>) => void,
+  onClose: () => void,
+): void => {
+  if (!frame) {
+    return;
+  }
+  globalThis.addEventListener('message', (event: MessageEvent<unknown>) => {
+    if (
+      event.origin !== globalThis.location.origin ||
+      event.source !== frame.contentWindow ||
+      typeof event.data !== 'object' ||
+      event.data === null ||
+      !('type' in event.data)
+    ) {
+      return;
+    }
+    const message = event.data;
+    if (message.type === 'deadvox-review-map-key') {
+      onKey(message as Record<string, unknown>);
+    } else if (message.type === 'deadvox-review-map-close') {
+      onClose();
+    }
+  });
+};
 
 interface InputReplayStatusOptions {
   readonly replayPlayer: InputReplayPlayer | undefined;
@@ -560,10 +603,15 @@ export const startPlay = (
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
-    // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
+    // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ZombieMeshes leaves
+    // them undefined.
     zombieEffects: {
+      onWound: (_id, _zombie, hit, damage) => view.gore.spray(hit, damage),
       onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
-      onCarve: (id, zombie, cells, hit) => zombieMeshes.zombieCarved?.(id, zombie, cells, hit),
+      onCarve: (id, zombie, cells, hit) => {
+        zombieMeshes.zombieCarved?.(id, zombie, cells, hit);
+        view.gore.carved(hit, cells.length);
+      },
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
@@ -828,15 +876,7 @@ export const startPlay = (
       /* Storage can be disabled; gameplay remains available. */
     }
   };
-  const exportMetrics = (): void => {
-    const blob = new Blob([metricsExportJson(metrics)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `deadvox-metrics-seed-${config.seed}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
+  const exportMetrics = (): void => downloadFile(metricsFile(metrics));
   const measureSnapshot = () => playtestObserver!.measureSnapshot(captureSnapshot, session);
   const openInventoryScreen = (): void => {
     screen.open();
@@ -933,6 +973,79 @@ export const startPlay = (
     },
     import: importReplay,
   };
+  const handBackStatus = $('playtest-export-status');
+  const handBack = async (file: () => HandBackFile | Promise<HandBackFile>): Promise<void> => {
+    try {
+      const saved = await file();
+      downloadFile(saved);
+      handBackStatus.textContent = `Saved ${saved.name}`;
+    } catch (error) {
+      handBackStatus.textContent = error instanceof Error ? error.message : String(error);
+    }
+  };
+  // Assigned, not added: a later world on this page must not save each file twice.
+  $('playtest-metrics-export').onclick = () => handBack(() => metricsFile(metrics));
+  $('playtest-replay-export').onclick = () =>
+    handBack(async () => replayFile(await inputReplayHooks.export(), new Date()));
+  $('playtest-export').hidden = false;
+  let reviewMapOpen = false;
+  const reviewMapFrame = createReviewMapFrame(config.debug);
+  const toggleReviewMap = (open = !reviewMapOpen): void => {
+    if (open === reviewMapOpen || !reviewMapFrame) {
+      return;
+    }
+    reviewMapOpen = open;
+    reviewMapFrame.hidden = !open;
+    if (open) {
+      debugTools?.closeMenus();
+      const mapUrl = new URL('map.html', globalThis.location.href);
+      mapUrl.searchParams.set('overlay', '1');
+      mapUrl.searchParams.set('debug', '1');
+      mapUrl.searchParams.set('seed', String(config.seed));
+      mapUrl.searchParams.set('site', config.site);
+      mapUrl.searchParams.set('storeys', String(config.storeys));
+      if (config.density !== null) {
+        mapUrl.searchParams.set('density', String(config.density));
+      }
+      const x = body.pos[0] * s;
+      const z = body.pos[2] * s;
+      mapUrl.searchParams.set('centerX', String(x));
+      mapUrl.searchParams.set('centerZ', String(z));
+      mapUrl.searchParams.set('playerX', String(x));
+      mapUrl.searchParams.set('playerZ', String(z));
+      mapUrl.searchParams.set('playerYaw', String(input.yaw));
+      reviewMapFrame.src = mapUrl.href;
+      input.unlock();
+      input.cancel();
+    } else {
+      reviewMapFrame.src = 'about:blank';
+    }
+    syncMenuState();
+    if (!open && started && !input.locked) {
+      resume();
+    }
+    keyboardInput.sync();
+  };
+  const routeReviewMapKey = (message: Record<string, unknown>) => {
+    if (typeof message.code !== 'string' || (message.phase !== 'down' && message.phase !== 'up')) {
+      return;
+    }
+    const keyEvent = {
+      code: message.code,
+      shiftKey: message.shiftKey === true,
+      altKey: message.altKey === true,
+      ctrlKey: message.ctrlKey === true,
+      metaKey: message.metaKey === true,
+      repeat: message.repeat === true,
+      isComposing: message.isComposing === true,
+    };
+    if (message.phase === 'down') {
+      keyboardInput.pressForwarded(keyEvent);
+    } else {
+      keyboardInput.releaseForwarded(keyEvent);
+    }
+  };
+  installReviewMapMessageListener(reviewMapFrame, routeReviewMapKey, () => toggleReviewMap(false));
   debugTools = debugModule?.attachDebugTools({
     engine,
     weather,
@@ -944,6 +1057,7 @@ export const startPlay = (
     sim,
     input,
     debugModifierHeld: () => keyboardInput.held('debug.gate'),
+    reviewMap: { isOpen: () => reviewMapOpen, toggle: () => toggleReviewMap() },
     impactLaser: {
       enabled: () => debugLaserEnabled,
       toggle: () => {
@@ -1005,6 +1119,7 @@ export const startPlay = (
       inventoryOpen: screen.isOpen,
       readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
+      reviewMapOpen,
       pointerLocked: input.locked || Boolean(options.replay),
       dead: sim.dead !== undefined,
       pointerLockChanged,
@@ -1212,6 +1327,7 @@ export const startPlay = (
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
+    clearDownedBody: (id, way) => session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
     craftContinue: () => {
       continueAction();
@@ -1417,6 +1533,9 @@ export const startPlay = (
     return debugTools?.noclip || spectatorCameraEnabled ? 'noclip' : 'play';
   };
   const inputContext = (): InputContext => {
+    if (reviewMapOpen) {
+      return 'review-map';
+    }
     if (options.saveController && !options.saveController.isEntered) {
       return 'title';
     }
@@ -1439,7 +1558,13 @@ export const startPlay = (
     quickbarInput.cancel();
     hintToggleInput.cancel();
   };
-  keyboardInput.escape = () => reading.close();
+  keyboardInput.escape = () => {
+    if (reviewMapOpen) {
+      toggleReviewMap(false);
+    } else {
+      reading.close();
+    }
+  };
   const inventoryTabCommand = (action: string): boolean => {
     const tab = inventoryTabForAction(action);
     if (!tab) {
@@ -1555,6 +1680,10 @@ export const startPlay = (
   const handleDebugCommand = (action: string): boolean => {
     if (!(action.startsWith('debug.') || action.startsWith('spawn.'))) {
       return false;
+    }
+    if (action === 'debug.review-map-toggle') {
+      toggleReviewMap();
+      return true;
     }
     debugTools?.handleAction(action);
     syncMenuState();
@@ -1732,6 +1861,9 @@ export const startPlay = (
       worldSeed: config.seed,
       isSolid: engine.isOpaque,
       hasModel: (id) => view.models.has(id),
+      downedBodies: [...session.zombieStore.entries()]
+        .filter(([, zombie]) => zombie.incapacitated)
+        .map(([id, zombie]) => ({ id, body: zombie.body })),
     });
   const lookedAt = (): BlockEntity | undefined => {
     const target = interactionTargetAt();
@@ -1769,6 +1901,16 @@ export const startPlay = (
     return `with ${tools} — ${plan.reason}`;
   };
 
+  const downedBodyHint = (id: EntityId): string => {
+    const finish = session.downedBodyPlan(id, 'finish-off');
+    if (!finish.ok) {
+      return finish.reason;
+    }
+    const dismember = session.downedBodyPlan(id, 'dismember');
+    const reason = dismember.ok ? '' : ` — ${dismember.reason.toLowerCase()}`;
+    return `${labelForAction('world.interact')}: ${finish.label.toLowerCase()}; hold to dismember${reason}`;
+  };
+
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): string => {
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
@@ -1789,16 +1931,25 @@ export const startPlay = (
     });
   };
 
+  /** A tap pockets an item or finishes off a downed body; a hold wields the item or dismembers the body. */
+  function interactionPayload(target: InteractionTarget, mode: 'pocket' | 'wield'): ReplayActionPayload {
+    switch (target.kind) {
+      case 'item':
+        return { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() };
+      case 'body':
+        return { kind: 'zombie.downed', zombieId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
+      default:
+        return { kind: 'furniture.interact', entityUid: target.entity.uid };
+    }
+  }
+
   function completeWorldInteraction(mode: 'pocket' | 'wield'): void {
     const target = interactionPressTarget;
     interactionPressTarget = undefined;
     if (!target) {
       return;
     }
-    const payload: ReplayActionPayload =
-      target.kind === 'item'
-        ? { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() }
-        : { kind: 'furniture.interact', entityUid: target.entity.uid };
+    const payload = interactionPayload(target, mode);
     const reason = dispatchScreenCommand(payload);
     if (reason) {
       showRefusal(reason, sim.time);
@@ -2370,6 +2521,8 @@ export const startPlay = (
       interactionHint = `${labelForAction('world.interact')}: pocket the ${inventory.name(target.item)}; hold to wield`;
     } else if (target?.kind === 'furniture') {
       interactionHint = useText(target.entity);
+    } else if (target?.kind === 'body') {
+      interactionHint = downedBodyHint(target.id);
     }
     return playPromptText(
       {
@@ -2770,6 +2923,11 @@ export const startPlay = (
     hintToggleInput.update(now);
   };
 
+  // Blood holds still while the game is paused.
+  const updateGore = (dt: RealSeconds): void => {
+    view.gore.update(sim.paused ? 0 : dt, engine.isSolid, { zombies: zombieStore, listener: body.pos });
+  };
+
   const frame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
@@ -2791,6 +2949,7 @@ export const startPlay = (
     advancePendingItemThrow();
     syncThrowingStance();
     caseEffects.update(dt, engine.isSolid);
+    updateGore(dt);
     impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = realNow() - mark;
     options.saveController?.afterFrame();

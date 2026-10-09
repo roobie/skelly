@@ -11,6 +11,7 @@ import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts';
 import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
+import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import {
   DEFAULT_REPLAY_START_STATE,
   decodeInputReplay,
@@ -138,6 +139,7 @@ const applyCommand = (
     interact: () => {
       throw new Error('Furniture interaction is not implemented in the replay test harness');
     },
+    clearDownedBody: (id, way) => runtime.session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftContinue: () => {
       const uid = runtime.session.crafting.currentUid;
@@ -644,6 +646,19 @@ const createRifleReplayFixture = () => {
 const REPLAY_EXPORT_OVERRIDE_MESSAGE = /debug firearm-handling overrides differ from content/;
 
 describe('input replay', () => {
+  it('records every context named by an input binding', () => {
+    const contexts = [...new Set(INPUT_BINDINGS.flatMap(({ contexts: bindingContexts }) => bindingContexts))];
+    const gate = INPUT_BINDINGS.find(({ id }) => id === 'debug.gate')!;
+    const command = gate.commands.find(({ id }) => id === 'debug.gate')!;
+    const start = capture(createRuntime());
+
+    for (const context of contexts) {
+      expect(gate.contexts).toContain(context);
+      const recorder = new InputReplayRecorder(start);
+      expect(() => recorder.queueAction(command.id, 'down', context)).not.toThrow();
+    }
+  });
+
   it('reports the supplied stop reason instead of an idle recording', () => {
     const options = {
       replayPlayer: undefined,

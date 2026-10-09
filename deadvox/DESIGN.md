@@ -18,6 +18,7 @@ read_if:
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
+  - you're changing the HUD defaults or why players can turn HUD elements off
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
@@ -834,11 +835,42 @@ without modeling armour now.
   death and severing; `src/core/zombieRegions.ts`, `posedShamblerRegionBoxes`, owns
   the posed hitboxes. Region health and severed state are simulation state and
   persist in saves.
+- **A downed shambler is cleared by hand.** A destroyed torso with the head
+  still on leaves the shambler downed: it lies where it fell, stays in the save,
+  and can't be hit. It no longer blocks the player or a closing door, so a body
+  can't seal a corridor or a stair. Clearing it is a timed handling action on a
+  body in reach. Finishing it off needs no tool. Dismembering needs a carried
+  tool with the type's quality, takes longer and leaves the arms and head as
+  items; it is where butchering will start. Either way it ends as a kill does,
+  and its corpse sinks. The action re-checks reach and the tool when it ends, so
+  walking away or cancelling leaves the body lying. Like all handling, an action
+  in progress is not saved. The times and the quality are content on the zombie
+  type. See `src/core/schema.ts`, `ZombieSchema` (`downed`); `src/game/downedBody.ts`,
+  `downedBodyPlan`; `src/core/zombies.ts`, `ZombieSystem.finishDowned`; and
+  `src/game/session.ts`, `standingZombieBodies`.
+- **Gore is presentation only.** Every damaging hit sprays blood from the
+  wound, mostly along the strike and some back toward the attacker, more for a
+  heavier hit. Where a droplet lands it leaves a splat. Splats fade and are not
+  saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
+  both derived from saved state (lost region health, severed parts, carved
+  flesh), so they survive a reload with no state of their own; a corpse keeps
+  the stains it fell with. Gore stays out of the simulation so that blood never
+  changes a fight, a save or a replay. Splats are decoration, so they fade
+  rather than being saved, which would add to every save. Whether bleeding
+  should matter to play is still open (below). The simulation reports each
+  wound through a one-way callback and reads nothing back, and
+  `test/zombies.test.ts` checks that a run with a listener matches one without.
+  Droplets and splats live in fixed pools, drips come from the nearest few
+  bodies, and a cap limits the droplets started per frame. Everything here
+  covers the amalgam too, which is fused from shamblers. See
+  `src/core/zombies.ts`, `ZombieSystemOptions.onWound`; `src/render/gore.ts`,
+  `Gore` and `woundSeverity`; `src/render/bloodStain.ts`, `bloodStain`; and
+  `mobgen/src/mob/crowd.ts`, `packBloodiness`.
 - **Determinism.** Hit regions, blast falloff and any spread are seeded, so
   saves and replays stay exact. Region and material state is simulation state:
   it goes into the save snapshot and the source fingerprint.
 Still open: the full list of damage types and each material's resistances,
-whether wounds bleed or slow a shambler, partial block damage (cracked looks),
+whether bleeding harms or slows a shambler, partial block damage (cracked looks),
 blast damage by distance across body regions, explosives and breach charges, and
 the sounds for severing and destruction (the audio manifest).
 
@@ -929,11 +961,13 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 1 | Screamer | Weak, but its scream pulls in the horde |
 | 1 | Bloater | Bursts into a noxious cloud |
 | 2 | Brute | Big, knocks you back, breaks doors |
-| 2 | Soldier | Armoured (from military sites) |
+| 2 | Soldier | Armoured; carries ordinary kit at the military camp |
 | 2 | Hazmat | Resists acid and fire (from lab sites) |
 | 3 | Smoulderer | Hot to the touch; sets flammable things on fire |
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
+
+Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers and explicit camp spawns; `src/core/hamlet.ts`, `ordinaryHamletSpawnWeights`, excludes authored-only kinds from ordinary selection. Its kit uses ordinary items; military loot remains restricted to site containers. For #487, defer the military clothing palette, armour, and body searching; the soldier first appears in civilian clothes, carries ordinary kit, and drops loot on death.
 
 ### Spawning
 
@@ -967,7 +1001,7 @@ A damaging hit on the amalgam knocks a chunk of flesh out of it and leaves a hol
 
 Holes are cosmetic: they show the damage without changing combat. Damage, region health, severing and later hit tests use the region boxes of the whole body, as they would without holes; `test/amalgam.test.ts` compares a hit sequence with and without carving. A hole is still simulation state, the amalgam's removed voxels as `Zombie.carved`, so it is deterministic, survives a save and replays, and a later rule could read which flesh is gone. A restore refuses holes no play could make: a cell outside the grid or without flesh, the protected core voxel, or any hole on a type that doesn't carve. See `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, and `src/core/zombies.ts`, `ZombieSystem.restoreState`.
 
-The renderer rebuilds a holed amalgam's mesh without its removed voxels, and the faces the hole exposes take the type's interior colour. They are marked as wound faces (`CARVED_NEIGHBOUR`) so gore can find them later; gore covers the amalgam as it does shamblers, since the amalgam is fused from them. The removed voxels fly off along the shot as a render-only rigid chunk that lands, lies, sinks and is removed, with a cap on live chunks. Neither the chunk nor the rebuilt mesh enters the simulation, and the corpse keeps the holes. See `src/render/amalgamFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
+The renderer rebuilds a holed amalgam's mesh without its removed voxels, and the faces the hole exposes take the type's interior colour. They are marked as wound faces (`CARVED_NEIGHBOUR`). The removed voxels fly off along the shot as a render-only rigid chunk that lands, lies, sinks and is removed, with a cap on live chunks. Gore covers the amalgam as it does shamblers ("Gore is presentation only" above): carving throws an extra burst of blood, and a chunk leaves a large splat where it lands. Neither the chunk nor the rebuilt mesh enters the simulation, and the corpse keeps the holes. See `src/render/amalgamFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
 
 Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
 sight-driven pursuit an immediate sprint threat, while the crawler uses the body's
@@ -1357,10 +1391,11 @@ decoration.
   minimap of zombies, no threat meter. A rest interruption says what you
   heard, not what it was. The in-game map is a paper map (#470); top-down
   renders are review tools, not UI.
-- **Aim for full diegesis (BR, 2026-10-03):** "we should _aim_ for full
-  diegesis - that's why the HUD is default off, but we can't always with voxel
-  graphics". Utilities such as the compass and the wristwatch are items the
-  player finds and holds (#183).
+- **Aim for full diegesis.** New players need the HUD to understand a voxel
+  world; experienced players can turn off individual elements as diegetic
+  affordances grow. See `src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. Utilities
+  such as the compass and the wristwatch are items the player finds and holds
+  (#183).
 
 ## Tone
 

@@ -48,7 +48,12 @@ describe('restViewModel', () => {
     expect(sim.compression.interruption).toBe(reason);
 
     const action: RestAction = { kind: 'rest', furnitureUid: 1, label: 'Resting', rate: -15, startFatigue: 40 };
-    const hidden = restViewModel(action, true, sim, hudVisibility(DEFAULT_HUD_OPTIONS).messages);
+    const hidden = restViewModel(
+      action,
+      true,
+      sim,
+      hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: false }).messages,
+    );
     const visible = restViewModel(
       action,
       true,
