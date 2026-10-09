@@ -181,7 +181,8 @@ to unseen sounds and interruptions, and any point where players stall or
 misunderstand. Ask which moment most annoyed and which most delighted each
 player. Save the local metrics and facilitator notes with the findings. If the
 second night is too safe, add night wanderers after the first playtest. Update DESIGN, CHALLENGES and this EPIC with
-the findings before planning Slice 4.
+the findings before planning Slice 4. The facilitator's steps, consent and
+observation template are in [docs/playtest-run.md](docs/playtest-run.md).
 
 The death/new-run contract is still open for version 1: should a new run in the
 same world preserve piles left by the previous character?
