@@ -4,6 +4,7 @@ import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type 
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { HAMLET_TEMPLATES, possibleHamletZombies } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
@@ -95,6 +96,42 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
+  it('routes camp spawns to the soldier while preserving ordinary shambler pockets', () => {
+    const campMarkers = [...baseRegistry.templates.values()]
+      .filter(({ id }) => id.startsWith('camp_'))
+      .flatMap((template) => compileTemplate(baseRegistry, template).spawns);
+    expect(campMarkers.length).toBeGreaterThan(0);
+    expect(campMarkers.every(({ zombie }) => zombie === 'military_shambler')).toBe(true);
+
+    const playtest = baseRegistry.layouts.get('playtest')!;
+    expect(playtest.shamblers.some(({ type }) => type === 'military_shambler')).toBe(true);
+    expect(playtest.shamblers.some(({ type }) => type === 'shambler')).toBe(true);
+    const shambler = baseRegistry.zombies.get('shambler')!;
+    const soldier = baseRegistry.zombies.get('military_shambler')!;
+    expect(soldier).toMatchObject({
+      ...shambler,
+      id: 'military_shambler',
+      name: 'Soldier',
+      debugOnly: true,
+      loot: 'soldier_pockets',
+    });
+    expect(shambler.loot).toBe('shambler_pockets');
+  });
+
+  it('keeps the camp soldier out of ordinary hamlet selection', () => {
+    const weights = new Map(
+      [...baseRegistry.zombies]
+        .filter(([, zombie]) => !zombie.debugOnly)
+        .map(([id, zombie]) => [id, zombie.spawnWeight]),
+    );
+    const markers = new Map(
+      HAMLET_TEMPLATES.map((id) => [id, compileTemplate(baseRegistry, baseRegistry.templates.get(id)!).spawns]),
+    );
+    const possible = possibleHamletZombies(markers, weights);
+    expect(possible.has('military_shambler')).toBe(false);
+    expect(possible.has('shambler')).toBe(true);
+  });
+
   it('keeps the base day cycle authoritative over mod overrides', () => {
     const baseCycle = baseRegistry.dayCycle!;
     const modCycle = {

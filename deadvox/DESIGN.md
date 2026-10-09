@@ -960,11 +960,13 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 1 | Screamer | Weak, but its scream pulls in the horde |
 | 1 | Bloater | Bursts into a noxious cloud |
 | 2 | Brute | Big, knocks you back, breaks doors |
-| 2 | Soldier | Armoured (from military sites) |
+| 2 | Soldier | Carries ordinary kit at the military camp |
 | 2 | Hazmat | Resists acid and fire (from lab sites) |
 | 3 | Smoulderer | Hot to the touch; sets flammable things on fire |
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
+
+Zombie kinds are content definitions, each with a type and a loot table, not code cases. The soldier is selected only by the military camp's authored markers and explicit spawns, so its kit stays out of ordinary areas and the camp's authoring decides where it appears. Its kit uses ordinary items; military loot remains restricted to site containers.
 
 ### Spawning
 
