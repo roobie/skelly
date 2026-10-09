@@ -1841,6 +1841,18 @@ try {
     return r.survival.use(r.inventory.itemByUid(uid));
   }, throwFixture.uid);
   assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
+  let landing = await page.evaluate(
+    ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
+    { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
+  );
+  for (let turn = 1; !landing?.fits && turn <= 16; turn += 1) {
+    await page.mouse.move(760 + turn * 16, 410);
+    landing = await page.evaluate(
+      ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
+      { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
+    );
+  }
+  assert(landing?.fits, `full-charge throw has a landing pile with room: ${JSON.stringify(landing)}`);
   const releaseThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);

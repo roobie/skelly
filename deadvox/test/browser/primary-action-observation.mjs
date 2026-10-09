@@ -124,7 +124,13 @@ export const observationPlugin = {
     },
     hudOptions,
     beginItemThrow,
-    itemLandingTarget,
+    getItemThrowLanding: (itemUid, heldSimSeconds) => {
+      const item = inventory.itemByUid(itemUid);
+      if (!item) return undefined;
+      const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
+      const target = itemLandingTarget(distance);
+      return { target, fits: Boolean(target && inventory.planAdd(item, target).ok) };
+    },
     getItemThrowState: () => ({ startedAt: itemThrowStartedAt, itemUid: itemThrowItemUid, hand: itemThrowHand }),
     selectPrimaryAction,
     ignitionTargetForHand,
