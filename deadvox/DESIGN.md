@@ -767,19 +767,21 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
   `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`,
   `spentCaseScatter`.
-- **Noise** is an event with a loudness and position. Footsteps (worse when
-  sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
-  Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
-  (see the screamer below). Stealth is a matter of managing noise and staying
-  out of sight. A real suppressor cuts a shot's base noise radius to a quarter;
-  an improvised suppressor uses its own weaker attachment factor. Both apply
-  consistently across firearms; the sound event selects the sample, not a second
-  radius. Near hearing ends at the scaled base radius, while the far tier extends
-  according to the listener's hearing model. Wear weakens the suppressor's
-  effect. Keep this tuning local to shots so other noises retain their range. See `src/core/zombies.ts`, `hearVocalNoise`,
-  `src/core/firearmAttachments.ts`, `firearmAttachmentResponse`,
-  `src/game/audioPresentation.ts`, `firearmShotEmission`, and `src/game/play.ts`,
-  `fireWeapon`.
+- **Noise** is an event with loudness and position. Sprinting makes footsteps
+  louder; melee, gunshots, doors, breaking glass and engines also make noise.
+  Walls reduce how far it travels. Zombies hear, investigate and pass noise on
+  (see the screamer below), so stealth means managing noise and staying out of
+  sight. Suppressor effects apply across firearms through attachment metadata;
+  the shot event selects the sample, not another radius. Near hearing ends at the
+  scaled base radius, while the far tier follows the listener's hearing model. At
+  full condition, a real suppressor brings that far tier to half the unsuppressed
+  base radius; an improvised suppressor is louder, and wear makes either louder.
+  Keep suppression local to shots so other noises retain their range. See
+  `gungen/src/gun/attachments.ts`, `suppressors`;
+  `src/core/firearmAttachments.ts`, `firearmAttachmentResponse` and
+  `wearFirearmAttachments`; `src/core/zombies.ts`, `hearVocalNoise`;
+  `src/game/audioPresentation.ts`, `firearmShotEmission`; and
+  `src/game/play.ts`, `fireWeapon`.
 - **Player-owned sound playback (d111-1):** BR: “their position in the world is
   the player, and the player is a mobile thing, so”. Character- and held-item
   sounds have the player as their source; listener-relative playback makes them
