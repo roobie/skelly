@@ -1,5 +1,6 @@
 // Render-only gore: blood thrown from wounds, splats where it lands, and drips from wounded bodies. Nothing
-// here is saved or read by the simulation: splats fade, and a reload starts clean.
+// here is saved or read by the simulation: splats fade, and a reload starts clean. It runs every frame under
+// crowds, so the per-frame path allocates nothing: pools, slots and vectors are made once and reused.
 
 import {
   BoxGeometry,
@@ -15,6 +16,7 @@ import {
   Vector3,
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
+import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
 
@@ -48,7 +50,7 @@ const CARVED_CELL_SEVERITY = 0.01;
 const DROPLET_COLOR = 0x52_17_0f;
 const SPLAT_COLOR = 0x3a_0c_08;
 const FACE_NORMAL = new Vector3(0, 0, 1);
-const UP: Vec3 = [0, 1, 0];
+const AXES = [0, 1, 2] as const;
 
 interface Droplet {
   active: boolean;
@@ -63,21 +65,44 @@ interface Splat {
   ageRealSeconds: number;
 }
 
-/** A wounded body that drips. Positions are metres; `position` is its feet. */
-export interface DripSource {
-  readonly position: Vec3;
-  readonly heightMetres: number;
-  readonly halfWidthMetres: number;
-  /** 0 to 1; see woundSeverity. */
-  readonly severity: number;
+/** One of the nearest wounded bodies, picked afresh each update. */
+interface Dripper {
+  zombie: Zombie | undefined;
+  distanceBlocks: number;
+  severity: number;
 }
+
+interface SeverityMemo {
+  update: number;
+  value: number;
+}
+
+/** What drips: the bodies in the world, and where the listener is (blocks). */
+export interface GoreBodies {
+  readonly zombies: Pick<EntityStore<Zombie>, 'entries'>;
+  readonly listener: Vec3;
+}
+
+const regionNameLists = new WeakMap<Zombie['type']['regions'], readonly string[]>();
+
+/** A type's region names, listed once per type rather than once per body per frame. */
+const regionNames = (maxima: Zombie['type']['regions']): readonly string[] => {
+  let names = regionNameLists.get(maxima);
+  if (!names) {
+    names = Object.keys(maxima);
+    regionNameLists.set(maxima, names);
+  }
+  return names;
+};
 
 /** How badly a body bleeds, 0 to 1, from its saved wounds: health lost across its regions, severed parts and
  * carved flesh. Derived, so drips and the bloodied tint survive a reload with no state of their own. */
 export const woundSeverity = (zombie: Pick<Zombie, 'type' | 'regions' | 'severed' | 'carved'>): number => {
   let full = 0;
   let left = 0;
-  for (const [region, max] of Object.entries(zombie.type.regions)) {
+  const maxima = zombie.type.regions;
+  for (const region of regionNames(maxima)) {
+    const max = maxima[region]!;
     full += max;
     left += Math.min(max, Math.max(0, zombie.regions[region] ?? 0));
   }
@@ -87,29 +112,6 @@ export const woundSeverity = (zombie: Pick<Zombie, 'type' | 'regions' | 'severed
     lost + zombie.severed.length * SEVERED_PART_SEVERITY + zombie.carved.length * CARVED_CELL_SEVERITY,
   );
 };
-
-/** The nearest wounded bodies to `listener` (blocks), as drip sources in metres. */
-export const dripSources = (zombies: Iterable<Zombie>, listener: Vec3, blockSize: number): DripSource[] =>
-  [...zombies]
-    .map((zombie) => ({
-      zombie,
-      severity: woundSeverity(zombie),
-      distanceMetres:
-        Math.hypot(
-          zombie.body.pos[0] - listener[0],
-          zombie.body.pos[1] - listener[1],
-          zombie.body.pos[2] - listener[2],
-        ) * blockSize,
-    }))
-    .filter(({ severity, distanceMetres }) => severity > 0 && distanceMetres <= DRIP_RANGE_M)
-    .sort((a, b) => a.distanceMetres - b.distanceMetres)
-    .slice(0, DRIP_SOURCE_CAP)
-    .map(({ zombie, severity }) => ({
-      position: [zombie.body.pos[0] * blockSize, zombie.body.pos[1] * blockSize, zombie.body.pos[2] * blockSize],
-      heightMetres: zombie.incapacitated ? DOWNED_DRIP_HEIGHT_M : zombie.body.height * blockSize,
-      halfWidthMetres: zombie.body.halfWidth * blockSize,
-      severity,
-    }));
 
 /** Fades each splat by its own opacity, which MeshBasicMaterial has no per-instance slot for. */
 const patchSplatOpacity = (material: MeshBasicMaterial): void => {
@@ -130,15 +132,22 @@ export class Gore {
   private readonly rng: Rng;
   private readonly droplets: Droplet[];
   private readonly splats: Splat[];
+  private readonly drippers: Dripper[];
+  private readonly severities = new WeakMap<Zombie, SeverityMemo>();
   private readonly dropletMesh: InstancedMesh<BoxGeometry, MeshBasicMaterial>;
   private readonly splatMesh: InstancedMesh<CircleGeometry, MeshBasicMaterial>;
   private readonly splatOpacity: InstancedBufferAttribute;
   private readonly dummy = new Object3D();
   private readonly turn = new Quaternion();
   private readonly scratch = new Vector3();
+  private readonly origin = new Vector3();
+  private readonly point = new Vector3();
+  private readonly normal = new Vector3();
   private nextDroplet = 0;
   private nextSplat = 0;
   private spawnedSinceUpdate = 0;
+  private dripperCount = 0;
+  private updates = 0;
 
   constructor(blockSize: number, seed = 1) {
     this.blockSize = blockSize;
@@ -151,6 +160,11 @@ export class Gore {
       sizeMetres: 0,
     }));
     this.splats = Array.from({ length: SPLAT_CAP }, () => ({ active: false, ageRealSeconds: 0 }));
+    this.drippers = Array.from({ length: DRIP_SOURCE_CAP }, () => ({
+      zombie: undefined,
+      distanceBlocks: 0,
+      severity: 0,
+    }));
     this.dropletMesh = new InstancedMesh(
       new BoxGeometry(1, 1, 1),
       new MeshBasicMaterial({ color: DROPLET_COLOR }),
@@ -190,11 +204,28 @@ export class Gore {
     return this.splats.reduce((count, splat) => count + Number(splat.active), 0);
   }
 
+  /** A body's woundSeverity, worked out at most once per update: the drips and the stains on live bodies
+   * (mobActors.ts) both read it every frame. */
+  severity(zombie: Zombie): number {
+    const memo = this.severities.get(zombie);
+    if (memo?.update === this.updates) {
+      return memo.value;
+    }
+    const value = woundSeverity(zombie);
+    if (memo) {
+      memo.update = this.updates;
+      memo.value = value;
+    } else {
+      this.severities.set(zombie, { update: this.updates, value });
+    }
+    return value;
+  }
+
   /** Blood thrown from a wound: most along the strike and on through the body, some back toward the attacker;
    * more for a heavier hit. `hit` is in blocks, like the simulation's. */
   spray(hit: HitImpulse, damage: number): void {
     const count = Math.min(SPRAY_DROPLETS_MAX, Math.max(SPRAY_DROPLETS_MIN, Math.round(2 + damage / 5)));
-    const origin: Vec3 = [hit.point[0] * this.blockSize, hit.point[1] * this.blockSize, hit.point[2] * this.blockSize];
+    this.origin.set(hit.point[0], hit.point[1], hit.point[2]).multiplyScalar(this.blockSize);
     for (let i = 0; i < count; i++) {
       const sense = this.rng.chance(SPRAY_BACK_FRACTION) ? -1 : 1;
       const direction = this.scratch
@@ -205,7 +236,7 @@ export class Gore {
         )
         .normalize()
         .multiplyScalar(this.rng.range(1.5, 4.5));
-      if (!this.emit(origin, direction, this.rng.range(0.012, 0.026))) {
+      if (!this.emit(this.origin, direction, this.rng.range(0.012, 0.026))) {
         return;
       }
     }
@@ -221,15 +252,13 @@ export class Gore {
    * flesh (its centre, metres). The floor is the top of the block the centre is in. */
   landed(centre: Vec3): void {
     const floor = Math.floor(centre[1] / this.blockSize) * this.blockSize;
-    this.splat(new Vector3(centre[0], floor, centre[2]), new Vector3(...UP), this.rng.range(0.14, 0.24));
+    this.splat(this.point.set(centre[0], floor, centre[2]), this.normal.set(0, 1, 0), this.rng.range(0.14, 0.24));
   }
 
-  /** Flies the droplets, leaves a splat where each lands, fades the splats and lets the wounded drip. */
-  update(
-    dt: number,
-    isSolid: (x: number, y: number, z: number) => boolean,
-    dripping: readonly DripSource[] = [],
-  ): void {
+  /** Flies the droplets, leaves a splat where each lands, fades the splats and lets the nearest wounded
+   * bodies drip. */
+  update(dt: number, isSolid: (x: number, y: number, z: number) => boolean, bodies?: GoreBodies): void {
+    this.updates += 1;
     const step = Math.max(0, dt);
     const substeps = Math.max(1, Math.ceil(step / 0.02));
     for (const droplet of this.droplets) {
@@ -245,7 +274,8 @@ export class Gore {
       }
     }
     this.fadeSplats(step);
-    this.drip(step, dripping);
+    this.pickDrippers(bodies);
+    this.drip(step);
     this.drawDroplets();
     this.spawnedSinceUpdate = 0;
   }
@@ -260,7 +290,7 @@ export class Gore {
   }
 
   /** Starts one droplet, reusing the oldest; false once this update's spawn budget is spent. */
-  private emit(origin: Vec3, velocity: Vector3, sizeMetres: number): boolean {
+  private emit(origin: Vector3, velocity: Vector3, sizeMetres: number): boolean {
     if (this.spawnedSinceUpdate >= DROPLET_SPAWNS_PER_FRAME) {
       return false;
     }
@@ -270,23 +300,66 @@ export class Gore {
     droplet.active = true;
     droplet.ageRealSeconds = 0;
     droplet.sizeMetres = sizeMetres;
-    droplet.position.set(...origin);
+    droplet.position.copy(origin);
     droplet.velocity.copy(velocity);
     return true;
   }
 
-  private drip(dt: number, dripping: readonly DripSource[]): void {
-    for (const source of dripping.slice(0, DRIP_SOURCE_CAP)) {
-      if (!this.rng.chance(DRIPS_PER_SECOND * source.severity * dt)) {
+  /** The nearest wounded bodies within range, nearest first; distance is checked before the severity. */
+  private pickDrippers(bodies: GoreBodies | undefined): void {
+    this.dripperCount = 0;
+    if (!bodies) {
+      return;
+    }
+    const [lx, ly, lz] = bodies.listener;
+    const rangeBlocks = DRIP_RANGE_M / this.blockSize;
+    for (const [, zombie] of bodies.zombies.entries()) {
+      const { pos } = zombie.body;
+      const distanceBlocks = Math.hypot(pos[0] - lx, pos[1] - ly, pos[2] - lz);
+      const full = this.dripperCount === DRIP_SOURCE_CAP;
+      if (
+        distanceBlocks > rangeBlocks ||
+        (full && distanceBlocks >= this.drippers[DRIP_SOURCE_CAP - 1]!.distanceBlocks)
+      ) {
         continue;
       }
-      const reach = source.halfWidthMetres;
-      const origin: Vec3 = [
-        source.position[0] + this.rng.range(-reach, reach),
-        source.position[1] + source.heightMetres * this.rng.range(0.35, 0.85),
-        source.position[2] + this.rng.range(-reach, reach),
-      ];
-      if (!this.emit(origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
+      const severity = this.severity(zombie);
+      if (severity > 0) {
+        this.insertDripper(zombie, distanceBlocks, severity);
+      }
+    }
+  }
+
+  /** Keeps the drippers sorted by distance: takes a free slot, or the farthest's when full, and moves it in
+   * behind the last one nearer than it. */
+  private insertDripper(zombie: Zombie, distanceBlocks: number, severity: number): void {
+    let index = Math.min(this.dripperCount, DRIP_SOURCE_CAP - 1);
+    const slot = this.drippers[index]!;
+    while (index > 0 && this.drippers[index - 1]!.distanceBlocks > distanceBlocks) {
+      this.drippers[index] = this.drippers[index - 1]!;
+      index -= 1;
+    }
+    slot.zombie = zombie;
+    slot.distanceBlocks = distanceBlocks;
+    slot.severity = severity;
+    this.drippers[index] = slot;
+    this.dripperCount = Math.min(this.dripperCount + 1, DRIP_SOURCE_CAP);
+  }
+
+  private drip(dt: number): void {
+    const s = this.blockSize;
+    for (let index = 0; index < this.dripperCount; index++) {
+      const { zombie, severity } = this.drippers[index]!;
+      if (!(zombie && this.rng.chance(DRIPS_PER_SECOND * severity * dt))) {
+        continue;
+      }
+      const { pos, halfWidth, height } = zombie.body;
+      const reach = halfWidth * s;
+      const heightMetres = zombie.incapacitated ? DOWNED_DRIP_HEIGHT_M : height * s;
+      const x = pos[0] * s + this.rng.range(-reach, reach);
+      const y = pos[1] * s + heightMetres * this.rng.range(0.35, 0.85);
+      const z = pos[2] * s + this.rng.range(-reach, reach);
+      if (!this.emit(this.origin.set(x, y, z), this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
         return;
       }
     }
@@ -294,21 +367,22 @@ export class Gore {
 
   /** Moves one axis at a time; the first solid block met takes a splat on the face it hit. */
   private advance(droplet: Droplet, dt: number, isSolid: (x: number, y: number, z: number) => boolean): void {
-    droplet.velocity.y -= GRAVITY_MPS2 * dt;
-    for (const axis of [0, 1, 2] as const) {
-      const speed = droplet.velocity.getComponent(axis);
-      const next = droplet.position.getComponent(axis) + speed * dt;
-      const block = [droplet.position.x, droplet.position.y, droplet.position.z].map((value, index) =>
-        Math.floor((index === axis ? next : value) / this.blockSize),
-      );
-      if (!isSolid(block[0]!, block[1]!, block[2]!)) {
-        droplet.position.setComponent(axis, next);
+    const { position, velocity } = droplet;
+    const s = this.blockSize;
+    velocity.y -= GRAVITY_MPS2 * dt;
+    for (const axis of AXES) {
+      const speed = velocity.getComponent(axis);
+      const next = position.getComponent(axis) + speed * dt;
+      const bx = Math.floor((axis === 0 ? next : position.x) / s);
+      const by = Math.floor((axis === 1 ? next : position.y) / s);
+      const bz = Math.floor((axis === 2 ? next : position.z) / s);
+      if (!isSolid(bx, by, bz)) {
+        position.setComponent(axis, next);
         continue;
       }
-      const face = (block[axis]! + (speed > 0 ? 0 : 1)) * this.blockSize;
-      droplet.position.setComponent(axis, face);
-      const normal = new Vector3().setComponent(axis, speed > 0 ? -1 : 1);
-      this.splat(droplet.position, normal, droplet.sizeMetres * this.rng.range(2.5, 4.5));
+      position.setComponent(axis, (Math.floor(next / s) + (speed > 0 ? 0 : 1)) * s);
+      this.normal.set(0, 0, 0).setComponent(axis, speed > 0 ? -1 : 1);
+      this.splat(position, this.normal, droplet.sizeMetres * this.rng.range(2.5, 4.5));
       droplet.active = false;
       return;
     }

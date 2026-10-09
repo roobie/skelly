@@ -853,13 +853,17 @@ without modeling armour now.
   saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps
-  the stains it fell with. The simulation reports each wound through a one-way
-  callback and reads nothing back, and `test/zombies.test.ts` checks that a run
-  with a listener matches one without. Droplets and splats live in fixed pools,
-  drips come from the nearest few bodies, and a cap limits the droplets started
-  per frame. Everything here covers the amalgam too, which is fused from
-  shamblers. See `src/core/zombies.ts`, `ZombieSystemOptions.onWound`;
-  `src/render/gore.ts`, `Gore` and `woundSeverity`; and
+  the stains it fell with. Gore stays out of the simulation so that blood never
+  changes a fight, a save or a replay. Splats are decoration, so they fade
+  rather than being saved, which would add to every save. Whether bleeding
+  should matter to play is still open (below). The simulation reports each
+  wound through a one-way callback and reads nothing back, and
+  `test/zombies.test.ts` checks that a run with a listener matches one without.
+  Droplets and splats live in fixed pools, drips come from the nearest few
+  bodies, and a cap limits the droplets started per frame. Everything here
+  covers the amalgam too, which is fused from shamblers. See
+  `src/core/zombies.ts`, `ZombieSystemOptions.onWound`; `src/render/gore.ts`,
+  `Gore` and `woundSeverity`; `src/render/bloodStain.ts`, `bloodStain`; and
   `mobgen/src/mob/crowd.ts`, `packBloodiness`.
 - **Determinism.** Hit regions, blast falloff and any spread are seeded, so
   saves and replays stay exact. Region and material state is simulation state:

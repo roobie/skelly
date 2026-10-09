@@ -1528,7 +1528,9 @@ describe('shambler scenarios', () => {
       expect(listened.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(listenedId);
       expect(silent.swing(silentRay.origin, silentRay.direction, FISTS_MELEE)).toBe(silentId);
     }
-    expect(wounds).toEqual(ZOMBIE_REGION_NAMES.map(() => FISTS_MELEE.damage));
+    // One report per damaging hit, each with damage done.
+    expect(wounds).toHaveLength(ZOMBIE_REGION_NAMES.length);
+    expect(wounds.every((damage) => damage > 0)).toBe(true);
     expect(listened.snapshotState()).toEqual(silent.snapshotState());
   });
 

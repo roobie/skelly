@@ -27,7 +27,6 @@ import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
-import { dripSources } from '../render/gore.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
@@ -2804,15 +2803,7 @@ export const startPlay = (
 
   // Blood holds still while the game is paused.
   const updateGore = (dt: RealSeconds): void => {
-    view.gore.update(
-      sim.paused ? 0 : dt,
-      engine.isSolid,
-      dripSources(
-        [...zombieStore.entries()].map(([, zombie]) => zombie),
-        body.pos,
-        config.scale.blockSize,
-      ),
-    );
+    view.gore.update(sim.paused ? 0 : dt, engine.isSolid, { zombies: zombieStore, listener: body.pos });
   };
 
   const frame = (now: RealTimestamp) => {

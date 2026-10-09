@@ -123,6 +123,7 @@ import { PLAYER } from '../game/player.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './amalgamFlesh.ts';
 import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
+import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -421,6 +422,8 @@ export interface MobActorMeshesOptions {
     | undefined;
   /** A chunk of carved flesh came to rest at this centre (metres), for gore to mark. */
   readonly onFleshLanded?: (centre: Vec3) => void;
+  /** How bloodied a live body is drawn, 0 to 1; gore.ts's woundSeverity unless gore shares its per-frame value. */
+  readonly bloodiness?: (zombie: Zombie) => number;
 }
 
 type ActorModel = 'shambler' | 'runner' | 'crawler' | 'amalgam';
@@ -533,6 +536,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly depthMaterial: MeshDepthMaterial;
   private readonly fleshInterior: Color | undefined;
   private readonly fleshChunks: FleshChunks;
+  private readonly bloodiness: (zombie: Zombie) => number;
   /** Shared by corpses and debris, so "oldest across both" (evictOldestDeadThing*) is a simple comparison
    * instead of needing to interleave two Maps' own iteration orders. */
   private nextDeadOrder = 0;
@@ -605,10 +609,11 @@ export class MobActorMeshes implements ZombieRenderer {
       shader.vertexShader = `${CROWD_VERTEX_DECLARATIONS}\n${shader.vertexShader}`
         .replace('#include <begin_vertex>', CROWD_BEGIN_VERTEX)
         .replace('#include <beginnormal_vertex>', CROWD_BEGINNORMAL_VERTEX);
-      shader.fragmentShader = `${CROWD_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`.replace(
-        '#include <color_fragment>',
-        `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}`,
-      );
+      shader.fragmentShader =
+        `${CROWD_FRAGMENT_DECLARATIONS}\n${BLOOD_STAIN_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`.replace(
+          '#include <color_fragment>',
+          `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}\n${BLOOD_STAIN_COLOR_FRAGMENT}`,
+        );
     };
 
     // The shadow pass draws with a depth material, which would leave every actor in its bind pose: this
@@ -618,6 +623,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const interiorColor = options.amalgamType?.carving?.interiorColor;
     this.fleshInterior = interiorColor === undefined ? undefined : new Color(interiorColor);
     this.fleshChunks = new FleshChunks(this.group, options.onFleshLanded);
+    this.bloodiness = options.bloodiness ?? woundSeverity;
     depthMaterial.customProgramCacheKey = () => 'deadvox-mob-actor-crowd-depth';
     depthMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.crowdBoneTexture = { value: texture };
@@ -1763,7 +1769,7 @@ export class MobActorMeshes implements ZombieRenderer {
       presentationSimSeconds: frame.presentationSimSeconds,
     });
     const severedIndices = this.indicesFor(variant, severedBoneIds(variant, zombie.severed));
-    this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices, bloodiness: woundSeverity(zombie) });
+    this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices, bloodiness: this.bloodiness(zombie) });
     state.lastPose = posed.pose;
     state.lastPlacement = posed.placement;
   }
@@ -1785,7 +1791,7 @@ export class MobActorMeshes implements ZombieRenderer {
       pose: state.lastPose!,
       placement: crowdPlacement,
       severedIndices,
-      bloodiness: woundSeverity(zombie),
+      bloodiness: this.bloodiness(zombie),
     });
     state.lastPlacement = crowdPlacement;
   }

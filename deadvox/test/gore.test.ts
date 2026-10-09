@@ -3,7 +3,7 @@ import type { HitImpulse } from '../src/core/zombies.ts';
 import { DROPLET_CAP, DROPLET_SPAWNS_PER_FRAME, Gore, SPLAT_CAP } from '../src/render/gore.ts';
 
 const floor = (_x: number, y: number, _z: number) => y < 0;
-// A heavy downward hit just above the floor, so every droplet lands on the first update.
+// A heavy downward hit just above the floor, so most droplets land within a few updates.
 const lowHit: HitImpulse = { point: [0.5, 0.05, 0.5], direction: [0, -1, 0], impulse: 4 };
 
 describe('Gore', () => {

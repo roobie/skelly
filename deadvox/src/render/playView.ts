@@ -139,6 +139,7 @@ export const createPlayView = (
           includeAmalgam: true,
           amalgamType: registry.zombies.get('amalgam'),
           onFleshLanded: (centre) => gore.landed(centre),
+          bloodiness: (zombie) => gore.severity(zombie),
         })
       : new ZombieMeshes(s);
   zombieMeshes.setWorld?.(engine.isSolid, s);

@@ -61,9 +61,10 @@ export const packSeveredMask = (
   data[crowdMaskTexelIndex(layout, slot)] = mask >>> 0;
 };
 
-/** Packs how bloodied `slot`'s body is, 0 (clean) to 1, into its mask texel's green channel; the shader
- * stains that share of the body in blotches (CROWD_BEGIN_VERTEX). A reused row keeps the last value
- * written, so every packer writes it. */
+/** Packs how bloodied `slot`'s body is, 0 (clean) to 1, into its mask texel's green channel.
+ * CROWD_BEGIN_VERTEX hands it on as `vCrowdBloodiness`, with the bone-local position and bone, for a host to
+ * shade stains from (deadvox's render/bloodStain.ts). A reused row keeps the last value written, so every
+ * packer writes it. */
 export const packBloodiness = (
   data: Float32Array,
   layout: CrowdTextureLayout,
@@ -160,7 +161,9 @@ attribute float crowdSlot;
 attribute float boneIndex;
 attribute float neighbourBone;
 varying float vCrowdGore;
-varying float vCrowdBlood;
+varying float vCrowdBloodiness;
+varying vec3 vCrowdLocal;
+varying float vCrowdBone;
 
 mat4 crowdBoneMatrix( float slot, float bone ) {
 
@@ -197,15 +200,10 @@ bool crowdBoneSevered( float slot, float bone ) {
 
 }
 
-// Blood: the mask texel's green channel says how bloodied the body is (packBloodiness). A hash of the
-// vertex's bone-local cell picks which blotches are stained, so the stains stay put on the body as it
-// moves and spread as the value grows.
-float crowdBlood( float slot, float bone, vec3 local ) {
+// Blood: the mask texel's green channel says how bloodied the body is (packBloodiness).
+float crowdBloodiness( float slot ) {
 
-	float bloodiness = texelFetch( crowdBoneTexture, ivec2( int( crowdBonesPerSlot ) * 3, int( slot ) ), 0 ).y;
-	vec3 cell = floor( local * 5.0 ) + vec3( bone );
-	float speck = fract( sin( dot( cell, vec3( 12.9898, 78.233, 37.719 ) ) ) * 43758.5453 );
-	return speck < bloodiness ? 0.55 + 0.3 * bloodiness : 0.0;
+	return texelFetch( crowdBoneTexture, ivec2( int( crowdBonesPerSlot ) * 3, int( slot ) ), 0 ).y;
 
 }
 `;
@@ -219,7 +217,10 @@ export const CROWD_BEGIN_VERTEX = /* glsl */ `
 mat4 crowdM = crowdBoneMatrix( crowdSlot, boneIndex );
 vec3 transformed = ( crowdM * vec4( position, 1.0 ) ).xyz;
 vCrowdGore = crowdBoneSevered( crowdSlot, neighbourBone ) ? 1.0 : 0.0;
-vCrowdBlood = crowdBlood( crowdSlot, boneIndex, position );
+// Bone-local, so anything shaded from it stays put on the body as it moves.
+vCrowdBloodiness = crowdBloodiness( crowdSlot );
+vCrowdLocal = position;
+vCrowdBone = boneIndex;
 `;
 
 export const CROWD_BEGINNORMAL_VERTEX = /* glsl */ `
@@ -229,7 +230,6 @@ vec3 objectNormal = mat3( crowdNormalM ) * normal;
 
 export const CROWD_FRAGMENT_DECLARATIONS = /* glsl */ `
 varying float vCrowdGore;
-varying float vCrowdBlood;
 `;
 
 // Patched in after <color_fragment> (where three applies the per-vertex colour, vColor, to diffuseColor —
@@ -238,7 +238,7 @@ varying float vCrowdBlood;
 // humanoid.ts's own wound "gore" material colour exactly (buildPalette's fixed [0.32, 0.09, 0.06], not
 // genome-sampled) — a fresh cut reads as the same gore as an authored wound. Mostly (0.85) replaces the
 // surviving bone's own colour right at the cut edge rather than just tinting it, so the seam reads clearly
-// even against a light palette. Blood stains (crowdBlood) use the same colour, a little lighter in strength.
+// even against a light palette.
 export const CROWD_COLOR_FRAGMENT = /* glsl */ `
-diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.32, 0.09, 0.06 ), max( vCrowdGore * 0.85, vCrowdBlood ) );
+diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.32, 0.09, 0.06 ), vCrowdGore * 0.85 );
 `;
