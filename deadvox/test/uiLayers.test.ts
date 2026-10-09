@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const style = readFileSync('src/ui/style.css', 'utf8');
-const UI_LAYER_REFERENCE = /^var\(--ui-layer-[\w-]+\)$/;
+const UI_LAYER_REFERENCE = /^var\((--ui-layer-[\w-]+)\)$/;
+const INLINE_LAYER_STYLE = /\b(?:z-index|zIndex)\s*:\s*(?:"([^"]+)"|'([^']+)'|([^,\s;}]+))/g;
 const root = style.match(/:root\s*\{([^}]*)\}/)?.[1];
 if (!root) {
   throw new Error('UI layer declarations are missing from :root');
@@ -21,6 +23,15 @@ const positionOf = (name: string): number => {
   return position;
 };
 
+const typescriptFiles = (directory: string): string[] =>
+  readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      return typescriptFiles(path);
+    }
+    return entry.isFile() && entry.name.endsWith('.ts') ? [path] : [];
+  });
+
 describe('UI layer order', () => {
   it('declares every stacking value once and uses the shared list in CSS and inline styles', () => {
     expect(new Set(layers.map(({ name }) => name)).size).toBe(layers.length);
@@ -28,15 +39,24 @@ describe('UI layer order', () => {
 
     const declarations = [...style.matchAll(/z-index:\s*([^;]+);/g)].map(([, value]) => value!.trim());
     expect(declarations.length).toBeGreaterThan(0);
-    expect(declarations.every((value) => UI_LAYER_REFERENCE.test(value))).toBe(true);
     for (const declaration of declarations) {
-      expect(layerPositions.has(declaration.slice(4, -1))).toBe(true);
+      const layer = declaration.match(UI_LAYER_REFERENCE)?.[1];
+      expect(layer).toBeDefined();
+      expect(layerPositions.has(layer!)).toBe(true);
     }
 
-    const mobActors = readFileSync('src/render/mobActors.ts', 'utf8');
-    expect(mobActors).toContain("zIndex: 'var(--ui-layer-perception-labels)'");
-    const gamePlay = readFileSync('src/game/play.ts', 'utf8');
-    expect(gamePlay).toContain('z-index:var(--ui-layer-review-map)');
+    const inlineDeclarations = typescriptFiles('src').flatMap((file) =>
+      [...readFileSync(file, 'utf8').matchAll(INLINE_LAYER_STYLE)].map(([, doubleQuoted, singleQuoted, bare]) => ({
+        file,
+        value: doubleQuoted ?? singleQuoted ?? bare!,
+      })),
+    );
+    expect(inlineDeclarations.length).toBeGreaterThan(0);
+    for (const { file, value } of inlineDeclarations) {
+      const layer = value.match(UI_LAYER_REFERENCE)?.[1];
+      expect(layer, file).toBeDefined();
+      expect(layerPositions.has(layer!)).toBe(true);
+    }
   });
 
   it('keeps the drag ghost above draggable panels and the game cursor above ordinary game layers', () => {

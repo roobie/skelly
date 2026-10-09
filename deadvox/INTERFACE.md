@@ -267,7 +267,7 @@ second widget or key instruction. See `src/ui/hud.ts`,
 
 ## UI layers
 
-UI layers come from ordered custom properties in `src/ui/style.css`, `:root`; inline styles use the same tokens. The drag ghost stays above the inventory and crafting panels, and `#game-cursor-root` is the highest ordinary game layer. The startup screen is a boot curtain, and the debug review map (`src/game/play.ts`, `createReviewMapFrame`) is a full-screen overlay; both can cover the cursor when active.
+UI layers come from ordered custom properties in `src/ui/style.css`, `:root`; inline styles use the same tokens. The drag ghost stays above the inventory and crafting panels. `#game-cursor-root` tops ordinary layers because it is the only pointer while pointer lock is held with a menu, inventory or page open; `src/ui/menuPointer.ts`, `mountMenuPointer`, forwards clicks at its position, so a higher layer would hide where the player points. The startup screen is a boot curtain, and the debug review map (`src/game/play.ts`, `toggleReviewMap`) may cover the cursor because neither uses it: play takes pointer lock after startup, and opening the map unlocks input.
 
 ## Where the current interface stands
 
