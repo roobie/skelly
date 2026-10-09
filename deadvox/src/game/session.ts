@@ -1007,6 +1007,10 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
+  /** A downed body lies on the floor: the player walks over it and a door closes on it, as shamblers already do. */
+  const standingZombieBodies = (): Body[] =>
+    [...zombieStore.entries()].filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body);
+
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
@@ -1015,8 +1019,7 @@ export const createSession = (options: SessionOptions) => {
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
-    const zombieBodies = [...zombieStore.entries()].map(([, zombie]) => zombie.body);
-    stepBody(body, dt, isSolid, { ...physics, obstacles: zombieBodies });
+    stepBody(body, dt, isSolid, { ...physics, obstacles: standingZombieBodies() });
     updatePlayerSounds(wasGrounded, previousPosition, time);
     const rustle = foliageRustle(rustleClock, {
       body,
@@ -1221,7 +1224,7 @@ export const createSession = (options: SessionOptions) => {
     queue,
     inventory,
     player: () => body,
-    others: () => [...zombieStore.entries()].map(([, zombie]) => zombie.body),
+    others: standingZombieBodies,
     playWorldSound: (event, position) => {
       const noise = registry.sounds.get(event)?.noise;
       playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});

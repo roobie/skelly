@@ -2,8 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
+import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
+import { FISTS_MELEE } from '../src/core/zombies.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
@@ -18,7 +22,9 @@ if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
 
-const makeRuntime = () => {
+const FLAT = (_x: number, y: number): boolean => y === 0;
+
+const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3 } = {}) => {
   const scale = makeScale(0.5);
   let intent: MoveIntent = { ...IDLE };
   let crouchToggle = false;
@@ -27,12 +33,12 @@ const makeRuntime = () => {
   const session = createSession({
     registry,
     world: new World(),
-    isSolid: (_x, y) => y === 0,
-    isOpaque: (_x, y) => y === 0,
+    isSolid,
+    isOpaque: isSolid,
     scale,
     seed: 73,
     start: 43_200,
-    spawn: [0, 1, 0],
+    spawn,
     ready: () => true,
     controls: {
       active: () => true,
@@ -129,6 +135,34 @@ describe('session movement consequences', () => {
     for (let index = 1; index < signs.length; index++) {
       expect(signs[index]).toBe(-signs[index - 1]!);
     }
+  });
+
+  it('walks past a downed shambler in a corridor one person wide', () => {
+    // Walls at x = -1 and x = 2 leave a corridor two blocks wide, along z.
+    const corridor = (x: number, y: number): boolean => y === 0 || ((x === -1 || x === 2) && y >= 1 && y <= 4);
+    const runtime = makeRuntime({ isSolid: corridor, spawn: [1, 1, 5] });
+    const { session } = runtime;
+    const shambler = registry.zombies.get('shambler')!;
+    // One blow downs it at the torso; its head stays on, so it lies there instead of dying.
+    const fragile = {
+      ...shambler,
+      regions: { ...shambler.regions, torso: FISTS_MELEE.damage },
+      dismember: { chance: 0, headOnKillChance: 0 },
+    };
+    const id = session.zombies.add(fragile, [1, 1, 1], [0, 0, -1]);
+    const zombie = session.zombies.store.get(id)!;
+    const { blockSize } = makeScale(0.5);
+    expect(2).toBeLessThan(2 * (session.body.halfWidth + zombie.body.halfWidth));
+    const chest = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize)).torso.find(
+      (box) => box.bone === 'chest',
+    )!.center;
+    const origin: Vec3 = [chest[0], chest[1], chest[2] + 0.45 / blockSize];
+    expect(session.zombies.swing(origin, [0, 0, -1], FISTS_MELEE)).toBe(id);
+    expect(zombie.incapacitated).toBe(true);
+
+    runtime.setIntent({ ...IDLE, forward: 1, walk: true });
+    runtime.advance(360);
+    expect(session.body.pos[2]).toBeLessThan(zombie.body.pos[2] - zombie.body.halfWidth - session.body.halfWidth);
   });
 
   it('does not sprint or drain stamina while crouched with sprint held', () => {
