@@ -535,8 +535,9 @@ try {
   assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
   assert.equal(
     await page.evaluate(() => {
-      const { weatheringState } = globalThis.firefoxUiTest.look;
-      const settings = weatheringState.settings;
+      const {
+        weatheringState: { settings },
+      } = globalThis.firefoxUiTest.look;
       return [...document.querySelectorAll('#debug-ui-root input[id^="weathering-"]')].every((input) => {
         const field = input.id.slice('weathering-'.length);
         return input.value === String(settings[field]);
