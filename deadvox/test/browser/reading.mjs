@@ -682,6 +682,8 @@ try {
           elapsed: job?.jobType === 'reading' ? job.elapsed : undefined,
           duration: job?.jobType === 'reading' ? job.duration : undefined,
           stopped: job?.stopped,
+          compressionActive: globalThis.readingWitness.session.sim.compression.active,
+          compressionMultiplier: globalThis.readingWitness.session.sim.compression.c,
         };
       });
     await page.locator('.reading-progress').waitFor({ state: 'visible' });
