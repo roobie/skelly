@@ -116,18 +116,9 @@ void main() {
     const makeMixMaterial = ({
       THREE: threeLib,
       profile,
-      legacyFormula,
       weatherablePatternGlsl,
       surfacePatternsGlsl,
     }) => {
-      const mixFormula = legacyFormula
-        ? `float mixAmount = clamp(weatherable * uStrength * clamp(
-    uTintDarkness * grime + uStreakStrength * streak + uMossStrength * moss, 0.0, uMixCeiling
-  ), 0.0, 1.0);`
-        : `float mixAmount = clamp(
-    weatherable * uStrength * (uTintDarkness * grime + uStreakStrength * streak + uMossStrength * moss),
-    0.0, uMixCeiling
-  );`;
       return new threeLib.ShaderMaterial({
         uniforms: {
           uStrength: { value: profile.strength },
@@ -202,7 +193,10 @@ void main() {
   float mossCutoff = uMossThreshold - uMossBias * environment;
   float mossPatches = smoothstep(mossCutoff, mossCutoff + 0.18, mossNoise) * environment * uVariation;
   float moss = baseMoss * broadStrength + mossPatches;
-  ${mixFormula}
+  float mixAmount = clamp(
+    weatherable * uStrength * (uTintDarkness * grime + uStreakStrength * streak + uMossStrength * moss),
+    0.0, uMixCeiling
+  );
   gl_FragColor = vec4(vec3(mixAmount), 1.0);
 }`,
         side: threeLib.DoubleSide,
@@ -220,12 +214,10 @@ void main() {
       width,
       height,
       profile,
-      legacyFormula = false,
     }) => {
       const material = makeMixMaterial({
         THREE: threeLib,
         profile,
-        legacyFormula,
         weatherablePatternGlsl: globalThis.firefoxUiTest.weatherablePatternGlsl,
         surfacePatternsGlsl: globalThis.firefoxUiTest.surfacePatternsGlsl,
       });
@@ -316,7 +308,6 @@ void main() {
     const settings = [
       ['off', undefined],
       ...profiles.map((profile) => [profile.id, profile]),
-      ['baseline-d150-11', { ...weatheringProfile, mixCeiling: 1, weatheringBlend: 0.9 }],
       ['zero-control', { ...weatheringProfile, strength: 0 }],
       ['strong', strongProfile],
     ];
@@ -415,41 +406,7 @@ void main() {
         height: canvas.height,
         profile,
       });
-    const mixPixelsAfter = renderProfileMix(weatheringProfile);
-    // Reconstruct the d150-11 defaults, which differ only in these two authored values.
-    const mixPixelsBefore = renderProfileMix({ ...weatheringProfile, mixCeiling: 1 });
-    const properProfile = profiles.find(({ weatheringBlend, strength }) => weatheringBlend === 0 && strength > 0);
-    if (!properProfile) {
-      throw new Error('weathering pixel equality needs a multiplicative-only profile');
-    }
-    const currentProperMix = renderProfileMix(properProfile);
-    const legacyProperMix = renderMixAmounts({
-      THREE: Three,
-      renderer: webglRenderer,
-      group: engine.meshes.group,
-      camera: activeCamera,
-      width: canvas.width,
-      height: canvas.height,
-      profile: { ...properProfile, mixCeiling: 1 / properProfile.strength },
-      legacyFormula: true,
-    });
-    let properMixPixelMaxDifference = 0;
-    for (let offset = 0; offset < currentProperMix.length; offset += 4) {
-      properMixPixelMaxDifference = Math.max(
-        properMixPixelMaxDifference,
-        Math.abs(currentProperMix[offset] - legacyProperMix[offset]),
-      );
-    }
-    const replacementShares = (mixPixels, blend) =>
-      Object.fromEntries(
-        Object.entries(materialHalves).map(([id, { weathered: pixels }]) => [
-          id,
-          pixels.filter(([x, y]) => (mixPixels[((canvas.height - 1 - y) * canvas.width + x) * 4] / 255) * blend >= 0.85)
-            .length / pixels.length,
-        ]),
-      );
-    const nearFullReplacementShares = replacementShares(mixPixelsBefore, 0.9);
-    const boundedNearFullReplacementShares = replacementShares(mixPixelsAfter, weatheringProfile.weatheringBlend);
+    renderProfileMix(weatheringProfile);
     const meanColor = (imageName, pixels) => {
       const { data } = decoded[imageName];
       const total = pixels.reduce(
@@ -481,6 +438,9 @@ void main() {
       }
       return pairs > 0 ? total / pairs : 0;
     };
+    const cleanTextureContrasts = Object.fromEntries(
+      Object.entries(materialHalves).map(([id, sides]) => [id, textureContrast('off', sides.clean)]),
+    );
     const materialReadability = (imageName) => {
       const means = Object.fromEntries(
         Object.entries(materialHalves).map(([id, sides]) => [
@@ -488,7 +448,7 @@ void main() {
           {
             clean: meanColor('off', sides.clean),
             weathered: meanColor(imageName, sides.weathered),
-            cleanTextureContrast: textureContrast('off', sides.clean),
+            cleanTextureContrast: cleanTextureContrasts[id],
             weatheredTextureContrast: textureContrast(imageName, sides.weathered),
           },
         ]),
@@ -558,9 +518,7 @@ void main() {
       weatherablePixels: weatherablePixels.length,
       weatherableFraction: weatherablePixels.length / buildingPixels.length,
       materialPixels: Object.fromEntries(Object.entries(materialPixels).map(([id, pixels]) => [id, pixels.length])),
-      nearFullReplacementShares,
-      boundedNearFullReplacementShares,
-      properMixPixelMaxDifference,
+      cleanTextureContrasts,
       materialPixelTotal: Object.values(materialPixels).reduce((total, pixels) => total + pixels.length, 0),
       diagnostics: {
         maskPixelCounts,
@@ -570,7 +528,6 @@ void main() {
       },
       differences: profilesCompared,
       materialReadability: Object.fromEntries(profiles.map((profile) => [profile.id, materialReadability(profile.id)])),
-      baselineMaterialReadability: materialReadability('baseline-d150-11'),
       maxWeatherablePixelChange,
       maxZeroStrengthPixelChange,
       images,
@@ -611,8 +568,8 @@ export const measureWeatheringMaterials = async (page) => {
       throw new Error(`comparison pad material ${id} has no weatherable pixels`);
     }
   }
-  const unrenderedMaterials = Object.entries(result.materialReadability.proper)
-    .filter(([, material]) => material.cleanTextureContrast === 0)
+  const unrenderedMaterials = Object.entries(result.cleanTextureContrasts)
+    .filter(([, contrast]) => contrast === 0)
     .map(([id]) => id);
   if (unrenderedMaterials.length > 0) {
     throw new Error(

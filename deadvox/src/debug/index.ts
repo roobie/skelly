@@ -420,6 +420,7 @@ const panelTemplate = ({
           <div class="debug-actions">
             <button id="copy-weathering-values" type="button" @click=${copyWeatheringValues}>Copy profile as content JSON</button>
             <output aria-live="polite">${weatheringCopyStatus}</output>
+            <textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea>
           </div>
         `
       : nothing,
@@ -434,6 +435,7 @@ const panelTemplate = ({
         ${firearmsSkillEffectSlider('automaticFollowup', 'recoilRecoveryScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         <button id="copy-firearms-skill-tuning" type="button" @click=${copyFirearmsSkillZeroHandling}>Copy this gun's skill values</button>
         <output aria-live="polite">${firearmsSkillCopyStatus}</output>
+        <textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea>
       </fieldset>
     `,
     shamblers: html`
@@ -489,9 +491,10 @@ const panelTemplate = ({
     <div class="debug-snapshot-result-row">
       <p id="snapshot-measurement-result" class="debug-snapshot-result" aria-live="polite" tabindex="0">${snapshotStatus || 'No snapshot measurement yet.'}</p>
       <button id="copy-snapshot-result" type="button" ?disabled=${snapshotStatus === ''} @click=${copySnapshotResult}>Copy</button>
+      <textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea>
     </div>
     <label class="debug-axis-toggle"><input type="checkbox" .checked=${axesVisible} @change=${toggleAxes} /> Show axis gizmo</label>
-    <div class="debug-readout"><button id="copy-view-link" type="button" @click=${copyViewLink}>Copy view link</button><span aria-live="polite">${copyStatus}</span></div>
+    <div class="debug-readout"><button id="copy-view-link" type="button" @click=${copyViewLink}>Copy view link</button><span aria-live="polite">${copyStatus}</span><textarea class="debug-copy-fallback" aria-label="Copy text manually; press Ctrl+C" hidden></textarea></div>
     <div id="debug-readout" class="debug-readout"></div>
     <p class="debug-last-hit" aria-live="polite" ?hidden=${lastHitText === ''}>${lastHitText}</p>
     ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
@@ -974,21 +977,49 @@ export const formatMeleeResult = (result: MeleeResult): string => {
   return `${result.region} ${result.damage} damage (${result.healthBefore}→${result.healthAfter}) · ${outcome}`;
 };
 
+// Debug previews may use plain HTTP, where browsers withhold the Clipboard API.
 export const copyTextOrSelect = async (
   text: string,
   clipboard: { writeText: (value: string) => Promise<void> } | undefined,
-  selectFallback: () => void,
+  fallbackHost: HTMLElement,
+  doc: Document = fallbackHost.ownerDocument,
 ): Promise<boolean> => {
-  try {
-    if (!clipboard) {
-      throw new Error('Clipboard API unavailable');
+  if (clipboard) {
+    try {
+      await clipboard.writeText(text);
+      return true;
+    } catch {
+      // Try the legacy command before asking the operator to copy the selected text manually.
     }
-    await clipboard.writeText(text);
-    return true;
-  } catch {
-    selectFallback();
+  }
+
+  const fallback = fallbackHost.querySelector<HTMLTextAreaElement>('.debug-copy-fallback');
+  if (!fallback) {
     return false;
   }
+  fallback.value = text;
+  fallback.readOnly = true;
+  fallback.hidden = false;
+  fallback.classList.add('debug-copy-temporary');
+  let copied = false;
+  try {
+    fallback.focus();
+    fallback.select();
+    copied = doc.execCommand('copy');
+  } catch {
+    // execCommand can be unavailable or refused by the browser.
+  }
+  fallback.classList.remove('debug-copy-temporary');
+  if (copied) {
+    fallback.hidden = true;
+    fallback.blur();
+    return true;
+  }
+
+  doc.exitPointerLock?.();
+  fallback.focus();
+  fallback.select();
+  return false;
 };
 
 const DEBUG_START_LIGHT = 'flashlight';
@@ -1158,10 +1189,16 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       return;
     }
     const content = JSON.stringify({ weathering: [state.settings] }, null, 2);
-    const copied = await copyTextOrSelect(content, globalThis.navigator.clipboard, () => undefined);
-    weatheringCopyStatus = copied ? 'Profile JSON copied' : `Clipboard unavailable — copy this:\n${content}`;
-    shellKey = '';
-    drawShell();
+    const fallbackHost = host.querySelector<HTMLElement>('#copy-weathering-values')?.parentElement;
+    if (!fallbackHost) {
+      return;
+    }
+    const copied = await copyTextOrSelect(content, globalThis.navigator.clipboard, fallbackHost);
+    if (copied) {
+      weatheringCopyStatus = 'Profile JSON copied';
+      shellKey = '';
+      drawShell();
+    }
   };
   const metresPerBlock = hooks.engine.config.scale.blockSize;
   /** Reused each call: the pose is read a few times a second, so no per-call allocation worth noticing. */
@@ -1462,13 +1499,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             if (!resultLine || snapshotStatus === '') {
               return;
             }
-            const text = snapshotStatus;
-            await copyTextOrSelect(text, globalThis.navigator.clipboard, () => {
-              resultLine.focus();
-              const selection = globalThis.getSelection();
-              selection?.removeAllRanges();
-              selection?.selectAllChildren(resultLine);
-            });
+            const fallbackHost = resultLine.parentElement;
+            if (fallbackHost) {
+              await copyTextOrSelect(snapshotStatus, globalThis.navigator.clipboard, fallbackHost);
+            }
           },
           exportMetrics: hooks.exportMetrics,
           toggleOpen: togglePanel,
@@ -1502,14 +1536,16 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           },
           copyFirearmsSkillZeroHandling: async () => {
             const values = JSON.stringify(hooks.firearmsSkillZeroHandling(), null, 2);
-            try {
-              await navigator.clipboard.writeText(values);
-              firearmsSkillCopyStatus = 'Values copied';
-            } catch {
-              firearmsSkillCopyStatus = values;
+            const fallbackHost = host.querySelector<HTMLElement>('#copy-firearms-skill-tuning')?.parentElement;
+            if (!fallbackHost) {
+              return;
             }
-            shellKey = '';
-            drawShell();
+            const copied = await copyTextOrSelect(values, globalThis.navigator.clipboard, fallbackHost);
+            if (copied) {
+              firearmsSkillCopyStatus = 'Values copied';
+              shellKey = '';
+              drawShell();
+            }
           },
           firearmsSkillCopyStatus,
           weatheringState: look.weatheringState,
@@ -1553,14 +1589,16 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   }
   async function copyViewLink(): Promise<void> {
     syncCamUrl(true);
-    try {
-      await navigator.clipboard.writeText(location.href);
-      copyStatus = 'View link copied';
-    } catch {
-      copyStatus = 'Clipboard unavailable';
+    const fallbackHost = host.querySelector<HTMLElement>('#copy-view-link')?.parentElement;
+    if (!fallbackHost) {
+      return;
     }
-    shellKey = '';
-    drawShell();
+    const copied = await copyTextOrSelect(location.href, globalThis.navigator.clipboard, fallbackHost);
+    if (copied) {
+      copyStatus = 'View link copied';
+      shellKey = '';
+      drawShell();
+    }
   }
   function dumpLook(): void {
     const { config } = hooks.engine;

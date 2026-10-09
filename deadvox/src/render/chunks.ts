@@ -32,14 +32,6 @@ float cellHash(vec3 c) {
   return fract(sin(dot(c, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
 }`;
 
-// Vertex colours are authored as sRGB bytes but three.js treats them as linear, so they render
-// paler than authored. This is the exact piecewise sRGB EOTF (not pow 2.2, which crushes the
-// darks differently), applied only while the `uLinearColors` uniform is 1.
-const SRGB_TO_LINEAR = `
-vec3 srgbToLinear(vec3 c) {
-  return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
-}`;
-
 // Per-quad surface pattern: its id (constant per quad, so interpolation only needs rounding),
 // the fragment's world position in metres and the face normal (object space is axis-aligned and
 // the group only scales, so it is the world normal too).
@@ -157,7 +149,7 @@ vFaceN = normalize(normal);`,
       .replace('#include <color_pars_fragment>', centroidColorPars(COLOR_PARS_GUARD_FRAGMENT))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringSplit;\nuniform float uWeatheringSplitEnabled;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\nuniform vec3 uWeatheringTintColor;\nuniform float uWeatheringTintDarkness;\nuniform vec3 uWeatheringStreakColor;\nuniform float uWeatheringStreakStrength;\nuniform float uWeatheringStreakLength;\nuniform vec3 uWeatheringMossColor;\nuniform float uWeatheringMossStrength;\nuniform float uWeatheringMixCeiling;\nuniform float uWeatheringBlend;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
+        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringSplit;\nuniform float uWeatheringSplitEnabled;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\nuniform vec3 uWeatheringTintColor;\nuniform float uWeatheringTintDarkness;\nuniform vec3 uWeatheringStreakColor;\nuniform float uWeatheringStreakStrength;\nuniform float uWeatheringStreakLength;\nuniform vec3 uWeatheringMossColor;\nuniform float uWeatheringMossStrength;\nuniform float uWeatheringMixCeiling;\nuniform float uWeatheringBlend;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SURFACE_PATTERN_GLSL}`,
       )
       .replace(
         '#include <lights_fragment_end>',

@@ -1337,9 +1337,9 @@ const WeatheringSchema = strictObject({
   mossThreshold: weatheringNumber('mossThreshold'),
   /** How much shelter and ground proximity lower the organic-patch cutoff. */
   mossBias: weatheringNumber('mossBias'),
-  /** Upper bound for the combined grime, streak and moss mix before shader saturation. */
+  /** Upper bound for the final combined grime, streak and moss mix. */
   mixCeiling: weatheringNumber('mixCeiling'),
-  /** Blend from the historic multiplicative tint toward opaque grime/moss colours. */
+  /** Blend from multiplicative weathering toward opaque grime/moss colours. */
   weatheringBlend: weatheringNumber('weatheringBlend'),
 });
 

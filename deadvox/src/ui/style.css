@@ -1552,6 +1552,25 @@ body.inventory-open.inventory-tab-crafting #crafting {
   user-select: text;
   -webkit-user-select: text;
 }
+#debug-ui-root .debug-copy-fallback {
+  flex-basis: 100%;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4em;
+  color: var(--text);
+  background: rgb(0 0 0 / 35%);
+  font: 11px / 1.4 ui-monospace, monospace;
+  cursor: text;
+  pointer-events: auto;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+#debug-ui-root .debug-copy-fallback.debug-copy-temporary {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  opacity: 0;
+}
 #debug-ui-root #copy-snapshot-result {
   flex: none;
   padding: 4px 7px;

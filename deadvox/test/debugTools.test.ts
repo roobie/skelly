@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
+import { Window } from 'happy-dom';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -46,42 +47,73 @@ const makeDoorWorld = () => {
 };
 
 const playerEye: Vec3 = [0, (SCALE.blockSize + PLAYER.eye) / SCALE.blockSize, 0];
+const copyDom = new Window();
+const copyDocument = copyDom.document as unknown as Document;
+const copyHost = (): HTMLElement => {
+  copyDocument.body.replaceChildren();
+  const host = copyDocument.createElement('div');
+  const fallback = copyDocument.createElement('textarea');
+  fallback.className = 'debug-copy-fallback';
+  fallback.hidden = true;
+  host.append(fallback);
+  copyDocument.body.append(host);
+  return host;
+};
+afterAll(() => copyDom.happyDOM.abort());
 
 describe('debug snapshot result copying', () => {
-  it('uses the clipboard when available and selects the result if copying fails', async () => {
+  it('uses the Clipboard API when available', async () => {
     let copied = '';
-    let selected = 0;
-    const clipboard = {
-      writeText: (text: string) => {
-        copied = text;
-        return Promise.resolve();
-      },
-    };
+    const host = copyHost();
+
     expect(
-      await copyTextOrSelect('measurement line', clipboard, () => {
-        selected += 1;
-      }),
+      await copyTextOrSelect('measurement line', {
+        writeText: async (text) => {
+          copied = text;
+        },
+      }, host),
     ).toBe(true);
     expect(copied).toBe('measurement line');
-    expect(selected).toBe(0);
+  });
 
-    expect(
-      await copyTextOrSelect(
-        'measurement line',
-        { writeText: () => Promise.reject(new Error('permission denied')) },
-        () => {
-          selected += 1;
-        },
-      ),
-    ).toBe(false);
-    expect(selected).toBe(1);
+  it('uses execCommand when the Clipboard API is unavailable', async () => {
+    let command = '';
+    let copied = '';
+    Object.defineProperty(copyDocument, 'execCommand', {
+      configurable: true,
+      value: (name: string) => {
+        command = name;
+        copied = (copyDocument.activeElement as HTMLTextAreaElement).value;
+        return true;
+      },
+    });
+    const host = copyHost();
 
-    expect(
-      await copyTextOrSelect('measurement line', undefined, () => {
-        selected += 1;
-      }),
-    ).toBe(false);
-    expect(selected).toBe(2);
+    expect(await copyTextOrSelect('measurement line', undefined, host)).toBe(true);
+    expect(command).toBe('copy');
+    expect(copied).toBe('measurement line');
+    expect(host.querySelector<HTMLTextAreaElement>('textarea.debug-copy-fallback')?.hidden).toBe(true);
+  });
+
+  it('shows and selects a readonly textarea if Clipboard API and execCommand both fail', async () => {
+    let unlocked = 0;
+    Object.defineProperty(copyDocument, 'execCommand', { configurable: true, value: () => false });
+    Object.defineProperty(copyDocument, 'exitPointerLock', {
+      configurable: true,
+      value: () => {
+        unlocked += 1;
+      },
+    });
+    const host = copyHost();
+
+    expect(await copyTextOrSelect('measurement line', undefined, host)).toBe(false);
+    const fallback = host.querySelector('textarea.debug-copy-fallback') as HTMLTextAreaElement;
+    expect(fallback).not.toBeNull();
+    expect(fallback.readOnly).toBe(true);
+    expect(fallback.value).toBe('measurement line');
+    expect(copyDocument.activeElement).toBe(fallback);
+    expect([fallback.selectionStart, fallback.selectionEnd]).toEqual([0, 'measurement line'.length]);
+    expect(unlocked).toBe(1);
   });
 });
 
