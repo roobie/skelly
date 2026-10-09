@@ -1867,7 +1867,7 @@
         },
         {
           "id": 67,
-          "name": "Runner on the camp approach",
+          "name": "Soldier on the camp approach",
           "type": "shambler",
           "point": true,
           "x": 474,
@@ -1881,13 +1881,13 @@
               "name": "zombie",
               "type": "string",
               "propertytype": "zombie_type",
-              "value": "runner"
+              "value": "military_shambler"
             }
           ]
         },
         {
           "id": 68,
-          "name": "Runner beyond the camp fence",
+          "name": "Soldier beyond the camp fence",
           "type": "shambler",
           "point": true,
           "x": 520,
@@ -1901,7 +1901,7 @@
               "name": "zombie",
               "type": "string",
               "propertytype": "zombie_type",
-              "value": "runner"
+              "value": "military_shambler"
             }
           ]
         }

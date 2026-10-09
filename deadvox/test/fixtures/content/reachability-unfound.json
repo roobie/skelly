@@ -1,4 +1,5 @@
 {
+  "skills": [{ "id": "crafting", "name": "Crafting", "training": { "craftingTierOffset": 1 } }],
   "items": [
     {
       "id": "fixture_unfound",
@@ -23,7 +24,8 @@
         "skill": "crafting",
         "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       }
-    }
+    },
+    { "id": "rag", "name": "Rag", "category": "material", "weight": 1, "size": [1, 1] }
   ],
   "recipes": [
     {

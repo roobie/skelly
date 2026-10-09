@@ -1439,7 +1439,7 @@ describe('authored fixed loot', () => {
         polylineDistance([spawn.position[0], spawn.position[2]], track.points) <= track.width * 2,
     );
     expect(roadsideThreats).toHaveLength(2);
-    const runners = layout.shamblers.filter(({ type }) => type === 'runner');
+    const campSoldiers = layout.shamblers.filter(({ type }) => type === 'military_shambler');
     const fenceRects = layout.buildings
       .filter(({ template }) => template === 'camp_wall_run')
       .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
@@ -1449,9 +1449,9 @@ describe('authored fixed loot', () => {
       x1: Math.max(...fenceRects.map(({ x1 }) => x1)),
       z1: Math.max(...fenceRects.map(({ z1 }) => z1)),
     };
-    expect(runners.length).toBeGreaterThan(0);
+    expect(campSoldiers.length).toBeGreaterThan(0);
     expect(
-      runners.every(
+      campSoldiers.every(
         ({ position: [x, , z] }) =>
           x < fenceBounds.x0 || x > fenceBounds.x1 || z < fenceBounds.z0 || z > fenceBounds.z1,
       ),

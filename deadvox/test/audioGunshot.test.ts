@@ -17,6 +17,20 @@ import { firearmShotEmission, HEARTBEAT_FILES, heartbeatForStamina } from '../sr
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const audios: GameAudio[] = [];
+const base = 'src/content/base';
+const baseRegistryBuild = buildRegistry(
+  readdirSync(base)
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+    .map((file) => ({
+      source: `../content/base/${file}`,
+      data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown,
+    })),
+);
+if (baseRegistryBuild.issues.length > 0) {
+  throw new Error(`Invalid base content fixture: ${JSON.stringify(baseRegistryBuild.issues)}`);
+}
+const baseRegistry = baseRegistryBuild.registry;
 const senseTuning = {
   id: 'fixture_player',
   crouch: { speedMetresPerSimSecond: simRate(0.8), hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
@@ -114,10 +128,15 @@ const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
     return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(data) } as Response);
   });
   vi.stubGlobal('fetch', fetchBuffer);
-  const soundData = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown;
-  const { registry, issues } = registryOverride
+  const soundRegistry = registryOverride
     ? { registry: registryOverride, issues: [] }
-    : buildRegistry([{ source: '../content/base/sounds.json', data: soundData }]);
+    : buildRegistry([
+        {
+          source: '../content/base/sounds.json',
+          data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
+        },
+      ]);
+  const { registry, issues } = soundRegistry;
   if (issues.length > 0) {
     throw new Error(`Invalid sound fixture: ${JSON.stringify(issues)}`);
   }
@@ -295,17 +314,7 @@ describe('game audio playback', () => {
   });
 
   it('head-locks default player sounds while world sounds retain their source position', async () => {
-    const base = 'src/content/base';
-    const { registry, issues } = buildRegistry(
-      readdirSync(base)
-        .filter((file) => file.endsWith('.json'))
-        .sort()
-        .map((file) => ({
-          source: `../content/base/${file}`,
-          data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown,
-        })),
-    );
-    expect(issues).toEqual([]);
+    const registry = baseRegistry;
     const { audio, context, isSolid } = setup(() => false, registry);
     const scale = makeScale(0.5);
     const session = createSession({
@@ -395,15 +404,7 @@ describe('game audio playback', () => {
   });
 
   it('uses the same one-step wall decision for zombie hearing and positional sound', async () => {
-    const base = 'src/content/base';
-    const { registry: worldRegistry, issues } = buildRegistry(
-      readdirSync(base)
-        .filter((file) => file.endsWith('.json'))
-        .sort()
-        .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
-    );
-    expect(issues).toEqual([]);
-    const shambler = worldRegistry.zombies.get('shambler')!;
+    const shambler = baseRegistry.zombies.get('shambler')!;
     let blocked = false;
     const solidAt: SolidAt = (x, y, z) => blocked && x === 4 && y === 2 && z === 0;
     const { audio, play, context, isSolid } = setup(solidAt);
