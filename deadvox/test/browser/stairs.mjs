@@ -15,6 +15,7 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
+const { STAIRS_WEATHERING_PERF } = process.env;
 assert.ok(mode === 'traversal' || mode === 'lighting' || mode === 'camo', 'choose traversal, lighting or camo');
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
@@ -224,14 +225,18 @@ try {
     mode === 'lighting',
     { timeout: 60_000 },
   );
-  if (mode === 'lighting' && process.env.STAIRS_WEATHERING_PERF === '1') {
+  if (mode === 'lighting' && STAIRS_WEATHERING_PERF === '1') {
     const timings = await page.evaluate(async () => {
-      const engine = globalThis.stairsWitness.engine;
-      const renderer = engine.renderer;
+      const {
+        stairsWitness: { engine },
+      } = globalThis;
+      const {
+        renderer,
+        config: { weathering, weatheringSplit },
+      } = engine;
       const gl = renderer.getContext();
       const originalRender = renderer.render.bind(renderer);
-      const settings = engine.config.weathering;
-      if (!(settings?.strength > 0)) {
+      if (!(weathering?.strength > 0)) {
         throw new Error('stairs weathering profile must be active for the default-profile timing sample');
       }
       const measurements = { off: [], default: [] };
@@ -247,12 +252,19 @@ try {
         return result;
       };
       const sample = async (label, weathering) => {
-        engine.meshes.setWeathering(weathering, engine.config.weatheringSplit);
+        engine.meshes.setWeathering(weathering, weatheringSplit);
         const startCount = measurements[label].length;
         const totalFrames = 23;
-        while (measurements[label].length < startCount + totalFrames) {
-          await new Promise(requestAnimationFrame);
-        }
+        await new Promise((resolveFrames) => {
+          const waitForFrames = () => {
+            if (measurements[label].length >= startCount + totalFrames) {
+              resolveFrames();
+            } else {
+              requestAnimationFrame(waitForFrames);
+            }
+          };
+          requestAnimationFrame(waitForFrames);
+        });
         return measurements[label].slice(startCount + 3, startCount + totalFrames);
       };
       const summarize = (values) => {
@@ -267,15 +279,17 @@ try {
         capture = 'off';
         const off = await sample('off', undefined);
         capture = 'default';
-        const enabled = await sample('default', settings);
+        const enabled = await sample('default', weathering);
         return { weatheringOff: summarize(off), defaultProfile: summarize(enabled) };
       } finally {
         capture = undefined;
-        engine.meshes.setWeathering(settings, engine.config.weatheringSplit);
+        engine.meshes.setWeathering(weathering, weatheringSplit);
         renderer.render = originalRender;
       }
     });
-    process.stdout.write(`Stairs weathering frame A/B (same page, synchronous WebGL completion): ${JSON.stringify(timings)}\n`);
+    process.stdout.write(
+      `Stairs weathering frame A/B (same page, synchronous WebGL completion): ${JSON.stringify(timings)}\n`,
+    );
   }
   if (mode === 'lighting') {
     const shaderErrors = errors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error'));
