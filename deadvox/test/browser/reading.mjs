@@ -418,7 +418,13 @@ try {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;
     });
-    await walk('movement.back', startX + 10, false);
+    // A walk ends when the stage releases the key, a wall-clock-dependent time after its condition holds, so it
+    // overshoots. Stopping abreast of the crate keeps any overshoot inside use reach.
+    const crateX = await page.evaluate(() => {
+      const crate = [...globalThis.readingWitness.engine.entities.all].find((entity) => entity.type === 'crate');
+      return crate.pos[0] + crate.size[0] / 2;
+    });
+    await walk('movement.back', crateX, false);
     await aim('crate');
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     const interactLabel = await page.evaluate(
@@ -722,6 +728,12 @@ try {
     const reopened = await readProgress();
     assert.ok(reopened.elapsed >= stoppedOnClose.elapsed);
     assert.ok(reopened.value >= stoppedOnClose.elapsed);
+    // Face along the clear lane before walking away, not at the crate the last aim chose: the walk's length
+    // depends on when the stage releases the key, and the walk to the sign must start on the lane.
+    await page.evaluate(() => {
+      globalThis.readingWitness.input.yaw = -Math.PI / 2;
+      globalThis.readingWitness.input.pitch = 0;
+    });
     const beforeMove = await page.evaluate(() => ({
       position: [...globalThis.readingWitness.body.pos],
       time: globalThis.readingWitness.session.sim.time,
@@ -748,10 +760,6 @@ try {
     );
     assert.equal(afterMove.stopped, true);
     assert.equal(afterMove.compression, false);
-    await page.evaluate(() => {
-      globalThis.readingWitness.input.yaw = -Math.PI / 2;
-      globalThis.readingWitness.input.pitch = 0;
-    });
     const signX = await page.evaluate(() => {
       const sign = [...globalThis.readingWitness.engine.entities.all].find((entity) => entity.type === 'sample_sign');
       return sign.pos[0] + sign.size[0] / 2;

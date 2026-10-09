@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
+import type { SolidAt } from '../src/core/raycast.ts';
 import { bodyDistance, INVENTORY_REACH } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ZombieDef } from '../src/core/schema.ts';
@@ -12,7 +13,7 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import type { MoveIntent } from '../src/game/player.ts';
+import { type MoveIntent, PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -26,7 +27,7 @@ if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
 
-const FLAT = (_x: number, y: number): boolean => y === 0;
+const FLAT: SolidAt = (_x, y) => y === 0;
 
 const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3 } = {}) => {
   const scale = makeScale(0.5);
@@ -34,6 +35,7 @@ const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3 } = {}) => {
   let crouchToggle = false;
   let readyHeld = false;
   const footfalls: string[] = [];
+  const refusals: string[] = [];
   const session = createSession({
     registry,
     world: new World(),
@@ -66,6 +68,9 @@ const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3 } = {}) => {
       },
     },
     notice: () => undefined,
+    refusal: (text) => {
+      refusals.push(text);
+    },
     onRead: () => undefined,
   });
   const advance = (frames: number) => {
@@ -78,6 +83,7 @@ const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3 } = {}) => {
     get footfallCount() {
       return footfalls.length;
     },
+    refusals,
     advance,
     setIntent: (next: MoveIntent) => {
       intent = next;
@@ -209,6 +215,65 @@ describe('session movement consequences', () => {
     expect(session.crouching).toBe(true);
     expect(session.sprinting).toBe(false);
     expect(needs.stamina).toBe(stamina);
+  });
+});
+
+describe('crouching under a low ceiling', () => {
+  const { blockSize } = makeScale(0.5);
+  const crouchedBlocks = registry.senses.get('player')!.crouch.bodyHeightMetres / blockSize;
+  // The lowest whole-block opening above the crouched body.
+  const gapBlocks = Math.floor(crouchedBlocks) + 1;
+  // A slab over z = -4..-2 leaves that opening above the floor; the player starts south of it, facing it.
+  const SlabNear = -1;
+  const SlabFar = -4;
+  const crawlSpace = (_x: number, y: number, z: number): boolean =>
+    y === 0 || (y === 1 + gapBlocks && z >= SlabFar && z < SlabNear);
+  const start = (crouched: boolean): Runtime => {
+    const runtime = makeRuntime({ isSolid: crawlSpace, spawn: [0, 1, 2] });
+    if (crouched) {
+      runtime.toggleCrouch();
+    }
+    runtime.advance(1);
+    runtime.setIntent({ ...IDLE, forward: 1, walk: true });
+    return runtime;
+  };
+  /** Walks on until the body is wholly past `z` or `frames` run out. */
+  const walkPast = (runtime: Runtime, z: number, frames: number): void => {
+    const { body } = runtime.session;
+    for (let frame = 0; frame < frames && body.pos[2]! + body.halfWidth > z; frame++) {
+      runtime.advance(1);
+    }
+  };
+
+  it('lets a crouched player through an opening lower than the standing body, and not a standing one', () => {
+    expect(gapBlocks).toBeLessThan(PLAYER.height / blockSize);
+    const crouched = start(true);
+    const standing = start(false);
+    walkPast(crouched, SlabFar, 600);
+    standing.advance(600);
+
+    expect(crouched.session.body.pos[2]! + crouched.session.body.halfWidth).toBeLessThan(SlabFar);
+    // Stopped against the slab's near edge.
+    expect(standing.session.body.pos[2]! - standing.session.body.halfWidth).toBeCloseTo(SlabNear, 1);
+  });
+
+  it('refuses to stand up under the opening, and stands once clear of it', () => {
+    const runtime = start(true);
+    const { session } = runtime;
+    walkPast(runtime, SlabNear, 600);
+    runtime.setIntent({ ...IDLE });
+    runtime.advance(30);
+    runtime.toggleCrouch();
+    runtime.advance(1);
+    expect(session.crouching).toBe(true);
+    expect(runtime.refusals).toHaveLength(1);
+
+    runtime.setIntent({ ...IDLE, forward: 1, walk: true });
+    walkPast(runtime, SlabFar, 600);
+    runtime.toggleCrouch();
+    runtime.advance(1);
+    expect(session.crouching).toBe(false);
+    expect(runtime.refusals).toHaveLength(1);
   });
 });
 

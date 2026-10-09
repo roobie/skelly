@@ -358,3 +358,6 @@ export const separateBodies = ({
 
 /** True if the box at pos would overlap the given block (used to stop placing blocks inside the player). */
 export const bodyOverlapsBlock = (body: Body, block: Vec3): boolean => overlapsBlock(body, block);
+
+/** True if the box at pos would overlap any solid block (used to check room before the player stands up). */
+export const bodyOverlapsTerrain = (body: Body, isSolid: SolidAt): boolean => overlapsTerrain(body, isSolid);

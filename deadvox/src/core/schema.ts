@@ -1303,6 +1303,7 @@ const SenseSchema = strictObject({
     hearingRangeScale: Fraction,
     sightRangeScale: Fraction,
     eyeDropMetres: Positive,
+    bodyHeightMetres: Positive,
   }),
   wall: strictObject({
     hearingRangeScale: Fraction,
