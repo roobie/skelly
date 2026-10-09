@@ -557,7 +557,7 @@ try {
       movementX: box.x + box.width / 2 - cursor.x,
       movementY: box.y + box.height / 2 - cursor.y,
     });
-    await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
+    await button.click();
   };
   const startWaitFromButton = async () => {
     const noticeBefore = await page.evaluate(() => globalThis.pumpHandlingTest.getNotice());
