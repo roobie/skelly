@@ -377,7 +377,7 @@ export class ChunkMeshes {
     geometry.setAttribute('normal', new BufferAttribute(data.normals, 3, true));
     geometry.setAttribute('color', new BufferAttribute(data.colors, 3, true));
     geometry.setAttribute('pattern', new BufferAttribute(data.patterns, 1));
-    geometry.setAttribute('weatherable', new BufferAttribute(data.weatherable, 1, true));
+    geometry.setAttribute('weatherable', new BufferAttribute(data.weatherable, 1));
     geometry.setAttribute('occlusion', new BufferAttribute(data.occlusion, 1, true));
     geometry.setAttribute('weather', new BufferAttribute(data.weathering, 2));
     geometry.setIndex(new BufferAttribute(data.indices, 1));
