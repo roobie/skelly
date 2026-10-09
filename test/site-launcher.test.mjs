@@ -14,6 +14,7 @@ const WEATHERING_SITE_OPTION_PATTERN =
 const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAYTEST_LINK_PATTERN = /<a\b[^>]*\bid="deadvox-playtest"[^>]*>/;
+const PLAYTEST_ENTRY_PATTERN = /\$\{playtestBrief\}/;
 const PLAYTEST_CARD_PATTERN = /<section class="card" aria-labelledby="playtest-title">([\s\S]*?)<\/section>/;
 const DEADVOX_CARD_PATTERN = /<section\b[^>]*\baria-labelledby="deadvox-title"[^>]*>/;
 const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
@@ -162,7 +163,7 @@ describe('site launchers track the games’ URL parameters', () => {
 describe('site launcher playtest entry', () => {
   it('keeps the playtest card distinct from the developer launcher', () => {
     const card = page.match(PLAYTEST_CARD_PATTERN);
-    const playtestEntry = page.indexOf('${playtestBrief}');
+    const playtestEntry = page.search(PLAYTEST_ENTRY_PATTERN);
     const deadvoxCard = page.match(DEADVOX_CARD_PATTERN)?.index ?? -1;
     const deadvoxForm = page.match(DEADVOX_FORM_PATTERN);
     assert.ok(card, 'the playtest has its own card');
