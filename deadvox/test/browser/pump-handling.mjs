@@ -653,7 +653,9 @@ try {
             actions: { job },
           },
         } = session;
-        return job === undefined;
+        const rest = document.querySelector('#rest');
+        const restHidden = !rest || rest.hidden || getComputedStyle(rest).display === 'none';
+        return job === undefined && restHidden;
       });
     });
     assert.equal(result.reached, true, `Wait did not stop: ${JSON.stringify(result)}`);
