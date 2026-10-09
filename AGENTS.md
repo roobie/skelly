@@ -105,21 +105,11 @@ and the pre-push hook (below) runs checks across every subproject. Run the full
 install under "Installing check dependencies" in it before its first push,
 including the push that publishes a new branch, or that push fails.
 
-### Git: this project does not use `git-flow`
+### Git workflow
 
-Don't use the `git-flow` skill or its driver here. Its single repo-wide pending
-ticket can block every agent, and fresh worktrees need full installs before their
-first push. Use plain git, following AGENTS.md:
-
-- **Start a topic:** `git fetch origin`, then `git worktree add .claude/worktrees/<name> -b <branch> origin/main`, the installs under "Installing check dependencies", and `git push -u origin <branch>`.
-- **While working:** commit in reasonable chunks and `git push`. To take in main,
-  `git fetch origin && git merge origin/main`. Never rebase or force-push a
-  published branch, and never bypass the pre-push hook with `--no-verify` to get
-  past a real failure.
-- **After BR merges the PR:** remove the worktree (`git worktree remove`) and
-  delete the local branch; the lead does this.
-
-Keep this copy aligned with `.claude/CLAUDE.md` so either entry point gives the same git guidance.
+One topic branch per feature, in a worktree from `origin/main`, merged through a reviewed
+PR. Take in main by merging; never rebase or force-push a published branch. The steps and
+their reasons are in `docs/git-workflow.md`.
 
 ### Main checkout
 
