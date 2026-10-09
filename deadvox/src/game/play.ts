@@ -80,6 +80,7 @@ import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
+import { stopReadingOnClose as stopReadingPageOnClose } from './readingClose.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
@@ -817,7 +818,7 @@ export const startPlay = (
   const overlay = $('overlay');
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
-  let stopReadingOnClose = () => undefined;
+  let stopReadingOnClose: () => void = () => undefined;
   const reading = mountReading(
     $('reading'),
     () => syncMenuState(),
@@ -1399,13 +1400,7 @@ export const startPlay = (
       compression.stop();
     }
   };
-  stopReadingOnClose = () => {
-    if (sim.actions.job?.jobType === 'reading' && !sim.actions.job.stopped) {
-      sim.actions.stop();
-      // Closing the page must return movement input immediately, not after compression ramps down.
-      sim.compression.snap();
-    }
-  };
+  stopReadingOnClose = () => stopReadingPageOnClose(sim);
 
   const replayCommandOwners: ReplayCommandOwners = {
     inventory,

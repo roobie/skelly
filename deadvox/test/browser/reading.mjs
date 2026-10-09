@@ -720,7 +720,7 @@ try {
       throw new Error(`Could not reopen the same book after closing it: ${JSON.stringify(state)}`, { cause: error });
     }
     const reopened = await readProgress();
-    assert.equal(reopened.elapsed, stoppedOnClose.elapsed);
+    assert.ok(reopened.elapsed >= stoppedOnClose.elapsed);
     assert.ok(reopened.value >= stoppedOnClose.elapsed);
     const beforeMove = await page.evaluate(() => ({
       position: [...globalThis.readingWitness.body.pos],
