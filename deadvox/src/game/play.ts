@@ -566,6 +566,7 @@ export const startPlay = (
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
     zombieEffects: {
       onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
+      onCarve: (id, zombie, cells, hit) => zombieMeshes.zombieCarved?.(id, zombie, cells, hit),
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
