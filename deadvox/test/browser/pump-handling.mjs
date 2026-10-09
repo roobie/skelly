@@ -573,13 +573,13 @@ try {
         return;
       }
       globalThis.waitClickProbeInstalled = true;
-      globalThis.waitButtonClickCount = 0;
+      globalThis.waitButtonClickEvents = [];
       globalThis.waitDispatches = [];
-      document
-        .querySelector('#inventory [data-tab-panel="actions"] button')
-        .addEventListener('click', () => globalThis.waitButtonClickCount++, { capture: true });
-      const hooks = globalThis.pumpHandlingTest.screen.hooks;
-      const dispatch = hooks.dispatch;
+      const waitButton = document.querySelector('#inventory [data-tab-panel="actions"] button');
+      waitButton.addEventListener('click', () => globalThis.waitButtonClickEvents.push(true), { capture: true });
+      const { screen } = globalThis.pumpHandlingTest;
+      const { hooks } = screen;
+      const { dispatch } = hooks;
       hooks.dispatch = (payload) => {
         if (payload.kind === 'action.wait') {
           globalThis.waitDispatches.push(payload);
@@ -589,7 +589,7 @@ try {
     });
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
     const clickState = await page.evaluate(() => ({
-      buttonClicks: globalThis.waitButtonClickCount,
+      buttonClicks: globalThis.waitButtonClickEvents.length,
       waitDispatches: globalThis.waitDispatches.length,
     }));
     assert.ok(clickState.buttonClicks > 0, `drawn cursor click reaches Wait: ${JSON.stringify(clickState)}`);
@@ -617,7 +617,7 @@ try {
           locked: input.locked,
           menuPointer: input.menuPointer,
           cursor: [input.cursorX, input.cursorY],
-          buttonClicks: globalThis.waitButtonClickCount,
+          buttonClicks: globalThis.waitButtonClickEvents.length,
           waitDispatches: globalThis.waitDispatches.length,
           notice: getNotice(),
           simTime: session.sim.time,
