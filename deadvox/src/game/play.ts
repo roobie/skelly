@@ -678,7 +678,12 @@ export const startPlay = (
     },
     notice: (text) => showNotice(text),
     refusal: (text) => showRefusal(text, sim.time),
-    onRead: (readable, bookUid) => reading.open(readable, bookUid),
+    onRead: (readable, bookUid, itemType) => {
+      reading.open(readable, bookUid);
+      if (itemType) {
+        playtestObserver?.readItem(itemType, sim.calendar);
+      }
+    },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onFirearmEjection: (effect) => caseEffects.spawn(effect),
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
@@ -959,7 +964,7 @@ export const startPlay = (
     }
   })();
   const metrics = new SessionMetrics(config.seed, storedMetrics);
-  playtestObserver = new PlaytestObserver(metrics);
+  playtestObserver = new PlaytestObserver(metrics, engine.site?.playtestMarks);
   const saveMetrics = (): void => {
     try {
       persistMetrics(metrics, localStorage);

@@ -47,7 +47,8 @@ export interface SurvivalHooks {
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
   /** Presents validated authored text and, for books, its action owner. */
-  read: (readable: Readonly<Readable>, bookUid?: number) => void;
+  /** `itemType` names the read item; a readable fixture has none. */
+  read: (readable: Readonly<Readable>, bookUid?: number, itemType?: string) => void;
   /** Whether the book has already taught every recipe it owns. */
   bookRead?: (bookUid: number) => boolean;
 }
@@ -199,7 +200,7 @@ export class Survival {
       }
     }
     if (readable) {
-      this.hooks.read(readable, hasBook ? item.uid : undefined);
+      this.hooks.read(readable, hasBook ? item.uid : undefined, item.type);
     }
     return undefined;
   }

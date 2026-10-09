@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import type { PlaytestMarks } from '../src/core/site.ts';
 import { PlaytestObserver } from '../src/game/playtestObserver.ts';
 import { SessionMetrics } from '../src/game/playtestTools.ts';
 import type { Session } from '../src/game/session.ts';
@@ -16,7 +17,7 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
 
-const runFurnitureChain = (startsInFurniture: boolean, metrics = new SessionMetrics(1)) => {
+const runFurnitureChain = (startsInFurniture: boolean, metrics = new SessionMetrics(1), marks?: PlaytestMarks) => {
   const inventory = new Inventory(registry);
   const backpack = inventory.create('school_backpack');
   inventory.add(backpack, { kind: 'hand', side: 'right' });
@@ -40,13 +41,14 @@ const runFurnitureChain = (startsInFurniture: boolean, metrics = new SessionMetr
     throw new Error('Could not queue the dependent chained move');
   }
 
-  const observer = new PlaytestObserver(metrics);
+  const observer = new PlaytestObserver(metrics, marks);
   observer.beginSearch(cupboard, 'kitchen cupboard');
   observer.beforeFrame(queue, inventory);
   const result = queue.tick(queue.remaining + 1);
   observer.handlingOutcomes(result);
   observer.afterFrame({ realSeconds: 1, screenOpen: true, visible: true }, queue, {
-    sim: { paused: false, compression: { c: 1 } },
+    sim: { paused: false, compression: { c: 1 }, calendar: 0 },
+    body: { pos: [1, 0, 1] },
     inventory,
   } as never);
   return { inventory, backpack, cupboard, item, metrics };
@@ -68,6 +70,26 @@ describe('playtest observer', () => {
     expect(Object.keys(intoFurniture.metrics.toJSON().pocketUses)).toEqual([
       `furniture:${intoFurniture.cupboard.uid}:0:kitchen cupboard pocket 1`,
     ]);
+  });
+
+  it('records key loot only from its anchored furniture, and a beat only where the player stands', () => {
+    const beats = [
+      { id: 'beat_here', area: { x0: 0, z0: 0, x1: 2, z1: 2 } },
+      { id: 'beat_elsewhere', area: { x0: 4, z0: 4, x1: 6, z1: 6 } },
+    ];
+    const anchored = runFurnitureChain(true, new SessionMetrics(1), {
+      beats,
+      keyLoot: new Map([['0,0,0', new Set(['rag'])]]),
+    }).metrics.toJSON();
+    expect(Object.keys(anchored.beatsReached)).toEqual(['beat_here']);
+    expect(Object.keys(anchored.keyItems)).toEqual(['rag']);
+    expect(anchored.keyItems.rag?.looted).toBeDefined();
+
+    const otherAnchor = runFurnitureChain(true, new SessionMetrics(1), {
+      beats,
+      keyLoot: new Map([['9,9,9', new Set(['rag'])]]),
+    }).metrics.toJSON();
+    expect(otherAnchor.keyItems).toEqual({});
   });
 
   it('keeps a metrics exception from escaping observer work into the simulation frame', () => {

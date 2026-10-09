@@ -204,6 +204,15 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       check(p, `.tracks[${i}].points[${j}]`, track.width / 2);
     });
   });
+  const beatIds = new Set<string>();
+  layout.beats?.forEach(({ id, area }, i) => {
+    if (beatIds.has(id)) {
+      issues.push([`.beats[${i}].id`, `beat "${id}" is used more than once`]);
+    }
+    beatIds.add(id);
+    check([area.x0, area.z0], `.beats[${i}].area`);
+    check([area.x1, area.z1], `.beats[${i}].area`);
+  });
   return issues;
 };
 

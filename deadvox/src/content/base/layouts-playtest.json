@@ -76,11 +76,13 @@
                 },
                 {
                   "item": "evacuation_note",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 },
                 {
                   "item": "flashlight",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 },
                 {
                   "item": "bandage",
@@ -132,7 +134,8 @@
               "items": [
                 {
                   "item": "home_repair_book",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             },
@@ -225,11 +228,13 @@
                 {
                   "item": "portable_radio",
                   "count": 1,
-                  "condition": 0.2
+                  "condition": 0.2,
+                  "key": true
                 },
                 {
                   "item": "compass",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             },
@@ -255,7 +260,8 @@
               "items": [
                 {
                   "item": "pump_shotgun",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             },
@@ -264,7 +270,8 @@
               "items": [
                 {
                   "item": "dad_cabin_key",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             },
@@ -281,7 +288,8 @@
                 },
                 {
                   "item": "shotshell_box",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             }
@@ -298,7 +306,8 @@
               "items": [
                 {
                   "item": "hunter_logbook",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 },
                 {
                   "item": "machete",
@@ -335,7 +344,8 @@
                 {
                   "item": "crowbar",
                   "count": 1,
-                  "condition": 0.6
+                  "condition": 0.6,
+                  "key": true
                 }
               ]
             }
@@ -352,11 +362,13 @@
               "items": [
                 {
                   "item": "antiseptic",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 },
                 {
                   "item": "pharmacy_key",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             },
@@ -365,7 +377,8 @@
               "items": [
                 {
                   "item": "antibiotics",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             },
@@ -374,7 +387,8 @@
               "items": [
                 {
                   "item": "medical_research_log",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             },
@@ -383,7 +397,8 @@
               "items": [
                 {
                   "item": "camp_armoury_key",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             }
@@ -586,11 +601,13 @@
               "items": [
                 {
                   "item": "rifle_assault",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 },
                 {
                   "item": "rifle_ak",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             },
@@ -649,11 +666,13 @@
                 },
                 {
                   "item": "fastener_pack",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 },
                 {
                   "item": "rubber_strip",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 },
                 {
                   "item": "screwdriver",
@@ -692,7 +711,8 @@
               "items": [
                 {
                   "item": "workshop_notes",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             }
@@ -715,7 +735,8 @@
               "items": [
                 {
                   "item": "steel_pipe",
-                  "count": 1
+                  "count": 1,
+                  "key": true
                 }
               ]
             }
@@ -957,6 +978,62 @@
           "type": "military_shambler",
           "position": [520, 21.5, 534],
           "chance": 1
+        }
+      ],
+      "beats": [
+        {
+          "id": "lone_house",
+          "area": {
+            "x0": 76,
+            "z0": 60,
+            "x1": 130,
+            "z1": 95
+          }
+        },
+        {
+          "id": "hamlet",
+          "area": {
+            "x0": 160,
+            "z0": 42,
+            "x1": 222,
+            "z1": 109
+          }
+        },
+        {
+          "id": "hunting_cabins",
+          "area": {
+            "x0": 322,
+            "z0": 135,
+            "x1": 362,
+            "z1": 170
+          }
+        },
+        {
+          "id": "workshop",
+          "area": {
+            "x0": 404,
+            "z0": 184,
+            "x1": 433,
+            "z1": 213
+          }
+        },
+        {
+          "id": "medical_site",
+          "area": {
+            "x0": 400,
+            "z0": 228,
+            "x1": 446,
+            "z1": 268
+          }
+        },
+        {
+          "id": "military_camp",
+          "area": {
+            "x0": 434,
+            "z0": 486,
+            "x1": 518,
+            "z1": 566
+          }
         }
       ]
     }

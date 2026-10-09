@@ -30,7 +30,44 @@ describe('playtest metrics', () => {
       compressedSeconds: 5,
       interruptions: 1,
       pocketUses: { 'player pocket 1': 2 },
+      playSeconds: 5,
+      beatsReached: {},
+      keyItems: {},
     });
+  });
+
+  it('keeps the first arrival at a beat and the first loot and read of a key item through a save round trip', () => {
+    const data = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => data.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        data.set(key, value);
+      },
+    };
+    const metrics = new SessionMetrics(5);
+    metrics.frame(10, false, false);
+    metrics.reachBeat('fixtureBeat', 'first arrival');
+    metrics.recordKeyItem('fixtureNote', 'looted', 'first loot');
+    metrics.frame(20, false, false);
+    metrics.reachBeat('fixtureBeat', 'second arrival');
+    metrics.recordKeyItem('fixtureNote', 'looted', 'second loot');
+    metrics.recordKeyItem('fixtureNote', 'read', 'first read');
+    expect(metrics.toJSON()).toMatchObject({
+      playSeconds: 30,
+      beatsReached: { fixtureBeat: { gameTime: 'first arrival', playSeconds: 10 } },
+      keyItems: {
+        fixtureNote: {
+          looted: { gameTime: 'first loot', playSeconds: 10 },
+          read: { gameTime: 'first read', playSeconds: 30 },
+        },
+      },
+    });
+
+    persistMetrics(metrics, storage);
+    const restored = new SessionMetrics(5, loadMetrics(5, storage));
+    restored.reachBeat('fixtureBeat', 'arrival after reload');
+    restored.recordKeyItem('fixtureNote', 'read', 'read after reload');
+    expect(restored.toJSON()).toEqual(metrics.toJSON());
   });
 
   it('exports versioned JSON and survives reload through the local side channel', () => {

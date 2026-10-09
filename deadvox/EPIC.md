@@ -138,8 +138,9 @@ wear and light. Slice 3's milestone scope and gates are in
 Use the authored map specified in
 [#181](https://github.com/roobie/skelly/issues/181) and detailed in
 [SLICE-3.md](SLICE-3.md). Test at least three people, including someone new to
-both CDDA and DayZ, in a 45-minute session on Pages. Use “find the military
-camp” as the prompt specified by #181. Do not teach the systems first.
+both CDDA and DayZ, on Pages, in as many sittings as each tester likes
+([docs/playtest-run.md](docs/playtest-run.md), "Session format"). Use “find the
+military camp” as the prompt specified by #181. Do not teach the systems first.
 
 For #181, open the Pages build, read the controls card and start in late
 afternoon at the lone house. Follow the authored progression through the first
@@ -162,7 +163,7 @@ Ask each player:
    darkness and sounds rather than a scripted moment? Until voxel light arrives
    in Slice 4, interiors are no darker than outdoors; read the answers with that
    in mind ([DESIGN.md](DESIGN.md#light)).
-7. Does the 1:8 clock ratio let a 45-minute session show enough of the world?
+7. Does the 1:8 clock ratio let one sitting show enough of the world?
 8. Do non-respawning shamblers make the second night too safe?
 9. Is combat readable and visceral? Do noise and wounds change what the player
    does? Do they listen before moving?
