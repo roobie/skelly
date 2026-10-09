@@ -9,6 +9,7 @@ read_if:
   - you review BR's control rulings or unresolved input questions
   - you change input ownership, binding preferences or their labels
   - you add a pointer, click or wheel action
+  - you change how the drawn cursor drives menus under pointer lock
   - you implement or inspect input recording and replay
   - you change how a locked door advertises its crowbar fallback
   - you change stance hints or first-person held poses
@@ -205,7 +206,10 @@ commands, custom modal navigation and held quick/debug gates remain rebindable.
 See `src/game/inputBindings.ts`, `NATIVE_INPUTS` and `NATIVE_EDITING`. In a
 pointer-locked menu, `mountMenuPointer` in `src/ui/menuPointer.ts` maps locked
 cursor movement to range values because forwarded synthetic pointer events do not
-trigger the browser's native range-drag action.
+trigger the browser's native range-drag action. It also cancels the real press's
+own mousedown focus handling: that press lands on the locked canvas, so Firefox
+would blur the field under the drawn cursor and close an open combo box before the
+forwarded click reaches its option. Focus follows forwarded clicks instead.
 
 Noclip flight is the substantive debug exception: holding the debug gate for an
 entire flight would occupy a hand and interfere with viewing. Space/C flight
