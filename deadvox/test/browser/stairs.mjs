@@ -32,7 +32,7 @@ const vite = await createServer({
       transform(code, id) {
         if (mode === 'lighting' && id.endsWith('/src/content/base/templates-stairs.json')) {
           const content = JSON.parse(code);
-          const cabin = content.templates.find(({ id }) => id === 'stairs_cabin');
+          const cabin = content.templates.find(({ id: templateId }) => templateId === 'stairs_cabin');
           assert.ok(cabin);
           cabin.palette.s = 'camo_woodland';
           return `export default ${JSON.stringify(content)};`;
@@ -335,10 +335,14 @@ try {
       const context = canvas.getContext('2d');
       context.drawImage(image, 0, 0);
       const { engine } = globalThis.stairsWitness;
-      const camera = engine.camera;
+      const {
+        camera,
+        config: {
+          scale: { blockSize },
+        },
+      } = engine;
       camera.updateMatrixWorld(true);
       const project = ([x, y, z]) => {
-        const blockSize = engine.config.scale.blockSize;
         const point = [x * blockSize, y * blockSize, z * blockSize, 1];
         const multiply = (m, v) => [
           m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12] * v[3],
@@ -346,8 +350,13 @@ try {
           m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14] * v[3],
           m[3] * v[0] + m[7] * v[1] + m[11] * v[2] + m[15] * v[3],
         ];
-        const clip = multiply(camera.projectionMatrix.elements, multiply(camera.matrixWorldInverse.elements, point));
-        return { x: ((clip[0] / clip[3]) * 0.5 + 0.5) * canvas.width, y: (0.5 - (clip[1] / clip[3]) * 0.5) * canvas.height };
+        const { elements: projection } = camera.projectionMatrix;
+        const { elements: worldToCamera } = camera.matrixWorldInverse;
+        const clip = multiply(projection, multiply(worldToCamera, point));
+        return {
+          x: ((clip[0] / clip[3]) * 0.5 + 0.5) * canvas.width,
+          y: (0.5 - (clip[1] / clip[3]) * 0.5) * canvas.height,
+        };
       };
       const luminance = (point) => {
         const { x, y } = project(point);
@@ -356,8 +365,10 @@ try {
         }
         const pixels = context.getImageData(Math.round(x) - 3, Math.round(y) - 3, 7, 7).data;
         let sum = 0;
-        for (let i = 0; i < pixels.length; i += 4) sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
-        return { x, y, luminance: sum / (pixels.length / 4 * 3) };
+        for (let i = 0; i < pixels.length; i += 4) {
+          sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+        }
+        return { x, y, luminance: sum / ((pixels.length / 4) * 3) };
       };
       return {
         innerCorner: luminance([133, 43.15, 111.3]),

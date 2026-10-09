@@ -9,7 +9,12 @@ import { BLOCK_PATTERNS } from '../core/schema.ts';
 
 const DEFINES = BLOCK_PATTERNS.map((name, i) => `#define PAT_${name.toUpperCase()} ${i}.0`).join('\n');
 const FALLBACK_CAMO: CamoShaderConfig = {
-  palette: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+  palette: [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+  ],
   washout: 0,
   baseColor: [1, 1, 1],
 };
@@ -27,7 +32,9 @@ const rgb = (hex: string): Rgb =>
 /** Values supplied to the chunk shader from the merged runtime registry. */
 export const camoShaderConfig = (blocks: Registry['blocks']): CamoShaderConfig => {
   const camo = blocks.find(({ pattern }) => pattern === 'camo');
-  if (!camo?.patternPalette || camo.patternWashout === undefined) return FALLBACK_CAMO;
+  if (!camo?.patternPalette || camo.patternWashout === undefined) {
+    return FALLBACK_CAMO;
+  }
   return {
     palette: camo.patternPalette.map(rgb) as CamoShaderConfig['palette'],
     washout: camo.patternWashout,

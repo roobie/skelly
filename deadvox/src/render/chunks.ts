@@ -11,9 +11,9 @@ import {
   Sphere,
   Vector3,
 } from 'three';
+import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { MeshData } from '../core/mesher.ts';
-import type { Registry } from '../core/content.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
 
@@ -59,13 +59,19 @@ const centroidColorPars = (guard: string): string => `${guard}\ncentroid varying
  * pattern. `linearColors`, `patterns` and `occlusion` (0 off, 1 on) are shared with the compiled shader,
  * so changing them doesn't recompile.
  */
-const chunkMaterial = (
-  blockSize: number,
-  linearColors: { value: number },
-  patterns: { value: number },
-  occlusion: { value: number },
-  registry?: Registry,
-): MeshLambertMaterial => {
+const chunkMaterial = ({
+  blockSize,
+  linearColors,
+  patterns,
+  occlusion,
+  registry,
+}: {
+  blockSize: number;
+  linearColors: { value: number };
+  patterns: { value: number };
+  occlusion: { value: number };
+  registry?: Registry | undefined;
+}): MeshLambertMaterial => {
   const material = new MeshLambertMaterial({ vertexColors: true });
   const camo = camoShaderConfig(registry?.blocks ?? []);
   material.onBeforeCompile = (shader) => {
@@ -161,7 +167,13 @@ export class ChunkMeshes {
 
   /** Meshes are in blocks; the group scales them to metres. */
   constructor(blockSize: number, registry?: Registry) {
-    this.material = chunkMaterial(blockSize, this.linearColors, this.patterns, this.occlusion, registry);
+    this.material = chunkMaterial({
+      blockSize,
+      linearColors: this.linearColors,
+      patterns: this.patterns,
+      occlusion: this.occlusion,
+      registry,
+    });
     this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);
     // Never drawn and not in `boxes`, so `cull` leaves it hidden. It only puts the chunk material
