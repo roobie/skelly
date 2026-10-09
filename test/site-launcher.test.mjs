@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +9,15 @@ const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const page = read('site/launcher.js');
 const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
 const SELECT_PATTERN = /<select\b/;
+const PLAYTEST_LINK_PATTERN = /<a\b[^>]*\bid="deadvox-playtest"[^>]*>/;
+const HREF_PATTERN = /\bhref="([^"]+)"/;
+const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
+const DEADVOX_CONTENT = 'deadvox/src/content/base';
+
+const authoredLayoutIds = () =>
+  readdirSync(join(ROOT, DEADVOX_CONTENT))
+    .filter((name) => LAYOUT_FILE_PATTERN.test(name))
+    .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
 
 const intentionallyUnofferedDeadvoxParams = {
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
@@ -102,5 +111,20 @@ describe('site launchers track the games’ URL parameters', () => {
     for (const name of ['template', 'fixture', 'design', 'colors', 'ammo', 'ammoCase', 'mag']) {
       assert.doesNotMatch(form, new RegExp(`data-url-param="${name}"`));
     }
+  });
+});
+
+describe('site launcher playtest entry', () => {
+  it('opens an authored deadvox site without development tools', () => {
+    const anchor = page.match(PLAYTEST_LINK_PATTERN)?.[0];
+    assert.ok(anchor, 'the launcher has a playtest link');
+    const href = anchor.match(HREF_PATTERN)?.[1];
+    assert.ok(href, 'the playtest link has an href');
+    const base = new URL('https://pages.example/skelly/');
+    const url = new URL(href, base);
+    assert.equal(`${url.origin}${url.pathname}`, new URL('deadvox/', base).href);
+    const site = url.searchParams.get('site');
+    assert.ok(authoredLayoutIds().includes(site), `site ${site} is an authored layout`);
+    assert.equal(url.searchParams.has('debug'), false);
   });
 });
