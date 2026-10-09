@@ -281,6 +281,13 @@
       "size": [3, 3]
     },
     {
+      "id": "shambler_head",
+      "name": "Severed shambler head",
+      "category": "misc",
+      "weight": 5000,
+      "size": [2, 2]
+    },
+    {
       "id": "shambler_left_arm",
       "name": "Severed shambler left arm",
       "category": "misc",

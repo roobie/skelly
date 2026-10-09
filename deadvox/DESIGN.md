@@ -826,6 +826,19 @@ without modeling armour now.
   death and severing; `src/core/zombieRegions.ts`, `posedShamblerRegionBoxes`, owns
   the posed hitboxes. Region health and severed state are simulation state and
   persist in saves.
+- **A downed shambler is cleared by hand.** A destroyed torso with the head
+  still on leaves the shambler downed: it lies where it fell, stays in the save,
+  and can't be hit. It no longer blocks the player or a closing door, so a body
+  can't seal a corridor or a stair. Clearing it is a timed handling action on a
+  body in reach. Finishing it off needs no tool. Dismembering needs a carried
+  tool with the type's quality, takes longer and leaves the arms and head as
+  items; it is where butchering will start. Either way it ends as a kill does,
+  and its corpse sinks. The action re-checks reach and the tool when it ends, so
+  walking away or cancelling leaves the body lying. Like all handling, an action
+  in progress is not saved. The times and the quality are content on the zombie
+  type. See `src/core/schema.ts`, `ZombieSchema` (`downed`); `src/game/downedBody.ts`,
+  `downedBodyPlan`; `src/core/zombies.ts`, `ZombieSystem.finishDowned`; and
+  `src/game/session.ts`, `standingZombieBodies`.
 - **Determinism.** Hit regions, blast falloff and any spread are seeded, so
   saves and replays stay exact. Region and material state is simulation state:
   it goes into the save snapshot and the source fingerprint.

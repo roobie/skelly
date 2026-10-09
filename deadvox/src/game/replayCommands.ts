@@ -2,6 +2,7 @@ import type { WorkOperation } from '../core/craftCommands.ts';
 import type { CraftPreference } from '../core/crafting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory, TargetState } from '../core/inventory.ts';
+import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 
 export type ReplayActionPayload =
@@ -9,6 +10,7 @@ export type ReplayActionPayload =
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
   | { kind: 'furniture.interact'; entityUid: number }
+  | { kind: 'zombie.downed'; zombieId: number; way: DownedBodyWay }
   | { kind: 'inventory.search'; entityUid: number }
   | { kind: 'inventory.work'; itemUid: number; operation: WorkOperation }
   | { kind: 'inventory.assign'; slot: number; itemUid: number }
@@ -92,6 +94,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'inventory.search':
     case 'furniture.interact':
       return isUid(payload.entityUid);
+    case 'zombie.downed':
+      return isUid(payload.zombieId) && isDownedBodyWay(payload.way);
     case 'item.pickup':
       return (
         isUid(payload.itemUid) &&
@@ -152,6 +156,7 @@ export interface ReplayCommandOwners {
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
   interact: (entityUid: number) => string | undefined;
+  clearDownedBody: (zombieId: number, way: DownedBodyWay) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
@@ -179,6 +184,8 @@ export const applyReplayActionPayload = (
       return owners.pickup(payload.itemUid, payload.mode, payload.feet);
     case 'furniture.interact':
       return owners.interact(payload.entityUid);
+    case 'zombie.downed':
+      return owners.clearDownedBody(payload.zombieId, payload.way);
     case 'inventory.search':
       return owners.search(payload.entityUid);
     case 'inventory.work':
