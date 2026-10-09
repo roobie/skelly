@@ -594,7 +594,7 @@ body.unconscious::after {
   max-width: none;
   scrollbar-gutter: stable;
 }
-@media (max-width: 800px) {
+@media (max-width: 790px) {
   #inventory .inv-body[data-tab-panel="items"] {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: repeat(3, minmax(160px, 1fr));
