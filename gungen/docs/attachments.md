@@ -52,6 +52,12 @@ Computed class comparisons and their review trigger are tracked in
 `docs/deferred-assertions.md`; BR tunes those assumptions before they become
 pinned assertions.
 
+An attachment's appearance belongs to its part instance, not the firearm it is
+fitted to. An item is its own instance, so its colour must not change with its
+host; two instances of the same attachment may carry unrelated finishes. See
+`src/gun/attachments.ts`, `attachmentInstanceForId`, and `src/core/glb.ts`,
+`exportGlb`.
+
 ## Viewer previews
 
 Use repeatable `fit` query parameters to preview attachments without editing the

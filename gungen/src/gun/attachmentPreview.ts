@@ -103,12 +103,12 @@ export const previewFittedAttachments = (
   const parts = { ...source.resolved.assembly.parts };
   const connections = [...source.resolved.assembly.connections];
   for (const [index, { request, slot }] of selected.entries()) {
-    const { family, params } = attachmentInstanceForId(request.id);
+    const instance = attachmentInstanceForId(request.id);
     let partId = `fit-preview-${index}`;
     while (parts[partId]) {
       partId = `_${partId}`;
     }
-    parts[partId] = { family, params };
+    parts[partId] = instance;
     const slotSeparator = slot.id.lastIndexOf('.');
     const from = slotSeparator < 0 ? '' : slot.id.slice(0, slotSeparator);
     if (!from) {

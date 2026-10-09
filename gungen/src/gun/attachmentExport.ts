@@ -1,7 +1,7 @@
-import type { AppearanceContext, GlbAssetIdentity, GlbExportError } from '../core/design.ts';
+import type { GlbAssetIdentity, GlbExportError } from '../core/design.ts';
 import { exportGlb } from '../core/glb.ts';
 import { resolve } from '../core/resolve.ts';
-import type { Assembly, PartFamily } from '../core/schema.ts';
+import type { Assembly, PartAppearance, PartFamily } from '../core/schema.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { attachmentInstanceForId, attachmentMetadata } from './attachments.ts';
 import { gunDomain } from './domain.ts';
@@ -17,9 +17,9 @@ export type AttachmentExportResult =
 export const exportAttachmentGlb = (
   id: string,
   asset: GlbAssetIdentity,
-  appearance: AppearanceContext = {},
+  appearance?: PartAppearance,
 ): AttachmentExportResult => {
-  const instance = attachmentInstanceForId(id);
+  const instance = attachmentInstanceForId(id, appearance);
   const family = FAMILIES[instance.family] ?? ATTACHMENT_FAMILIES[instance.family];
   if (!family) {
     throw new Error(`Attachment ${id} has no part family`);
@@ -27,7 +27,7 @@ export const exportAttachmentGlb = (
   const assembly: Assembly = {
     name: asset.id,
     root: id,
-    parts: { [id]: { family: instance.family, ...(instance.params ? { params: instance.params } : {}) } },
+    parts: { [id]: instance },
     connections: [],
   };
   // Preserve authored mount frames, but an item model is not an incomplete gun assembly.
@@ -45,7 +45,7 @@ export const exportAttachmentGlb = (
     rules: [],
   };
   const resolved = resolve(assembly, domain);
-  const result = exportGlb({ resolved, palette: GUN_PALETTE, appearance, asset });
+  const result = exportGlb({ resolved, palette: GUN_PALETTE, asset });
   if (!result.ok) {
     return result;
   }

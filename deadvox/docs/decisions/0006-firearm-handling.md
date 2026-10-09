@@ -3,6 +3,7 @@ read_if:
   - you're changing the Gungen-to-Deadvox firearm model contract
   - you're changing firearm cycle state, ammunition, magazines or spent cases
   - you're evaluating firearm attachment effects
+  - you're changing how exported attachment appearance is carried into Deadvox
 tags: [deadvox, gungen, adr, firearms, export, feel]
 ---
 
@@ -36,7 +37,15 @@ shot, and keeps a case with the place it actually landed. See
 `src/core/scatterPile.ts`, `spentCaseScatter`.
 
 Fitted attachments affect the firearm through their authored geometry and
-properties. Gungen derives suppressor mass from geometry and material. The only
+properties. Their material comes from the attachment model Gungen exports;
+Deadvox's `src/render/itemLook.ts`, `itemLook`, selects that model and
+`src/render/models.ts`, `ModelLibrary.part`, composes it without inheriting the
+host firearm's finish. An attachment is its own item instance, so mounting it
+must not change its colour. Gungen's part-instance contract allows separate
+instances to carry unrelated finishes; Deadvox's inventory still selects one
+model per item type, so per-item finish choices need instance appearance data in
+that inventory contract. Gungen derives suppressor mass from geometry and
+material. The only
 hand-set suppressor effect is each type's recoil reduction, which follows trapped
 gas; the improvised type is less effective. One shared muzzle rule uses weight
 multiplied by distance from the hands to slow raising and swinging, add sway and

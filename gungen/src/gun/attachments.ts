@@ -1,7 +1,7 @@
 import { localSolidBounds } from '../core/geometry.ts';
 import { applyDir, applyPoint, type Vec3 } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
-import type { PartDef } from '../core/schema.ts';
+import type { PartAppearance, PartDef, PartInstance } from '../core/schema.ts';
 import { attachmentMassKg } from './attachmentMass.ts';
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
@@ -85,17 +85,21 @@ export const ATTACHMENT_IDS = [
 
 export const attachmentInstanceForId = (
   id: string,
-): { readonly family: string; readonly params: Readonly<Record<string, string>> } => {
+  appearance?: PartAppearance,
+): PartInstance & { readonly params: Readonly<Record<string, string>> } => {
   if (!ATTACHMENT_IDS.includes(id as (typeof ATTACHMENT_IDS)[number])) {
     throw new Error(`Unknown attachment id: ${id}`);
   }
+  const instanceAppearance = appearance ?? {
+    ...(id === 'real-suppressor' || id === 'improvised-suppressor' ? { finish: { metal: 'alu-anodized-black' } } : {}),
+  };
   if (id.startsWith('optic-')) {
-    return { family: 'sight', params: { type: id.slice('optic-'.length) } };
+    return { family: 'sight', params: { type: id.slice('optic-'.length) }, appearance: instanceAppearance };
   }
   if (id === 'real-suppressor' || id === 'improvised-suppressor') {
-    return { family: 'suppressor', params: { type: id } };
+    return { family: 'suppressor', params: { type: id }, appearance: instanceAppearance };
   }
-  return { family: id, params: {} };
+  return { family: id, params: {}, appearance: instanceAppearance };
 };
 
 const MOUNT_SET = new Set<MountKind>(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']);
