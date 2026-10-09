@@ -171,7 +171,7 @@ try {
       const { controlsCardRows } = await import('/src/game/controls.ts');
       const controls = document.querySelector('#controls');
       const entries = [...controls.querySelectorAll('dt')];
-      const rows = controlsCardRows();
+      const rows = controlsCardRows(undefined, true);
       const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
       const cardEl = document.querySelector('#overlay .card');
       const card = cardEl.getBoundingClientRect();
