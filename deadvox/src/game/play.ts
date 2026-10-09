@@ -306,7 +306,7 @@ interface HandlingPresentationOptions {
   readonly job: Readonly<LongJob> | undefined;
   readonly queue: HandlingPresentationSource;
   readonly inventory: Inventory;
-  readonly simTime: number;
+  readonly simSeconds: number;
   readonly clockRatio: number;
   readonly compressionActive: boolean;
   readonly throwCharge?: HandlingPresentationSource['throwCharge'];
@@ -316,7 +316,7 @@ const handlingPresentationFor = ({
   job,
   queue,
   inventory,
-  simTime,
+  simSeconds,
   clockRatio,
   compressionActive,
   throwCharge,
@@ -334,7 +334,7 @@ const handlingPresentationFor = ({
     ...(job.jobType === 'reading' ? { ownerUid: job.bookUid } : {}),
     label: timedActionLabel(job, inventory),
     duration: job.duration,
-    elapsed: elapsedForPresentation(job, simTime, clockRatio, compressionActive),
+    elapsed: elapsedForPresentation(job, simSeconds, clockRatio, compressionActive),
     stopped: job.stopped,
   };
   return timedActionHandlingPresentation(action, stopLabel);
@@ -2996,7 +2996,7 @@ export const startPlay = (
       job: sim.actions.job,
       queue,
       inventory,
-      simTime: sim.time,
+      simSeconds: sim.time,
       clockRatio: sim.clock.ratio,
       compressionActive: compression.active,
       throwCharge:
