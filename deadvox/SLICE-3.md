@@ -25,13 +25,13 @@ The player should have to choose when to ready a weapon, spend ammunition, make 
 
 ## Playtest questions
 
-Use the playtest questions in [EPIC.md](EPIC.md), together with Slice 2's questions and observations. Slice 3 adds only these questions:
+Use the playtest questions in [EPIC.md](EPIC.md), together with Slice 2's questions and findings. Slice 3 adds only these questions:
 
 - Can testers read ready/unready, ADS and en-garde from the controls and held pose without a HUD mode indicator?
 - Do weapon attachments and firearm handling make ammunition choices clear before a shot is fired?
 - Can players tell which available treatment applies to a wound and its infection stage?
 
-The first real playtest runs at the end of this slice, before Slice 4, on the authored map in [#181](https://github.com/roobie/skelly/issues/181). Observe inventory time, pocket choices, reactions to unseen sounds and interruptions, where players stall, and the moments that annoy or delight them. Follow EPIC's run instructions; confirm the proposed tester prompt with BR during 3.11, and do not teach the systems first. Recruit at least three testers, including someone new to both CDDA and DayZ. BR has one tester; two more remain to be found.
+The first real playtest runs at the end of this slice, before Slice 4, on the authored map in [#181](https://github.com/roobie/skelly/issues/181). The organiser shares the Pages landing-page link with at least three people, including someone new to both CDDA and DayZ; each tester plays independently until they want to stop, in as many sittings as they like. The Playtest link gives them the prompt “find the military camp.” Use any metrics and feedback they choose to share to assess inventory time, pocket choices, reactions to unseen sounds and interruptions, where players got to, and what felt annoying or delightful. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md).
 
 ## Scope
 
@@ -412,37 +412,24 @@ Replay retains generated-column transitions because readiness determines whether
 
 ### 3.11 Authored playtest map and playtest
 
-**BR, 2026-10-06 12:31:** “can we continue on the authored playtest map meanwhile?”
-This request brings beats 1–3 forward while the agreed beats 4–6 wait for their
-dependencies.
+The end-of-slice playtest uses the authored progression in [#181](https://github.com/roobie/skelly/issues/181). Testers follow the Playtest link from the Pages landing page and can explore for as long as they like; the game is not a facilitated or shadowed session. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md) for the self-serve format and how tester feedback and metrics inform Slice 4.
 
-**BR, 2026-10-03 14:52, verbatim (#181):**
-
-> 3. no I didn't mean a mission assigned to the player, but rather that the lore could be that the medial place was setup in order to do that - and that there is lore items for the player to discover / 4. preliminary: yes
-
-**BR, 2026-10-05 21:37:**
-
-> what you call "the mission" is not a mission for the player - it's simply a raison-d'etre for the medical site
-> q1: yes, those are the beats
-> q2: see above
-> q3: bigger
-> q4: i have one tester - the other two are open
-
-**In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. The medical site's virus-sampling research is lore, not a player mission. For #181, its wards stay dangerous because the sick brought there remain among the beds; crawler markers make that threat part of the care setting rather than a scripted encounter. See `src/content/base/templates-medical.json`, `medical_hall`.
+**In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. The medical site's virus-sampling research is lore, not a player mission. Its wards stay dangerous because the sick brought there remain among the beds; crawler markers make that threat part of the care setting rather than a scripted encounter. See `src/content/base/templates-medical.json`, `medical_hall`.
 
 - **Discoverable lore:** readable notes and documents, perhaps a wall notice; distinct from 2.5's recipe-teaching books.
-- **Nights:** night 1 near the hunting cabins; night 2 at the medical site (preliminary, BR, 2026-10-03).
-- **Armoury access:** the camp must remain reachable if the clinic key stays on the dead officer. BR said at 19:03, “#320 the prying should take a bit longer - maybe 5 ingame seconds? Eyeballin” and at 19:05, “yeah, let's not make it a long action” / “but it should be skill dependent - starting at 15 seconds - gets faster by 'fabrication' or similar woodworking skill”. Asked whether to add `fabrication`, use `mechanics`, or use `crafting`, BR answered “1b”: use the existing `mechanics` skill. BR also answered “2 sounds like a good start” to the proposed level-10 duration of 7.5 real seconds—half the 15-second level-0 duration—with 30 strikes retained. The lead reads 15 seconds as real play time; keep prying out of compression so the crowbar's noise draws the dead at normal pace. The matching key remains the quiet route, and `lock_test` is a first-look fixture, not the authored military site. BR answered #309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door unlocked, making forced entry one-way. See `DESIGN.md`, “Base building and electricity”, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
-- **Tester prompt:** “find the military camp” (BR, 2026-10-06 13:05: “yes, confirmed”; #181).
-- **Military compound:** guard posts keep their floors at walking height and exits open; the separate three-storey HQ shares a solid wall with the armoury without opening into its locked interior. The HQ is dressed as a field command post, not a brick residence, so it reads as the FOB's headquarters. `src/content/base/camp.json` (`camp_hq`) defines the interiors, `maps/playtest.tmj` places them, and `test/authoredFixedLoot.test.ts` checks post exits, HQ access and the shared wall (`expectCampHqProperties`).
-- **Grounding and camp scale:** solid ground-layer foundations meet the terrain surface, including templates with cellars; the raised lookout stands on ground-supported legs and its cabin is reachable. Preserve existing buildings and the armoury route as placements while keeping the expanded compound's open ground for the later amalgam encounter. `src/content/base/camp.json` defines structures and access; `maps/extensions/deadvox.mjs`, `exportLayout`, exports placements from `maps/playtest.tmj`; `test/authoredFixedLoot.test.ts`, `grounds every authored building on solid terrain`.
-- **FOB perimeter:** solid wall columns exceed jump reach; the vehicle-width north approach and return-walled pen make the guarded entry legible, while the damaged inner gate is a weak point, not a bypass. The southern wall breach preserves another route into the compound. Uneven top courses carry the abandoned-site treatment. New structures follow the dilapidation direction, starting with the camp walls in #385; retrofitting existing structures is tracked in #396. See `src/content/base/camp.json`, `camp_wall_run`, `camp_gate`, and `camp_gate_return`; `test/authoredFixedLoot.test.ts`, `keeps FOB wall and gate solid columns above jump reach`, and `test/campGate.test.ts` check the perimeter.
+- **Nights:** the first night is near the hunting cabins; the second is at the medical site.
+- **Armoury access:** keep the camp reachable if the clinic key stays on the dead officer. A matching key is the quiet route; prying destroys the padlock and leaves the door unlocked, making forced entry one-way. Prying uses the existing `mechanics` skill and runs in real time so its noise draws the dead. `lock_test` is a first-look fixture, not the authored military site. See `DESIGN.md`, “Base building and electricity”, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
+- **Tester prompt:** “find the military camp”.
+- **Military compound:** guard posts keep their floors at walking height and exits open; the separate HQ shares a solid wall with the armoury without opening into its locked interior. The HQ reads as a field command post. `src/content/base/camp.json`, `camp_hq`, defines the interiors; `maps/playtest.tmj` places them; `test/authoredFixedLoot.test.ts`, `expectCampHqProperties`, checks post exits, HQ access and the shared wall.
+- **Grounding and camp scale:** foundations meet the terrain surface, including templates with cellars; the raised lookout stands on ground-supported legs and its cabin is reachable. Preserve existing buildings and the armoury route while keeping the expanded compound's open ground for the later amalgam encounter. `src/content/base/camp.json` defines structures and access; `maps/extensions/deadvox.mjs`, `exportLayout`, exports placements from `maps/playtest.tmj`; `test/authoredFixedLoot.test.ts` checks that authored buildings stand on solid terrain.
+- **FOB perimeter:** solid wall columns exceed jump reach; the north approach and return-walled pen make the guarded entry legible, while the damaged inner gate is a weak point, not a bypass. The southern wall breach preserves another route. `src/content/base/camp.json`, `camp_wall_run`, `camp_gate`, and `camp_gate_return`, defines the perimeter; `test/authoredFixedLoot.test.ts` and `test/campGate.test.ts` check it.
 - The camp's closing readable directs testers to Project home through the F9 menu.
 
-At Mike's place, fixed loot and the workbench make the taped light mount craftable without noise. The fixed and random loot lack one improvised-suppressor input; the yard scrap pile is the only source there, and searching it emits noise. Quiet costs noise up front, and the medical site's second night tests whether the trade was worth it. The radio remains broken and has no radio-specific behavior. The authored runner markers use the existing runner type, and the stripped car remains a prop. See `src/content/base/layouts-playtest.json`, `workshop_yard.fixedLoot`; `src/core/schema.ts`, `FurnitureSchema`; and `src/game/session.ts`, `search`.
+The yard scrap pile is the only source of one improvised-suppressor input; fixed and random loot lack it. The workshop makes a taped light mount craftable without noise. Finding the suppressor input at the yard scrap pile costs noise, so the medical site's second night tests whether that trade was worthwhile. The radio remains broken and has no radio-specific behavior; runner markers use the existing runner type; the stripped car is a prop. See `src/content/base/layouts-playtest.json`, `workshop_yard.fixedLoot`, and `src/game/session.ts`, `search`.
+
 **Saves:** The authored layout, fixed placements and seeded loot regenerate from the site and seed. Dynamic changes and looted items use the existing world/inventory save; no separate map-progress state is added.
-**Tests:** authored content validates; site generation is deterministic across chunk order; required progression and routes remain traversable; fixed key loot and seeded filler follow their separate ownership without pinning exact coordinates or complete loot lists. The playtest records consented observation notes and local metrics without changing game state.
-**Done when:** the approved map supports the end-of-slice playtest, its two nights and progression are playable, the checklist links its evidence, and the playtest findings are recorded before Slice 4 planning.
+**Tests:** authored content validates; site generation is deterministic across chunk order; required progression and routes remain traversable; fixed key loot and seeded filler follow their separate ownership without pinning exact coordinates or complete loot lists. Metrics remain outside game state.
+**Done when:** the approved map supports the self-serve end-of-slice playtest, its progression and nights are playable, the checklist links its evidence, and the playtest findings are recorded before Slice 4 planning.
 **First look / BR approval:** the completed authored map, including the workshop/medical/military progression and night locations.
 
 #### Loose-item pickup
@@ -489,6 +476,6 @@ Only questions BR left open; don't infer answers from implementation or old prop
 - Milestones 3.0–3.11 are merged and deployed with CI green, including their required type, unit, content and browser checks.
 - Every new persistent simulation state is owned, saved, fingerprinted and covered by a current-build round trip. The default test run remains within the applicable budget or has a coverage-based explanation and a plan to keep it fast.
 - The noise-to-positional-sound contract holds; recordings replay deterministically; performance work is measured against the approved workloads.
-- The checklist issue links evidence and carried-forward work; the end-of-slice playtest questions are asked of the required testers and its findings inform Slice 4.
+- The checklist issue links evidence and carried-forward work; the Pages link reaches at least three testers, including someone new to both CDDA and DayZ, and findings from their feedback and any metrics they choose to share are recorded before Slice 4 planning.
 - BR has approved the required first looks for ready/ADS, firearm gore/impacts, optics, new zombie types, the horde and the authored map.
 - A retrospective records what changed and what carries forward.

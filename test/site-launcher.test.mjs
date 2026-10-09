@@ -14,6 +14,8 @@ const WEATHERING_SITE_OPTION_PATTERN =
 const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAYTEST_LINK_PATTERN = /<a\b[^>]*\bid="deadvox-playtest"[^>]*>/;
+const PLAYTEST_CARD_PATTERN = /<section class="card" aria-labelledby="playtest-title">([\s\S]*?)<\/section>/;
+const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
 const DEADVOX_CONTENT = 'deadvox/src/content/base';
@@ -157,6 +159,18 @@ describe('site launchers track the games’ URL parameters', () => {
 });
 
 describe('site launcher playtest entry', () => {
+  it('keeps the playtest card distinct from the developer launcher', () => {
+    const card = page.match(PLAYTEST_CARD_PATTERN);
+    const deadvoxCard = page.indexOf('<section class="card" aria-labelledby="deadvox-title">');
+    const deadvoxForm = page.match(DEADVOX_FORM_PATTERN);
+    assert.ok(card, 'the playtest has its own card');
+    assert.ok(deadvoxCard > page.indexOf(card[0]), 'the playtest card appears before the developer launcher');
+    assert.ok(card[1].includes('<h1 id="playtest-title">'));
+    assert.ok(card[1].indexOf('id="deadvox-playtest"') > card[1].indexOf('</ul>'), 'the play link follows the brief');
+    assert.ok(deadvoxForm, 'the developer launch form is present');
+    assert.equal(deadvoxForm[0].includes('id="deadvox-playtest"'), false);
+  });
+
   it('opens an authored deadvox site without development tools', () => {
     const anchor = page.match(PLAYTEST_LINK_PATTERN)?.[0];
     assert.ok(anchor, 'the launcher has a playtest link');
