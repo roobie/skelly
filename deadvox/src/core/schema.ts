@@ -1239,6 +1239,8 @@ const SkillSchema = pipe(
             reloadFactorHalfLifeLevels: Positive,
             rackFactorFloor: Fraction,
             rackFactorHalfLifeLevels: Positive,
+            attachmentFactorFloor: Fraction,
+            attachmentFactorHalfLifeLevels: Positive,
           }),
         ),
         melee: optional(

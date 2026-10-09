@@ -44,7 +44,9 @@
           "reloadFactorFloor": 0.025,
           "reloadFactorHalfLifeLevels": 5,
           "rackFactorFloor": 0.16,
-          "rackFactorHalfLifeLevels": 3
+          "rackFactorHalfLifeLevels": 3,
+          "attachmentFactorFloor": 0,
+          "attachmentFactorHalfLifeLevels": 1.1
         }
       }
     },
