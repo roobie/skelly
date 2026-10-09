@@ -190,6 +190,28 @@ try {
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
+  const reviewMap = page.locator('iframe[title="Current-world review map"]');
+  await pressAction(page, 'debug.review-map-toggle');
+  await page.waitForFunction(() => {
+    const frame = document.querySelector('iframe[title="Current-world review map"]');
+    return frame && !frame.hidden && frame.src.includes('overlay=1');
+  });
+  const reviewMapPage = page.frameLocator('iframe[title="Current-world review map"]');
+  await reviewMapPage.locator('#map-status').getByText('Ready', { exact: false }).waitFor();
+  assert.equal(await reviewMapPage.locator('#map-label').textContent(), 'HAMLET · REVIEW MAP');
+  const mapParams = await reviewMap.evaluate((frame) => Object.fromEntries(new URL(frame.src).searchParams));
+  assert.equal(mapParams.seed, '73', 'review map receives the active world seed');
+  assert.equal(mapParams.site, 'hamlet', 'review map receives the active site');
+  assert.equal(mapParams.centerX, mapParams.playerX, 'map centers on the player');
+  assert.equal(mapParams.centerZ, mapParams.playerZ, 'map centers on the player');
+  assert.equal(Number.isFinite(Number(mapParams.playerYaw)), true, 'map receives player facing');
+  assert.equal(await page.evaluate(() => globalThis.fullAutoRuntime.sim.paused), false, 'map matches the debug panel pause rule');
+  await pressAction(page, 'debug.review-map-toggle');
+  await page.waitForFunction(() => document.querySelector('iframe[title="Current-world review map"]')?.hidden);
+  await pressAction(page, 'debug.review-map-toggle');
+  await page.waitForFunction(() => !document.querySelector('iframe[title="Current-world review map"]')?.hidden);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.querySelector('iframe[title="Current-world review map"]')?.hidden);
   const setHudOption = async (labelText, key, selector, visible) => {
     await page.evaluate(
       ({ label, nextVisibility }) => {

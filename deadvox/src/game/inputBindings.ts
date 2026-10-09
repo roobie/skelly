@@ -8,6 +8,7 @@ export type InputContext =
   | 'reading'
   | 'spawn'
   | 'debug-panel'
+  | 'review-map'
   | 'build'
   | 'noclip'
   | 'play'
@@ -40,6 +41,7 @@ const entered: readonly InputContext[] = [
   'reading',
   'spawn',
   'debug-panel',
+  'review-map',
   ...moving,
   'interrupted',
 ];
@@ -186,7 +188,8 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugRow('debug.spawn-amalgam', 'Spawn amalgam', 'Numpad4'),
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes', 'KeyY'),
   debugRow('debug.freeze-shamblers', 'Freeze shamblers', 'KeyO'),
-  debugRow('debug.freeze-game', 'Freeze game', 'KeyM'),
+  debugRow('debug.review-map-toggle', 'Review map', 'KeyM', ['play', 'noclip', 'review-map']),
+  debugRow('debug.freeze-game', 'Freeze game', 'Numpad5'),
   debugRow('debug.tone-cycle', 'Tone mapping', 'KeyJ'),
   debugRow('debug.exposure-decrease', 'Exposure −', 'Minus'),
   debugRow('debug.exposure-increase', 'Exposure +', 'Equal'),

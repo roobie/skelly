@@ -516,6 +516,13 @@ export const createDebugActions = ({
   (
     [
       {
+        id: 'debug.review-map-toggle',
+        label: 'Review map',
+        group: 'tools',
+        state: hooks.reviewMap.isOpen,
+        run: hooks.reviewMap.toggle,
+      },
+      {
         id: 'debug.build-toggle',
         label: 'Build tools',
         group: 'tools',

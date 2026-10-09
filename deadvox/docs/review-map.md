@@ -1,13 +1,13 @@
 ---
 read_if:
-  - "you're reviewing the authored playtest layout in #181"
-  - "you're changing the top-down review map before #470"
+  - "you're reviewing an authored layout or current-world terrain"
+  - "you're changing the top-down review map or opening it in-game in a debug session"
 ---
 
-# Playtest review map
+# Review map
 
-`map.html` is a development-only review page for inspecting the authored playtest site without adding a top-down view to the game. Open it on the Deadvox dev server, choose a view, then drag, zoom and click to inspect ground coordinates and open a fresh debug game there.
+`map.html` is a development review tool, not player knowledge. In a debug game, F2+M opens an overlay centered on the player's current position; Escape or F2+M closes it. The game remains unpaused, matching the debug panel. The overlay uses the active seed and site settings, shows the player's facing, and supports panning, zooming, and coordinate inspection. The standalone page remains useful for reviewing authored layouts and opening a fresh debug game at a selected coordinate.
 
-The page samples terrain and authored-site shaping through the same world-generation modules as play, and gets block colours from the content registry. See `src/siteMapPage.ts`, `generateMap`, and `src/render/siteMap.ts`, `marchingSquares`.
+Map sampling uses the current world's site surface and chunk stamping with the shared terrain and block-generation paths. Authored footprints and tracks appear when the selected site has a layout; other sites show sampled terrain and generated top-block colours without invented footprints. See `src/siteMapPage.ts`, `generateMap`, `src/game/worldSetup.ts`, `siteForReviewMap`, and `src/render/siteMap.ts`, `marchingSquares`.
 
-The top-down render is a review tool, not player knowledge. The in-game map is a paper map (#470); see `DESIGN.md`, “UI principles”.
+The game's player map remains a paper map; see `DESIGN.md`, “UI principles”.

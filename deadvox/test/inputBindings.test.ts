@@ -262,6 +262,12 @@ describe('keyboard registry', () => {
     expect(bindings.rebind('hud.toggle-interaction-hints', [{ code: 'KeyJ' }])).toBeUndefined();
     expect(bindings.label('hud.toggle-interaction-hints')).toBe('J');
   });
+  it('gates the review map behind F2+M and moves game freeze off M', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    expect(bindings.binding('debug.review-map-toggle')?.defaults[0]?.code).toBe('KeyM');
+    expect(bindings.binding('debug.review-map-toggle')?.gate).toBe('debug.gate');
+    expect(bindings.binding('debug.freeze-game')?.defaults[0]?.code).toBe('Numpad5');
+  });
   it('keeps noclip flight ungated and concurrent with ordinary movement', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
     let context: InputContext = 'noclip';

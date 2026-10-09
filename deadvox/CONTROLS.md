@@ -57,14 +57,17 @@ shortcuts and their rationale are described in [the inventory layout](docs/inven
   never invokes an item's use action. See
   `src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`, and
   `src/core/options.ts`, `quickMove`.
-- **Debug gate (2026-10-05 19:52):** “debug modifier F2 to not collide with a builtin
-  hotkey”. Debug authoring actions use a held F2 gate. The gate is itself a binding,
-  not a native OS modifier. A consumed debug chord cannot also execute its
-  ordinary gameplay command; enabling the gate preserves a held pointer stance
-  and its ADS toggle. Spawn confirmation is a modal navigation exception: the menu
-  itself remains debug-only, while Enter acts normally once it is open. BR's ruling
-  is quoted in [TROUBLESHOOTING.md](TROUBLESHOOTING.md), “Debug parameters”. See
-  `src/game/inputBindings.ts`, `KeyboardInput.cancel`.
+- **Debug gate and review map (2026-10-05 19:52):** “debug modifier F2 to not
+  collide with a builtin hotkey”. Debug authoring actions use a held F2 gate. In a
+  debug game, F2+M opens the review map and Escape or F2+M closes it; F2+Numpad5
+  freezes the game. The gate is itself a binding, not a native OS modifier. A
+  consumed debug chord cannot also execute its ordinary gameplay command; enabling
+  the gate preserves a held pointer stance and its ADS toggle. Spawn confirmation
+  is a modal navigation exception: the menu itself remains debug-only, while Enter
+  acts normally once it is open. BR's ruling is quoted in
+  [TROUBLESHOOTING.md](TROUBLESHOOTING.md), “Debug parameters”. See
+  `src/game/inputBindings.ts`, `KeyboardInput.cancel`, and `src/game/play.ts`,
+  `toggleReviewMap`.
 - **Interaction and reserved lean inputs (2026-09-27):** F interacts; Q and E
   remain reserved. Reserve their physical positions across contexts, including
   debug, rather than inventing no-op lean commands.

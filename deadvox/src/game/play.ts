@@ -939,6 +939,59 @@ export const startPlay = (
     },
     import: importReplay,
   };
+  let reviewMapOpen = false;
+  const reviewMapFrame = document.createElement('iframe');
+  reviewMapFrame.title = 'Current-world review map';
+  reviewMapFrame.style.cssText =
+    'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:10000;background:#d7ddd4';
+  reviewMapFrame.hidden = true;
+  document.body.append(reviewMapFrame);
+  const toggleReviewMap = (open = !reviewMapOpen): void => {
+    if (open === reviewMapOpen) {
+      return;
+    }
+    reviewMapOpen = open;
+    reviewMapFrame.hidden = !open;
+    if (open) {
+      debugTools?.closeMenus();
+      const mapUrl = new URL('/map.html', globalThis.location.href);
+      mapUrl.searchParams.set('overlay', '1');
+      mapUrl.searchParams.set('debug', '1');
+      mapUrl.searchParams.set('seed', String(config.seed));
+      mapUrl.searchParams.set('site', config.site);
+      mapUrl.searchParams.set('storeys', String(config.storeys));
+      if (config.density !== null) {
+        mapUrl.searchParams.set('density', String(config.density));
+      }
+      const x = body.pos[0] * s;
+      const z = body.pos[2] * s;
+      mapUrl.searchParams.set('centerX', String(x));
+      mapUrl.searchParams.set('centerZ', String(z));
+      mapUrl.searchParams.set('playerX', String(x));
+      mapUrl.searchParams.set('playerZ', String(z));
+      mapUrl.searchParams.set('playerYaw', String(input.yaw));
+      reviewMapFrame.src = mapUrl.href;
+      input.unlock();
+      input.cancel();
+    }
+    syncMenuState();
+    if (!open && started && !input.locked) {
+      resume();
+    }
+    keyboardInput.sync();
+  };
+  globalThis.addEventListener('message', (event: MessageEvent<unknown>) => {
+    if (
+      event.origin === globalThis.location.origin &&
+      event.source === reviewMapFrame.contentWindow &&
+      typeof event.data === 'object' &&
+      event.data !== null &&
+      'type' in event.data &&
+      event.data.type === 'deadvox-review-map-close'
+    ) {
+      toggleReviewMap(false);
+    }
+  });
   debugTools = debugModule?.attachDebugTools({
     engine,
     weather,
@@ -950,6 +1003,7 @@ export const startPlay = (
     sim,
     input,
     debugModifierHeld: () => keyboardInput.held('debug.gate'),
+    reviewMap: { isOpen: () => reviewMapOpen, toggle: () => toggleReviewMap() },
     impactLaser: {
       enabled: () => debugLaserEnabled,
       toggle: () => {
@@ -1011,6 +1065,7 @@ export const startPlay = (
       inventoryOpen: screen.isOpen,
       readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
+      reviewMapOpen,
       pointerLocked: input.locked || Boolean(options.replay),
       dead: sim.dead !== undefined,
       pointerLockChanged,
@@ -1423,6 +1478,9 @@ export const startPlay = (
     return debugTools?.noclip || spectatorCameraEnabled ? 'noclip' : 'play';
   };
   const inputContext = (): InputContext => {
+    if (reviewMapOpen) {
+      return 'review-map';
+    }
     if (options.saveController && !options.saveController.isEntered) {
       return 'title';
     }
@@ -1445,7 +1503,13 @@ export const startPlay = (
     quickbarInput.cancel();
     hintToggleInput.cancel();
   };
-  keyboardInput.escape = () => reading.close();
+  keyboardInput.escape = () => {
+    if (reviewMapOpen) {
+      toggleReviewMap(false);
+    } else {
+      reading.close();
+    }
+  };
   const inventoryTabCommand = (action: string): boolean => {
     const tab = inventoryTabForAction(action);
     if (!tab) {
@@ -1561,6 +1625,10 @@ export const startPlay = (
   const handleDebugCommand = (action: string): boolean => {
     if (!(action.startsWith('debug.') || action.startsWith('spawn.'))) {
       return false;
+    }
+    if (action === 'debug.review-map-toggle') {
+      toggleReviewMap();
+      return true;
     }
     debugTools?.handleAction(action);
     syncMenuState();

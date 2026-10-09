@@ -31,6 +31,7 @@ export interface MenuStateInput {
   inventoryOpen: boolean;
   readingOpen?: boolean;
   debugMenuOpen: boolean;
+  reviewMapOpen?: boolean;
   pointerLocked: boolean;
   dead: boolean;
   /** True only while handling the browser's pointerlockchange event, not on animation frames. */
@@ -77,7 +78,9 @@ const titleMenuState = (input: MenuStateInput): MenuState => ({
 
 const activeMenuState = (input: MenuStateInput): MenuState => {
   const started = input.started || input.pointerLocked;
-  const pointerUnlocked = Boolean(input.pointerLockChanged && started && !input.pointerLocked && !input.dead);
+  const pointerUnlocked = Boolean(
+    input.pointerLockChanged && started && !input.pointerLocked && !input.dead && !input.reviewMapOpen,
+  );
   const resumed = Boolean(input.pointerLocked && input.resumeRequested && !input.dead);
   const { mainMenuOpen: requestedMainMenuOpen } = input;
   const closeOtherMenus = pointerUnlocked || resumed || mainMenuHasConflict(input);
@@ -90,14 +93,15 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
   const inventoryOpen = closeOtherMenus ? false : input.inventoryOpen;
   const debugMenuOpen = closeOtherMenus ? false : input.debugMenuOpen;
   const readingOpen = !closeOtherMenus && Boolean(input.readingOpen);
-  const overlayHidden = (input.pointerLocked && !mainMenuOpen) || inventoryOpen || readingOpen || input.dead;
+  const overlayHidden =
+    Boolean(input.reviewMapOpen) || (input.pointerLocked && !mainMenuOpen) || inventoryOpen || readingOpen || input.dead;
   return {
     started,
     mainMenuOpen,
     inventoryOpen,
     debugMenuOpen,
     closeOtherMenus,
-    menuPointer: mainMenuOpen || inventoryOpen || readingOpen || debugMenuOpen,
+    menuPointer: mainMenuOpen || inventoryOpen || readingOpen || debugMenuOpen || Boolean(input.reviewMapOpen),
     overlayHidden,
     paused: !overlayHidden,
     goLabel: started ? 'Paused. Click to continue' : (input.titleNewWorldLabel ?? 'Click to play'),
