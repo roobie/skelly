@@ -292,8 +292,15 @@ const LightSchema = strictObject({
   burnTimeGameHours: optional(PositiveGameHours),
   /** Fuel units consumed per Game hour, for self-fueled sources such as a lighter. */
   fuelPerGameHour: optional(GamePerHour),
-  /** A cone of this many degrees; absent means light all around. */
-  beam: optional(pipe(Positive, maxValue(180, 'must be at most 180'))),
+  /** A cone-shaped beam; absent means light all around. */
+  beam: optional(
+    strictObject({
+      /** Full width of the cone, in degrees. */
+      angleDegrees: pipe(Positive, maxValue(180, 'must be at most 180')),
+      /** Share of the cone, from its edge inward, over which the beam fades to dark; the rest is the hotspot. */
+      penumbra: pipe(number(), minValue(0, 'must be at least 0'), maxValue(1, 'must be at most 1')),
+    }),
+  ),
   burning: optional(
     strictObject({
       ignition: picklist(['manual', 'firestarter', 'snap']),

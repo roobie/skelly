@@ -235,7 +235,7 @@
         "seenFrom": 40,
         "color": "#fff1d8",
         "intensity": 5,
-        "beam": 30,
+        "beam": { "angleDegrees": 60, "penumbra": 0.6 },
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.25
@@ -255,7 +255,7 @@
         "seenFrom": 30,
         "color": "#fff1d8",
         "intensity": 2.5,
-        "beam": 24,
+        "beam": { "angleDegrees": 24, "penumbra": 0.35 },
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.2
