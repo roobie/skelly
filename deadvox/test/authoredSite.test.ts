@@ -458,7 +458,7 @@ describe('authored layout acceptance', () => {
     };
     const building = { ...layout.buildings[0], template: 'bad_palette', storeys: 1 };
     const data = { templates: [template], layouts: [{ ...layout, id: 'bad_palette_site', buildings: [building] }] };
-    const result = buildRegistry([...base, { source: 'layout-test.json', data }]);
+    const result = buildRegistry([{ source: 'layout-test.json', data }]);
     expect(result.issues.map((issue) => `${issue.path}: ${issue.message}`)).toContain(
       'templates[0].palette["X"].furniture: no furniture "no_such_furniture"',
     );

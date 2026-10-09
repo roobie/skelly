@@ -15,10 +15,12 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
-assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or lighting');
+assert.ok(mode === 'traversal' || mode === 'lighting' || mode === 'camo', 'choose traversal, lighting or camo');
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
 const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
+// Keep the witness near the stairs lighting route; the remote wall incurred chunk streaming before its captures.
+const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [75, 21, 60], rotation: 0 };
 await mkdir(artifacts, { recursive: true });
 const vite = await createServer({
   root,
@@ -30,21 +32,47 @@ const vite = await createServer({
       name: 'stairs-test-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (mode === 'lighting' && id.endsWith('/src/core/authoredSite.ts')) {
-          // Post-admission fixture: a deliberate 6 m raise is not valid authored cut/fill.
-          // Keep its lot at shared ground, exposing the lower west wall for slot contrast.
-          const anchor = '    const s = scale.blockSize;';
-          const lot = 'lotOf(building, rect)';
-          assert.equal(code.split(anchor).length, 2);
-          assert.equal(code.split(lot).length, 2);
-          return code
-            .replace(
-              anchor,
-              `${anchor}\n    const raisedCabin = ${JSON.stringify(RAISED_CABIN)};\n    layout = {...layout, buildings: [...layout.buildings, raisedCabin]};`,
-            )
-            .replace(lot, '{...lotOf(building, rect), ...(building === raisedCabin ? {floor: layout.ground} : {})}');
+        if (mode === 'camo' && id.endsWith('/src/content/base/templates-stairs.json')) {
+          const content = JSON.parse(code);
+          const floor = new Array(8).fill('########');
+          const walls = ['########', ...new Array(6).fill('c......#'), '########'];
+          content.templates.push({
+            id: 'stairs_camo_witness',
+            size: [8, 4, 8],
+            palette: { '#': 'stone', c: 'camo_woodland', '.': 'air' },
+            layers: [floor, walls, walls, new Array(8).fill('........')],
+          });
+          return JSON.stringify(content);
         }
-        if (id.endsWith('/src/render/skylight.ts')) {
+        if (mode === 'camo' && id.endsWith('/src/content/base/blocks.json')) {
+          const content = JSON.parse(code);
+          const camo = content.blocks.find(({ pattern }) => pattern === 'camo');
+          assert.ok(camo);
+          camo.color = '#b8b5a3';
+          camo.patternPalette = ['#b8b5a3', '#b8b5a3', '#b8b5a3', '#b8b5a3'];
+          camo.patternWashout = 1;
+          return JSON.stringify(content);
+        }
+        if (mode !== 'traversal' && id.endsWith('/src/core/authoredSite.ts')) {
+          const anchor = '    const s = scale.blockSize;';
+          assert.equal(code.split(anchor).length, 2);
+          const fixtureName = mode === 'lighting' ? 'raisedCabin' : 'camoWitness';
+          const fixture = mode === 'lighting' ? RAISED_CABIN : CAMO_WITNESS;
+          let transformed = code.replace(
+            anchor,
+            `${anchor}\n    const ${fixtureName} = ${JSON.stringify(fixture)};\n    layout = {...layout, buildings: [...layout.buildings, ${fixtureName}]};`,
+          );
+          if (mode === 'lighting') {
+            const lot = 'lotOf(building, rect)';
+            assert.equal(code.split(lot).length, 2);
+            transformed = transformed.replace(
+              lot,
+              '{...lotOf(building, rect), ...(building === raisedCabin ? {floor: layout.ground} : {})}',
+            );
+          }
+          return transformed;
+        }
+        if (mode === 'lighting' && id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.
           assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
           assert.ok(code.includes('float skyVisibility() {'));
@@ -75,12 +103,17 @@ let browser;
 try {
   await vite.listen();
   const { port } = vite.httpServer.address();
-  browser = await launchChromium(mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting', {
+  const stageName = {
+    traversal: 'stairs-traversal',
+    camo: 'stairs-camo',
+    lighting: 'stairs-lighting',
+  }[mode];
+  browser = await launchChromium(stageName, {
     headless: process.env.BROWSER_HEADED !== '1',
   });
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
   const page = await browser.newPage({
-    viewport: mode === 'traversal' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
+    viewport: mode === 'lighting' ? { width: 1280, height: 800 } : { width: 640, height: 400 },
   });
   const errors = [];
   const states = [];
@@ -110,7 +143,7 @@ try {
       errors.push(message.text());
     }
   });
-  const stageId = mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting';
+  const stageId = stageName;
   await page.goto(
     browserStageUrl(stageId, `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`),
   );
@@ -259,10 +292,10 @@ try {
   }
   // The contrast witnesses measure only the world, never the debug hover label or HUD.
   await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
-  const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2) => {
+  const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2, fixturePitch = 0) => {
     // Fixtures are positioned only BEFORE each independent scenario, never across a flight during traversal.
     await page.evaluate(
-      ({ position, yaw }) => {
+      ({ position, yaw, pitch }) => {
         const { session, input, noclip } = globalThis.stairsWitness;
         assertNoNoclip();
         function assertNoNoclip() {
@@ -274,9 +307,9 @@ try {
         session.body.vel = [0, 0, 0];
         session.body.onGround = true;
         input.yaw = yaw;
-        input.pitch = 0;
+        input.pitch = pitch;
       },
-      { position: fixturePosition, yaw: fixtureYaw },
+      { position: fixturePosition, yaw: fixtureYaw, pitch: fixturePitch },
     );
     if (mode === 'traversal') {
       const settleFrom = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
@@ -331,6 +364,97 @@ try {
     return value;
   };
   const shot = (label) => page.screenshot({ path: resolve(artifacts, `${label}.png`) });
+  const camoWallPixels = async (png) =>
+    page.evaluate(async (data) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${data}`;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      const { engine } = globalThis.stairsWitness;
+      const {
+        camera,
+        config: {
+          scale: { blockSize },
+        },
+      } = engine;
+      camera.updateMatrixWorld(true);
+      const project = ([x, y, z]) => {
+        const point = [x * blockSize, y * blockSize, z * blockSize, 1];
+        const multiply = (m, v) => [
+          m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12] * v[3],
+          m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13] * v[3],
+          m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14] * v[3],
+          m[3] * v[0] + m[7] * v[1] + m[11] * v[2] + m[15] * v[3],
+        ];
+        const { elements: projection } = camera.projectionMatrix;
+        const { elements: worldToCamera } = camera.matrixWorldInverse;
+        const clip = multiply(projection, multiply(worldToCamera, point));
+        return {
+          x: ((clip[0] / clip[3]) * 0.5 + 0.5) * canvas.width,
+          y: (0.5 - (clip[1] / clip[3]) * 0.5) * canvas.height,
+        };
+      };
+      const luminance = (point) => {
+        const { x, y } = project(point);
+        if (x < 2 || y < 2 || x >= canvas.width - 2 || y >= canvas.height - 2) {
+          throw new Error(`camo AO sample is outside the screenshot: ${x},${y}`);
+        }
+        const pixels = context.getImageData(Math.round(x) - 1, Math.round(y) - 1, 3, 3).data;
+        let sum = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+        }
+        return { x, y, luminance: sum / ((pixels.length / 4) * 3) };
+      };
+      return {
+        corner: luminance([151, 43.1, 121.1]),
+        middle: luminance([151, 43.5, 121.5]),
+      };
+    }, png.toString('base64'));
+  if (mode === 'camo') {
+    await stage([155, 43.0001, 122], Math.PI / 2, -0.2);
+    const originalModes = await page.evaluate(() => {
+      const { engine } = globalThis.stairsWitness;
+      return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn };
+    });
+    const setShaderLook = async (linear, patterns) => {
+      const before = await page.evaluate(() => globalThis.stairsWitness.engine.renderer.info.render.frame);
+      await page.evaluate(
+        ({ linear: useLinearColors, patterns: usePatterns }) => {
+          const { engine } = globalThis.stairsWitness;
+          engine.meshes.setLinearColors(useLinearColors);
+          engine.meshes.setPatterns(usePatterns);
+        },
+        { linear, patterns },
+      );
+      await page.waitForFunction((frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame, before);
+    };
+    let camoAo;
+    try {
+      await setShaderLook(true, true);
+      const patterned = await camoWallPixels(await shot('camo-ao-patterned'));
+      await setShaderLook(true, false);
+      const plain = await camoWallPixels(await shot('camo-ao-plain'));
+      const ratio = ({ corner, middle }) => corner.luminance / middle.luminance;
+      camoAo = {
+        patterned,
+        plain,
+        patternedRatio: ratio(patterned),
+        plainRatio: ratio(plain),
+      };
+    } finally {
+      await setShaderLook(originalModes.linear, originalModes.patterns);
+    }
+    await writeFile(resolve(artifacts, 'camo-inner-corner-ao.json'), JSON.stringify(camoAo, null, 2));
+    await test('camo preserves corner AO relative to the same plain block face', () => {
+      assert.ok(camoAo.plainRatio < 0.9, JSON.stringify(camoAo));
+      assert.ok(Math.abs(camoAo.patternedRatio - camoAo.plainRatio) < 0.08, JSON.stringify(camoAo));
+    });
+  }
   const walk = async (actionId, targetX, ascending, targetFeet) => {
     const release = await holdAction(page, actionId);
     try {
@@ -787,7 +911,7 @@ try {
 
     await walk('movement.forward', 143, true, 43);
     assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
-  } else {
+  } else if (mode === 'lighting') {
     await stage([134, 35.0001, 115]);
     const residents = () =>
       page.evaluate(() => {
