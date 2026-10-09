@@ -85,6 +85,8 @@ const actionExportFacts = (name: string) => {
     palette: GUN_PALETTE,
     appearance: { variant: 'ar' },
     asset: ASSET,
+    generator: 'skelly gungen glb export',
+    metadataNamespace: 'gungen',
   });
   return {
     rpm: action.roundsPerSimMinute,
@@ -706,6 +708,12 @@ describe('glb export: deadvox model entry', () => {
     expect(out.read.json.nodes.some((node) => node.name === 'carrier-renamed:bolt-carrier')).toBe(true);
     expect(out.modelEntry.action, 'identity-only changes must not silently drop action data').toBeDefined();
     expect(out.modelEntry.action!.parts.carrier!.node).toBe('carrier-renamed:bolt-carrier');
+  });
+
+  it('keeps Gungen GLB identity in the Gungen export adapter', () => {
+    const glb = exported(design('archetype-ar')).read.json;
+    expect(glb.asset.generator).toBe('skelly gungen glb export');
+    expect(glb.nodes[0]!.extras).toHaveProperty('gungen');
   });
 
   it.each([

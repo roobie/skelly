@@ -978,6 +978,11 @@
           "type": "military_shambler",
           "position": [520, 21.5, 534],
           "chance": 1
+        },
+        {
+          "type": "amalgam",
+          "position": [490, 21.5, 545],
+          "chance": 1
         }
       ],
       "beats": [

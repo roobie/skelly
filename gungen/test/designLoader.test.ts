@@ -1,5 +1,4 @@
-import type { Design } from '@skelly/engine/core/design.ts';
-import { type DesignLoadInputs, loadDesign, loadDesignValue } from '@skelly/engine/core/designLoader.ts';
+import type { DesignLoadInputs } from '@skelly/engine/core/designLoader.ts';
 import { generateValid } from '@skelly/engine/core/generate.ts';
 import type { Assembly } from '@skelly/engine/core/schema.ts';
 import type { Template } from '@skelly/engine/core/template.ts';
@@ -7,7 +6,7 @@ import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
-import { loadGunDesign } from '../src/gun/designLoader.ts';
+import { type GunDesign, loadGunDesign, loadGunDesignValue } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_FINISH_SLOTS } from '../src/gun/palette.ts';
 import type { PrefabCatalogue } from '../src/gun/prefabs.ts';
@@ -27,7 +26,7 @@ if (!generated) {
 }
 const baseAssembly: Assembly = generated.assembly;
 
-const makeDesign = (overrides: Partial<Design> = {}): Design => ({
+const makeDesign = (overrides: Partial<GunDesign> = {}): GunDesign => ({
   format: 1,
   template: 'ar',
   assembly: baseAssembly,
@@ -44,7 +43,7 @@ const inputs = (over: Partial<DesignLoadInputs> = {}): DesignLoadInputs => ({
   ...over,
 });
 
-const load = (value: unknown, over: Partial<DesignLoadInputs> = {}) => loadDesignValue(value, inputs(over));
+const load = (value: unknown, over: Partial<DesignLoadInputs> = {}) => loadGunDesignValue(value, inputs(over));
 
 const withPart = (part: Assembly['parts'][string], id = 'magazine'): Assembly => ({
   ...baseAssembly,
@@ -61,7 +60,7 @@ const expectFatal = (result: ReturnType<typeof load>) => {
 describe('loadDesign: feasibility evaluation', () => {
   it('evaluates an explicit-calibre design once per load', () => {
     const template = TEMPLATES.find(({ name }) => name === 'ak');
-    if (!template?.calibre) {
+    if (!template?.variant) {
       throw new Error('the AK template must specify its generated calibre');
     }
     const generatedAk = generateValid(template, gunDomain, 0);
@@ -92,7 +91,7 @@ describe('loadDesign: feasibility evaluation', () => {
         },
       },
     };
-    const design = makeDesign({ template: 'ak', assembly: generatedAk.assembly, calibre: template.calibre });
+    const design = makeDesign({ template: 'ak', assembly: generatedAk.assembly, calibre: template.variant });
 
     receiverBuilds = 0;
     validate(generatedAk.assembly, domain);
@@ -115,10 +114,10 @@ describe('loadDesign: parse and round trip', () => {
 
   it('round-trips through JSON text', () => {
     const design = makeDesign({ status: 'draft' });
-    const result = loadDesign(JSON.stringify(design), inputs());
+    const result = loadGunDesign(JSON.stringify(design));
     expect(result).toEqual({ ok: true, declaredStatus: 'draft', design, issues: [] });
     if (result.ok) {
-      expect(loadDesign(JSON.stringify(result.design), inputs())).toEqual(result);
+      expect(loadGunDesign(JSON.stringify(result.design))).toEqual(result);
     }
   });
 
@@ -150,7 +149,7 @@ describe('loadDesign: parse and round trip', () => {
 
 describe('loadDesign: fatal errors', () => {
   it('reports invalid JSON, with no declared status', () => {
-    const result = expectFatal(loadDesign('{ nope', inputs()));
+    const result = expectFatal(loadGunDesign('{ nope'));
     expect(result.error.code).toBe('invalid-json');
     expect(result.declaredStatus).toBeUndefined();
   });
@@ -209,7 +208,7 @@ describe('loadDesign: fatal errors', () => {
 describe('loadDesign: finish validation', () => {
   it('retains the template calibre in generated design files', () => {
     const template = TEMPLATES.find(({ name }) => name === 'ak');
-    if (!template?.calibre) {
+    if (!template?.variant) {
       throw new Error('AK template has no explicit calibre');
     }
     const generatedAk = generateValid(template, gunDomain, 0);
@@ -217,12 +216,12 @@ describe('loadDesign: finish validation', () => {
       throw new Error('AK template has no valid generated assembly');
     }
     const saved = saveDesign(
-      createEditorState(template, generatedAk.assembly, { calibre: template.calibre }),
+      createEditorState(template, generatedAk.assembly, { calibre: template.variant }),
       gunDomain,
     );
     expect(saved.ok).toBe(true);
     if (saved.ok) {
-      expect(saved.design.calibre).toBe(template.calibre);
+      expect(saved.design.calibre).toBe(template.variant);
     }
   });
 
@@ -288,7 +287,7 @@ const mappedCalibreCase = (
   expectedVariant: string,
   variants: readonly string[],
 ) => {
-  const generatedAk = generateValid({ ...template, calibre }, gunDomain, 0);
+  const generatedAk = generateValid({ ...template, variant: calibre }, gunDomain, 0);
   if (!generatedAk) {
     throw new Error(`AK template did not generate a valid ${calibre} design`);
   }
@@ -544,7 +543,7 @@ describe('loadDesign: change policy', () => {
 describe('loadDesign: declaredStatus on a published-but-invalid file', () => {
   it('keeps declaredStatus published while the loaded status is draft', () => {
     const assembly: Assembly = { ...baseAssembly, connections: [] };
-    const result = loadDesign(JSON.stringify(makeDesign({ status: 'published', assembly })), inputs());
+    const result = loadGunDesign(JSON.stringify(makeDesign({ status: 'published', assembly })));
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.declaredStatus).toBe('published');

@@ -1,11 +1,11 @@
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, Palette } from '@skelly/engine/core/design.ts';
-import { exportGlb } from '@skelly/engine/core/glb.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, Domain, PartDef, PartFamily, RevolvedSolid, Solid } from '@skelly/engine/core/schema.ts';
 import { cartridgeModelAsset } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { type RoundProfiles, roundProfiles } from '../ammo/roundProfile.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
+import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { shotshellGeometry, shotshellHullColor } from './shotshellGeometry.ts';
 
 interface CartridgeModel {

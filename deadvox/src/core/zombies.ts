@@ -34,6 +34,7 @@ import type { SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
+import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
 import type { PlayerHitArea } from './wear.ts';
 import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
@@ -56,14 +57,7 @@ export const BACKGROUND_ZOMBIE_SLICE_COUNT = 30;
 export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_ZOMBIE_SLICE_COUNT;
 const BACKGROUND_STEP_CAP_METRES = 1;
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
-
-export const zombieBodyDimensions = (
-  type: ZombieDef,
-  blockSize: number,
-): { halfWidth: number; halfDepth?: number; height: number } =>
-  type.model === 'amalgam'
-    ? amalgamCollisionEnvelope(amalgamFigureForType(type, AMALGAM_FIGURE_SEED), blockSize)
-    : { halfWidth: 0.28 / blockSize, height: 1.7 / blockSize };
+export const zombieBodyDimensions = measureZombieBody;
 
 export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
   type.model === 'amalgam' ? type.attack.reach * amalgamFigureForType(type, figureSeed).scale : type.attack.reach;

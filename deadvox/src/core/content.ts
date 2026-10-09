@@ -21,7 +21,7 @@ import {
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
-import { templateSpatialIssues } from './templateSpatial.ts';
+import { templateSpatialIssues, templateSpawnClearanceIssues } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 
 export type {
@@ -776,8 +776,15 @@ const checkFloorCourseWalls = (registry: Registry, template: TemplateDef, report
 };
 
 const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: Report) => {
-  if (template.access && templateResolves(registry, template)) {
-    for (const [path, message] of templateSpatialIssues(registry, compileTemplate(registry, template))) {
+  if (!templateResolves(registry, template)) {
+    return;
+  }
+  const compiled = compileTemplate(registry, template);
+  for (const [path, message] of templateSpawnClearanceIssues(registry, compiled)) {
+    report('templates', template.id, path, message);
+  }
+  if (template.access) {
+    for (const [path, message] of templateSpatialIssues(registry, compiled)) {
       report('templates', template.id, path, message);
     }
   }

@@ -4,13 +4,13 @@ import type {
   GlbExportError,
   GlbExportResult,
 } from '@skelly/engine/core/design.ts';
-import { exportGlb } from '@skelly/engine/core/glb.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, PartInstance } from '@skelly/engine/core/schema.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import { gunDomain } from './domain.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
+import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { magazineRoundColumn, magazineRoundPoses } from './magazineGeometry.ts';
 import { GUN_PALETTE } from './palette.ts';
 

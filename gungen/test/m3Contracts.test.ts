@@ -176,7 +176,7 @@ it('pins the 3.0a contracts and chosen-value storage', () => {
   expectTypeOf<ReturnType<ExportGlb>>().toEqualTypeOf<GlbExportResult>();
   expectTypeOf(exportInput).toMatchTypeOf<GlbExportInput>();
   expectTypeOf<keyof GlbExportInput>().toEqualTypeOf<
-    'resolved' | 'palette' | 'appearance' | 'finish' | 'asset' | 'revolveFacets'
+    'resolved' | 'palette' | 'appearance' | 'finish' | 'asset' | 'revolveFacets' | 'generator' | 'metadataNamespace'
   >();
   expectTypeOf<Parameters<Suggest>>().toEqualTypeOf<
     [

@@ -74,14 +74,14 @@ export const generate = (template: Template, domain: Domain, seed: number): Asse
     }
     const params: Record<string, string> = {};
     for (const [name, c] of Object.entries(slot.params ?? {})) {
-      const calibreMapping = template.calibreParams?.find(
+      const variantMapping = template.variantParams?.find(
         ({ slot: slotId, param }) => slotId === slot.id && param === name,
       );
-      if (calibreMapping) {
-        const selected = calibreMapping.byCalibre[template.calibre ?? ''];
+      if (variantMapping) {
+        const selected = variantMapping.byVariant[template.variant ?? ''];
         if (selected === undefined) {
           throw new Error(
-            `Template ${template.name} has no ${slot.id}.${name} choice for calibre ${template.calibre ?? '(unset)'}.`,
+            `Template ${template.name} has no ${slot.id}.${name} choice for variant ${template.variant ?? '(unset)'}.`,
           );
         }
         params[name] = selected;

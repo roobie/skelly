@@ -29,8 +29,8 @@ if (!template) {
   console.error(`--template must be one of: ${names}`);
   process.exit(2);
 }
-if (template.calibre !== undefined) {
-  const cartridge = readCartridge(template.calibre);
+if (template.variant !== undefined) {
+  const cartridge = readCartridge(template.variant);
   if (!(cartridge.ok && cartridge.cartridge)) {
     console.error(
       `Template ${template.name} calibre: ${cartridge.ok ? 'cartridge data is missing' : cartridge.message}`,
@@ -66,7 +66,7 @@ if (values.valid) {
 const json = `${JSON.stringify(
   {
     ...assembly,
-    ...(template.calibre === undefined ? {} : { calibre: template.calibre }),
+    ...(template.variant === undefined ? {} : { calibre: template.variant }),
     appearance: { variant: template.name },
   },
   null,

@@ -1,10 +1,10 @@
-// Conventions every part and assembly is authored against (PROJECT.md §4).
+// Shared coordinate conventions for authored assemblies.
 
 import type { Vec3 } from './math.ts';
 
 /**
  * Assembly frame. Right-handed, Y up, which matches three.js.
- *   +X  forward: along the main axis, toward the front (for guns, the muzzle)
+ *   +X  forward: along the main axis, toward the front
  *   +Y  up
  *   +Z  right, from the point of view of someone holding the assembly
  * The root part is placed at the origin with an identity rotation.
@@ -12,20 +12,17 @@ import type { Vec3 } from './math.ts';
 const FORWARD: Vec3 = [1, 0, 0];
 
 /**
- * The main axis: the line through the origin along +X. Domains name it; for
- * gungen it is the bore line.
+ * The main axis: the line through the origin along +X.
  */
 export const MAIN_AXIS = { origin: [0, 0, 0] as Vec3, dir: FORWARD };
 
 /**
- * The gun domain's grid (`GUN_UNITS.grid`); other domains declare their own in `Domain.units`.
- * Lengths are in u, an abstract unit. It only sets proportions: 1 u is roughly
- * a centimetre, so models look right, but it is not a measurement.
- * Authored positions and extents sit on this grid.
+ * Default construction grid step for authored geometry. A domain may provide
+ * its own step through `Domain.units`.
  */
 export const GRID = 0.25;
 
-/** Size classes. Each part family maps them to u in its own tables. */
+/** Shared size classes; each part family maps them into its domain's units. */
 export const SIZE_CLASSES = ['S', 'M', 'L'] as const;
 export type SizeClass = (typeof SIZE_CLASSES)[number];
 
