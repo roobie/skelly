@@ -585,7 +585,7 @@ body.unconscious::after {
 }
 #inventory .inv-body[data-tab-panel="items"] [data-pane="details"] {
   grid-column: 3;
-  grid-row: 1;
+  grid-row: 2;
 }
 #inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
   grid-column: 4;
