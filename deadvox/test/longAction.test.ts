@@ -10,6 +10,8 @@ import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { craftingActivityTier } from '../src/core/skillTraining.ts';
+import { realSeconds } from '../src/core/time.ts';
+import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
@@ -247,17 +249,22 @@ describe('core long actions', () => {
     const { inv, sim } = runtime;
     const book = inv.create('field_manual');
     expect(inv.add(book, { kind: 'hand', side: 'right' })).toBe(true);
-    const { actions, clock, compression, scheduler } = sim;
+    const { actions, clock, compression } = sim;
     expect(actions.beginReading(book.uid)).toBeUndefined();
     const { job } = actions;
     if (job?.jobType !== 'reading') {
       throw new Error('The reading action did not start');
     }
-    scheduler.advance(job.duration / clock.ratio + 1);
+    const maxFrames = Math.ceil((job.duration / clock.ratio) * 60) + 120;
+    for (let frames = 0; actions.job !== undefined && frames < maxFrames; frames += 1) {
+      advanceLiveFrame(sim, realSeconds(1 / 60));
+    }
+    if (actions.job !== undefined) {
+      throw new Error('The reading action did not finish within its frame bound');
+    }
 
-    expect(actions.job).toBeUndefined();
     expect(compression.active).toBe(false);
-    compression.c = 2;
+    expect(compression.c).toBeGreaterThan(1);
     stopReadingOnClose(sim);
 
     expect(compression.c).toBe(1);
@@ -268,11 +275,13 @@ describe('core long actions', () => {
     const { actions, compression } = sim;
     actions.treatment = { validate: () => undefined, finish: () => true };
     expect(actions.beginTreatment('torso', 1, 'rag', 10)).toBeUndefined();
-    compression.c = 2;
+    advanceLiveFrame(sim, realSeconds(1 / 60));
+    expect(compression.c).toBeGreaterThan(1);
+    const compressionBeforeClose = compression.c;
 
     stopReadingOnClose(sim);
 
-    expect(compression.c).toBe(2);
+    expect(compression.c).toBe(compressionBeforeClose);
     expect(compression.active).toBe(true);
   });
 
