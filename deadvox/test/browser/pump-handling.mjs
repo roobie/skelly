@@ -557,7 +557,18 @@ try {
       movementX: box.x + box.width / 2 - cursor.x,
       movementY: box.y + box.height / 2 - cursor.y,
     });
-    await button.click();
+    const hit = await page.evaluate(() => {
+      const { input } = globalThis.pumpHandlingTest;
+      const target = document.elementFromPoint(input.cursorX, input.cursorY);
+      return {
+        locked: input.locked,
+        menuPointer: input.menuPointer,
+        targetIsWait: Boolean(target?.closest('#inventory [data-tab-panel="actions"] button')),
+        target: target?.outerHTML.slice(0, 120),
+      };
+    });
+    assert.equal(hit.targetIsWait, true, `drawn cursor must hit Wait: ${JSON.stringify(hit)}`);
+    await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
   };
   const startWaitFromButton = async () => {
     const noticeBefore = await page.evaluate(() => globalThis.pumpHandlingTest.getNotice());
@@ -574,9 +585,13 @@ try {
       );
     } catch (error) {
       const state = await page.evaluate(() => {
-        const { session, getNotice } = globalThis.pumpHandlingTest;
+        const { input, screen, session, getNotice } = globalThis.pumpHandlingTest;
         return {
           job: session.sim.actions.job,
+          activeTab: screen.activeTab,
+          locked: input.locked,
+          menuPointer: input.menuPointer,
+          cursor: [input.cursorX, input.cursorY],
           notice: getNotice(),
           simTime: session.sim.time,
           paused: session.sim.paused,
