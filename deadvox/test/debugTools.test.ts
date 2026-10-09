@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
 import { Window } from 'happy-dom';
+import { afterAll, describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -67,11 +67,16 @@ describe('debug snapshot result copying', () => {
     const host = copyHost();
 
     expect(
-      await copyTextOrSelect('measurement line', {
-        writeText: async (text) => {
-          copied = text;
+      await copyTextOrSelect(
+        'measurement line',
+        {
+          writeText: (text) => {
+            copied = text;
+            return Promise.resolve();
+          },
         },
-      }, host),
+        host,
+      ),
     ).toBe(true);
     expect(copied).toBe('measurement line');
   });

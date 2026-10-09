@@ -113,13 +113,8 @@ void main() {
       return masks;
     };
 
-    const makeMixMaterial = ({
-      THREE: threeLib,
-      profile,
-      weatherablePatternGlsl,
-      surfacePatternsGlsl,
-    }) => {
-      return new threeLib.ShaderMaterial({
+    const makeMixMaterial = ({ THREE: threeLib, profile, weatherablePatternGlsl, surfacePatternsGlsl }) =>
+      new threeLib.ShaderMaterial({
         uniforms: {
           uStrength: { value: profile.strength },
           uVariationScale: { value: profile.variationScaleMetres },
@@ -204,17 +199,8 @@ void main() {
         depthWrite: true,
         toneMapped: false,
       });
-    };
 
-    const renderMixAmounts = ({
-      THREE: threeLib,
-      renderer: maskRenderer,
-      group,
-      camera,
-      width,
-      height,
-      profile,
-    }) => {
+    const renderMixAmounts = ({ THREE: threeLib, renderer: maskRenderer, group, camera, width, height, profile }) => {
       const material = makeMixMaterial({
         THREE: threeLib,
         profile,
