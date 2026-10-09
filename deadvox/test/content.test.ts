@@ -1593,7 +1593,9 @@ describe('content', () => {
     expect(new Set(issues.map(({ path }) => path.split('.').at(-1)))).toEqual(
       new Set(['patternPalette', 'patternWashout']),
     );
-    expect(issues.filter(({ path }) => ['blocks[2].patternPalette', 'blocks[3].patternWashout'].includes(path))).toHaveLength(2);
+    expect(
+      issues.filter(({ path }) => ['blocks[2].patternPalette', 'blocks[3].patternWashout'].includes(path)),
+    ).toHaveLength(2);
   });
 
   it('gives every base block a known pattern and patterns the stone work', () => {
