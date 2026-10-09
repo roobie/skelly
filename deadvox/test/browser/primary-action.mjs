@@ -1841,18 +1841,26 @@ try {
     return r.survival.use(r.inventory.itemByUid(uid));
   }, throwFixture.uid);
   assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
+  const landingTolerance = throwFixture.blockSize * 2;
   let landing = await page.evaluate(
     ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
     { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
   );
-  for (let turn = 1; !landing?.fits && turn <= 16; turn += 1) {
+  for (
+    let turn = 1;
+    !(landing?.fits && Math.abs(landing.landingDistance - landing.distance) <= landingTolerance) && turn <= 16;
+    turn += 1
+  ) {
     await page.mouse.move(760 + turn * 16, 410);
     landing = await page.evaluate(
       ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
       { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
     );
   }
-  assert(landing?.fits, `full-charge throw has a landing pile with room: ${JSON.stringify(landing)}`);
+  assert(
+    landing?.fits && Math.abs(landing.landingDistance - landing.distance) <= landingTolerance,
+    `full-charge throw has room near its tuned range: ${JSON.stringify(landing)}`,
+  );
   const releaseThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -1918,19 +1926,15 @@ try {
     const [x, , z] = location.pile.pos;
     return Math.hypot(x + 0.5 - start[0], z + 0.5 - start[2]) * blockSize;
   }, throwFixture);
-  const landingTolerance = throwFixture.blockSize * 2;
   assert.ok(
     await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount > 0),
     'item throw presents a visible arc to the landing point',
   );
   assert.ok(
-    thrown >= throwFixture.distance - landingTolerance,
+    thrown >= landing.distance - landingTolerance,
     `throw reaches its tuned landing range (distance ${thrown})`,
   );
-  assert.ok(
-    thrown <= throwFixture.distance + landingTolerance,
-    `throw uses the tuned landing range (distance ${thrown})`,
-  );
+  assert.ok(thrown <= landing.distance + landingTolerance, `throw uses the tuned landing range (distance ${thrown})`);
   const loadedFirearm = await page.evaluate(async (moduleUrl) => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);

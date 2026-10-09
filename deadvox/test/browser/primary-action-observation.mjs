@@ -129,7 +129,10 @@ export const observationPlugin = {
       if (!item) return undefined;
       const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
       const target = itemLandingTarget(distance);
-      return { target, fits: Boolean(target && inventory.planAdd(item, target).ok) };
+      const landingDistance = target
+        ? Math.hypot(target.pos[0] + 0.5 - body.pos[0], target.pos[2] + 0.5 - body.pos[2]) * s
+        : undefined;
+      return { target, fits: Boolean(target && inventory.planAdd(item, target).ok), distance, landingDistance };
     },
     getItemThrowState: () => ({ startedAt: itemThrowStartedAt, itemUid: itemThrowItemUid, hand: itemThrowHand }),
     selectPrimaryAction,
