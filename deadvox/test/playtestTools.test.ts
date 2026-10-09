@@ -395,9 +395,10 @@ describe('controls card', () => {
     expect(sharedBindings.length).toBeGreaterThan(0);
     expect(debugOnly.every(({ id }) => !ordinaryById.has(id))).toBe(true);
     expect(debugOnly.every(({ id }) => debugRows.some((row) => row.id === id))).toBe(true);
-    expect(
-      ordinaryBindings.every(({ id }) => ordinaryById.has(id) && debugRows.some((row) => row.id === id)),
-    ).toBe(true);
+    const ordinaryRowsIncludeEveryBinding = ordinaryBindings.every(
+      ({ id }) => ordinaryById.has(id) && debugRows.some((row) => row.id === id),
+    );
+    expect(ordinaryRowsIncludeEveryBinding).toBe(true);
     expect(sharedBindings.every(({ id }) => ordinaryById.has(id))).toBe(true);
     const ordinaryText = ordinaryRows.flatMap(({ action, description, keys }) =>
       words(`${action} ${description} ${keys}`),
