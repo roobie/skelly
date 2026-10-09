@@ -82,9 +82,7 @@ const ACTION_IDS = [
 ];
 const ACTION_INDEX = new Map(ACTION_IDS.map((id, index) => [id, index]));
 // Derive contexts from bindings so adding a binding context cannot make recording throw.
-const CONTEXTS: readonly InputContext[] = [
-  ...new Set(INPUT_BINDINGS.flatMap(({ contexts }) => contexts)),
-];
+const CONTEXTS: readonly InputContext[] = [...new Set(INPUT_BINDINGS.flatMap(({ contexts }) => contexts))];
 const CONTEXT_INDEX = new Map(CONTEXTS.map((context, index) => [context, index]));
 const FRAME_FLAGS = {
   active: 1 << 0,
