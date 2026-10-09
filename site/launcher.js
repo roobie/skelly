@@ -1,6 +1,20 @@
 // biome-ignore lint/correctness/noUnresolvedImports: the browser loads this ESM module from jsDelivr.
 import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
 
+// The tester brief's wording lives only here; the facilitator's run sheet points at it, so a change reaches every session.
+const playtestBrief = html`
+        <section class="playtest" aria-labelledby="playtest-title">
+          <h3 id="playtest-title">Playtest</h3>
+          <p><a id="deadvox-playtest" href="deadvox/?site=playtest">Play the playtest map</a>. Your task: find the military camp.</p>
+          <ul>
+            <li>The game records play metrics only on your machine, in this browser.</li>
+            <li>Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.</li>
+            <li>This site, the game included, loads Simple Analytics to count visits. It gets none of your play metrics.</li>
+            <li>Send feedback through <a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">the playtest feedback form</a>. It opens a public GitHub issue and needs a GitHub account.</li>
+            <li>If someone runs your session, they watch without helping and take notes. You can stop at any time.</li>
+          </ul>
+        </section>`;
+
 const page = (state) => html`  <main>
       <h1>skelly</h1>
       <p class="lede">Low poly tools and a game.</p>
@@ -11,6 +25,7 @@ const page = (state) => html`  <main>
           <span>// working title = <code>Darker Yet -VOX-</code></span>
           <p>A singleplayer voxel survival prototype with data-driven content.</p>
         </div>
+        ${playtestBrief}
         <form id="deadvox-form" @input=${onInput} @change=${onInput} @submit=${onSubmit}>
           <div class="form-grid">
             <label>Start mode
@@ -132,7 +147,7 @@ const page = (state) => html`  <main>
           <button type="button" data-deadvox-preset="debug">Debug before dawn</button>
           <button type="button" data-deadvox-preset="benchmark">Benchmark</button>
         </fieldset>
-        <p class="status">Debug tools and their current keys are documented in-game. A playtest profile will be added when its URL flag is implemented.</p>
+        <p class="status">Debug tools and their current keys are documented in-game.</p>
       </section>
 
       <section class="card" aria-labelledby="gungen-title">
