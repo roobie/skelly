@@ -114,8 +114,8 @@ spare-battery search all read the same snapshot. Inventory Management speeds
 ordinary transfers and their derived gathering estimates, box unpacking and
 furniture searches, and awards practice only after successful completion.
 Firearms Combat owns firearm readiness, reload, rack, magazine insert/remove and
-firearm-attachment fitting/removal. Inventory Management does not speed
-attachment work; those actions are outside its timing effect.
+firearm-attachment fitting/removal. Attachment fitting and removal take a fixed
+time outside both skill effects; Inventory Management does not speed them.
 
 The snapshot is cached against the inventory, block-entity and player-block
 versions, so a redraw that changes nothing does not rebuild it. There is one

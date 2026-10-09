@@ -95,6 +95,7 @@ import { RestController } from './rest.ts';
 import { shamblerBodyPitch } from './shamblerAudio.ts';
 import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
+import { UNPACK_ACTION } from './unpacking.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
@@ -118,7 +119,7 @@ const sessionFirearmsShotKind = (
 const sessionFirearmTargetName = (registry: Registry, firearmType: string | undefined): string | undefined =>
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
 const isInventoryPracticeAction = (job: Job): boolean =>
-  job.kind === 'action' && (job.jobType === 'item.unpack' || job.jobType === 'furniture.search');
+  job.kind === 'action' && (job.jobType === UNPACK_ACTION || job.jobType === 'furniture.search');
 const createSessionAim = ({
   tuning,
   seed,
