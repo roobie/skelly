@@ -1063,6 +1063,27 @@ describe('MobActorMeshes reactions', () => {
     }
   });
 
+  it('lets an incapacitated row lie and sink once its zombie dies, as any corpse does', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1);
+      zombie.incapacitated = true;
+      renderer.sync(store, 20, 1); // lying well past a corpse's lifetime
+      store.remove(id);
+      renderer.zombieDied(id, zombie);
+      renderer.sync(store, 1, 1);
+      expect(renderer.isTracked(id)).toBe(true); // still lies there, now as an ordinary corpse
+
+      renderer.sync(store, 20, 1);
+      expect(renderer.isTracked(id)).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('caps corpses, evicting the oldest first once the cap is exceeded', () => {
     const renderer = new MobActorMeshes(0.5, 20, { poolSize: 1 }); // one shared variant, room for every corpse
     try {

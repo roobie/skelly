@@ -5,6 +5,8 @@ read_if:
 
 # Notes for coding agents
 
+**REMEMBER to always RECORD the 'why'**
+
 Keep this file short: only what every agent needs on every task. Topic detail goes in
 the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), whose
 `read_if` front matter says when to read it ("Further docs" below).
@@ -107,9 +109,7 @@ including the push that publishes a new branch, or that push fails.
 
 Don't use the `git-flow` skill or its driver here. Its single repo-wide pending
 ticket can block every agent, and fresh worktrees need full installs before their
-first push. Revisit when bjorn/git-kit#7, #8 and #9 are fixed.
-
-Use plain git, following AGENTS.md:
+first push. Use plain git, following AGENTS.md:
 
 - **Start a topic:** `git fetch origin`, then `git worktree add .claude/worktrees/<name> -b <branch> origin/main`, the installs under "Installing check dependencies", and `git push -u origin <branch>`.
 - **While working:** commit in reasonable chunks and `git push`. To take in main,
