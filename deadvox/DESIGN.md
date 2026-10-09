@@ -911,9 +911,13 @@ stays on its own model in hand, on the ground and in flight; an emissive marker 
 only a fallback when the model cannot be drawn. This keeps glow attached to the
 visible item without changing the light pool or zombie sensing reach, or merging
 render and sense heights. The marker does not replace pool lighting. Source
-colour, intensity, radius and burn rules belong to item content. Tune that content
-against the ground and walls under the pool's shared near-field falloff, not
-against the glow. The zombie light check keeps sky visibility separate from
+colour, intensity, radius, beam shape and burn rules belong to item content.
+Tune that content against the ground and walls under the pool's shared
+near-field falloff, not against the glow. A flashlight's beam is a wide cone
+with a long soft edge, like a real torch's bright hotspot inside a dimmer
+spill: a narrow cone showed too little of a room or the path ahead to play by.
+Only the drawn light reads the beam's shape; zombies sense a carried light by
+its seen-from distance. The zombie light check keeps sky visibility separate from
 carried light, so voxel sky light doesn't change the carried-light rule. The
 sun-derived day phase owns simulation sun exposure and blends zombie sight through
 twilight, while time-of-day lighting stays in the sky and fog rather than being
