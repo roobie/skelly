@@ -6,6 +6,7 @@
       "model": "shambler",
       "canJumpObstacles": true,
       "spawnWeight": 1,
+      "footstepSound": "shambler",
       "sounds": {
         "idle": "shambler_idle",
         "alert": "shambler_alert",
@@ -95,7 +96,8 @@
       "model": "shambler",
       "canJumpObstacles": true,
       "spawnWeight": 1,
-      "debugOnly": true,
+      "authoredOnly": true,
+      "footstepSound": "shambler",
       "sounds": {
         "idle": "shambler_idle",
         "alert": "shambler_alert",
@@ -325,7 +327,7 @@
       "bodyScale": 4,
       "soundPitchMultiplier": 0.5,
       "spawnWeight": 1,
-      "debugOnly": true,
+      "authoredOnly": true,
       "sounds": {
         "idle": "amalgam_idle",
         "alert": "amalgam_alert",

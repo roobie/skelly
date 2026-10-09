@@ -58,8 +58,14 @@ const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
   return { system, store, played };
 };
 
-const addWalker = (system: ZombieSystem, store: MapEntityStore<Zombie>, position: Vec3, mode: 'stroll' | 'chase') => {
-  const id = system.add(SHAMBLER, position, [1, 0, 0]);
+const addWalker = (
+  system: ZombieSystem,
+  store: MapEntityStore<Zombie>,
+  position: Vec3,
+  mode: 'stroll' | 'chase',
+  type: Zombie['type'] = SHAMBLER,
+) => {
+  const id = system.add(type, position, [1, 0, 0]);
   const zombie = store.get(id)!;
   zombie.body.onGround = true;
   zombie.mode = mode;
@@ -67,7 +73,7 @@ const addWalker = (system: ZombieSystem, store: MapEntityStore<Zombie>, position
   zombie.lastPerceived = [40, position[1], position[2]];
   zombie.strollHeading = [1, 0, 0];
   zombie.horizontalSpeed =
-    mode === 'stroll' ? SHAMBLER.speed.wanderMetresPerSimSecond : SHAMBLER.speed.chaseMetresPerSimSecond;
+    mode === 'stroll' ? type.speed.wanderMetresPerSimSecond : type.speed.chaseMetresPerSimSecond;
   zombie.lurchValue = 1;
   zombie.stumbleFactor = 1;
   return zombie;
@@ -79,10 +85,10 @@ const run = (system: ZombieSystem, seconds: number): void => {
   }
 };
 
-const movedSteps = (mode: 'stroll' | 'chase', seconds: number): number => {
+const movedSteps = (mode: 'stroll' | 'chase', seconds: number, type: Zombie['type'] = SHAMBLER): number => {
   const player = mode === 'chase' ? sense([20, 1, 2], [-1, 0, 0]) : sense([100, 1, 100], [-1, 0, 0]);
   const { system, store, played } = makeWorld(player);
-  addWalker(system, store, [2, 1, 2], mode);
+  addWalker(system, store, [2, 1, 2], mode, type);
   run(system, seconds);
   return played.length;
 };
@@ -126,6 +132,11 @@ describe('shambler footsteps', () => {
 
   it('uses a faster distance cadence in a chase than a stroll on the same ground', () => {
     expect(movedSteps('chase', 3)).toBeGreaterThan(movedSteps('stroll', 3));
+  });
+
+  it('emits shambler footsteps for a kind selected by its content, not its id', () => {
+    const fixture = { ...SHAMBLER, id: 'fixture_soldier', footstepSound: 'shambler' as const };
+    expect(movedSteps('stroll', 3, fixture)).toBeGreaterThan(0);
   });
 
   it('maps the block underfoot to the matching shambler surface event', () => {
