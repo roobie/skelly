@@ -58,6 +58,8 @@ export interface FirearmsCombatTuning {
   readonly reloadFactorHalfLifeLevels: number;
   readonly rackFactorFloor: number;
   readonly rackFactorHalfLifeLevels: number;
+  readonly attachmentFactorFloor: number;
+  readonly attachmentFactorHalfLifeLevels: number;
 }
 
 export interface FirearmsSkillEffects {
