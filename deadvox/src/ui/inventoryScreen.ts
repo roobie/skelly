@@ -345,11 +345,11 @@ const detailsTemplate = (
   attachmentAction: (payload: ReplayActionPayload) => void,
 ): TemplateResult => {
   if (vm.empty) {
-    return html`<aside class="inv-details"><p class="inv-muted">Pick an item to see what it is and where it can go.</p></aside>`;
+    return html`<aside class="inv-details" data-pane="details" data-selected-uid=""><p class="inv-muted">Pick an item to see what it is and where it can go.</p></aside>`;
   }
   const item = vm.item!;
   return html`
-    <aside class="inv-details">
+    <aside class="inv-details" data-pane="details" data-selected-uid=${item.uid}>
       <div class="inv-kicker">${vm.category}</div>
       <h3>${vm.name}</h3>
       <div class="inv-condition">${vm.condition}</div>
@@ -456,7 +456,7 @@ const inventoryTemplate = (
       class="inv-splitter"
       data-inventory-splitter
       role="separator"
-      aria-label="Resize inventory and vicinity panes"
+      aria-label="Resize player and vicinity columns"
       aria-orientation="vertical"
       aria-valuemin="0"
       aria-valuemax="100"
@@ -1203,16 +1203,24 @@ export class InventoryScreen {
 
   // ---- drag and drop ----
 
-  private pointerDown(e: PointerEvent): void {
+  private startSplitterDrag(e: PointerEvent): boolean {
     const splitter = (e.target as HTMLElement).closest<HTMLElement>('[data-inventory-splitter]');
-    if (splitter && e.button === 0 && (!e.pointerType || e.pointerType === 'mouse')) {
-      const body = splitter.closest<HTMLElement>('.inv-body');
-      if (!body) {
-        return;
-      }
-      e.preventDefault();
-      const availableWidth = Math.max(1, body.clientWidth - splitter.offsetWidth);
-      this.splitDrag = { startX: e.clientX, startRatio: this.splitRatio, availableWidth };
+    if (!(splitter && e.button === 0 && (!e.pointerType || e.pointerType === 'mouse'))) {
+      return false;
+    }
+    const body = splitter.closest<HTMLElement>('.inv-body');
+    if (!body) {
+      return true;
+    }
+    e.preventDefault();
+    const details = body.querySelector<HTMLElement>('[data-pane="details"]');
+    const availableWidth = Math.max(1, body.clientWidth - splitter.offsetWidth - (details?.offsetWidth ?? 0));
+    this.splitDrag = { startX: e.clientX, startRatio: this.splitRatio, availableWidth };
+    return true;
+  }
+
+  private pointerDown(e: PointerEvent): void {
+    if (this.startSplitterDrag(e)) {
       return;
     }
     const refusal = this.hooks.actionRefusal?.();

@@ -16,13 +16,19 @@ slot inaccessible merely because the item occupies a different column.
 The character screen groups Items, Skills and Crafting into tabs so the game,
 notably on a small zoomed screen, has room for each view. Character inventory
 and nearby piles or containers stay together on Items so drag and drop remains
-within one view. The divider between You and Around you starts at the midpoint,
-giving each column half the available width; dragging lets the player favor
-either view without collapsing the other. The Around you pane fills its column. Its floor and container sections wrap when
-they do not fit, so the vicinity uses whatever width the player gives it. A
-container section has room for its capped pocket grid and scroll gutter; when it
-cannot fit beside another section, it wraps rather than squeezing the grid.
-Justified wider grids scroll within the content-owned cap.
+within one view. For #518, the selected item and both item locations stay
+visible together so the player can read its details while seeing where it can
+move. On wide screens, the detail panel sits between You and Around you, and
+the divider lets the player balance space between those two location panes. At
+narrow widths, the panes stack rather than shrinking until their actions are
+hidden. Each pane scrolls independently. The handling queue stays across the
+bottom because it summarizes work across the whole inventory, not only the
+selected item. The Around you pane fills its column.
+Its floor and container sections wrap when they do not fit, so the vicinity
+uses whatever width the player gives it. A container section has room for its
+capped pocket grid and scroll gutter; when it cannot fit beside another
+section, it wraps rather than squeezing the grid. Justified wider grids scroll
+within the content-owned cap.
 
 Floor piles are displayed packed to the column width in
 `src/ui/inventoryScreen.ts`, `InventoryScreen.gridViewModel`. Their stored

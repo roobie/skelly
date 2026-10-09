@@ -247,26 +247,58 @@ try {
   );
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
   await page.locator('#inventory .inv-tab[data-tab="items"]').click();
-  await page.setViewportSize({ width: 640, height: 400 });
+  await page.setViewportSize({ width: 800, height: 400 });
+  await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
+  const selectedDetailLayout = await page.evaluate(() => {
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+    const you = body?.querySelector('[data-pane="you"]');
+    const details = body?.querySelector('[data-pane="details"]');
+    const around = body?.querySelector('[data-pane="around"]');
+    const selected = body?.querySelector('.inv-item.selected');
+    if (!(you && details && around && selected)) {
+      throw new Error('Selected item details or one of the inventory columns is missing');
+    }
+    const youBox = you.getBoundingClientRect();
+    const detailsBox = details.getBoundingClientRect();
+    const aroundBox = around.getBoundingClientRect();
+    return {
+      between: youBox.right <= detailsBox.left && detailsBox.right <= aroundBox.left,
+      detailsUid: details.getAttribute('data-selected-uid'),
+      selectedUid: selected.getAttribute('data-uid'),
+    };
+  });
+  assert.equal(
+    selectedDetailLayout.between,
+    true,
+    `details sit between the two item locations: ${JSON.stringify(selectedDetailLayout)}`,
+  );
+  assert.equal(selectedDetailLayout.detailsUid, selectedDetailLayout.selectedUid, 'details show the selected item');
   const splitAtOpen = await page.evaluate(() => {
     const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const splitter = body?.querySelector('[data-inventory-splitter]');
+    const you = body?.querySelector('[data-pane="you"]');
+    const details = body?.querySelector('[data-pane="details"]');
     const around = body?.querySelector('[data-pane="around"]');
-    if (!(body && splitter && around)) {
-      throw new Error('Items pane divider is missing');
+    if (!(body && splitter && you && details && around)) {
+      throw new Error('Items pane divider or columns are missing');
     }
-    const bodyBox = body.getBoundingClientRect();
     const dividerBox = splitter.getBoundingClientRect();
+    const youBox = you.getBoundingClientRect();
+    const detailsBox = details.getBoundingClientRect();
     const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
     return {
       ratio: Number(splitter.getAttribute('aria-valuenow')),
-      center: (dividerBox.left + dividerBox.width / 2 - bodyBox.left) / bodyBox.width,
+      dividerBetweenColumns: youBox.right <= dividerBox.left && dividerBox.right <= detailsBox.left,
       aroundWidth: around.getBoundingClientRect().width,
-      aroundColumnWidth: tracks[2],
+      aroundColumnWidth: tracks[3],
     };
   });
-  assert.equal(splitAtOpen.ratio, 50, `Items panes start at half: ${JSON.stringify(splitAtOpen)}`);
-  assert.ok(Math.abs(splitAtOpen.center - 0.5) < 0.03, `divider starts at half: ${JSON.stringify(splitAtOpen)}`);
+  assert.equal(splitAtOpen.ratio, 50, `side panes start balanced: ${JSON.stringify(splitAtOpen)}`);
+  assert.equal(
+    splitAtOpen.dividerBetweenColumns,
+    true,
+    `divider stays between columns: ${JSON.stringify(splitAtOpen)}`,
+  );
   assert.ok(
     Math.abs(splitAtOpen.aroundWidth - splitAtOpen.aroundColumnWidth) <= 1,
     `Around you fills its column: ${JSON.stringify(splitAtOpen)}`,
@@ -292,9 +324,10 @@ try {
   const splitAtLeftClamp = await page.evaluate(() => {
     const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const splitter = document.querySelector('#inventory [data-inventory-splitter]');
+    const details = body?.querySelector('[data-pane="details"]');
     return {
       ratio: Number(splitter?.getAttribute('aria-valuenow')),
-      availableWidth: body && splitter ? body.clientWidth - splitter.offsetWidth : 0,
+      availableWidth: body && splitter && details ? body.clientWidth - splitter.offsetWidth - details.offsetWidth : 0,
     };
   });
   assert.equal(
@@ -306,9 +339,10 @@ try {
   const splitAtRightClamp = await page.evaluate(() => {
     const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const splitter = document.querySelector('#inventory [data-inventory-splitter]');
+    const details = body?.querySelector('[data-pane="details"]');
     return {
       ratio: Number(splitter?.getAttribute('aria-valuenow')),
-      availableWidth: body && splitter ? body.clientWidth - splitter.offsetWidth : 0,
+      availableWidth: body && splitter && details ? body.clientWidth - splitter.offsetWidth - details.offsetWidth : 0,
     };
   });
   assert.equal(
@@ -511,6 +545,43 @@ try {
   assert.ok(
     fittedAround && fittedAround.x + fittedAround.width <= 960 && fittedAround.y + fittedAround.height <= 540,
     `vicinity stays within the fitted screen: ${JSON.stringify(fittedAround)}`,
+  );
+  await page.setViewportSize({ width: 480, height: 400 });
+  const narrowLayout = await page.evaluate(() => {
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+    const you = body?.querySelector('[data-pane="you"]');
+    const details = body?.querySelector('[data-pane="details"]');
+    const around = body?.querySelector('[data-pane="around"]');
+    if (!(body && you && details && around)) {
+      throw new Error('Narrow inventory columns are missing');
+    }
+    const youBox = you.getBoundingClientRect();
+    const detailsBox = details.getBoundingClientRect();
+    const aroundBox = around.getBoundingClientRect();
+    const actionsFit = [...details.querySelectorAll('.inv-option')].every((action) => {
+      const bounds = action.getBoundingClientRect();
+      return bounds.left >= detailsBox.left && bounds.right <= detailsBox.right;
+    });
+    return {
+      noHorizontalOverflow: body.scrollWidth <= body.clientWidth,
+      stacked: youBox.bottom <= detailsBox.top && detailsBox.bottom <= aroundBox.top,
+      actionsFit,
+    };
+  });
+  assert.equal(
+    narrowLayout.noHorizontalOverflow,
+    true,
+    `narrow inventory does not hide columns: ${JSON.stringify(narrowLayout)}`,
+  );
+  assert.equal(
+    narrowLayout.stacked,
+    true,
+    `narrow inventory stacks its scrollable columns: ${JSON.stringify(narrowLayout)}`,
+  );
+  assert.equal(
+    narrowLayout.actionsFit,
+    true,
+    `narrow detail actions stay inside their panel: ${JSON.stringify(narrowLayout)}`,
   );
   await page.setViewportSize({ width: 1280, height: 480 });
   await page.evaluate(() => globalThis.scrollFixture.populatePiles());
