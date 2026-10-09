@@ -45,7 +45,16 @@ const campAmalgams = () => {
     const markerSpawn = { type: 'amalgam', pos: [x / blockSize, y / blockSize, z / blockSize] as Vec3 };
     return { cx, cz, markerSpawn, spawns };
   });
-  return { markers, locations };
+  const everyMarkerHasSpawn =
+    markers.length > 0 &&
+    locations.every(({ markerSpawn, spawns }) =>
+      spawns.some(
+        (spawn) =>
+          spawn.type === markerSpawn.type &&
+          spawn.pos.every((coordinate, index) => coordinate === markerSpawn.pos[index]),
+      ),
+    );
+  return { locations, everyMarkerHasSpawn };
 };
 
 const load = (spawner: ZombieSpawner, spawned: Spawned[], cx: number, cz: number) => {
@@ -54,18 +63,8 @@ const load = (spawner: ZombieSpawner, spawned: Spawned[], cx: number, cz: number
 
 describe('authored zombie spawn persistence', () => {
   it('spawns every authored camp amalgam on its first column load only', () => {
-    const { markers, locations } = campAmalgams();
-    expect(markers.length).toBeGreaterThan(0);
-    expect(locations).toHaveLength(markers.length);
-    expect(
-      locations.every(({ markerSpawn, spawns }) =>
-        spawns.some(
-          (spawn) =>
-            spawn.type === markerSpawn.type &&
-            spawn.pos.every((coordinate, index) => coordinate === markerSpawn.pos[index]),
-        ),
-      ),
-    ).toBe(true);
+    const { locations, everyMarkerHasSpawn } = campAmalgams();
+    expect(everyMarkerHasSpawn).toBe(true);
     for (const { cx, cz } of locations) {
       for (const order of [
         [cx + 1, cx, cx + 1],
@@ -88,18 +87,8 @@ describe('authored zombie spawn persistence', () => {
   });
 
   it('restores every authored camp amalgam without duplicating or losing it', () => {
-    const { markers, locations } = campAmalgams();
-    expect(markers.length).toBeGreaterThan(0);
-    expect(locations).toHaveLength(markers.length);
-    expect(
-      locations.every(({ markerSpawn, spawns }) =>
-        spawns.some(
-          (spawn) =>
-            spawn.type === markerSpawn.type &&
-            spawn.pos.every((coordinate, index) => coordinate === markerSpawn.pos[index]),
-        ),
-      ),
-    ).toBe(true);
+    const { locations, everyMarkerHasSpawn } = campAmalgams();
+    expect(everyMarkerHasSpawn).toBe(true);
     for (const { cx, cz } of locations) {
       const expected = site
         .zombiesIn(cx, cz)

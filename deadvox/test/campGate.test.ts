@@ -11,6 +11,7 @@ import {
   compileTemplate,
   footprint,
   placedBlockAt,
+  placedPieces,
   type Placement as WorldPlacement,
 } from '../src/core/templates.ts';
 import { PLAYER } from '../src/game/player.ts';
@@ -32,6 +33,7 @@ interface Bounds {
 }
 const PERIMETER_IDS = new Set(['camp_wall_run', 'camp_gate', 'camp_gate_damaged', 'camp_gate_return']);
 const NEARBY_APPROACH_BLOCKS = 60;
+const OPEN_GROUND_RING_BLOCKS = 42;
 
 const perimeterPlacements = (camp: SiteLayoutDef): WorldPlacement[] =>
   camp.buildings
@@ -72,29 +74,55 @@ const outsideApproachPoints = (camp: SiteLayoutDef, bounds: Bounds): [number, nu
       return outside && Math.hypot(dx, dz) <= NEARBY_APPROACH_BLOCKS;
     });
 
+const solidFurnitureCells = (wall: WorldPlacement): Point3[] =>
+  placedPieces(wall).flatMap((piece) => {
+    const furniture = registry.furniture.get(piece.furniture);
+    if (!furniture || (!furniture.door && furniture.solid !== true)) {
+      return [];
+    }
+    return [...cellsOf(piece.size)].map(([dx, dy, dz]) => [piece.pos[0] + dx, piece.pos[1] + dy, piece.pos[2] + dz]);
+  });
+
 const perimeterSolidCells = (walls: readonly WorldPlacement[]): Point3[] => {
   const cells = new Map<string, Point3>();
+  const addCell = (cell: Point3) => cells.set(cell.join(','), cell);
   for (const wall of walls) {
     const [originX, originY, originZ] = wall.origin;
     const [, templateHeight] = wall.template.size;
     const [width, depth] = footprint(wall);
     for (const [dx, dy, dz] of cellsOf([width, templateHeight, depth])) {
-      const x = originX + dx;
-      const y = originY + dy;
-      const z = originZ + dz;
-      const block = placedBlockAt(wall, [x, y, z]);
+      const cell: Point3 = [originX + dx, originY + dy, originZ + dz];
+      const block = placedBlockAt(wall, cell);
       if (block !== undefined && registry.blocks[block]?.solid) {
-        cells.set(`${x},${y},${z}`, [x, y, z]);
+        addCell(cell);
       }
+    }
+    for (const cell of solidFurnitureCells(wall)) {
+      addCell(cell);
     }
   }
   return [...cells.values()];
 };
 
+const outsideGroundRingPoints = (
+  markers: readonly SiteLayoutDef['shamblers'][number][],
+  bounds: Bounds,
+): [number, number][] => {
+  const xProjections = [bounds.x0, ...markers.map(({ position }) => position[0] / BLOCK_SIZE), bounds.x1];
+  const zProjections = [bounds.z0, ...markers.map(({ position }) => position[2] / BLOCK_SIZE), bounds.z1];
+  const distance = OPEN_GROUND_RING_BLOCKS;
+  return [
+    ...xProjections.map((x) => [x, bounds.z0 - distance] as [number, number]),
+    ...xProjections.map((x) => [x, bounds.z1 + distance] as [number, number]),
+    ...zProjections.map((z) => [bounds.x0 - distance, z] as [number, number]),
+    ...zProjections.map((z) => [bounds.x1 + distance, z] as [number, number]),
+  ];
+};
+
 const axisInterval = (from: Point3, to: Point3, cell: Point3, axis: 0 | 1 | 2): [number, number] | undefined => {
   const delta = to[axis] - from[axis];
   if (delta === 0) {
-    return from[axis] > cell[axis] && from[axis] < cell[axis] + 1
+    return from[axis] >= cell[axis] && from[axis] <= cell[axis] + 1
       ? [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY]
       : undefined;
   }
@@ -323,17 +351,20 @@ describe('camp gate templates', () => {
     ).toBe(undefined);
   });
 
-  it('blocks the finale top from line of sight on the outside camp approach tracks', () => {
+  it('blocks finale sightlines from approach tracks and surrounding open ground', () => {
     const { layouts } = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
       layouts: SiteLayoutDef[];
     };
     const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;
     const walls = perimeterPlacements(camp);
-    const approaches = outsideApproachPoints(camp, perimeterBounds(walls));
-    const solidCells = perimeterSolidCells(walls);
+    const bounds = perimeterBounds(walls);
+    const approaches = outsideApproachPoints(camp, bounds);
     const markers = camp.shamblers.filter(({ type }) => type === 'amalgam');
+    const openGround = outsideGroundRingPoints(markers, bounds);
+    const solidCells = perimeterSolidCells(walls);
     expect(markers.length).toBeGreaterThan(0);
     expect(approaches.length).toBeGreaterThan(0);
+    expect(openGround.length).toBeGreaterThan(0);
 
     const eyeHeight = (camp.ground + BLOCK_SIZE + PLAYER.eye) / BLOCK_SIZE;
     for (const marker of markers) {
@@ -343,9 +374,12 @@ describe('camp gate templates', () => {
         marker.position[1] / BLOCK_SIZE + body.height + 0.01,
         marker.position[2] / BLOCK_SIZE,
       ];
-      for (const [x, z] of approaches) {
-        expect(wallBlocksSightline(solidCells, [x, eyeHeight, z], top)).toBe(true);
-      }
+      expect(approaches.every(([x, z]) => wallBlocksSightline(solidCells, [x, eyeHeight, z], top))).toBe(true);
+      const visibleOpenGround = openGround.filter(([x, z]) => !wallBlocksSightline(solidCells, [x, eyeHeight, z], top));
+      expect(
+        visibleOpenGround,
+        JSON.stringify({ visibleOpenGround, bounds, eyeHeight, top, solidCount: solidCells.length }),
+      ).toEqual([]);
     }
   });
 });
