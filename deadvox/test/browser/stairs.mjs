@@ -332,7 +332,7 @@ try {
   await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
   const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2, fixturePitch = 0) => {
     // Fixtures are positioned only BEFORE each independent scenario, never across a flight during traversal.
-    await page.evaluate(
+    const stagedFrame = await page.evaluate(
       ({ position, yaw, pitch }) => {
         const { session, input, noclip } = globalThis.stairsWitness;
         assertNoNoclip();
@@ -346,6 +346,7 @@ try {
         session.body.onGround = true;
         input.yaw = yaw;
         input.pitch = pitch;
+        return globalThis.stairsWitness.engine.renderer.info.render.frame;
       },
       { position: fixturePosition, yaw: fixtureYaw, pitch: fixturePitch },
     );
@@ -373,6 +374,7 @@ try {
         { seconds: 1, from: settleFrom, label: 'fixture placement grounded at rest', record: state },
       );
     }
+    return stagedFrame;
   };
   const state = async (label, details) => {
     const value = await page.evaluate(() => {
@@ -560,7 +562,11 @@ try {
         return [engine.skylight.at([65.75, 18.75, 59.25]), engine.skylight.at([81.75, 24.75, 59.25])];
       });
       assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
-      await stage([157, 43.0001, 118]);
+      const frameAtStage = await stage([157, 43.0001, 118]);
+      await page.waitForFunction(
+        (frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame,
+        frameAtStage,
+      );
       const raisedCabinVisibility = await page.evaluate(() =>
         globalThis.stairsWitness.engine.skylight.at([83, 23.6, 57.5]),
       );
