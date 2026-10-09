@@ -413,7 +413,7 @@ export const exportGlb: ExportGlb = (input) => {
   }
 
   (nodes[0] as Json).extras = {
-    gungen: {
+    [input.metadataNamespace ?? 'assembly']: {
       assembly: resolved.assembly.name,
       unit: 'u',
       metresPerUnit,
@@ -423,7 +423,7 @@ export const exportGlb: ExportGlb = (input) => {
   };
 
   const json: Json = {
-    asset: { version: '2.0', generator: 'skelly gungen glb export' },
+    asset: { version: '2.0', generator: input.generator ?? 'skelly assembly engine' },
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes,

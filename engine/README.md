@@ -7,6 +7,4 @@ read_if:
 
 # Shared engine
 
-The engine is a shared library for tools that assemble authored shapes and check how their parts fit. It exists so the item-authoring tool and Gungen can share one engine rather than maintaining parallel geometry and fit systems; see issue #509 and `src/core/schema.ts`, `Domain`.
-
-The target boundary is to keep firearm and domain names out of this package. Consumers provide their own domain data and rules; the engine owns reusable mechanisms, while each tool owns its vocabulary and specialization. For g60, move the firearm names still here—calibre params and selection, design calibre validation, and the GLB generator brand—behind Gungen adapters.
+Issue #509 establishes a shared boundary so consumers do not maintain parallel geometry and fit systems. The reason for keeping domain vocabulary outside the package is to let each consumer evolve its data and rules without coupling other consumers to its concepts. See `src/core/schema.ts`, `Domain`, and `src/core/designLoader.ts`, `DesignLoadInputs`.

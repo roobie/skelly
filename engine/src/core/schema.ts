@@ -128,7 +128,7 @@ export interface KeepOut {
   readonly allowFamilies?: readonly string[];
 }
 
-/** A named axis on a part, such as a bore or a sight line. */
+/** A named axis on a part for domain-defined rules. */
 interface Axis {
   readonly kind: string;
   readonly origin: Vec3;

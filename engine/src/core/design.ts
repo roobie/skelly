@@ -32,8 +32,6 @@ export interface DesignOrigin {
 export interface Design {
   readonly format: DesignFormat;
   readonly template: string;
-  /** Cartridge-data id selected for this firearm design. */
-  readonly calibre?: string;
   readonly assembly: Assembly;
   readonly locks: DesignLocks;
   readonly status: DesignStatus;
@@ -85,7 +83,7 @@ export type DesignLoadResult =
       readonly error: DesignLoadError;
     };
 
-/** Generic right-handed frame in its owner's local or resolved assembly space; units are gungen `u`. */
+/** Generic right-handed frame in its owner's local or resolved assembly space, in domain units. */
 export interface AnchorFrame {
   readonly position: Vec3;
   readonly forward: Vec3;
@@ -106,7 +104,7 @@ export type PartAnchorDeclarations<Name extends string = string> = Readonly<
   Record<string, PartAnchorDeclaration<Name>>
 >;
 
-/** Part id -> named frames transformed into resolved assembly coordinates (gungen units). */
+/** Part id -> named frames transformed into resolved assembly coordinates, in domain units. */
 export type ResolvedAnchors<Name extends string = string> = Readonly<Record<string, NamedAnchors<Name>>>;
 
 /** Contract for the generic core transformation from family-local to assembly-space anchors. */
@@ -149,7 +147,7 @@ export interface Palette {
  */
 export type PartPortId = `${string}.${string}`;
 
-/** Mating frame in gungen assembly coordinates and units; its local X/normal points out of the part. */
+/** Mating frame in assembly coordinates and domain units; local X/normal points out of the part. */
 interface PortMatingFrame {
   readonly position: Vec3;
   readonly normal: Vec3;
@@ -177,7 +175,7 @@ export interface GlbAssetIdentity {
   readonly file: string;
 }
 
-/** All domain-specific inputs are supplied explicitly; this type imports no gun module. */
+/** All domain-specific inputs are supplied explicitly; this type imports no domain module. */
 export interface GlbExportInput {
   readonly resolved: Resolved;
   readonly palette: Palette;
@@ -186,6 +184,10 @@ export interface GlbExportInput {
   /** Optional design-level slot-to-material overrides, ahead of variant defaults. */
   readonly finish?: Readonly<Record<string, string>>;
   readonly asset: GlbAssetIdentity;
+  /** Optional exporter identity placed in the glTF asset record. */
+  readonly generator?: string;
+  /** Namespace for the engine's root assembly metadata in glTF extras. */
+  readonly metadataNamespace?: string;
   /** Facets of every revolved solid in the file: a level of detail baked in at export. Defaults to the mesh default. */
   readonly revolveFacets?: number;
 }

@@ -760,7 +760,7 @@ describe('attachment parts and export metadata', () => {
       throw new Error('AK template is missing');
     }
     for (const [calibre, expectedVariant] of Object.entries(AK_MAGAZINE_VARIANT_BY_CALIBRE)) {
-      const generated = generateValid({ ...template, calibre }, gunDomain, 0);
+      const generated = generateValid({ ...template, variant: calibre }, gunDomain, 0);
       expect(generated).toBeDefined();
       const variant = generated?.assembly.parts.magazine?.params?.variant as
         | keyof typeof AK_MAGAZINE_CALIBRE_BY_VARIANT

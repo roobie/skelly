@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest';
 
 type ParsedImport = ReturnType<typeof parse>[0][number];
 const sourceExtensions = new Set(['.ts', '.tsx', '.mts', '.js', '.jsx', '.mjs', '.cjs']);
+const forbiddenDomainIdentifiers = new Set(['calibre', 'bore', 'gungen']);
+const domainIdentifierAllowlist: ReadonlySet<string> = new Set();
 
 const sourceFiles = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -57,6 +59,15 @@ const importProblem = (file: string, imported: ParsedImport, engineSrc: string):
   return undefined;
 };
 
+const findDomainIdentifierViolations = (files: readonly string[]): string[] =>
+  files.flatMap((file) => {
+    const source = readFileSync(file, 'utf8');
+    return [...source.matchAll(/\b(?:calibre|bore|gungen)\b/gi)]
+      .map(([identifier]) => identifier.toLowerCase())
+      .filter((identifier) => forbiddenDomainIdentifiers.has(identifier) && !domainIdentifierAllowlist.has(identifier))
+      .map((identifier) => `${file}: forbidden domain identifier ${identifier}`);
+  });
+
 const findBoundaryViolations = async (files: readonly string[], engineSrc: string): Promise<string[]> => {
   await init();
   const violations: string[] = [];
@@ -75,8 +86,10 @@ const findBoundaryViolations = async (files: readonly string[], engineSrc: strin
 describe('engine import boundary', () => {
   const engineSrc = fileURLToPath(new URL('../../engine/src/', import.meta.url));
 
-  it('keeps every engine source file inside engine/src and out of gungen', async () => {
-    expect(await findBoundaryViolations(sourceFiles(engineSrc), engineSrc)).toEqual([]);
+  it('keeps engine source imports and identifiers domain-neutral', async () => {
+    const files = sourceFiles(engineSrc);
+    expect(await findBoundaryViolations(files, engineSrc)).toEqual([]);
+    expect(findDomainIdentifierViolations(files)).toEqual([]);
   });
 
   it('flags relative imports outside engine/src and bare gungen imports', async () => {
@@ -93,14 +106,21 @@ describe('engine import boundary', () => {
       const target = join(ammoRoot, 'calibreSlug.ts');
       const relativeCanary = join(coreRoot, 'math.ts');
       const packageCanary = join(viewerRoot, 'scene.ts');
+      const globCanary = join(viewerRoot, 'glob.ts');
+      const identifierCanary = join(coreRoot, 'domainNames.ts');
       writeFileSync(target, 'export const fixture = true;\n');
       writeFileSync(relativeCanary, "import '../../../gungen/src/ammo/calibreSlug.ts';\n");
       writeFileSync(packageCanary, "import 'gungen/src/gun/palette.ts';\n");
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: this fixture writes dynamic import source.
+      writeFileSync(globCanary, 'const modules = import(`./parts/${name}.ts`);\n');
+      writeFileSync(identifierCanary, 'export const calibre = 5; export const bore = 1; export const gungen = true;\n');
 
-      const violations = await findBoundaryViolations([relativeCanary, packageCanary], fixtureEngineSrc);
-      expect(violations).toHaveLength(2);
+      const violations = await findBoundaryViolations([relativeCanary, packageCanary, globCanary], fixtureEngineSrc);
+      expect(violations).toHaveLength(3);
       expect(violations[0]).toContain('relative import leaves engine/src');
       expect(violations[1]).toContain('imports gungen/src/gun/palette.ts');
+      expect(violations[2]).toContain('import cannot be resolved statically');
+      expect(findDomainIdentifierViolations([identifierCanary])).toHaveLength(3);
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }

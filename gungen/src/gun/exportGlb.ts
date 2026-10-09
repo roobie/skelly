@@ -5,7 +5,7 @@ import type {
   GlbExportResult,
 } from '@skelly/engine/core/design.ts';
 import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
-import { exportGlb, partNodeName } from '@skelly/engine/core/glb.ts';
+import { partNodeName } from '@skelly/engine/core/glb.ts';
 import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/core/math.ts';
 import { type Resolved, resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, PartDef } from '@skelly/engine/core/schema.ts';
@@ -30,6 +30,7 @@ import {
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { eulerXyzDegrees, gripTurn, toFileAxes } from './exportFrame.ts';
+import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';

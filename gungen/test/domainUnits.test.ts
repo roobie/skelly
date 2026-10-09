@@ -90,7 +90,7 @@ describe('domain units', () => {
       expect(extent).toBeCloseTo(0.001, 7);
     }
     expect(portNode.translation).toEqual([0.002, 0, 0]);
-    expect(glb.json.nodes[0]!.extras).toMatchObject({ gungen: { metresPerUnit: 0.001 } });
+    expect(glb.json.nodes[0]!.extras).toMatchObject({ assembly: { metresPerUnit: 0.001 } });
   });
 
   it('insets the cap of an exported box by the domain bevel', () => {
