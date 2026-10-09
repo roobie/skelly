@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ShaderLib, Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
+import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
@@ -1552,10 +1552,10 @@ describe('content', () => {
 
   it('rejects camo blocks with missing shader settings or a conflicting second palette', () => {
     const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
-    const noPalette = { ...camo, id: 'test_camo_no_palette' };
-    delete noPalette.patternPalette;
-    const noWashout = { ...camo, id: 'test_camo_no_washout' };
-    delete noWashout.patternWashout;
+    const { patternPalette: _palette, ...withoutPalette } = camo;
+    const noPalette = { ...withoutPalette, id: 'test_camo_no_palette' };
+    const { patternWashout: _washout, ...withoutWashout } = camo;
+    const noWashout = { ...withoutWashout, id: 'test_camo_no_washout' };
     const issues = buildRegistry([
       ...base,
       {

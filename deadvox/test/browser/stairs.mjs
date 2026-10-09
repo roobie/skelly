@@ -33,13 +33,13 @@ const vite = await createServer({
       transform(code, id) {
         if (mode === 'lighting' && id.endsWith('/src/content/base/templates-stairs.json')) {
           const content = JSON.parse(code);
-          const floor = Array(8).fill('########');
-          const walls = ['########', ...Array(6).fill('c......#'), '########'];
+          const floor = new Array(8).fill('########');
+          const walls = ['########', ...new Array(6).fill('c......#'), '########'];
           content.templates.push({
             id: 'stairs_camo_witness',
             size: [8, 4, 8],
             palette: { '#': 'stone', c: 'camo_woodland', '.': 'air' },
-            layers: [floor, walls, walls, Array(8).fill('........')],
+            layers: [floor, walls, walls, new Array(8).fill('........')],
           });
           return `export default ${JSON.stringify(content)};`;
         }
