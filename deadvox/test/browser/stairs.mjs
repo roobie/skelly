@@ -1093,7 +1093,11 @@ try {
   const resultFile = isLightingMode ? `result-${mode}.json` : 'result.json';
   await writeFile(
     resolve(artifacts, resultFile),
-    JSON.stringify({ mode, states, lightProof, outdoorProof, residentProof, secondSlotProof, raisedOutdoor, errors }, null, 2),
+    JSON.stringify(
+      { mode, states, lightProof, outdoorProof, residentProof, secondSlotProof, raisedOutdoor, errors },
+      null,
+      2,
+    ),
   );
 } finally {
   await timeIfLighting('page-close', async () => page?.close());
