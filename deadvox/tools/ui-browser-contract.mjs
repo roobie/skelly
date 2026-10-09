@@ -509,7 +509,7 @@ try {
     !clockOptionBeforeReset,
     'drawn cursor toggles the clock option',
   );
-  if (clockOptionBeforeReset !== clockOptionInitiallyChecked) {
+  if ((await evaluate(`${clockOption}.checked`)) !== clockOptionInitiallyChecked) {
     await clickAt('#hud-options label:nth-of-type(2)');
   }
   const statsOption = "document.querySelectorAll('#hud-options input')[0]";
