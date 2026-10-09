@@ -50,7 +50,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/audio.ts', marker);
           return code.replace(
             marker,
-            '    this.stealOldestVoice(event, context);\n    globalThis.fullAutoProbe.event = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.event = undefined;',
+            '    this.stealOldestVoice(event, context);\n    globalThis.fullAutoProbe.sourceEvent = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.sourceEvent = undefined;',
           );
         }
       },
@@ -75,7 +75,7 @@ try {
       const source = makeSource.call(this);
       const record = {
         source,
-        event: probe.event,
+        event: probe.sourceEvent,
         gain: null,
         starts: [],
         stops: [],
