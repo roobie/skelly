@@ -523,6 +523,7 @@ export class InventoryScreen {
     | 'plan'
     | 'planAdd'
     | 'registry'
+    | 'scaleHandlingTime'
     | 'targetState'
     | 'version'
     | 'worn'
@@ -550,6 +551,7 @@ export class InventoryScreen {
       | 'plan'
       | 'planAdd'
       | 'registry'
+      | 'scaleHandlingTime'
       | 'targetState'
       | 'version'
       | 'worn'
@@ -933,7 +935,10 @@ export class InventoryScreen {
         uid: entity.uid,
         label: `${def.name} · ${this.hooks.entityDistance(entity).toFixed(1)} m`,
         searching: !entity.searched && this.hooks.searching(entity),
-        searchLabel: entity.searched || this.hooks.searching(entity) ? undefined : secs(searchTime(def)),
+        searchLabel:
+          entity.searched || this.hooks.searching(entity)
+            ? undefined
+            : secs(this.inv.scaleHandlingTime(searchTime(def))),
         grids: searchedGrids,
       };
     });
