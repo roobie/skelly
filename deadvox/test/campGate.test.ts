@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
+import { stepBodyHorizontal } from '../src/core/physics.ts';
 import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
 import {
   type CompiledTemplate,
@@ -31,7 +32,13 @@ interface Bounds {
   x1: number;
   z1: number;
 }
-const PERIMETER_IDS = new Set(['camp_wall_run', 'camp_gate', 'camp_gate_damaged', 'camp_gate_return']);
+const PERIMETER_IDS = new Set([
+  'camp_wall_run',
+  'camp_wall_run_crouch_hole',
+  'camp_gate',
+  'camp_gate_damaged',
+  'camp_gate_return',
+]);
 const NEARBY_APPROACH_BLOCKS = 60;
 // The outer ring sits just inside the nearest south over-wall threshold; the inner ring reaches the gate leaves.
 const NEAR_GROUND_RING_DISTANCES = [5, 42] as const;
@@ -83,6 +90,34 @@ const solidFurnitureCells = (wall: WorldPlacement): Point3[] =>
     }
     return [...cellsOf(piece.size)].map(([dx, dy, dz]) => [piece.pos[0] + dx, piece.pos[1] + dy, piece.pos[2] + dz]);
   });
+
+const crouchHoleOpening = (wall: WorldPlacement, groundBlock: number) => {
+  const [width, depth] = footprint(wall);
+  const feetY = groundBlock + 1;
+  const cellIsSolid = (x: number, y: number, z: number): boolean => {
+    const block = placedBlockAt(wall, [x, y, z]);
+    return block !== undefined && registry.blocks[block]?.solid === true;
+  };
+  const openZ = Array.from({ length: depth }, (_value, offset) => wall.origin[2] + offset).filter((z) =>
+    Array.from({ length: width }, (_value, offset) => wall.origin[0] + offset).every(
+      (x) => !cellIsSolid(x, feetY, z),
+    ),
+  );
+  let height = 0;
+  for (let y = feetY; y < wall.origin[1] + wall.template.size[1]; y += 1) {
+    if (
+      !openZ.every((z) =>
+        Array.from({ length: width }, (_value, offset) => wall.origin[0] + offset).every(
+          (x) => !cellIsSolid(x, y, z),
+        ),
+      )
+    ) {
+      break;
+    }
+    height += 1;
+  }
+  return { openZ, height, width, feetY, cellIsSolid };
+};
 
 const perimeterSolidCells = (walls: readonly WorldPlacement[]): Point3[] => {
   const cells = new Map<string, Point3>();
@@ -428,6 +463,54 @@ describe('camp gate templates', () => {
     ).toBe(undefined);
   });
 
+  it('blocks each zombie body unless its existing collision size fits the east opening', () => {
+    const { layouts } = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
+      layouts: SiteLayoutDef[];
+    };
+    const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;
+    const walls = perimeterPlacements(camp);
+    const wall = walls.find(({ template }) => template.id === 'camp_wall_run_crouch_hole')!;
+    const groundBlock = Math.round(camp.ground / BLOCK_SIZE);
+    const opening = crouchHoleOpening(wall, groundBlock);
+    expect(opening.openZ.length).toBeGreaterThan(0);
+    const laneWidth = opening.openZ.length;
+    const laneCenterZ = (opening.openZ[0]! + opening.openZ.at(-1)! + 1) / 2;
+    const isSolid = (x: number, y: number, z: number): boolean => {
+      if (
+        x >= wall.origin[0] &&
+        x < wall.origin[0] + opening.width &&
+        z >= wall.origin[2] &&
+        z < wall.origin[2] + footprint(wall)[1]
+      ) {
+        return opening.cellIsSolid(x, y, z);
+      }
+      return y <= groundBlock;
+    };
+    const zombies = [...registry.zombies.values()];
+    expect(zombies.length).toBeGreaterThan(0);
+
+    for (const type of zombies) {
+      const dimensions = zombieBodyDimensions(type, BLOCK_SIZE);
+      const halfDepth = dimensions.halfDepth ?? dimensions.halfWidth;
+      const fits = dimensions.height <= opening.height && halfDepth * 2 <= laneWidth;
+      const body = {
+        pos: [wall.origin[0] + opening.width + dimensions.halfWidth + 1, opening.feetY, laneCenterZ] as Point3,
+        vel: [0, 0, 0] as Point3,
+        halfWidth: dimensions.halfWidth,
+        halfDepth,
+        height: dimensions.height,
+        onGround: true,
+      };
+      stepBodyHorizontal(body, {
+        dx: -(opening.width + dimensions.halfWidth * 2 + 2),
+        dz: 0,
+        isSolid,
+        params: { gravity: 0, stepHeight: 0 },
+      });
+      expect(body.pos[0]! + body.halfWidth < wall.origin[0], type.id).toBe(fits);
+    }
+  });
+
   it('hides the finale from approach tracks and near ground except through the southern breach', () => {
     const { layouts } = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
       layouts: SiteLayoutDef[];
@@ -445,8 +528,11 @@ describe('camp gate templates', () => {
     expect(nearGround.length).toBeGreaterThan(0);
     expect(breaches).toHaveLength(1);
     expect(breaches[0]?.side).toBe('south');
-
+    const crouchHole = walls.find(({ template }) => template.id === 'camp_wall_run_crouch_hole')!;
+    const holeOpening = crouchHoleOpening(crouchHole, Math.round(camp.ground / BLOCK_SIZE));
+    expect(holeOpening.openZ.length).toBeGreaterThan(0);
     const eyeHeight = (camp.ground + BLOCK_SIZE + PLAYER.eye) / BLOCK_SIZE;
+    expect(holeOpening.feetY + holeOpening.height).toBeLessThan(eyeHeight);
     for (const marker of markers) {
       const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, BLOCK_SIZE);
       const top: Point3 = [

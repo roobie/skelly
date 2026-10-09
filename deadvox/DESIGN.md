@@ -114,15 +114,21 @@ building templates. The frame budget and why the default is 96 m are in
 `src/core/scale.ts`, `BLOCK_SIZE`.
 
 Crouching lowers the player's collision body as well as the eye, so a crouched
-player fits through openings a standing one can't. Crawl spaces and the crouch
-hole planned for the FOB's east side (d207-2) rely on this. Standing up is
-refused while the standing body would intersect a solid block overhead, and the
-player stays crouched, so a stance change never leaves the body inside a
+player fits through openings a standing one can't. The FOB's east wall has a
+low passage sized from the crouched body in `src/content/base/senses.json`,
+`crouch.bodyHeightMetres`: a crouched player fits but a standing player does
+not. Its retained base course keeps the floor level with the approach, and the
+opening remains below standing eye height. The gap sits
+away from the guarded north entrance and the southern breach, so it reads as a
+separate low route. A zombie uses it only if its existing collision body fits;
+zombies do not crouch and the hole adds no type-specific exception. Standing up
+is refused while the standing body would intersect a solid block overhead, and
+the player stays crouched, so a stance change never leaves the body inside a
 ceiling. A save keeps the stance and the session derives the body height from
-it, so retuned content applies to saved games. The crouched height is content
-beside the eye drop (`src/content/base/senses.json`, `crouch.bodyHeightMetres`,
-required by `src/core/schema.ts`, `SenseSchema`). See `src/game/session.ts`,
-`settleStance`. Zombie bodies don't crouch.
+it, so retuned content applies to saved games. The crouched height is required
+by `src/core/schema.ts`, `SenseSchema`. See `src/content/base/camp.jsonnet`,
+`camp_wall_run_crouch_hole`; `src/game/session.ts`, `settleStance`; and
+`src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
 ### Block shapes
 
