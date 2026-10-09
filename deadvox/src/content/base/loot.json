@@ -329,10 +329,7 @@
     {
       "id": "soldier_pockets",
       "rolls": [1, 1],
-      "entries": [
-        { "nothing": true, "weight": 4 },
-        { "table": "soldier_kit", "weight": 1 }
-      ]
+      "entries": [{ "nothing": true, "weight": 4 }, { "table": "soldier_kit", "weight": 1 }]
     },
     {
       "id": "soldier_kit",
