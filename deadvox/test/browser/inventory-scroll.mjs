@@ -314,14 +314,11 @@ try {
       if (!details) {
         throw new Error('Items details pane is missing');
       }
-      const bodyBox = body.getBoundingClientRect();
       const dividerBox = splitter.getBoundingClientRect();
-      const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
-      const availableWidth = tracks[0] + tracks[3];
+      const availableWidth = body.clientWidth - splitter.offsetWidth - details.offsetWidth;
       return {
-        body: bodyBox.toJSON(),
         divider: dividerBox.toJSON(),
-        ratio: tracks[0] / availableWidth,
+        ratio: Number(splitter.getAttribute('aria-valuenow')) / 100,
         availableWidth,
       };
     });
