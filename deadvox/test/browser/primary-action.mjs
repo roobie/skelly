@@ -1848,7 +1848,7 @@ try {
   );
   for (
     let turn = 1;
-    !(landing?.fits && Math.abs(landing.landingDistance - landing.distance) <= landingTolerance) && turn <= 16;
+    !(landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance) && turn <= 16;
     turn += 1
   ) {
     await page.mouse.move(760 + turn * 16, 410);
@@ -1858,7 +1858,7 @@ try {
     );
   }
   assert(
-    landing?.fits && Math.abs(landing.landingDistance - landing.distance) <= landingTolerance,
+    landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance,
     `full-charge throw has room near its tuned range: ${JSON.stringify(landing)}`,
   );
   const releaseThrow = await mouseCharge(page);
@@ -1885,22 +1885,25 @@ try {
       return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.itemThrows.activeCount > 0;
     }, throwFixture.uid);
   } catch (error) {
-    const state = await page.evaluate((uid) => {
-      const r = globalThis.primaryActionTest;
-      const item = r.inventory.itemByUid(uid);
-      return {
-        location: item && r.inventory.locate(item)?.kind,
-        activeThrows: r.itemThrows.activeCount,
-        throw: r.getItemThrowState(),
-        target: r.itemLandingTarget(r.inventory.registry.senses.get('player').light.throwMaxDistanceMetres),
-        useHeld: r.input.dominantUseHeld,
-        rightHeld: r.input.rightMouseHeld,
-        time: r.session.sim.time,
-        bodyRefusal: r.session.sim.body.actionRefusal,
-        notice: r.getNotice(),
-        throwActions: r.inputRecorder.copyInputs().actions.filter((action) => action.action === 'item.throw').length,
-      };
-    }, throwFixture.uid);
+    const state = await page.evaluate(
+      ({ uid, seconds }) => {
+        const r = globalThis.primaryActionTest;
+        const item = r.inventory.itemByUid(uid);
+        return {
+          location: item && r.inventory.locate(item)?.kind,
+          activeThrows: r.itemThrows.activeCount,
+          throw: r.getItemThrowState(),
+          target: r.getItemThrowLanding(uid, seconds),
+          useHeld: r.input.dominantUseHeld,
+          rightHeld: r.input.rightMouseHeld,
+          time: r.session.sim.time,
+          bodyRefusal: r.session.sim.body.actionRefusal,
+          notice: r.getNotice(),
+          throwActions: r.inputRecorder.copyInputs().actions.filter((action) => action.action === 'item.throw').length,
+        };
+      },
+      { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
+    );
     process.stderr.write(`Full-charge throw did not complete: ${JSON.stringify(state)}\\n`);
     throw error;
   }
@@ -1931,10 +1934,13 @@ try {
     'item throw presents a visible arc to the landing point',
   );
   assert.ok(
-    thrown >= landing.distance - landingTolerance,
+    thrown >= throwFixture.distance - landingTolerance,
     `throw reaches its tuned landing range (distance ${thrown})`,
   );
-  assert.ok(thrown <= landing.distance + landingTolerance, `throw uses the tuned landing range (distance ${thrown})`);
+  assert.ok(
+    thrown <= throwFixture.distance + landingTolerance,
+    `throw uses the tuned landing range (distance ${thrown})`,
+  );
   const loadedFirearm = await page.evaluate(async (moduleUrl) => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);

@@ -178,6 +178,14 @@ try {
         true,
         'startup screen covers the action until discovery finishes',
       );
+      assert.equal(
+        await button.evaluate((action) => {
+          action.focus();
+          return document.activeElement === action;
+        }),
+        false,
+        'keyboard focus cannot reach the action during discovery',
+      );
       assert.equal(await page.evaluate(() => globalThis.persistenceQueries), 0, 'advisory status has not started');
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
       await page.evaluate(() => globalThis.releasePersistenceIdentity());

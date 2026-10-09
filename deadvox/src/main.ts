@@ -24,6 +24,8 @@ import { contentLookup, SaveController } from './ui/saveController.ts';
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
 const startupScreen = document.getElementById('startup-screen')!;
+const overlay = document.getElementById('overlay')!;
+overlay.inert = true;
 const saveStatus = document.getElementById('save-status')!;
 const saveStatusHome = saveStatus.parentElement!;
 const saveStatusNextSibling = saveStatus.nextSibling;
@@ -34,6 +36,7 @@ const restoreSaveStatus = () => {
 };
 const hideStartupScreen = () => {
   restoreSaveStatus();
+  overlay.inert = false;
   startupScreen.hidden = true;
 };
 const showStartupFailure = (message: string) => {
@@ -201,7 +204,6 @@ if (bench === 'report') {
       startPlay(engine, debugModule, { saveController, restore: restored });
       hideStartupScreen();
     } else {
-      const overlay = document.getElementById('overlay')!;
       saveController.setNewWorldLauncher((creation) => {
         const entry = startPlay(engine, debugModule, { saveController, ...creation });
         return {

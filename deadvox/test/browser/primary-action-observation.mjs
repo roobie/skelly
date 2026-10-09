@@ -132,7 +132,7 @@ export const observationPlugin = {
       const landingDistance = target
         ? Math.hypot(target.pos[0] + 0.5 - body.pos[0], target.pos[2] + 0.5 - body.pos[2]) * s
         : undefined;
-      return { target, fits: Boolean(target && inventory.planAdd(item, target).ok), distance, landingDistance };
+      return { target, fits: Boolean(target && inventory.planAdd(item, target).ok), landingDistance };
     },
     getItemThrowState: () => ({ startedAt: itemThrowStartedAt, itemUid: itemThrowItemUid, hand: itemThrowHand }),
     selectPrimaryAction,

@@ -15,11 +15,9 @@ Cataclysm: DDA (detailed items, bodies, crafting). The graphics are blocky voxel
 This file describes the code as it is. The game's design and roadmap are in
 [DESIGN.md](DESIGN.md) and [EPIC.md](EPIC.md).
 
-The startup screen stays up while saved worlds are discovered and any candidate is
-validated. It shows the save controller's status beneath the loading bar, so slow
-storage checks remain explained. The title card and any persistence action become
-available after discovery, when storage state is known. See `src/main.ts`,
-`hideStartupScreen`, and `src/ui/saveController.ts`, `SaveController.prepare`.
+The title card and persistence action stay unavailable until save discovery and content
+validation finish. For the loading status and recovery behavior, see
+[Startup and save discovery](TROUBLESHOOTING.md#startup-and-save-discovery).
 
 **Play:** <https://roobie.github.io/skelly/deadvox/>. URL parameters:
 
