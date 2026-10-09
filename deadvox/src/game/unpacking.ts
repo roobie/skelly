@@ -6,7 +6,7 @@ import { playerPockets } from '../core/options.ts';
 
 /** Gameplay handling estimate for opening a sealed cardboard package. */
 export const BOX_UNPACK_SECONDS = 1.2;
-const UNPACK_ACTION = 'item.unpack';
+export const UNPACK_ACTION = 'item.unpack';
 
 /** Activation only: deliberately not an inventory Use option. */
 export class Unpacking {
@@ -31,9 +31,14 @@ export class Unpacking {
     if (this.queue.busy) {
       return 'Already handling something';
     }
-    this.queue.enqueueAction(UNPACK_ACTION, `Unpack ${this.inventory.name(item)}`, BOX_UNPACK_SECONDS, {
-      uid: item.uid,
-    });
+    this.queue.enqueueAction(
+      UNPACK_ACTION,
+      `Unpack ${this.inventory.name(item)}`,
+      this.inventory.scaleHandlingTime(BOX_UNPACK_SECONDS),
+      {
+        uid: item.uid,
+      },
+    );
     return undefined;
   }
 

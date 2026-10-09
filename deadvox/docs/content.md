@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
+  - "you change skill content tuning or training rules"
   - you're authoring or changing base template geometry or palettes
   - you change content references, static reachability, or disassembly-output contracts
   - you change how content-loading tests build their registry fixtures
@@ -10,6 +11,7 @@ read_if:
   - you author or validate time-windowed template spawns
   - you're authoring or changing playtest fixed loot
   - you're assigning noise to opening a door
+  - you change site-generation tuning or its content schema
 ---
 
 # Content sections and recipes
@@ -37,6 +39,10 @@ rechecking unrelated base content while preserving those integration checks;
 see `test/content.test.ts`, `templateBase`, and `test/authoredSite.test.ts`,
 `registry`.
 
+## Site-generation tuning
+
+`siteGeneration` definitions in `src/core/schema.ts` keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into `layouts-playtest.json`. `src/content/base/site-generation.json` supplies the authored-site profile consumed by `src/core/authoredSite.ts`, `AuthoredSite`; tune that profile to balance natural variation against playable structures and routes.
+
 ## Recipe format (Slice 2.2)
 
 `recipes` is a list of definitions: `id`, `result: { item, count }`, positive
@@ -50,7 +56,7 @@ unchanged item `ToolSchema` levels. A recipe may have at most
 **1,024 combinations**, inclusive: the product of its group lengths. Validation
 uses exact integer multiplication and reports the count when refusing a file.
 
-- `skills` definitions contain only an id and name; character state is 2.5.
+- Skill definitions own effect tuning and training activities. An activity grants either fixed practice or practice per simulation second; a tiered activity stops at its declared tier and discards excess, while an untiered activity trains to ordinary level 10. Inventory Management uses untiered fixed practice after completed ordinary transfers, box unpacking and furniture searches; refused, cancelled or failed actions award none. The same handling effect scales those actions; at level 0 its factor is 1, so each takes its base time. `src/core/inventory.ts`, `Inventory.scaleHandlingTime`, supplies the shared factor. The starting practice amount is first-look tuning, not an approved value. Character progression is saved as defined in 2.5.
 - Quality IDs are keys declared by loaded items' `tool.qualities` (including
   mod keys) or furniture `workstation.qualities`, not a new top-level section.
   A missing declaration is an error. Whether a reachable item or placed

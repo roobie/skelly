@@ -113,6 +113,45 @@ export const sunExposedAt = ({
   return raycast(origin, [0, 1, 0], distance, isOpaque) === undefined;
 };
 
+/** Reuses the highest opaque block in each vertical column for the session's sun checks. */
+export class SunExposureCache {
+  private readonly opaqueTopByColumn = new Map<string, number | null>();
+  private readonly skyTop: number;
+  private readonly skyBottom: number;
+  private readonly isOpaque: SolidAt;
+
+  constructor(skyTop: number, skyBottom: number, isOpaque: SolidAt) {
+    this.skyTop = skyTop;
+    this.skyBottom = skyBottom;
+    this.isOpaque = isOpaque;
+  }
+
+  clear(): void {
+    this.opaqueTopByColumn.clear();
+  }
+
+  isExposedAt(position: readonly [number, number, number], gameHours: number, cycle = DEFAULT_DAY_CYCLE): boolean {
+    if (sunDirection(gameHours, cycle)[1] <= 0 || this.skyTop - position[1] <= 0) {
+      return false;
+    }
+    const x = Math.floor(position[0]);
+    const z = Math.floor(position[2]);
+    const key = `${x},${z}`;
+    let opaqueTop = this.opaqueTopByColumn.get(key);
+    if (opaqueTop === undefined && !this.opaqueTopByColumn.has(key)) {
+      for (let y = Math.floor(this.skyTop); y >= this.skyBottom; y--) {
+        if (this.isOpaque(x, y, z)) {
+          opaqueTop = y;
+          break;
+        }
+      }
+      this.opaqueTopByColumn.set(key, opaqueTop ?? null);
+    }
+    const top = opaqueTop ?? this.opaqueTopByColumn.get(key) ?? null;
+    return top === null || Math.floor(position[1] + 1e-4) > top;
+  }
+}
+
 /** Shared gate for carried player signatures and independent light lures. */
 export const lightSenseRangeScale = (exposure: LightExposure, sunlit: boolean, tuning: SenseDef['light']): number => {
   if (exposure === 'carried') {

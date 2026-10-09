@@ -265,7 +265,7 @@
         "mount": "muzzle",
         "mountFrame": { "normal": [-1, 0, 0], "up": [0, 1, 0] },
         "properties": {
-          "noiseFactor": 0.45,
+          "noiseFactor": 0.25,
           "wearClass": "real"
         }
       }

@@ -372,6 +372,15 @@
       "changes": "BR's original synthetic csound shots. Trimmed trailing silence only, then converted from 48 kHz 24-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
     },
     {
+      "title": "BR M4 shot synthesis",
+      "url": null,
+      "author": "BR",
+      "licence": "CC0-1.0",
+      "download": "m4unsup_single_sc_field_v2b.wav and m4sup1_single_sc_field_v2.wav",
+      "files": ["assets/audio/gunshot-m4-01.ogg", "assets/audio/gunshot-m4-suppressed-01.ogg"],
+      "changes": "BR's original synthesised M4 shots. Trimmed trailing silence only, then converted from 48 kHz 16-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
+    },
+    {
       "title": "Project-built low-poly hand-tool and content stand-ins",
       "url": "https://github.com/roobie/skelly",
       "author": "Skelly contributors",

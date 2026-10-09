@@ -25,7 +25,13 @@ const observation = {
       marker,
       `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\nimport { SURFACE_PATTERN_GLSL as FirefoxSurfacePatternsGlsl } from '../render/surfacePatterns.ts';\n${exposed}\n`;
+    const startupHintMarker = '    updateStartupHint();';
+    assert(exposed.includes(startupHintMarker), 'startup hint observation point exists');
+    const withStartupHint = exposed.replace(
+      startupHintMarker,
+      `${startupHintMarker}\n    if (!startupHint.hidden && startupProgress.value < startupProgress.max && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { meshes: Array.from(engine.meshes.keys()).length };\n    }`,
+    );
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { weatherablePatternGlsl as FirefoxWeatherablePatternGlsl } from '../render/weatherablePatterns.ts';\nimport { SURFACE_PATTERN_GLSL as FirefoxSurfacePatternsGlsl } from '../render/surfacePatterns.ts';\n${withStartupHint}\n`;
   },
 };
 const vite = await createServer({
@@ -64,6 +70,7 @@ try {
       document.dispatchEvent(new Event('pointerlockchange'));
     };
     globalThis.firefoxUiFrames = 0;
+    globalThis.firefoxUiStartupSample = undefined;
     const frame = () => {
       globalThis.firefoxUiFrames += 1;
       requestAnimationFrame(frame);
@@ -86,6 +93,37 @@ try {
     () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
     null,
     { timeout: 10_000 },
+  );
+  try {
+    await page.waitForFunction(() => globalThis.firefoxUiStartupSample?.meshes === 0, null, { timeout: 10_000 });
+  } catch (error) {
+    const state = await page.evaluate(() => {
+      const hint = document.querySelector('#startup-hint');
+      const progress = document.querySelector('#startup-hint-progress');
+      const runtime = globalThis.firefoxUiTest;
+      return {
+        hintHidden: hint?.hidden,
+        progress: progress ? { value: progress.value, max: progress.max } : null,
+        firstVisibleSample: globalThis.firefoxUiStartupSample,
+        meshes: runtime?.engine?.meshes ? Array.from(runtime.engine.meshes.keys()).length : null,
+        locked: runtime?.input?.locked,
+        menuPointer: runtime?.input?.menuPointer,
+        streamerPending: runtime?.engine?.streamer?.pending,
+      };
+    });
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(state)}`,
+      { cause: error },
+    );
+  }
+  await page.waitForFunction(
+    () => {
+      const hint = document.querySelector('#startup-hint');
+      const progress = document.querySelector('#startup-hint-progress');
+      return hint?.hidden && progress && progress.value === progress.max;
+    },
+    null,
+    { timeout: 30_000 },
   );
   await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, initialTime, {
     timeout: 20_000,
