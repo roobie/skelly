@@ -219,6 +219,23 @@
       ],
       "color": "#ff70a080",
       "drawFill": true
+    },
+    {
+      "id": 109,
+      "name": "beat",
+      "members": [
+        {
+          "name": "beat",
+          "type": "string",
+          "value": ""
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
     }
   ]
 }

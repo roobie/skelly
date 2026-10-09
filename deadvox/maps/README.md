@@ -4,6 +4,7 @@ read_if:
   - you're changing authored-site fixed loot or playtest-map scope
   - you're extending the workshop route or its multiple approaches
   - you're authoring time-windowed Tiled spawn markers
+  - you're drawing playtest beat areas or marking key fixed loot
   - you're authoring or reviewing the playtest military compound and its routes
 ---
 
@@ -25,9 +26,13 @@ The north pen makes the second gate a real threshold instead of a panel one can 
 
 `SiteLayoutDef` in `src/core/schema.ts` gives a building placement fixed items at a template-local container anchor. `src/core/authoredSite.ts`, `AuthoredSite.furnitureIn`, combines those with the container's ordinary seeded table, and `src/core/loot.ts`, `fixedItems`, preserves item stack limits. Fixed items are supplied first to `src/core/inventory.ts`, `Inventory.furnish`: progression and craft ingredients therefore cannot be crowded out by seed-owned filler, while the remaining capacity still receives its normal deterministic roll. The fixed source regenerates from site and seed; looted state remains owned by the existing inventory save.
 
-The contract records item, count and optional condition, not a second generic item-state format. The beats' named contents already belong to item definitions and construction defaults: `shotshell_box` owns its unpacking, `src/core/items.ts`, `ItemFactory.create`, makes a pump shotgun empty, and an unpowered flashlight needs no inserted battery. This keeps authored placement separate from the state and behavior each item already owns.
+The contract records item, count, optional condition and an optional playtest `key` flag, not a second generic item-state format. The beats' named contents already belong to item definitions and construction defaults: `shotshell_box` owns its unpacking, `src/core/items.ts`, `ItemFactory.create`, makes a pump shotgun empty, and an unpowered flashlight needs no inserted battery. This keeps authored placement separate from the state and behavior each item already owns.
 
 The scenario start belongs to its layout so a playtest begins at the authored beat's time; `src/game/config.ts`, `configFromUrl`, still lets an explicit `time` parameter override it.
+
+## Playtest beats and key loot
+
+Rectangle `beat` objects mark each beat's area by a `beat` id, and `maps/extensions/deadvox.mjs`, `exportLayout`, writes them into the layout's `beats`. A fixed-loot item's `key` flag marks what the beat hinges on. Both are observation only: the playtest metrics read them through `src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and the simulation never does, so redrawing an area or marking an item cannot change play. What the metrics record is in `docs/playtest-run.md`, "What the metrics export records".
 
 ## Time-windowed spawns
 

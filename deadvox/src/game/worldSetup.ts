@@ -7,7 +7,7 @@ import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
 import { rollLoot } from '../core/loot.ts';
-import { blockPatterns } from '../core/meshInput.ts';
+import { blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { Rng } from '../core/random.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
@@ -21,6 +21,7 @@ import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
 import { testHouseRangeStock } from './testHouseRange.ts';
+import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
 export interface WorldSetup {
   config: GameConfig;
@@ -220,7 +221,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const id = (name: string) => blockId(registry, name);
 
   const house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined;
-  const built = siteForReviewMap(config, registry, house);
+  const built = buildDebugWeatheringTestSite(config, registry) ?? siteForReviewMap(config, registry, house);
   const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: FurnitureSpawn[] } = built
     ? { structures: [], spawn: built.spawn, furniture: house?.furniture ?? [] }
     : (house ?? testHouseScene(config, registry));
@@ -237,6 +238,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     terrain: terrainBlockIds(id),
     colors: blockColors(registry),
     patterns: blockPatterns(registry),
+    weatherable: blockWeatherability(registry),
     scale,
     structures: site.structures,
     surface: built?.surface,

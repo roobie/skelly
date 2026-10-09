@@ -44,7 +44,7 @@ const wideOf = (solid: Solid): Uint8Array => {
   return wide;
 };
 
-const meshOf = (solid: Solid): MeshData => buildMesh(paddedOf(solid), colors, undefined, wideOf(solid));
+const meshOf = (solid: Solid): MeshData => buildMesh(paddedOf(solid), colors, { wide: wideOf(solid) });
 
 interface Corner {
   pos: number[];
@@ -226,7 +226,7 @@ describe('wide occlusion in the mesh', () => {
     const solid: Solid = (x, y, z) =>
       y < Math.floor(6 + hash3(seed, Math.floor(x / 5), Math.floor(z / 5), 0) * 14) || hash3(seed + 9, x, y, z) < 0.004;
     const wide = wideOf(solid);
-    const mesh = buildMesh(paddedOf(solid), colors, undefined, wide);
+    const mesh = buildMesh(paddedOf(solid), colors, { wide });
     expect(mesh.indices.length / 6).toBeLessThan(unitFaces(mesh).size); // merging happened
     let wrong = 0;
     for (let v = 0; v < mesh.occlusion.length; v++) {

@@ -17,6 +17,7 @@ import {
   type FurnitureDef,
   type ItemDef,
   type RecipeDef,
+  type SiteLayoutDef,
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
@@ -930,6 +931,15 @@ const checkKeys = (registry: Registry, report: Report) => {
   }
 };
 
+const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
+  if (layout.weatheringProfile && !registry.weathering.has(layout.weatheringProfile)) {
+    report('layouts', layout.id, '.weatheringProfile', `no weathering profile "${layout.weatheringProfile}"`);
+  }
+  for (const [path, message] of authoredLayoutIssues(layout, registry)) {
+    report('layouts', layout.id, path, message);
+  }
+};
+
 const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {
   if (!block.patternPalette) {
     report('blocks', block.id, '.patternPalette', 'camo blocks require a four-colour pattern palette');
@@ -1000,9 +1010,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkZombies(registry, report);
   checkRecipes(registry, report);
   for (const layout of registry.layouts.values()) {
-    for (const [path, message] of authoredLayoutIssues(layout, registry)) {
-      report('layouts', layout.id, path, message);
-    }
+    checkLayoutReferences(layout, registry, report);
   }
   return issues;
 };

@@ -28,7 +28,7 @@ describe('buildMesh', () => {
     const p = padded([3, 3, 3]);
     p[paddedIndex(5, 4, 4)] = 2; // a second block type beside the first
     const patterns = new Uint8Array([0, 4, 9]);
-    const m = buildMesh(p, colors, patterns);
+    const m = buildMesh(p, colors, { patterns });
     expect(m.patterns.length).toBe(m.positions.length / 3);
     for (let q = 0; q < m.patterns.length; q += 4) {
       expect(new Set(m.patterns.slice(q, q + 4)).size).toBe(1);

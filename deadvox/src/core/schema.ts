@@ -44,6 +44,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
+import { WEATHERING_RANGES } from './weather.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
@@ -141,6 +142,8 @@ const BlockSchema = strictObject({
   rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
+  /** Whether render-only site weathering may affect this built material. */
+  weatherable: optional(vBoolean()),
   /** Four-colour palette read only by the `camo` surface pattern. */
   patternPalette: optional(tuple([Color, Color, Color, Color])),
   /** Washout amount in [0, 1], read only by the `camo` surface pattern. */
@@ -935,6 +938,8 @@ const FixedLootItem = strictObject({
   item: Id,
   count: optional(pipe(Count, minValue(1))),
   condition: optional(Fraction),
+  /** Observation only: playtest metrics record when the player first loots or reads this item. */
+  key: optional(vBoolean()),
 });
 const FixedLootOverride = strictObject({
   /** Template-local furniture anchor in half-metre block cells. */
@@ -948,15 +953,18 @@ const LayoutBuilding = strictObject({
   storeys: optional(pipe(Count, minValue(1), maxValue(8))),
   fixedLoot: optional(array(FixedLootOverride)),
 });
+const LayoutRect = pipe(
+  strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
+  check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'must have positive area'),
+);
 
 const SiteLayoutSchema = strictObject({
   id: Id,
   /** Fixture and showcase layouts are not world sources; unmarked authored layouts contribute building containers and fixed loot. */
   demo: optional(vBoolean()),
-  bounds: pipe(
-    strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
-    check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'bounds must have positive area'),
-  ),
+  /** The render-only weathering profile for this site; absent layouts use the default profile. */
+  weatheringProfile: optional(Id),
+  bounds: LayoutRect,
   /** Foundation elevation: lower face of the top ground block, in metres. */
   ground: HalfMetres,
   /** Calendar time on day 1 when this site is selected without an explicit ?time=. */
@@ -984,6 +992,8 @@ const SiteLayoutSchema = strictObject({
       surface: optional(picklist(['dirt', 'asphalt'])),
     }),
   ),
+  /** Observation only: playtest metrics record when the player first stands in each beat's area. */
+  beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
 });
 
 // ---- zombies ----
@@ -1310,9 +1320,46 @@ const SenseSchema = strictObject({
     throwArmEnergyJoules: Positive,
   }),
 });
+/** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
 const RecipeItemSchema = ItemCountSchema;
 
-/** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
+const weatheringNumber = (field: keyof typeof WEATHERING_RANGES) => {
+  const { min, max } = WEATHERING_RANGES[field];
+  return pipe(number(), minValue(min), maxValue(max));
+};
+
+const WeatheringSchema = strictObject({
+  id: Id,
+  /** Shared weathering strength for the rendered site. */
+  strength: weatheringNumber('strength'),
+  /** Linear tint multiplier for grime. */
+  tintColor: Color,
+  /** Grime darkness multiplier, before the profile's mix ceiling. */
+  tintDarkness: weatheringNumber('tintDarkness'),
+  /** Streak tint, blended from the grime tint where runoff appears. */
+  streakColor: Color,
+  /** Amount of vertical runoff mixed into the profile. */
+  streakStrength: weatheringNumber('streakStrength'),
+  /** World-space period of vertical runoff, in metres. */
+  streakLengthMetres: weatheringNumber('streakLengthMetres'),
+  /** Organic patch colour. */
+  mossColor: Color,
+  /** Amount of moss mixed into the profile; zero disables moss independently. */
+  mossStrength: weatheringNumber('mossStrength'),
+  /** World-space wavelength for broad weathering changes, in metres. */
+  variationScaleMetres: weatheringNumber('variationScaleMetres'),
+  /** Strength of world-scale weathering variation. */
+  variationStrength: weatheringNumber('variationStrength'),
+  /** Noise cutoff for organic moss and damp patches. */
+  mossThreshold: weatheringNumber('mossThreshold'),
+  /** How much shelter and ground proximity lower the organic-patch cutoff. */
+  mossBias: weatheringNumber('mossBias'),
+  /** Upper bound for the final combined grime, streak and moss mix. */
+  mixCeiling: weatheringNumber('mixCeiling'),
+  /** Blend from multiplicative weathering toward opaque grime/moss colours. */
+  weatheringBlend: weatheringNumber('weatheringBlend'),
+});
+
 const BodyTuningSchema = strictObject({
   id: Id,
   /** Game hours after a bleeding wound before an at-risk infection becomes early. */
@@ -1411,6 +1458,7 @@ const SECTION_DESCRIPTOR = {
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
+  weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
 } as const;
 
@@ -1440,6 +1488,7 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;

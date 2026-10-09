@@ -34,8 +34,7 @@ authoring commands; see `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and the
 generated keyboard settings for the effective chords. Plain gameplay keys never
 invoke debug tools. With it, the look and
 camera settings live in the URL and update as you change them, so a reload or a pasted
-link reproduces what you saw. Only deviations from the defaults are written; values and
-their ranges are in `src/debug/lookUrl.ts` and `src/debug/camUrl.ts`.
+link reproduces what you saw. Only deviations from the defaults are written; look values and ranges are in `src/debug/lookUrl.ts`, weathering profile edits are resolved by `src/core/weatheringUrl.ts`, and camera values are in `src/debug/camUrl.ts`.
 
 Browser profiles can rebind defaults, so this guide does not reproduce a key
 catalogue that could mislead a player; see `BindingRegistry` in
@@ -79,6 +78,7 @@ games or restored saves. See `src/debug/index.ts`, `attachDebugTools`.
   noise, and then step the body into sight. The labels expose the state transition while gaze stays
   tied to the simulated body.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture). With `debug=1`, use the south garden gate, then go east around the wall to the range's west end; the rack and shooting table are there, and targets are east. Registry-derived stock is in `src/game/testHouseRange.ts`, `testHouseRangeStock`.
+- `site=weatheringTest&debug=1`: concrete, brick and wood bands share a clean/weathered world-x split on one pad. Open the debug panel's Weathering group to choose a profile and tune its sliders or colours; each edit updates shader uniforms and the address bar, so the profile and its edits survive a reload. The comparison site's split defaults to x = 0; `weatheringSplit=<x metres>` moves it. See `src/game/weatheringTestSite.ts`, `DebugWeatheringTestSite`; `src/debug/index.ts`, `panelTemplate`; and `src/core/weatheringUrl.ts`, `resolveWeatheringUrl`.
 - `voicePitch=<factor>` and `voicePitchLarge=<factor>` on `?site=voice_size&debug=1` tune figure pitch anchors. `src/game/shamblerAudio.ts`, `debugVoicePitch`, ignores them on other sites or without debug mode.
 - `firearmsCombat=<level>` on a fresh debug world sets the authored firearms-combat skill range (`firearms_combat`). See `src/core/character.ts`, `SKILL_LEVEL_MIN`, `SKILL_LEVEL_MAX` and `SKILL_LEVEL_LEGENDARY`, and `src/debug/debugFirearmsSkill.ts`, `setDebugFirearmsSkill`.
 - `inventoryManagement=<level>` on a fresh debug world sets the Inventory Management skill (`inventory_management`). See `src/debug/debugInventoryManagementSkill.ts`, `setDebugInventoryManagementSkill`.

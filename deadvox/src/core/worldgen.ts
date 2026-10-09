@@ -15,7 +15,7 @@ export interface TerrainBlocks {
 export const terrainBlockIds = (id: (name: string) => number): TerrainBlocks => ({
   grass: id('grass'),
   dirt: id('dirt'),
-  stone: id('stone'),
+  stone: id('rock'),
   sand: id('sand'),
 });
 

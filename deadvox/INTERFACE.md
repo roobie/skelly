@@ -7,6 +7,7 @@ read_if:
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
   - you're changing how playtesters hand back metrics or replays
   - you're changing UI layer order, overlay stacking, or native controls under the drawn cursor
+  - you're changing the inventory layout
 tags: [deadvox, design, ui, ux, diegesis, hud]
 created: 2026-09-27
 status: active
@@ -288,9 +289,13 @@ UI layers come from ordered custom properties in `src/ui/style.css`, `:root`; in
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; its key names come from the bindings, and it moves to the hint channel with "Order of work" item 2 |
 | Main menu (F9) | meta | meta | fine; settings, help and the playtest hand-back live here |
-| Inventory screen | meta | meta | grids stay; numbers per DESIGN.md "numbers are there when you look" |
+| Inventory screen | meta | meta | grids stay; numbers remain available on request per DESIGN.md "numbers are there when you look" |
 | Refusal notices ("Quickbar 1 is empty") | voice | voice | none: they name no key or procedure (`src/game/play.ts`, `showRefusal`) |
 | Drawn menu cursor | meta | meta | fine |
+
+### Inventory layout
+
+Selected-item details sit between the two places items move between: inspection and actions read down, not across, and the player can see both destinations while reading. The side-by-side layout keeps the nearby pane wide enough for a cap-limited locker; at narrower windows the details pane joins the vertical stack instead of squeezing the locker. See `src/ui/inventoryScreen.ts`, `inventoryTemplate` and `detailsTemplate`.
 
 ## Numbers and diegesis
 

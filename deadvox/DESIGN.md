@@ -27,6 +27,7 @@ read_if:
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
+  - you're choosing or changing the building-weathering look and its dilapidation direction
   - you're authoring dilapidated structures or breached perimeters
   - you're changing player-facing item descriptions or their boundary with control guidance
 ---
@@ -1271,6 +1272,8 @@ something in play, not only decorate it.
   weeks since people left. Food rotting changes what's still worth scavenging.
   There is no plant-growth or dust-accumulation simulation.
 
+Building weathering gives each site a render-only mood without changing simulation or shared geometry: fairly kept points of interest benefit from restrained change, while long-abandoned places need a general overgrown and dilapidated look. It marks built materials, not nature's terrain or vegetation; `src/core/schema.ts`, `BlockSchema.weatherable`, lets content keep that distinction, and an absent flag means no weathering. Fabric, window frames, chain link and sandbags stay clean because moss and lichen belong on stone, concrete and wood; hazard paint keeps its warning colour, and galvanized sheet keeps its corrugated ribs legible. The overgrown tint may shift the base hue, but the surface pattern must still read; the restrained default keeps each material's base hue.
+
 **Rendering and performance.** There will be a lot of trees (BR), so foliage gets
 a performance plan from the start rather than as a fix later:
 
@@ -1292,10 +1295,7 @@ a performance plan from the start rather than as a fix later:
 
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
-- **The look:** flat colour per block, with small per-block variation, ambient
-  occlusion and fog. Textures only if colour alone can't carry the look. The
-  palette is muted and grey; the saturated colours are the ones that mean
-  something: warning signs, blood, fire and the glow of hot zombies.
+- **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
 - **Day and night** follow one sun model derived from the base pack's latitude,
   fixed date and nautical twilight. The sky and fog follow the resulting phases;
   light and night looks blend through dusk and dawn, and a flashlight matters
