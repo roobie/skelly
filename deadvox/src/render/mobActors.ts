@@ -47,20 +47,9 @@
 // zeroed) and is driven by the core rigid-body stepper, reusing the corpse cap/eviction/lifecycle machinery
 // (a debris row counts toward MAX_CORPSES exactly like a corpse does).
 
-import type { Material } from '@mobgen/core/body.ts';
 import type { Realized } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
-import {
-  type Mat3,
-  type Vec3 as MobVec3,
-  mat3ToQuat,
-  mulMM,
-  mulMV,
-  quatToMat3,
-  rotY,
-  type Transform,
-  transpose,
-} from '@mobgen/core/math.ts';
+import { type Mat3, mat3ToQuat, mulMM, mulMV, quatToMat3, rotY, type Transform, transpose } from '@mobgen/core/math.ts';
 import {
   allocateBoneTransforms,
   boneTransforms,
@@ -71,7 +60,7 @@ import {
   type Pose,
 } from '@mobgen/core/pose.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
-import { cellIndex, materialOf, shadeOf, worldPosition } from '@mobgen/core/voxelize.ts';
+import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
 import {
   CROWD_BEGIN_VERTEX,
@@ -95,9 +84,9 @@ import { DEATH_FALL_DURATION, type DeathActor, deathPose } from '@mobgen/mob/rea
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
-  BufferAttribute,
-  BufferGeometry,
+  type BufferGeometry,
   type Camera,
+  Color,
   CylinderGeometry,
   DataTexture,
   FloatType,
@@ -131,6 +120,7 @@ import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { PLAYER } from '../game/player.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
+import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './amalgamFlesh.ts';
 import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -162,6 +152,8 @@ export interface ZombieRenderer {
    * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
   setWorld?: (isSolid: RigidWorld['isSolid'], blockSize: number) => void;
   zombieSevered?: (id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie) => void;
+  /** Called when a hit knocks flesh out of an amalgam (src/core/zombies.ts's onCarve, forwarded by play.ts). */
+  zombieCarved?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
 }
 
 const DEFAULT_POOL_SIZE = SHAMBLER_FIGURE_SEEDS.length;
@@ -208,75 +200,13 @@ export const fallDirectionAwayFromPlayer = (facing: Vec3, zombiePos: Vec3, playe
   return facingTowardPlayer > 0 ? -1 : 1;
 };
 
-/** Same conversion mobgen's own viewer/scene.ts uses (not importable — that file pulls in three from
- * mobgen's own node_modules) — palette-index colour bytes to per-vertex RGB. */
-const SHADE_FACTORS = [0.72, 0.88, 1.04, 1.2] as const;
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 const backgroundActorBlend = (zombie: Zombie, simulationTime: number | undefined, fallback: number): number =>
   simulationTime === undefined || zombie.renderPrevious.time === undefined
     ? fallback
     : clamp01((simulationTime - zombie.renderPrevious.time) * BACKGROUND_ZOMBIE_RATE);
-const vertexColorsFrom = (colorBytes: Uint8Array, palette: Readonly<Record<Material, MobVec3>>): Float32Array => {
-  const out = new Float32Array(colorBytes.length * 3);
-  for (let v = 0; v < colorBytes.length; v++) {
-    const byte = colorBytes[v]!;
-    const base = palette[materialOf(byte)];
-    const factor = SHADE_FACTORS[shadeOf(byte)] ?? 1;
-    out[v * 3] = clamp01(base[0] * factor);
-    out[v * 3 + 1] = clamp01(base[1] * factor);
-    out[v * 3 + 2] = clamp01(base[2] * factor);
-  }
-  return out;
-};
-
-/** Merged geometry for one body variant: like mobgen's own buildCrowdGeometry (stressActors.ts, not
- * importable for the same reason as vertexColorsFrom above) — one float `boneIndex` per vertex instead of
- * skinIndex/skinWeight, fetched straight from the shared bone texture in the vertex shader. */
-const buildVariantGeometry = (realized: Realized): BufferGeometry => {
-  const { meshes, body } = realized;
-  let vertexCount = 0;
-  let indexCount = 0;
-  for (const mesh of meshes.values()) {
-    vertexCount += mesh.positions.length / 3;
-    indexCount += mesh.indices.length;
-  }
-  const positions = new Float32Array(vertexCount * 3);
-  const normals = new Float32Array(vertexCount * 3);
-  const colors = new Float32Array(vertexCount * 3);
-  const boneIndexAttr = new Float32Array(vertexCount);
-  // -1 for a face exposed to empty space, else the neighbouring bone's own index — dismemberment's gore
-  // effect (crowd.ts) tints a face whose neighbour has just been severed but this bone hasn't.
-  const neighbourBoneAttr = new Float32Array(vertexCount);
-  const indices = new Uint32Array(indexCount);
-
-  let vertexOffset = 0;
-  let indexOffset = 0;
-  for (const [boneIndex, mesh] of meshes) {
-    const vertices = mesh.positions.length / 3;
-    positions.set(mesh.positions, vertexOffset * 3);
-    normals.set(mesh.normals, vertexOffset * 3);
-    colors.set(vertexColorsFrom(mesh.colors, body.palette), vertexOffset * 3);
-    boneIndexAttr.fill(boneIndex, vertexOffset, vertexOffset + vertices);
-    for (let v = 0; v < vertices; v++) {
-      neighbourBoneAttr[vertexOffset + v] = mesh.neighbourBone[v]!;
-    }
-    for (let i = 0; i < mesh.indices.length; i++) {
-      indices[indexOffset + i] = mesh.indices[i]! + vertexOffset;
-    }
-    vertexOffset += vertices;
-    indexOffset += mesh.indices.length;
-  }
-
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new BufferAttribute(positions, 3));
-  geometry.setAttribute('normal', new BufferAttribute(normals, 3));
-  geometry.setAttribute('color', new BufferAttribute(colors, 3));
-  geometry.setAttribute('boneIndex', new BufferAttribute(boneIndexAttr, 1));
-  geometry.setAttribute('neighbourBone', new BufferAttribute(neighbourBoneAttr, 1));
-  geometry.setIndex(new BufferAttribute(indices, 1));
-  geometry.computeBoundingSphere();
-  return geometry;
-};
+const buildVariantGeometry = (realized: Realized): BufferGeometry =>
+  mergeBoneMeshes(realized.meshes, realized.body.palette);
 
 /** A live zombie is keyed by its EntityId; a piece of debris (there can be more than one per zombie, over
  * its lifetime) gets its own synthetic string key — see zombieSevered. Corpses stay EntityId-keyed (one
@@ -433,6 +363,17 @@ interface Corpse extends SlotHolder {
   readonly insertOrder: number;
 }
 
+/**
+ * A carved amalgam's own body mesh, rebuilt without its carved voxels. It reads the same bone-texture row
+ * as the amalgam's instance in the shared variant mesh, which is pointed at the all-zero hidden row so
+ * only this one draws.
+ */
+interface Wound {
+  readonly mesh: InstancedMesh;
+  /** How many cells the current geometry has carved out; `carved` only grows. */
+  cells: number;
+}
+
 /** Arguments kept together for inserting one physics-backed debris slot. */
 interface DebrisSpawn {
   id: EntityId;
@@ -468,7 +409,9 @@ interface Debris extends SlotHolder {
 export interface MobActorMeshesOptions {
   readonly poolSize?: number;
   readonly includeAmalgam?: boolean;
-  readonly amalgamType?: ZombieFigureType | undefined;
+  readonly amalgamType?:
+    | (ZombieFigureType & { readonly carving?: { readonly interiorColor: string } | undefined })
+    | undefined;
 }
 
 type ActorModel = 'shambler' | 'runner' | 'crawler' | 'amalgam';
@@ -575,6 +518,12 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly tentacleUp = new Vector3(0, 1, 0);
   private readonly tentacleDirection = new Vector3();
   private readonly debris = new Map<string, Debris>();
+  private readonly wounds = new Map<EntityId, Wound>();
+  /** One bone-texture row past every variant's, left all zero: an instance pointed at it collapses unseen. */
+  private readonly hiddenRow: number;
+  private readonly depthMaterial: MeshDepthMaterial;
+  private readonly fleshInterior: Color | undefined;
+  private readonly fleshChunks: FleshChunks;
   /** Shared by corpses and debris, so "oldest across both" (evictOldestDeadThing*) is a simple comparison
    * instead of needing to interleave two Maps' own iteration orders. */
   private nextDeadOrder = 0;
@@ -619,10 +568,11 @@ export class MobActorMeshes implements ZombieRenderer {
     console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);
 
     const bonesPerSlot = Math.max(1, ...built.map((v) => v.realized.body.bones.length));
-    // Each model/seed variant owns its own capacity rows in the shared bone texture.
-    this.layout = crowdTextureLayout(bonesPerSlot, built.length * capacity);
+    // Each model/seed variant owns its own capacity rows in the shared bone texture, plus the hidden row.
+    this.hiddenRow = built.length * capacity;
+    this.layout = crowdTextureLayout(bonesPerSlot, this.hiddenRow + 1);
     this.textureData = new Float32Array(this.layout.width * this.layout.height * 4);
-    for (let slot = 0; slot < this.layout.height; slot++) {
+    for (let slot = 0; slot < this.hiddenRow; slot++) {
       for (let bone = 0; bone < this.layout.bonesPerSlot; bone++) {
         const i = (slot * this.layout.bonesPerSlot + bone) * 3 * 4;
         this.textureData[i] = 1;
@@ -655,6 +605,10 @@ export class MobActorMeshes implements ZombieRenderer {
     // The shadow pass draws with a depth material, which would leave every actor in its bind pose: this
     // one fetches the same bone matrices (the gore varying it declares is simply unused).
     const depthMaterial = new MeshDepthMaterial();
+    this.depthMaterial = depthMaterial;
+    const interiorColor = options.amalgamType?.carving?.interiorColor;
+    this.fleshInterior = interiorColor === undefined ? undefined : new Color(interiorColor);
+    this.fleshChunks = new FleshChunks(this.group);
     depthMaterial.customProgramCacheKey = () => 'deadvox-mob-actor-crowd-depth';
     depthMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.crowdBoneTexture = { value: texture };
@@ -1160,13 +1114,99 @@ export class MobActorMeshes implements ZombieRenderer {
       variant.liveIds[entry.instanceIndex] = movedKey;
       variant.idToInstanceIndex.set(movedKey, entry.instanceIndex);
       moved.instanceIndex = entry.instanceIndex;
-      variant.crowdSlotAttr.setX(entry.instanceIndex, moved.globalRow);
+      variant.crowdSlotAttr.setX(entry.instanceIndex, this.rowFor(movedKey, moved.globalRow));
+    }
+    if (typeof key === 'number') {
+      this.removeWound(key);
     }
     variant.liveIds.pop();
     variant.idToInstanceIndex.delete(key);
     variant.freeLocalSlots.push(entry.localSlot);
     variant.mesh.count = variant.liveIds.length;
     variant.crowdSlotAttr.needsUpdate = true;
+  }
+
+  /** The bone-texture row an instance in a shared variant mesh reads: hidden while its own wound mesh draws it. */
+  private rowFor(key: SlotKey, globalRow: number): number {
+    return typeof key === 'number' && this.wounds.has(key) ? this.hiddenRow : globalRow;
+  }
+
+  /**
+   * Brings an amalgam's wound mesh up to date with its carved cells: built on its first hole, rebuilt when
+   * more are carved. Its shared instance then reads the hidden row, so only the wound mesh draws the body.
+   */
+  private syncWound(id: EntityId, holder: SlotHolder, carved: readonly number[]): void {
+    const wound = this.wounds.get(id);
+    if (carved.length === 0 || !this.fleshInterior || (wound && wound.cells === carved.length)) {
+      return;
+    }
+    const variant = this.variants[holder.variantIndex]!;
+    const geometry = buildCarvedGeometry(variant.realized, carved, this.fleshInterior);
+    geometry.setAttribute('crowdSlot', new InstancedBufferAttribute(new Float32Array([holder.globalRow]), 1));
+    if (wound) {
+      wound.mesh.geometry.dispose();
+      wound.mesh.geometry = geometry;
+      wound.cells = carved.length;
+      return;
+    }
+    const mesh = new InstancedMesh(geometry, this.material, 1);
+    mesh.customDepthMaterial = this.depthMaterial;
+    mesh.frustumCulled = false; // as the variant meshes: the bone texture, not the geometry, places it
+    mesh.setMatrixAt(0, new Matrix4());
+    castsAndReceives(mesh);
+    this.group.add(mesh);
+    this.wounds.set(id, { mesh, cells: carved.length });
+    variant.crowdSlotAttr.setX(holder.instanceIndex, this.hiddenRow);
+    variant.crowdSlotAttr.needsUpdate = true;
+  }
+
+  private removeWound(id: EntityId): void {
+    const wound = this.wounds.get(id);
+    if (wound) {
+      this.group.remove(wound.mesh);
+      wound.mesh.geometry.dispose();
+      this.wounds.delete(id);
+    }
+  }
+
+  /**
+   * Called when a hit knocks flesh out of an amalgam (src/core/zombies.ts's onCarve, forwarded by play.ts).
+   * Rebuilds its wound mesh — a corpse's too, since the shot that kills it carves after its death — and
+   * throws the knocked-out cells as one chunk of flesh along the strike.
+   */
+  zombieCarved(id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse): void {
+    const corpse = this.corpses.get(id);
+    const holder = this.states.get(id) ?? corpse;
+    if (!holder) {
+      return;
+    }
+    this.syncWound(id, holder, zombie.carved);
+    const variant = this.variants[holder.variantIndex]!;
+    const pose = this.states.get(id)?.lastPose ?? corpse?.basePose;
+    if (!pose || variant.bodyScale === undefined) {
+      return;
+    }
+    const placement = this.currentRenderPlacement(zombie);
+    const bone = variant.realized.voxels.owner[cells[0]!]! - 1;
+    const transform = boneTransforms(variant.realized.body.bones, pose).get(variant.realized.body.bones[bone]!.id);
+    if (!transform) {
+      return;
+    }
+    const yaw = rotY((placement.yaw * 180) / Math.PI);
+    const scale = variant.bodyScale;
+    const offset = mulMV(yaw, [transform.t[0] * scale, transform.t[1] * scale, transform.t[2] * scale]);
+    this.fleshChunks.spawn({
+      realized: variant.realized,
+      scale,
+      cells,
+      rotation: mulMM(yaw, transform.r),
+      translation: [
+        placement.worldPos[0] + offset[0],
+        placement.worldPos[1] + offset[1],
+        placement.worldPos[2] + offset[2],
+      ],
+      direction: hit.direction,
+    });
   }
 
   /** A plain vanish (despawn/unload) — not a death; see this module's header comment and zombieDied. */
@@ -1333,8 +1373,8 @@ export class MobActorMeshes implements ZombieRenderer {
       inertiaBody: partData.inertiaBody,
       corners: partData.corners,
       remainderRealSeconds: 0,
-      elapsed: 0,
-      quietTime: 0,
+      elapsedRealSeconds: 0,
+      quietRealSeconds: 0,
       asleep: false,
     };
     if (hit) {
@@ -1841,6 +1881,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     state.lastSeenFrame = this.frameCounter;
     this.observePerceptionTime(state, zombie);
+    this.syncWound(id, state, zombie.carved);
     const variant = this.variants[state.variantIndex]!;
     const placement = this.currentRenderPlacement(zombie);
     this.updatePerceptionLabel(id, zombie, state, placement);
@@ -1892,9 +1933,15 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     const corpsesDirty = this.advanceCorpses(realDt);
     const debrisDirty = this.advanceDebris(realDt);
+    this.fleshChunks.update(realDt, this.rigidWorld());
     if (corpsesDirty || debrisDirty || anyDirty) {
       this.texture.needsUpdate = true;
     }
+  }
+
+  /** The loaded voxel world, or a local feet-height plane if no world was supplied (tests/bench). */
+  private rigidWorld(): RigidWorld {
+    return this.world ?? { blockSize: this.blockSize, isSolid: (_x: number, y: number, _z: number) => y < 0 };
   }
 
   /** Corpses are driven entirely by their own `elapsed`, not by the store (the sim has already forgotten
@@ -1923,11 +1970,11 @@ export class MobActorMeshes implements ZombieRenderer {
     return anyDirty;
   }
 
-  /** Steps each debris rigid body against the loaded voxel world, or a local feet-height plane if no world
-   * was supplied (tests/bench). Lying and sinking begin only after the solver sleeps the body. */
+  /** Steps each debris rigid body against `rigidWorld()`. Lying and sinking begin only after the solver
+   * sleeps the body. */
   private advanceDebris(realDt: number): boolean {
     let anyDirty = false;
-    const world = this.world ?? { blockSize: this.blockSize, isSolid: (_x: number, y: number, _z: number) => y < 0 };
+    const world = this.rigidWorld();
     for (const [key, d] of this.debris) {
       d.elapsed += realDt;
       if (!d.body.asleep) {
@@ -1958,6 +2005,10 @@ export class MobActorMeshes implements ZombieRenderer {
     this.tentacleGeometry?.dispose();
     this.tentacleTipGeometry?.dispose();
     this.tentacleMaterial?.dispose();
+    for (const id of [...this.wounds.keys()]) {
+      this.removeWound(id);
+    }
+    this.fleshChunks.dispose();
     this.texture.dispose();
     this.material.dispose();
     for (const variant of this.variants) {

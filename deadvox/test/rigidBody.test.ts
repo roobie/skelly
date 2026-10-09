@@ -46,8 +46,8 @@ const body = (): RigidBody => ({
     [0.2, 0.1, 0.3],
   ],
   remainderRealSeconds: 0,
-  elapsed: 0,
-  quietTime: 0,
+  elapsedRealSeconds: 0,
+  quietRealSeconds: 0,
   asleep: false,
 });
 
@@ -292,10 +292,10 @@ describe('rigid body', () => {
     b.velocity = [1, 0, 0];
     stepRigidBody(b, 1, undefined, 0);
     expect(b.center[0]).toBeCloseTo(16 / 120, 12);
-    expect(b.elapsed).toBeCloseTo(16 / 120, 12);
+    expect(b.elapsedRealSeconds).toBeCloseTo(16 / 120, 12);
     stepRigidBody(b, 1 / 120, undefined, 0);
     expect(b.center[0]).toBeCloseTo(17 / 120, 12);
-    expect(b.elapsed).toBeCloseTo(17 / 120, 12);
+    expect(b.elapsedRealSeconds).toBeCloseTo(17 / 120, 12);
   });
   it('forces an airborne body to sleep after eight seconds', () => {
     const b = body();

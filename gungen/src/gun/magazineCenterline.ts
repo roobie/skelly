@@ -46,10 +46,13 @@ export const magazineCenterline = (solids: readonly Solid[]): MagazineCenterline
     const points = sectionPairs.map(([rear, front]) => midpoint(rear, front));
     const sectionDepths = sectionPairs.map(([rear, front]) => Math.hypot(front[0] - rear[0], front[1] - rear[1]));
     const upperWidth = upper.z[1] - upper.z[0];
-    const bodyWidth = straightBody?.kind === 'extruded-polygon' ? straightBody.z[1] - straightBody.z[0] : upperWidth;
+    const bodyWidth =
+      straightBody?.kind === 'extruded-polygon'
+        ? straightBody.z[1] - straightBody.z[0]
+        : (sectors[0]?.z[1] ?? upper.z[1]) - (sectors[0]?.z[0] ?? upper.z[0]);
     return {
       points,
-      width: upperWidth,
+      width: bodyWidth,
       sectionWidths: sectionPairs.map((_, index) => (index < 2 ? upperWidth : bodyWidth)),
       sectionDepths,
       rearX: Math.min(...upper.profile.map(([x]) => x)),
