@@ -1,6 +1,6 @@
 /**
  * Periodic checkpoints come due by simulated time, so a paused game, whose simulation clock
- * stands still, never saves however long it stays open.
+ * stands still, takes no periodic checkpoint however long it stays open.
  */
 export class CheckpointSchedule {
   private readonly intervalSimSeconds: number;

@@ -55,8 +55,8 @@ These safeguards reduce corruption risk but are not backups.
 
 Autosave checkpoints often enough that a crash or a killed tab loses only a
 little play. Periodic checkpoints count simulated play time, not wall-clock time
-or game hours, so a paused game never saves and the cadence does not change with
-the clock ratio. The interval is content tuning in
+or game hours, so a paused game takes no periodic checkpoint and the cadence
+does not change with the clock ratio. The interval is content tuning in
 `src/content/base/saves.jsonnet`, which `src/game/play.ts`,
 `autosaveCheckpointSimSeconds`, reads; `src/ui/checkpointSchedule.ts`,
 `CheckpointSchedule`, decides when a checkpoint is due. Saves before sleep, on
