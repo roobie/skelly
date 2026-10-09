@@ -73,7 +73,11 @@ import {
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
-import { FirearmAttachmentHandling } from './firearmAttachmentHandling.ts';
+import {
+  ATTACHMENT_WORK_SKILL,
+  FirearmAttachmentHandling,
+  isAttachmentWorkAction,
+} from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
@@ -1166,6 +1170,10 @@ export const createSession = (options: SessionOptions) => {
     if (isFirearmTrainingAction(job)) {
       const training = skillActivityPractice(registry, 'firearms_combat', 'handling');
       character.awardPractice('firearms_combat', training.practice, training.tier);
+    }
+    if (isAttachmentWorkAction(job)) {
+      const training = skillActivityPractice(registry, ATTACHMENT_WORK_SKILL, 'attachment');
+      character.awardPractice(ATTACHMENT_WORK_SKILL, training.practice, training.tier);
     }
   };
   const tickHandling = (dt: number) => {
