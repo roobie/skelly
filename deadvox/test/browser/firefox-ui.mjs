@@ -16,6 +16,11 @@ const observation = {
   name: 'firefox-ui-session-observation',
   enforce: 'pre',
   transform(code, id) {
+    if (id.endsWith('/src/debug/index.ts')) {
+      const marker = '  const initialLook = parseLookParams(new URLSearchParams(location.search));';
+      assert(code.includes(marker), 'debug look observation point exists');
+      return code.replace(marker, `  Object.assign(globalThis, { firefoxUiLook: look });\n${marker}`);
+    }
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
@@ -23,7 +28,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, look, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, weatherablePatternGlsl: FirefoxWeatherablePatternGlsl, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     const startupHintMarker = '    updateStartupHint();';
     assert(exposed.includes(startupHintMarker), 'startup hint observation point exists');
@@ -551,7 +556,7 @@ try {
     await page.evaluate(() => {
       const {
         weatheringState: { settings },
-      } = globalThis.firefoxUiTest.look;
+      } = globalThis.firefoxUiLook;
       return [...document.querySelectorAll('#debug-ui-root input[id^="weathering-"]')].every((input) => {
         const field = input.id.slice('weathering-'.length);
         return input.value === String(settings[field]);
