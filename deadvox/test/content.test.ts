@@ -1230,11 +1230,22 @@ describe('content references', () => {
     zombie.id = 'fixture_military_looter';
     zombie.loot = lootId;
     const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
+    const { quality, level } = zombie.downed!.dismember;
     const result = buildRegistry([
       {
         source,
         data: {
-          items: [{ id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] }],
+          items: [
+            { id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] },
+            {
+              id: 'fixture_blade',
+              name: 'Fixture blade',
+              category: 'tool',
+              weight: 1,
+              size: [1, 1],
+              tool: { qualities: { [quality]: level } },
+            },
+          ],
           loot: [
             { id: lootId, military: true, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] },
           ],
@@ -1345,6 +1356,10 @@ describe('content references', () => {
             },
             attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
+            downed: {
+              finishOff: { simSeconds: 3 },
+              dismember: { simSeconds: 15, quality: 'missing_quality', level: 1 },
+            },
             abilities: [],
             loot: 'till',
           },
@@ -1372,6 +1387,7 @@ describe('content references', () => {
       'furniture[0].loot',
       'furniture[1].door.prying.skill',
       'items[0].light.power.battery',
+      'zombies[0].downed.dismember.quality',
       'zombies[0].loot',
     ]);
   });
@@ -1393,6 +1409,7 @@ const templateSoundDefinitions = (
     sounds: { id: string }[];
   }
 ).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));
+const templateDismember = baseRegistry.zombies.get('shambler')!.downed!.dismember;
 const templateBase = [
   {
     source: 'template-blocks.json',
@@ -1410,6 +1427,16 @@ const templateBase = [
       furniture: [
         { id: 'fixture_door', name: 'Door', size: [1, 1, 1], color: '#7a5534' },
         { id: 'crate', name: 'Crate', size: [2, 2, 2], color: '#7a5534' },
+      ],
+      items: [
+        {
+          id: 'blade',
+          name: 'Blade',
+          category: 'tool',
+          weight: 100,
+          size: [1, 1],
+          tool: { qualities: { [templateDismember.quality]: templateDismember.level } },
+        },
       ],
     },
   },

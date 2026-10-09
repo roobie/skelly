@@ -800,11 +800,16 @@ const checkTemplates = (registry: Registry, report: Report) => {
 };
 
 const checkZombies = (registry: Registry, report: Report) => {
+  const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const zombie of registry.zombies.values()) {
     if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
       report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
     } else if (registry.loot.get(zombie.loot ?? '')?.military) {
       report('zombies', zombie.id, '.loot', 'zombie loot may not use a military table');
+    }
+    const quality = zombie.downed?.dismember.quality;
+    if (quality !== undefined && !qualities.has(quality)) {
+      report('zombies', zombie.id, '.downed.dismember.quality', `no tool quality "${quality}"`);
     }
     for (const key of ['idle', 'alert', 'attack', 'hurt'] as const) {
       const event = zombie.sounds[key];

@@ -116,4 +116,6 @@ export const TEMPORAL_FIELDS = [
   },
   { path: 'zombies.attack.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.attack.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'zombies.downed.finishOff.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'zombies.downed.dismember.simSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
 ] as const satisfies readonly TemporalField[];

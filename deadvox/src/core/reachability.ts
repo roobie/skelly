@@ -12,6 +12,7 @@ const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
   WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',
   'spent_case_5_d_56x45',
+  'shambler_head',
   'shambler_torso',
   'shambler_left_arm',
   'shambler_right_arm',
