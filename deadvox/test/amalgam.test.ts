@@ -905,38 +905,81 @@ describe('amalgam flesh carving', () => {
     );
   });
 
-  it("opens holes where shots land after its members are severed, never in a lost member's hidden flesh", () => {
+  /** An amalgam with every member severed, brought back by a save restore as a load would. */
+  const severedAmalgam = () => {
     const simulation = system();
     const id = simulation.add(amalgam, [0, 1, 0]);
     const state = structuredClone(simulation.snapshotState());
     state.zombies.find((entry) => entry.id === id)!.zombie.severed = figure.manifest.parts
       .filter((part) => part.severable)
       .map((part) => part.id);
-    const target = system();
-    target.restoreState(state, (type) => registry.zombies.get(type));
-    const zombie = target.store.get(id)!;
+    const restored = system();
+    restored.restoreState(state, (type) => registry.zombies.get(type));
+    const zombie = restored.store.get(id)!;
     const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
     const { hidden } = posedShambler(input);
     const { owner } = figure.realized.voxels;
-    const { bones } = figure.realized.body;
-    let holes = 0;
-    // A ring of single pellets at each core box, as the hit test sees it with the members gone.
-    for (const box of posedAmalgamRegionBoxes(input)['core.trunk']!) {
-      for (let step = 0; step < 16; step++) {
-        for (const lift of [-0.4, 0, 0.4]) {
-          const angle = (step / 16) * 2 * Math.PI;
+    const lost = (cell: number): boolean =>
+      owner[cell]! > 0 && hidden.has(figure.realized.body.bones[owner[cell]! - 1]!.id);
+    return { simulation: restored, zombie, input, lost };
+  };
+
+  it('opens a hole for every shot that hits the core after its members are severed', () => {
+    const { simulation, zombie, input } = severedAmalgam();
+    // A ring of light pellets at each core box; some lines cross where a lost member's voxels were.
+    const lines = posedAmalgamRegionBoxes(input)['core.trunk']!.flatMap((box) =>
+      Array.from({ length: 16 }, (_, step) => (step / 16) * 2 * Math.PI).flatMap((angle) =>
+        [-0.4, 0, 0.4].map((lift) => {
           const length = Math.hypot(1, lift);
           const direction: Vec3 = [Math.cos(angle) / length, lift / length, Math.sin(angle) / length];
           const origin = box.voxelCentroid.map((value, axis) => value - (direction[axis]! * 4) / BLOCK_SIZE) as Vec3;
-          const before = new Set(zombie.carved);
-          target.firePellets(projectileShot({ ...buck, pellets: 1, damage: 1 }, origin, [direction]));
-          const opened = zombie.carved.filter((cell) => !before.has(cell));
-          holes += opened.length > 0 ? 1 : 0;
-          expect(opened.filter((cell) => hidden.has(bones[owner[cell]! - 1]!.id))).toEqual([]);
-        }
+          return { origin, direction };
+        }),
+      ),
+    );
+    let hits = 0;
+    let holes = 0;
+    for (const { origin, direction } of lines) {
+      const before = zombie.carved.length;
+      if (simulation.firePellets(projectileShot({ ...buck, pellets: 1, damage: 1 }, origin, [direction])) > 0) {
+        hits += 1;
+        holes += zombie.carved.length > before ? 1 : 0;
       }
     }
-    expect(holes).toBeGreaterThan(0);
+    expect(hits).toBeGreaterThan(0);
+    expect(holes).toBe(hits);
+  });
+
+  it("never knocks out a lost member's hidden voxels, even with a blast struck beside them", () => {
+    const { zombie, lost } = severedAmalgam();
+    const { dims, owner } = figure.realized.voxels;
+    const faceNeighbours = (cell: number): number[] => {
+      const [i, j, k] = [cell % dims[0], Math.floor(cell / dims[0]) % dims[1], Math.floor(cell / (dims[0] * dims[1]))];
+      return [
+        [i + 1, j, k],
+        [i - 1, j, k],
+        [i, j + 1, k],
+        [i, j - 1, k],
+        [i, j, k + 1],
+        [i, j, k - 1],
+      ]
+        .filter(([a, b, c]) => a! >= 0 && b! >= 0 && c! >= 0 && a! < dims[0] && b! < dims[1] && c! < dims[2])
+        .map(([a, b, c]) => a! + b! * dims[0] + c! * dims[0] * dims[1]);
+    };
+    const struck = owner.findIndex(
+      (value, cell) =>
+        value > 0 && !lost(cell) && cell !== protectedCoreCell(figure) && faceNeighbours(cell).some(lost),
+    );
+    expect(struck).toBeGreaterThanOrEqual(0);
+    const cells = carveAround({
+      figure,
+      carving,
+      missing: missingFlesh(figure, zombie),
+      struck,
+      damage: buck.pellets * buck.damage,
+    });
+    expect(cells).toContain(struck);
+    expect(cells.filter(lost)).toEqual([]);
   });
 
   it('carves the same holes when the same hits replay', () => {

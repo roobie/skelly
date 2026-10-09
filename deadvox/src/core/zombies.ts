@@ -2741,8 +2741,8 @@ export class ZombieSystem {
       type: 'pierce',
       ...(shot.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: shot.headDamageMultiplier }),
     };
-    // One shot's pellets carve one hole per amalgam, struck against the flesh as it was before the shot,
-    // so pellets on one line can't tunnel through the body.
+    // One shot's pellets carve one hole per amalgam, struck against the flesh as it was before the shot's
+    // holes, so pellets on one line can't tunnel through the body.
     const strikes = new Map<EntityId, { zombie: Zombie; strikes: AmalgamStrike[] }>();
     for (const direction of shot.directions) {
       const aim = this.targetAt({
