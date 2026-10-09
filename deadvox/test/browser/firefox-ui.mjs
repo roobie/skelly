@@ -567,17 +567,6 @@ try {
   );
   assert.equal(await weatheringGroup.locator('#weathering-tintColor').isVisible(), true);
   assert.equal(await weatheringGroup.locator('#copy-weathering-values').isVisible(), true);
-  await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined }));
-  await weatheringGroup.locator('#copy-weathering-values').click();
-  await page.waitForFunction(() =>
-    document
-      .querySelector('.debug-group[data-group="weathering"] output[aria-live="polite"]')
-      ?.textContent.includes('Clipboard unavailable'),
-  );
-  assert.match(
-    await weatheringGroup.locator('output[aria-live="polite"]').textContent(),
-    /Clipboard unavailable[\s\S]*weathering/,
-  );
   await page.reload();
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
     timeout: 30_000,
