@@ -23,7 +23,7 @@ import type {
 import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
-import type { SnapshotMeasurement } from '../game/playtestTools.ts';
+import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { positionLookedAtReadout } from '../ui/hud.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
@@ -1252,15 +1252,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     shellKey = '';
     drawShell();
     try {
-      const bytes = await hooks.inputReplay.export();
+      const file = replayFile(await hooks.inputReplay.export(), new Date());
       if (replayDownload) {
         URL.revokeObjectURL(replayDownload.url);
       }
-      replayDownload = {
-        url: URL.createObjectURL(new Blob([bytes.slice().buffer], { type: 'application/json' })),
-        name: `deadvox-replay-${new Date().toISOString().replaceAll(':', '-')}.json`,
-      };
-      replayStatus = `Replay ready to download · ${bytes.byteLength} bytes`;
+      replayDownload = { url: URL.createObjectURL(file.blob), name: file.name };
+      replayStatus = `Replay ready to download · ${file.blob.size} bytes`;
       shellKey = '';
       drawShell();
     } catch (error) {
