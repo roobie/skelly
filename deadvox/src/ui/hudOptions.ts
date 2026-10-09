@@ -13,15 +13,16 @@ export const HUD_OPTION_KEYS = [
 export type HudOptionKey = (typeof HUD_OPTION_KEYS)[number];
 export type HudOptionsState = Record<HudOptionKey, boolean>;
 
+// New players need the HUD to understand the game; experienced players can turn it off as diegetic affordances grow.
 export const DEFAULT_HUD_OPTIONS: HudOptionsState = {
-  stats: false,
-  clock: false,
-  details: false,
-  crosshair: false,
-  interaction: false,
-  quickbar: false,
-  handling: false,
-  messages: false,
+  stats: true,
+  clock: true,
+  details: true,
+  crosshair: true,
+  interaction: true,
+  quickbar: true,
+  handling: true,
+  messages: true,
 };
 
 export const hudVisibility = (state: HudOptionsState, debug = false): HudOptionsState =>
