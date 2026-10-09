@@ -7,6 +7,7 @@ import { buildRegistry, type ItemDef, type Registry } from '../src/core/content.
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { defOf } from '../src/core/items.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { BOX_UNPACK_SECONDS, Unpacking } from '../src/game/unpacking.ts';
@@ -280,5 +281,54 @@ describe('Inventory Management skill', () => {
     expect(restored.session.character.practice.inventory_management).toBe(
       runtime.session.character.practice.inventory_management,
     );
+  });
+});
+
+describe('Firearms Combat attachment work', () => {
+  it('trains Firearms Combat after each completed fit and removal, not after a cancelled one', () => {
+    const runtime = createRuntime();
+    const { inventory, handling: queue, session } = runtime;
+    const backpack = inventory.hands.right;
+    if (!(backpack && inventory.move(backpack, { kind: 'worn' }).ok)) {
+      throw new Error('Could not free the hand for the attachment fixture');
+    }
+    const firearm = inventory.create('rifle_assault');
+    if (!inventory.add(firearm, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the attachment fixture firearm');
+    }
+    const slot = registry.models.get(defOf(registry, 'rifle_assault').model!)!.attachments![0]!.mountedAt;
+    const fitted = firearm.slots?.[slot];
+    if (!fitted) {
+      throw new Error('The fixture firearm has no default attachment to remove');
+    }
+    const progress = () => {
+      const { skills, practice } = session.character.snapshotState();
+      return { level: skills.firearms_combat, practice: practice.firearms_combat };
+    };
+    const complete = (refusal: string | undefined) => {
+      if (refusal) {
+        throw new Error(refusal);
+      }
+      const before = progress();
+      advance(runtime, Math.ceil((queue.jobs[0]!.duration + 0.1) * 60));
+      return before;
+    };
+    const initial = progress();
+
+    const cancelRefusal = session.firearmAttachments.remove(firearm.uid, slot);
+    if (cancelRefusal) {
+      throw new Error(cancelRefusal);
+    }
+    queue.cancel();
+    expect(firearm.slots?.[slot]).toBe(fitted);
+    expect(progress()).toEqual(initial);
+
+    const beforeRemove = complete(session.firearmAttachments.remove(firearm.uid, slot));
+    expect(firearm.slots?.[slot]).toBeUndefined();
+    expect(progress()).not.toEqual(beforeRemove);
+
+    const beforeFit = complete(session.firearmAttachments.fit(firearm.uid, slot, fitted.uid));
+    expect(firearm.slots?.[slot]).toBe(fitted);
+    expect(progress()).not.toEqual(beforeFit);
   });
 });

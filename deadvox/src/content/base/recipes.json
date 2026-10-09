@@ -16,7 +16,8 @@
           "readying": { "practicePerSimSecond": 0.1, "tier": 1 },
           "handling": { "practice": 1, "tier": 3 },
           "shot": { "practice": 1, "tier": 3 },
-          "hit": { "practice": 1, "tier": 5 }
+          "hit": { "practice": 1, "tier": 5 },
+          "attachment": { "practice": 1, "tier": 1 }
         }
       },
       "combat": {
