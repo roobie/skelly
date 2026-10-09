@@ -7,13 +7,11 @@ read_if:
 
 # Notes for Claude Code
 
+**REMEMBER to always RECORD the 'why'**
+
 ## Git: this project does not use `git-flow`
 
-Don't use the `git-flow` skill or its driver here. Its single repo-wide pending
-ticket can block every agent, and fresh worktrees need full installs before their
-first push. Revisit when bjorn/git-kit#7, #8 and #9 are fixed.
-
-Use plain git, following AGENTS.md:
+Don't use the `git-flow` skill or its driver here. Use plain git, following AGENTS.md:
 
 - **Start a topic:** `git fetch origin`, then `git worktree add .claude/worktrees/<name> -b <branch> origin/main`, the installs under "Installing check dependencies", and `git push -u origin <branch>`.
 - **While working:** commit in reasonable chunks and `git push`. To take in main, `git fetch origin && git merge origin/main`. Never rebase or force-push a published branch, and never bypass the pre-push hook with `--no-verify` to get past a real failure.
