@@ -12,6 +12,7 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
+import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
@@ -139,6 +140,28 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
+  it('rejects a template marker whose zombie envelope intersects a solid', () => {
+    const fixture: TemplateDef = {
+      id: 'spawn_clearance_fixture',
+      size: [4, 4, 4],
+      palette: { '.': 'air', '#': 'planks', z: { spawn: 'amalgam' } },
+      layers: [
+        ['####', '####', '####', '####'],
+        ['....', '#.z.', '....', '....'],
+        ['....', '....', '....', '....'],
+        ['....', '....', '....', '....'],
+      ],
+    };
+    const compiled = compileTemplate(baseRegistry, fixture);
+    const smallZombieTemplate = compileTemplate(baseRegistry, {
+      ...fixture,
+      palette: { ...fixture.palette, z: { spawn: 'shambler' } },
+    });
+
+    expect(templateSpawnClearanceIssues(baseRegistry, smallZombieTemplate)).toEqual([]);
+    expect(templateSpawnClearanceIssues(baseRegistry, compiled).map(([path]) => path)).toEqual(['.spawns[0]']);
+  });
+
   it('keeps soldier spawns within camp authoring and preserves the shambler design', () => {
     const soldier = baseRegistry.zombies.get('military_shambler')!;
     const templateSpawns = [...baseRegistry.templates.values()].flatMap((template) =>

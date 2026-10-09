@@ -37,7 +37,12 @@ describe('validate CLI', () => {
     try {
       const run = spawnSync(
         process.execPath,
-        [resolve('src/cli/validate.ts'), 'test/fixtures/content/missing-model.json'],
+        [
+          '--import',
+          resolve('tools/register-mobgen-alias.mjs'),
+          resolve('src/cli/validate.ts'),
+          'test/fixtures/content/missing-model.json',
+        ],
         { cwd: root, encoding: 'utf8' },
       );
       expect(run.status).toBe(1);

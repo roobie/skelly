@@ -1274,7 +1274,7 @@ something in play, not only decorate it.
   route, so each authored site names the gaps a player can cross. New structures
   and reworks follow this direction, starting with the camp walls in #385;
   retrofitting existing structures is tracked in #396. See
-  `src/content/base/camp.json`, `camp_wall_run`, `camp_gate`, and
+  `src/content/base/camp.jsonnet`, `camp_wall_run`, `camp_gate`, and
   `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an

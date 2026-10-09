@@ -1,7 +1,9 @@
 // Static spatial acceptance, not recipe closure and not runtime navigation. Doors may be opened.
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import type { StairDef } from './schema.ts';
+import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { CompiledTemplate } from './templates.ts';
 
@@ -248,6 +250,25 @@ class TemplateSpace {
     return issues;
   }
 }
+
+export const templateSpawnClearanceIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {
+  const space = new TemplateSpace(registry, template);
+  const [sx, sy, sz] = template.size;
+  return template.spawns.flatMap((spawn, index) => {
+    const type = registry.zombies.get(spawn.zombie);
+    if (!type) {
+      return [];
+    }
+    const blocked = spawnOverlappingSolidBlock(
+      spawn.pos,
+      zombieBodyDimensions(type, HAMLET_BLOCK_SIZE),
+      (x, y, z) => x >= 0 && y >= 0 && z >= 0 && x < sx && y < sy && z < sz && space.occupied(x, y, z, false),
+    );
+    return blocked
+      ? [[`.spawns[${index}]`, `spawn body overlaps solid cell [${blocked.join(',')}]`] as SpatialIssue]
+      : [];
+  });
+};
 
 export const templateReachableStandingPositions = (registry: Registry, template: CompiledTemplate): Vec3[] => {
   if (!template.access) {
