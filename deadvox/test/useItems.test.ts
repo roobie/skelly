@@ -10,7 +10,7 @@ import { slotsReason } from '../src/core/magazine.ts';
 import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { EAT_TIME } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { Survival } from '../src/game/survival.ts';
+import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
@@ -30,7 +30,12 @@ const batteryOf = (light: Item): Item => {
   return battery;
 };
 
-const setup = (content: Registry = registry) => {
+const setup = (
+  content: Registry = registry,
+  readHook: SurvivalHooks['read'] = () => {
+    throw new Error('Unexpected reading in use-items fixture');
+  },
+) => {
   const sim = new Simulation({ seed: 1 });
   const inventory = new Inventory(content);
   const queue = new HandlingQueue(inventory);
@@ -41,9 +46,7 @@ const setup = (content: Registry = registry) => {
     reach,
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: (text) => notices.push(text),
-    read: () => {
-      throw new Error('Unexpected reading in use-items fixture');
-    },
+    read: readHook,
   });
   const hold = (type: string, side: 'right' | 'left' = 'right') => {
     const item = inventory.create(type);
@@ -90,6 +93,15 @@ describe('using what you hold', () => {
     expect(selected).not.toBe(initial);
     expect(t.survival.use(rag)).toBeUndefined();
     expect(beginTreatment.mock.calls[1]?.[0]).toBe(selected?.treatment?.region);
+  });
+
+  it('passes the read item type to the read hook', () => {
+    const readTypes: (string | undefined)[] = [];
+    const t = setup(registry, (_readable, _bookUid, itemType) => readTypes.push(itemType));
+    const note = t.hold('evacuation_note');
+
+    expect(t.survival.use(note)).toBeUndefined();
+    expect(readTypes).toEqual(['evacuation_note']);
   });
 
   it('eats from your hands after a few seconds', () => {
