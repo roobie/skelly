@@ -96,12 +96,14 @@ describe('using what you hold', () => {
   });
 
   it('passes the read item type to the read hook', () => {
+    const readableType = [...registry.items.values()].find((def) => def.readable && !def.book)?.id;
+    expect(readableType).toBeDefined();
     const readTypes: (string | undefined)[] = [];
     const t = setup(registry, (_readable, _bookUid, itemType) => readTypes.push(itemType));
-    const note = t.hold('evacuation_note');
+    const note = t.hold(readableType!);
 
     expect(t.survival.use(note)).toBeUndefined();
-    expect(readTypes).toEqual(['evacuation_note']);
+    expect(readTypes).toEqual([readableType]);
   });
 
   it('eats from your hands after a few seconds', () => {
