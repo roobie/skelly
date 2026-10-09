@@ -26,7 +26,7 @@ import { portFrame } from './resolve.ts';
 import type { PartDef, PartInstance, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
-/** glTF node name of a part: its id and its registry key (`PartInstance.family`), e.g. `barrel:barrel`. */
+/** glTF node name of a part: its id and registry key (`PartInstance.family`), e.g. `part-1:family-a`. */
 export const partNodeName = (id: string, family: string): string => `${id}:${family}`;
 
 /** The standard sRGB electro-optical transfer: one normalized channel to linear light. */
@@ -413,7 +413,7 @@ export const exportGlb: ExportGlb = (input) => {
   }
 
   (nodes[0] as Json).extras = {
-    gungen: {
+    [input.metadataNamespace ?? 'assembly']: {
       assembly: resolved.assembly.name,
       unit: 'u',
       metresPerUnit,
@@ -423,7 +423,7 @@ export const exportGlb: ExportGlb = (input) => {
   };
 
   const json: Json = {
-    asset: { version: '2.0', generator: 'skelly gungen glb export' },
+    asset: { version: '2.0', generator: input.generator ?? 'skelly assembly engine' },
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes,

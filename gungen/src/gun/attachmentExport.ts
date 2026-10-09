@@ -1,11 +1,11 @@
 import type { GlbAssetIdentity, GlbExportError } from '@skelly/engine/core/design.ts';
-import { exportGlb } from '@skelly/engine/core/glb.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, PartAppearance, PartFamily } from '@skelly/engine/core/schema.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { attachmentInstanceForId, attachmentMetadata } from './attachments.ts';
 import { gunDomain } from './domain.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
+import { exportGunGeometry as exportGlb } from './glbWriter.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { FAMILIES } from './parts.ts';
 

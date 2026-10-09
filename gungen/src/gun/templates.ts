@@ -80,8 +80,8 @@ export const ar: Template = {
   name: 'ar',
   description:
     'AR-pattern rifle: clamped A2 front sight or a free-float handguard with an optional rail-mounted front post.',
-  calibre: '5.56x45',
-  calibreParams: [{ slot: 'receiver', param: 'actionFrame', byCalibre: AR_FRAME_BY_CALIBRE }],
+  variant: '5.56x45',
+  variantParams: [{ slot: 'receiver', param: 'actionFrame', byVariant: AR_FRAME_BY_CALIBRE }],
   root: 'receiver',
   slots: [
     {
@@ -181,8 +181,8 @@ export const ak: Template = {
   name: 'ak',
   description:
     'AK-pattern rifle: dust cover, exposed gas block and gas cylinder, forward-leaning curved magazine, wooden buttstock, and block sights.',
-  calibre: GENERATED_AK_CALIBRE,
-  calibreParams: [{ slot: 'magazine', param: 'variant', byCalibre: AK_MAGAZINE_VARIANT_BY_CALIBRE }],
+  variant: GENERATED_AK_CALIBRE,
+  variantParams: [{ slot: 'magazine', param: 'variant', byVariant: AK_MAGAZINE_VARIANT_BY_CALIBRE }],
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'ak-receiver', params: { bore: ['S', 'M'] } },

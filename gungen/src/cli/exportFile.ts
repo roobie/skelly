@@ -74,7 +74,7 @@ const readDesignAssembly = (text: string): ReadAssemblyResult => {
   }
   const template = TEMPLATES.find(({ name }) => name === loaded.design.template);
   const calibrePaths = new Set(
-    (template?.calibreParams ?? []).map(({ slot, param }) => `assembly.parts.${slot}.params.${param}`),
+    (template?.variantParams ?? []).map(({ slot, param }) => `assembly.parts.${slot}.params.${param}`),
   );
   const calibreIssue = loaded.issues.find(
     (issue) => issue.path === 'calibre' || (issue.path !== undefined && calibrePaths.has(issue.path)),

@@ -32,12 +32,8 @@ export interface TriangleMesh {
   readonly triangleCount: number;
 }
 
-// The gun domain's chamfer size (`GUN_UNITS.bevel`); a domain declares its own in `Domain.units.bevel`.
-// Chamfer size: half a grid step (PROJECT.md §4). A quarter grid step (the
-// first value tried here) was too fine to read as a bevel at gungen's scale
-// (5.5u ≈ 63mm, so 1u ≈ 11.5mm: a quarter step is under 1mm); half a step
-// (≈1.4mm) reads clearly in the viewer while staying small next to most
-// parts' multi-u dimensions. Clamped per solid, see `clampBevel`.
+// Default chamfer size: half a grid step. This keeps the edge readable while
+// preserving the part's overall shape; each solid clamps it to its geometry.
 export const BEVEL = GRID / 2;
 
 /** Keep the chamfer well inside the geometric limit that would invert a face. */
