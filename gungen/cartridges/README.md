@@ -7,12 +7,12 @@ read_if:
 
 # Cartridge data
 
-Author new or touched cartridge content in Jsonnet, with the same slug and ID references
-as the compiled JSON (`7.62x39`). The shared root pipeline in `tools/jsonnet` keeps
-authored relationships composable while the cartridge parser and exporter continue to
-consume JSON; see `../../docs/jsonnet.md` for the common rules. Metallic cartridges and
-shotshells have real-size solids, viewer presentation and the common cartridge exporter
-(roobie/skelly#109).
+There is one cartridge JSON file per cartridge, named `<id>.json`, where `id` is the
+slug other cartridges use to refer to it (`7.62x39`). Files may be hand-written or
+compiled from a `.jsonnet` source beside them (`<id>.jsonnet`). The cartridge parser and
+exporter consume JSON; see `../../docs/jsonnet.md` for the repository-wide authoring rule
+and compiler contract. Metallic cartridges and shotshells have real-size solids, viewer
+presentation and the common cartridge exporter (roobie/skelly#109).
 Shotshell reproduction and explicit visual proxies: `../docs/shotshell-export.md`.
 The pump-action clearance model also consumes the sourced loaded length. The scope exception that allows real dimensions here is in
 `PROJECT.md` ("Non-goals").

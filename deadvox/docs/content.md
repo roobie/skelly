@@ -21,7 +21,7 @@ read_if:
 
 ## Authoring source
 
-Write new or touched structured content in Jsonnet and use constructors or comprehensions when they express real repetition; keep existing JSON as valid content input. The root `tools/jsonnet` pipeline compiles sources to the JSON consumed by `buildRegistry` in `src/core/content.ts`, so runtime validation and reference checks keep one boundary. The shared guide at `../docs/jsonnet.md` explains source locations and the stale-output check.
+Use the repository-wide authoring and conversion rule in `../docs/jsonnet.md`. The root `tools/jsonnet` pipeline compiles sources to the JSON consumed by `buildRegistry` in `src/core/content.ts`, so runtime validation and reference checks keep one boundary.
 
 The single section descriptor in `src/core/schema.ts` owns native Valibot schemas,
 labels and registration order. `CONTENT_SECTIONS`/`CONTENT_SECTION_KEYS` supply

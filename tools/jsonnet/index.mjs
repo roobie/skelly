@@ -14,6 +14,12 @@ export function compileJsonnetFile(sourcePath, repositoryRoot = REPOSITORY_ROOT)
       maxBuffer: 16 * 1024 * 1024,
     });
   } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+      throw new Error(
+        `Go toolchain not found (see README.md, “Run and check”): failed to spawn 'go' while compiling ${relative(repositoryRoot, absoluteSource)}. Install Go, then rerun 'npm run content:compile' or 'npm run content:check'.`,
+        { cause: error },
+      );
+    }
     const detail = error instanceof Error && 'stderr' in error ? String(error.stderr).trim() : String(error);
     throw new Error(`Jsonnet compilation failed for ${relative(repositoryRoot, absoluteSource)}: ${detail}`, {
       cause: error,

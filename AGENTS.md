@@ -21,7 +21,9 @@ don't require byte-identical exports. What must still work: gungen exports a mod
 that deadvox validates and loads. Migration, especially of save games, starts
 mattering at v1.0 beta.
 
-Use Jsonnet for new or touched structured content across subprojects; its authoring guide is `docs/jsonnet.md`, because composition and assertions prevent repeated data from drifting.
+## Jsonnet
+
+The repository-wide authoring and conversion rule is `docs/jsonnet.md`.
 
 ## No host-specific information in tracked files
 
@@ -131,7 +133,7 @@ command includes `deadvox/tools/lit-check`, which deadvox's Lit lint and root Kn
 npm run setup
 ```
 
-Jsonnet compilation uses the shared Go evaluator in `tools/jsonnet`; CI installs Go before invoking it.
+Jsonnet compilation requires Go for the shared evaluator in `tools/jsonnet`; use the minimum in `tools/jsonnet/go.mod`, `go`, while CI's `.github/workflows/lint.yml`, `setup-go`, selects the CI toolchain. `npm run setup` downloads the Go module dependencies.
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 

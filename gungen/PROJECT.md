@@ -66,7 +66,7 @@ adding shell geometry. The data format is described in `cartridges/README.md`.
 | Tests | Vitest |
 | Lint/format | Biome, repo-wide (`biome.jsonc`): every stable rule on. See the static-analysis pillar in the root README |
 | Part definitions | TypeScript code: each family is a function from size-class params to a part |
-| Assemblies | Jsonnet sources compile to JSON: part instances plus connections (§7); see `../docs/jsonnet.md` |
+| Assemblies | JSON files (a Jsonnet source compiles to the JSON beside it): part instances plus connections (§7); see `../docs/jsonnet.md` |
 | Loops | Loops are only *checked* for closure; there is no solver yet |
 | Layouts | Data, not code: the receiver is only the action body, and a swappable lower sets where the grip and magazine go |
 | Domain rules | Domains add their own rules next to the core ones (`Domain.rules`) |

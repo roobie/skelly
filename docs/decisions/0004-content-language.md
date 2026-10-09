@@ -1,23 +1,33 @@
 ---
 read_if:
-  - you change how authored content and tuning enter a subproject
-  - you're designing the build-time authoring or runtime-mod boundary
-  - you change deterministic content identity or import semantics
-tags: [content, mods, determinism, jsonnet]
+  - you're changing how Deadvox content and tunables are authored
+  - you're designing deterministic functions or the engine-to-mod boundary
+  - "you're taking up the mod-content work in #313 or #393"
+tags: [deadvox, adr, content, mods, determinism]
 ---
 
-# 4. Make authored content a deterministic build input
+# 4. Make the core game a mod
 
 ## Decision
 
-Structured content across the repository is authored in Jsonnet at build time. The game-facing format remains JSON: each subproject's loaders and schema validators continue receiving the compiled output. Existing JSON remains valid input; new or touched structured content uses Jsonnet when repeated schemas, constructors, imports or comprehensions make the source clearer.
+The base content pack is the core mod. New content and tuning values belong in that pack, with schema validation, rather than being duplicated as TypeScript defaults. Existing TypeScript tuning moves only through scoped follow-up work. This keeps authored rules and their canonical identity in one place while leaving exact game mechanics under system ownership. See `deadvox/src/game/bundledContent.ts`, `BUNDLED_CONTENT`, and `deadvox/src/core/content.ts`, `buildRegistry`.
 
-`tools/jsonnet/compile.mjs`, `compileJsonnetSources`, is the single repository entry point, using go-jsonnet with a fixed repository-root import search path. The Node/WASM evaluator tested for this work could not resolve file imports, so it could not supply the shared `.libsonnet` boundary. CI installs Go for build-time compilation, while game and tool consumers continue receiving JSON. `npm run content:check` rejects stale output rather than allowing source and runtime data to diverge.
+Authored content uses the conversion rule in `docs/jsonnet.md` and is compiled to JSON for existing game and tool consumers. `tools/jsonnet/compile.mjs`, `compileJsonnetSources`, is the repository's single compiler entry point; it uses go-jsonnet with repository-root imports and checks generated outputs. Runtime mod functions and the expression format remain open for a later design pass. The engine owns exact simulation, persistence and lifecycle work. A mod-facing rule may describe a consequence, but must not mutate an owner outside the engine's validated boundary.
 
-The build-time language does not define runtime mod behavior. Runtime evaluation remains open for a design pass after playtest 1 (#181), or earlier if the engine-to-mod boundary is reconsidered. The game continues to validate content through `deadvox/src/core/content.ts`, `buildRegistry`; `deadvox/src/game/bundledContent.ts`, `BUNDLED_CONTENT`, supplies the base registry, and `deadvox/src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, owns save compatibility.
+## Runtime design remains open
 
-## Rationale
+The runtime-function format remains proposed pending BR's decision. The next design pass must choose how rules read state, which events and effects cross the engine/mod boundary, how composition and conflicts work, and how mod-owned state is saved. Open design issue #313 records dynamic world-event needs and the remaining boundary questions. #393 tracks inventory and extraction of existing TypeScript content and tunables.
 
-One source language makes repeated definitions composable while preserving JSON as the simple runtime interchange format. Fixed-root imports make output depend only on the repository. Assertions and deterministic compilation catch invalid or stale authored data before it enters the registry or the base-content identity carried by saves. Runtime rules, exact simulation, persistence and lifecycle remain engine responsibilities rather than executable mod code.
+### Direction for the runtime design pass, not yet decided
 
-See `docs/jsonnet.md` for authoring patterns, project source locations and the shared compile contract. See `deadvox/docs/content.md`, `gungen/PROJECT.md`, and `mobgen/PROJECT.md` for each subproject's authoring boundary.
+- Weather simulation stays in code while mods configure weather; a mod may configure continual rain. Rules may read weather through an event such as `weather_changed`.
+- Ordering and conflict policy should be simple and useful, not clever. Mods may declare `dependencies: Mod[]`; whether anything more is needed is open.
+- Migration should be incremental, in a low number of large steps; the steps remain open.
+- Purity should be enforced by the language or a sandbox, not by convention, so composed content can be hashed and replayed deterministically. The mechanism remains open.
+- Mind Over Matter is the golden standard the content format should aim to support, not only a capability benchmark, and not a mandate to clone its implementation; its scope is still open.
+
+A later spike should compare a small runtime expression evaluator with CEL and establish an authoring and runtime boundary before a format is treated as stable.
+
+## When
+
+Revisit after Slice 3's playtest 1 (#181), or earlier if BR directs. The first spike should cover one content area and one runtime function; existing TypeScript tunables move only through scoped follow-up work.

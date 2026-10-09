@@ -61,6 +61,7 @@ local content = {
   }],
 };
 
-assert lockedShed.palette.K.furniture == 'key_box' : 'K must reference the key_box furniture id';
+assert std.length([f.id for f in content.furniture if f.id == lockedShed.palette.K.furniture]) == 1 : 'K must reference a furniture id';
+assert std.length([entry.id for entry in content.loot if entry.id == lockedShed.palette.K.loot]) == 1 : 'K must reference a loot id';
 assert lockedShed.size[1] == std.length(lockedShed.layers) : 'template layer count must match size';
 content
