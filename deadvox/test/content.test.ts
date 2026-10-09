@@ -99,8 +99,8 @@ describe('content', () => {
   it('keeps soldier spawns within camp authoring and preserves the shambler design', () => {
     const soldier = baseRegistry.zombies.get('military_shambler')!;
     const templateSpawns = [...baseRegistry.templates.values()].flatMap((template) =>
-      compileTemplate(baseRegistry, template).spawns
-        .filter(({ zombie }) => zombie === soldier.id)
+      compileTemplate(baseRegistry, template)
+        .spawns.filter(({ zombie }) => zombie === soldier.id)
         .map(() => template.id),
     );
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
@@ -109,9 +109,9 @@ describe('content', () => {
     expect(templateSpawns.some((id) => id.startsWith('camp_'))).toBe(true);
     expect(templateSpawns.every((id) => id.startsWith('camp_'))).toBe(true);
     expect(layoutSpawns.length).toBeGreaterThan(0);
-    expect(
-      layoutSpawns.every((layout) => layout.buildings.some(({ template }) => template.startsWith('camp_'))),
-    ).toBe(true);
+    expect(layoutSpawns.every((layout) => layout.buildings.some(({ template }) => template.startsWith('camp_')))).toBe(
+      true,
+    );
 
     const shambler = baseRegistry.zombies.get('shambler')!;
     const sharedShamblerData = Object.fromEntries(

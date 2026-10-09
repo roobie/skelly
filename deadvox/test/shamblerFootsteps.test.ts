@@ -58,13 +58,19 @@ const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
   return { system, store, played };
 };
 
-const addWalker = (
-  system: ZombieSystem,
-  store: MapEntityStore<Zombie>,
-  position: Vec3,
-  mode: 'stroll' | 'chase',
-  type: Zombie['type'] = SHAMBLER,
-) => {
+const addWalker = ({
+  system,
+  store,
+  position,
+  mode,
+  type = SHAMBLER,
+}: {
+  system: ZombieSystem;
+  store: MapEntityStore<Zombie>;
+  position: Vec3;
+  mode: 'stroll' | 'chase';
+  type?: Zombie['type'];
+}) => {
   const id = system.add(type, position, [1, 0, 0]);
   const zombie = store.get(id)!;
   zombie.body.onGround = true;
@@ -72,8 +78,7 @@ const addWalker = (
   zombie.modeTimer = 100;
   zombie.lastPerceived = [40, position[1], position[2]];
   zombie.strollHeading = [1, 0, 0];
-  zombie.horizontalSpeed =
-    mode === 'stroll' ? type.speed.wanderMetresPerSimSecond : type.speed.chaseMetresPerSimSecond;
+  zombie.horizontalSpeed = mode === 'stroll' ? type.speed.wanderMetresPerSimSecond : type.speed.chaseMetresPerSimSecond;
   zombie.lurchValue = 1;
   zombie.stumbleFactor = 1;
   return zombie;
@@ -88,7 +93,7 @@ const run = (system: ZombieSystem, seconds: number): void => {
 const movedSteps = (mode: 'stroll' | 'chase', seconds: number, type: Zombie['type'] = SHAMBLER): number => {
   const player = mode === 'chase' ? sense([20, 1, 2], [-1, 0, 0]) : sense([100, 1, 100], [-1, 0, 0]);
   const { system, store, played } = makeWorld(player);
-  addWalker(system, store, [2, 1, 2], mode, type);
+  addWalker({ system, store, position: [2, 1, 2], mode, type });
   run(system, seconds);
   return played.length;
 };
@@ -159,7 +164,7 @@ describe('shambler footsteps', () => {
   it('lets only the nearest three moving shamblers emit footsteps', () => {
     const { system, store, played } = makeWorld(sense([0, 1, 2], [1, 0, 0]));
     for (let i = 0; i < 4; i++) {
-      addWalker(system, store, [2 + i * 8, 1, 2], 'stroll');
+      addWalker({ system, store, position: [2 + i * 8, 1, 2], mode: 'stroll' });
     }
     run(system, 2);
     const walkerZones = new Set(played.map((position) => Math.floor((position[0] - 2) / 8)));
