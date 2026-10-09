@@ -1522,7 +1522,8 @@ body.inventory-open.inventory-tab-crafting #crafting {
   white-space: nowrap;
   cursor: pointer;
 }
-.combo-box-option[aria-selected="true"] {
+.combo-box-option[aria-selected="true"],
+.combo-box-option.game-cursor-hover {
   border-color: var(--accent);
   background: rgb(255 255 255 / 8%);
 }

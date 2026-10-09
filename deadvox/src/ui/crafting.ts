@@ -1,5 +1,6 @@
 // Lit view of completed projections. Commands and preferences arrive as explicit callbacks.
 import { html, nothing, render } from 'lit-html';
+import { repeat } from 'lit-html/directives/repeat.js';
 import { labelForAction } from '../game/inputBindings.ts';
 import { comboBox } from './comboBox.ts';
 import type { CraftRow, CraftStatus } from './craftReadout.ts';
@@ -13,7 +14,10 @@ export interface CraftPanelActions {
 export const renderCrafting = (root: HTMLElement, rows: readonly CraftRow[], actions: CraftPanelActions): void => {
   render(
     html`<header><h2>Crafting</h2><p>Known recipes · clear both hands to start.</p></header>
-    ${rows.map(
+    ${repeat(
+      // Keyed by recipe so an open combo box stays with its own recipe when rows change.
+      rows,
+      (row) => row.id,
       (row) => html`<article class="craft-recipe" data-recipe=${row.id}>
       <h3>${row.name}</h3><div class="craft-time">${row.time} game time</div>
       ${row.components.map(
