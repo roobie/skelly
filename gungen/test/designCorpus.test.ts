@@ -1,11 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { worldSolid } from '@skelly/engine/core/geometry.ts';
+import { applyPoint, extrusionPoint, IDENTITY, type Vec3 } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, Solid } from '@skelly/engine/core/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { checkDesignFiles } from '../src/cli/designCheck.ts';
-import { worldSolid } from '../src/core/geometry.ts';
-import { applyPoint, extrusionPoint, IDENTITY, type Vec3 } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Assembly, Solid } from '../src/core/schema.ts';
 import { SMALL_AR_CARTRIDGE, SMALL_AR_FRAME } from '../src/gun/arFrames.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';

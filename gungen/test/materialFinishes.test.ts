@@ -1,5 +1,6 @@
+import { srgbToHex } from '@skelly/engine/core/appearance.ts';
 import { describe, expect, it } from 'vitest';
-import { GUN_FINISH_SLOTS, GUN_PALETTE, resolveAppearance, srgbToHex } from '../src/gun/palette.ts';
+import { GUN_FINISH_SLOTS, GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 

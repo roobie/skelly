@@ -1,7 +1,7 @@
-import { localSolidBounds } from '../core/geometry.ts';
-import { applyDir, applyPoint, type Vec3 } from '../core/math.ts';
-import type { Resolved } from '../core/resolve.ts';
-import type { PartAppearance, PartDef, PartInstance } from '../core/schema.ts';
+import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
+import { applyDir, applyPoint, type Vec3 } from '@skelly/engine/core/math.ts';
+import type { Resolved } from '@skelly/engine/core/resolve.ts';
+import type { PartAppearance, PartDef, PartInstance } from '@skelly/engine/core/schema.ts';
 import { attachmentMassKg } from './attachmentMass.ts';
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';

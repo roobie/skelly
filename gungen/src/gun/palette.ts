@@ -1,5 +1,5 @@
-import { type ResolvedAppearance, resolveAppearance as resolveCoreAppearance } from '../core/appearance.ts';
-import type { Palette, SrgbColor } from '../core/design.ts';
+import { type ResolvedAppearance, resolveAppearance as resolveCoreAppearance } from '@skelly/engine/core/appearance.ts';
+import type { Palette, SrgbColor } from '@skelly/engine/core/design.ts';
 import {
   ANTI_MATERIEL_FAMILY_COLORS,
   ANTI_MATERIEL_FINISH,
@@ -13,10 +13,6 @@ export const hexToSrgb = (hex: number): SrgbColor => [
   ((hex >> 8) & 0xff) / 255,
   (hex & 0xff) / 255,
 ];
-
-/** Inverse of `hexToSrgb`, rounding each channel to the nearest 8-bit value. */
-export const srgbToHex = (c: SrgbColor): number =>
-  (Math.round(c[0] * 255) << 16) | (Math.round(c[1] * 255) << 8) | Math.round(c[2] * 255);
 
 const validColor = (c: SrgbColor): boolean => c.length === 3 && c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
 
@@ -249,13 +245,3 @@ export const resolveAppearance = (
       ...(options.slot === undefined ? {} : { partSlot: options.slot }),
     },
   });
-
-const own = <T>(table: Readonly<Record<string, T>> | undefined, key: string): T | undefined =>
-  table && Object.hasOwn(table, key) ? table[key] : undefined;
-
-/** Role-only geometry-check colour; explicitly finished solids keep their own material base colour. */
-export const solidColor = (palette: Palette, family: string, solidId: string, material?: string): SrgbColor =>
-  (material ? own(palette.materials, material) : undefined) ??
-  own(palette.specialColors, solidId) ??
-  own(palette.familyColors, family) ??
-  palette.fallbackColor;

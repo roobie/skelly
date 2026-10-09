@@ -1,5 +1,5 @@
-import { clippedExtrudedPolygonPolyhedron, polyhedronVolume } from '../core/geometry.ts';
-import type { PartDef, Solid } from '../core/schema.ts';
+import { clippedExtrudedPolygonPolyhedron, polyhedronVolume } from '@skelly/engine/core/geometry.ts';
+import type { PartDef, Solid } from '@skelly/engine/core/schema.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { FAMILIES } from './parts.ts';

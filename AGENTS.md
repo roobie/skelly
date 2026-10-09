@@ -63,7 +63,7 @@ a comment or a PR:
 
 - Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
   no lists, tables or values copied from code. A cited path is relative to the repo
-  root, the doc's subproject root (`deadvox/`, `gungen/`, `mobgen/`) when relevant,
+  root, the doc's subproject root (`deadvox/`, `engine/`, `gungen/`, `mobgen/`) when relevant,
   or the doc itself.
 - A "when" names its trigger: an item ID or an issue. No "today", "currently" or
   "newly". When your PR completes an item, resolve every doc line that names it.
@@ -93,8 +93,9 @@ one by hand. Mint checks the tracker and `.agent-mail/scratch/` to prevent colli
 overwriting briefs and misrouting mail.
 
 - **Feature:** `<subproject><number>` (`g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide
-  or docs), one PR on one branch. Numbers count up per subproject; new work always gets a
-  new number, even when it grows out of another feature. PR titles end with the feature ID,
+  or docs), one PR on one branch; engine work uses the `g` prefix because gungen is the
+  engine's only consumer. Numbers count up per subproject; new work always gets a new
+  number, even when it grows out of another feature. PR titles end with the feature ID,
   e.g. `(g26)`.
 - **Round:** each dispatched piece of work on a feature is a round and its mail item
   (`g26-1`, `g26-2`, …). The first round is `-1`; BR's feedback, review fixes or a

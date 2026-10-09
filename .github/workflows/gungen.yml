@@ -5,9 +5,9 @@ name: gungen
 on:
   push:
     branches: [main]
-    paths: ['gungen/**', '!**/*.md', 'gungen/PROJECT.md', 'deadvox/package-lock.json', 'testPool.ts', '.github/workflows/gungen.yml']
+    paths: ['gungen/**', 'engine/**', '!**/*.md', 'gungen/PROJECT.md', 'deadvox/package-lock.json', 'testPool.ts', '.github/workflows/gungen.yml']
   pull_request:
-    paths: ['gungen/**', '!**/*.md', 'gungen/PROJECT.md', 'deadvox/package-lock.json', 'testPool.ts', '.github/workflows/gungen.yml']
+    paths: ['gungen/**', 'engine/**', '!**/*.md', 'gungen/PROJECT.md', 'deadvox/package-lock.json', 'testPool.ts', '.github/workflows/gungen.yml']
 
 # PR updates replace this PR's checks; main/manual groups always remain unique.
 concurrency:
@@ -26,7 +26,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: gungen/package-lock.json
+          cache-dependency-path: |
+            engine/package-lock.json
+            gungen/package-lock.json
+      - run: npm ci --prefix ../engine
       - run: npm ci
       - run: npm ci --prefix ../deadvox
       - name: Cache Playwright Chromium
@@ -38,6 +41,7 @@ jobs:
         timeout-minutes: 3
         run: npx playwright install chromium
         working-directory: deadvox
+      - run: npm --prefix ../engine run typecheck
       - run: npm run typecheck
       - run: npm test
       - run: npm run validate

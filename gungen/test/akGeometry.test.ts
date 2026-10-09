@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import {
   boundsOfPoints,
   localSolidBounds,
@@ -7,10 +6,11 @@ import {
   type WorldSolid,
   worldBox,
   worldSolid,
-} from '../src/core/geometry.ts';
-import { applyPoint, IDENTITY, type Vec3 } from '../src/core/math.ts';
-import type { Resolved } from '../src/core/resolve.ts';
-import { validate } from '../src/core/validate.ts';
+} from '@skelly/engine/core/geometry.ts';
+import { applyPoint, IDENTITY, type Vec3 } from '@skelly/engine/core/math.ts';
+import type { Resolved } from '@skelly/engine/core/resolve.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
+import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadCorpus } from './helpers.ts';
 

@@ -182,13 +182,13 @@ logic, and put everything gun-specific in data. The same core should later
 drive other skelly domains, such as rigging, where a joint is just a port that
 can rotate.
 
-**Units per domain.** A domain declares `units` (`src/core/schema.ts#DomainUnits`):
+**Units per domain.** A domain declares `units` (`../engine/src/core/schema.ts#DomainUnits`):
 metres per unit, the snap grid and the bevel, all in its own u. The gun domain
 declares its values in `src/gun/units.ts#GUN_UNITS`, built from
 `METRES_PER_UNIT`, `GRID` and `BEVEL`. The core reads them from
 `resolved.domain.units`: the glb export scales by `metresPerUnit`, the
 connection-contact rule allows a gap of one `grid` step, and meshes are
-chamfered by `bevel` (`src/core/mesh.ts#displayBevel`). That contact tolerance
+chamfered by `bevel` (`../engine/src/core/mesh.ts#displayBevel`). That contact tolerance
 is not permission to model a visible gap: the revolver's frame/grip/trigger-guard
 junction is a zero-gap shared-solid contract checked by `revolver-grip-joint`.
 The shared frame between domains is metres; an assembly belongs to one domain,
@@ -196,7 +196,7 @@ so a scene that shows two domains is two assemblies placed in metres, with no
 rule checks between them. The tolerances in `conventions.ts` other than the contact gap are
 still the gun's numbers in u.
 
-**Revolved solids.** `RevolvedSolid` (`src/core/schema.ts#RevolvedSolid`) is a
+**Revolved solids.** `RevolvedSolid` (`../engine/src/core/schema.ts#RevolvedSolid`) is a
 third kind of solid: a profile of (axial, radial) points turned about an axis
 (`axis`, local Z when omitted, with the same axes as an extrusion). Optional
 `origin: Vec3` translates that axis in the part frame (omitted = `[0, 0, 0]`);
@@ -205,20 +205,20 @@ It exists
 for round parts with real detail, such as cartridges, which the box and
 extrusion kinds cannot describe.
 
-- Mesh: `src/core/revolve.ts#meshForRevolved`. Normals are smooth around the
+- Mesh: `../engine/src/core/revolve.ts#meshForRevolved`. Normals are smooth around the
   circumference and hard where the profile bends past `creaseDegrees` (40 by
   default). The facet count is a level of detail chosen when the mesh is built,
   not a field of the solid: `meshForSolid` takes it (default 6), the viewer
   takes `?facets=N` (default 16, 24 for close-ups) and the glb export takes `revolveFacets`.
   The bevel and `display.mergeGroup` do not apply; the viewer draws it
   smooth-shaded and without an edge outline.
-- Collision: `src/core/revolve.ts#revolvedLocalPolyhedron`, the convex hull of
+- Collision: `../engine/src/core/revolve.ts#revolvedLocalPolyhedron`, the convex hull of
   the turned profile with a fixed 8 facets, whatever the level of detail. It
   ignores grooves and hollows, and its facets are inscribed, so it is at most
   7.6% of the radius smaller than the true solid. Because the hull is solid, a part seated
   inside a hollow revolved part overlaps it; the ammunition domain has to deal
   with that.
-- Validation: `src/core/revolve.ts#revolvedProfileError` reports a bad profile
+- Validation: `../engine/src/core/revolve.ts#revolvedProfileError` reports a bad profile
   as a structure issue when the assembly resolves.
 
 ## Milestone 1: validator and debug viewer
@@ -232,19 +232,19 @@ the generator later has something independent to be tested against (§9).
 
 ### What was built
 
-- **Conventions** (`src/core/conventions.ts`): +X forward (toward the muzzle),
+- **Conventions** (`../engine/src/core/conventions.ts`): +X forward (toward the muzzle),
   +Y up, +Z right; right-handed. The bore line is the X axis through the
   origin, and the root part sits at the origin. Lengths are in u, an abstract
   unit that sets proportions only, on a 0.25u grid. Size classes are S/M/L;
   each part family maps them to u in its own tables.
-- **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes, optionally
+- **Schemas** (`../engine/src/core/schema.ts`): ports, keep-out volumes (boxes, optionally
   refined by convex extruded-polygon profiles), box, convex extruded-polygon
   and revolved solids (§10), parts, part families, domains, and the JSON
   assembly format.
-- **Placement** (`src/core/resolve.ts`): walks connections out from the root.
+- **Placement** (`../engine/src/core/resolve.ts`): walks connections out from the root.
   A connection whose two parts are both already placed closes a loop and is
   checked, not solved. Connections support rail slots and 90° roll.
-- **Rules** (`src/core/rules.ts`), each with an id and a readable message:
+- **Rules** (`../engine/src/core/rules.ts`), each with an id and a readable message:
 
   | Rule id | Checks |
   | --- | --- |
@@ -503,7 +503,7 @@ The validator then judges it like any hand-written fixture.
 
 ### What was built
 
-- **Templates** (`src/core/template.ts` for the schema, `src/gun/templates.ts`
+- **Templates** (`../engine/src/core/template.ts` for the schema, `src/gun/templates.ts`
   for the ten current archetypes). A template lists slots and connections:
   - A **slot** names a part family and, per param, a value or a list to pick
     from. Params it leaves out are default or read from neighbours; a pump
@@ -514,8 +514,8 @@ The validator then judges it like any hand-written fixture.
   - A connection's `from` can be a **list of ports** (a sight on the receiver
     rail or the handguard rail), and its `slot` can be **`any`**. The slot
     count is read from the resolved part, so it respects inherited params.
-- **Generator** (`src/core/generate.ts`): `generate(template, domain, seed)`
-  is deterministic. It uses a seeded RNG (`src/core/random.ts`, mulberry32),
+- **Generator** (`../engine/src/core/generate.ts`): `generate(template, domain, seed)`
+  is deterministic. It uses a seeded RNG (`../engine/src/core/random.ts`, mulberry32),
   never `Math.random`. `generateValid` tries seed, seed + 1, … until a build
   passes. The generator never checks feasibility itself.
 - **CLI:** `npm run generate` prints one assembly with explicit appearance
@@ -852,12 +852,12 @@ BR's rulings:
 Already in place: the parameter panel (param edits, optional parts, URL
 overrides, connections dropped when a port disappears), fixtures (a hand-made
 assembly is already a JSON file), the validator, and the bevelled mesh module
-(`src/core/mesh.ts`, no three.js).
+(`../engine/src/core/mesh.ts`, no three.js).
 
 Current limits the plan works within:
 
 - An assembly records values only. It has no format version, no locks and no
-  prefab identity (`src/core/schema.ts#Assembly`). The panel infers "set by
+  prefab identity (`../engine/src/core/schema.ts#Assembly`). The panel infers "set by
   the user" by comparing against the seed (`src/viewer/paramPanel.ts#paramState`),
   so keeping a seed value on purpose looks the same as leaving it alone.
 - Adding or removing optional parts needs a template
@@ -898,11 +898,14 @@ Current limits the plan works within:
 - **3.0b Implement:** parsing, anchors for every archetype, and the palette
   migration. Done (see "3.0b (implemented)").
 
-Core stays free of gun data: every core function takes what it needs as
-explicit inputs, and the gun domain supplies them. The core `Domain` has no
-template registry (`src/core/schema.ts#Domain`), so functions that need a
-template take the resolved `Template`, and the export takes the anchors and
-palette as arguments.
+The target engine boundary is to keep firearm and domain names out of the
+shared package: core functions take domain data explicitly, and the gun domain
+supplies it. For g60, move the firearm names still in the engine—calibre params
+and selection, design calibre validation, and the GLB generator brand—behind
+Gungen adapters. The engine `Domain` has no template registry
+(`../engine/src/core/schema.ts#Domain`), so functions that need a template take
+the resolved `Template`, and the export takes anchors and palette as arguments.
+See `../engine/README.md`, `Shared engine`, for the package boundary and g60 follow-up.
 
 - **Design file.** A versioned `format` field, plus:
   - `template`: the template the design belongs to;
@@ -946,12 +949,12 @@ palette as arguments.
     applies only when there is no grip. Equal-rank `hold` anchors are
     ambiguous, and the design cannot be published. `SelectGunAnchors` applies
     this policy before the core exporter receives `SelectedAnchors`.
-- **Appearance.** The viewer and exporter share `src/core/appearance.ts`'s
+- **Appearance.** The viewer and exporter share `../engine/src/core/appearance.ts`'s
   domain-agnostic resolver. Callers pass a variant explicitly; assembly display
   names are never parsed as archetypes. Precedence is solid material, part
   material, instance appearance, design finish, variant finish, then role
   material. An instance's own appearance replaces the host's design and variant
-  finishes for that part; see `src/core/glb.ts`, `exportGlb`. Missing palette
+  finishes for that part; see `../engine/src/core/glb.ts`, `exportGlb`. Missing palette
   material ids remain absent from metadata rather than being fabricated. Legacy
   family/special/fallback colours still support generic domains.
 - **Export metadata** (frozen here for the 3.4 export), per port: stable id
@@ -976,7 +979,7 @@ build against it; it isn't a compatibility promise. Pre-pre-alpha, these
 contracts change whenever that makes the code simpler (AGENTS.md, "Project stage").
 
 Types only; 3.0b supplies parsing and values. The contracts live in
-`src/core/design.ts` (`Design`/`DesignFormat`/`DesignStatus`, `DesignOrigin`,
+`../engine/src/core/design.ts` (`Design`/`DesignFormat`/`DesignStatus`, `DesignOrigin`,
 `DesignLocks`, `DesignIssue`, `DesignLoadError`/`DesignLoadResult`,
 `AnchorFrame`, `PartAnchorDeclaration`/`PartAnchorDeclarations`/
 `ResolveAnchors`, `ResolvedAnchors`/`SelectedAnchors`/`AnchorSelectionError`,
@@ -984,7 +987,7 @@ Types only; 3.0b supplies parsing and values. The contracts live in
 `DeadvoxModelEntry`/`GlbAssetIdentity`, `GlbExportInput`/`GlbExportResult`/
 `GlbExportError`/`ExportGlb`, and `EffectiveSuggestionLocks`/
 `SuggestionResult`/`Suggest`). `PartInstance.prefab` uses the core
-`PrefabReference` in `src/core/schema.ts`; the gun catalogue types are
+`PrefabReference` in `../engine/src/core/schema.ts`; the gun catalogue types are
 `PrefabCatalogueEntry` and `PrefabCatalogue` in `src/gun/prefabs.ts`. Gun
 anchor names and policy are in `src/gun/anchors.ts`, not core. The type test
 is `test/m3Contracts.test.ts`; its import-boundary guard uses `es-module-lexer`
@@ -1090,7 +1093,7 @@ requirement. Structural anchors remain reference points; replaceable geometry
 uses item-owned slots so Deadvox can hide a baked node when no item is fitted.
 The design/template calibre keeps generated AK magazines matched to the gun's
 cartridge, because receiver compatibility with both patterns is not magazine
-ammunition interchangeability (`src/core/template.ts`, `Template`; `src/core/design.ts`, `Design`; `src/gun/templates.ts`, `ak`).
+ammunition interchangeability (`../engine/src/core/template.ts`, `Template`; `../engine/src/core/design.ts`, `Design`; `src/gun/templates.ts`, `ak`).
 
 - `calibre?: string` is the exact cartridge-data id (not a display designation;
   e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,
@@ -1157,7 +1160,7 @@ an implementation except the ones that belong to later packages (`Suggest`,
 
 **Parsing and loading.**
 
-- `src/core/parseAssembly.ts`: `parseAssembly(value)`, `parseAssemblyJson(text)`
+- `../engine/src/core/parseAssembly.ts`: `parseAssembly(value)`, `parseAssemblyJson(text)`
   and `parseAssemblyOrThrow(text, source)` (for fixtures and tests) return
   `{ ok: true, assembly }` or `{ ok: false, error: { path, message } }`;
   `formatParseError` renders `path: message`. Every field is checked and the
@@ -1166,7 +1169,7 @@ an implementation except the ones that belong to later packages (`Suggest`,
   path and a message. The helpers `parseRecord`, `parseStringArray` and
   `parsePrefabReference` are exported for the loader. The CLI, the viewer and
   the fixture tests read files through it.
-- `src/core/designLoader.ts`: `loadDesign(text, inputs)` and
+- `../engine/src/core/designLoader.ts`: `loadDesign(text, inputs)` and
   `loadDesignValue(value, inputs)` return the frozen `DesignLoadResult`.
   `inputs` is `{ domain, template, prefabs }`, all explicit, so core imports no
   gun data; `DesignPrefabEntry` is the shape a `PrefabCatalogueEntry` fits.
@@ -1210,7 +1213,7 @@ an implementation except the ones that belong to later packages (`Suggest`,
 
 **Anchors.**
 
-- `src/core/anchors.ts`: `resolveAnchors(resolved, declarations)` runs each
+- `../engine/src/core/anchors.ts`: `resolveAnchors(resolved, declarations)` runs each
   placed part's declaration with its resolved param values and transforms the
   frames to assembly space. Declarations are keyed by `PartInstance.family`.
   Unplaced parts, parts with no built definition and parts with no declaration
@@ -1232,12 +1235,10 @@ an implementation except the ones that belong to later packages (`Suggest`,
   barrel and muzzle device, at its `muzzle` port (`muzzlePortAnchor`). Frames
   are computed from the built part, so they follow params.
 
-**Palette.** `src/gun/palette.ts`: `GUN_PALETTE`, `createPalette` (throws on a
-channel that isn't finite or lies outside [0,1]), `solidColor(palette, role,
-solidId)` (special colour by solid id, then role colour, then the fallback),
-and `hexToSrgb`/`srgbToHex`. The viewer's old colours are reproduced
-bit-identically for every role that had one. Six roles that used to render as
-the `#888888` fallback now have colours (below).
+**Palette.** Firearm colour tables, material identities and finish mappings live
+in `src/gun/palette.ts`; shared colour conversion and role-only lookup live in
+`../engine/src/core/appearance.ts`. The viewer and exporter use the same
+appearance policy, while each domain supplies its own palette.
 
 **Decided (BR, 2026-09-30): materials + slots + role shade + finishes.** The palette is keyed by material ids with sRGB base colours; roles map to `metal`, `furniture`, or `accent` and apply bounded shade multipliers. Explicit solid material/slot wins, then part-owned material/slot, design finish, variant finish, and role default. Archetype finishes cover every slot; design or part may override. Finish maps survive load, editor save/reopen, viewer rendering, and shipped export. Magazine follows furniture because it is a polymer/wood exterior component. The revolver uses stainless metal with walnut grips; battle rifles use parkerized metal with walnut furniture. Magazines default to the metal slot; the AK's darkened blued-steel magazine reads black, while AR magazines resolve to anodized aluminium. Pump shotguns have no box magazine; their tube magazine is metal. The GLB carries material and slot metadata and shares materials by resolved colour. Role-only colours remain a viewer geometry-check mode. See `test/materialFinishes.test.ts`.
 
@@ -1303,7 +1304,7 @@ The `stanag-20` prefab selects the straight profile at M length. Resolving a
 non-M straight profile reports a structure issue that points to #414 for the
 deferred capacities. The shared upper preserves feed and magwell fit, and
 `stanag-30` uses the curved profile. See `src/gun/prefabs.ts`, `GUN_PREFABS`,
-`src/gun/parts.ts`, `magazine`, and `src/core/resolve.ts`, `resolveParams`.
+`src/gun/parts.ts`, `magazine`, and `../engine/src/core/resolve.ts`, `resolveParams`.
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
   are the curated product.
@@ -1348,7 +1349,7 @@ The viewer strip that shows them comes after 3.1.
 built on `mesh.ts`:
 
 - the same solids the viewer draws (`displaySolids ?? solids`,
-  `src/viewer/scene.ts#displaySolids`) and the shared palette, with colours converted
+  `../engine/src/viewer/scene.ts#displaySolids`) and the shared palette, with colours converted
   to linear space;
 - one node per part, named by part id and family, with the port metadata
   frozen in 3.0a as empty child nodes plus glTF `extras`;
@@ -1364,7 +1365,7 @@ deadvox holds a model with +x forward and +y up
 
 **3.4 (implemented).**
 
-- API. `src/core/glb.ts#exportGlb` is the frozen `ExportGlb`; it also exports
+- API. `../engine/src/core/glb.ts#exportGlb` is the frozen `ExportGlb`; it also exports
   `partNodeName` and `srgbToLinear`. `src/gun/exportGlb.ts#exportGunGlb(assembly,
   asset)` resolves, selects the gun anchors and applies `GUN_PALETTE`; it
   returns the writer's result, or the `AnchorSelectionError` for a missing or
@@ -1383,10 +1384,8 @@ deadvox holds a model with +x forward and +y up
   count/pitch record. Port frames in `extras` are assembly space in u, as
   frozen; the node's own transform is part-local, in metres. The root's
   `extras.gungen` records the unit and `metresPerUnit`.
-- Materials: one per distinct colour, `baseColorFactor` in linear space
-  (standard sRGB transfer function), metallic 0, roughness 0.85. The writer has
-  its own copy of the special, role, fallback lookup, since core can't import
-  `src/gun/palette.ts#solidColor`; a test checks the two agree.
+- Materials: the writer and viewer share appearance resolution, so exported
+  materials follow the same domain palette and finish choices as the display.
 - Units: `METRES_PER_UNIT = 0.0115` (1u = 11.5 mm) is the gun domain's chosen
   calibration; its 5.5u magazine top is 63.25 mm. The Brownells listing's stated
   2.54 in (64.5 mm) STANAG-20 body depth corroborates that scale within one grid
@@ -1593,10 +1592,10 @@ not part of the export's acceptance:
   AK magazines' runs of ring sectors. Bevelling and outlining each segment
   breaks the curve up; they look best plain and without outlines. Proposed:
   display hints on a solid (no bevel, no outline), set by the part family,
-  which the viewer (`src/viewer/scene.ts`, bevel and `EdgesGeometry`) and the
+  which the viewer (`../engine/src/viewer/scene.ts`, bevel and `EdgesGeometry`) and the
   3.4 export both honour. Collision and the rules ignore the hints. By
   default a solid is bevelled and outlined. The mesh module already accepts a
-  zero bevel (`src/core/mesh.ts#meshForSolid`). The export draws no outlines, so for
+  zero bevel (`../engine/src/core/mesh.ts#meshForSolid`). The export draws no outlines, so for
   the export "no outline" needs nothing. Generic rendering hints can live in
   the core schema, as `displaySolids` already does. Display hints are assigned
   by the generated part family; they are runtime `Solid` metadata, not fields in
@@ -1604,7 +1603,7 @@ not part of the export's acceptance:
   neither requires nor retains these hints. The viewer honours no-bevel and
   no-outline; glTF export honours no-bevel (it draws no outlines). Collision
   and rule checks ignore the metadata. This changes the
-  `Solid` type in `src/core/schema.ts`;
+  `Solid` type in `../engine/src/core/schema.ts`;
 - g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid enters; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors so Deadvox can hide the baked magazine when no magazine is fitted (d114-11, #337); see `deadvox/docs/decisions/0006-firearm-handling.md`.
   Gungen's attachment mass is a geometry/material estimate, not a product specification; d118-3 uses the exported model fact when reconciling inventory weight and attachment handling. BR tunes the cited density and fill assumptions before mass figures become fixed; see `src/gun/attachmentMass.ts`, `attachmentMassKg`, and `docs/deferred-assertions.md`.
   BR, 2026-10-07 11:27, verbatim: “#347 let's stick to 7.62x39 for now” and “but we will add 5.45x39 at some point”; generated AKs stay 7.62x39-only, and 5.45x39 is follow-up #362.

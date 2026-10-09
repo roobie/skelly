@@ -1,7 +1,7 @@
+import { generate } from '@skelly/engine/core/generate.ts';
+import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { generate } from '../src/core/generate.ts';
-import { localSolidBounds } from '../src/core/geometry.ts';
-import { validate } from '../src/core/validate.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { gunDomain } from '../src/gun/domain.ts';

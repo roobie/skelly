@@ -1,10 +1,10 @@
+import { generate } from '@skelly/engine/core/generate.ts';
+import { distanceWorld, validateExtrudedPolygon, worldSolid } from '@skelly/engine/core/geometry.ts';
+import { IDENTITY } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { ExtrudedPolygonSolid } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { generate } from '../src/core/generate.ts';
-import { distanceWorld, validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
-import { IDENTITY } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { ExtrudedPolygonSolid } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { gunDomain } from '../src/gun/domain.ts';

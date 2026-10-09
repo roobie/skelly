@@ -1,3 +1,5 @@
+import { meshForSolid } from '@skelly/engine/core/mesh.ts';
+import type { RevolvedSolid, Vec2 } from '@skelly/engine/core/schema.ts';
 import {
   BufferAttribute,
   BufferGeometry,
@@ -13,8 +15,6 @@ import {
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { Cartridge, Shotshell } from '../ammo/cartridge.ts';
 import { roundProfiles } from '../ammo/roundProfile.ts';
-import { meshForSolid } from '../core/mesh.ts';
-import type { RevolvedSolid, Vec2 } from '../core/schema.ts';
 import { UNITS_PER_MM } from '../gun/magazineGeometry.ts';
 import { shotshellGeometry, shotshellHullColor } from '../gun/shotshellGeometry.ts';
 

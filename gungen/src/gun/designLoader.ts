@@ -1,5 +1,5 @@
-import type { DesignLoadResult } from '../core/design.ts';
-import { loadDesign } from '../core/designLoader.ts';
+import type { DesignLoadResult } from '@skelly/engine/core/design.ts';
+import { loadDesign } from '@skelly/engine/core/designLoader.ts';
 import { gunDomain } from './domain.ts';
 import { GUN_FINISH_SLOTS, GUN_PALETTE } from './palette.ts';
 import { GUN_PREFABS } from './prefabs.ts';

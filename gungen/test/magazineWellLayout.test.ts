@@ -1,5 +1,5 @@
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { variant } from './helpers.ts';
 

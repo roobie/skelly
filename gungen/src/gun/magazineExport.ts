@@ -1,9 +1,14 @@
+import type {
+  AppearanceContext,
+  GlbAssetIdentity,
+  GlbExportError,
+  GlbExportResult,
+} from '@skelly/engine/core/design.ts';
+import { exportGlb } from '@skelly/engine/core/glb.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, PartInstance } from '@skelly/engine/core/schema.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
-import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
-import { exportGlb } from '../core/glb.ts';
-import { resolve } from '../core/resolve.ts';
-import type { Assembly, PartInstance } from '../core/schema.ts';
 import { gunDomain } from './domain.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
 import { magazineRoundColumn, magazineRoundPoses } from './magazineGeometry.ts';

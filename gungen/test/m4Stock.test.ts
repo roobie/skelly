@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { worldSolid } from '@skelly/engine/core/geometry.ts';
+import { applyPoint, cross, IDENTITY, sub } from '@skelly/engine/core/math.ts';
+import { meshForSolid } from '@skelly/engine/core/mesh.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, PortDef, Solid } from '@skelly/engine/core/schema.ts';
 import { describe, expect, it } from 'vitest';
-import { worldSolid } from '../src/core/geometry.ts';
-import { applyPoint, cross, IDENTITY, sub } from '../src/core/math.ts';
-import { meshForSolid } from '../src/core/mesh.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Assembly, PortDef, Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, M4_STOCK_GEOMETRY } from '../src/gun/parts.ts';
 import { loadFixture } from './helpers.ts';

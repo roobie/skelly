@@ -1,10 +1,10 @@
+import { GRID } from '@skelly/engine/core/conventions.ts';
+import { validateExtrudedPolygon, worldSolid } from '@skelly/engine/core/geometry.ts';
+import { applyPoint } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
-import { GRID } from '../src/core/conventions.ts';
-import { validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
-import { applyPoint } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import { validate } from '../src/core/validate.ts';
 import { AR_ACTION_LAYOUT } from '../src/gun/arLayout.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { magazineRoundColumn } from '../src/gun/magazineGeometry.ts';

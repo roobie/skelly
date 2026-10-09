@@ -5,7 +5,7 @@
   "scripts": {
     "check": "biome check",
     "fix": "biome check --write",
-    "setup": "npm ci && npm ci --prefix gungen && npm ci --prefix deadvox && npm ci --prefix mobgen && npm ci --prefix deadvox/tools/lit-check && npm run jsonnet:setup",
+    "setup": "npm ci && npm ci --prefix engine && npm ci --prefix gungen && npm ci --prefix deadvox && npm ci --prefix mobgen && npm ci --prefix deadvox/tools/lit-check && npm run jsonnet:setup",
     "jsonnet:setup": "node tools/jsonnet/setup.mjs",
     "content:compile": "node tools/jsonnet/compile.mjs",
     "content:check": "node tools/jsonnet/compile.mjs --check",

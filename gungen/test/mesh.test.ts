@@ -1,12 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { generate } from '@skelly/engine/core/generate.ts';
+import { validateExtrudedPolygon } from '@skelly/engine/core/geometry.ts';
+import { BEVEL, meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '@skelly/engine/core/schema.ts';
 import { describe, expect, it } from 'vitest';
-
-import { generate } from '../src/core/generate.ts';
-import { validateExtrudedPolygon } from '../src/core/geometry.ts';
-import { BEVEL, meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { expectWatertightMesh } from './helpers.ts';
@@ -146,7 +145,7 @@ const meshSpecifierRe = /(^|\/)mesh(\.ts)?$/;
 describe('mesh module is display-only', () => {
   it('the validator path in src/core does not import mesh.ts', () => {
     for (const name of ['validate.ts', 'rules.ts', 'resolve.ts', 'geometry.ts']) {
-      const source = readFileSync(join(import.meta.dirname, '..', 'src', 'core', name), 'utf8');
+      const source = readFileSync(join(import.meta.dirname, '..', '..', 'engine', 'src', 'core', name), 'utf8');
       const specs = [...source.matchAll(importRe)].map((m) => m[1] ?? m[2] ?? '');
       expect(specs.length, `${name}: no imports parsed`).toBeGreaterThan(0);
       expect(

@@ -1,10 +1,10 @@
+import { displayItems } from '@skelly/engine/core/display.ts';
+import { meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
+import type { Resolved } from '@skelly/engine/core/resolve.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Solid } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { displayItems } from '../src/core/display.ts';
-import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
-import type { Resolved } from '../src/core/resolve.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Solid } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { REVOLVER_PROPORTIONS, revolverAlignment } from '../src/gun/revolver.ts';

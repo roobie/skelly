@@ -1,9 +1,10 @@
 // biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: Geometry contract tests intentionally assert linked dimensions, motion paths, and clearances together.
+
+import { distanceWorld, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
+import { applyPoint, compose, extrusionPoint, IDENTITY, translation, type Vec3 } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, Box, Solid } from '@skelly/engine/core/schema.ts';
 import { describe, expect, it } from 'vitest';
-import { distanceWorld, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
-import { applyPoint, compose, extrusionPoint, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Assembly, Box, Solid } from '../src/core/schema.ts';
 import { AR_ACTION_LAYOUT } from '../src/gun/arLayout.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import {

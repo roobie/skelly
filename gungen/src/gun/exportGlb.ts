@@ -1,11 +1,16 @@
+import type {
+  AppearanceContext,
+  GlbAssetIdentity,
+  GlbExportError,
+  GlbExportResult,
+} from '@skelly/engine/core/design.ts';
+import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
+import { exportGlb, partNodeName } from '@skelly/engine/core/glb.ts';
+import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '@skelly/engine/core/math.ts';
+import { type Resolved, resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, PartDef } from '@skelly/engine/core/schema.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
-import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
-import { localSolidBounds } from '../core/geometry.ts';
-import { exportGlb, partNodeName } from '../core/glb.ts';
-import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '../core/math.ts';
-import { type Resolved, resolve } from '../core/resolve.ts';
-import type { Assembly, PartDef } from '../core/schema.ts';
 import { resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';

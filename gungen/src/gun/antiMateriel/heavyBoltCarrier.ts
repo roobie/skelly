@@ -1,5 +1,5 @@
-import { boxFromMinMax } from '../../core/geometry.ts';
-import type { PartDef, PartFamily, Solid } from '../../core/schema.ts';
+import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
+import type { PartDef, PartFamily, Solid } from '@skelly/engine/core/schema.ts';
 import { EJECTION_PORT_MARGIN_U } from '../ejectionPort.ts';
 import { box, X } from './common.ts';
 import { HEAVY_MAGAZINE_DEPTH } from './heavyMagazine.ts';

@@ -1,4 +1,4 @@
-import type { Solid, Vec2 } from '../core/schema.ts';
+import type { Solid, Vec2 } from '@skelly/engine/core/schema.ts';
 
 export interface MagazineCenterline {
   /** Centreline in magazine-local XY coordinates, from the feed face down through the body. */

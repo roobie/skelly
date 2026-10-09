@@ -1,11 +1,21 @@
 // Gun-specific rules, added to the core rules through the domain.
 
-import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../core/geometry.ts';
-import type { Issue } from '../core/issue.ts';
-import type { Vec3 } from '../core/math.ts';
-import { add, applyDir, applyPoint, dot as dotProduct, IDENTITY, invert, length, scale, sub } from '../core/math.ts';
-import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
-import type { Box, PartDef, Rule, Solid } from '../core/schema.ts';
+import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
+import type { Issue } from '@skelly/engine/core/issue.ts';
+import type { Vec3 } from '@skelly/engine/core/math.ts';
+import {
+  add,
+  applyDir,
+  applyPoint,
+  dot as dotProduct,
+  IDENTITY,
+  invert,
+  length,
+  scale,
+  sub,
+} from '@skelly/engine/core/math.ts';
+import type { PortRef, Resolved, ResolvedConnection } from '@skelly/engine/core/resolve.ts';
+import type { Box, PartDef, Rule, Solid } from '@skelly/engine/core/schema.ts';
 import { mountCanAccept } from './mounts.ts';
 import { getOptic, opticRailContactSolids } from './optics.ts';
 import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS, TRIGGER_GUARD } from './parts.ts';

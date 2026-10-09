@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
+import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
+import { parseAssemblyOrThrow } from '@skelly/engine/core/parseAssembly.ts';
+import type { Domain, PartFamily } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { boxFromMinMax } from '../src/core/geometry.ts';
-import { parseAssemblyOrThrow } from '../src/core/parseAssembly.ts';
-import type { Domain, PartFamily } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { GUN_UNITS } from '../src/gun/units.ts';
 
 const sourceFamily: PartFamily = {

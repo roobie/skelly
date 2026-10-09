@@ -1,4 +1,4 @@
-import type { Vec2 } from '../core/schema.ts';
+import type { Vec2 } from '@skelly/engine/core/schema.ts';
 
 export interface ColumnInput {
   /** Centreline from the feed face down to the bottom of the body, at least two points. */

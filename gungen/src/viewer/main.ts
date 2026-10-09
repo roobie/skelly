@@ -1,3 +1,12 @@
+import type { DesignLoadResult } from '@skelly/engine/core/design.ts';
+import { generate, generateValid } from '@skelly/engine/core/generate.ts';
+import { worldBox } from '@skelly/engine/core/geometry.ts';
+import type { Issue } from '@skelly/engine/core/issue.ts';
+import { formatParseError, parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
+import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '@skelly/engine/core/revolve.ts';
+import type { Assembly, Connection } from '@skelly/engine/core/schema.ts';
+import type { Template } from '@skelly/engine/core/template.ts';
+import { type Report, validate } from '@skelly/engine/core/validate.ts';
 import {
   Box3,
   Color,
@@ -17,15 +26,6 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
-import type { DesignLoadResult } from '../core/design.ts';
-import { generate, generateValid } from '../core/generate.ts';
-import { worldBox } from '../core/geometry.ts';
-import type { Issue } from '../core/issue.ts';
-import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
-import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '../core/revolve.ts';
-import type { Assembly, Connection } from '../core/schema.ts';
-import type { Template } from '../core/template.ts';
-import { type Report, validate } from '../core/validate.ts';
 import { actionOpenOffsets, resolveGunAction } from '../gun/actionDescription.ts';
 import { previewFittedAttachments } from '../gun/attachmentPreview.ts';
 import { withAttachmentInstanceAppearances } from '../gun/attachments.ts';

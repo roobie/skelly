@@ -1,6 +1,6 @@
+import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
+import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import type { Shotshell } from '../ammo/cartridge.ts';
-import { localSolidBounds } from '../core/geometry.ts';
-import type { Resolved } from '../core/resolve.ts';
 
 /** Visual fit estimates, not manufacturer's tube specifications. */
 const TUBE_FOLLOWER_SPRING_RESERVE_U = 1;

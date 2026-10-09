@@ -1,4 +1,4 @@
-import { GRID } from '../core/conventions.ts';
+import { GRID } from '@skelly/engine/core/conventions.ts';
 import { SMALL_AR_FRAME } from './arFrames.ts';
 import { GUN_UNITS } from './units.ts';
 

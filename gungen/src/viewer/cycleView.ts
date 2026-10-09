@@ -1,5 +1,6 @@
 // Presentation-only action-cycle controls. Timelines and motion profiles stay in the gun domain module.
 
+import type { Resolved } from '@skelly/engine/core/resolve.ts';
 import {
   ArrowHelper,
   type Group,
@@ -9,7 +10,6 @@ import {
   type Object3D,
   Vector3,
 } from 'three';
-import type { Resolved } from '../core/resolve.ts';
 import type { ResolvedGunAction } from '../gun/actionDescription.ts';
 import { type CycleMode, type CycleMotion, type CycleTimeline, sweepMovingPart } from '../gun/cycle.ts';
 
