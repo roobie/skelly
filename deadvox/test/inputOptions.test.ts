@@ -5,8 +5,10 @@ import {
   DEBUG_ONLY_CONTEXTS,
   INPUT_BINDINGS,
   type InputContext,
+  keyboardInput,
 } from '../src/game/inputBindings.ts';
 
+const contextWordSeparator = /[^a-z0-9-]+/;
 const dom = new Window();
 for (const key of [
   'document',
@@ -70,5 +72,37 @@ describe('input options context visibility', () => {
         return row && binding.contexts.every((context) => contextLabels(row).includes(context));
       }),
     ).toBe(true);
+  });
+
+  it('does not name debug-only contexts in an ordinary-run rebind conflict', () => {
+    const pair = INPUT_BINDINGS.flatMap((first, index) =>
+      INPUT_BINDINGS.slice(index + 1).map((second) => ({ first, second })),
+    ).find(({ first, second }) => {
+      const shared = first.contexts.filter((context) => second.contexts.includes(context));
+      return (
+        !(bindingIsDebugOnly(first) || bindingIsDebugOnly(second)) &&
+        first.gate === second.gate &&
+        shared.some((context) => !DEBUG_ONLY_CONTEXTS.has(context)) &&
+        shared.some((context) => DEBUG_ONLY_CONTEXTS.has(context))
+      );
+    });
+    expect(pair).toBeDefined();
+    const root = document.createElement('div');
+    document.body.append(root);
+    mountInputOptions(root);
+    const button = rowFor(root, pair!.first.id)?.querySelector<HTMLButtonElement>(
+      'button[data-binding-alternative="0"]',
+    );
+    expect(button).toBeDefined();
+    button!.click();
+    try {
+      keyboardInput.capture?.(pair!.second.defaults[0]!);
+      const status = root.querySelector('.input-binding-status')?.textContent?.trim() ?? '';
+      const words = status.toLowerCase().split(contextWordSeparator);
+      expect(status).not.toBe('');
+      expect([...DEBUG_ONLY_CONTEXTS].every((context) => !words.includes(context))).toBe(true);
+    } finally {
+      keyboardInput.capture = undefined;
+    }
   });
 });

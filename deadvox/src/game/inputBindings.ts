@@ -383,7 +383,7 @@ const pairBindingIssue = (a: Binding, b: Binding, overrides: BindingMap): string
         (isHeld(b) && modifierCodes[y.code] === x.modifier && x.modifier !== undefined),
     ),
   );
-  return overlap ? `${a.description} conflicts with ${b.description} in ${contexts.join(', ')}` : undefined;
+  return overlap ? `${a.description} conflicts with ${b.description}` : undefined;
 };
 export const bindingConflict = (bindings: readonly Binding[], overrides: BindingMap): string | undefined => {
   for (let i = 0; i < bindings.length; i++) {

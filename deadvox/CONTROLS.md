@@ -32,8 +32,10 @@ both independently scrolling panes.
   labels. Plain substring matching keeps results predictable: a partial action or
   key name returns every matching row without ranking. Native text ownership keeps
   search keystrokes from activating game actions. Ordinary runs hide debug-marked
-  bindings and bindings scoped only to debug contexts because those controls are
-  unavailable there; debug runs list them all. Debug actions use the held gate,
+  bindings and bindings scoped only to debug contexts; shared rows show only their
+  ordinary contexts, and Settings conflict messages omit context names. Ordinary
+  runs name no debug-only contexts because those contexts are unavailable there;
+  debug runs list them all. Debug actions use the held gate,
   with noclip flight controls as the readily available exception. See `src/game/inputBindings.ts`,
   `INPUT_BINDINGS`, `DEBUG_ONLY_CONTEXTS`, `KeyboardInput.install`,
   `noclip.ascend` and `noclip.descend`, and `src/game/controls.ts`,
