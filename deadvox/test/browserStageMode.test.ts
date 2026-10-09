@@ -23,7 +23,6 @@ describe('browser stage rendering mode', () => {
       'http://localhost/?seed=1',
     );
     expect(browserStageMode('stairs-camo')).toBe('pixel');
-    expect(browserStageMode('stairs-lighting')).toBe('pixel');
     expect(browserStageMode('save-storage-opfs-continue')).toBe('pixel');
     expect(browserStageArgs('save-storage-opfs-continue')).toContain('--use-gl=swiftshader');
     expect(browserStageMode('save-storage-indexeddb-continue')).toBe('pixel');
@@ -35,9 +34,12 @@ describe('browser stage rendering mode', () => {
       'http://localhost/?seed=1',
     );
     expect(browserStageArgs('stairs-camo')).toContain('--use-gl=swiftshader');
-    expect(browserStageArgs('stairs-lighting')).toContain('--use-gl=swiftshader');
-    expect(browserStageArgs('stairs-lighting')).toContain('--enable-unsafe-swiftshader');
-    expect(browserStageUrl('stairs-lighting', 'http://localhost/?seed=1&render=0')).toBe('http://localhost/?seed=1');
+    for (const stage of ['stairs-lighting-cellar', 'stairs-lighting-atlas']) {
+      expect(browserStageMode(stage)).toBe('pixel');
+      expect(browserStageArgs(stage)).toContain('--use-gl=swiftshader');
+      expect(browserStageArgs(stage)).toContain('--enable-unsafe-swiftshader');
+      expect(browserStageUrl(stage, 'http://localhost/?seed=1&render=0')).toBe('http://localhost/?seed=1');
+    }
   });
 
   it('rejects inherited property names as unknown stages', () => {
