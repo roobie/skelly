@@ -905,6 +905,7 @@ and selection, design calibre validation, and the GLB generator brand—behind
 Gungen adapters. The engine `Domain` has no template registry
 (`../engine/src/core/schema.ts#Domain`), so functions that need a template take
 the resolved `Template`, and the export takes anchors and palette as arguments.
+See `../engine/README.md`, `Shared engine`, for the package boundary and g60 follow-up.
 
 - **Design file.** A versioned `format` field, plus:
   - `template`: the template the design belongs to;
