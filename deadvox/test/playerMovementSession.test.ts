@@ -8,7 +8,7 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { bodyDistance, INVENTORY_REACH } from '../src/core/reach.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
-import { compileTemplate, footprint, placedBlockAt, type Placement } from '../src/core/templates.ts';
+import { compileTemplate, footprint, type Placement, placedBlockAt } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
@@ -295,7 +295,7 @@ describe('crouching under a low ceiling', () => {
       openingHeightBlocks += 1;
     }
     const laneCenterZ = (openingZ[0]! + openingZ.at(-1)! + 1) / 2;
-    const walkThrough = (crouched: boolean, oneBlockTaller = false) => {
+    const walkThrough = (isCrouched: boolean, oneBlockTaller = false) => {
       const isSolid: SolidAt = (x, y, z) => {
         if (
           oneBlockTaller &&
@@ -306,7 +306,12 @@ describe('crouching under a low ceiling', () => {
         ) {
           return false;
         }
-        if (x >= wall.origin[0] && x < wall.origin[0] + wallWidth && z >= wall.origin[2] && z < wall.origin[2] + wallDepth) {
+        if (
+          x >= wall.origin[0] &&
+          x < wall.origin[0] + wallWidth &&
+          z >= wall.origin[2] &&
+          z < wall.origin[2] + wallDepth
+        ) {
           return wallCellSolid(x, y, z);
         }
         return y <= groundBlock;
@@ -316,7 +321,7 @@ describe('crouching under a low ceiling', () => {
         spawn: [wall.origin[0] + wallWidth + 3, groundBlock + 1, laneCenterZ],
         yaw: Math.PI / 2,
       });
-      if (crouched) {
+      if (isCrouched) {
         runtime.toggleCrouch();
         runtime.advance(1);
       }

@@ -2,9 +2,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import { stepBodyHorizontal } from '../src/core/physics.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { stepBodyHorizontal } from '../src/core/physics.ts';
 import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
 import {
   type CompiledTemplate,
@@ -99,17 +99,13 @@ const crouchHoleOpening = (wall: WorldPlacement, groundBlock: number) => {
     return block !== undefined && registry.blocks[block]?.solid === true;
   };
   const openZ = Array.from({ length: depth }, (_value, offset) => wall.origin[2] + offset).filter((z) =>
-    Array.from({ length: width }, (_value, offset) => wall.origin[0] + offset).every(
-      (x) => !cellIsSolid(x, feetY, z),
-    ),
+    Array.from({ length: width }, (_value, offset) => wall.origin[0] + offset).every((x) => !cellIsSolid(x, feetY, z)),
   );
   let height = 0;
   for (let y = feetY; y < wall.origin[1] + wall.template.size[1]; y += 1) {
     if (
       !openZ.every((z) =>
-        Array.from({ length: width }, (_value, offset) => wall.origin[0] + offset).every(
-          (x) => !cellIsSolid(x, y, z),
-        ),
+        Array.from({ length: width }, (_value, offset) => wall.origin[0] + offset).every((x) => !cellIsSolid(x, y, z)),
       )
     ) {
       break;
