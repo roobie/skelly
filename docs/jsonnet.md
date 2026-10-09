@@ -13,7 +13,7 @@ The shared compiler in `tools/jsonnet/compile.mjs`, `compileJsonnetSources`, use
 
 ## Source layout
 
-Jsonnet's `main.jsonnet`, `lib/` and `data/` roles map onto each consumer's existing paths; they do not require a duplicate project-level directory structure.
+Jsonnet's composition-root, helper-module and authored-data roles map onto each consumer's existing paths; they do not require a duplicate project-level directory structure.
 
 - Deadvox core-mod sources live in `deadvox/src/content/base`. Each `.jsonnet` file there is a composition root that emits the same JSON shape its registry already loads; local helper modules may live beside it as `.libsonnet`, while shared modules belong in `tools/jsonnet/lib`. The registry still validates and loads JSON; see `deadvox/src/game/bundledContent.ts`, `BUNDLED_CONTENT`, and `deadvox/src/core/content.ts`, `buildRegistry`.
 - Deadvox Tiled maps live under `deadvox/maps`; author or change them in `.tmj.jsonnet` and compile back to `.tmj` so the editor and map tools keep their expected format.
