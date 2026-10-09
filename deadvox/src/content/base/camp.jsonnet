@@ -294,7 +294,7 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
     },
     {
       "id": "camp_command_tent",
-      "size": [16, 5, 10],
+      "size": [16, 7, 10],
       "palette": {
         ".": "air",
         "T": "fabric",
@@ -309,7 +309,8 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
         "F": {
           "furniture": "footlocker",
           "loot": "camp_supplies"
-        }
+        },
+        "z": spawnMarker("military_shambler", 0.5)
       },
       "layers": [
         [
@@ -327,7 +328,7 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
         [
           "TTTTTTTTTTTTTTTT",
           "T..............T",
-          "T..............T",
+          "T..........z...T",
           "T.....WWW......T",
           "T.....WWW......T",
           "T...OO.........T",
@@ -345,6 +346,30 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
           "T...OO.........T",
           "T..............T",
           "T........FF....T",
+          "T..............T",
+          "TTTTTTTTTTTTTTTT"
+        ],
+        [
+          "TTTTTTTTTTTTTTTT",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "TTTTTTTTTTTTTTTT"
+        ],
+        [
+          "TTTTTTTTTTTTTTTT",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "T..............T",
+          "T..............T",
           "T..............T",
           "TTTTTTTTTTTTTTTT"
         ],
@@ -478,7 +503,7 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
           "furniture": "footlocker",
           "loot": "camp_supplies"
         },
-        "z": spawnMarker("shambler", 0.4),
+        "z": spawnMarker("military_shambler", 0.4),
         "=": "dirt"
       },
       "layers": [
@@ -716,7 +741,7 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
     },
     {
       "id": "camp_wall_run",
-      "size": [32, 5, 2],
+      "size": [32, 7, 2],
       "palette": {
         ".": "air",
         "=": "sandbag"
@@ -726,7 +751,9 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
         ["================================", "================================"],
         ["================================", "================================"],
         ["================================", "================================"],
-        ["====.=======.=======.=======.===", "=.=======.=======.=======.======"]
+        ["====.=======.=======.=======.===", "=.=======.=======.=======.======"],
+        ["================================", "================================"],
+        ["================================", "================================"]
       ]
     },
     {
@@ -1160,7 +1187,7 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
     },
     {
       "id": "camp_gate",
-      "size": [16, 6, 2],
+      "size": [16, 8, 2],
       "palette": {
         ".": "air",
         "=": "dirt",
@@ -1180,12 +1207,14 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
         ["##LLLLLLRRRRRR##", "................"],
         ["##LLLLLLRRRRRR##", "................"],
         ["##LLLLLLRRRRRR##", "................"],
-        ["##LLLLLLRRRRRR##", "................"]
+        ["##LLLLLLRRRRRR##", "................"],
+        ["################", "################"],
+        ["################", "################"]
       ]
     },
     {
       "id": "camp_gate_damaged",
-      "size": [16, 6, 2],
+      "size": [16, 8, 2],
       "palette": {
         ".": "air",
         "=": "dirt",
@@ -1205,12 +1234,14 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
         ["##LLLLLL......##", "................"],
         ["##LLLLLL......##", "................"],
         ["##LLLLLL......##", "................"],
-        ["##LLLLLL......##", "................"]
+        ["##LLLLLL......##", "................"],
+        ["################", "################"],
+        ["################", "################"]
       ]
     },
     {
       "id": "camp_gate_return",
-      "size": [2, 6, 16],
+      "size": [2, 8, 16],
       "palette": {
         ".": "air",
         "=": "dirt",
@@ -1218,6 +1249,8 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
       },
       "layers": [
         ["==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "==", "=="],
+        ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],
+        ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],
         ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],
         ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],
         ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],

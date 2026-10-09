@@ -34,18 +34,18 @@ const zombieSystemFor = (spawned: Spawned[]): ZombieSystem =>
     addHorde: () => undefined,
   }) as unknown as ZombieSystem;
 
-const campAmalgam = () => {
+const campAmalgams = () => {
   const markers = camp.shamblers.filter(({ type }) => type === 'amalgam');
-  const [marker] = markers;
-  if (!marker) {
-    return { markers, location: undefined };
-  }
-  const [x, , z] = marker.position;
   const { blockSize } = makeScale(0.5);
-  const cx = toChunk(x / blockSize);
-  const cz = toChunk(z / blockSize);
-  const spawn = site.zombiesIn(cx, cz).find(({ type }) => type === 'amalgam');
-  return { markers, location: spawn ? { cx, cz, spawn } : undefined };
+  const locations = markers.map(({ position }) => {
+    const [x, y, z] = position;
+    const cx = toChunk(x / blockSize);
+    const cz = toChunk(z / blockSize);
+    const spawns = site.zombiesIn(cx, cz).filter(({ type }) => type === 'amalgam');
+    const markerSpawn = { type: 'amalgam', pos: [x / blockSize, y / blockSize, z / blockSize] as Vec3 };
+    return { cx, cz, markerSpawn, spawns };
+  });
+  return { markers, locations };
 };
 
 const load = (spawner: ZombieSpawner, spawned: Spawned[], cx: number, cz: number) => {
@@ -53,40 +53,71 @@ const load = (spawner: ZombieSpawner, spawned: Spawned[], cx: number, cz: number
 };
 
 describe('authored zombie spawn persistence', () => {
-  it('spawns the authored camp amalgam on its first column load only', () => {
-    const { markers, location } = campAmalgam();
-    expect(markers).toHaveLength(1);
-    expect(location).toBeDefined();
-    const { cx, cz, spawn } = location!;
-    for (const order of [
-      [cx + 1, cx, cx + 1],
-      [cx, cx + 1, cx],
-    ]) {
-      const spawner = new ZombieSpawner();
-      const spawned: Spawned[] = [];
-      for (const column of order) {
-        load(spawner, spawned, column, cz);
+  it('spawns every authored camp amalgam on its first column load only', () => {
+    const { markers, locations } = campAmalgams();
+    expect(markers.length).toBeGreaterThan(0);
+    expect(locations).toHaveLength(markers.length);
+    expect(
+      locations.every(({ markerSpawn, spawns }) =>
+        spawns.some(
+          (spawn) =>
+            spawn.type === markerSpawn.type &&
+            spawn.pos.every((coordinate, index) => coordinate === markerSpawn.pos[index]),
+        ),
+      ),
+    ).toBe(true);
+    for (const { cx, cz } of locations) {
+      for (const order of [
+        [cx + 1, cx, cx + 1],
+        [cx, cx + 1, cx],
+      ]) {
+        const spawner = new ZombieSpawner();
+        const spawned: Spawned[] = [];
+        for (const column of order) {
+          load(spawner, spawned, column, cz);
+        }
+        const expected = [...new Set(order)].flatMap((column) =>
+          site
+            .zombiesIn(column, cz)
+            .filter(({ type }) => type === 'amalgam')
+            .map(({ type, pos }) => ({ type, pos })),
+        );
+        expect(spawned.filter(({ type }) => type === 'amalgam')).toEqual(expected);
       }
-      expect(spawned.filter(({ type }) => type === 'amalgam')).toEqual([{ type: 'amalgam', pos: spawn.pos }]);
     }
   });
 
-  it('restores the spawn ledger without duplicating or losing the saved amalgam', () => {
-    const { markers, location } = campAmalgam();
-    expect(markers).toHaveLength(1);
-    expect(location).toBeDefined();
-    const { cx, cz, spawn } = location!;
-    const beforeSave = new ZombieSpawner();
-    const savedZombies: Spawned[] = [];
-    load(beforeSave, savedZombies, cx, cz);
-    const savedLedger = JSON.parse(JSON.stringify(beforeSave.snapshotState())) as readonly string[];
+  it('restores every authored camp amalgam without duplicating or losing it', () => {
+    const { markers, locations } = campAmalgams();
+    expect(markers.length).toBeGreaterThan(0);
+    expect(locations).toHaveLength(markers.length);
+    expect(
+      locations.every(({ markerSpawn, spawns }) =>
+        spawns.some(
+          (spawn) =>
+            spawn.type === markerSpawn.type &&
+            spawn.pos.every((coordinate, index) => coordinate === markerSpawn.pos[index]),
+        ),
+      ),
+    ).toBe(true);
+    for (const { cx, cz } of locations) {
+      const expected = site
+        .zombiesIn(cx, cz)
+        .filter(({ type }) => type === 'amalgam')
+        .map(({ type, pos }) => ({ type, pos }));
+      const beforeSave = new ZombieSpawner();
+      const savedZombies: Spawned[] = [];
+      load(beforeSave, savedZombies, cx, cz);
+      expect(savedZombies.filter(({ type }) => type === 'amalgam')).toEqual(expected);
+      const savedLedger = JSON.parse(JSON.stringify(beforeSave.snapshotState())) as readonly string[];
 
-    const afterLoad = new ZombieSpawner();
-    afterLoad.restoreState(savedLedger);
-    const restoredZombies = [...savedZombies];
-    load(afterLoad, restoredZombies, cx, cz);
+      const afterLoad = new ZombieSpawner();
+      afterLoad.restoreState(savedLedger);
+      const restoredZombies = [...savedZombies];
+      load(afterLoad, restoredZombies, cx, cz);
 
-    expect(afterLoad.snapshotState()).toEqual(savedLedger);
-    expect(restoredZombies.filter(({ type }) => type === 'amalgam')).toEqual([{ type: 'amalgam', pos: spawn.pos }]);
+      expect(afterLoad.snapshotState()).toEqual(savedLedger);
+      expect(restoredZombies.filter(({ type }) => type === 'amalgam')).toEqual(expected);
+    }
   });
 });

@@ -5,10 +5,6 @@
       "output": "deadvox/src/content/base/camp.json"
     },
     {
-      "source": "deadvox/src/content/base/layouts-playtest.jsonnet",
-      "output": "deadvox/src/content/base/layouts-playtest.json"
-    },
-    {
       "source": "deadvox/src/content/base/locks.jsonnet",
       "output": "deadvox/src/content/base/locks.json"
     }

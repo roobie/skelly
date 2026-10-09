@@ -325,18 +325,19 @@ describe('authored layout acceptance', () => {
     };
     const camp = playtest.layouts[0]!;
     const amalgams = camp.shamblers.filter(({ type }) => type === 'amalgam');
-    expect(amalgams).toHaveLength(1);
-    const marker = amalgams[0]!;
+    expect(amalgams.length).toBeGreaterThan(0);
     const { blockSize } = makeScale(0.5);
-    const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, blockSize);
-    const bodyRadius = Math.hypot(body.halfWidth, body.halfDepth ?? body.halfWidth) * blockSize;
-    const nearestTrackEdge = Math.min(
-      ...camp.tracks.map(
-        (track) => polylineDistance([marker.position[0], marker.position[2]], track.points) - track.width / 2,
-      ),
-    );
+    for (const marker of amalgams) {
+      const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, blockSize);
+      const bodyRadius = Math.hypot(body.halfWidth, body.halfDepth ?? body.halfWidth) * blockSize;
+      const nearestTrackEdge = Math.min(
+        ...camp.tracks.map(
+          (track) => polylineDistance([marker.position[0], marker.position[2]], track.points) - track.width / 2,
+        ),
+      );
 
-    expect(nearestTrackEdge).toBeGreaterThan(bodyRadius);
+      expect(nearestTrackEdge).toBeGreaterThan(bodyRadius);
+    }
   });
   it('carries a spawn window from a template marker into its world column', () => {
     const templateSource = base.find((file) => file.source === 'templates.json')!;
