@@ -558,9 +558,9 @@ body.unconscious::after {
   grid-template-rows: minmax(0, 1fr);
 }
 #inventory .inv-body[data-tab-panel="items"] {
-  --inv-details-fr: 0.25fr;
-  grid-template-columns: minmax(220px, var(--inv-you-fr, 0.5fr)) 12px minmax(0, var(--inv-details-fr)) minmax(
-      220px,
+  --inv-details-width: 20%;
+  grid-template-columns: minmax(220px, var(--inv-you-fr, 0.5fr)) 12px minmax(0, var(--inv-details-width)) minmax(
+      362px,
       var(--inv-around-fr, 0.5fr)
     );
   grid-template-rows: minmax(0, 1fr);
@@ -594,7 +594,7 @@ body.unconscious::after {
   max-width: none;
   scrollbar-gutter: stable;
 }
-@media (max-width: 640px) {
+@media (max-width: 800px) {
   #inventory .inv-body[data-tab-panel="items"] {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: repeat(3, minmax(160px, 1fr));

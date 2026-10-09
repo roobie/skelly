@@ -295,7 +295,7 @@ UI layers come from ordered custom properties in `src/ui/style.css`, `:root`; in
 
 ### Inventory layout
 
-For #518, selected-item details sit between the two places items move between: inspection and actions read down, not across, and the player can see both destinations while reading. See `src/ui/inventoryScreen.ts`, `inventoryTemplate` and `detailsTemplate`.
+For #518, selected-item details sit between the two places items move between: inspection and actions read down, not across, and the player can see both destinations while reading. The side-by-side layout keeps the nearby pane wide enough for a cap-limited locker; at narrower windows the details pane joins the vertical stack instead of squeezing the locker. See `src/ui/inventoryScreen.ts`, `inventoryTemplate` and `detailsTemplate`.
 
 ## Numbers and diegesis
 

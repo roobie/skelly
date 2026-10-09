@@ -13,29 +13,26 @@ put its apparent click point in an adjacent pane when content packing changes.
 Sharing the screen with the crafting catalogue must not make an ordinary pile
 slot inaccessible merely because the item occupies a different column.
 
-The character screen groups Items, Skills and Crafting into tabs so the game,
-notably on a small zoomed screen, has room for each view. Character inventory
-and nearby piles or containers stay together on Items so drag and drop remains
-within one view. For #518, the selected item and both item locations stay
-visible together so the player can read its details while seeing where it can
-move. On wide screens, the detail panel sits between You and Around you, and
-the divider lets the player balance space between those two location panes. At
-narrow widths, the panes stack rather than shrinking until their actions are
-hidden. Each pane scrolls independently. The handling queue stays across the
-bottom because it summarizes work across the whole inventory, not only the
-selected item. The Around you pane fills its column.
-Its floor and container sections wrap when they do not fit, so the vicinity
-uses whatever width the player gives it. A container section has room for its
-capped pocket grid and scroll gutter; when it cannot fit beside another
-section, it wraps rather than squeezing the grid. Justified wider grids scroll
-within the content-owned cap.
+For #518, selected-item details stay between the two item locations: the player
+can read the inspection and actions while seeing both destinations. The divider
+balances space between You and Around you. The nearby pane must retain enough
+room for its cap-limited locker grid; when a window cannot fit that pane beside
+the details, the details join the vertical stack rather than forcing horizontal
+scrolling in an ordinary locker. This trade keeps the requested narrow details
+column without squeezing nearby containers. The handling queue stays below the
+panes because it summarizes work across the whole inventory. See
+`src/ui/style.css`, `#inventory .inv-body[data-tab-panel="items"]`.
 
-Floor piles are displayed packed to the column width in
-`src/ui/inventoryScreen.ts`, `InventoryScreen.gridViewModel`. Their stored
-positions are save state, and display packing never writes them. A drop onto a
-floor pile merges into the item under the pointer when compatible; otherwise
-ordinary pile placement uses an available stack or the first free stored spot.
-Each pane scrolls independently.
+The floor and container sections wrap when they cannot share a row, so the
+vicinity uses its available width without squeezing a capped grid. Justified
+wider grids scroll within their content-owned cap. Floor piles are displayed
+packed to the column width in `src/ui/inventoryScreen.ts`,
+`InventoryScreen.gridViewModel`; stored positions remain save state and display
+packing never writes them. Drops onto floor piles merge with the item under the
+pointer when compatible; otherwise they use an available stack or the first
+free stored spot. See `src/ui/inventoryScreen.ts`,
+`InventoryScreen.scrollSelectedItemIntoView`, for selection visibility across
+scrollable ancestors.
 Tab selection and the split are runtime UI state, not save or replay state.
 G, V and B open the character screen on Items, Skills or Crafting, or switch to that tab
 while it is open; Tab reopens the last tab. The keys sit beside WASD so movement can
