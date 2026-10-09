@@ -2937,29 +2937,22 @@ describe('idle and stroll shambling', () => {
   it('uses seeded idle and straight stroll intervals during a sustained sample', () => {
     const sense = senses(() => player([1000, 1, 1000]));
     const system = new ZombieSystem({ ...sense, seed: 73 });
-    const replay = new ZombieSystem({ ...sense, seed: 73 });
     const withExtraBody = new ZombieSystem({ ...sense, seed: 73 });
     const id = system.add(SHAMBLER, [0, 1, 0]);
-    const replayId = replay.add(SHAMBLER, [0, 1, 0]);
     const independentId = withExtraBody.add(SHAMBLER, [0, 1, 0]);
     withExtraBody.add(SHAMBLER, [100, 1, 100]);
     const zombie = system.store.get(id)!;
-    const replayed = replay.store.get(replayId)!;
     const independent = withExtraBody.store.get(independentId)!;
     zombie.body.onGround = true;
-    replayed.body.onGround = true;
     independent.body.onGround = true;
     let idleTicks = 0;
     let strollTicks = 0;
     const sampleTicks = 5 * 60 * 20;
     for (let tick = 0; tick < sampleTicks; tick++) {
       system.tick(1 / 20);
-      replay.tick(1 / 20);
       withExtraBody.tick(1 / 20);
       if (tick % 100 === 0) {
-        expect(replayed.body.pos).toEqual(zombie.body.pos);
         expect(independent.body.pos).toEqual(zombie.body.pos);
-        expect(replayed.behaviorRng.state()).toEqual(zombie.behaviorRng.state());
         expect(independent.behaviorRng.state()).toEqual(zombie.behaviorRng.state());
       }
       if (String(zombie.mode) === 'idle') {

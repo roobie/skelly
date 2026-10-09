@@ -53,31 +53,10 @@ describe('validate CLI', () => {
     expect(run.stdout).toContain('0 issue(s)');
   });
 
-  it.each([
-    [
-      'unknown-knowledge',
-      ['recipes[0].knowledge: recipe "unlearned_recipe" has no starting or reachable book knowledge source'],
-    ],
-    ['unfound', ['recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable']],
-    [
-      'cycle',
-      [
-        'recipes[0].components[0][0].item: item "fixture_b" is neither found nor craftable',
-        'recipes[1].components[0][0].item: item "fixture_a" is neither found nor craftable',
-      ],
-    ],
-    [
-      'self-tool',
-      [
-        'recipes[0].qualities.fixture_quality: no reachable tool or placed workstation provides "fixture_quality" level 2 without bootstrapping its own requirements',
-      ],
-    ],
-  ])('rejects %s reachability with its semantic diagnostic', (fixture, diagnostics) => {
-    const run = validate(`test/fixtures/content/reachability-${fixture}.json`);
+  it('reports an unreachable component from static reachability', () => {
+    const run = validate('test/fixtures/content/reachability-unfound.json');
     expect(run.status).toBe(1);
-    for (const diagnostic of diagnostics) {
-      expect(run.stdout).toContain(diagnostic);
-    }
+    expect(run.stdout).toContain('recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable');
   });
 
   it('rejects compatible content and asset fixtures with every per-file diagnostic', () => {

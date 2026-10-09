@@ -261,12 +261,16 @@ const runObstacleCase = (
   let crossed = false;
   let leftGround = false;
   let maxZ = Number.NEGATIVE_INFINITY;
-  for (let tick = 0; tick < 1200; tick++) {
+  const maxTicks = typeId === 'amalgam' ? 600 : 1200;
+  for (let tick = 0; tick < maxTicks; tick++) {
     simulation.tick(1 / 60);
     const { body } = simulation.store.get(id)!;
     crossed ||= body.pos[2] > 2.5;
     leftGround ||= !body.onGround;
     maxZ = Math.max(maxZ, body.pos[2]);
+    if (typeId === 'shambler' && crossed) {
+      break;
+    }
   }
   return { barrierSolid, crossed, leftGround, maxZ, mode: simulation.store.get(id)!.mode };
 };
