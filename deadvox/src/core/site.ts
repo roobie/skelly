@@ -49,7 +49,17 @@ export interface HordeSpawn {
   members: number;
 }
 
+/** Observation only: what the playtest metrics watch for. Nothing in the simulation reads it. */
+export interface PlaytestMarks {
+  /** Beat areas, in blocks. */
+  readonly beats: readonly { readonly id: string; readonly area: Rect }[];
+  /** Key fixed-loot item ids, keyed by their furniture's anchor block ("x,y,z"). */
+  readonly keyLoot: ReadonlyMap<string, ReadonlySet<string>>;
+}
+
 export interface Site {
+  /** An authored site's playtest beats and key fixed loot. */
+  readonly playtestMarks?: PlaytestMarks;
   /** Bounded authored cellar interiors needing voxel sky visibility instead of unoccluded hemisphere light. */
   readonly skyBounds?: readonly SkyBounds[];
   /** The ground under the site, blended into the natural ground around it. */

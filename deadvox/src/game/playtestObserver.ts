@@ -1,6 +1,8 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
+import { formatClock } from '../core/clock.ts';
 import type { CompletedMove, HandlingQueue, MoveJob, TickResult } from '../core/handling.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
+import type { PlaytestMarks } from '../core/site.ts';
 import {
   measureSnapshots,
   type SessionMetrics,
@@ -77,9 +79,25 @@ export class PlaytestObserver {
   private lastPersistAt = 0;
   private lastInterruption: string | undefined;
   private readonly metrics: SessionMetrics;
+  private readonly marks: PlaytestMarks | undefined;
+  private readonly keyItems: ReadonlySet<string>;
+  private readonly reachedBeats = new Set<string>();
+  /** Item types of this frame's queued moves: a stack that merges on arrival loses its UID. */
+  private readonly moveTypes = new Map<number, string>();
 
-  constructor(metrics: SessionMetrics) {
+  constructor(metrics: SessionMetrics, marks?: PlaytestMarks) {
     this.metrics = metrics;
+    this.marks = marks;
+    this.keyItems = new Set([...(marks?.keyLoot.values() ?? [])].flatMap((items) => [...items]));
+  }
+
+  /** A key item counts as read at its first read, wherever it lies. */
+  readItem(itemType: string, calendar: number): void {
+    this.guard(() => {
+      if (this.keyItems.has(itemType)) {
+        this.metrics.recordKeyItem(itemType, 'read', formatClock(calendar));
+      }
+    });
   }
 
   beginSearch(entity: BlockEntity, name: string): void {
@@ -93,6 +111,15 @@ export class PlaytestObserver {
   beforeFrame(queue: HandlingQueue, inventory: Inventory): void {
     this.guard(() => {
       this.frameActiveUid = this.sourceUid(queue.jobs[0], inventory);
+      this.moveTypes.clear();
+      if (this.keyItems.size > 0) {
+        for (const job of queue.jobs) {
+          const type = job.kind === 'move' ? inventory.itemByUid(job.itemUid)?.type : undefined;
+          if (job.kind === 'move' && type) {
+            this.moveTypes.set(job.itemUid, type);
+          }
+        }
+      }
     });
   }
 
@@ -110,8 +137,23 @@ export class PlaytestObserver {
       const runningSeconds = !session.sim.paused && frame.visible ? Math.max(0, frame.realSeconds) : 0;
       const handlingActive = runningSeconds > 0 && session.sim.compression.c <= 1;
       this.recordFrameTime(runningSeconds, frame.screenOpen, handlingActive ? this.frameActiveUid : undefined);
-      this.commitOutcomes(session.inventory);
+      this.commitOutcomes(session.inventory, () => formatClock(session.sim.calendar));
     });
+    this.guard(() => this.observeBeats(session));
+  }
+
+  private observeBeats(session: Session): void {
+    const beats = this.marks?.beats ?? [];
+    if (beats.length === 0) {
+      return;
+    }
+    const [x, , z] = session.body.pos;
+    for (const { id, area } of beats) {
+      if (!this.reachedBeats.has(id) && x >= area.x0 && x < area.x1 && z >= area.z0 && z < area.z1) {
+        this.reachedBeats.add(id);
+        this.metrics.reachBeat(id, formatClock(session.sim.calendar));
+      }
+    }
   }
 
   private sourceUid(job: HandlingQueue['jobs'][number] | undefined, inventory: Inventory): number | undefined {
@@ -144,10 +186,10 @@ export class PlaytestObserver {
     }
   }
 
-  private commitOutcomes(inventory: Inventory): void {
+  private commitOutcomes(inventory: Inventory, gameClock: () => string): void {
     for (const result of this.outcomes) {
       for (const completed of result.completedMoves ?? []) {
-        this.completeMove(completed, inventory);
+        this.completeMove(completed, inventory, gameClock);
       }
     }
     this.outcomes.length = 0;
@@ -163,30 +205,35 @@ export class PlaytestObserver {
     return window;
   }
 
-  private completeMove(pending: PendingMove, inventory: Inventory): void {
+  private completeMove(pending: PendingMove, inventory: Inventory, gameClock: () => string): void {
     const { job } = pending;
     const item = inventory.itemByUid(job.itemUid);
     const current = item ? inventory.locate(item) : undefined;
-    this.recordSourceLoot(pending, current, item, inventory);
+    const looted = this.recordSourceLoot(pending, current, item, inventory);
+    const type = item?.type ?? this.moveTypes.get(job.itemUid);
+    if (looted && type && this.marks?.keyLoot.get(looted.pos.join(','))?.has(type)) {
+      this.metrics.recordKeyItem(type, 'looted', gameClock());
+    }
     this.recordPocketUse(job, inventory);
   }
 
+  /** Records a container loot and returns the looted furniture, if the move took from one. */
   private recordSourceLoot(
     pending: PendingMove,
     current: Location | undefined,
     item: ReturnType<Inventory['itemByUid']>,
     inventory: Inventory,
-  ): void {
+  ): BlockEntity | undefined {
     const { source, job } = pending;
     if (source?.kind !== 'furniture') {
-      return;
+      return undefined;
     }
     const targetIsSameFurniture = job.target.kind === 'furniture' && job.target.entityUid === source.entity.uid;
     const sourceChanged =
       !samePlace(source, current) ||
       Boolean(item && pending.sourceCount !== undefined && item.count <= pending.sourceCount - job.count);
     if (!sourceChanged || targetIsSameFurniture) {
-      return;
+      return undefined;
     }
     const window = this.ensureWindow(source.entity, inventory);
     this.metrics.recordContainerLoot(window.name, window.handlingSeconds, window.uiSeconds);
@@ -194,6 +241,7 @@ export class PlaytestObserver {
     if (this.uiContainerUid === source.entity.uid) {
       this.uiContainerUid = undefined;
     }
+    return source.entity;
   }
 
   private recordPocketUse(job: MoveJob, inventory: Inventory): void {
