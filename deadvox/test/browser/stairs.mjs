@@ -100,6 +100,7 @@ const vite = await createServer({
   ],
 });
 let browser;
+let page;
 try {
   await vite.listen();
   const { port } = vite.httpServer.address();
@@ -112,7 +113,7 @@ try {
     headless: process.env.BROWSER_HEADED !== '1',
   });
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
-  const page = await browser.newPage({
+  page = await browser.newPage({
     viewport: mode === 'lighting' ? { width: 1280, height: 800 } : { width: 640, height: 400 },
   });
   const errors = [];
@@ -1034,6 +1035,7 @@ try {
     JSON.stringify({ mode, states, lightProof, outdoorProof, residentProof, secondSlotProof, errors }, null, 2),
   );
 } finally {
+  await page?.close();
   await browser?.close();
   await vite.close();
 }
