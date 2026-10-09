@@ -116,14 +116,8 @@ const nearGroundRingPoints = (
     }
     return centers;
   };
-  const xSamples = [
-    ...cellCenters(bounds.x0, bounds.x1),
-    ...markers.map(({ position }) => position[0] / BLOCK_SIZE),
-  ];
-  const zSamples = [
-    ...cellCenters(bounds.z0, bounds.z1),
-    ...markers.map(({ position }) => position[2] / BLOCK_SIZE),
-  ];
+  const xSamples = [...cellCenters(bounds.x0, bounds.x1), ...markers.map(({ position }) => position[0] / BLOCK_SIZE)];
+  const zSamples = [...cellCenters(bounds.z0, bounds.z1), ...markers.map(({ position }) => position[2] / BLOCK_SIZE)];
   return NEAR_GROUND_RING_DISTANCES.flatMap((distance) => [
     ...xSamples.map((x) => [x, bounds.z0 - distance - 0.5] as [number, number]),
     ...xSamples.map((x) => [x, bounds.z1 + distance + 0.5] as [number, number]),
@@ -467,8 +461,10 @@ describe('camp gate templates', () => {
       );
       const visibleNearGround = nearGround.filter(
         (point) =>
-          !sightlineCrossesBreach(from(point), top, breaches[0]!, bounds) &&
-          !wallBlocksSightline(solidCells, from(point), top),
+          !(
+            sightlineCrossesBreach(from(point), top, breaches[0]!, bounds) ||
+            wallBlocksSightline(solidCells, from(point), top)
+          ),
       );
       expect(openBreachSightlines.length).toBeGreaterThan(0);
       expect(
