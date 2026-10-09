@@ -29,12 +29,13 @@ not a second hand-maintained section table here.
 
 ## Content test registries
 
-For d121, keep fixture-only template checks on a registry containing the
-content those assertions exercise; full-pack cases retain the base definitions
-when their contract depends on cross-file merging or references. This avoids
-rechecking unrelated base content while preserving those integration checks;
-see `test/content.test.ts`, `templateBase`, and `test/authoredSite.test.ts`,
-`registry`.
+Fixture builders include only the content an assertion exercises. Keep a full-pack
+registry when a contract depends on cross-file references or reachability; share
+that validated registry across related assertions rather than rebuilding it. This
+keeps unrelated validation work from dominating tests without removing integration
+coverage. See `test/content.test.ts`, `templateBase`; `test/audioGunshot.test.ts`,
+`baseRegistry`; `test/disassembly.test.ts`, `fixtureBuild`; and
+`test/firearmSave.test.ts`, `fixtureRegistry`.
 
 ## Exterior shell continuity
 
