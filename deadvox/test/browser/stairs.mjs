@@ -251,8 +251,8 @@ try {
         }
         return result;
       };
-      const sample = async (label, weathering) => {
-        engine.meshes.setWeathering(weathering, weatheringSplit);
+      const sample = async (label, profile) => {
+        engine.meshes.setWeathering(profile, weatheringSplit);
         const startCount = measurements[label].length;
         const totalFrames = 23;
         await new Promise((resolveFrames) => {
