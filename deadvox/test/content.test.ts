@@ -1207,11 +1207,22 @@ describe('content references', () => {
     zombie.id = 'fixture_military_looter';
     zombie.loot = lootId;
     const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
+    const { quality, level } = zombie.downed!.dismember;
     const result = buildRegistry([
       {
         source,
         data: {
-          items: [{ id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] }],
+          items: [
+            { id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] },
+            {
+              id: 'fixture_blade',
+              name: 'Fixture blade',
+              category: 'tool',
+              weight: 1,
+              size: [1, 1],
+              tool: { qualities: { [quality]: level } },
+            },
+          ],
           loot: [
             { id: lootId, military: true, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] },
           ],
