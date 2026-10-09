@@ -320,7 +320,7 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
   stanag30: {
     seat: 'well',
     straightTop: 4.25,
-    arc: { radius: 32, sweepDegrees: 10.25, collisionFacets: 4, displayFacets: 16 },
+    arc: { radius: 32, sweepDegrees: 12, collisionFacets: 4, displayFacets: 16 },
     straightBottom: 3.11,
     topSlopeDegrees: 0,
   },

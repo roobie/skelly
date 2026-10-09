@@ -358,16 +358,19 @@ Scale anchor: keep the gun-domain unit calibration; the Brownells listing's stat
   feed lips use the same snapped width as both bodies. Both STANAG bodies fit
   the AR magwell as modelled. For g52-7, the raised magazine needs an open path
   through the AR lower; its former interior roof is omitted while the outer
-  frame and magwell dimensions stay fixed. The 30-round side profile follows the
-  public paired-magazine photo: the straight 20-round body provides the photo-skew
-  correction, and the 30's bend begins about halfway down the 20's body.
-  Correcting for that photo skew leaves the 30 appearing longer than the
-  listing's approximate length, so the sourced dimension remains the model basis. Its
-  floorplate detail remains a photo estimate. For AR seating, the feed lips
-  follow the receiver's modeled bolt-path and barrel-extension clearance; no
-  sourced feed-lip-to-bore dimension was available. The lower's `magwell` anchor
-  follows that well seat through `src/gun/anchorData.ts`; see `src/gun/parts.ts`,
-  `BOLT_CARRIER_ENVELOPES`, and `magazine` for the derived clearance. The HK
+  frame and magwell dimensions stay fixed. The 30-round side profile is a visual
+  fit to the public paired-magazine photo; the straight 20-round body provides
+  camera-skew calibration, and the 30's bend begins about halfway down the
+  20-round body's length. The corrected photo makes the 30 appear longer than
+  the listing's approximate length, so retain that sourced dimension as the
+  model basis; its floorplate detail remains an estimate. For g52-7, the feed-lip
+  height follows the receiver's modeled bolt-path and barrel-extension clearance,
+  because no sourced feed-lip-to-bore dimension was available. The lower's
+  `magwell` anchor and Deadvox's `slots.magazine` frame must follow that same
+  raised seat so a fitted magazine remains aligned; see `src/gun/anchorData.ts`,
+  `src/gun/parts.ts`, `BOLT_CARRIER_ENVELOPES`, `magazine`,
+  `src/gun/exportGlb.ts`, `exportGunGlb`, and `deadvox/src/render/itemLook.ts`,
+  `itemLook`. The HK
   listing's approximate empty weight is for steel, so Deadvox uses a gameplay
   mass estimate unless an aluminium STANAG-30 mass is sourced; see
   `deadvox/src/content/base/items-ammunition.json`, `magazine_stanag_30`. See
