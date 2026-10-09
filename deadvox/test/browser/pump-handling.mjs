@@ -620,9 +620,7 @@ try {
           },
         } = session;
         const notice = getNotice();
-        return job?.jobType === 'wait' || notice !== previousNotice
-          ? { job, notice, simTime }
-          : undefined;
+        return job?.jobType === 'wait' || notice !== previousNotice ? { job, notice, simTime } : undefined;
       });
     }, noticeBefore);
     assert.equal(
@@ -638,7 +636,9 @@ try {
   const timeProgress = await page.evaluate((start) => {
     const { session } = globalThis.pumpHandlingTest;
     return globalThis.pumpManualFrames.until(() => {
-      const { sim: { time } } = session;
+      const {
+        sim: { time },
+      } = session;
       return time > start ? time : undefined;
     });
   }, waitStart);
@@ -648,7 +648,11 @@ try {
     const result = await page.evaluate(() => {
       const { session } = globalThis.pumpHandlingTest;
       return globalThis.pumpManualFrames.until(() => {
-        const { sim: { actions: { job } } } = session;
+        const {
+          sim: {
+            actions: { job },
+          },
+        } = session;
         return job === undefined;
       });
     });
