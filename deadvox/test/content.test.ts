@@ -14,6 +14,7 @@ import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDe
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
@@ -44,6 +45,32 @@ const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: '
   }
   return validateContent({ source: zombieFile.source, data });
 };
+
+it('validates weathering profile bounds without pinning authored tuning', () => {
+  const profile = baseRegistry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+  const validate = (candidate: typeof profile) =>
+    validateContent({ source: 'weathering.json', data: { weathering: [candidate] } });
+  expect(validate(profile)).toEqual([]);
+  expect(validate({ ...profile, weatheringBlend: 1 })).not.toEqual([]);
+  for (const [field, range] of Object.entries(WEATHERING_RANGES)) {
+    expect(validate({ ...profile, [field]: range.min } as typeof profile)).toEqual([]);
+    expect(validate({ ...profile, [field]: range.max } as typeof profile)).toEqual([]);
+    expect(validate({ ...profile, [field]: range.min - 1 } as typeof profile)).not.toEqual([]);
+    expect(validate({ ...profile, [field]: range.max + 1 } as typeof profile)).not.toEqual([]);
+  }
+  expect(validate({ ...profile, tintColor: 'blue' })).not.toEqual([]);
+});
+
+it('rejects a layout that names an unknown weathering profile', () => {
+  const file = base.find(({ data: candidateData }) => 'layouts' in (candidateData as Record<string, unknown>))!;
+  const layoutData = structuredClone(file.data) as { layouts: { weatheringProfile?: string }[] };
+  layoutData.layouts[0]!.weatheringProfile = 'not_a_weathering_profile';
+  const weatheringFile = base.find(({ source }) => source === 'weathering.json')!;
+  const result = buildRegistry([weatheringFile, { source: file.source, data: layoutData }]);
+  expect(result.issues).toEqual(
+    expect.arrayContaining([expect.objectContaining({ path: expect.stringContaining('.weatheringProfile') })]),
+  );
+});
 
 interface WindowFrameRun {
   y: number;

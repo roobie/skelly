@@ -1,6 +1,9 @@
-import { parseTimeOfDay, SPAWN_TIME } from '../core/clock.ts';
+import { parseTimeOfDay, SPAWN_TIME, SPAWN_TIMES } from '../core/clock.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
+import type { WeatheringDef } from '../core/schema.ts';
+import { DEFAULT_WEATHERING_PROFILE_ID } from '../core/weather.ts';
+import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
 import { BUNDLED_CONTENT } from './bundledContent.ts';
 
 /** View distances offered on the start card, in metres. 96 m is the default. */
@@ -37,6 +40,14 @@ export interface GameConfig {
   storeys: number;
   /** Fixed occupancy override (`?density=0..1`); null selects the frozen seeded field. */
   density: number | null;
+  /** Profile id selected for this site, with debug URL selection applied. */
+  weatheringProfileId: string;
+  /** Site's authored weathering profile id, which is the URL's default. */
+  weatheringDefaultProfileId: string;
+  /** Render-only weathering profile with optional debug URL edits applied. */
+  weathering: WeatheringDef | undefined;
+  /** Debug-only world-x boundary; only fragments east of it receive weathering. */
+  weatheringSplit?: number;
   /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
    * ZombieMeshes' six boxes instead. */
   actors: ActorRenderer;
@@ -47,6 +58,7 @@ export type ActorRenderer = 'boxes' | 'detailed';
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
 export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE): GameConfig => {
   const scale = makeScale(blockSize);
+  const profile = BUNDLED_CONTENT.registry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID);
   return {
     seed,
     scale,
@@ -57,6 +69,9 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
     site: 'hamlet',
     storeys: 1,
     density: null,
+    weatheringProfileId: DEFAULT_WEATHERING_PROFILE_ID,
+    weatheringDefaultProfileId: DEFAULT_WEATHERING_PROFILE_ID,
+    weathering: profile ? { ...profile } : undefined,
     actors: 'detailed',
   };
 };
@@ -97,6 +112,22 @@ const debugWobbleNoiseScaleFromUrl = (params: URLSearchParams): number | undefin
   return Number.isFinite(value) && value >= 0 && value <= 8 ? value : undefined;
 };
 
+const debugWeatheringSplitFromUrl = (params: URLSearchParams, debug: boolean, site: SiteName): number | undefined => {
+  if (!debug) {
+    return undefined;
+  }
+  const raw = params.get('weatheringSplit');
+  const value = raw === null || raw.trim() === '' ? Number.NaN : Number(raw);
+  if (Number.isFinite(value) && value >= -256 && value <= 256) {
+    return value;
+  }
+  if (raw !== null && raw.trim() !== '') {
+    // biome-ignore lint/suspicious/noConsole: a malformed debug URL needs a visible fallback warning.
+    console.warn(`Ignoring invalid weatheringSplit value "${raw}"; expected a number from -256 to 256 metres.`);
+  }
+  return site === 'weatheringTest' && raw === null ? 0 : undefined;
+};
+
 const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
   if (params.get('debug') !== '1') {
     return undefined;
@@ -123,7 +154,7 @@ const MAX_STOREYS = 20;
 
 /**
  * `?site=city` and `?storeys=N` build the stress-test city; `?site=testHouse` selects the test house;
- * `fallback` is the site otherwise.
+ * `?site=weatheringTest` selects the debug-only comparison; `fallback` is the site otherwise.
  */
 export const siteFromUrl = (
   params: URLSearchParams,
@@ -133,12 +164,14 @@ export const siteFromUrl = (
   const density = densityText === null || densityText.trim() === '' ? null : Number(densityText);
   const storeys = Number(params.get('storeys') ?? 1);
   const requested = params.get('site');
+  const debug = params.get('debug') === '1';
   return {
     site:
       requested === 'city' ||
       requested === 'testHouse' ||
       requested === 'forest' ||
       requested === 'hamlet' ||
+      (debug && requested === 'weatheringTest') ||
       (requested !== null && authoredIds.has(requested))
         ? requested
         : fallback,
@@ -147,10 +180,21 @@ export const siteFromUrl = (
   };
 };
 
+export const applyWeatheringConfig = (
+  config: GameConfig,
+  params: URLSearchParams,
+  registry: Pick<typeof BUNDLED_CONTENT.registry, 'layouts' | 'weathering'> = BUNDLED_CONTENT.registry,
+): void => {
+  config.weatheringDefaultProfileId =
+    registry.layouts.get(config.site)?.weatheringProfile ?? DEFAULT_WEATHERING_PROFILE_ID;
+  const weathering = resolveWeatheringUrl(params, registry.weathering, config.weatheringDefaultProfileId, config.debug);
+  config.weatheringProfileId = weathering?.profileId ?? config.weatheringDefaultProfileId;
+  config.weathering = weathering?.settings;
+};
+
 /**
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
- * With `?debug=1` the debug tools also read and write the look parameters (`?tone=`, `?exposure=`,
- * `?srgb=`, `?patterns=`), documented in src/debug/lookUrl.ts.
+ * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in src/debug/lookUrl.ts.
  */
 export const configFromUrl = (params: URLSearchParams): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
@@ -161,8 +205,16 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
   Object.assign(config, siteFromUrl(params, 'hamlet'));
   const layoutTime = BUNDLED_CONTENT.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
   const requestedTime = params.get('time');
-  config.start = requestedTime === null ? (layoutTime ?? SPAWN_TIME) : (parseTimeOfDay(requestedTime) ?? SPAWN_TIME);
+  config.start =
+    requestedTime === null
+      ? (layoutTime ?? (config.site === 'weatheringTest' ? SPAWN_TIMES.noon : SPAWN_TIME))
+      : (parseTimeOfDay(requestedTime) ?? SPAWN_TIME);
   config.debug = params.get('debug') === '1';
+  applyWeatheringConfig(config, params);
+  const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);
+  if (weatheringSplit !== undefined) {
+    config.weatheringSplit = weatheringSplit;
+  }
   const debugStart = debugStartFromUrl(params);
   if (debugStart) {
     config.debugStart = debugStart;

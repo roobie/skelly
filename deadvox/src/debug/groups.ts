@@ -10,6 +10,7 @@ export type GroupId =
   | 'shamblers'
   | 'time'
   | 'look'
+  | 'weathering'
   | 'post'
   | 'lighting'
   | 'atmosphere'
@@ -39,6 +40,27 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
   { id: 'shamblers', title: 'Shamblers' },
   { id: 'time', title: 'Time' },
   { id: 'look', title: 'Look' },
+  {
+    id: 'weathering',
+    title: 'Weathering',
+    notes: [
+      { label: 'Profile', param: 'weatheringProfile' },
+      { label: 'Strength', param: 'weathering' },
+      { label: 'Tint darkness', param: 'weatheringTint' },
+      { label: 'Tint colour', param: 'weatheringTintColor' },
+      { label: 'Streak strength', param: 'weatheringStreaks' },
+      { label: 'Streak length', param: 'weatheringStreakLength' },
+      { label: 'Streak colour', param: 'weatheringStreakColor' },
+      { label: 'Moss amount', param: 'weatheringMoss' },
+      { label: 'Moss colour', param: 'weatheringMossColor' },
+      { label: 'Patch size', param: 'weatheringScale' },
+      { label: 'Patch variation', param: 'weatheringVariation' },
+      { label: 'Moss threshold', param: 'weatheringMossThreshold' },
+      { label: 'Moss shelter bias', param: 'weatheringMossBias' },
+      { label: 'Mix ceiling', param: 'weatheringMixCeiling' },
+      { label: 'Weathering blend', param: 'weatheringBlend' },
+    ],
+  },
   { id: 'post', title: 'Post-processing' },
   { id: 'lighting', title: 'Lighting' },
   { id: 'atmosphere', title: 'Atmosphere' },

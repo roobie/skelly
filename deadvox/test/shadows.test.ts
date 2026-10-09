@@ -176,6 +176,7 @@ const floor: MeshData = {
   colors: new Uint8Array(12),
   patterns: new Uint8Array(4),
   occlusion: new Uint8Array(4).fill(255),
+  weathering: new Float32Array(8),
   indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
 };
 
