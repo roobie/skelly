@@ -463,10 +463,15 @@ try {
     report: () => {},
   }).settings)`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
-  const hudOptionBeforeClick = await evaluate("document.querySelectorAll('#hud-options input')[1].checked");
-  await clickAt('#hud-options label:nth-of-type(2)');
+  const clockOption = "document.querySelectorAll('#hud-options input')[1]";
+  if (!(await evaluate(`${clockOption}.checked`))) {
+    await clickAt('#hud-options label:nth-of-type(2)');
+  }
+  assert.equal(await evaluate(`${clockOption}.checked`), true, 'clock is enabled for the pause readout');
+  const hudOptionBeforeClick = await evaluate("document.querySelectorAll('#hud-options input')[0].checked");
+  await clickAt('#hud-options label:nth-of-type(1)');
   assert.equal(
-    await evaluate("document.querySelectorAll('#hud-options input')[1].checked"),
+    await evaluate("document.querySelectorAll('#hud-options input')[0].checked"),
     !hudOptionBeforeClick,
     'drawn cursor toggles F9 menu controls from either default state',
   );
