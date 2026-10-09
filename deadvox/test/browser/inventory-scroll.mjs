@@ -247,26 +247,77 @@ try {
   );
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
   await page.locator('#inventory .inv-tab[data-tab="items"]').click();
-  await page.setViewportSize({ width: 640, height: 400 });
-  const splitAtOpen = await page.evaluate(() => {
+  await page.setViewportSize({ width: 800, height: 400 });
+  await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
+  // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
+  const EDGE = 0.5;
+  const selectedDetailLayout = await page.evaluate((edge) => {
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+    const you = body?.querySelector('[data-pane="you"]');
+    const details = body?.querySelector('[data-pane="details"]');
+    const around = body?.querySelector('[data-pane="around"]');
+    const selected = body?.querySelector('.inv-item.selected');
+    if (!(you && details && around && selected)) {
+      throw new Error('Selected item details or one of the inventory columns is missing');
+    }
+    const youBox = you.getBoundingClientRect();
+    const detailsBox = details.getBoundingClientRect();
+    const aroundBox = around.getBoundingClientRect();
+    return {
+      between: youBox.right <= detailsBox.left + edge && detailsBox.right <= aroundBox.left + edge,
+      sideBySide: Math.abs(youBox.top - detailsBox.top) <= 1 && Math.abs(detailsBox.top - aroundBox.top) <= 1,
+      boxes: {
+        you: { left: youBox.left, right: youBox.right },
+        details: { left: detailsBox.left, right: detailsBox.right },
+        around: { left: aroundBox.left, right: aroundBox.right },
+      },
+      detailsUid: details.getAttribute('data-selected-uid'),
+      selectedUid: selected.getAttribute('data-uid'),
+    };
+  }, EDGE);
+  assert.equal(
+    selectedDetailLayout.sideBySide,
+    true,
+    `the 800px viewport stays above the stacked layout: ${JSON.stringify(selectedDetailLayout)}`,
+  );
+  assert.equal(
+    selectedDetailLayout.between,
+    true,
+    `details sit between the two item locations: ${JSON.stringify(selectedDetailLayout)}`,
+  );
+  assert.equal(selectedDetailLayout.detailsUid, selectedDetailLayout.selectedUid, 'details show the selected item');
+  const splitAtOpen = await page.evaluate((edge) => {
     const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const splitter = body?.querySelector('[data-inventory-splitter]');
+    const you = body?.querySelector('[data-pane="you"]');
+    const details = body?.querySelector('[data-pane="details"]');
     const around = body?.querySelector('[data-pane="around"]');
-    if (!(body && splitter && around)) {
-      throw new Error('Items pane divider is missing');
+    if (!(body && splitter && you && details && around)) {
+      throw new Error('Items pane divider or columns are missing');
     }
-    const bodyBox = body.getBoundingClientRect();
     const dividerBox = splitter.getBoundingClientRect();
+    const youBox = you.getBoundingClientRect();
+    const detailsBox = details.getBoundingClientRect();
+    const availableWidth = body.clientWidth - splitter.offsetWidth - details.offsetWidth;
     const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
     return {
       ratio: Number(splitter.getAttribute('aria-valuenow')),
-      center: (dividerBox.left + dividerBox.width / 2 - bodyBox.left) / bodyBox.width,
+      actualRatio: (100 * youBox.width) / availableWidth,
+      availableWidth,
+      dividerBetweenColumns: youBox.right <= dividerBox.left + edge && dividerBox.right <= detailsBox.left + edge,
       aroundWidth: around.getBoundingClientRect().width,
-      aroundColumnWidth: tracks[2],
+      aroundColumnWidth: tracks[3],
     };
-  });
-  assert.equal(splitAtOpen.ratio, 50, `Items panes start at half: ${JSON.stringify(splitAtOpen)}`);
-  assert.ok(Math.abs(splitAtOpen.center - 0.5) < 0.03, `divider starts at half: ${JSON.stringify(splitAtOpen)}`);
+  }, EDGE);
+  assert.ok(
+    Math.abs(splitAtOpen.ratio - Math.round(splitAtOpen.actualRatio)) <= 1,
+    `splitter state matches the CSS allocation: ${JSON.stringify(splitAtOpen)}`,
+  );
+  assert.equal(
+    splitAtOpen.dividerBetweenColumns,
+    true,
+    `divider stays between columns: ${JSON.stringify(splitAtOpen)}`,
+  );
   assert.ok(
     Math.abs(splitAtOpen.aroundWidth - splitAtOpen.aroundColumnWidth) <= 1,
     `Around you fills its column: ${JSON.stringify(splitAtOpen)}`,
@@ -278,50 +329,53 @@ try {
       if (!(body && splitter)) {
         throw new Error('Items pane divider is missing');
       }
-      const bodyBox = body.getBoundingClientRect();
+      const details = body.querySelector('[data-pane="details"]');
+      if (!details) {
+        throw new Error('Items details pane is missing');
+      }
       const dividerBox = splitter.getBoundingClientRect();
-      return { body: bodyBox.toJSON(), divider: dividerBox.toJSON() };
+      const availableWidth = body.clientWidth - splitter.offsetWidth - details.offsetWidth;
+      return {
+        divider: dividerBox.toJSON(),
+        ratio: Number(splitter.getAttribute('aria-valuenow')) / 100,
+        availableWidth,
+      };
     });
     const y = geometry.divider.y + geometry.divider.height / 2;
-    await page.mouse.move(geometry.divider.x + geometry.divider.width / 2, y);
+    const startX = geometry.divider.x + geometry.divider.width / 2;
+    await page.mouse.move(startX, y);
     await page.mouse.down();
-    await page.mouse.move(geometry.body.x + geometry.body.width * fraction, y);
+    await page.mouse.move(startX + (fraction - geometry.ratio) * geometry.availableWidth, y);
     await page.mouse.up();
   };
-  await dragSplitter(0);
-  const splitAtLeftClamp = await page.evaluate(() => {
-    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
-    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
-    return {
-      ratio: Number(splitter?.getAttribute('aria-valuenow')),
-      availableWidth: body && splitter ? body.clientWidth - splitter.offsetWidth : 0,
-    };
-  });
-  assert.equal(
-    splitAtLeftClamp.ratio,
-    Math.round((220 / splitAtLeftClamp.availableWidth) * 100),
-    `left drag reaches the JavaScript clamp: ${JSON.stringify(splitAtLeftClamp)}`,
-  );
-  await dragSplitter(1);
-  const splitAtRightClamp = await page.evaluate(() => {
-    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
-    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
-    return {
-      ratio: Number(splitter?.getAttribute('aria-valuenow')),
-      availableWidth: body && splitter ? body.clientWidth - splitter.offsetWidth : 0,
-    };
-  });
-  assert.equal(
-    splitAtRightClamp.ratio,
-    Math.round((1 - 220 / splitAtRightClamp.availableWidth) * 100),
-    `right drag reaches the JavaScript clamp: ${JSON.stringify(splitAtRightClamp)}`,
-  );
-  await dragSplitter(0.5);
-  const middleRatio = Number(await page.locator('#inventory [data-inventory-splitter]').getAttribute('aria-valuenow'));
-  assert.ok(
-    Math.abs(middleRatio - 50) <= 1,
-    `integer clientX rounding can shift the divider by one percentage point: ${middleRatio}`,
-  );
+  // The side panes' floors come from the CSS (their min-widths), never from literals here.
+  const splitState = async () =>
+    page.evaluate(() => {
+      const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+      const splitter = body?.querySelector('[data-inventory-splitter]');
+      const you = body?.querySelector('[data-pane="you"]');
+      const details = body?.querySelector('[data-pane="details"]');
+      const around = body?.querySelector('[data-pane="around"]');
+      if (!(body && splitter && you && details && around)) {
+        throw new Error('Items pane divider or columns are missing');
+      }
+      return {
+        ratio: Number(splitter.getAttribute('aria-valuenow')),
+        availableWidth: body.clientWidth - splitter.offsetWidth - details.offsetWidth,
+        youMin: Number.parseFloat(getComputedStyle(you).minWidth),
+        aroundMin: Number.parseFloat(getComputedStyle(around).minWidth),
+        aroundWidth: around.getBoundingClientRect().width,
+        youWidth: you.getBoundingClientRect().width,
+        aroundRight: around.getBoundingClientRect().right,
+        bodyRight: body.getBoundingClientRect().left + body.clientLeft + body.clientWidth,
+        gutter: Number.parseFloat(
+          getComputedStyle(document.querySelector('#inventory')).getPropertyValue('--inv-scrollbar-width'),
+        ),
+      };
+    });
+  // Resize handlers run with the next frame, so observe two frames, not an arbitrary delay.
+  const nextFrames = async () =>
+    page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   const emptyAround = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
     const you = document.querySelector('#inventory [data-pane="you"]');
@@ -342,6 +396,7 @@ try {
     const hit = document.elementFromPoint(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
     return {
       around: { width: aroundBox.width, height: aroundBox.height, right: aroundBox.right, bottom: aroundBox.bottom },
+      viewport: { width: window.innerWidth, height: window.innerHeight },
       you: { width: youBox.width, height: youBox.height },
       target: { width: targetBox.width, height: targetBox.height },
       cell,
@@ -350,22 +405,36 @@ try {
     };
   });
   assert.ok(
-    emptyAround.around.right <= 640 && emptyAround.around.bottom <= 400,
-    `vicinity fits 640×400: ${JSON.stringify(emptyAround)}`,
+    emptyAround.around.right <= emptyAround.viewport.width && emptyAround.around.bottom <= emptyAround.viewport.height,
+    `vicinity stays inside its viewport: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(
     emptyAround.target.width < emptyAround.around.width,
     `empty vicinity content shrink-wraps inside its pane: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(
-    emptyAround.around.height < emptyAround.you.height,
-    `empty vicinity shrink-wraps vertically: ${JSON.stringify(emptyAround)}`,
+    emptyAround.target.height < emptyAround.around.height,
+    `empty-feet target stays compact in the full-height Around pane: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(
     emptyAround.target.width >= 2 * emptyAround.cell && emptyAround.target.height >= 2 * emptyAround.cell,
     `feet target remains a usable two-cell hit area: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(emptyAround.targetIsHit, 'the visible empty-feet target receives a centre pointer hit');
+  await dragSplitter(1);
+  const vicinityAtFloor = await splitState();
+  assert.ok(
+    vicinityAtFloor.aroundMin > 0 && Math.abs(vicinityAtFloor.aroundWidth - vicinityAtFloor.aroundMin) <= 1,
+    `the right clamp leaves the vicinity at its CSS floor: ${JSON.stringify(vicinityAtFloor)}`,
+  );
+  process.stdout.write(`${engine}: stable scroll gutter ${vicinityAtFloor.gutter}px\n`);
+  if (engine === 'chromium') {
+    // With overlay scrollbars both gutters are 0, and the cap-wide check below would pass vacuously.
+    assert.ok(
+      vicinityAtFloor.gutter > 0,
+      `Chromium has classic scrollbars (launched without --hide-scrollbars), so the cap-wide rack meets both scroll gutters: ${JSON.stringify(vicinityAtFloor)}`,
+    );
+  }
   await page.evaluate(() => globalThis.scrollFixture.addCapRack());
   const capWideRack = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
@@ -383,6 +452,7 @@ try {
     const hit = document.elementFromPoint(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
     return {
       pane: { left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom },
+      viewport: { width: window.innerWidth, height: window.innerHeight },
       sectionWidth: rack.getBoundingClientRect().width,
       gridWidth: grid.getBoundingClientRect().width,
       clientWidth: scroll.clientWidth,
@@ -397,10 +467,10 @@ try {
   });
   assert.ok(
     capWideRack.pane.left >= 0 &&
-      capWideRack.pane.right <= 640 &&
+      capWideRack.pane.right <= capWideRack.viewport.width &&
       capWideRack.pane.top >= 0 &&
-      capWideRack.pane.bottom <= 400,
-    `cap-wide vicinity stays in the 640×400 viewport: ${JSON.stringify(capWideRack)}`,
+      capWideRack.pane.bottom <= capWideRack.viewport.height,
+    `cap-wide vicinity stays inside its viewport: ${JSON.stringify(capWideRack)}`,
   );
   assert.ok(
     capWideRack.gridWidth <= capWideRack.cap * capWideRack.cell + 1,
@@ -417,7 +487,59 @@ try {
   );
   assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
-  await page.setViewportSize({ width: 720, height: 400 });
+  // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
+  await page.setViewportSize({ width: 1280, height: 400 });
+  await dragSplitter(0);
+  const splitAtLeftClamp = await splitState();
+  assert.ok(
+    Math.abs(splitAtLeftClamp.ratio - Math.round((100 * splitAtLeftClamp.youMin) / splitAtLeftClamp.availableWidth)) <=
+      1,
+    `left drag stops at the player pane's floor: ${JSON.stringify(splitAtLeftClamp)}`,
+  );
+  await dragSplitter(1);
+  const splitAtRightClamp = await splitState();
+  assert.ok(
+    Math.abs(
+      splitAtRightClamp.ratio - Math.round(100 * (1 - splitAtRightClamp.aroundMin / splitAtRightClamp.availableWidth)),
+    ) <= 1,
+    `right drag stops at the vicinity's floor: ${JSON.stringify(splitAtRightClamp)}`,
+  );
+  // The chosen split is a preference: a narrower window clamps only what it applies, and widening restores it.
+  await page.setViewportSize({ width: 800, height: 400 });
+  await nextFrames();
+  const narrowedSplit = await splitState();
+  assert.ok(
+    narrowedSplit.ratio < splitAtRightClamp.ratio - 1 &&
+      Math.abs(narrowedSplit.ratio - Math.round(100 * (1 - narrowedSplit.aroundMin / narrowedSplit.availableWidth))) <=
+        1,
+    `a narrower window applies its own clamp: ${JSON.stringify({ splitAtRightClamp, narrowedSplit })}`,
+  );
+  await page.setViewportSize({ width: 1280, height: 400 });
+  await nextFrames();
+  const restoredSplit = await splitState();
+  assert.ok(
+    Math.abs(restoredSplit.ratio - splitAtRightClamp.ratio) <= 1,
+    `widening the window restores the chosen split: ${JSON.stringify({ splitAtRightClamp, restoredSplit })}`,
+  );
+  // A clamp can land a sub-pixel past a floor, depending on how the details width rounds. Five consecutive widths
+  // cover every rounding residue of a 20% details column; past either clamp, the split must hold and fill the body.
+  for (let width = 1280; width < 1285; width++) {
+    await page.setViewportSize({ width, height: 400 });
+    for (const pastClamp of [-0.2, 1.2]) {
+      await dragSplitter(pastClamp);
+      await nextFrames();
+      const held = await splitState();
+      assert.ok(
+        Math.abs((100 * held.youWidth) / held.availableWidth - held.ratio) <= 1 &&
+          held.aroundRight >= held.bodyRight - 1,
+        `a drag past the clamp holds there and the columns fill the body: ${JSON.stringify({ width, pastClamp, held })}`,
+      );
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 400 });
+  await dragSplitter(0.5);
+  const middleSplit = await splitState();
+  assert.ok(Math.abs(middleSplit.ratio - 50) <= 1, `divider returns to half: ${JSON.stringify(middleSplit)}`);
   await page.evaluate(() => globalThis.scrollFixture.populatePiles());
   const capContainerLayout = async () =>
     page.evaluate(() => {
@@ -511,6 +633,46 @@ try {
   assert.ok(
     fittedAround && fittedAround.x + fittedAround.width <= 960 && fittedAround.y + fittedAround.height <= 540,
     `vicinity stays within the fitted screen: ${JSON.stringify(fittedAround)}`,
+  );
+  await page.setViewportSize({ width: 480, height: 400 });
+  const narrowLayout = await page.evaluate(() => {
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+    const you = body?.querySelector('[data-pane="you"]');
+    const details = body?.querySelector('[data-pane="details"]');
+    const around = body?.querySelector('[data-pane="around"]');
+    if (!(body && you && details && around)) {
+      throw new Error('Narrow inventory columns are missing');
+    }
+    const youBox = you.getBoundingClientRect();
+    const detailsBox = details.getBoundingClientRect();
+    const aroundBox = around.getBoundingClientRect();
+    const actions = [...details.querySelectorAll('.inv-option')];
+    const actionsFit = actions.every((action) => {
+      const bounds = action.getBoundingClientRect();
+      return bounds.left >= detailsBox.left && bounds.right <= detailsBox.right;
+    });
+    return {
+      noHorizontalOverflow: body.scrollWidth <= body.clientWidth,
+      stacked: youBox.bottom <= detailsBox.top && detailsBox.bottom <= aroundBox.top,
+      actionCount: actions.length,
+      actionsFit,
+    };
+  });
+  assert.equal(
+    narrowLayout.noHorizontalOverflow,
+    true,
+    `narrow inventory does not hide columns: ${JSON.stringify(narrowLayout)}`,
+  );
+  assert.equal(
+    narrowLayout.stacked,
+    true,
+    `narrow inventory stacks its scrollable columns: ${JSON.stringify(narrowLayout)}`,
+  );
+  assert.ok(narrowLayout.actionCount > 0, `the details panel exposes an action: ${JSON.stringify(narrowLayout)}`);
+  assert.equal(
+    narrowLayout.actionsFit,
+    true,
+    `narrow detail actions stay inside their panel: ${JSON.stringify(narrowLayout)}`,
   );
   await page.setViewportSize({ width: 1280, height: 480 });
   await page.evaluate(() => globalThis.scrollFixture.populatePiles());
