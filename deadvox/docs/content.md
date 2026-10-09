@@ -14,9 +14,14 @@ read_if:
   - you're authoring base surface materials or procedural pattern tuning
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
+  - you author or change Deadvox content sources or their build pipeline
 ---
 
 # Content sections and recipes
+
+## Authoring source
+
+Use the repository-wide authoring and conversion rule in `../docs/jsonnet.md`. The root `tools/jsonnet` pipeline compiles sources to the JSON consumed by `buildRegistry` in `src/core/content.ts`, so runtime validation and reference checks keep one boundary.
 
 The single section descriptor in `src/core/schema.ts` owns native Valibot schemas,
 labels and registration order. `CONTENT_SECTIONS`/`CONTENT_SECTION_KEYS` supply

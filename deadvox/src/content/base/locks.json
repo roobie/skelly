@@ -1,39 +1,78 @@
 {
-  "items": [
-    {
-      "id": "shed_key",
-      "name": "Shed key",
-      "category": "tool",
-      "weight": 10,
-      "size": [1, 1],
-      "key": { "lock": "test_shed" },
-      "description": "A small key for the shed's door."
-    }
-  ],
   "furniture": [
     {
+      "color": "#666666",
+      "container": {
+        "pockets": [
+          {
+            "grid": [2, 1],
+            "handlingSimSeconds": 0.20000000000000001,
+            "name": "Inside"
+          }
+        ]
+      },
       "id": "key_box",
       "name": "Key box",
-      "size": [1, 1, 1],
-      "color": "#666666",
-      "container": { "pockets": [{ "name": "Inside", "grid": [2, 1], "handlingSimSeconds": 0.2 }] }
+      "size": [1, 1, 1]
+    }
+  ],
+  "items": [
+    {
+      "category": "tool",
+      "description": "A small key for the shed's door.",
+      "id": "shed_key",
+      "key": {
+        "lock": "test_shed"
+      },
+      "name": "Shed key",
+      "size": [1, 1],
+      "weight": 10
+    }
+  ],
+  "layouts": [
+    {
+      "bounds": {
+        "x0": -16,
+        "x1": 16,
+        "z0": -16,
+        "z1": 16
+      },
+      "buildings": [
+        {
+          "position": [-2, 0, -1],
+          "rotation": 0,
+          "template": "locked_shed"
+        }
+      ],
+      "demo": true,
+      "ground": 0,
+      "id": "lock_test",
+      "player": {
+        "bearing": 180,
+        "position": [0, 0.5, -1.5]
+      },
+      "shamblers": [],
+      "terrain": [],
+      "tracks": [],
+      "woodlands": []
     }
   ],
   "loot": [
-    { "id": "shed_key_nearby", "rolls": [1, 1], "entries": [{ "weight": 1, "item": "shed_key", "count": [1, 1] }] }
+    {
+      "entries": [
+        {
+          "count": [1, 1],
+          "item": "shed_key",
+          "weight": 1
+        }
+      ],
+      "id": "shed_key_nearby",
+      "rolls": [1, 1]
+    }
   ],
   "templates": [
     {
       "id": "locked_shed",
-      "size": [8, 6, 8],
-      "palette": {
-        ".": "air",
-        "#": "planks",
-        "W": "siding_blue",
-        "R": "roof",
-        "D": { "furniture": "wood_door", "facing": "n", "lock": { "id": "test_shed", "locked": true } },
-        "K": { "furniture": "key_box", "loot": "shed_key_nearby" }
-      },
       "layers": [
         ["########", "########", "########", "########", "########", "########", "########", "########"],
         ["........", "..K.....", "WWWDDWWW", "W......W", "W......W", "W......W", "W......W", "WWWWWWWW"],
@@ -41,21 +80,26 @@
         ["........", "........", "WWWDDWWW", "W......W", "W......W", "W......W", "W......W", "WWWWWWWW"],
         ["........", "........", "WWWDDWWW", "W......W", "W......W", "W......W", "W......W", "WWWWWWWW"],
         ["........", "........", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR"]
-      ]
-    }
-  ],
-  "layouts": [
-    {
-      "id": "lock_test",
-      "demo": true,
-      "bounds": { "x0": -16, "z0": -16, "x1": 16, "z1": 16 },
-      "ground": 0,
-      "terrain": [],
-      "buildings": [{ "template": "locked_shed", "position": [-2, 0, -1], "rotation": 0 }],
-      "player": { "position": [0, 0.5, -1.5], "bearing": 180 },
-      "shamblers": [],
-      "woodlands": [],
-      "tracks": []
+      ],
+      "palette": {
+        "#": "planks",
+        ".": "air",
+        "D": {
+          "facing": "n",
+          "furniture": "wood_door",
+          "lock": {
+            "id": "test_shed",
+            "locked": true
+          }
+        },
+        "K": {
+          "furniture": "key_box",
+          "loot": "shed_key_nearby"
+        },
+        "R": "roof",
+        "W": "siding_blue"
+      },
+      "size": [8, 6, 8]
     }
   ]
 }

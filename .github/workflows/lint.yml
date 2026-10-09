@@ -30,6 +30,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Cache go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: tools/jsonnet/bin
+          key: jsonnet-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/jsonnet/runtime.json') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -45,6 +50,8 @@ jobs:
       - run: npm ci --prefix deadvox
       - run: npm ci --prefix deadvox/tools/lit-check
       - run: npm ci --prefix mobgen
+      - name: Install pinned go-jsonnet
+        run: npm run jsonnet:setup
       - run: npm run knip
       # The npm script runs the lockfile's @biomejs/biome and fails if it isn't installed;
       # `npx biome` could fall back to the unrelated `biome` package, which checks nothing.

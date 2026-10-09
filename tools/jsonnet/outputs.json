@@ -1,0 +1,8 @@
+{
+  "files": [
+    {
+      "source": "deadvox/src/content/base/locks.jsonnet",
+      "output": "deadvox/src/content/base/locks.json"
+    }
+  ]
+}
