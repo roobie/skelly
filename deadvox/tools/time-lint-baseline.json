@@ -313,7 +313,6 @@
       "time": 2
     },
     "ui/saveController.ts": {
-      "checkpointInterval": 1,
       "recordSnapshotDuration": 2,
       "simTime": 1
     },

@@ -415,6 +415,14 @@ const configureReplayStreaming = (streamer: Engine['streamer'], replay: StartPla
   }
 };
 
+const autosaveCheckpointSimSeconds = (registry: Engine['registry']): number => {
+  const autosave = registry.saves.get('autosave');
+  if (!autosave) {
+    throw new Error('Missing autosave tuning');
+  }
+  return autosave.checkpointSimSeconds;
+};
+
 export const startPlay = (
   engine: Engine,
   debugModule?: DebugModule,
@@ -3184,7 +3192,10 @@ export const startPlay = (
       captureSnapshot,
       () => sim.time,
       { blockSize: s, site: config.site, storeys: config.storeys, density: config.density },
-      { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
+      {
+        checkpointSimSeconds: autosaveCheckpointSimSeconds(registry),
+        recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs),
+      },
     );
   }
   inputRecorder = createInputReplayRecorder(

@@ -186,7 +186,7 @@ if (bench === 'report') {
             return { savedGeneration, failure };
           },
           triggerPeriodicCheckpoint: () => {
-            (saveController as unknown as { nextAutosaveAt: number }).nextAutosaveAt = 0;
+            (saveController as unknown as { checkpoints: { nextAt: number } }).checkpoints.nextAt = 0;
             saveController.afterFrame();
           },
         },

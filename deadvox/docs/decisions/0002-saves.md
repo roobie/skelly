@@ -2,6 +2,7 @@
 read_if:
   - you're changing persistent simulation state or restore guarantees
   - you're evaluating save identity or compatibility policy
+  - you're changing when the game autosaves
 tags: [deadvox, adr, saves, persistence, determinism]
 ---
 
@@ -51,6 +52,15 @@ a frozen page can hold the origin lock and block the next page, so the last
 committed generation remains the recovery point. See
 `src/ui/saveController.ts`, `SaveController`, and `test/browser/save-storage.mjs`.
 These safeguards reduce corruption risk but are not backups.
+
+Autosave checkpoints often enough that a crash or a killed tab loses only a
+little play. Periodic checkpoints count simulated play time, not wall-clock time
+or game hours, so a paused game takes no periodic checkpoint and the cadence
+does not change with the clock ratio. The interval is content tuning in
+`src/content/base/saves.jsonnet`, which `src/game/play.ts`,
+`autosaveCheckpointSimSeconds`, reads; `src/ui/checkpointSchedule.ts`,
+`CheckpointSchedule`, decides when a checkpoint is due. Saves before sleep, on
+`visibilitychange` and on `pagehide` cover the moments between checkpoints.
 
 ## Compatibility
 
