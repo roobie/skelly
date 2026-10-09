@@ -25,9 +25,6 @@ How to look at the game and narrow down a problem. Lessons from past problems ar
 
 The title overlay hides when pointer lock is granted, before the spawn neighborhood is fully meshed. Keep a centered status hint over the canvas until that neighborhood is ready; otherwise the empty view can look like a stalled start. `src/game/play.ts`, `updateStartupHint`, uses `Streamer.unmeshedColumns` to show progress and decide when the hint can hide. This covers post-start meshing; for page load through the title card, see [Startup and save discovery](#startup-and-save-discovery).
 
-## Startup and save discovery
-
-The startup screen covers the title card until save discovery and content validation finish. During that wait, the controller's `#save-status` stays visible beneath the loading bar, so a slow or failed storage check explains itself. The persistence action becomes reachable on the title card only after discovery has established the storage state. See `src/main.ts`, `hideStartupScreen`, and `src/ui/saveController.ts`, `SaveController.prepare`. After starting a new world, see [New-world loading feedback](#new-world-loading-feedback) for the separate spawn-meshing wait.
 
 ## Debug parameters
 
