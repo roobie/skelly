@@ -310,7 +310,7 @@
           "loot": "camp_supplies"
         },
         "z": {
-          "spawn": "shambler",
+          "spawn": "military_shambler",
           "chance": 0.5
         }
       },
@@ -482,7 +482,7 @@
           "loot": "camp_supplies"
         },
         "z": {
-          "spawn": "shambler",
+          "spawn": "military_shambler",
           "chance": 0.4
         },
         "=": "dirt"
@@ -784,7 +784,7 @@
           "furniture": "camp_orders"
         },
         "z": {
-          "spawn": "shambler",
+          "spawn": "military_shambler",
           "chance": 0.4
         }
       },

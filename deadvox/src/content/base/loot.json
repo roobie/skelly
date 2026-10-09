@@ -327,6 +327,24 @@
       ]
     },
     {
+      "id": "soldier_pockets",
+      "rolls": [1, 1],
+      "entries": [{ "nothing": true, "weight": 4 }, { "table": "soldier_kit", "weight": 1 }]
+    },
+    {
+      "id": "soldier_kit",
+      "rolls": [1, 2],
+      "entries": [
+        { "item": "bandage", "weight": 3 },
+        { "item": "antiseptic", "weight": 1 },
+        { "item": "painkillers", "weight": 1 },
+        { "item": "flashlight", "weight": 1 },
+        { "item": "screwdriver", "weight": 1 },
+        { "item": "duct_tape", "weight": 1 },
+        { "item": "matches", "weight": 1 }
+      ]
+    },
+    {
       "id": "hardware_store_stock",
       "rolls": [1, 3],
       "entries": [

@@ -58,6 +58,7 @@
       "type": "enum",
       "storageType": "string",
       "values": [
+        "military_shambler",
         "runner",
         "shambler"
       ],
