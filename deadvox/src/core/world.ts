@@ -29,6 +29,8 @@ export interface WorldDiffs {
 /** Sparse block storage. Missing chunks read as air. */
 export class World {
   readonly chunks = new Map<string, Chunk>();
+  /** Changes whenever blocks visible to simulation queries change. */
+  version = 0;
   private readonly deltas = new Map<string, { x: number; y: number; z: number; base: number; id: number }>();
   private readonly deltaCounts = new Map<string, number>();
   private readonly pendingRestore = new Map<string, { diff: ChunkDiff; blockId: (id: string) => number }>();
@@ -40,6 +42,7 @@ export class World {
   addChunk(chunk: Chunk): void {
     const key = chunkKey(chunk.cx, chunk.cy, chunk.cz);
     this.chunks.set(key, chunk);
+    this.version += 1;
     const pending = this.pendingRestore.get(key);
     if (pending) {
       this.restoreChunkDiff(chunk, pending.diff, pending.blockId);
@@ -48,7 +51,9 @@ export class World {
   }
 
   removeChunk(cx: number, cy: number, cz: number): void {
-    this.chunks.delete(chunkKey(cx, cy, cz));
+    if (this.chunks.delete(chunkKey(cx, cy, cz))) {
+      this.version += 1;
+    }
   }
 
   /** Changed cells only, with stable content ids; the live world and chunks are untouched. */
@@ -90,6 +95,7 @@ export class World {
     }
     const seen = new Set<string>();
     for (const diff of diffs.chunks) {
+      this.version += 1;
       const key = chunkKey(diff.cx, diff.cy, diff.cz);
       if (seen.has(key)) {
         throw new Error(`Duplicate world diff chunk ${key}`);
@@ -138,6 +144,7 @@ export class World {
     this.deltas.set(`${x},${y},${z}`, { x, y, z, base, id });
     const key = chunkKey(diff.cx, diff.cy, diff.cz);
     this.deltaCounts.set(key, (this.deltaCounts.get(key) ?? 0) + 1);
+    this.version += 1;
   }
 
   getBlock(x: number, y: number, z: number): number {
@@ -180,6 +187,7 @@ export class World {
         this.deltaCounts.delete(editedKey);
       }
       chunk.edited = count > 0;
+      this.version += 1;
     }
     return affectedChunks(x, y, z);
   }
