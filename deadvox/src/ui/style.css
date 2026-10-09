@@ -724,7 +724,7 @@ body.unconscious::after {
 }
 #inventory .inv-around-section[data-around-section="container"] {
   flex: 0 0 auto;
-  max-width: min(100%, calc(var(--inv-around-container-width-cap, 100%) + 1.25em));
+  max-width: min(100%, calc(var(--inv-around-container-width-cap, 100%) + 2.5em));
 }
 #inventory .inv-pocket {
   min-width: 0;
