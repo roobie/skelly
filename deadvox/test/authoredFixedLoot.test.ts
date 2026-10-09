@@ -1354,6 +1354,20 @@ describe('authored fixed loot', () => {
     }
   });
 
+  it('spawns each authored medical ward crawler marker as a crawler', () => {
+    const site = new AuthoredSite(73, result.registry, scale, layout);
+    const markers = site.placements
+      .filter((placement) => placement.template.id === 'medical_hall')
+      .flatMap((placement) => placedSpawns(placement).filter(({ zombie }) => zombie === 'crawler'));
+    const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
+    const crawlers = spawns.filter(({ type }) => type === 'crawler');
+
+    expect(markers.length).toBeGreaterThan(0);
+    for (const marker of markers) {
+      expect(crawlers.some(({ pos }) => pos.every((coordinate, axis) => coordinate === marker.pos[axis]))).toBe(true);
+    }
+  });
+
   it('places the agreed shambler threats by beat and keeps the seeded wanderer', () => {
     const houseTemplate = result.registry.templates.get('playtest_house')!;
     const bedroomFloor = houseTemplate.access?.storeys.find(({ id }) => id === 'bedroom')?.floor;
