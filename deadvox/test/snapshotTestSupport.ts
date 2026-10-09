@@ -143,6 +143,7 @@ export function createRuntime(
       time: number,
       compression: number,
     ) => PlayerInputSample;
+    onOpaque?: () => void;
   } = {},
 ) {
   const { sampleAtPlayerTick } = options;
@@ -194,7 +195,10 @@ export function createRuntime(
     registry,
     world,
     isSolid: worldSolid(world, registry, sharedEntities),
-    isOpaque: (x, y, z) => world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z),
+    isOpaque: (x, y, z) => {
+      options.onOpaque?.();
+      return world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z);
+    },
     entities: sharedEntities,
     scale,
     seed,
