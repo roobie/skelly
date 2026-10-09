@@ -1859,10 +1859,31 @@ try {
   );
   assert.equal(fullMeter, 100, 'maximum charge fills the handling meter');
   await releaseThrow();
-  await page.waitForFunction((uid) => {
-    const r = globalThis.primaryActionTest;
-    return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.itemThrows.activeCount > 0;
-  }, throwFixture.uid);
+  try {
+    await page.waitForFunction((uid) => {
+      const r = globalThis.primaryActionTest;
+      return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.itemThrows.activeCount > 0;
+    }, throwFixture.uid);
+  } catch (error) {
+    const state = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(uid);
+      return {
+        location: item && r.inventory.locate(item)?.kind,
+        activeThrows: r.itemThrows.activeCount,
+        throw: r.getItemThrowState(),
+        target: r.itemLandingTarget(r.inventory.registry.senses.get('player').light.throwMaxDistanceMetres),
+        useHeld: r.input.dominantUseHeld,
+        rightHeld: r.input.rightMouseHeld,
+        time: r.session.sim.time,
+        bodyRefusal: r.session.sim.body.actionRefusal,
+        notice: r.getNotice(),
+        throwActions: r.inputRecorder.copyInputs().actions.filter((action) => action.action === 'item.throw').length,
+      };
+    }, throwFixture.uid);
+    process.stderr.write(`Full-charge throw did not complete: ${JSON.stringify(state)}\\n`);
+    throw error;
+  }
   await page.waitForFunction(() => document.querySelector('#handling').hidden);
   const thrownGlowstick = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;

@@ -124,6 +124,8 @@ export const observationPlugin = {
     },
     hudOptions,
     beginItemThrow,
+    itemLandingTarget,
+    getItemThrowState: () => ({ startedAt: itemThrowStartedAt, itemUid: itemThrowItemUid, hand: itemThrowHand }),
     selectPrimaryAction,
     ignitionTargetForHand,
     interactionTargetAt,
