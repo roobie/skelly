@@ -75,6 +75,7 @@ export const TEMPORAL_FIELDS = [
     unit: 'PerSecond',
     dimension: 'rate',
   },
+  { path: 'saves.checkpointSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'body.infectionOnsetGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.antisepticWindowGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.knockoutSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

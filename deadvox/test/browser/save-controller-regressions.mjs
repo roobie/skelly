@@ -295,7 +295,7 @@ try {
     const schedule = await page.evaluate(async () => {
       const { controller } = deadvoxSaveTest;
       // The interval play bound from content; the schedule below is expressed in it.
-      const interval = controller.checkpoints?.interval;
+      const interval = controller.checkpoints?.intervalSimSeconds;
       if (!(interval > 0)) {
         throw new Error(`play bound no positive checkpoint interval: ${interval}`);
       }
@@ -439,7 +439,7 @@ try {
         return snapshot;
       };
       controller.bindSession(latestSnapshot, () => time, controller.worldOptions, {
-        checkpointSimSeconds: controller.checkpoints.interval,
+        checkpointSimSeconds: controller.checkpoints.intervalSimSeconds,
       });
       storage.save = async (saveNamespace, encode) => {
         calls += 1;

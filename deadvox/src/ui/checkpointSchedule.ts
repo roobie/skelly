@@ -3,11 +3,11 @@
  * stands still, never saves however long it stays open.
  */
 export class CheckpointSchedule {
-  private readonly interval: number;
+  private readonly intervalSimSeconds: number;
   private nextAt: number;
 
-  constructor(interval: number, time: number) {
-    this.interval = interval;
+  constructor(intervalSimSeconds: number, time: number) {
+    this.intervalSimSeconds = intervalSimSeconds;
     this.nextAt = this.after(time);
   }
 
@@ -26,6 +26,6 @@ export class CheckpointSchedule {
   }
 
   private after(time: number): number {
-    return (Math.floor(time / this.interval) + 1) * this.interval;
+    return (Math.floor(time / this.intervalSimSeconds) + 1) * this.intervalSimSeconds;
   }
 }
