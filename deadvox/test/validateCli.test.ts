@@ -56,7 +56,9 @@ describe('validate CLI', () => {
   it('reports an unreachable component from static reachability', () => {
     const run = validate('test/fixtures/content/reachability-unfound.json');
     expect(run.status).toBe(1);
-    expect(run.stdout).toContain('recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable');
+    expect(run.stdout).toContain(
+      'recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable',
+    );
   });
 
   it('rejects compatible content and asset fixtures with every per-file diagnostic', () => {

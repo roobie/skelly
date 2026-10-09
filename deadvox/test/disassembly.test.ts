@@ -17,7 +17,7 @@ const itemSource = (file: string, ids: readonly string[]) => {
   data.items = data.items.filter(({ id }) => ids.includes(id));
   for (const item of data.items) {
     if (item.id === 'portable_radio') {
-      delete item.salvage;
+      item.salvage = undefined;
     }
   }
   return { source: file, data };
