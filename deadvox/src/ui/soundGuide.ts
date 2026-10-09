@@ -181,7 +181,7 @@ const TRIGGER_ENTRIES = [
     'gunshot',
     {
       trigger:
-        'Fire the AK-pattern rifle; its AKM samples vary per shot. A real suppressor cuts base noise radius to a quarter, an improvised one leaves seven-tenths, and far hearing extends beyond either base.',
+        'Fire the AK-pattern rifle; its AKM samples vary per shot. Fitted suppressors reduce hearing distance: the improvised suppressor is louder than the real one, and wear makes either louder.',
     },
   ],
   ['gunshot_pbs1_reference', { trigger: 'Preview-only PBS-1 suppressed AKM alternatives; not used by gameplay.' }],
@@ -190,7 +190,7 @@ const TRIGGER_ENTRIES = [
     'gunshot_m4_suppressed',
     {
       trigger:
-        'Fire the AR-pattern rifle with a real suppressor fitted; it cuts the base noise radius to one quarter, and the far-hearing tier carries it beyond that.',
+        'Fire the AR-pattern rifle with a real suppressor fitted; it reduces the shot’s hearing distance, and wear makes it carry farther.',
     },
   ],
   [

@@ -117,7 +117,7 @@ describe('audio listening guide', () => {
     expect(definitions.get('shambler_step_leaves')?.variants).toEqual(definitions.get('footstep_leaves')?.variants);
   });
 
-  it('uses only the selected generic swing and exposes the new drop and pouch cues without noise emission', () => {
+  it('keeps fist-hit, item-drop, and pouch cues listed with expected noise and provenance', () => {
     const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
     for (const id of ['melee_hit_fist', 'item_drop_wood', 'pouch_take']) {
       expect(definitions.get(id)?.noise.enabled).toBe(false);
