@@ -120,6 +120,18 @@ try {
         lastManualTimestamp = timestamp;
         frame.callback(timestamp);
       },
+      until: (predicate, maxFrames = 60) => {
+        for (let frames = 0; frames <= maxFrames; frames += 1) {
+          const value = predicate();
+          if (value) {
+            return { reached: true, frames, value };
+          }
+          if (frames < maxFrames) {
+            globalThis.pumpManualFrames.step(1 / 60);
+          }
+        }
+        return { reached: false, frames: maxFrames };
+      },
       disable: () => {
         manualFrames = false;
         lastManualTimestamp = undefined;
@@ -598,9 +610,9 @@ try {
   const startWaitFromButton = async () => {
     const noticeBefore = await page.evaluate(() => globalThis.pumpHandlingTest.getNotice());
     await clickWaitButton();
-    const state = await page.evaluate((previousNotice) => {
+    const result = await page.evaluate((previousNotice) => {
       const { session, getNotice } = globalThis.pumpHandlingTest;
-      for (let frames = 0; frames < 60; frames += 1) {
+      return globalThis.pumpManualFrames.until(() => {
         const {
           sim: {
             actions: { job },
@@ -608,62 +620,72 @@ try {
           },
         } = session;
         const notice = getNotice();
-        if (job?.jobType === 'wait' || notice !== previousNotice) {
-          return { job, notice, frames, simTime };
-        }
-        globalThis.pumpManualFrames.step(1 / 60);
-      }
-      const {
-        sim: {
-          actions: { job },
-          time: simTime,
-        },
-      } = session;
-      return { job, notice: getNotice(), frames: 60, simTime };
+        return job?.jobType === 'wait' || notice !== previousNotice
+          ? { job, notice, simTime }
+          : undefined;
+      });
     }, noticeBefore);
     assert.equal(
-      state.job?.jobType,
-      'wait',
-      `Wait button did not start after bounded simulated frames: ${JSON.stringify(state)}`,
+      result.reached && result.value.job?.jobType === 'wait',
+      true,
+      `Wait button did not start after bounded simulated frames: ${JSON.stringify(result)}`,
     );
   };
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   await startWaitFromButton();
   assert.match(await page.locator('#rest').textContent(), /Waiting/);
   const waitStart = await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.time);
-  await page.evaluate(() => globalThis.pumpManualFrames.step(1));
-  assert(
-    (await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.time)) > waitStart,
-    'Wait advances simulated time',
-  );
+  const timeProgress = await page.evaluate((start) => {
+    const { session } = globalThis.pumpHandlingTest;
+    return globalThis.pumpManualFrames.until(() => {
+      const { sim: { time } } = session;
+      return time > start ? time : undefined;
+    });
+  }, waitStart);
+  assert.equal(timeProgress.reached, true, 'Wait advances simulated time');
+
+  const waitUntilStopped = async () => {
+    const result = await page.evaluate(() => {
+      const { session } = globalThis.pumpHandlingTest;
+      return globalThis.pumpManualFrames.until(() => {
+        const { sim: { actions: { job } } } = session;
+        return job === undefined;
+      });
+    });
+    assert.equal(result.reached, true, `Wait did not stop: ${JSON.stringify(result)}`);
+  };
   await pressAction(page, 'handling.stop');
-  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
-  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job === undefined);
+  await waitUntilStopped();
   assert.equal(await page.locator('#rest').isVisible(), false);
 
   await pressAction(page, 'ui.inventory-tab-actions');
   await startWaitFromButton();
   await pressAction(page, 'movement.forward');
-  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
-  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job === undefined);
+  await waitUntilStopped();
 
   await pressAction(page, 'ui.inventory-tab-actions');
   await startWaitFromButton();
-  await page.evaluate(() =>
-    globalThis.pumpHandlingTest.session.sim.emit({ kind: 'interrupt', reason: 'test interruption' }),
-  );
-  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
-  await page.waitForFunction(
-    () =>
-      globalThis.pumpHandlingTest.session.sim.actions.job?.jobType === 'wait' &&
-      globalThis.pumpHandlingTest.session.sim.actions.job.stopped &&
-      globalThis.pumpHandlingTest.session.sim.compression.interruption === 'test interruption',
-  );
+  await page.evaluate(() => {
+    const { session } = globalThis.pumpHandlingTest;
+    session.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+  });
+  const interrupted = await page.evaluate(() => {
+    const { session } = globalThis.pumpHandlingTest;
+    return globalThis.pumpManualFrames.until(() => {
+      const {
+        sim: {
+          actions: { job },
+          compression: { interruption },
+        },
+      } = session;
+      return job?.jobType === 'wait' && job.stopped && interruption === 'test interruption';
+    });
+  });
+  assert.equal(interrupted.reached, true, `Wait interruption did not settle: ${JSON.stringify(interrupted)}`);
   await pressAction(page, 'compression.continue');
   await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
   await pressAction(page, 'handling.stop');
-  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
-  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job === undefined);
+  await waitUntilStopped();
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
   await page.setViewportSize({ width: 880, height: 540 });
   for (const tab of ['items', 'skills', 'crafting', 'actions']) {
