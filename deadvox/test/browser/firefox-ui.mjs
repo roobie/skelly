@@ -346,7 +346,14 @@ try {
     await moveCursorTo({ x: sourceBox.x + sourceBox.width / 2, y: sourceBox.y + sourceBox.height / 2 });
     await dispatchPointer('pointerdown', 0, 1);
     await moveCursorTo({ x: targetBox.x + 16, y: targetBox.y + 16 });
+    const ghost = page.locator('#inventory-drag-root .inv-ghost');
+    const ghostLayer = await ghost.evaluate((node) => ({
+      zIndex: Number(getComputedStyle(node).zIndex),
+      inventoryZIndex: Number(getComputedStyle(document.querySelector('#inventory')).zIndex),
+    }));
+    assert.ok(ghostLayer.zIndex > ghostLayer.inventoryZIndex, 'Firefox drag ghost is visible above the inventory');
     await dispatchPointer('pointerup', -1, 0);
+    assert.equal(await ghost.count(), 0, 'Firefox drop removes the drag ghost');
   };
   const finishMove = async () => {
     await pressAction(page, 'ui.inventory-toggle');
