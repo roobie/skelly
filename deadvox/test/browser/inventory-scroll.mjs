@@ -249,7 +249,9 @@ try {
   await page.locator('#inventory .inv-tab[data-tab="items"]').click();
   await page.setViewportSize({ width: 800, height: 400 });
   await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
-  const selectedDetailLayout = await page.evaluate(() => {
+  // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
+  const EDGE = 0.5;
+  const selectedDetailLayout = await page.evaluate((edge) => {
     const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const you = body?.querySelector('[data-pane="you"]');
     const details = body?.querySelector('[data-pane="details"]');
@@ -262,7 +264,7 @@ try {
     const detailsBox = details.getBoundingClientRect();
     const aroundBox = around.getBoundingClientRect();
     return {
-      between: youBox.right <= detailsBox.left && detailsBox.right <= aroundBox.left,
+      between: youBox.right <= detailsBox.left + edge && detailsBox.right <= aroundBox.left + edge,
       sideBySide: Math.abs(youBox.top - detailsBox.top) <= 1 && Math.abs(detailsBox.top - aroundBox.top) <= 1,
       boxes: {
         you: { left: youBox.left, right: youBox.right },
@@ -272,7 +274,7 @@ try {
       detailsUid: details.getAttribute('data-selected-uid'),
       selectedUid: selected.getAttribute('data-uid'),
     };
-  });
+  }, EDGE);
   assert.equal(
     selectedDetailLayout.sideBySide,
     true,
@@ -284,7 +286,7 @@ try {
     `details sit between the two item locations: ${JSON.stringify(selectedDetailLayout)}`,
   );
   assert.equal(selectedDetailLayout.detailsUid, selectedDetailLayout.selectedUid, 'details show the selected item');
-  const splitAtOpen = await page.evaluate(() => {
+  const splitAtOpen = await page.evaluate((edge) => {
     const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const splitter = body?.querySelector('[data-inventory-splitter]');
     const you = body?.querySelector('[data-pane="you"]');
@@ -302,11 +304,11 @@ try {
       ratio: Number(splitter.getAttribute('aria-valuenow')),
       actualRatio: (100 * youBox.width) / availableWidth,
       availableWidth,
-      dividerBetweenColumns: youBox.right <= dividerBox.left && dividerBox.right <= detailsBox.left,
+      dividerBetweenColumns: youBox.right <= dividerBox.left + edge && dividerBox.right <= detailsBox.left + edge,
       aroundWidth: around.getBoundingClientRect().width,
       aroundColumnWidth: tracks[3],
     };
-  });
+  }, EDGE);
   assert.ok(
     Math.abs(splitAtOpen.ratio - Math.round(splitAtOpen.actualRatio)) <= 1,
     `splitter state matches the CSS allocation: ${JSON.stringify(splitAtOpen)}`,
@@ -346,51 +348,25 @@ try {
     await page.mouse.move(startX + (fraction - geometry.ratio) * geometry.availableWidth, y);
     await page.mouse.up();
   };
-  await dragSplitter(0);
-  const splitAtLeftClamp = await page.evaluate(() => {
-    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
-    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
-    const details = body?.querySelector('[data-pane="details"]');
-    return {
-      ratio: Number(splitter?.getAttribute('aria-valuenow')),
-      availableWidth: body && splitter && details ? body.clientWidth - splitter.offsetWidth - details.offsetWidth : 0,
-    };
-  });
-  assert.ok(
-    Math.abs(splitAtLeftClamp.ratio - Math.round((220 / splitAtLeftClamp.availableWidth) * 100)) <= 1,
-    `left drag reaches the JavaScript clamp within percentage rounding: ${JSON.stringify(splitAtLeftClamp)}`,
-  );
-  await dragSplitter(1);
-  const splitAtRightClamp = await page.evaluate(() => {
-    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
-    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
-    const details = body?.querySelector('[data-pane="details"]');
-    return {
-      ratio: Number(splitter?.getAttribute('aria-valuenow')),
-      availableWidth: body && splitter && details ? body.clientWidth - splitter.offsetWidth - details.offsetWidth : 0,
-    };
-  });
-  assert.ok(
-    Math.abs(splitAtRightClamp.ratio - Math.round((1 - 362 / splitAtRightClamp.availableWidth) * 100)) <= 1,
-    `right drag reaches the JavaScript clamp within percentage rounding: ${JSON.stringify(splitAtRightClamp)}`,
-  );
-  await dragSplitter(0.5);
-  const middleSplit = await page.evaluate(() => {
-    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
-    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
-    const details = body?.querySelector('[data-pane="details"]');
-    return {
-      ratio: Number(splitter?.getAttribute('aria-valuenow')),
-      availableWidth: body && splitter && details ? body.clientWidth - splitter.offsetWidth - details.offsetWidth : 0,
-    };
-  });
-  const minRatio = Math.min(0.5, 220 / middleSplit.availableWidth);
-  const maxRatio = Math.max(minRatio, Math.min(0.5, 1 - 362 / middleSplit.availableWidth));
-  const expectedMiddleRatio = Math.max(minRatio, Math.min(maxRatio, 0.5));
-  assert.ok(
-    Math.abs(middleSplit.ratio - Math.round(expectedMiddleRatio * 100)) <= 1,
-    `divider settles at the nearest feasible midpoint: ${JSON.stringify(middleSplit)}`,
-  );
+  // The side panes' floors come from the CSS (their min-widths), never from literals here.
+  const splitState = async () =>
+    page.evaluate(() => {
+      const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+      const splitter = body?.querySelector('[data-inventory-splitter]');
+      const you = body?.querySelector('[data-pane="you"]');
+      const details = body?.querySelector('[data-pane="details"]');
+      const around = body?.querySelector('[data-pane="around"]');
+      if (!(body && splitter && you && details && around)) {
+        throw new Error('Items pane divider or columns are missing');
+      }
+      return {
+        ratio: Number(splitter.getAttribute('aria-valuenow')),
+        availableWidth: body.clientWidth - splitter.offsetWidth - details.offsetWidth,
+        youMin: Number.parseFloat(getComputedStyle(you).minWidth),
+        aroundMin: Number.parseFloat(getComputedStyle(around).minWidth),
+        aroundWidth: around.getBoundingClientRect().width,
+      };
+    });
   const emptyAround = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
     const you = document.querySelector('#inventory [data-pane="you"]');
@@ -436,6 +412,12 @@ try {
     `feet target remains a usable two-cell hit area: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(emptyAround.targetIsHit, 'the visible empty-feet target receives a centre pointer hit');
+  await dragSplitter(1);
+  const vicinityAtFloor = await splitState();
+  assert.ok(
+    vicinityAtFloor.aroundMin > 0 && Math.abs(vicinityAtFloor.aroundWidth - vicinityAtFloor.aroundMin) <= 1,
+    `the right clamp leaves the vicinity at its CSS floor: ${JSON.stringify(vicinityAtFloor)}`,
+  );
   await page.evaluate(() => globalThis.scrollFixture.addCapRack());
   const capWideRack = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
@@ -488,7 +470,26 @@ try {
   );
   assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
+  // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
   await page.setViewportSize({ width: 1280, height: 400 });
+  await dragSplitter(0);
+  const splitAtLeftClamp = await splitState();
+  assert.ok(
+    Math.abs(splitAtLeftClamp.ratio - Math.round((100 * splitAtLeftClamp.youMin) / splitAtLeftClamp.availableWidth)) <=
+      1,
+    `left drag stops at the player pane's floor: ${JSON.stringify(splitAtLeftClamp)}`,
+  );
+  await dragSplitter(1);
+  const splitAtRightClamp = await splitState();
+  assert.ok(
+    Math.abs(
+      splitAtRightClamp.ratio - Math.round(100 * (1 - splitAtRightClamp.aroundMin / splitAtRightClamp.availableWidth)),
+    ) <= 1,
+    `right drag stops at the vicinity's floor: ${JSON.stringify(splitAtRightClamp)}`,
+  );
+  await dragSplitter(0.5);
+  const middleSplit = await splitState();
+  assert.ok(Math.abs(middleSplit.ratio - 50) <= 1, `divider returns to half: ${JSON.stringify(middleSplit)}`);
   await page.evaluate(() => globalThis.scrollFixture.populatePiles());
   const capContainerLayout = async () =>
     page.evaluate(() => {

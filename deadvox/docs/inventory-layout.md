@@ -13,15 +13,24 @@ put its apparent click point in an adjacent pane when content packing changes.
 Sharing the screen with the crafting catalogue must not make an ordinary pile
 slot inaccessible merely because the item occupies a different column.
 
-For #518, selected-item details stay between the two item locations so the
-player can inspect an item while seeing both destinations. On tighter windows,
-details yield space before the layout stacks. The divider state follows the
-space left after details and keeps both side panes within their usable bounds.
-The nearby pane reserves room for a cap-limited locker and its vertical scroll
-gutter, avoiding horizontal scrolling in an ordinary locker. The handling
-queue stays below the panes because it summarizes work across the whole
-inventory. See `src/ui/style.css`, `#inventory .inv-body[data-tab-panel="items"]`,
-and `src/ui/inventoryScreen.ts`, `InventoryScreen.syncSplitterToLayout`.
+Selected-item details stay between the two item locations so the player can
+inspect an item while seeing both destinations. On tighter windows, details
+yield space before the layout stacks. The nearby pane's floor is derived from
+the content's container width cap, plus two scroll gutters: the locker grid's
+and the pane's own. A cap-wide locker therefore fits without horizontal
+scrolling whatever the cap. No CSS value reports a gutter's width; it is 0 with
+overlay scrollbars and about 15px with classic ones, and a browser can hide its
+scrollbars yet still reserve a stable gutter. So the screen measures a stable
+gutter and publishes it as `--inv-scrollbar-width` (`src/ui/inventoryScreen.ts`,
+`scrollbarWidth`). The floors live once, in CSS, as the side panes'
+min-widths. The divider's clamp reads them, so the divider and the columns
+can't disagree. The divider keeps the player's chosen
+split and clamps only what it applies: a window too narrow for that split
+shows the nearest one that fits, and widening it again restores the choice.
+The handling queue stays below the panes because it summarizes work across
+the whole inventory. See `src/ui/style.css`,
+`#inventory .inv-body[data-tab-panel="items"]`, and `src/ui/inventoryScreen.ts`,
+`splitBounds` and `InventoryScreen.syncSplitterToLayout`.
 
 The floor and container sections wrap when they cannot share a row, so the
 vicinity uses its available width without squeezing a capped grid. Justified

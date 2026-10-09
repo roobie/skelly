@@ -557,18 +557,30 @@ body.unconscious::after {
   grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
   grid-template-rows: minmax(0, 1fr);
 }
+/* The side panes' floors are their min-widths too, so the splitter's clamp reads the same values. */
 #inventory .inv-body[data-tab-panel="items"] {
   --inv-details-width: 20%;
-  grid-template-columns: minmax(220px, var(--inv-you-fr, 0.5fr)) 12px minmax(0, var(--inv-details-width)) minmax(
-      362px,
-      var(--inv-around-fr, 0.5fr)
-    );
+  --inv-you-min: 220px;
+  /* A cap-wide container section (its grid plus scroll gutter) beside the pane's own scroll gutter, inside the pane's padding and border. */
+  --inv-around-min: calc(
+    var(--inv-around-container-width-cap, 0px) +
+    2 *
+    var(--inv-scrollbar-width, 1em) +
+    2 *
+    var(--inv-pane-padding-inline) +
+    2 *
+    var(--inv-pane-border-width)
+  );
+  grid-template-columns:
+    minmax(var(--inv-you-min), var(--inv-you-fr, 0.5fr)) 12px minmax(0, var(--inv-details-width))
+    minmax(var(--inv-around-min), var(--inv-around-fr, 0.5fr));
   grid-template-rows: minmax(0, 1fr);
   column-gap: 0;
 }
 #inventory .inv-body[data-tab-panel="items"] [data-pane="you"] {
   grid-column: 1;
   grid-row: 1;
+  min-width: var(--inv-you-min);
 }
 #inventory .inv-body[data-tab-panel="items"] .inv-splitter {
   grid-column: 2;
@@ -591,6 +603,7 @@ body.unconscious::after {
   grid-column: 4;
   grid-row: 1;
   width: 100%;
+  min-width: var(--inv-around-min);
   max-width: none;
   scrollbar-gutter: stable;
 }
@@ -608,6 +621,7 @@ body.unconscious::after {
   #inventory .inv-body[data-tab-panel="items"] [data-pane="you"] {
     grid-column: 1;
     grid-row: 1;
+    min-width: 0;
   }
   #inventory .inv-body[data-tab-panel="items"] .inv-splitter {
     display: none;
@@ -619,6 +633,7 @@ body.unconscious::after {
   #inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
     grid-column: 1;
     grid-row: 3;
+    min-width: 0;
   }
 }
 #inventory .inv-pane,
@@ -729,7 +744,7 @@ body.unconscious::after {
 }
 #inventory .inv-around-section[data-around-section="container"] {
   flex: 0 0 auto;
-  min-width: min(100%, calc(var(--inv-around-container-width-cap, 100%) + 1em));
+  min-width: min(100%, calc(var(--inv-around-container-width-cap, 100%) + var(--inv-scrollbar-width, 1em)));
   max-width: min(100%, calc(var(--inv-around-container-width-cap, 100%) + 1.25em));
 }
 #inventory .inv-pocket {
