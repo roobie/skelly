@@ -819,11 +819,28 @@ try {
     };
   })()`);
   assert.match(transfer.sourceTarget, /^pocket:/, 'source item is in a container pocket');
-  await moveCursorTo(transfer.source);
-  await evaluate(`document.elementFromPoint(${transfer.source.x}, ${transfer.source.y}).dispatchEvent(new PointerEvent('pointerdown', {
-    bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1,
-    clientX: ${transfer.source.x}, clientY: ${transfer.source.y},
-  }))`);
+  const dragGhost = () =>
+    evaluate(`(() => {
+      const ghost = document.querySelector('#inventory-drag-root .inv-ghost');
+      if (!ghost) return null;
+      const rect = ghost.getBoundingClientRect();
+      return {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        zIndex: Number(getComputedStyle(ghost).zIndex),
+        inventoryZIndex: Number(getComputedStyle(document.querySelector('#inventory')).zIndex),
+      };
+    })()`);
+  const beginDrag = async () => {
+    await moveCursorTo(transfer.source);
+    await evaluate(`document.elementFromPoint(${transfer.source.x}, ${transfer.source.y}).dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1,
+      clientX: ${transfer.source.x}, clientY: ${transfer.source.y},
+    }))`);
+  };
+  await beginDrag();
   assert.equal(
     await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent"),
     'Can of beans',
@@ -831,7 +848,29 @@ try {
   );
   await moveCursorTo(transfer.destination);
   await dispatchPointerAt('pointermove', -1, 1, transfer.destination);
+  const ghostAtDestination = await dragGhost();
+  assert(ghostAtDestination, 'drag displays the item ghost');
+  assert.ok(
+    ghostAtDestination.zIndex > ghostAtDestination.inventoryZIndex,
+    'drag ghost is layered above the inventory',
+  );
+  const movedPointer = { x: transfer.destination.x + 4, y: transfer.destination.y + 6 };
+  await dispatchPointerAt('pointermove', -1, 1, movedPointer);
+  const ghostAfterMove = await dragGhost();
+  assert.equal(ghostAfterMove?.left, ghostAtDestination.left + 4, 'drag ghost follows horizontal pointer movement');
+  assert.equal(ghostAfterMove?.top, ghostAtDestination.top + 6, 'drag ghost follows vertical pointer movement');
+  const outside = { x: 4, y: 4 };
+  await dispatchPointerAt('pointermove', -1, 1, outside);
+  await dispatchPointerAt('pointerup', -1, 0, outside);
+  assert.equal(await dragGhost(), null, 'release outside removes the drag ghost');
+  assert.equal(await moveQueued(), false, 'release outside cancels the move');
+
+  await beginDrag();
+  await moveCursorTo(transfer.destination);
+  await dispatchPointerAt('pointermove', -1, 1, transfer.destination);
+  assert(await dragGhost(), 'drag displays the item ghost before drop');
   await dispatchPointerAt('pointerup', -1, 0, transfer.destination);
+  assert.equal(await dragGhost(), null, 'drop removes the drag ghost');
   await delay(100);
   assert.match(
     await evaluate("document.querySelector('#inventory .inv-queue').textContent"),

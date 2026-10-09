@@ -639,7 +639,7 @@ body.unconscious::after {
 }
 .inv-ghost {
   position: fixed;
-  z-index: 10;
+  z-index: 22;
   pointer-events: none;
   opacity: 0.85;
   border-color: var(--accent);
