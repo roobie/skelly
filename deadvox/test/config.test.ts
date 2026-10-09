@@ -1,8 +1,12 @@
 import { expect, it, vi } from 'vitest';
-import { SPAWN_TIMES } from '../src/core/clock.ts';
+import { SPAWN_TIME, SPAWN_TIMES } from '../src/core/clock.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { applyWeatheringConfig, configFromUrl, makeConfig } from '../src/game/config.ts';
+
+it('uses SPAWN_TIME when the URL has no time for a site without its own start', () => {
+  expect(configFromUrl(new URLSearchParams('site=city')).start).toBe(SPAWN_TIME);
+});
 
 it('restricts handedness overrides to debug URL configuration', () => {
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=left')).debugHandedness).toBe('left');

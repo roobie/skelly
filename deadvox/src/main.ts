@@ -5,6 +5,8 @@ import { loadRecord } from './bench/plan.ts';
 import { showReport } from './bench/report.ts';
 import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
+import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
+import { validateManifest } from './core/assets.ts';
 import { parseTimeOfDay } from './core/clock.ts';
 import { applyWeatheringConfig, configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
@@ -15,11 +17,60 @@ import { startPlay } from './game/play.ts';
 import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
+import { mountCredits } from './ui/credits.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
 import { contentLookup, SaveController } from './ui/saveController.ts';
 
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
+const startupScreen = document.getElementById('startup-screen')!;
+const overlay = document.getElementById('overlay')!;
+overlay.inert = true;
+const saveStatus = document.getElementById('save-status')!;
+const saveStatusHome = saveStatus.parentElement!;
+const saveStatusNextSibling = saveStatus.nextSibling;
+const restoreSaveStatus = () => {
+  if (saveStatus.parentElement === startupScreen) {
+    saveStatusHome.insertBefore(saveStatus, saveStatusNextSibling);
+  }
+};
+const hideStartupScreen = () => {
+  restoreSaveStatus();
+  overlay.inert = false;
+  startupScreen.hidden = true;
+};
+const showStartupFailure = (message: string) => {
+  document.getElementById('errors')!.textContent = message;
+  hideStartupScreen();
+};
+// The opaque loading screen covers errors, so surface failures from module startup as well as replay setup.
+globalThis.addEventListener('error', (event) => {
+  if (!startupScreen.hidden) {
+    showStartupFailure(`Startup failed: ${event.error instanceof Error ? event.error.message : event.message}`);
+  }
+});
+globalThis.addEventListener('unhandledrejection', (event) => {
+  if (!startupScreen.hidden) {
+    event.preventDefault();
+    const detail = event.reason instanceof Error ? event.reason.message : String(event.reason);
+    showStartupFailure(`Startup failed: ${detail}`);
+  }
+});
+const menuCard = document.querySelector<HTMLElement>('#overlay .card');
+const scrollUpCue = document.getElementById('card-scroll-up');
+const scrollDownCue = document.getElementById('card-scroll-down');
+if (menuCard && scrollUpCue && scrollDownCue) {
+  const updateScrollCues = () => {
+    const overflows = menuCard.scrollHeight > menuCard.clientHeight + 1;
+    scrollUpCue.hidden = !overflows || menuCard.scrollTop <= 1;
+    scrollDownCue.hidden = !overflows || menuCard.scrollTop + menuCard.clientHeight >= menuCard.scrollHeight - 1;
+  };
+  menuCard.addEventListener('scroll', updateScrollCues, { passive: true });
+  window.addEventListener('resize', updateScrollCues);
+  new ResizeObserver(updateScrollCues).observe(menuCard);
+  new MutationObserver(updateScrollCues).observe(menuCard, { attributes: true, childList: true, subtree: true });
+  updateScrollCues();
+}
 const menuKeyLabel = document.querySelector<HTMLElement>('[data-key-binding="mainMenu"]');
 const drawMenuLabel = () => {
   if (menuKeyLabel) {
@@ -31,7 +82,32 @@ inputBindings.subscribe(drawMenuLabel);
 drawMenuLabel();
 const bench = params.get('bench');
 const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
+if (bench === null) {
+  const credits = validateManifest('assets/manifest.json', assetManifest);
+  document.getElementById('errors')!.textContent = credits.issues
+    .map((issue) => `${issue.source} ${issue.path}: ${issue.message}`)
+    .join('\n');
+  mountCredits(
+    {
+      about: document.getElementById('about')!,
+      box: document.getElementById('credits')!,
+      show: document.getElementById('show-credits')!,
+    },
+    credits.manifest,
+  );
+  for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-view-distance]')) {
+    const radius = link.dataset.viewDistance;
+    if (radius) {
+      const target = new URL(location.href);
+      target.searchParams.set('radius', radius);
+      link.href = target.href;
+    }
+  }
+}
 
+if (bench !== null) {
+  hideStartupScreen();
+}
 if (bench === 'report') {
   document.body.classList.add('bench');
   showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
@@ -80,21 +156,23 @@ if (bench === 'report') {
           endSimTimestamp: decoded.endSimTimestamp,
         },
       });
+      hideStartupScreen();
     } catch (error) {
       clearPendingInputReplay();
-      document.getElementById('errors')!.textContent =
-        `Replay rejected: ${error instanceof Error ? error.message : String(error)}`;
+      showStartupFailure(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
     }
   } else {
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
     const saveController = new SaveController(backend);
-    const savedWorld = await saveController.prepare();
+    startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
       Object.assign(globalThis, {
         deadvoxSaveTest: {
           storage: saveController.storage,
-          namespace: saveController.namespace,
+          get namespace() {
+            return saveController.namespace;
+          },
           controller: saveController,
           saveState: () => {
             const { savedGeneration, failure } = saveController as unknown as {
@@ -110,6 +188,7 @@ if (bench === 'report') {
         },
       });
     }
+    const savedWorld = await saveController.prepare();
     if (savedWorld) {
       const resumed = makeConfig(savedWorld.seed, config.radiusM, savedWorld.blockSize);
       resumed.start = savedWorld.clock.start;
@@ -125,8 +204,20 @@ if (bench === 'report') {
     const restored = await saveController.validateContent(engine.registry);
     if (saveController.isRestored && restored) {
       startPlay(engine, debugModule, { saveController, restore: restored });
+      hideStartupScreen();
     } else {
-      saveController.setNewWorldLauncher((creation) => startPlay(engine, debugModule, { saveController, ...creation }));
+      saveController.setNewWorldLauncher((creation) => {
+        const entry = startPlay(engine, debugModule, { saveController, ...creation });
+        return {
+          enter: () => {
+            overlay.classList.remove('startup-ready');
+            entry.enter();
+          },
+        };
+      });
+      saveController.setNewWorldGoLabel('Click to start game');
+      overlay.classList.add('startup-ready');
+      hideStartupScreen();
     }
   }
 } else if (bench === 'shamblers') {

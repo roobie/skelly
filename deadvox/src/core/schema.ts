@@ -178,7 +178,17 @@ const PocketSchema = strictObject({
   handlingSimSeconds: SimSeconds,
 });
 
-const ContainerSchema = strictObject({ pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')) });
+const ContainerSchema = strictObject({
+  pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')),
+  /** Why its pockets need more than the inventory width tuning allows. */
+  wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
+});
+
+const InventoryTuningSchema = strictObject({
+  id: Id,
+  /** Maximum width, in cells, for a container pocket without a content-owned exception. */
+  containerMaxWidthCells: Cells,
+});
 
 const WearableSchema = strictObject({
   slot: picklist(WEAR_SLOTS),
@@ -1419,6 +1429,7 @@ const SECTION_DESCRIPTOR = {
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
   weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
+  inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };

@@ -333,9 +333,9 @@ describe('authored layout acceptance', () => {
   it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
     expect(issues).toEqual([]);
     expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');
-    expect(BUNDLED_CONTENT.registry.layouts.get('playtest')?.startTimeGameTimeOfDay).toBe(16 * 3600);
+    const playtestLayout = BUNDLED_CONTENT.registry.layouts.get('playtest')!;
     expect(configFromUrl(new URLSearchParams('site=playtest')).site).toBe('playtest');
-    expect(configFromUrl(new URLSearchParams('site=playtest')).start).toBe(16 * 60 * 60);
+    expect(configFromUrl(new URLSearchParams('site=playtest')).start).toBe(playtestLayout.startTimeGameTimeOfDay);
     expect(configFromUrl(new URLSearchParams('site=playtest&time=18:30')).start).toBe(18.5 * 60 * 60);
   });
   it('maps a clockwise east bearing to an east-facing authored spawn', () => {
