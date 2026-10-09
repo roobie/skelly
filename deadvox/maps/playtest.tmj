@@ -1904,6 +1904,26 @@
               "value": "military_shambler"
             }
           ]
+        },
+        {
+          "id": 104,
+          "name": "Amalgam at the camp",
+          "type": "shambler",
+          "point": true,
+          "x": 490,
+          "y": 545,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "amalgam"
+            }
+          ]
         }
       ]
     },
