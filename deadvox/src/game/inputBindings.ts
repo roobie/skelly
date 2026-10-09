@@ -35,6 +35,7 @@ export interface Binding {
 }
 const world: readonly InputContext[] = ['play', 'noclip'];
 const moving: readonly InputContext[] = [...world, 'build'];
+const movingWhileReading: readonly InputContext[] = [...moving, 'reading'];
 const entered: readonly InputContext[] = [
   'menu',
   'inventory',
@@ -85,10 +86,10 @@ export const INPUT_BINDINGS: readonly Binding[] = [
     device: 'pointer',
   }),
   row('aim.ads-toggle', 'Toggle sights while firearm is ready', world, ['Mouse1'], 'press', { device: 'pointer' }),
-  row('movement.forward', 'Move forward', moving, ['KeyW'], 'held-state'),
-  row('movement.back', 'Move backward', moving, ['KeyS'], 'held-state'),
-  row('movement.left', 'Move left', moving, ['KeyA'], 'held-state'),
-  row('movement.right', 'Move right', moving, ['KeyD'], 'held-state'),
+  row('movement.forward', 'Move forward', movingWhileReading, ['KeyW'], 'held-state'),
+  row('movement.back', 'Move backward', movingWhileReading, ['KeyS'], 'held-state'),
+  row('movement.left', 'Move left', movingWhileReading, ['KeyA'], 'held-state'),
+  row('movement.right', 'Move right', movingWhileReading, ['KeyD'], 'held-state'),
   row('movement.sprint', 'Sprint', moving, ['ShiftLeft', 'ShiftRight'], 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving, ['KeyZ']),
   row('player.crouch-toggle', 'Toggle crouch', ['play', 'build'], ['KeyC']),
@@ -684,7 +685,16 @@ export class KeyboardInput {
   sync(): void {
     const next = this.context();
     if (next.context !== this.state.context || next.debug !== this.state.debug) {
+      const continuingMovement = [...this.active].filter(
+        ([, action]) =>
+          action.startsWith('movement.') && this.registry.binding(action)?.contexts.includes(next.context),
+      );
       this.cancel(true, false, 'context-change');
+      // Movement remains valid across the reading-to-play transition, so its initiating key must pass through.
+      for (const [code, action] of continuingMovement) {
+        this.blocked.delete(code);
+        this.active.set(code, action);
+      }
       this.state = next;
     }
   }

@@ -5,8 +5,15 @@ import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { cellCount, defOf } from '../src/core/items.ts';
+import { labelForAction } from '../src/game/inputBindings.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
-import { handlingViewModel, quickbarKey, quickbarViewModel } from '../src/ui/hud.ts';
+import {
+  handlingViewModel,
+  quickbarKey,
+  quickbarViewModel,
+  type TimedActionPresentation,
+  timedActionHandlingPresentation,
+} from '../src/ui/hud.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -180,6 +187,42 @@ describe('handlingViewModel', () => {
     expect(next).toContain('Search the drawer');
   });
 
+  it('projects each timed long job through one progress view and hides stopped jobs', () => {
+    const jobs: readonly TimedActionPresentation[] = [
+      {
+        kind: 'pry',
+        label: 'Fixture action',
+        elapsed: 3,
+        duration: 8,
+        stopped: false,
+      },
+      {
+        kind: 'reading',
+        label: 'Fixture action',
+        elapsed: 2,
+        duration: 10,
+        stopped: false,
+      },
+      {
+        kind: 'treatment',
+        label: 'Fixture action',
+        elapsed: 1,
+        duration: 5,
+        stopped: false,
+      },
+    ];
+
+    for (const job of jobs) {
+      const vm = handlingViewModel(timedActionHandlingPresentation(job, labelForAction('handling.stop')));
+      expect(vm.visible).toBe(true);
+      expect(vm.percent).toBe(Math.round((job.elapsed / job.duration) * 100));
+      expect(vm.cancelLabel).toContain(labelForAction('handling.stop'));
+    }
+    const stopped = { ...jobs[1]!, stopped: true };
+    expect(handlingViewModel(timedActionHandlingPresentation(stopped, labelForAction('handling.stop'))).visible).toBe(
+      false,
+    );
+  });
   it('has no next-job text when nothing is queued after the current one', () => {
     const inv = new Inventory(registry);
     const queue = queueForTest(inv);

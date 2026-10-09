@@ -1840,6 +1840,12 @@ body.inventory-open.inventory-tab-crafting #crafting {
   border: 1px solid #8e7d58;
   white-space: nowrap;
 }
+.reading-progress {
+  width: 100%;
+  height: 8px;
+  margin: 0 0 14px;
+  accent-color: #735e31;
+}
 .reading-text {
   min-height: 0;
   overflow-y: auto;

@@ -22,8 +22,10 @@ This authoring constraint is documented, not a new validation rejection.
 Each distinct authored note/logbook is its own item type (normally `category: "book"`);
 each distinct sign is its own furniture type. Copies of a type share its immutable
 text. Item/furniture saves retain the existing type reference, not duplicated text
-or reading progress. There is no runtime editing or per-instance message state to
-justify another save format. The view itself is transient, not saved.
+or per-copy reading state. A timed book's progress belongs to its long action,
+not the authored readable; see `src/core/longAction.ts`, `LongActions`. There is
+no runtime editing or per-instance message state to justify another save format.
+The view itself is transient, not saved.
 
 ## Authoring rules
 
@@ -59,35 +61,42 @@ holding its slot uses the note while it is in hand (`src/game/quickbarActions.ts
 `src/game/survival.ts`, `Survival.use`, revalidates hand ownership and owns the
 read effect. Reading a readable-only note neither consumes nor changes the item
 and admits no handling job. Opening paper has **zero command time**; time spent
-actually reading already passes in the live world.
+actually reading a readable-only note passes in the live world.
 
 Look at a sign and press F. Normal furniture picking includes gaze/occlusion and
 Search's reach; the session command rechecks the live entity identity and reach.
 Moving away or passing a stale entity does not open the view.
 
-The parchment-styled reading surface is not a new HUD panel. It takes focus, wraps
-text and scrolls with wheel, arrows, Page Up/Down, Home/End or Space. Wheel routing
-uses the existing scroll-pane/menu-pointer implementation. **Esc, Tab or Put away**
-close it and restore previous focus. F9 opens the main menu and puts it away;
-pointer-lock loss and death also close it. Other gameplay, inventory, quickbar and
-primary-action keys do not leak through. The world **keeps moving**, just as with
-inventory; movement/action input is inactive. `src/core/longAction.ts`,
-`LongActions`, owns the timed book action that may continue while its separate
-paper surface is open.
-`src/ui/reading.ts`, `mountReading`, retains the surface's close and scroll keys.
-Main-menu/pointer-loss pause rules are unchanged. This does not add or enable the
-HUD: existing HUD preferences and compass/watch item plans remain unchanged.
+The parchment-styled reading surface takes focus, wraps text and scrolls with
+wheel, arrows, Page Up/Down, Home/End or Space. Wheel routing uses the existing
+scroll-pane/menu-pointer implementation. **Esc, Tab or Put away** close it and
+restore previous focus. F9 opens the main menu and puts it away; pointer-lock loss
+and death also close it. Other gameplay, inventory, quickbar and primary-action
+keys do not leak through. A recipe book's page includes its own progress bar,
+independent of HUD options. The bar makes the character visibly read toward an
+endpoint, and lets the player tell how long is left and when reading is done even
+with the HUD off. `src/ui/reading.ts`, `mountReading`, presents progress from
+`LongActions` while the page is open and shows its completed endpoint when the
+book has been read.
+
+For a recipe book, reading runs only while its page is open. Closing the page
+stops the long action and keeps its progress; opening the same book resumes it.
+Movement while a book page is open closes the page, stops reading and passes the
+movement input through so the player can walk away. This avoids locking the player
+in place and keeps reading tied to the page being in front of them. Readable-only
+notes and signs have no timed book job. See `src/game/play.ts`,
+`stopReadingOnClose`, and
+`src/core/longAction.ts`, `LongActions`, for the ownership boundary.
 
 A book may define both `book` and `readable`. `book` supplies the timed
 recipe-learning action; `readable` supplies authored prose for the paper surface.
-`Survival.use` starts the book action and then opens that text, so the visible
-handbook text is not an action-progress view. Closing the surface dismisses only
-the presentation; the long-action owner remains responsible for the book job and
-its progress.
+`Survival.use` starts or resumes the book action and opens that text. Learned
+recipes make a reopened book show its completed progress; closing the paper
+pauses the job rather than hiding progress in a separate HUD.
 
 The maintained browser contract exercises the real sample pickup/search/handling/
-quickbar-held Read path, sign F interaction, input ownership, focus, scrolling and
-dismissal.
+quickbar-held Read path, the timed-book quickbar path, sign F interaction, input
+ownership, focus, scrolling and dismissal.
 It also checks maximum title/body sizes at 360×640 and 800×600 (20 px body text,
 no horizontal overflow, footer/button visible).
 

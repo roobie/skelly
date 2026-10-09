@@ -223,6 +223,12 @@ vanishes on release or cancellation, so the player can read force without a
 second widget or key instruction. See `src/ui/hud.ts`,
 `handlingViewModel`, and `src/game/play.ts`, `handlingPresentationFor`.
 
+A recipe book's progress is meta information embedded in the paper view, not an
+optional HUD line. The readable text cannot show how long a compressed action has
+left, and the player needs that endpoint even with every HUD option off. The
+meter is shown only while the book is open; closing it pauses the action and
+keeps its progress. See `src/ui/reading.ts`, `ReadingProgress` and `mountReading`.
+
 ## Development and playtest
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in

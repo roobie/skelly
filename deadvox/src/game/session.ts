@@ -305,7 +305,7 @@ export interface SessionOptions {
   /** Presentation cue for an action the handling queue refused. */
   refusal?: ((text: string) => void) | undefined;
   /** Authored text selected by a live domain command; presentation owns its view. */
-  onRead: (readable: Readonly<Readable>) => void;
+  onRead: (readable: Readonly<Readable>, bookUid?: number) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   /** Output only, called after the simulation has committed the case transition. */
@@ -711,6 +711,11 @@ export const createSession = (options: SessionOptions) => {
     feet: () => ({ kind: 'pile', pos: feet() }),
     notice: options.notice,
     read: options.onRead,
+    bookRead: (bookUid) => {
+      const item = inventory.itemByUid(bookUid);
+      const book = item && registry.items.get(item.type)?.book;
+      return Boolean(book?.recipes.every((recipe) => character.knownRecipes.has(recipe)));
+    },
   });
   sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
   sim.actions.reading = bookReadingHooks(inventory, character);

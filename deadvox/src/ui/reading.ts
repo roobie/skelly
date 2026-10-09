@@ -3,6 +3,12 @@ import { html, render } from 'lit-html';
 import type { Readable } from '../core/readable.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 
+/** Meta progress embedded in the paper, because the optional HUD cannot explain a compressed reading action. */
+export interface ReadingProgress {
+  readonly value: number;
+  readonly max: number;
+}
+
 const scrollText = (text: HTMLElement, action: string): void => {
   switch (action) {
     case 'reading.first':
@@ -27,14 +33,19 @@ const scrollText = (text: HTMLElement, action: string): void => {
       break;
   }
 };
-export const mountReading = (host: HTMLElement, changed: () => void) => {
+export const mountReading = (host: HTMLElement, changed: () => void, closing: () => void = () => undefined) => {
   let current: Readonly<Readable> | undefined;
+  let currentBookUid: number | undefined;
+  let progress: ReadingProgress | undefined;
   let previousFocus: HTMLElement | undefined;
   const close = () => {
     if (!current) {
       return;
     }
+    closing();
     current = undefined;
+    currentBookUid = undefined;
+    progress = undefined;
     host.hidden = true;
     render(html``, host);
     previousFocus?.focus({ preventScroll: true });
@@ -49,6 +60,7 @@ export const mountReading = (host: HTMLElement, changed: () => void) => {
       html`
       <article class="reading-paper" role="dialog" aria-modal="true" aria-labelledby="reading-title" tabindex="-1">
         <header><h1 class="reading-title" id="reading-title">${current.title}</h1><button class="reading-dismiss" type="button" @click=${close} aria-label="Put away reading">Put away</button></header>
+        ${progress ? html`<progress class="reading-progress" max=${progress.max} value=${progress.value} aria-label="Reading progress"></progress>` : ''}
         <div class="reading-text" tabindex="0" aria-label="Text">${current.text}</div>
         <footer>${labelForAction('reading.close')} to put away · The world keeps moving</footer>
       </article>`,
@@ -60,11 +72,23 @@ export const mountReading = (host: HTMLElement, changed: () => void) => {
     get isOpen() {
       return current !== undefined;
     },
-    open(readable: Readonly<Readable>) {
+    get bookUid() {
+      return currentBookUid;
+    },
+    setProgress(next: ReadingProgress | undefined) {
+      if (!current || (progress?.value === next?.value && progress?.max === next?.max)) {
+        return;
+      }
+      progress = next;
+      draw();
+    },
+    open(readable: Readonly<Readable>, bookUid?: number) {
       if (!current) {
         previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
       }
       current = readable;
+      currentBookUid = bookUid;
+      progress = undefined;
       host.hidden = false;
       draw();
       host.querySelector<HTMLElement>('article')!.focus({ preventScroll: true });
