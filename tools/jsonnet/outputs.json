@@ -5,6 +5,10 @@
       "output": "deadvox/src/content/base/camp.json"
     },
     {
+      "source": "deadvox/src/content/base/items-tools.jsonnet",
+      "output": "deadvox/src/content/base/items-tools.json"
+    },
+    {
       "source": "deadvox/src/content/base/locks.jsonnet",
       "output": "deadvox/src/content/base/locks.json"
     },

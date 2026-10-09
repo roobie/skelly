@@ -42,7 +42,6 @@ import { installNearFieldFalloff } from './lightFalloff.ts';
  */
 export const FLASHLIGHT_INTENSITY = 5;
 export const FLASHLIGHT_DECAY = 1;
-const PENUMBRA = 0.35;
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
 const HALF_BRIGHTNESS = 0.9;
@@ -83,13 +82,15 @@ export const flashlightCastsShadow = (allowed: boolean, intensity: number): bool
   allowed && intensity > MIN_SHADOW_INTENSITY;
 
 export class Flashlight {
-  readonly light = new SpotLight(0xff_f1_d8, 0, 20, Math.PI / 12, PENUMBRA, FLASHLIGHT_DECAY);
+  // Colour, range and beam shape come from the lit item's content in `update`.
+  readonly light = new SpotLight(undefined, 0);
   private readonly at = new Vector3();
   private readonly ahead = new Vector3();
 
   constructor(scene: Scene) {
     // Before any material compiles; the light chunk is shared by all of them.
     installNearFieldFalloff();
+    this.light.decay = FLASHLIGHT_DECAY;
     const { shadow } = this.light;
     shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
     shadow.camera.near = SHADOW_NEAR;
@@ -143,7 +144,8 @@ export class Flashlight {
     this.light.intensity = def.intensity * this.daylightScale * this.strength;
     this.light.castShadow = flashlightCastsShadow(this.shadowsAllowed, this.light.intensity);
     this.light.distance = def.radius;
-    this.light.angle = MathUtils.degToRad(def.beam / 2);
+    this.light.angle = MathUtils.degToRad(def.beam.angleDegrees / 2);
+    this.light.penumbra = def.beam.penumbra;
     this.light.position.copy(this.at);
     camera.getWorldDirection(this.ahead);
     this.light.target.position.copy(this.at).addScaledVector(this.ahead, 10);

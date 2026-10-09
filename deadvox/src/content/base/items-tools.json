@@ -1,87 +1,46 @@
 {
-  "models": [
-    {
-      "id": "flashlight",
-      "file": "assets/models/flashlight.glb",
-      "grip": {
-        "at": [0.085, 0, 0]
-      },
-      "anchors": {
-        "lens": [0.199, 0, 0]
-      }
-    },
-    {
-      "id": "glowstick",
-      "file": "assets/models/glowstick.glb",
-      "emissiveMaterial": "chemical-light tube"
-    }
-  ],
-  "meleeClasses": [
-    {
-      "id": "blunt",
-      "damageVariance": 0.05,
-      "headDamageMultiplier": 1.7,
-      "limbDamageMultiplier": 1,
-      "speedMultiplier": 0.85
-    },
-    {
-      "id": "cut",
-      "damageVariance": 0.18,
-      "headDamageMultiplier": 1,
-      "limbDamageMultiplier": 2.5,
-      "speedMultiplier": 1
-    },
-    {
-      "id": "pierce",
-      "damageVariance": 0.4,
-      "headDamageMultiplier": 1,
-      "limbDamageMultiplier": 1,
-      "speedMultiplier": 1.15
-    }
-  ],
   "items": [
     {
+      "category": "tool",
+      "description": "A small electronic compass with an illuminated heading display. Prototype: battery use is not yet modeled.",
+      "heldDisplay": "compass",
       "id": "compass",
       "name": "Compass",
-      "category": "tool",
-      "weight": 120,
       "size": [1, 2],
-      "description": "A small electronic compass with an illuminated heading display. Prototype: battery use is not yet modeled.",
-      "heldDisplay": "compass"
+      "weight": 120
     },
     {
-      "id": "crowbar",
-      "name": "Crowbar",
       "category": "tool",
-      "weight": 1500,
-      "size": [1, 5],
       "description": "Pries open doors and crates. Also a weapon.",
+      "id": "crowbar",
       "model": "crowbar",
+      "name": "Crowbar",
+      "size": [1, 5],
       "tool": {
         "qualities": {
-          "prying": 3,
-          "hammering": 1
+          "hammering": 1,
+          "prying": 3
         }
       },
       "weapon": {
         "melee": {
+          "cooldownSimSeconds": 1.1000000000000001,
           "damage": 14,
-          "reach": 0.6,
-          "cooldownSimSeconds": 1.1,
-          "stamina": 8,
           "impulse": 8,
-          "wearPerHit": 0.015,
-          "type": "blunt"
+          "reach": 0.59999999999999998,
+          "stamina": 8,
+          "type": "blunt",
+          "wearPerHit": 0.014999999999999999
         }
-      }
+      },
+      "weight": 1500
     },
     {
-      "id": "hammer",
-      "name": "Hammer",
       "category": "tool",
-      "weight": 700,
-      "size": [1, 3],
+      "id": "hammer",
       "model": "hammer",
+      "name": "Hammer",
+      "size": [1, 3],
       "tool": {
         "qualities": {
           "hammering": 2
@@ -89,289 +48,370 @@
       },
       "weapon": {
         "melee": {
+          "cooldownSimSeconds": 0.80000000000000004,
           "damage": 10,
-          "reach": 0.4,
-          "cooldownSimSeconds": 0.8,
-          "stamina": 5,
           "impulse": 6,
-          "wearPerHit": 0.012,
-          "type": "blunt"
-        }
-      }
-    },
-    {
-      "id": "kitchen_knife",
-      "name": "Kitchen knife",
-      "category": "tool",
-      "weight": 150,
-      "size": [1, 3],
-      "model": "kitchen_knife",
-      "tool": {
-        "qualities": {
-          "cutting": 2
-        }
-      },
-      "weapon": {
-        "melee": {
-          "damage": 8,
-          "reach": 0.25,
-          "cooldownSimSeconds": 0.5,
-          "stamina": 3,
-          "impulse": 3.5,
-          "wearPerHit": 0.025,
-          "type": "cut"
-        }
-      }
-    },
-    {
-      "id": "kabar",
-      "name": "Kabar",
-      "category": "tool",
-      "weight": 300,
-      "size": [1, 3],
-      "model": "kabar",
-      "tool": {
-        "qualities": {
-          "cutting": 2
-        }
-      },
-      "weapon": {
-        "melee": {
-          "damage": 9,
-          "reach": 0.3,
-          "cooldownSimSeconds": 0.55,
-          "stamina": 3.5,
-          "impulse": 4,
-          "wearPerHit": 0.025,
-          "type": "cut"
-        }
-      }
-    },
-    {
-      "id": "machete",
-      "name": "Machete",
-      "category": "tool",
-      "weight": 550,
-      "size": [1, 4],
-      "model": "machete",
-      "tool": {
-        "qualities": {
-          "cutting": 2
-        }
-      },
-      "weapon": {
-        "melee": {
-          "damage": 11,
-          "reach": 0.45,
-          "cooldownSimSeconds": 0.75,
+          "reach": 0.40000000000000002,
           "stamina": 5,
-          "impulse": 4.5,
-          "wearPerHit": 0.02,
-          "type": "cut"
+          "type": "blunt",
+          "wearPerHit": 0.012
         }
-      }
+      },
+      "weight": 700
     },
     {
+      "category": "tool",
+      "id": "kitchen_knife",
+      "model": "kitchen_knife",
+      "name": "Kitchen knife",
+      "size": [1, 3],
+      "tool": {
+        "qualities": {
+          "cutting": 2
+        }
+      },
+      "weapon": {
+        "melee": {
+          "cooldownSimSeconds": 0.5,
+          "damage": 8,
+          "impulse": 3.5,
+          "reach": 0.25,
+          "stamina": 3,
+          "type": "cut",
+          "wearPerHit": 0.025000000000000001
+        }
+      },
+      "weight": 150
+    },
+    {
+      "category": "tool",
+      "id": "kabar",
+      "model": "kabar",
+      "name": "Kabar",
+      "size": [1, 3],
+      "tool": {
+        "qualities": {
+          "cutting": 2
+        }
+      },
+      "weapon": {
+        "melee": {
+          "cooldownSimSeconds": 0.55000000000000004,
+          "damage": 9,
+          "impulse": 4,
+          "reach": 0.29999999999999999,
+          "stamina": 3.5,
+          "type": "cut",
+          "wearPerHit": 0.025000000000000001
+        }
+      },
+      "weight": 300
+    },
+    {
+      "category": "tool",
+      "id": "machete",
+      "model": "machete",
+      "name": "Machete",
+      "size": [1, 4],
+      "tool": {
+        "qualities": {
+          "cutting": 2
+        }
+      },
+      "weapon": {
+        "melee": {
+          "cooldownSimSeconds": 0.75,
+          "damage": 11,
+          "impulse": 4.5,
+          "reach": 0.45000000000000001,
+          "stamina": 5,
+          "type": "cut",
+          "wearPerHit": 0.02
+        }
+      },
+      "weight": 550
+    },
+    {
+      "category": "tool",
       "id": "can_opener",
       "name": "Can opener",
-      "category": "tool",
-      "weight": 100,
       "size": [1, 1],
       "tool": {
         "qualities": {
           "opening": 1
         }
-      }
+      },
+      "weight": 100
     },
     {
-      "id": "baseball_bat",
-      "name": "Baseball bat",
       "category": "weapon",
-      "weight": 900,
-      "size": [1, 6],
+      "id": "baseball_bat",
       "model": "baseball_bat",
+      "name": "Baseball bat",
+      "size": [1, 6],
       "twoHanded": true,
       "weapon": {
         "melee": {
-          "damage": 15,
-          "reach": 0.8,
           "cooldownSimSeconds": 1.2,
-          "stamina": 9,
+          "damage": 15,
           "impulse": 10,
-          "wearPerHit": 0.01,
-          "type": "blunt"
+          "reach": 0.80000000000000004,
+          "stamina": 9,
+          "type": "blunt",
+          "wearPerHit": 0.01
         }
-      }
+      },
+      "weight": 900
     },
     {
-      "id": "steel_pipe",
-      "name": "Steel pipe",
       "category": "weapon",
-      "weight": 1800,
+      "id": "steel_pipe",
+      "model": "steel_pipe",
+      "name": "Steel pipe",
       "size": [1, 6],
       "weapon": {
         "melee": {
-          "damage": 13,
-          "reach": 0.6,
           "cooldownSimSeconds": 1.2,
-          "stamina": 9,
+          "damage": 13,
           "impulse": 8,
-          "wearPerHit": 0.015,
-          "type": "blunt"
+          "reach": 0.59999999999999998,
+          "stamina": 9,
+          "type": "blunt",
+          "wearPerHit": 0.014999999999999999
         }
       },
-      "model": "steel_pipe"
+      "weight": 1800
     },
     {
-      "id": "flashlight",
-      "name": "Flashlight",
       "category": "light",
-      "weight": 250,
-      "size": [1, 2],
       "description": "Lets you see. Lets them see you.",
-      "model": "flashlight",
+      "id": "flashlight",
       "light": {
-        "radius": 20,
-        "seenFrom": 40,
+        "beam": {
+          "angleDegrees": 60,
+          "penumbra": 0.59999999999999998
+        },
         "color": "#fff1d8",
         "intensity": 5,
-        "beam": 30,
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.25
-        }
-      }
+        },
+        "radius": 20,
+        "seenFrom": 40
+      },
+      "model": "flashlight",
+      "name": "Flashlight",
+      "size": [1, 2],
+      "weight": 250
     },
     {
-      "id": "headlamp",
-      "name": "Headlamp",
       "category": "light",
-      "weight": 180,
-      "size": [1, 2],
       "description": "A battery-powered beam worn on the head, leaving both hands free.",
-      "wearable": { "slot": "head", "encumbrance": 0 },
+      "id": "headlamp",
       "light": {
-        "radius": 12,
-        "seenFrom": 30,
+        "beam": {
+          "angleDegrees": 24,
+          "penumbra": 0.34999999999999998
+        },
         "color": "#fff1d8",
         "intensity": 2.5,
-        "beam": 24,
         "power": {
           "battery": "aa_battery",
-          "chargePerGameHour": 0.2
-        }
-      }
+          "chargePerGameHour": 0.20000000000000001
+        },
+        "radius": 12,
+        "seenFrom": 30
+      },
+      "name": "Headlamp",
+      "size": [1, 2],
+      "wearable": {
+        "encumbrance": 0,
+        "slot": "head"
+      },
+      "weight": 180
     },
     {
-      "id": "torch",
-      "name": "Torch",
       "category": "light",
-      "weight": 350,
-      "size": [1, 4],
       "description": "Rags and wax wrapped tightly around a stick.",
       "disassembly": {
-        "timeGameMinutes": 10,
         "skill": "crafting",
+        "timeGameMinutes": 10,
         "yields": [
-          { "item": "stick", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
-          { "item": "rag", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
-          { "item": "wax", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "stick",
+            "rounding": "floor"
+          },
+          {
+            "count": 2,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "rag",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "wax",
+            "rounding": "floor"
+          }
         ]
       },
+      "id": "torch",
       "light": {
-        "radius": 6,
-        "seenFrom": 60,
-        "color": "#ffb36b",
-        "intensity": 5,
         "burnTimeGameHours": 4,
         "burning": {
-          "ignition": "firestarter",
           "douse": true,
-          "sprint": "stay",
-          "stow": "refuse",
           "drop": "douse",
-          "relight": true
-        }
-      }
+          "ignition": "firestarter",
+          "relight": true,
+          "sprint": "stay",
+          "stow": "refuse"
+        },
+        "color": "#ffb36b",
+        "intensity": 5,
+        "radius": 6,
+        "seenFrom": 60
+      },
+      "name": "Torch",
+      "size": [1, 4],
+      "weight": 350
     },
     {
-      "id": "candle",
-      "name": "Candle",
       "category": "light",
-      "weight": 150,
-      "size": [1, 1],
       "description": "A wax candle with a rag wick.",
       "disassembly": {
-        "timeGameMinutes": 5,
         "skill": "crafting",
+        "timeGameMinutes": 5,
         "yields": [
-          { "item": "wax", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
-          { "item": "rag", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
+          {
+            "count": 2,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "wax",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "rag",
+            "rounding": "floor"
+          }
         ]
       },
+      "id": "candle",
       "light": {
-        "radius": 3,
-        "seenFrom": 15,
-        "color": "#ffd28a",
-        "intensity": 1,
         "burnTimeGameHours": 6,
         "burning": {
-          "ignition": "firestarter",
           "douse": true,
-          "sprint": "douse",
-          "stow": "douse",
           "drop": "douse",
-          "relight": true
-        }
-      }
+          "ignition": "firestarter",
+          "relight": true,
+          "sprint": "douse",
+          "stow": "douse"
+        },
+        "color": "#ffd28a",
+        "intensity": 1,
+        "radius": 3,
+        "seenFrom": 15
+      },
+      "name": "Candle",
+      "size": [1, 1],
+      "weight": 150
     },
     {
-      "id": "glowstick",
-      "name": "Glowstick",
       "category": "light",
-      "weight": 30,
-      "size": [1, 2],
       "description": "A sealed chemical light.",
-      "model": "glowstick",
+      "id": "glowstick",
       "light": {
-        "radius": 2,
-        "seenFrom": 15,
-        "color": "#62ff81",
-        "intensity": 1,
-        "emissive": 0.8,
         "burnTimeGameHours": 8,
         "burning": {
-          "ignition": "snap",
           "douse": false,
-          "sprint": "stay",
-          "stow": "stay",
           "drop": "stay",
-          "relight": false
-        }
-      }
-    },
-    {
-      "id": "lighter",
-      "name": "Lighter",
-      "category": "light",
-      "weight": 20,
-      "size": [1, 1],
-      "light": {
+          "ignition": "snap",
+          "relight": false,
+          "sprint": "stay",
+          "stow": "stay"
+        },
+        "color": "#62ff81",
+        "emissive": 0.80000000000000004,
+        "intensity": 1,
         "radius": 2,
-        "seenFrom": 10,
-        "color": "#ffd28a",
-        "intensity": 0.7,
-        "fuelPerGameHour": 10
+        "seenFrom": 15
       },
-      "igniter": { "capacity": 100, "perIgnition": 1 }
+      "model": "glowstick",
+      "name": "Glowstick",
+      "size": [1, 2],
+      "weight": 30
     },
     {
-      "id": "matches",
-      "name": "Box of matches",
       "category": "light",
-      "weight": 20,
+      "id": "lighter",
+      "igniter": {
+        "capacity": 100,
+        "perIgnition": 1
+      },
+      "light": {
+        "color": "#ffd28a",
+        "fuelPerGameHour": 10,
+        "intensity": 0.69999999999999996,
+        "radius": 2,
+        "seenFrom": 10
+      },
+      "name": "Lighter",
       "size": [1, 1],
-      "igniter": { "capacity": 10, "perIgnition": 1 }
+      "weight": 20
+    },
+    {
+      "category": "light",
+      "id": "matches",
+      "igniter": {
+        "capacity": 10,
+        "perIgnition": 1
+      },
+      "name": "Box of matches",
+      "size": [1, 1],
+      "weight": 20
+    }
+  ],
+  "meleeClasses": [
+    {
+      "damageVariance": 0.050000000000000003,
+      "headDamageMultiplier": 1.7,
+      "id": "blunt",
+      "limbDamageMultiplier": 1,
+      "speedMultiplier": 0.84999999999999998
+    },
+    {
+      "damageVariance": 0.17999999999999999,
+      "headDamageMultiplier": 1,
+      "id": "cut",
+      "limbDamageMultiplier": 2.5,
+      "speedMultiplier": 1
+    },
+    {
+      "damageVariance": 0.40000000000000002,
+      "headDamageMultiplier": 1,
+      "id": "pierce",
+      "limbDamageMultiplier": 1,
+      "speedMultiplier": 1.1499999999999999
+    }
+  ],
+  "models": [
+    {
+      "anchors": {
+        "lens": [0.19900000000000001, 0, 0]
+      },
+      "file": "assets/models/flashlight.glb",
+      "grip": {
+        "at": [0.085000000000000006, 0, 0]
+      },
+      "id": "flashlight"
+    },
+    {
+      "emissiveMaterial": "chemical-light tube",
+      "file": "assets/models/glowstick.glb",
+      "id": "glowstick"
     }
   ]
 }
