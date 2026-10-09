@@ -20,9 +20,9 @@
     {
       "id": "overgrown",
       "strength": 4,
-      "tintColor": "#888888",
+      "tintColor": "#dddddd",
       "tintDarkness": 1.5,
-      "streakColor": "#6f6f6f",
+      "streakColor": "#bcbcbc",
       "streakStrength": 0.8,
       "streakLengthMetres": 4.5,
       "mossColor": "#799247",
@@ -32,7 +32,7 @@
       "mossThreshold": 0.55,
       "mossBias": 0.7,
       "mixCeiling": 0.75,
-      "weatheringBlend": 0
+      "weatheringBlend": 0.3
     }
   ]
 }
