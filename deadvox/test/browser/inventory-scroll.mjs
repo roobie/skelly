@@ -558,13 +558,15 @@ try {
     const youBox = you.getBoundingClientRect();
     const detailsBox = details.getBoundingClientRect();
     const aroundBox = around.getBoundingClientRect();
-    const actionsFit = [...details.querySelectorAll('.inv-option')].every((action) => {
+    const actions = [...details.querySelectorAll('.inv-option')];
+    const actionsFit = actions.every((action) => {
       const bounds = action.getBoundingClientRect();
       return bounds.left >= detailsBox.left && bounds.right <= detailsBox.right;
     });
     return {
       noHorizontalOverflow: body.scrollWidth <= body.clientWidth,
       stacked: youBox.bottom <= detailsBox.top && detailsBox.bottom <= aroundBox.top,
+      actionCount: actions.length,
       actionsFit,
     };
   });
@@ -578,6 +580,7 @@ try {
     true,
     `narrow inventory stacks its scrollable columns: ${JSON.stringify(narrowLayout)}`,
   );
+  assert.ok(narrowLayout.actionCount > 0, `the details panel exposes an action: ${JSON.stringify(narrowLayout)}`);
   assert.equal(
     narrowLayout.actionsFit,
     true,
