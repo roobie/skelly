@@ -460,7 +460,7 @@ try {
   );
   assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
-  await page.setViewportSize({ width: 720, height: 400 });
+  await page.setViewportSize({ width: 1280, height: 400 });
   await page.evaluate(() => globalThis.scrollFixture.populatePiles());
   const capContainerLayout = async () =>
     page.evaluate(() => {
