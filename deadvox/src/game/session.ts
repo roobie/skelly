@@ -321,6 +321,8 @@ export interface SessionOptions {
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
     onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
+    /** A hit knocked flesh out of an amalgam (its `carved` already lists `cells`). */
+    onCarve?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
     /** A zombie became incapacitated but remains in the store and may be revived later. */
     onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
     /** A zombie died: it is already out of the store, and its loot is already dropped. */
@@ -907,6 +909,7 @@ export const createSession = (options: SessionOptions) => {
       }
     },
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
+    onCarve: (id, zombie, cells, hit) => options.zombieEffects?.onCarve?.(id, zombie, cells, hit),
     onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
     ...(options.zombieEffects?.onMeleeResult ? { onMeleeResult: options.zombieEffects.onMeleeResult } : {}),
     ...(options.zombieEffects?.onMeleeContact ? { onMeleeContact: options.zombieEffects.onMeleeContact } : {}),

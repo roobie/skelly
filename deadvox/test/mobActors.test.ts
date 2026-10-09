@@ -21,8 +21,10 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
-import { type InstancedMesh, PerspectiveCamera } from 'three';
+import { Color, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
+import { protectedCoreCell } from '../src/core/amalgamCarving.ts';
+import { amalgamFigureForType } from '../src/core/amalgamFigure.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
@@ -33,6 +35,7 @@ import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombi
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
+import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import {
   fallDirectionAwayFromPlayer,
   HEARING_GAZE_JITTER,
@@ -843,6 +846,60 @@ describe('MobActorMeshes', () => {
           expect(Math.hypot(matrix![0]!, matrix![4]!, matrix![8]!)).toBeCloseTo(type.bodyScale!);
         }
       }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('draws a carved amalgam once, from a wound mesh with flesh walls, and drops it with the amalgam', () => {
+    const amalgam = registry.zombies.get('amalgam')!;
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1, includeAmalgam: true, amalgamType: amalgam });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { type: amalgam });
+      const id = store.add(zombie);
+      renderer.sync(store, 0, 1);
+      // A cell buried in flesh on all six sides, so knocking it out opens walls on every side.
+      const figure = amalgamFigureForType(amalgam, zombie.figureSeed);
+      const { dims, owner } = figure.realized.voxels;
+      const buried = (index: number): boolean =>
+        [1, -1, dims[0], -dims[0], dims[0] * dims[1], -dims[0] * dims[1]].every((step) => owner[index + step]);
+      const cell = owner.findIndex((value, index) => value > 0 && index !== protectedCoreCell(figure) && buried(index));
+      expect(cell).toBeGreaterThanOrEqual(0);
+      zombie.carved = [cell];
+      renderer.zombieCarved(id, zombie, [cell], { point: [0, 2, 0], direction: [0, 0, -1], impulse: 0 });
+
+      const internals = renderer as unknown as {
+        wounds: Map<number, { mesh: InstancedMesh }>;
+        states: Map<number, { variantIndex: number; instanceIndex: number }>;
+        variants: readonly { crowdSlotAttr: InstancedBufferAttribute }[];
+        hiddenRow: number;
+        fleshChunks: { count: number };
+      };
+      const wound = internals.wounds.get(id)!;
+      const state = internals.states.get(id)!;
+      expect(renderer.group.children).toContain(wound.mesh);
+      expect(internals.variants[state.variantIndex]!.crowdSlotAttr.getX(state.instanceIndex)).toBe(internals.hiddenRow);
+      expect(internals.fleshChunks.count).toBe(1);
+      const neighbours = wound.mesh.geometry.getAttribute('neighbourBone');
+      const colors = wound.mesh.geometry.getAttribute('color');
+      const interior = new Color(amalgam.carving!.interiorColor);
+      const walls = Array.from({ length: neighbours.count }, (_, v) => v).filter(
+        (v) => neighbours.getX(v) === CARVED_NEIGHBOUR,
+      );
+      expect(walls.length).toBeGreaterThan(0);
+      expect(
+        walls.every((v) =>
+          [colors.getX(v), colors.getY(v), colors.getZ(v)].every(
+            (c, axis) => Math.abs(c - interior.toArray()[axis]!) < 1e-6,
+          ),
+        ),
+      ).toBe(true);
+
+      store.remove(id);
+      renderer.sync(store, 0, 1);
+      expect(internals.wounds.has(id)).toBe(false);
+      expect(renderer.group.children).not.toContain(wound.mesh);
     } finally {
       renderer.dispose();
     }
