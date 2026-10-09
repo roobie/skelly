@@ -600,21 +600,20 @@ try {
     await clickWaitButton();
     const state = await page.evaluate((previousNotice) => {
       const { session, getNotice } = globalThis.pumpHandlingTest;
-      const { sim } = session;
       for (let frames = 0; frames < 60; frames += 1) {
-        const job = sim.actions.job;
+        const {
+          sim: { actions: { job }, time: simTime },
+        } = session;
         const notice = getNotice();
         if (job?.jobType === 'wait' || notice !== previousNotice) {
-          return { job, notice, frames, simTime: sim.time };
+          return { job, notice, frames, simTime };
         }
         globalThis.pumpManualFrames.step(1 / 60);
       }
-      return {
-        job: sim.actions.job,
-        notice: getNotice(),
-        frames: 60,
-        simTime: sim.time,
-      };
+      const {
+        sim: { actions: { job }, time: simTime },
+      } = session;
+      return { job, notice: getNotice(), frames: 60, simTime };
     }, noticeBefore);
     assert.equal(
       state.job?.jobType,
