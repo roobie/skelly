@@ -42,7 +42,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore() } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), firearmShotEvent: (item) => firearmShotEmission(item, firearms.noiseFactorFor(item)).event, fireWeapon: (item, time) => fireWeapon(item, time) } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -50,7 +50,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/audio.ts', marker);
           return code.replace(
             marker,
-            '    this.stealOldestVoice(event, context);\n    globalThis.fullAutoProbe.event = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.event = undefined;',
+            '    this.stealOldestVoice(event, context);\n    globalThis.fullAutoProbe.sourceEvent = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.sourceEvent = undefined;',
           );
         }
       },
@@ -67,15 +67,15 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
-    const probe = { shots: [], sources: [], peak: 0, released: false, laserVisibleAfterFire: false };
+    const probe = { shots: [], sources: [], peak: 0, released: false, laserVisibleAfterFire: false, event: 'gunshot' };
     globalThis.fullAutoProbe = probe;
-    const gun = (record) => record.event === 'gunshot';
+    const gun = (record) => record.event === probe.event;
     const makeSource = AudioContext.prototype.createBufferSource;
     AudioContext.prototype.createBufferSource = function () {
       const source = makeSource.call(this);
       const record = {
         source,
-        event: probe.event,
+        event: probe.sourceEvent,
         gain: null,
         starts: [],
         stops: [],
@@ -358,21 +358,27 @@ try {
       globalThis.fullAutoProbe.laserVisibleAfterFire ||= impactEffects.laser.visible;
     };
   });
-  // Reproduce the review's same-quantum cold load with actual sample decoding/nodes.
+  // Reproduce the review's same-quantum cold load with the AR's actual shot sample.
   await page.evaluate(() => {
-    const { session } = globalThis.fullAutoRuntime;
+    const { inventory, session } = globalThis.fullAutoRuntime;
+    const rifle = inventory.hands.right;
+    if (rifle?.type !== 'rifle_assault') {
+      throw new Error('The AR loadout is missing before cold sound startup');
+    }
+    globalThis.fullAutoProbe.event = globalThis.fullAutoRuntime.firearmShotEvent(rifle);
     for (let index = 0; index < 40; index++) {
-      session.playPlayerSound('gunshot', session.sim.time, { listenerRelative: true });
+      session.playPlayerSound(globalThis.fullAutoProbe.event, session.sim.time, { listenerRelative: true });
     }
   });
   await page.waitForFunction(
     () =>
-      globalThis.fullAutoProbe.sources.filter((record) => record.starts.length > 0 && record.event === 'gunshot')
-        .length === 40,
+      globalThis.fullAutoProbe.sources.filter(
+        (record) => record.starts.length > 0 && record.event === globalThis.fullAutoProbe.event,
+      ).length === 40,
   );
   const cold = await page.evaluate(() =>
     globalThis.fullAutoProbe.sources
-      .filter((record) => record.event === 'gunshot')
+      .filter((record) => record.event === globalThis.fullAutoProbe.event)
       .map(({ stops, ramps }) => ({ stops, ramps })),
   );
   assert.equal(cold.flatMap(({ stops }) => stops).length, 8, '32 full cold voices and eight fading retirees');
@@ -386,7 +392,7 @@ try {
   );
   await page.waitForFunction(() =>
     globalThis.fullAutoProbe.sources
-      .filter((record) => record.event === 'gunshot')
+      .filter((record) => record.event === globalThis.fullAutoProbe.event)
       .every((record) => record.disconnected),
   );
   await page.evaluate(() => {
@@ -400,6 +406,7 @@ try {
     if (rifle?.type !== 'rifle_assault' || !rifle.slots?.magazine) {
       throw new Error('The AR loadout did not put a magazine-fed AR in the right hand');
     }
+    globalThis.fullAutoProbe.event = globalThis.fullAutoRuntime.firearmShotEvent(rifle);
     const refusal = session.firearms.cock(rifle.uid, session.sim.time);
     if (refusal) {
       throw new Error(`Could not charge the fixture AR: ${refusal}`);
@@ -527,7 +534,7 @@ try {
   // Warm buffers are real decoded bundled samples. Seed 32 live tails so this burst must steal.
   await page.waitForFunction(() =>
     globalThis.fullAutoProbe.sources
-      .filter((record) => record.event === 'gunshot')
+      .filter((record) => record.event === globalThis.fullAutoProbe.event)
       .every((record) => record.disconnected),
   );
   await page.evaluate(() => {
@@ -536,13 +543,14 @@ try {
     probe.sources = [];
     probe.peak = 0;
     for (let index = 0; index < 32; index++) {
-      session.playPlayerSound('gunshot', session.sim.time, { listenerRelative: true });
+      session.playPlayerSound(probe.event, session.sim.time, { listenerRelative: true });
     }
   });
   await page.waitForFunction(
     () =>
-      globalThis.fullAutoProbe.sources.filter((record) => record.event === 'gunshot' && record.starts.length > 0)
-        .length === 32,
+      globalThis.fullAutoProbe.sources.filter(
+        (record) => record.event === globalThis.fullAutoProbe.event && record.starts.length > 0,
+      ).length === 32,
   );
   await page.evaluate(() => {
     globalThis.fullAutoProbe.shots = [];
@@ -554,14 +562,14 @@ try {
   await page.mouse.up({ button: 'right' });
   await page.waitForFunction(() =>
     globalThis.fullAutoProbe.sources
-      .filter((record) => record.event === 'gunshot')
+      .filter((record) => record.event === globalThis.fullAutoProbe.event)
       .every((record) => record.disconnected && record.gainDisconnected),
   );
   const native = await page.evaluate(() => ({
     shots: globalThis.fullAutoProbe.shots,
     peak: globalThis.fullAutoProbe.peak,
     records: globalThis.fullAutoProbe.sources
-      .filter((record) => record.event === 'gunshot')
+      .filter((record) => record.event === globalThis.fullAutoProbe.event)
       .map(({ starts, stops, ramps, disconnected, gainDisconnected }) => ({
         starts,
         stops,
@@ -644,6 +652,54 @@ try {
   assert.equal(runtimeTuning.effective, runtimeTuning.slider, 'the mouse-selected value changes firearm handling');
   assert.equal(runtimeTuning.locked, true, 'dragging the slider keeps pointer lock available for play');
   assert.ok(!runtimeTuning.saved.includes('skillZeroHandling'), 'runtime tuning is not included in a save');
+  const firearmNoise = await page.evaluate(() => {
+    const { session } = globalThis.fullAutoRuntime;
+    const originalFire = session.firearms.fire;
+    const shots = [
+      { label: 'unsuppressed AR', uid: 101, type: 'rifle_assault' },
+      {
+        label: 'suppressed AR',
+        uid: 102,
+        type: 'rifle_assault',
+        slots: { muzzle: { uid: 202, type: 'real_suppressor', count: 1, condition: 1 } },
+      },
+      { label: 'unsuppressed AK', uid: 103, type: 'rifle_ak' },
+      {
+        label: 'suppressed AK',
+        uid: 104,
+        type: 'rifle_ak',
+        slots: { muzzle: { uid: 204, type: 'real_suppressor', count: 1, condition: 1 } },
+      },
+    ];
+    session.firearms.fire = () => ({ committed: true });
+    try {
+      return shots.map((item) => {
+        const factor = session.firearms.noiseFactorFor(item);
+        if (!globalThis.fullAutoRuntime.fireWeapon(item, session.sim.time)) {
+          throw new Error(`fireWeapon refused ${item.label}`);
+        }
+        const noise = session.playerAudio.vocalNoise;
+        if (!noise) {
+          throw new Error(`fireWeapon emitted no noise for ${item.label}`);
+        }
+        return { label: item.label, radius: noise.radiusMetres, factor };
+      });
+    } finally {
+      session.firearms.fire = originalFire;
+    }
+  });
+  const noiseByLabel = new Map(firearmNoise.map(({ label, radius }) => [label, radius]));
+  const factorByLabel = new Map(firearmNoise.map(({ label, factor }) => [label, factor]));
+  assert.equal(
+    noiseByLabel.get('suppressed AR') / noiseByLabel.get('unsuppressed AR'),
+    factorByLabel.get('suppressed AR'),
+    'fireWeapon scales AR noise by its fitted suppressor factor',
+  );
+  assert.equal(
+    noiseByLabel.get('suppressed AK') / noiseByLabel.get('unsuppressed AK'),
+    factorByLabel.get('suppressed AK'),
+    'fireWeapon scales AK noise by its fitted suppressor factor',
+  );
   assert.deepEqual(errors, []);
   process.stdout.write(
     `full-auto native WebAudio passed: 27 shots/2s at 800rpm, 27 cases, release stops, ${native.records.length} starts, ${nativeSpan.toFixed(3)}s native attack span, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,

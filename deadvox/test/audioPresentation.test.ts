@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import type { SoundDef } from '../src/core/content.ts';
+import type { Item } from '../src/core/items.ts';
 import {
   createRefusalPresenter,
   firearmShotSound,
@@ -61,17 +64,43 @@ describe('refusal audio presentation', () => {
   });
 });
 
+const firearm = (type: string, slots: Item['slots'] = {}): Item => ({
+  uid: 1,
+  type,
+  count: 1,
+  condition: 1,
+  slots,
+});
+
 describe('firearm audio presentation', () => {
-  it('uses one shared AKM profile while retaining an item-specific extension point', () => {
-    expect(firearmShotSound('rifle_assault')).toEqual({
-      event: 'gunshot',
-      sourceLabel: 'rifle_assault',
+  it('selects the M4 sound only for the AR and keeps AK and actor selection consistent', () => {
+    const ar = firearm('rifle_assault');
+    const ak = firearm('rifle_ak');
+    expect(firearmShotSound(ar)).toMatchObject({ event: 'gunshot_m4', sourceLabel: ar.type, listenerRelative: true });
+    expect(firearmShotSound(ak)).toMatchObject({ event: 'gunshot', sourceLabel: ak.type, listenerRelative: true });
+
+    const suppressedAr = firearm('rifle_assault', { muzzle: firearm('real_suppressor') });
+    expect(firearmShotSound(suppressedAr)).toMatchObject({
+      event: 'gunshot_m4_suppressed',
+      sourceLabel: suppressedAr.type,
       listenerRelative: true,
     });
-    expect(firearmShotSound('future_weapon', 'actor')).toEqual({
-      event: 'gunshot',
-      sourceLabel: 'future_weapon',
+    expect(firearmShotSound(suppressedAr, 'actor')).toMatchObject({
+      event: 'gunshot_m4_suppressed',
       listenerRelative: false,
     });
+  });
+
+  it('keeps M4 sound selection separate from attachment-based noise scaling', () => {
+    const definitions = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as SoundDef[];
+    const byId = new Map(definitions.map((definition) => [definition.id, definition]));
+    const unsuppressed = firearmShotSound(firearm('rifle_assault'));
+    const suppressed = firearmShotSound(firearm('rifle_assault', { muzzle: firearm('real_suppressor') }));
+    const unsuppressedNoise = byId.get(unsuppressed.event)?.noise;
+    const suppressedNoise = byId.get(suppressed.event)?.noise;
+
+    expect(unsuppressedNoise?.enabled).toBe(true);
+    expect(suppressedNoise?.enabled).toBe(true);
+    expect(suppressedNoise!.radiusMetres).toBe(unsuppressedNoise!.radiusMetres);
   });
 });
