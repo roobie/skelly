@@ -265,47 +265,72 @@ const syncReadingProgress = (
   setProgress(bookIsComplete(bookUid) ? { value: 1, max: 1 } : undefined);
 };
 
-const handlingPresentationFor = (
-  job: Readonly<LongJob> | undefined,
-  queue: HandlingPresentationSource,
-  inventory: Inventory,
+type TimedLongJob = Extract<LongJob, { jobType: 'reading' | 'pry' | 'treatment' }>;
+
+const isTimedLongJob = (job: Readonly<LongJob>): job is TimedLongJob =>
+  job.jobType === 'reading' || job.jobType === 'pry' || job.jobType === 'treatment';
+
+const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
+  switch (job.jobType) {
+    case 'reading': {
+      const book = inventory.itemByUid(job.bookUid);
+      return book ? `Reading ${inventory.name(book)}` : 'Reading';
+    }
+    case 'pry':
+      return 'Prying padlock';
+    case 'treatment': {
+      const item = inventory.itemByUid(job.itemUid);
+      return item ? `Treating ${inventory.name(item)}` : 'Treating wound';
+    }
+  }
+};
+
+const elapsedForPresentation = (
+  job: TimedLongJob,
   simTime: number,
   clockRatio: number,
   compressionActive: boolean,
-  throwCharge?: HandlingPresentationSource['throwCharge'],
-): HandlingPresentationSource => {
+): number => {
+  if (!compressionActive) {
+    return job.elapsed;
+  }
+  const secondsPerSimSecond = job.jobType === 'reading' ? clockRatio : 1;
+  return Math.min(job.duration, job.elapsed + Math.max(0, simTime - job.last) * secondsPerSimSecond);
+};
+
+interface HandlingPresentationOptions {
+  readonly job: Readonly<LongJob> | undefined;
+  readonly queue: HandlingPresentationSource;
+  readonly inventory: Inventory;
+  readonly simTime: number;
+  readonly clockRatio: number;
+  readonly compressionActive: boolean;
+  readonly throwCharge?: HandlingPresentationSource['throwCharge'];
+}
+
+const handlingPresentationFor = ({
+  job,
+  queue,
+  inventory,
+  simTime,
+  clockRatio,
+  compressionActive,
+  throwCharge,
+}: HandlingPresentationOptions): HandlingPresentationSource => {
   if (throwCharge) {
     return { jobs: [], throwCharge };
   }
   const stopLabel = labelForAction('handling.stop');
-  if (!job || job.stopped) {
-    return { ...queue, cancelLabel: queue.cancelLabel ?? `${stopLabel} cancels` };
+  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? `${stopLabel} cancels` };
+  if (!job || job.stopped || !isTimedLongJob(job)) {
+    return inactive;
   }
-  let label: string;
-  if (job.jobType === 'reading') {
-    const book = inventory.itemByUid(job.bookUid);
-    label = book ? `Reading ${inventory.name(book)}` : 'Reading';
-  } else if (job.jobType === 'pry') {
-    label = 'Prying padlock';
-  } else if (job.jobType === 'treatment') {
-    const item = inventory.itemByUid(job.itemUid);
-    label = item ? `Treating ${inventory.name(item)}` : 'Treating wound';
-  } else {
-    return { ...queue, cancelLabel: queue.cancelLabel ?? `${stopLabel} cancels` };
-  }
-  const elapsed =
-    !compressionActive
-      ? job.elapsed
-      : Math.min(
-          job.duration,
-          job.elapsed + Math.max(0, simTime - job.last) * (job.jobType === 'reading' ? clockRatio : 1),
-        );
   const action: TimedActionPresentation = {
     kind: job.jobType,
     ...(job.jobType === 'reading' ? { ownerUid: job.bookUid } : {}),
-    label,
+    label: timedActionLabel(job, inventory),
     duration: job.duration,
-    elapsed,
+    elapsed: elapsedForPresentation(job, simTime, clockRatio, compressionActive),
     stopped: job.stopped,
   };
   return timedActionHandlingPresentation(action, stopLabel);
@@ -2963,21 +2988,22 @@ export const startPlay = (
       sim,
       messagesVisible: visible.messages,
     });
-    const currentPresentation = handlingPresentationFor(
-      sim.actions.job,
+    const currentPresentation = handlingPresentationFor({
+      job: sim.actions.job,
       queue,
       inventory,
-      sim.time,
-      sim.clock.ratio,
-      compression.active,
-      itemThrowStartedAt === undefined
-        ? undefined
-        : {
-            elapsedSimSeconds: Math.max(0, sim.time - itemThrowStartedAt),
-            chargeSimSeconds: throwChargeSimSeconds,
-            minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
-          },
-    );
+      simTime: sim.time,
+      clockRatio: sim.clock.ratio,
+      compressionActive: compression.active,
+      throwCharge:
+        itemThrowStartedAt === undefined
+          ? undefined
+          : {
+              elapsedSimSeconds: Math.max(0, sim.time - itemThrowStartedAt),
+              chargeSimSeconds: throwChargeSimSeconds,
+              minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
+            },
+    });
     screen.update();
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
