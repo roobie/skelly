@@ -138,8 +138,8 @@ export interface FleshChunkSpawn {
 interface FleshChunk {
   readonly mesh: Mesh;
   readonly body: RigidBody;
-  elapsed: number;
-  groundedAt: number | undefined;
+  ageRealSeconds: number;
+  groundedAtRealSeconds: number | undefined;
 }
 
 // Presentation tuning, not gameplay.
@@ -239,8 +239,8 @@ export class FleshChunks {
       ],
       corners,
       remainderRealSeconds: 0,
-      elapsed: 0,
-      quietTime: 0,
+      elapsedRealSeconds: 0,
+      quietRealSeconds: 0,
       asleep: false,
     };
     const mesh = new Mesh(geometry, this.material);
@@ -250,7 +250,7 @@ export class FleshChunks {
     if (this.chunks.length >= MAX_FLESH_CHUNKS) {
       this.remove(0);
     }
-    this.chunks.push({ mesh, body: rigid, elapsed: 0, groundedAt: undefined });
+    this.chunks.push({ mesh, body: rigid, ageRealSeconds: 0, groundedAtRealSeconds: undefined });
     this.place(this.chunks.at(-1)!, 0);
   }
 
@@ -258,15 +258,18 @@ export class FleshChunks {
   update(dt: number, world: RigidWorld): void {
     for (let index = this.chunks.length - 1; index >= 0; index--) {
       const chunk = this.chunks[index]!;
-      chunk.elapsed += dt;
+      chunk.ageRealSeconds += dt;
       if (!chunk.body.asleep) {
         stepRigidBody(chunk.body, dt, world);
       }
-      if (chunk.body.asleep && chunk.groundedAt === undefined) {
-        chunk.groundedAt = chunk.elapsed;
+      if (chunk.body.asleep && chunk.groundedAtRealSeconds === undefined) {
+        chunk.groundedAtRealSeconds = chunk.ageRealSeconds;
       }
-      const sinking = chunk.groundedAt === undefined ? 0 : chunk.elapsed - chunk.groundedAt - CHUNK_LIE_S;
-      if (sinking >= CHUNK_SINK_S || chunk.elapsed >= CHUNK_MAX_AGE_S) {
+      const sinking =
+        chunk.groundedAtRealSeconds === undefined
+          ? 0
+          : chunk.ageRealSeconds - chunk.groundedAtRealSeconds - CHUNK_LIE_S;
+      if (sinking >= CHUNK_SINK_S || chunk.ageRealSeconds >= CHUNK_MAX_AGE_S) {
         this.remove(index);
         continue;
       }

@@ -1373,8 +1373,8 @@ export class MobActorMeshes implements ZombieRenderer {
       inertiaBody: partData.inertiaBody,
       corners: partData.corners,
       remainderRealSeconds: 0,
-      elapsed: 0,
-      quietTime: 0,
+      elapsedRealSeconds: 0,
+      quietRealSeconds: 0,
       asleep: false,
     };
     if (hit) {
