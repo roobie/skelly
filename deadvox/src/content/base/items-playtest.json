@@ -23,6 +23,7 @@
       "category": "book",
       "weight": 5,
       "size": [1, 1],
+      "description": "A folded note from the kitchen; readable in hand.",
       "readable": {
         "title": "A note from the kitchen",
         "text": "If you're reading this, they took the sick south to the clinic. We went looking for Dad. Please don't wait for us."
