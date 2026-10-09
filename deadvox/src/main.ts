@@ -166,7 +166,9 @@ if (bench === 'report') {
       Object.assign(globalThis, {
         deadvoxSaveTest: {
           storage: saveController.storage,
-          namespace: saveController.namespace,
+          get namespace() {
+            return saveController.namespace;
+          },
           controller: saveController,
           saveState: () => {
             const { savedGeneration, failure } = saveController as unknown as {
