@@ -179,6 +179,11 @@ try {
     godBefore,
     'plain debug key cannot author',
   );
+  await page.waitForFunction(
+    () => globalThis.firefoxUiTest.screen.isOpen && globalThis.firefoxUiTest.screen.activeTab === 'actions',
+    null,
+    { timeout: 5000 },
+  );
   await pressAction(page, 'debug.god-toggle');
   assert.equal(
     await page.evaluate(() => globalThis.firefoxUiTest.session.sim.godMode),
@@ -195,6 +200,8 @@ try {
   assert.equal(gateEvents.length, 2);
   assert.ok(gateEvents.every((event) => event.trusted));
   assert.ok(gateEvents.some((event) => event.type === 'keydown' && event.prevented));
+  await pressAction(page, 'ui.inventory-toggle');
+  await page.waitForFunction(() => !globalThis.firefoxUiTest.screen.isOpen, null, { timeout: 5000 });
   assert.equal(page.context().pages().length, 1, 'no Help page or window');
   // Register after startup: Input and play must handle this window event before we read cancellation.
   await page.evaluate(() => {

@@ -411,7 +411,7 @@ try {
   }
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(
-    () => globalThis.pumpHandlingTest.screen.isOpen && globalThis.pumpHandlingTest.screen.activeTab === 'crafting',
+    () => globalThis.pumpHandlingTest.screen.isOpen && globalThis.pumpHandlingTest.screen.activeTab === 'actions',
   );
   for (const { action, tab } of inventoryTabActions) {
     await pressAction(page, action);
