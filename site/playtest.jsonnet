@@ -1,0 +1,28 @@
+{
+  en: {
+    title: 'Playtest',
+    task: 'Your task: find the military camp.',
+    playLink: 'Play the playtest map',
+    duration: 'Play for as long as you like, in as many sittings as you like. Continue picks up where you left off.',
+    metrics: 'The game records play metrics only on your machine, in this browser.',
+    sending: 'Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.',
+    analytics: 'This site, the game included, loads Simple Analytics to count visits. It is anonymous, stores no cookies on your device, and gets none of your play metrics.',
+    feedbackBefore: 'Send feedback through ',
+    feedbackLink: 'the playtest feedback form',
+    feedbackAfter: '. It opens a public GitHub issue and needs a GitHub account.',
+    email: 'No GitHub account? You can email your metrics, and any feedback, to the person who sent you the link.',
+  },
+  sv: {
+    title: 'Speltest',
+    task: 'Ditt uppdrag: hitta militärlägret.',
+    playLink: 'Spela speltestkartan',
+    duration: 'Spela så länge du vill, i så många omgångar du vill. Med Continue fortsätter du där du slutade.',
+    metrics: 'Spelet sparar speldata bara på din dator, i den här webbläsaren.',
+    sending: 'Du väljer själv om du vill skicka den: i F9-menyn sparar du din speldata, och en repris av ditt senaste spelande, som filer du kan bifoga till din återkoppling.',
+    analytics: 'Den här webbplatsen, spelet inräknat, använder Simple Analytics för att räkna besök. Det är anonymt, sparar inga kakor på din enhet och får inte ta del av din speldata.',
+    feedbackBefore: 'Skicka återkoppling via ',
+    feedbackLink: 'formuläret för speltestet',
+    feedbackAfter: '. Det öppnar ett offentligt ärende på GitHub och kräver ett GitHub-konto.',
+    email: 'Har du inget GitHub-konto? Då kan du mejla din speldata, och eventuell återkoppling, till den som skickade länken till dig.',
+  },
+}

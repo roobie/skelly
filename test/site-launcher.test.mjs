@@ -3,9 +3,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { loadPlaytestText } from '../site/playtestCatalog.js';
+import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
+const selectLanguage = (languages, search) => applyPlaytestLanguage(languages, search);
 const page = read('site/launcher.js');
 const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
 const SELECT_PATTERN = /<select\b/;
@@ -15,7 +18,10 @@ const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAYTEST_LINK_PATTERN = /<a\b[^>]*\bid="deadvox-playtest"[^>]*>/;
 const PLAYTEST_ENTRY_PATTERN = /\$\{playtestBrief\}/;
-const PLAYTEST_CARD_PATTERN = /<section class="card" aria-labelledby="playtest-title">([\s\S]*?)<\/section>/;
+const PLAYTEST_CARD_PATTERN =
+  /<section class="card" lang=\$\{playtestLanguage\} aria-labelledby="playtest-title">([\s\S]*?)<\/section>/;
+const OPTIONAL_PLAYTEST_BRIEF_PATTERN = /const playtestBrief = playtestText\s*\?[\s\S]*?: undefined;/;
+const ENGLISH_DOCUMENT_LANGUAGE_PATTERN = /<html lang="en">/;
 const DEADVOX_CARD_PATTERN = /<section\b[^>]*\baria-labelledby="deadvox-title"[^>]*>/;
 const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
@@ -98,6 +104,50 @@ const coverageFailures = (description, supportedValues, offeredValues, intention
       .map((value) => `${description} does not offer supported value ${value}`),
   ];
 };
+
+describe('playtest language and catalog', () => {
+  it('chooses Swedish when a Swedish browser tag comes before English', () => {
+    assert.equal(selectLanguage(['sv-FI', 'en-US'], ''), 'sv');
+  });
+
+  it('chooses English when English comes before Swedish', () => {
+    assert.equal(selectLanguage(['en-US', 'sv-SE'], ''), 'en');
+  });
+
+  it('chooses English when no Swedish browser tag is listed', () => {
+    assert.equal(selectLanguage(['fi-FI', 'en-US'], ''), 'en');
+  });
+
+  it('honors either supported language override', () => {
+    assert.equal(selectLanguage(['en-US', 'sv-SE'], '?lang=sv'), 'sv');
+    assert.equal(selectLanguage(['sv-SE', 'en-US'], '?lang=en'), 'en');
+  });
+
+  it('keeps the page English and labels only the playtest section with its language', () => {
+    assert.match(read('site/index.html'), ENGLISH_DOCUMENT_LANGUAGE_PATTERN);
+    assert.ok(PLAYTEST_CARD_PATTERN.test(page), 'the Playtest section uses the selected language');
+  });
+
+  it('keeps the rest of the page when the playtest catalog cannot be loaded', async () => {
+    assert.match(page, OPTIONAL_PLAYTEST_BRIEF_PATTERN);
+    const failingFetchers = [
+      async () => ({ ok: false }),
+      async () => ({ ok: true, json: async () => Promise.reject(new Error('invalid JSON')) }),
+      async () => Promise.reject(new Error('network failure')),
+    ];
+    const results = await Promise.all(
+      failingFetchers.map((fetcher) => loadPlaytestText(fetcher, 'playtest.json', 'en')),
+    );
+    assert.deepEqual(results, [null, null, null]);
+  });
+
+  it('provides the same playtest string keys in both languages', () => {
+    const catalog = JSON.parse(read('site/playtest.json'));
+    const englishKeys = Object.keys(catalog.en).sort();
+    assert.ok(englishKeys.length > 0, 'the English playtest catalog has strings');
+    assert.deepEqual(englishKeys, Object.keys(catalog.sv).sort());
+  });
+});
 
 describe('site launchers track the games’ URL parameters', () => {
   it('offers every supported deadvox URL parameter except documented omissions', () => {
