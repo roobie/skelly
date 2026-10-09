@@ -602,7 +602,10 @@ try {
       const { session, getNotice } = globalThis.pumpHandlingTest;
       for (let frames = 0; frames < 60; frames += 1) {
         const {
-          sim: { actions: { job }, time: simTime },
+          sim: {
+            actions: { job },
+            time: simTime,
+          },
         } = session;
         const notice = getNotice();
         if (job?.jobType === 'wait' || notice !== previousNotice) {
@@ -611,7 +614,10 @@ try {
         globalThis.pumpManualFrames.step(1 / 60);
       }
       const {
-        sim: { actions: { job }, time: simTime },
+        sim: {
+          actions: { job },
+          time: simTime,
+        },
       } = session;
       return { job, notice: getNotice(), frames: 60, simTime };
     }, noticeBefore);
