@@ -18,6 +18,8 @@ const modes = Object.freeze({
   'stairs-traversal': 'render-free',
   'stairs-camo': 'pixel',
   'stairs-lighting-cellar': 'pixel',
+  'stairs-lighting-residents': 'pixel',
+  'stairs-lighting-outdoor': 'pixel',
   'stairs-lighting-atlas': 'pixel',
   reading: 'render-free',
   'firefox-ui': 'render-free',

@@ -188,6 +188,14 @@ jobs:
         if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/stairs.mjs lighting-cellar
+      - name: Stairs lighting residents browser contract
+        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        timeout-minutes: 3
+        run: node test/browser/stairs.mjs lighting-residents
+      - name: Stairs lighting outdoor browser contract
+        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
+        timeout-minutes: 3
+        run: node test/browser/stairs.mjs lighting-outdoor
       - name: Stairs lighting atlas browser contract
         if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
         timeout-minutes: 3

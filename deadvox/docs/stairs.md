@@ -173,20 +173,22 @@ lighting retains the pixel-oracle viewport for cellar checks. The camo AO
 witness runs as its own pixel stage (see `deadvox/test/browser/stairs.mjs`,
 `camo`) with its own cap, so its extra captures cannot consume the cellar
 lighting stages' budget.
-`lighting-cellar` compares HUD-free dark/beam screenshots and checks residents
-stay dark across the nearest-cellar switch. The test-only second cabin, raised
-so its padded top is in an all-air chunk, checks real Streamer-to-render cache
-recovery. `lighting-atlas` compares an outdoor view against sky visibility forced
-to one, then tests the second slot against the first using the same local cell:
-the CPU values must differ, and the exposed wall's GPU luminance must match the
-sky-one reference. This contrast detects a wrong-slot sample; two identically
-dark interiors would not. The raised cabin and terrain apron exist only in the
-lighting Vite plugin, not the demo or build. The proof sets are split into
-independently capped stages because their combined capture runtime approached
-the shared step cap. Captures encode only the viewport region their pixel
-assertions inspect, and `timePhase` reports startup and proof costs. See
-`deadvox/test/browser/stairs.mjs`, `lightingCellarProofs`, `lightingAtlasProofs`
-and `timePhase`, and `.github/workflows/deadvox-browser.yml`, `jobs.run`.
+`lighting-cellar` compares HUD-free dark/beam screenshots. `lighting-residents`
+checks the CPU samples stay dark across the nearest-cellar switch and confirms
+the second field is resident rather than the visibility-1 fallback. The test-only
+second cabin, raised so its padded top is in an all-air chunk, checks real
+Streamer-to-render cache recovery. `lighting-outdoor` compares an outdoor view
+against sky visibility forced to one. `lighting-atlas` tests the second slot
+against the first using the same local cell: the CPU values must differ, and the
+exposed wall's GPU luminance must match the sky-one reference. This contrast
+detects a wrong-slot sample; two identically dark interiors would not. The raised
+cabin and terrain apron exist only in the lighting Vite plugin, not the demo or
+build. The proof sets are split into independently capped stages because their
+combined capture runtime approached the shared step cap. Captures encode only the
+viewport region their pixel assertions inspect, and `timePhase` reports startup
+and proof costs. See `deadvox/test/browser/stairs.mjs`, `lightingCellarProofs`,
+`lightingResidentProofs`, `lightingOutdoorProofs`, `lightingAtlasProofs` and
+`timePhase`, and `.github/workflows/deadvox-browser.yml`, `jobs.run`.
 Traversal witnesses actual floor following; screenshots are secondary to its simulation
 observations.
 

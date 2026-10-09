@@ -17,10 +17,19 @@ import { browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(
-  mode === 'traversal' || mode === 'lighting-cellar' || mode === 'lighting-atlas' || mode === 'camo',
-  'choose traversal, lighting-cellar, lighting-atlas or camo',
+  mode === 'traversal' ||
+    mode === 'lighting-cellar' ||
+    mode === 'lighting-residents' ||
+    mode === 'lighting-outdoor' ||
+    mode === 'lighting-atlas' ||
+    mode === 'camo',
+  'choose traversal, lighting-cellar, lighting-residents, lighting-outdoor, lighting-atlas or camo',
 );
-const isLightingMode = mode === 'lighting-cellar' || mode === 'lighting-atlas';
+const isLightingMode =
+  mode === 'lighting-cellar' ||
+  mode === 'lighting-residents' ||
+  mode === 'lighting-outdoor' ||
+  mode === 'lighting-atlas';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
 const pixelCrop = { x: 480, y: 260, width: 240, height: 240 };
@@ -125,6 +134,8 @@ try {
     traversal: 'stairs-traversal',
     camo: 'stairs-camo',
     'lighting-cellar': 'stairs-lighting-cellar',
+    'lighting-residents': 'stairs-lighting-residents',
+    'lighting-outdoor': 'stairs-lighting-outdoor',
     'lighting-atlas': 'stairs-lighting-atlas',
   }[mode];
   browser = await timeIfLighting('browser-launch', () =>
@@ -466,13 +477,6 @@ try {
     }, png.toString('base64'));
   const lightingCellarProofs = async () => {
     await stage([134, 35.0001, 115]);
-    const residents = () =>
-      page.evaluate(() => {
-        const { engine } = globalThis.stairsWitness;
-        return [engine.skylight.at([67, 17.6, 57.5]), engine.skylight.at([83, 23.6, 57.5])];
-      });
-    const first = await timePhase('cellar-resident-samples', residents);
-    assert.deepEqual(first, [0, 0]);
     const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
     assert.equal(raisedOutdoor, 1);
     const lightProof = await timePhase('cellar-dark-beam-pixels', async () => {
@@ -505,20 +509,27 @@ try {
       const proof = { dark: await luminance(dark), beam: await luminance(lit) };
       assert.ok(proof.dark < 15, JSON.stringify(proof));
       assert.ok(proof.beam > proof.dark + 10, JSON.stringify(proof));
-      return { proof, mouse5 };
+      return proof;
     });
-    const residentProof = await timePhase('resident-field-switch', async () => {
-      await lightProof.mouse5();
-      await stage([166, 47.0001, 115]);
-      const second = await residents();
-      assert.deepEqual(second, first);
-      const secondDark = await luminance(await shot('second-cellar-dark', true));
-      assert.ok(secondDark < 15, JSON.stringify({ secondDark }));
-      return { first, second, secondDark, raisedOutdoor };
-    });
-    return { lightProof: lightProof.proof, residentProof };
+    return { lightProof, raisedOutdoor };
   };
-  const lightingAtlasProofs = async () => {
+  const lightingResidentProofs = async () => {
+    await stage([134, 35.0001, 115]);
+    const residents = () =>
+      page.evaluate(() => {
+        const { engine } = globalThis.stairsWitness;
+        return [engine.skylight.at([67, 17.6, 57.5]), engine.skylight.at([83, 23.6, 57.5])];
+      });
+    const first = await timePhase('first-resident-samples', residents);
+    assert.deepEqual(first, [0, 0]);
+    await stage([166, 47.0001, 115]);
+    const second = await timePhase('second-resident-samples', residents);
+    assert.deepEqual(second, first);
+    const secondDark = await luminance(await shot('second-cellar-dark', true));
+    assert.ok(secondDark < 15, JSON.stringify({ secondDark }));
+    return { residentProof: { first, second, secondDark } };
+  };
+  const lightingOutdoorProofs = async () => {
     const outdoorProof = await timePhase('outdoor-sky-equivalence', async () => {
       await stage([125, 43.0001, 118]);
       await page.evaluate(() => {
@@ -538,6 +549,9 @@ try {
       assert.ok(Math.abs(proof.normal - proof.reference) < 1.5, JSON.stringify(proof));
       return proof;
     });
+    return { outdoorProof };
+  };
+  const lightingAtlasProofs = async () => {
     const secondSlotProof = await timePhase('atlas-slot-wall-equivalence', async () => {
       const contrast = await page.evaluate(() => {
         const { engine } = globalThis.stairsWitness;
@@ -567,7 +581,7 @@ try {
       assert.ok(Math.abs(proof.normal - proof.reference) < 1.5, JSON.stringify(proof));
       return proof;
     });
-    return { outdoorProof, secondSlotProof };
+    return { secondSlotProof };
   };
   if (mode === 'camo') {
     await stage([155, 43.0001, 122], Math.PI / 2, -0.2);
@@ -813,6 +827,7 @@ try {
   let outdoorProof;
   let residentProof;
   let secondSlotProof;
+  let raisedOutdoor;
   if (mode === 'traversal') {
     const sprintDoor = await page.evaluate(() => {
       const { body, input, entities, doorPanel } = globalThis.stairsWitness;
@@ -1066,15 +1081,19 @@ try {
     await walk('movement.forward', 143, true, 43);
     assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
   } else if (mode === 'lighting-cellar') {
-    ({ lightProof, residentProof } = await timePhase('lighting-cellar-proofs', lightingCellarProofs));
+    ({ lightProof, raisedOutdoor } = await timePhase('lighting-cellar-proofs', lightingCellarProofs));
+  } else if (mode === 'lighting-residents') {
+    ({ residentProof } = await timePhase('lighting-resident-proofs', lightingResidentProofs));
+  } else if (mode === 'lighting-outdoor') {
+    ({ outdoorProof } = await timePhase('lighting-outdoor-proofs', lightingOutdoorProofs));
   } else if (mode === 'lighting-atlas') {
-    ({ outdoorProof, secondSlotProof } = await timePhase('lighting-atlas-proofs', lightingAtlasProofs));
+    ({ secondSlotProof } = await timePhase('lighting-atlas-proofs', lightingAtlasProofs));
   }
   assert.deepEqual(errors, []);
   const resultFile = isLightingMode ? `result-${mode}.json` : 'result.json';
   await writeFile(
     resolve(artifacts, resultFile),
-    JSON.stringify({ mode, states, lightProof, outdoorProof, residentProof, secondSlotProof, errors }, null, 2),
+    JSON.stringify({ mode, states, lightProof, outdoorProof, residentProof, secondSlotProof, raisedOutdoor, errors }, null, 2),
   );
 } finally {
   await timeIfLighting('page-close', async () => page?.close());

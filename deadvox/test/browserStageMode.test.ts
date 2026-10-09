@@ -34,7 +34,12 @@ describe('browser stage rendering mode', () => {
       'http://localhost/?seed=1',
     );
     expect(browserStageArgs('stairs-camo')).toContain('--use-gl=swiftshader');
-    for (const stage of ['stairs-lighting-cellar', 'stairs-lighting-atlas']) {
+    for (const stage of [
+      'stairs-lighting-cellar',
+      'stairs-lighting-residents',
+      'stairs-lighting-outdoor',
+      'stairs-lighting-atlas',
+    ]) {
       expect(browserStageMode(stage)).toBe('pixel');
       expect(browserStageArgs(stage)).toContain('--use-gl=swiftshader');
       expect(browserStageArgs(stage)).toContain('--enable-unsafe-swiftshader');
