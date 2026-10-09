@@ -1317,7 +1317,16 @@ const templateSoundDefinitions = (
   }
 ).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));
 const templateBase = [
-  { source: 'template-blocks.json', data: { blocks: [{ id: 'brick', name: 'Brick', color: '#ffffff', solid: true }] } },
+  {
+    source: 'template-blocks.json',
+    data: {
+      blocks: [
+        { id: 'brick', name: 'Brick', color: '#ffffff', solid: true },
+        { id: 'planks', name: 'Planks', color: '#ffffff', solid: true },
+        { id: 'window_frame', name: 'Window frame', color: '#ffffff', solid: true },
+      ],
+    },
+  },
   {
     source: 'template-support.json',
     data: {
@@ -1441,6 +1450,32 @@ describe('templates', () => {
     );
     expect(issues.some((issue) => issue.includes('palette["A"]'))).toBe(true);
     expect(issues.some((issue) => issue.includes('palette["Z"]'))).toBe(false);
+  });
+
+  it('reports open floor-course wall cells without flagging doors or window frames', () => {
+    const palette = {
+      '#': 'brick',
+      p: 'planks',
+      '.': 'air',
+      D: { furniture: 'fixture_door' },
+      w: 'window_frame',
+    };
+    const valid = template(
+      [
+        ['###', '###', '###'],
+        ['D#w', '#p#', '###'],
+        ['###', '###', '###'],
+      ],
+      palette,
+      [3, 3, 3],
+    );
+    expect(check(valid)).toEqual([]);
+
+    const broken = structuredClone(valid);
+    broken.data.templates[0]!.layers[1]![0] = 'D.w';
+    expect(check(broken)).toContain(
+      'templates[0].layers[1]: has an open exterior cell between matching "brick" wall courses',
+    );
   });
 
   it('checks layer sizes and that characters are in the palette', () => {

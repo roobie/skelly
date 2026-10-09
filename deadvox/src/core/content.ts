@@ -626,6 +626,98 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   return found;
 };
 
+const solidTemplateBlock = (
+  registry: Registry,
+  template: TemplateDef,
+  char: string | undefined,
+): string | undefined => {
+  const id = char === undefined ? undefined : template.palette[char];
+  if (typeof id !== 'string') {
+    return undefined;
+  }
+  const index = registry.blockIds.get(id);
+  return index !== undefined && registry.blocks[index]?.solid ? id : undefined;
+};
+
+const boundaryWallAt = (
+  registry: Registry,
+  template: TemplateDef,
+  y: number,
+  { x, z }: { x: number; z: number },
+): string | null => {
+  const [width, , depth] = template.size;
+  if (x !== 0 && z !== 0 && x !== width - 1 && z !== depth - 1) {
+    return null;
+  }
+  const row = template.layers[y]?.[z] ?? '';
+  if (template.palette[row[x] ?? ''] !== 'air') {
+    return null;
+  }
+  const wall = solidTemplateBlock(registry, template, template.layers[y - 1]?.[z]?.[x]);
+  return wall && wall === solidTemplateBlock(registry, template, template.layers[y + 1]?.[z]?.[x]) ? wall : null;
+};
+
+const exteriorWallCourses = (registry: Registry, template: TemplateDef, y: number): Set<string> => {
+  const [width, , depth] = template.size;
+  const walls = new Set<string>();
+  for (let z = 0; z < depth; z += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const wall = boundaryWallAt(registry, template, y, { x, z });
+      if (wall) {
+        walls.add(wall);
+      }
+    }
+  }
+  return walls;
+};
+
+const interiorSolidBlocks = (registry: Registry, template: TemplateDef, y: number): Set<string> => {
+  const [width, , depth] = template.size;
+  const blocks = new Set<string>();
+  for (let z = 1; z < depth - 1; z += 1) {
+    const row = template.layers[y]?.[z] ?? '';
+    for (let x = 1; x < width - 1; x += 1) {
+      const block = solidTemplateBlock(registry, template, row[x]);
+      if (block) {
+        blocks.add(block);
+      }
+    }
+  }
+  return blocks;
+};
+
+const floorCourseWallGap = (registry: Registry, template: TemplateDef, y: number): string | null => {
+  const wallCourses = exteriorWallCourses(registry, template, y);
+  if (wallCourses.size === 0) {
+    return null;
+  }
+  const floorBlocks = interiorSolidBlocks(registry, template, y);
+  for (const wall of wallCourses) {
+    if ([...floorBlocks].some((block) => block !== wall)) {
+      return wall;
+    }
+  }
+  return null;
+};
+
+const checkFloorCourseWall = (registry: Registry, template: TemplateDef, y: number, report: Report): void => {
+  const wall = floorCourseWallGap(registry, template, y);
+  if (wall) {
+    report(
+      'templates',
+      template.id,
+      `.layers[${y}]`,
+      `has an open exterior cell between matching "${wall}" wall courses`,
+    );
+  }
+};
+
+const checkFloorCourseWalls = (registry: Registry, template: TemplateDef, report: Report): void => {
+  for (let y = 1; y < template.layers.length - 1; y += 1) {
+    checkFloorCourseWall(registry, template, y, report);
+  }
+};
+
 const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: Report) => {
   if (template.access && templateResolves(registry, template)) {
     for (const [path, message] of templateSpatialIssues(registry, compileTemplate(registry, template))) {
@@ -646,6 +738,7 @@ const checkTemplates = (registry: Registry, report: Report) => {
         report('templates', template.id, at, `no block "${entry}"`);
       }
     }
+    checkFloorCourseWalls(registry, template, report);
     checkTemplateSpace(registry, template, report);
   }
 };

@@ -35,6 +35,10 @@ rechecking unrelated base content while preserving those integration checks;
 see `test/content.test.ts`, `templateBase`, and `test/authoredSite.test.ts`,
 `registry`.
 
+## Exterior shell continuity
+
+An authored floor course cut into an exterior wall reads as an unfinished recess. Keep the shell visually continuous while doors and solid window frames remain authored openings. See `src/core/content.ts`, `floorCourseWallGap`.
+
 ## Site-generation tuning
 
 `siteGeneration` definitions in `src/core/schema.ts` keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into `layouts-playtest.json`. `src/content/base/site-generation.json` supplies the authored-site profile consumed by `src/core/authoredSite.ts`, `AuthoredSite`; tune that profile to balance natural variation against playable structures and routes.
