@@ -22,7 +22,7 @@
       "strength": 4,
       "tintColor": "#dddddd",
       "tintDarkness": 1.5,
-      "streakColor": "#bcbcbc",
+      "streakColor": "#dddddd",
       "streakStrength": 0.8,
       "streakLengthMetres": 4.5,
       "mossColor": "#dddddd",
@@ -32,7 +32,7 @@
       "mossThreshold": 0.55,
       "mossBias": 0.7,
       "mixCeiling": 0.75,
-      "weatheringBlend": 0.3
+      "weatheringBlend": 0
     }
   ]
 }
