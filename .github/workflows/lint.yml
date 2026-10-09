@@ -41,11 +41,13 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
+            engine/package-lock.json
             gungen/package-lock.json
             deadvox/package-lock.json
             deadvox/tools/lit-check/package-lock.json
             mobgen/package-lock.json
       - run: npm ci
+      - run: npm ci --prefix engine
       - run: npm ci --prefix gungen
       - run: npm ci --prefix deadvox
       - run: npm ci --prefix deadvox/tools/lit-check

@@ -14,6 +14,7 @@ on:
     paths:
       - 'site/**'
       - 'gungen/**'
+      - 'engine/**'
       - 'deadvox/**'
       - 'mobgen/**'
       - 'package.json'
@@ -55,6 +56,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
+            engine/package-lock.json
             gungen/package-lock.json
             deadvox/package-lock.json
             deadvox/tools/lit-check/package-lock.json
@@ -62,6 +64,7 @@ jobs:
       - name: Lint (repo-wide)
         run: |
           npm ci
+          npm ci --prefix engine
           npm ci --prefix gungen
           npm ci --prefix deadvox
           npm ci --prefix deadvox/tools/lit-check
