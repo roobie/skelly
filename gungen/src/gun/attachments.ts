@@ -329,3 +329,26 @@ export const attachmentMetadata = (
   }
   return { ...metadata, mountFrame: { normal: port.normal, up: port.up } };
 };
+
+export const withAttachmentInstanceAppearances = (resolved: Resolved): Resolved => {
+  let parts: Record<string, PartInstance> | undefined;
+  for (const [id, definition] of resolved.defs) {
+    const instance = resolved.assembly.parts[id];
+    if (!instance || instance.appearance) {
+      continue;
+    }
+    const params = resolved.params.get(id);
+    const metadata = attachmentMetadata(
+      instance.family,
+      params && Object.fromEntries(Object.entries(params).map(([name, value]) => [name, value.value])),
+      resolved.domain.units.metresPerUnit,
+      definition,
+    );
+    if (!metadata) {
+      continue;
+    }
+    parts ??= { ...resolved.assembly.parts };
+    parts[id] = { ...instance, appearance: attachmentInstanceForId(metadata.id).appearance ?? {} };
+  }
+  return parts ? { ...resolved, assembly: { ...resolved.assembly, parts } } : resolved;
+};

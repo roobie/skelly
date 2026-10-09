@@ -124,24 +124,28 @@ describe('gungen exports satisfy deadvox model validation', () => {
     }
   });
 
-  it('loads an exported suppressor material without changing its colour', async () => {
-    const exported = exportAttachmentGlb('real-suppressor', {
-      id: 'real_suppressor',
-      file: 'assets/models/real_suppressor.glb',
-    });
-    assert.ok(exported.ok, exported.ok ? '' : JSON.stringify(exported.error));
-    const exportedColor = glbJson(Buffer.from(exported.glb)).materials[0].pbrMetallicRoughness.baseColorFactor;
-    const asset = readFileSync(join(ROOT, 'deadvox/src/content/base/assets/models/real_suppressor.glb'));
-    const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(asset).buffer, '');
-    const loadedColors = [];
-    loaded.scene.traverse((object) => {
-      if (object.isMesh) {
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
-        loadedColors.push(...materials.map(({ color }) => color.toArray()));
-      }
-    });
-    assert.ok(loadedColors.length > 0, 'Deadvox suppressor GLB loaded no mesh materials');
-    assert.deepEqual(loadedColors, [exportedColor.slice(0, 3)]);
+  it('loads each exported suppressor material without changing its colour', async () => {
+    await Promise.all(
+      ['real_suppressor', 'improvised_suppressor'].map(async (id) => {
+        const exported = exportAttachmentGlb(id.replaceAll('_', '-'), {
+          id,
+          file: `assets/models/${id}.glb`,
+        });
+        assert.ok(exported.ok, exported.ok ? '' : JSON.stringify(exported.error));
+        const exportedColor = glbJson(Buffer.from(exported.glb)).materials[0].pbrMetallicRoughness.baseColorFactor;
+        const asset = readFileSync(join(ROOT, `deadvox/src/content/base/assets/models/${id}.glb`));
+        const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(asset).buffer, '');
+        const loadedColors = [];
+        loaded.scene.traverse((object) => {
+          if (object.isMesh) {
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            loadedColors.push(...materials.map(({ color }) => color.toArray()));
+          }
+        });
+        assert.ok(loadedColors.length > 0, `Deadvox ${id} GLB loaded no mesh materials`);
+        assert.deepEqual(loadedColors, [exportedColor.slice(0, 3)]);
+      }),
+    );
   });
 
   it('rejects unknown action fields', () => {

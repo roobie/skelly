@@ -28,6 +28,7 @@ import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
 import { actionOpenOffsets, resolveGunAction } from '../gun/actionDescription.ts';
 import { previewFittedAttachments } from '../gun/attachmentPreview.ts';
+import { withAttachmentInstanceAppearances } from '../gun/attachments.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
@@ -395,8 +396,12 @@ const redraw = () => {
   fitNotice.textContent = preview.ok ? '' : preview.message;
   fitNotice.hidden = preview.ok;
   const renderReport = preview.ok ? preview.report : report;
+  const appearanceReport = {
+    ...renderReport,
+    resolved: withAttachmentInstanceAppearances(renderReport.resolved),
+  };
   layers = buildLayers(
-    renderReport,
+    appearanceReport,
     focused ? [focused] : report.issues,
     colorMode,
     {
@@ -413,7 +418,7 @@ const redraw = () => {
   // A static full-rearward inspection pose must not become the hand-cycle's new home pose.
   cycleView.bind(
     layers.solids,
-    report.resolved,
+    appearanceReport.resolved,
     initialQuery.get('pose') === 'action-open' && action?.kind === 'pump' ? undefined : action,
   );
   if (ammoMeshes) {

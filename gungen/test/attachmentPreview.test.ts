@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Matrix4, Mesh, MeshStandardMaterial, Quaternion } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { AppearanceContext } from '../src/core/design.ts';
 import type { Mat3 } from '../src/core/math.ts';
+import { resolve } from '../src/core/resolve.ts';
 import { validate } from '../src/core/validate.ts';
 import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';
 import { parseAttachmentFit, previewFittedAttachments } from '../src/gun/attachmentPreview.ts';
+import { attachmentMetadata, attachmentMountSlot, withAttachmentInstanceAppearances } from '../src/gun/attachments.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { buildLayers } from '../src/viewer/scene.ts';
@@ -36,6 +40,24 @@ const suppressorColor = (assembly: typeof ar, context: AppearanceContext): strin
   return `#${mesh.material.color.getHexString()}`;
 };
 
+const designHasAttachment = (assembly: Parameters<typeof exportGunGlb>[0]): boolean => {
+  const resolved = resolve(assembly, gunDomain);
+  return [...resolved.defs.entries()].some(([id, definition]) => {
+    const instance = resolved.assembly.parts[id];
+    if (!instance) {
+      return false;
+    }
+    const params = resolved.params.get(id);
+    const metadata = attachmentMetadata(
+      instance.family,
+      params && Object.fromEntries(Object.entries(params).map(([name, value]) => [name, value.value])),
+      resolved.domain.units.metresPerUnit,
+      definition,
+    );
+    return Boolean(metadata && attachmentMountSlot(resolved, id, metadata.mount));
+  });
+};
+
 const rotationMatrix = (rotation: Mat3): Matrix4 =>
   new Matrix4().set(
     rotation[0],
@@ -55,6 +77,56 @@ const rotationMatrix = (rotation: Mat3): Matrix4 =>
     0,
     1,
   );
+
+const exportDesign = (assembly: Parameters<typeof exportGunGlb>[0]) => {
+  const design = JSON.parse(
+    readFileSync(join(import.meta.dirname, '..', 'designs', `${assembly.name}.json`), 'utf8'),
+  ) as { template: string; finish?: Readonly<Record<string, string>> };
+  const exported = exportGunGlb(
+    assembly,
+    { id: assembly.name, file: `assets/models/${assembly.name}.glb` },
+    { variant: design.template, ...(design.finish ? { finish: design.finish } : {}) },
+  );
+  if (!exported.ok) {
+    throw new Error(`${assembly.name}: ${JSON.stringify(exported.error)}`);
+  }
+  return exported;
+};
+
+const viewerAttachmentMaterials = (layers: ReturnType<typeof buildLayers>, partId: string): string[] =>
+  layers.solids.children.flatMap((child) => {
+    if (!(child instanceof Mesh && child.userData.part === partId && child.material instanceof MeshStandardMaterial)) {
+      return [];
+    }
+    return [`#${child.material.color.getHexString()}`];
+  });
+
+const attachmentMaterialPair = (
+  gunJson: ReturnType<typeof readGlb>['json'],
+  designName: string,
+  attachment: { id: string; node: string },
+): { label: string; host: string[]; item: string[] } => {
+  const node = gunJson.nodes.find(({ name }) => name === attachment.node);
+  if (node?.mesh === undefined) {
+    throw new Error(`${designName}: attachment node ${attachment.node} has no mesh`);
+  }
+  const hostMaterials = gunJson.meshes[node.mesh]!.primitives.map(
+    ({ material }) => gunJson.materials[material]!.name!,
+  ).sort();
+  const id = attachment.id.replaceAll('-', '_');
+  const standalone = exportAttachmentGlb(attachment.id, {
+    id,
+    file: `assets/models/${id}.glb`,
+  });
+  if (!standalone.ok) {
+    throw new Error(`${attachment.id}: ${JSON.stringify(standalone.error)}`);
+  }
+  const itemGlb = readGlb(standalone.glb).json;
+  const itemMaterials = itemGlb.meshes
+    .flatMap(({ primitives }) => primitives.map(({ material }) => itemGlb.materials[material]!.name!))
+    .sort();
+  return { label: `${designName} ${attachment.id}`, host: hostMaterials, item: itemMaterials };
+};
 
 describe('viewer attachment previews', () => {
   it('parses repeated attachment IDs with optional explicit mount ports', () => {
@@ -103,6 +175,36 @@ describe('viewer attachment previews', () => {
     const greenColor = readGlb(green.glb).json.materials[0]?.name;
     expect(greenColor).not.toBe(blackColor);
   });
+
+  const designsWithAttachments = loadDesigns().filter(({ assembly }) => designHasAttachment(assembly));
+  it('finds published design-authored attachments to verify', () => {
+    expect(designsWithAttachments.length).toBeGreaterThan(0);
+  });
+
+  for (const { assembly } of designsWithAttachments) {
+    it(`exports ${assembly.name} attachment materials like their standalone item models`, () => {
+      const exported = exportDesign(assembly);
+      const { json } = readGlb(exported.glb);
+      const design = JSON.parse(
+        readFileSync(join(import.meta.dirname, '..', 'designs', `${assembly.name}.json`), 'utf8'),
+      ) as { template: string; finish?: Readonly<Record<string, string>> };
+      const report = validate(assembly, gunDomain);
+      const normalizedReport = { ...report, resolved: withAttachmentInstanceAppearances(report.resolved) };
+      const layers = buildLayers(normalizedReport, [], 'finish', {
+        variant: design.template,
+        ...(design.finish ? { finish: design.finish } : {}),
+      });
+      const attachments = exported.modelEntry.attachments ?? [];
+      expect(attachments.length).toBeGreaterThan(0);
+      for (const attachment of attachments) {
+        const pair = attachmentMaterialPair(json, assembly.name, attachment);
+        expect(pair.host, pair.label).toEqual(pair.item);
+        const partId = attachment.node.split(':')[0]!;
+        const viewerMaterials = [...new Set(viewerAttachmentMaterials(layers, partId))].sort();
+        expect(viewerMaterials, `${pair.label} viewer`).toEqual([...new Set(pair.item)].sort());
+      }
+    });
+  }
 
   it('matches fitted preview appearance to the standalone attachment export', () => {
     const exported = exportAttachmentGlb('real-suppressor', {

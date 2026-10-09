@@ -44,7 +44,7 @@ host firearm's finish. An attachment is its own item instance, so mounting it
 must not change its colour. Gungen's part-instance contract allows separate
 instances to carry unrelated finishes; Deadvox's inventory still selects one
 model per item type, so per-item finish choices need instance appearance data in
-that inventory contract. Gungen derives suppressor mass from geometry and
+that inventory contract (#502). Gungen derives suppressor mass from geometry and
 material. The only
 hand-set suppressor effect is each type's recoil reduction, which follows trapped
 gas; the improvised type is less effective. One shared muzzle rule uses weight
