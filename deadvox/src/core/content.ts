@@ -561,6 +561,16 @@ const checkDoorOpenNoise = (registry: Registry, furniture: FurnitureDef, report:
   }
 };
 
+const checkSearchNoise = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const { searchNoise } = furniture;
+  const sound = searchNoise && registry.sounds.get(searchNoise.sound);
+  if (searchNoise && !sound) {
+    report('furniture', furniture.id, '.searchNoise.sound', `no sound event "${searchNoise.sound}"`);
+  } else if (searchNoise && sound && !sound.noise.enabled) {
+    report('furniture', furniture.id, '.searchNoise.sound', 'search sound must emit hearing noise');
+  }
+};
+
 const militaryOnly = (id: string) => `"${id}" is military loot only`;
 
 const checkMilitaryTables = (registry: Registry, military: ReadonlySet<string>, report: Report) => {
@@ -612,6 +622,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
     }
     checkDoorOpenNoise(registry, furniture, report);
+    checkSearchNoise(registry, furniture, report);
     if (furniture.door?.prying && !registry.skills.has(furniture.door.prying.skill)) {
       report('furniture', furniture.id, '.door.prying.skill', `no skill "${furniture.door.prying.skill}"`);
     }
@@ -626,6 +637,27 @@ const checkFurniture = (registry: Registry, report: Report) => {
 
 type PaletteThing = Exclude<TemplateDef['palette'][string], string>;
 
+const militaryLootIssue = (
+  registry: Registry,
+  template: TemplateDef,
+  lootId: string | undefined,
+): string | undefined =>
+  registry.loot.get(lootId ?? '')?.military && !template.military
+    ? 'military loot tables may only appear in a military template'
+    : undefined;
+
+const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [string, string][] => {
+  const found: [string, string][] = [];
+  const furniture = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture);
+  if (entry.lock && furniture && !furniture.door) {
+    found.push(['.lock', 'only a door can have a lock']);
+  }
+  if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
+    found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
+  }
+  return found;
+};
+
 const checkPaletteThing = (registry: Registry, template: TemplateDef, char: string, entry: PaletteThing) => {
   const found: [string, string][] = [];
   const furniture = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture);
@@ -636,19 +668,111 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (problem) {
     found.push(['.furniture', problem]);
   }
+  const lootId = entry.loot ?? furniture?.loot;
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
+  }
+  const militaryIssue = militaryLootIssue(registry, template, lootId);
+  if (militaryIssue) {
+    found.push(['.loot', militaryIssue]);
   }
   if (entry.loot !== undefined && furniture && furniture.container === undefined) {
     found.push(['.loot', 'has loot but no container to put it in']);
   }
-  if (entry.lock && furniture && !furniture.door) {
-    found.push(['.lock', 'only a door can have a lock']);
-  }
-  if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
-    found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
-  }
+  found.push(...checkPaletteObjectRefs(registry, entry));
   return found;
+};
+
+const solidTemplateBlock = (
+  registry: Registry,
+  template: TemplateDef,
+  char: string | undefined,
+): string | undefined => {
+  const id = char === undefined ? undefined : template.palette[char];
+  if (typeof id !== 'string') {
+    return undefined;
+  }
+  const index = registry.blockIds.get(id);
+  return index !== undefined && registry.blocks[index]?.solid ? id : undefined;
+};
+
+const boundaryWallAt = (
+  registry: Registry,
+  template: TemplateDef,
+  y: number,
+  { x, z }: { x: number; z: number },
+): string | null => {
+  const [width, , depth] = template.size;
+  if (x !== 0 && z !== 0 && x !== width - 1 && z !== depth - 1) {
+    return null;
+  }
+  const row = template.layers[y]?.[z] ?? '';
+  if (template.palette[row[x] ?? ''] !== 'air') {
+    return null;
+  }
+  const wall = solidTemplateBlock(registry, template, template.layers[y - 1]?.[z]?.[x]);
+  return wall && wall === solidTemplateBlock(registry, template, template.layers[y + 1]?.[z]?.[x]) ? wall : null;
+};
+
+const exteriorWallCourses = (registry: Registry, template: TemplateDef, y: number): Set<string> => {
+  const [width, , depth] = template.size;
+  const walls = new Set<string>();
+  for (let z = 0; z < depth; z += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const wall = boundaryWallAt(registry, template, y, { x, z });
+      if (wall) {
+        walls.add(wall);
+      }
+    }
+  }
+  return walls;
+};
+
+const interiorSolidBlocks = (registry: Registry, template: TemplateDef, y: number): Set<string> => {
+  const [width, , depth] = template.size;
+  const blocks = new Set<string>();
+  for (let z = 1; z < depth - 1; z += 1) {
+    const row = template.layers[y]?.[z] ?? '';
+    for (let x = 1; x < width - 1; x += 1) {
+      const block = solidTemplateBlock(registry, template, row[x]);
+      if (block) {
+        blocks.add(block);
+      }
+    }
+  }
+  return blocks;
+};
+
+const floorCourseWallGap = (registry: Registry, template: TemplateDef, y: number): string | null => {
+  const wallCourses = exteriorWallCourses(registry, template, y);
+  if (wallCourses.size === 0) {
+    return null;
+  }
+  const floorBlocks = interiorSolidBlocks(registry, template, y);
+  for (const wall of wallCourses) {
+    if ([...floorBlocks].some((block) => block !== wall)) {
+      return wall;
+    }
+  }
+  return null;
+};
+
+const checkFloorCourseWall = (registry: Registry, template: TemplateDef, y: number, report: Report): void => {
+  const wall = floorCourseWallGap(registry, template, y);
+  if (wall) {
+    report(
+      'templates',
+      template.id,
+      `.layers[${y}]`,
+      `has an open exterior cell between matching "${wall}" wall courses`,
+    );
+  }
+};
+
+const checkFloorCourseWalls = (registry: Registry, template: TemplateDef, report: Report): void => {
+  for (let y = 1; y < template.layers.length - 1; y += 1) {
+    checkFloorCourseWall(registry, template, y, report);
+  }
 };
 
 const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: Report) => {
@@ -671,6 +795,7 @@ const checkTemplates = (registry: Registry, report: Report) => {
         report('templates', template.id, at, `no block "${entry}"`);
       }
     }
+    checkFloorCourseWalls(registry, template, report);
     checkTemplateSpace(registry, template, report);
   }
 };
@@ -679,6 +804,8 @@ const checkZombies = (registry: Registry, report: Report) => {
   for (const zombie of registry.zombies.values()) {
     if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
       report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
+    } else if (registry.loot.get(zombie.loot ?? '')?.military) {
+      report('zombies', zombie.id, '.loot', 'zombie loot may not use a military table');
     }
     for (const key of ['idle', 'alert', 'attack', 'hurt'] as const) {
       const event = zombie.sounds[key];
@@ -808,12 +935,57 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
   }
 };
 
+const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {
+  if (!block.patternPalette) {
+    report('blocks', block.id, '.patternPalette', 'camo blocks require a four-colour pattern palette');
+  }
+  if (block.patternWashout === undefined) {
+    report('blocks', block.id, '.patternWashout', 'camo blocks require a pattern washout value');
+  }
+};
+
+const reportCamoSettingMismatch = (first: BlockDef, block: BlockDef, report: Report): void => {
+  if (
+    !first.patternPalette ||
+    first.patternWashout === undefined ||
+    !block.patternPalette ||
+    block.patternWashout === undefined
+  ) {
+    return;
+  }
+  const paletteDiffers = block.patternPalette.some((color, i) => color !== first.patternPalette?.[i]);
+  const washoutDiffers = block.patternWashout !== first.patternWashout;
+  if (!(paletteDiffers || washoutDiffers)) {
+    return;
+  }
+  report(
+    'blocks',
+    block.id,
+    paletteDiffers ? '.patternPalette' : '.patternWashout',
+    `camo palette and washout must match the first camo block "${first.id}"`,
+  );
+};
+
+const checkCamoBlocks = (registry: Registry, report: Report): void => {
+  const [first, ...rest] = registry.blocks.filter((block) => block.pattern === 'camo');
+  if (!first) {
+    return;
+  }
+
+  reportMissingCamoSettings(first, report);
+  for (const block of rest) {
+    reportMissingCamoSettings(block, report);
+    reportCamoSettingMismatch(first, block, report);
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
     const origin = origins.get(`${section}:${id}`)!;
     issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
   };
+  checkCamoBlocks(registry, report);
   for (const block of registry.blocks) {
     for (const [gait, event] of Object.entries(block.rustle ?? {})) {
       const sound = registry.sounds.get(event);

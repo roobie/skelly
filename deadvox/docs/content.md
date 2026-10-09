@@ -10,6 +10,8 @@ read_if:
   - you change static reachability checks
   - you author or validate time-windowed template spawns
   - you're authoring or changing playtest fixed loot
+  - you're assigning noise to a furniture action
+  - you're authoring base surface materials or procedural pattern tuning
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
 ---
@@ -38,6 +40,10 @@ when their contract depends on cross-file merging or references. This avoids
 rechecking unrelated base content while preserving those integration checks;
 see `test/content.test.ts`, `templateBase`, and `test/authoredSite.test.ts`,
 `registry`.
+
+## Exterior shell continuity
+
+An authored floor course cut into an exterior wall reads as an unfinished recess. Keep the shell visually continuous while doors and solid window frames remain authored openings. See `src/core/content.ts`, `floorCourseWallGap`.
 
 ## Site-generation tuning
 
@@ -68,6 +74,14 @@ uses exact integer multiplication and reports the count when refusing a file.
 - Result, every alternative item, skill, quality and workstation references are
   checked after ordered merging. Broken files are removed whole, including their
   skills/recipes/items, and references are checked again as before.
+
+Procedural surface pattern IDs are validated with `BLOCK_PATTERNS` in
+`src/core/schema.ts`; the shader implementation lives in
+`src/render/surfacePatterns.ts`. Woodland camouflage's palette and washout
+are block fields in `src/content/base/blocks.json`, alongside the pattern assignment
+to `camo_woodland`. Keeping blotches anchored in world coordinates avoids texture
+assets and repeated seams; the tunable palette and washout live on the block.
+All camo blocks share one palette and washout; distinct looks need per-block shader lookup.
 
 Template spawn palette entries can specify `window: {from, to?}`.
 `src/core/schema.ts`, `PaletteThingSchema`, validates the field; named game-clock
@@ -168,6 +182,6 @@ check must prove that reachable practice sources can raise a recipe's required s
 stores no closure or runtime state; progression, crafting and disassembly remain
 separate owners.
 
-## Door opening noise
+## Furniture action noise
 
-`FurnitureSchema` in `src/core/schema.ts` lets door content select an opening sound through `door.openNoise`; `src/core/content.ts`, `checkFurniture`, requires that event to emit hearing noise. The event definition owns its hearing radius, and `src/game/doorAction.ts`, `registerDoorAction`, sends it through the ordinary positioned sound path. The field is optional so a door stays quiet unless its content says otherwise. This keeps a loud workshop roller door distinct without making the everyday `wood_door` noisy or duplicating radius tuning.
+Give a furniture action an explicit noise only when it should expose the player; ordinary doors and containers stay quiet. The sound owns its hearing radius, and validation rejects a selected event that cannot alert. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/content.ts`, `checkDoorOpenNoise` and `checkSearchNoise`; `src/game/doorAction.ts`, `registerDoorAction`; and `src/game/session.ts`, `search`.

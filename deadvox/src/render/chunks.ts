@@ -10,12 +10,14 @@ import {
   Mesh,
   MeshLambertMaterial,
   Sphere,
+  Vector3,
 } from 'three';
+import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { MeshData } from '../core/mesher.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { patchHeightFog } from './heightFog.ts';
-import { SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
+import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
 import { weatherablePatternGlsl } from './weatherablePatterns.ts';
 
 // Per-block brightness variation stands in for textures. It's computed in the
@@ -83,6 +85,7 @@ const chunkMaterial = ({
   mossStrength,
   mixCeiling,
   weatheringBlend,
+  registry,
 }: {
   blockSize: number;
   linearColors: { value: number };
@@ -104,8 +107,10 @@ const chunkMaterial = ({
   mossStrength: { value: number };
   mixCeiling: { value: number };
   weatheringBlend: { value: number };
+  registry: Registry;
 }): MeshLambertMaterial => {
   const material = new MeshLambertMaterial({ vertexColors: true });
+  const camo = camoShaderConfig(registry.blocks);
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uBlockSize = { value: blockSize };
     shader.uniforms.uLinearColors = linearColors;
@@ -127,6 +132,9 @@ const chunkMaterial = ({
     shader.uniforms.uWeatheringMossStrength = mossStrength;
     shader.uniforms.uWeatheringMixCeiling = mixCeiling;
     shader.uniforms.uWeatheringBlend = weatheringBlend;
+    shader.uniforms.uCamoPalette = { value: camo.palette.map(([r, g, b]) => new Vector3(r, g, b)) };
+    shader.uniforms.uCamoWashout = { value: camo.washout };
+    shader.uniforms.uCamoBaseColor = { value: new Vector3(...camo.baseColor) };
     patchHeightFog(shader, 'chunk');
     shader.vertexShader = shader.vertexShader
       .replace('#include <color_pars_vertex>', centroidColorPars(COLOR_PARS_GUARD_VERTEX))
@@ -160,8 +168,9 @@ vFaceN = normalize(normal);`,
       )
       .replace(
         '#include <color_fragment>',
-        // The sRGB decode comes first so patterns modulate decoded colour. A patterned block's own
-        // shading replaces the per-block hash (its cell jitter would otherwise cut across joints);
+        // Camo replaces block colour, while its source vertex colour carries the mesher's corner AO.
+        // Other patterns modulate the decoded colour. A patterned block's own shading replaces the
+        // per-block hash (its cell jitter would otherwise cut across joints);
         // with patterns off every block gets the hash, as before. The derivatives are taken here, in
         // uniform control flow, whatever the block.
         // The clamp comes right after the vertex colour. MSAA shades edge pixels at the pixel centre even
@@ -170,14 +179,21 @@ vFaceN = normalize(normal);`,
         // guard for drivers without proper centroid.
         `#include <color_fragment>
 diffuseColor.rgb = clamp(diffuseColor.rgb, 0.0, 1.0);
-if (uLinearColors > 0.5) diffuseColor.rgb = srgbToLinear(diffuseColor.rgb);
+vec3 diffuseLinear = srgbToLinear(diffuseColor.rgb);
+if (uLinearColors > 0.5) diffuseColor.rgb = diffuseLinear;
+vec3 camoBase = uLinearColors > 0.5 ? srgbToLinear(uCamoBaseColor) : uCamoBaseColor;
 vec2 patUV = surfaceUV(vWorld, vFaceN);
 vec2 patFw = fwidth(patUV);
 float patId = floor(vPattern + 0.5);
 float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
-diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
-  ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
-  : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));
+if (uPatterns > 0.5 && patId == PAT_CAMO) {
+  float camoAO = min(diffuseColor.r / max(camoBase.r, 1e-4), min(diffuseColor.g / max(camoBase.g, 1e-4), diffuseColor.b / max(camoBase.b, 1e-4)));
+  diffuseColor.rgb = camoColor(vWorld, max(patFw.x, patFw.y)) * clamp(camoAO, 0.0, 1.0);
+} else {
+  diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
+    ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
+    : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));
+}
 // Keep the zero-strength comparison on the pre-weathering colour path exactly.
 if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheringSplit)) {
   float verticalFace = 1.0 - abs(vFaceN.y);
@@ -212,6 +228,7 @@ if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheri
   vec3 multiplicativeWeathering = diffuseColor.rgb * mix(vec3(1.0), tint, weatheringMix);
   vec3 blendedWeathering = mix(diffuseColor.rgb, tint, weatheringMix);
   diffuseColor.rgb = mix(multiplicativeWeathering, blendedWeathering, uWeatheringBlend);
+}
 }`,
       );
   };
@@ -228,7 +245,7 @@ export class ChunkMeshes {
   private readonly meshes = new Map<string, Mesh>();
   /** Each mesh's tight box, in metres. */
   private readonly boxes = new Map<Mesh, Box3>();
-  private readonly material: MeshLambertMaterial;
+  readonly material: MeshLambertMaterial;
   private readonly blockSize: number;
   private readonly linearColors = { value: 0 };
   private readonly patterns = { value: 1 };
@@ -256,7 +273,7 @@ export class ChunkMeshes {
   onChange?: (origin: Vec3) => void;
 
   /** Meshes are in blocks; the group scales them to metres. */
-  constructor(blockSize: number) {
+  constructor(blockSize: number, registry: Registry) {
     this.material = chunkMaterial({
       blockSize,
       linearColors: this.linearColors,
@@ -278,6 +295,7 @@ export class ChunkMeshes {
       mossStrength: this.mossStrength,
       mixCeiling: this.mixCeiling,
       weatheringBlend: this.weatheringBlend,
+      registry,
     });
     this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);

@@ -1366,6 +1366,10 @@ export const createSession = (options: SessionOptions) => {
         return undefined;
       }
       searching.add(entity);
+      const { searchNoise } = entities.defOf(entity);
+      if (searchNoise) {
+        playPlayerSound(searchNoise.sound, sim.time, { sourceLabel: `searching ${nameOf(entity)}` });
+      }
       queue.enqueueAction(
         'furniture.search',
         `Search the ${nameOf(entity)}`,

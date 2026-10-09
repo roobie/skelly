@@ -8,6 +8,8 @@ read_if:
   - you're changing crawler gait, hit response or generation validation
   - you're preparing the end-of-slice playtest or its authored map
   - you're detailing the military site's armoury access and its noisy fallback
+  - "you're tracking the #181 beat 4 site, its loot and radio choices"
+  - you're authoring the military compound, its buildings or perimeter walls
   - you're changing or measuring input-replay capture and playback
 ---
 
@@ -79,7 +81,7 @@ Paperwork; no game code.
 
 - Open a checklist issue linking each milestone, dependency, first-look gate, test proof and final playtest evidence.
 - Check the default Deadvox suite against the applicable test-run budget. Record any overrun and its coverage-based cause before code work; keep host-specific timings out of this plan.
-- Map each open question to the milestone it gates. Get BR's decision when that milestone starts; beats 4–6 remain assigned to 3.11, not a blocker for earlier work.
+- Map each open question to the milestone it gates. Get BR's decision before its dependent map round; beats 5–6 remain assigned to 3.11, not blockers for earlier work.
 - Confirm the carried-in work: d84's beeline attention brain (#279); d83's 0–10 skill scale and legendary level plus #275's training tiers; and d80's recoil and d78's impact tracing for 3.2.
 
 **Saves:** none.
@@ -432,8 +434,12 @@ dependencies.
 - **Nights:** night 1 near the hunting cabins; night 2 at the medical site (preliminary, BR, 2026-10-03).
 - **Armoury access:** the camp must remain reachable if the clinic key stays on the dead officer. BR said at 19:03, “#320 the prying should take a bit longer - maybe 5 ingame seconds? Eyeballin” and at 19:05, “yeah, let's not make it a long action” / “but it should be skill dependent - starting at 15 seconds - gets faster by 'fabrication' or similar woodworking skill”. Asked whether to add `fabrication`, use `mechanics`, or use `crafting`, BR answered “1b”: use the existing `mechanics` skill. BR also answered “2 sounds like a good start” to the proposed level-10 duration of 7.5 real seconds—half the 15-second level-0 duration—with 30 strikes retained. The lead reads 15 seconds as real play time; keep prying out of compression so the crowbar's noise draws the dead at normal pace. The matching key remains the quiet route, and `lock_test` is a first-look fixture, not the authored military site. BR answered #309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door unlocked, making forced entry one-way. See `DESIGN.md`, “Base building and electricity”, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
 - **Tester prompt:** “find the military camp” (BR, 2026-10-06 13:05: “yes, confirmed”; #181).
+- **Military compound:** guard posts keep their floors at walking height and exits open; the separate three-storey HQ shares a solid wall with the armoury without opening into its locked interior. The HQ is dressed as a field command post, not a brick residence, so it reads as the FOB's headquarters. `src/content/base/camp.json` (`camp_hq`) defines the interiors, `maps/playtest.tmj` places them, and `test/authoredFixedLoot.test.ts` checks post exits, HQ access and the shared wall (`expectCampHqProperties`).
+- **Grounding and camp scale:** solid ground-layer foundations meet the terrain surface, including templates with cellars; the raised lookout stands on ground-supported legs and its cabin is reachable. Preserve existing buildings and the armoury route as placements while keeping the expanded compound's open ground for the later amalgam encounter. `src/content/base/camp.json` defines structures and access; `maps/extensions/deadvox.mjs`, `exportLayout`, exports placements from `maps/playtest.tmj`; `test/authoredFixedLoot.test.ts`, `grounds every authored building on solid terrain`.
+- **FOB perimeter:** solid wall columns exceed jump reach; the vehicle-width north approach and return-walled pen make the guarded entry legible, while the damaged inner gate is a weak point, not a bypass. The southern wall breach preserves another route into the compound. Uneven top courses carry the abandoned-site treatment. New structures follow the dilapidation direction, starting with the camp walls in #385; retrofitting existing structures is tracked in #396. See `src/content/base/camp.json`, `camp_wall_run`, `camp_gate`, and `camp_gate_return`; `test/authoredFixedLoot.test.ts`, `keeps FOB wall and gate solid columns above jump reach`, and `test/campGate.test.ts` check the perimeter.
+- The camp's closing readable directs testers to Project home through the F9 menu.
 
-The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. BR agreed beats 4–6 in #181. The dependency-independent workshop core is in d124-2: `src/content/base/templates-workshop.json` owns its reusable interiors, `maps/playtest.tmj` owns the site and route, and `src/content/base/layouts-playtest.json` is the committed export. Its optional door `openNoise` keeps the roller entry loud while the side door stays quiet (`src/core/schema.ts`, `FurnitureSchema`; `src/game/doorAction.ts`, `registerDoorAction`). Fixed promises and seed-owned filler remain separate; the radio is loot, not an implementation decision about whether it works. The workshop's authored `r` spawn markers use the existing runner type; no scripted spawns are used. Its static stripped 4×4 comes from the vehicle-spike blueprint in `src/vehicles/rangeRover.ts`, rendered by `src/render/workshopVehicle.ts`, while furniture retains collision ownership. The main hall roof is double height by BR's 2026-10-07 16:33 request: “we will likely want to raise the roof too in the workshop main hall to double height”. Quiet/light choice loot remains deferred to 3.7. The medical and military map rounds retain their dependencies on 3.4 and 3.8, and 3.2, 3.8 and 3.9 respectively. Do not block beats 1–3 on those later rounds.
+At Mike's place, fixed loot and the workbench make the taped light mount craftable without noise. The fixed and random loot lack one improvised-suppressor input; the yard scrap pile is the only source there, and searching it emits noise. Quiet costs noise up front, and the medical site's second night tests whether the trade was worth it. The radio remains broken and has no radio-specific behavior. The authored runner markers use the existing runner type, and the stripped car remains a prop. See `src/content/base/layouts-playtest.json`, `workshop_yard.fixedLoot`; `src/core/schema.ts`, `FurnitureSchema`; and `src/game/session.ts`, `search`.
 **Saves:** The authored layout, fixed placements and seeded loot regenerate from the site and seed. Dynamic changes and looted items use the existing world/inventory save; no separate map-progress state is added.
 **Tests:** authored content validates; site generation is deterministic across chunk order; required progression and routes remain traversable; fixed key loot and seeded filler follow their separate ownership without pinning exact coordinates or complete loot lists. The playtest records consented observation notes and local metrics without changing game state.
 **Done when:** the approved map supports the end-of-slice playtest, its two nights and progression are playable, the checklist links its evidence, and the playtest findings are recorded before Slice 4 planning.
@@ -462,7 +468,7 @@ Inventory Management covers actions that handle inventory, including another con
 - 3.5 precedes 3.6 and 3.9.
 - 3.2 precedes 3.7.
 - 3.10 starts early enough for later milestones to use replays.
-- BR agreed beats 4–6 in #181. Beat 4's choice-critical attachments remain deferred to 3.7, and its authored `r` spawn markers use the existing runner type without scripted spawns. d124-2 supplies the independent workshop core. Beat 5 follows 3.4 and 3.8, and beat 6 follows 3.2, 3.8 and 3.9.
+- Beat 4 follows 3.7; beats 5–6 follow their map dependencies. Beat 5 follows 3.4 and 3.8, and beat 6 follows 3.2, 3.8 and 3.9.
 
 ## Carried in
 
@@ -476,7 +482,6 @@ Inventory Management covers actions that handle inventory, including another con
 Only questions BR left open; don't infer answers from implementation or old proposals.
 
 - **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
-- **#181 beat 4:** whether the radio works, and which quiet-or-light craft path fixed workshop loot should cover fully. d124-2 places the radio and defers both decisions; its attachment-dependent choice loot remains deferred to 3.7. The template's `r` spawn markers use the existing runner type without scripted spawns. Beats 5–6 retain their own dependent map rounds.
 - **#308 — playtest 1 apex enemy:** the design questions remain open; see 3.8.
 
 ## Definition of done

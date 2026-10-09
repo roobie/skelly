@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
-import { HAMLET_TEMPLATES } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
@@ -15,6 +15,8 @@ import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
+import { ChunkMeshes } from '../src/render/chunks.ts';
+import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -1052,7 +1054,7 @@ describe('content references', () => {
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
-  it('requires an opening-noise door to select a sound event with hearing noise', () => {
+  it('requires door and search action noise to select sound events with hearing noise', () => {
     const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
       ({ id }) => id === 'door_open',
     )!;
@@ -1071,11 +1073,34 @@ describe('content references', () => {
         ],
       },
     };
-    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [quietDoorOpen] } }, quietDoor]);
+    const quietPile = {
+      source: 'quiet-pile.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_quiet_pile',
+            name: 'Fixture pile',
+            size: [1, 1, 1],
+            color: '#333333',
+            searchNoise: { sound: 'door_open' },
+          },
+        ],
+      },
+    };
+    const { issues } = buildRegistry([
+      { source: 'door-sound.json', data: { sounds: [quietDoorOpen] } },
+      quietDoor,
+      quietPile,
+    ]);
     expect(issues).toContainEqual({
       source: 'quiet-door.json',
       path: 'furniture[0].door.openNoise.sound',
       message: 'opening sound must emit hearing noise',
+    });
+    expect(issues).toContainEqual({
+      source: 'quiet-pile.json',
+      path: 'furniture[0].searchNoise.sound',
+      message: 'search sound must emit hearing noise',
     });
   });
 
@@ -1215,33 +1240,60 @@ describe('content references', () => {
     ]);
   });
 
-  it('makes every military-only item reachable once an authored site rolls a military table', () => {
-    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
-    // Demo layouts aren't world sources (`worldSources`), so the site must come from a played layout.
-    const authoredOnly = [...baseRegistry.layouts.values()]
-      .filter((layout) => !layout.demo)
-      .flatMap((layout) => layout.buildings.map(({ template }) => baseRegistry.templates.get(template)!))
-      .filter((definition) => !HAMLET_TEMPLATES.includes(definition.id));
-    const site = authoredOnly
-      .map((definition) => structuredClone(definition))
-      .find((definition) =>
-        Object.values(definition.palette).some((entry) => typeof entry === 'object' && 'loot' in entry),
-      );
-    if (armoury === undefined || site === undefined) {
-      throw new Error('base content needs a military table and an authored-only template with a loot container');
+  it('limits military tables to military templates and forbids them on zombie types', () => {
+    const source = 'military-site.json';
+    const lootId = 'fixture_military_table';
+    const furniture = {
+      ...structuredClone(baseRegistry.furniture.get('crate')!),
+      id: 'fixture_crate',
+      loot: undefined,
+    };
+    const [width, height, depth] = furniture.size;
+    const template = {
+      id: 'fixture_nonmilitary_site',
+      size: [width, height, depth],
+      palette: { C: { furniture: furniture.id, loot: lootId } },
+      layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => 'C'.repeat(width))),
+    };
+    const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
+    zombie.id = 'fixture_military_looter';
+    zombie.loot = lootId;
+    const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
+    const result = buildRegistry([
+      {
+        source,
+        data: {
+          items: [{ id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] }],
+          loot: [
+            { id: lootId, military: true, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] },
+          ],
+          furniture: [furniture],
+          templates: [template],
+          zombies: [zombie],
+          sounds,
+        },
+      },
+    ]);
+    expect(result.issues).toEqual([
+      {
+        source,
+        path: 'templates[0].palette["C"].loot',
+        message: 'military loot tables may only appear in a military template',
+      },
+      {
+        source,
+        path: 'zombies[0].loot',
+        message: 'zombie loot may not use a military table',
+      },
+    ]);
+  });
+
+  it('makes every military-only item reachable from the playtest layout', () => {
+    const playtest = baseRegistry.layouts.get('playtest');
+    if (playtest === undefined) {
+      throw new Error('base content needs the playtest layout');
     }
-    const baseFound = checkReachability(baseRegistry).found;
-    const baseMilitaryItems = [...militaryLootItems(baseRegistry)];
-    expect(baseMilitaryItems.some((id) => !baseFound.has(id))).toBe(true);
-    for (const [key, entry] of Object.entries(site.palette)) {
-      if (typeof entry === 'object' && 'loot' in entry) {
-        site.palette[key] = { ...entry, loot: armoury.id };
-      }
-    }
-    // Reuse the already validated base registry; this scenario only changes a known loot table on an existing template.
-    const templates = new Map(baseRegistry.templates);
-    templates.set(site.id, site);
-    const registry = { ...baseRegistry, templates };
+    const registry = { ...baseRegistry, layouts: new Map([[playtest.id, playtest]]) };
     const { found } = checkReachability(registry);
     const military = [...militaryLootItems(registry)];
     expect(military.length).toBeGreaterThan(0);
@@ -1371,7 +1423,16 @@ const templateSoundDefinitions = (
   }
 ).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));
 const templateBase = [
-  { source: 'template-blocks.json', data: { blocks: [{ id: 'brick', name: 'Brick', color: '#ffffff', solid: true }] } },
+  {
+    source: 'template-blocks.json',
+    data: {
+      blocks: [
+        { id: 'brick', name: 'Brick', color: '#ffffff', solid: true },
+        { id: 'planks', name: 'Planks', color: '#ffffff', solid: true },
+        { id: 'window_frame', name: 'Window frame', color: '#ffffff', solid: true },
+      ],
+    },
+  },
   {
     source: 'template-support.json',
     data: {
@@ -1497,6 +1558,32 @@ describe('templates', () => {
     expect(issues.some((issue) => issue.includes('palette["Z"]'))).toBe(false);
   });
 
+  it('reports open floor-course wall cells without flagging doors or window frames', () => {
+    const palette = {
+      '#': 'brick',
+      p: 'planks',
+      '.': 'air',
+      D: { furniture: 'fixture_door' },
+      w: 'window_frame',
+    };
+    const valid = template(
+      [
+        ['###', '###', '###'],
+        ['D#w', '#p#', '###'],
+        ['###', '###', '###'],
+      ],
+      palette,
+      [3, 3, 3],
+    );
+    expect(check(valid)).toEqual([]);
+
+    const broken = structuredClone(valid);
+    broken.data.templates[0]!.layers[1]![0] = 'D.w';
+    expect(check(broken)).toContain(
+      'templates[0].layers[1]: has an open exterior cell between matching "brick" wall courses',
+    );
+  });
+
   it('checks layer sizes and that characters are in the palette', () => {
     expect(check(template([['###', '#?#'], ['##']], { '#': 'brick' }))).toEqual([
       'templates[0].layers[0][1]: "?" is not in the palette',
@@ -1585,6 +1672,65 @@ describe('content', () => {
       data: { blocks: [{ id: 'x', name: 'X', color: '#ffffff', solid: true, pattern: 'marble' }] },
     });
     expect(issues.map((i) => i.path)).toEqual(['blocks[0].pattern']);
+  });
+
+  it('feeds registry camo overrides into the compiled chunk shader uniforms', () => {
+    expect(() => camoShaderConfig([])).not.toThrow();
+    const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
+    const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
+    const { registry, issues } = buildRegistry([
+      ...base,
+      {
+        source: 'mod-camo.json',
+        data: { blocks: [{ ...camo, color: '#56789a', patternPalette: palette, patternWashout: 0.37 }] },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const meshes = new ChunkMeshes(0.5, registry);
+    const shader = {
+      uniforms: {},
+      vertexShader: ShaderLib.lambert.vertexShader,
+      fragmentShader: ShaderLib.lambert.fragmentShader,
+    } as WebGLProgramParametersWithUniforms;
+    meshes.material.onBeforeCompile(shader, {} as WebGLRenderer);
+    const paletteInput = shader.uniforms.uCamoPalette!.value as Vector3[];
+    expect(paletteInput.map((color) => color.toArray())).toEqual([
+      [18 / 255, 52 / 255, 86 / 255],
+      [35 / 255, 69 / 255, 103 / 255],
+      [52 / 255, 86 / 255, 120 / 255],
+      [69 / 255, 103 / 255, 137 / 255],
+    ]);
+    expect(shader.uniforms.uCamoWashout!.value).toBe(0.37);
+    expect((shader.uniforms.uCamoBaseColor!.value as Vector3).toArray()).toEqual([86 / 255, 120 / 255, 154 / 255]);
+  });
+
+  it('rejects camo blocks with missing shader settings or a conflicting second palette', () => {
+    const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
+    const { patternPalette: _palette, ...withoutPalette } = camo;
+    const noPalette = { ...withoutPalette, id: 'test_camo_no_palette' };
+    const { patternWashout: _washout, ...withoutWashout } = camo;
+    const noWashout = { ...withoutWashout, id: 'test_camo_no_washout' };
+    const issues = buildRegistry([
+      ...base,
+      {
+        source: 'camo-contract.json',
+        data: {
+          blocks: [
+            noPalette,
+            noWashout,
+            { ...camo, id: 'test_camo_palette_variant', patternPalette: ['#123456', '#123456', '#123456', '#123456'] },
+            { ...camo, id: 'test_camo_washout_variant', patternWashout: 0.1 },
+          ],
+        },
+      },
+    ]).issues.filter(({ source }) => source === 'camo-contract.json');
+    expect(issues).toHaveLength(4);
+    expect(new Set(issues.map(({ path }) => path.split('.').at(-1)))).toEqual(
+      new Set(['patternPalette', 'patternWashout']),
+    );
+    expect(
+      issues.filter(({ path }) => ['blocks[2].patternPalette', 'blocks[3].patternWashout'].includes(path)),
+    ).toHaveLength(2);
   });
 
   it('gives every base block a known pattern and patterns the stone work', () => {
