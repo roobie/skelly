@@ -18,7 +18,6 @@ import type { MeshData } from '../core/mesher.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
-import { weatherablePatternGlsl } from './weatherablePatterns.ts';
 
 // Per-block brightness variation stands in for textures. It's computed in the
 // fragment shader from the block each fragment belongs to, so the mesher can merge
@@ -44,6 +43,7 @@ const WEATHERING_BASE_GRIME_FLOOR = 0.22;
 // `centroid` for the same MSAA reason as above; the fragment shader clamps it as a guard.
 const OCCLUSION_VARYING = 'centroid varying float vOcclusion;';
 const WEATHER_VARYING = 'centroid varying vec2 vWeather;';
+const WEATHERABLE_VARYING = 'centroid varying float vWeatherable;';
 
 // three declares vColor in these chunks as a plain `varying vec4`; same guard as theirs, centroid added.
 const COLOR_PARS_GUARD_VERTEX =
@@ -132,7 +132,7 @@ const chunkMaterial = ({
       .replace('#include <color_pars_vertex>', centroidColorPars(COLOR_PARS_GUARD_VERTEX))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uBlockSize;\nattribute float pattern;\nattribute float occlusion;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\nattribute vec2 weather;\n${WEATHER_VARYING}`,
+        `#include <common>\nuniform float uBlockSize;\nattribute float pattern;\nattribute float weatherable;\nattribute float occlusion;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\nattribute vec2 weather;\n${WEATHER_VARYING}\n${WEATHERABLE_VARYING}`,
       )
       .replace(
         '#include <begin_vertex>',
@@ -140,6 +140,7 @@ const chunkMaterial = ({
         `#include <begin_vertex>
 vOcclusion = occlusion;
 vWeather = weather;
+vWeatherable = weatherable;
 vCell = (modelMatrix * vec4(position - normalize(normal) * 0.5, 1.0)).xyz / uBlockSize;
 vPattern = pattern;
 vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
@@ -149,7 +150,7 @@ vFaceN = normalize(normal);`,
       .replace('#include <color_pars_fragment>', centroidColorPars(COLOR_PARS_GUARD_FRAGMENT))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringSplit;\nuniform float uWeatheringSplitEnabled;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\nuniform vec3 uWeatheringTintColor;\nuniform float uWeatheringTintDarkness;\nuniform vec3 uWeatheringStreakColor;\nuniform float uWeatheringStreakStrength;\nuniform float uWeatheringStreakLength;\nuniform vec3 uWeatheringMossColor;\nuniform float uWeatheringMossStrength;\nuniform float uWeatheringMixCeiling;\nuniform float uWeatheringBlend;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SURFACE_PATTERN_GLSL}`,
+        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\nuniform float uWeatheringSplit;\nuniform float uWeatheringSplitEnabled;\nuniform float uWeatheringVariation;\nuniform float uWeatheringVariationScale;\nuniform float uMossThreshold;\nuniform float uMossBias;\nuniform vec3 uWeatheringTintColor;\nuniform float uWeatheringTintDarkness;\nuniform vec3 uWeatheringStreakColor;\nuniform float uWeatheringStreakStrength;\nuniform float uWeatheringStreakLength;\nuniform vec3 uWeatheringMossColor;\nuniform float uWeatheringMossStrength;\nuniform float uWeatheringMixCeiling;\nuniform float uWeatheringBlend;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${WEATHERABLE_VARYING}\n${CELL_HASH}\n${SURFACE_PATTERN_GLSL}`,
       )
       .replace(
         '#include <lights_fragment_end>',
@@ -189,7 +190,7 @@ if (uPatterns > 0.5 && patId == PAT_CAMO) {
 // Keep the zero-strength comparison on the pre-weathering colour path exactly.
 if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheringSplit)) {
   float verticalFace = 1.0 - abs(vFaceN.y);
-  float weatherable = (${weatherablePatternGlsl('patId')}) ? 1.0 : 0.0;
+  float weatherable = vWeatherable;
   float grain = vnoise(patUV * 1.7 + vec2(patSeed));
   float weatherPatch = smoothstep(0.28, 0.76, grain);
   float sheltered = clamp(vOcclusion, 0.0, 1.0);
@@ -376,6 +377,7 @@ export class ChunkMeshes {
     geometry.setAttribute('normal', new BufferAttribute(data.normals, 3, true));
     geometry.setAttribute('color', new BufferAttribute(data.colors, 3, true));
     geometry.setAttribute('pattern', new BufferAttribute(data.patterns, 1));
+    geometry.setAttribute('weatherable', new BufferAttribute(data.weatherable, 1));
     geometry.setAttribute('occlusion', new BufferAttribute(data.occlusion, 1, true));
     geometry.setAttribute('weather', new BufferAttribute(data.weathering, 2));
     geometry.setIndex(new BufferAttribute(data.indices, 1));

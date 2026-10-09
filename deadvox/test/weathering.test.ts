@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { blockColors, buildRegistry } from '../src/core/content.ts';
 import { buildMesh } from '../src/core/mesher.ts';
-import { PADDED } from '../src/core/meshInput.ts';
+import { blockWeatherability, PADDED, paddedIndex } from '../src/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE } from '../src/core/occlusion.ts';
 
 const R = OCCLUSION_RADIUS;
@@ -22,7 +23,7 @@ const meshFor = (solid: Cell) => {
   const padded = gridFor(PADDED, 1, solid);
   const ids = new Uint16Array(padded.length);
   ids.set(padded);
-  return buildMesh(ids, colors, undefined, gridFor(WIDE, R, solid));
+  return buildMesh(ids, colors, { wide: gridFor(WIDE, R, solid) });
 };
 
 const weatherAt = (mesh: ReturnType<typeof meshFor>, position: readonly number[]): [number, number] => {
@@ -37,6 +38,34 @@ const weatherAt = (mesh: ReturnType<typeof meshFor>, position: readonly number[]
 };
 
 describe('mesher weathering attributes', () => {
+  it('uses content weatherability for built and natural blocks sharing one surface pattern', () => {
+    const { registry, issues } = buildRegistry([
+      {
+        source: 'weathering-fixture.json',
+        data: {
+          blocks: [
+            { id: 'built', name: 'Built', color: '#888888', solid: true, pattern: 'rough', weatherable: true },
+            { id: 'natural', name: 'Natural', color: '#888888', solid: true, pattern: 'rough', weatherable: false },
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const padded = new Uint16Array(PADDED ** 3);
+    padded[paddedIndex(11, 11, 11)] = registry.blockIds.get('built')!;
+    padded[paddedIndex(13, 11, 11)] = registry.blockIds.get('natural')!;
+    const mesh = buildMesh(padded, blockColors(registry), { weatherable: blockWeatherability(registry) });
+
+    expect(mesh.weatherable).toHaveLength(mesh.positions.length / 3);
+    const splitX = (11 + 13) / 2;
+    const builtVertices = mesh.weatherable.filter((_, vertex) => mesh.positions[vertex * 3]! < splitX);
+    const naturalVertices = mesh.weatherable.filter((_, vertex) => mesh.positions[vertex * 3]! >= splitX);
+    expect(builtVertices.length).toBeGreaterThan(0);
+    expect(naturalVertices.length).toBeGreaterThan(0);
+    expect(builtVertices.every((weatherable) => weatherable === 1)).toBe(true);
+    expect(naturalVertices.every((weatherable) => weatherable === 0)).toBe(true);
+  });
+
   it('emits finite weathering data for every mesh vertex', () => {
     const mesh = meshFor((x, y, z) => x === 10 && y === 10 && z === 10);
     expect(mesh.weathering).toHaveLength((mesh.positions.length / 3) * 2);

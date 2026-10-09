@@ -34,6 +34,8 @@ export interface StreamerOptions {
   colors: Uint8Array;
   /** Surface pattern id per block id, for the mesher. */
   patterns: Uint8Array;
+  /** Content-owned render-weathering flag per block id. */
+  weatherable: Uint8Array;
   scale: Scale;
   /** Stamped into every column as it generates. */
   structures: readonly BlockBox[];
@@ -85,7 +87,7 @@ export class Streamer {
     for (let i = 0; i < count; i++) {
       const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(e.data);
-      this.send(worker, { type: 'init', colors: opts.colors, patterns: opts.patterns });
+      this.send(worker, { type: 'init', colors: opts.colors, patterns: opts.patterns, weatherable: opts.weatherable });
       this.workers.push(worker);
     }
     this.maxInFlight = count * 2;
