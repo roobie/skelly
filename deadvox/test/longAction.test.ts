@@ -10,8 +10,8 @@ import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { craftingActivityTier } from '../src/core/skillTraining.ts';
-import { craftRows } from '../src/ui/craftReadout.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
+import { craftRows } from '../src/ui/craftReadout.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const baseContent = readdirSync('src/content/base')
@@ -244,33 +244,36 @@ describe('core long actions', () => {
 
   it('snaps compression when closing a book after reading has finished', () => {
     const runtime = make();
-    const book = runtime.inv.create('field_manual');
-    expect(runtime.inv.add(book, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
-    const job = runtime.sim.actions.job;
+    const { inv, sim } = runtime;
+    const book = inv.create('field_manual');
+    expect(inv.add(book, { kind: 'hand', side: 'right' })).toBe(true);
+    const { actions, clock, compression, scheduler } = sim;
+    expect(actions.beginReading(book.uid)).toBeUndefined();
+    const { job } = actions;
     if (job?.jobType !== 'reading') {
       throw new Error('The reading action did not start');
     }
-    runtime.sim.scheduler.advance(job.duration / runtime.sim.clock.ratio + 1);
+    scheduler.advance(job.duration / clock.ratio + 1);
 
-    expect(runtime.sim.actions.job).toBeUndefined();
-    expect(runtime.sim.compression.active).toBe(false);
-    runtime.sim.compression.c = 2;
-    stopReadingOnClose(runtime.sim);
+    expect(actions.job).toBeUndefined();
+    expect(compression.active).toBe(false);
+    compression.c = 2;
+    stopReadingOnClose(sim);
 
-    expect(runtime.sim.compression.c).toBe(1);
+    expect(compression.c).toBe(1);
   });
 
   it('leaves compression intact while another long action is running', () => {
     const { sim } = make();
-    sim.actions.treatment = { validate: () => undefined, finish: () => true };
-    expect(sim.actions.beginTreatment('torso', 1, 'rag', 10)).toBeUndefined();
-    sim.compression.c = 2;
+    const { actions, compression } = sim;
+    actions.treatment = { validate: () => undefined, finish: () => true };
+    expect(actions.beginTreatment('torso', 1, 'rag', 10)).toBeUndefined();
+    compression.c = 2;
 
     stopReadingOnClose(sim);
 
-    expect(sim.compression.c).toBe(2);
-    expect(sim.compression.active).toBe(true);
+    expect(compression.c).toBe(2);
+    expect(compression.active).toBe(true);
   });
 
   it('resumes reading the held book and teaches its recipes only once on completion', () => {
