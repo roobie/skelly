@@ -33,7 +33,8 @@ interface Bounds {
 }
 const PERIMETER_IDS = new Set(['camp_wall_run', 'camp_gate', 'camp_gate_damaged', 'camp_gate_return']);
 const NEARBY_APPROACH_BLOCKS = 60;
-const OPEN_GROUND_RING_BLOCKS = 42;
+// The outer ring sits just inside the nearest south over-wall threshold; the inner ring reaches the gate leaves.
+const NEAR_GROUND_RING_DISTANCES = [5, 42] as const;
 
 const perimeterPlacements = (camp: SiteLayoutDef): WorldPlacement[] =>
   camp.buildings
@@ -104,24 +105,106 @@ const perimeterSolidCells = (walls: readonly WorldPlacement[]): Point3[] => {
   return [...cells.values()];
 };
 
-const outsideGroundRingPoints = (
+const nearGroundRingPoints = (
   markers: readonly SiteLayoutDef['shamblers'][number][],
   bounds: Bounds,
 ): [number, number][] => {
-  const xProjections = [bounds.x0, ...markers.map(({ position }) => position[0] / BLOCK_SIZE), bounds.x1];
-  const zProjections = [bounds.z0, ...markers.map(({ position }) => position[2] / BLOCK_SIZE), bounds.z1];
-  const distance = OPEN_GROUND_RING_BLOCKS;
-  return [
-    ...xProjections.map((x) => [x, bounds.z0 - distance] as [number, number]),
-    ...xProjections.map((x) => [x, bounds.z1 + distance] as [number, number]),
-    ...zProjections.map((z) => [bounds.x0 - distance, z] as [number, number]),
-    ...zProjections.map((z) => [bounds.x1 + distance, z] as [number, number]),
+  const cellCenters = (start: number, end: number): number[] => {
+    const centers: number[] = [];
+    for (let cell = Math.ceil(start); cell < end; cell += 2) {
+      centers.push(cell + 0.5);
+    }
+    return centers;
+  };
+  const xSamples = [
+    ...cellCenters(bounds.x0, bounds.x1),
+    ...markers.map(({ position }) => position[0] / BLOCK_SIZE),
   ];
+  const zSamples = [
+    ...cellCenters(bounds.z0, bounds.z1),
+    ...markers.map(({ position }) => position[2] / BLOCK_SIZE),
+  ];
+  return NEAR_GROUND_RING_DISTANCES.flatMap((distance) => [
+    ...xSamples.map((x) => [x, bounds.z0 - distance - 0.5] as [number, number]),
+    ...xSamples.map((x) => [x, bounds.z1 + distance + 0.5] as [number, number]),
+    ...zSamples.map((z) => [bounds.x0 - distance - 0.5, z] as [number, number]),
+    ...zSamples.map((z) => [bounds.x1 + distance + 0.5, z] as [number, number]),
+  ]);
+};
+
+interface BreachBand {
+  side: 'north' | 'east' | 'south' | 'west';
+  start: number;
+  end: number;
+}
+
+const perimeterGaps = (walls: readonly WorldPlacement[], bounds: Bounds): BreachBand[] => {
+  const edges: { side: BreachBand['side']; start: number; end: number; covered: [number, number][] }[] = [
+    {
+      side: 'north',
+      start: bounds.x0,
+      end: bounds.x1,
+      covered: walls
+        .filter(({ origin }) => origin[2] === bounds.z0)
+        .map((wall) => [wall.origin[0], wall.origin[0] + footprint(wall)[0]] as [number, number]),
+    },
+    {
+      side: 'east',
+      start: bounds.z0,
+      end: bounds.z1,
+      covered: walls
+        .filter((wall) => wall.origin[0] + footprint(wall)[0] === bounds.x1)
+        .map((wall) => [wall.origin[2], wall.origin[2] + footprint(wall)[1]] as [number, number]),
+    },
+    {
+      side: 'south',
+      start: bounds.x0,
+      end: bounds.x1,
+      covered: walls
+        .filter((wall) => wall.origin[2] + footprint(wall)[1] === bounds.z1)
+        .map((wall) => [wall.origin[0], wall.origin[0] + footprint(wall)[0]] as [number, number]),
+    },
+    {
+      side: 'west',
+      start: bounds.z0,
+      end: bounds.z1,
+      covered: walls
+        .filter(({ origin }) => origin[0] === bounds.x0)
+        .map((wall) => [wall.origin[2], wall.origin[2] + footprint(wall)[1]] as [number, number]),
+    },
+  ];
+  return edges.flatMap(({ side, start, end, covered }) => {
+    let cursor = start;
+    const gaps: BreachBand[] = [];
+    for (const [coveredStart, coveredEnd] of covered.sort((a, b) => a[0] - b[0])) {
+      if (coveredStart > cursor) {
+        gaps.push({ side, start: cursor, end: coveredStart });
+      }
+      cursor = Math.max(cursor, coveredEnd);
+    }
+    if (cursor < end) {
+      gaps.push({ side, start: cursor, end });
+    }
+    return gaps;
+  });
+};
+
+const sightlineCrossesBreach = (from: Point3, to: Point3, breach: BreachBand, bounds: Bounds): boolean => {
+  if (breach.side !== 'south') {
+    return false;
+  }
+  const fraction = (bounds.z1 - from[2]) / (to[2] - from[2]);
+  if (fraction < 0 || fraction > 1) {
+    return false;
+  }
+  const xAtBreach = from[0] + (to[0] - from[0]) * fraction;
+  return xAtBreach >= breach.start && xAtBreach <= breach.end;
 };
 
 const axisInterval = (from: Point3, to: Point3, cell: Point3, axis: 0 | 1 | 2): [number, number] | undefined => {
   const delta = to[axis] - from[axis];
   if (delta === 0) {
+    // Face-coincident sightlines still touch cells on either side of the shared boundary.
     return from[axis] >= cell[axis] && from[axis] <= cell[axis] + 1
       ? [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY]
       : undefined;
@@ -351,7 +434,7 @@ describe('camp gate templates', () => {
     ).toBe(undefined);
   });
 
-  it('blocks finale sightlines from approach tracks and surrounding open ground', () => {
+  it('hides the finale from approach tracks and near ground except through the southern breach', () => {
     const { layouts } = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
       layouts: SiteLayoutDef[];
     };
@@ -360,11 +443,14 @@ describe('camp gate templates', () => {
     const bounds = perimeterBounds(walls);
     const approaches = outsideApproachPoints(camp, bounds);
     const markers = camp.shamblers.filter(({ type }) => type === 'amalgam');
-    const openGround = outsideGroundRingPoints(markers, bounds);
+    const nearGround = nearGroundRingPoints(markers, bounds);
+    const breaches = perimeterGaps(walls, bounds);
     const solidCells = perimeterSolidCells(walls);
     expect(markers.length).toBeGreaterThan(0);
     expect(approaches.length).toBeGreaterThan(0);
-    expect(openGround.length).toBeGreaterThan(0);
+    expect(nearGround.length).toBeGreaterThan(0);
+    expect(breaches).toHaveLength(1);
+    expect(breaches[0]?.side).toBe('south');
 
     const eyeHeight = (camp.ground + BLOCK_SIZE + PLAYER.eye) / BLOCK_SIZE;
     for (const marker of markers) {
@@ -375,10 +461,19 @@ describe('camp gate templates', () => {
         marker.position[2] / BLOCK_SIZE,
       ];
       expect(approaches.every(([x, z]) => wallBlocksSightline(solidCells, [x, eyeHeight, z], top))).toBe(true);
-      const visibleOpenGround = openGround.filter(([x, z]) => !wallBlocksSightline(solidCells, [x, eyeHeight, z], top));
+      const from = (point: [number, number]): Point3 => [point[0], eyeHeight, point[1]];
+      const openBreachSightlines = nearGround.filter((point) =>
+        sightlineCrossesBreach(from(point), top, breaches[0]!, bounds),
+      );
+      const visibleNearGround = nearGround.filter(
+        (point) =>
+          !sightlineCrossesBreach(from(point), top, breaches[0]!, bounds) &&
+          !wallBlocksSightline(solidCells, from(point), top),
+      );
+      expect(openBreachSightlines.length).toBeGreaterThan(0);
       expect(
-        visibleOpenGround,
-        JSON.stringify({ visibleOpenGround, bounds, eyeHeight, top, solidCount: solidCells.length }),
+        visibleNearGround,
+        JSON.stringify({ visibleNearGround, breaches, bounds, eyeHeight, top, solidCount: solidCells.length }),
       ).toEqual([]);
     }
   });
