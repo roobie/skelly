@@ -400,8 +400,8 @@ try {
     `empty vicinity content shrink-wraps inside its pane: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(
-    emptyAround.around.height < emptyAround.you.height,
-    `empty vicinity shrink-wraps vertically: ${JSON.stringify(emptyAround)}`,
+    emptyAround.target.height < emptyAround.around.height,
+    `empty-feet target stays compact in the full-height Around pane: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(
     emptyAround.target.width >= 2 * emptyAround.cell && emptyAround.target.height >= 2 * emptyAround.cell,
