@@ -1,0 +1,19 @@
+{
+  "name": "@skelly/engine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "typescript": "^7.0.2"
+  },
+  "exports": {
+    "./core/*": "./src/core/*",
+    "./viewer/scene": "./src/viewer/scene.ts"
+  },
+  "peerDependencies": {
+    "three": "^0.186.0"
+  }
+}

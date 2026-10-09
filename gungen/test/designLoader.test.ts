@@ -1,11 +1,11 @@
+import type { Design } from '@skelly/engine/core/design.ts';
+import { type DesignLoadInputs, loadDesign, loadDesignValue } from '@skelly/engine/core/designLoader.ts';
+import { generateValid } from '@skelly/engine/core/generate.ts';
+import type { Assembly } from '@skelly/engine/core/schema.ts';
+import type { Template } from '@skelly/engine/core/template.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
-import type { Design } from '../src/core/design.ts';
-import { type DesignLoadInputs, loadDesign, loadDesignValue } from '../src/core/designLoader.ts';
-import { generateValid } from '../src/core/generate.ts';
-import type { Assembly } from '../src/core/schema.ts';
-import type { Template } from '../src/core/template.ts';
-import { validate } from '../src/core/validate.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';

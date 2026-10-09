@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 // and treat an import it cannot resolve statically as a violation.
 
 const SRC = resolve(import.meta.dirname, '..', 'src');
+const ENGINE_SRC = resolve(import.meta.dirname, '..', '..', 'engine', 'src');
 
 const typeScriptFiles = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -33,7 +34,8 @@ const importProblem = (file: string, imported: Import, forbidden: readonly strin
     return undefined;
   }
   const target = resolve(dirname(file), imported.specifier);
-  return forbidden.some((name) => target.startsWith(join(SRC, name) + sep))
+  const sourceRoot = file.startsWith(ENGINE_SRC + sep) ? ENGINE_SRC : SRC;
+  return forbidden.some((name) => target.startsWith(join(sourceRoot, name) + sep))
     ? `${file}: imports ${imported.specifier}`
     : undefined;
 };
@@ -53,12 +55,12 @@ describe('ammo module boundaries', () => {
   });
 
   it('core does not import ammo', async () => {
-    expect(await forbiddenImports(join(SRC, 'core'), ['ammo'])).toEqual([]);
+    expect(await forbiddenImports(join(ENGINE_SRC, 'core'), ['ammo'])).toEqual([]);
   });
 
   it('the guard sees a violation when there is one', async () => {
-    // Pointing the scan at gun/ with a forbidden name it does import proves the walker finds imports.
-    const found = await forbiddenImports(join(SRC, 'gun'), ['core']);
+    // Pointing the scan at the renderer with its core imports forbidden proves the walker finds violations.
+    const found = await forbiddenImports(join(ENGINE_SRC, 'viewer'), ['core']);
     expect(found.length).toBeGreaterThan(0);
   });
 });

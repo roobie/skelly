@@ -1,6 +1,6 @@
-import { boxFromMinMax } from '../core/geometry.ts';
-import type { Vec3 } from '../core/math.ts';
-import type { PartDef, PartFamily, Solid } from '../core/schema.ts';
+import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
+import type { Vec3 } from '@skelly/engine/core/math.ts';
+import type { PartDef, PartFamily, Solid } from '@skelly/engine/core/schema.ts';
 
 const X: Vec3 = [1, 0, 0];
 const NEG_X: Vec3 = [-1, 0, 0];

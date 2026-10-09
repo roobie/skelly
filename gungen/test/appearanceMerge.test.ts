@@ -1,8 +1,8 @@
+import { exportGlb } from '@skelly/engine/core/glb.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Solid } from '@skelly/engine/core/schema.ts';
 import type { Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
-import { exportGlb } from '../src/core/glb.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Solid } from '../src/core/schema.ts';
 import { GUN_PALETTE } from '../src/gun/palette.ts';
 import { GUN_UNITS } from '../src/gun/units.ts';
 import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';

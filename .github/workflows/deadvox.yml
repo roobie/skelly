@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'deadvox/**'
+      - 'engine/**'
       - 'tools/jsonnet/**'
       - 'mobgen/src/**'
       - 'testPool.ts'
@@ -17,6 +18,7 @@ on:
   pull_request:
     paths:
       - 'deadvox/**'
+      - 'engine/**'
       - 'tools/jsonnet/**'
       - 'mobgen/src/**'
       - 'testPool.ts'

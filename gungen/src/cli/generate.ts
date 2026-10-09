@@ -7,9 +7,9 @@
 import { writeFileSync } from 'node:fs';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
-import { generate, generateValid } from '../core/generate.ts';
-import type { Assembly } from '../core/schema.ts';
-import { validate } from '../core/validate.ts';
+import { generate, generateValid } from '@skelly/engine/core/generate.ts';
+import type { Assembly } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { readCartridge } from './readCartridge.ts';

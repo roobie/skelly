@@ -3,8 +3,8 @@
 //   npm run stats -- --seeds 200
 
 import { parseArgs } from 'node:util';
-import { generate } from '../core/generate.ts';
-import { validate } from '../core/validate.ts';
+import { generate } from '@skelly/engine/core/generate.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 

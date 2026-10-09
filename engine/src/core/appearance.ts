@@ -13,8 +13,17 @@ export interface ResolvedAppearance {
   readonly color: SrgbColor;
 }
 
+export const srgbToHex = (color: SrgbColor): number =>
+  (Math.round(color[0] * 255) << 16) | (Math.round(color[1] * 255) << 8) | Math.round(color[2] * 255);
+
 const own = <T>(table: Readonly<Record<string, T>> | undefined, key: string): T | undefined =>
   table && Object.hasOwn(table, key) ? table[key] : undefined;
+
+export const solidColor = (palette: Palette, family: string, solidId: string, material?: string): SrgbColor =>
+  (material ? own(palette.materials, material) : undefined) ??
+  own(palette.specialColors, solidId) ??
+  own(palette.familyColors, family) ??
+  palette.fallbackColor;
 
 /** One domain-agnostic appearance policy shared by the viewer and exporters. */
 export const resolveAppearance = (

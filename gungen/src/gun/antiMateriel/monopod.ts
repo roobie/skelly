@@ -1,4 +1,4 @@
-import type { PartDef, PartFamily } from '../../core/schema.ts';
+import type { PartDef, PartFamily } from '@skelly/engine/core/schema.ts';
 import { box, choice, X, Y } from './common.ts';
 
 /**

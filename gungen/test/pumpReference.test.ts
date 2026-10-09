@@ -1,11 +1,11 @@
+import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
+import { applyPoint, IDENTITY } from '@skelly/engine/core/math.ts';
+import { meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, ExtrudedPolygonSolid, Solid } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import type { Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
-import { localSolidBounds, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
-import { applyPoint, IDENTITY } from '../src/core/math.ts';
-import { meshForSolidGroup } from '../src/core/mesh.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Assembly, ExtrudedPolygonSolid, Solid } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { RECEIVER_SECTION } from '../src/gun/parts.ts';

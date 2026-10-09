@@ -5,8 +5,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
-import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
-import { validate } from '../core/validate.ts';
+import { formatParseError, parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 
 const args = process.argv.slice(2);

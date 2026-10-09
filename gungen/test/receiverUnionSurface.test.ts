@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
+import type { Vec3 } from '@skelly/engine/core/math.ts';
+import type { TriangleMesh } from '@skelly/engine/core/mesh.ts';
 import { describe, expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/math.ts';
-import type { TriangleMesh } from '../src/core/mesh.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';

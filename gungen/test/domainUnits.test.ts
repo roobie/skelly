@@ -1,10 +1,10 @@
+import type { GlbAssetIdentity, Palette } from '@skelly/engine/core/design.ts';
+import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
+import { exportGlb } from '@skelly/engine/core/glb.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Domain, DomainUnits, PartDef } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
-import { boxFromMinMax } from '../src/core/geometry.ts';
-import { exportGlb } from '../src/core/glb.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Domain, DomainUnits, PartDef } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { readGlb } from './glbReader.ts';
 
 // Each test here protects one thing a domain's units decide, using a synthetic domain whose numbers

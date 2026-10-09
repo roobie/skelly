@@ -7,11 +7,11 @@
 // per side). "After" is the new chamfered mesh (src/core/mesh.ts).
 
 import { parseArgs } from 'node:util';
-import { displayItems } from '../core/display.ts';
-import { generate } from '../core/generate.ts';
-import { displayBevel, meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
-import { resolve } from '../core/resolve.ts';
-import type { Solid } from '../core/schema.ts';
+import { displayItems } from '@skelly/engine/core/display.ts';
+import { generate } from '@skelly/engine/core/generate.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Solid } from '@skelly/engine/core/schema.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 

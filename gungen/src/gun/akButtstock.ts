@@ -1,5 +1,5 @@
-import type { SizeClass } from '../core/conventions.ts';
-import type { Solid, Vec2 } from '../core/schema.ts';
+import type { SizeClass } from '@skelly/engine/core/conventions.ts';
+import type { Solid, Vec2 } from '@skelly/engine/core/schema.ts';
 import { AK_PROPORTIONS } from './akProportions.ts';
 import { hermite, type StockContour, woodRegion } from './stockWood.ts';
 

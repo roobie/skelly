@@ -1,14 +1,20 @@
+import {
+  boxFromMinMax,
+  distanceWorld,
+  localSolidBounds,
+  penetrationWorld,
+  worldSolid,
+} from '@skelly/engine/core/geometry.ts';
+import { exportGlb, partNodeName } from '@skelly/engine/core/glb.ts';
+import { applyDir, type ExtrusionAxis, mulMM, rotX, rotY, rotZ } from '@skelly/engine/core/math.ts';
+import { meshForSolid, type TriangleMesh } from '@skelly/engine/core/mesh.ts';
+import { type Resolved, resolve } from '@skelly/engine/core/resolve.ts';
+import { connectionContact, keepOut as keepOutRule } from '@skelly/engine/core/rules.ts';
+import type { Domain, ExtrudedPolygonSolid, KeepOut, PartDef } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import validator from 'gltf-validator';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import { boxFromMinMax, distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
-import { exportGlb, partNodeName } from '../src/core/glb.ts';
-import { applyDir, type ExtrusionAxis, mulMM, rotX, rotY, rotZ } from '../src/core/math.ts';
-import { meshForSolid, type TriangleMesh } from '../src/core/mesh.ts';
-import { type Resolved, resolve } from '../src/core/resolve.ts';
-import { connectionContact, keepOut as keepOutRule } from '../src/core/rules.ts';
-import type { Domain, ExtrudedPolygonSolid, KeepOut, PartDef } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_PALETTE } from '../src/gun/palette.ts';
 import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';

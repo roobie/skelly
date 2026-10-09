@@ -1,8 +1,8 @@
+import { CORE_RULE_IDS } from '@skelly/engine/core/issue.ts';
+import { CORE_RULES } from '@skelly/engine/core/rules.ts';
+import type { Assembly, Domain } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { CORE_RULE_IDS } from '../src/core/issue.ts';
-import { CORE_RULES } from '../src/core/rules.ts';
-import type { Assembly, Domain } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { pistolBarrelCrown } from '../src/gun/rules.ts';
 import { loadFixture, variant } from './helpers.ts';

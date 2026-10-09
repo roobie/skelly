@@ -2,10 +2,6 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { init, parse } from 'es-module-lexer';
-import { LanguageVariant, SyntaxKind } from 'typescript/unstable/ast';
-import { createScanner } from 'typescript/unstable/ast/scanner';
-import { expect, expectTypeOf, it } from 'vitest';
 import type {
   AnchorFrame,
   Design,
@@ -22,10 +18,14 @@ import type {
   SrgbColor,
   Suggest,
   SuggestionResult,
-} from '../src/core/design.ts';
-import type { Resolved } from '../src/core/resolve.ts';
-import type { Domain, PartInstance } from '../src/core/schema.ts';
-import type { Template } from '../src/core/template.ts';
+} from '@skelly/engine/core/design.ts';
+import type { Resolved } from '@skelly/engine/core/resolve.ts';
+import type { Domain, PartInstance } from '@skelly/engine/core/schema.ts';
+import type { Template } from '@skelly/engine/core/template.ts';
+import { init, parse } from 'es-module-lexer';
+import { LanguageVariant, SyntaxKind } from 'typescript/unstable/ast';
+import { createScanner } from 'typescript/unstable/ast/scanner';
+import { expect, expectTypeOf, it } from 'vitest';
 import type {
   AnchorSelectionError,
   GunAnchorDeclarations,
@@ -120,6 +120,9 @@ const inspectImport = (
   }
   if (imported.specifier === undefined || (imported.type === 'dynamic' && imported.glob)) {
     return `unresolved dynamic import in ${from}`;
+  }
+  if (imported.specifier === '@skelly/gungen' || imported.specifier.startsWith('@skelly/gungen/')) {
+    return `${from} -> ${imported.specifier}`;
   }
   if (!imported.specifier.startsWith('.')) {
     return undefined;
@@ -344,9 +347,9 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   expectTypeOf(effectiveLocks).toMatchTypeOf<EffectiveSuggestionLocks>();
   expectTypeOf<(typeof suggestions.variants)[number]['status']>().toEqualTypeOf<'draft'>();
 
-  const sourceRoot = fileURLToPath(new URL('../src/', import.meta.url));
+  const sourceRoot = fileURLToPath(new URL('../../engine/src/', import.meta.url));
   const coreRoot = join(sourceRoot, 'core');
-  const gunRoot = join(sourceRoot, 'gun');
+  const gunRoot = fileURLToPath(new URL('../src/gun/', import.meta.url));
   const coreFiles = typeScriptFiles(coreRoot);
   expect(await findGunImport(coreFiles, sourceRoot, gunRoot)).toBeUndefined();
   expect(findForbiddenCoreIdentifier(coreFiles)).toBeUndefined();

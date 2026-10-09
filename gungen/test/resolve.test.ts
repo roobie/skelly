@@ -1,9 +1,9 @@
+import { localSolidBounds } from '@skelly/engine/core/geometry.ts';
+import { applyPoint, invert } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Domain } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { localSolidBounds } from '../src/core/geometry.ts';
-import { applyPoint, invert } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Domain } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixture, variant } from './helpers.ts';
 

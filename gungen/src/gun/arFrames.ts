@@ -1,6 +1,6 @@
+import { GRID } from '@skelly/engine/core/conventions.ts';
 import cartridgeJson from '../../cartridges/5.56x45.json' with { type: 'json' };
 import { parseCartridge } from '../ammo/parseCartridge.ts';
-import { GRID } from '../core/conventions.ts';
 import {
   type ActionFrame,
   AR_FRAME_RANKS,

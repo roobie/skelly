@@ -1,4 +1,4 @@
-import type { PortDef } from '../core/schema.ts';
+import type { PortDef } from '@skelly/engine/core/schema.ts';
 
 /** Generic attachment faces. Future accessories use these interfaces, not optic-specific ports. */
 export const MOUNT_KINDS = ['rail-top', 'rail-side', 'rail-bottom', 'muzzle'] as const;

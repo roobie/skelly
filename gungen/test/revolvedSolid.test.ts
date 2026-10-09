@@ -1,12 +1,12 @@
+import type { GlbAssetIdentity, Palette } from '@skelly/engine/core/design.ts';
+import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/core/geometry.ts';
+import { exportGlb } from '@skelly/engine/core/glb.ts';
+import { type ExtrusionAxis, extrusionPoint, IDENTITY } from '@skelly/engine/core/math.ts';
+import { meshForSolid } from '@skelly/engine/core/mesh.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Domain, DomainUnits, PartDef, RevolvedSolid, Solid } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
-import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
-import { exportGlb } from '../src/core/glb.ts';
-import { type ExtrusionAxis, extrusionPoint, IDENTITY } from '../src/core/math.ts';
-import { meshForSolid } from '../src/core/mesh.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Domain, DomainUnits, PartDef, RevolvedSolid, Solid } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { readGlb } from './glbReader.ts';
 
 const AXES: readonly ExtrusionAxis[] = ['x', 'y', 'z'];

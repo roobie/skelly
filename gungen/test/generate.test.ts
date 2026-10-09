@@ -1,8 +1,8 @@
+import { generate, generateValid } from '@skelly/engine/core/generate.ts';
+import { seededRng } from '@skelly/engine/core/random.ts';
+import type { ParamReference, Template } from '@skelly/engine/core/template.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { generate, generateValid } from '../src/core/generate.ts';
-import { seededRng } from '../src/core/random.ts';
-import type { ParamReference, Template } from '../src/core/template.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { SUSPENDED_TEMPLATE_NAMES, SUSPENDED_TEMPLATES, TEMPLATES } from '../src/gun/templates.ts';
 import { sweepGroup } from './sweeps.ts';

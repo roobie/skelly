@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseAssembly, parseAssemblyJson } from '@skelly/engine/core/parseAssembly.ts';
 import { describe, expect, it } from 'vitest';
-import { parseAssembly, parseAssemblyJson } from '../src/core/parseAssembly.ts';
 
 const FIXTURES = join(import.meta.dirname, '..', 'fixtures');
 const fixtureFiles = readdirSync(FIXTURES).filter((f) => f.endsWith('.json'));

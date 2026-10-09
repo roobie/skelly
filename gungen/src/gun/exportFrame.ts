@@ -1,6 +1,6 @@
 // Units and axes of the gun GLB export (PROJECT.md 3.4). Kept beside the gun exporter so no domain semantics leak into core.
 
-import { IDENTITY_M, type Mat3, mulMV, transpose, type Vec3 } from '../core/math.ts';
+import { IDENTITY_M, type Mat3, mulMV, transpose, type Vec3 } from '@skelly/engine/core/math.ts';
 
 /**
  * Metres per gungen unit in the gun domain (`GUN_UNITS.metresPerUnit`); the export scales by the resolved

@@ -1,8 +1,8 @@
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import { CORE_RULES } from '@skelly/engine/core/rules.ts';
+import type { Assembly } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { resolve } from '../src/core/resolve.ts';
-import { CORE_RULES } from '../src/core/rules.ts';
-import type { Assembly } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixtures, type MutableAssembly, variant } from './helpers.ts';
 import { runSweeps, sweepGroup } from './sweeps.ts';

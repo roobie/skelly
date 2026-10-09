@@ -1,7 +1,7 @@
+import { meshForRevolved } from '@skelly/engine/core/revolve.ts';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { ASSUMED_BULLET_SEATING_DEPTH_CALIBRES, CASE_WALL_MM, roundProfiles } from '../src/ammo/roundProfile.ts';
-import { meshForRevolved } from '../src/core/revolve.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 
 const cartridge = loadCartridgeFile('7.62x39.json') as MetallicCartridge;

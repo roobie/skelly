@@ -1,4 +1,4 @@
-import type { DesignLoadResult } from '../core/design.ts';
+import type { DesignLoadResult } from '@skelly/engine/core/design.ts';
 import { GUN_PREFABS, type PrefabCatalogue } from '../gun/prefabs.ts';
 
 interface DesignIssueView {

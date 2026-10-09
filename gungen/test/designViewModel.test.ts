@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { DesignLoadResult } from '@skelly/engine/core/design.ts';
+import { loadDesign } from '@skelly/engine/core/designLoader.ts';
 import { describe, expect, it } from 'vitest';
-import type { DesignLoadResult } from '../src/core/design.ts';
-import { loadDesign } from '../src/core/designLoader.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_PREFABS, type PrefabCatalogue } from '../src/gun/prefabs.ts';

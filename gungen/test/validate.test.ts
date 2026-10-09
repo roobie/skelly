@@ -1,6 +1,6 @@
+import type { Assembly, Domain, PartDef, Rule } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import type { Assembly, Domain, PartDef, Rule } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { GUN_UNITS } from '../src/gun/units.ts';
 
 const emptyPart: PartDef = { family: 'empty', ports: [], solids: [], keepOuts: [], axes: [] };

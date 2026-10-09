@@ -1,15 +1,26 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { GlbAssetIdentity, Palette } from '@skelly/engine/core/design.ts';
+import { displayItems as selectDisplayItems } from '@skelly/engine/core/display.ts';
+import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '@skelly/engine/core/geometry.ts';
+import { exportGlb, partNodeName, srgbToLinear } from '@skelly/engine/core/glb.ts';
+import {
+  applyPoint,
+  IDENTITY,
+  type Mat3,
+  mulMM,
+  mulMV,
+  rotX,
+  rotY,
+  rotZ,
+  sub,
+  type Vec3,
+} from '@skelly/engine/core/math.ts';
+import { meshForSolid, meshForSolidGroup } from '@skelly/engine/core/mesh.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly } from '@skelly/engine/core/schema.ts';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
-import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
-import { displayItems as selectDisplayItems } from '../src/core/display.ts';
-import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '../src/core/geometry.ts';
-import { exportGlb, partNodeName, srgbToLinear } from '../src/core/glb.ts';
-import { applyPoint, IDENTITY, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, type Vec3 } from '../src/core/math.ts';
-import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Assembly } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import type { SelectedAnchors } from '../src/gun/anchors.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';

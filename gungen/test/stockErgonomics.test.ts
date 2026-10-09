@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { generate } from '@skelly/engine/core/generate.ts';
+import { applyPoint, invert } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, ExtrudedPolygonSolid } from '@skelly/engine/core/schema.ts';
+import { validate } from '@skelly/engine/core/validate.ts';
 import { describe, expect, it } from 'vitest';
-import { generate } from '../src/core/generate.ts';
-import { applyPoint, invert } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Assembly, ExtrudedPolygonSolid } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';

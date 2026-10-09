@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import {
   boxFromMinMax,
   clipConvexPolyhedron,
@@ -12,9 +11,10 @@ import {
   validateExtrudedPolygon,
   worldBox,
   worldSolid,
-} from '../src/core/geometry.ts';
-import { IDENTITY, mulMM, rotX, rotY, rotZ } from '../src/core/math.ts';
-import type { Solid } from '../src/core/schema.ts';
+} from '@skelly/engine/core/geometry.ts';
+import { IDENTITY, mulMM, rotX, rotY, rotZ } from '@skelly/engine/core/math.ts';
+import type { Solid } from '@skelly/engine/core/schema.ts';
+import { describe, expect, it } from 'vitest';
 
 const CONVEX_ERROR = /convex/i;
 const SELF_INTERSECT_ERROR = /self-intersect/i;

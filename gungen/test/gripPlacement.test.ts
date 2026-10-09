@@ -1,10 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { generate } from '@skelly/engine/core/generate.ts';
+import { applyPoint, extrusionPoint, type Transform, type Vec3 } from '@skelly/engine/core/math.ts';
+import { resolve } from '@skelly/engine/core/resolve.ts';
+import type { Assembly, Solid } from '@skelly/engine/core/schema.ts';
 import { describe, expect, it } from 'vitest';
-import { generate } from '../src/core/generate.ts';
-import { applyPoint, extrusionPoint, type Transform, type Vec3 } from '../src/core/math.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Assembly, Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { loadFixtures } from './helpers.ts';

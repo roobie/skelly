@@ -1,7 +1,7 @@
+import { srgbToLinear } from '@skelly/engine/core/glb.ts';
 import validator from 'gltf-validator';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
-import { srgbToLinear } from '../src/core/glb.ts';
 import { exportCartridgeModels } from '../src/gun/cartridgeExport.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 

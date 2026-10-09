@@ -5,9 +5,9 @@
 // the direction the gun points (+X) and `up` is the hand's up. A grip's frame follows the grip's own
 // (leaned) axes, so it tilts with the grip once placed.
 
-import type { AnchorFrame } from '../core/design.ts';
-import { add, extrusionPoint, type Vec3 } from '../core/math.ts';
-import type { PartDef, RevolvedSolid, Solid } from '../core/schema.ts';
+import type { AnchorFrame } from '@skelly/engine/core/design.ts';
+import { add, extrusionPoint, type Vec3 } from '@skelly/engine/core/math.ts';
+import type { PartDef, RevolvedSolid, Solid } from '@skelly/engine/core/schema.ts';
 import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
 import { localEjectionPoint } from './ejection.ts';
 import { FIRING_GRIP } from './parts.ts';

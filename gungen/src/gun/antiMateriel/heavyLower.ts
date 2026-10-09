@@ -1,5 +1,5 @@
-import { boxFromMinMax } from '../../core/geometry.ts';
-import type { KeepOut, PartDef, PartFamily, PortDef, Solid } from '../../core/schema.ts';
+import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
+import type { KeepOut, PartDef, PartFamily, PortDef, Solid } from '@skelly/engine/core/schema.ts';
 import { box, NEG_Y, X, Y } from './common.ts';
 import { HEAVY_MAGAZINE_DEPTH, HEAVY_MAGAZINE_INSERTION, HEAVY_MAGAZINE_WIDTH } from './heavyMagazine.ts';
 
