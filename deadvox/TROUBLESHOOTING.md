@@ -7,6 +7,7 @@ read_if:
   - you investigate a Chromium launch failure in browser CI
   - you investigate native inventory selection or keyboard settlement in browser tests
   - you're authoring a browser stage that checks a frame-applied effect
+  - a browser stage walks the player somewhere and acts where the walk stopped
   - you're authoring or exporting a Deadvox site in Tiled
   - you diagnose a stalled Deadvox CI browser dependency install (#388)
   - you're choosing render-free or pixel mode for a browser stage
@@ -183,6 +184,15 @@ pre-key sample, or it can declare success before any row is selected. See
 an observed UID change, not elapsed wall time or an injected selection. Debug
 toggles apply on the next frame; in a browser stage, use `pressAction`, wait for
 the effect, and only then assert.
+
+A browser-stage walk holds a real key until its condition holds. Released from Node,
+the key stays down through the round trip while the game keeps simulating, so the
+walk overshoots by its speed times that latency, and a later step that depends on
+where it stopped flakes under load. Pass the hold as the wait's `stop`: the poll that
+ends the wait releases it in the page, through the same window listeners a real keyup
+reaches, before the next game frame. See `test/browser/simulation-wait.mjs`,
+`waitForSimulation`, and `test/browser/input-actions.mjs`, `holdAction`. A mouse hold
+has no in-page release and still ends from Node.
 
 ## Render-free browser logic stages
 
