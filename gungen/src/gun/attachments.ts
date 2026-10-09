@@ -70,7 +70,7 @@ interface ResolvedAttachmentSlot {
 }
 
 const suppressors = {
-  'real-suppressor': { noiseFactor: 0.45, wearClass: 'real' },
+  'real-suppressor': { noiseFactor: 0.25, wearClass: 'real' },
   'improvised-suppressor': { noiseFactor: 0.7, wearClass: 'improvised' },
 } as const;
 

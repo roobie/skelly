@@ -33,6 +33,13 @@ const FIREARM_SOUND_BY_ITEM: ReadonlyMap<string, FirearmSoundProfile> = new Map(
   ['rifle_assault', { unsuppressed: 'gunshot_m4', suppressed: 'gunshot_m4_suppressed' }],
 ]);
 
+export const FIREARM_SHOT_SOUND_EVENTS: ReadonlySet<SoundEventId> = new Set([
+  'gunshot',
+  ...[...FIREARM_SOUND_BY_ITEM.values()].flatMap(({ unsuppressed, suppressed }) =>
+    suppressed === undefined ? [unsuppressed] : [unsuppressed, suppressed],
+  ),
+]);
+
 const hasMountedSuppressor = (item: Item): boolean =>
   Object.values(item.slots ?? {}).some((attachment) =>
     attachment ? attachment.type === 'real_suppressor' || hasMountedSuppressor(attachment) : false,
@@ -42,16 +49,20 @@ const hasMountedSuppressor = (item: Item): boolean =>
 export const firearmShotSound = (
   item: Item,
   perspective: 'player' | 'actor' = 'player',
-): { event: SoundEventId; sourceLabel: string; listenerRelative: boolean; noiseRadiusScale?: number } => {
+): { event: SoundEventId; sourceLabel: string; listenerRelative: boolean } => {
   const profile = FIREARM_SOUND_BY_ITEM.get(item.type);
   const suppressed = profile?.suppressed !== undefined && hasMountedSuppressor(item);
   return {
     event: suppressed ? profile.suppressed! : (profile?.unsuppressed ?? 'gunshot'),
     sourceLabel: item.type,
     listenerRelative: perspective === 'player',
-    ...(suppressed ? { noiseRadiusScale: 1 } : {}),
   };
 };
+
+export const firearmShotEmission = (item: Item, noiseRadiusScale: number) => ({
+  ...firearmShotSound(item),
+  noiseRadiusScale,
+});
 
 export const HEARTBEAT_FILES = {
   slow: 'assets/audio/heartbeat-slow-beat.ogg',

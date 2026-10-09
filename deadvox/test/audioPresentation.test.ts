@@ -84,7 +84,6 @@ describe('firearm audio presentation', () => {
       event: 'gunshot_m4_suppressed',
       sourceLabel: suppressedAr.type,
       listenerRelative: true,
-      noiseRadiusScale: 1,
     });
     expect(firearmShotSound(suppressedAr, 'actor')).toMatchObject({
       event: 'gunshot_m4_suppressed',
@@ -92,7 +91,7 @@ describe('firearm audio presentation', () => {
     });
   });
 
-  it('uses event content to halve zombie hearing distance for a suppressed AR shot', () => {
+  it('keeps M4 sound selection separate from attachment-based noise scaling', () => {
     const definitions = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as SoundDef[];
     const byId = new Map(definitions.map((definition) => [definition.id, definition]));
     const unsuppressed = firearmShotSound(firearm('rifle_assault'));
@@ -102,7 +101,6 @@ describe('firearm audio presentation', () => {
 
     expect(unsuppressedNoise?.enabled).toBe(true);
     expect(suppressedNoise?.enabled).toBe(true);
-    expect(suppressedNoise!.radiusMetres / unsuppressedNoise!.radiusMetres).toBe(0.5);
-    expect(suppressed.noiseRadiusScale).toBe(1);
+    expect(suppressedNoise!.radiusMetres).toBe(unsuppressedNoise!.radiusMetres);
   });
 });

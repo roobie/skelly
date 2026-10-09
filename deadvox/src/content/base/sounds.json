@@ -409,7 +409,7 @@
       "gainJitter": [1, 1],
       "minIntervalSimSeconds": 0,
       "category": "world",
-      "noise": { "enabled": true, "radiusMetres": 50 }
+      "noise": { "enabled": true, "radiusMetres": 100 }
     },
     {
       "id": "item_drop_wood",

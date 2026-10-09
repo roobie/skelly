@@ -13,7 +13,7 @@ import { simRate, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio } from '../src/game/audio.ts';
-import { firearmShotSound, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
+import { firearmShotEmission, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const audios: GameAudio[] = [];
@@ -338,12 +338,13 @@ describe('game audio playback', () => {
     audio.updateListener(listenerAtStart, [0, 0, -1]);
     session.playPlayerSound('player_strain');
     const ar = { uid: 1, type: 'rifle_assault', count: 1, condition: 1 };
-    const shot = firearmShotSound(ar);
+    const shot = firearmShotEmission(ar, session.firearms.noiseFactorFor(ar));
     session.playPlayerSound(shot.event, session.sim.time, shot);
-    const suppressedShot = firearmShotSound({
+    const suppressedAr = {
       ...ar,
       slots: { muzzle: { uid: 2, type: 'real_suppressor', count: 1, condition: 1 } },
-    });
+    };
+    const suppressedShot = firearmShotEmission(suppressedAr, session.firearms.noiseFactorFor(suppressedAr));
     session.playPlayerSound(suppressedShot.event, session.sim.time, suppressedShot);
     audio.updateListener([listenerAtStart[0] + 3, listenerAtStart[1], listenerAtStart[2]], [1, 0, 0]);
     await flush();
@@ -380,7 +381,6 @@ describe('game audio playback', () => {
     if (shotNoiseRadius?.kind !== 'noise' || suppressedNoiseRadius?.kind !== 'noise') {
       throw new Error('Expected both AR shot events to emit gameplay noise');
     }
-    expect(suppressedNoiseRadius.radiusMetres / shotNoiseRadius.radiusMetres).toBe(0.5);
     expect(events.find((event) => event.kind === 'sound' && event.event === 'player_strain')).toMatchObject({
       position: playerOrigin,
       emittedAsNoise: true,
