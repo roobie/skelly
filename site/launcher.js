@@ -1,7 +1,7 @@
 // biome-ignore lint/correctness/noUnresolvedImports: the browser loads this ESM module from jsDelivr.
 import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
 
-// Testers agree to this brief before they play, so it is the one place the consent wording lives.
+// The tester brief's wording lives only here; the facilitator's run sheet points at it, so a change reaches every session.
 const playtestBrief = html`
         <section class="playtest" aria-labelledby="playtest-title">
           <h3 id="playtest-title">Playtest</h3>
@@ -11,7 +11,7 @@ const playtestBrief = html`
             <li>Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.</li>
             <li>This site, the game included, loads Simple Analytics to count visits. It gets none of your play metrics.</li>
             <li>Send feedback through <a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">the playtest feedback form</a>. It opens a public GitHub issue and needs a GitHub account.</li>
-            <li>If someone runs your session, they watch without helping and take notes. The notes go into a public playtest issue under a tester number, not your name. You can stop at any time.</li>
+            <li>If someone runs your session, they watch without helping and take notes. You can stop at any time.</li>
           </ul>
         </section>`;
 

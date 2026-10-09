@@ -20,21 +20,22 @@ the facilitator watches.
 
 ## Before the session
 
-1. Give the tester the next unused tester number from the playtest issues. Use the
-   number, never the tester's name, in everything you record.
+1. how notes name the tester: pending BR (cr-r65-1 F1)
 2. Have the tester open the landing page, <https://roobie.github.io/skelly/>, in the
    browser they will play in.
 3. Prepare one observation block per beat (template below).
 
 ## Consent
 
-The tester brief beside the landing page's Playtest link is the consent text
+The consent step uses the tester brief beside the landing page's Playtest link
 (`site/launcher.js`, `playtestBrief`). Read it from there, not from a copy, so
 that a wording change reaches every session.
 
+consent wording: pending BR (cr-r65-1 F1)
+
 1. Ask the tester to read the brief, and answer their questions about it.
 2. Ask: "Are you happy to play on those terms?" Start only on a yes, and note the
-   yes with the tester number.
+   yes in your notes.
 3. Say: "I won't explain or help while you play. Tell me whenever you want to stop."
 
 ## During play
@@ -59,16 +60,16 @@ What EPIC's watch list shows in this beat:
    ([SLICE-3.md](../SLICE-3.md), "Playtest questions") and EPIC's
    most-annoyed and most-delighted question.
 2. Ask whether the tester wants to send their metrics and a recent replay. If they
-   do, they save them through the F9 menu's export buttons (#512). It is their
+   do, they save them through the F9 menu's export buttons (`deadvox/index.html`,
+   `playtest-metrics-export`). It is their
    choice, so don't press the buttons for them.
 
 ## Where it goes
 
-- **Session issue:** one issue per session, from the playtest feedback form
-  (`.github/ISSUE_TEMPLATE/playtest-feedback.md`), titled with the tester number.
-  It holds the facilitator's notes and the tester's answers, with the metrics and
-  replay files attached when the tester chose to send them. Issues are public, so
-  nothing in them names the tester.
+- **Facilitator notes:** where facilitator notes go: pending BR (cr-r65-1 F1)
+- **Tester feedback:** the tester sends feedback, and the metrics and replay files
+  if they choose to, through the playtest feedback form
+  (`.github/ISSUE_TEMPLATE/playtest-feedback.md`).
 - **Findings:** after the last session, record the findings where EPIC's "Playtest
   plan" says, before Slice 4 planning
   ([SLICE-3.md](../SLICE-3.md), 3.11, "Done when").
