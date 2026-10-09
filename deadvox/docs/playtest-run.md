@@ -79,8 +79,10 @@ and seconds of play (`src/game/playtestTools.ts`, `SessionMetricsV1`). It stays
 high level because playtest 1 asks how far testers get and what they find, not how
 each action went; a later playtest may add detail. The beats are the `beat` areas
 in the playtest map (`maps/playtest.tmj`), and the key items are its fixed loot
-marked `key` (`src/content/base/layouts-playtest.json`). Nothing in the game reads
-either; they only feed the metrics.
+marked `key` (`src/content/base/layouts-playtest.json`).
+`AuthoredSite` (`src/core/authoredSite.ts`) and `PlaytestObserver`
+(`src/game/playtestObserver.ts`) read these marks only to feed the export; the
+simulation does not read either.
 
 ## Where it goes
 
