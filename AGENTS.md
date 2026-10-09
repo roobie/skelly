@@ -133,7 +133,7 @@ command includes `deadvox/tools/lit-check`, which deadvox's Lit lint and root Kn
 npm run setup
 ```
 
-`npm run setup` fetches the pinned go-jsonnet binary for the shared compiler; `.github/workflows/lint.yml`, `Cache go-jsonnet`, caches it by the manifest hash.
+`npm run setup` fetches the pinned go-jsonnet binary for the shared compiler; `.github/workflows/lint.yml`, `Cache go-jsonnet`, caches it by the hash of `tools/jsonnet/runtime.json`.
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 

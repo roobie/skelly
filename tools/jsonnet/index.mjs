@@ -16,8 +16,7 @@ function jsonnetExecutable() {
     try {
       execFileSync(process.execPath, [SETUP_SCRIPT], { cwd: REPOSITORY_ROOT, stdio: 'inherit' });
     } catch (error) {
-      const detail = error instanceof Error && 'stderr' in error ? String(error.stderr).trim() : String(error);
-      throw new Error(`jsonnet binary missing: run npm run setup. ${detail}`, { cause: error });
+      throw new Error('jsonnet binary missing: run npm run setup', { cause: error });
     }
   }
   if (!existsSync(JSONNET_EXECUTABLE)) {

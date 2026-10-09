@@ -17,7 +17,7 @@ Shotshell reproduction and explicit visual proxies: `../docs/shotshell-export.md
 The pump-action clearance model also consumes the sourced loaded length. The scope exception that allows real dimensions here is in
 `PROJECT.md` ("Non-goals").
 
-Compiled cartridge JSON sits at the package root next to `designs/` and `fixtures/` because tests, CLIs and the viewer read it by path. New Jsonnet sources use the repository-root compiler and emit JSON beside their sources. Types, parsing and rules remain in `src/ammo/`, which, like core, imports nothing from `gun/` or `viewer/`.
+Cartridge JSON sits at the package root next to `designs/` and `fixtures/` because tests, CLIs and the viewer read it by path. New Jsonnet sources use the repository-root compiler and emit JSON beside their sources. Types, parsing and rules remain in `src/ammo/`, which, like core, imports nothing from `gun/` or `viewer/`.
 
 ## Units
 

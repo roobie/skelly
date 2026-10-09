@@ -29,10 +29,9 @@ choices, and a validator with named rules decides what's feasible.
 
 ### Authored data
 
-Write new or touched structured mobgen data in Jsonnet, using the repository-root
-compiler and the shared authoring rules in `../docs/jsonnet.md`. Generator algorithms and
-poses remain TypeScript so content composition does not become a second implementation of
-mobgen's feasibility rules. Moving body plans into external data is a named follow-up; it
+Structured mobgen data follows the repository-wide authoring rule in `../docs/jsonnet.md`.
+Generator algorithms and poses remain TypeScript so content composition does not become a
+second implementation of mobgen's feasibility rules. Moving body plans into external data is a named follow-up; it
 must use the same compiler rather than a mobgen-specific evaluator.
 
 ### Creature range
