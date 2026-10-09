@@ -167,6 +167,10 @@ vec4 voronoi3(vec3 p) {
   return vec4(d1, d2, id, 0.0);
 }
 
+vec3 camoSrgbToLinear(vec3 c) {
+  return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
+}
+
 // World-anchored 3D blotches continue across chunk edges and changes in face orientation.
 vec3 camoColor(vec3 world, float fw) {
   vec4 v = voronoi3(world / 0.72);
@@ -176,8 +180,8 @@ vec3 camoColor(vec3 world, float fw) {
   if (paletteIndex > 0.5) blotch = uCamoPalette[1];
   if (paletteIndex > 1.5) blotch = uCamoPalette[2];
   if (paletteIndex > 2.5) blotch = uCamoPalette[3];
-  blotch = mix(srgbToLinear(blotch), srgbToLinear(vec3(0.24, 0.25, 0.22)), edge * 0.16);
-  vec3 neutral = srgbToLinear(vec3(0.72, 0.71, 0.64));
+  blotch = mix(camoSrgbToLinear(blotch), camoSrgbToLinear(vec3(0.24, 0.25, 0.22)), edge * 0.16);
+  vec3 neutral = camoSrgbToLinear(vec3(0.72, 0.71, 0.64));
   vec3 washed = mix(blotch, neutral, uCamoWashout);
   return mix(neutral, washed, featureFade(fw, 0.72));
 }
