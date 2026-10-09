@@ -126,6 +126,7 @@ export const BLOCK_PATTERNS = [
   'corrugated',
   'shingles',
   'noise',
+  'camo',
 ] as const;
 
 const BlockSchema = strictObject({
@@ -140,6 +141,10 @@ const BlockSchema = strictObject({
   rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
+  /** Four-colour palette read only by the `camo` surface pattern. */
+  patternPalette: optional(tuple([Color, Color, Color, Color])),
+  /** Washout amount in [0, 1], read only by the `camo` surface pattern. */
+  patternWashout: optional(pipe(number(), minValue(0), maxValue(1))),
 });
 
 // ---- items ----
@@ -865,6 +870,8 @@ const TemplateAccessSchema = strictObject({
 
 const TemplateSchema = strictObject({
   id: Id,
+  /** Military supply may be rolled only inside a military site. */
+  military: optional(vBoolean()),
   /** Blocks: [x, y, z]. */
   size: Size,
   /** What each character means: a block id ("air" for empty), or furniture or a spawn point. */

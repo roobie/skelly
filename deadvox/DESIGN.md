@@ -26,6 +26,7 @@ read_if:
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
+  - you're authoring dilapidated structures or breached perimeters
   - you're changing player-facing item descriptions or their boundary with control guidance
 ---
 
@@ -1221,6 +1222,13 @@ something in play, not only decorate it.
   taking off, when something comes near. If adopted, it responds to an actual
   nearby cause, never to a timer or a guaranteed enemy alarm, so it stays a
   warning the world gives rather than one the UI gives.
+- **Dilapidation:** built things show abandonment through collapsed sections,
+  breaches, slumped or missing segments and rubble. A passable breach is a real
+  route, so each authored site names the gaps a player can cross. New structures
+  and reworks follow this direction, starting with the camp walls in #385;
+  retrofitting existing structures is tracked in #396. See
+  `src/content/base/camp.json`, `camp_wall_run`, `camp_gate`, and
+  `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an
   animal ecology, hunting or farming in version 1 (EPIC.md, "Not in version

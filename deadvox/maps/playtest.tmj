@@ -10,7 +10,7 @@
   "tileheight": 1,
   "infinite": false,
   "nextlayerid": 7,
-  "nextobjectid": 56,
+  "nextobjectid": 98,
   "properties": [
     {
       "name": "id",
@@ -329,34 +329,1399 @@
             }
           ]
         },
-        {"id":27,"name":"Commandeered community hall","type":"building","x":418.5,"y":239,"width":16,"height":12,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"medical_hall"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[{\"at\":[4,1,20],\"items\":[{\"item\":\"antiseptic\",\"count\":1},{\"item\":\"pharmacy_key\",\"count\":1}]},{\"at\":[25,1,3],\"items\":[{\"item\":\"antibiotics\",\"count\":1}]},{\"at\":[3,1,10],\"items\":[{\"item\":\"medical_research_log\",\"count\":1}]}]"}]},
-        {"id":28,"name":"Triage tent west","type":"building","x":407,"y":242,"width":7,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"triage_tent"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":29,"name":"Triage tent east","type":"building","x":436.5,"y":242,"width":7,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"triage_tent"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":30,"name":"Medical fence north 1","type":"building","x":402,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":31,"name":"Medical fence north 2","type":"building","x":409,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":32,"name":"Medical fence north 3","type":"building","x":416,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":33,"name":"Medical fence north 4","type":"building","x":423,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":34,"name":"Medical fence north 5","type":"building","x":430,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":35,"name":"Medical fence north 6","type":"building","x":437,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":36,"name":"Medical fence south 1","type":"building","x":402,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":37,"name":"Medical fence south 2","type":"building","x":409,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":38,"name":"Medical fence south 3","type":"building","x":416,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":39,"name":"Medical fence south 4","type":"building","x":430,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":40,"name":"Medical fence south 5","type":"building","x":437,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":41,"name":"Medical fence west 1","type":"building","x":402,"y":230.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":42,"name":"Medical fence west 2","type":"building","x":402,"y":237.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":43,"name":"Medical fence west 3","type":"building","x":402,"y":244.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":44,"name":"Medical fence west 4","type":"building","x":402,"y":251.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":45,"name":"Medical fence west 5","type":"building","x":402,"y":258.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":46,"name":"Medical fence east 1","type":"building","x":444.5,"y":230.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":47,"name":"Medical fence east 2","type":"building","x":444.5,"y":237.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":48,"name":"Medical fence east 3","type":"building","x":444.5,"y":244.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":49,"name":"Medical fence east 4","type":"building","x":444.5,"y":251.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":50,"name":"Medical fence east 5","type":"building","x":444.5,"y":258.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":51,"name":"Mike's Garage — two-bay workshop hall","type":"building","x":410,"y":198,"width":12,"height":10,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"workshop_hall"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[{\"at\":[17,1,9],\"items\":[{\"item\":\"shotshell_box\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[17,1,15],\"items\":[{\"item\":\"portable_radio\",\"count\":1},{\"item\":\"jerry_can\",\"count\":1}]}]"}]},
-        {"id":52,"name":"Mike's Garage — office","type":"building","x":422,"y":198,"width":5,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"workshop_office"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[{\"at\":[4,1,4],\"items\":[{\"item\":\"workshop_notes\",\"count\":1}]}]"}]},
-        {"id":53,"name":"Mike's Garage — parts store","type":"building","x":422,"y":202,"width":5,"height":5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"workshop_parts_store"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":54,"name":"Mike's Garage — fenced yard","type":"building","x":410,"y":189,"width":9,"height":9,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"workshop_yard"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[]"}]}
+        {
+          "id": 27,
+          "name": "Commandeered community hall",
+          "type": "building",
+          "x": 418.5,
+          "y": 239,
+          "width": 16,
+          "height": 12,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "medical_hall"
+            },
+            {
+              "name": "storeys",
+              "type": "int",
+              "value": 1
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[4,1,20],\"items\":[{\"item\":\"antiseptic\",\"count\":1},{\"item\":\"pharmacy_key\",\"count\":1}]},{\"at\":[25,1,3],\"items\":[{\"item\":\"antibiotics\",\"count\":1}]},{\"at\":[3,1,10],\"items\":[{\"item\":\"medical_research_log\",\"count\":1}]},{\"at\":[12,1,1],\"items\":[{\"item\":\"camp_armoury_key\",\"count\":1}]}]"
+            }
+          ]
+        },
+        {
+          "id": 28,
+          "name": "Triage tent west",
+          "type": "building",
+          "x": 407,
+          "y": 242,
+          "width": 7,
+          "height": 4,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "triage_tent"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 29,
+          "name": "Triage tent east",
+          "type": "building",
+          "x": 436.5,
+          "y": 242,
+          "width": 7,
+          "height": 4,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "triage_tent"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 30,
+          "name": "Medical fence north 1",
+          "type": "building",
+          "x": 402,
+          "y": 230,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 31,
+          "name": "Medical fence north 2",
+          "type": "building",
+          "x": 409,
+          "y": 230,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 32,
+          "name": "Medical fence north 3",
+          "type": "building",
+          "x": 416,
+          "y": 230,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 33,
+          "name": "Medical fence north 4",
+          "type": "building",
+          "x": 423,
+          "y": 230,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 34,
+          "name": "Medical fence north 5",
+          "type": "building",
+          "x": 430,
+          "y": 230,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 35,
+          "name": "Medical fence north 6",
+          "type": "building",
+          "x": 437,
+          "y": 230,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 36,
+          "name": "Medical fence south 1",
+          "type": "building",
+          "x": 402,
+          "y": 265.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 37,
+          "name": "Medical fence south 2",
+          "type": "building",
+          "x": 409,
+          "y": 265.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 38,
+          "name": "Medical fence south 3",
+          "type": "building",
+          "x": 416,
+          "y": 265.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 39,
+          "name": "Medical fence south 4",
+          "type": "building",
+          "x": 430,
+          "y": 265.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "name": "Medical fence south 5",
+          "type": "building",
+          "x": 437,
+          "y": 265.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 41,
+          "name": "Medical fence west 1",
+          "type": "building",
+          "x": 402,
+          "y": 230.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 42,
+          "name": "Medical fence west 2",
+          "type": "building",
+          "x": 402,
+          "y": 237.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 43,
+          "name": "Medical fence west 3",
+          "type": "building",
+          "x": 402,
+          "y": 244.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 44,
+          "name": "Medical fence west 4",
+          "type": "building",
+          "x": 402,
+          "y": 251.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 45,
+          "name": "Medical fence west 5",
+          "type": "building",
+          "x": 402,
+          "y": 258.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 46,
+          "name": "Medical fence east 1",
+          "type": "building",
+          "x": 444.5,
+          "y": 230.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 47,
+          "name": "Medical fence east 2",
+          "type": "building",
+          "x": 444.5,
+          "y": 237.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 48,
+          "name": "Medical fence east 3",
+          "type": "building",
+          "x": 444.5,
+          "y": 244.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 49,
+          "name": "Medical fence east 4",
+          "type": "building",
+          "x": 444.5,
+          "y": 251.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 50,
+          "name": "Medical fence east 5",
+          "type": "building",
+          "x": 444.5,
+          "y": 258.5,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 60,
+          "name": "Gate post west",
+          "type": "building",
+          "x": 468,
+          "y": 495,
+          "width": 4,
+          "height": 4,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_sandbag_post"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 61,
+          "name": "Gate post east",
+          "type": "building",
+          "x": 480,
+          "y": 495,
+          "width": 4,
+          "height": 4,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_sandbag_post"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 62,
+          "name": "Sandbag post far corner",
+          "type": "building",
+          "x": 486,
+          "y": 537,
+          "width": 4,
+          "height": 4,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_sandbag_post"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 63,
+          "name": "Camp watchtower",
+          "type": "building",
+          "x": 486,
+          "y": 516,
+          "width": 6,
+          "height": 6,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_watchtower"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 64,
+          "name": "Command tent",
+          "type": "building",
+          "x": 452,
+          "y": 516,
+          "width": 8,
+          "height": 5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_command_tent"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 65,
+          "name": "Sleeping tent",
+          "type": "building",
+          "x": 452,
+          "y": 525,
+          "width": 6,
+          "height": 4,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_tent"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 69,
+          "name": "Supply container",
+          "type": "building",
+          "x": 452,
+          "y": 533,
+          "width": 9,
+          "height": 5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_container"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 70,
+          "name": "Three-storey camp HQ",
+          "type": "building",
+          "x": 476,
+          "y": 517,
+          "width": 8,
+          "height": 9,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_hq"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 66,
+          "name": "Locked military armoury",
+          "type": "building",
+          "x": 470,
+          "y": 526,
+          "width": 10,
+          "height": 6,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_armoury"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[3,1,3],\"items\":[{\"item\":\"rifle_assault\",\"count\":1},{\"item\":\"rifle_ak\",\"count\":1}]},{\"at\":[7,1,5],\"items\":[{\"item\":\"magazine_stanag_30\",\"count\":1},{\"item\":\"magazine_akm_30\",\"count\":1}]},{\"at\":[13,1,7],\"items\":[{\"item\":\"cartridge_5_d_56x45\",\"count\":15},{\"item\":\"cartridge_7_d_62x39\",\"count\":15}]}]"
+            }
+          ]
+        },
+        {
+          "id": 71,
+          "name": "Mike's Garage — two-bay workshop hall",
+          "type": "building",
+          "x": 410,
+          "y": 198,
+          "width": 12,
+          "height": 10,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "workshop_hall"
+            },
+            {
+              "name": "storeys",
+              "type": "int",
+              "value": 1
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[17,1,9],\"items\":[{\"item\":\"shotshell_box\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[17,1,15],\"items\":[{\"item\":\"portable_radio\",\"count\":1},{\"item\":\"jerry_can\",\"count\":1}]}]"
+            }
+          ]
+        },
+        {
+          "id": 72,
+          "name": "Mike's Garage — office",
+          "type": "building",
+          "x": 422,
+          "y": 198,
+          "width": 5,
+          "height": 4,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "workshop_office"
+            },
+            {
+              "name": "storeys",
+              "type": "int",
+              "value": 1
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[4,1,4],\"items\":[{\"item\":\"workshop_notes\",\"count\":1}]}]"
+            }
+          ]
+        },
+        {
+          "id": 73,
+          "name": "Mike's Garage — parts store",
+          "type": "building",
+          "x": 422,
+          "y": 202,
+          "width": 5,
+          "height": 5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "workshop_parts_store"
+            },
+            {
+              "name": "storeys",
+              "type": "int",
+              "value": 1
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 74,
+          "name": "Mike's Garage — fenced yard",
+          "type": "building",
+          "x": 410,
+          "y": 189,
+          "width": 9,
+          "height": 9,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "workshop_yard"
+            },
+            {
+              "name": "storeys",
+              "type": "int",
+              "value": 1
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 76,
+          "name": "Camp wall north 440",
+          "type": "building",
+          "x": 440,
+          "y": 494,
+          "width": 16,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 77,
+          "name": "Camp wall north 456",
+          "type": "building",
+          "x": 456,
+          "y": 494,
+          "width": 16,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 78,
+          "name": "Camp wall north 480",
+          "type": "building",
+          "x": 480,
+          "y": 494,
+          "width": 16,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 79,
+          "name": "Camp wall north 496",
+          "type": "building",
+          "x": 496,
+          "y": 494,
+          "width": 16,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 80,
+          "name": "Camp wall south 440",
+          "type": "building",
+          "x": 440,
+          "y": 559,
+          "width": 16,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 81,
+          "name": "Camp wall south 456",
+          "type": "building",
+          "x": 456,
+          "y": 559,
+          "width": 16,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 82,
+          "name": "Camp wall south 480",
+          "type": "building",
+          "x": 480,
+          "y": 559,
+          "width": 16,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 83,
+          "name": "Camp wall south 496",
+          "type": "building",
+          "x": 496,
+          "y": 559,
+          "width": 16,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 84,
+          "name": "Camp wall west 495",
+          "type": "building",
+          "x": 441,
+          "y": 495,
+          "width": 16,
+          "height": 1,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 85,
+          "name": "Camp wall west 511",
+          "type": "building",
+          "x": 441,
+          "y": 511,
+          "width": 16,
+          "height": 1,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 86,
+          "name": "Camp wall west 527",
+          "type": "building",
+          "x": 441,
+          "y": 527,
+          "width": 16,
+          "height": 1,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 87,
+          "name": "Camp wall west 543",
+          "type": "building",
+          "x": 441,
+          "y": 543,
+          "width": 16,
+          "height": 1,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 88,
+          "name": "Camp wall east 495",
+          "type": "building",
+          "x": 512,
+          "y": 495,
+          "width": 16,
+          "height": 1,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 89,
+          "name": "Camp wall east 511",
+          "type": "building",
+          "x": 512,
+          "y": 511,
+          "width": 16,
+          "height": 1,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 90,
+          "name": "Camp wall east 527",
+          "type": "building",
+          "x": 512,
+          "y": 527,
+          "width": 16,
+          "height": 1,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 91,
+          "name": "Camp wall east 543",
+          "type": "building",
+          "x": 512,
+          "y": 543,
+          "width": 16,
+          "height": 1,
+          "rotation": 90,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_wall_run"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 92,
+          "name": "North outer gate 1",
+          "type": "building",
+          "x": 472,
+          "y": 494,
+          "width": 8,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_gate"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 95,
+          "name": "North pen west return",
+          "type": "building",
+          "x": 472,
+          "y": 495,
+          "width": 1,
+          "height": 8,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_gate_return"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 96,
+          "name": "North pen east return",
+          "type": "building",
+          "x": 479,
+          "y": 495,
+          "width": 1,
+          "height": 8,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_gate_return"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 97,
+          "name": "North inner gate 2 — damaged",
+          "type": "building",
+          "x": 472,
+          "y": 503,
+          "width": 8,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "camp_gate_damaged"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        }
       ]
     },
     {
@@ -499,6 +1864,46 @@
               "value": "dusk"
             }
           ]
+        },
+        {
+          "id": 67,
+          "name": "Runner on the camp approach",
+          "type": "shambler",
+          "point": true,
+          "x": 474,
+          "y": 486,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "runner"
+            }
+          ]
+        },
+        {
+          "id": 68,
+          "name": "Runner beyond the camp fence",
+          "type": "shambler",
+          "point": true,
+          "x": 520,
+          "y": 534,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "runner"
+            }
+          ]
         }
       ]
     },
@@ -596,10 +2001,22 @@
           "rotation": 0,
           "visible": true,
           "polygon": [
-            { "x": 0, "y": 0 },
-            { "x": 21, "y": 0 },
-            { "x": 25, "y": 11 },
-            { "x": 4, "y": 14 }
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 21,
+              "y": 0
+            },
+            {
+              "x": 25,
+              "y": 11
+            },
+            {
+              "x": 4,
+              "y": 14
+            }
           ],
           "properties": [
             {
@@ -781,6 +2198,30 @@
             {
               "x": 334.5,
               "y": 167
+            },
+            {
+              "x": 334.5,
+              "y": 185
+            },
+            {
+              "x": 348,
+              "y": 215
+            },
+            {
+              "x": 363,
+              "y": 275
+            },
+            {
+              "x": 378,
+              "y": 345
+            },
+            {
+              "x": 384,
+              "y": 395
+            },
+            {
+              "x": 384,
+              "y": 425
             }
           ],
           "properties": [
@@ -792,7 +2233,60 @@
           ]
         },
         {
-          "id": 55,
+          "id": 94,
+          "name": "Full-width dirt road from the medical compound to the north double gate",
+          "type": "track",
+          "x": 428.5,
+          "y": 274.5,
+          "width": 47.5,
+          "height": 235.5,
+          "rotation": 0,
+          "visible": true,
+          "polyline": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 11.5,
+              "y": 25.5
+            },
+            {
+              "x": 26.5,
+              "y": 85.5
+            },
+            {
+              "x": 41.5,
+              "y": 105.5
+            },
+            {
+              "x": 41.5,
+              "y": 155.5
+            },
+            {
+              "x": 47.5,
+              "y": 205.5
+            },
+            {
+              "x": 47.5,
+              "y": 235.5
+            }
+          ],
+          "properties": [
+            {
+              "name": "width",
+              "type": "float",
+              "value": 8
+            },
+            {
+              "name": "surface",
+              "type": "string",
+              "value": "dirt"
+            }
+          ]
+        },
+        {
+          "id": 75,
           "name": "Track spur to Mike's Garage",
           "type": "track",
           "x": 390,
@@ -802,13 +2296,62 @@
           "rotation": 0,
           "visible": true,
           "polyline": [
-            { "x": 0, "y": 0 },
-            { "x": 8, "y": 4 },
-            { "x": 15, "y": 12 },
-            { "x": 20, "y": 16.5 }
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 8,
+              "y": 4
+            },
+            {
+              "x": 15,
+              "y": 12
+            },
+            {
+              "x": 20,
+              "y": 16.5
+            }
           ],
           "properties": [
-            { "name": "width", "type": "float", "value": 2 }
+            {
+              "name": "width",
+              "type": "float",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "id": 93,
+          "name": "Southern wall breach route",
+          "type": "track",
+          "x": 476,
+          "y": 552,
+          "width": 0,
+          "height": 16,
+          "rotation": 0,
+          "visible": true,
+          "polyline": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ],
+          "properties": [
+            {
+              "name": "width",
+              "type": "float",
+              "value": 3
+            },
+            {
+              "name": "surface",
+              "type": "string",
+              "value": "dirt"
+            }
           ]
         }
       ]
