@@ -4,6 +4,10 @@ import type { RestAction } from '../core/longAction.ts';
 import type { Simulation } from '../core/sim.ts';
 import { labelForAction } from '../game/inputBindings.ts';
 
+export interface WaitViewAction {
+  readonly label: 'Waiting';
+}
+
 export interface RestViewModel {
   readonly visible: boolean;
   readonly label: string;
@@ -15,7 +19,7 @@ export interface RestViewModel {
 }
 
 export const restViewModel = (
-  action: RestAction | undefined,
+  action: RestAction | WaitViewAction | undefined,
   canStop: boolean,
   sim: Simulation,
   messagesVisible: boolean,
@@ -23,10 +27,13 @@ export const restViewModel = (
   if (!action) {
     return { visible: false, label: '', clock: '', percent: 0, stopHint: '', canStop: false, prompt: undefined };
   }
-  const percent =
-    action.startFatigue > 0
-      ? Math.min(100, Math.max(0, ((action.startFatigue - sim.needs.fatigue) / action.startFatigue) * 100))
-      : 100;
+  let percent = 0;
+  if ('startFatigue' in action) {
+    percent =
+      action.startFatigue > 0
+        ? Math.min(100, Math.max(0, ((action.startFatigue - sim.needs.fatigue) / action.startFatigue) * 100))
+        : 100;
+  }
   return {
     visible: true,
     label: action.label,
@@ -58,7 +65,7 @@ export const renderRest = ({
   messagesVisible,
 }: {
   root: HTMLElement;
-  action: RestAction | undefined;
+  action: RestAction | WaitViewAction | undefined;
   canStop: boolean;
   sim: Simulation;
   messagesVisible: boolean;

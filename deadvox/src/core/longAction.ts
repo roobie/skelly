@@ -15,7 +15,15 @@ export interface RestAction {
   rate: number;
   startFatigue: number;
 }
+const WAIT_CANCELLING_MOVEMENTS = new Set([
+  'movement.forward',
+  'movement.back',
+  'movement.left',
+  'movement.right',
+  'movement.jump',
+]);
 export type LongJob =
+  | { jobType: 'wait'; stopped: boolean; last: number }
   | { jobType: RestKind; stopped: boolean; last: number; elapsed: number; rest: RestAction }
   | { jobType: 'craft'; stopped: boolean; last: number; workUid: number }
   | { jobType: 'reading'; stopped: boolean; last: number; bookUid: number; elapsed: number; duration: number }
@@ -162,6 +170,11 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
         throw new Error('Invalid craft descriptor');
       }
       return;
+    case 'wait':
+      if ('rest' in job || 'elapsed' in job) {
+        throw new Error('Invalid wait descriptor');
+      }
+      return;
     case 'reading':
       validateReading(job);
       return;
@@ -241,6 +254,21 @@ export class LongActions {
       }
     }
     this.current = state.job === null ? undefined : structuredClone(state.job);
+  }
+  startWait(): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
+    if (this.current && !this.current.stopped) {
+      return 'Stop the current action first';
+    }
+    const result = this.sim.compressLongAction();
+    if (!result.ok) {
+      return result.reason;
+    }
+    this.current = { jobType: 'wait', stopped: false, last: this.sim.time };
+    return undefined;
   }
   startRest(kind: RestKind, rate: number, furnitureUid: number): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
@@ -502,10 +530,19 @@ export class LongActions {
     this.sim.compression.stop();
     return true;
   }
+  cancelWaitForMovement(action: string): boolean {
+    if (this.current?.jobType !== 'wait' || !WAIT_CANCELLING_MOVEMENTS.has(action)) {
+      return false;
+    }
+    this.stop();
+    return true;
+  }
   /** No payload is discarded. A second Stop cannot spend more time. */
   stop(): void {
     this.advance(this.sim.time);
-    if (this.current) {
+    if (this.current?.jobType === 'wait') {
+      this.current = undefined;
+    } else if (this.current) {
       this.current.stopped = true;
     }
     this.sim.compression.stop();
@@ -611,6 +648,9 @@ export class LongActions {
       job.elapsed = Math.min(job.duration, job.elapsed + seconds);
       return job.elapsed === job.duration;
     }
+    if (job.jobType === 'wait') {
+      return false;
+    }
     job.elapsed += seconds;
     return this.sim.needs.fatigue <= 0;
   }
@@ -630,7 +670,7 @@ export class LongActions {
         if (reason !== true) {
           this.failedEffect(job, new Error(reason));
         }
-      } else {
+      } else if (job.jobType !== 'wait') {
         this.notice('You feel rested');
       }
     } catch (error) {

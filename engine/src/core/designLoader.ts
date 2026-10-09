@@ -1,6 +1,6 @@
 // Design loader: text or a parsed value in, DesignLoadResult out (PROJECT.md,
 // "3.0a contracts"). Domain-agnostic: the domain, the resolved template and the
-// prefab catalogue are all explicit inputs, so core imports no gun data.
+// prefab catalogue are all explicit inputs, so the loader imports no domain data.
 //
 // Fatal (a load error): invalid JSON or shape, an unknown format, an unknown
 // prefab id or version. Non-fatal (a draft with issues): an infeasible design,
@@ -38,7 +38,7 @@ import { validate } from './validate.ts';
 /**
  * One catalogue revision. `family` is the domain's registry key (the key in
  * `Domain.families`, as stored in `PartInstance.family`); it is not
- * `PartDef.family`. The gun catalogue's `PrefabCatalogueEntry` fits this.
+ * `PartDef.family`. A domain's prefab catalogue entry can provide this shape.
  */
 interface DesignPrefabEntry {
   readonly id: string;
@@ -52,6 +52,8 @@ export interface DesignLoadInputs {
   /** The template the design claims to belong to, already resolved by the caller. */
   readonly template: Template;
   readonly prefabs: readonly DesignPrefabEntry[];
+  /** Additional domain-specific checks, using the resolved design already built by this load. */
+  readonly validateDesign?: (design: Design, resolved: Resolved) => readonly DesignIssue[];
 }
 
 const SUPPORTED_FORMAT = 1;
@@ -119,25 +121,10 @@ const parseOrigin = (value: unknown): Parsed<DesignOrigin> => {
 };
 
 /** Shape-checks everything after the format gate. */
-const parseOptionalCalibre = (value: unknown): Parsed<string | undefined> => {
-  if (value === undefined) {
-    return success(undefined);
-  }
-  const parsed = parseString(value, 'calibre');
-  if (!parsed.ok) {
-    return parsed;
-  }
-  return parsed.value.trim() === '' ? failure('calibre', 'expected a non-empty cartridge id') : parsed;
-};
-
 const parseDesignBody = (raw: Record<string, unknown>): Parsed<Design> => {
   const template = parseString(raw.template, 'template');
   if (!template.ok) {
     return template;
-  }
-  const calibre = parseOptionalCalibre(raw.calibre);
-  if (!calibre.ok) {
-    return calibre;
   }
   if (raw.status !== 'draft' && raw.status !== 'published') {
     return failure('status', `expected "draft" or "published", got ${JSON.stringify(raw.status) ?? 'nothing'}`);
@@ -170,7 +157,6 @@ const parseDesignBody = (raw: Record<string, unknown>): Parsed<Design> => {
   return success({
     format: SUPPORTED_FORMAT,
     template: template.value,
-    ...(calibre.value === undefined ? {} : { calibre: calibre.value }),
     assembly: assembly.assembly,
     locks: locks.value,
     status: raw.status,
@@ -287,52 +273,7 @@ const slotIssues = (slot: SlotTemplate, assembly: Assembly, domain: Domain): Des
   return issues;
 };
 
-const calibreIssues = (design: Design, template: Template, resolved: Resolved): DesignIssue[] => {
-  if (design.calibre === undefined) {
-    return [];
-  }
-  const mappings = template.calibreParams ?? [];
-  if (mappings.length === 0) {
-    return template.calibre !== undefined && design.calibre !== template.calibre
-      ? [
-          {
-            code: 'template-choice',
-            message: `the design calibre is "${design.calibre}", but template "${template.name}" specifies "${template.calibre}"`,
-            path: 'calibre',
-          },
-        ]
-      : [];
-  }
-  const resolvedParams = resolved.params;
-  return mappings.flatMap(({ slot, param, byCalibre }) => {
-    const expected = byCalibre[design.calibre!];
-    if (expected === undefined) {
-      return [
-        {
-          code: 'template-choice',
-          message: `template "${template.name}" has no ${slot}.${param} choice for calibre "${design.calibre}"`,
-          path: 'calibre',
-        },
-      ];
-    }
-    if (!design.assembly.parts[slot]) {
-      return [];
-    }
-    const actual = resolvedParams.get(slot)?.[param]?.value;
-    return actual === undefined || actual === expected
-      ? []
-      : [
-          {
-            code: 'template-choice',
-            message: `${slot}.${param} is "${actual}", but calibre "${design.calibre}" requires "${expected}"`,
-            path: partPath(slot, 'params', param),
-            parts: [slot],
-          },
-        ];
-  });
-};
-
-const templateIssues = (design: Design, template: Template, domain: Domain, resolved: Resolved): DesignIssue[] => {
+const templateIssues = (design: Design, template: Template, domain: Domain): DesignIssue[] => {
   const issues: DesignIssue[] = [];
   if (design.template !== template.name) {
     issues.push({
@@ -341,7 +282,6 @@ const templateIssues = (design: Design, template: Template, domain: Domain, reso
       path: 'template',
     });
   }
-  issues.push(...calibreIssues(design, template, resolved));
   if (design.assembly.root !== template.root) {
     issues.push({
       code: 'template-choice',
@@ -471,7 +411,8 @@ export const loadDesignValue = (raw: unknown, inputs: DesignLoadInputs): DesignL
   }
   const validation = validate(design.assembly, inputs.domain);
   const issues = [
-    ...templateIssues(design, inputs.template, inputs.domain, validation.resolved),
+    ...(inputs.validateDesign?.(design, validation.resolved) ?? []),
+    ...templateIssues(design, inputs.template, inputs.domain),
     ...prefabIssues(design.assembly, inputs.prefabs),
     ...feasibilityIssues(validation.resolved, validation.issues),
   ];

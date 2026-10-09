@@ -193,8 +193,9 @@ is not permission to model a visible gap: the revolver's frame/grip/trigger-guar
 junction is a zero-gap shared-solid contract checked by `revolver-grip-joint`.
 The shared frame between domains is metres; an assembly belongs to one domain,
 so a scene that shows two domains is two assemblies placed in metres, with no
-rule checks between them. The tolerances in `conventions.ts` other than the contact gap are
-still the gun's numbers in u.
+rule checks between them. The generic defaults in
+`../engine/src/core/conventions.ts#TOLERANCE` were tuned against Gungen's u-scale;
+a new domain should assess their magnitudes against its own units.
 
 **Revolved solids.** `RevolvedSolid` (`../engine/src/core/schema.ts#RevolvedSolid`) is a
 third kind of solid: a profile of (axial, radial) points turned about an axis
@@ -898,14 +899,12 @@ Current limits the plan works within:
 - **3.0b Implement:** parsing, anchors for every archetype, and the palette
   migration. Done (see "3.0b (implemented)").
 
-The target engine boundary is to keep firearm and domain names out of the
-shared package: core functions take domain data explicitly, and the gun domain
-supplies it. For g60, move the firearm names still in the engine—calibre params
-and selection, design calibre validation, and the GLB generator brand—behind
-Gungen adapters. The engine `Domain` has no template registry
-(`../engine/src/core/schema.ts#Domain`), so functions that need a template take
-the resolved `Template`, and the export takes anchors and palette as arguments.
-See `../engine/README.md`, `Shared engine`, for the package boundary and g60 follow-up.
+The shared engine stays free of firearm vocabulary so other consumers can reuse
+its mechanisms without inheriting Gungen concepts. Gungen-specific persisted
+fields and export identity belong to the Gungen adapters; see
+`src/gun/designLoader.ts#loadGunDesignValue` and
+`src/gun/glbWriter.ts#exportGunGeometry`. The rationale for this boundary is in
+`../engine/README.md`, `Shared engine`.
 
 - **Design file.** A versioned `format` field, plus:
   - `template`: the template the design belongs to;
@@ -1091,9 +1090,10 @@ The firearm metadata extends the 3.0a `DeadvoxModelEntry`. New metadata fields
 are optional in the schema; byte-identical output is not a compatibility
 requirement. Structural anchors remain reference points; replaceable geometry
 uses item-owned slots so Deadvox can hide a baked node when no item is fitted.
-The design/template calibre keeps generated AK magazines matched to the gun's
-cartridge, because receiver compatibility with both patterns is not magazine
-ammunition interchangeability (`../engine/src/core/template.ts`, `Template`; `../engine/src/core/design.ts`, `Design`; `src/gun/templates.ts`, `ak`).
+Generated AK magazines remain tied to cartridge identity because receiver
+compatibility with both patterns does not imply ammunition interchangeability.
+The Gungen design adapter enforces that distinction; see
+`src/gun/designLoader.ts#loadGunDesignValue` and `src/gun/templates.ts`, `ak`.
 
 - `calibre?: string` is the exact cartridge-data id (not a display designation;
   e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,
@@ -1169,11 +1169,9 @@ an implementation except the ones that belong to later packages (`Suggest`,
   path and a message. The helpers `parseRecord`, `parseStringArray` and
   `parsePrefabReference` are exported for the loader. The CLI, the viewer and
   the fixture tests read files through it.
-- `../engine/src/core/designLoader.ts`: `loadDesign(text, inputs)` and
-  `loadDesignValue(value, inputs)` return the frozen `DesignLoadResult`.
-  `inputs` is `{ domain, template, prefabs }`, all explicit, so core imports no
-  gun data; `DesignPrefabEntry` is the shape a `PrefabCatalogueEntry` fits.
-  Neither function throws on bad input.
+- The engine loader has no firearm data dependency. Gungen applies persisted
+  firearm-field checks through `src/gun/designLoader.ts#loadGunDesignValue`,
+  reusing the assembly resolution already performed by the engine.
 - Fatal errors (`ok: false`, with `declaredStatus` when the file had a readable
   one): `invalid-json`, `invalid-shape` (with a `path`; a missing `format` is
   this code), `unsupported-format` (anything but `1`) and `unknown-prefab`
@@ -1365,12 +1363,11 @@ deadvox holds a model with +x forward and +y up
 
 **3.4 (implemented).**
 
-- API. `../engine/src/core/glb.ts#exportGlb` is the frozen `ExportGlb`; it also exports
-  `partNodeName` and `srgbToLinear`. `src/gun/exportGlb.ts#exportGunGlb(assembly,
-  asset)` resolves, selects the gun anchors and applies `GUN_PALETTE`; it
-  returns the writer's result, or the `AnchorSelectionError` for a missing or
-  ambiguous `hold`. Units and axes are in `src/gun/exportFrame.ts`. The frozen
-  types didn't change.
+- API. `../engine/src/core/glb.ts#exportGlb` owns neutral geometry writing.
+  `src/gun/exportGlb.ts#exportGunGlb` supplies firearm anchors and palette, while
+  `src/gun/glbWriter.ts#exportGunGeometry` keeps the Gungen asset identity and
+  `extras.gungen` namespace outside the shared package. Units and axes are in
+  `src/gun/exportFrame.ts`.
 - CLI: `npm run export:glb -- designs/archetype-ar.json --out <dir> [--entry-out
   <dir>] [--id <model_id>]` writes `<id>.glb` and `<id>.model.json` (the deadvox
   entry); `--entry-out` defaults to `--out`. It takes a design (has `format`) or

@@ -1,9 +1,9 @@
 // Pure design-editor state transitions and persistence. No DOM or rendering.
-import type { Design, DesignLocks, DesignOrigin, DesignStatus } from '@skelly/engine/core/design.ts';
-import { loadDesignValue } from '@skelly/engine/core/designLoader.ts';
+import type { DesignLocks, DesignOrigin, DesignStatus } from '@skelly/engine/core/design.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, Domain, PartInstance } from '@skelly/engine/core/schema.ts';
 import type { ParamChoice, Template } from '@skelly/engine/core/template.ts';
+import { type GunDesign, loadGunDesignValue } from '../gun/designLoader.ts';
 import { GUN_PREFABS, type PrefabCatalogue, type PrefabCatalogueEntry } from '../gun/prefabs.ts';
 import { clearParam, type EditResult, setParam, setSlotPresent } from './paramPanel.ts';
 
@@ -75,7 +75,7 @@ export const createEditorState = (
 };
 
 /** Converts a loaded design to editable viewer state without materializing implicit params. */
-export const editorStateFromDesign = (design: Design, template: Template | undefined): DesignEditorState => ({
+export const editorStateFromDesign = (design: GunDesign, template: Template | undefined): DesignEditorState => ({
   template,
   assembly: design.assembly,
   locks: design.locks,
@@ -353,7 +353,7 @@ const chosenAssembly = (state: DesignEditorState, domain: Domain): Assembly => {
 };
 
 export type SaveDesignResult =
-  | { readonly ok: true; readonly design: Design; readonly text: string }
+  | { readonly ok: true; readonly design: GunDesign; readonly text: string }
   | { readonly ok: false; readonly reason: DesignEditorError };
 
 /** Produces the design-file contract; implicit defaults and inherited values remain absent. */
@@ -367,7 +367,7 @@ export const saveDesign = (state: DesignEditorState, domain: Domain): SaveDesign
       return { ok: false, reason: 'family-not-allowed' };
     }
   }
-  const design: Design = {
+  const design: GunDesign = {
     format: 1,
     template: state.template.name,
     ...(state.calibre === undefined ? {} : { calibre: state.calibre }),
@@ -389,7 +389,7 @@ export const saveDesignForDownload = (
   if (!saved.ok || saved.design.status !== 'published' || !state.template) {
     return saved;
   }
-  const checked = loadDesignValue(saved.design, { domain, template: state.template, prefabs: GUN_PREFABS });
+  const checked = loadGunDesignValue(saved.design, { domain, template: state.template, prefabs: GUN_PREFABS });
   if (checked.ok && checked.issues.length === 0) {
     return saved;
   }

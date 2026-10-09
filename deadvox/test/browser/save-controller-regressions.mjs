@@ -214,7 +214,7 @@ try {
     }
   });
 
-  await test('title, two-hour checkpoint, and visible save-failure recovery', async () => {
+  await test('title, periodic checkpoint, and visible save-failure recovery', async () => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     const page = await context.newPage();
     const pageErrors = [];
@@ -294,6 +294,11 @@ try {
     await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
     const schedule = await page.evaluate(async () => {
       const { controller } = deadvoxSaveTest;
+      // The interval play bound from content; the schedule below is expressed in it.
+      const interval = controller.checkpoints?.intervalSimSeconds;
+      if (!(interval > 0)) {
+        throw new Error(`play bound no positive checkpoint interval: ${interval}`);
+      }
       let time = 0;
       let writes = 0;
       const measuredDurations = [];
@@ -303,28 +308,29 @@ try {
       };
       const bindAtCurrentTime = () =>
         controller.bindSession(controller.snapshot, () => time, controller.worldOptions, {
+          checkpointSimSeconds: interval,
           recordSnapshotDuration: (durationMs) => measuredDurations.push(durationMs),
         });
       bindAtCurrentTime();
       const samples = [];
-      for (time of [899.999, 900, 1800]) {
+      for (time of [0.999 * interval, interval, 2 * interval]) {
         controller.afterFrame();
         await new Promise((resolve) => setTimeout(resolve, 0));
         samples.push(writes);
       }
-      time = 900;
+      time = interval;
       bindAtCurrentTime();
-      for (time of [1799, 1800]) {
+      for (time of [1.5 * interval, 2 * interval]) {
         controller.afterFrame();
         await new Promise((resolve) => setTimeout(resolve, 0));
         samples.push(writes);
       }
       time = 0;
       bindAtCurrentTime();
-      time = 950; // the debug clock moved past the scheduled 900-second checkpoint
+      time = 1.5 * interval; // the debug clock moved past the first scheduled checkpoint
       controller.rearmAutosaveAfterTimeSeek();
       const afterSeek = [];
-      for (time of [950, 1799, 1800, 1801]) {
+      for (time of [1.5 * interval, 1.9 * interval, 2 * interval, 2.1 * interval]) {
         controller.afterFrame();
         await new Promise((resolve) => setTimeout(resolve, 0));
         afterSeek.push(writes);
@@ -432,7 +438,9 @@ try {
         snapshot.character.simulation.body.health = health;
         return snapshot;
       };
-      controller.bindSession(latestSnapshot, () => time, controller.worldOptions);
+      controller.bindSession(latestSnapshot, () => time, controller.worldOptions, {
+        checkpointSimSeconds: controller.checkpoints.intervalSimSeconds,
+      });
       storage.save = async (saveNamespace, encode) => {
         calls += 1;
         const call = calls;

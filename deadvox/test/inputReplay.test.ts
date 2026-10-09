@@ -148,6 +148,7 @@ const applyCommand = (
     craftStop: () => {
       runtime.sim.actions.stop();
     },
+    wait: () => runtime.sim.actions.startWait(),
     cancelItemThrow: () => undefined,
     throwItem: (itemUid, hand, distance) => throwItem?.(itemUid, hand, distance),
   });
@@ -1279,6 +1280,20 @@ describe('input replay', () => {
     expect(decoded.inputs.actions.map(({ action, context, payload }) => ({ action, context, payload }))).toEqual(
       commands.map((payload) => ({ action: payload.kind, context: 'inventory', payload })),
     );
+  });
+
+  it('round-trips a Wait command from the inventory', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    const payload = { kind: 'action.wait' } as const;
+    recorder.queueAction(payload.kind, 'down', 'inventory', { payload });
+    recorder.recordTick(replaySample);
+
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(decoded.inputs.actions).toEqual([
+      { tick: 0, action: payload.kind, phase: 'down', context: 'inventory', payload },
+    ]);
   });
 
   it('validates replay command identities and pickup modes', () => {

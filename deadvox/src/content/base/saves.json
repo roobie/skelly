@@ -1,0 +1,8 @@
+{
+  "saves": [
+    {
+      "checkpointSimSeconds": 120,
+      "id": "autosave"
+    }
+  ]
+}

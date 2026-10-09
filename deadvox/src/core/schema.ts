@@ -197,6 +197,12 @@ const InventoryTuningSchema = strictObject({
   containerMaxWidthCells: Cells,
 });
 
+const SaveTuningSchema = strictObject({
+  id: Id,
+  /** Simulated seconds of play between periodic checkpoints, independent of the clock ratio. */
+  checkpointSimSeconds: PositiveSimSeconds,
+});
+
 const WearableSchema = strictObject({
   slot: picklist(WEAR_SLOTS),
   /** 0–100: how much it slows and hampers you. */
@@ -1471,6 +1477,7 @@ const SECTION_DESCRIPTOR = {
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
   weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
+  saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };

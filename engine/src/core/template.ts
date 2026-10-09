@@ -51,19 +51,19 @@ export interface ConnectionTemplate {
   readonly when?: ParamCondition;
 }
 
-interface CalibreParamMapping {
+interface VariantParamMapping {
   readonly slot: string;
   readonly param: string;
-  readonly byCalibre: Readonly<Record<string, string>>;
+  readonly byVariant: Readonly<Record<string, string>>;
 }
 
 export interface Template {
   readonly name: string;
   readonly description: string;
-  /** Default cartridge-data id for generated designs, when the template defines one. */
-  readonly calibre?: string;
-  /** Generated part params selected by the template's calibre; curated designs may retain another offered value. */
-  readonly calibreParams?: readonly CalibreParamMapping[];
+  /** Selector key used by this template's domain-neutral parameter mappings. */
+  readonly variant?: string;
+  /** Generated parameter values selected by the template's variant key. */
+  readonly variantParams?: readonly VariantParamMapping[];
   readonly root: string;
   readonly slots: readonly SlotTemplate[];
   readonly connections: readonly ConnectionTemplate[];

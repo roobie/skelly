@@ -1317,7 +1317,7 @@ const runGenerator = (step = 0, preserveOverrides = false) => {
   baseline = generated;
   activeTemplate = template;
   editorState = createEditorState(template, generated, {
-    ...(template.calibre === undefined ? {} : { calibre: template.calibre }),
+    ...(template.variant === undefined ? {} : { calibre: template.variant }),
     origin: { template: template.name, seed, overrides: uiState.overrides },
   });
   if (hasOverrides(uiState.overrides)) {

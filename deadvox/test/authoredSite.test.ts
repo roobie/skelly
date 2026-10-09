@@ -18,11 +18,13 @@ import {
   standingHeight,
 } from '../src/core/authoredTerrain.mjs';
 import { SPAWN_TIMES } from '../src/core/clock.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { compassBearing, toChunk } from '../src/core/coords.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
+import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
+import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
 import { rectsOverlap } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
@@ -208,6 +210,38 @@ const openGroundHasNoise = (terrain: AuthoredTerrainCase): boolean => {
   }
   return false;
 };
+const withClearTemplateSpawn = (
+  contentRegistry: Registry,
+  definition: TemplateDef,
+  markerChar: string,
+  air: string,
+): TemplateDef | undefined => {
+  for (const [index, layer] of definition.layers.slice(1).entries()) {
+    const y = index + 1;
+    for (const [z, row] of layer.entries()) {
+      for (let x = 0; x < row.length; x += 1) {
+        if (row[x] !== air) {
+          continue;
+        }
+        const layers = definition.layers.map((rows) => [...rows]);
+        layers[y]![z] = `${row.slice(0, x)}${markerChar}${row.slice(x + 1)}`;
+        const candidate: TemplateDef = {
+          ...definition,
+          layers,
+          palette: {
+            ...definition.palette,
+            [markerChar]: { spawn: 'shambler', window: { fromGameTimeOfDay: 'dusk' } },
+          } as unknown as TemplateDef['palette'],
+        };
+        if (templateSpawnClearanceIssues(contentRegistry, compileTemplate(contentRegistry, candidate)).length === 0) {
+          return candidate;
+        }
+      }
+    }
+  }
+  return undefined;
+};
+
 const minimalLayoutBaselineIssues = buildRegistry([
   ...layoutValidationBase,
   { source: 'layout-test.json', data: { layouts: [layout] } },
@@ -285,6 +319,26 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
 };
 
 describe('authored layout acceptance', () => {
+  it('keeps the fixed camp amalgam clear of authored vehicle routes', () => {
+    const playtest = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
+      layouts: SiteLayoutDef[];
+    };
+    const camp = playtest.layouts[0]!;
+    const amalgams = camp.shamblers.filter(({ type }) => type === 'amalgam');
+    expect(amalgams.length).toBeGreaterThan(0);
+    const { blockSize } = makeScale(0.5);
+    for (const marker of amalgams) {
+      const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, blockSize);
+      const bodyRadius = Math.hypot(body.halfWidth, body.halfDepth ?? body.halfWidth) * blockSize;
+      const nearestTrackEdge = Math.min(
+        ...camp.tracks.map(
+          (track) => polylineDistance([marker.position[0], marker.position[2]], track.points) - track.width / 2,
+        ),
+      );
+
+      expect(nearestTrackEdge).toBeGreaterThan(bodyRadius);
+    }
+  });
   it('carries a spawn window from a template marker into its world column', () => {
     const templateSource = base.find((file) => file.source === 'templates.json')!;
     const templateFile = structuredClone(templateSource.data) as { templates: TemplateDef[] };
@@ -296,26 +350,9 @@ describe('authored layout acceptance', () => {
     const used = new Set(Object.keys(definition.palette));
     const markerChar = ['@', '$', '?', '!'].find((char) => !used.has(char));
     expect(markerChar).toBeDefined();
-    const layers = definition.layers.map((rows) => [...rows]);
-    let placed = false;
-    for (let y = 0; y < layers.length && !placed; y++) {
-      for (let z = 0; z < layers[y]!.length && !placed; z++) {
-        const x = layers[y]![z]!.indexOf(air!);
-        if (x >= 0) {
-          layers[y]![z] = `${layers[y]![z]!.slice(0, x)}${markerChar}${layers[y]![z]!.slice(x + 1)}`;
-          placed = true;
-        }
-      }
-    }
-    expect(placed).toBe(true);
-    templateFile.templates[templateIndex] = {
-      ...definition,
-      layers,
-      palette: {
-        ...definition.palette,
-        [markerChar!]: { spawn: 'shambler', window: { fromGameTimeOfDay: 'dusk' } },
-      } as unknown as TemplateDef['palette'],
-    };
+    const timedTemplate = withClearTemplateSpawn(registry, definition, markerChar!, air!);
+    expect(timedTemplate).toBeDefined();
+    templateFile.templates[templateIndex] = timedTemplate!;
     const files = base.map((file) =>
       file.source === templateSource.source ? { source: file.source, data: templateFile } : file,
     );
@@ -375,6 +412,40 @@ describe('authored layout acceptance', () => {
       { ...layout, player: { ...layout.player, position: [72, 22.5, 65] } },
       'supported surface',
     );
+  });
+  it('rejects an amalgam whose feet are clear but whose full envelope intersects a building', () => {
+    const template: TemplateDef = {
+      id: 'spawn_clearance_fixture',
+      size: [4, 4, 4],
+      palette: { '.': 'air', '#': 'planks', z: { spawn: 'amalgam' } },
+      layers: [
+        ['####', '####', '####', '####'],
+        ['....', '#.z.', '....', '....'],
+        ['....', '....', '....', '....'],
+        ['....', '....', '....', '....'],
+      ],
+    };
+    const fixtureRegistry = {
+      ...registry,
+      templates: new Map(registry.templates).set(template.id, template),
+    };
+    const site = {
+      ...validationLayout('spawn_clearance_fixture'),
+      buildings: [{ template: template.id, position: [4, 0, 4] as [number, number, number], rotation: 0, storeys: 1 }],
+      player: { position: [2, 0.5, 2], bearing: 0 },
+      shamblers: [{ type: 'amalgam', position: [4.8, 0.5, 4.5], chance: 1 }],
+    } as SiteLayoutDef;
+
+    const amalgamIssues = authoredLayoutIssues(site, fixtureRegistry).map(([path]) => path);
+    const smallZombieSite = {
+      ...site,
+      shamblers: [{ ...site.shamblers[0]!, type: 'shambler' }],
+    };
+
+    expect(authoredLayoutIssues(smallZombieSite, fixtureRegistry).map(([path]) => path)).not.toContain(
+      '.shamblers[0].position',
+    );
+    expect(amalgamIssues).toContain('.shamblers[0].position');
   });
   it('rejects an elevated shambler spawn without support', () => {
     const supported = validationLayout('shambler_support_fixture');

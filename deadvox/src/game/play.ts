@@ -65,7 +65,7 @@ import {
 import { playReadout } from '../ui/playReadout.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
-import { renderRest } from '../ui/rest.ts';
+import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { GameAudio } from './audio.ts';
 import {
@@ -74,6 +74,7 @@ import {
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
+import { continueActionResumesJob } from './continueAction.ts';
 import type { DebugHooks, DebugModule, DebugRuntime, InputReplayStatusState } from './debugInterface.ts';
 import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
@@ -413,6 +414,14 @@ const configureReplayStreaming = (streamer: Engine['streamer'], replay: StartPla
   if (replay) {
     streamer.setReplayControlled();
   }
+};
+
+const autosaveCheckpointSimSeconds = (registry: Engine['registry']): number => {
+  const autosave = registry.saves.get('autosave');
+  if (!autosave) {
+    throw new Error('Missing autosave tuning');
+  }
+  return autosave.checkpointSimSeconds;
 };
 
 export const startPlay = (
@@ -1320,7 +1329,7 @@ export const startPlay = (
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {
-    if (sim.actions.job?.jobType === 'pry') {
+    if (sim.actions.job?.jobType === 'pry' || sim.actions.job?.jobType === 'wait') {
       sim.actions.stop();
     } else {
       rest.stop();
@@ -1373,12 +1382,7 @@ export const startPlay = (
     if (continueWork()) {
       return;
     }
-    if (
-      rest.action ||
-      sim.actions.job?.jobType === 'reading' ||
-      sim.actions.job?.jobType === 'pry' ||
-      sim.actions.job?.jobType === 'treatment'
-    ) {
+    if (rest.action || continueActionResumesJob(sim.actions.job?.jobType)) {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
         showRefusal(`Can't continue: ${reason}`, sim.time);
@@ -1395,6 +1399,7 @@ export const startPlay = (
     }
     if (
       sim.actions.job?.jobType === 'craft' ||
+      sim.actions.job?.jobType === 'wait' ||
       sim.actions.job?.jobType === 'reading' ||
       sim.actions.job?.jobType === 'pry' ||
       sim.actions.job?.jobType === 'treatment'
@@ -1438,6 +1443,7 @@ export const startPlay = (
     craftStop: () => {
       stopAction();
     },
+    wait: () => sim.actions.startWait(),
     cancelItemThrow,
     throwItem: throwRecordedItem,
   };
@@ -1451,7 +1457,7 @@ export const startPlay = (
       if (item) {
         showNotice(`${inventory.name(item)} on quickbar ${payload.slot + 1}`);
       }
-    } else if (payload.kind === 'craft.start') {
+    } else if (payload.kind === 'craft.start' || payload.kind === 'action.wait') {
       closeInventoryScreen();
       syncMenuState();
     }
@@ -1837,6 +1843,7 @@ export const startPlay = (
     releaseCommand(action, at, slot);
   };
   const dispatchPressCommand = (action: string, at: number, slot: number | undefined): void => {
+    sim.actions.cancelWaitForMovement(action);
     if (action === 'ui.main-menu-toggle') {
       modalCommand(action);
       return;
@@ -3037,6 +3044,24 @@ export const startPlay = (
   const updateGore = (dt: RealSeconds): void => {
     view.gore.update(sim.paused ? 0 : dt, engine.isSolid, { zombies: zombieStore, listener: body.pos });
   };
+  const waitViewAction = (): WaitViewAction | undefined => {
+    const { job } = sim.actions;
+    if (job?.jobType !== 'wait' || (job.stopped && compression.interruption === undefined)) {
+      return undefined;
+    }
+    return { label: 'Waiting' };
+  };
+  const renderRestAndWait = (messagesVisible: boolean): void => {
+    const waitAction = waitViewAction();
+    document.body.classList.toggle('resting', rest.action !== undefined);
+    renderRest({
+      root: restBox,
+      action: rest.action ?? waitAction,
+      canStop: rest.canStop || waitAction !== undefined,
+      sim,
+      messagesVisible,
+    });
+  };
 
   const frame = (now: RealTimestamp) => {
     const workStart = realNow();
@@ -3120,14 +3145,7 @@ export const startPlay = (
         prompt: promptText(now, visible),
       },
     );
-    document.body.classList.toggle('resting', rest.action !== undefined);
-    renderRest({
-      root: restBox,
-      action: rest.action,
-      canStop: rest.canStop,
-      sim,
-      messagesVisible: visible.messages,
-    });
+    renderRestAndWait(visible.messages);
     const currentPresentation = handlingPresentationFor({
       job: sim.actions.job,
       queue,
@@ -3184,7 +3202,10 @@ export const startPlay = (
       captureSnapshot,
       () => sim.time,
       { blockSize: s, site: config.site, storeys: config.storeys, density: config.density },
-      { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
+      {
+        checkpointSimSeconds: autosaveCheckpointSimSeconds(registry),
+        recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs),
+      },
     );
   }
   inputRecorder = createInputReplayRecorder(
