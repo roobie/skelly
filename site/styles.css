@@ -13,7 +13,7 @@
   --ember-light: #d88e4b;
   --ember-bright: #f2b66e;
   --bg: var(--rock-dark);
-  --panel: rgba(195, 196, 184, 0.88);
+  --panel: color-mix(in srgb, var(--rock-light) 88%, transparent);
   --control: var(--rock-light);
   --text: var(--rock-dark);
   --muted: var(--moss);
@@ -29,7 +29,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --panel: rgba(43, 46, 42, 0.88);
+    --panel: color-mix(in srgb, var(--rock-dark) 88%, transparent);
     --control: var(--rock-dark);
     --text: var(--rock-light);
     --muted: var(--moss-light);
