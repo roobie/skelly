@@ -3,9 +3,15 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
+const selectLanguage = (languages, search) => {
+  const documentElement = {};
+  const language = applyPlaytestLanguage(documentElement, languages, search);
+  return { language, htmlLang: documentElement.lang };
+};
 const page = read('site/launcher.js');
 const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
 const SELECT_PATTERN = /<select\b/;
@@ -96,6 +102,32 @@ const coverageFailures = (description, supportedValues, offeredValues, intention
       .map((value) => `${description} does not offer supported value ${value}`),
   ];
 };
+
+describe('playtest language and catalog', () => {
+  it('chooses Swedish when a Swedish browser tag comes before English', () => {
+    assert.deepEqual(selectLanguage(['sv-FI', 'en-US'], ''), { language: 'sv', htmlLang: 'sv' });
+  });
+
+  it('chooses English when English comes before Swedish', () => {
+    assert.deepEqual(selectLanguage(['en-US', 'sv-SE'], ''), { language: 'en', htmlLang: 'en' });
+  });
+
+  it('chooses English when no Swedish browser tag is listed', () => {
+    assert.deepEqual(selectLanguage(['fi-FI', 'en-US'], ''), { language: 'en', htmlLang: 'en' });
+  });
+
+  it('honors either supported language override', () => {
+    assert.deepEqual(selectLanguage(['en-US', 'sv-SE'], '?lang=sv'), { language: 'sv', htmlLang: 'sv' });
+    assert.deepEqual(selectLanguage(['sv-SE', 'en-US'], '?lang=en'), { language: 'en', htmlLang: 'en' });
+  });
+
+  it('provides the same playtest string keys in both languages', () => {
+    const catalog = JSON.parse(read('site/playtest.json'));
+    const englishKeys = Object.keys(catalog.en).sort();
+    assert.ok(englishKeys.length > 0, 'the English playtest catalog has strings');
+    assert.deepEqual(englishKeys, Object.keys(catalog.sv).sort());
+  });
+});
 
 describe('site launchers track the games’ URL parameters', () => {
   it('offers every supported deadvox URL parameter except documented omissions', () => {
