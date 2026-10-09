@@ -598,43 +598,27 @@ try {
   const startWaitFromButton = async () => {
     const noticeBefore = await page.evaluate(() => globalThis.pumpHandlingTest.getNotice());
     await clickWaitButton();
-    await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
-    try {
-      await page.waitForFunction(
-        (previousNotice) => {
-          const { session, getNotice } = globalThis.pumpHandlingTest;
-          return session.sim.actions.job?.jobType === 'wait' || getNotice() !== previousNotice;
-        },
-        noticeBefore,
-        { timeout: 5000 },
-      );
-    } catch (error) {
-      const state = await page.evaluate(() => {
-        const { input, screen, session, getNotice } = globalThis.pumpHandlingTest;
-        return {
-          job: session.sim.actions.job,
-          activeTab: screen.activeTab,
-          locked: input.locked,
-          menuPointer: input.menuPointer,
-          cursor: [input.cursorX, input.cursorY],
-          buttonClicks: globalThis.waitButtonClickEvents.length,
-          waitDispatches: globalThis.waitDispatches.length,
-          notice: getNotice(),
-          simTime: session.sim.time,
-          paused: session.sim.paused,
-          bodyActionRefusal: session.body.actionRefusal,
-          compressionActive: session.sim.compression.active,
-          compressionInterruption: session.sim.compression.interruption,
-          unsafeReason: session.zombies.unsafeReason(),
-        };
-      });
-      throw new Error(`Wait button neither started nor refused: ${JSON.stringify(state)}`, { cause: error });
-    }
-    const jobType = await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.actions.job?.jobType);
+    const state = await page.evaluate((previousNotice) => {
+      const { session, getNotice } = globalThis.pumpHandlingTest;
+      for (let frames = 0; frames < 60; frames += 1) {
+        const job = session.sim.actions.job;
+        const notice = getNotice();
+        if (job?.jobType === 'wait' || notice !== previousNotice) {
+          return { job, notice, frames, simTime: session.sim.time };
+        }
+        globalThis.pumpManualFrames.step(1 / 60);
+      }
+      return {
+        job: session.sim.actions.job,
+        notice: getNotice(),
+        frames: 60,
+        simTime: session.sim.time,
+      };
+    }, noticeBefore);
     assert.equal(
-      jobType,
+      state.job?.jobType,
       'wait',
-      `Wait button was refused: ${await page.evaluate(() => globalThis.pumpHandlingTest.getNotice())}`,
+      `Wait button did not start after bounded simulated frames: ${JSON.stringify(state)}`,
     );
   };
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
