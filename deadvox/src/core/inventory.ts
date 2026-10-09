@@ -9,6 +9,8 @@ import {
   type HandedCharacter,
   SKILL_LEVEL_LEGENDARY,
   SKILL_LEVEL_MIN,
+  skillEffectLevel,
+  skillSaturation,
 } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -56,6 +58,15 @@ export const HANDLING = {
   /** Putting on or taking off a worn item. */
   wear: 2.0,
 } as const;
+
+const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
+  const tuning = registry.skills.get('inventory_management')?.inventory;
+  if (!tuning) {
+    return 1;
+  }
+  const level = skillEffectLevel(character.skills?.inventory_management ?? SKILL_LEVEL_MIN);
+  return skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
+};
 
 /** What one block of floor holds. */
 export const PILE_GRID: GridSize = { w: 8, h: 6 };
@@ -854,7 +865,12 @@ export class Inventory {
           return HANDLING.ground + perCell;
       }
     })();
-    return out + into;
+    return this.scaleHandlingTime(out + into);
+  }
+
+  /** Applies Inventory Management's timing effect to another inventory-handling action. */
+  scaleHandlingTime(seconds: number): number {
+    return seconds * inventoryHandlingFactor(this.registry, this.character);
   }
 
   furnitureHandling(entity: BlockEntity, pocket: number): number {

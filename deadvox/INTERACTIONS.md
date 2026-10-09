@@ -12,6 +12,7 @@ read_if:
   - you change movement or action input during long actions
   - you reconcile BR's interaction rulings with actor handedness
   - you change quickbar hand displacement or automatic item-stow behavior
+  - "you change inventory handling costs or training"
   - you change long-action admission or interruption behavior
 ---
 
@@ -109,8 +110,12 @@ The arrow only points one way: `ui` reads `core` and calls its commands;
 Each item carries its location and the handling time to bring it to your
 hands, from `src/core/inventory.ts`, `Inventory.handlingTime`. The inventory's
 "around" pane, crafting planner, gathering, appliance panel and a dead light's
-spare-battery search all
-read the same snapshot.
+spare-battery search all read the same snapshot. Inventory Management speeds
+ordinary transfers and their derived gathering estimates, box unpacking and
+furniture searches, and awards practice only after successful completion.
+Firearms Combat owns firearm readiness, reload, rack, magazine insert/remove and
+firearm-attachment fitting/removal. Attachment fitting and removal take a fixed
+time outside both skill effects; Inventory Management does not speed them.
 
 The snapshot is cached against the inventory, block-entity and player-block
 versions, so a redraw that changes nothing does not rebuild it. There is one
