@@ -796,12 +796,17 @@ const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {
 };
 
 const reportCamoSettingMismatch = (first: BlockDef, block: BlockDef, report: Report): void => {
-  if (!first.patternPalette || first.patternWashout === undefined || !block.patternPalette || block.patternWashout === undefined) {
+  if (
+    !first.patternPalette ||
+    first.patternWashout === undefined ||
+    !block.patternPalette ||
+    block.patternWashout === undefined
+  ) {
     return;
   }
   const paletteDiffers = block.patternPalette.some((color, i) => color !== first.patternPalette?.[i]);
   const washoutDiffers = block.patternWashout !== first.patternWashout;
-  if (!paletteDiffers && !washoutDiffers) {
+  if (!(paletteDiffers || washoutDiffers)) {
     return;
   }
   report(
@@ -813,16 +818,14 @@ const reportCamoSettingMismatch = (first: BlockDef, block: BlockDef, report: Rep
 };
 
 const checkCamoBlocks = (registry: Registry, report: Report): void => {
-  const camoBlocks = registry.blocks.filter((block) => block.pattern === 'camo');
-  const first = camoBlocks[0];
+  const [first, ...rest] = registry.blocks.filter((block) => block.pattern === 'camo');
   if (!first) {
     return;
   }
 
-  for (const block of camoBlocks) {
+  reportMissingCamoSettings(first, report);
+  for (const block of rest) {
     reportMissingCamoSettings(block, report);
-  }
-  for (const block of camoBlocks.slice(1)) {
     reportCamoSettingMismatch(first, block, report);
   }
 };
