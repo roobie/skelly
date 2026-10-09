@@ -83,9 +83,22 @@ try {
       `http://127.0.0.1:${address.port}/?debug=1&actors=detailed&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
-  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
-    timeout: 30_000,
-  });
+  try {
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
+      timeout: 30_000,
+    });
+  } catch (error) {
+    const startupState = await page.evaluate(() => ({
+      readyState: document.readyState,
+      goDisabled: document.querySelector('#go')?.getAttribute('aria-disabled'),
+      startupScreenHidden: document.querySelector('#startup-screen')?.hidden,
+      startupStatus: document.querySelector('#save-status')?.textContent,
+      errors: document.querySelector('#errors')?.textContent,
+    }));
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
+    );
+  }
   await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view')));
   const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
