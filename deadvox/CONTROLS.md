@@ -29,11 +29,12 @@ both independently scrolling panes.
 - **Keyboard controls:** The binding catalogue drives the controls card and
   settings, so rebinding updates the displayed key labels. The main-menu controls
   list uses case-insensitive substring search over action descriptions and key
-  labels; native text ownership keeps search keystrokes from activating game
-  actions. Ordinary runs hide debug-marked bindings and bindings scoped only to
-  debug contexts because those controls are unavailable there; debug runs include
-  them where usable. Debug actions use the held gate, with noclip flight controls
-  as the readily available exception. See `src/game/inputBindings.ts`,
+  labels. Plain substring matching keeps results predictable: a partial action or
+  key name returns every matching row without ranking. Native text ownership keeps
+  search keystrokes from activating game actions. Ordinary runs hide debug-marked
+  bindings and bindings scoped only to debug contexts because those controls are
+  unavailable there; debug runs list them all. Debug actions use the held gate,
+  with noclip flight controls as the readily available exception. See `src/game/inputBindings.ts`,
   `INPUT_BINDINGS`, `DEBUG_ONLY_CONTEXTS`, `KeyboardInput.install`,
   `noclip.ascend` and `noclip.descend`, and `src/game/controls.ts`,
   `controlsCardRows` and `filterControlsCardRows`; settings use

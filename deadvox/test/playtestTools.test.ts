@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { controlsCardRows, filterControlsCardRows } from '../src/game/controls.ts';
-import { BindingRegistry, DEBUG_ONLY_CONTEXTS, INPUT_BINDINGS } from '../src/game/inputBindings.ts';
+import { BindingRegistry, DEBUG_ONLY_CONTEXTS, INPUT_BINDINGS, INPUT_CONTEXTS } from '../src/game/inputBindings.ts';
 import {
   loadMetrics,
   measureSnapshots,
@@ -374,15 +374,14 @@ describe('controls card', () => {
   });
   it('shows table-derived debug-only bindings only during debug runs', () => {
     const registry = new BindingRegistry(INPUT_BINDINGS);
-    const debugOnly = INPUT_BINDINGS.filter(
-      (binding) => binding.debug || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context)),
-    );
-    const ordinaryIds = INPUT_BINDINGS.filter(
-      (binding) => !(binding.debug || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context))),
-    ).map(({ id }) => id);
+    const isDebugOnly = (binding: (typeof INPUT_BINDINGS)[number]) =>
+      binding.debug || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context));
+    const debugOnly = INPUT_BINDINGS.filter(isDebugOnly);
+    const ordinaryIds = INPUT_BINDINGS.filter((binding) => !isDebugOnly(binding)).map(({ id }) => id);
     const ordinaryRows = new Set(controlsCardRows(registry).map(({ id }) => id));
     const debugRows = new Set(controlsCardRows(registry, true).map(({ id }) => id));
 
+    expect(INPUT_CONTEXTS.noclip).toBe(true);
     expect(debugOnly.length).toBeGreaterThan(0);
     expect(debugOnly.every(({ id }) => !ordinaryRows.has(id))).toBe(true);
     expect(debugOnly.every(({ id }) => debugRows.has(id))).toBe(true);

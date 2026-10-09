@@ -1,25 +1,23 @@
 // biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
 // biome-ignore-all lint/style/noExcessiveClassesPerFile: preferences and their single DOM resolver share the enforced keyboard boundary.
 
-export type InputContext =
-  | 'title'
-  | 'menu'
-  | 'inventory'
-  | 'reading'
-  | 'spawn'
-  | 'debug-panel'
-  | 'review-map'
-  | 'build'
-  | 'noclip'
-  | 'play'
-  | 'interrupted';
-export const DEBUG_ONLY_CONTEXTS: ReadonlySet<InputContext> = new Set([
-  'build',
-  'debug-panel',
-  'review-map',
-  'spawn',
-  'noclip',
-]);
+export const INPUT_CONTEXTS = {
+  title: false,
+  menu: false,
+  inventory: false,
+  reading: false,
+  spawn: true,
+  'debug-panel': true,
+  'review-map': true,
+  build: true,
+  noclip: true,
+  play: false,
+  interrupted: false,
+} as const satisfies Record<string, boolean>;
+export type InputContext = keyof typeof INPUT_CONTEXTS;
+export const DEBUG_ONLY_CONTEXTS: ReadonlySet<InputContext> = new Set(
+  (Object.keys(INPUT_CONTEXTS) as InputContext[]).filter((context) => INPUT_CONTEXTS[context]),
+);
 type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold';
 export type Modifier = 'shift' | 'alt' | 'ctrl' | 'meta';
 export interface Chord {
