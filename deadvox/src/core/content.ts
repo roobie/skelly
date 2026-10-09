@@ -786,32 +786,44 @@ const checkKeys = (registry: Registry, report: Report) => {
   }
 };
 
+const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {
+  if (!block.patternPalette) {
+    report('blocks', block.id, '.patternPalette', 'camo blocks require a four-colour pattern palette');
+  }
+  if (block.patternWashout === undefined) {
+    report('blocks', block.id, '.patternWashout', 'camo blocks require a pattern washout value');
+  }
+};
+
+const reportCamoSettingMismatch = (first: BlockDef, block: BlockDef, report: Report): void => {
+  if (!first.patternPalette || first.patternWashout === undefined || !block.patternPalette || block.patternWashout === undefined) {
+    return;
+  }
+  const paletteDiffers = block.patternPalette.some((color, i) => color !== first.patternPalette?.[i]);
+  const washoutDiffers = block.patternWashout !== first.patternWashout;
+  if (!paletteDiffers && !washoutDiffers) {
+    return;
+  }
+  report(
+    'blocks',
+    block.id,
+    paletteDiffers ? '.patternPalette' : '.patternWashout',
+    `camo palette and washout must match the first camo block "${first.id}"`,
+  );
+};
+
 const checkCamoBlocks = (registry: Registry, report: Report): void => {
   const camoBlocks = registry.blocks.filter((block) => block.pattern === 'camo');
-  const [first, ...rest] = camoBlocks;
-  if (!first) return;
+  const first = camoBlocks[0];
+  if (!first) {
+    return;
+  }
 
   for (const block of camoBlocks) {
-    if (!block.patternPalette) {
-      report('blocks', block.id, '.patternPalette', 'camo blocks require a four-colour pattern palette');
-    }
-    if (block.patternWashout === undefined) {
-      report('blocks', block.id, '.patternWashout', 'camo blocks require a pattern washout value');
-    }
+    reportMissingCamoSettings(block, report);
   }
-  if (!first.patternPalette || first.patternWashout === undefined) return;
-  for (const block of rest) {
-    if (!block.patternPalette || block.patternWashout === undefined) continue;
-    const paletteDiffers = block.patternPalette.some((color, i) => color !== first.patternPalette?.[i]);
-    const washoutDiffers = block.patternWashout !== first.patternWashout;
-    if (paletteDiffers || washoutDiffers) {
-      report(
-        'blocks',
-        block.id,
-        paletteDiffers ? '.patternPalette' : '.patternWashout',
-        `camo palette and washout must match the first camo block "${first.id}"`,
-      );
-    }
+  for (const block of camoBlocks.slice(1)) {
+    reportCamoSettingMismatch(first, block, report);
   }
 };
 
