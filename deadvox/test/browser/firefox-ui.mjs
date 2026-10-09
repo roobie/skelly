@@ -495,6 +495,9 @@ try {
     weatheringPixels.maxWeatherablePixelChange > 0,
     `full-strength weathering changes a weatherable comparison pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
   );
+  const defaultProfileId = await page.evaluate(() =>
+    import('/src/core/weather.ts').then(({ DEFAULT_WEATHERING_PROFILE_ID }) => DEFAULT_WEATHERING_PROFILE_ID),
+  );
   for (const [profileId, profileStrength] of Object.entries(weatheringPixels.profileStrengths)) {
     if (profileStrength <= 0) {
       continue;
@@ -504,8 +507,14 @@ try {
         difference.pixels > 0 && difference.changedShare > 0,
         `weathering profile ${profileId} changes ${material} pixels: ${JSON.stringify(difference)}`,
       );
-      // A deliberately strong tint may change a material's dominant hue; the surface pattern must remain visible.
       const readability = weatheringPixels.materialReadability[profileId][material];
+      if (profileId === defaultProfileId) {
+        assert.equal(
+          readability.retainsIdentity,
+          true,
+          `weathered default ${material} remains closer to its own clean surface than to other weathered materials: ${JSON.stringify(readability)}`,
+        );
+      }
       assert.equal(
         readability.retainsTexture,
         true,
