@@ -12,6 +12,9 @@ const playtestText = (await playtestResponse.json())[playtestLanguage];
 // The static launcher cannot import deadvox/src/core/weather.ts; keep its control range in sync with WEATHERING_STRENGTH_MAX.
 const WEATHERING_STRENGTH_MAX = 8;
 
+// force scroll to the top on load, because of big 1000px space in the middle (can get confusing otherwise)
+window.scrollTo(0, 0);
+
 // The tester brief's wording lives only here; the organiser's sheet points at it, so a change reaches every tester.
 const playtestBrief = html`
       <section class="card" aria-labelledby="playtest-title">
@@ -33,7 +36,7 @@ const page = (state) => html`  <main>
         <img class="site-logo" src="assets/deadvox-survival-logo.webp" alt="Deadvox Survival">
       </header>
       ${playtestBrief}
-      <section class="card" aria-labelledby="deadvox-title">
+      <section class="card" aria-labelledby="deadvox-title" style="margin-top: 1000px;">
         <div class="card-heading">
           <h2 id="deadvox-title"><a href="deadvox/">deadvox</a><span>(codename)</span></h2>
           <span>// working title = <code>Darker Yet -VOX-</code></span>
