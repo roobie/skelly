@@ -1,24 +1,45 @@
 :root {
-  --bg: #f6f7f9;
-  --panel: #ffffff;
-  --text: #1d2126;
-  --muted: #5f6670;
-  --line: #dde1e6;
-  --link: #1f6feb;
-  --button: #1f6feb;
-  --button-text: #ffffff;
+  --moss: #2a4327;
+  --moss-dark: #20331d;
+  --moss-light: #b4c682;
+  --moss-bright: #d5e3a3;
+  --rock: #96988e;
+  --rock-dark: #2b2e2a;
+  --rock-light: #c3c4b8;
+  --rock-bright: #f2f0e8;
+  --ember: #82451f;
+  --ember-dark: #5a3018;
+  --ember-deep: #4a2816;
+  --ember-light: #d88e4b;
+  --ember-bright: #f2b66e;
+  --bg: var(--rock-dark);
+  --panel: color-mix(in srgb, var(--rock-light) 88%, transparent);
+  --control: var(--rock-light);
+  --text: var(--rock-dark);
+  --muted: var(--moss);
+  --line: var(--rock-dark);
+  --link: var(--moss);
+  --button: var(--ember);
+  --button-link: var(--ember-dark);
+  --button-hover: var(--ember-deep);
+  --button-text: var(--rock-bright);
+  --focus: var(--moss-dark);
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #16181c;
-    --panel: #1f2227;
-    --text: #d8dbe0;
-    --muted: #8b919a;
-    --line: #2e3268;
-    --link: #6cb6ff;
-    --button: #3478c8;
+    --panel: color-mix(in srgb, var(--rock-dark) 88%, transparent);
+    --control: var(--rock-dark);
+    --text: var(--rock-light);
+    --muted: var(--moss-light);
+    --line: var(--rock);
+    --link: var(--moss-light);
+    --button: var(--ember-light);
+    --button-link: var(--ember-light);
+    --button-hover: var(--ember-bright);
+    --button-text: var(--rock-dark);
+    --focus: var(--moss-light);
   }
 }
 
@@ -54,16 +75,19 @@ main {
 }
 
 h1 {
+  color: var(--link);
   font-size: 30px;
   margin: 0 0 4px;
 }
 
 h2 {
+  color: var(--link);
   font-size: 19px;
   margin: 0 0 4px;
 }
 
 h3 {
+  color: var(--link);
   font-size: 14px;
   margin: 18px 0 8px;
 }
@@ -72,13 +96,28 @@ p {
   margin: 0 0 12px;
 }
 
-.muted,
-footer {
+.muted {
   color: var(--muted);
+}
+
+footer {
+  color: var(--rock-bright);
 }
 
 a {
   color: var(--link);
+}
+
+#deadvox-playtest {
+  color: var(--button-link);
+}
+
+#deadvox-playtest:hover {
+  color: var(--button-hover);
+}
+
+footer a {
+  color: var(--moss-bright);
 }
 
 .card {
@@ -148,7 +187,7 @@ select {
   min-height: 42px;
   padding: 8px 10px;
   color: var(--text);
-  background: var(--bg);
+  background: var(--control);
   border: 1px solid var(--line);
   border-radius: 6px;
 }
@@ -177,12 +216,20 @@ button:hover {
   border-color: var(--link);
 }
 
+button.primary:hover {
+  border-color: var(--button-text);
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--link);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+footer a:focus-visible {
+  outline-color: var(--moss-bright);
 }
 
 button.primary {
