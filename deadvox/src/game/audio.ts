@@ -22,6 +22,8 @@ const DEFAULT_VOLUMES: AudioVolumes = { master: 0.8, world: 0.8, body: 0.8, ui: 
 const VOICE_CAPS = new Map<SoundEventId, number>([
   ['gunshot', 32],
   ['gunshot_pbs1_reference', 32],
+  ['gunshot_m4', 32],
+  ['gunshot_m4_suppressed', 32],
 ]);
 const VOICE_FADE_SECONDS = 0.01;
 

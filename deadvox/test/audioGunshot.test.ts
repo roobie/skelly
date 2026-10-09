@@ -13,7 +13,7 @@ import { simRate, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio } from '../src/game/audio.ts';
-import { firearmShotSound, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
+import { firearmShotEmission, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const audios: GameAudio[] = [];
@@ -337,8 +337,15 @@ describe('game audio playback', () => {
     const listenerAtStart = playerOrigin.map((value) => value * scale.blockSize) as Vec3;
     audio.updateListener(listenerAtStart, [0, 0, -1]);
     session.playPlayerSound('player_strain');
-    const shot = firearmShotSound('rifle_assault');
+    const ar = { uid: 1, type: 'rifle_assault', count: 1, condition: 1 };
+    const shot = firearmShotEmission(ar, session.firearms.noiseFactorFor(ar));
     session.playPlayerSound(shot.event, session.sim.time, shot);
+    const suppressedAr = {
+      ...ar,
+      slots: { muzzle: { uid: 2, type: 'real_suppressor', count: 1, condition: 1 } },
+    };
+    const suppressedShot = firearmShotEmission(suppressedAr, session.firearms.noiseFactorFor(suppressedAr));
+    session.playPlayerSound(suppressedShot.event, session.sim.time, suppressedShot);
     audio.updateListener([listenerAtStart[0] + 3, listenerAtStart[1], listenerAtStart[2]], [1, 0, 0]);
     await flush();
 
@@ -367,6 +374,13 @@ describe('game audio playback', () => {
     ).toBeGreaterThan(0);
 
     const events = eventsReader.read();
+    const shotNoiseRadius = events.find((event) => event.kind === 'noise' && event.event === shot.event);
+    const suppressedNoiseRadius = events.find(
+      (event) => event.kind === 'noise' && event.event === suppressedShot.event,
+    );
+    if (shotNoiseRadius?.kind !== 'noise' || suppressedNoiseRadius?.kind !== 'noise') {
+      throw new Error('Expected both AR shot events to emit gameplay noise');
+    }
     expect(events.find((event) => event.kind === 'sound' && event.event === 'player_strain')).toMatchObject({
       position: playerOrigin,
       emittedAsNoise: true,

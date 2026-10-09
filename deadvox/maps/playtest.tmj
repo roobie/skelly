@@ -25,7 +25,7 @@
     {
       "name": "startTime",
       "type": "string",
-      "value": "16:00"
+      "value": "15:00"
     }
   ],
   "tilesets": [],

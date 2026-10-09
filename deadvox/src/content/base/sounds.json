@@ -392,6 +392,26 @@
       "noise": { "enabled": true, "radiusMetres": 50 }
     },
     {
+      "id": "gunshot_m4",
+      "variants": ["assets/audio/gunshot-m4-01.ogg"],
+      "gain": 1,
+      "pitchJitter": [1, 1],
+      "gainJitter": [1, 1],
+      "minIntervalSimSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 100 }
+    },
+    {
+      "id": "gunshot_m4_suppressed",
+      "variants": ["assets/audio/gunshot-m4-suppressed-01.ogg"],
+      "gain": 1,
+      "pitchJitter": [1, 1],
+      "gainJitter": [1, 1],
+      "minIntervalSimSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 100 }
+    },
+    {
       "id": "item_drop_wood",
       "variants": ["assets/audio/item_drop_wood-01.ogg", "assets/audio/item_drop_wood-02.ogg"],
       "gain": 0.55,

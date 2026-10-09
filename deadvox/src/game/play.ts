@@ -2,9 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
-import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
@@ -33,7 +31,6 @@ import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
-import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { type HandlingPresentationSource, quickbarKey, renderQuickbar } from '../ui/hud.ts';
@@ -66,7 +63,7 @@ import type { SaveController } from '../ui/saveController.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
-  firearmShotSound,
+  firearmShotEmission,
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
@@ -707,11 +704,7 @@ export const startPlay = (
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
   const restBox = $('rest');
-  const credits = validateManifest('assets/manifest.json', assetManifest);
-  $('errors').textContent = [engine.contentErrors, ...credits.issues.map((i) => `${i.source} ${i.path}: ${i.message}`)]
-    .filter(Boolean)
-    .join('\n');
-  mountCredits({ about: $('about'), box: $('credits'), show: $('show-credits') }, credits.manifest);
+  $('errors').textContent = [$('errors').textContent, engine.contentErrors].filter(Boolean).join('\n');
   renderAudioOptions($('audio-options'), audio.settings, (category, value) => audio.setVolume(category, value));
 
   /** A message that isn't an interruption, such as why a move was refused. */
@@ -2153,7 +2146,6 @@ export const startPlay = (
   };
 
   const fireWeapon = (item: Item, time: number): boolean => {
-    const noiseRadiusScale = firearms.noiseFactorFor(item);
     const fired = firearms.fire({
       aimFrame: aim.frame,
       ready: isFirearmReady(item.uid),
@@ -2174,8 +2166,8 @@ export const startPlay = (
     if (registry.items.get(item.type)?.firearm?.pump) {
       return true;
     }
-    const shot = firearmShotSound(item.type);
-    session.playPlayerSound(shot.event, time, { ...shot, noiseRadiusScale });
+    const shot = firearmShotEmission(item, firearms.noiseFactorFor(item));
+    session.playPlayerSound(shot.event, time, shot);
     return true;
   };
 

@@ -59,7 +59,7 @@ Object.defineProperty(globalThis, 'removeEventListener', {
 });
 // Happy DOM has no layout and omits this API; a moved cursor in these controls hits no drop zone.
 Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: () => [] });
-const { InventoryScreen } = await import('../src/ui/inventoryScreen.ts');
+const { InventoryScreen, targetForPackedFloorDrop } = await import('../src/ui/inventoryScreen.ts');
 
 afterAll(() => dom.happyDOM.abort());
 
@@ -189,6 +189,43 @@ const holdQuickGate = () => {
 };
 
 describe('inventory screen Lit rendering', () => {
+  it('drops a packed floor stack onto the visible stack at its stored spot', () => {
+    const items = new Map(registry.items);
+    items.set('fixture_floor_stack', {
+      id: 'fixture_floor_stack',
+      name: 'Fixture floor stack',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+      stack: 4,
+    });
+    const inventory = new Inventory({ ...registry, items });
+    const pos: [number, number, number] = [0, 0, 0];
+    const hiddenFirst = inventory.create('fixture_floor_stack');
+    const visibleStack = inventory.create('fixture_floor_stack', 2);
+    if (
+      !(
+        inventory.add(hiddenFirst, { kind: 'pile', pos, at: { x: 0, y: 0, rotated: false } }) &&
+        inventory.add(visibleStack, { kind: 'pile', pos, at: { x: 1, y: 0, rotated: false } })
+      )
+    ) {
+      throw new Error('Could not create packed floor drop fixture');
+    }
+    inventory.consume(hiddenFirst);
+    const dragged = inventory.create('fixture_floor_stack');
+    if (!inventory.add(dragged, { kind: 'hand', side: 'left' })) {
+      throw new Error('Could not hold packed floor drop fixture');
+    }
+
+    const target = targetForPackedFloorDrop(inventory, dragged, pos, visibleStack);
+    expect(target).toEqual({ kind: 'pile', pos, at: { x: 1, y: 0, rotated: false } });
+    const plan = inventory.plan(dragged, target);
+    if (!plan.ok) {
+      throw new Error(`Visible floor stack refused its matching drop: ${plan.reason}`);
+    }
+    expect(plan.merge).toBe(visibleStack);
+  });
+
   it('opens directly on a requested tab and remembers it across toggles', () => {
     const { screen, root } = setup();
     screen.close();

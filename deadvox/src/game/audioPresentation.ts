@@ -1,6 +1,7 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { MoveStart } from '../core/handling.ts';
 import type { Location } from '../core/inventory.ts';
+import type { Item } from '../core/items.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 
 export interface HandlingSoundCue {
@@ -23,16 +24,44 @@ export const createRefusalPresenter = (
   };
 };
 
-const FIREARM_SOUND_BY_ITEM: Readonly<Partial<Record<string, SoundEventId>>> = {};
+interface FirearmSoundProfile {
+  readonly unsuppressed: SoundEventId;
+  readonly suppressed?: SoundEventId;
+}
 
-/** Item-keyed override point for future weapon-specific shot profiles. */
+const FIREARM_SOUND_BY_ITEM: ReadonlyMap<string, FirearmSoundProfile> = new Map([
+  ['rifle_assault', { unsuppressed: 'gunshot_m4', suppressed: 'gunshot_m4_suppressed' }],
+]);
+
+export const FIREARM_SHOT_SOUND_EVENTS: ReadonlySet<SoundEventId> = new Set([
+  'gunshot',
+  ...[...FIREARM_SOUND_BY_ITEM.values()].flatMap(({ unsuppressed, suppressed }) =>
+    suppressed === undefined ? [unsuppressed] : [unsuppressed, suppressed],
+  ),
+]);
+
+const hasMountedSuppressor = (item: Item): boolean =>
+  Object.values(item.slots ?? {}).some((attachment) =>
+    attachment ? attachment.type === 'real_suppressor' || hasMountedSuppressor(attachment) : false,
+  );
+
+/** Item-keyed shot selection shared by player and actor presentation; fitted suppressors are read from the item tree. */
 export const firearmShotSound = (
-  itemType: string,
+  item: Item,
   perspective: 'player' | 'actor' = 'player',
-): { event: SoundEventId; sourceLabel: string; listenerRelative: boolean } => ({
-  event: FIREARM_SOUND_BY_ITEM[itemType] ?? 'gunshot',
-  sourceLabel: itemType,
-  listenerRelative: perspective === 'player',
+): { event: SoundEventId; sourceLabel: string; listenerRelative: boolean } => {
+  const profile = FIREARM_SOUND_BY_ITEM.get(item.type);
+  const suppressed = profile?.suppressed !== undefined && hasMountedSuppressor(item);
+  return {
+    event: suppressed ? profile.suppressed! : (profile?.unsuppressed ?? 'gunshot'),
+    sourceLabel: item.type,
+    listenerRelative: perspective === 'player',
+  };
+};
+
+export const firearmShotEmission = (item: Item, noiseRadiusScale: number) => ({
+  ...firearmShotSound(item),
+  noiseRadiusScale,
 });
 
 export const HEARTBEAT_FILES = {

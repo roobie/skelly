@@ -277,6 +277,8 @@ describe('simulation source fingerprint', () => {
 
   it('classifies every core and game source module', async () => {
     const graph = await actualSimulationGraph();
+    expect(SIMULATION_EXCLUSIONS).toContain('src/core/assets.ts');
+    expect(NON_RUNTIME_SOURCE_RULES).not.toHaveProperty('src/core/assets.ts');
     const modules = [...(await sourceFilesUnder('src/core')), ...(await sourceFilesUnder('src/game'))];
     const scopedExclusions = SIMULATION_EXCLUSIONS.filter(
       (rule) => rule.startsWith('src/core/') || rule.startsWith('src/game/'),

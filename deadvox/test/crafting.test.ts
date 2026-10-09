@@ -194,7 +194,10 @@ describe('pure craft planner', () => {
             { ...registry.items.get('crowbar')!, stack: 4 },
             {
               ...registry.items.get('school_backpack')!,
-              container: { pockets: [{ name: 'Fixture', grid: [600, 8], handlingSimSeconds: 0.5 }] },
+              container: {
+                wideReason: 'The crafting stress fixture needs one large pocket for disjoint placements.',
+                pockets: [{ name: 'Fixture', grid: [600, 8], handlingSimSeconds: 0.5 }],
+              },
             },
           ],
         },

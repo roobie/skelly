@@ -1096,6 +1096,23 @@ try {
       page = await withTimeout('busy-lock relaunch page creation', context.newPage());
       trackPageNavigation(page);
       await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
+      await page.waitForFunction(
+        () => {
+          const status = document.querySelector('#startup-screen #save-status');
+          return Boolean(
+            status?.textContent.trim() &&
+              globalThis.deadvoxSaveTest?.controller &&
+              !globalThis.deadvoxSaveTest.controller.ready,
+          );
+        },
+        undefined,
+        { timeout: STAGE_TIMEOUT_MS },
+      );
+      assert.equal(
+        await page.locator('#startup-screen #save-status').isVisible(),
+        true,
+        'save discovery status is visible on the startup screen while the busy lock is checked',
+      );
       try {
         await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
           timeout: STAGE_TIMEOUT_MS,

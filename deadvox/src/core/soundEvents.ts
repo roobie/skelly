@@ -24,6 +24,8 @@ export const SOUND_EVENT_IDS = [
   'melee_hit_fist',
   'gunshot',
   'gunshot_pbs1_reference',
+  'gunshot_m4',
+  'gunshot_m4_suppressed',
   'shotgun_blast',
   'shotgun_rack_back',
   'shotgun_rack_forward',

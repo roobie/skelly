@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
-import { SPAWN_TIMES } from '../src/core/clock.ts';
+import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -1402,7 +1402,9 @@ describe('authored fixed loot', () => {
       spawn.window?.fromGameTimeOfDay === SPAWN_TIMES.dusk;
     expect(parsedRoadsideThreats.filter(hasDuskWindow)).toHaveLength(1);
     expect(parsedTreelineThreats.filter(hasDuskWindow)).toHaveLength(1);
-    expect(parsedLayout.startTimeGameTimeOfDay).toBe(16 * 3600);
+    expect(parsedLayout.startTimeGameTimeOfDay).toBe(
+      parseTimeOfDay(layout.startTimeGameTimeOfDay as unknown as string),
+    );
   });
 
   it('keeps the authored route clear except for its openable gate and walkable over terrain', () => {
