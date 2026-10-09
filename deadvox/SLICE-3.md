@@ -31,7 +31,7 @@ Use the playtest questions in [EPIC.md](EPIC.md), together with Slice 2's questi
 - Do weapon attachments and firearm handling make ammunition choices clear before a shot is fired?
 - Can players tell which available treatment applies to a wound and its infection stage?
 
-The first real playtest runs at the end of this slice, before Slice 4, on the authored map in [#181](https://github.com/roobie/skelly/issues/181). The organiser shares the Pages landing-page link with a few people; each tester plays independently until they want to stop, in as many sittings as they like. The Playtest link gives them the prompt “find the military camp.” Use any metrics and feedback they choose to share to assess inventory time, pocket choices, reactions to unseen sounds and interruptions, where players got to, and what felt annoying or delightful. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md).
+The first real playtest runs at the end of this slice, before Slice 4, on the authored map in [#181](https://github.com/roobie/skelly/issues/181). The organiser shares the Pages landing-page link with at least three people, including someone new to both CDDA and DayZ; each tester plays independently until they want to stop, in as many sittings as they like. The Playtest link gives them the prompt “find the military camp.” Use any metrics and feedback they choose to share to assess inventory time, pocket choices, reactions to unseen sounds and interruptions, where players got to, and what felt annoying or delightful. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md).
 
 ## Scope
 
@@ -425,11 +425,11 @@ The end-of-slice playtest uses the authored progression in [#181](https://github
 - **FOB perimeter:** solid wall columns exceed jump reach; the north approach and return-walled pen make the guarded entry legible, while the damaged inner gate is a weak point, not a bypass. The southern wall breach preserves another route. `src/content/base/camp.json`, `camp_wall_run`, `camp_gate`, and `camp_gate_return`, defines the perimeter; `test/authoredFixedLoot.test.ts` and `test/campGate.test.ts` check it.
 - The camp's closing readable directs testers to Project home through the F9 menu.
 
-The workshop makes a taped light mount craftable without noise. Finding suppressor materials at the yard scrap pile costs noise, so the medical site's second night tests whether that trade was worthwhile. The radio remains broken and has no radio-specific behavior; runner markers use the existing runner type; the stripped car is a prop. See `src/content/base/layouts-playtest.json`, `workshop_yard.fixedLoot`, and `src/game/session.ts`, `search`.
+The yard scrap pile is the only source of one improvised-suppressor input; fixed and random loot lack it. The workshop makes a taped light mount craftable without noise. Finding the suppressor input at the yard scrap pile costs noise, so the medical site's second night tests whether that trade was worthwhile. The radio remains broken and has no radio-specific behavior; runner markers use the existing runner type; the stripped car is a prop. See `src/content/base/layouts-playtest.json`, `workshop_yard.fixedLoot`, and `src/game/session.ts`, `search`.
 
 **Saves:** The authored layout, fixed placements and seeded loot regenerate from the site and seed. Dynamic changes and looted items use the existing world/inventory save; no separate map-progress state is added.
 **Tests:** authored content validates; site generation is deterministic across chunk order; required progression and routes remain traversable; fixed key loot and seeded filler follow their separate ownership without pinning exact coordinates or complete loot lists. Metrics remain outside game state.
-**Done when:** the approved map supports the self-serve end-of-slice playtest, its progression and nights are playable, the checklist links its evidence, and tester feedback and metrics inform Slice 4 planning.
+**Done when:** the approved map supports the self-serve end-of-slice playtest, its progression and nights are playable, the checklist links its evidence, and the playtest findings are recorded before Slice 4 planning.
 **First look / BR approval:** the completed authored map, including the workshop/medical/military progression and night locations.
 
 #### Loose-item pickup
@@ -476,6 +476,6 @@ Only questions BR left open; don't infer answers from implementation or old prop
 - Milestones 3.0–3.11 are merged and deployed with CI green, including their required type, unit, content and browser checks.
 - Every new persistent simulation state is owned, saved, fingerprinted and covered by a current-build round trip. The default test run remains within the applicable budget or has a coverage-based explanation and a plan to keep it fast.
 - The noise-to-positional-sound contract holds; recordings replay deterministically; performance work is measured against the approved workloads.
-- The checklist issue links evidence and carried-forward work; feedback and metrics from the self-serve end-of-slice playtest inform Slice 4.
+- The checklist issue links evidence and carried-forward work; the Pages link reaches at least three testers, including someone new to both CDDA and DayZ, and findings from their feedback and any metrics they choose to share are recorded before Slice 4 planning.
 - BR has approved the required first looks for ready/ADS, firearm gore/impacts, optics, new zombie types, the horde and the authored map.
 - A retrospective records what changed and what carries forward.

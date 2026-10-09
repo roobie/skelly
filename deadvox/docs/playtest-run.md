@@ -11,8 +11,8 @@ The Slice 3 playtest is self-serve. The organiser shares the landing-page link
 with a few people; each tester plays on their own until they want to stop. The
 organiser may invite them to share feedback and any metrics through the playtest
 feedback form. Testers without GitHub can email the organiser using the address
-provided with the link. The game starts the authored map with the prompt to find
-the military camp; see [EPIC.md](../EPIC.md),
+provided with the link. The Playtest card gives the task, find the military camp,
+and its link opens the authored map; see [EPIC.md](../EPIC.md),
 "Playtest plan", and [#181](https://github.com/roobie/skelly/issues/181).
 
 ## Session format
@@ -26,12 +26,12 @@ with version 1.
 
 ## Tester number
 
-If a tester number is provided with the link, use it in the public feedback
-issue's title or the subject of an email instead of adding the tester's real
-name. The number helps refer to feedback consistently; a public GitHub issue is
-not anonymous and requires an account. A tester without GitHub can email their
-metrics and feedback to the organiser; provide the email address separately with
-the link, not in project files.
+The organiser gives each tester a number with the link and asks them to put it
+in the title of any public feedback issue or the subject of an email. This keeps
+feedback consistent without using the tester's real name. A public GitHub issue
+is not anonymous and requires an account. Testers without GitHub may email their
+metrics and feedback to the organiser; provide the address separately with the
+link, not in project files.
 
 ## Consent
 
@@ -64,7 +64,7 @@ key items are its fixed loot marked `key`
 (`src/content/base/layouts-playtest.json`). `AuthoredSite`
 (`src/core/authoredSite.ts`) and `PlaytestObserver`
 (`src/game/playtestObserver.ts`) read these marks only to feed the export.
-Nothing in the simulation reads either; they only feed the metrics.
+Nothing in the simulation reads either.
 
 ## Findings
 

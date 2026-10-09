@@ -135,16 +135,17 @@ wear and light. Slice 3's milestone scope and gates are in
 
 #### Playtest plan
 
-Share the Pages landing-page link with a few people. The Playtest link opens the
-authored map specified in [#181](https://github.com/roobie/skelly/issues/181)
-and detailed in [SLICE-3.md](SLICE-3.md), with “find the military camp” as the
-prompt. Each tester plays on their own for as long and in as many sittings as
-they like; Continue resumes their run
-([docs/playtest-run.md](docs/playtest-run.md), "Session format"). There is no
-scripted session or fixed play time. Testers can send feedback through the
-public form and may choose to attach their local metrics and a recent replay.
-Testers without GitHub can email their metrics and feedback to the organiser;
-the organiser provides the address separately with the link.
+Share the Pages landing-page link with at least three people, including someone
+new to both CDDA and DayZ. The Playtest link opens the authored map specified in
+[#181](https://github.com/roobie/skelly/issues/181) and detailed in
+[SLICE-3.md](SLICE-3.md), with “find the military camp” as the prompt. Each
+tester plays on their own for as long and in as many sittings as they like;
+Continue resumes their run ([docs/playtest-run.md](docs/playtest-run.md),
+"Session format"). There is no scripted session or fixed play time. Do not teach
+the systems first. Testers can send feedback through the public form and may
+choose to attach their local metrics and a recent replay. Testers without GitHub
+can email their metrics and feedback to the organiser; the organiser provides
+the address separately with the link.
 
 The authored route runs from the lone house through the hamlet, hunting cabins,
 medical site and military camp, with the first and second nights along the way.
@@ -181,9 +182,9 @@ Use the metrics and feedback testers choose to share to assess:
 The metrics show how far testers get, what they find and when they reach map
 beats. Their feedback issues or emails can explain what felt tense, confusing,
 satisfying or frustrating, and which moments annoyed or delighted them. Use that
-evidence to update DESIGN, CHALLENGES and this EPIC before planning Slice 4. If the second
-night is too safe, consider adding night wanderers after reviewing the feedback.
-The organiser's sheet in [docs/playtest-run.md](docs/playtest-run.md) explains
+evidence to update DESIGN, CHALLENGES and this EPIC before planning Slice 4. If
+the second night is too safe, add night wanderers after the first playtest. The
+organiser's sheet in [docs/playtest-run.md](docs/playtest-run.md) explains
 how testers can export and share their metrics and feedback.
 
 The death/new-run contract is still open for version 1: should a new run in the
