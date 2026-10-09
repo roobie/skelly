@@ -77,6 +77,7 @@ const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-items', description: 'Open / select Items tab', tab: 'items', code: 'KeyG' },
   { action: 'ui.inventory-tab-skills', description: 'Open / select Skills tab', tab: 'skills', code: 'KeyV' },
   { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting', code: 'KeyB' },
+  { action: 'ui.inventory-tab-actions', description: 'Open / select Actions tab', tab: 'actions', code: 'KeyH' },
 ] as const;
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   'ui.inventory-toggle',
@@ -143,8 +144,8 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('inventory.previous', 'Select previous item', ['inventory'], ['ArrowUp', 'ArrowLeft'], 'press', { repeat: true }),
   row('inventory.next', 'Select next item', ['inventory'], ['ArrowDown', 'ArrowRight'], 'press', { repeat: true }),
   row('inventory.search', 'Search next container', ['inventory'], ['KeyS']),
-  row('inventory.hands', 'Wield selected item', ['inventory'], ['KeyH']),
-  row('inventory.wear', 'Wear or remove', ['inventory'], ['KeyW']),
+  row('inventory.hands', 'Wield selected item', ['inventory'], ['KeyW']),
+  row('inventory.wear', 'Wear or remove', ['inventory'], ['KeyY']),
   row('inventory.drop', 'Drop selected item', ['inventory'], ['KeyD']),
   row('inventory.rotate', 'Rotate selected or dragged item', ['inventory'], ['KeyR']),
   row('inventory.best-pocket', 'Move to best pocket', ['inventory'], ['Enter']),

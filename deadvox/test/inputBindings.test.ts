@@ -243,7 +243,7 @@ describe('keyboard registry', () => {
     expect(craft.contexts).toEqual(['play']);
     expect(interruption.contexts).toEqual(['interrupted']);
   });
-  it('routes G/V/B to the inventory tabs in play and inventory contexts', () => {
+  it('routes G/V/B/H to the inventory tabs in play and inventory contexts', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
     let context: InputContext = 'play';
     keyboard.context = () => ({ context, debug: false });
@@ -253,6 +253,7 @@ describe('keyboard registry', () => {
       { code: 'KeyG', action: 'ui.inventory-tab-items' },
       { code: 'KeyV', action: 'ui.inventory-tab-skills' },
       { code: 'KeyB', action: 'ui.inventory-tab-crafting' },
+      { code: 'KeyH', action: 'ui.inventory-tab-actions' },
     ];
 
     for (const tab of tabs) {
@@ -272,6 +273,9 @@ describe('keyboard registry', () => {
       expect(registry.binding(tab.action)?.contexts).toEqual(expect.arrayContaining(['play', 'inventory']));
       expect(registry.rebind(tab.action, [{ code: `Numpad${4 + index}` }])).toBeUndefined();
     }
+    const wield = new BindingRegistry(INPUT_BINDINGS, storage()).binding('inventory.hands');
+    expect(wield?.defaults[0]?.code).toBe('KeyW');
+    expect(wield?.contexts).toEqual(['inventory']);
   });
   it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
