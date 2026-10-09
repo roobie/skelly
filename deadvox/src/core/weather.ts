@@ -27,7 +27,7 @@ export const WEATHERING_RANGES = {
   strength: { min: 0, max: WEATHERING_STRENGTH_MAX, step: 0.1 },
   tintDarkness: { min: 0, max: 2, step: 0.01 },
   streakStrength: { min: 0, max: 2, step: 0.01 },
-  streakLengthMetres: { min: 0.25, max: 12, step: 0.05 },
+  streakLengthMetres: { min: 0.25, max: 12, step: 0.01 },
   mossStrength: { min: 0, max: 2, step: 0.01 },
   variationScaleMetres: { min: 2, max: 48, step: 0.1 },
   variationStrength: { min: 0, max: 2, step: 0.01 },
