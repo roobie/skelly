@@ -78,6 +78,7 @@ export function createEngine(
   applySky(sky, DAY_SKY);
 
   const meshes = new ChunkMeshes(scale.blockSize, BUNDLED_CONTENT.registry);
+  meshes.setWeathering(config.weathering, config.weatheringSplit);
   const worldSetup = createWorldSetup(config, meshes, stats);
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.

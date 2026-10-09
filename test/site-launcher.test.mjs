@@ -9,6 +9,10 @@ const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const page = read('site/launcher.js');
 const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
 const SELECT_PATTERN = /<select\b/;
+const WEATHERING_SITE_OPTION_PATTERN =
+  /state\.deadvox\.debug && state\.deadvox\.bench === ''[\s\S]*value="weatheringTest"/;
+const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
+const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAYTEST_LINK_PATTERN = /<a\b[^>]*\bid="deadvox-playtest"[^>]*>/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
@@ -23,6 +27,19 @@ const intentionallyUnofferedDeadvoxParams = {
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
+  weatheringProfile: 'A profile choice owned by the in-game debug look panel, not the start launcher.',
+  weatheringTint: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringTintColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
+  weatheringStreaks: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringStreakLength: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringStreakColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
+  weatheringMoss: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMossColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
+  weatheringScale: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMossThreshold: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMossBias: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringMixCeiling: 'A debug-panel weathering look slider, not a launch-time site option.',
+  weatheringBlend: 'A debug-panel weathering look slider, not a launch-time site option.',
 };
 const intentionallyUnofferedGungenParams = {
   camera:
@@ -42,10 +59,16 @@ const intentionallyUnofferedGungenParams = {
 const paramsReadBy = (sources) => {
   const found = new Set();
   for (const source of sources) {
-    for (const match of read(source).matchAll(
+    const text = read(source);
+    for (const match of text.matchAll(
       /(?:\b(?:params|query|initialQuery)|new URLSearchParams\([^)]*\))\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g,
     )) {
       found.add(match[1]);
+    }
+    if (source.endsWith('core/weatheringUrl.ts')) {
+      for (const match of text.matchAll(/^\s*\['(weathering[^']*)',\s*'[^']+'\],?$/gm)) {
+        found.add(match[1]);
+      }
     }
   }
   return [...found].sort();
@@ -77,6 +100,7 @@ describe('site launchers track the games’ URL parameters', () => {
     const supported = paramsReadBy([
       'deadvox/src/main.ts',
       'deadvox/src/game/config.ts',
+      'deadvox/src/core/weatheringUrl.ts',
       'deadvox/src/bench/run.ts',
       'deadvox/src/bench/shamblers.ts',
       'deadvox/src/debug/debugLoadout.ts',
@@ -86,6 +110,24 @@ describe('site launchers track the games’ URL parameters', () => {
       assert.ok(supported.includes(name), `${name} has a documented omission reason`);
     }
     assert.deepEqual(coverageFailures('deadvox parameter', supported, paramsOfferedBy('deadvox-form'), omitted), []);
+  });
+
+  it('offers weathering overrides only in debug play and matches the game strength ceiling', () => {
+    assert.match(page, WEATHERING_SITE_OPTION_PATTERN);
+    for (const [id, parameter] of [
+      ['deadvox-weathering-field', 'weathering'],
+      ['deadvox-weathering-variation-field', 'weatheringVariation'],
+      ['deadvox-weathering-split-field', 'weatheringSplit'],
+    ]) {
+      assert.match(page, new RegExp(`'${id}': \\(d\\) => d\\.bench === '' && d\\.debug`));
+      assert.match(page, new RegExp(`name="${parameter}" data-url-param="${parameter}"`));
+    }
+
+    const gameMax = read('deadvox/src/core/weather.ts').match(GAME_WEATHERING_MAX_PATTERN);
+    const launcherMax = page.match(LAUNCHER_WEATHERING_MAX_PATTERN);
+    assert.ok(gameMax, 'game weathering ceiling is declared');
+    assert.ok(launcherMax, 'static launcher weathering ceiling is declared');
+    assert.equal(launcherMax[1], gameMax[1]);
   });
 
   it('offers every launcher-editable gungen URL parameter except documented omissions', () => {

@@ -225,6 +225,8 @@ try {
     { timeout: 60_000 },
   );
   if (mode === 'lighting') {
+    const shaderErrors = errors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error'));
+    assert.deepEqual(shaderErrors, [], 'chunk shaders compile before the lighting pixel checks');
     await page.evaluate(() => {
       const runtime = globalThis.d7Review;
       globalThis.d7Observed = { frames: [], outsideMood: 0, initialPost: runtime.engine.mood.post };
