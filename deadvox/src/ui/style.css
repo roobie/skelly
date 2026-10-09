@@ -1,4 +1,22 @@
 :root {
+  --ui-layer-startup-content: 1;
+  --ui-layer-card-scroll-cue: 2;
+  --ui-layer-perception-labels: 4;
+  --ui-layer-damage: 8;
+  --ui-layer-debug-aim-readout: 9;
+  --ui-layer-inventory: 20;
+  --ui-layer-crafting: 21;
+  --ui-layer-drag-ghost: 22;
+  --ui-layer-reading: 40;
+  --ui-layer-debug-ui: 50;
+  --ui-layer-debug-overlay: 1000;
+  --ui-layer-startup-hint: 2000;
+  --ui-layer-unconscious: 2000;
+  --ui-layer-menu-overlay: 2001;
+  --ui-layer-save-recovery: 2002;
+  --ui-layer-game-cursor: 2003;
+  --ui-layer-startup-screen: 3000;
+  --ui-layer-review-map: 10000;
   --panel: rgb(18 20 24 / 88%);
   --text: #e3e6ea;
   --muted: #98a0aa;
@@ -22,7 +40,7 @@ body {
 }
 #startup-screen {
   position: fixed;
-  z-index: 3000;
+  z-index: var(--ui-layer-startup-screen);
   inset: 0;
   display: grid;
   align-content: center;
@@ -75,7 +93,7 @@ body.unconscious::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: var(--ui-layer-unconscious);
   background: #000;
   pointer-events: none;
 }
@@ -83,7 +101,7 @@ body.unconscious::after {
 #game-cursor-root {
   position: fixed;
   inset: 0;
-  z-index: 2003;
+  z-index: var(--ui-layer-game-cursor);
   pointer-events: none;
   mix-blend-mode: difference;
 }
@@ -109,7 +127,7 @@ body.unconscious::after {
 #damage {
   position: fixed;
   inset: 0;
-  z-index: 8;
+  z-index: var(--ui-layer-damage);
   pointer-events: none;
   opacity: 0;
   background: radial-gradient(ellipse at center, transparent 45%, rgb(190 0 0 / 82%) 100%);
@@ -119,7 +137,7 @@ body.unconscious::after {
   position: fixed;
   left: 50%;
   top: calc(50% + 18px);
-  z-index: 9;
+  z-index: var(--ui-layer-debug-aim-readout);
   transform: translateX(-50%);
   padding: 2px 6px;
   border-radius: 3px;
@@ -234,7 +252,7 @@ body.unconscious::after {
 
 #save-recovery {
   position: fixed;
-  z-index: 2002;
+  z-index: var(--ui-layer-save-recovery);
   left: 12px;
   bottom: 12px;
   max-width: min(680px, calc(100vw - 24px));
@@ -257,7 +275,7 @@ body.unconscious::after {
 
 #startup-hint {
   position: fixed;
-  z-index: 2000;
+  z-index: var(--ui-layer-startup-hint);
   left: 50%;
   bottom: 24px;
   display: grid;
@@ -283,7 +301,7 @@ body.unconscious::after {
 
 #overlay {
   position: fixed;
-  z-index: 2001;
+  z-index: var(--ui-layer-menu-overlay);
   inset: 0;
   display: grid;
   /* The card is docked to the right edge, vertically centred, and the layer has no tint or blur so
@@ -322,7 +340,7 @@ body.unconscious::after {
 }
 #overlay .card-scroll-cue {
   position: absolute;
-  z-index: 2;
+  z-index: var(--ui-layer-card-scroll-cue);
   left: 1px;
   right: 1px;
   display: grid;
@@ -387,7 +405,7 @@ body.unconscious::after {
   position: fixed;
   left: 50%;
   top: 50%;
-  z-index: 1;
+  z-index: var(--ui-layer-startup-content);
   transform: translate(-50%, -50%);
   color: #b8bcc2;
   cursor: pointer;
@@ -456,7 +474,7 @@ body.unconscious::after {
   /* Bound tall nearby grids so their scrollports don't expand the pane. */
   --inv-around-grid-max-height: max(96px, 40vh);
   position: fixed;
-  z-index: 20;
+  z-index: var(--ui-layer-inventory);
   inset: 24px;
   display: flex;
   flex-direction: column;
@@ -793,7 +811,7 @@ body.unconscious::after {
 }
 .inv-ghost {
   position: fixed;
-  z-index: 22;
+  z-index: var(--ui-layer-drag-ghost);
   pointer-events: none;
   opacity: 0.85;
   border-color: var(--accent);
@@ -1330,7 +1348,7 @@ body.inventory-open:not(.inventory-tab-crafting) #crafting,
 }
 body.inventory-open.inventory-tab-crafting #crafting {
   position: fixed;
-  z-index: 21;
+  z-index: var(--ui-layer-crafting);
   top: 126px;
   right: 40px;
   bottom: 106px;
@@ -1463,7 +1481,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #debug-ui-root {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--ui-layer-debug-ui);
   pointer-events: none;
 }
 #debug-ui-root #debug-center-x {
@@ -1745,7 +1763,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 
 #f3-debug-overlay {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--ui-layer-debug-overlay);
   top: 0.5rem;
   left: 0.5rem;
   max-width: min(48rem, calc(100vw - 1rem));
@@ -1779,7 +1797,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #reading {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: var(--ui-layer-reading);
   display: grid;
   place-items: center;
   background: #0003;

@@ -6,6 +6,7 @@ read_if:
   - you're changing player-facing prompts, feedback, or HUD language
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
   - you're changing how playtesters hand back metrics or replays
+  - you're changing UI layer order or overlay stacking
 tags: [deadvox, design, ui, ux, diegesis, hud]
 created: 2026-09-27
 status: active
@@ -263,6 +264,10 @@ second widget or key instruction. See `src/ui/hud.ts`,
   and the rest card's stop hint ignore those options ("How it's encoded"). The
   crosshair follows its HUD option; a separate center X is part of `?debug=1` and
   never ships.
+
+## UI layers
+
+UI layers come from ordered custom properties in `src/ui/style.css`, `:root`; inline styles use the same tokens. The drag ghost stays above the inventory and crafting panels, and `#game-cursor-root` is the highest ordinary game layer. The startup screen is a boot curtain, and the debug review map (`src/game/play.ts`, `createReviewMapFrame`) is a full-screen overlay; both can cover the cursor when active.
 
 ## Where the current interface stands
 
