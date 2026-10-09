@@ -7,7 +7,6 @@ import {
   type InputContext,
 } from '../src/game/inputBindings.ts';
 
-const contextWordSeparator = /[^a-z0-9-]+/;
 const dom = new Window();
 for (const key of [
   'document',
