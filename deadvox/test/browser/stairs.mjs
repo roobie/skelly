@@ -4,10 +4,10 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { performance } from 'node:perf_hooks';
 
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
@@ -447,7 +447,7 @@ try {
           y: (0.5 - (clip[1] / clip[3]) * 0.5) * canvas.height,
         };
       };
-      const luminance = (point) => {
+      const sampleLuminance = (point) => {
         const { x, y } = project(point);
         if (x < 2 || y < 2 || x >= canvas.width - 2 || y >= canvas.height - 2) {
           throw new Error(`camo AO sample is outside the screenshot: ${x},${y}`);
@@ -460,8 +460,8 @@ try {
         return { x, y, luminance: sum / ((pixels.length / 4) * 3) };
       };
       return {
-        corner: luminance([151, 43.1, 121.1]),
-        middle: luminance([151, 43.5, 121.5]),
+        corner: sampleLuminance([151, 43.1, 121.1]),
+        middle: sampleLuminance([151, 43.5, 121.5]),
       };
     }, png.toString('base64'));
   const lightingCellarProofs = async () => {
