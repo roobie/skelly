@@ -357,8 +357,16 @@ try {
     timeout: 5000,
   });
 
-  await pressAction(page, 'ui.inventory-toggle');
-  await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
+  if (await page.locator('#inventory').evaluate((panel) => panel.hidden)) {
+    await pressAction(page, 'ui.inventory-toggle');
+  }
+  await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden, null, { timeout: 5000 });
+  await pressAction(page, 'ui.inventory-tab-items');
+  await page.waitForFunction(
+    () => document.querySelector('#inventory [data-tab-panel="items"]')?.hidden === false,
+    null,
+    { timeout: 5000 },
+  );
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {
     await page.evaluate(
       ({ type, button, buttons }) =>

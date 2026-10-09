@@ -23,6 +23,16 @@ import {
 } from './snapshotTestSupport.ts';
 
 describe('snapshot state components', () => {
+  it('round-trips an active Wait through the save codec', async () => {
+    const runtime = createRuntime();
+    expect(runtime.sim.actions.startWait()).toBeUndefined();
+    runtime.session.frame(1 / 60);
+    const saved = capture(runtime);
+    const decoded = await decodeSave(await encodeFixture(saved), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    expect(restored.sim.actions.job).toMatchObject({ jobType: 'wait', stopped: false });
+    expect(restored.sim.compression.active).toBe(true);
+  });
   it('keeps a crouch toggle and its body height through an inactive long action and deterministic save continuation', () => {
     const uninterrupted = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'rest')).toBeUndefined();
