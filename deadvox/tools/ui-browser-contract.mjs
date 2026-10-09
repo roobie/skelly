@@ -463,6 +463,11 @@ try {
     report: () => {},
   }).settings)`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
+  const initialHudToggles = await evaluate(
+    "[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)",
+  );
+  assert.ok(initialHudToggles.every(Boolean), 'HUD options start enabled');
+  const [statsOptionInitiallyChecked, clockOptionInitiallyChecked] = initialHudToggles;
   const clockOption = "document.querySelectorAll('#hud-options input')[1]";
   if (!(await evaluate(`${clockOption}.checked`))) {
     await clickAt('#hud-options label:nth-of-type(2)');
@@ -497,11 +502,24 @@ try {
     savedWorldVolume,
     'audio volume remains selected when the menu reopens',
   );
+  const clockOptionBeforeReset = await evaluate(`${clockOption}.checked`);
   await clickAt('#hud-options label:nth-of-type(2)');
   assert.equal(
-    await evaluate("document.querySelectorAll('#hud-options input')[1].checked"),
-    false,
-    'drawn cursor can reset menu controls',
+    await evaluate(`${clockOption}.checked`),
+    !clockOptionBeforeReset,
+    'drawn cursor toggles the clock option',
+  );
+  if (clockOptionBeforeReset !== clockOptionInitiallyChecked) {
+    await clickAt('#hud-options label:nth-of-type(2)');
+  }
+  const statsOption = "document.querySelectorAll('#hud-options input')[0]";
+  if ((await evaluate(`${statsOption}.checked`)) !== statsOptionInitiallyChecked) {
+    await clickAt('#hud-options label:nth-of-type(1)');
+  }
+  assert.deepEqual(
+    await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)"),
+    initialHudToggles,
+    'menu interactions restore the initial HUD settings',
   );
   await clickAt('#go', 'edge');
   const arrowTip = await evaluate(`(() => {
@@ -749,11 +767,7 @@ try {
     'play is resumed before inventory queue checks',
   );
   const toggles = await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)");
-  assert.equal(
-    toggles.every((checked) => !checked),
-    true,
-    'all HUD settings start off',
-  );
+  assert.deepEqual(toggles, initialHudToggles, 'HUD settings retain their initial state through gameplay');
   await press('Tab', 'Tab', 9);
   assert.equal(
     await evaluate("document.querySelector('#inventory .inv-needs') !== null"),
