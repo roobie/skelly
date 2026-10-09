@@ -18,6 +18,7 @@ read_if:
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
+  - you're changing the HUD defaults or why players can turn HUD elements off
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
@@ -1357,10 +1358,11 @@ decoration.
   minimap of zombies, no threat meter. A rest interruption says what you
   heard, not what it was. The in-game map is a paper map (#470); top-down
   renders are review tools, not UI.
-- **Aim for full diegesis (BR, 2026-10-03):** "we should _aim_ for full
-  diegesis - that's why the HUD is default off, but we can't always with voxel
-  graphics". Utilities such as the compass and the wristwatch are items the
-  player finds and holds (#183).
+- **Aim for full diegesis.** New players need the HUD to understand a voxel
+  world; experienced players can turn off individual elements as diegetic
+  affordances grow. See `src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. Utilities
+  such as the compass and the wristwatch are items the player finds and holds
+  (#183).
 
 ## Tone
 

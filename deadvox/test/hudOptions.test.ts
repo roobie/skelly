@@ -3,7 +3,7 @@ import { DEFAULT_HUD_OPTIONS, HUD_OPTION_KEYS, hudVisibility } from '../src/ui/h
 
 describe('HUD options', () => {
   it('enables every HUD element by default', () => {
-    expect(hudVisibility({ ...DEFAULT_HUD_OPTIONS })).toEqual(DEFAULT_HUD_OPTIONS);
+    expect(Object.values(DEFAULT_HUD_OPTIONS).every((enabled) => enabled)).toBe(true);
   });
 
   it.each(HUD_OPTION_KEYS)('enables only the %s element when its toggle is on', (key) => {
