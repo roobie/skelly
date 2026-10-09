@@ -64,10 +64,8 @@ it('rejects a layout that names an unknown weathering profile', () => {
   const file = base.find(({ data: candidateData }) => 'layouts' in (candidateData as Record<string, unknown>))!;
   const layoutData = structuredClone(file.data) as { layouts: { weatheringProfile?: string }[] };
   layoutData.layouts[0]!.weatheringProfile = 'not_a_weathering_profile';
-  const result = buildRegistry([
-    ...base.filter(({ source }) => source !== file.source),
-    { source: file.source, data: layoutData },
-  ]);
+  const weatheringFile = base.find(({ source }) => source === 'weathering.json')!;
+  const result = buildRegistry([weatheringFile, { source: file.source, data: layoutData }]);
   expect(result.issues).toEqual(
     expect.arrayContaining([expect.objectContaining({ path: expect.stringContaining('.weatheringProfile') })]),
   );
@@ -1737,8 +1735,9 @@ describe('content', () => {
     const noPalette = { ...withoutPalette, id: 'test_camo_no_palette' };
     const { patternWashout: _washout, ...withoutWashout } = camo;
     const noWashout = { ...withoutWashout, id: 'test_camo_no_washout' };
+    const blocksFile = base.find(({ source }) => source === 'blocks.json')!;
     const issues = buildRegistry([
-      ...base,
+      blocksFile,
       {
         source: 'camo-contract.json',
         data: {
