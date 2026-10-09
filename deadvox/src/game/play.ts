@@ -63,7 +63,7 @@ import type { SaveController } from '../ui/saveController.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
-  firearmShotSound,
+  firearmShotEmission,
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
@@ -2146,7 +2146,6 @@ export const startPlay = (
   };
 
   const fireWeapon = (item: Item, time: number): boolean => {
-    const noiseRadiusScale = firearms.noiseFactorFor(item);
     const fired = firearms.fire({
       aimFrame: aim.frame,
       ready: isFirearmReady(item.uid),
@@ -2167,8 +2166,8 @@ export const startPlay = (
     if (registry.items.get(item.type)?.firearm?.pump) {
       return true;
     }
-    const shot = firearmShotSound(item.type);
-    session.playPlayerSound(shot.event, time, { ...shot, noiseRadiusScale });
+    const shot = firearmShotEmission(item, firearms.noiseFactorFor(item));
+    session.playPlayerSound(shot.event, time, shot);
     return true;
   };
 
