@@ -27,6 +27,7 @@ import type { Assembly, Connection } from '../core/schema.ts';
 import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
 import { actionOpenOffsets, resolveGunAction } from '../gun/actionDescription.ts';
+import { previewFittedAttachments } from '../gun/attachmentPreview.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
@@ -52,7 +53,6 @@ import {
 } from './designEditor.ts';
 import { buildDesignViewModel } from './designViewModel.ts';
 import { buildDetachedMagazine } from './magazineView.ts';
-import { previewFittedAttachments } from '../gun/attachmentPreview.ts';
 import {
   buildPanelModel,
   clearParam,
@@ -155,12 +155,13 @@ const saveUiState = () => {
 };
 
 /** Keeps the address bar a shareable link for the current model, including panel overrides. */
-const syncUrl = () => {
-  const params = new URLSearchParams();
+const setModelQuery = (params: URLSearchParams): void => {
   const activeDesignName = activeDesign?.name;
   if (activeDesignName && designs.some((design) => design.name === activeDesignName)) {
     params.set('design', activeDesignName);
-  } else if (uiState.assembly.kind === 'generated') {
+    return;
+  }
+  if (uiState.assembly.kind === 'generated') {
     params.set('template', uiState.template);
     params.set('seed', uiState.seed);
   } else if (uiState.assembly.kind === 'fixture') {
@@ -169,16 +170,12 @@ const syncUrl = () => {
   if (hasOverrides(uiState.overrides)) {
     params.set('set', serializeOverrides(uiState.overrides));
   }
+};
+
+const setPreservedQuery = (params: URLSearchParams): void => {
   for (const fittedAttachment of initialQuery.getAll('fit')) {
     params.append('fit', fittedAttachment);
   }
-  if (colorMode === 'role') {
-    params.set('colors', 'role');
-  }
-  const ammo = initialQuery.get('ammo');
-  const ammoCase = initialQuery.get('ammoCase');
-  const mag = initialQuery.get('mag');
-  const pose = initialQuery.get('pose');
   const viewerQuery = new URLSearchParams(location.search);
   const cycle = viewerQuery.get('cycle');
   const cycleSpeed = Number(viewerQuery.get('cycleSpeed'));
@@ -188,21 +185,27 @@ const syncUrl = () => {
   if ([1, 0.25, 0.1, 0.02].includes(cycleSpeed)) {
     params.set('cycleSpeed', String(cycleSpeed));
   }
-  if (ammo) {
-    params.set('ammo', ammo);
+  for (const key of ['ammo', 'ammoCase', 'mag'] as const) {
+    const value = initialQuery.get(key);
+    if (value) {
+      params.set(key, value);
+    }
   }
-  if (ammoCase) {
-    params.set('ammoCase', ammoCase);
-  }
-  if (mag) {
-    params.set('mag', mag);
-  }
-  if (pose === 'action-open') {
-    params.set('pose', pose);
+  if (initialQuery.get('pose') === 'action-open') {
+    params.set('pose', 'action-open');
   }
   if (revolveFacets !== DEFAULT_REVOLVE_FACETS) {
     params.set('facets', String(revolveFacets));
   }
+};
+
+const syncUrl = () => {
+  const params = new URLSearchParams();
+  setModelQuery(params);
+  if (colorMode === 'role') {
+    params.set('colors', 'role');
+  }
+  setPreservedQuery(params);
   params.set(
     'camera',
     serializeCameraState({
@@ -378,16 +381,21 @@ let pendingCamera: CameraState | undefined;
 const cycleView = createCycleView();
 let detachedMagazine: Group | undefined;
 
+const clearLayers = (): void => {
+  if (!layers) {
+    return;
+  }
+  for (const group of Object.values(layers)) {
+    scene.remove(group);
+    disposeGroup(group);
+  }
+};
+
 const redraw = () => {
   if (!report) {
     return;
   }
-  if (layers) {
-    for (const g of Object.values(layers)) {
-      scene.remove(g);
-      disposeGroup(g);
-    }
-  }
+  clearLayers();
   const action = resolveGunAction(report.resolved);
   const contextTemplate = editorState?.template ?? activeTemplate;
   const preview = previewFittedAttachments(report, initialQuery.getAll('fit'));
@@ -441,12 +449,17 @@ const placeAmmo = (shown: Report): void => {
   ammoMeshes.fired.position.set(x - ammoMeshes.caseLengthUnits / 2, y - gap, z);
 };
 
-const placeDetachedMagazine = (shown: Report, solids: Group): void => {
-  if (detachedMagazine) {
-    scene.remove(detachedMagazine);
-    disposeGroup(detachedMagazine);
-    detachedMagazine = undefined;
+const clearDetachedMagazine = (): void => {
+  if (!detachedMagazine) {
+    return;
   }
+  scene.remove(detachedMagazine);
+  disposeGroup(detachedMagazine);
+  detachedMagazine = undefined;
+};
+
+const placeDetachedMagazine = (shown: Report, solids: Group): void => {
+  clearDetachedMagazine();
   if (!(showMagazine && ammoCartridge?.kind === 'metallic' && ammoMeshes)) {
     delete view.dataset.magazineRounds;
     delete view.dataset.magazineView;

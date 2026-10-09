@@ -1,10 +1,10 @@
 import type { Assembly, Domain } from '../core/schema.ts';
 import { type Report, validate } from '../core/validate.ts';
 import { attachmentCompatibility } from './attachmentCompatibility.ts';
-import { attachmentInstanceForId, ATTACHMENT_IDS, attachmentSlots } from './attachments.ts';
+import { ATTACHMENT_IDS, attachmentInstanceForId, attachmentSlots } from './attachments.ts';
 import { gunDomain } from './domain.ts';
 
-export interface AttachmentFitRequest {
+interface AttachmentFitRequest {
   readonly id: string;
   readonly port?: string;
 }
@@ -33,6 +33,32 @@ export const parseAttachmentFit = (values: readonly string[]): AttachmentFitPars
 export type AttachmentPreviewResult =
   | { readonly ok: true; readonly report: Report }
   | { readonly ok: false; readonly message: string };
+
+const selectSlots = (
+  requests: readonly AttachmentFitRequest[],
+  slots: ReturnType<typeof attachmentSlots>,
+  compatibility: Readonly<Record<string, readonly string[]>>,
+):
+  | {
+      readonly ok: true;
+      readonly selected: readonly { readonly request: AttachmentFitRequest; readonly slot: (typeof slots)[number] }[];
+    }
+  | { readonly ok: false; readonly message: string } => {
+  const selected: { readonly request: AttachmentFitRequest; readonly slot: (typeof slots)[number] }[] = [];
+  const used = new Set<string>();
+  for (const request of requests) {
+    const choice = chooseSlot(request, slots, compatibility);
+    if (typeof choice === 'string') {
+      return { ok: false, message: choice };
+    }
+    if (used.has(choice.id)) {
+      return { ok: false, message: `Only one preview attachment can use ${choice.id}.` };
+    }
+    used.add(choice.id);
+    selected.push({ request, slot: choice });
+  }
+  return { ok: true, selected };
+};
 
 const issueKey = (issue: Report['issues'][number]): string =>
   JSON.stringify([issue.rule, issue.message, issue.parts, issue.ports ?? [], issue.keepOut ?? null]);
@@ -68,19 +94,11 @@ export const previewFittedAttachments = (
 
   const slots = attachmentSlots(source.resolved);
   const compatibility = attachmentCompatibility(source.resolved.assembly, slots, domain);
-  const selected: { readonly request: AttachmentFitRequest; readonly slot: (typeof slots)[number] }[] = [];
-  const used = new Set<string>();
-  for (const request of parsed.requests) {
-    const choice = chooseSlot(request, slots, compatibility);
-    if (typeof choice === 'string') {
-      return { ok: false, message: choice };
-    }
-    if (used.has(choice.id)) {
-      return { ok: false, message: `Only one preview attachment can use ${choice.id}.` };
-    }
-    used.add(choice.id);
-    selected.push({ request, slot: choice });
+  const selection = selectSlots(parsed.requests, slots, compatibility);
+  if (!selection.ok) {
+    return selection;
   }
+  const { selected } = selection;
 
   const parts = { ...source.resolved.assembly.parts };
   const connections = [...source.resolved.assembly.connections];

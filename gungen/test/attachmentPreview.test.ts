@@ -2,11 +2,13 @@ import { Matrix4, Quaternion } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Mat3 } from '../src/core/math.ts';
 import { validate } from '../src/core/validate.ts';
-import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { parseAttachmentFit, previewFittedAttachments } from '../src/gun/attachmentPreview.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { previewFittedAttachments, parseAttachmentFit } from '../src/gun/attachmentPreview.ts';
+import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { readGlb } from './glbReader.ts';
 import { loadDesigns } from './helpers.ts';
+
+const INCOMPATIBLE_FIT = /foregrip is incompatible/;
 
 const ar = loadDesigns().find(({ assembly }) => assembly.name === 'archetype-ar')?.assembly;
 if (!ar) {
@@ -37,10 +39,7 @@ describe('viewer attachment previews', () => {
   it('parses repeated attachment IDs with optional explicit mount ports', () => {
     expect(parseAttachmentFit(['real-suppressor', 'optic-mini-reflex@receiver.rail.3'])).toEqual({
       ok: true,
-      requests: [
-        { id: 'real-suppressor' },
-        { id: 'optic-mini-reflex', port: 'receiver.rail.3' },
-      ],
+      requests: [{ id: 'real-suppressor' }, { id: 'optic-mini-reflex', port: 'receiver.rail.3' }],
     });
   });
 
@@ -55,7 +54,7 @@ describe('viewer attachment previews', () => {
     const result = previewFittedAttachments(validate(ar, gunDomain), ['foregrip@barrel.muzzle']);
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.message).toMatch(/foregrip is incompatible/);
+      expect(result.message).toMatch(INCOMPATIBLE_FIT);
     }
   });
 
@@ -86,7 +85,7 @@ describe('viewer attachment previews', () => {
     const units = preview.report.resolved.domain.units.metresPerUnit;
     expect(node.translation ?? [0, 0, 0]).toEqual(transform.t.map((value) => value * units));
     const expectedRotation = new Quaternion().setFromRotationMatrix(rotationMatrix(transform.r));
-    const exportedRotation = new Quaternion(...(node.rotation ?? [0, 0, 0, 1]) as [number, number, number, number]);
+    const exportedRotation = new Quaternion(...((node.rotation ?? [0, 0, 0, 1]) as [number, number, number, number]));
     expect(Math.abs(expectedRotation.dot(exportedRotation))).toBeCloseTo(1, 6);
   });
 });
