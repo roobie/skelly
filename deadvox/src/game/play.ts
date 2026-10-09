@@ -282,6 +282,10 @@ const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
       const item = inventory.itemByUid(job.itemUid);
       return item ? `Treating ${inventory.name(item)}` : 'Treating wound';
     }
+    default: {
+      const unhandled: never = job;
+      return unhandled;
+    }
   }
 };
 
