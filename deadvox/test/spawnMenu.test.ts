@@ -102,6 +102,7 @@ describe('spawnMenuViewModel', () => {
     };
     const hooks = {
       sim,
+      reviewMap: { isOpen: () => false, toggle: () => undefined },
       compress: () => undefined,
       spectatorCamera: { enabled: () => false, toggle: () => undefined },
       perceptionLabels: { enabled: () => false, toggle: () => undefined },
