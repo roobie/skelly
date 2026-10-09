@@ -26,24 +26,18 @@ both independently scrolling panes.
 
 ## BR's rulings
 
-- **One registry, player rebinding:** The binding catalogue is the source for the
-  controls card and settings, so rebinding changes the displayed key labels with
-  the active bindings. The main-menu controls list uses case-insensitive substring
-  search over action descriptions and key labels; native text ownership keeps
-  search keystrokes from activating game actions. It hides debug-marked bindings
-  and bindings scoped only to debug contexts during ordinary runs, because those
-  controls are unavailable there, and includes them during debug runs so they are
-  discoverable where usable. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`,
-  `DEBUG_ONLY_CONTEXTS` and `KeyboardInput.install`, and `src/game/controls.ts`,
+- **Keyboard controls:** The binding catalogue drives the controls card and
+  settings, so rebinding updates the displayed key labels. The main-menu controls
+  list uses case-insensitive substring search over action descriptions and key
+  labels; native text ownership keeps search keystrokes from activating game
+  actions. Ordinary runs hide debug-marked bindings and bindings scoped only to
+  debug contexts because those controls are unavailable there; debug runs include
+  them where usable. Debug actions use the held gate, with noclip flight controls
+  as the readily available exception. See `src/game/inputBindings.ts`,
+  `INPUT_BINDINGS`, `DEBUG_ONLY_CONTEXTS`, `KeyboardInput.install`,
+  `noclip.ascend` and `noclip.descend`, and `src/game/controls.ts`,
   `controlsCardRows` and `filterControlsCardRows`; settings use
   `src/ui/inputOptions.ts`, `mountInputOptions`.
-- **Rebindability and the debug exception (2026-10-04 12:12):** “we must make it so
-  the player can rebind any keyboard input - this means we need a 100% centralised
-  registry and as for the debug keybinds, how about gating them all behind e.g.
-  holding down F1 then pressing the debug key? Unless some special circumstance for
-  a key need it readily available”. The noclip flight keys are that special
-  circumstance; see `noclip.ascend` and `noclip.descend` in
-  `src/game/inputBindings.ts`.
 - **No Ctrl, Cmd/Meta or Alt as game modifiers:** The browser owns them (Ctrl/Cmd
   shortcuts; Alt+Left/Right go back and forward; on Windows and Linux, Alt or
   Alt+letter opens the menu bar). The registry refuses these modifiers; see
