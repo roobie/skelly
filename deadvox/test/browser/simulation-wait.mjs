@@ -12,6 +12,9 @@ import assert from 'node:assert/strict';
  */
 export async function waitForSimulation(page, sample, argument, { seconds, from, label, record, stop }) {
   assert.ok(Number.isFinite(seconds) && seconds > 0, 'positive simulation budget');
+  // A stop without keyUps, such as a wrapped holdAction release, would leave a held key down until Node
+  // releases it; a hold with no key to release, such as a mouse hold, declares keyUps: [].
+  assert.ok(stop === undefined || Array.isArray(stop.keyUps), `${label}: stop must carry keyUps`);
   const initial = await page.evaluate(sample, argument);
   const start = from ?? initial.time;
   assert.ok(Number.isFinite(start), 'finite simulation start');

@@ -176,6 +176,8 @@ Firefox start-up probe, page load took 6.1 s with the default look against 2.5 s
 those three parameters (commit `3299e50`; on the full look the contract took 8m09s against
 its 300 s cap). It tests the UI, not the look.
 
+## Browser stage input
+
 Native key delivery and the inventory's next-frame DOM update are different
 boundaries. A selection wait must compare the same empty representation as its
 pre-key sample, or it can declare success before any row is selected. See
@@ -188,11 +190,14 @@ the effect, and only then assert.
 A browser-stage walk holds a real key until its condition holds. Released from Node,
 the key stays down through the round trip while the game keeps simulating, so the
 walk overshoots by its speed times that latency, and a later step that depends on
-where it stopped flakes under load. Pass the hold as the wait's `stop`: the poll that
-ends the wait releases it in the page, through the same window listeners a real keyup
-reaches, before the next game frame. See `test/browser/simulation-wait.mjs`,
-`waitForSimulation`, and `test/browser/input-actions.mjs`, `holdAction`. A mouse hold
-has no in-page release and still ends from Node.
+where it stopped flakes under load. Pass the hold itself as the wait's `stop`: the poll
+that ends the wait releases it in the page, through the same window listeners a real
+keyup reaches, before the next game frame. See `test/browser/simulation-wait.mjs`,
+`waitForSimulation`, and `test/browser/input-actions.mjs`, `holdAction`. The wait
+refuses a `stop` without `keyUps`, so a wrapped release can't fall back to Node
+unnoticed; a mouse hold has no key to release and declares an empty list. On an idle
+host the round trip fits in one frame, so no stage catches a lost in-page release;
+`test/simulationWait.test.ts` guards it.
 
 ## Render-free browser logic stages
 
