@@ -4,17 +4,17 @@ import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
 // The static launcher cannot import deadvox/src/core/weather.ts; keep its control range in sync with WEATHERING_STRENGTH_MAX.
 const WEATHERING_STRENGTH_MAX = 8;
 
-// The tester brief's wording lives only here; the facilitator's run sheet points at it, so a change reaches every session.
+// The tester brief's wording lives only here; the organiser's sheet points at it, so a change reaches every tester.
 const playtestBrief = html`
         <section class="playtest" aria-labelledby="playtest-title">
           <h3 id="playtest-title">Playtest</h3>
           <p><a id="deadvox-playtest" href="deadvox/?site=playtest">Play the playtest map</a>. Your task: find the military camp.</p>
           <ul>
+            <li>Play for as long as you like, in as many sittings as you like. Continue picks up where you left off.</li>
             <li>The game records play metrics only on your machine, in this browser.</li>
             <li>Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.</li>
-            <li>This site, the game included, loads Simple Analytics to count visits. It gets none of your play metrics.</li>
+            <li>This site, the game included, loads Simple Analytics to count visits. It is anonymous, stores no cookies on your device, and gets none of your play metrics.</li>
             <li>Send feedback through <a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">the playtest feedback form</a>. It opens a public GitHub issue and needs a GitHub account.</li>
-            <li>If someone runs your session, they watch without helping and take notes. You can stop at any time.</li>
           </ul>
         </section>`;
 

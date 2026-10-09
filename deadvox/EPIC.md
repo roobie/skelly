@@ -135,22 +135,21 @@ wear and light. Slice 3's milestone scope and gates are in
 
 #### Playtest plan
 
-Use the authored map specified in
-[#181](https://github.com/roobie/skelly/issues/181) and detailed in
-[SLICE-3.md](SLICE-3.md). Test at least three people, including someone new to
-both CDDA and DayZ, on Pages, in as many sittings as each tester likes
-([docs/playtest-run.md](docs/playtest-run.md), "Session format"). Use “find the
-military camp” as the prompt specified by #181. Do not teach the systems first.
+Share the Pages landing-page link with a few people. The Playtest link opens the
+authored map specified in [#181](https://github.com/roobie/skelly/issues/181)
+and detailed in [SLICE-3.md](SLICE-3.md), with “find the military camp” as the
+prompt. Each tester plays on their own for as long and in as many sittings as
+they like; Continue resumes their run
+([docs/playtest-run.md](docs/playtest-run.md), "Session format"). There is no
+scripted session or fixed play time. Testers can send feedback through the
+public form and may choose to attach their local metrics and a recent replay.
 
-For #181, open the Pages build, read the controls card and start in late
-afternoon at the lone house. Follow the authored progression through the first
-night near the hunting cabins and the second night at the medical site; do not
-script zombie behavior.
-Observe inventory choices, combat, noise, light and wound decisions without
-coaching. Close the tab and return with Continue; on a later death, review the
-death screen and start a new world.
+The authored route runs from the lone house through the hamlet, hunting cabins,
+medical site and military camp, with the first and second nights along the way.
+The game does not script zombie behavior. Testers explore the map and make their
+own choices; the run is not facilitated or shadowed.
 
-Ask each player:
+Use the metrics testers choose to share and their feedback issues to assess:
 
 1. Is looting tense and fun when each item move takes real seconds while the
    world keeps moving?
@@ -161,12 +160,12 @@ Ask each player:
 5. Are a few shamblers enough threat to make looting and sleep meaningful?
 6. Is the first night frightening? What scared the player, and did it come from
    darkness and sounds rather than a scripted moment? Until voxel light arrives
-   in Slice 4, interiors are no darker than outdoors; read the answers with that
-   in mind ([DESIGN.md](DESIGN.md#light)).
-7. Does the 1:8 clock ratio let one sitting show enough of the world?
+   in Slice 4, interiors are no darker than outdoors; interpret feedback with
+   that in mind ([DESIGN.md](DESIGN.md#light)).
+7. Does the 1:8 clock ratio give players enough time to explore the world?
 8. Do non-respawning shamblers make the second night too safe?
-9. Is combat readable and visceral? Do noise and wounds change what the player
-   does? Do they listen before moving?
+9. Is combat readable and visceral? Do noise and wounds change what players do?
+   Do they listen before moving?
 10. Do players pick up materials for what they could make, and plan loot runs
     around recipes?
 11. Can players tell what crafting is missing and where those materials might
@@ -177,13 +176,13 @@ Ask each player:
 14. Do players make light, and does carrying a burning torch change how they move
     at night?
 
-Watch how long people spend in the inventory screen, pocket choices, reactions
-to unseen sounds and interruptions, and any point where players stall or
-misunderstand. Ask which moment most annoyed and which most delighted each
-player. Save the local metrics and facilitator notes with the findings. If the
-second night is too safe, add night wanderers after the first playtest. Update DESIGN, CHALLENGES and this EPIC with
-the findings before planning Slice 4. The facilitator's steps, consent and
-observation template are in [docs/playtest-run.md](docs/playtest-run.md).
+The metrics show how far testers get, what they find and when they reach map
+beats. Their feedback issues can explain what felt tense, confusing, satisfying
+or frustrating, and which moments annoyed or delighted them. Use that evidence
+to update DESIGN, CHALLENGES and this EPIC before planning Slice 4. If the second
+night is too safe, consider adding night wanderers after reviewing the feedback.
+The organiser's sheet in [docs/playtest-run.md](docs/playtest-run.md) explains
+how testers can export and share their metrics and feedback.
 
 The death/new-run contract is still open for version 1: should a new run in the
 same world preserve piles left by the previous character?
