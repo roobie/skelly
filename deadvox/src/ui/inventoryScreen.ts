@@ -345,11 +345,11 @@ const detailsTemplate = (
   attachmentAction: (payload: ReplayActionPayload) => void,
 ): TemplateResult => {
   if (vm.empty) {
-    return html`<aside class="inv-details"><p class="inv-muted">Pick an item to see what it is and where it can go.</p></aside>`;
+    return html`<aside class="inv-details" data-pane="details" data-selected-uid=""><p class="inv-muted">Pick an item to see what it is and where it can go.</p></aside>`;
   }
   const item = vm.item!;
   return html`
-    <aside class="inv-details">
+    <aside class="inv-details" data-pane="details" data-selected-uid=${item.uid}>
       <div class="inv-kicker">${vm.category}</div>
       <h3>${vm.name}</h3>
       <div class="inv-condition">${vm.condition}</div>
@@ -420,8 +420,8 @@ const inventoryTemplate = (
     class="inv-body"
     data-tab-panel="items"
     style=${[
-      `--inv-you-fr: ${splitRatio}fr`,
-      `--inv-around-fr: ${1 - splitRatio}fr`,
+      `--inv-you-fr: ${splitFactors(splitRatio).you}`,
+      `--inv-around-fr: ${splitFactors(splitRatio).around}`,
       vm.containerMaxWidthCells === undefined
         ? ''
         : `--inv-around-container-width-cap: ${vm.containerMaxWidthCells * CELL}px`,
@@ -456,7 +456,7 @@ const inventoryTemplate = (
       class="inv-splitter"
       data-inventory-splitter
       role="separator"
-      aria-label="Resize inventory and vicinity panes"
+      aria-label="Resize player and vicinity columns"
       aria-orientation="vertical"
       aria-valuemin="0"
       aria-valuemax="100"
@@ -543,6 +543,7 @@ const inventoryTemplate = (
     </section>
   </div>
   <footer class="inv-queue"></footer>
+  <div class="inv-gutter-probe" aria-hidden="true"></div>
 `;
 
 const queueTemplate = (queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>): TemplateResult => {
@@ -567,6 +568,51 @@ const queueTemplate = (queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>
       `,
     )}
   `;
+};
+
+/** The You-pane share the side-by-side Items columns allow, as fractions of the width they share. */
+interface SplitBounds {
+  readonly availableWidth: number;
+  readonly min: number;
+  readonly max: number;
+}
+
+/** Undefined while the Items columns stack or are hidden, when the split doesn't apply. */
+const splitBounds = (body: HTMLElement): SplitBounds | undefined => {
+  const splitter = body.querySelector<HTMLElement>('[data-inventory-splitter]');
+  const you = body.querySelector<HTMLElement>('[data-pane="you"]');
+  const details = body.querySelector<HTMLElement>('[data-pane="details"]');
+  const around = body.querySelector<HTMLElement>('[data-pane="around"]');
+  if (!(splitter && you && details && around && splitter.offsetWidth > 0)) {
+    return;
+  }
+  const availableWidth = Math.max(1, body.clientWidth - splitter.offsetWidth - details.offsetWidth);
+  // Each side pane's min-width is its grid column's floor, so the clamp and the CSS can't disagree.
+  const floor = (pane: HTMLElement): number => Number.parseFloat(getComputedStyle(pane).minWidth) || 0;
+  const min = Math.min(1, floor(you) / availableWidth);
+  return { availableWidth, min, max: Math.max(min, 1 - floor(around) / availableWidth) };
+};
+
+const clampSplit = (ratio: number, bounds: SplitBounds): number => Math.max(bounds.min, Math.min(bounds.max, ratio));
+
+/**
+ * The side tracks' fr factors for a split, scaled so the smaller is 1. When one side sits at its floor, CSS Grid
+ * gives the other track only its factor times the rest (a factor sum below 1 counts as 1), so a factor below 1
+ * would leave an empty band and pull the split away from where the player put it.
+ */
+const splitFactors = (ratio: number): { readonly you: string; readonly around: string } => {
+  const smaller = Math.max(Math.min(ratio, 1 - ratio), 0.01);
+  return { you: `${ratio / smaller}fr`, around: `${(1 - ratio) / smaller}fr` };
+};
+
+/**
+ * The width a stable scroll gutter takes here (0 for overlay scrollbars), which no CSS value reports, so the
+ * layout floors can reserve exactly one per gutter. The probe has a stable gutter like the panes, not
+ * `overflow: scroll`: a browser can hide scrollbars yet still reserve a stable gutter. Undefined while hidden.
+ */
+const scrollbarWidth = (root: HTMLElement): number | undefined => {
+  const probe = root.querySelector<HTMLElement>('.inv-gutter-probe');
+  return probe && probe.offsetWidth > 0 ? probe.offsetWidth - probe.clientWidth : undefined;
 };
 
 export class InventoryScreen {
@@ -597,8 +643,9 @@ export class InventoryScreen {
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
+  /** The player's chosen split; a narrow window clamps only what it applies, so widening restores the choice. */
   private splitRatio = 0.5;
-  private splitDrag: { startX: number; startRatio: number; availableWidth: number } | undefined;
+  private splitDrag: { startX: number; startRatio: number; bounds: SplitBounds } | undefined;
   private drag: Drag | undefined;
 
   constructor(
@@ -628,6 +675,7 @@ export class InventoryScreen {
     this.queue = queue;
     this.hooks = hooks;
     root.addEventListener('pointerdown', (e) => this.pointerDown(e));
+    globalThis.addEventListener('resize', () => this.syncSplitterToLayout());
     globalThis.addEventListener('pointermove', (e) => this.pointerMove(e));
     globalThis.addEventListener('pointerup', (e) => this.pointerUp(e));
   }
@@ -915,6 +963,30 @@ export class InventoryScreen {
     } else if (selectedUid !== this.revealedSelectionUid && this.scrollSelectedItemIntoView()) {
       this.revealedSelectionUid = selectedUid;
     }
+    this.syncSplitterToLayout();
+  }
+
+  private syncSplitterToLayout(): void {
+    const scrollbar = scrollbarWidth(this.root);
+    if (scrollbar !== undefined) {
+      this.root.style.setProperty('--inv-scrollbar-width', `${scrollbar}px`);
+    }
+    const body = this.root.querySelector<HTMLElement>('.inv-body[data-tab-panel="items"]');
+    const bounds = body ? splitBounds(body) : undefined;
+    if (body && bounds) {
+      this.applySplit(body, bounds);
+    }
+  }
+
+  private applySplit(body: HTMLElement, bounds: SplitBounds): void {
+    const applied = clampSplit(this.splitRatio, bounds);
+    const factors = splitFactors(applied);
+    body.style.setProperty('--inv-you-fr', factors.you);
+    body.style.setProperty('--inv-around-fr', factors.around);
+    const splitter = body.querySelector<HTMLElement>('[data-inventory-splitter]');
+    splitter?.setAttribute('aria-valuemin', String(Math.round(bounds.min * 100)));
+    splitter?.setAttribute('aria-valuemax', String(Math.round(bounds.max * 100)));
+    splitter?.setAttribute('aria-valuenow', String(Math.round(applied * 100)));
   }
 
   private scrollSelectedItemIntoView(): boolean {
@@ -1203,16 +1275,23 @@ export class InventoryScreen {
 
   // ---- drag and drop ----
 
-  private pointerDown(e: PointerEvent): void {
+  private startSplitterDrag(e: PointerEvent): boolean {
     const splitter = (e.target as HTMLElement).closest<HTMLElement>('[data-inventory-splitter]');
-    if (splitter && e.button === 0 && (!e.pointerType || e.pointerType === 'mouse')) {
-      const body = splitter.closest<HTMLElement>('.inv-body');
-      if (!body) {
-        return;
-      }
-      e.preventDefault();
-      const availableWidth = Math.max(1, body.clientWidth - splitter.offsetWidth);
-      this.splitDrag = { startX: e.clientX, startRatio: this.splitRatio, availableWidth };
+    if (!(splitter && e.button === 0 && (!e.pointerType || e.pointerType === 'mouse'))) {
+      return false;
+    }
+    const body = splitter.closest<HTMLElement>('.inv-body');
+    const bounds = body ? splitBounds(body) : undefined;
+    if (!bounds) {
+      return true;
+    }
+    e.preventDefault();
+    this.splitDrag = { startX: e.clientX, startRatio: clampSplit(this.splitRatio, bounds), bounds };
+    return true;
+  }
+
+  private pointerDown(e: PointerEvent): void {
+    if (this.startSplitterDrag(e)) {
       return;
     }
     const refusal = this.hooks.actionRefusal?.();
@@ -1250,19 +1329,12 @@ export class InventoryScreen {
 
   private pointerMove(e: PointerEvent): void {
     if (this.splitDrag) {
-      const minRatio = Math.min(0.5, 220 / this.splitDrag.availableWidth);
-      this.splitRatio = Math.max(
-        minRatio,
-        Math.min(
-          1 - minRatio,
-          this.splitDrag.startRatio + (e.clientX - this.splitDrag.startX) / this.splitDrag.availableWidth,
-        ),
-      );
+      const { startX, startRatio, bounds } = this.splitDrag;
+      this.splitRatio = clampSplit(startRatio + (e.clientX - startX) / bounds.availableWidth, bounds);
       const body = this.root.querySelector<HTMLElement>('.inv-body[data-tab-panel="items"]');
-      body?.style.setProperty('--inv-you-fr', `${this.splitRatio}fr`);
-      body?.style.setProperty('--inv-around-fr', `${1 - this.splitRatio}fr`);
-      const splitter = body?.querySelector<HTMLElement>('[data-inventory-splitter]');
-      splitter?.setAttribute('aria-valuenow', String(Math.round(this.splitRatio * 100)));
+      if (body) {
+        this.applySplit(body, bounds);
+      }
       return;
     }
     const { drag } = this;

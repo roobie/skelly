@@ -13,23 +13,35 @@ put its apparent click point in an adjacent pane when content packing changes.
 Sharing the screen with the crafting catalogue must not make an ordinary pile
 slot inaccessible merely because the item occupies a different column.
 
-The character screen groups Items, Skills and Crafting into tabs so the game,
-notably on a small zoomed screen, has room for each view. Character inventory
-and nearby piles or containers stay together on Items so drag and drop remains
-within one view. The divider between You and Around you starts at the midpoint,
-giving each column half the available width; dragging lets the player favor
-either view without collapsing the other. The Around you pane fills its column. Its floor and container sections wrap when
-they do not fit, so the vicinity uses whatever width the player gives it. A
-container section has room for its capped pocket grid and scroll gutter; when it
-cannot fit beside another section, it wraps rather than squeezing the grid.
-Justified wider grids scroll within the content-owned cap.
+Selected-item details stay between the two item locations so the player can
+inspect an item while seeing both destinations. On tighter windows, details
+yield space before the layout stacks. The nearby pane's floor is derived from
+the content's container width cap, plus two scroll gutters: the locker grid's
+and the pane's own. A cap-wide locker therefore fits without horizontal
+scrolling whatever the cap. No CSS value reports a gutter's width; it is 0 with
+overlay scrollbars and about 15px with classic ones, and a browser can hide its
+scrollbars yet still reserve a stable gutter. So the screen measures a stable
+gutter and publishes it as `--inv-scrollbar-width` (`src/ui/inventoryScreen.ts`,
+`scrollbarWidth`). The floors live once, in CSS, as the side panes'
+min-widths. The divider's clamp reads them, so the divider and the columns
+can't disagree. The divider keeps the player's chosen
+split and clamps only what it applies: a window too narrow for that split
+shows the nearest one that fits, and widening it again restores the choice.
+The handling queue stays below the panes because it summarizes work across
+the whole inventory. See `src/ui/style.css`,
+`#inventory .inv-body[data-tab-panel="items"]`, and `src/ui/inventoryScreen.ts`,
+`splitBounds` and `InventoryScreen.syncSplitterToLayout`.
 
-Floor piles are displayed packed to the column width in
-`src/ui/inventoryScreen.ts`, `InventoryScreen.gridViewModel`. Their stored
-positions are save state, and display packing never writes them. A drop onto a
-floor pile merges into the item under the pointer when compatible; otherwise
-ordinary pile placement uses an available stack or the first free stored spot.
-Each pane scrolls independently.
+The floor and container sections wrap when they cannot share a row, so the
+vicinity uses its available width without squeezing a capped grid. Justified
+wider grids scroll within their content-owned cap. Floor piles are displayed
+packed to the column width in `src/ui/inventoryScreen.ts`,
+`InventoryScreen.gridViewModel`; stored positions remain save state and display
+packing never writes them. Drops onto floor piles merge with the item under the
+pointer when compatible; otherwise they use an available stack or the first
+free stored spot. See `src/ui/inventoryScreen.ts`,
+`InventoryScreen.scrollSelectedItemIntoView`, for selection visibility across
+scrollable ancestors.
 Tab selection and the split are runtime UI state, not save or replay state.
 G, V and B open the character screen on Items, Skills or Crafting, or switch to that tab
 while it is open; Tab reopens the last tab. The keys sit beside WASD so movement can
