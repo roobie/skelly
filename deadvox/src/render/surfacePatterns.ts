@@ -4,26 +4,42 @@
 // Anti-aliasing: `fw` is the pixel footprint in metres, taken by the caller in uniform control
 // flow. Features fade at range so fine details do not shimmer.
 
-import baseBlocks from '../content/base/blocks.json' with { type: 'json' };
+import type { Registry } from '../core/content.ts';
 import { BLOCK_PATTERNS } from '../core/schema.ts';
 
 const DEFINES = BLOCK_PATTERNS.map((name, i) => `#define PAT_${name.toUpperCase()} ${i}.0`).join('\n');
-const woodlandCamo = baseBlocks.blocks.find(({ pattern }) => pattern === 'camo');
-if (!woodlandCamo?.patternPalette || woodlandCamo.patternWashout === undefined) {
-  throw new Error('The camo block needs a palette and washout amount');
+const FALLBACK_CAMO: CamoShaderConfig = {
+  palette: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+  washout: 0,
+  baseColor: [1, 1, 1],
+};
+
+type Rgb = [number, number, number];
+export interface CamoShaderConfig {
+  palette: [Rgb, Rgb, Rgb, Rgb];
+  washout: number;
+  baseColor: Rgb;
 }
-const camoPalette = woodlandCamo.patternPalette
-  .map((color) => {
-    const hex = color.slice(1);
-    const rgb = [0, 2, 4].map((offset) => (Number.parseInt(hex.slice(offset, offset + 2), 16) / 255).toFixed(4));
-    return `vec3(${rgb.join(', ')})`;
-  })
-  .join(', ');
-const CAMO_CONFIG_GLSL = `const vec3 CAMO_PALETTE[4] = vec3[4](${camoPalette});\nconst float CAMO_WASHOUT = ${woodlandCamo.patternWashout.toFixed(3)};`;
+
+const rgb = (hex: string): Rgb =>
+  [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset + 1, offset + 3), 16) / 255) as Rgb;
+
+/** Values supplied to the chunk shader from the merged runtime registry. */
+export const camoShaderConfig = (blocks: Registry['blocks']): CamoShaderConfig => {
+  const camo = blocks.find(({ pattern }) => pattern === 'camo');
+  if (!camo?.patternPalette || camo.patternWashout === undefined) return FALLBACK_CAMO;
+  return {
+    palette: camo.patternPalette.map(rgb) as CamoShaderConfig['palette'],
+    washout: camo.patternWashout,
+    baseColor: rgb(camo.color),
+  };
+};
 
 export const SURFACE_PATTERN_GLSL = `
 ${DEFINES}
-${CAMO_CONFIG_GLSL}
+uniform vec3 uCamoPalette[4];
+uniform float uCamoWashout;
+uniform vec3 uCamoBaseColor;
 
 // Hoskins' hash without sine; cell coordinates are wrapped so large worlds keep precision.
 float hash21(vec2 p) {
@@ -149,13 +165,13 @@ vec3 camoColor(vec3 world, float fw) {
   vec4 v = voronoi3(world / 0.72);
   float edge = 1.0 - smoothstep(0.015, 0.08, (v.y - v.x) * 0.72);
   float paletteIndex = floor(v.z * 4.0);
-  vec3 blotch = CAMO_PALETTE[0];
-  if (paletteIndex > 0.5) blotch = CAMO_PALETTE[1];
-  if (paletteIndex > 1.5) blotch = CAMO_PALETTE[2];
-  if (paletteIndex > 2.5) blotch = CAMO_PALETTE[3];
+  vec3 blotch = uCamoPalette[0];
+  if (paletteIndex > 0.5) blotch = uCamoPalette[1];
+  if (paletteIndex > 1.5) blotch = uCamoPalette[2];
+  if (paletteIndex > 2.5) blotch = uCamoPalette[3];
   blotch = mix(srgbToLinear(blotch), srgbToLinear(vec3(0.24, 0.25, 0.22)), edge * 0.16);
   vec3 neutral = srgbToLinear(vec3(0.72, 0.71, 0.64));
-  vec3 washed = mix(blotch, neutral, CAMO_WASHOUT);
+  vec3 washed = mix(blotch, neutral, uCamoWashout);
   return mix(neutral, washed, featureFade(fw, 0.72));
 }
 

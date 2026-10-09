@@ -141,9 +141,9 @@ const BlockSchema = strictObject({
   rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
-  /** Pattern-specific palette, when the selected surface pattern uses one. */
+  /** Four-colour palette read only by the `camo` surface pattern. */
   patternPalette: optional(tuple([Color, Color, Color, Color])),
-  /** Pattern-specific washout amount in [0, 1]. */
+  /** Washout amount in [0, 1], read only by the `camo` surface pattern. */
   patternWashout: optional(pipe(number(), minValue(0), maxValue(1))),
 });
 

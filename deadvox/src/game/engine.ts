@@ -16,6 +16,7 @@ import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
 import type { GameConfig } from './config.ts';
 import type { StreamerStats } from './streamer.ts';
+import { BUNDLED_CONTENT } from './bundledContent.ts';
 import { createWorldSetup, type WorldSetup } from './worldSetup.ts';
 
 export interface Engine extends WorldSetup {
@@ -76,7 +77,7 @@ export function createEngine(
   scene.add(sky.ambient, sunRig);
   applySky(sky, DAY_SKY);
 
-  const meshes = new ChunkMeshes(scale.blockSize);
+  const meshes = new ChunkMeshes(scale.blockSize, BUNDLED_CONTENT.registry);
   const worldSetup = createWorldSetup(config, meshes, stats);
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.

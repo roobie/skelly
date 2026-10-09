@@ -30,6 +30,22 @@ const vite = await createServer({
       name: 'stairs-test-observation',
       enforce: 'pre',
       transform(code, id) {
+        if (mode === 'lighting' && id.endsWith('/src/content/base/templates-stairs.json')) {
+          const content = JSON.parse(code);
+          const cabin = content.templates.find(({ id }) => id === 'stairs_cabin');
+          assert.ok(cabin);
+          cabin.palette.s = 'camo_woodland';
+          return `export default ${JSON.stringify(content)};`;
+        }
+        if (mode === 'lighting' && id.endsWith('/src/content/base/blocks.json')) {
+          const content = JSON.parse(code);
+          const camo = content.blocks.find(({ pattern }) => pattern === 'camo');
+          assert.ok(camo);
+          camo.color = '#777777';
+          camo.patternPalette = ['#777777', '#777777', '#777777', '#777777'];
+          camo.patternWashout = 0;
+          return `export default ${JSON.stringify(content)};`;
+        }
         if (mode === 'lighting' && id.endsWith('/src/core/authoredSite.ts')) {
           // Post-admission fixture: a deliberate 6 m raise is not valid authored cut/fill.
           // Keep its lot at shared ground, exposing the lower west wall for slot contrast.
@@ -259,10 +275,10 @@ try {
   }
   // The contrast witnesses measure only the world, never the debug hover label or HUD.
   await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
-  const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2) => {
+  const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2, fixturePitch = 0) => {
     // Fixtures are positioned only BEFORE each independent scenario, never across a flight during traversal.
     await page.evaluate(
-      ({ position, yaw }) => {
+      ({ position, yaw, pitch }) => {
         const { session, input, noclip } = globalThis.stairsWitness;
         assertNoNoclip();
         function assertNoNoclip() {
@@ -274,9 +290,9 @@ try {
         session.body.vel = [0, 0, 0];
         session.body.onGround = true;
         input.yaw = yaw;
-        input.pitch = 0;
+        input.pitch = pitch;
       },
-      { position: fixturePosition, yaw: fixtureYaw },
+      { position: fixturePosition, yaw: fixtureYaw, pitch: fixturePitch },
     );
     await page.waitForTimeout(200);
   };
@@ -308,6 +324,54 @@ try {
     return value;
   };
   const shot = (label) => page.screenshot({ path: resolve(artifacts, `${label}.png`) });
+  const camoWallPixels = async (png) =>
+    page.evaluate(async (data) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${data}`;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      const { engine } = globalThis.stairsWitness;
+      const camera = engine.camera;
+      camera.updateMatrixWorld(true);
+      const project = ([x, y, z]) => {
+        const blockSize = engine.config.scale.blockSize;
+        const point = [x * blockSize, y * blockSize, z * blockSize, 1];
+        const multiply = (m, v) => [
+          m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12] * v[3],
+          m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13] * v[3],
+          m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14] * v[3],
+          m[3] * v[0] + m[7] * v[1] + m[11] * v[2] + m[15] * v[3],
+        ];
+        const clip = multiply(camera.projectionMatrix.elements, multiply(camera.matrixWorldInverse.elements, point));
+        return { x: ((clip[0] / clip[3]) * 0.5 + 0.5) * canvas.width, y: (0.5 - (clip[1] / clip[3]) * 0.5) * canvas.height };
+      };
+      const luminance = (point) => {
+        const { x, y } = project(point);
+        if (x < 4 || y < 4 || x >= canvas.width - 4 || y >= canvas.height - 4) {
+          throw new Error(`camo AO sample is outside the screenshot: ${x},${y}`);
+        }
+        const pixels = context.getImageData(Math.round(x) - 3, Math.round(y) - 3, 7, 7).data;
+        let sum = 0;
+        for (let i = 0; i < pixels.length; i += 4) sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+        return { x, y, luminance: sum / (pixels.length / 4 * 3) };
+      };
+      return {
+        innerCorner: luminance([133, 43.15, 111.3]),
+        openWall: luminance([133, 45.5, 115.3]),
+      };
+    }, png.toString('base64'));
+  if (mode === 'lighting') {
+    await stage([140, 44, 114], Math.PI / 2, -0.25);
+    const camoAo = await camoWallPixels(await shot('camo-inner-corner-ao'));
+    await writeFile(resolve(artifacts, 'camo-inner-corner-ao.json'), JSON.stringify(camoAo, null, 2));
+    await test('inner-corner camo pixel is darker than the same wall open middle', () => {
+      assert.ok(camoAo.innerCorner.luminance + 5 < camoAo.openWall.luminance, JSON.stringify(camoAo));
+    });
+  }
   const walk = async (actionId, targetX, ascending, targetFeet) => {
     const release = await holdAction(page, actionId);
     try {

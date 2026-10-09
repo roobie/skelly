@@ -105,12 +105,16 @@ const expectHqFloorCourseEdges = (template: Pick<TemplateDef, 'layers' | 'size'>
 };
 
 const expectHqMaterialsAndFloorEdges = (compiledHq: CompiledTemplate): void => {
-  const hqBlockAt = (x: number, y: number, z: number): string | undefined => {
-    const block = compiledHq.blocks[x + compiledHq.size[0] * (z + compiledHq.size[2] * y)]!;
-    return result.registry.blocks[block]?.id;
-  };
-  expect(hqBlockAt(0, 1, 1)).toBe('camo_woodland');
-  expectHqFloorCourseEdges(result.registry.templates.get('camp_hq')!);
+  const hq = result.registry.templates.get('camp_hq')!;
+  const shell = hq.palette['#'];
+  if (typeof shell !== 'string') {
+    throw new Error('the HQ shell palette entry must select a block');
+  }
+  const shellBlock = result.registry.blocks[result.registry.blockIds.get(shell)!];
+  expect(shellBlock?.pattern).toBe('camo');
+  const compiledShell = compiledHq.blocks[0 + compiledHq.size[0] * (1 + compiledHq.size[2])]!;
+  expect(result.registry.blocks[compiledShell]?.pattern).toBe('camo');
+  expectHqFloorCourseEdges(hq);
 };
 
 const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {

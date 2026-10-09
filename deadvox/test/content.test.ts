@@ -13,7 +13,7 @@ import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
-import { SURFACE_PATTERN_GLSL } from '../src/render/surfacePatterns.ts';
+import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -1518,15 +1518,28 @@ describe('content', () => {
     expect(issues.map((i) => i.path)).toEqual(['blocks[0].pattern']);
   });
 
-  it('validates the woodland camouflage palette and emits its shader pattern', () => {
+  it('feeds registry camo palette and washout overrides to shader uniforms', () => {
+    expect(() => camoShaderConfig([])).not.toThrow();
     const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
-    expect(camo.pattern).toBe('camo');
-    expect(camo.patternPalette).toHaveLength(4);
-    expect(camo.patternWashout).toBeGreaterThanOrEqual(0);
-    expect(camo.patternWashout).toBeLessThanOrEqual(1);
-    expect(SURFACE_PATTERN_GLSL).toContain('#define PAT_CAMO');
-    expect(SURFACE_PATTERN_GLSL).toContain('camoColor');
-    expect(SURFACE_PATTERN_GLSL).toContain('CAMO_PALETTE');
+    const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
+    const { registry, issues } = buildRegistry([
+      ...base,
+      {
+        source: 'mod-camo.json',
+        data: { blocks: [{ ...camo, color: '#56789a', patternPalette: palette, patternWashout: 0.37 }] },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    expect(camoShaderConfig(registry.blocks)).toEqual({
+      palette: [
+        [18 / 255, 52 / 255, 86 / 255],
+        [35 / 255, 69 / 255, 103 / 255],
+        [52 / 255, 86 / 255, 120 / 255],
+        [69 / 255, 103 / 255, 137 / 255],
+      ],
+      washout: 0.37,
+      baseColor: [86 / 255, 120 / 255, 154 / 255],
+    });
   });
 
   it('gives every base block a known pattern and patterns the stone work', () => {

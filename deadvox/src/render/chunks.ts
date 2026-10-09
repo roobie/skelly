@@ -9,11 +9,13 @@ import {
   Mesh,
   MeshLambertMaterial,
   Sphere,
+  Vector3,
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import type { MeshData } from '../core/mesher.ts';
+import type { Registry } from '../core/content.ts';
 import { patchHeightFog } from './heightFog.ts';
-import { SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
+import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
 
 // Per-block brightness variation stands in for textures. It's computed in the
 // fragment shader from the block each fragment belongs to, so the mesher can merge
@@ -62,13 +64,18 @@ const chunkMaterial = (
   linearColors: { value: number },
   patterns: { value: number },
   occlusion: { value: number },
+  registry?: Registry,
 ): MeshLambertMaterial => {
   const material = new MeshLambertMaterial({ vertexColors: true });
+  const camo = camoShaderConfig(registry?.blocks ?? []);
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uBlockSize = { value: blockSize };
     shader.uniforms.uLinearColors = linearColors;
     shader.uniforms.uPatterns = patterns;
     shader.uniforms.uOcclusion = occlusion;
+    shader.uniforms.uCamoPalette = { value: camo.palette.map(([r, g, b]) => new Vector3(r, g, b)) };
+    shader.uniforms.uCamoWashout = { value: camo.washout };
+    shader.uniforms.uCamoBaseColor = { value: new Vector3(...camo.baseColor) };
     patchHeightFog(shader, 'chunk');
     shader.vertexShader = shader.vertexShader
       .replace('#include <color_pars_vertex>', centroidColorPars(COLOR_PARS_GUARD_VERTEX))
@@ -101,8 +108,9 @@ vFaceN = normalize(normal);`,
       )
       .replace(
         '#include <color_fragment>',
-        // The sRGB decode comes first so patterns modulate decoded colour. A patterned block's own
-        // shading replaces the per-block hash (its cell jitter would otherwise cut across joints);
+        // Camo replaces block colour, while its source vertex colour carries the mesher's corner AO.
+        // Other patterns modulate the decoded colour. A patterned block's own shading replaces the
+        // per-block hash (its cell jitter would otherwise cut across joints);
         // with patterns off every block gets the hash, as before. The derivatives are taken here, in
         // uniform control flow, whatever the block.
         // The clamp comes right after the vertex colour. MSAA shades edge pixels at the pixel centre even
@@ -111,13 +119,15 @@ vFaceN = normalize(normal);`,
         // guard for drivers without proper centroid.
         `#include <color_fragment>
 diffuseColor.rgb = clamp(diffuseColor.rgb, 0.0, 1.0);
+vec3 camoVertexColor = diffuseColor.rgb;
 if (uLinearColors > 0.5) diffuseColor.rgb = srgbToLinear(diffuseColor.rgb);
 vec2 patUV = surfaceUV(vWorld, vFaceN);
 vec2 patFw = fwidth(patUV);
 float patId = floor(vPattern + 0.5);
 float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
 if (uPatterns > 0.5 && patId == PAT_CAMO) {
-  diffuseColor.rgb = camoColor(vWorld, max(patFw.x, patFw.y));
+  float camoAO = min(camoVertexColor.r / max(uCamoBaseColor.r, 1e-4), min(camoVertexColor.g / max(uCamoBaseColor.g, 1e-4), camoVertexColor.b / max(uCamoBaseColor.b, 1e-4)));
+  diffuseColor.rgb = camoColor(vWorld, max(patFw.x, patFw.y)) * clamp(camoAO, 0.0, 1.0);
 } else {
   diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
     ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
@@ -150,8 +160,8 @@ export class ChunkMeshes {
   onChange?: (origin: Vec3) => void;
 
   /** Meshes are in blocks; the group scales them to metres. */
-  constructor(blockSize: number) {
-    this.material = chunkMaterial(blockSize, this.linearColors, this.patterns, this.occlusion);
+  constructor(blockSize: number, registry?: Registry) {
+    this.material = chunkMaterial(blockSize, this.linearColors, this.patterns, this.occlusion, registry);
     this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);
     // Never drawn and not in `boxes`, so `cull` leaves it hidden. It only puts the chunk material
