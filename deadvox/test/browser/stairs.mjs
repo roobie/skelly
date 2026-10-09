@@ -330,10 +330,10 @@ try {
   }
   // The contrast witnesses measure only the world, never the debug hover label or HUD.
   await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
-  const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2, fixturePitch = 0, captureRendererFrame = false) => {
+  const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2, fixturePitch = 0, { captureFrame = false } = {}) => {
     // Fixtures are positioned only BEFORE each independent scenario, never across a flight during traversal.
     const stagedFrame = await page.evaluate(
-      ({ position, yaw, pitch, captureRendererFrame }) => {
+      ({ position, yaw, pitch, captureFrame: shouldCaptureFrame }) => {
         const { engine, session, input, noclip } = globalThis.stairsWitness;
         assertNoNoclip();
         function assertNoNoclip() {
@@ -346,9 +346,9 @@ try {
         session.body.onGround = true;
         input.yaw = yaw;
         input.pitch = pitch;
-        return captureRendererFrame ? engine.renderer.info.render.frame : null;
+        return shouldCaptureFrame ? engine.renderer.info.render.frame : null;
       },
-      { position: fixturePosition, yaw: fixtureYaw, pitch: fixturePitch, captureRendererFrame },
+      { position: fixturePosition, yaw: fixtureYaw, pitch: fixturePitch, captureFrame },
     );
     if (mode === 'traversal') {
       const settleFrom = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
@@ -562,7 +562,7 @@ try {
         return [engine.skylight.at([65.75, 18.75, 59.25]), engine.skylight.at([81.75, 24.75, 59.25])];
       });
       assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
-      const frameAtStage = await stage([157, 43.0001, 118], -Math.PI / 2, 0, true);
+      const frameAtStage = await stage([157, 43.0001, 118], undefined, undefined, { captureFrame: true });
       await page.waitForFunction(
         (frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame,
         frameAtStage,
