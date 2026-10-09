@@ -1339,32 +1339,26 @@ describe('authored fixed loot', () => {
     expect(WORKSHOP_DISPLAY_CAR.fittings.some(({ type }) => type === wheel.type.id)).toBe(false);
   });
 
-  it('spawns each authored workshop runner marker as a runner', () => {
+  it.each([
+    {
+      kind: 'runner',
+      templates: ['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard'],
+    },
+    { kind: 'crawler', templates: ['medical_hall'] },
+  ])('spawns each authored beat marker as its kind ($kind)', ({ kind, templates }) => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
-    const workshopIds = new Set(['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard']);
+    const templateIds = new Set(templates);
     const markers = site.placements
-      .filter((placement) => workshopIds.has(placement.template.id))
-      .flatMap((placement) => placedSpawns(placement).filter(({ zombie }) => zombie === 'runner'));
+      .filter((placement) => templateIds.has(placement.template.id))
+      .flatMap((placement) => placedSpawns(placement).filter(({ zombie }) => zombie === kind));
     const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
-    const runners = spawns.filter(({ type }) => type === 'runner');
+    const matchingSpawns = spawns.filter(({ type }) => type === kind);
 
     expect(markers.length).toBeGreaterThan(0);
     for (const marker of markers) {
-      expect(runners.some(({ pos }) => pos.every((coordinate, axis) => coordinate === marker.pos[axis]))).toBe(true);
-    }
-  });
-
-  it('spawns each authored medical ward crawler marker as a crawler', () => {
-    const site = new AuthoredSite(73, result.registry, scale, layout);
-    const markers = site.placements
-      .filter((placement) => placement.template.id === 'medical_hall')
-      .flatMap((placement) => placedSpawns(placement).filter(({ zombie }) => zombie === 'crawler'));
-    const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
-    const crawlers = spawns.filter(({ type }) => type === 'crawler');
-
-    expect(markers.length).toBeGreaterThan(0);
-    for (const marker of markers) {
-      expect(crawlers.some(({ pos }) => pos.every((coordinate, axis) => coordinate === marker.pos[axis]))).toBe(true);
+      expect(matchingSpawns.some(({ pos }) => pos.every((coordinate, axis) => coordinate === marker.pos[axis]))).toBe(
+        true,
+      );
     }
   });
 
