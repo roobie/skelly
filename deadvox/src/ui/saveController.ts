@@ -1,7 +1,5 @@
 import { html, render } from 'lit-html';
 import type { HandedCharacter } from '../core/character.ts';
-import type { ClockSettings } from '../core/clock.ts';
-import { defaultClock, simSecondsPerHour } from '../core/clock.ts';
 import type { Registry } from '../core/content.ts';
 import {
   currentSaveVersionIdentity,
@@ -19,6 +17,7 @@ import {
   type SaveStorageStatus,
 } from '../game/saveStorage.ts';
 import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
+import { CheckpointSchedule } from './checkpointSchedule.ts';
 import { computeMenuState } from './menuState.ts';
 
 const SCHEDULER_IDS = new Set([
@@ -32,9 +31,6 @@ const SCHEDULER_IDS = new Set([
   'handling',
   'firearms',
 ]);
-const SAVE_CHECKPOINT_GAME_HOURS = 2;
-export const saveCheckpointInterval = (clock: ClockSettings): number =>
-  SAVE_CHECKPOINT_GAME_HOURS * simSecondsPerHour(clock);
 const CONTINUE_KEY = 'deadvox.continue-namespace';
 const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
 
@@ -122,9 +118,8 @@ export class SaveController {
   private worldId = '';
   private characterId = '';
   private readonly environmentProblem: string | undefined;
-  private nextAutosaveAt = 0;
+  private checkpoints: CheckpointSchedule | undefined;
   private queued: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
-  private checkpointInterval = SAVE_CHECKPOINT_GAME_HOURS * 450;
   private writing = false;
   private requestingPersistence = false;
   private pageIsLeaving = false;
@@ -407,15 +402,13 @@ export class SaveController {
     snapshot: () => Readonly<SaveSnapshot>,
     simTime: () => number,
     worldOptions: SaveWorldOptions,
-    options: { clock?: ClockSettings; recordSnapshotDuration?: (durationMs: number) => void } = {},
+    options: { checkpointSimSeconds: number; recordSnapshotDuration?: (durationMs: number) => void },
   ): { worldId: string; characterId: string } {
     this.snapshot = snapshot;
     this.simTime = simTime;
     this.worldOptions = worldOptions;
     this.recordSnapshotDuration = options.recordSnapshotDuration;
-    const interval = saveCheckpointInterval(options.clock ?? defaultClock);
-    this.checkpointInterval = interval;
-    this.nextAutosaveAt = (Math.floor(simTime() / interval) + 1) * interval;
+    this.checkpoints = new CheckpointSchedule(options.checkpointSimSeconds, simTime());
     return { worldId: this.worldId, characterId: this.characterId };
   }
 
@@ -423,16 +416,15 @@ export class SaveController {
   rearmAutosaveAfterTimeSeek(): void {
     const time = this.simTime?.();
     if (time !== undefined) {
-      this.nextAutosaveAt = (Math.floor(time / this.checkpointInterval) + 1) * this.checkpointInterval;
+      this.checkpoints?.rearm(time);
     }
   }
 
-  /** Called after each simulation frame; thresholds are in simulated seconds. */
+  /** Called after each simulation frame, paused or not. */
   afterFrame(): void {
     const time = this.simTime?.();
-    if (time !== undefined && time >= this.nextAutosaveAt) {
-      this.nextAutosaveAt = (Math.floor(time / this.checkpointInterval) + 1) * this.checkpointInterval;
-      this.capture('two-game-hour checkpoint');
+    if (time !== undefined && this.checkpoints?.due(time)) {
+      this.capture('periodic checkpoint');
     }
   }
 

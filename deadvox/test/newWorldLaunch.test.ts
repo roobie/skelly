@@ -37,6 +37,7 @@ it('creates and binds only on resource-ready acceptance and enters after control
       },
       () => 0,
       { blockSize: 0.5, site: 'forest', storeys: 1, density: 0 },
+      { checkpointSimSeconds: 1 },
     );
     events.push('bind');
     return {
