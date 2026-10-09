@@ -23,8 +23,8 @@ import { compassBearing, toChunk } from '../src/core/coords.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
+import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
 import { rectsOverlap } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
@@ -327,7 +327,7 @@ describe('authored layout acceptance', () => {
     const amalgams = camp.shamblers.filter(({ type }) => type === 'amalgam');
     expect(amalgams).toHaveLength(1);
     const marker = amalgams[0]!;
-    const blockSize = makeScale(0.5).blockSize;
+    const { blockSize } = makeScale(0.5);
     const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, blockSize);
     const bodyRadius = Math.hypot(body.halfWidth, body.halfDepth ?? body.halfWidth) * blockSize;
     const nearestTrackEdge = Math.min(
