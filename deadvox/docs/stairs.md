@@ -184,8 +184,11 @@ screenshot proves its field is resident, not the visibility-1 fallback. The wall
 contrast proves it is read from its own slice. This contrast, not two identically dark interiors, detects
 wrong-slot sampling. The extra cabin and terrain
 override exist only in the lighting test's Vite plugin, not the demo or build. The
-browser stages keep their existing outer caps; none retries to green. Traversal witnesses
-actual floor following; screenshots are secondary to its simulation observations.
+browser stages keep their existing outer caps; none retries to green. The lighting runner
+closes its page before Chromium and Vite teardown: completed pixel checks can still leave the
+WebGL frame loop holding the Node process open. See `deadvox/test/browser/stairs.mjs`, `finally`.
+Traversal witnesses actual floor following; screenshots are secondary to its simulation
+observations.
 
 Shamblers do not navigate between storeys or follow authored flights as routes,
 though a resident can drift onto the flight while beelining. They move
