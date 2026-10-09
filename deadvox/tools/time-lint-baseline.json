@@ -95,10 +95,6 @@
     "core/reach.ts": {
       "handlingTime": 2
     },
-    "core/rigidBody.ts": {
-      "elapsed": 1,
-      "quietTime": 1
-    },
     "core/saveFormat.ts": {
       "attackWindup": 1,
       "cooldown": 2,
@@ -291,8 +287,7 @@
       "elapsed": 1
     },
     "render/mobActors.ts": {
-      "elapsed": 6,
-      "quietTime": 1
+      "elapsed": 5
     },
     "render/playView.ts": {
       "time": 1

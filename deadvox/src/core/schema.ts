@@ -1118,6 +1118,16 @@ const ZombieSchema = strictObject({
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
   ),
+  /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/amalgamCarving.ts): the struck voxel
+   * and every voxel within the radius of it. Amalgams only. */
+  carving: optional(
+    strictObject({
+      radiusMetresPerDamage: pipe(NonNegative, maxValue(0.01, 'must be at most 0.01')),
+      maxRadiusMetres: pipe(NonNegative, maxValue(1, 'must be at most 1')),
+      /** The hole's inner faces. */
+      interiorColor: Color,
+    }),
+  ),
   /** Per-hit chance of severing a random not-yet-severed arm part (src/core/zombies.ts's swing); a
    * killing blow additionally rolls headOnKillChance to sever the head too. Both independent 0..1 chances,
    * not a shared budget. */
@@ -1354,6 +1364,10 @@ const SECTION_DESCRIPTOR = {
         check(
           (types) => types.every((zombie) => zombie.model !== 'amalgam' || zombie.bodyScale !== undefined),
           'amalgam must define bodyScale',
+        ),
+        check(
+          (types) => types.every((zombie) => zombie.model === 'amalgam' || zombie.carving === undefined),
+          'only an amalgam may define carving',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
       ),

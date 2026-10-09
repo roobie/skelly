@@ -5,6 +5,7 @@ import { boneTransforms } from '@mobgen/core/pose.ts';
 import { worldPosition } from '@mobgen/core/voxelize.ts';
 import { amalgamManifest } from '@mobgen/mob/amalgam.ts';
 import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
+import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import type { BoneVoxelBox } from '@mobgen/mob/shamblerFigure.ts';
 import type { Vec3 } from './coords.ts';
 
@@ -66,6 +67,15 @@ const coreInteriorPoint = (centers: readonly VoxelPoint[], halfVoxel: number): V
 export const amalgamStrikeOrigin = (figure: AmalgamFigure, facing: Vec3): Vec3 => {
   const [x, y, z] = mulMV(rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI), figure.restStrikeOrigin);
   return [x, y, z];
+};
+
+/** The bones that severing `severed` (manifest part ids) hides: each part's root bone and all below it. */
+export const amalgamSeveredBones = (figure: AmalgamFigure, severed: readonly string[]): ReadonlySet<string> => {
+  const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
+  return severedBoneSet(
+    figure.realized.body.bones,
+    severed.map((part) => partRoots.get(part) ?? part),
+  );
 };
 
 interface Bounds {

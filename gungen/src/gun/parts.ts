@@ -196,11 +196,15 @@ const mmToMagazineUnits = (millimetres: number): number => millimetres / (METRES
 const snapMagazineDimension = (millimetres: number): number => Math.round(mmToMagazineUnits(millimetres) / GRID) * GRID;
 // Brownells listing for the USGI straight 20-round magazine: https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983
 // Its delivery dimensions (127 x 66 x 25 mm) corroborate the outer box within about 3 mm; they are package dimensions, not the body envelope.
+export const STANAG20_SOURCED_WIDTH_MM = 24.8;
 const STANAG20_BODY_BOX_U = {
   length: snapMagazineDimension(4.895 * 25.4),
   depth: snapMagazineDimension(2.54 * 25.4),
-  width: snapMagazineDimension(0.975 * 25.4),
+  width: snapMagazineDimension(STANAG20_SOURCED_WIDTH_MM),
 } as const;
+const STANAG30_CENTERLINE_LENGTH_U = snapMagazineDimension(190);
+const STANAG30_BODY_DEPTH_U = snapMagazineDimension(65);
+const STANAG30_BODY_WIDTH_U = STANAG20_BODY_BOX_U.width;
 const MAGAZINE_WELL_CLEARANCE = 0.25;
 const MAGAZINE_WELL_DEPTH = MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
@@ -215,8 +219,18 @@ const magazineSection = (profile: string | undefined): { readonly depth: number;
   const smg = profile === 'smg';
   return { depth: MAGAZINE_DEPTH * (smg ? 0.6 : 1), width: MAGAZINE_WIDTH * (smg ? 0.8 : 1) };
 };
-const magazineBodySection = (profile: MagazineProfile): { readonly depth: number; readonly width: number } =>
-  profile === 'stanag-straight' ? STANAG20_BODY_BOX_U : magazineSection(profile);
+const magazineBodySection = (
+  profile: MagazineProfile,
+  length: SizeClass,
+): { readonly depth: number; readonly width: number } => {
+  if (profile === 'stanag-straight') {
+    return STANAG20_BODY_BOX_U;
+  }
+  if (profile === 'stanag-curved' && length === 'L') {
+    return { depth: STANAG30_BODY_DEPTH_U, width: STANAG30_BODY_WIDTH_U };
+  }
+  return magazineSection(profile);
+};
 type MagazineLength = '5-round' | '10-round' | SizeClass;
 type MagazineProfile = 'standard' | 'smg' | 'pistol' | 'ak-curved' | 'stanag-curved' | 'stanag-straight';
 type MagazineBands = Readonly<Record<SizeClass, number>>;
@@ -255,6 +269,9 @@ const magazineLengthData = (
   if (profile === 'stanag-straight') {
     return { size: 'M', length: MAGAZINE_PROFILE_LENGTHS_U['stanag-straight'].M };
   }
+  if (profile === 'stanag-curved' && sizeClass === 'L') {
+    return { size: sizeClass, length: STANAG30_CENTERLINE_LENGTH_U };
+  }
   const bands =
     profile === 'ak-curved'
       ? MAGAZINE_PROFILE_LENGTHS_U['ak-curved'][variant === 'akm' ? 'akm' : 'ak74']
@@ -267,6 +284,7 @@ interface MagazineShape {
   readonly width: number;
   readonly insertion: number;
   readonly bodyLength: number;
+  readonly upperWidth?: number;
 }
 interface CurvedMagazineProfile {
   readonly seat: 'well' | 'face';
@@ -298,11 +316,11 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     straightBottom: 0,
     topSlopeDegrees: 6,
   },
-  // Its L length follows the traced 30-round magazine reference.
+  // The paired-magazine reference shows this straight upper length and bend before the arc.
   stanag30: {
     seat: 'well',
-    straightTop: 7.1,
-    arc: { radius: 32, sweepDegrees: 10, collisionFacets: 4, displayFacets: 16 },
+    straightTop: 4.25,
+    arc: { radius: 32, sweepDegrees: 12, collisionFacets: 4, displayFacets: 16 },
     straightBottom: 3.11,
     topSlopeDegrees: 0,
   },
@@ -2157,7 +2175,14 @@ const lower: PartFamily = {
     // The magazine well at x, with a sloped opening only for the G3-style fit.
     const well = (x: number) => {
       let portY = -1.5;
-      if (orientation.kind === 'tilt' && supportsTiltedMagazineWell) {
+      if (layout === 'ar' && orientation.kind === 'straight') {
+        const feedLipY = Math.min(
+          BOLT_CARRIER_ENVELOPES.ar.y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+          -AR_ACTION_LAYOUT.barrelExtensionDiameterU / 2 - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+        );
+        const targetPortY = AR_ACTION_LAYOUT.receiverHeightU / 2 + feedLipY - MAGAZINE_INSERTION;
+        portY = Math.round(targetPortY / GRID) * GRID;
+      } else if (orientation.kind === 'tilt' && supportsTiltedMagazineWell) {
         portY = -1.5 - (MAGAZINE_HOUSING_FRONT_LENGTH + MAGAZINE_HOUSING_REAR_LENGTH) / 2;
       } else if (params.magazineWell === 'recessed') {
         portY = RECESSED_MAGAZINE_PORT_Y;
@@ -2242,7 +2267,10 @@ const lower: PartFamily = {
         solid('frame-front', [x1, -1.5, -outerZ], [maxX, 0, outerZ]),
         solid('well-wall-left', [x0, -1.5, -outerZ], [x1, 0, -z0]),
         solid('well-wall-right', [x0, -1.5, z0], [x1, 0, outerZ]),
-        ...(params.magazineWell === 'recessed' ? [] : [solid('well-roof', [x0, roofY, -z0], [x1, 0, z0])]),
+        // The AR well opens through the lower so the seated magazine can reach the feed path.
+        ...(params.magazineWell === 'recessed' || params.layout === 'ar'
+          ? []
+          : [solid('well-roof', [x0, roofY, -z0], [x1, 0, z0])]),
       ];
     };
     // Conventional: the rear face meets the trigger-finger volume (it ends at
@@ -3689,28 +3717,44 @@ interface DerivedMagazineGeometry {
   readonly display: readonly Solid[];
 }
 
-const curvedMagazineGeometry = (shape: MagazineShape, description: CurvedMagazineProfile): DerivedMagazineGeometry => {
+const curvedMagazineGeometry = (
+  shape: MagazineShape,
+  description: CurvedMagazineProfile,
+  sharedUpper?: Extract<Solid, { kind: 'extruded-polygon' }>,
+): DerivedMagazineGeometry => {
   const sweep = (description.arc.sweepDegrees * Math.PI) / 180;
   const referenceLength = description.straightTop + description.arc.radius * sweep + description.straightBottom;
-  const scale = shape.bodyLength / referenceLength;
+  const sharedTopBack = sharedUpper?.profile[0];
+  const sharedTopFront = sharedUpper?.profile[1];
+  const sharedTopCenter: Vec2 | undefined =
+    sharedTopBack && sharedTopFront
+      ? [(sharedTopBack[0] + sharedTopFront[0]) / 2, (sharedTopBack[1] + sharedTopFront[1]) / 2]
+      : undefined;
+  const scale = sharedTopCenter
+    ? (shape.bodyLength - (shape.insertion - sharedTopCenter[1])) /
+      (description.arc.radius * sweep + description.straightBottom)
+    : shape.bodyLength / referenceLength;
   const topLength = description.straightTop * scale;
   const bottomLength = description.straightBottom * scale;
   const radius = description.arc.radius * scale;
   const topSlope = (description.topSlopeDegrees * Math.PI) / 180;
   const rise = shape.depth * Math.tan(topSlope);
-  const topBack: Vec2 = [-shape.depth / 2, shape.insertion - topLength];
-  const topFront: Vec2 = [shape.depth / 2, shape.insertion - topLength + rise];
+  const topBack: Vec2 = sharedTopBack ?? [-shape.depth / 2, shape.insertion - topLength];
+  const topFront: Vec2 = sharedTopFront ?? [shape.depth / 2, shape.insertion - topLength + rise];
   const topEdgeAngle = Math.atan2(topFront[1] - topBack[1], topFront[0] - topBack[0]);
   const topCenter: Vec2 = [(topBack[0] + topFront[0]) / 2, (topBack[1] + topFront[1]) / 2];
   const arcCenter: Vec2 = [
     topCenter[0] + radius * Math.cos(topEdgeAngle),
     topCenter[1] + radius * Math.sin(topEdgeAngle),
   ];
-  const upper = extrudedPolygon(
-    'upper-body',
-    [topBack, topFront, [shape.depth / 2, shape.insertion], [-shape.depth / 2, shape.insertion]],
-    [-shape.width / 2, shape.width / 2],
-  );
+  const upperWidth = shape.upperWidth ?? shape.width;
+  const upper =
+    sharedUpper ??
+    extrudedPolygon(
+      'upper-body',
+      [topBack, topFront, [shape.depth / 2, shape.insertion], [-shape.depth / 2, shape.insertion]],
+      [-upperWidth / 2, upperWidth / 2],
+    );
   const buildArc = (facets: number, prefix: string): Solid[] => {
     const step = sweep / facets;
     const rotate = ([x, y]: Vec2): Vec2 => {
@@ -3762,14 +3806,29 @@ const magazineGeometryFor = (
     return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES[params.variant === 'akm' ? 'akm' : 'ak74']);
   }
   if (params.profile === 'stanag-curved') {
+    if (shape.length === 'L') {
+      const referenceShape = {
+        ...shape,
+        depth: MAGAZINE_DEPTH,
+        width: STANAG30_BODY_WIDTH_U,
+        bodyLength: MAGAZINE_PROFILE_LENGTHS_U['stanag-curved'].L,
+        upperWidth: STANAG20_BODY_BOX_U.width,
+      };
+      const [sharedUpper] = curvedMagazineGeometry(referenceShape, CURVED_MAGAZINE_PROFILES.stanag30).collision;
+      if (sharedUpper?.kind !== 'extruded-polygon') {
+        throw new Error('the STANAG magazine top must be an extruded profile');
+      }
+      return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES.stanag30, sharedUpper);
+    }
     return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES.stanag30);
   }
   if (params.profile === 'stanag-straight') {
     const referenceShape = {
       ...shape,
       depth: MAGAZINE_DEPTH,
-      width: MAGAZINE_WIDTH,
+      width: STANAG30_BODY_WIDTH_U,
       bodyLength: MAGAZINE_PROFILE_LENGTHS_U['stanag-curved'].L,
+      upperWidth: STANAG20_BODY_BOX_U.width,
     };
     const sharedTop = curvedMagazineGeometry(referenceShape, CURVED_MAGAZINE_PROFILES.stanag30).collision[0]!;
     if (sharedTop.kind !== 'extruded-polygon') {
@@ -3859,7 +3918,7 @@ export const magazine: PartFamily = {
     const magazineLength = magazineLengthData(params.length, profile, params.variant);
     const isCompactBoltMagazine = params.length === '5-round' || params.length === '10-round';
     const len = magazineLength.length;
-    const { depth, width } = magazineBodySection(profile);
+    const { depth, width } = magazineBodySection(profile, magazineLength.size);
     let curveProfile: CurvedMagazineProfile | undefined;
     if (params.profile === 'ak-curved') {
       curveProfile = CURVED_MAGAZINE_PROFILES[params.variant === 'akm' ? 'akm' : 'ak74'];
@@ -3874,6 +3933,7 @@ export const magazine: PartFamily = {
       width,
       insertion: resolvedInsertion,
       bodyLength: len,
+      ...(profile === 'stanag-curved' ? { upperWidth: STANAG20_BODY_BOX_U.width } : {}),
     };
     const geometry = magazineGeometryFor(params, shape);
     const floorplate = isCompactBoltMagazine
