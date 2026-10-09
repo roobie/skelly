@@ -263,10 +263,16 @@ try {
     const aroundBox = around.getBoundingClientRect();
     return {
       between: youBox.right <= detailsBox.left && detailsBox.right <= aroundBox.left,
+      sideBySide: Math.abs(youBox.top - detailsBox.top) <= 1 && Math.abs(detailsBox.top - aroundBox.top) <= 1,
       detailsUid: details.getAttribute('data-selected-uid'),
       selectedUid: selected.getAttribute('data-uid'),
     };
   });
+  assert.equal(
+    selectedDetailLayout.sideBySide,
+    true,
+    `the 800px viewport stays above the stacked layout: ${JSON.stringify(selectedDetailLayout)}`,
+  );
   assert.equal(
     selectedDetailLayout.between,
     true,
@@ -289,7 +295,7 @@ try {
     const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
     return {
       ratio: Number(splitter.getAttribute('aria-valuenow')),
-      youWidth: youBox.width,
+      actualRatio: (100 * youBox.width) / availableWidth,
       availableWidth,
       dividerBetweenColumns: youBox.right <= dividerBox.left && dividerBox.right <= detailsBox.left,
       aroundWidth: around.getBoundingClientRect().width,
@@ -297,7 +303,7 @@ try {
     };
   });
   assert.ok(
-    Math.abs(splitAtOpen.youWidth - (splitAtOpen.availableWidth * splitAtOpen.ratio) / 100) <= 1,
+    Math.abs(splitAtOpen.ratio - Math.round(splitAtOpen.actualRatio)) <= 1,
     `splitter state matches the CSS allocation: ${JSON.stringify(splitAtOpen)}`,
   );
   assert.equal(
