@@ -58,7 +58,8 @@ Use repeatable `fit` query parameters to preview attachments without editing the
 curated design. A value names an attachment ID; append `@<port>` to choose a
 specific mount port. For example, `?design=archetype-ar&fit=real-suppressor`
 previews a suppressor on the first compatible muzzle. The viewer resolves the
-preview as an assembly connection, so it uses the same mount transform and part
-geometry as a fitted attachment in an export. Unknown or incompatible choices
+preview as an assembly connection (see `src/gun/attachmentPreview.ts`,
+`previewFittedAttachments`), so it uses the same mount transform and part geometry
+as a fitted attachment in an export. Unknown or incompatible choices
 show an error while leaving the source firearm visible. The query stays in the
 URL so the preview can be shared.

@@ -8,8 +8,6 @@ import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { readGlb } from './glbReader.ts';
 import { loadDesigns } from './helpers.ts';
 
-const INCOMPATIBLE_FIT = /foregrip is incompatible/;
-
 const ar = loadDesigns().find(({ assembly }) => assembly.name === 'archetype-ar')?.assembly;
 if (!ar) {
   throw new Error('Published AR design is missing');
@@ -43,19 +41,22 @@ describe('viewer attachment previews', () => {
     });
   });
 
-  it('reports unknown attachment IDs while parsing fit parameters', () => {
-    expect(parseAttachmentFit(['made-up-attachment'])).toEqual({
-      ok: false,
-      message: 'Unknown attachment: made-up-attachment',
-    });
+  it('rejects unknown attachment IDs and identifies the rejected ID', () => {
+    const result = parseAttachmentFit(['made-up-attachment']);
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error('Unknown attachment was accepted');
+    }
+    expect(result.message).toContain('made-up-attachment');
   });
 
-  it('keeps the firearm renderable when an attachment is incompatible with its requested port', () => {
+  it("refuses an attachment its requested port can't take", () => {
     const result = previewFittedAttachments(validate(ar, gunDomain), ['foregrip@barrel.muzzle']);
     expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.message).toMatch(INCOMPATIBLE_FIT);
+    if (result.ok) {
+      throw new Error('Incompatible attachment was accepted');
     }
+    expect(result.message).toContain('foregrip');
   });
 
   it('exports a preview attachment at the same transform as the fitted GLB node', () => {

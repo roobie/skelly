@@ -65,10 +65,10 @@ import {
   type PanelPart,
   type PanelSlot,
   parseOverrides,
-  serializeOverrides,
   setParam,
 } from './paramPanel.ts';
 import { buildLayers, disposeGroup, type Layers } from './scene.ts';
+import { setModelQuery as writeModelQuery } from './shareUrl.ts';
 import { DEFAULT_UI_STATE, parseUiState, UI_STATE_KEY, type UiState } from './uiState.ts';
 
 const fixtures = Object.entries(
@@ -155,22 +155,15 @@ const saveUiState = () => {
 };
 
 /** Keeps the address bar a shareable link for the current model, including panel overrides. */
-const setModelQuery = (params: URLSearchParams): void => {
-  const activeDesignName = activeDesign?.name;
-  if (activeDesignName && designs.some((design) => design.name === activeDesignName)) {
-    params.set('design', activeDesignName);
-    return;
-  }
-  if (uiState.assembly.kind === 'generated') {
-    params.set('template', uiState.template);
-    params.set('seed', uiState.seed);
-  } else if (uiState.assembly.kind === 'fixture') {
-    params.set('fixture', uiState.assembly.name);
-  }
-  if (hasOverrides(uiState.overrides)) {
-    params.set('set', serializeOverrides(uiState.overrides));
-  }
-};
+const setModelQuery = (params: URLSearchParams): void =>
+  writeModelQuery(params, {
+    designName: activeDesign?.name,
+    designNames: designs.map(({ name }) => name),
+    assembly: uiState.assembly,
+    template: uiState.template,
+    seed: uiState.seed,
+    overrides: uiState.overrides,
+  });
 
 const setPreservedQuery = (params: URLSearchParams): void => {
   for (const fittedAttachment of initialQuery.getAll('fit')) {
