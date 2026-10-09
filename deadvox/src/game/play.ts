@@ -158,7 +158,8 @@ const createReviewMapFrame = (debug: boolean): HTMLIFrameElement | undefined => 
   }
   const frame = document.createElement('iframe');
   frame.title = 'Current-world review map';
-  frame.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:10000;background:#d7ddd4';
+  frame.style.cssText =
+    'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:var(--ui-layer-review-map);background:#d7ddd4';
   frame.hidden = true;
   document.body.append(frame);
   return frame;
