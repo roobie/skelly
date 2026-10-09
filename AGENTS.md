@@ -107,7 +107,9 @@ including the push that publishes a new branch, or that push fails.
 
 ### Git: this project does not use `git-flow`
 
-Don't use the `git-flow` skill or its driver here. Use plain git, following AGENTS.md:
+Don't use the `git-flow` skill or its driver here. Its single repo-wide pending
+ticket can block every agent, and fresh worktrees need full installs before their
+first push. Use plain git, following AGENTS.md:
 
 - **Start a topic:** `git fetch origin`, then `git worktree add .claude/worktrees/<name> -b <branch> origin/main`, the installs under "Installing check dependencies", and `git push -u origin <branch>`.
 - **While working:** commit in reasonable chunks and `git push`. To take in main,
