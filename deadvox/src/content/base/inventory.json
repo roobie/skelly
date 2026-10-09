@@ -1,0 +1,8 @@
+{
+  "inventory": [
+    {
+      "id": "player",
+      "containerMaxWidthCells": 10
+    }
+  ]
+}
