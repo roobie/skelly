@@ -540,7 +540,7 @@ try {
     );
   }
   await selectInventoryTab('actions');
-  assert.equal(
+  assert.deepEqual(
     (await page.locator('#inventory [data-tab-panel="actions"] button').allTextContents()).map((text) => text.trim()),
     ['Wait'],
   );
