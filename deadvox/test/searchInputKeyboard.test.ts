@@ -138,11 +138,24 @@ it('routes inventory controls from a focused select but leaves picker navigation
     commands.length = 0;
     const pickerActions = ['inventory.previous', 'inventory.next', 'inventory.best-pocket'];
     const pickerCodes = new Set(pickerActions.flatMap((action) => bindings.chords(action).map(({ code }) => code)));
+    expect(pickerCodes.size).toBeGreaterThan(0);
     for (const code of pickerCodes) {
       expect(press(code).defaultPrevented).toBe(false);
     }
     expect(commands).toEqual([]);
     expect(document.activeElement).toBe(select);
+
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    inventory.append(textInput);
+    textInput.focus();
+    expect(document.activeElement).toBe(textInput);
+    const tabCode = bindings.chords('ui.inventory-tab-items')[0]!.code;
+    const textInputTab = key('keydown', tabCode);
+    textInput.dispatchEvent(textInputTab);
+    textInput.dispatchEvent(key('keyup', tabCode));
+    expect(textInputTab.defaultPrevented).toBe(false);
+    expect(commands).toEqual([]);
   } finally {
     remove();
     inventory.remove();
