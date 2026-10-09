@@ -22,7 +22,10 @@ save schema, deterministic generator versions and ordered content identities.
 Check that identity before resolving content, and refuse a mismatch without
 changing the saved record. A Git revision is diagnostic, not part of identity.
 Exactness matters because a restored scheduler, random stream or action must
-continue as if saving and loading had not changed the simulation.
+continue as if saving and loading had not changed the simulation. The worldgen
+generator identity also changes when the generated terrain baseline changes, so
+saved chunk diffs are never applied over a different ground surface; see
+`src/core/saveFormat.ts`, `defaultVersion`.
 
 Persist every future-affecting owner state in the same change that introduces
 it. At entity boundaries such as `src/core/zombies.ts`, `ZombieSystem.snapshotState`,

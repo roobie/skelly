@@ -114,6 +114,7 @@ export const vegetationPlacements = ({
   density,
   ground,
   reserved,
+  shapeMix,
 }: {
   seed: number;
   registry: Registry;
@@ -122,6 +123,7 @@ export const vegetationPlacements = ({
   density: number | ((x: number, z: number) => number);
   ground: (x: number, z: number) => number;
   reserved: readonly Rect[];
+  shapeMix?: (x: number, z: number) => readonly TreeShape[];
 }): TreePlacement[] => {
   const shapes = treeShapes(registry, scale);
   const step = TREE_CELL_METRES / scale.blockSize;
@@ -137,7 +139,8 @@ export const vegetationPlacements = ({
       }
       const x = Math.floor((cx + 0.5) * step) + rng.int(-jitter, jitter);
       const z = Math.floor((cz + 0.5) * step) + rng.int(-jitter, jitter);
-      const shape = TREE_MIX[rng.int(0, TREE_MIX.length - 1)]!;
+      const mix = shapeMix?.((cx + 0.5) * TREE_CELL_METRES, (cz + 0.5) * TREE_CELL_METRES) ?? TREE_MIX;
+      const shape = mix[rng.int(0, mix.length - 1)]!;
       const tree = placeTree(shape, [x, ground(x, z) + 1, z], shapes[shape]);
       if (
         tree.bounds.x0 >= area.x0 &&

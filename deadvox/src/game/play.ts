@@ -26,7 +26,7 @@ import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
-import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
+import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
@@ -127,11 +127,14 @@ import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInp
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
+import { updateStartupHintLatch } from './startupHint.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const STARTUP_MESH_RADIUS = 1;
+const STARTUP_COLUMN_COUNT = (STARTUP_MESH_RADIUS * 2 + 1) ** 2;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 export const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
@@ -298,6 +301,8 @@ export const startPlay = (
 ): { enter: () => void } => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const inputTarget = renderer?.domElement ?? $('view');
+  const startupHint = $('startup-hint');
+  const startupProgress = $('startup-hint-progress') as HTMLProgressElement;
   if (options.saveController) {
     streamer.onGenerationError = (error) => {
       if (!options.saveController?.refuseRestore(error)) {
@@ -561,6 +566,7 @@ export const startPlay = (
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
     zombieEffects: {
       onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
+      onCarve: (id, zombie, cells, hit) => zombieMeshes.zombieCarved?.(id, zombie, cells, hit),
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
@@ -997,6 +1003,7 @@ export const startPlay = (
 
   let started = options.restore !== undefined;
   let mainMenuOpen = !options.replay;
+  let startupHintPending = !options.replay;
   let resumeRequested = false;
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
@@ -1030,6 +1037,18 @@ export const startPlay = (
       $('go').textContent = state.goLabel;
     }
     return state;
+  };
+  const updateStartupHint = () => {
+    if (options.replay || !started || mainMenuOpen || screen.isOpen || reading.isOpen || debugTools?.menuOpen) {
+      startupHint.hidden = true;
+      return;
+    }
+    const unmeshed = streamer.unmeshedColumns(body.pos[0], body.pos[2], STARTUP_MESH_RADIUS);
+    startupProgress.max = STARTUP_COLUMN_COUNT;
+    startupProgress.value = STARTUP_COLUMN_COUNT - unmeshed;
+    const latch = updateStartupHintLatch(startupHintPending, unmeshed);
+    startupHintPending = latch.pending;
+    startupHint.hidden = !latch.visible;
   };
   const resume = () => {
     if (replayPlayer) {
@@ -2771,6 +2790,7 @@ export const startPlay = (
     const visible = hudVisibility(hudOptions);
     let mark = realNow();
     streamer.update(body.pos[0], body.pos[2]);
+    updateStartupHint();
     meshingQueueMs = realNow() - mark;
     updateActionInputs(now);
     playtestObserver?.beforeFrame(queue, inventory);
@@ -2803,6 +2823,7 @@ export const startPlay = (
       calendar: sim.calendar,
       time: sim.time,
       playerEye: eye().map((coordinate) => coordinate * s) as Vec3,
+      playerChest: [body.pos[0] * s, body.pos[1] * s + PLAYER_CHEST_METRES, body.pos[2] * s],
       lastZombieStep: session.lastZombieStep,
       lastBackgroundStep: session.lastBackgroundStep,
       dt,

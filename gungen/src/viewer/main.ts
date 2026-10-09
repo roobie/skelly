@@ -58,6 +58,7 @@ import {
   diffOverrides,
   EMPTY_OVERRIDES,
   hasOverrides,
+  initialOverrides,
   type PanelEntry,
   type PanelParam,
   type PanelPart,
@@ -1378,9 +1379,12 @@ saveButton.addEventListener('click', () => {
 const query = new URLSearchParams(location.search);
 pendingCamera = parseCameraState(query.get('camera'));
 const querySet = query.get('set');
-if (querySet !== null) {
-  uiState.overrides = parseOverrides(querySet);
-}
+const hasModelQuery = query.has('design') || query.has('template') || query.has('fixture');
+uiState.overrides = initialOverrides(
+  uiState.overrides,
+  querySet === null ? undefined : parseOverrides(querySet),
+  hasModelQuery,
+);
 const initialTemplate = TEMPLATES.find((t) => t.name === query.get('template'));
 const queryFixture = fixtures.find((f) => f.name === query.get('fixture'));
 const queryDesign = query.get('design');

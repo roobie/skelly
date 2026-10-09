@@ -5,6 +5,7 @@ import { freezeSnapshot } from './snapshotData.ts';
 
 export interface HandedCharacter {
   readonly handedness: HandSide;
+  readonly skills?: Readonly<Record<string, number>>;
 }
 
 /** Standalone fixtures share this view; production supplies its actual Character. */
@@ -83,8 +84,8 @@ export class Character implements HandedCharacter {
     });
   }
 
-  /** The awarding activity supplies its own tier; practice beyond that ceiling is discarded. */
-  awardPractice(skill: string, amount: number, tier: number): void {
+  /** A tiered activity supplies its own ceiling; an untiered source can train to ordinary level 10. */
+  awardPractice(skill: string, amount: number, tier = SKILL_LEVEL_MAX): void {
     if (
       !(Object.hasOwn(this.skills, skill) && Number.isFinite(amount)) ||
       amount < 0 ||

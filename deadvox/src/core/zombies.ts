@@ -1,5 +1,18 @@
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
-import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigureForType } from './amalgamFigure.ts';
+import {
+  carveAround,
+  centralCell,
+  gridRayForHit,
+  missingFlesh,
+  protectedCoreCell,
+  struckCell,
+} from './amalgamCarving.ts';
+import {
+  AMALGAM_FIGURE_SEED,
+  amalgamCollisionEnvelope,
+  amalgamFigureForType,
+  amalgamStrikeOrigin,
+} from './amalgamFigure.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
@@ -28,7 +41,7 @@ import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 import {
   type PosedBoneBox,
   posedAmalgamRegionBoxes,
-  posedRegionHitDistance,
+  posedRegionHit,
   posedShamblerRegionBoxes,
   type ZombieHitRegion,
   type ZombieRegion,
@@ -119,12 +132,22 @@ export interface ZombieAim {
   readonly health: number;
   readonly maxHealth: number;
   readonly boxes: readonly PosedBoneBox[];
+  /** The box the ray entered first, the one `distanceMetres` measures to. */
+  readonly hitBox: PosedBoneBox;
+}
+
+/** Where one hit struck an amalgam's flesh, before it is carved. */
+interface AmalgamStrike {
+  readonly cell: number;
+  readonly damage: number;
+  readonly hit: HitImpulse;
 }
 
 interface MeleeHitContext {
   readonly id: EntityId;
   readonly zombie: Zombie;
   readonly region: ZombieHitRegion;
+  readonly hitBox: PosedBoneBox;
   readonly origin: Vec3;
   readonly direction: Vec3;
   readonly distanceMetres: number;
@@ -261,6 +284,9 @@ export interface Zombie {
    * far — cumulative, never un-severed. A renderer derives what to hide via mobgen's severedBoneSet, not
    * stored pre-expanded here (severing upperArm.L already implies forearm.L/hand.L without listing them). */
   severed: string[];
+  /** Voxel-grid cells of an amalgam's realized figure that hits have knocked out, ascending; empty for every
+   * other type. Holes are flesh only: they never change regions, damage, severing or hit tests. */
+  carved: number[];
 }
 
 export interface AmalgamMemberContribution {
@@ -324,7 +350,21 @@ const validZombieEventState = (zombie: ZombieState): boolean =>
   (zombie.stimulusAt === undefined || (Number.isFinite(zombie.stimulusAt) && zombie.stimulusAt >= 0)) &&
   Array.isArray(zombie.severed) &&
   zombie.severed.every((part) => typeof part === 'string') &&
+  Array.isArray(zombie.carved) &&
+  zombie.carved.every(
+    (cell, index) => Number.isSafeInteger(cell) && cell >= 0 && (index === 0 || cell > zombie.carved[index - 1]!),
+  ) &&
   validShamblerFootstepClock(zombie.footstepClock);
+/** Holes play could make: only a type that carves has any, each on flesh in its grid, never the core cell. */
+const validCarvedCells = (type: ZombieDef, figureSeed: number, carved: readonly number[]): boolean => {
+  if (!type.carving) {
+    return carved.length === 0;
+  }
+  const figure = amalgamFigureForType(type, figureSeed);
+  const { owner } = figure.realized.voxels;
+  const keep = protectedCoreCell(figure);
+  return carved.every((cell) => cell < owner.length && owner[cell]! > 0 && cell !== keep);
+};
 const validHordeMemberState = (zombie: ZombieState): boolean =>
   (zombie.hordeId === undefined && zombie.hordeOffset === undefined) ||
   (typeof zombie.hordeId === 'string' &&
@@ -439,6 +479,9 @@ export interface ZombieSystemOptions {
    * `zombie.severed` already includes `part`, so a renderer reading zombie.severed at this point sees the
    * new cut too. Fires before onDeath on a killing blow that also severs the head. */
   onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
+  /** Called when a hit knocks flesh out of an amalgam, *after* `zombie.carved` includes `cells`. `hit` is
+   * the strike the hole centres on. */
+  onCarve?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
   /** Reports the actual result of an attempted player melee swing; absent in normal play. */
   onMeleeResult?: (result: MeleeResult) => void;
   /** Presentation-only recoil for a confirmed hit. */
@@ -580,30 +623,64 @@ const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
   headingAt(approachAngle(angleOf(current), angleOf(target), radians));
 const inRange = (rng: Rng, range: { min: number; max: number }): number => rng.range(range.min, range.max);
 
+/** The player point every zombie attack aims at, in metres above the feet: the chest. */
+export const PLAYER_CHEST_METRES = 1;
+
 interface AttackReachProbe {
+  zombie: Zombie;
   zombiePos: Vec3;
   playerPos: Vec3;
-  reachMetres: number;
   blockSize: number;
   isSolid: SolidAt;
 }
 
-/** Shared by both attack start (telegraph) and attack resolve (after the windup elapses): horizontal
- * reach, a vertical band matching a standing player, and clear chest-to-chest line of sight. Used
- * identically at both times so "still in reach" at resolve means exactly what "in reach" meant at start. */
-const withinAttackReach = ({ zombiePos, playerPos, reachMetres, blockSize, isSolid }: AttackReachProbe): boolean => {
-  if (reachMetres <= 0 || horizontalDistance(playerPos, zombiePos) * blockSize > reachMetres) {
+/** A grab reaches horizontally from the body, within a vertical band matching a standing player, chest to chest. */
+const grabOrigin = (
+  { zombiePos, playerPos, blockSize }: AttackReachProbe,
+  reachMetres: number,
+  chestOffset: number,
+): Vec3 | undefined =>
+  horizontalDistance(playerPos, zombiePos) * blockSize > reachMetres ||
+  Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= 1.7
+    ? undefined
+    : [zombiePos[0], zombiePos[1] + chestOffset, zombiePos[2]];
+
+/** An amalgam's tentacle strikes in a straight line from its core, at any height, as far as its reach. */
+const strikeOrigin = (
+  { zombie, zombiePos, blockSize }: AttackReachProbe,
+  reachMetres: number,
+  playerChest: Vec3,
+): Vec3 | undefined => {
+  const offset = amalgamStrikeOrigin(amalgamFigureForType(zombie.type, zombie.figureSeed), zombie.facing);
+  const origin: Vec3 = [
+    zombiePos[0] + offset[0] / blockSize,
+    zombiePos[1] + offset[1] / blockSize,
+    zombiePos[2] + offset[2] / blockSize,
+  ];
+  return Math.hypot(...sub(playerChest, origin)) * blockSize > reachMetres ? undefined : origin;
+};
+
+/** Shared by both attack start (telegraph) and attack resolve (after the windup elapses): the attack's
+ * reach rule, then a clear line from its origin to the player's chest. Used identically at both times so
+ * "still in reach" at resolve means exactly what "in reach" meant at start. */
+const withinAttackReach = (probe: AttackReachProbe): boolean => {
+  const { zombie, playerPos, blockSize, isSolid } = probe;
+  const reachMetres = zombieAttackReachMetres(zombie);
+  if (reachMetres <= 0) {
     return false;
   }
-  if (Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= 1.7) {
-    return false;
-  }
-  const chestOffset = 1 / blockSize;
-  const zombieChest: Vec3 = [zombiePos[0], zombiePos[1] + chestOffset, zombiePos[2]];
+  const chestOffset = PLAYER_CHEST_METRES / blockSize;
   const playerChest: Vec3 = [playerPos[0], playerPos[1] + chestOffset, playerPos[2]];
-  const toPlayer = sub(playerChest, zombieChest);
-  const chestDistance = Math.hypot(...toPlayer);
-  return chestDistance > 0 && raycast(zombieChest, unit(toPlayer), chestDistance, isSolid) === undefined;
+  const origin =
+    zombie.type.model === 'amalgam'
+      ? strikeOrigin(probe, reachMetres, playerChest)
+      : grabOrigin(probe, reachMetres, chestOffset);
+  if (!origin) {
+    return false;
+  }
+  const toPlayer = sub(playerChest, origin);
+  const lineDistance = Math.hypot(...toPlayer);
+  return lineDistance > 0 && raycast(origin, unit(toPlayer), lineDistance, isSolid) === undefined;
 };
 
 // ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
@@ -1102,6 +1179,7 @@ const zombieSnapshotFields = [
   'stepOffset',
   'hitFlinchTime',
   'severed',
+  'carved',
 ] as const satisfies readonly (keyof ZombieState)[];
 type ZombieSnapshotField = (typeof zombieSnapshotFields)[number];
 type ZombieSnapshot = Pick<ZombieState, ZombieSnapshotField> &
@@ -1203,6 +1281,7 @@ const zombieSnapshotProjectors = {
   stepOffset: (zombie) => zombie.stepOffset,
   hitFlinchTime: (zombie) => zombie.hitFlinchTime,
   severed: (zombie) => [...zombie.severed],
+  carved: (zombie) => [...zombie.carved],
 } satisfies ZombieSnapshotProjectors;
 
 const hordeSnapshotProjectors = {
@@ -1345,6 +1424,9 @@ export class ZombieSystem {
             throw new Error(`Invalid amalgam severed parts for entity ${id}`);
           }
         }
+        if (!validCarvedCells(type, zombie.figureSeed, zombie.carved)) {
+          throw new Error(`Invalid carved cells for entity ${id}`);
+        }
         const { type: _type, behaviorRng, soundRng, dismemberRng, lastVocalNoiseId, ...fields } = zombie;
         const restored: Zombie = {
           ...fields,
@@ -1374,6 +1456,7 @@ export class ZombieSystem {
             gaitPhase: zombie.gaitPhase,
           },
           severed: [...zombie.severed],
+          carved: [...zombie.carved],
         };
         return [id, restored] as const;
       },
@@ -1634,6 +1717,7 @@ export class ZombieSystem {
       wanderClock: 0,
       stepOffset: 0,
       severed: [],
+      carved: [],
     };
     const id = this.store.add(zombie);
     // EntityStore ids are stable within the world's entity lifetime.
@@ -2190,13 +2274,7 @@ export class ZombieSystem {
     scratch.seeking = zombie.mode === 'chase' || zombie.mode === 'investigate';
     scratch.inReach =
       zombie.mode === 'chase' &&
-      withinAttackReach({
-        zombiePos: pos,
-        playerPos: scratch.target,
-        reachMetres: zombieAttackReachMetres(zombie),
-        blockSize,
-        isSolid,
-      });
+      withinAttackReach({ zombie, zombiePos: pos, playerPos: scratch.target, blockSize, isSolid });
     scratch.direction = obstacleDirection ?? unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
     if (scratch.moving) {
@@ -2403,13 +2481,7 @@ export class ZombieSystem {
       zombie.attackWindup = Math.max(0, zombie.attackWindup - dt);
       if (
         zombie.attackWindup <= 0 &&
-        withinAttackReach({
-          zombiePos: pos,
-          playerPos: player.pos,
-          reachMetres: zombieAttackReachMetres(zombie),
-          blockSize,
-          isSolid,
-        })
+        withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
       ) {
         this.options.hurtPlayer(type.attack.damage, type.attack.hitRegion ?? 'torso', scratch.id);
       }
@@ -2417,13 +2489,7 @@ export class ZombieSystem {
       zombie.mode === 'chase' &&
       zombie.attackWait <= 0 &&
       (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie.severed)) &&
-      withinAttackReach({
-        zombiePos: pos,
-        playerPos: player.pos,
-        reachMetres: zombieAttackReachMetres(zombie),
-        blockSize,
-        isSolid,
-      })
+      withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
       zombie.attackWindup = type.attack.windupSimSeconds;
@@ -2594,9 +2660,9 @@ export class ZombieSystem {
     direction: Vec3;
     isBlocked: SolidAt;
     poseCache?: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>> | undefined;
-  }): [EntityId, Zombie, ZombieHitRegion, number, readonly PosedBoneBox[]] | undefined {
+  }): [EntityId, Zombie, ZombieHitRegion, number, readonly PosedBoneBox[], PosedBoneBox] | undefined {
     const { blockSize } = this.options;
-    let nearest: [EntityId, Zombie, ZombieHitRegion, number, readonly PosedBoneBox[]] | undefined;
+    let nearest: [EntityId, Zombie, ZombieHitRegion, number, readonly PosedBoneBox[], PosedBoneBox] | undefined;
     let nearestDistance = Number.POSITIVE_INFINITY;
     for (const [id, zombie] of this.store.entries()) {
       if (zombie.incapacitated || !rayMayHitZombie(zombie, origin, direction, blockSize)) {
@@ -2609,12 +2675,16 @@ export class ZombieSystem {
           continue;
         }
         const boxes = posed[region] ?? [];
-        const distance = posedRegionHitDistance(boxes, origin, direction, blockSize);
-        if (distance === undefined || raycast(origin, direction, distance, isBlocked) || distance >= nearestDistance) {
+        const hit = posedRegionHit(boxes, origin, direction, blockSize);
+        if (
+          hit === undefined ||
+          raycast(origin, direction, hit.distance, isBlocked) ||
+          hit.distance >= nearestDistance
+        ) {
           continue;
         }
-        nearestDistance = distance;
-        nearest = [id, zombie, region, distance, boxes];
+        nearestDistance = hit.distance;
+        nearest = [id, zombie, region, hit.distance, boxes, hit.box];
       }
     }
     return nearest;
@@ -2642,7 +2712,7 @@ export class ZombieSystem {
     if (!found) {
       return undefined;
     }
-    const [id, zombie, region, distance, boxes] = found;
+    const [id, zombie, region, distance, boxes, hitBox] = found;
     const distanceMetres = distance * this.options.blockSize;
     const reachMetres = PLAYER_ARM_REACH_M + weapon.reach;
     return {
@@ -2654,6 +2724,7 @@ export class ZombieSystem {
       health: zombie.regions[region]!,
       maxHealth: maxZombieRegionHealth(zombie.type, region) ?? zombie.regions[region]!,
       boxes,
+      hitBox,
     };
   }
 
@@ -2670,6 +2741,9 @@ export class ZombieSystem {
       type: 'pierce',
       ...(shot.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: shot.headDamageMultiplier }),
     };
+    // One shot's pellets carve one hole per amalgam, struck against the flesh as it was before the shot's
+    // holes, so pellets on one line can't tunnel through the body.
+    const strikes = new Map<EntityId, { zombie: Zombie; strikes: AmalgamStrike[] }>();
     for (const direction of shot.directions) {
       const aim = this.targetAt({
         origin: shot.origin,
@@ -2682,10 +2756,11 @@ export class ZombieSystem {
       if (!(aim && zombie)) {
         continue;
       }
-      this.applyMeleeHit({
+      const strike = this.applyMeleeHit({
         id: aim.id,
         zombie,
         region: aim.region,
+        hitBox: aim.hitBox,
         origin: shot.origin,
         direction,
         distanceMetres: aim.distanceMetres,
@@ -2694,7 +2769,15 @@ export class ZombieSystem {
         isFist: false,
         projectile: true,
       });
+      if (strike) {
+        const entry = strikes.get(aim.id) ?? { zombie, strikes: [] };
+        entry.strikes.push(strike);
+        strikes.set(aim.id, entry);
+      }
       hits += 1;
+    }
+    for (const [id, entry] of strikes) {
+      this.carve(id, entry.zombie, entry.strikes);
     }
     return hits;
   }
@@ -2722,10 +2805,11 @@ export class ZombieSystem {
     if (!zombie) {
       return undefined;
     }
-    this.applyMeleeHit({
+    const strike = this.applyMeleeHit({
       id: aim.id,
       zombie,
       region: aim.region,
+      hitBox: aim.hitBox,
       origin,
       direction,
       distanceMetres: aim.distanceMetres,
@@ -2733,6 +2817,9 @@ export class ZombieSystem {
       damageType: weapon.type ?? 'blunt',
       isFist,
     });
+    if (strike) {
+      this.carve(aim.id, zombie, [strike]);
+    }
     return aim.id;
   }
 
@@ -2742,10 +2829,12 @@ export class ZombieSystem {
     return this.resolveMeleeNow(origin, direction, weapon);
   }
 
+  /** Applies one hit's damage and effects; returns where it struck an amalgam's flesh, for the caller to carve. */
   private applyMeleeHit({
     id,
     zombie,
     region,
+    hitBox,
     origin,
     direction,
     distanceMetres,
@@ -2753,7 +2842,7 @@ export class ZombieSystem {
     damageType,
     isFist,
     projectile = false,
-  }: MeleeHitContext & { projectile?: boolean }): void {
+  }: MeleeHitContext & { projectile?: boolean }): AmalgamStrike | undefined {
     const ray = unit(direction);
     const distance = distanceMetres / this.options.blockSize;
     const hit: HitImpulse = {
@@ -2761,6 +2850,8 @@ export class ZombieSystem {
       direction: ray,
       impulse: weapon.impulse ?? 4,
     };
+    const damage = meleeDamageForContact(zombie, region, weapon, damageType);
+    const cell = this.struckFlesh(zombie, hitBox, hit);
     if (!projectile) {
       this.options.onMeleeContact?.(hit.impulse);
     }
@@ -2770,7 +2861,7 @@ export class ZombieSystem {
       this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos), zombie);
     }
     this.options.onSound?.(zombie.type.sounds.hurt, copy(zombie.body.pos), zombie);
-    const healthAfter = Math.max(0, healthBefore - meleeDamageForContact(zombie, region, weapon, damageType));
+    const healthAfter = Math.max(0, healthBefore - damage);
     zombie.regions[region] = healthAfter;
     if (healthAfter < healthBefore) {
       zombie.hitFlinchTime = 0;
@@ -2793,6 +2884,41 @@ export class ZombieSystem {
         ...(part === undefined ? {} : { part }),
       });
     }
+    return cell === undefined ? undefined : { cell, damage, hit };
+  }
+
+  /** The first visible flesh cell the hit's ray meets from the box it struck, for a type that carves. */
+  private struckFlesh(zombie: Zombie, hitBox: PosedBoneBox, hit: HitImpulse): number | undefined {
+    if (!zombie.type.carving) {
+      return undefined;
+    }
+    const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
+    return struckCell(figure, missingFlesh(figure, zombie), gridRayForHit(figure, hitBox, hit, this.options.blockSize));
+  }
+
+  /** Knocks out the flesh around one hole: the strikes' central cell, sized by their summed damage. */
+  private carve(id: EntityId, zombie: Zombie, strikes: readonly AmalgamStrike[]): void {
+    const { carving } = zombie.type;
+    if (!carving || strikes.length === 0) {
+      return;
+    }
+    const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
+    const struck = centralCell(
+      figure,
+      strikes.map((strike) => strike.cell),
+    );
+    const cells = carveAround({
+      figure,
+      carving,
+      missing: missingFlesh(figure, zombie),
+      struck,
+      damage: strikes.reduce((total, strike) => total + strike.damage, 0),
+    });
+    if (cells.length === 0) {
+      return;
+    }
+    zombie.carved = [...zombie.carved, ...cells].sort((a, b) => a - b);
+    this.options.onCarve?.(id, zombie, cells, strikes.find((strike) => strike.cell === struck)!.hit);
   }
 
   private applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit }: MeleeEffectsContext): boolean {

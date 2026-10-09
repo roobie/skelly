@@ -864,6 +864,25 @@ describe('content references', () => {
     ).toBe(true);
   });
 
+  it('requires Inventory Management training to be untiered', () => {
+    const baseActivity = baseRegistry.skills.get('inventory_management')?.training?.activities?.handling;
+    expect(baseActivity?.practice).toBeDefined();
+    expect(baseActivity?.tier).toBeUndefined();
+
+    const tiered = base.map(({ source, data }) => {
+      if (source !== 'recipes.json') {
+        return { source, data };
+      }
+      const recipes = structuredClone(data) as {
+        skills: { id: string; training?: { activities?: Record<string, { tier?: number }> } }[];
+      };
+      recipes.skills.find(({ id }) => id === 'inventory_management')!.training!.activities!.handling!.tier = 1;
+      return { source, data: recipes };
+    });
+    const { issues } = buildRegistry(tiered);
+    expect(issues.some((issue) => issue.message.includes('must be untiered'))).toBe(true);
+  });
+
   it('validates and merges a mod recipe/skill with declared IDs at exactly 1024 alternatives', () => {
     const { registry, issues } = buildRegistry([recipeDependencies, { source: 'recipe-mod.json', data: recipePack }]);
     expect(issues).toEqual([]);

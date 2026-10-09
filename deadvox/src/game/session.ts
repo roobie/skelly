@@ -33,9 +33,9 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
-import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling.ts';
+import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
-import { lightSenseSourceFor, sunExposedAt } from '../core/lights.ts';
+import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
@@ -95,6 +95,7 @@ import { RestController } from './rest.ts';
 import { shamblerBodyPitch } from './shamblerAudio.ts';
 import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
+import { UNPACK_ACTION } from './unpacking.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
@@ -117,6 +118,8 @@ const sessionFirearmsShotKind = (
   firearmUid === undefined ? 'singleShot' : mechanics.handlingShotKind(firearmUid, timeSimSeconds);
 const sessionFirearmTargetName = (registry: Registry, firearmType: string | undefined): string | undefined =>
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
+const isInventoryPracticeAction = (job: Job): boolean =>
+  job.kind === 'action' && (job.jobType === UNPACK_ACTION || job.jobType === 'furniture.search');
 const createSessionAim = ({
   tuning,
   seed,
@@ -321,6 +324,8 @@ export interface SessionOptions {
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
     onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
+    /** A hit knocked flesh out of an amalgam (its `carved` already lists `cells`). */
+    onCarve?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
     /** A zombie became incapacitated but remains in the store and may be revived later. */
     onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
     /** A zombie died: it is already out of the store, and its loot is already dropped. */
@@ -472,8 +477,6 @@ export const createSession = (options: SessionOptions) => {
   const dayCycle = dayCycleFor(registry.dayCycle);
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
-  const isSunExposedAt = (pos: Vec3, hour: number): boolean =>
-    sunExposedAt({ position: pos, gameHours: hour, skyTop, isOpaque: options.isOpaque, cycle: dayCycle });
   const physics = physicsFor(scale);
   const restored = options.restore;
 
@@ -507,6 +510,21 @@ export const createSession = (options: SessionOptions) => {
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
   const { entities } = inventory;
+  // Zombie ticks share vertical block geometry; revisions keep edits visible to every caller.
+  const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, options.isOpaque);
+  let cachedWorldVersion = world.version;
+  let cachedEntityVersion = entities.version;
+  const clearSunExposureCache = (): void => {
+    sunExposureCache.clear();
+    cachedWorldVersion = world.version;
+    cachedEntityVersion = entities.version;
+  };
+  const isSunExposedAt = (pos: Vec3, hour: number): boolean => {
+    if (cachedWorldVersion !== world.version || cachedEntityVersion !== entities.version) {
+      clearSunExposureCache();
+    }
+    return sunExposureCache.isExposedAt(pos, hour, dayCycle);
+  };
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
   const zombieStore = new MapEntityStore<Zombie>();
@@ -620,6 +638,10 @@ export const createSession = (options: SessionOptions) => {
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
+  const awardInventoryPractice = (): void => {
+    const training = skillActivityPractice(registry, 'inventory_management', 'handling');
+    character.awardPractice('inventory_management', training.practice, training.tier);
+  };
   const queue = new HandlingQueue(
     inventory,
     (move) =>
@@ -629,7 +651,10 @@ export const createSession = (options: SessionOptions) => {
         chest(),
         sim.time,
       ),
-    (move) => options.audio.onMoveComplete?.(move, sim.time),
+    (move) => {
+      awardInventoryPractice();
+      options.audio.onMoveComplete?.(move, sim.time);
+    },
   );
 
   const firearms = new FirearmMechanics(inventory, queue, {
@@ -907,6 +932,7 @@ export const createSession = (options: SessionOptions) => {
       }
     },
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
+    onCarve: (id, zombie, cells, hit) => options.zombieEffects?.onCarve?.(id, zombie, cells, hit),
     onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
     ...(options.zombieEffects?.onMeleeResult ? { onMeleeResult: options.zombieEffects.onMeleeResult } : {}),
     ...(options.zombieEffects?.onMeleeContact ? { onMeleeContact: options.zombieEffects.onMeleeContact } : {}),
@@ -1130,6 +1156,15 @@ export const createSession = (options: SessionOptions) => {
   });
 
   let handlingPausedForKnockout = restoredHandlingPause;
+  const awardCompletedActionPractice = (job: Job): void => {
+    if (isInventoryPracticeAction(job)) {
+      awardInventoryPractice();
+    }
+    if (isFirearmTrainingAction(job)) {
+      const training = skillActivityPractice(registry, 'firearms_combat', 'handling');
+      character.awardPractice('firearms_combat', training.practice, training.tier);
+    }
+  };
   const tickHandling = (dt: number) => {
     // Handling happens in real time; compressed time belongs to long actions.
     if (sim.body.actionRefusal) {
@@ -1142,10 +1177,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const result = queue.tick(dt);
     for (const job of result.done) {
-      if (isFirearmTrainingAction(job)) {
-        const training = skillActivityPractice(registry, 'firearms_combat', 'handling');
-        character.awardPractice('firearms_combat', training.practice, training.tier);
-      }
+      awardCompletedActionPractice(job);
     }
     options.onHandlingOutcomes?.(result);
     for (const { job, reason } of result.failed) {
@@ -1334,9 +1366,14 @@ export const createSession = (options: SessionOptions) => {
         return undefined;
       }
       searching.add(entity);
-      queue.enqueueAction('furniture.search', `Search the ${nameOf(entity)}`, searchTime(entities.defOf(entity)), {
-        entityUid: entity.uid,
-      });
+      queue.enqueueAction(
+        'furniture.search',
+        `Search the ${nameOf(entity)}`,
+        inventory.scaleHandlingTime(searchTime(entities.defOf(entity))),
+        {
+          entityUid: entity.uid,
+        },
+      );
       return undefined;
     },
     /** F's gaze/occlusion selection is in play; admission shares Search's live furniture reach. */
@@ -1358,6 +1395,7 @@ export const createSession = (options: SessionOptions) => {
     nameOf,
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
+      clearSunExposureCache();
       crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
       rest.frame(dt, until);
       for (const event of audioEvents.read()) {
@@ -1367,6 +1405,7 @@ export const createSession = (options: SessionOptions) => {
       }
     },
     frameReplay: (realSeconds: number): void => {
+      clearSunExposureCache();
       crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
       rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {

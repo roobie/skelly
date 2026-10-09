@@ -1,9 +1,13 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import { generateValid } from '@mobgen/core/generate.ts';
+import { mulMV, rotY } from '@mobgen/core/math.ts';
+import { boneTransforms } from '@mobgen/core/pose.ts';
 import { worldPosition } from '@mobgen/core/voxelize.ts';
 import { amalgamManifest } from '@mobgen/mob/amalgam.ts';
 import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
+import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import type { BoneVoxelBox } from '@mobgen/mob/shamblerFigure.ts';
+import type { Vec3 } from './coords.ts';
 
 type AmalgamRealized = NonNullable<ReturnType<typeof generateValid>>['realized'];
 type AmalgamManifest = ReturnType<typeof amalgamManifest>;
@@ -20,7 +24,59 @@ export interface AmalgamFigure {
   readonly bounds: { readonly min: readonly [number, number, number]; readonly max: readonly [number, number, number] };
   /** Moves the generated mesh to a ground-based origin centered on its horizontal bounds. */
   readonly originOffset: readonly [number, number, number];
+  /** A point inside the core's voxels, in unscaled figure space: the tentacle's root. */
+  readonly coreInteriorPoint: readonly [number, number, number];
+  /** That point at rest pose, in metres from the ground origin, facing -z (see `amalgamStrikeOrigin`). */
+  readonly restStrikeOrigin: Vec3;
 }
+
+type VoxelPoint = readonly [number, number, number];
+
+const coreInteriorPoint = (centers: readonly VoxelPoint[], halfVoxel: number): VoxelPoint => {
+  const centroid = centers.reduce(
+    (sum, center) => [
+      sum[0] + center[0] / centers.length,
+      sum[1] + center[1] / centers.length,
+      sum[2] + center[2] / centers.length,
+    ],
+    [0, 0, 0] as Vec3,
+  );
+  if (
+    centers.some(
+      (center) =>
+        Math.abs(center[0] - centroid[0]) < halfVoxel &&
+        Math.abs(center[1] - centroid[1]) < halfVoxel &&
+        Math.abs(center[2] - centroid[2]) < halfVoxel,
+    )
+  ) {
+    return centroid;
+  }
+  return centers.reduce((nearest, center) => {
+    const distance = (center[0] - centroid[0]) ** 2 + (center[1] - centroid[1]) ** 2 + (center[2] - centroid[2]) ** 2;
+    const nearestDistance =
+      (nearest[0] - centroid[0]) ** 2 + (nearest[1] - centroid[1]) ** 2 + (nearest[2] - centroid[2]) ** 2;
+    return distance < nearestDistance ? center : nearest;
+  }, centers[0]!);
+};
+
+/**
+ * Where the amalgam's tentacle strike starts, in metres from its ground origin: the core's interior point at
+ * rest pose, turned to `facing`. The simulation's attack line and the rendered tentacle both start there; the
+ * render poses the core first, so the two part only during a hit flinch.
+ */
+export const amalgamStrikeOrigin = (figure: AmalgamFigure, facing: Vec3): Vec3 => {
+  const [x, y, z] = mulMV(rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI), figure.restStrikeOrigin);
+  return [x, y, z];
+};
+
+/** The bones that severing `severed` (manifest part ids) hides: each part's root bone and all below it. */
+export const amalgamSeveredBones = (figure: AmalgamFigure, severed: readonly string[]): ReadonlySet<string> => {
+  const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
+  return severedBoneSet(
+    figure.realized.body.bones,
+    severed.map((part) => partRoots.get(part) ?? part),
+  );
+};
 
 interface Bounds {
   min: [number, number, number];
@@ -165,6 +221,17 @@ export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
     min: totalBounds.min.map((value) => value * scale) as [number, number, number],
     max: totalBounds.max.map((value) => value * scale) as [number, number, number],
   };
+  const originOffset: Vec3 = [-centerX * scale, -totalBounds.min[1] * scale, -centerZ * scale];
+  const coreCenters = voxelCentersByBone.get('core');
+  if (!coreCenters?.length) {
+    throw new Error(`Amalgam seed ${seed} has no core voxels`);
+  }
+  const corePoint = coreInteriorPoint(coreCenters, realized.voxels.size / 2);
+  const restCore = boneTransforms(realized.body.bones, {
+    root: originOffset.map((coordinate) => coordinate / scale) as Vec3,
+    rotations: {},
+  }).get('core')!;
+  const restCorePoint = mulMV(restCore.r, corePoint.map((coordinate) => coordinate * scale) as Vec3);
   const figure: AmalgamFigure = {
     seed,
     scale,
@@ -174,7 +241,13 @@ export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
     boxes,
     voxelCentersByBone,
     bounds,
-    originOffset: [-centerX * scale, -totalBounds.min[1] * scale, -centerZ * scale],
+    originOffset,
+    coreInteriorPoint: corePoint,
+    restStrikeOrigin: [
+      restCorePoint[0] + restCore.t[0] * scale,
+      restCorePoint[1] + restCore.t[1] * scale,
+      restCorePoint[2] + restCore.t[2] * scale,
+    ],
   };
   cache.set(key, figure);
   return figure;

@@ -331,6 +331,31 @@ describe('fitted attachment model frames', () => {
   });
 });
 
+describe('fitted magazine model frame', () => {
+  it('keeps the carried-magazine overlay aligned with the firearm export', async () => {
+    const firearm = registry.models.get('rifle_assault');
+    if (!firearm?.slots?.magazine) {
+      throw new Error('Exported rifle has no magazine slot');
+    }
+    const look = itemLook(registry, new Inventory(registry).create('rifle_assault'));
+    const slot = look?.slots.find(({ slot: id }) => id === 'magazine');
+    if (!slot) {
+      throw new Error('Rifle magazine look is incomplete');
+    }
+    const gltf = await parseGlb(readFileSync(`${BASE}/${firearm.file}`));
+    const node = gltf.parser.json.nodes.find(
+      (candidate: { name?: string; translation?: number[] }) => candidate.name === 'magazine:magazine',
+    ) as unknown as { translation?: number[] } | undefined;
+    if (!node?.translation) {
+      throw new Error('Exported rifle has no magazine node transform');
+    }
+    node.translation.forEach((coordinate, axis) => {
+      expect(coordinate).toBeCloseTo(firearm.slots!.magazine!.at[axis]!, 12);
+    });
+    expect(slot.at).toEqual(firearm.slots.magazine.at);
+  });
+});
+
 describe('base pack melee', () => {
   const melee = buildRegistry([read(`${BASE}/models-melee.json`)]).registry;
   const models = [...melee.models.values()];
@@ -550,6 +575,25 @@ describe('base pack shotshells', () => {
     expect(bounds.getCenter(new Vector3()).x).toBeCloseTo(0, 7);
     expect(groundParts.length).toBeGreaterThan(0);
   });
+});
+
+it('loads both exported STANAG magazine GLBs with the same body width', async () => {
+  const sizes = await Promise.all(
+    ['magazine_stanag_20', 'magazine_stanag_30'].map(async (id) => {
+      const definition = registry.models.get(id);
+      expect(definition).toBeDefined();
+      const { scene } = await parseGlb(readFileSync(`${BASE}/${definition!.file}`));
+      scene.updateMatrixWorld(true);
+      const size = new Box3().setFromObject(scene).getSize(new Vector3());
+      expect(size.x).toBeGreaterThan(0);
+      expect(size.y).toBeGreaterThan(0);
+      expect(size.z).toBeGreaterThan(0);
+      expect(size.z).toBeLessThan(size.x);
+      expect(size.z).toBeLessThan(size.y);
+      return size;
+    }),
+  );
+  expect(sizes[0]!.z).toBeCloseTo(sizes[1]!.z, 7);
 });
 
 describe('base pack guns', () => {
