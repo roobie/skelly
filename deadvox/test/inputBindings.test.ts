@@ -268,6 +268,24 @@ describe('keyboard registry', () => {
     expect(bindings.binding('debug.review-map-toggle')?.gate).toBe('debug.gate');
     expect(bindings.binding('debug.freeze-game')?.defaults[0]?.code).not.toBe('KeyM');
   });
+  it('lets the review-map toggle close the map without exposing other debug bindings', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'review-map', debug: true });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+
+    expect(keyboard.press(event('F2'))).toBe(true);
+    expect(keyboard.held('debug.gate')).toBe(true);
+    expect(keyboard.press(event('KeyM'))).toBe(true);
+    expect(commands.map(({ action, phase }) => [action, phase])).toEqual([
+      ['debug.gate', 'down'],
+      ['debug.review-map-toggle', 'down'],
+    ]);
+    expect(INPUT_BINDINGS.filter(({ contexts }) => contexts.includes('review-map')).map(({ id }) => id)).toEqual([
+      'debug.gate',
+      'debug.review-map-toggle',
+    ]);
+  });
   it('keeps noclip flight ungated and concurrent with ordinary movement', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
     let context: InputContext = 'noclip';

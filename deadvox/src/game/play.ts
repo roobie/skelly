@@ -934,14 +934,16 @@ export const startPlay = (
     import: importReplay,
   };
   let reviewMapOpen = false;
-  const reviewMapFrame = document.createElement('iframe');
-  reviewMapFrame.title = 'Current-world review map';
-  reviewMapFrame.style.cssText =
-    'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:10000;background:#d7ddd4';
-  reviewMapFrame.hidden = true;
-  document.body.append(reviewMapFrame);
+  const reviewMapFrame = config.debug ? document.createElement('iframe') : undefined;
+  if (reviewMapFrame) {
+    reviewMapFrame.title = 'Current-world review map';
+    reviewMapFrame.style.cssText =
+      'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:10000;background:#d7ddd4';
+    reviewMapFrame.hidden = true;
+    document.body.append(reviewMapFrame);
+  }
   const toggleReviewMap = (open = !reviewMapOpen): void => {
-    if (open === reviewMapOpen) {
+    if (open === reviewMapOpen || !reviewMapFrame) {
       return;
     }
     reviewMapOpen = open;
@@ -967,6 +969,8 @@ export const startPlay = (
       reviewMapFrame.src = mapUrl.href;
       input.unlock();
       input.cancel();
+    } else {
+      reviewMapFrame.src = 'about:blank';
     }
     syncMenuState();
     if (!open && started && !input.locked) {
@@ -974,42 +978,44 @@ export const startPlay = (
     }
     keyboardInput.sync();
   };
-  const routeReviewMapKey = (message: Record<string, unknown>) => {
-    if (typeof message.code !== 'string' || (message.phase !== 'down' && message.phase !== 'up')) {
-      return;
-    }
-    const keyEvent = {
-      code: message.code,
-      shiftKey: message.shiftKey === true,
-      altKey: message.altKey === true,
-      ctrlKey: message.ctrlKey === true,
-      metaKey: message.metaKey === true,
-      repeat: message.repeat === true,
-      isComposing: message.isComposing === true,
+  if (reviewMapFrame) {
+    const routeReviewMapKey = (message: Record<string, unknown>) => {
+      if (typeof message.code !== 'string' || (message.phase !== 'down' && message.phase !== 'up')) {
+        return;
+      }
+      const keyEvent = {
+        code: message.code,
+        shiftKey: message.shiftKey === true,
+        altKey: message.altKey === true,
+        ctrlKey: message.ctrlKey === true,
+        metaKey: message.metaKey === true,
+        repeat: message.repeat === true,
+        isComposing: message.isComposing === true,
+      };
+      if (message.phase === 'down') {
+        keyboardInput.pressForwarded(keyEvent);
+      } else {
+        keyboardInput.releaseForwarded(keyEvent);
+      }
     };
-    if (message.phase === 'down') {
-      keyboardInput.pressForwarded(keyEvent);
-    } else {
-      keyboardInput.releaseForwarded(keyEvent);
-    }
-  };
-  globalThis.addEventListener('message', (event: MessageEvent<unknown>) => {
-    if (
-      event.origin !== globalThis.location.origin ||
-      event.source !== reviewMapFrame.contentWindow ||
-      typeof event.data !== 'object' ||
-      event.data === null ||
-      !('type' in event.data)
-    ) {
-      return;
-    }
-    const message = event.data;
-    if (message.type === 'deadvox-review-map-key') {
-      routeReviewMapKey(message as Record<string, unknown>);
-    } else if (message.type === 'deadvox-review-map-close') {
-      toggleReviewMap(false);
-    }
-  });
+    globalThis.addEventListener('message', (event: MessageEvent<unknown>) => {
+      if (
+        event.origin !== globalThis.location.origin ||
+        event.source !== reviewMapFrame.contentWindow ||
+        typeof event.data !== 'object' ||
+        event.data === null ||
+        !('type' in event.data)
+      ) {
+        return;
+      }
+      const message = event.data;
+      if (message.type === 'deadvox-review-map-key') {
+        routeReviewMapKey(message as Record<string, unknown>);
+      } else if (message.type === 'deadvox-review-map-close') {
+        toggleReviewMap(false);
+      }
+    });
+  }
   debugTools = debugModule?.attachDebugTools({
     engine,
     weather,
