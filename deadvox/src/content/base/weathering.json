@@ -32,7 +32,7 @@
       "mossThreshold": 0.55,
       "mossBias": 0.7,
       "mixCeiling": 0.75,
-      "weatheringBlend": 0.55
+      "weatheringBlend": 0.3
     }
   ]
 }
