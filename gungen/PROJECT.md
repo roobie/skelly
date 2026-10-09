@@ -356,21 +356,21 @@ Scale anchor: keep the gun-domain unit calibration; the Brownells listing's stat
   listing and are snapped to the nearest grid step. This is a visible reference,
   not a claim that the 30 is a USGI aluminium magazine. The shared upper and
   feed lips use the same snapped width as both bodies. Both STANAG bodies fit
-  the AR magwell as modelled. For g52-7, the raised magazine needs an open path
-  through the AR lower; its former interior roof is omitted while the outer
-  frame and magwell dimensions stay fixed. The 30-round side profile is a visual
-  fit to the public paired-magazine photo; the straight 20-round body provides
-  camera-skew calibration, and the 30's bend begins about halfway down the
-  20-round body's length. The corrected photo makes the 30 appear longer than
-  the listing's approximate length, so retain that sourced dimension as the
-  model basis; its floorplate detail remains an estimate. For g52-7, the feed-lip
-  height follows the receiver's modeled bolt-path and barrel-extension clearance,
-  because no sourced feed-lip-to-bore dimension was available. The lower's
-  `magwell` anchor and Deadvox's `slots.magazine` frame must follow that same
-  raised seat so a fitted magazine remains aligned; see `src/gun/anchorData.ts`,
-  `src/gun/parts.ts`, `BOLT_CARRIER_ENVELOPES`, `magazine`,
-  `src/gun/exportGlb.ts`, `exportGunGlb`, and `deadvox/src/render/itemLook.ts`,
-  `itemLook`. The HK
+  the AR magwell as modelled. The AR lower has no well roof, so a seated magazine
+  passes up through it into the receiver; the magwell opening and outer frame
+  come from `AR_ACTION_LAYOUT`. The 30-round side profile is a visual fit to the
+  public paired-magazine photo; the straight 20-round body provides camera-skew
+  calibration, and the 30's bend begins a little under halfway down the
+  20-round body's length. The calibrated photo makes the 30 appear longer than
+  the listing's approximate length, so the listing's length is the model basis;
+  the floorplate detail is an estimate. No feed-lip-to-bore dimension is sourced,
+  so feed-lip height comes from the modelled bolt-carrier path and barrel
+  extension, snapped to the grid. The lower's `magwell` anchor and Deadvox's
+  `slots.magazine` frame follow the seat so a fitted magazine remains aligned;
+  see `src/gun/parts.ts`, `lower`, `BOLT_CARRIER_ENVELOPES`,
+  `BOLT_CARRIER_RUNNING_CLEARANCE_U`, `src/gun/arLayout.ts`, `AR_ACTION_LAYOUT`,
+  `src/gun/anchorData.ts`, `frameAt`, `src/gun/exportGlb.ts`, `exportGunGlb`,
+  and `deadvox/src/render/itemLook.ts`, `itemLook`. The HK
   listing's approximate empty weight is for steel, so Deadvox uses a gameplay
   mass estimate unless an aluminium STANAG-30 mass is sourced; see
   `deadvox/src/content/base/items-ammunition.json`, `magazine_stanag_30`. See
@@ -1389,8 +1389,8 @@ deadvox holds a model with +x forward and +y up
   2.54 in (64.5 mm) STANAG-20 body depth corroborates that scale within one grid
   step; the 127 × 66 × 25 mm delivery dimensions are package data. The writer
   scales by the resolved domain's `units.metresPerUnit`. Vertices are `mesh.ts` positions times that;
-  normals are unscaled. `conventions.ts` still says "roughly a centimetre" for
-  `u`; the export uses 11.5 mm.
+  normals are unscaled. `conventions.ts` describes `u` as "roughly a centimetre";
+  the export uses 11.5 mm.
 - Axes. gungen is right-handed, +X forward, +Y up, +Z right; glTF is
   right-handed Y-up; deadvox's held model is +x forward, +y up. So the file
   keeps gungen's axes (`FILE_FROM_GUNGEN`, identity) and `grip.at` and the

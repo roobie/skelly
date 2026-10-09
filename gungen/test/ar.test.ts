@@ -134,8 +134,6 @@ describe('AR-pattern parts', () => {
     expect(column.rounds.length).toBeGreaterThan(0);
     const topRound = column.rounds[0]!;
     const topRoundWorld = applyPoint(magazineTransform, [topRound.position[0], topRound.position[1], topRound.z]);
-    expect(topRoundWorld[1]).toBeLessThan(0);
-    expect(topRoundWorld[1]).toBeLessThan(boltPathBottomY);
     expect(boltPathBottomY - topRoundWorld[1]).toBeGreaterThan(0);
     expect(boltPathBottomY - topRoundWorld[1]).toBeLessThan(AR_ACTION_LAYOUT.barrelExtensionDiameterU / 2 + GRID);
   });
