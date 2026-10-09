@@ -18,8 +18,10 @@ read_if:
 
 Read with [INTERFACE.md](INTERFACE.md), especially “Afford, don't instruct” and
 “Readying before acting”. Settled controls are recorded here as rationale; future
-controls remain proposals until their issue is implemented. Character-screen tab
-shortcuts and their rationale are described in [the inventory layout](docs/inventory-layout.md).
+controls remain proposals until their issue is implemented. Character-screen tabs
+and the Items tab's balanced, mouse-resizable split are described in [the inventory
+layout](docs/inventory-layout.md); dragging the divider preserves a usable width for
+both independently scrolling panes.
 
 ## BR's rulings
 

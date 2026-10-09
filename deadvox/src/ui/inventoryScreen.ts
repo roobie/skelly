@@ -1,6 +1,6 @@
 // The inventory screen (DESIGN.md, "Inventory screen"): what you hold and wear, with
 // each pocket drawn as its grid, and the piles and furniture within reach. Items move
-// by drag and drop, with the cells where they'd go previewed, or by keys. Every move
+// by drag and drop with a destination preview, or by keys. Every move
 // goes through the handling queue, so it takes real seconds while the world keeps
 // running. Furniture shows its contents once it has been searched.
 
@@ -23,6 +23,29 @@ import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 
 /** Pixels per inventory cell. */
 const CELL = 32;
+const EMPTY_DROP_GRID: GridSize = { w: 2, h: 2 };
+
+export const targetForPackedFloorDrop = (
+  inventory: Pick<Inventory, 'locate' | 'plan'>,
+  dragged: Item,
+  pos: Vec3,
+  underPointer?: Item,
+): Target => {
+  if (underPointer && underPointer.uid !== dragged.uid) {
+    const location = inventory.locate(underPointer);
+    if (location?.kind === 'pile' && location.pile.pos.every((coordinate, index) => coordinate === pos[index])) {
+      const at = spotOf(location);
+      if (at) {
+        const target: Target = { kind: 'pile', pos, at };
+        const plan = inventory.plan(dragged, target);
+        if (plan.ok && plan.merge === underPointer) {
+          return target;
+        }
+      }
+    }
+  }
+  return { kind: 'pile', pos };
+};
 
 /** Wear slots always shown, so there's somewhere to drop clothing. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist'];
@@ -94,6 +117,7 @@ interface GridViewModel {
   readonly width: number;
   readonly height: number;
   readonly items: readonly ItemViewModel[];
+  readonly packed?: boolean | undefined;
 }
 
 interface PocketViewModel {
@@ -178,6 +202,7 @@ interface InventoryScreenViewModel {
   };
   readonly skills: readonly SkillViewModel[];
   readonly needs: string;
+  readonly containerMaxWidthCells?: number | undefined;
   readonly weight: string;
   readonly hands: readonly SlotViewModel[];
   readonly worn: readonly SlotViewModel[];
@@ -251,7 +276,11 @@ const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
 `;
 
 const gridTemplate = (vm: GridViewModel): TemplateResult => html`
-  <div class="inv-grid" data-target=${vm.target} style=${`width: ${vm.width}px; height: ${vm.height}px`}>
+  <div
+    class=${vm.packed ? 'inv-grid inv-grid-packed' : 'inv-grid'}
+    data-target=${vm.target}
+    style=${vm.packed ? `--inv-grid-max-width: ${vm.width}px` : `width: ${vm.width}px; height: ${vm.height}px`}
+  >
     ${vm.items.map(itemTemplate)}
   </div>
 `;
@@ -260,6 +289,13 @@ const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
   <div class="inv-pocket">
     <span class="inv-pocket-label">${vm.label}</span>
     ${gridTemplate(vm.grid)}
+  </div>
+`;
+
+const aroundPocketTemplate = (vm: PocketViewModel): TemplateResult => html`
+  <div class="inv-pocket">
+    <span class="inv-pocket-label">${vm.label}</span>
+    <div class="inv-grid-scroll">${gridTemplate(vm.grid)}</div>
   </div>
 `;
 
@@ -351,7 +387,7 @@ const furnitureBodyTemplate = (
 
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
-  tab: InventoryTab,
+  { tab, splitRatio }: { tab: InventoryTab; splitRatio: number },
   selectTab: (tab: InventoryTab) => void,
   {
     queue,
@@ -380,7 +416,20 @@ const inventoryTemplate = (
       <span>Drag items · Hold ${labelForAction('inventory.quick-action-gate')} and click for quick move · ${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
     </details>
   </header>
-  <div class="inv-body" data-tab-panel="items" ?hidden=${tab !== 'items'}>
+  <div
+    class="inv-body"
+    data-tab-panel="items"
+    style=${[
+      `--inv-you-fr: ${splitRatio}fr`,
+      `--inv-around-fr: ${1 - splitRatio}fr`,
+      vm.containerMaxWidthCells === undefined
+        ? ''
+        : `--inv-around-container-width-cap: ${vm.containerMaxWidthCells * CELL}px`,
+    ]
+      .filter(Boolean)
+      .join('; ')}
+    ?hidden=${tab !== 'items'}
+  >
     <section class="inv-pane" data-pane="you">
       <h3>You</h3>
       <div class="inv-hands">
@@ -403,41 +452,53 @@ const inventoryTemplate = (
       `,
       )}
     </section>
+    <div
+      class="inv-splitter"
+      data-inventory-splitter
+      role="separator"
+      aria-label="Resize inventory and vicinity panes"
+      aria-orientation="vertical"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow=${Math.round(splitRatio * 100)}
+    ></div>
     <section class="inv-pane" data-pane="around">
       <h3>Around you</h3>
-      ${vm.piles.map(
-        (pile) => html`
-        <div class="inv-pile">
-          <div class="inv-pile-label">${pile.label}</div>
-          ${pile.grids.map(gridTemplate)}
+      <div class="inv-around-sections">
+        ${vm.piles.map(
+          (pile) => html`
+          <div class="inv-around-section inv-around-floor" data-around-section="floor">
+            <div class="inv-pile-label">${pile.label}</div>
+            ${pile.grids.map((grid) => html`<div class="inv-grid-scroll inv-floor-grid-scroll">${gridTemplate(grid)}</div>`)}
+          </div>
           ${pile.bags.map(
             (bag) => html`
-            <div class="inv-bag">
+            <div class="inv-around-section inv-around-container" data-around-section="container">
               <div class="inv-pile-label">${bag.name}, on the floor</div>
-              <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
+              <div class="inv-pockets">${bag.pockets.map(aroundPocketTemplate)}</div>
             </div>
           `,
           )}
-        </div>
-      `,
-      )}
-      ${
-        vm.hasFeetPile
-          ? nothing
-          : html`
-        <div class="inv-pile">
-          <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: PILE_GRID.w * CELL, height: PILE_GRID.h * CELL, items: [] })}
-        </div>
-      `
-      }
-      ${vm.furniture.map(
-        (furniture) => html`
-        <div class="inv-pile" data-entity-uid=${furniture.uid}>
-          <div class="inv-pile-label">${furniture.label}</div>
-          ${furnitureBodyTemplate(furniture, search)}
-        </div>
-      `,
-      )}
+        `,
+        )}
+        ${
+          vm.hasFeetPile
+            ? nothing
+            : html`
+          <div class="inv-around-section inv-around-floor" data-around-section="floor">
+            <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL, height: EMPTY_DROP_GRID.h * CELL, items: [] })}
+          </div>
+        `
+        }
+        ${vm.furniture.map(
+          (furniture) => html`
+          <div class="inv-around-section inv-around-container inv-pile" data-around-section="container" data-entity-uid=${furniture.uid}>
+            <div class="inv-pile-label">${furniture.label}</div>
+            ${furnitureBodyTemplate(furniture, search)}
+          </div>
+        `,
+        )}
+      </div>
     </section>
     ${detailsTemplate(vm.details, queue, attachmentAction)}
   </div>
@@ -536,6 +597,8 @@ export class InventoryScreen {
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
+  private splitRatio = 0.5;
+  private splitDrag: { startX: number; startRatio: number; availableWidth: number } | undefined;
   private drag: Drag | undefined;
 
   constructor(
@@ -592,6 +655,7 @@ export class InventoryScreen {
     this.revealedSelectionUid = undefined;
     this.root.hidden = true;
     document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
+    this.splitDrag = undefined;
     this.endDrag();
   }
 
@@ -813,7 +877,7 @@ export class InventoryScreen {
     this.order = [];
     const vm = this.viewModel();
     render(
-      inventoryTemplate(vm, this.tabs.active, (tab) => this.selectTab(tab), {
+      inventoryTemplate(vm, { tab: this.tabs.active, splitRatio: this.splitRatio }, (tab) => this.selectTab(tab), {
         queue: (item, target, operation) => {
           const refusal = this.hooks.actionRefusal?.();
           if (refusal) {
@@ -907,7 +971,7 @@ export class InventoryScreen {
     const piles = this.hooks.nearby().map(
       (pile): PileViewModel => ({
         label: `On the floor · ${this.hooks.distance(pile).toFixed(1)} m`,
-        grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`)],
+        grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
           .map(({ item }) => ({ name: this.inv.name(item), pockets: this.pocketsViewModel(item) })),
@@ -959,6 +1023,7 @@ export class InventoryScreen {
       body: bodyView,
       skills,
       needs: this.hooks.needs(),
+      containerMaxWidthCells: this.inv.registry.inventory.get('player')?.containerMaxWidthCells,
       weight: kg(this.inv.carriedWeight()),
       hands,
       worn,
@@ -982,19 +1047,26 @@ export class InventoryScreen {
     }));
   }
 
-  private gridViewModel(size: GridSize, placed: readonly Placed[], target: string): GridViewModel {
+  private gridViewModel(size: GridSize, placed: readonly Placed[], target: string, packed = false): GridViewModel {
     return {
       target,
       width: size.w * CELL,
       height: size.h * CELL,
+      packed,
       items: placed.map(({ item, x, y, rotated }) => {
         const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated);
-        return this.itemViewModel(item, h > w ? 'inv-item inv-item-tall' : 'inv-item', {
-          left: `${x * CELL + 1}px`,
-          top: `${y * CELL + 1}px`,
-          width: `${w * CELL - 2}px`,
-          height: `${h * CELL - 2}px`,
-        });
+        return this.itemViewModel(
+          item,
+          h > w ? 'inv-item inv-item-tall' : 'inv-item',
+          packed
+            ? { 'grid-column': `span ${w}`, 'grid-row': `span ${h}` }
+            : {
+                left: `${x * CELL + 1}px`,
+                top: `${y * CELL + 1}px`,
+                width: `${w * CELL - 2}px`,
+                height: `${h * CELL - 2}px`,
+              },
+        );
       }),
     };
   }
@@ -1132,6 +1204,17 @@ export class InventoryScreen {
   // ---- drag and drop ----
 
   private pointerDown(e: PointerEvent): void {
+    const splitter = (e.target as HTMLElement).closest<HTMLElement>('[data-inventory-splitter]');
+    if (splitter && e.button === 0 && (!e.pointerType || e.pointerType === 'mouse')) {
+      const body = splitter.closest<HTMLElement>('.inv-body');
+      if (!body) {
+        return;
+      }
+      e.preventDefault();
+      const availableWidth = Math.max(1, body.clientWidth - splitter.offsetWidth);
+      this.splitDrag = { startX: e.clientX, startRatio: this.splitRatio, availableWidth };
+      return;
+    }
     const refusal = this.hooks.actionRefusal?.();
     if (refusal) {
       this.refuse(refusal);
@@ -1166,6 +1249,22 @@ export class InventoryScreen {
   }
 
   private pointerMove(e: PointerEvent): void {
+    if (this.splitDrag) {
+      const minRatio = Math.min(0.5, 220 / this.splitDrag.availableWidth);
+      this.splitRatio = Math.max(
+        minRatio,
+        Math.min(
+          1 - minRatio,
+          this.splitDrag.startRatio + (e.clientX - this.splitDrag.startX) / this.splitDrag.availableWidth,
+        ),
+      );
+      const body = this.root.querySelector<HTMLElement>('.inv-body[data-tab-panel="items"]');
+      body?.style.setProperty('--inv-you-fr', `${this.splitRatio}fr`);
+      body?.style.setProperty('--inv-around-fr', `${1 - this.splitRatio}fr`);
+      const splitter = body?.querySelector<HTMLElement>('[data-inventory-splitter]');
+      splitter?.setAttribute('aria-valuenow', String(Math.round(this.splitRatio * 100)));
+      return;
+    }
     const { drag } = this;
     if (!drag) {
       return;
@@ -1182,6 +1281,10 @@ export class InventoryScreen {
   }
 
   private pointerUp(e: PointerEvent): void {
+    if (this.splitDrag) {
+      this.splitDrag = undefined;
+      return;
+    }
     const { drag } = this;
     if (!drag) {
       return;
@@ -1244,10 +1347,10 @@ export class InventoryScreen {
     const drag = this.drag!;
     this.clearPreview();
     drag.hover = undefined;
-    const zone = document
-      .elementsFromPoint(px, py)
-      .map((n) => (n as HTMLElement).closest<HTMLElement>('[data-target]'))
-      .find((n) => n !== null && this.root.contains(n));
+    const hits = document.elementsFromPoint(px, py).map((node) => node as HTMLElement);
+    const zone = hits
+      .map((node) => node.closest<HTMLElement>('[data-target]'))
+      .find((node) => node !== null && this.root.contains(node));
     if (!zone) {
       return;
     }
@@ -1258,14 +1361,30 @@ export class InventoryScreen {
       y: Math.round((top - rect.top) / CELL),
       rotated: drag.rotated,
     };
-    const target = this.targetFrom(spec, spot);
+    const packedFloor = spec.startsWith('pile:') && zone.classList.contains('inv-grid-packed');
+    let target: Target | undefined;
+    if (packedFloor) {
+      const pos = spec.slice('pile:'.length).split(',').map(Number) as Vec3;
+      const underPointerNode = hits
+        .map((node) => node.closest<HTMLElement>('.inv-item[data-uid]'))
+        .find((node) => node !== null && zone.contains(node));
+      const underPointer = underPointerNode ? this.byUid.get(Number(underPointerNode.dataset.uid)) : undefined;
+      target = targetForPackedFloorDrop(this.inv, drag.item, pos, underPointer);
+    } else {
+      target = this.targetFrom(spec, spot);
+    }
     if (!target) {
       return;
     }
     const { ok, reason } = this.dropCheck(drag.item, spec, target);
     drag.hover = { target, ok, reason };
     zone.classList.add(ok ? 'drop-ok' : 'drop-no');
-    if (spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:')) {
+    if (packedFloor) {
+      zone.style.setProperty('--preview-left', '0px');
+      zone.style.setProperty('--preview-top', '0px');
+      zone.style.setProperty('--preview-width', `${zone.clientWidth}px`);
+      zone.style.setProperty('--preview-height', `${zone.clientHeight}px`);
+    } else if (spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:')) {
       const [w, h] = footprint(defOf(this.inv.registry, drag.item.type), drag.rotated);
       zone.style.setProperty('--preview-left', `${spot.x * CELL}px`);
       zone.style.setProperty('--preview-top', `${spot.y * CELL}px`);

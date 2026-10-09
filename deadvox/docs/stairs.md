@@ -3,6 +3,7 @@ read_if:
   - you're authoring multi-storey templates, stairs or root cellars
   - you're changing stair traversal, floor-opening validation or cellar lighting
   - you're changing shambler responses to stairs or targets on another floor
+  - you're changing the stairs lighting browser witness or its staging budget
 ---
 
 # Explicit storeys, stairs and root cellars
@@ -168,7 +169,10 @@ the simulation pauses, rather than waiting for the outer kill. Body position,
 velocity, onGround, simulation time and pause state are written to
 `states.json` before assertions and on walk/settle failure. Traversal uses a smaller
 viewport because its unasserted diagnostic rendering consumes frame time;
-lighting retains the pixel-oracle viewport.
+lighting retains the pixel-oracle viewport for cellar checks. The camo AO
+witness runs as its own pixel stage (see `deadvox/test/browser/stairs.mjs`,
+`camo`) with its own cap, so its extra captures cannot consume the cellar
+lighting stage's budget.
 `test/browser/stairs.mjs lighting` independently compares HUD-free dark/beam
 screenshots and an outdoor view against sky visibility forced to one. A test-only
 second authored cabin, raised so its padded top is in an all-air chunk, checks real Streamer-to-render cache recovery and both CPU interior
@@ -179,8 +183,8 @@ wall's GPU luminance must match the sky-one reference. The second-cellar dark
 screenshot proves its field is resident, not the visibility-1 fallback. The wall
 contrast proves it is read from its own slice. This contrast, not two identically dark interiors, detects
 wrong-slot sampling. The extra cabin and terrain
-override exist only in the lighting test's Vite plugin, not the demo or build. Both
-stages keep the existing outer cap; neither retries to green. Traversal witnesses
+override exist only in the lighting test's Vite plugin, not the demo or build. The
+browser stages keep their existing outer caps; none retries to green. Traversal witnesses
 actual floor following; screenshots are secondary to its simulation observations.
 
 Shamblers do not navigate between storeys or follow authored flights as routes,

@@ -432,7 +432,7 @@
         { "item": "cartridge_box_7_d_62x39", "weight": 3 },
         { "item": "cartridge_5_d_56x45", "weight": 2, "count": [5, 15] },
         { "item": "cartridge_7_d_62x39", "weight": 2, "count": [5, 15] },
-        { "nothing": true, "weight": 2 }
+        { "nothing": true, "weight": 27 }
       ]
     },
     {

@@ -71,40 +71,6 @@ const shapeFor = (entry: { point?: boolean; polyline?: unknown[]; polygon?: unkn
   return 'rectangle';
 };
 
-interface ExportedWindow {
-  from: string;
-  to?: string;
-  [field: string]: unknown;
-}
-interface ExportedShambler {
-  window?: ExportedWindow;
-  [field: string]: unknown;
-}
-interface ExportedLayout {
-  startTime?: string;
-  shamblers: ExportedShambler[];
-  [field: string]: unknown;
-}
-
-const normalizeLayout = (layout: ExportedLayout) => {
-  const { startTime, shamblers, ...fields } = layout;
-  return {
-    ...fields,
-    ...(startTime === undefined ? {} : { startTimeGameTimeOfDay: startTime }),
-    shamblers: shamblers.map(({ window, ...spawn }) => {
-      if (!window) {
-        return spawn;
-      }
-      const { from, to, ...windowFields } = window;
-      const normalizedWindow: Record<string, unknown> = { ...windowFields, fromGameTimeOfDay: from };
-      if (to !== undefined) {
-        normalizedWindow.toGameTimeOfDay = to;
-      }
-      return { ...spawn, window: normalizedWindow };
-    }),
-  };
-};
-
 const object = (className: string, x: number, y: number, properties: Record<string, unknown>) => ({
   name: className,
   className,
@@ -149,7 +115,7 @@ describe('Tiled spawn-window export', () => {
     const {
       shamblers: [shambler],
     } = layout;
-    expect(shambler.window).toEqual({ from: 'dusk', to: 'dawn' });
+    expect(shambler.window).toEqual({ fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' });
   });
 
   it('keeps the committed playtest layout exported from its Tiled source', () => {
@@ -208,7 +174,7 @@ describe('Tiled spawn-window export', () => {
     const {
       layouts: [rawLayout],
     } = exportLayout(map);
-    const exported = { layouts: [normalizeLayout(rawLayout)] };
+    const exported = { layouts: [rawLayout] };
     const tiledProject = JSON.parse(readFileSync(projectPath, 'utf8')) as {
       propertyTypes: { name: string; values: string[] }[];
     };

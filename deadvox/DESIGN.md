@@ -15,7 +15,7 @@ read_if:
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
-  - you change the game's design, especially held-item feedback, body damage or treatment, or hand ownership
+  - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
@@ -26,6 +26,7 @@ read_if:
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
+  - you're authoring dilapidated structures or breached perimeters
   - you're changing player-facing item descriptions or their boundary with control guidance
 ---
 
@@ -424,8 +425,13 @@ HTML over the game view, and keyboard-first:
 
 - Two panes: **you** (hands, then each worn item with its pockets drawn as
   grids) and **around** (piles, and containers within reach, also as grids).
-  Items move by drag and drop, with the cells where the item fits highlighted,
-  or with keys. R rotates.
+  Items move by drag and drop with a destination preview, or with keys. R rotates.
+- So Items fits small zoomed screens, the compact view leaves unused cells out of
+  the empty **At your feet** target, and a content-owned width limit keeps an
+  oversized locker from dominating the nearby pane; wider containers carry a reason
+  in content.
+  See `src/ui/inventoryScreen.ts`, `InventoryScreen.viewModel`, and
+  `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
   shows its handling time. Weight, exact condition and times are in the item's
   details.
@@ -1216,6 +1222,13 @@ something in play, not only decorate it.
   taking off, when something comes near. If adopted, it responds to an actual
   nearby cause, never to a timer or a guaranteed enemy alarm, so it stays a
   warning the world gives rather than one the UI gives.
+- **Dilapidation:** built things show abandonment through collapsed sections,
+  breaches, slumped or missing segments and rubble. A passable breach is a real
+  route, so each authored site names the gaps a player can cross. New structures
+  and reworks follow this direction, starting with the camp walls in #385;
+  retrofitting existing structures is tracked in #396. See
+  `src/content/base/camp.json`, `camp_wall_run`, `camp_gate`, and
+  `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an
   animal ecology, hunting or farming in version 1 (EPIC.md, "Not in version

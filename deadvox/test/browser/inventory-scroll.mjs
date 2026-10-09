@@ -20,6 +20,23 @@ const content = [
   {
     source: 'inventory-scroll-fixture',
     data: {
+      inventory: [{ id: 'player', containerMaxWidthCells: 5 }],
+      furniture: [
+        {
+          id: 'scroll_rack',
+          name: 'Scroll rack',
+          size: [1, 1, 1],
+          color: '#494b4e',
+          container: { pockets: [{ name: 'Rack', grid: [5, 6], handlingSimSeconds: 0.1 }] },
+        },
+        {
+          id: 'scroll_small_container',
+          name: '_',
+          size: [1, 1, 1],
+          color: '#494b4e',
+          container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 0.1 }] },
+        },
+      ],
       items: [
         ...['legs', 'torso', 'back'].map((slot) => ({
           id: `scroll_${slot}`,
@@ -30,6 +47,19 @@ const content = [
           wearable: { slot, encumbrance: 0, warmth: 0 },
           container: { pockets: [{ grid: [1, 12], handlingSimSeconds: 0.1 }] },
         })),
+        {
+          id: 'scroll_bag',
+          name: 'Scroll bag',
+          category: 'clothing',
+          weight: 1,
+          size: [1, 1],
+          container: {
+            pockets: [
+              { name: 'Main', grid: [2, 2], handlingSimSeconds: 0.1 },
+              { name: 'Lid', grid: [1, 2], handlingSimSeconds: 0.1 },
+            ],
+          },
+        },
         { id: 'scroll_token', name: 'Scroll token', category: 'tool', weight: 1, size: [1, 1] },
         { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
       ],
@@ -72,14 +102,18 @@ body.impact(1, 'leftArm', { bleeding: true });
 for (const slot of ['legs', 'torso', 'back']) {
   if (!inventory.add(inventory.create('scroll_' + slot), { kind: 'worn' })) throw Error('worn fixture failed');
 }
-for (let i = 0; i < 12; i++) {
-  if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [i % 3, 0, Math.floor(i / 3)] })) throw Error('pile fixture failed');
-}
+const populatePiles = () => {
+  for (let i = 0; i < 12; i++) {
+    if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [i % 3, 0, Math.floor(i / 3)] })) throw Error('pile fixture failed');
+  }
+  if (!inventory.add(inventory.create('scroll_bag'), { kind: 'pile', pos: [0, 0, 0] })) throw Error('floor container fixture failed');
+  screen.update();
+};
 let needsText = 'health 100% · stamina 100%';
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
-  containers: () => [], entityDistance: () => 0, dispatch: () => undefined, searching: () => false,
+  containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: () => undefined, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
   body: () => body.snapshotState(), character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
 });
@@ -107,6 +141,22 @@ const menu = mountMenuPointer({ input, canvas: target, cursor: document.querySel
 let gameplayWheels = 0;
 target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions: BODY_REGIONS,
+  containerMaxWidthCells: registry.inventory.get('player')?.containerMaxWidthCells,
+  populatePiles,
+  addCapRack() {
+    const width = registry.inventory.get('player')?.containerMaxWidthCells;
+    if (width === undefined) throw Error('content width cap is missing');
+    const rack = inventory.entities.add({ type: 'scroll_rack', pos: [0, 0, 0], size: [1, 1, 1], facing: 'n' });
+    if (!rack) throw Error('cap-width rack fixture failed');
+    rack.searched = true;
+    if (!inventory.add(inventory.create('scroll_token'), { kind: 'furniture', entity: rack, pocket: 0, at: { x: width - 1, y: 0, rotated: false } })) {
+      throw Error('last-column item fixture failed');
+    }
+    const small = inventory.entities.add({ type: 'scroll_small_container', pos: [1, 0, 0], size: [1, 1, 1], facing: 'n' });
+    if (!small) throw Error('small container fixture failed');
+    small.searched = true;
+    screen.update();
+  },
   get gameplayWheels() { return gameplayWheels; },
   resetWheels() { gameplayWheels = 0; },
   redraw() {
@@ -176,7 +226,11 @@ try {
   browser =
     engine === 'firefox'
       ? await firefox.launch({ headless: false })
-      : await launchChromium('inventory-scroll', { headless: true });
+      : await launchChromium('inventory-scroll', {
+          headless: true,
+          // Exercise the double-scrollbar width budget with desktop-style scrollbars.
+          ignoreDefaultArgs: ['--hide-scrollbars'],
+        });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -192,6 +246,274 @@ try {
     await page.evaluate(() => globalThis.scrollFixture.bodyRegions.length),
   );
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
+  await page.locator('#inventory .inv-tab[data-tab="items"]').click();
+  await page.setViewportSize({ width: 640, height: 400 });
+  const splitAtOpen = await page.evaluate(() => {
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+    const splitter = body?.querySelector('[data-inventory-splitter]');
+    const around = body?.querySelector('[data-pane="around"]');
+    if (!(body && splitter && around)) {
+      throw new Error('Items pane divider is missing');
+    }
+    const bodyBox = body.getBoundingClientRect();
+    const dividerBox = splitter.getBoundingClientRect();
+    const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
+    return {
+      ratio: Number(splitter.getAttribute('aria-valuenow')),
+      center: (dividerBox.left + dividerBox.width / 2 - bodyBox.left) / bodyBox.width,
+      aroundWidth: around.getBoundingClientRect().width,
+      aroundColumnWidth: tracks[2],
+    };
+  });
+  assert.equal(splitAtOpen.ratio, 50, `Items panes start at half: ${JSON.stringify(splitAtOpen)}`);
+  assert.ok(Math.abs(splitAtOpen.center - 0.5) < 0.03, `divider starts at half: ${JSON.stringify(splitAtOpen)}`);
+  assert.ok(
+    Math.abs(splitAtOpen.aroundWidth - splitAtOpen.aroundColumnWidth) <= 1,
+    `Around you fills its column: ${JSON.stringify(splitAtOpen)}`,
+  );
+  const dragSplitter = async (fraction) => {
+    const geometry = await page.evaluate(() => {
+      const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+      const splitter = body?.querySelector('[data-inventory-splitter]');
+      if (!(body && splitter)) {
+        throw new Error('Items pane divider is missing');
+      }
+      const bodyBox = body.getBoundingClientRect();
+      const dividerBox = splitter.getBoundingClientRect();
+      return { body: bodyBox.toJSON(), divider: dividerBox.toJSON() };
+    });
+    const y = geometry.divider.y + geometry.divider.height / 2;
+    await page.mouse.move(geometry.divider.x + geometry.divider.width / 2, y);
+    await page.mouse.down();
+    await page.mouse.move(geometry.body.x + geometry.body.width * fraction, y);
+    await page.mouse.up();
+  };
+  await dragSplitter(0);
+  const splitAtLeftClamp = await page.evaluate(() => {
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
+    return {
+      ratio: Number(splitter?.getAttribute('aria-valuenow')),
+      availableWidth: body && splitter ? body.clientWidth - splitter.offsetWidth : 0,
+    };
+  });
+  assert.equal(
+    splitAtLeftClamp.ratio,
+    Math.round((220 / splitAtLeftClamp.availableWidth) * 100),
+    `left drag reaches the JavaScript clamp: ${JSON.stringify(splitAtLeftClamp)}`,
+  );
+  await dragSplitter(1);
+  const splitAtRightClamp = await page.evaluate(() => {
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
+    return {
+      ratio: Number(splitter?.getAttribute('aria-valuenow')),
+      availableWidth: body && splitter ? body.clientWidth - splitter.offsetWidth : 0,
+    };
+  });
+  assert.equal(
+    splitAtRightClamp.ratio,
+    Math.round((1 - 220 / splitAtRightClamp.availableWidth) * 100),
+    `right drag reaches the JavaScript clamp: ${JSON.stringify(splitAtRightClamp)}`,
+  );
+  await dragSplitter(0.5);
+  const middleRatio = Number(await page.locator('#inventory [data-inventory-splitter]').getAttribute('aria-valuenow'));
+  assert.ok(
+    Math.abs(middleRatio - 50) <= 1,
+    `integer clientX rounding can shift the divider by one percentage point: ${middleRatio}`,
+  );
+  const emptyAround = await page.evaluate(() => {
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    const you = document.querySelector('#inventory [data-pane="you"]');
+    const grid = around?.querySelector('.inv-grid');
+    if (!around) {
+      throw new Error('empty vicinity pane is missing');
+    }
+    if (!you) {
+      throw new Error('player pane is missing');
+    }
+    if (!grid) {
+      throw new Error('empty-feet drop target is missing');
+    }
+    const aroundBox = around.getBoundingClientRect();
+    const youBox = you.getBoundingClientRect();
+    const targetBox = grid.getBoundingClientRect();
+    const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+    const hit = document.elementFromPoint(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
+    return {
+      around: { width: aroundBox.width, height: aroundBox.height, right: aroundBox.right, bottom: aroundBox.bottom },
+      you: { width: youBox.width, height: youBox.height },
+      target: { width: targetBox.width, height: targetBox.height },
+      cell,
+      cap: globalThis.scrollFixture.containerMaxWidthCells,
+      targetIsHit: hit?.closest('.inv-grid') === grid,
+    };
+  });
+  assert.ok(
+    emptyAround.around.right <= 640 && emptyAround.around.bottom <= 400,
+    `vicinity fits 640×400: ${JSON.stringify(emptyAround)}`,
+  );
+  assert.ok(
+    emptyAround.target.width < emptyAround.around.width,
+    `empty vicinity content shrink-wraps inside its pane: ${JSON.stringify(emptyAround)}`,
+  );
+  assert.ok(
+    emptyAround.around.height < emptyAround.you.height,
+    `empty vicinity shrink-wraps vertically: ${JSON.stringify(emptyAround)}`,
+  );
+  assert.ok(
+    emptyAround.target.width >= 2 * emptyAround.cell && emptyAround.target.height >= 2 * emptyAround.cell,
+    `feet target remains a usable two-cell hit area: ${JSON.stringify(emptyAround)}`,
+  );
+  assert.ok(emptyAround.targetIsHit, 'the visible empty-feet target receives a centre pointer hit');
+  await page.evaluate(() => globalThis.scrollFixture.addCapRack());
+  const capWideRack = await page.evaluate(() => {
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
+    const scroll = rack?.querySelector('.inv-grid-scroll');
+    const grid = scroll?.querySelector('.inv-grid');
+    const item = grid?.querySelector('.inv-item');
+    if (!(around && scroll && grid && item)) {
+      throw new Error('cap-width rack fixture is missing');
+    }
+    const pane = around.getBoundingClientRect();
+    const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+    item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const itemBox = item.getBoundingClientRect();
+    const hit = document.elementFromPoint(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
+    return {
+      pane: { left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom },
+      sectionWidth: rack.getBoundingClientRect().width,
+      gridWidth: grid.getBoundingClientRect().width,
+      clientWidth: scroll.clientWidth,
+      scrollWidth: scroll.scrollWidth,
+      scrollLeft: scroll.scrollLeft,
+      itemLeft: Number.parseFloat(item.style.left),
+      itemRect: { x: itemBox.x, y: itemBox.y, width: itemBox.width, height: itemBox.height },
+      cell,
+      cap: globalThis.scrollFixture.containerMaxWidthCells,
+      itemHit: hit?.closest('.inv-item') === item,
+    };
+  });
+  assert.ok(
+    capWideRack.pane.left >= 0 &&
+      capWideRack.pane.right <= 640 &&
+      capWideRack.pane.top >= 0 &&
+      capWideRack.pane.bottom <= 400,
+    `cap-wide vicinity stays in the 640×400 viewport: ${JSON.stringify(capWideRack)}`,
+  );
+  assert.ok(
+    capWideRack.gridWidth <= capWideRack.cap * capWideRack.cell + 1,
+    `cap-wide rack grid stays within the content cap: ${JSON.stringify(capWideRack)}`,
+  );
+  assert.ok(
+    capWideRack.scrollWidth <= capWideRack.clientWidth,
+    `cap-wide rack needs no horizontal scrolling: ${JSON.stringify(capWideRack)}`,
+  );
+  assert.equal(
+    Math.floor(capWideRack.itemLeft / capWideRack.cell),
+    capWideRack.cap - 1,
+    'fixture item occupies the rack’s last column',
+  );
+  assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
+  assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
+  await page.setViewportSize({ width: 720, height: 400 });
+  await page.evaluate(() => globalThis.scrollFixture.populatePiles());
+  const capContainerLayout = async () =>
+    page.evaluate(() => {
+      const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
+      const section = rack?.closest('[data-around-section="container"]');
+      const scroll = rack?.querySelector('.inv-grid-scroll');
+      const grid = scroll?.querySelector('.inv-grid');
+      const around = document.querySelector('#inventory [data-pane="around"]');
+      if (!(rack && section && scroll && grid && around)) {
+        throw new Error('cap-width container layout is missing');
+      }
+      const sectionTop = section.getBoundingClientRect().top;
+      const rowSections = [...around.querySelectorAll('[data-around-section]')].filter(
+        (candidate) => Math.abs(candidate.getBoundingClientRect().top - sectionTop) < 1,
+      ).length;
+      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+      return {
+        rowSections,
+        aroundWidth: around.getBoundingClientRect().width,
+        sections: [...around.querySelectorAll('[data-around-section]')].map((candidate) => {
+          const box = candidate.getBoundingClientRect();
+          return {
+            label: candidate.querySelector('.inv-pile-label')?.textContent,
+            x: box.x,
+            y: box.y,
+            width: box.width,
+          };
+        }),
+        gridWidth: grid.getBoundingClientRect().width,
+        cap: globalThis.scrollFixture.containerMaxWidthCells,
+        cell,
+        scrollWidth: scroll.scrollWidth,
+        clientWidth: scroll.clientWidth,
+      };
+    });
+  const balancedCapContainer = await capContainerLayout();
+  const aroundLayout = async () =>
+    page.evaluate(() => {
+      const around = document.querySelector('#inventory [data-pane="around"]');
+      const sections = [...document.querySelectorAll('#inventory [data-pane="around"] [data-around-section]')];
+      const floor = document.querySelector('#inventory .inv-grid-packed');
+      if (!(around && floor && sections.length > 0)) {
+        throw new Error('responsive vicinity sections are missing');
+      }
+      const aroundBox = around.getBoundingClientRect();
+      const sectionBoxes = sections.map((section) => section.getBoundingClientRect());
+      const firstTop = Math.min(...sectionBoxes.map((box) => box.top));
+      return {
+        firstRow: sectionBoxes.filter((box) => Math.abs(box.top - firstTop) < 1).length,
+        overflow: sectionBoxes.some((box) => box.left < aroundBox.left || box.right > aroundBox.right),
+        floorWidth: floor.getBoundingClientRect().width,
+        floorColumns: getComputedStyle(floor).gridTemplateColumns.trim().split(' ').length,
+        pileState: JSON.stringify(globalThis.scrollFixture.inventory.snapshotState().piles),
+      };
+    });
+  const balancedLayout = await aroundLayout();
+  await dragSplitter(0);
+  const wideLayout = await aroundLayout();
+  const wideCapContainer = await capContainerLayout();
+  for (const [split, layout] of [
+    ['balanced', balancedCapContainer],
+    ['wide', wideCapContainer],
+  ]) {
+    assert.ok(layout.rowSections > 1, `${split} cap-width container shares a row: ${JSON.stringify(layout)}`);
+    assert.ok(
+      layout.gridWidth <= layout.cap * layout.cell + 1,
+      `${split} container grid stays within the cap: ${JSON.stringify(layout)}`,
+    );
+    assert.ok(
+      layout.scrollWidth <= layout.clientWidth,
+      `${split} shared container fits without horizontal scrolling: ${JSON.stringify(layout)}`,
+    );
+  }
+  assert.ok(
+    wideLayout.firstRow > balancedLayout.firstRow,
+    `wider Around you fits another section: ${JSON.stringify({ balancedLayout, wideLayout })}`,
+  );
+  assert.equal(wideLayout.overflow, false, `Around-you sections stay in their column: ${JSON.stringify(wideLayout)}`);
+  assert.equal(
+    wideLayout.pileState,
+    balancedLayout.pileState,
+    'responsive floor packing leaves saved pile positions unchanged',
+  );
+  assert.ok(
+    wideLayout.floorWidth !== balancedLayout.floorWidth && wideLayout.floorColumns !== balancedLayout.floorColumns,
+    `floor pile display packing follows its available width: ${JSON.stringify({ balancedLayout, wideLayout })}`,
+  );
+  await dragSplitter(0.5);
+  await page.setViewportSize({ width: 960, height: 540 });
+  const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
+  assert.ok(
+    fittedAround && fittedAround.x + fittedAround.width <= 960 && fittedAround.y + fittedAround.height <= 540,
+    `vicinity stays within the fitted screen: ${JSON.stringify(fittedAround)}`,
+  );
+  await page.setViewportSize({ width: 1280, height: 480 });
+  await page.evaluate(() => globalThis.scrollFixture.populatePiles());
   const failures = [];
   let activeTab;
   for (const { tab, selector } of [
