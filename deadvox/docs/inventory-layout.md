@@ -13,15 +13,15 @@ put its apparent click point in an adjacent pane when content packing changes.
 Sharing the screen with the crafting catalogue must not make an ordinary pile
 slot inaccessible merely because the item occupies a different column.
 
-For #518, selected-item details stay between the two item locations: the player
-can read the inspection and actions while seeing both destinations. The divider
-balances space between You and Around you. The nearby pane must retain enough
-room for its cap-limited locker grid; when a window cannot fit that pane beside
-the details, the details join the vertical stack rather than forcing horizontal
-scrolling in an ordinary locker. This trade keeps the requested narrow details
-column without squeezing nearby containers. The handling queue stays below the
-panes because it summarizes work across the whole inventory. See
-`src/ui/style.css`, `#inventory .inv-body[data-tab-panel="items"]`.
+For #518, selected-item details stay between the two item locations so the
+player can inspect an item while seeing both destinations. On tighter windows,
+details yield space before the layout stacks. The divider state follows the
+space left after details and keeps both side panes within their usable bounds.
+The nearby pane reserves room for a cap-limited locker and its vertical scroll
+gutter, avoiding horizontal scrolling in an ordinary locker. The handling
+queue stays below the panes because it summarizes work across the whole
+inventory. See `src/ui/style.css`, `#inventory .inv-body[data-tab-panel="items"]`,
+and `src/ui/inventoryScreen.ts`, `InventoryScreen.syncSplitterToLayout`.
 
 The floor and container sections wrap when they cannot share a row, so the
 vicinity uses its available width without squeezing a capped grid. Justified

@@ -285,15 +285,21 @@ try {
     const dividerBox = splitter.getBoundingClientRect();
     const youBox = you.getBoundingClientRect();
     const detailsBox = details.getBoundingClientRect();
+    const availableWidth = body.clientWidth - splitter.offsetWidth - details.offsetWidth;
     const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
     return {
       ratio: Number(splitter.getAttribute('aria-valuenow')),
+      youWidth: youBox.width,
+      availableWidth,
       dividerBetweenColumns: youBox.right <= dividerBox.left && dividerBox.right <= detailsBox.left,
       aroundWidth: around.getBoundingClientRect().width,
       aroundColumnWidth: tracks[3],
     };
   });
-  assert.equal(splitAtOpen.ratio, 50, `side panes start balanced: ${JSON.stringify(splitAtOpen)}`);
+  assert.ok(
+    Math.abs(splitAtOpen.youWidth - (splitAtOpen.availableWidth * splitAtOpen.ratio) / 100) <= 1,
+    `splitter state matches the CSS allocation: ${JSON.stringify(splitAtOpen)}`,
+  );
   assert.equal(
     splitAtOpen.dividerBetweenColumns,
     true,
@@ -354,7 +360,7 @@ try {
     };
   });
   assert.ok(
-    Math.abs(splitAtRightClamp.ratio - Math.round((1 - 220 / splitAtRightClamp.availableWidth) * 100)) <= 1,
+    Math.abs(splitAtRightClamp.ratio - Math.round((1 - 362 / splitAtRightClamp.availableWidth) * 100)) <= 1,
     `right drag reaches the JavaScript clamp within percentage rounding: ${JSON.stringify(splitAtRightClamp)}`,
   );
   await dragSplitter(0.5);

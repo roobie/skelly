@@ -628,6 +628,7 @@ export class InventoryScreen {
     this.queue = queue;
     this.hooks = hooks;
     root.addEventListener('pointerdown', (e) => this.pointerDown(e));
+    globalThis.addEventListener('resize', () => this.syncSplitterToLayout());
     globalThis.addEventListener('pointermove', (e) => this.pointerMove(e));
     globalThis.addEventListener('pointerup', (e) => this.pointerUp(e));
   }
@@ -915,6 +916,23 @@ export class InventoryScreen {
     } else if (selectedUid !== this.revealedSelectionUid && this.scrollSelectedItemIntoView()) {
       this.revealedSelectionUid = selectedUid;
     }
+    this.syncSplitterToLayout();
+  }
+
+  private syncSplitterToLayout(): void {
+    const body = this.root.querySelector<HTMLElement>('.inv-body[data-tab-panel="items"]');
+    const splitter = body?.querySelector<HTMLElement>('[data-inventory-splitter]');
+    const details = body?.querySelector<HTMLElement>('[data-pane="details"]');
+    if (!(body && splitter && details && body.clientWidth > 0)) {
+      return;
+    }
+    const availableWidth = Math.max(1, body.clientWidth - splitter.offsetWidth - details.offsetWidth);
+    const minRatio = Math.min(0.5, 220 / availableWidth);
+    const maxRatio = Math.max(0.5, 1 - 362 / availableWidth);
+    this.splitRatio = Math.max(minRatio, Math.min(maxRatio, this.splitRatio));
+    body.style.setProperty('--inv-you-fr', `${this.splitRatio}fr`);
+    body.style.setProperty('--inv-around-fr', `${1 - this.splitRatio}fr`);
+    splitter.setAttribute('aria-valuenow', String(Math.round(this.splitRatio * 100)));
   }
 
   private scrollSelectedItemIntoView(): boolean {
@@ -1259,10 +1277,11 @@ export class InventoryScreen {
   private pointerMove(e: PointerEvent): void {
     if (this.splitDrag) {
       const minRatio = Math.min(0.5, 220 / this.splitDrag.availableWidth);
+      const maxRatio = Math.max(0.5, 1 - 362 / this.splitDrag.availableWidth);
       this.splitRatio = Math.max(
         minRatio,
         Math.min(
-          1 - minRatio,
+          maxRatio,
           this.splitDrag.startRatio + (e.clientX - this.splitDrag.startX) / this.splitDrag.availableWidth,
         ),
       );
