@@ -92,10 +92,15 @@ Mint every new feature, round and review ID with `agent-work mint` (for example,
 one by hand. Mint checks the tracker and `.agent-mail/scratch/` to prevent collisions from
 overwriting briefs and misrouting mail.
 
-Feature IDs use `<subproject><number>` (`g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide
-or docs); rounds use `<feature>-<round>` and start at `-1`; reviews use `cr-<round>`. Each
-feature becomes one PR on one branch, and a review targets one exact round. Existing
-letter-suffix IDs remain unchanged.
+- **Feature:** `<subproject><number>` (`g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide
+  or docs), one PR on one branch. Numbers count up per subproject; new work always gets a
+  new number, even when it grows out of another feature. PR titles end with the feature ID,
+  e.g. `(g26)`.
+- **Round:** each dispatched piece of work on a feature is a round and its mail item
+  (`g26-1`, `g26-2`, …). The first round is `-1`; BR's feedback, review fixes or a
+  main merge start the next round.
+- **Review:** `cr-` plus the exact round reviewed; fixes after a review are the next round,
+  so each review has one target. Existing letter-suffix IDs remain unchanged.
 
 ## Git workflow and worktrees
 
