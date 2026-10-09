@@ -19,7 +19,8 @@ assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or ligh
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
 const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
-const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [90, 21, 82], rotation: 0 };
+// Keep the witness near the stairs lighting route; the remote wall incurred chunk streaming before its captures.
+const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [75, 21, 60], rotation: 0 };
 await mkdir(artifacts, { recursive: true });
 const vite = await createServer({
   root,
@@ -389,10 +390,10 @@ try {
       };
       const luminance = (point) => {
         const { x, y } = project(point);
-        if (x < 4 || y < 4 || x >= canvas.width - 4 || y >= canvas.height - 4) {
+        if (x < 2 || y < 2 || x >= canvas.width - 2 || y >= canvas.height - 2) {
           throw new Error(`camo AO sample is outside the screenshot: ${x},${y}`);
         }
-        const pixels = context.getImageData(Math.round(x) - 3, Math.round(y) - 3, 7, 7).data;
+        const pixels = context.getImageData(Math.round(x) - 1, Math.round(y) - 1, 3, 3).data;
         let sum = 0;
         for (let i = 0; i < pixels.length; i += 4) {
           sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
@@ -400,12 +401,12 @@ try {
         return { x, y, luminance: sum / ((pixels.length / 4) * 3) };
       };
       return {
-        corner: luminance([181, 43.1, 165.1]),
-        middle: luminance([181, 43.5, 165.5]),
+        corner: luminance([151, 43.1, 121.1]),
+        middle: luminance([151, 43.5, 121.5]),
       };
     }, png.toString('base64'));
   if (mode === 'lighting') {
-    await stage([185, 43.0001, 166], Math.PI / 2, -0.2);
+    await stage([155, 43.0001, 122], Math.PI / 2, -0.2);
     const originalModes = await page.evaluate(() => {
       const { engine } = globalThis.stairsWitness;
       return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn };
@@ -422,8 +423,26 @@ try {
       );
       await page.waitForFunction((frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame, before);
     };
+    const resizeViewport = async ({ width, height }) => {
+      const before = await page.evaluate(() => globalThis.stairsWitness.engine.renderer.info.render.frame);
+      await page.setViewportSize({ width, height });
+      await page.waitForFunction(
+        ({ width: expectedWidth, height: expectedHeight, frame }) => {
+          const view = document.querySelector('#view');
+          return (
+            view?.clientWidth === expectedWidth &&
+            view.clientHeight === expectedHeight &&
+            globalThis.stairsWitness.engine.renderer.info.render.frame > frame
+          );
+        },
+        { width, height, frame: before },
+      );
+    };
     let camoAo;
+    const originalViewport = page.viewportSize();
+    assert.ok(originalViewport);
     try {
+      await resizeViewport({ width: 640, height: 400 });
       await setShaderLook(true, true);
       const patterned = await camoWallPixels(await shot('camo-ao-patterned'));
       await setShaderLook(true, false);
@@ -437,6 +456,7 @@ try {
       };
     } finally {
       await setShaderLook(originalModes.linear, originalModes.patterns);
+      await resizeViewport(originalViewport);
     }
     await writeFile(resolve(artifacts, 'camo-inner-corner-ao.json'), JSON.stringify(camoAo, null, 2));
     await test('camo preserves corner AO relative to the same plain block face', () => {

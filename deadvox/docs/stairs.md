@@ -3,6 +3,7 @@ read_if:
   - you're authoring multi-storey templates, stairs or root cellars
   - you're changing stair traversal, floor-opening validation or cellar lighting
   - you're changing shambler responses to stairs or targets on another floor
+  - you're changing the stairs lighting browser witness or its staging budget
 ---
 
 # Explicit storeys, stairs and root cellars
@@ -168,7 +169,10 @@ the simulation pauses, rather than waiting for the outer kill. Body position,
 velocity, onGround, simulation time and pause state are written to
 `states.json` before assertions and on walk/settle failure. Traversal uses a smaller
 viewport because its unasserted diagnostic rendering consumes frame time;
-lighting retains the pixel-oracle viewport.
+lighting retains the pixel-oracle viewport for cellar checks. The paired camo
+witness samples use a reduced viewport, and the witness stays inside the
+pre-streamed stairs area: full-resolution captures and remote chunk streaming
+added enough work to exhaust the lighting stage's existing cap.
 `test/browser/stairs.mjs lighting` independently compares HUD-free dark/beam
 screenshots and an outdoor view against sky visibility forced to one. A test-only
 second authored cabin, raised so its padded top is in an all-air chunk, checks real Streamer-to-render cache recovery and both CPU interior
