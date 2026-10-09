@@ -757,6 +757,8 @@ const FurnitureSchema = strictObject({
   container: optional(ContainerSchema),
   /** The loot table rolled into its container when the chunk generates. */
   loot: optional(Id),
+  /** Sound emitted when searching this furniture; it must alert hearing. */
+  searchNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
   /** It opens and closes, taking this many Sim seconds. */
   door: optional(
     strictObject({
