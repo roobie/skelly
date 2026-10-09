@@ -11,8 +11,8 @@ export interface DeathMetric {
 
 /** When something first happened: the game clock, and the play seconds by then. */
 export interface MetricStamp {
-  readonly gameTime: string;
-  readonly playSeconds: number;
+  readonly gameClock: string;
+  readonly playRealSeconds: number;
 }
 
 export type KeyItemEvent = 'looted' | 'read';
@@ -31,7 +31,7 @@ export interface SessionMetricsV1 {
   readonly interruptions: number;
   readonly pocketUses: Readonly<Record<string, number>>;
   /** Real seconds of unpaused, visible play. */
-  readonly playSeconds: number;
+  readonly playRealSeconds: number;
   /** Each beat's first arrival, in the order reached. */
   readonly beatsReached: Readonly<Record<string, MetricStamp>>;
   /** Each key item's first loot and first read. */
@@ -52,7 +52,7 @@ export class SessionMetrics {
   private compressedSeconds = 0;
   private interruptions = 0;
   private readonly pocketUses: Record<string, number> = {};
-  private playSeconds = 0;
+  private playRealSeconds = 0;
   private readonly beatsReached: Record<string, MetricStamp> = {};
   private readonly keyItems: Record<string, KeyItemMetric> = {};
 
@@ -66,7 +66,7 @@ export class SessionMetrics {
       this.compressedSeconds = Math.max(0, initial.compressedSeconds);
       this.interruptions = Math.max(0, Math.floor(initial.interruptions));
       Object.assign(this.pocketUses, Object.fromEntries(Object.entries(initial.pocketUses).slice(-POCKET_KEY_LIMIT)));
-      this.playSeconds = Math.max(0, initial.playSeconds);
+      this.playRealSeconds = Math.max(0, initial.playRealSeconds);
       Object.assign(
         this.beatsReached,
         firstEntries(initial.beatsReached, (stamp) => ({ ...stamp })),
@@ -79,23 +79,23 @@ export class SessionMetrics {
   }
 
   /** Keeps a beat's first arrival; later arrivals change nothing. */
-  reachBeat(beat: string, gameTime: string): void {
+  reachBeat(beat: string, gameClock: string): void {
     if (beat && !Object.hasOwn(this.beatsReached, beat) && Object.keys(this.beatsReached).length < MARK_KEY_LIMIT) {
-      this.beatsReached[beat] = this.stamp(gameTime);
+      this.beatsReached[beat] = this.stamp(gameClock);
     }
   }
 
   /** Keeps a key item's first loot and first read; repeats change nothing. */
-  recordKeyItem(item: string, event: KeyItemEvent, gameTime: string): void {
+  recordKeyItem(item: string, event: KeyItemEvent, gameClock: string): void {
     const metric = Object.hasOwn(this.keyItems, item) ? this.keyItems[item] : undefined;
     if (!item || metric?.[event] || (!metric && Object.keys(this.keyItems).length >= MARK_KEY_LIMIT)) {
       return;
     }
-    this.keyItems[item] = { ...metric, [event]: this.stamp(gameTime) };
+    this.keyItems[item] = { ...metric, [event]: this.stamp(gameClock) };
   }
 
-  private stamp(gameTime: string): MetricStamp {
-    return { gameTime, playSeconds: this.playSeconds };
+  private stamp(gameClock: string): MetricStamp {
+    return { gameClock, playRealSeconds: this.playRealSeconds };
   }
 
   recordContainerLoot(container: string, handlingSeconds: number, uiSeconds: number): void {
@@ -123,7 +123,7 @@ export class SessionMetrics {
 
   frame(realSeconds: number, compressed: boolean, interrupted: boolean): void {
     if (Number.isFinite(realSeconds) && realSeconds > 0) {
-      this.playSeconds += realSeconds;
+      this.playRealSeconds += realSeconds;
     }
     if (compressed) {
       this.compressedSeconds += Math.max(0, realSeconds);
@@ -151,7 +151,7 @@ export class SessionMetrics {
       compressedSeconds: this.compressedSeconds,
       interruptions: this.interruptions,
       pocketUses: { ...this.pocketUses },
-      playSeconds: this.playSeconds,
+      playRealSeconds: this.playRealSeconds,
       beatsReached: firstEntries(this.beatsReached, (stamp) => ({ ...stamp })),
       keyItems: firstEntries(this.keyItems, (metric) => ({ ...metric })),
     };
@@ -189,10 +189,10 @@ const isRecordOf = (value: unknown, entry: (item: unknown) => boolean): boolean 
 const isStamp = (value: unknown): value is MetricStamp =>
   typeof value === 'object' &&
   value !== null &&
-  'gameTime' in value &&
-  typeof value.gameTime === 'string' &&
-  'playSeconds' in value &&
-  finiteNonNegative(value.playSeconds);
+  'gameClock' in value &&
+  typeof value.gameClock === 'string' &&
+  'playRealSeconds' in value &&
+  finiteNonNegative(value.playRealSeconds);
 
 const isKeyItemMetric = (value: unknown): value is KeyItemMetric =>
   isRecordOf(value, isStamp) && Object.keys(value as object).every((event) => event === 'looted' || event === 'read');
@@ -238,7 +238,7 @@ const isMetricsV1 = (input: unknown, seed: number): input is SessionMetricsV1 =>
     value.pocketUses !== null &&
     !Array.isArray(value.pocketUses) &&
     Object.values(value.pocketUses).every((count) => Number.isSafeInteger(count) && (count as number) >= 0) &&
-    finiteNonNegative(value.playSeconds) &&
+    finiteNonNegative(value.playRealSeconds) &&
     isRecordOf(value.beatsReached, isStamp) &&
     isRecordOf(value.keyItems, isKeyItemMetric)
   );

@@ -30,7 +30,7 @@ describe('playtest metrics', () => {
       compressedSeconds: 5,
       interruptions: 1,
       pocketUses: { 'player pocket 1': 2 },
-      playSeconds: 5,
+      playRealSeconds: 5,
       beatsReached: {},
       keyItems: {},
     });
@@ -53,12 +53,12 @@ describe('playtest metrics', () => {
     metrics.recordKeyItem('fixtureNote', 'looted', 'second loot');
     metrics.recordKeyItem('fixtureNote', 'read', 'first read');
     expect(metrics.toJSON()).toMatchObject({
-      playSeconds: 30,
-      beatsReached: { fixtureBeat: { gameTime: 'first arrival', playSeconds: 10 } },
+      playRealSeconds: 30,
+      beatsReached: { fixtureBeat: { gameClock: 'first arrival', playRealSeconds: 10 } },
       keyItems: {
         fixtureNote: {
-          looted: { gameTime: 'first loot', playSeconds: 10 },
-          read: { gameTime: 'first read', playSeconds: 30 },
+          looted: { gameClock: 'first loot', playRealSeconds: 10 },
+          read: { gameClock: 'first read', playRealSeconds: 30 },
         },
       },
     });

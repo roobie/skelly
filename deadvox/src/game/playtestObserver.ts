@@ -186,10 +186,10 @@ export class PlaytestObserver {
     }
   }
 
-  private commitOutcomes(inventory: Inventory, gameTime: () => string): void {
+  private commitOutcomes(inventory: Inventory, gameClock: () => string): void {
     for (const result of this.outcomes) {
       for (const completed of result.completedMoves ?? []) {
-        this.completeMove(completed, inventory, gameTime);
+        this.completeMove(completed, inventory, gameClock);
       }
     }
     this.outcomes.length = 0;
@@ -205,14 +205,14 @@ export class PlaytestObserver {
     return window;
   }
 
-  private completeMove(pending: PendingMove, inventory: Inventory, gameTime: () => string): void {
+  private completeMove(pending: PendingMove, inventory: Inventory, gameClock: () => string): void {
     const { job } = pending;
     const item = inventory.itemByUid(job.itemUid);
     const current = item ? inventory.locate(item) : undefined;
     const looted = this.recordSourceLoot(pending, current, item, inventory);
     const type = item?.type ?? this.moveTypes.get(job.itemUid);
     if (looted && type && this.marks?.keyLoot.get(looted.pos.join(','))?.has(type)) {
-      this.metrics.recordKeyItem(type, 'looted', gameTime());
+      this.metrics.recordKeyItem(type, 'looted', gameClock());
     }
     this.recordPocketUse(job, inventory);
   }
