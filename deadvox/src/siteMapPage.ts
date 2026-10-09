@@ -1,7 +1,7 @@
 import { buildingBounds } from './core/authoredTerrain.mjs';
 import type { Chunk } from './core/chunk.ts';
 import { blockColors, blockId } from './core/content.ts';
-import { CHUNK, toChunk, toLocal } from './core/coords.ts';
+import { CHUNK, compassBearing, toChunk, toLocal } from './core/coords.ts';
 import { BLOCK_SIZE } from './core/scale.ts';
 import { generateColumn, terrainBlockIds, worldGroundAt } from './core/worldgen.ts';
 import { BUNDLED_CONTENT } from './game/bundledContent.ts';
@@ -15,7 +15,6 @@ import {
   siteMapRasterToWorld,
   siteMapWorldToRaster,
 } from './render/siteMap.ts';
-import { compassBearing } from './core/coords.ts';
 
 const CELL_SIZE = BLOCK_SIZE;
 const OUTSIDE_MARGIN_METRES = 24;
@@ -31,26 +30,25 @@ config.debug = true;
 const layout = registry.layouts.get(config.site);
 const site = siteForReviewMap(config, registry);
 const selectedView = (params.get('view') === 'satellite' ? 'satellite' : 'topographic') as SiteMapView;
-const scale = config.scale;
-const playerPosition = overlay
-  ? { x: Number(params.get('playerX')), z: Number(params.get('playerZ')) }
-  : undefined;
+const { scale } = config;
+const playerPosition = overlay ? { x: Number(params.get('playerX')), z: Number(params.get('playerZ')) } : undefined;
 const playerYaw = overlay ? Number(params.get('playerYaw')) : undefined;
 const centerX = overlay ? Number(params.get('centerX')) : 0;
 const centerZ = overlay ? Number(params.get('centerZ')) : 0;
-const requestedBounds = layout && !overlay
-  ? {
-      minX: layout.bounds.x0 - OUTSIDE_MARGIN_METRES,
-      maxX: layout.bounds.x1 + OUTSIDE_MARGIN_METRES,
-      minZ: layout.bounds.z0 - OUTSIDE_MARGIN_METRES,
-      maxZ: layout.bounds.z1 + OUTSIDE_MARGIN_METRES,
-    }
-  : {
-      minX: centerX - 128,
-      maxX: centerX + 128,
-      minZ: centerZ - 128,
-      maxZ: centerZ + 128,
-    };
+const requestedBounds =
+  layout && !overlay
+    ? {
+        minX: layout.bounds.x0 - OUTSIDE_MARGIN_METRES,
+        maxX: layout.bounds.x1 + OUTSIDE_MARGIN_METRES,
+        minZ: layout.bounds.z0 - OUTSIDE_MARGIN_METRES,
+        maxZ: layout.bounds.z1 + OUTSIDE_MARGIN_METRES,
+      }
+    : {
+        minX: centerX - 128,
+        maxX: centerX + 128,
+        minZ: centerZ - 128,
+        maxZ: centerZ + 128,
+      };
 const minBlockX = Math.floor(requestedBounds.minX / CELL_SIZE);
 const maxBlockX = Math.round(requestedBounds.maxX / CELL_SIZE);
 const minBlockZ = Math.floor(requestedBounds.minZ / CELL_SIZE);

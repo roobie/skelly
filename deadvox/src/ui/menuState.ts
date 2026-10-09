@@ -94,7 +94,11 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
   const debugMenuOpen = closeOtherMenus ? false : input.debugMenuOpen;
   const readingOpen = !closeOtherMenus && Boolean(input.readingOpen);
   const overlayHidden =
-    Boolean(input.reviewMapOpen) || (input.pointerLocked && !mainMenuOpen) || inventoryOpen || readingOpen || input.dead;
+    Boolean(input.reviewMapOpen) ||
+    (input.pointerLocked && !mainMenuOpen) ||
+    inventoryOpen ||
+    readingOpen ||
+    input.dead;
   return {
     started,
     mainMenuOpen,

@@ -205,7 +205,11 @@ try {
   assert.equal(mapParams.centerX, mapParams.playerX, 'map centers on the player');
   assert.equal(mapParams.centerZ, mapParams.playerZ, 'map centers on the player');
   assert.equal(Number.isFinite(Number(mapParams.playerYaw)), true, 'map receives player facing');
-  assert.equal(await page.evaluate(() => globalThis.fullAutoRuntime.sim.paused), false, 'map matches the debug panel pause rule');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoRuntime.sim.paused),
+    false,
+    'map matches the debug panel pause rule',
+  );
   await pressAction(page, 'debug.review-map-toggle');
   await page.waitForFunction(() => document.querySelector('iframe[title="Current-world review map"]')?.hidden);
   await pressAction(page, 'debug.review-map-toggle');
