@@ -90,8 +90,8 @@
               "max": 6
             },
             "railSpanNotches": {
-              "minOffset": -5,
-              "maxOffset": 6
+              "minOffset": -3,
+              "maxOffset": 3
             }
           },
           "sight": {
