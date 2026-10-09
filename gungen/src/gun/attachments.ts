@@ -1,7 +1,7 @@
 import { localSolidBounds } from '../core/geometry.ts';
 import { applyDir, applyPoint, type Vec3 } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
-import type { PartDef } from '../core/schema.ts';
+import type { PartAppearance, PartDef, PartInstance } from '../core/schema.ts';
 import { attachmentMassKg } from './attachmentMass.ts';
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
@@ -82,6 +82,25 @@ export const ATTACHMENT_IDS = [
   'tactical-flashlight-mount',
   'foregrip',
 ] as const;
+
+export const attachmentInstanceForId = (
+  id: string,
+  appearance?: PartAppearance,
+): PartInstance & { readonly params: Readonly<Record<string, string>> } => {
+  if (!ATTACHMENT_IDS.includes(id as (typeof ATTACHMENT_IDS)[number])) {
+    throw new Error(`Unknown attachment id: ${id}`);
+  }
+  const instanceAppearance = appearance ?? {
+    ...(id === 'real-suppressor' || id === 'improvised-suppressor' ? { finish: { metal: 'alu-anodized-black' } } : {}),
+  };
+  if (id.startsWith('optic-')) {
+    return { family: 'sight', params: { type: id.slice('optic-'.length) }, appearance: instanceAppearance };
+  }
+  if (id === 'real-suppressor' || id === 'improvised-suppressor') {
+    return { family: 'suppressor', params: { type: id }, appearance: instanceAppearance };
+  }
+  return { family: id, params: {}, appearance: instanceAppearance };
+};
 
 const MOUNT_SET = new Set<MountKind>(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']);
 
@@ -309,4 +328,27 @@ export const attachmentMetadata = (
     throw new Error(`Attachment ${metadata.id} has no male ${metadata.mount} connector`);
   }
   return { ...metadata, mountFrame: { normal: port.normal, up: port.up } };
+};
+
+export const withAttachmentInstanceAppearances = (resolved: Resolved): Resolved => {
+  let parts: Record<string, PartInstance> | undefined;
+  for (const [id, definition] of resolved.defs) {
+    const instance = resolved.assembly.parts[id];
+    if (!instance || instance.appearance) {
+      continue;
+    }
+    const params = resolved.params.get(id);
+    const metadata = attachmentMetadata(
+      instance.family,
+      params && Object.fromEntries(Object.entries(params).map(([name, value]) => [name, value.value])),
+      resolved.domain.units.metresPerUnit,
+      definition,
+    );
+    if (!metadata) {
+      continue;
+    }
+    parts ??= { ...resolved.assembly.parts };
+    parts[id] = { ...instance, appearance: attachmentInstanceForId(metadata.id).appearance ?? {} };
+  }
+  return parts ? { ...resolved, assembly: { ...resolved.assembly, parts } } : resolved;
 };

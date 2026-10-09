@@ -160,7 +160,7 @@ export function buildLayers(
     const drawn = def.displaySolids ?? def.solids;
     const appearanceFor = (solid: Solid) =>
       resolveAppearance(GUN_PALETTE, def.family, solid.id, {
-        context: appearanceContext,
+        context: resolved.assembly.parts[part]?.appearance ?? appearanceContext,
         overrides: {
           ...(def.material === undefined ? {} : { partMaterial: def.material }),
           ...(def.slot === undefined ? {} : { partSlot: def.slot }),

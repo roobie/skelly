@@ -238,9 +238,16 @@ export interface PrefabReference {
   readonly version: number;
 }
 
+export interface PartAppearance {
+  /** Per-instance finish by material slot, independent of the host assembly's finish. */
+  readonly finish?: Readonly<Record<string, string>>;
+}
+
 export interface PartInstance {
   readonly family: string;
   readonly params?: Readonly<Record<string, string>>;
+  /** Appearance belongs to this part instance, not to the assembly it is fitted to. */
+  readonly appearance?: PartAppearance;
   /** Present on curated designs; legacy assemblies need no prefab reference. */
   readonly prefab?: PrefabReference;
 }

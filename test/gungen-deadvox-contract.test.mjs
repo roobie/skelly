@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { buildRegistry } from '../deadvox/src/core/content.ts';
 import { exportFileText } from '../gungen/src/cli/exportFile.ts';
+import { exportAttachmentGlb } from '../gungen/src/gun/attachmentExport.ts';
 import { loadGunDesign } from '../gungen/src/gun/designLoader.ts';
 import { exportGunGlb } from '../gungen/src/gun/exportGlb.ts';
 
+const deadvoxRequire = createRequire(new URL('../deadvox/package.json', import.meta.url));
+const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const ROOT = new URL('../', import.meta.url).pathname;
 const DESIGNS = join(ROOT, 'gungen/designs');
 const FIREARM_CONTENT = JSON.parse(readFileSync(join(ROOT, 'deadvox/src/content/base/models-firearms.json'), 'utf8'));
@@ -15,6 +19,13 @@ const SYNCED_FIREARM_DESIGNS = [
   ['archetype-ak-akm.json', 'rifle_ak'],
 ];
 const omitDeadvoxOwnedFields = ({ chargingHandleDegrees: _chargingHandleDegrees, ...model }) => model;
+const glbJson = (bytes) =>
+  JSON.parse(
+    bytes
+      .subarray(20, 20 + bytes.readUInt32LE(12))
+      .toString()
+      .trim(),
+  );
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const arrayDifference = (actual, expected, path) => {
   if (!(Array.isArray(actual) && Array.isArray(expected))) {
@@ -111,6 +122,30 @@ describe('gungen exports satisfy deadvox model validation', () => {
         `${modelId} differs from gungen's export outside Deadvox-owned fields${difference ? `: ${difference}` : ''}`,
       );
     }
+  });
+
+  it('loads each exported suppressor material without changing its colour', async () => {
+    await Promise.all(
+      ['real_suppressor', 'improvised_suppressor'].map(async (id) => {
+        const exported = exportAttachmentGlb(id.replaceAll('_', '-'), {
+          id,
+          file: `assets/models/${id}.glb`,
+        });
+        assert.ok(exported.ok, exported.ok ? '' : JSON.stringify(exported.error));
+        const exportedColor = glbJson(Buffer.from(exported.glb)).materials[0].pbrMetallicRoughness.baseColorFactor;
+        const asset = readFileSync(join(ROOT, `deadvox/src/content/base/assets/models/${id}.glb`));
+        const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(asset).buffer, '');
+        const loadedColors = [];
+        loaded.scene.traverse((object) => {
+          if (object.isMesh) {
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            loadedColors.push(...materials.map(({ color }) => color.toArray()));
+          }
+        });
+        assert.ok(loadedColors.length > 0, `Deadvox ${id} GLB loaded no mesh materials`);
+        assert.deepEqual(loadedColors, [exportedColor.slice(0, 3)]);
+      }),
+    );
   });
 
   it('rejects unknown action fields', () => {
