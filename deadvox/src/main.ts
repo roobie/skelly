@@ -112,7 +112,6 @@ if (bench === 'report') {
   document.body.classList.add('bench');
   showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
 } else if (bench === null) {
-  mountControlsCard(document.getElementById('controls')!);
   mountInputOptions(document.getElementById('input-options')!);
   keyboardInput.install();
   inputBindings.loadLayout();
@@ -129,6 +128,11 @@ if (bench === 'report') {
   if (pendingReplay) {
     config.debug = true;
   }
+  mountControlsCard(
+    document.getElementById('controls')!,
+    document.getElementById('controls-search') as HTMLInputElement,
+    () => config.debug,
+  );
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
   if (pendingReplay) {
     try {

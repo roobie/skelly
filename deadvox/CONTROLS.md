@@ -26,12 +26,17 @@ both independently scrolling panes.
 
 ## BR's rulings
 
-- **One registry, player rebinding (2026-10-04):** “we must make it so the player
-  can rebind any keyboard input - this means we need a 100% centralised registry”.
-  See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, rather than a copied default
-  list. The controls card and settings are generated from that same catalogue;
-  see `src/game/controls.ts`, `controlsCardRows`, and `src/ui/inputOptions.ts`,
-  `mountInputOptions`.
+- **One registry, player rebinding:** The binding catalogue is the source for the
+  controls card and settings, so rebinding changes the displayed key labels with
+  the active bindings. The main-menu controls list uses case-insensitive substring
+  search over action descriptions and key labels; native text ownership keeps
+  search keystrokes from activating game actions. It hides debug-marked bindings
+  and bindings scoped only to debug contexts during ordinary runs, because those
+  controls are unavailable there, and includes them during debug runs so they are
+  discoverable where usable. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`,
+  `DEBUG_ONLY_CONTEXTS` and `KeyboardInput.install`, and `src/game/controls.ts`,
+  `controlsCardRows` and `filterControlsCardRows`; settings use
+  `src/ui/inputOptions.ts`, `mountInputOptions`.
 - **Rebindability and the debug exception (2026-10-04 12:12):** “we must make it so
   the player can rebind any keyboard input - this means we need a 100% centralised
   registry and as for the debug keybinds, how about gating them all behind e.g.

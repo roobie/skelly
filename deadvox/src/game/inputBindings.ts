@@ -13,6 +13,13 @@ export type InputContext =
   | 'noclip'
   | 'play'
   | 'interrupted';
+export const DEBUG_ONLY_CONTEXTS: ReadonlySet<InputContext> = new Set([
+  'build',
+  'debug-panel',
+  'review-map',
+  'spawn',
+  'noclip',
+]);
 type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold';
 export type Modifier = 'shift' | 'alt' | 'ctrl' | 'meta';
 export interface Chord {

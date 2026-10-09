@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { controlsCardRows } from '../src/game/controls.ts';
-import { BindingRegistry } from '../src/game/inputBindings.ts';
+import { controlsCardRows, filterControlsCardRows } from '../src/game/controls.ts';
+import { BindingRegistry, DEBUG_ONLY_CONTEXTS, INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import {
   loadMetrics,
   measureSnapshots,
@@ -348,15 +348,22 @@ describe('debug time control', () => {
 
 describe('controls card', () => {
   it('derives visible actions and labels from the effective registry rather than a copied key table', () => {
-    const registry = new BindingRegistry([
+    const registry = new BindingRegistry(
+      [
+        {
+          id: 'fixture.action',
+          description: 'Fixture action',
+          contexts: ['inventory'],
+          commands: [{ id: 'fixture.action', kind: 'press' }],
+          defaults: [{ code: 'KeyJ' }],
+        },
+      ],
       {
-        id: 'fixture.action',
-        description: 'Fixture action',
-        contexts: ['inventory'],
-        commands: [{ id: 'fixture.action', kind: 'press' }],
-        defaults: [{ code: 'KeyJ' }],
+        getItem: () => null,
+        setItem: () => undefined,
+        removeItem: () => undefined,
       },
-    ]);
+    );
     const [row] = controlsCardRows(registry);
     expect(row?.id).toBe('fixture.action');
     expect(row?.keys).toContain('J');
@@ -364,5 +371,46 @@ describe('controls card', () => {
     expect(row?.action).toContain('inventory');
     expect(registry.rebind('fixture.action', [{ code: 'KeyK' }])).toBeUndefined();
     expect(controlsCardRows(registry)[0]?.keys).toBe('K');
+  });
+  it('shows table-derived debug-only bindings only during debug runs', () => {
+    const registry = new BindingRegistry(INPUT_BINDINGS);
+    const debugOnly = INPUT_BINDINGS.filter(
+      (binding) => binding.debug || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context)),
+    );
+    const ordinaryIds = INPUT_BINDINGS.filter(
+      (binding) => !(binding.debug || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context))),
+    ).map(({ id }) => id);
+    const ordinaryRows = new Set(controlsCardRows(registry).map(({ id }) => id));
+    const debugRows = new Set(controlsCardRows(registry, true).map(({ id }) => id));
+
+    expect(debugOnly.length).toBeGreaterThan(0);
+    expect(debugOnly.every(({ id }) => !ordinaryRows.has(id))).toBe(true);
+    expect(debugOnly.every(({ id }) => debugRows.has(id))).toBe(true);
+    expect(ordinaryIds.every((id) => ordinaryRows.has(id) && debugRows.has(id))).toBe(true);
+  });
+  it('filters descriptions and key labels by case-insensitive substring only', () => {
+    const registry = new BindingRegistry([
+      {
+        id: 'fixture.reload',
+        description: 'Reload magazine',
+        contexts: ['play'],
+        commands: [{ id: 'fixture.reload', kind: 'press' }],
+        defaults: [{ code: 'KeyR' }],
+      },
+      {
+        id: 'fixture.ready',
+        description: 'Ready to aim',
+        contexts: ['play'],
+        commands: [{ id: 'fixture.ready', kind: 'press' }],
+        defaults: [{ code: 'KeyQ' }],
+      },
+    ]);
+    const rows = controlsCardRows(registry);
+
+    expect(filterControlsCardRows(rows, 'LOAD MAG').map(({ id }) => id)).toContain('fixture.reload');
+    expect(filterControlsCardRows(rows, 'q').map(({ id }) => id)).toContain('fixture.ready');
+    expect(filterControlsCardRows(rows, 'play').map(({ id }) => id)).not.toContain('fixture.reload');
+    expect(filterControlsCardRows(rows, 'relad').map(({ id }) => id)).not.toContain('fixture.reload');
+    expect(filterControlsCardRows(rows, '   ')).toEqual(rows);
   });
 });

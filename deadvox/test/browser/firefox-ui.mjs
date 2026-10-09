@@ -213,6 +213,38 @@ try {
     null,
     { timeout: 5000 },
   );
+  const controlsSearch = page.locator('#controls-search');
+  const controlsBeforeSearch = await page.locator('#controls dt').count();
+  await page.evaluate(() => {
+    globalThis.controlsSearchKeyPrevented = [];
+    globalThis.addEventListener(
+      'keydown',
+      (event) => {
+        if (event.target?.id === 'controls-search') {
+          globalThis.controlsSearchKeyPrevented.push(event.defaultPrevented);
+        }
+      },
+      false,
+    );
+  });
+  await controlsSearch.focus();
+  await page.keyboard.type('f');
+  const filteredControls = await page
+    .locator('#controls')
+    .evaluate((root) =>
+      [...root.querySelectorAll('dt')].map((key) =>
+        `${key.textContent} ${key.nextElementSibling?.textContent}`.toLowerCase(),
+      ),
+    );
+  assert.ok(filteredControls.length > 0 && filteredControls.length < controlsBeforeSearch);
+  assert.ok(
+    filteredControls.every((row) => row.includes('f')),
+    'search keeps only matching descriptions or key labels',
+  );
+  assert.deepEqual(await page.evaluate(() => globalThis.controlsSearchKeyPrevented), [false]);
+  assert.equal(await page.locator('#overlay').evaluate((panel) => panel.hidden), false);
+  await controlsSearch.fill('');
+  assert.equal(await page.locator('#controls dt').count(), controlsBeforeSearch);
   assert.equal(await page.evaluate(() => document.pointerLockElement === document.querySelector('#view')), true);
   assert.ok(await page.locator('#audio-volume-master').count());
   const paused = await page.evaluate(() => ({
