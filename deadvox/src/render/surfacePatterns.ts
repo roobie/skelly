@@ -42,6 +42,15 @@ export const camoShaderConfig = (blocks: Registry['blocks']): CamoShaderConfig =
   };
 };
 
+/** A 3D hash to [0, 1) without sine; shared by the camo blotches here and the blood stains on bodies. */
+export const HASH31_GLSL = `
+float hash31(vec3 p) {
+  p = mod(p, 512.0);
+  p = fract(p * 0.1031);
+  p += dot(p, p.yxz + 33.33);
+  return fract((p.x + p.y) * p.z);
+}`;
+
 export const SURFACE_PATTERN_GLSL = `
 ${DEFINES}
 // Vertex colours are authored as sRGB bytes but three.js treats them as linear; use the exact piecewise sRGB EOTF, not pow 2.2.
@@ -140,12 +149,7 @@ vec3 voronoi(vec2 p) {
   return vec3(d1, d2, id);
 }
 
-float hash31(vec3 p) {
-  p = mod(p, 512.0);
-  p = fract(p * 0.1031);
-  p += dot(p, p.yxz + 33.33);
-  return fract((p.x + p.y) * p.z);
-}
+${HASH31_GLSL}
 vec4 voronoi3(vec3 p) {
   vec3 i = floor(p);
   vec3 f = fract(p);
