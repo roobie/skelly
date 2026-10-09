@@ -7,6 +7,7 @@ import {
   type InputContext,
 } from '../src/game/inputBindings.ts';
 
+const contextWordSeparator = /[^a-z0-9-]+/;
 const dom = new Window();
 for (const key of [
   'document',
@@ -48,7 +49,9 @@ describe('input options context visibility', () => {
     expect(shared.length).toBeGreaterThan(0);
 
     mountInputOptions(ordinaryRoot);
-    const headings = [...ordinaryRoot.querySelectorAll('section h3')].map((heading) => heading.textContent?.trim() ?? '');
+    const headings = [...ordinaryRoot.querySelectorAll('section h3')].map((heading) =>
+      heading.textContent?.trim() ?? '',
+    );
     expect(headings.every((heading) => !DEBUG_ONLY_CONTEXTS.has(heading as InputContext))).toBe(true);
     expect(debugOnly.every(({ id }) => rowFor(ordinaryRoot, id) === undefined)).toBe(true);
     for (const binding of shared) {

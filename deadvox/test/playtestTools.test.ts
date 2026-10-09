@@ -12,6 +12,8 @@ import {
 } from '../src/game/playtestTools.ts';
 import { Simulation } from './simulationFixture.ts';
 
+const contextWordSeparator = /[^a-z0-9-]+/;
+
 describe('playtest metrics', () => {
   it('accumulates looting time, deaths, compression, interruptions, and pocket uses', () => {
     const metrics = new SessionMetrics(7007);
@@ -386,7 +388,7 @@ describe('controls card', () => {
     const ordinaryRows = controlsCardRows(registry);
     const ordinaryById = new Map(ordinaryRows.map((row) => [row.id, row]));
     const debugRows = controlsCardRows(registry, true);
-    const words = (text: string) => text.toLowerCase().split(/[^a-z0-9-]+/);
+    const words = (text: string) => text.toLowerCase().split(contextWordSeparator);
 
     expect(INPUT_CONTEXTS.noclip).toBe(true);
     expect(debugOnly.length).toBeGreaterThan(0);

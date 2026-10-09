@@ -1,8 +1,8 @@
 import { html, render } from 'lit-html';
 import {
+  type BindingRegistry,
   bindingIsDebugOnly,
   contextsForRun,
-  type BindingRegistry,
   inputBindings,
   NATIVE_INPUTS,
   POINTER_ACTIONS,
