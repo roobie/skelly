@@ -535,7 +535,22 @@ try {
     ),
   );
   assert.ok(alternateProfileId, 'a second weathering profile exists for profile-switch coverage');
-  await weatheringGroup.locator('#weathering-profile').selectOption(alternateProfileId);
+  // Choose from the game's combo box by keyboard: Down opens it at the current profile, arrows walk to the other.
+  const profileField = weatheringGroup.locator('#weathering-profile');
+  await profileField.focus();
+  await page.keyboard.press('ArrowDown');
+  const profileSteps = await profileField.evaluate((field, profileId) => {
+    const options = [
+      ...document.getElementById(field.getAttribute('aria-controls')).querySelectorAll('[role="option"]'),
+    ];
+    const active = options.findIndex((option) => option.id === field.getAttribute('aria-activedescendant'));
+    return options.findIndex((option) => option.textContent === profileId) - active;
+  }, alternateProfileId);
+  for (let step = 0; step < Math.abs(profileSteps); step += 1) {
+    // biome-ignore lint/performance/noAwaitInLoops: each arrow moves the highlight one option, in order.
+    await page.keyboard.press(profileSteps > 0 ? 'ArrowDown' : 'ArrowUp');
+  }
+  await page.keyboard.press('Enter');
   const strengthSlider = weatheringGroup.locator('#weathering-strength');
   const sliderNext = await strengthSlider.evaluate((input) => {
     input.value = String(Number(input.value) + Number(input.step));
@@ -550,7 +565,9 @@ try {
       const {
         weatheringState: { settings },
       } = globalThis.firefoxUiLook;
-      return [...document.querySelectorAll('#debug-ui-root input[id^="weathering-"]')].every((input) => {
+      // The profile combo box names the profile; the other inputs edit its settings.
+      const settingInputs = '#debug-ui-root input[id^="weathering-"]:not([role="combobox"])';
+      return [...document.querySelectorAll(settingInputs)].every((input) => {
         const field = input.id.slice('weathering-'.length);
         return input.value === String(settings[field]);
       });

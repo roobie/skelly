@@ -1453,6 +1453,86 @@ body.inventory-open.inventory-tab-crafting #crafting {
 .craft-start {
   margin-top: 10px;
 }
+.craft-use {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* ---- combo box: src/ui/comboBox.ts ---- */
+.combo-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 12em;
+  max-width: 100%;
+}
+.combo-box::after {
+  content: "▾";
+  position: absolute;
+  right: 8px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.combo-box-field {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 4px 22px 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #0e1013;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.combo-box-field:focus {
+  outline: none;
+  cursor: text;
+}
+.combo-box-field:focus,
+.combo-box-field.game-cursor-hover {
+  border-color: var(--accent);
+}
+/* Fixed to the viewport so a scrolling panel can't clip it. Positioned without a z-index, it paints over
+   the host panel's content and stays in the host's layer. */
+.combo-box-list {
+  position: fixed;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgb(16 18 22 / 98%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+.combo-box-list[hidden] {
+  display: none;
+}
+.combo-box-option {
+  overflow: hidden;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.combo-box-option[aria-selected="true"] {
+  border-color: var(--accent);
+  background: rgb(255 255 255 / 8%);
+}
+.combo-box-chosen {
+  color: var(--accent);
+}
+.combo-box-empty {
+  color: var(--muted);
+  cursor: default;
+}
 .inv-occupied-hand {
   color: var(--muted);
   font-size: 12px;

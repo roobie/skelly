@@ -78,7 +78,7 @@ const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-skills', description: 'Open / select Skills tab', tab: 'skills', code: 'KeyV' },
   { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting', code: 'KeyB' },
 ] as const;
-const INVENTORY_SELECT_BINDINGS: ReadonlySet<string> = new Set([
+const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   'ui.inventory-toggle',
   ...INVENTORY_TAB_BINDINGS.map(({ action }) => action),
 ]);
@@ -649,6 +649,25 @@ export const capturedChord = (event: KeyEvent): Chord | string => {
 const browserEscape = (event: Pick<KeyboardEvent, 'code'>): boolean => event.code === 'Escape';
 const nativeActivation = (event: Pick<KeyboardEvent, 'code'>): boolean =>
   event.code === 'Enter' || event.code === 'Space';
+/** What a key does in the game's combo box (`src/ui/comboBox.ts`). Like a native list control's keys, these are fixed. */
+export type ComboBoxKey = 'next' | 'previous' | 'collapse' | 'choose' | 'close';
+export const comboBoxKey = (event: Event): ComboBoxKey | undefined => {
+  if (!(event instanceof KeyboardEvent)) {
+    return;
+  }
+  if (event.key === 'ArrowDown') {
+    return 'next';
+  }
+  if (event.key === 'ArrowUp') {
+    return event.altKey ? 'collapse' : 'previous';
+  }
+  if (event.key === 'Enter') {
+    return 'choose';
+  }
+  return event.key === 'Escape' || event.key === 'Tab' ? 'close' : undefined;
+};
+const typesCharacter = (event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): boolean =>
+  event.key.length === 1 && !(event.ctrlKey || event.metaKey || event.altKey);
 const editable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   !target.closest('[hidden]') &&
@@ -850,11 +869,16 @@ export class KeyboardInput {
         event.preventDefault();
         return;
       }
-      const focusedInventorySelect =
+      const text = editable(event.target);
+      // A focused combo box keeps the inventory closable and its tabs reachable, but a key that types
+      // a character stays in its filter field.
+      const comboBoxGameKey =
+        text &&
         this.context().context === 'inventory' &&
-        document.activeElement instanceof HTMLSelectElement &&
-        editable(document.activeElement);
-      if (this.press(event, editable(event.target), focusedInventorySelect ? INVENTORY_SELECT_BINDINGS : undefined)) {
+        event.target instanceof HTMLElement &&
+        event.target.matches('[role="combobox"]') &&
+        !typesCharacter(event);
+      if (this.press(event, text, comboBoxGameKey ? INVENTORY_COMBO_BOX_BINDINGS : undefined)) {
         event.preventDefault();
       }
     };

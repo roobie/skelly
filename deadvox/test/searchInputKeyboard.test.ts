@@ -96,7 +96,7 @@ it('gates native debug-checkbox activation but leaves text editing native', () =
   }
 });
 
-it('routes inventory controls from a focused select but leaves picker navigation native', () => {
+it('routes inventory toggle and tab keys from a focused combo box unless they type into its filter', () => {
   const bindings = new BindingRegistry(INPUT_BINDINGS, undefined);
   const keyboard = new KeyboardInput(bindings);
   keyboard.context = () => ({ context: 'inventory', debug: false });
@@ -108,53 +108,55 @@ it('routes inventory controls from a focused select but leaves picker navigation
   };
   const remove = keyboard.install();
   const inventory = document.createElement('section');
-  const select = document.createElement('select');
-  inventory.append(select);
+  const field = document.createElement('input');
+  field.setAttribute('role', 'combobox');
+  const textInput = document.createElement('input');
+  inventory.append(field, textInput);
   document.body.append(inventory);
-  select.focus();
-  const key = (type: 'keydown' | 'keyup', code: string) =>
-    new KeyboardEvent(type, { bubbles: true, cancelable: true, code });
-  const press = (code: string) => {
-    const down = key('keydown', code);
-    select.dispatchEvent(down);
-    select.dispatchEvent(key('keyup', code));
+  // A KeyG code types "g"; named keys such as Tab and ArrowDown carry their code as their key.
+  const keyOf = (code: string) => (code.startsWith('Key') ? code.slice('Key'.length).toLowerCase() : code);
+  const press = (target: HTMLElement, code: string) => {
+    const init = { bubbles: true, cancelable: true, code, key: keyOf(code) };
+    const down = new KeyboardEvent('keydown', init);
+    target.dispatchEvent(down);
+    target.dispatchEvent(new KeyboardEvent('keyup', init));
     return down;
   };
   try {
-    expect(document.activeElement).toBe(select);
+    field.focus();
     const inventoryActions = [
       'ui.inventory-toggle',
       'ui.inventory-tab-items',
       'ui.inventory-tab-skills',
       'ui.inventory-tab-crafting',
     ];
-    for (const action of inventoryActions) {
-      const chord = bindings.chords(action)[0]!;
-      const down = press(chord.code);
-      expect(down.defaultPrevented).toBe(true);
-      expect(commands.at(-1)).toBe(action);
+    const routed = inventoryActions.map((action) => {
+      const { code } = bindings.chords(action)[0]!;
+      commands.length = 0;
+      const down = press(field, code);
+      return { action, typed: keyOf(code).length === 1, prevented: down.defaultPrevented, commands: [...commands] };
+    });
+    // Both kinds must be present, or the test would pass without exercising the rule.
+    expect(routed.some(({ typed }) => typed)).toBe(true);
+    expect(routed.some(({ typed }) => !typed)).toBe(true);
+    for (const { action, typed, prevented, commands: sent } of routed) {
+      expect({ action, prevented, sent }).toEqual(
+        typed ? { action, prevented: false, sent: [] } : { action, prevented: true, sent: [action] },
+      );
     }
 
     commands.length = 0;
-    const pickerActions = ['inventory.previous', 'inventory.next', 'inventory.best-pocket'];
-    const pickerCodes = new Set(pickerActions.flatMap((action) => bindings.chords(action).map(({ code }) => code)));
-    expect(pickerCodes.size).toBeGreaterThan(0);
-    for (const code of pickerCodes) {
-      expect(press(code).defaultPrevented).toBe(false);
+    const listActions = ['inventory.previous', 'inventory.next', 'inventory.best-pocket'];
+    const listCodes = new Set(listActions.flatMap((action) => bindings.chords(action).map(({ code }) => code)));
+    expect(listCodes.size).toBeGreaterThan(0);
+    for (const code of listCodes) {
+      expect(press(field, code).defaultPrevented).toBe(false);
     }
     expect(commands).toEqual([]);
-    expect(document.activeElement).toBe(select);
 
-    const textInput = document.createElement('input');
-    textInput.type = 'text';
-    inventory.append(textInput);
     textInput.focus();
-    expect(document.activeElement).toBe(textInput);
-    const tabCode = bindings.chords('ui.inventory-tab-items')[0]!.code;
-    const textInputTab = key('keydown', tabCode);
-    textInput.dispatchEvent(textInputTab);
-    textInput.dispatchEvent(key('keyup', tabCode));
-    expect(textInputTab.defaultPrevented).toBe(false);
+    const toggleCode = bindings.chords('ui.inventory-toggle')[0]!.code;
+    expect(press(textInput, toggleCode).defaultPrevented).toBe(false);
     expect(commands).toEqual([]);
   } finally {
     remove();

@@ -15,25 +15,6 @@ interface MenuPointerInput {
   moveMenuCursor: (movementX: number, movementY: number) => void;
 }
 
-const isSelectElement = (element: Element): element is HTMLSelectElement => element.tagName === 'SELECT';
-
-const openNativeSelect = (target: EventTarget): boolean => {
-  if (!(target instanceof Element)) {
-    return false;
-  }
-  const select = target.closest('select');
-  if (!(select && isSelectElement(select))) {
-    return false;
-  }
-  select.focus();
-  try {
-    select.showPicker();
-  } catch {
-    // A browser may not support showPicker or may refuse it; keep keyboard focus as the fallback.
-  }
-  return true;
-};
-
 export interface MenuPointerOptions {
   input: MenuPointerInput;
   /** The game canvas: never a forwarding target, since it owns the lock. */
@@ -223,22 +204,20 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       if (target && target !== canvas && target.id !== 'game-cursor') {
         forwardingClick = true;
         try {
-          if (!openNativeSelect(target)) {
-            if (isInputElement(target)) {
-              target.focus();
-            }
-            target.dispatchEvent(
-              new MouseEvent('click', {
-                bubbles: true,
-                cancelable: true,
-                clientX: input.cursorX,
-                clientY: input.cursorY,
-                button: (e as MouseEvent).button,
-                shiftKey: (e as MouseEvent).shiftKey,
-                altKey: (e as MouseEvent).altKey,
-              }),
-            );
+          if (isInputElement(target)) {
+            target.focus();
           }
+          target.dispatchEvent(
+            new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              clientX: input.cursorX,
+              clientY: input.cursorY,
+              button: (e as MouseEvent).button,
+              shiftKey: (e as MouseEvent).shiftKey,
+              altKey: (e as MouseEvent).altKey,
+            }),
+          );
         } finally {
           forwardingClick = false;
         }
@@ -252,7 +231,8 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       cursor.hidden = !(input.locked && input.menuPointer);
       cursor.style.transform = `translate(${input.cursorX}px, ${input.cursorY}px)`;
       const underCursor = document.elementFromPoint(input.cursorX, input.cursorY);
-      const clickable = underCursor?.closest('button, a, input, select, textarea, [role="button"]') ?? null;
+      const clickable =
+        underCursor?.closest('button, a, input, select, textarea, [role="button"], [role="option"]') ?? null;
       cursor.classList.toggle('hand', clickable !== null);
       hoveredElement?.classList.remove('game-cursor-hover');
       hoveredElement = clickable;
