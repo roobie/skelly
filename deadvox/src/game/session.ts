@@ -72,6 +72,7 @@ import {
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
+import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
 import { FirearmAttachmentHandling } from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
@@ -216,7 +217,8 @@ const VOCAL_NOISE_LIFETIME = 0.5;
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
 
 /** The item a severed shambler region leaves behind. */
-const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string>> = {
+const SEVERED_ITEM: Readonly<Record<ZombieRegion, string>> = {
+  head: 'shambler_head',
   torso: 'shambler_torso',
   leftArm: 'shambler_left_arm',
   rightArm: 'shambler_right_arm',
@@ -1012,6 +1014,10 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
+  /** A downed body lies on the floor: the player walks over it and a door closes on it, as shamblers already do. */
+  const standingZombieBodies = (): Body[] =>
+    [...zombieStore.entries()].filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body);
+
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
@@ -1020,8 +1026,7 @@ export const createSession = (options: SessionOptions) => {
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
-    const zombieBodies = [...zombieStore.entries()].map(([, zombie]) => zombie.body);
-    stepBody(body, dt, isSolid, { ...physics, obstacles: zombieBodies });
+    stepBody(body, dt, isSolid, { ...physics, obstacles: standingZombieBodies() });
     updatePlayerSounds(wasGrounded, previousPosition, time);
     const rustle = foliageRustle(rustleClock, {
       body,
@@ -1226,12 +1231,13 @@ export const createSession = (options: SessionOptions) => {
     queue,
     inventory,
     player: () => body,
-    others: () => [...zombieStore.entries()].map(([, zombie]) => zombie.body),
+    others: standingZombieBodies,
     playWorldSound: (event, position) => {
       const noise = registry.sounds.get(event)?.noise;
       playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
     },
   });
+  registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
   sim.actions.prying = {
     validate: (entityUid, toolUid) => {
       const entity = entities.byUid(entityUid);
@@ -1312,6 +1318,10 @@ export const createSession = (options: SessionOptions) => {
       const plan = pryPlan(inventory, entity, toolUid, character);
       return plan.ok ? sim.actions.beginPrying(entity.uid, plan.tool.uid, plan.time, plan.strikeInterval) : plan.reason;
     },
+    downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, zombieStore.get(id), way),
+    /** Queues finishing off or dismembering a downed body; returns why not. */
+    clearDownedBody: (id: EntityId, way: DownedBodyWay) =>
+      queueDownedBody({ queue, player: reachPlayer, zombies: zombieSystem }, id, way),
     crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
     survival,
     rest,
@@ -1371,6 +1381,10 @@ export const createSession = (options: SessionOptions) => {
         return undefined;
       }
       searching.add(entity);
+      const { searchNoise } = entities.defOf(entity);
+      if (searchNoise) {
+        playPlayerSound(searchNoise.sound, sim.time, { sourceLabel: `searching ${nameOf(entity)}` });
+      }
       queue.enqueueAction(
         'furniture.search',
         `Search the ${nameOf(entity)}`,

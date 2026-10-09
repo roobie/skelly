@@ -10,6 +10,7 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
+import type { EntityId } from '../core/entities.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
@@ -1248,6 +1249,7 @@ export const startPlay = (
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
+    clearDownedBody: (id, way) => session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
     craftContinue: () => {
       continueAction();
@@ -1775,6 +1777,9 @@ export const startPlay = (
       worldSeed: config.seed,
       isSolid: engine.isOpaque,
       hasModel: (id) => view.models.has(id),
+      downedBodies: [...session.zombieStore.entries()]
+        .filter(([, zombie]) => zombie.incapacitated)
+        .map(([id, zombie]) => ({ id, body: zombie.body })),
     });
   const lookedAt = (): BlockEntity | undefined => {
     const target = interactionTargetAt();
@@ -1812,6 +1817,16 @@ export const startPlay = (
     return `with ${tools} — ${plan.reason}`;
   };
 
+  const downedBodyHint = (id: EntityId): string => {
+    const finish = session.downedBodyPlan(id, 'finish-off');
+    if (!finish.ok) {
+      return finish.reason;
+    }
+    const dismember = session.downedBodyPlan(id, 'dismember');
+    const reason = dismember.ok ? '' : ` — ${dismember.reason.toLowerCase()}`;
+    return `${labelForAction('world.interact')}: ${finish.label.toLowerCase()}; hold to dismember${reason}`;
+  };
+
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): string => {
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
@@ -1832,16 +1847,25 @@ export const startPlay = (
     });
   };
 
+  /** A tap pockets an item or finishes off a downed body; a hold wields the item or dismembers the body. */
+  function interactionPayload(target: InteractionTarget, mode: 'pocket' | 'wield'): ReplayActionPayload {
+    switch (target.kind) {
+      case 'item':
+        return { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() };
+      case 'body':
+        return { kind: 'zombie.downed', zombieId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
+      default:
+        return { kind: 'furniture.interact', entityUid: target.entity.uid };
+    }
+  }
+
   function completeWorldInteraction(mode: 'pocket' | 'wield'): void {
     const target = interactionPressTarget;
     interactionPressTarget = undefined;
     if (!target) {
       return;
     }
-    const payload: ReplayActionPayload =
-      target.kind === 'item'
-        ? { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() }
-        : { kind: 'furniture.interact', entityUid: target.entity.uid };
+    const payload = interactionPayload(target, mode);
     const reason = dispatchScreenCommand(payload);
     if (reason) {
       showRefusal(reason, sim.time);
@@ -2413,6 +2437,8 @@ export const startPlay = (
       interactionHint = `${labelForAction('world.interact')}: pocket the ${inventory.name(target.item)}; hold to wield`;
     } else if (target?.kind === 'furniture') {
       interactionHint = useText(target.entity);
+    } else if (target?.kind === 'body') {
+      interactionHint = downedBodyHint(target.id);
     }
     return playPromptText(
       {

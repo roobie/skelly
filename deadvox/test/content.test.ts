@@ -1025,7 +1025,7 @@ describe('content references', () => {
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
-  it('requires an opening-noise door to select a sound event with hearing noise', () => {
+  it('requires door and search action noise to select sound events with hearing noise', () => {
     const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
       ({ id }) => id === 'door_open',
     )!;
@@ -1044,11 +1044,34 @@ describe('content references', () => {
         ],
       },
     };
-    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [quietDoorOpen] } }, quietDoor]);
+    const quietPile = {
+      source: 'quiet-pile.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_quiet_pile',
+            name: 'Fixture pile',
+            size: [1, 1, 1],
+            color: '#333333',
+            searchNoise: { sound: 'door_open' },
+          },
+        ],
+      },
+    };
+    const { issues } = buildRegistry([
+      { source: 'door-sound.json', data: { sounds: [quietDoorOpen] } },
+      quietDoor,
+      quietPile,
+    ]);
     expect(issues).toContainEqual({
       source: 'quiet-door.json',
       path: 'furniture[0].door.openNoise.sound',
       message: 'opening sound must emit hearing noise',
+    });
+    expect(issues).toContainEqual({
+      source: 'quiet-pile.json',
+      path: 'furniture[0].searchNoise.sound',
+      message: 'search sound must emit hearing noise',
     });
   });
 
@@ -1207,11 +1230,22 @@ describe('content references', () => {
     zombie.id = 'fixture_military_looter';
     zombie.loot = lootId;
     const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
+    const { quality, level } = zombie.downed!.dismember;
     const result = buildRegistry([
       {
         source,
         data: {
-          items: [{ id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] }],
+          items: [
+            { id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] },
+            {
+              id: 'fixture_blade',
+              name: 'Fixture blade',
+              category: 'tool',
+              weight: 1,
+              size: [1, 1],
+              tool: { qualities: { [quality]: level } },
+            },
+          ],
           loot: [
             { id: lootId, military: true, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] },
           ],
@@ -1322,6 +1356,10 @@ describe('content references', () => {
             },
             attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
+            downed: {
+              finishOff: { simSeconds: 3 },
+              dismember: { simSeconds: 15, quality: 'missing_quality', level: 1 },
+            },
             abilities: [],
             loot: 'till',
           },
@@ -1349,6 +1387,7 @@ describe('content references', () => {
       'furniture[0].loot',
       'furniture[1].door.prying.skill',
       'items[0].light.power.battery',
+      'zombies[0].downed.dismember.quality',
       'zombies[0].loot',
     ]);
   });
@@ -1370,14 +1409,34 @@ const templateSoundDefinitions = (
     sounds: { id: string }[];
   }
 ).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));
+const templateDismember = baseRegistry.zombies.get('shambler')!.downed!.dismember;
 const templateBase = [
-  { source: 'template-blocks.json', data: { blocks: [{ id: 'brick', name: 'Brick', color: '#ffffff', solid: true }] } },
+  {
+    source: 'template-blocks.json',
+    data: {
+      blocks: [
+        { id: 'brick', name: 'Brick', color: '#ffffff', solid: true },
+        { id: 'planks', name: 'Planks', color: '#ffffff', solid: true },
+        { id: 'window_frame', name: 'Window frame', color: '#ffffff', solid: true },
+      ],
+    },
+  },
   {
     source: 'template-support.json',
     data: {
       furniture: [
         { id: 'fixture_door', name: 'Door', size: [1, 1, 1], color: '#7a5534' },
         { id: 'crate', name: 'Crate', size: [2, 2, 2], color: '#7a5534' },
+      ],
+      items: [
+        {
+          id: 'blade',
+          name: 'Blade',
+          category: 'tool',
+          weight: 100,
+          size: [1, 1],
+          tool: { qualities: { [templateDismember.quality]: templateDismember.level } },
+        },
       ],
     },
   },
@@ -1495,6 +1554,32 @@ describe('templates', () => {
     );
     expect(issues.some((issue) => issue.includes('palette["A"]'))).toBe(true);
     expect(issues.some((issue) => issue.includes('palette["Z"]'))).toBe(false);
+  });
+
+  it('reports open floor-course wall cells without flagging doors or window frames', () => {
+    const palette = {
+      '#': 'brick',
+      p: 'planks',
+      '.': 'air',
+      D: { furniture: 'fixture_door' },
+      w: 'window_frame',
+    };
+    const valid = template(
+      [
+        ['###', '###', '###'],
+        ['D#w', '#p#', '###'],
+        ['###', '###', '###'],
+      ],
+      palette,
+      [3, 3, 3],
+    );
+    expect(check(valid)).toEqual([]);
+
+    const broken = structuredClone(valid);
+    broken.data.templates[0]!.layers[1]![0] = 'D.w';
+    expect(check(broken)).toContain(
+      'templates[0].layers[1]: has an open exterior cell between matching "brick" wall courses',
+    );
   });
 
   it('checks layer sizes and that characters are in the palette', () => {

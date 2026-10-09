@@ -5,6 +5,8 @@ read_if:
 
 # Notes for coding agents
 
+**REMEMBER to always RECORD the 'why'**
+
 Keep this file short: only what every agent needs on every task. Topic detail goes in
 the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), whose
 `read_if` front matter says when to read it ("Further docs" below).

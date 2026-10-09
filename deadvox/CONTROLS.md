@@ -82,6 +82,11 @@ both independently scrolling panes.
   `interactionTargetAt` and `completeWorldInteraction`, route the gesture through
   the existing inventory handling owner; `src/render/grabPose.ts`, `grabPose`,
   supplies the visual-only reach.
+- **Downed bodies:** F on a downed shambler follows the same tap and hold: a tap
+  finishes it off, and a hold dismembers it. Two ways to clear a body need no
+  second binding. A ray against the body's box picks it, in the same nearest-target
+  choice as ground items. See `src/core/interactionPick.ts`, `pickInteractionTarget`,
+  and `src/game/play.ts`, `interactionPayload`.
 - **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
   to the browser. Escape releases pointer lock and is never a game rebind.
 - **Reload, rack, remove (2026-10-07 11:20):** BR, on how R treats a rifle:

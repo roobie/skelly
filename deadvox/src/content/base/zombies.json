@@ -82,6 +82,10 @@
         "chance": 0.15,
         "headOnKillChance": 0.25
       },
+      "downed": {
+        "finishOff": { "simSeconds": 3 },
+        "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
+      },
       "abilities": [],
       "loot": "shambler_pockets"
     },
@@ -147,6 +151,10 @@
       },
       "attack": { "damage": 10, "reach": 1.2, "cooldownSimSeconds": 1.3, "windupSimSeconds": 0.25 },
       "dismember": { "chance": 0.1, "headOnKillChance": 0.2 },
+      "downed": {
+        "finishOff": { "simSeconds": 3 },
+        "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
+      },
       "abilities": [],
       "loot": "shambler_pockets"
     },
@@ -212,6 +220,10 @@
       },
       "attack": { "damage": 6, "reach": 1.2, "cooldownSimSeconds": 1.7, "windupSimSeconds": 0.4, "hitRegion": "legs" },
       "dismember": { "chance": 0.05, "headOnKillChance": 0.15 },
+      "downed": {
+        "finishOff": { "simSeconds": 3 },
+        "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
+      },
       "abilities": ["grab"],
       "loot": "shambler_pockets"
     },

@@ -30,8 +30,8 @@
 // death is different — src/core/zombies.ts's onDeath removes the zombie from its store and calls zombieDied
 // here in the very same step, so this renderer owns the corpse from then on: it keeps the existing
 // slot/variant/instance, plays deathPose from the frozen living pose, holds once lying, sinks, then frees
-// the slot. Corpses are render-only; incapacitated zombies remain simulation entities, fall once, lie
-// forever in their existing row, never sink, and are excluded from corpse eviction.
+// the slot. Corpses are render-only; incapacitated zombies remain simulation entities, fall once and lie in
+// their existing row, excluded from corpse eviction, until finishing one off makes it an ordinary corpse.
 //
 // Dismemberment (mobgen/src/mob/dismember.ts): src/core/zombies.ts's Zombie.severed (part names, e.g.
 // "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live zombie,
@@ -1239,8 +1239,9 @@ export class MobActorMeshes implements ZombieRenderer {
     this.debris.delete(key);
   }
 
-  /** A torso-destroyed zombie remains in the store, so its fallen row is permanent: no sink/despawn and
-   * no MAX_CORPSES eviction. A death corpse is different and remains render-only with the finite lifecycle below. */
+  /** A torso-destroyed zombie remains in the store, so its fallen row stays while it lies there: no sink/despawn
+   * and no MAX_CORPSES eviction until it dies (see finishDownedCorpse). A death corpse is render-only with the
+   * finite lifecycle below. */
   zombieIncapacitated(id: EntityId, zombie: Zombie): void {
     const state = this.states.get(id);
     this.removePerceptionLabel(id);
@@ -1284,6 +1285,10 @@ export class MobActorMeshes implements ZombieRenderer {
   zombieDied(id: EntityId, zombie: Zombie, playerPos?: Vec3): void {
     this.removePerceptionLabel(id);
     this.removeTentacle(id);
+    if (this.corpses.get(id)?.incapacitated) {
+      this.finishDownedCorpse(id, zombie);
+      return;
+    }
     const state = this.states.get(id);
     if (!state) {
       return;
@@ -1317,6 +1322,23 @@ export class MobActorMeshes implements ZombieRenderer {
       insertOrder: this.takeDeadOrder(),
     });
     this.states.delete(id);
+  }
+
+  /** A downed body that dies (finished off or dismembered) becomes an ordinary corpse where it lies: it keeps its
+   * fallen pose and slot, shows the parts cut since it fell, then lies and sinks like any other corpse. */
+  private finishDownedCorpse(id: EntityId, zombie: Zombie): void {
+    if (this.evictableDeadThingCount() >= MAX_CORPSES) {
+      this.evictOldestDeadThingGlobally();
+    }
+    // Read after the eviction, which may have moved this corpse's instance.
+    const corpse: Corpse = {
+      ...this.corpses.get(id)!,
+      incapacitated: false,
+      severed: [...zombie.severed],
+      insertOrder: this.takeDeadOrder(),
+    };
+    corpse.elapsed = Math.min(corpse.elapsed, DEATH_FALL_DURATION);
+    this.corpses.set(id, corpse);
   }
 
   /**

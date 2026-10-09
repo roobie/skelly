@@ -853,8 +853,16 @@ try {
     };
   })()`);
   assert.match(transfer.sourceTarget, /^pocket:/, 'source item is in a container pocket');
+  const dragGhost = () =>
+    evaluate(`(() => {
+      const ghost = document.querySelector('#inventory-drag-root .inv-ghost');
+      if (!ghost) return null;
+      const rect = ghost.getBoundingClientRect();
+      return { left: rect.left, top: rect.top };
+    })()`);
   assert.equal(transfer.hitUid, transfer.sourceUid, `container item is the topmost hit: ${JSON.stringify(transfer)}`);
-  await moveCursorTo({ x: transfer.source.x + 16, y: transfer.source.y + 16 });
+  const drawnSource = { x: transfer.source.x + 16, y: transfer.source.y + 16 };
+  await moveCursorTo(drawnSource);
   await evaluate(dispatchMenuPointerClickExpression());
   await waitFor(
     async () =>
@@ -865,11 +873,50 @@ try {
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives selecting a container item');
   const transferDestination = { x: transfer.destination.x + 16, y: transfer.destination.y + 16 };
-  await moveCursorTo({ x: transfer.source.x + 16, y: transfer.source.y + 16 });
-  await dispatchPointerAt('pointerdown', 0, 1, { x: transfer.source.x + 16, y: transfer.source.y + 16 });
+  const beginDrag = async () => {
+    await moveCursorTo(drawnSource);
+    await dispatchPointerAt('pointerdown', 0, 1, drawnSource);
+  };
+
+  await beginDrag();
   await moveCursorTo(transferDestination);
   await dispatchPointerAt('pointermove', -1, 1, transferDestination);
+  const ghostAtDestination = await dragGhost();
+  assert(ghostAtDestination, 'drag displays the item ghost');
+  const ghostHit = await evaluate(`(() => {
+    const ghost = document.querySelector('#inventory-drag-root .inv-ghost');
+    if (!ghost) return false;
+    const previous = ghost.style.pointerEvents;
+    ghost.style.pointerEvents = 'auto';
+    const rect = ghost.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    ghost.style.pointerEvents = previous;
+    return hit === ghost || ghost.contains(hit);
+  })()`);
+  assert.equal(ghostHit, true, 'drag ghost is topmost at its centre');
+  const movedPointer = { x: transferDestination.x + 4, y: transferDestination.y + 6 };
+  await moveCursorTo(movedPointer);
+  await dispatchPointerAt('pointermove', -1, 1, movedPointer);
+  const ghostAfterMove = await dragGhost();
+  assert.ok(ghostAfterMove, 'drag ghost remains while the pointer moves');
+  assert.ok(
+    Math.abs(ghostAfterMove.left - ghostAtDestination.left - 4) < 0.5,
+    'drag ghost follows horizontal movement',
+  );
+  assert.ok(Math.abs(ghostAfterMove.top - ghostAtDestination.top - 6) < 0.5, 'drag ghost follows vertical movement');
+  const outside = { x: 4, y: 4 };
+  await moveCursorTo(outside);
+  await dispatchPointerAt('pointermove', -1, 1, outside);
+  await dispatchPointerAt('pointerup', -1, 0, outside);
+  assert.equal(await dragGhost(), null, 'release outside removes the drag ghost');
+  assert.equal(await moveQueued(), false, 'release outside cancels the move');
+
+  await beginDrag();
+  await moveCursorTo(transferDestination);
+  await dispatchPointerAt('pointermove', -1, 1, transferDestination);
+  assert(await dragGhost(), 'drag displays the item ghost before drop');
   await dispatchPointerAt('pointerup', -1, 0, transferDestination);
+  assert.equal(await dragGhost(), null, 'drop removes the drag ghost');
   await delay(100);
   assert.ok(await moveQueued(), 'container transfer remains in the handling queue');
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');

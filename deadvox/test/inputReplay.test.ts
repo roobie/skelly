@@ -138,6 +138,7 @@ const applyCommand = (
     interact: () => {
       throw new Error('Furniture interaction is not implemented in the replay test harness');
     },
+    clearDownedBody: (id, way) => runtime.session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftContinue: () => {
       const uid = runtime.session.crafting.currentUid;

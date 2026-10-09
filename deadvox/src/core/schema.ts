@@ -757,6 +757,8 @@ const FurnitureSchema = strictObject({
   container: optional(ContainerSchema),
   /** The loot table rolled into its container when the chunk generates. */
   loot: optional(Id),
+  /** Sound emitted when searching this furniture; it must alert hearing. */
+  searchNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
   /** It opens and closes, taking this many Sim seconds. */
   door: optional(
     strictObject({
@@ -1142,6 +1144,14 @@ const ZombieSchema = strictObject({
    * killing blow additionally rolls headOnKillChance to sever the head too. Both independent 0..1 chances,
    * not a shared budget. */
   dismember: strictObject({ chance: Fraction, headOnKillChance: Fraction }),
+  /** The timed actions that clear a downed body (src/game/downedBody.ts). Finishing it off needs no tool;
+   * dismembering it needs a carried tool with the quality and leaves its arms and head behind. */
+  downed: optional(
+    strictObject({
+      finishOff: strictObject({ simSeconds: PositiveSimSeconds }),
+      dismember: strictObject({ simSeconds: PositiveSimSeconds, quality: Id, level: QualityLevel }),
+    }),
+  ),
   abilities: array(picklist(ZOMBIE_ABILITIES)),
   /** What's in its pockets. */
   loot: optional(Id),
@@ -1378,6 +1388,10 @@ const SECTION_DESCRIPTOR = {
         check(
           (types) => types.every((zombie) => zombie.model === 'amalgam' || zombie.carving === undefined),
           'only an amalgam may define carving',
+        ),
+        check(
+          (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.downed === undefined)),
+          'every type but the amalgam, which never lies downed, must define downed',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
       ),

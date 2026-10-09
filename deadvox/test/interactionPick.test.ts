@@ -91,6 +91,16 @@ describe('F interaction target selection', () => {
     expect(target).toMatchObject({ kind: 'item', item: { uid: item.uid } });
   });
 
+  it('lets a nearer downed body beat a farther container under the same ray', () => {
+    const inventory = new Inventory(registry);
+    const cupboard = inventory.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 2], size: [2, 2, 1], facing: 'n' }, []);
+    expect(cupboard).toBeDefined();
+    const downedBodies = [{ id: 7, body: { pos: [0.5, 0, 0.5] as Vec3, halfWidth: 0.25, height: 3 } }];
+
+    const target = pickInteractionTarget({ ...options(inventory, [0.5, 0.05, -1], [0, 0, 1]), downedBodies });
+    expect(target).toMatchObject({ kind: 'body', id: 7 });
+  });
+
   it('lets furniture win when its face and a ground item start at the same ray distance', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create(modelItemType!);

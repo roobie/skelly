@@ -1128,7 +1128,7 @@
         },
         {
           "id": 71,
-          "name": "Mike's Garage — two-bay workshop hall",
+          "name": "Mike's place — two-bay workshop hall",
           "type": "building",
           "x": 410,
           "y": 198,
@@ -1151,13 +1151,13 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[17,1,9],\"items\":[{\"item\":\"shotshell_box\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[17,1,15],\"items\":[{\"item\":\"portable_radio\",\"count\":1},{\"item\":\"jerry_can\",\"count\":1}]}]"
+              "value": "[{\"at\":[17,1,9],\"items\":[{\"item\":\"shotshell_box\",\"count\":1},{\"item\":\"bandage\",\"count\":1},{\"item\":\"scrap_metal\",\"count\":1},{\"item\":\"electrical_tape\",\"count\":1},{\"item\":\"fastener_pack\",\"count\":1},{\"item\":\"rubber_strip\",\"count\":1},{\"item\":\"screwdriver\",\"count\":1},{\"item\":\"wrench\",\"count\":1}]},{\"at\":[17,1,15],\"items\":[{\"item\":\"portable_radio\",\"count\":1,\"condition\":0},{\"item\":\"jerry_can\",\"count\":1}]}]"
             }
           ]
         },
         {
           "id": 72,
-          "name": "Mike's Garage — office",
+          "name": "Mike's place — office",
           "type": "building",
           "x": 422,
           "y": 198,
@@ -1186,7 +1186,7 @@
         },
         {
           "id": 73,
-          "name": "Mike's Garage — parts store",
+          "name": "Mike's place — parts store",
           "type": "building",
           "x": 422,
           "y": 202,
@@ -1215,7 +1215,7 @@
         },
         {
           "id": 74,
-          "name": "Mike's Garage — fenced yard",
+          "name": "Mike's place — fenced yard",
           "type": "building",
           "x": 410,
           "y": 189,
@@ -1238,7 +1238,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[]"
+              "value": "[{\"at\":[7,1,7],\"items\":[{\"item\":\"steel_pipe\",\"count\":1}]}]"
             }
           ]
         },
@@ -2287,7 +2287,7 @@
         },
         {
           "id": 75,
-          "name": "Track spur to Mike's Garage",
+          "name": "Track spur to Mike's place",
           "type": "track",
           "x": 390,
           "y": 180,
