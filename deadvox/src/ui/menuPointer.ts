@@ -190,9 +190,9 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
     { capture: true, passive: false },
   );
 
-  // A real press lands on the locked canvas, and its default focus handling would blur the field the drawn
-  // cursor is using, such as an open combo box, before the forwarded click reaches the option under it.
-  // Focus follows forwarded clicks instead.
+  // A real press lands on the locked canvas, so Firefox's default focus handling would blur the focused field,
+  // closing an open combo box before the forwarded click reaches its option. Focus moves only when a forwarded
+  // click lands on an input.
   document.addEventListener(
     'mousedown',
     (event) => {

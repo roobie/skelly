@@ -13,6 +13,7 @@ import { cdpKey, pressCdpAction } from '../test/browser/input-actions.mjs';
 import {
   dispatchMenuPointerClickExpression,
   dispatchMenuPointerMoveExpression,
+  pressWithDrawnCursor,
 } from '../test/browser/menu-pointer.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
 
@@ -990,35 +991,7 @@ try {
     document.querySelector('#weathering-profile').scrollIntoView({ block: 'center' });
     return window.__pointerCalls.exit;
   })()`);
-  // Under pointer lock a real press lands on the input surface, and the browser runs its own mousedown focus
-  // handling there; menuPointer forwards the pointer events and the click, never that mousedown. So press for
-  // real over bare surface.
-  const bareSurface = await evaluate(`(() => {
-    for (let y = innerHeight - 8; y > innerHeight / 2; y -= 16) {
-      for (let x = 8; x < innerWidth / 2; x += 16) {
-        if (document.elementFromPoint(x, y) === window.__inputSurface) return { x, y };
-      }
-    }
-  })()`);
-  assert.ok(bareSurface, 'bare input surface is exposed for a real press');
-  const pressOverSurface = async (selector) => {
-    await page.mouse.move(bareSurface.x, bareSurface.y);
-    cursor = await evaluate(`(() => {
-      const node = document.querySelector('#game-cursor');
-      const rect = node.getBoundingClientRect();
-      return { x: rect.left + (node.classList.contains('hand') ? 4 : 0), y: rect.top };
-    })()`);
-    await moveCursorTo(
-      await evaluate(`(() => {
-        const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
-        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      })()`),
-    );
-    await page.mouse.down();
-    await page.mouse.up();
-    await delay(120);
-  };
-  await pressOverSurface('#weathering-profile');
+  await pressWithDrawnCursor(page, '#weathering-profile');
   const openedProfiles = await evaluate(`(() => {
     const field = document.querySelector('#weathering-profile');
     const list = document.getElementById(field.getAttribute('aria-controls'));
@@ -1035,7 +1008,7 @@ try {
     'a drawn-cursor click opens the weathering combo box with focus kept in the page',
   );
   assert.ok(openedProfiles.other, 'the weathering combo box offers another profile to choose');
-  await pressOverSurface(`#${openedProfiles.other.id}`);
+  await pressWithDrawnCursor(page, `#${openedProfiles.other.id}`);
   await delay(300);
   assert.deepEqual(
     await evaluate(`(() => ({

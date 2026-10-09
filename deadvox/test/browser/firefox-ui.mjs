@@ -6,7 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
-import { dispatchMenuPointerMove } from './menu-pointer.mjs';
+import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 
@@ -535,48 +535,17 @@ try {
     ),
   );
   assert.ok(alternateProfileId, 'a second weathering profile exists for profile-switch coverage');
-  // Choose from the game's combo box as a player does under pointer lock: the real press lands on bare locked
-  // surface, where Firefox runs its own mousedown focus handling, while the drawn cursor points at the target.
-  const bareSurface = await page.evaluate(() => {
-    const surface = document.pointerLockElement;
-    for (let y = innerHeight - 8; y > innerHeight / 2; y -= 16) {
-      for (let x = 8; x < innerWidth / 2; x += 16) {
-        if (document.elementFromPoint(x, y) === surface) {
-          return { x, y, selector: surface.id ? `#${surface.id}` : surface.tagName.toLowerCase() };
-        }
-      }
-    }
-    return null;
-  });
-  assert.ok(bareSurface, 'bare locked surface is exposed for a real press');
-  const pressWithDrawnCursor = async (selector) => {
-    await page.mouse.move(bareSurface.x, bareSurface.y);
-    const gap = await page.evaluate((target) => {
-      const drawnCursor = document.querySelector('#game-cursor');
-      const tip = drawnCursor.getBoundingClientRect();
-      const rect = document.querySelector(target).getBoundingClientRect();
-      return {
-        x: rect.left + rect.width / 2 - (tip.left + (drawnCursor.classList.contains('hand') ? 4 : 0)),
-        y: rect.top + rect.height / 2 - tip.top,
-      };
-    }, selector);
-    await page.evaluate(dispatchMenuPointerMove, {
-      canvasSelector: bareSurface.selector,
-      movementX: gap.x,
-      movementY: gap.y,
-    });
-    await page.mouse.down();
-    await page.mouse.up();
-  };
+  // Choose from the game's combo box with a real press, as a player does under pointer lock. The drawn cursor
+  // can't reach below the fold, so the field is scrolled into view first.
   await weatheringGroup.locator('#weathering-profile').scrollIntoViewIfNeeded();
-  await pressWithDrawnCursor('#weathering-profile');
+  await pressWithDrawnCursor(page, '#weathering-profile');
   const alternateOptionId = await page.evaluate((profileId) => {
     const field = document.querySelector('#weathering-profile');
     const list = document.getElementById(field.getAttribute('aria-controls'));
     return [...list.querySelectorAll('[role="option"]')].find((option) => option.textContent === profileId)?.id;
   }, alternateProfileId);
   assert.ok(alternateOptionId, 'the weathering combo box lists the alternate profile');
-  await pressWithDrawnCursor(`#${alternateOptionId}`);
+  await pressWithDrawnCursor(page, `#${alternateOptionId}`);
   const strengthSlider = weatheringGroup.locator('#weathering-strength');
   const sliderNext = await strengthSlider.evaluate((input) => {
     input.value = String(Number(input.value) + Number(input.step));

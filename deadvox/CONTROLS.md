@@ -208,8 +208,8 @@ pointer-locked menu, `mountMenuPointer` in `src/ui/menuPointer.ts` maps locked
 cursor movement to range values because forwarded synthetic pointer events do not
 trigger the browser's native range-drag action. It also cancels the real press's
 own mousedown focus handling: that press lands on the locked canvas, so Firefox
-would blur the field under the drawn cursor and close an open combo box before the
-forwarded click reaches its option. Focus follows forwarded clicks instead.
+would blur the focused field, closing an open combo box before the forwarded click
+reaches its option. Focus moves only when a forwarded click lands on an input.
 
 Noclip flight is the substantive debug exception: holding the debug gate for an
 entire flight would occupy a hand and interfere with viewing. Space/C flight
