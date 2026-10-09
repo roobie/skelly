@@ -5,7 +5,7 @@
 // biome-ignore-all lint/correctness/noUndeclaredVariables: page.evaluate callbacks run in the browser context
 
 import assert from 'node:assert/strict';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { resolve as resolvePath } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -359,6 +359,40 @@ try {
     const [download] = await Promise.all([page.waitForEvent('download'), page.click('#save-export-current')]);
     assert.match(download.suggestedFilename(), CURRENT_EXPORT);
     assert.ok((await stat(await download.path())).size > 0);
+
+    // Testers hand back metrics and a replay from the F9 card; this page runs without debug.
+    assert.equal(await page.locator('#playtest-export').isVisible(), true, 'the F9 card offers the hand-back exports');
+    const handBack = async (button) => {
+      const [saved] = await Promise.all([page.waitForEvent('download'), page.click(button)]).catch(async (error) => {
+        throw new Error(`${button}: ${await page.textContent('#playtest-export-status')}`, { cause: error });
+      });
+      const bytes = await readFile(await saved.path());
+      assert.ok(bytes.length > 0, `${button} saves a non-empty file`);
+      return bytes.toString('base64');
+    };
+    const files = {
+      metrics: await handBack('#playtest-metrics-export'),
+      replay: await handBack('#playtest-replay-export'),
+    };
+    const pageModules = { tools: '/src/game/playtestTools.ts', replays: '/src/game/inputReplay.ts' };
+    const kinds = await page.evaluate(
+      async ({ metrics, replay, modules }) => {
+        const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+        const { loadMetrics } = await import(modules.tools);
+        const { decodeInputReplay } = await import(modules.replays);
+        const seed = Number(new URLSearchParams(location.search).get('seed'));
+        const metricsText = new TextDecoder().decode(bytes(metrics));
+        return {
+          metrics: loadMetrics(seed, { getItem: () => metricsText }) !== undefined,
+          replay: await decodeInputReplay(bytes(replay), { contentLookup: () => true }).then(
+            () => true,
+            (error) => String(error),
+          ),
+        };
+      },
+      { ...files, modules: pageModules },
+    );
+    assert.deepEqual(kinds, { metrics: true, replay: true }, 'each export reads back as its own kind of file');
 
     await page.evaluate(() => {
       deadvoxSaveTest.controller.storage.save = async () => ({ generation: 99, slot: 'a', backend: 'indexeddb' });

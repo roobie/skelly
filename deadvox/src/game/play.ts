@@ -111,9 +111,12 @@ import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
+  downloadFile,
+  type HandBackFile,
   loadMetrics,
-  metricsExportJson,
+  metricsFile,
   persistMetrics,
+  replayFile,
   SessionMetrics,
 } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
@@ -834,15 +837,7 @@ export const startPlay = (
       /* Storage can be disabled; gameplay remains available. */
     }
   };
-  const exportMetrics = (): void => {
-    const blob = new Blob([metricsExportJson(metrics)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `deadvox-metrics-seed-${config.seed}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
+  const exportMetrics = (): void => downloadFile(metricsFile(metrics));
   const measureSnapshot = () => playtestObserver!.measureSnapshot(captureSnapshot, session);
   const openInventoryScreen = (): void => {
     screen.open();
@@ -939,6 +934,21 @@ export const startPlay = (
     },
     import: importReplay,
   };
+  const handBackStatus = $('playtest-export-status');
+  const handBack = async (file: () => HandBackFile | Promise<HandBackFile>): Promise<void> => {
+    try {
+      const saved = await file();
+      downloadFile(saved);
+      handBackStatus.textContent = `Saved ${saved.name}`;
+    } catch (error) {
+      handBackStatus.textContent = error instanceof Error ? error.message : String(error);
+    }
+  };
+  // Assigned, not added: a later world on this page must not save each file twice.
+  $('playtest-metrics-export').onclick = () => handBack(() => metricsFile(metrics));
+  $('playtest-replay-export').onclick = () =>
+    handBack(async () => replayFile(await inputReplayHooks.export(), new Date()));
+  $('playtest-export').hidden = false;
   debugTools = debugModule?.attachDebugTools({
     engine,
     weather,
