@@ -899,8 +899,14 @@ try {
   await dispatchPointerAt('pointermove', -1, 1, movedPointer);
   const ghostAfterMove = await dragGhost();
   assert.ok(ghostAfterMove, 'drag ghost remains while the pointer moves');
-  assert.ok(Math.abs(ghostAfterMove.left - ghostAtDestination.left - 4) < 0.5, 'drag ghost follows horizontal movement');
-  assert.ok(Math.abs(ghostAfterMove.top - ghostAtDestination.top - 6) < 0.5, 'drag ghost follows vertical movement');
+  assert.ok(
+    Math.abs(ghostAfterMove.left - ghostAtDestination.left - 4) < 0.5,
+    'drag ghost follows horizontal movement',
+  );
+  assert.ok(
+    Math.abs(ghostAfterMove.top - ghostAtDestination.top - 6) < 0.5,
+    'drag ghost follows vertical movement',
+  );
   const outside = { x: 4, y: 4 };
   await moveCursorTo(outside);
   await dispatchPointerAt('pointermove', -1, 1, outside);
