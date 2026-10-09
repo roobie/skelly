@@ -5,149 +5,179 @@
       "name": "Grass",
       "color": "#5b8c3a",
       "solid": true,
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": false
     },
     {
       "id": "dirt",
       "name": "Dirt",
       "color": "#7a5a3a",
       "solid": true,
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": false
     },
     {
       "id": "stone",
       "name": "Stone",
       "color": "#8a8d91",
       "solid": true,
-      "pattern": "rough"
+      "pattern": "rough",
+      "weatherable": true
+    },
+    {
+      "id": "rock",
+      "name": "Natural stone",
+      "color": "#8a8d91",
+      "solid": true,
+      "pattern": "rough",
+      "weatherable": false
     },
     {
       "id": "sand",
       "name": "Sand",
       "color": "#d6c68f",
       "solid": true,
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": false
     },
     {
       "id": "asphalt",
       "name": "Asphalt",
       "color": "#3b3d40",
       "solid": true,
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": true
     },
     {
       "id": "concrete",
       "name": "Concrete",
       "color": "#b5b3ad",
       "solid": true,
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": true
     },
     {
       "id": "planks",
       "name": "Wooden planks",
       "color": "#a0763f",
       "solid": true,
-      "pattern": "planks"
+      "pattern": "planks",
+      "weatherable": true
     },
     {
       "id": "brick",
       "name": "Brick",
       "color": "#9c4f3a",
       "solid": true,
-      "pattern": "brick"
+      "pattern": "brick",
+      "weatherable": true
     },
     {
       "id": "plaster",
       "name": "Plaster",
       "color": "#d9d4c7",
       "solid": true,
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": true
     },
     {
       "id": "tiles",
       "name": "Tiles",
       "color": "#cfd6da",
       "solid": true,
-      "pattern": "tiles"
+      "pattern": "tiles",
+      "weatherable": true
     },
     {
       "id": "fabric",
       "name": "Fabric",
       "color": "#5b6f9a",
-      "solid": true
+      "solid": true,
+      "weatherable": true
     },
     {
       "id": "roof",
       "name": "Roofing",
       "color": "#4a4b50",
       "solid": true,
-      "pattern": "shingles"
+      "pattern": "shingles",
+      "weatherable": true
     },
     {
       "id": "carpet",
       "name": "Carpet",
       "color": "#6b4f4a",
       "solid": true,
-      "pattern": "noise"
+      "pattern": "noise",
+      "weatherable": true
     },
     {
       "id": "window_frame",
       "name": "Window frame",
       "color": "#e6e2d8",
-      "solid": true
+      "solid": true,
+      "weatherable": true
     },
     {
       "id": "siding_red",
       "name": "Painted siding (faded red)",
       "color": "#8f4b4b",
       "solid": true,
-      "pattern": "siding"
+      "pattern": "siding",
+      "weatherable": true
     },
     {
       "id": "siding_blue",
       "name": "Painted siding (faded blue-grey)",
       "color": "#7a8d94",
       "solid": true,
-      "pattern": "siding"
+      "pattern": "siding",
+      "weatherable": true
     },
     {
       "id": "galvanized",
       "name": "Galvanized sheet",
       "color": "#aab4b8",
       "solid": true,
-      "pattern": "corrugated"
+      "pattern": "corrugated",
+      "weatherable": true
     },
     {
       "id": "cobblestone_mossy",
       "name": "Mossy cobblestone",
       "color": "#5f6b58",
       "solid": true,
-      "pattern": "cobble"
+      "pattern": "cobble",
+      "weatherable": true
     },
     {
       "id": "dressed_stone",
       "name": "Dressed stone",
       "color": "#bcab8a",
       "solid": true,
-      "pattern": "dressed"
+      "pattern": "dressed",
+      "weatherable": true
     },
     {
       "id": "hazard_yellow",
       "name": "Hazard paint",
       "color": "#c9a43a",
-      "solid": true
+      "solid": true,
+      "weatherable": true
     },
     {
       "id": "chain_link",
       "name": "Chain-link fence",
       "color": "#89979a",
-      "solid": true
+      "solid": true,
+      "weatherable": true
     },
     {
       "id": "sandbag",
       "name": "Sandbag",
       "color": "#9b8d6a",
-      "solid": true
+      "solid": true,
+      "weatherable": true
     },
     {
       "id": "camo_woodland",
@@ -155,6 +185,7 @@
       "color": "#777b6a",
       "solid": true,
       "pattern": "camo",
+      "weatherable": true,
       "patternPalette": ["#53694d", "#78634d", "#9b8a6b", "#3b4039"],
       "patternWashout": 0.42
     }

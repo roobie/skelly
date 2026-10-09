@@ -12,6 +12,10 @@ import type { World } from './world.ts';
 export const blockPatterns = (registry: Registry): Uint8Array =>
   Uint8Array.from(registry.blocks, (b) => BLOCK_PATTERNS.indexOf(b.pattern ?? 'none'));
 
+/** Render-only weatherability per runtime block id, owned by block content rather than surface pattern. */
+export const blockWeatherability = (registry: Registry): Uint8Array =>
+  Uint8Array.from(registry.blocks, (block) => (block.weatherable ? 1 : 0));
+
 /** Side of the padded block array handed to the mesher: the chunk plus a 1-block border. */
 export const PADDED = CHUNK + 2;
 
