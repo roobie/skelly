@@ -668,7 +668,7 @@ try {
           const { session } = globalThis.readingWitness;
           return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
         },
-        beforeTime + 0.2,
+        beforeTime + 1.2,
         { seconds: 3, from: beforeTime, label: 'book reading progress', record },
       );
     };
