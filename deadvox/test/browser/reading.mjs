@@ -699,7 +699,26 @@ try {
     assert.equal(stoppedOnClose.stopped, true);
     assert.ok(stoppedOnClose.elapsed >= beforeClose.value);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
-    await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    try {
+      await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    } catch (error) {
+      const state = await page.evaluate((uid) => {
+        const { session, input, screen, reading, mainMenuOpen } = globalThis.readingWitness;
+        return {
+          bookLocation: session.inventory.locate(session.inventory.itemByUid(uid)),
+          quickbar: [...session.quickbar.slots],
+          job: session.sim.actions.job,
+          queue: session.queue.jobs,
+          readingOpen: reading.isOpen,
+          mainMenuOpen,
+          paused: session.sim.paused,
+          locked: input.locked,
+          inventoryOpen: screen.isOpen,
+          notice: document.body.innerText.slice(-500),
+        };
+      }, readingBook.uid);
+      throw new Error(`Could not reopen the same book after closing it: ${JSON.stringify(state)}`, { cause: error });
+    }
     const reopened = await readProgress();
     assert.equal(reopened.elapsed, stoppedOnClose.elapsed);
     assert.ok(reopened.value >= stoppedOnClose.elapsed);
