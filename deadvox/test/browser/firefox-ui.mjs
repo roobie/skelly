@@ -536,13 +536,11 @@ try {
   assert.ok(alternateProfileId, 'a second weathering profile exists for profile-switch coverage');
   await weatheringGroup.locator('#weathering-profile').selectOption(alternateProfileId);
   const strengthSlider = weatheringGroup.locator('#weathering-strength');
-  const sliderStart = Number(await strengthSlider.inputValue());
-  const sliderStep = Number(await strengthSlider.getAttribute('step'));
-  const sliderNext = sliderStart + sliderStep;
-  await strengthSlider.evaluate((input, value) => {
-    input.value = String(value);
+  const sliderNext = await strengthSlider.evaluate((input) => {
+    input.value = String(Number(input.value) + Number(input.step));
     input.dispatchEvent(new Event('input', { bubbles: true }));
-  }, sliderNext);
+    return Number(input.value);
+  });
   assert.equal(new URL(page.url()).searchParams.get('weatheringProfile'), alternateProfileId);
   assert.equal(Number(new URL(page.url()).searchParams.get('weathering')), sliderNext);
   assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);

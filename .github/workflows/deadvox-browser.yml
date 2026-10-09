@@ -187,8 +187,6 @@ jobs:
       - name: Stairs lighting browser contract
         if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
         timeout-minutes: 5
-        env:
-          STAIRS_WEATHERING_PERF: '1'
         run: node test/browser/stairs.mjs lighting
       - name: Reading consumer browser contract
         if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}

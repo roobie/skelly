@@ -2752,6 +2752,10 @@ try {
     logPhase('locked-door-input-case', lockedDoorStart);
   }
 
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.interaction = false;
+  });
+  await page.waitForFunction(() => document.querySelector('#prompt').hidden);
   const treatment = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);
