@@ -15,6 +15,25 @@ interface MenuPointerInput {
   moveMenuCursor: (movementX: number, movementY: number) => void;
 }
 
+const isSelectElement = (element: Element): element is HTMLSelectElement => element.tagName === 'SELECT';
+
+const openNativeSelect = (target: EventTarget): boolean => {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  const select = target.closest('select');
+  if (!(select && isSelectElement(select))) {
+    return false;
+  }
+  select.focus();
+  try {
+    select.showPicker();
+  } catch {
+    // A browser may not support showPicker or may refuse it; keep keyboard focus as the fallback.
+  }
+  return true;
+};
+
 export interface MenuPointerOptions {
   input: MenuPointerInput;
   /** The game canvas: never a forwarding target, since it owns the lock. */
@@ -37,7 +56,6 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
   const capturedRanges = new Map<number, { input: HTMLInputElement; initialValue: string }>();
   let forwardingPointer = false;
   const isInputElement = (element: Element): element is HTMLInputElement => element.tagName === 'INPUT';
-  const isSelectElement = (element: Element): element is HTMLSelectElement => element.tagName === 'SELECT';
   const liveRangeInput = (rangeInput: HTMLInputElement): HTMLInputElement => {
     const current = rangeInput.id ? document.getElementById(rangeInput.id) : null;
     return current && isInputElement(current) && current.type === 'range' ? current : rangeInput;
@@ -205,30 +223,22 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       if (target && target !== canvas && target.id !== 'game-cursor') {
         forwardingClick = true;
         try {
-          const select = target instanceof Element ? target.closest('select') : null;
-          if (select && isSelectElement(select)) {
-            select.focus();
-            try {
-              select.showPicker();
-            } catch {
-              // A browser may not support showPicker or may refuse it; keep keyboard focus as the fallback.
+          if (!openNativeSelect(target)) {
+            if (isInputElement(target)) {
+              target.focus();
             }
-            return;
+            target.dispatchEvent(
+              new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                clientX: input.cursorX,
+                clientY: input.cursorY,
+                button: (e as MouseEvent).button,
+                shiftKey: (e as MouseEvent).shiftKey,
+                altKey: (e as MouseEvent).altKey,
+              }),
+            );
           }
-          if (isInputElement(target)) {
-            target.focus();
-          }
-          target.dispatchEvent(
-            new MouseEvent('click', {
-              bubbles: true,
-              cancelable: true,
-              clientX: input.cursorX,
-              clientY: input.cursorY,
-              button: (e as MouseEvent).button,
-              shiftKey: (e as MouseEvent).shiftKey,
-              altKey: (e as MouseEvent).altKey,
-            }),
-          );
         } finally {
           forwardingClick = false;
         }

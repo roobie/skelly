@@ -6,7 +6,8 @@ const dom = new Window();
 for (const key of ['document', 'Element', 'HTMLElement', 'Event', 'MouseEvent'] as const) {
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key] });
 }
-document.body.innerHTML = '<canvas></canvas><select><option>First</option></select><button>Continue</button><div id="cursor"></div>';
+document.body.innerHTML =
+  '<canvas></canvas><select><option>First</option></select><button>Continue</button><div id="cursor"></div>';
 const canvas = document.querySelector('canvas')!;
 const select = document.querySelector('select')!;
 const button = document.querySelector('button')!;
