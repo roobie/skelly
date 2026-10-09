@@ -4,12 +4,14 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
+import { bodyDistance, INVENTORY_REACH } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ZombieDef } from '../src/core/schema.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type Zombie } from '../src/core/zombies.ts';
+import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
@@ -180,6 +182,20 @@ describe('session movement consequences', () => {
     expect(session.body.pos[2]).toBeLessThan(zombie.body.pos[2] - zombie.body.halfWidth - session.body.halfWidth);
   });
 
+  it('closes a door over a downed shambler lying in the doorway', () => {
+    const runtime = makeRuntime();
+    const { session } = runtime;
+    const door = session.entities.add({ type: 'wood_door', pos: [0, 1, -3], size: [2, 4, 1], facing: 'n' })!;
+    session.entities.setOpen(door, true);
+    const { zombie } = downShambler(session, [1, 1, -2.5]);
+    expect(session.entities.bodyIntersects(door, zombie.body)).toBe(true);
+
+    const { handlingSimSeconds } = registry.furniture.get('wood_door')!.door!;
+    session.queue.enqueueAction(DOOR_ACTION, 'Door', handlingSimSeconds, { entityUid: door.uid, closing: true });
+    runtime.advance(Math.ceil((handlingSimSeconds + 0.5) * 60));
+    expect(door.open).toBe(false);
+  });
+
   it('does not sprint or drain stamina while crouched with sprint held', () => {
     const runtime = makeRuntime();
     runtime.advance(120);
@@ -235,15 +251,35 @@ describe('clearing a downed shambler', () => {
   });
 
   it.each([
-    ['cancelled', (runtime: Runtime) => runtime.session.queue.cancel()],
-    ['walked out of reach', (runtime: Runtime) => runtime.setIntent({ ...IDLE, forward: -1 })],
-  ])('leaves the body lying there when finishing it off is %s', (_, interrupt) => {
+    [
+      'cancelled',
+      (runtime: Runtime) => runtime.session.queue.cancel(),
+      (session: Session) => expect(session.queue.busy).toBe(false),
+    ],
+    [
+      'walked out of reach',
+      (runtime: Runtime) => runtime.setIntent({ ...IDLE, forward: -1 }),
+      // Still running as it is about to end, with the body beyond reach.
+      (session: Session, zombie: Zombie) => {
+        expect(session.queue.busy).toBe(true);
+        const player = {
+          inventory: session.inventory,
+          position: session.body.pos,
+          blockSize: makeScale(0.5).blockSize,
+        };
+        expect(bodyDistance(player, zombie.body)).toBeGreaterThan(INVENTORY_REACH);
+      },
+    ],
+  ])('leaves the body lying there when finishing it off is %s', (_, interrupt, premise) => {
     const runtime = makeRuntime();
     const { session } = runtime;
     const { id, zombie } = downShambler(session, [0, 1, -2]);
     expect(session.clearDownedBody(id, 'finish-off')).toBeUndefined();
     interrupt(runtime);
-    runtime.advance(framesFor(downed.finishOff.simSeconds));
+    const beforeEnd = Math.floor(downed.finishOff.simSeconds * 60) - 1;
+    runtime.advance(beforeEnd);
+    premise(session, zombie);
+    runtime.advance(framesFor(downed.finishOff.simSeconds) - beforeEnd);
     expect(session.zombies.store.get(id)).toBe(zombie);
     expect(zombie.incapacitated).toBe(true);
   });

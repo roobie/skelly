@@ -561,10 +561,15 @@ export const startPlay = (
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
-    // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
+    // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ZombieMeshes leaves
+    // them undefined.
     zombieEffects: {
+      onWound: (_id, _zombie, hit, damage) => view.gore.spray(hit, damage),
       onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
-      onCarve: (id, zombie, cells, hit) => zombieMeshes.zombieCarved?.(id, zombie, cells, hit),
+      onCarve: (id, zombie, cells, hit) => {
+        zombieMeshes.zombieCarved?.(id, zombie, cells, hit);
+        view.gore.carved(hit, cells.length);
+      },
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
@@ -2796,6 +2801,11 @@ export const startPlay = (
     hintToggleInput.update(now);
   };
 
+  // Blood holds still while the game is paused.
+  const updateGore = (dt: RealSeconds): void => {
+    view.gore.update(sim.paused ? 0 : dt, engine.isSolid, { zombies: zombieStore, listener: body.pos });
+  };
+
   const frame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
@@ -2817,6 +2827,7 @@ export const startPlay = (
     advancePendingItemThrow();
     syncThrowingStance();
     caseEffects.update(dt, engine.isSolid);
+    updateGore(dt);
     impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = realNow() - mark;
     options.saveController?.afterFrame();

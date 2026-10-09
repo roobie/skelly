@@ -32,9 +32,9 @@ export const crowdTextureLayout = (bonesPerSlot: number, slotCount: number): Cro
 export const crowdTexelIndex = (layout: CrowdTextureLayout, slot: number, bone: number): number =>
   (slot * layout.width + bone * 3) * 4;
 
-/** Flat Float32Array index of the one extra texel per row holding the severed-bone bitmask (see
- * packSeveredMask) — right after this slot's last bone matrix. Only the texel's first (red) channel is
- * used; green/blue/alpha are left at whatever the texture was cleared to. */
+/** Flat Float32Array index of the one extra texel per row holding the actor's flags, right after this
+ * slot's last bone matrix: red is the severed-bone bitmask (packSeveredMask), green how bloodied the body
+ * is (packBloodiness); blue and alpha are unused. */
 export const crowdMaskTexelIndex = (layout: CrowdTextureLayout, slot: number): number =>
   (slot * layout.width + layout.bonesPerSlot * 3) * 4;
 
@@ -59,6 +59,19 @@ export const packSeveredMask = (
     }
   }
   data[crowdMaskTexelIndex(layout, slot)] = mask >>> 0;
+};
+
+/** Packs how bloodied `slot`'s body is, 0 (clean) to 1, into its mask texel's green channel.
+ * CROWD_BEGIN_VERTEX hands it on as `vCrowdBloodiness`, with the bone-local position and bone, for a host to
+ * shade stains from (deadvox's render/bloodStain.ts). A reused row keeps the last value written, so every
+ * packer writes it. */
+export const packBloodiness = (
+  data: Float32Array,
+  layout: CrowdTextureLayout,
+  slot: number,
+  bloodiness: number,
+): void => {
+  data[crowdMaskTexelIndex(layout, slot) + 1] = Math.min(1, Math.max(0, bloodiness));
 };
 
 /** Whether `boneIndex`'s bit is set in a mask value read back from the texture (e.g. in a test — the
@@ -148,6 +161,9 @@ attribute float crowdSlot;
 attribute float boneIndex;
 attribute float neighbourBone;
 varying float vCrowdGore;
+varying float vCrowdBloodiness;
+varying vec3 vCrowdLocal;
+varying float vCrowdBone;
 
 mat4 crowdBoneMatrix( float slot, float bone ) {
 
@@ -183,6 +199,13 @@ bool crowdBoneSevered( float slot, float bone ) {
 	return ( mask & bit ) != 0;
 
 }
+
+// Blood: the mask texel's green channel says how bloodied the body is (packBloodiness).
+float crowdBloodiness( float slot ) {
+
+	return texelFetch( crowdBoneTexture, ivec2( int( crowdBonesPerSlot ) * 3, int( slot ) ), 0 ).y;
+
+}
 `;
 
 // Computed independently in each replacement (rather than sharing one `crowdM` local) since
@@ -194,6 +217,10 @@ export const CROWD_BEGIN_VERTEX = /* glsl */ `
 mat4 crowdM = crowdBoneMatrix( crowdSlot, boneIndex );
 vec3 transformed = ( crowdM * vec4( position, 1.0 ) ).xyz;
 vCrowdGore = crowdBoneSevered( crowdSlot, neighbourBone ) ? 1.0 : 0.0;
+// Bone-local, so anything shaded from it stays put on the body as it moves.
+vCrowdBloodiness = crowdBloodiness( crowdSlot );
+vCrowdLocal = position;
+vCrowdBone = boneIndex;
 `;
 
 export const CROWD_BEGINNORMAL_VERTEX = /* glsl */ `

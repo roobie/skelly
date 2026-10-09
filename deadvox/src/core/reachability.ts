@@ -6,18 +6,15 @@ import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
 import { WORK_IN_PROGRESS } from './inventory.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
+import { SEVERED_ITEM } from './zombieRegionNames.ts';
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
 const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
   WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',
   'spent_case_5_d_56x45',
-  'shambler_head',
-  'shambler_torso',
-  'shambler_left_arm',
-  'shambler_right_arm',
-  'shambler_left_leg',
-  'shambler_right_leg',
+  // Body parts come from cutting shamblers up, not from finding or crafting.
+  ...Object.values(SEVERED_ITEM),
 ]);
 
 interface RecipeDiagnostic {
