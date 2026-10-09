@@ -55,12 +55,34 @@ describe('shared menu wheel routing', () => {
     expect(pane.scrollTop).toBe(68);
   });
 
-  it('consumes wheel input in a pane that fits, preventing chaining to the page or game', () => {
+  it('passes the wheel from a pane that fits to the pane around it that can scroll, never the page or game', () => {
     Object.defineProperty(pane, 'scrollHeight', { configurable: true, value: 100 });
-    expect(wheel(canvas).defaultPrevented).toBe(true);
-    expect(outer.scrollTop).toBe(0);
-    expect(gameplayWheels).toBe(0);
-    Object.defineProperty(pane, 'scrollHeight', { configurable: true, value: 600 });
+    try {
+      expect(wheel(canvas).defaultPrevented).toBe(true);
+      expect(outer.scrollTop).toBe(100);
+      expect(gameplayWheels).toBe(0);
+      input.locked = false;
+      input.menuPointer = false;
+      expect(wheel(item, 2, 1).defaultPrevented).toBe(true);
+      expect(outer.scrollTop).toBe(132);
+    } finally {
+      Object.defineProperty(pane, 'scrollHeight', { configurable: true, value: 600 });
+    }
+  });
+
+  it('still consumes a free-pointer wheel when no pane under it can scroll, so the page never scrolls', () => {
+    for (const element of [pane, outer]) {
+      Object.defineProperty(element, 'scrollHeight', { configurable: true, value: 100 });
+    }
+    input.locked = false;
+    input.menuPointer = false;
+    try {
+      expect(wheel(item, 2, 1).defaultPrevented).toBe(true);
+    } finally {
+      for (const element of [pane, outer]) {
+        Object.defineProperty(element, 'scrollHeight', { configurable: true, value: 600 });
+      }
+    }
   });
 
   it('leaves the existing build wheel and locked main-card wheel routes untouched', () => {

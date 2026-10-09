@@ -126,6 +126,7 @@ export const BLOCK_PATTERNS = [
   'corrugated',
   'shingles',
   'noise',
+  'camo',
 ] as const;
 
 const BlockSchema = strictObject({
@@ -140,6 +141,10 @@ const BlockSchema = strictObject({
   rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
+  /** Four-colour palette read only by the `camo` surface pattern. */
+  patternPalette: optional(tuple([Color, Color, Color, Color])),
+  /** Washout amount in [0, 1], read only by the `camo` surface pattern. */
+  patternWashout: optional(pipe(number(), minValue(0), maxValue(1))),
 });
 
 // ---- items ----
@@ -177,7 +182,17 @@ const PocketSchema = strictObject({
   handlingSimSeconds: SimSeconds,
 });
 
-const ContainerSchema = strictObject({ pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')) });
+const ContainerSchema = strictObject({
+  pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')),
+  /** Why its pockets need more than the inventory width tuning allows. */
+  wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
+});
+
+const InventoryTuningSchema = strictObject({
+  id: Id,
+  /** Maximum width, in cells, for a container pocket without a content-owned exception. */
+  containerMaxWidthCells: Cells,
+});
 
 const WearableSchema = strictObject({
   slot: picklist(WEAR_SLOTS),
@@ -855,6 +870,8 @@ const TemplateAccessSchema = strictObject({
 
 const TemplateSchema = strictObject({
   id: Id,
+  /** Military supply may be rolled only inside a military site. */
+  military: optional(vBoolean()),
   /** Blocks: [x, y, z]. */
   size: Size,
   /** What each character means: a block id ("air" for empty), or furniture or a spawn point. */
@@ -1390,6 +1407,7 @@ const SECTION_DESCRIPTOR = {
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
+  inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };

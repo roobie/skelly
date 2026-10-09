@@ -15,7 +15,7 @@ read_if:
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
-  - you change the game's design, especially held-item feedback, body damage or treatment, or hand ownership
+  - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
@@ -26,6 +26,7 @@ read_if:
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
+  - you're authoring dilapidated structures or breached perimeters
   - you're changing player-facing item descriptions or their boundary with control guidance
 ---
 
@@ -424,8 +425,13 @@ HTML over the game view, and keyboard-first:
 
 - Two panes: **you** (hands, then each worn item with its pockets drawn as
   grids) and **around** (piles, and containers within reach, also as grids).
-  Items move by drag and drop, with the cells where the item fits highlighted,
-  or with keys. R rotates.
+  Items move by drag and drop with a destination preview, or with keys. R rotates.
+- So Items fits small zoomed screens, the compact view leaves unused cells out of
+  the empty **At your feet** target, and a content-owned width limit keeps an
+  oversized locker from dominating the nearby pane; wider containers carry a reason
+  in content.
+  See `src/ui/inventoryScreen.ts`, `InventoryScreen.viewModel`, and
+  `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
   shows its handling time. Weight, exact condition and times are in the item's
   details.
@@ -767,19 +773,21 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
   `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`,
   `spentCaseScatter`.
-- **Noise** is an event with a loudness and position. Footsteps (worse when
-  sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
-  Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
-  (see the screamer below). Stealth is a matter of managing noise and staying
-  out of sight. A real suppressor cuts a shot's base noise radius to a quarter;
-  an improvised suppressor uses its own weaker attachment factor. Both apply
-  consistently across firearms; the sound event selects the sample, not a second
-  radius. Near hearing ends at the scaled base radius, while the far tier extends
-  according to the listener's hearing model. Wear weakens the suppressor's
-  effect. Keep this tuning local to shots so other noises retain their range. See `src/core/zombies.ts`, `hearVocalNoise`,
-  `src/core/firearmAttachments.ts`, `firearmAttachmentResponse`,
-  `src/game/audioPresentation.ts`, `firearmShotEmission`, and `src/game/play.ts`,
-  `fireWeapon`.
+- **Noise** is an event with loudness and position. Sprinting makes footsteps
+  louder; melee, gunshots, doors, breaking glass and engines also make noise.
+  Walls reduce how far it travels. Zombies hear, investigate and pass noise on
+  (see the screamer below), so stealth means managing noise and staying out of
+  sight. Suppressor effects apply across firearms through attachment metadata;
+  the shot event selects the sample, not another radius. Near hearing ends at the
+  scaled base radius, while the far tier follows the listener's hearing model. At
+  full condition, a real suppressor brings that far tier to half the unsuppressed
+  base radius; an improvised suppressor is louder, and wear makes either louder.
+  Keep suppression local to shots so other noises retain their range. See
+  `gungen/src/gun/attachments.ts`, `suppressors`;
+  `src/core/firearmAttachments.ts`, `firearmAttachmentResponse` and
+  `wearFirearmAttachments`; `src/core/zombies.ts`, `hearVocalNoise`;
+  `src/game/audioPresentation.ts`, `firearmShotEmission`; and
+  `src/game/play.ts`, `fireWeapon`.
 - **Player-owned sound playback (d111-1):** BR: “their position in the world is
   the player, and the player is a mobile thing, so”. Character- and held-item
   sounds have the player as their source; listener-relative playback makes them
@@ -1227,6 +1235,13 @@ something in play, not only decorate it.
   taking off, when something comes near. If adopted, it responds to an actual
   nearby cause, never to a timer or a guaranteed enemy alarm, so it stays a
   warning the world gives rather than one the UI gives.
+- **Dilapidation:** built things show abandonment through collapsed sections,
+  breaches, slumped or missing segments and rubble. A passable breach is a real
+  route, so each authored site names the gaps a player can cross. New structures
+  and reworks follow this direction, starting with the camp walls in #385;
+  retrofitting existing structures is tracked in #396. See
+  `src/content/base/camp.json`, `camp_wall_run`, `camp_gate`, and
+  `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an
   animal ecology, hunting or farming in version 1 (EPIC.md, "Not in version

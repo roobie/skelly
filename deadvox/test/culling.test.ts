@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { CHUNK } from '../src/core/coords.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { skyAt } from '../src/core/sky.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { applySky, type SkyTargets } from '../src/render/sky.ts';
 
@@ -29,7 +30,7 @@ const setup = () => {
     camera,
     radiusM: RADIUS_M,
   };
-  const meshes = new ChunkMeshes(0.5);
+  const meshes = new ChunkMeshes(0.5, BUNDLED_CONTENT.registry);
   scene.add(meshes.group);
   return { scene, camera, sky, meshes };
 };

@@ -3,14 +3,15 @@ import { BODY_REGIONS } from '../src/core/body.ts';
 import {
   calendarAt,
   defaultClock,
-  formatClock,
   nextTimeOfDay,
   parseTimeOfDay,
   SECONDS_PER_DAY,
+  SPAWN_TIME,
   simSecondsPerHour,
   skipTarget,
 } from '../src/core/clock.ts';
 import { COMPRESSION, SKIP_COMPRESSION } from '../src/core/compression.ts';
+import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
@@ -33,10 +34,14 @@ const runUntil = (sim: Simulation, until: number): number => {
 };
 
 describe('clock', () => {
-  it('starts at dusk and runs 8 calendar seconds per simulation second', () => {
-    expect(formatClock(calendarAt(defaultClock, 0))).toBe('Day 1, 19:30');
-    expect(HOUR).toBe(450);
-    expect(formatClock(calendarAt(defaultClock, 5 * HOUR))).toBe('Day 2, 00:30');
+  it('starts at SPAWN_TIME in daylight and advances the calendar at the clock ratio', () => {
+    const start = calendarAt(defaultClock, 0);
+    expect(defaultClock.start).toBe(SPAWN_TIME);
+    expect(start).toBe(SPAWN_TIME);
+    const phase = dayPhaseAt(DEFAULT_DAY_CYCLE, start);
+    expect(phase.phase).toBe('day');
+    expect(phase.sunset).toBeGreaterThan(start);
+    expect(calendarAt(defaultClock, HOUR) - start).toBe(3600);
   });
 
   it('parses a time of day', () => {
@@ -191,8 +196,8 @@ describe('Simulation', () => {
     expect(realPlain).toBeCloseTo(HOUR, 0);
     expect(realFast).toBeLessThan(HOUR / 10);
     expect(fast.time).toBeCloseTo(plain.time, 9);
-    expect(formatClock(fast.calendar)).toBe('Day 1, 20:30');
-    expect(formatClock(plain.calendar)).toBe('Day 1, 20:30');
+    expect(fast.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * fast.time, 6);
+    expect(plain.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * plain.time, 6);
     // Needs lag by at most one grown step: 30 s, 4 game minutes.
     const tolerance = (Math.max(...Object.values(NEED_RATES).map(Math.abs)) * 4) / 60;
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {
@@ -325,7 +330,7 @@ describe('Simulation', () => {
       runUntil(sim, until);
       expect(sim.time).toBeCloseTo(until, 6);
       expect(sim.compression.interruption).toBeUndefined();
-      expect(formatClock(sim.calendar)).toBe('Day 1, 20:30');
+      expect(sim.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * sim.time, 6);
     });
 
     it('runs the needs for the whole span, so a long skip is cut short when one turns critical', () => {

@@ -1841,6 +1841,26 @@ try {
     return r.survival.use(r.inventory.itemByUid(uid));
   }, throwFixture.uid);
   assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
+  const landingTolerance = throwFixture.blockSize * 2;
+  let landing = await page.evaluate(
+    ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
+    { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
+  );
+  for (
+    let turn = 1;
+    !(landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance) && turn <= 16;
+    turn += 1
+  ) {
+    await page.mouse.move(760 + turn * 16, 410);
+    landing = await page.evaluate(
+      ({ uid, seconds }) => globalThis.primaryActionTest.getItemThrowLanding(uid, seconds),
+      { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
+    );
+  }
+  assert(
+    landing?.fits && Math.abs(landing.landingDistance - throwFixture.distance) <= landingTolerance,
+    `full-charge throw has room near its tuned range: ${JSON.stringify(landing)}`,
+  );
   const releaseThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -1859,10 +1879,34 @@ try {
   );
   assert.equal(fullMeter, 100, 'maximum charge fills the handling meter');
   await releaseThrow();
-  await page.waitForFunction((uid) => {
-    const r = globalThis.primaryActionTest;
-    return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.itemThrows.activeCount > 0;
-  }, throwFixture.uid);
+  try {
+    await page.waitForFunction((uid) => {
+      const r = globalThis.primaryActionTest;
+      return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.itemThrows.activeCount > 0;
+    }, throwFixture.uid);
+  } catch (error) {
+    const state = await page.evaluate(
+      ({ uid, seconds }) => {
+        const r = globalThis.primaryActionTest;
+        const item = r.inventory.itemByUid(uid);
+        return {
+          location: item && r.inventory.locate(item)?.kind,
+          activeThrows: r.itemThrows.activeCount,
+          throw: r.getItemThrowState(),
+          target: r.getItemThrowLanding(uid, seconds),
+          useHeld: r.input.dominantUseHeld,
+          rightHeld: r.input.rightMouseHeld,
+          time: r.session.sim.time,
+          bodyRefusal: r.session.sim.body.actionRefusal,
+          notice: r.getNotice(),
+          throwActions: r.inputRecorder.copyInputs().actions.filter((action) => action.action === 'item.throw').length,
+        };
+      },
+      { uid: throwFixture.uid, seconds: throwFixture.chargeSimSeconds },
+    );
+    process.stderr.write(`Full-charge throw did not complete: ${JSON.stringify(state)}\\n`);
+    throw error;
+  }
   await page.waitForFunction(() => document.querySelector('#handling').hidden);
   const thrownGlowstick = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
@@ -1885,7 +1929,6 @@ try {
     const [x, , z] = location.pile.pos;
     return Math.hypot(x + 0.5 - start[0], z + 0.5 - start[2]) * blockSize;
   }, throwFixture);
-  const landingTolerance = throwFixture.blockSize * 2;
   assert.ok(
     await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount > 0),
     'item throw presents a visible arc to the landing point',
