@@ -41,7 +41,7 @@ const vite = await createServer({
             palette: { '#': 'stone', c: 'camo_woodland', '.': 'air' },
             layers: [floor, walls, walls, new Array(8).fill('........')],
           });
-          return `export default ${JSON.stringify(content)};`;
+          return JSON.stringify(content);
         }
         if (mode === 'lighting' && id.endsWith('/src/content/base/blocks.json')) {
           const content = JSON.parse(code);
@@ -50,7 +50,7 @@ const vite = await createServer({
           camo.color = '#b8b5a3';
           camo.patternPalette = ['#b8b5a3', '#b8b5a3', '#b8b5a3', '#b8b5a3'];
           camo.patternWashout = 1;
-          return `export default ${JSON.stringify(content)};`;
+          return JSON.stringify(content);
         }
         if (mode === 'lighting' && id.endsWith('/src/core/authoredSite.ts')) {
           // Post-admission fixture: a deliberate 6 m raise is not valid authored cut/fill.

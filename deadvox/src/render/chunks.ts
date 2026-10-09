@@ -127,13 +127,13 @@ vFaceN = normalize(normal);`,
 diffuseColor.rgb = clamp(diffuseColor.rgb, 0.0, 1.0);
 vec3 diffuseLinear = srgbToLinear(diffuseColor.rgb);
 if (uLinearColors > 0.5) diffuseColor.rgb = diffuseLinear;
-vec3 camoBaseLinear = srgbToLinear(uCamoBaseColor);
+vec3 camoBase = uLinearColors > 0.5 ? srgbToLinear(uCamoBaseColor) : uCamoBaseColor;
 vec2 patUV = surfaceUV(vWorld, vFaceN);
 vec2 patFw = fwidth(patUV);
 float patId = floor(vPattern + 0.5);
 float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
 if (uPatterns > 0.5 && patId == PAT_CAMO) {
-  float camoAO = min(diffuseLinear.r / max(camoBaseLinear.r, 1e-4), min(diffuseLinear.g / max(camoBaseLinear.g, 1e-4), diffuseLinear.b / max(camoBaseLinear.b, 1e-4)));
+  float camoAO = min(diffuseColor.r / max(camoBase.r, 1e-4), min(diffuseColor.g / max(camoBase.g, 1e-4), diffuseColor.b / max(camoBase.b, 1e-4)));
   diffuseColor.rgb = camoColor(vWorld, max(patFw.x, patFw.y)) * clamp(camoAO, 0.0, 1.0);
 } else {
   diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
