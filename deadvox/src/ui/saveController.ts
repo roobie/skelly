@@ -113,6 +113,7 @@ export class SaveController {
   private entered = false;
   private ready = false;
   private newWorldLauncher: ((creation: HandedCharacter) => { enter: () => void }) | undefined;
+  private newWorldGoLabel = 'New world';
   private statusText = 'Checking saved worlds…';
   private snapshot: (() => Readonly<SaveSnapshot>) | undefined;
   private simTime: (() => number) | undefined;
@@ -351,8 +352,22 @@ export class SaveController {
     this.render();
   }
 
-  /** The controller is the sole writer of #go; play supplies the derived menu label here. */
+  /** The controller owns title labels so storage warnings cannot be overwritten. */
   setGoLabel(label: string): void {
+    if (!this.entered && this.newWorldLauncher) {
+      this.renderGoLabel();
+      return;
+    }
+    render(html`${label}`, $('go'));
+  }
+
+  setNewWorldGoLabel(label: string): void {
+    this.newWorldGoLabel = label;
+    this.renderGoLabel();
+  }
+
+  private renderGoLabel(): void {
+    const label = this.titleNewWorldLabel === 'New world' ? this.newWorldGoLabel : this.titleNewWorldLabel;
     render(html`${label}`, $('go'));
   }
 
@@ -641,7 +656,7 @@ export class SaveController {
     const status = $('save-status');
     const button = $('continue') as HTMLButtonElement;
     if (!this.entered) {
-      this.setGoLabel(this.titleNewWorldLabel);
+      this.renderGoLabel();
     }
     const controls = computeMenuState({
       started: false,

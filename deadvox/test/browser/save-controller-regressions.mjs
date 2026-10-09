@@ -46,11 +46,28 @@ const url = browserStageUrl(
 const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
-const PERSISTENT_BACKEND = /Persistent indexeddb/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
 const BASE_MISMATCH = /Generated base mismatch/;
+const REPLAY_REJECTED = /^Replay rejected:/;
 
 try {
+  await test('rejected pending replay reveals its error instead of leaving the loading screen up', async () => {
+    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
+    try {
+      await context.addInitScript(() => {
+        sessionStorage.setItem('deadvox.pending-replay', btoa('not a replay'));
+      });
+      const page = await context.newPage();
+      await page.goto(url);
+      await page.waitForFunction(() => document.querySelector('#errors')?.textContent.startsWith('Replay rejected:'));
+      assert.equal(await page.locator('#startup-screen').isVisible(), false);
+      assert.equal(await page.locator('#errors').isVisible(), true);
+      assert.match(await page.locator('#errors').textContent(), REPLAY_REJECTED);
+    } finally {
+      await context.close();
+    }
+  });
+
   await test('persistence button alone requests once and updates status after an unavailable startup query', async () => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     try {
@@ -94,7 +111,7 @@ try {
     }
   });
 
-  await test('explicit persistence grant survives a click before the first storage status', async () => {
+  await test('startup covers persistence action until save discovery finishes', async () => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     try {
       await context.addInitScript(() => {
@@ -131,24 +148,62 @@ try {
       const page = await context.newPage();
       await page.goto(url);
       await page.waitForFunction(() => typeof globalThis.releasePersistenceIdentity === 'function');
+      await page.waitForFunction(() => {
+        const status = document.querySelector('#startup-screen #save-status');
+        return Boolean(
+          status?.textContent.trim() &&
+            globalThis.deadvoxSaveTest?.controller &&
+            !globalThis.deadvoxSaveTest.controller.ready,
+        );
+      });
+      assert.equal(await page.locator('#startup-screen').isVisible(), true, 'startup remains visible during discovery');
+      assert.equal(
+        await page.locator('#startup-screen #save-status').isVisible(),
+        true,
+        'discovery status is visible under the bar',
+      );
       const button = page.locator('#save-persist');
-      assert.equal(await button.isVisible(), true, 'unknown-state action remains available during discovery');
+      assert.equal(await button.isVisible(), true, 'the controller still renders its action while state is unknown');
       assert.equal(await button.isEnabled(), true);
+      assert.equal(
+        await page.evaluate(() => {
+          const action = document.querySelector('#save-persist');
+          const rect = action.getBoundingClientRect();
+          return (
+            document
+              .elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+              ?.closest('#startup-screen') !== null
+          );
+        }),
+        true,
+        'startup screen covers the action until discovery finishes',
+      );
+      assert.equal(
+        await button.evaluate((action) => {
+          action.focus();
+          return document.activeElement === action;
+        }),
+        false,
+        'keyboard focus cannot reach the action during discovery',
+      );
       assert.equal(await page.evaluate(() => globalThis.persistenceQueries), 0, 'advisory status has not started');
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
+      await page.evaluate(() => globalThis.releasePersistenceIdentity());
+      await page.waitForFunction(
+        () => globalThis.deadvoxSaveTest?.controller.ready && document.querySelector('#startup-screen').hidden,
+        undefined,
+        { timeout: 30_000 },
+      );
+      assert.equal(await button.isVisible(), true, 'action is available after discovery finishes');
+      assert.equal(await page.locator('#save-status').isVisible(), true, 'final discovery status is on the title card');
+      assert.equal(await page.evaluate(() => globalThis.persistenceQueries), 1);
       await button.click();
       await page.waitForFunction(() =>
         document.querySelector('#save-status').textContent.includes('Persistent storage granted'),
       );
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 1);
       assert.match(await page.locator('#save-status').textContent(), PERSISTENCE_GRANTED);
-      assert.equal(await button.isVisible(), false, 'explicit grant is retained before discovery completes');
-      await page.evaluate(() => globalThis.releasePersistenceIdentity());
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-      assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 1, 'discovery never requests again');
-      assert.equal(await page.evaluate(() => globalThis.persistenceQueries), 1);
-      assert.equal(await button.isVisible(), false, 'discovery cannot make a granted action visible again');
-      assert.match(await page.locator('#save-status').textContent(), PERSISTENT_BACKEND);
+      assert.equal(await button.isVisible(), false, 'explicit grant removes the request action');
       assert.equal(await page.evaluate(() => globalThis.deadvoxSaveTest.controller.storageStatus.persistent), true);
       assert.equal(
         await page.evaluate(async () => (await globalThis.deadvoxSaveTest.storage.status()).persistent),
@@ -167,6 +222,57 @@ try {
     await page.goto(url);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    const radiusLinks = await page.locator('[data-view-distance]').evaluateAll((links) =>
+      links.map((link) => {
+        const expected = new URL(location.href);
+        expected.searchParams.set('radius', link.dataset.viewDistance);
+        return new URL(link.href).href === expected.href;
+      }),
+    );
+    assert(radiusLinks.length > 0, 'view-distance links are present');
+    assert(radiusLinks.every(Boolean), 'each view-distance link preserves the current URL parameters');
+    await page.click('#show-credits');
+    assert.equal(await page.locator('#about').isVisible(), false, 'the About card is replaced by credits');
+    assert.equal(await page.locator('#credits').isVisible(), true, 'credits open from the title screen');
+    await page.locator('#credits a[href="#"]').click();
+    assert.equal(await page.locator('#about').isVisible(), true, 'Back returns to the About card');
+    assert.equal(await page.locator('#credits').isVisible(), false);
+    assert.equal(
+      await page.locator('#startup-screen').isVisible(),
+      false,
+      'loading ends when the title screen is ready',
+    );
+    assert.equal(
+      await page.locator('#overlay').evaluate((overlay) => overlay.classList.contains('startup-ready')),
+      true,
+    );
+    assert.equal(
+      await page
+        .locator('#go')
+        .evaluate(
+          (go) =>
+            [...go.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim()).length,
+        ),
+      1,
+      'the start hint has one text node',
+    );
+    const card = page.locator('#overlay .card');
+    await page.setViewportSize({ width: 800, height: 200 });
+    await page.waitForFunction(() => document.querySelector('#card-scroll-down')?.hidden === false);
+    await card.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+      element.dispatchEvent(new Event('scroll'));
+    });
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#card-scroll-up')?.hidden === false &&
+        document.querySelector('#card-scroll-down')?.hidden === true,
+    );
+    await card.evaluate((element) => {
+      element.scrollTop = 0;
+      element.dispatchEvent(new Event('scroll'));
+    });
+    await page.setViewportSize({ width: 800, height: 600 });
     const before = await page.evaluate(() => ({
       hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
       entered: deadvoxSaveTest.controller.isEntered,

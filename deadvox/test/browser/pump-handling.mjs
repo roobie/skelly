@@ -471,9 +471,9 @@ try {
     );
   }
   assert.ok(
-    lockerGeometry.lockerScroll.scrollWidth > lockerGeometry.lockerScroll.clientWidth &&
+    lockerGeometry.lockerScroll.scrollWidth <= lockerGeometry.lockerScroll.clientWidth &&
       lockerGeometry.lockerScroll.scrollHeight > lockerGeometry.lockerScroll.clientHeight,
-    `the locker grid scrolls both ways inside its region: ${JSON.stringify(lockerGeometry.lockerScroll)}`,
+    `the cap-wide locker stays visible horizontally and scrolls vertically inside its region: ${JSON.stringify(lockerGeometry.lockerScroll)}`,
   );
   const selectInventoryTab = async (tab) => {
     const tabButton = page.locator(`#inventory .inv-tab[data-tab="${tab}"]`);

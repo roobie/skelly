@@ -16,6 +16,7 @@ const modes = Object.freeze({
   'save-storage-indexeddb-continue': 'pixel',
   'insecure-saves': 'render-free',
   'stairs-traversal': 'render-free',
+  'stairs-camo': 'pixel',
   'stairs-lighting': 'pixel',
   reading: 'render-free',
   'firefox-ui': 'render-free',

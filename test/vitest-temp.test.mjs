@@ -35,12 +35,10 @@ test('Vitest startup reclaims dead directories but preserves the exact live, den
   const root = mkdtempSync(join(tmpdir(), 'skelly-vitest-temp-test-'));
   try {
     const cache = join(root, 'node_modules/.cache/vitest-tmp');
-    const ended = spawnSync(process.execPath, ['-e', 'console.log(process.pid)'], { encoding: 'utf8' });
-    assert.equal(ended.status, 0, ended.stderr);
-    const stale = join(cache, `${Number(ended.stdout)}-stale`);
-    const endedLinkOwner = spawnSync(process.execPath, ['-e', 'console.log(process.pid)'], { encoding: 'utf8' });
-    assert.equal(endedLinkOwner.status, 0, endedLinkOwner.stderr);
-    const staleLinkName = `${Number(endedLinkOwner.stdout)}-symlink`;
+    const staleOwner = 2_147_483_647;
+    assert.throws(() => process.kill(staleOwner, 0), { code: 'ESRCH' });
+    const stale = join(cache, `${staleOwner}-stale`);
+    const staleLinkName = `${staleOwner}-symlink`;
     const staleLink = join(cache, staleLinkName);
     const symlinkTarget = join(root, 'symlink-target');
     const live = `${process.pid}-live`;

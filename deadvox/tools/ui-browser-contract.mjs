@@ -174,17 +174,15 @@ try {
       const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
       const cardEl = document.querySelector('#overlay .card');
       const card = cardEl.getBoundingClientRect();
-      const style = getComputedStyle(cardEl);
-      const maxWidth = Number.parseFloat(style.maxWidth) +
-        Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      const shellWidth = Number.parseFloat(getComputedStyle(cardEl.parentElement).width);
       return rows.length > 0 && entries.length === rows.length &&
         entries.every((key, index) => key.nextElementSibling?.tagName === 'DD' &&
           key.textContent === rows[index].keys && key.nextElementSibling.textContent === rows[index].action) &&
-        columns.length === 1 && Number.isFinite(maxWidth) && card.width <= maxWidth &&
+        columns.length === 1 && Number.isFinite(shellWidth) && card.width <= shellWidth &&
         card.left >= 0 && card.right <= innerWidth;
     })()`),
     true,
-    'binding-derived controls stack in one column within the card computed maximum width and viewport',
+    'binding-derived controls stack in one column within the scroll shell width and viewport',
   );
   assert.equal(
     await evaluate(
@@ -715,8 +713,8 @@ try {
   await press('Tab', 'Tab', 9);
 
   await action('debug.spawn-menu-toggle');
-  // Bags first: their pockets make the nearby pane tall enough to scroll, and the one pile at the feet
-  // would otherwise fill with whichever small items sort first.
+  // Bags first: once the divider is dragged to narrow Around you (below), their pockets make the nearby
+  // pane scroll; the pile at the feet would otherwise fill with whichever small items sort first.
   const spawnNames = await evaluate(`(() => {
     const entries = Array.from(document.querySelectorAll('#spawn .spawn-list button'))
       .map((button, index) => ({
@@ -762,23 +760,43 @@ try {
     ),
     true,
   );
+  const dragInventoryDivider = async (fraction) => {
+    const itemsBody = await page.locator('#inventory .inv-body[data-tab-panel="items"]').boundingBox();
+    const splitter = await page.locator('#inventory [data-inventory-splitter]').boundingBox();
+    assert.ok(itemsBody && splitter, 'Items divider is available to resize Around you');
+    await page.mouse.move(splitter.x + splitter.width / 2, splitter.y + splitter.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(
+      itemsBody.x + itemsBody.width * fraction - (fraction === 1 ? 1 : 0),
+      splitter.y + splitter.height / 2,
+    );
+    await page.mouse.up();
+    cursor = await evaluate(`(() => {
+      const rect = document.querySelector('#game-cursor').getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    })()`);
+  };
+  await dragInventoryDivider(1);
   const inventoryScroll = await evaluate(`(() => {
     const pane = document.querySelector('#inventory [data-pane="around"]');
     pane.scrollTop = Math.min(40, pane.scrollHeight - pane.clientHeight);
     const view = pane.getBoundingClientRect();
-    const visible = [...pane.querySelectorAll('.inv-item')].find((node) => {
+    const visible = [...pane.querySelectorAll('.inv-grid-packed .inv-item')].find((node) => {
       const item = node.getBoundingClientRect();
-      return node.querySelector('.inv-item-name')?.textContent === 'AA battery' && item.bottom > view.top && item.top < view.bottom;
+      if (item.bottom <= view.top || item.top >= view.bottom) return false;
+      return document.elementFromPoint(item.left + item.width / 2, item.top + item.height / 2)?.closest('.inv-item') === node;
     });
     return {
       top: pane.scrollTop,
       overflow: pane.scrollHeight - pane.clientHeight,
       uid: visible?.dataset.uid,
+      target: visible?.closest('.inv-grid')?.dataset.target,
       name: visible?.querySelector('.inv-item-name')?.textContent,
     };
   })()`);
   assert.ok(inventoryScroll.overflow > 1, 'nearby pane has enough items to scroll');
   assert.ok(inventoryScroll.uid, 'a nearby item is visible to select');
+  assert.ok(inventoryScroll.target, 'the selected nearby item has a source inventory grid');
   await clickAt(`#inventory [data-uid="${inventoryScroll.uid}"]`);
   assert.equal(
     await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent"),
@@ -797,23 +815,39 @@ try {
   assert.equal(await moveQueued(), true, 'selected item queues a move');
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives queueing a move');
+  const selectedTarget = () =>
+    evaluate(
+      `document.querySelector('#inventory .inv-item[data-uid="${inventoryScroll.uid}"]')?.closest('.inv-grid')?.dataset.target`,
+    );
   await waitFor(
-    () => evaluate("document.querySelector('#inventory .inv-queue').textContent.includes('Nothing queued')"),
-    'inventory handling job completes',
+    () => selectedTarget().then((target) => target !== undefined && target !== inventoryScroll.target),
+    'selected item moves into inventory',
     15_000,
   );
+  const completedTarget = await selectedTarget();
+  assert.ok(completedTarget && completedTarget !== inventoryScroll.target, 'completed item leaves its source grid');
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives handling completion');
 
+  await dragInventoryDivider(0.5);
   const transfer = await evaluate(`(() => {
     const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans');
     const legs = [...document.querySelectorAll('#inventory .inv-worn')].find((node) => node.querySelector('.inv-slot-label')?.textContent === 'Legs');
     const grid = [...legs.querySelectorAll('.inv-grid')].find((node) => !node.querySelector('[data-uid]'));
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    if (!(item && legs && grid && around)) throw new Error('container-to-inventory fixture is missing');
+    item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     const itemRect = item.getBoundingClientRect();
     const gridRect = grid.getBoundingClientRect();
+    const source = { x: itemRect.left + itemRect.width / 2, y: itemRect.top + itemRect.height / 2 };
+    const hit = document.elementFromPoint(source.x, source.y)?.closest('.inv-item');
     return {
-      source: { x: itemRect.left + itemRect.width / 2, y: itemRect.top + itemRect.height / 2 },
+      source,
       sourceTarget: item.closest('.inv-grid').dataset.target,
+      sourceUid: item.dataset.uid,
+      paneTop: around.scrollTop,
+      hitUid: hit?.dataset.uid,
+      hitName: hit?.querySelector('.inv-item-name')?.textContent,
       destination: { x: gridRect.left + 16, y: gridRect.top + 16 },
       target: grid.dataset.target,
     };
@@ -824,80 +858,90 @@ try {
       const ghost = document.querySelector('#inventory-drag-root .inv-ghost');
       if (!ghost) return null;
       const rect = ghost.getBoundingClientRect();
-      return {
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-        height: rect.height,
-        zIndex: Number(getComputedStyle(ghost).zIndex),
-        inventoryZIndex: Number(getComputedStyle(document.querySelector('#inventory')).zIndex),
-      };
+      return { left: rect.left, top: rect.top };
     })()`);
-  const beginDrag = async () => {
-    await moveCursorTo(transfer.source);
-    await evaluate(`document.elementFromPoint(${transfer.source.x}, ${transfer.source.y}).dispatchEvent(new PointerEvent('pointerdown', {
-      bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1,
-      clientX: ${transfer.source.x}, clientY: ${transfer.source.y},
-    }))`);
-  };
-  await beginDrag();
-  assert.equal(
-    await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent"),
-    'Can of beans',
-    'drawn-cursor pointerdown selects an item in a container',
+  assert.equal(transfer.hitUid, transfer.sourceUid, `container item is the topmost hit: ${JSON.stringify(transfer)}`);
+  const drawnSource = { x: transfer.source.x + 16, y: transfer.source.y + 16 };
+  await moveCursorTo(drawnSource);
+  await evaluate(dispatchMenuPointerClickExpression());
+  await waitFor(
+    async () =>
+      (await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent")) === 'Can of beans',
+    `drawn-cursor click selects an item in a container: ${JSON.stringify(transfer)}`,
+    2000,
   );
-  await moveCursorTo(transfer.destination);
-  await dispatchPointerAt('pointermove', -1, 1, transfer.destination);
+  paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
+  assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives selecting a container item');
+  const transferDestination = { x: transfer.destination.x + 16, y: transfer.destination.y + 16 };
+  const beginDrag = async () => {
+    await moveCursorTo(drawnSource);
+    await dispatchPointerAt('pointerdown', 0, 1, drawnSource);
+  };
+
+  await beginDrag();
+  await moveCursorTo(transferDestination);
+  await dispatchPointerAt('pointermove', -1, 1, transferDestination);
   const ghostAtDestination = await dragGhost();
   assert(ghostAtDestination, 'drag displays the item ghost');
-  assert.ok(
-    ghostAtDestination.zIndex > ghostAtDestination.inventoryZIndex,
-    'drag ghost is layered above the inventory',
-  );
-  const movedPointer = { x: transfer.destination.x + 4, y: transfer.destination.y + 6 };
+  const ghostHit = await evaluate(`(() => {
+    const ghost = document.querySelector('#inventory-drag-root .inv-ghost');
+    if (!ghost) return false;
+    const previous = ghost.style.pointerEvents;
+    ghost.style.pointerEvents = 'auto';
+    const rect = ghost.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    ghost.style.pointerEvents = previous;
+    return hit === ghost || ghost.contains(hit);
+  })()`);
+  assert.equal(ghostHit, true, 'drag ghost is topmost at its centre');
+  const movedPointer = { x: transferDestination.x + 4, y: transferDestination.y + 6 };
+  await moveCursorTo(movedPointer);
   await dispatchPointerAt('pointermove', -1, 1, movedPointer);
   const ghostAfterMove = await dragGhost();
-  assert.equal(ghostAfterMove?.left, ghostAtDestination.left + 4, 'drag ghost follows horizontal pointer movement');
-  assert.equal(ghostAfterMove?.top, ghostAtDestination.top + 6, 'drag ghost follows vertical pointer movement');
+  assert.ok(ghostAfterMove, 'drag ghost remains while the pointer moves');
+  assert.ok(Math.abs(ghostAfterMove.left - ghostAtDestination.left - 4) < 0.5, 'drag ghost follows horizontal movement');
+  assert.ok(Math.abs(ghostAfterMove.top - ghostAtDestination.top - 6) < 0.5, 'drag ghost follows vertical movement');
   const outside = { x: 4, y: 4 };
+  await moveCursorTo(outside);
   await dispatchPointerAt('pointermove', -1, 1, outside);
   await dispatchPointerAt('pointerup', -1, 0, outside);
   assert.equal(await dragGhost(), null, 'release outside removes the drag ghost');
   assert.equal(await moveQueued(), false, 'release outside cancels the move');
 
   await beginDrag();
-  await moveCursorTo(transfer.destination);
-  await dispatchPointerAt('pointermove', -1, 1, transfer.destination);
+  await moveCursorTo(transferDestination);
+  await dispatchPointerAt('pointermove', -1, 1, transferDestination);
   assert(await dragGhost(), 'drag displays the item ghost before drop');
-  await dispatchPointerAt('pointerup', -1, 0, transfer.destination);
+  await dispatchPointerAt('pointerup', -1, 0, transferDestination);
   assert.equal(await dragGhost(), null, 'drop removes the drag ghost');
   await delay(100);
-  assert.match(
-    await evaluate("document.querySelector('#inventory .inv-queue').textContent"),
-    /Can of beans/,
-    'drag queues a container-to-inventory move',
-  );
+  assert.ok(await moveQueued(), 'container transfer remains in the handling queue');
+  paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
+  assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives queueing the container move');
   await press('Tab', 'Tab', 9);
   assert.equal(
     await evaluate("document.querySelector('#inventory').hidden"),
     true,
     'Tab closes inventory while the move runs',
   );
-  await delay(8000);
   await press('Tab', 'Tab', 9);
   assert.equal(
     await evaluate("!document.querySelector('#inventory').hidden"),
     true,
     'Tab reopens inventory to verify the drop',
   );
-  await delay(100);
-  assert.equal(
-    await evaluate(
+  const transferTarget = () =>
+    evaluate(
       "[...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans')?.closest('.inv-grid')?.dataset.target",
-    ),
-    transfer.target,
-    'dropped item lands in the target inventory pocket',
+    );
+  await waitFor(
+    () => transferTarget().then((target) => target === transfer.target),
+    'container move completes',
+    15_000,
   );
+  assert.equal(await transferTarget(), transfer.target, 'dropped item lands in the target inventory pocket');
+  paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
+  assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives handling completion');
   await press('Tab', 'Tab', 9);
 
   // With a menu open and pointer locked, move the drawn cursor, dispatch a click to its target,

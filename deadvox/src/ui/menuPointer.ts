@@ -176,7 +176,7 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
         return;
       }
       const target = input.locked ? document.elementFromPoint(input.cursorX, input.cursorY) : event.target;
-      const pane = wheelPane(target);
+      const pane = wheelPane(target, { x: event.deltaX, y: event.deltaY });
       if (pane) {
         pane.scrollTop += wheelPixels(event.deltaY, event.deltaMode, pane.clientHeight);
         pane.scrollLeft += wheelPixels(event.deltaX, event.deltaMode, pane.clientWidth);

@@ -3,6 +3,7 @@ read_if:
   - you're running the game, its debug tools or its benchmarks
   - you're running Deadvox unit tests or the opt-in CPU benchmark
   - you're checking the present implementation and known limits
+  - you're investigating startup or save discovery
 ---
 
 # deadvox — singleplayer voxel survival
@@ -14,12 +15,16 @@ Cataclysm: DDA (detailed items, bodies, crafting). The graphics are blocky voxel
 This file describes the code as it is. The game's design and roadmap are in
 [DESIGN.md](DESIGN.md) and [EPIC.md](EPIC.md).
 
+The title card and persistence action stay unavailable until save discovery and content
+validation finish. For the loading status and recovery behavior, see
+[Startup and save discovery](TROUBLESHOOTING.md#startup-and-save-discovery).
+
 **Play:** <https://roobie.github.io/skelly/deadvox/>. URL parameters:
 
 - `?seed=N` picks a world.
 - `?radius=N` sets the view distance in metres (default 96; the start card offers
   64, 96 and 128).
-- `?time=HH:MM` sets the time of day at the start (default 19:30).
+- `?time=HH:MM` sets the time of day at the start (default 10:00, or the layout's own start time where it sets one, as the playtest map does). The default gives development evaluations good light and time before dark. See `src/game/config.ts`, `configFromUrl`.
 - `?debug=1` enables debug authoring tools. Authoring actions require the
   rebindable F2 gate; Space/C flight controls are ungated only while noclip is
   active. Spawn-menu navigation and dismissal remain ordinary modal controls.
@@ -153,8 +158,8 @@ keeps mobgen source imports available; its obstruction predicate must match play
   The AR and AK items (`rifle_assault`, `rifle_ak`) are real rifles: magazine-fed,
   charged by hand, with exported automatic and hand cycles (DESIGN.md, "Rifles
   (3.2, d114)"). Only a `military` loot table holds them (DESIGN.md, "Military loot
-  (3.2, d114)"), and no site rolls one until 3.11 places the military camp (#181,
-  beat 6); `?debug=1&loadout=ar|ak` starts with one in hand. The debug
+  (3.2, d114)"). The playtest camp's `camp_armoury` rolls `military_armoury`
+  (`src/content/base/camp.json`); `?debug=1&loadout=ar|ak` remains the shortcut. The debug
   pump item (no loot table; spawns through the gated debug menu under `?debug=1`)
   exercises a model in hands and piles. The playable pump uses real 00-buck shells,
   a four-shell tube plus chamber, one-shell loading jobs and manual exported
