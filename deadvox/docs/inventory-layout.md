@@ -48,9 +48,9 @@ through every scrollable ancestor. A wheel scrolls the nearest region with
 something to scroll along it, even one already at its edge, so a grid that fits
 never swallows the wheel meant for the pane around it. When none has anything to
 scroll, the nearest region still takes the wheel, so it reaches neither the page
-nor the game. See `deadvox/src/ui/wheel.ts`, `wheelPane`. Routine redraws leave the player's browsing
-position alone. The reading consumer stage verifies the selected note is visible
-and topmost at its centre.
+nor the game. See `deadvox/src/ui/wheel.ts`, `wheelPane`. Routine redraws leave
+the player's browsing position alone. The reading consumer stage verifies the
+selected note is visible and topmost at its centre.
 
 See `deadvox/src/ui/style.css`, `.inv-body` and `.inv-grid-scroll`, for the
 sizing and scroll regions, and `deadvox/src/ui/inventoryScreen.ts`,

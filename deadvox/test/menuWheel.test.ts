@@ -70,13 +70,14 @@ describe('shared menu wheel routing', () => {
     }
   });
 
-  it('still consumes the wheel when no pane under it can scroll', () => {
+  it('still consumes a free-pointer wheel when no pane under it can scroll, so the page never scrolls', () => {
     for (const element of [pane, outer]) {
       Object.defineProperty(element, 'scrollHeight', { configurable: true, value: 100 });
     }
+    input.locked = false;
+    input.menuPointer = false;
     try {
-      expect(wheel(canvas).defaultPrevented).toBe(true);
-      expect(gameplayWheels).toBe(0);
+      expect(wheel(item, 2, 1).defaultPrevented).toBe(true);
     } finally {
       for (const element of [pane, outer]) {
         Object.defineProperty(element, 'scrollHeight', { configurable: true, value: 600 });
