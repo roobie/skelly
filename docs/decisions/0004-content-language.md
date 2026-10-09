@@ -12,7 +12,7 @@ tags: [deadvox, adr, content, mods, determinism]
 
 The base content pack is the core mod. New content and tuning values belong in that pack, with schema validation, rather than being duplicated as TypeScript defaults. Existing TypeScript tuning moves only through scoped follow-up work. This keeps authored rules and their canonical identity in one place while leaving exact game mechanics under system ownership. See `deadvox/src/game/bundledContent.ts`, `BUNDLED_CONTENT`, and `deadvox/src/core/content.ts`, `buildRegistry`.
 
-Authored content uses the conversion rule in `docs/jsonnet.md` and is compiled to JSON for existing game and tool consumers. `tools/jsonnet/compile.mjs`, `compileJsonnetSources`, is the repository's single compiler entry point; it uses go-jsonnet with repository-root imports and checks generated outputs. Runtime mod functions and the expression format remain open for a later design pass. The engine owns exact simulation, persistence and lifecycle work. A mod-facing rule may describe a consequence, but must not mutate an owner outside the engine's validated boundary.
+Jsonnet is the build-time authoring language under the conversion rule in `docs/jsonnet.md`; selected sources compile to JSON for existing game and tool consumers. `tools/jsonnet/compile.mjs`, `compileJsonnetSources`, is the repository's single compiler entry point; it uses go-jsonnet with repository-root imports and checks generated outputs. Runtime mod functions and the expression format remain open for a later design pass. The engine owns exact simulation, persistence and lifecycle work. A mod-facing rule may describe a consequence, but must not mutate an owner outside the engine's validated boundary.
 
 ## Runtime design remains open
 

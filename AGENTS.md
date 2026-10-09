@@ -133,7 +133,7 @@ command includes `deadvox/tools/lit-check`, which deadvox's Lit lint and root Kn
 npm run setup
 ```
 
-Jsonnet compilation requires Go for the shared evaluator in `tools/jsonnet`; use the minimum in `tools/jsonnet/go.mod`, `go`, while CI's `.github/workflows/lint.yml`, `setup-go`, selects the CI toolchain. `npm run setup` downloads the Go module dependencies.
+`npm run setup` fetches the pinned go-jsonnet binary for the shared compiler; `.github/workflows/lint.yml`, `Cache go-jsonnet`, caches it by the manifest hash.
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 

@@ -5,10 +5,11 @@
   "scripts": {
     "check": "biome check",
     "fix": "biome check --write",
-    "setup": "npm ci && npm ci --prefix gungen && npm ci --prefix deadvox && npm ci --prefix mobgen && npm ci --prefix deadvox/tools/lit-check && go -C tools/jsonnet mod download",
+    "setup": "npm ci && npm ci --prefix gungen && npm ci --prefix deadvox && npm ci --prefix mobgen && npm ci --prefix deadvox/tools/lit-check && npm run jsonnet:setup",
+    "jsonnet:setup": "node tools/jsonnet/setup.mjs",
     "content:compile": "node tools/jsonnet/compile.mjs",
     "content:check": "node tools/jsonnet/compile.mjs --check",
-    "ci": "npm run content:check && biome ci && npm run knip && node deadvox/tools/time-lint.mjs && node --test test/vitest-temp.test.mjs test/pages-analytics.test.mjs test/workflow-lint-dependencies.test.mjs test/deadvox-browser-ci.test.mjs test/browser-ci-result.test.mjs test/zero-drift-check.test.mjs test/slice-checklist.test.mjs test/bench-shamblers.test.mjs test/gungen-deadvox-contract.test.mjs && node tools/zero-drift-check.mjs",
+    "ci": "npm run content:check && biome ci && npm run knip && node deadvox/tools/time-lint.mjs && node --test tools/jsonnet/setup.test.mjs test/vitest-temp.test.mjs test/pages-analytics.test.mjs test/workflow-lint-dependencies.test.mjs test/deadvox-browser-ci.test.mjs test/browser-ci-result.test.mjs test/zero-drift-check.test.mjs test/slice-checklist.test.mjs test/bench-shamblers.test.mjs test/gungen-deadvox-contract.test.mjs && node tools/zero-drift-check.mjs",
     "knip": "knip",
     "check:zero-drift": "node tools/zero-drift-check.mjs",
     "baseline:zero-drift": "node tools/zero-drift-check.mjs --write-baseline",

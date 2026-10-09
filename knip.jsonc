@@ -2,10 +2,6 @@
   "$schema": "./node_modules/knip/schema.json",
   "workspaces": {
     ".": {
-      "ignoreBinaries": [
-        // Jsonnet evaluation is the repository's shared Go tool invoked by the root compiler.
-        "go"
-      ],
       "entry": ["site/launcher.js!", "test/**/*.mjs", "testPool.ts", "tools/**/*.mjs"],
       "project": ["site/**/*.js!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"]
     },

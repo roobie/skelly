@@ -38,7 +38,7 @@ Reviews that find an amendment trail return FIX. Obsolete or superseded ADRs are
 
 ## Run and check
 
-Install the dependencies for repository-wide checks with `npm run setup`. Jsonnet compilation also requires Go; the minimum is declared by `tools/jsonnet/go.mod`, and CI's `.github/workflows/lint.yml`, `setup-go`, supplies its selected toolchain.
+Install the dependencies for repository-wide checks with `npm run setup`; setup fetches and verifies the pinned go-jsonnet binary used by the shared content compiler. Its release version and date and the supported archive hashes are pinned in `tools/jsonnet/runtime.json`, `version`, `released` and `sha256`.
 
 ```sh
 npm run setup
