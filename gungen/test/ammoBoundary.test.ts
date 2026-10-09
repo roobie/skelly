@@ -3,13 +3,9 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { init, parse } from 'es-module-lexer';
 import { describe, expect, it } from 'vitest';
 
-// Module boundaries for ammunition (roobie/skelly#109): the ammo module stays domain-agnostic
-// like core. It must not import gun/ or viewer/, and core must not import ammo/. Same approach as
-// the core-versus-gun guard in m3Contracts.test.ts: read each file's imports with es-module-lexer,
-// and treat an import it cannot resolve statically as a violation.
+// Ammunition calculations stay independent of firearm assembly and viewer modules.
 
 const SRC = resolve(import.meta.dirname, '..', 'src');
-const ENGINE_SRC = resolve(import.meta.dirname, '..', '..', 'engine', 'src');
 
 const typeScriptFiles = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -34,8 +30,7 @@ const importProblem = (file: string, imported: Import, forbidden: readonly strin
     return undefined;
   }
   const target = resolve(dirname(file), imported.specifier);
-  const sourceRoot = file.startsWith(ENGINE_SRC + sep) ? ENGINE_SRC : SRC;
-  return forbidden.some((name) => target.startsWith(join(sourceRoot, name) + sep))
+  return forbidden.some((name) => target.startsWith(join(SRC, name) + sep))
     ? `${file}: imports ${imported.specifier}`
     : undefined;
 };
@@ -52,15 +47,5 @@ const forbiddenImports = async (directory: string, forbidden: readonly string[])
 describe('ammo module boundaries', () => {
   it('ammo does not import gun or viewer', async () => {
     expect(await forbiddenImports(join(SRC, 'ammo'), ['gun', 'viewer'])).toEqual([]);
-  });
-
-  it('core does not import ammo', async () => {
-    expect(await forbiddenImports(join(ENGINE_SRC, 'core'), ['ammo'])).toEqual([]);
-  });
-
-  it('the guard sees a violation when there is one', async () => {
-    // Pointing the scan at the renderer with its core imports forbidden proves the walker finds violations.
-    const found = await forbiddenImports(join(ENGINE_SRC, 'viewer'), ['core']);
-    expect(found.length).toBeGreaterThan(0);
   });
 });

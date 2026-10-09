@@ -14,10 +14,6 @@ export const hexToSrgb = (hex: number): SrgbColor => [
   (hex & 0xff) / 255,
 ];
 
-/** Inverse of `hexToSrgb`, rounding each channel to the nearest 8-bit value. */
-export const srgbToHex = (c: SrgbColor): number =>
-  (Math.round(c[0] * 255) << 16) | (Math.round(c[1] * 255) << 8) | Math.round(c[2] * 255);
-
 const validColor = (c: SrgbColor): boolean => c.length === 3 && c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
 
 /** Returns the palette, throwing if any channel is not finite or lies outside [0,1]. */
@@ -249,13 +245,3 @@ export const resolveAppearance = (
       ...(options.slot === undefined ? {} : { partSlot: options.slot }),
     },
   });
-
-const own = <T>(table: Readonly<Record<string, T>> | undefined, key: string): T | undefined =>
-  table && Object.hasOwn(table, key) ? table[key] : undefined;
-
-/** Role-only geometry-check colour; explicitly finished solids keep their own material base colour. */
-export const solidColor = (palette: Palette, family: string, solidId: string, material?: string): SrgbColor =>
-  (material ? own(palette.materials, material) : undefined) ??
-  own(palette.specialColors, solidId) ??
-  own(palette.familyColors, family) ??
-  palette.fallbackColor;

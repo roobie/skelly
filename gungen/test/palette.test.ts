@@ -1,8 +1,9 @@
+import { solidColor, srgbToHex } from '@skelly/engine/core/appearance.ts';
 import { resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly } from '@skelly/engine/core/schema.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
-import { createPalette, GUN_PALETTE, hexToSrgb, solidColor, srgbToHex } from '../src/gun/palette.ts';
+import { createPalette, GUN_PALETTE, hexToSrgb } from '../src/gun/palette.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { loadCorpus, loadFixtures } from './helpers.ts';
 

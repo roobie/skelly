@@ -1235,12 +1235,10 @@ an implementation except the ones that belong to later packages (`Suggest`,
   barrel and muzzle device, at its `muzzle` port (`muzzlePortAnchor`). Frames
   are computed from the built part, so they follow params.
 
-**Palette.** `src/gun/palette.ts`: `GUN_PALETTE`, `createPalette` (throws on a
-channel that isn't finite or lies outside [0,1]), `solidColor(palette, role,
-solidId)` (special colour by solid id, then role colour, then the fallback),
-and `hexToSrgb`/`srgbToHex`. The viewer's old colours are reproduced
-bit-identically for every role that had one. Six roles that used to render as
-the `#888888` fallback now have colours (below).
+**Palette.** Firearm colour tables, material identities and finish mappings live
+in `src/gun/palette.ts`; shared colour conversion and role-only lookup live in
+`../engine/src/core/appearance.ts`. The viewer and exporter use the same
+appearance policy, while each domain supplies its own palette.
 
 **Decided (BR, 2026-09-30): materials + slots + role shade + finishes.** The palette is keyed by material ids with sRGB base colours; roles map to `metal`, `furniture`, or `accent` and apply bounded shade multipliers. Explicit solid material/slot wins, then part-owned material/slot, design finish, variant finish, and role default. Archetype finishes cover every slot; design or part may override. Finish maps survive load, editor save/reopen, viewer rendering, and shipped export. Magazine follows furniture because it is a polymer/wood exterior component. The revolver uses stainless metal with walnut grips; battle rifles use parkerized metal with walnut furniture. Magazines default to the metal slot; the AK's darkened blued-steel magazine reads black, while AR magazines resolve to anodized aluminium. Pump shotguns have no box magazine; their tube magazine is metal. The GLB carries material and slot metadata and shares materials by resolved colour. Role-only colours remain a viewer geometry-check mode. See `test/materialFinishes.test.ts`.
 
@@ -1386,10 +1384,8 @@ deadvox holds a model with +x forward and +y up
   count/pitch record. Port frames in `extras` are assembly space in u, as
   frozen; the node's own transform is part-local, in metres. The root's
   `extras.gungen` records the unit and `metresPerUnit`.
-- Materials: one per distinct colour, `baseColorFactor` in linear space
-  (standard sRGB transfer function), metallic 0, roughness 0.85. The writer has
-  its own copy of the special, role, fallback lookup, since core can't import
-  `src/gun/palette.ts#solidColor`; a test checks the two agree.
+- Materials: the writer and viewer share appearance resolution, so exported
+  materials follow the same domain palette and finish choices as the display.
 - Units: `METRES_PER_UNIT = 0.0115` (1u = 11.5 mm) is the gun domain's chosen
   calibration; its 5.5u magazine top is 63.25 mm. The Brownells listing's stated
   2.54 in (64.5 mm) STANAG-20 body depth corroborates that scale within one grid

@@ -63,7 +63,7 @@ a comment or a PR:
 
 - Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
   no lists, tables or values copied from code. A cited path is relative to the repo
-  root, the doc's subproject root (`deadvox/`, `gungen/`, `mobgen/`) when relevant,
+  root, the doc's subproject root (`deadvox/`, `engine/`, `gungen/`, `mobgen/`) when relevant,
   or the doc itself.
 - A "when" names its trigger: an item ID or an issue. No "today", "currently" or
   "newly". When your PR completes an item, resolve every doc line that names it.
@@ -90,7 +90,8 @@ a comment or a PR:
 Every coordinated work item (agent mail `X-Item`, branch, PR) has an ID:
 
 - **Feature:** `<subproject><number>`, one feature that becomes one PR on one branch.
-  Subprojects: `g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide or docs. Numbers
+  Subprojects: `g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide or docs; engine work uses
+  the `g` prefix because gungen is the engine's only consumer. Numbers
   count up per subproject. New work always gets a new number, even when it grows
   out of another feature. PR titles end with it, e.g. "(g26)".
 - **Round:** each dispatched piece of work on a feature is a round, and the round
