@@ -57,7 +57,7 @@ import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core
 import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { zombieFigure } from '../core/zombieFigure.ts';
-import type { ZombieRegion } from '../core/zombieRegions.ts';
+import { SEVERED_ITEM } from '../core/zombieRegionNames.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
   BACKGROUND_ZOMBIE_RATE,
@@ -216,16 +216,6 @@ const setSessionFirearmsSkillZeroHandling = (
 const VOCAL_NOISE_LIFETIME = 0.5;
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
 
-/** The item a severed shambler region leaves behind. */
-const SEVERED_ITEM: Readonly<Record<ZombieRegion, string>> = {
-  head: 'shambler_head',
-  torso: 'shambler_torso',
-  leftArm: 'shambler_left_arm',
-  rightArm: 'shambler_right_arm',
-  leftLeg: 'shambler_left_leg',
-  rightLeg: 'shambler_right_leg',
-};
-
 /** What the player is doing with the keyboard and mouse, read each tick. */
 export interface PlayerInputSample {
   readonly active: boolean;
@@ -324,6 +314,8 @@ export interface SessionOptions {
   onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
+    /** A hit drew blood: where it struck, along which line, and how hard. */
+    onWound?: (id: EntityId, zombie: Zombie, hit: HitImpulse, damage: number) => void;
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
     onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
     /** A hit knocked flesh out of an amalgam (its `carved` already lists `cells`). */
@@ -933,6 +925,7 @@ export const createSession = (options: SessionOptions) => {
         inventory.add(inventory.create(item), { kind: 'pile', pos });
       }
     },
+    onWound: (id, zombie, hit, damage) => options.zombieEffects?.onWound?.(id, zombie, hit, damage),
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
     onCarve: (id, zombie, cells, hit) => options.zombieEffects?.onCarve?.(id, zombie, cells, hit),
     onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),

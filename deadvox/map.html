@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <title>Deadvox playtest site map</title>
+    <title>Deadvox world review map</title>
     <style>
       * { box-sizing: border-box; }
       :root { color-scheme: light; font-family: system-ui, sans-serif; color: #202822; background: #d7ddd4; }
@@ -31,25 +31,37 @@
       #point { min-height: 76px; padding: 9px; background: #e2e5dc; border-left: 3px solid #7a825f; font-size: 12px; line-height: 1.5; }
       #point a { color: #285844; font-weight: 650; }
       #error { position: fixed; z-index: 3; left: 12px; bottom: 12px; max-width: 80%; color: #8b1720; background: #fff5ee; padding: 8px 10px; font-weight: 700; }
+      #close { display: none; }
+      body.map-overlay { overflow: hidden; }
+      body.map-overlay header { display: none; }
+      body.map-overlay #workspace { height: 100%; grid-template-columns: minmax(0, 1fr) minmax(220px, 270px); }
+      body.map-overlay #close { display: inline-block; }
       @media (max-width: 850px) {
         body { overflow: auto; }
         #workspace { height: auto; min-height: calc(100% - 46px); grid-template-columns: 1fr; }
         #stage { height: min(68vh, 680px); min-height: 390px; }
         #controls { overflow: visible; border-left: 0; border-top: 1px solid #a0a89e; }
+        body.map-overlay { overflow: hidden; }
+        body.map-overlay #workspace { height: 100%; min-height: 0; grid-template-columns: minmax(0, 1fr) 220px; }
+        body.map-overlay #stage { height: 100%; min-height: 0; }
+        body.map-overlay #controls { overflow: auto; border-top: 0; border-left: 1px solid #a0a89e; }
       }
     </style>
   </head>
   <body>
-    <header>DEADVOX · PLAYTEST SITE REVIEW MAP</header>
+    <header>DEADVOX · WORLD REVIEW MAP</header>
     <main id="workspace">
-      <section id="stage" aria-label="Top-down map of the playtest site">
+      <section id="stage" aria-label="Top-down review map of the current world">
         <canvas id="map"></canvas>
         <div id="map-label">PLAYTEST SITE · TOP VIEW</div>
         <div id="map-status" role="status">Loading authored world…</div>
         <div id="hint">Drag to pan · wheel to zoom · click for ground coordinates and a game link</div>
       </section>
       <aside id="controls">
-        <h1>Playtest site map</h1>
+        <div class="row" style="justify-content: space-between; align-items: center">
+          <h1>World review map</h1>
+          <button type="button" id="close">Close (Esc)</button>
+        </div>
         <p class="quiet">Seed <span id="seed"></span> · north is up · contours follow the generated ground</p>
         <h2>View</h2>
         <div class="row">

@@ -201,6 +201,6 @@ it('shows a refusal reason only when the messages option is on', () => {
     interruption: undefined,
     resting: false,
   });
-  expect(playPromptText(state, DEFAULT_HUD_OPTIONS)).toBe('');
+  expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: false }))).toBe('');
   expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true }))).toContain(reason);
 });

@@ -149,6 +149,45 @@ const INPUT_REPLAY_COLUMN_OVERFLOW_STOP_REASON =
   'a streamed-column batch exceeded the recording window; the recent replay was discarded';
 const inputReplayStoppedStatus = (reason: string): string => `Recording stopped: ${reason}`;
 
+const createReviewMapFrame = (debug: boolean): HTMLIFrameElement | undefined => {
+  if (!debug) {
+    return;
+  }
+  const frame = document.createElement('iframe');
+  frame.title = 'Current-world review map';
+  frame.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:10000;background:#d7ddd4';
+  frame.hidden = true;
+  document.body.append(frame);
+  return frame;
+};
+
+const installReviewMapMessageListener = (
+  frame: HTMLIFrameElement | undefined,
+  onKey: (message: Record<string, unknown>) => void,
+  onClose: () => void,
+): void => {
+  if (!frame) {
+    return;
+  }
+  globalThis.addEventListener('message', (event: MessageEvent<unknown>) => {
+    if (
+      event.origin !== globalThis.location.origin ||
+      event.source !== frame.contentWindow ||
+      typeof event.data !== 'object' ||
+      event.data === null ||
+      !('type' in event.data)
+    ) {
+      return;
+    }
+    const message = event.data;
+    if (message.type === 'deadvox-review-map-key') {
+      onKey(message as Record<string, unknown>);
+    } else if (message.type === 'deadvox-review-map-close') {
+      onClose();
+    }
+  });
+};
+
 interface InputReplayStatusOptions {
   readonly replayPlayer: InputReplayPlayer | undefined;
   readonly inputRecorder: InputReplayRecorder | undefined;
@@ -561,10 +600,15 @@ export const startPlay = (
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
-    // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
+    // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ZombieMeshes leaves
+    // them undefined.
     zombieEffects: {
+      onWound: (_id, _zombie, hit, damage) => view.gore.spray(hit, damage),
       onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
-      onCarve: (id, zombie, cells, hit) => zombieMeshes.zombieCarved?.(id, zombie, cells, hit),
+      onCarve: (id, zombie, cells, hit) => {
+        zombieMeshes.zombieCarved?.(id, zombie, cells, hit);
+        view.gore.carved(hit, cells.length);
+      },
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
@@ -934,6 +978,64 @@ export const startPlay = (
     },
     import: importReplay,
   };
+  let reviewMapOpen = false;
+  const reviewMapFrame = createReviewMapFrame(config.debug);
+  const toggleReviewMap = (open = !reviewMapOpen): void => {
+    if (open === reviewMapOpen || !reviewMapFrame) {
+      return;
+    }
+    reviewMapOpen = open;
+    reviewMapFrame.hidden = !open;
+    if (open) {
+      debugTools?.closeMenus();
+      const mapUrl = new URL('map.html', globalThis.location.href);
+      mapUrl.searchParams.set('overlay', '1');
+      mapUrl.searchParams.set('debug', '1');
+      mapUrl.searchParams.set('seed', String(config.seed));
+      mapUrl.searchParams.set('site', config.site);
+      mapUrl.searchParams.set('storeys', String(config.storeys));
+      if (config.density !== null) {
+        mapUrl.searchParams.set('density', String(config.density));
+      }
+      const x = body.pos[0] * s;
+      const z = body.pos[2] * s;
+      mapUrl.searchParams.set('centerX', String(x));
+      mapUrl.searchParams.set('centerZ', String(z));
+      mapUrl.searchParams.set('playerX', String(x));
+      mapUrl.searchParams.set('playerZ', String(z));
+      mapUrl.searchParams.set('playerYaw', String(input.yaw));
+      reviewMapFrame.src = mapUrl.href;
+      input.unlock();
+      input.cancel();
+    } else {
+      reviewMapFrame.src = 'about:blank';
+    }
+    syncMenuState();
+    if (!open && started && !input.locked) {
+      resume();
+    }
+    keyboardInput.sync();
+  };
+  const routeReviewMapKey = (message: Record<string, unknown>) => {
+    if (typeof message.code !== 'string' || (message.phase !== 'down' && message.phase !== 'up')) {
+      return;
+    }
+    const keyEvent = {
+      code: message.code,
+      shiftKey: message.shiftKey === true,
+      altKey: message.altKey === true,
+      ctrlKey: message.ctrlKey === true,
+      metaKey: message.metaKey === true,
+      repeat: message.repeat === true,
+      isComposing: message.isComposing === true,
+    };
+    if (message.phase === 'down') {
+      keyboardInput.pressForwarded(keyEvent);
+    } else {
+      keyboardInput.releaseForwarded(keyEvent);
+    }
+  };
+  installReviewMapMessageListener(reviewMapFrame, routeReviewMapKey, () => toggleReviewMap(false));
   debugTools = debugModule?.attachDebugTools({
     engine,
     weather,
@@ -945,6 +1047,7 @@ export const startPlay = (
     sim,
     input,
     debugModifierHeld: () => keyboardInput.held('debug.gate'),
+    reviewMap: { isOpen: () => reviewMapOpen, toggle: () => toggleReviewMap() },
     impactLaser: {
       enabled: () => debugLaserEnabled,
       toggle: () => {
@@ -1006,6 +1109,7 @@ export const startPlay = (
       inventoryOpen: screen.isOpen,
       readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
+      reviewMapOpen,
       pointerLocked: input.locked || Boolean(options.replay),
       dead: sim.dead !== undefined,
       pointerLockChanged,
@@ -1419,6 +1523,9 @@ export const startPlay = (
     return debugTools?.noclip || spectatorCameraEnabled ? 'noclip' : 'play';
   };
   const inputContext = (): InputContext => {
+    if (reviewMapOpen) {
+      return 'review-map';
+    }
     if (options.saveController && !options.saveController.isEntered) {
       return 'title';
     }
@@ -1441,7 +1548,13 @@ export const startPlay = (
     quickbarInput.cancel();
     hintToggleInput.cancel();
   };
-  keyboardInput.escape = () => reading.close();
+  keyboardInput.escape = () => {
+    if (reviewMapOpen) {
+      toggleReviewMap(false);
+    } else {
+      reading.close();
+    }
+  };
   const inventoryTabCommand = (action: string): boolean => {
     const tab = inventoryTabForAction(action);
     if (!tab) {
@@ -1557,6 +1670,10 @@ export const startPlay = (
   const handleDebugCommand = (action: string): boolean => {
     if (!(action.startsWith('debug.') || action.startsWith('spawn.'))) {
       return false;
+    }
+    if (action === 'debug.review-map-toggle') {
+      toggleReviewMap();
+      return true;
     }
     debugTools?.handleAction(action);
     syncMenuState();
@@ -2796,6 +2913,11 @@ export const startPlay = (
     hintToggleInput.update(now);
   };
 
+  // Blood holds still while the game is paused.
+  const updateGore = (dt: RealSeconds): void => {
+    view.gore.update(sim.paused ? 0 : dt, engine.isSolid, { zombies: zombieStore, listener: body.pos });
+  };
+
   const frame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
@@ -2817,6 +2939,7 @@ export const startPlay = (
     advancePendingItemThrow();
     syncThrowingStance();
     caseEffects.update(dt, engine.isSolid);
+    updateGore(dt);
     impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = realNow() - mark;
     options.saveController?.afterFrame();
