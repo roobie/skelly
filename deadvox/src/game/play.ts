@@ -269,6 +269,9 @@ const handlingPresentationFor = (
   job: Readonly<LongJob> | undefined,
   queue: HandlingPresentationSource,
   inventory: Inventory,
+  simTime: number,
+  clockRatio: number,
+  compressionActive: boolean,
   throwCharge?: HandlingPresentationSource['throwCharge'],
 ): HandlingPresentationSource => {
   if (throwCharge) {
@@ -290,12 +293,19 @@ const handlingPresentationFor = (
   } else {
     return { ...queue, cancelLabel: queue.cancelLabel ?? `${stopLabel} cancels` };
   }
+  const elapsed =
+    !compressionActive
+      ? job.elapsed
+      : Math.min(
+          job.duration,
+          job.elapsed + Math.max(0, simTime - job.last) * (job.jobType === 'reading' ? clockRatio : 1),
+        );
   const action: TimedActionPresentation = {
     kind: job.jobType,
     ...(job.jobType === 'reading' ? { ownerUid: job.bookUid } : {}),
     label,
     duration: job.duration,
-    elapsed: job.elapsed,
+    elapsed,
     stopped: job.stopped,
   };
   return timedActionHandlingPresentation(action, stopLabel);
@@ -2957,6 +2967,9 @@ export const startPlay = (
       sim.actions.job,
       queue,
       inventory,
+      sim.time,
+      sim.clock.ratio,
+      compression.active,
       itemThrowStartedAt === undefined
         ? undefined
         : {
