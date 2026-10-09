@@ -92,6 +92,21 @@ describe('playtest observer', () => {
     expect(otherAnchor.keyItems).toEqual({});
   });
 
+  it('records reads only for key item types', () => {
+    const metrics = new SessionMetrics(1);
+    const observer = new PlaytestObserver(metrics, {
+      beats: [],
+      keyLoot: new Map([['0,0,0', new Set(['rag'])]]),
+    });
+
+    observer.readItem('rag', 0);
+    observer.readItem('matches', 0);
+
+    const { keyItems } = metrics.toJSON();
+    expect(keyItems.rag?.read).toBeDefined();
+    expect(keyItems).not.toHaveProperty('matches');
+  });
+
   it('keeps a metrics exception from escaping observer work into the simulation frame', () => {
     const metrics = new SessionMetrics(1);
     metrics.recordPocketUse = () => {

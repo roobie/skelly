@@ -57,10 +57,14 @@ interruption figures (`src/game/playtestTools.ts`, `SessionMetricsV1`). The map
 adds only high-level records for the first time each beat is reached and each
 key item is looted or read. A read counts for any copy of a key item, wherever
 the tester found it; a loot counts only when the item leaves its own anchored
-furniture. Playtest 1 adds no further detailed metric collection. The beats are the `beat` areas in the playtest map
-(`maps/playtest.tmj`), and the key items are its fixed loot marked `key`
-(`src/content/base/layouts-playtest.json`). Nothing in the simulation reads
-either; they only feed the metrics.
+furniture. Playtest 1 adds no further detailed metric collection.
+
+The beats are `beat` areas in the playtest map (`maps/playtest.tmj`), and the
+key items are its fixed loot marked `key`
+(`src/content/base/layouts-playtest.json`). `AuthoredSite`
+(`src/core/authoredSite.ts`) and `PlaytestObserver`
+(`src/game/playtestObserver.ts`) read these marks only to feed the export.
+Nothing in the simulation reads either; they only feed the metrics.
 
 ## Findings
 
