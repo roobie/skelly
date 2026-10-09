@@ -23,7 +23,7 @@ import { boundsOfPoints } from './geometry.ts';
 import { compose, type Mat3, type Transform, type Vec3 } from './math.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from './mesh.ts';
 import { portFrame } from './resolve.ts';
-import type { PartDef, PortDef } from './schema.ts';
+import type { PartDef, PartInstance, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
 /** glTF node name of a part: its id and its registry key (`PartInstance.family`), e.g. `barrel:barrel`. */
@@ -176,6 +176,7 @@ type Json = Record<string, unknown>;
 interface PartExport {
   readonly id: string;
   readonly family: string;
+  readonly appearance?: PartInstance['appearance'];
   readonly def: PartDef;
   readonly placed: Transform;
 }
@@ -256,7 +257,18 @@ export const exportGlb: ExportGlb = (input) => {
     .flatMap((id) => {
       const def = resolved.defs.get(id);
       const placed = resolved.placed.get(id);
-      return def && placed ? [{ id, family: resolved.assembly.parts[id]!.family, def, placed }] : [];
+      const instance = resolved.assembly.parts[id];
+      return def && placed && instance
+        ? [
+            {
+              id,
+              family: instance.family,
+              ...(instance.appearance ? { appearance: instance.appearance } : {}),
+              def,
+              placed,
+            },
+          ]
+        : [];
     });
 
   const bin = new BinaryBuffer();
@@ -287,7 +299,7 @@ export const exportGlb: ExportGlb = (input) => {
   const rootChildren = (nodes[0] as { children: number[] }).children;
   const appearanceFor = (part: PartExport, solid: DisplayItem['solids'][number]) =>
     resolveAppearance(palette, part.def.family, solid.id, {
-      context: appearanceContext,
+      context: part.appearance ?? appearanceContext,
       overrides: {
         ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
         ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),
@@ -359,7 +371,7 @@ export const exportGlb: ExportGlb = (input) => {
       meshes.push({ name, primitives });
     }
     const appearance = resolveAppearance(palette, part.def.family, '', {
-      context: appearanceContext,
+      context: part.appearance ?? appearanceContext,
       overrides: {
         ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
         ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),

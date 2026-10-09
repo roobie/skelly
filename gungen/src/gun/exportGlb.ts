@@ -20,6 +20,7 @@ import {
   attachmentMetadata,
   attachmentMountSlot,
   attachmentSlots,
+  withAttachmentInstanceAppearances,
 } from './attachments.ts';
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
@@ -391,7 +392,7 @@ export const exportGunGlb = (
   options: GunExportOptions = {},
 ): GunExportResult => {
   const { includeAttachmentCompatibility = false, ...metadata } = options;
-  const resolved = resolve(assembly, gunDomain);
+  const resolved = withAttachmentInstanceAppearances(resolve(assembly, gunDomain));
   // Broken assemblies get the core writer's structure report before anchor selection.
   if (resolved.issues.length > 0 || resolved.placed.size < Object.keys(assembly.parts).length) {
     const probe = exportGlb({ resolved, palette: GUN_PALETTE, appearance, asset });
