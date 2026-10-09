@@ -10,7 +10,7 @@ export const rectDistance = (r, x, z, cellSize = 0.5) => {
 };
 export const hasSegment = (points) =>
   points.some((point, i) => i > 0 && (point[0] !== points[i - 1][0] || point[1] !== points[i - 1][1]));
-export const polylineDistance = ([x, z], points) => {
+export const polylineDistanceAt = (x, z, points) => {
   let closest = Number.POSITIVE_INFINITY;
   for (let i = 1; i < points.length; i++) {
     const [ax, az] = points[i - 1];
@@ -23,6 +23,8 @@ export const polylineDistance = ([x, z], points) => {
   }
   return closest;
 };
+
+export const polylineDistance = ([x, z], points) => polylineDistanceAt(x, z, points);
 
 export const profileHeight = (layout, x, z) => {
   let rise = 0;
