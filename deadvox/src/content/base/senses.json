@@ -6,7 +6,8 @@
         "speedMetresPerSimSecond": 1,
         "hearingRangeScale": 0.5,
         "sightRangeScale": 0.5,
-        "eyeDropMetres": 0.7
+        "eyeDropMetres": 0.7,
+        "bodyHeightMetres": 1.2
       },
       "wall": {
         "hearingRangeScale": 0.5,

@@ -4,7 +4,13 @@ import { GameAudio } from '../src/game/audio.ts';
 
 const senseTuning = {
   id: 'fixture_player',
-  crouch: { speedMetresPerSimSecond: simRate(0.8), hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
+  crouch: {
+    speedMetresPerSimSecond: simRate(0.8),
+    hearingRangeScale: 0.5,
+    sightRangeScale: 0.5,
+    eyeDropMetres: 0.6,
+    bodyHeightMetres: 1.2,
+  },
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
   light: {
     playerDaySightScale: 0,

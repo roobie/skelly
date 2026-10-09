@@ -3,6 +3,7 @@ read_if:
   - you decide how sunlight and shadows should read in play
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
+  - you change the player's collision body, or what crouching lets the player fit through
   - you're changing world block shapes or slab geometry
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
@@ -111,6 +112,17 @@ about eight times as many chunks at the same view radius, plus a redraw of
 building templates. The frame budget and why the default is 96 m are in
 [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks). The choice is implemented by
 `src/core/scale.ts`, `BLOCK_SIZE`.
+
+Crouching lowers the player's collision body as well as the eye, so a crouched
+player fits through openings a standing one can't. Crawl spaces and the crouch
+hole planned for the FOB's east side (d207-2) rely on this. Standing up is
+refused while the standing body would intersect a solid block overhead, and the
+player stays crouched, so a stance change never leaves the body inside a
+ceiling. A save keeps the stance and the session derives the body height from
+it, so retuned content applies to saved games. The crouched height is content
+beside the eye drop (`src/content/base/senses.json`, `crouch.bodyHeightMetres`,
+required by `src/core/schema.ts`, `SenseSchema`). See `src/game/session.ts`,
+`settleStance`. Zombie bodies don't crouch.
 
 ### Block shapes
 

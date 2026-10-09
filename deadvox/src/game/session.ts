@@ -39,7 +39,7 @@ import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
-import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
+import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
@@ -365,6 +365,35 @@ const firearmsSkillLevel = (character: Character): number =>
 const nextCrouchState = (togglePressed: boolean, noclip: boolean, crouching: boolean): boolean =>
   togglePressed && !noclip ? !crouching : crouching;
 
+interface StanceBody {
+  readonly body: Body;
+  readonly standingHeight: number;
+  readonly crouchedHeight: number;
+  readonly isSolid: SolidAt;
+}
+
+const setStanceHeight = (stance: StanceBody, crouching: boolean): void => {
+  stance.body.height = crouching ? stance.crouchedHeight : stance.standingHeight;
+};
+
+/** Crouching shrinks the collision body; standing up is refused, keeping the crouch, without room overhead. */
+const settleStance = (
+  stance: StanceBody,
+  crouching: boolean,
+  wanted: boolean,
+  refuse: (text: string) => void,
+): boolean => {
+  if (wanted === crouching) {
+    return crouching;
+  }
+  if (!wanted && bodyOverlapsTerrain({ ...stance.body, height: stance.standingHeight }, stance.isSolid)) {
+    refuse('No room to stand up');
+    return crouching;
+  }
+  setStanceHeight(stance, wanted);
+  return wanted;
+};
+
 const resolvePlayerEyeHeight = (
   unconscious: boolean,
   proneHeight: number,
@@ -483,6 +512,18 @@ export const createSession = (options: SessionOptions) => {
   let crouching = restoredPlayer?.crouching ?? false;
   const body: Body =
     restoredPlayer?.body ?? createPlayerBody(scale, options.spawn[0], options.spawn[1], options.spawn[2]);
+  // The stance sets the collision height, so a crouched save loads crouched and retuned content applies.
+  const stance: StanceBody = {
+    body,
+    standingHeight: PLAYER.height / s,
+    crouchedHeight: senseTuning.crouch.bodyHeightMetres / s,
+    isSolid,
+  };
+  setStanceHeight(stance, crouching);
+  const updateStance = (): void => {
+    const wanted = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
+    crouching = settleStance(stance, crouching, wanted, options.refusal ?? options.notice);
+  };
   const restoredLook: RestoredLook | undefined = restoredPlayer && {
     yaw: restoredPlayer.yaw,
     pitch: restoredPlayer.pitch,
@@ -1416,7 +1457,7 @@ export const createSession = (options: SessionOptions) => {
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
       clearSunExposureCache();
-      crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
+      updateStance();
       rest.frame(dt, until);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
@@ -1426,7 +1467,7 @@ export const createSession = (options: SessionOptions) => {
     },
     frameReplay: (realSeconds: number): void => {
       clearSunExposureCache();
-      crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
+      updateStance();
       rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
