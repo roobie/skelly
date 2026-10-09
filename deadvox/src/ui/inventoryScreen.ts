@@ -928,7 +928,7 @@ export class InventoryScreen {
     }
     const availableWidth = Math.max(1, body.clientWidth - splitter.offsetWidth - details.offsetWidth);
     const minRatio = Math.min(0.5, 220 / availableWidth);
-    const maxRatio = Math.max(0.5, 1 - 362 / availableWidth);
+    const maxRatio = Math.max(minRatio, Math.min(0.5, 1 - 362 / availableWidth));
     this.splitRatio = Math.max(minRatio, Math.min(maxRatio, this.splitRatio));
     body.style.setProperty('--inv-you-fr', `${this.splitRatio}fr`);
     body.style.setProperty('--inv-around-fr', `${1 - this.splitRatio}fr`);
@@ -1277,7 +1277,7 @@ export class InventoryScreen {
   private pointerMove(e: PointerEvent): void {
     if (this.splitDrag) {
       const minRatio = Math.min(0.5, 220 / this.splitDrag.availableWidth);
-      const maxRatio = Math.max(0.5, 1 - 362 / this.splitDrag.availableWidth);
+      const maxRatio = Math.max(minRatio, Math.min(0.5, 1 - 362 / this.splitDrag.availableWidth));
       this.splitRatio = Math.max(
         minRatio,
         Math.min(
