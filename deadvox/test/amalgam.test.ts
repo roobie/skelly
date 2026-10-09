@@ -204,6 +204,7 @@ interface ObstacleResult {
   crossed: boolean;
   leftGround: boolean;
   maxZ: number;
+  stalled: boolean;
   mode: string;
 }
 
@@ -260,19 +261,28 @@ const runObstacleCase = (
   const id = simulation.add(configuredType, [centerX, 1, startZ], [0, 0, 1]);
   let crossed = false;
   let leftGround = false;
+  let stalled = false;
+  let stalledTicks = 0;
+  let previousZ = startZ;
   let maxZ = Number.NEGATIVE_INFINITY;
-  const maxTicks = typeId === 'amalgam' ? 600 : 1200;
-  for (let tick = 0; tick < maxTicks; tick++) {
+  for (let tick = 0; tick < 1200; tick++) {
     simulation.tick(1 / 60);
     const { body } = simulation.store.get(id)!;
-    crossed ||= body.pos[2] > 2.5;
+    const [, , z] = body.pos;
+    crossed ||= z > 2.5;
     leftGround ||= !body.onGround;
-    maxZ = Math.max(maxZ, body.pos[2]);
+    maxZ = Math.max(maxZ, z);
+    stalledTicks = z <= previousZ + 1e-8 ? stalledTicks + 1 : 0;
+    previousZ = z;
+    if (typeId === 'amalgam' && stalledTicks >= 60) {
+      stalled = true;
+      break;
+    }
     if (typeId === 'shambler' && crossed) {
       break;
     }
   }
-  return { barrierSolid, crossed, leftGround, maxZ, mode: simulation.store.get(id)!.mode };
+  return { barrierSolid, crossed, leftGround, maxZ, stalled, mode: simulation.store.get(id)!.mode };
 };
 
 describe('amalgam body and combat seam', () => {
@@ -535,6 +545,7 @@ describe('amalgam body and combat seam', () => {
     const amalgam = runObstacleCase(kind, 'amalgam');
     expect(amalgam.barrierSolid).toBe(true);
     expect(amalgam.mode).toBe('chase');
+    expect(amalgam.stalled).toBe(true);
     expect(amalgam.maxZ).toBeGreaterThan(-30);
     expect(amalgam.crossed).toBe(false);
     expect(amalgam.leftGround).toBe(false);

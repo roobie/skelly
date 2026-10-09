@@ -29,13 +29,13 @@ not a second hand-maintained section table here.
 
 ## Content test registries
 
-Fixture builders include only the content an assertion exercises. Keep a full-pack
-registry when a contract depends on cross-file references or reachability; share
-that validated registry across related assertions rather than rebuilding it. This
-keeps unrelated validation work from dominating tests without removing integration
-coverage. See `test/content.test.ts`, `templateBase`; `test/audioGunshot.test.ts`,
-`baseRegistry`; `test/disassembly.test.ts`, `fixtureBuild`; and
-`test/firearmSave.test.ts`, `fixtureRegistry`.
+Fixture builders include only the content an assertion exercises. When a contract needs
+cross-file references or reachability, share one validated full-pack registry read-only;
+a test that changes content copies each registry section it changes. This keeps unrelated
+validation work from dominating tests while preventing one assertion's changes from
+leaking into another. See `test/content.test.ts`, `templateBase`;
+`test/audioGunshot.test.ts`, `baseRegistry`; `test/disassembly.test.ts`, `fixtureBuild`;
+and `test/firearmSave.test.ts`, `fixtureRegistry`.
 
 ## Exterior shell continuity
 

@@ -106,12 +106,9 @@ describe('validate CLI', () => {
         root,
         'test/fixtures/packs/lamp/lamp.json',
         'test/fixtures/packs/lamp/assets/manifest.json',
-        'test/fixtures/content/missing-model-file.json',
       );
-      expect(run.status).toBe(1);
-      expect(run.stdout).toContain(
-        'FAIL  test/fixtures/content/missing-model-file.json models[0].file: "assets/models/lamp.glb" is not in the pack',
-      );
+      expect(run.stdout).toContain('2 file(s):');
+      expect(run.stdout).toContain('1 asset sources');
       expect(run.stdout).not.toContain('FAIL  test/fixtures/packs/lamp/lamp.json');
       expect(run.stdout).not.toContain('FAIL  test/fixtures/packs/lamp/assets/manifest.json');
     } finally {

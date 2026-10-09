@@ -61,9 +61,10 @@ describe('authored disassembly yields', () => {
   });
 
   it('uses indexed usable tool qualities and excludes a ruined provider', () => {
-    expect(registry.items.get('kitchen_knife')?.tool?.qualities.cutting).toBeGreaterThan(0);
-    const radio = registry.items.get('portable_radio')!;
-    registry.items.set('portable_radio', {
+    const testRegistry = { ...registry, items: new Map(registry.items) };
+    expect(testRegistry.items.get('kitchen_knife')?.tool?.qualities.cutting).toBeGreaterThan(0);
+    const radio = testRegistry.items.get('portable_radio')!;
+    testRegistry.items.set('portable_radio', {
       ...radio,
       salvage: undefined,
       disassembly: {
@@ -80,7 +81,7 @@ describe('authored disassembly yields', () => {
         ],
       },
     });
-    const inventory = new Inventory(registry);
+    const inventory = new Inventory(testRegistry);
     const position: [number, number, number] = [0, 0, 0];
     const reach = bindReach({ inventory, position, blockSize: 0.5 });
     const source = inventory.create('portable_radio');
@@ -89,7 +90,7 @@ describe('authored disassembly yields', () => {
     expect(inventory.add(source, { kind: 'pile', pos: position })).toBe(true);
     expect(inventory.add(ruinedKnife, { kind: 'pile', pos: position })).toBe(true);
 
-    const plan = planDisassembly(source, reach(), new Character(registry));
+    const plan = planDisassembly(source, reach(), new Character(testRegistry));
     expect(plan?.toolLevels).toEqual({ cutting: 0 });
     expect(plan?.outputs).toEqual([{ item: 'scrap_metal', count: 1 }]);
   });
