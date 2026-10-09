@@ -74,6 +74,7 @@ games or restored saves. See `src/debug/index.ts`, `attachDebugTools`.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture). With `debug=1`, use the south garden gate, then go east around the wall to the range's west end; the rack and shooting table are there, and targets are east. Registry-derived stock is in `src/game/testHouseRange.ts`, `testHouseRangeStock`.
 - `voicePitch=<factor>` and `voicePitchLarge=<factor>` on `?site=voice_size&debug=1` tune figure pitch anchors. `src/game/shamblerAudio.ts`, `debugVoicePitch`, ignores them on other sites or without debug mode.
 - `firearmsCombat=<level>` on a fresh debug world sets the authored firearms-combat skill range (`firearms_combat`). See `src/core/character.ts`, `SKILL_LEVEL_MIN`, `SKILL_LEVEL_MAX` and `SKILL_LEVEL_LEGENDARY`, and `src/debug/debugFirearmsSkill.ts`, `setDebugFirearmsSkill`.
+- `inventoryManagement=<level>` on a fresh debug world sets the Inventory Management skill (`inventory_management`). See `src/debug/debugInventoryManagementSkill.ts`, `setDebugInventoryManagementSkill`.
 - `hotcheck=1`: world fragments whose colour is NaN, infinite, negative or
   above 8 are painted by material (legend in the debug panel); full / half / checker fill =
   NaN / Inf-or->8 / negative. It runs after fog.

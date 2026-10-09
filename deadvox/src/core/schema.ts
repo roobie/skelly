@@ -1158,7 +1158,7 @@ const SkillSchema = pipe(
               strictObject({
                 practice: optional(NonNegative),
                 practicePerSimSecond: optional(NonNegativeSimRate),
-                tier: SkillLevel,
+                tier: optional(SkillLevel),
               }),
               check(
                 (activity) => (activity.practice === undefined) !== (activity.practicePerSimSecond === undefined),
@@ -1167,6 +1167,12 @@ const SkillSchema = pipe(
             ),
           ),
         ),
+      }),
+    ),
+    inventory: optional(
+      strictObject({
+        handlingFactorFloor: Fraction,
+        handlingFactorHalfLifeLevels: Positive,
       }),
     ),
     combat: optional(
@@ -1206,7 +1212,7 @@ const SkillSchema = pipe(
       }),
     ),
   }),
-  check(({ training, id, combat }) => {
+  check(({ training, id, combat, inventory }) => {
     const activity = (activityId: string, field: 'practice' | 'practicePerSimSecond') =>
       training?.activities?.[activityId]?.[field] !== undefined;
     const complete =
@@ -1217,7 +1223,8 @@ const SkillSchema = pipe(
           activity('handling', 'practice') &&
           activity('shot', 'practice') &&
           activity('hit', 'practice'))) &&
-      (id !== 'melee_combat' || (combat?.melee !== undefined && activity('block', 'practice')));
+      (id !== 'melee_combat' || (combat?.melee !== undefined && activity('block', 'practice'))) &&
+      (id !== 'inventory_management' || (inventory !== undefined && activity('handling', 'practice')));
     const firearm = combat?.firearms;
     const melee = combat?.melee;
     return (
@@ -1226,6 +1233,10 @@ const SkillSchema = pipe(
       (!melee || melee.blockChanceMinimum + melee.blockChanceRange <= 1)
     );
   }, 'missing required skill tuning or effect range exceeds one'),
+  check(
+    ({ id, training }) => id !== 'inventory_management' || training?.activities?.handling?.tier === undefined,
+    'inventory-management handling activity must be untiered',
+  ),
 );
 const SiteGenerationSchema = strictObject({
   id: Id,

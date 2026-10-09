@@ -189,15 +189,15 @@ const rotateByQuaternion = (q: readonly number[], v: Vec3): Vec3 => {
 };
 
 describe('glb export: axes and units', () => {
-  it('calibrates authored STANAG depth against its millimetre reference within one grid step', () => {
+  it('calibrates the shared STANAG top against Brownells listed body depth within one grid step', () => {
     const stanag = FAMILIES.magazine!.build({ length: 'M', profile: 'stanag-curved' });
     const upperBody = stanag.solids.find(({ id }) => id === 'upper-body')!;
     const [min, max] = localSolidBounds(upperBody);
     const topDepthUnits = max[0]! - min[0]!;
     const authoredDepthMm = topDepthUnits * METRES_PER_UNIT * 1000;
-    const sourcedDepthMm = 63;
+    const listedBodyDepthMm = 64.5;
     const gridStepMm = gunDomain.units.grid * METRES_PER_UNIT * 1000;
-    expect(Math.abs(authoredDepthMm - sourcedDepthMm)).toBeLessThanOrEqual(gridStepMm);
+    expect(Math.abs(authoredDepthMm - listedBodyDepthMm)).toBeLessThanOrEqual(gridStepMm);
     expect(METRES_PER_UNIT).toBe(gunDomain.units.metresPerUnit);
   });
 
@@ -374,39 +374,36 @@ describe('glb export: meshes', () => {
     );
   });
 
-  it('exports AK and pump receiver primitives with the same closed merged meshes', () => {
-    const samples = [
-      { designName: 'archetype-ak', group: 'receiver-ak' },
-      { designName: 'archetype-pump-shotgun', group: 'receiver-pump' },
-    ];
-    for (const { designName, group } of samples) {
-      const model = exported(design(designName), ASSET, designName.replace('archetype-', ''));
-      const def = model.resolved.defs.get('receiver')!;
-      const solids = (def.displaySolids ?? def.solids).filter((solid) => solid.display?.mergeGroup === group);
-      const expectedMesh = meshForSolidGroup(solids);
-      expectWatertightMesh(expectedMesh, `${designName}: source topology`);
-      const node = model.read.json.nodes.find((entry) => entry.extras?.part === 'receiver')!;
-      const primitive = model.read.json.meshes[node.mesh!]!.primitives.find(
-        (entry) => (entry.extras as Record<string, unknown> | undefined)?.mergeGroup === group,
-      )!;
-      const positions = model.read.floats(primitive.attributes.POSITION);
-      const indices = glbIndices(model.read, primitive.indices);
-      expect(indices).toEqual(expectedMesh.indices);
-      near(
-        Array.from(positions),
-        Array.from(expectedMesh.positions, (value) => value * S),
-        7,
-      );
-      expectWatertightMesh(
-        {
-          positions: Float32Array.from(positions, (value) => value / S),
-          normals: model.read.floats(primitive.attributes.NORMAL),
-          indices,
-          triangleCount: indices.length / 3,
-        },
-        `${designName}: exported topology`,
-      );
-    }
+  it.each([
+    { designName: 'archetype-ak', group: 'receiver-ak' },
+    { designName: 'archetype-pump-shotgun', group: 'receiver-pump' },
+  ])('exports the $group receiver as the same closed merged mesh', ({ designName, group }) => {
+    const model = exported(design(designName), ASSET, designName.replace('archetype-', ''));
+    const def = model.resolved.defs.get('receiver')!;
+    const solids = (def.displaySolids ?? def.solids).filter((solid) => solid.display?.mergeGroup === group);
+    const expectedMesh = meshForSolidGroup(solids);
+    expectWatertightMesh(expectedMesh, `${designName}: source topology`);
+    const node = model.read.json.nodes.find((entry) => entry.extras?.part === 'receiver')!;
+    const primitive = model.read.json.meshes[node.mesh!]!.primitives.find(
+      (entry) => (entry.extras as Record<string, unknown> | undefined)?.mergeGroup === group,
+    )!;
+    const positions = model.read.floats(primitive.attributes.POSITION);
+    const indices = glbIndices(model.read, primitive.indices);
+    expect(indices).toEqual(expectedMesh.indices);
+    near(
+      Array.from(positions),
+      Array.from(expectedMesh.positions, (value) => value * S),
+      7,
+    );
+    expectWatertightMesh(
+      {
+        positions: Float32Array.from(positions, (value) => value / S),
+        normals: model.read.floats(primitive.attributes.NORMAL),
+        indices,
+        triangleCount: indices.length / 3,
+      },
+      `${designName}: exported topology`,
+    );
   });
 
   it('draws normal solids individually and section shells as one merged primitive', () => {
@@ -422,32 +419,30 @@ describe('glb export: meshes', () => {
     }
   });
 
-  it('matches mesh.ts bounds times the metre scale for every solid', () => {
-    for (const id of Object.keys(ar.resolved.assembly.parts)) {
-      const node = json.nodes.find((n) => n.extras?.part === id)!;
-      const prims = json.meshes[node.mesh!]!.primitives;
-      displayItems(id).forEach(({ mesh }, i) => {
-        const lo = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
-        const hi = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
-        for (let v = 0; v < mesh.positions.length; v += 3) {
-          for (let k = 0; k < 3; k++) {
-            lo[k] = Math.min(lo[k]!, mesh.positions[v + k]! * S);
-            hi[k] = Math.max(hi[k]!, mesh.positions[v + k]! * S);
-          }
+  it.each(Object.keys(ar.resolved.assembly.parts))('matches mesh.ts bounds times the metre scale for %s', (id) => {
+    const node = json.nodes.find((n) => n.extras?.part === id)!;
+    const prims = json.meshes[node.mesh!]!.primitives;
+    displayItems(id).forEach(({ mesh }, i) => {
+      const lo = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+      const hi = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+      for (let v = 0; v < mesh.positions.length; v += 3) {
+        for (let k = 0; k < 3; k++) {
+          lo[k] = Math.min(lo[k]!, mesh.positions[v + k]! * S);
+          hi[k] = Math.max(hi[k]!, mesh.positions[v + k]! * S);
         }
-        const acc = json.accessors[prims[i]!.attributes.POSITION]!;
-        near(acc.min!, lo, 7);
-        near(acc.max!, hi, 7);
-        const positions = ar.read.floats(prims[i]!.attributes.POSITION);
-        expect(positions.length).toBe(mesh.positions.length);
-        near(
-          Array.from(positions).slice(0, 30),
-          Array.from(mesh.positions.slice(0, 30)).map((x) => x * S),
-          7,
-        );
-        expect(json.accessors[prims[i]!.indices]!.count).toBe(mesh.indices.length);
-      });
-    }
+      }
+      const acc = json.accessors[prims[i]!.attributes.POSITION]!;
+      near(acc.min!, lo, 7);
+      near(acc.max!, hi, 7);
+      const positions = ar.read.floats(prims[i]!.attributes.POSITION);
+      expect(positions.length).toBe(mesh.positions.length);
+      near(
+        Array.from(positions).slice(0, 30),
+        Array.from(mesh.positions.slice(0, 30)).map((x) => x * S),
+        7,
+      );
+      expect(json.accessors[prims[i]!.indices]!.count).toBe(mesh.indices.length);
+    });
   });
 
   it('writes unit-length normals, unscaled', () => {
