@@ -543,6 +543,7 @@ const inventoryTemplate = (
     </section>
   </div>
   <footer class="inv-queue"></footer>
+  <div class="inv-gutter-probe" aria-hidden="true"></div>
 `;
 
 const queueTemplate = (queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>): TemplateResult => {
@@ -596,17 +597,12 @@ const clampSplit = (ratio: number, bounds: SplitBounds): number => Math.max(boun
 
 /**
  * The width a stable scroll gutter takes here (0 for overlay scrollbars), which no CSS value reports, so the
- * layout floors can reserve exactly one per gutter. It probes the gutter the panes use, not `overflow: scroll`:
- * a browser can hide scrollbars yet still reserve a stable gutter. Undefined while `host` isn't laid out.
+ * layout floors can reserve exactly one per gutter. The probe has a stable gutter like the panes, not
+ * `overflow: scroll`: a browser can hide scrollbars yet still reserve a stable gutter. Undefined while hidden.
  */
-const scrollbarWidth = (host: HTMLElement): number | undefined => {
-  const probe = host.ownerDocument.createElement('div');
-  probe.style.cssText =
-    'position: absolute; visibility: hidden; width: 100px; height: 100px; overflow: auto; scrollbar-gutter: stable';
-  host.append(probe);
-  const width = probe.offsetWidth > 0 ? probe.offsetWidth - probe.clientWidth : undefined;
-  probe.remove();
-  return width;
+const scrollbarWidth = (root: HTMLElement): number | undefined => {
+  const probe = root.querySelector<HTMLElement>('.inv-gutter-probe');
+  return probe && probe.offsetWidth > 0 ? probe.offsetWidth - probe.clientWidth : undefined;
 };
 
 export class InventoryScreen {

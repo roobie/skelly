@@ -557,6 +557,16 @@ body.unconscious::after {
   grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
   grid-template-rows: minmax(0, 1fr);
 }
+/* Gives `scrollbarWidth` in inventoryScreen.ts a gutter like the panes' to measure. */
+#inventory .inv-gutter-probe {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  visibility: hidden;
+  pointer-events: none;
+}
 /* The side panes' floors are their min-widths too, so the splitter's clamp reads the same values. */
 #inventory .inv-body[data-tab-panel="items"] {
   --inv-details-width: 20%;
