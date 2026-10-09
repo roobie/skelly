@@ -49,7 +49,7 @@ to GitHub Pages.
   `DESIGN.md`, `Simulation architecture`, and [ADR 0002](0002-saves.md).
 - Content data files for items, materials, recipes, body parts, loot and zombie
   types merge with mod folders, giving moddability for free. The content
-  direction is in [ADR 0004](0004-content-language.md).
+  direction is in [ADR 0004](../../../docs/decisions/0004-content-language.md).
 - Building on GitHub and deploying to Pages is easy, and every commit is playable
   at a URL; see `.github/workflows/pages.yml`.
 

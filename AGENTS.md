@@ -21,6 +21,10 @@ don't require byte-identical exports. What must still work: gungen exports a mod
 that deadvox validates and loads. Migration, especially of save games, starts
 mattering at v1.0 beta.
 
+## Jsonnet
+
+The repository-wide authoring and conversion rule is `docs/jsonnet.md`.
+
 ## No host-specific information in tracked files
 
 Tracked files describe the project, not the machine the team happens to work on. Every
@@ -128,6 +132,8 @@ command includes `deadvox/tools/lit-check`, which deadvox's Lit lint and root Kn
 ```sh
 npm run setup
 ```
+
+`npm run setup` fetches the pinned go-jsonnet binary for the shared compiler; `.github/workflows/lint.yml`, `Cache go-jsonnet`, caches it by the hash of `tools/jsonnet/runtime.json`.
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 
