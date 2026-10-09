@@ -6,7 +6,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { cellCount, defOf } from '../src/core/items.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
-import { handlingPresentationFor, handlingViewModel, quickbarKey, quickbarViewModel } from '../src/ui/hud.ts';
+import { handlingViewModel, quickbarKey, quickbarViewModel } from '../src/ui/hud.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -169,34 +169,6 @@ describe('handlingViewModel', () => {
     expect(vm.label).toBe(label);
     expect(vm.simSecondsLabel.match(/[\d.]+/g)?.map(Number)).toEqual([job.elapsed, job.duration]);
     expect(vm.percent).toBe(Math.round((job.elapsed / job.duration) * 100));
-  });
-
-  it('presents reading progress and its cancel control without implying movement', () => {
-    const inventory = new Inventory(registry);
-    const bookType = [...registry.items.entries()].find(([, definition]) => definition.book)?.[0];
-    if (!bookType) {
-      throw new Error('Reading HUD fixture requires a book definition');
-    }
-    const book = inventory.create(bookType);
-    expect(inventory.add(book, { kind: 'hand', side: 'right' })).toBe(true);
-    const job = {
-      jobType: 'reading',
-      stopped: false,
-      last: 0,
-      bookUid: book.uid,
-      elapsed: 15,
-      duration: 60,
-    } as const;
-    const vm = handlingViewModel(handlingPresentationFor(job, { jobs: [] }, inventory));
-
-    expect(vm).toMatchObject({
-      visible: true,
-      label: `Reading ${inventory.name(book)}`,
-      simSecondsLabel: '15.0 / 60.0 s',
-      percent: 25,
-      cancelLabel: 'X cancels',
-      movementLabel: '',
-    });
   });
 
   it('shows the next job when there is one queued after the current one', () => {

@@ -12,11 +12,11 @@ import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
-import type { HandSide, Pile, Target } from '../core/inventory.ts';
+import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import type { RestKind } from '../core/longAction.ts';
+import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
@@ -33,7 +33,7 @@ import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
-import { handlingPresentationFor, quickbarKey, renderQuickbar } from '../ui/hud.ts';
+import { type HandlingPresentationSource, quickbarKey, renderQuickbar } from '../ui/hud.ts';
 import {
   type HudOptionsState,
   hudVisibility,
@@ -241,6 +241,33 @@ const createInputReplayDriver = (
   player: InputReplayPlayer | undefined,
   ports: Omit<InputReplayDriverPorts, 'player'>,
 ): InputReplayDriver | undefined => (player ? new InputReplayDriver({ ...ports, player }) : undefined);
+
+const handlingPresentationFor = (
+  job: Readonly<LongJob> | undefined,
+  queue: HandlingPresentationSource,
+  inventory: Inventory,
+  throwCharge?: HandlingPresentationSource['throwCharge'],
+): HandlingPresentationSource => {
+  if (throwCharge) {
+    return { jobs: [], throwCharge };
+  }
+  if (job?.jobType === 'reading' || (job?.jobType === 'pry' && !job.stopped)) {
+    const reading = job.jobType === 'reading';
+    let label = 'Prying padlock';
+    let cancelLabel = 'X pauses';
+    if (reading) {
+      const book = inventory.itemByUid(job.bookUid);
+      label = book ? `Reading ${inventory.name(book)}` : 'Reading';
+      cancelLabel = 'X cancels';
+    }
+    return {
+      jobs: [{ label, duration: job.duration, elapsed: job.elapsed }],
+      cancelLabel,
+      movementLabel: '',
+    };
+  }
+  return queue;
+};
 
 const createPlayRefusalPresenter = (
   registry: Engine['registry'],
