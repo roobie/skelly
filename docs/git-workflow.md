@@ -9,6 +9,12 @@ read_if:
 Skelly uses plain git with one topic branch per feature, merged into `main` through a
 reviewed PR. The steps from dispatch to merge, and who may merge, are in `PROCESS.md`.
 
+Skelly is a public repository, so anyone who clones it, and CI, must be able to follow its
+workflow with stock git and GitHub alone. The workflow is therefore written out here in
+full and depends on no private tooling. Many agents work in parallel: separate branches
+and worktrees keep them from blocking each other, and review and CI on every push catch
+defects before they reach `main`.
+
 ## Start a feature
 
 1. `git fetch origin`, then `git worktree add .claude/worktrees/<name> -b <branch> origin/main`.
