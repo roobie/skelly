@@ -207,6 +207,24 @@ describe('furniture', () => {
     expect(stoppedByWall).toBeUndefined();
   });
 
+  it('keeps each shaped furniture instance to one draw object', () => {
+    const entities = new BlockEntities(registry);
+    for (const [type, x] of [
+      ['chair', 0],
+      ['chair', 3],
+      ['range_table', 6],
+    ] as const) {
+      const { size } = registry.furniture.get(type)!;
+      entities.add({ type, pos: [x, 0, 0], size, facing: 'n' });
+    }
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    furniture.sync(entities);
+
+    const meshes = furniture.group.children as Mesh[];
+    expect(meshes).toHaveLength(3);
+    expect(meshes.every((mesh) => mesh.isMesh && mesh.geometry.groups.length === 0)).toBe(true);
+  });
+
   it('renders a nonblocking readable sign as a thin board facing into the room', () => {
     const entities = new BlockEntities(registry);
     const board = entities.add({
