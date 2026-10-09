@@ -137,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 43;
+export const SAVE_SCHEMA_VERSION = 44;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -407,7 +407,7 @@ const inventory = obj({
 const longAction = obj({
   job: nullable(
     obj({
-      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'pry', 'treatment']),
+      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'pry', 'treatment', 'wait']),
       stopped: bool,
       last: nonNegative,
       elapsed: opt(nonNegative),

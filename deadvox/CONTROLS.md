@@ -126,6 +126,15 @@ both independently scrolling panes.
   chairs, etc” and “`L` remvoed - sleep is on sleepable objects, like bed”.
   Neither has a registry entry. Eligible furniture starts these actions through
   the world-interaction binding; see `src/game/play.ts`, `startPlay`.
+- **Wait and character-screen keys (2026-10-09):** The no-rest-key ruling is
+  unchanged: Wait is a button, not a rest or sleep key. BR's reason is “this is
+  one of those things we can't really make it diegetic. A player must be able to
+  simply pass time, when needed.” The Actions tab's Wait starts the ordinary
+  long-action compression path. H selects Actions; W wields the selected item,
+  because movement keys are free inside the character screen. See
+  `src/core/longAction.ts`, `LongActions.startWait`,
+  `src/ui/inventoryScreen.ts`, `inventoryTemplate`, and
+  `src/game/inputBindings.ts`, `INVENTORY_TAB_BINDINGS`.
 - **Wield, then activate (2026-10-04):** “that's not a thing you do in inventory
   - you wield the box and activante it in oder to unpack”. A key acts on the
   door from a hand; an ammunition box is wielded and activated to unpack. See

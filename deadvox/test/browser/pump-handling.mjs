@@ -397,6 +397,7 @@ try {
     { action: 'ui.inventory-tab-items', tab: 'items' },
     { action: 'ui.inventory-tab-skills', tab: 'skills' },
     { action: 'ui.inventory-tab-crafting', tab: 'crafting' },
+    { action: 'ui.inventory-tab-actions', tab: 'actions' },
   ];
   for (const { action, tab } of inventoryTabActions) {
     await pressAction(page, action);
@@ -492,7 +493,7 @@ try {
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
   };
   const tabChecks = [];
-  for (const tab of ['items', 'skills', 'crafting', 'items']) {
+  for (const tab of ['items', 'skills', 'crafting', 'actions', 'items']) {
     await selectInventoryTab(tab);
     tabChecks.push(
       await page.evaluate(
@@ -538,8 +539,72 @@ try {
       `tab content owns its overflow: ${JSON.stringify(result)}`,
     );
   }
+  await selectInventoryTab('actions');
+  assert.equal(
+    (await page.locator('#inventory [data-tab-panel="actions"] button').allTextContents()).map((text) => text.trim()),
+    ['Wait'],
+  );
+  const clickWaitButton = async () => {
+    const button = page.locator('#inventory [data-tab-panel="actions"] button');
+    const box = await button.boundingBox();
+    assert(box, 'Wait button has a layout box');
+    const cursor = await page.evaluate(() => ({
+      x: globalThis.pumpHandlingTest.input.cursorX,
+      y: globalThis.pumpHandlingTest.input.cursorY,
+    }));
+    await page.evaluate(dispatchMenuPointerMove, {
+      canvasSelector: '#view',
+      movementX: box.x + box.width / 2 - cursor.x,
+      movementY: box.y + box.height / 2 - cursor.y,
+    });
+    await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
+  };
+  await page.evaluate(() => globalThis.pumpManualFrames.enable());
+  await clickWaitButton();
+  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job?.jobType === 'wait');
+  assert.match(await page.locator('#rest').textContent(), /Waiting/);
+  const waitStart = await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.time);
+  await page.evaluate(() => globalThis.pumpManualFrames.step(1));
+  assert(
+    (await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.time)) > waitStart,
+    'Wait advances simulated time',
+  );
+  await pressAction(page, 'handling.stop');
+  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job === undefined);
+  assert.equal(await page.locator('#rest').isVisible(), false);
+
+  await pressAction(page, 'ui.inventory-tab-actions');
+  await clickWaitButton();
+  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job?.jobType === 'wait');
+  await pressAction(page, 'movement.forward');
+  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job === undefined);
+
+  await pressAction(page, 'ui.inventory-tab-actions');
+  await clickWaitButton();
+  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job?.jobType === 'wait');
+  await page.evaluate(() =>
+    globalThis.pumpHandlingTest.session.sim.emit({ kind: 'interrupt', reason: 'test interruption' }),
+  );
+  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+  await page.waitForFunction(
+    () =>
+      globalThis.pumpHandlingTest.session.sim.actions.job?.jobType === 'wait' &&
+      globalThis.pumpHandlingTest.session.sim.actions.job.stopped &&
+      globalThis.pumpHandlingTest.session.sim.compression.interruption === 'test interruption',
+  );
+  await pressAction(page, 'compression.continue');
+  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+  await pressAction(page, 'handling.stop');
+  await page.evaluate(() => globalThis.pumpManualFrames.step(0.1));
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.session.sim.actions.job === undefined);
+  await page.evaluate(() => globalThis.pumpManualFrames.disable());
   await page.setViewportSize({ width: 880, height: 540 });
-  for (const tab of ['items', 'skills', 'crafting']) {
+  for (const tab of ['items', 'skills', 'crafting', 'actions']) {
     await selectInventoryTab(tab);
     const view = await page.evaluate((selected) => {
       const panel =

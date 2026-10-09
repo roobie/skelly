@@ -129,6 +129,7 @@ it('routes inventory toggle and tab keys from a focused combo box unless they ty
       'ui.inventory-tab-items',
       'ui.inventory-tab-skills',
       'ui.inventory-tab-crafting',
+      'ui.inventory-tab-actions',
     ];
     const routed = inventoryActions.map((action) => {
       const { code } = bindings.chords(action)[0]!;

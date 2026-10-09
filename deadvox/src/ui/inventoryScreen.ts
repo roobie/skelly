@@ -393,19 +393,21 @@ const inventoryTemplate = (
     queue,
     search,
     attachmentAction,
+    wait,
   }: {
     queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
     search: (uid: number) => void;
     attachmentAction: (payload: ReplayActionPayload) => void;
+    wait: () => void;
   },
 ): TemplateResult => html`
   <header class="inv-head">
     <div class="inv-title"><h2>Inventory</h2><span class="inv-weight">Carrying ${vm.weight}</span></div>
     <nav class="inv-tabs" aria-label="Character screen">
-      ${(['items', 'skills', 'crafting'] as const).map(
+      ${(['items', 'skills', 'crafting', 'actions'] as const).map(
         (name) => html`
         <button type="button" class="inv-tab" data-tab=${name} aria-selected=${tab === name} @click=${() => selectTab(name)}>
-          ${({ items: 'Items', skills: 'Skills', crafting: 'Crafting' } satisfies Record<InventoryTab, string>)[name]}
+          ${({ items: 'Items', skills: 'Skills', crafting: 'Crafting', actions: 'Actions' } satisfies Record<InventoryTab, string>)[name]}
         </button>
       `,
       )}
@@ -540,6 +542,12 @@ const inventoryTemplate = (
         </div>
       `,
       )}
+    </section>
+  </div>
+  <div class="inv-body inv-actions" data-tab-panel="actions" ?hidden=${tab !== 'actions'}>
+    <section class="inv-pane inv-body-panel" aria-label="Actions">
+      <h3>Actions</h3>
+      <button class="inv-option" type="button" @click=${wait}>Wait</button>
     </section>
   </div>
   <footer class="inv-queue"></footer>
@@ -951,6 +959,14 @@ export class InventoryScreen {
             this.refuse(refusal);
           } else {
             this.report(this.hooks.dispatch(payload));
+          }
+        },
+        wait: () => {
+          const refusal = this.hooks.actionRefusal?.();
+          if (refusal) {
+            this.refuse(refusal);
+          } else {
+            this.report(this.hooks.dispatch({ kind: 'action.wait' }));
           }
         },
       }),

@@ -109,6 +109,40 @@ const startRepair = () => {
 };
 
 describe('core long actions', () => {
+  it('wait advances the simulation, saves its progress, and stops cleanly', () => {
+    const runtime = make();
+    const startTime = runtime.sim.time;
+    expect(runtime.sim.actions.startWait()).toBeUndefined();
+    runtime.sim.frame(10);
+    const saved = snapshot(runtime);
+    const savedTime = runtime.sim.time;
+    expect(savedTime).toBeGreaterThan(startTime);
+    expect(runtime.sim.actions.restRate).toBeUndefined();
+
+    const restored = make(saved);
+    expect(restored.sim.time).toBe(savedTime);
+    expect(restored.sim.actions.job).toMatchObject({ jobType: 'wait', stopped: false });
+    restored.sim.actions.stop();
+    expect(restored.sim.actions.job).toBeUndefined();
+    expect(restored.sim.compression.interruption).toBeUndefined();
+  });
+  it('movement stops wait without leaving a continuation prompt', () => {
+    const { sim } = make();
+    expect(sim.actions.startWait()).toBeUndefined();
+    expect(sim.actions.cancelWaitForMovement('movement.walk-toggle')).toBe(false);
+    expect(sim.actions.job?.jobType).toBe('wait');
+    expect(sim.actions.cancelWaitForMovement('movement.forward')).toBe(true);
+    expect(sim.actions.job).toBeUndefined();
+    expect(sim.compression.interruption).toBeUndefined();
+  });
+  it('an interrupting event stops wait with the usual continue prompt', () => {
+    const { sim } = make();
+    expect(sim.actions.startWait()).toBeUndefined();
+    sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+    sim.frame(1);
+    expect(sim.actions.job).toMatchObject({ jobType: 'wait', stopped: true });
+    expect(sim.compression.interruption).toBe('test interruption');
+  });
   it('stops long-action progress while unconscious and resumes after wake', () => {
     const { sim } = make();
     let finished = 0;

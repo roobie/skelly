@@ -240,6 +240,16 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
   });
 
+  it('shows Wait on the Actions tab and dispatches it through the screen owner', () => {
+    const { screen, root, lastPayload } = setup();
+    screen.selectTab('actions');
+    expect(root.querySelector<HTMLElement>('[data-tab-panel="actions"]')?.hidden).toBe(false);
+    expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
+    const button = [...root.querySelectorAll('button')].find((candidate) => candidate.textContent?.trim() === 'Wait');
+    expect(button).toBeDefined();
+    button!.click();
+    expect(lastPayload()).toEqual({ kind: 'action.wait' });
+  });
   it('routes a hotkey to an open screen before its generic action handler', () => {
     const { screen } = setup();
     const handled = routeModalCommand('ui.inventory-tab-skills', {

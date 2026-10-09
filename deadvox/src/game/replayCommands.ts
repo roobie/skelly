@@ -20,6 +20,7 @@ export type ReplayActionPayload =
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
+  | { kind: 'action.wait' }
   | { kind: 'item.throw.cancel' }
   | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
 
@@ -119,6 +120,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'inventory.cancel-handling':
     case 'craft.continue':
     case 'craft.stop':
+    case 'action.wait':
     case 'item.throw.cancel':
       return Object.keys(payload).length === 1;
     case 'item.throw':
@@ -160,6 +162,7 @@ export interface ReplayCommandOwners {
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
+  wait?: () => string | undefined;
   cancelItemThrow: () => void;
   throwItem: (itemUid: number, hand: 'left' | 'right', distance: number) => void;
 }
@@ -215,6 +218,8 @@ export const applyReplayActionPayload = (
       return owners.craftContinue();
     case 'craft.stop':
       return owners.craftStop();
+    case 'action.wait':
+      return owners.wait ? owners.wait() : 'Wait is unavailable';
     case 'item.throw.cancel':
       owners.cancelItemThrow();
       return undefined;
