@@ -1,7 +1,14 @@
 import { html, render } from 'lit-html';
-import { inputBindings, keyboardInput, NATIVE_EDITING, NATIVE_INPUTS } from '../game/inputBindings.ts';
+import {
+  bindingIsDebugOnly,
+  contextsForRun,
+  inputBindings,
+  keyboardInput,
+  NATIVE_EDITING,
+  NATIVE_INPUTS,
+} from '../game/inputBindings.ts';
 
-export const mountInputOptions = (root: HTMLElement): void => {
+export const mountInputOptions = (root: HTMLElement, debugRun = false): void => {
   let capture: { id: string; alternative: number } | undefined;
   let status = '';
   const stop = () => {
@@ -38,7 +45,8 @@ export const mountInputOptions = (root: HTMLElement): void => {
     };
     draw();
   };
-  const contexts = [...new Set(inputBindings.bindings.flatMap((binding) => binding.contexts))];
+  const bindings = inputBindings.bindings.filter((binding) => debugRun || !bindingIsDebugOnly(binding));
+  const contexts = [...new Set(bindings.flatMap((binding) => contextsForRun(binding, debugRun)))];
   const draw = () => {
     render(
       html`
@@ -49,8 +57,8 @@ export const mountInputOptions = (root: HTMLElement): void => {
         <p class="input-binding-status" role="status">${status || inputBindings.diagnostics.at(-1) || ''}</p>
         ${contexts.map(
           (context) => html`<section><h3>${context}</h3>
-          ${inputBindings.bindings
-            .filter((binding) => binding.contexts[0] === context)
+          ${bindings
+            .filter((binding) => contextsForRun(binding, debugRun)[0] === context)
             .map(
               (binding) => html`
             <div class="input-binding-row" data-binding-id=${binding.id}>
@@ -61,7 +69,7 @@ export const mountInputOptions = (root: HTMLElement): void => {
                   ${inputBindings.alternativeLabel(binding.id, alternative)}
                 </button>`,
               )}
-              <small>${binding.contexts.join(', ')}</small>
+              <small>${contextsForRun(binding, debugRun).join(', ')}</small>
             </div>`,
             )}
         </section>`,

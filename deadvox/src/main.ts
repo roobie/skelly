@@ -112,7 +112,6 @@ if (bench === 'report') {
   document.body.classList.add('bench');
   showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
 } else if (bench === null) {
-  mountInputOptions(document.getElementById('input-options')!);
   keyboardInput.install();
   inputBindings.loadLayout();
   let config = configFromUrl(params);
@@ -128,6 +127,7 @@ if (bench === 'report') {
   if (pendingReplay) {
     config.debug = true;
   }
+  mountInputOptions(document.getElementById('input-options')!, config.debug);
   mountControlsCard(
     document.getElementById('controls')!,
     document.getElementById('controls-search') as HTMLInputElement,

@@ -1,8 +1,8 @@
 import { html, render } from 'lit-html';
 import {
-  type Binding,
+  bindingIsDebugOnly,
+  contextsForRun,
   type BindingRegistry,
-  DEBUG_ONLY_CONTEXTS,
   inputBindings,
   NATIVE_INPUTS,
   POINTER_ACTIONS,
@@ -15,18 +15,18 @@ export interface ControlsCardRow {
   readonly description: string;
 }
 
-const debugOnly = (binding: Binding): boolean =>
-  binding.debug === true || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context));
-
 export const controlsCardRows = (registry: BindingRegistry = inputBindings, debugRun = false): ControlsCardRow[] => [
   ...registry.bindings
-    .filter((binding) => debugRun || !debugOnly(binding))
-    .map((binding) => ({
-      id: binding.id,
-      keys: registry.label(binding.id),
-      action: `${binding.description} (${binding.contexts.join(', ')})`,
-      description: binding.description,
-    })),
+    .filter((binding) => debugRun || !bindingIsDebugOnly(binding))
+    .map((binding) => {
+      const contexts = contextsForRun(binding, debugRun);
+      return {
+        id: binding.id,
+        keys: registry.label(binding.id),
+        action: `${binding.description} (${contexts.join(', ')})`,
+        description: binding.description,
+      };
+    }),
   ...POINTER_ACTIONS.map((action) => ({
     id: action.id,
     keys: registry.binding(action.id) ? registry.label(action.id) : action.label,

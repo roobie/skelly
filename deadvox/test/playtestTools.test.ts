@@ -372,20 +372,42 @@ describe('controls card', () => {
     expect(registry.rebind('fixture.action', [{ code: 'KeyK' }])).toBeUndefined();
     expect(controlsCardRows(registry)[0]?.keys).toBe('K');
   });
-  it('shows table-derived debug-only bindings only during debug runs', () => {
+  it('shows only ordinary contexts in ordinary-run controls and all contexts in debug runs', () => {
     const registry = new BindingRegistry(INPUT_BINDINGS);
     const isDebugOnly = (binding: (typeof INPUT_BINDINGS)[number]) =>
       binding.debug || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context));
     const debugOnly = INPUT_BINDINGS.filter(isDebugOnly);
-    const ordinaryIds = INPUT_BINDINGS.filter((binding) => !isDebugOnly(binding)).map(({ id }) => id);
-    const ordinaryRows = new Set(controlsCardRows(registry).map(({ id }) => id));
-    const debugRows = new Set(controlsCardRows(registry, true).map(({ id }) => id));
+    const ordinaryBindings = INPUT_BINDINGS.filter((binding) => !isDebugOnly(binding));
+    const sharedBindings = ordinaryBindings.filter(
+      (binding) =>
+        binding.contexts.some((context) => DEBUG_ONLY_CONTEXTS.has(context)) &&
+        binding.contexts.some((context) => !DEBUG_ONLY_CONTEXTS.has(context)),
+    );
+    const ordinaryRows = controlsCardRows(registry);
+    const ordinaryById = new Map(ordinaryRows.map((row) => [row.id, row]));
+    const debugRows = controlsCardRows(registry, true);
+    const words = (text: string) => text.toLowerCase().split(/[^a-z0-9-]+/);
 
     expect(INPUT_CONTEXTS.noclip).toBe(true);
     expect(debugOnly.length).toBeGreaterThan(0);
-    expect(debugOnly.every(({ id }) => !ordinaryRows.has(id))).toBe(true);
-    expect(debugOnly.every(({ id }) => debugRows.has(id))).toBe(true);
-    expect(ordinaryIds.every((id) => ordinaryRows.has(id) && debugRows.has(id))).toBe(true);
+    expect(sharedBindings.length).toBeGreaterThan(0);
+    expect(debugOnly.every(({ id }) => !ordinaryById.has(id))).toBe(true);
+    expect(debugOnly.every(({ id }) => debugRows.some((row) => row.id === id))).toBe(true);
+    expect(
+      ordinaryBindings.every(({ id }) => ordinaryById.has(id) && debugRows.some((row) => row.id === id)),
+    ).toBe(true);
+    expect(sharedBindings.every(({ id }) => ordinaryById.has(id))).toBe(true);
+    const ordinaryText = ordinaryRows.flatMap(({ action, description, keys }) =>
+      words(`${action} ${description} ${keys}`),
+    );
+    expect([...DEBUG_ONLY_CONTEXTS].every((context) => !ordinaryText.includes(context))).toBe(true);
+    expect(filterControlsCardRows(ordinaryRows, 'noclip')).toEqual([]);
+    expect(
+      INPUT_BINDINGS.every((binding) => {
+        const row = debugRows.find((candidate) => candidate.id === binding.id);
+        return row && binding.contexts.every((context) => words(row.action).includes(context));
+      }),
+    ).toBe(true);
   });
   it('filters descriptions and key labels by case-insensitive substring only', () => {
     const registry = new BindingRegistry([

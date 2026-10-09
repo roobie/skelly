@@ -38,6 +38,10 @@ export interface Binding {
   readonly plainKey?: boolean;
   readonly holdMs?: number;
 }
+export const bindingIsDebugOnly = (binding: Binding): boolean =>
+  binding.debug === true || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context));
+export const contextsForRun = (binding: Binding, debugRun: boolean): readonly InputContext[] =>
+  debugRun ? binding.contexts : binding.contexts.filter((context) => !DEBUG_ONLY_CONTEXTS.has(context));
 const world: readonly InputContext[] = ['play', 'noclip'];
 const moving: readonly InputContext[] = [...world, 'build'];
 const movingWhileReading: readonly InputContext[] = [...moving, 'reading'];
