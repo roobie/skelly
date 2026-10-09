@@ -3,6 +3,7 @@ read_if:
   - you're running the game, its debug tools or its benchmarks
   - you're running Deadvox unit tests or the opt-in CPU benchmark
   - you're checking the present implementation and known limits
+  - you're investigating startup or save discovery
 ---
 
 # deadvox — singleplayer voxel survival
@@ -14,12 +15,16 @@ Cataclysm: DDA (detailed items, bodies, crafting). The graphics are blocky voxel
 This file describes the code as it is. The game's design and roadmap are in
 [DESIGN.md](DESIGN.md) and [EPIC.md](EPIC.md).
 
+The title card and persistence action stay unavailable until save discovery and content
+validation finish. For the loading status and recovery behavior, see
+[Startup and save discovery](TROUBLESHOOTING.md#startup-and-save-discovery).
+
 **Play:** <https://roobie.github.io/skelly/deadvox/>. URL parameters:
 
 - `?seed=N` picks a world.
 - `?radius=N` sets the view distance in metres (default 96; the start card offers
   64, 96 and 128).
-- `?time=HH:MM` sets the time of day at the start (default 19:30).
+- `?time=HH:MM` sets the time of day at the start (default 10:00, or the layout's own start time where it sets one, as the playtest map does). The default gives development evaluations good light and time before dark. See `src/game/config.ts`, `configFromUrl`.
 - `?debug=1` enables debug authoring tools. Authoring actions require the
   rebindable F2 gate; Space/C flight controls are ungated only while noclip is
   active. Spawn-menu navigation and dismissal remain ordinary modal controls.

@@ -20,6 +20,50 @@ body {
     14px / 1.4 system-ui,
     sans-serif;
 }
+#startup-screen {
+  position: fixed;
+  z-index: 3000;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  background: #000;
+}
+#startup-screen[hidden] {
+  display: none;
+}
+#startup-progress {
+  width: min(240px, 60vw);
+  height: 3px;
+  overflow: hidden;
+  background: #30343a;
+}
+#startup-progress span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: #b8bcc2;
+  animation: startup-progress 1.2s ease-in-out infinite;
+}
+#save-status {
+  overflow-wrap: anywhere;
+}
+#startup-screen #save-status {
+  max-width: min(420px, calc(100vw - 32px));
+  margin: 0;
+  color: #b8bcc2;
+  text-align: center;
+}
+@keyframes startup-progress {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(260%);
+  }
+}
+
 #view {
   position: fixed;
   inset: 0;
@@ -254,16 +298,51 @@ body.unconscious::after {
 #inventory-drag-root {
   pointer-events: none;
 }
+#overlay .card-scroll-shell {
+  position: relative;
+  width: min(360px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  margin-right: 16px;
+}
+/* This card is opaque because there is no dimming layer behind it. */
 #overlay .card {
-  max-width: 360px;
+  width: 100%;
+  max-width: 100%;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
-  margin-right: 16px;
+  margin: 0;
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  /* Opaque: with no dimming layer behind it the card must stay readable on its own. */
   background: rgb(18 20 24);
+}
+#overlay .card:focus-within {
+  outline: 2px solid var(--muted);
+  outline-offset: 2px;
+}
+#overlay .card-scroll-cue {
+  position: absolute;
+  z-index: 2;
+  left: 1px;
+  right: 1px;
+  display: grid;
+  place-items: center;
+  height: 34px;
+  color: var(--muted);
+  font-size: 12px;
+  pointer-events: none;
+  text-shadow: 0 1px 3px #000;
+}
+#overlay #card-scroll-up {
+  top: 1px;
+  background: linear-gradient(#121418 10%, rgb(18 20 24 / 0%));
+}
+#overlay #card-scroll-down {
+  bottom: 1px;
+  background: linear-gradient(rgb(18 20 24 / 0%), #121418 90%);
+}
+#overlay .card-scroll-cue[hidden] {
+  display: none;
 }
 #overlay h1 {
   margin: 0 0 4px;
@@ -301,8 +380,19 @@ body.unconscious::after {
   font-weight: 600;
   margin: 0;
 }
-#save-status {
-  overflow-wrap: anywhere;
+#overlay.startup-ready {
+  background: #000;
+}
+#overlay.startup-ready .go {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  color: #b8bcc2;
+  cursor: pointer;
+  font-weight: 400;
+  white-space: nowrap;
 }
 #continue,
 #save-persist,
