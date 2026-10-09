@@ -7,7 +7,7 @@ import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
 import { rollLoot } from '../core/loot.ts';
-import { blockPatterns } from '../core/meshInput.ts';
+import { blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { Rng } from '../core/random.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
@@ -238,6 +238,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     terrain: terrainBlockIds(id),
     colors: blockColors(registry),
     patterns: blockPatterns(registry),
+    weatherable: blockWeatherability(registry),
     scale,
     structures: site.structures,
     surface: built?.surface,

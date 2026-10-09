@@ -5,15 +5,16 @@ import type { FromMesher, ToMesher } from './protocol.ts';
 
 let colors: Uint8Array = new Uint8Array(0);
 let patterns: Uint8Array = new Uint8Array(0);
+let weatherable: Uint8Array = new Uint8Array(0);
 
 globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
   if (msg.type === 'init') {
-    ({ colors, patterns } = msg);
+    ({ colors, patterns, weatherable } = msg);
     return;
   }
   const { key, version, padded, wide } = msg;
   const start = performance.now();
-  const mesh = buildMesh(padded, colors, patterns, wide);
+  const mesh = buildMesh(padded, colors, { patterns, wide, weatherable });
   const reply: FromMesher = { type: 'mesh', key, version, mesh, ms: performance.now() - start };
   postMessage(reply, {
     transfer: [
@@ -21,6 +22,7 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
       mesh.normals.buffer,
       mesh.colors.buffer,
       mesh.patterns.buffer,
+      mesh.weatherable.buffer,
       mesh.occlusion.buffer,
       mesh.indices.buffer,
     ],

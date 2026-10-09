@@ -29,6 +29,7 @@ export interface MeshData {
   normals: Int8Array; // 3 per vertex, -1/0/1
   colors: Uint8Array; // RGB, 3 per vertex
   patterns: Uint8Array; // surface pattern id (schema.ts BLOCK_PATTERNS), 1 per vertex; constant per quad
+  weatherable: Uint8Array; // content-owned render-weathering flag, 1 per vertex; constant per quad
   occlusion: Uint8Array; // wide-radius ambient factor, normalized (255 = 1), 1 per vertex
   weathering: Float32Array; // rain exposure and nearby ground, 2 per vertex
   indices: Uint32Array;
@@ -120,6 +121,7 @@ interface Context {
   sums: Int32Array | undefined;
   colors: Uint8Array;
   patterns: Uint8Array;
+  weatherable: Uint8Array;
   mask: Int32Array;
   occMask: Int32Array;
   /** Occlusion level per vertex of the current slice, (CHUNK + 1)² of them; see occlusionKey. */
@@ -128,10 +130,17 @@ interface Context {
   normals: number[];
   vcolors: number[];
   vpatterns: number[];
+  vweatherable: number[];
   voccs: number[];
   vweather: number[];
   indices: number[];
   wide: Uint8Array | undefined;
+}
+
+export interface MeshOptions {
+  patterns?: Uint8Array;
+  wide?: Uint8Array;
+  weatherable?: Uint8Array;
 }
 
 /** Reused between builds: one worker builds one mesh at a time. */
@@ -306,6 +315,7 @@ const emitQuad = (ctx: Context, face: Face, [key, occ]: Keys, [slice, u0, v0, w,
     ctx.normals.push(nx, ny, nz);
     ctx.vcolors.push(ctx.colors[id * 3]! * k, ctx.colors[id * 3 + 1]! * k, ctx.colors[id * 3 + 2]! * k);
     ctx.vpatterns.push(ctx.patterns[id] ?? 0);
+    ctx.vweatherable.push(ctx.weatherable[id] ?? 0);
     ctx.voccs.push(occlusionByte(occAt(occ, corner)));
     weatherAt(ctx.vweather, ctx.wide, face, pos[0], pos[1], pos[2]);
   }
@@ -368,16 +378,11 @@ const mergeMask = (ctx: Context, face: Face, slice: number): void => {
  * Builds a mesh for one chunk.
  * @param padded block ids for the chunk plus a 1-block border (see extractPadded)
  * @param colors RGB per block id (3 bytes each)
- * @param patterns surface pattern id per block id; omitted means every block is unpatterned
- * @param wide solidity (0 air, else solid) of the chunk plus an OCCLUSION_RADIUS border (see extractWide);
- *   omitted means no wide occlusion: every vertex is fully open
+ * @param options Per-block surface patterns, wide solidity border, and content-owned weatherability.
+ *   Omitted patterns are unpatterned; omitted wide solidity disables wide occlusion; omitted weatherability disables weathering.
  */
-export const buildMesh = (
-  padded: Uint16Array,
-  colors: Uint8Array,
-  patterns: Uint8Array = new Uint8Array(0),
-  wide?: Uint8Array,
-): MeshData => {
+export const buildMesh = (padded: Uint16Array, colors: Uint8Array, options: MeshOptions = {}): MeshData => {
+  const { patterns = new Uint8Array(0), wide, weatherable = new Uint8Array(0) } = options;
   if (wide) {
     buildSums(wide, SUMS);
   }
@@ -386,6 +391,7 @@ export const buildMesh = (
     sums: wide ? SUMS : undefined,
     colors,
     patterns,
+    weatherable,
     mask: new Int32Array(CHUNK * CHUNK),
     occMask: new Int32Array(CHUNK * CHUNK),
     vertexLevels: new Uint8Array((CHUNK + 1) ** 2),
@@ -393,6 +399,7 @@ export const buildMesh = (
     normals: [],
     vcolors: [],
     vpatterns: [],
+    vweatherable: [],
     voccs: [],
     vweather: [],
     indices: [],
@@ -410,6 +417,7 @@ export const buildMesh = (
     normals: new Int8Array(ctx.normals),
     colors: new Uint8Array(ctx.vcolors),
     patterns: new Uint8Array(ctx.vpatterns),
+    weatherable: new Uint8Array(ctx.vweatherable),
     occlusion: new Uint8Array(ctx.voccs),
     weathering: new Float32Array(ctx.vweather),
     indices: new Uint32Array(ctx.indices),
