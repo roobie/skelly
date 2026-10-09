@@ -46,8 +46,10 @@ export interface SurvivalHooks {
   feet: () => Target;
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
-  /** Presents validated authored text; no time, consumption or save-state mutation. */
-  read: (readable: Readonly<Readable>) => void;
+  /** Presents validated authored text and, for books, its action owner. */
+  read: (readable: Readonly<Readable>, bookUid?: number) => void;
+  /** Whether the book has already taught every recipe it owns. */
+  bookRead?: (bookUid: number) => boolean;
 }
 
 export class Survival {
@@ -188,6 +190,20 @@ export class Survival {
     );
   }
 
+  private readItem(item: Item, readable: Readonly<Readable> | undefined): string | undefined {
+    const hasBook = defOf(this.inventory.registry, item.type).book !== undefined;
+    if (hasBook && this.hooks.bookRead?.(item.uid) !== true) {
+      const reason = this.sim.actions.beginReading(item.uid);
+      if (reason) {
+        return reason;
+      }
+    }
+    if (readable) {
+      this.hooks.read(readable, hasBook ? item.uid : undefined);
+    }
+    return undefined;
+  }
+
   /** Executes the live core option; this owner retains effects and serializable queue actions. */
   use(item: Item): string | undefined {
     if (this.sim.body.actionRefusal) {
@@ -216,18 +232,8 @@ export class Survival {
         return undefined;
       case 'switch':
         return this.switchLight(item);
-      case 'read': {
-        if (definition.book) {
-          const reason = this.sim.actions.beginReading(item.uid);
-          if (reason) {
-            return reason;
-          }
-        }
-        if (option.readable) {
-          this.hooks.read(option.readable);
-        }
-        return undefined;
-      }
+      case 'read':
+        return this.readItem(item, option.readable);
       default:
         throw new Error('Invalid usable core option');
     }

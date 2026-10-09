@@ -948,7 +948,9 @@ palette as arguments.
 - **Appearance.** The viewer and exporter share `src/core/appearance.ts`'s
   domain-agnostic resolver. Callers pass a variant explicitly; assembly display
   names are never parsed as archetypes. Precedence is solid material, part
-  material, design finish, variant finish, then role material. Missing palette
+  material, instance appearance, design finish, variant finish, then role
+  material. An instance's own appearance replaces the host's design and variant
+  finishes for that part; see `src/core/glb.ts`, `exportGlb`. Missing palette
   material ids remain absent from metadata rather than being fabricated. Legacy
   family/special/fallback colours still support generic domains.
 - **Export metadata** (frozen here for the 3.4 export), per port: stable id

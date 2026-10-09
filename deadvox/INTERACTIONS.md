@@ -359,12 +359,19 @@ processes on rate changes and adds the appliance panel.
 
 ## Long-action input and wake behavior
 
-Movement and gameplay action input are ignored while reading, resting, sleeping
-or crafting. Each action keeps its own close, cancel or wake behavior:
+Movement and gameplay action input are ignored while resting, sleeping or
+crafting. Book reading runs only while its paper surface is open: closing the
+page stops the job and keeps its progress, and moving closes the page before the
+movement input passes through. Reopening the same book resumes the job. This
+keeps the player from being locked in place and makes reading happen only while
+the page is in front of them. The paper carries its progress and completed
+endpoint, so the player can tell how long is left and when reading is done even
+with the HUD off. See `src/game/play.ts`, `readingMovementAction` and
+`stopReadingOnClose`, `src/ui/reading.ts`, `mountReading`, and
+`src/core/longAction.ts`, `LongActions`.
 
-- Reading routes its controls separately from world input; the simulation keeps
-  moving while the paper surface is open. See `src/game/inputBindings.ts`,
-  `KeyboardInput`.
+Each other action keeps its own close, cancel or wake behavior:
+
 - Rest can be cancelled with F on its anchor or X; movement does not stop it.
 - Sleep starts at sleepable furniture. Movement and X do not stop it; an emitted
   interruption wakes the player and clears sleep.

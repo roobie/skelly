@@ -2,6 +2,7 @@ export interface ModalCommandHandlers {
   toggleMainMenu: () => void;
   readingOpen: boolean;
   readingAction: (action: string) => void;
+  readingMovementAction?: (action: string) => boolean;
   toggleInventory: () => void;
   inventoryTabAction: (action: string) => boolean;
   screenOpen: boolean;
@@ -16,6 +17,12 @@ export const routeModalCommand = (action: string, handlers: ModalCommandHandlers
     return true;
   }
   if (handlers.readingOpen) {
+    if (
+      ['movement.forward', 'movement.back', 'movement.left', 'movement.right'].includes(action) &&
+      handlers.readingMovementAction?.(action)
+    ) {
+      return false;
+    }
     handlers.readingAction(action);
     return true;
   }

@@ -112,6 +112,14 @@ const parsePrefabReference = (value: unknown, path: string): Parsed<PrefabRefere
   return version.ok ? pass({ id: id.value, version: version.value }) : version;
 };
 
+const parsePartAppearance = (value: unknown, path: string): Parsed<NonNullable<PartInstance['appearance']>> => {
+  if (!isRecord(value)) {
+    return fail(path, `expected an object, got ${describeValue(value)}`);
+  }
+  const finish = parseOptional(value, 'finish', path, (v, p) => parseRecord(v, p, parseString));
+  return finish.ok ? pass(finish.value === undefined ? {} : { finish: finish.value }) : finish;
+};
+
 const parsePartInstance = (value: unknown, path: string): Parsed<PartInstance> => {
   if (!isRecord(value)) {
     return fail(path, `expected an object, got ${describeValue(value)}`);
@@ -124,6 +132,10 @@ const parsePartInstance = (value: unknown, path: string): Parsed<PartInstance> =
   if (!params.ok) {
     return params;
   }
+  const appearance = parseOptional(value, 'appearance', path, parsePartAppearance);
+  if (!appearance.ok) {
+    return appearance;
+  }
   const prefab = parseOptional(value, 'prefab', path, parsePrefabReference);
   if (!prefab.ok) {
     return prefab;
@@ -131,6 +143,7 @@ const parsePartInstance = (value: unknown, path: string): Parsed<PartInstance> =
   return pass({
     family: family.value,
     ...(params.value === undefined ? {} : { params: params.value }),
+    ...(appearance.value === undefined ? {} : { appearance: appearance.value }),
     ...(prefab.value === undefined ? {} : { prefab: prefab.value }),
   });
 };

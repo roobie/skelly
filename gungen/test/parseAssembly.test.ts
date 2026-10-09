@@ -35,10 +35,18 @@ describe('parseAssembly', () => {
       ...minimal,
       description: 'd',
       expect: ['keep-out'],
-      parts: { a: { family: 'x', params: { p: 'v' }, prefab: { id: 'stanag-30', version: 2 } } },
+      parts: {
+        a: {
+          family: 'x',
+          params: { p: 'v' },
+          appearance: { finish: { metal: 'instance-finish' } },
+          prefab: { id: 'stanag-30', version: 2 },
+        },
+      },
       connections: [{ from: 'a.p', to: 'b.q', slot: 1, roll: 90 }],
     });
     expect(result.ok && result.assembly.parts.a?.prefab).toEqual({ id: 'stanag-30', version: 2 });
+    expect(result.ok && result.assembly.parts.a?.appearance).toEqual({ finish: { metal: 'instance-finish' } });
     expect(result.ok && result.assembly.connections[0]).toEqual({ from: 'a.p', to: 'b.q', slot: 1, roll: 90 });
   });
 
@@ -66,6 +74,11 @@ describe('parseAssembly', () => {
     ['parts as an array', { ...minimal, parts: [] }, 'parts'],
     ['a part without family', { ...minimal, parts: { a: {} } }, 'parts.a.family'],
     ['a non-string param value', { ...minimal, parts: { a: { family: 'x', params: { p: 3 } } } }, 'parts.a.params.p'],
+    [
+      'a non-string instance finish value',
+      { ...minimal, parts: { a: { family: 'x', appearance: { finish: { metal: 3 } } } } },
+      'parts.a.appearance.finish.metal',
+    ],
     [
       'a fractional prefab version',
       { ...minimal, parts: { a: { family: 'x', prefab: { id: 'p', version: 1.5 } } } },

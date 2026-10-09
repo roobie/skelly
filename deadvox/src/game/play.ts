@@ -13,7 +13,7 @@ import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
-import type { HandSide, Pile, Target } from '../core/inventory.ts';
+import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
@@ -34,7 +34,13 @@ import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
-import { type HandlingPresentationSource, quickbarKey, renderQuickbar } from '../ui/hud.ts';
+import {
+  type HandlingPresentationSource,
+  quickbarKey,
+  renderQuickbar,
+  type TimedActionPresentation,
+  timedActionHandlingPresentation,
+} from '../ui/hud.ts';
 import {
   type HudOptionsState,
   hudVisibility,
@@ -124,6 +130,7 @@ import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
+import { stopReadingOnClose as stopReadingPageOnClose } from './readingClose.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
@@ -158,7 +165,8 @@ const createReviewMapFrame = (debug: boolean): HTMLIFrameElement | undefined => 
   }
   const frame = document.createElement('iframe');
   frame.title = 'Current-world review map';
-  frame.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:10000;background:#d7ddd4';
+  frame.style.cssText =
+    'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:var(--ui-layer-review-map);background:#d7ddd4';
   frame.hidden = true;
   document.body.append(frame);
   return frame;
@@ -285,22 +293,95 @@ const createInputReplayDriver = (
   ports: Omit<InputReplayDriverPorts, 'player'>,
 ): InputReplayDriver | undefined => (player ? new InputReplayDriver({ ...ports, player }) : undefined);
 
-const handlingPresentationFor = (
-  job: Readonly<LongJob> | undefined,
-  queue: HandlingPresentationSource,
-  throwCharge?: HandlingPresentationSource['throwCharge'],
-): HandlingPresentationSource => {
+const syncReadingProgress = (
+  bookUid: number | undefined,
+  action: TimedActionPresentation | undefined,
+  setProgress: (progress: { readonly value: number; readonly max: number } | undefined) => void,
+  bookIsComplete: (bookUid: number) => boolean,
+): void => {
+  if (bookUid === undefined) {
+    return;
+  }
+  if (action?.kind === 'reading' && action.ownerUid === bookUid) {
+    setProgress({ value: action.elapsed, max: action.duration });
+    return;
+  }
+  setProgress(bookIsComplete(bookUid) ? { value: 1, max: 1 } : undefined);
+};
+
+type TimedLongJob = Extract<LongJob, { jobType: 'reading' | 'pry' | 'treatment' }>;
+
+const isTimedLongJob = (job: Readonly<LongJob>): job is TimedLongJob =>
+  job.jobType === 'reading' || job.jobType === 'pry' || job.jobType === 'treatment';
+
+const timedActionLabel = (job: TimedLongJob, inventory: Inventory): string => {
+  switch (job.jobType) {
+    case 'reading': {
+      const book = inventory.itemByUid(job.bookUid);
+      return book ? `Reading ${inventory.name(book)}` : 'Reading';
+    }
+    case 'pry':
+      return 'Prying padlock';
+    case 'treatment': {
+      const item = inventory.itemByUid(job.itemUid);
+      return item ? `Treating ${inventory.name(item)}` : 'Treating wound';
+    }
+    default: {
+      const unhandled: never = job;
+      return unhandled;
+    }
+  }
+};
+
+const elapsedForPresentation = (
+  job: TimedLongJob,
+  simTime: number,
+  clockRatio: number,
+  compressionActive: boolean,
+): number => {
+  if (!compressionActive) {
+    return job.elapsed;
+  }
+  const secondsPerSimSecond = job.jobType === 'reading' ? clockRatio : 1;
+  return Math.min(job.duration, job.elapsed + Math.max(0, simTime - job.last) * secondsPerSimSecond);
+};
+
+interface HandlingPresentationOptions {
+  readonly job: Readonly<LongJob> | undefined;
+  readonly queue: HandlingPresentationSource;
+  readonly inventory: Inventory;
+  readonly simSeconds: number;
+  readonly clockRatio: number;
+  readonly compressionActive: boolean;
+  readonly throwCharge?: HandlingPresentationSource['throwCharge'];
+}
+
+const handlingPresentationFor = ({
+  job,
+  queue,
+  inventory,
+  simSeconds,
+  clockRatio,
+  compressionActive,
+  throwCharge,
+}: HandlingPresentationOptions): HandlingPresentationSource => {
   if (throwCharge) {
     return { jobs: [], throwCharge };
   }
-  if (job?.jobType === 'pry' && !job.stopped) {
-    return {
-      jobs: [{ label: 'Prying padlock', duration: job.duration, elapsed: job.elapsed }],
-      cancelLabel: 'X pauses',
-      movementLabel: '',
-    };
+  const stopLabel = labelForAction('handling.stop');
+  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? `${stopLabel} cancels` };
+  if (!job || job.stopped || !isTimedLongJob(job)) {
+    return inactive;
   }
-  return queue;
+  const action: TimedActionPresentation = {
+    kind: job.jobType,
+    ...(job.jobType === 'reading' ? { ownerUid: job.bookUid } : {}),
+    label: timedActionLabel(job, inventory),
+    duration: job.duration,
+    elapsed: elapsedForPresentation(job, simSeconds, clockRatio, compressionActive),
+    stopped: job.stopped,
+  };
+  return timedActionHandlingPresentation(action, stopLabel);
 };
 
 const createPlayRefusalPresenter = (
@@ -597,7 +678,7 @@ export const startPlay = (
     },
     notice: (text) => showNotice(text),
     refusal: (text) => showRefusal(text, sim.time),
-    onRead: (readable) => reading.open(readable),
+    onRead: (readable, bookUid) => reading.open(readable, bookUid),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onFirearmEjection: (effect) => caseEffects.spawn(effect),
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
@@ -738,7 +819,17 @@ export const startPlay = (
   const overlay = $('overlay');
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
-  const reading = mountReading($('reading'), () => syncMenuState());
+  let stopReadingOnClose: () => void = () => undefined;
+  const reading = mountReading(
+    $('reading'),
+    () => syncMenuState(),
+    () => stopReadingOnClose(),
+  );
+  const isBookComplete = (bookUid: number): boolean => {
+    const book = inventory.itemByUid(bookUid);
+    const definition = book && registry.items.get(book.type);
+    return Boolean(definition?.book?.recipes.every((recipe) => session.character.knownRecipes.has(recipe)));
+  };
   const hud = $('hud');
   const hudOptions = readHudOptions();
   const drawHudOptions = () =>
@@ -1277,7 +1368,12 @@ export const startPlay = (
     if (continueWork()) {
       return;
     }
-    if (rest.action || sim.actions.job?.jobType === 'reading' || sim.actions.job?.jobType === 'pry') {
+    if (
+      rest.action ||
+      sim.actions.job?.jobType === 'reading' ||
+      sim.actions.job?.jobType === 'pry' ||
+      sim.actions.job?.jobType === 'treatment'
+    ) {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
         showRefusal(`Can't continue: ${reason}`, sim.time);
@@ -1295,7 +1391,8 @@ export const startPlay = (
     if (
       sim.actions.job?.jobType === 'craft' ||
       sim.actions.job?.jobType === 'reading' ||
-      sim.actions.job?.jobType === 'pry'
+      sim.actions.job?.jobType === 'pry' ||
+      sim.actions.job?.jobType === 'treatment'
     ) {
       sim.actions.stop();
     } else if (rest.action) {
@@ -1304,6 +1401,7 @@ export const startPlay = (
       compression.stop();
     }
   };
+  stopReadingOnClose = () => stopReadingPageOnClose(sim);
 
   const replayCommandOwners: ReplayCommandOwners = {
     inventory,
@@ -1584,6 +1682,13 @@ export const startPlay = (
       },
       readingOpen: reading.isOpen,
       readingAction: (command) => reading.onAction(command),
+      readingMovementAction: () => {
+        if (reading.bookUid === undefined) {
+          return false;
+        }
+        reading.close();
+        return true;
+      },
       toggleInventory: () => {
         if (!compression.locksInput) {
           toggleInventory();
@@ -3018,15 +3123,14 @@ export const startPlay = (
       sim,
       messagesVisible: visible.messages,
     });
-    screen.update();
-    craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
-    drawQuickbar();
-    quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
-    renderPlayHandling(
-      handlingBox,
-      handlingPresentationFor(
-        sim.actions.job,
-        queue,
+    const currentPresentation = handlingPresentationFor({
+      job: sim.actions.job,
+      queue,
+      inventory,
+      simSeconds: sim.time,
+      clockRatio: sim.clock.ratio,
+      compressionActive: compression.active,
+      throwCharge:
         itemThrowStartedAt === undefined
           ? undefined
           : {
@@ -3034,9 +3138,13 @@ export const startPlay = (
               chargeSimSeconds: throwChargeSimSeconds,
               minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
             },
-      ),
-      !screen.isOpen && visible.handling,
-    );
+    });
+    screen.update();
+    syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
+    craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
+    drawQuickbar();
+    quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
+    renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling);
     view.prepareLighting(sky);
     view.updateShadows(hour, sky);
     renderMs = view.render();

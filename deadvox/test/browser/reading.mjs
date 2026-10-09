@@ -36,7 +36,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value)=>{proofReadCalls++;proofOpen(value);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
+          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
         );
       },
     },
@@ -174,6 +174,15 @@ try {
       await uiClick(interactionCheckbox);
     }
     assert.equal(await interactionCheckbox.isChecked(), true);
+    const handlingOption = await page.evaluate(
+      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('handling'))",
+    );
+    assert.ok(handlingOption >= 0);
+    const handlingCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(handlingOption);
+    if (await handlingCheckbox.isChecked()) {
+      await uiClick(handlingCheckbox);
+    }
+    assert.equal(await handlingCheckbox.isChecked(), false);
     await pressAction(page, 'ui.main-menu-toggle');
     const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
     await pressAction(page, 'player.crouch-toggle');
@@ -629,6 +638,116 @@ try {
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
     assert.equal(await previousFocus.evaluate((element) => element === document.activeElement), true);
     await previousFocus.dispose();
+    const readingBook = await page.evaluate(() => {
+      const { session } = globalThis.readingWitness;
+      const bookDefinition = [...session.inventory.registry.items.entries()].find(
+        ([, definition]) => definition.book && definition.readable,
+      );
+      if (!bookDefinition) {
+        throw new Error('No readable book definition is available for the reading fixture');
+      }
+      const book = session.inventory.create(bookDefinition[0]);
+      if (!session.inventory.add(book, { kind: 'hand', side: 'left' })) {
+        throw new Error('Could not place the reading fixture in a free hand');
+      }
+      return { uid: book.uid, name: session.inventory.name(book) };
+    });
+    await pressAction(page, 'ui.inventory-toggle');
+    const bookRow = page.locator(`.inv-item[data-uid="${readingBook.uid}"]`);
+    await bookRow.waitFor({ state: 'visible' });
+    await uiClick(bookRow);
+    await pressAction(page, 'quickbar.assign.2');
+    await page.waitForFunction((uid) => globalThis.readingWitness.session.quickbar.slots[1] === uid, readingBook.uid);
+    await pressAction(page, 'ui.inventory-toggle');
+    await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    const advanceReading = async () => {
+      const beforeTime = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      await waitForSimulation(
+        page,
+        (until) => {
+          const { session } = globalThis.readingWitness;
+          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
+        },
+        beforeTime + 0.2,
+        { seconds: 3, from: beforeTime, label: 'book reading progress', record },
+      );
+    };
+    const readProgress = () =>
+      page.evaluate(() => {
+        const { value, max } = document.querySelector('.reading-progress') ?? {};
+        const { job } = globalThis.readingWitness.session.sim.actions;
+        return {
+          value,
+          max,
+          elapsed: job?.jobType === 'reading' ? job.elapsed : undefined,
+          duration: job?.jobType === 'reading' ? job.duration : undefined,
+          stopped: job?.stopped,
+        };
+      });
+    await page.locator('.reading-progress').waitFor({ state: 'visible' });
+    const whenOpened = await readProgress();
+    await advanceReading();
+    const beforeClose = await readProgress();
+    assert.ok(whenOpened.value !== undefined && beforeClose.value !== undefined);
+    assert.ok(beforeClose.value > whenOpened.value, JSON.stringify({ whenOpened, beforeClose }));
+    assert.ok(beforeClose.max !== undefined && beforeClose.max > beforeClose.value);
+    assert.ok(beforeClose.elapsed !== undefined);
+    assert.equal(beforeClose.max, beforeClose.duration);
+    await pressAction(page, 'reading.close');
+    assert.equal(await page.locator('#reading').isVisible(), false);
+    const stoppedOnClose = await readProgress();
+    assert.equal(stoppedOnClose.stopped, true);
+    assert.ok(stoppedOnClose.elapsed >= beforeClose.value);
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.locksInput), false);
+    try {
+      await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
+    } catch (error) {
+      const state = await page.evaluate((uid) => {
+        const { session, input, screen, reading, mainMenuOpen } = globalThis.readingWitness;
+        return {
+          bookLocation: session.inventory.locate(session.inventory.itemByUid(uid)),
+          quickbar: [...session.quickbar.slots],
+          job: session.sim.actions.job,
+          queue: session.queue.jobs,
+          readingOpen: reading.isOpen,
+          mainMenuOpen,
+          paused: session.sim.paused,
+          locked: input.locked,
+          inventoryOpen: screen.isOpen,
+          notice: document.body.innerText.slice(-500),
+        };
+      }, readingBook.uid);
+      throw new Error(`Could not reopen the same book after closing it: ${JSON.stringify(state)}`, { cause: error });
+    }
+    const reopened = await readProgress();
+    assert.ok(reopened.elapsed >= stoppedOnClose.elapsed);
+    assert.ok(reopened.value >= stoppedOnClose.elapsed);
+    const beforeMove = await page.evaluate(() => ({
+      position: [...globalThis.readingWitness.body.pos],
+      time: globalThis.readingWitness.session.sim.time,
+    }));
+    await holdAction('movement.forward', async () => {
+      await page.waitForFunction(() => document.querySelector('#reading').hidden);
+      await waitForSimulation(
+        page,
+        (until) => {
+          const { session } = globalThis.readingWitness;
+          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
+        },
+        beforeMove.time + 0.2,
+        { seconds: 3, from: beforeMove.time, label: 'walking away from reading', record },
+      );
+    });
+    const afterMove = await page.evaluate(() => ({
+      position: [...globalThis.readingWitness.body.pos],
+      stopped: globalThis.readingWitness.session.sim.actions.job?.stopped,
+      compression: globalThis.readingWitness.session.sim.compression.active,
+    }));
+    assert.ok(
+      Math.hypot(afterMove.position[0] - beforeMove.position[0], afterMove.position[2] - beforeMove.position[2]) > 0.01,
+    );
+    assert.equal(afterMove.stopped, true);
+    assert.equal(afterMove.compression, false);
     await page.evaluate(() => {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;
@@ -653,9 +772,9 @@ try {
     assert.equal(await page.locator('#reading').isVisible(), false);
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => !globalThis.readingWitness.session.sim.paused);
-    const resumed = await record('resume with reading hidden');
-    assert.equal(resumed.readingOpen, false);
-    assert.equal(resumed.menuPointer, false);
+    const pageResumed = await record('resume with reading hidden');
+    assert.equal(pageResumed.readingOpen, false);
+    assert.equal(pageResumed.menuPointer, false);
     assert.equal(await page.locator('#reading').isVisible(), false);
     // A hidden reading surface must not capture F after resume.
     await pressAction(page, 'world.interact');
@@ -669,7 +788,7 @@ try {
       overlayHidden: document.querySelector('#overlay').hidden,
     }));
     assert.equal(escaped.overlayHidden, escaped.locked);
-    proof = { before, during, escaped, menu, resumed };
+    proof = { before, during, escaped, menu, resumed: pageResumed };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';

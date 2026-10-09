@@ -267,6 +267,30 @@ describe('inventory screen Lit rendering', () => {
     expect(screen.activeTab).toBe('skills');
   });
 
+  it('lets movement leave a book page after its close callback stops reading', () => {
+    let pageClosed = false;
+    const handled = routeModalCommand('movement.forward', {
+      toggleMainMenu: () => undefined,
+      readingOpen: true,
+      readingAction: () => {
+        throw new Error('Movement should leave the book page');
+      },
+      readingMovementAction: () => {
+        pageClosed = true;
+        return true;
+      },
+      toggleInventory: () => undefined,
+      inventoryTabAction: () => false,
+      screenOpen: false,
+      screenAction: () => undefined,
+      mainMenuOpen: false,
+      interruptionCommand: () => false,
+    });
+
+    expect(pageClosed).toBe(true);
+    expect(handled).toBe(false);
+  });
+
   it('keeps live needs in the character-screen header on every tab', () => {
     const { screen, root, setNeeds } = setup();
     const needs = () => root.querySelector<HTMLElement>('.inv-needs')?.textContent;
