@@ -1,0 +1,20 @@
+{
+  "siteGeneration": [
+    {
+      "id": "authored",
+      "topography": {
+        "amplitudeMetres": 0.65,
+        "wavelengthMetres": 28,
+        "buildingMarginMetres": 5,
+        "roadShoulderMetres": 4,
+        "spawnMarginMetres": 8
+      },
+      "vegetation": {
+        "woodlandEdgeWavelengthMetres": 20,
+        "woodlandEdgeVariation": 0.3,
+        "openDensity": 0.035,
+        "obstacleMarginMetres": 1
+      }
+    }
+  ]
+}
