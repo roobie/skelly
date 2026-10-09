@@ -693,6 +693,8 @@ try {
   await pressAction(page, 'handling.stop');
   await waitUntilStopped();
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
+  await pressAction(page, 'ui.inventory-toggle');
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.screen.isOpen);
   await page.setViewportSize({ width: 880, height: 540 });
   for (const tab of ['items', 'skills', 'crafting', 'actions']) {
     await selectInventoryTab(tab);
