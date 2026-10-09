@@ -1025,7 +1025,7 @@ describe('content references', () => {
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
-  it('requires an opening-noise door to select a sound event with hearing noise', () => {
+  it('requires door and search action noise to select sound events with hearing noise', () => {
     const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
       ({ id }) => id === 'door_open',
     )!;
@@ -1044,11 +1044,34 @@ describe('content references', () => {
         ],
       },
     };
-    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [quietDoorOpen] } }, quietDoor]);
+    const quietPile = {
+      source: 'quiet-pile.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_quiet_pile',
+            name: 'Fixture pile',
+            size: [1, 1, 1],
+            color: '#333333',
+            searchNoise: { sound: 'door_open' },
+          },
+        ],
+      },
+    };
+    const { issues } = buildRegistry([
+      { source: 'door-sound.json', data: { sounds: [quietDoorOpen] } },
+      quietDoor,
+      quietPile,
+    ]);
     expect(issues).toContainEqual({
       source: 'quiet-door.json',
       path: 'furniture[0].door.openNoise.sound',
       message: 'opening sound must emit hearing noise',
+    });
+    expect(issues).toContainEqual({
+      source: 'quiet-pile.json',
+      path: 'furniture[0].searchNoise.sound',
+      message: 'search sound must emit hearing noise',
     });
   });
 
@@ -1371,7 +1394,16 @@ const templateSoundDefinitions = (
   }
 ).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));
 const templateBase = [
-  { source: 'template-blocks.json', data: { blocks: [{ id: 'brick', name: 'Brick', color: '#ffffff', solid: true }] } },
+  {
+    source: 'template-blocks.json',
+    data: {
+      blocks: [
+        { id: 'brick', name: 'Brick', color: '#ffffff', solid: true },
+        { id: 'planks', name: 'Planks', color: '#ffffff', solid: true },
+        { id: 'window_frame', name: 'Window frame', color: '#ffffff', solid: true },
+      ],
+    },
+  },
   {
     source: 'template-support.json',
     data: {
@@ -1495,6 +1527,32 @@ describe('templates', () => {
     );
     expect(issues.some((issue) => issue.includes('palette["A"]'))).toBe(true);
     expect(issues.some((issue) => issue.includes('palette["Z"]'))).toBe(false);
+  });
+
+  it('reports open floor-course wall cells without flagging doors or window frames', () => {
+    const palette = {
+      '#': 'brick',
+      p: 'planks',
+      '.': 'air',
+      D: { furniture: 'fixture_door' },
+      w: 'window_frame',
+    };
+    const valid = template(
+      [
+        ['###', '###', '###'],
+        ['D#w', '#p#', '###'],
+        ['###', '###', '###'],
+      ],
+      palette,
+      [3, 3, 3],
+    );
+    expect(check(valid)).toEqual([]);
+
+    const broken = structuredClone(valid);
+    broken.data.templates[0]!.layers[1]![0] = 'D.w';
+    expect(check(broken)).toContain(
+      'templates[0].layers[1]: has an open exterior cell between matching "brick" wall courses',
+    );
   });
 
   it('checks layer sizes and that characters are in the palette', () => {

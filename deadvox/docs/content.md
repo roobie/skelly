@@ -9,6 +9,7 @@ read_if:
   - you change static reachability checks
   - you author or validate time-windowed template spawns
   - you're authoring or changing playtest fixed loot
+  - you're assigning noise to a furniture action
   - you're authoring base surface materials or procedural pattern tuning
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
@@ -34,6 +35,10 @@ when their contract depends on cross-file merging or references. This avoids
 rechecking unrelated base content while preserving those integration checks;
 see `test/content.test.ts`, `templateBase`, and `test/authoredSite.test.ts`,
 `registry`.
+
+## Exterior shell continuity
+
+An authored floor course cut into an exterior wall reads as an unfinished recess. Keep the shell visually continuous while doors and solid window frames remain authored openings. See `src/core/content.ts`, `floorCourseWallGap`.
 
 ## Site-generation tuning
 
@@ -172,6 +177,6 @@ check must prove that reachable practice sources can raise a recipe's required s
 stores no closure or runtime state; progression, crafting and disassembly remain
 separate owners.
 
-## Door opening noise
+## Furniture action noise
 
-`FurnitureSchema` in `src/core/schema.ts` lets door content select an opening sound through `door.openNoise`; `src/core/content.ts`, `checkFurniture`, requires that event to emit hearing noise. The event definition owns its hearing radius, and `src/game/doorAction.ts`, `registerDoorAction`, sends it through the ordinary positioned sound path. The field is optional so a door stays quiet unless its content says otherwise. This keeps a loud workshop roller door distinct without making the everyday `wood_door` noisy or duplicating radius tuning.
+Give a furniture action an explicit noise only when it should expose the player; ordinary doors and containers stay quiet. The sound owns its hearing radius, and validation rejects a selected event that cannot alert. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/content.ts`, `checkDoorOpenNoise` and `checkSearchNoise`; `src/game/doorAction.ts`, `registerDoorAction`; and `src/game/session.ts`, `search`.

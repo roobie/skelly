@@ -638,6 +638,30 @@
                 {
                   "item": "bandage",
                   "count": 1
+                },
+                {
+                  "item": "scrap_metal",
+                  "count": 1
+                },
+                {
+                  "item": "electrical_tape",
+                  "count": 1
+                },
+                {
+                  "item": "fastener_pack",
+                  "count": 1
+                },
+                {
+                  "item": "rubber_strip",
+                  "count": 1
+                },
+                {
+                  "item": "screwdriver",
+                  "count": 1
+                },
+                {
+                  "item": "wrench",
+                  "count": 1
                 }
               ]
             },
@@ -646,7 +670,8 @@
               "items": [
                 {
                   "item": "portable_radio",
-                  "count": 1
+                  "count": 1,
+                  "condition": 0
                 },
                 {
                   "item": "jerry_can",
@@ -683,7 +708,18 @@
           "template": "workshop_yard",
           "position": [410, 21, 189],
           "rotation": 0,
-          "storeys": 1
+          "storeys": 1,
+          "fixedLoot": [
+            {
+              "at": [7, 1, 7],
+              "items": [
+                {
+                  "item": "steel_pipe",
+                  "count": 1
+                }
+              ]
+            }
+          ]
         },
         {
           "template": "camp_wall_run",
