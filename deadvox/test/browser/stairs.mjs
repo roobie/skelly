@@ -15,7 +15,7 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
-assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or lighting');
+assert.ok(mode === 'traversal' || mode === 'lighting' || mode === 'camo', 'choose traversal, lighting or camo');
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
 const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
@@ -32,7 +32,7 @@ const vite = await createServer({
       name: 'stairs-test-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (mode === 'lighting' && id.endsWith('/src/content/base/templates-stairs.json')) {
+        if (mode === 'camo' && id.endsWith('/src/content/base/templates-stairs.json')) {
           const content = JSON.parse(code);
           const floor = new Array(8).fill('########');
           const walls = ['########', ...new Array(6).fill('c......#'), '########'];
@@ -44,7 +44,7 @@ const vite = await createServer({
           });
           return JSON.stringify(content);
         }
-        if (mode === 'lighting' && id.endsWith('/src/content/base/blocks.json')) {
+        if (mode === 'camo' && id.endsWith('/src/content/base/blocks.json')) {
           const content = JSON.parse(code);
           const camo = content.blocks.find(({ pattern }) => pattern === 'camo');
           assert.ok(camo);
@@ -53,21 +53,26 @@ const vite = await createServer({
           camo.patternWashout = 1;
           return JSON.stringify(content);
         }
-        if (mode === 'lighting' && id.endsWith('/src/core/authoredSite.ts')) {
-          // Post-admission fixture: a deliberate 6 m raise is not valid authored cut/fill.
-          // Keep its lot at shared ground, exposing the lower west wall for slot contrast.
+        if ((mode === 'lighting' || mode === 'camo') && id.endsWith('/src/core/authoredSite.ts')) {
           const anchor = '    const s = scale.blockSize;';
-          const lot = 'lotOf(building, rect)';
           assert.equal(code.split(anchor).length, 2);
-          assert.equal(code.split(lot).length, 2);
-          return code
-            .replace(
-              anchor,
-              `${anchor}\n    const raisedCabin = ${JSON.stringify(RAISED_CABIN)};\n    const camoWitness = ${JSON.stringify(CAMO_WITNESS)};\n    layout = {...layout, buildings: [...layout.buildings, raisedCabin, camoWitness]};`,
-            )
-            .replace(lot, '{...lotOf(building, rect), ...(building === raisedCabin ? {floor: layout.ground} : {})}');
+          const fixtureName = mode === 'lighting' ? 'raisedCabin' : 'camoWitness';
+          const fixture = mode === 'lighting' ? RAISED_CABIN : CAMO_WITNESS;
+          let transformed = code.replace(
+            anchor,
+            `${anchor}\n    const ${fixtureName} = ${JSON.stringify(fixture)};\n    layout = {...layout, buildings: [...layout.buildings, ${fixtureName}]};`,
+          );
+          if (mode === 'lighting') {
+            const lot = 'lotOf(building, rect)';
+            assert.equal(code.split(lot).length, 2);
+            transformed = transformed.replace(
+              lot,
+              '{...lotOf(building, rect), ...(building === raisedCabin ? {floor: layout.ground} : {})}',
+            );
+          }
+          return transformed;
         }
-        if (id.endsWith('/src/render/skylight.ts')) {
+        if (mode === 'lighting' && id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.
           assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
           assert.ok(code.includes('float skyVisibility() {'));
@@ -98,12 +103,13 @@ let browser;
 try {
   await vite.listen();
   const { port } = vite.httpServer.address();
-  browser = await launchChromium(mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting', {
+  const stageName = mode === 'traversal' ? 'stairs-traversal' : mode === 'camo' ? 'stairs-camo' : 'stairs-lighting';
+  browser = await launchChromium(stageName, {
     headless: process.env.BROWSER_HEADED !== '1',
   });
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
   const page = await browser.newPage({
-    viewport: mode === 'traversal' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
+    viewport: mode === 'lighting' ? { width: 1280, height: 800 } : { width: 640, height: 400 },
   });
   const errors = [];
   const states = [];
@@ -133,7 +139,7 @@ try {
       errors.push(message.text());
     }
   });
-  const stageId = mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting';
+  const stageId = stageName;
   await page.goto(
     browserStageUrl(stageId, `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`),
   );
@@ -405,7 +411,7 @@ try {
         middle: luminance([151, 43.5, 121.5]),
       };
     }, png.toString('base64'));
-  if (mode === 'lighting') {
+  if (mode === 'camo') {
     await stage([155, 43.0001, 122], Math.PI / 2, -0.2);
     const originalModes = await page.evaluate(() => {
       const { engine } = globalThis.stairsWitness;
@@ -423,26 +429,8 @@ try {
       );
       await page.waitForFunction((frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame, before);
     };
-    const resizeViewport = async ({ width, height }) => {
-      const before = await page.evaluate(() => globalThis.stairsWitness.engine.renderer.info.render.frame);
-      await page.setViewportSize({ width, height });
-      await page.waitForFunction(
-        ({ width: expectedWidth, height: expectedHeight, frame }) => {
-          const view = document.querySelector('#view');
-          return (
-            view?.clientWidth === expectedWidth &&
-            view.clientHeight === expectedHeight &&
-            globalThis.stairsWitness.engine.renderer.info.render.frame > frame
-          );
-        },
-        { width, height, frame: before },
-      );
-    };
     let camoAo;
-    const originalViewport = page.viewportSize();
-    assert.ok(originalViewport);
     try {
-      await resizeViewport({ width: 640, height: 400 });
       await setShaderLook(true, true);
       const patterned = await camoWallPixels(await shot('camo-ao-patterned'));
       await setShaderLook(true, false);
@@ -456,7 +444,6 @@ try {
       };
     } finally {
       await setShaderLook(originalModes.linear, originalModes.patterns);
-      await resizeViewport(originalViewport);
     }
     await writeFile(resolve(artifacts, 'camo-inner-corner-ao.json'), JSON.stringify(camoAo, null, 2));
     await test('camo preserves corner AO relative to the same plain block face', () => {
@@ -920,7 +907,7 @@ try {
 
     await walk('movement.forward', 143, true, 43);
     assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
-  } else {
+  } else if (mode === 'lighting') {
     await stage([134, 35.0001, 115]);
     const residents = () =>
       page.evaluate(() => {
