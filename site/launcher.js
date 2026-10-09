@@ -6,29 +6,31 @@ const WEATHERING_STRENGTH_MAX = 8;
 
 // The tester brief's wording lives only here; the organiser's sheet points at it, so a change reaches every tester.
 const playtestBrief = html`
-        <section class="playtest" aria-labelledby="playtest-title">
-          <h3 id="playtest-title">Playtest</h3>
-          <p><a id="deadvox-playtest" href="deadvox/?site=playtest">Play the playtest map</a>. Your task: find the military camp.</p>
-          <ul>
-            <li>Play for as long as you like, in as many sittings as you like. Continue picks up where you left off.</li>
-            <li>The game records play metrics only on your machine, in this browser.</li>
-            <li>Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.</li>
-            <li>This site, the game included, loads Simple Analytics to count visits. It is anonymous, stores no cookies on your device, and gets none of your play metrics.</li>
-            <li>Send feedback through <a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">the playtest feedback form</a>. It opens a public GitHub issue and needs a GitHub account.</li>
-          </ul>
-        </section>`;
+      <section class="card" aria-labelledby="playtest-title">
+        <h1 id="playtest-title">Playtest</h1>
+        <p>Your task: find the military camp.</p>
+        <ul>
+          <li>Play for as long as you like, in as many sittings as you like. Continue picks up where you left off.</li>
+          <li>The game records play metrics only on your machine, in this browser.</li>
+          <li>Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.</li>
+          <li>This site, the game included, loads Simple Analytics to count visits. It is anonymous, stores no cookies on your device, and gets none of your play metrics.</li>
+          <li>Send feedback through <a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">the playtest feedback form</a>. It opens a public GitHub issue and needs a GitHub account.</li>
+          <li>No GitHub account? You can email your metrics, and any feedback, to the person who sent you the link.</li>
+        </ul>
+        <p><a id="deadvox-playtest" href="deadvox/?site=playtest">Play the playtest map</a></p>
+      </section>`;
 
 const page = (state) => html`  <main>
-      <h1>skelly</h1>
-      <p class="lede">Low poly tools and a game.</p>
-
+      <header class="brand">
+        <img class="site-logo" src="assets/deadvox-survival-logo.webp" alt="Deadvox Survival">
+      </header>
+      ${playtestBrief}
       <section class="card" aria-labelledby="deadvox-title">
         <div class="card-heading">
           <h2 id="deadvox-title"><a href="deadvox/">deadvox</a><span>(codename)</span></h2>
           <span>// working title = <code>Darker Yet -VOX-</code></span>
           <p>A singleplayer voxel survival prototype with data-driven content.</p>
         </div>
-        ${playtestBrief}
         <form id="deadvox-form" @input=${onInput} @change=${onInput} @submit=${onSubmit}>
           <div class="form-grid">
             <label>Start mode

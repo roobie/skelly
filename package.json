@@ -12,11 +12,13 @@
     "baseline:zero-drift": "node tools/zero-drift-check.mjs --write-baseline",
     "test:zero-drift": "node --test test/zero-drift-check.test.mjs",
     "test:site": "node --test test/site-launcher.test.mjs",
+    "process:site-assets": "node tools/process-site-assets.mjs",
     "prepare": "sh .githooks/prepare"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
     "knip": "6.34.0",
+    "sharp": "0.35.4",
     "yaml": "^2.9.1"
   }
 }

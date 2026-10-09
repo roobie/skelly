@@ -31,7 +31,7 @@ Use the playtest questions in [EPIC.md](EPIC.md), together with Slice 2's questi
 - Do weapon attachments and firearm handling make ammunition choices clear before a shot is fired?
 - Can players tell which available treatment applies to a wound and its infection stage?
 
-The first real playtest runs at the end of this slice, before Slice 4, on the authored map in [#181](https://github.com/roobie/skelly/issues/181). BR shares the Pages landing-page link with a few people; each tester plays independently until they want to stop, in as many sittings as they like. The Playtest link gives them the prompt “find the military camp.” Use any metrics they choose to share and their public feedback issues to assess inventory time, pocket choices, reactions to unseen sounds and interruptions, where players got to, and what felt annoying or delightful. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md).
+The first real playtest runs at the end of this slice, before Slice 4, on the authored map in [#181](https://github.com/roobie/skelly/issues/181). The organiser shares the Pages landing-page link with a few people; each tester plays independently until they want to stop, in as many sittings as they like. The Playtest link gives them the prompt “find the military camp.” Use any metrics and feedback they choose to share to assess inventory time, pocket choices, reactions to unseen sounds and interruptions, where players got to, and what felt annoying or delightful. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md).
 
 ## Scope
 
@@ -412,7 +412,7 @@ Replay retains generated-column transitions because readiness determines whether
 
 ### 3.11 Authored playtest map and playtest
 
-The end-of-slice playtest uses the authored progression in [#181](https://github.com/roobie/skelly/issues/181). Testers follow the Playtest link from the Pages landing page and can explore for as long as they like; the game is not a facilitated or shadowed session. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md) for the self-serve format and how metrics and feedback issues inform Slice 4.
+The end-of-slice playtest uses the authored progression in [#181](https://github.com/roobie/skelly/issues/181). Testers follow the Playtest link from the Pages landing page and can explore for as long as they like; the game is not a facilitated or shadowed session. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md) for the self-serve format and how tester feedback and metrics inform Slice 4.
 
 **In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. The medical site's virus-sampling research is lore, not a player mission. Its wards stay dangerous because the sick brought there remain among the beds; crawler markers make that threat part of the care setting rather than a scripted encounter. See `src/content/base/templates-medical.json`, `medical_hall`.
 
@@ -429,7 +429,7 @@ The workshop makes a taped light mount craftable without noise. Finding suppress
 
 **Saves:** The authored layout, fixed placements and seeded loot regenerate from the site and seed. Dynamic changes and looted items use the existing world/inventory save; no separate map-progress state is added.
 **Tests:** authored content validates; site generation is deterministic across chunk order; required progression and routes remain traversable; fixed key loot and seeded filler follow their separate ownership without pinning exact coordinates or complete loot lists. Metrics remain outside game state.
-**Done when:** the approved map supports the self-serve end-of-slice playtest, its progression and nights are playable, the checklist links its evidence, and tester metrics and feedback issues inform Slice 4 planning.
+**Done when:** the approved map supports the self-serve end-of-slice playtest, its progression and nights are playable, the checklist links its evidence, and tester feedback and metrics inform Slice 4 planning.
 **First look / BR approval:** the completed authored map, including the workshop/medical/military progression and night locations.
 
 #### Loose-item pickup
@@ -476,6 +476,6 @@ Only questions BR left open; don't infer answers from implementation or old prop
 - Milestones 3.0–3.11 are merged and deployed with CI green, including their required type, unit, content and browser checks.
 - Every new persistent simulation state is owned, saved, fingerprinted and covered by a current-build round trip. The default test run remains within the applicable budget or has a coverage-based explanation and a plan to keep it fast.
 - The noise-to-positional-sound contract holds; recordings replay deterministically; performance work is measured against the approved workloads.
-- The checklist issue links evidence and carried-forward work; metrics and feedback issues from the self-serve end-of-slice playtest inform Slice 4.
+- The checklist issue links evidence and carried-forward work; feedback and metrics from the self-serve end-of-slice playtest inform Slice 4.
 - BR has approved the required first looks for ready/ADS, firearm gore/impacts, optics, new zombie types, the horde and the authored map.
 - A retrospective records what changed and what carries forward.

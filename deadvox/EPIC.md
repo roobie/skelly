@@ -143,13 +143,15 @@ they like; Continue resumes their run
 ([docs/playtest-run.md](docs/playtest-run.md), "Session format"). There is no
 scripted session or fixed play time. Testers can send feedback through the
 public form and may choose to attach their local metrics and a recent replay.
+Testers without GitHub can email their metrics and feedback to the organiser;
+the organiser provides the address separately with the link.
 
 The authored route runs from the lone house through the hamlet, hunting cabins,
 medical site and military camp, with the first and second nights along the way.
 The game does not script zombie behavior. Testers explore the map and make their
 own choices; the run is not facilitated or shadowed.
 
-Use the metrics testers choose to share and their feedback issues to assess:
+Use the metrics and feedback testers choose to share to assess:
 
 1. Is looting tense and fun when each item move takes real seconds while the
    world keeps moving?
@@ -177,9 +179,9 @@ Use the metrics testers choose to share and their feedback issues to assess:
     at night?
 
 The metrics show how far testers get, what they find and when they reach map
-beats. Their feedback issues can explain what felt tense, confusing, satisfying
-or frustrating, and which moments annoyed or delighted them. Use that evidence
-to update DESIGN, CHALLENGES and this EPIC before planning Slice 4. If the second
+beats. Their feedback issues or emails can explain what felt tense, confusing,
+satisfying or frustrating, and which moments annoyed or delighted them. Use that
+evidence to update DESIGN, CHALLENGES and this EPIC before planning Slice 4. If the second
 night is too safe, consider adding night wanderers after reviewing the feedback.
 The organiser's sheet in [docs/playtest-run.md](docs/playtest-run.md) explains
 how testers can export and share their metrics and feedback.
