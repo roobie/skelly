@@ -154,6 +154,7 @@ export interface ZombieRenderer {
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
   setPlayerEyePosition?: (position: Vec3) => void;
+  setPlayerChestPosition?: (position: Vec3) => void;
   setPerceptionLabels?: (enabled: boolean) => void;
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
   zombieIncapacitated?: (id: EntityId, zombie: Zombie) => void;
@@ -583,6 +584,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private backgroundBlend = 1;
   private camera: Camera | undefined;
   private playerEyePosition: Vec3 | undefined;
+  private playerChestPosition: Vec3 | undefined;
   private perceptionLabelsEnabled = false;
   private perceptionLabelRoot: HTMLDivElement | undefined;
   private readonly perceptionLabels = new Map<EntityId, HTMLSpanElement>();
@@ -756,6 +758,10 @@ export class MobActorMeshes implements ZombieRenderer {
 
   setPlayerEyePosition(position: Vec3): void {
     this.playerEyePosition = [...position];
+  }
+
+  setPlayerChestPosition(position: Vec3): void {
+    this.playerChestPosition = [...position];
   }
 
   setPerceptionLabels(enabled: boolean): void {
@@ -1076,9 +1082,9 @@ export class MobActorMeshes implements ZombieRenderer {
     if (!meshes) {
       return;
     }
-    const playerEye = this.playerEyePosition;
+    const target = this.playerChestPosition;
     const reachMetres = zombieAttackReachMetres(zombie);
-    if (!playerEye || reachMetres <= 0 || !lastPose) {
+    if (!target || reachMetres <= 0 || !lastPose) {
       meshes.shaft.visible = false;
       meshes.tip.visible = false;
       return;
@@ -1101,14 +1107,12 @@ export class MobActorMeshes implements ZombieRenderer {
       yaw: rotY((placement.yaw * 180) / Math.PI),
       position: placement.worldPos,
     });
-    const target: Vec3 = [playerEye[0], start[1], playerEye[2]];
     const facing: Vec3 = [-Math.sin(placement.yaw), 0, -Math.cos(placement.yaw)];
     const pose = amalgamTentaclePose({
       start,
       target,
       facing,
       reachMetres,
-      anchorOffsetMetres: Math.hypot(start[0] - placement.worldPos[0], start[2] - placement.worldPos[2]),
       attackWindupSimSeconds: zombie.attackWindup,
       attackWindupDurationSimSeconds: zombie.type.attack.windupSimSeconds,
       attackWaitSimSeconds: zombie.attackWait,

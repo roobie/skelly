@@ -11,6 +11,16 @@ export const hash3 = (seed: number, x: number, y: number, z: number): number => 
 
 const smooth = (t: number): number => t * t * (3 - 2 * t);
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+const SIMPLEX_GRADIENTS: readonly (readonly [number, number])[] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [Math.SQRT1_2, Math.SQRT1_2],
+  [-Math.SQRT1_2, Math.SQRT1_2],
+  [Math.SQRT1_2, -Math.SQRT1_2],
+  [-Math.SQRT1_2, -Math.SQRT1_2],
+];
 
 /** Smooth 2D value noise in [0, 1). */
 export const valueNoise2 = (seed: number, x: number, z: number): number => {
@@ -21,6 +31,32 @@ export const valueNoise2 = (seed: number, x: number, z: number): number => {
   const a = lerp(hash3(seed, x0, 0, z0), hash3(seed, x0 + 1, 0, z0), tx);
   const b = lerp(hash3(seed, x0, 0, z0 + 1), hash3(seed, x0 + 1, 0, z0 + 1), tx);
   return lerp(a, b, tz);
+};
+
+/** Seeded 2D simplex noise, approximately in [-1, 1]. */
+export const simplexNoise2 = (seed: number, x: number, z: number): number => {
+  const skew = (Math.sqrt(3) - 1) / 2;
+  const unskew = (3 - Math.sqrt(3)) / 6;
+  const cell = Math.floor(x + (x + z) * skew);
+  const row = Math.floor(z + (x + z) * skew);
+  const origin = (cell + row) * unskew;
+  const x0 = x - (cell - origin);
+  const z0 = z - (row - origin);
+  const [i1, j1] = x0 > z0 ? [1, 0] : [0, 1];
+  const corners: readonly [number, number, number, number][] = [
+    [cell, row, x0, z0],
+    [cell + i1, row + j1, x0 - i1 + unskew, z0 - j1 + unskew],
+    [cell + 1, row + 1, x0 - 1 + 2 * unskew, z0 - 1 + 2 * unskew],
+  ];
+  let sum = 0;
+  for (const [cx, cz, dx, dz] of corners) {
+    const attenuation = 0.5 - dx * dx - dz * dz;
+    if (attenuation > 0) {
+      const gradient = SIMPLEX_GRADIENTS[Math.floor(hash3(seed, cx, 0, cz) * SIMPLEX_GRADIENTS.length)]!;
+      sum += attenuation ** 4 * (gradient[0] * dx + gradient[1] * dz);
+    }
+  }
+  return 70 * sum;
 };
 
 /** Fractal (octave-summed) value noise in [0, 1). */

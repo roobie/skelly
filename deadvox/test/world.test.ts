@@ -82,6 +82,22 @@ describe('coords', () => {
 });
 
 describe('World', () => {
+  it('revises the world token when queried blocks change', () => {
+    const world = new World();
+    let previous = world.version;
+    world.addChunk(new Chunk(0, 0, 0));
+    expect(world.version).toBeGreaterThan(previous);
+    previous = world.version;
+    world.setBlock(1, 5, 1, 3);
+    expect(world.version).toBeGreaterThan(previous);
+    previous = world.version;
+    world.setBlock(1, 5, 1, 0);
+    expect(world.version).toBeGreaterThan(previous);
+    previous = world.version;
+    world.removeChunk(0, 0, 0);
+    expect(world.version).toBeGreaterThan(previous);
+  });
+
   it('reads back blocks across chunk boundaries, and air where nothing was set', () => {
     const world = new World();
     world.setBlock(-1, 5, 40, 3);

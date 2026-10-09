@@ -35,7 +35,7 @@ import {
 } from '../core/footsteps.ts';
 import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
-import { lightSenseSourceFor, sunExposedAt } from '../core/lights.ts';
+import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
@@ -472,8 +472,6 @@ export const createSession = (options: SessionOptions) => {
   const dayCycle = dayCycleFor(registry.dayCycle);
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
-  const isSunExposedAt = (pos: Vec3, hour: number): boolean =>
-    sunExposedAt({ position: pos, gameHours: hour, skyTop, isOpaque: options.isOpaque, cycle: dayCycle });
   const physics = physicsFor(scale);
   const restored = options.restore;
 
@@ -507,6 +505,21 @@ export const createSession = (options: SessionOptions) => {
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
   const { entities } = inventory;
+  // Zombie ticks share vertical block geometry; revisions keep edits visible to every caller.
+  const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, options.isOpaque);
+  let cachedWorldVersion = world.version;
+  let cachedEntityVersion = entities.version;
+  const clearSunExposureCache = (): void => {
+    sunExposureCache.clear();
+    cachedWorldVersion = world.version;
+    cachedEntityVersion = entities.version;
+  };
+  const isSunExposedAt = (pos: Vec3, hour: number): boolean => {
+    if (cachedWorldVersion !== world.version || cachedEntityVersion !== entities.version) {
+      clearSunExposureCache();
+    }
+    return sunExposureCache.isExposedAt(pos, hour, dayCycle);
+  };
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
   const zombieStore = new MapEntityStore<Zombie>();
@@ -1362,6 +1375,7 @@ export const createSession = (options: SessionOptions) => {
     nameOf,
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
+      clearSunExposureCache();
       crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
       rest.frame(dt, until);
       for (const event of audioEvents.read()) {
@@ -1371,6 +1385,7 @@ export const createSession = (options: SessionOptions) => {
       }
     },
     frameReplay: (realSeconds: number): void => {
+      clearSunExposureCache();
       crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
       rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {

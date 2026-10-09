@@ -278,7 +278,30 @@ try {
       },
       { position: fixturePosition, yaw: fixtureYaw },
     );
-    await page.waitForTimeout(200);
+    if (mode === 'traversal') {
+      const settleFrom = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+      await waitForSimulation(
+        page,
+        (from) => {
+          const { body, session } = globalThis.stairsWitness;
+          const elapsed = session.sim.time - from;
+          const velocity = Math.hypot(...body.vel);
+          const grounded = body.onGround;
+          const atRest = velocity < 0.1;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: elapsed > 0 && grounded && atRest,
+            elapsed,
+            grounded,
+            atRest,
+            velocity,
+          };
+        },
+        settleFrom,
+        { seconds: 1, from: settleFrom, label: 'fixture placement grounded at rest', record: state },
+      );
+    }
   };
   const state = async (label, details) => {
     const value = await page.evaluate(() => {
@@ -332,8 +355,6 @@ try {
         },
       );
       const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
-      // Same three-second physical bound, now simulation seconds rather than renderer wall time.
-      // The outer stage remains capped at 300 s; no retry or larger stage cap.
       await waitForSimulation(
         page,
         (feet) => {
@@ -418,14 +439,14 @@ try {
     try {
       await waitForSimulation(
         page,
-        ({ target: destination, deadline }) => {
+        ({ target: destination, from, seconds }) => {
           const { body, session, input, engine } = globalThis.stairsWitness;
           const dx = destination[0] - body.pos[0];
           const dz = destination[2] - body.pos[2];
           input.yaw = Math.atan2(-dx, -dz);
           const distance = Math.hypot(dx, dz);
           const reached = distance < 0.5;
-          const terminal = reached || session.sim.paused || session.sim.time >= deadline;
+          const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
           if (!terminal) {
             return { time: session.sim.time, paused: session.sim.paused, reached, distance };
           }
@@ -468,7 +489,7 @@ try {
             })),
           };
         },
-        { target, deadline: start + 12 },
+        { target, from: start, seconds: 12 },
         { seconds: 12, from: start, label, record: state, stop: releaseForward },
       );
     } finally {
@@ -477,10 +498,10 @@ try {
     const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await waitForSimulation(
       page,
-      ({ target: destination, deadline }) => {
+      ({ target: destination, from, seconds }) => {
         const { body, session, engine } = globalThis.stairsWitness;
         const reached = body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01;
-        const terminal = reached || session.sim.paused || session.sim.time >= deadline;
+        const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
         if (!terminal) {
           return { time: session.sim.time, paused: session.sim.paused, reached };
         }
@@ -501,7 +522,7 @@ try {
           },
         };
       },
-      { target, deadline: settleStart + 4 },
+      { target, from: settleStart, seconds: 4 },
       {
         seconds: 4,
         from: settleStart,
@@ -641,7 +662,7 @@ try {
     const upperAnchorStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     const upperAnchor = await waitForSimulation(
       page,
-      ({ id, lowerLanding, upperLanding, deadline }) => {
+      ({ id, lowerLanding, upperLanding, from, seconds }) => {
         const { engine, session } = globalThis.stairsWitness;
         const resident = session.zombieStore.get(id);
         const residentPosition = resident ? [...resident.body.pos] : null;
@@ -664,7 +685,7 @@ try {
         );
         const collisionReady = collisionCells.map((cell) => engine.isSolid(...cell));
         const reached = residentGroundedAtUpper && collisionReady.every(Boolean);
-        const terminal = reached || session.sim.paused || session.sim.time >= deadline;
+        const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
@@ -685,7 +706,8 @@ try {
         id: residentId,
         lowerLanding: houseLower.position,
         upperLanding: houseUpper.position,
-        deadline: upperAnchorStart + 8,
+        from: upperAnchorStart,
+        seconds: 8,
       },
       {
         seconds: 8,
