@@ -314,6 +314,8 @@ export interface SessionOptions {
   onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
+    /** A hit drew blood: where it struck, along which line, and how hard. */
+    onWound?: (id: EntityId, zombie: Zombie, hit: HitImpulse, damage: number) => void;
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
     onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
     /** A hit knocked flesh out of an amalgam (its `carved` already lists `cells`). */
@@ -923,6 +925,7 @@ export const createSession = (options: SessionOptions) => {
         inventory.add(inventory.create(item), { kind: 'pile', pos });
       }
     },
+    onWound: (id, zombie, hit, damage) => options.zombieEffects?.onWound?.(id, zombie, hit, damage),
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
     onCarve: (id, zombie, cells, hit) => options.zombieEffects?.onCarve?.(id, zombie, cells, hit),
     onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),

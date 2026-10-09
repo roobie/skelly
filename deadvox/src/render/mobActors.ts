@@ -72,6 +72,7 @@ import {
   type CrowdTextureLayout,
   crowdTexelIndex,
   crowdTextureLayout,
+  packBloodiness,
   packCrowdBoneMatrix,
   packSeveredMask,
 } from '@mobgen/mob/crowd.ts';
@@ -122,6 +123,7 @@ import { PLAYER } from '../game/player.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './amalgamFlesh.ts';
 import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
+import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -357,6 +359,8 @@ interface Corpse extends SlotHolder {
    * this module's header comment); parts severed by the killing blow itself are already included, since
    * onSever fires before onDeath (src/core/zombies.ts's swing). */
   readonly severed: readonly string[];
+  /** How bloodied the body was as it fell (gore.ts's woundSeverity), drawn as stains until it's gone. */
+  readonly bloodiness: number;
   elapsed: number;
   /** Insertion order across corpses AND debris together — see evictOldestDeadThing*'s own doc comment on
    * why a single Map's own iteration order isn't enough once there are two Maps to compare. */
@@ -386,6 +390,7 @@ interface DebrisSpawn {
   initialOrientation: Quaternion;
   originOffsetY: number;
   body: RigidBody;
+  bloodiness: number;
 }
 
 /** A flying piece of debris — a severed limb, physically simulated (see zombieSevered/advanceDebris) —
@@ -402,6 +407,8 @@ interface Debris extends SlotHolder {
   readonly originOffsetY: number;
   readonly insertOrder: number;
   readonly body: RigidBody;
+  /** The stains of the body it was cut from, at the cut. */
+  readonly bloodiness: number;
   elapsed: number;
   groundedAt: number | undefined;
 }
@@ -412,6 +419,8 @@ export interface MobActorMeshesOptions {
   readonly amalgamType?:
     | (ZombieFigureType & { readonly carving?: { readonly interiorColor: string } | undefined })
     | undefined;
+  /** A chunk of carved flesh came to rest at this centre (metres), for gore to mark. */
+  readonly onFleshLanded?: (centre: Vec3) => void;
 }
 
 type ActorModel = 'shambler' | 'runner' | 'crawler' | 'amalgam';
@@ -608,7 +617,7 @@ export class MobActorMeshes implements ZombieRenderer {
     this.depthMaterial = depthMaterial;
     const interiorColor = options.amalgamType?.carving?.interiorColor;
     this.fleshInterior = interiorColor === undefined ? undefined : new Color(interiorColor);
-    this.fleshChunks = new FleshChunks(this.group);
+    this.fleshChunks = new FleshChunks(this.group, options.onFleshLanded);
     depthMaterial.customProgramCacheKey = () => 'deadvox-mob-actor-crowd-depth';
     depthMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.crowdBoneTexture = { value: texture };
@@ -1266,6 +1275,7 @@ export class MobActorMeshes implements ZombieRenderer {
       yaw: Math.atan2(-zombie.facing[0], -zombie.facing[2]),
       direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, undefined),
       severed: [...zombie.severed],
+      bloodiness: woundSeverity(zombie),
       elapsed: 0,
       insertOrder: this.takeDeadOrder(),
     });
@@ -1318,6 +1328,7 @@ export class MobActorMeshes implements ZombieRenderer {
       yaw: Math.atan2(-zombie.facing[0], -zombie.facing[2]),
       direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, playerPos),
       severed: [...zombie.severed],
+      bloodiness: woundSeverity(zombie),
       elapsed: 0,
       insertOrder: this.takeDeadOrder(),
     });
@@ -1335,6 +1346,7 @@ export class MobActorMeshes implements ZombieRenderer {
       ...this.corpses.get(id)!,
       incapacitated: false,
       severed: [...zombie.severed],
+      bloodiness: woundSeverity(zombie),
       insertOrder: this.takeDeadOrder(),
     };
     corpse.elapsed = Math.min(corpse.elapsed, DEATH_FALL_DURATION);
@@ -1413,6 +1425,7 @@ export class MobActorMeshes implements ZombieRenderer {
       initialOrientation,
       originOffsetY,
       body: rigidBody,
+      bloodiness: zombie ? woundSeverity(zombie) : 0,
     });
   }
 
@@ -1510,6 +1523,7 @@ export class MobActorMeshes implements ZombieRenderer {
       initialOrientation,
       originOffsetY,
       body,
+      bloodiness,
     } = spawn;
     if (this.evictableDeadThingCount() >= MAX_CORPSES) {
       this.evictOldestDeadThingGlobally();
@@ -1543,6 +1557,7 @@ export class MobActorMeshes implements ZombieRenderer {
       originOffsetY,
       insertOrder: order,
       body,
+      bloodiness,
       elapsed: 0,
       groundedAt: undefined,
     });
@@ -1611,8 +1626,8 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   /** FK from `pose`, then packs every bone at `globalRow`: severed bones get a zero matrix (hidden — see
-   * packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask too, even
-   * when `severedIndices` is empty, so a healed/never-severed actor's mask never goes stale. Shared by
+   * packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask and the
+   * bloodiness too, even when nothing is severed or bloodied, so a reused row never goes stale. Shared by
    * packPose (a live zombie) and packCorpse; packDebris packs its own inverse (only the carried subtree is
    * real) directly, since the two cases share little beyond "call packCrowdBoneMatrix or packZeroBone". */
   private packSkeleton(
@@ -1622,10 +1637,11 @@ export class MobActorMeshes implements ZombieRenderer {
       pose: Pose;
       placement: CrowdPlacement;
       severedIndices: ReadonlySet<number>;
+      bloodiness: number;
       transforms?: ReadonlyMap<string, Transform>;
     },
   ): void {
-    const { pose, placement, severedIndices, transforms } = frame;
+    const { pose, placement, severedIndices, bloodiness, transforms } = frame;
     if (transforms) {
       for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
         const source = transforms.get(variant.realized.body.bones[bone]!.id)!;
@@ -1648,6 +1664,7 @@ export class MobActorMeshes implements ZombieRenderer {
       }
     }
     packSeveredMask(this.textureData, this.layout, globalRow, severedIndices);
+    packBloodiness(this.textureData, this.layout, globalRow, bloodiness);
   }
 
   private observePerceptionTime(state: ZombieRenderState, zombie: Zombie): void {
@@ -1746,7 +1763,7 @@ export class MobActorMeshes implements ZombieRenderer {
       presentationSimSeconds: frame.presentationSimSeconds,
     });
     const severedIndices = this.indicesFor(variant, severedBoneIds(variant, zombie.severed));
-    this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices });
+    this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices, bloodiness: woundSeverity(zombie) });
     state.lastPose = posed.pose;
     state.lastPlacement = posed.placement;
   }
@@ -1768,6 +1785,7 @@ export class MobActorMeshes implements ZombieRenderer {
       pose: state.lastPose!,
       placement: crowdPlacement,
       severedIndices,
+      bloodiness: woundSeverity(zombie),
     });
     state.lastPlacement = crowdPlacement;
   }
@@ -1789,7 +1807,12 @@ export class MobActorMeshes implements ZombieRenderer {
       yawRad: corpse.yaw,
     };
     const severedIndices = this.indicesFor(variant, severedBoneIds(variant, corpse.severed));
-    this.packSkeleton(corpse.globalRow, variant, { pose, placement: crowdPlacement, severedIndices });
+    this.packSkeleton(corpse.globalRow, variant, {
+      pose,
+      placement: crowdPlacement,
+      severedIndices,
+      bloodiness: corpse.bloodiness,
+    });
   }
 
   /** A piece of debris's own per-frame pose+pack — the inverse of packSkeleton: only `severedIndices` (the
@@ -1836,6 +1859,7 @@ export class MobActorMeshes implements ZombieRenderer {
       }
     }
     packSeveredMask(this.textureData, this.layout, d.globalRow, hidden);
+    packBloodiness(this.textureData, this.layout, d.globalRow, d.bloodiness);
   }
 
   private zombiePoseBounds(zombie: Zombie, placement: { worldPos: Vec3 }): { center: Vector3; radius: number } {

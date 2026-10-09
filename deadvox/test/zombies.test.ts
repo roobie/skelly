@@ -1512,6 +1512,26 @@ describe('shambler scenarios', () => {
     }
   });
 
+  it('reports wounds one way: a wound listener leaves the simulation as it is without one', () => {
+    const wounds: number[] = [];
+    const listened = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      seed: 91,
+      onWound: (_id, _zombie, _hit, damage) => wounds.push(damage),
+    });
+    const silent = new ZombieSystem({ ...senses(() => player([100, 2, 0])), seed: 91 });
+    const listenedId = listened.add(SHAMBLER, [1, 1, 0], [0, 0, -1]);
+    const silentId = silent.add(SHAMBLER, [1, 1, 0], [0, 0, -1]);
+    for (const region of ZOMBIE_REGION_NAMES) {
+      const ray = regionRay(listened.store.get(listenedId)!, region);
+      const silentRay = regionRay(silent.store.get(silentId)!, region);
+      expect(listened.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(listenedId);
+      expect(silent.swing(silentRay.origin, silentRay.direction, FISTS_MELEE)).toBe(silentId);
+    }
+    expect(wounds).toEqual(ZOMBIE_REGION_NAMES.map(() => FISTS_MELEE.damage));
+    expect(listened.snapshotState()).toEqual(silent.snapshotState());
+  });
+
   it('severs every non-head region without killing; destroying the head alone kills', () => {
     for (const region of ZOMBIE_REGION_NAMES) {
       const severed: ZombieRegion[] = [];

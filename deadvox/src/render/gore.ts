@@ -1,0 +1,376 @@
+// Render-only gore: blood thrown from wounds, splats where it lands, and drips from wounded bodies. Nothing
+// here is saved or read by the simulation: splats fade, and a reload starts clean.
+
+import {
+  BoxGeometry,
+  CircleGeometry,
+  DoubleSide,
+  DynamicDrawUsage,
+  Group,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  MeshBasicMaterial,
+  Object3D,
+  Quaternion,
+  Vector3,
+} from 'three';
+import type { Vec3 } from '../core/coords.ts';
+import { Rng } from '../core/random.ts';
+import type { HitImpulse, Zombie } from '../core/zombies.ts';
+
+/** Droplets in flight at once; a new one replaces the oldest. */
+export const DROPLET_CAP = 128;
+/** Splats on surfaces at once; a new one replaces the oldest. */
+export const SPLAT_CAP = 256;
+/** Droplets that may start between two updates, across sprays and drips; the rest of a burst is skipped. */
+export const DROPLET_SPAWNS_PER_FRAME = 48;
+/** Wounded bodies that drip at once: the nearest ones. */
+const DRIP_SOURCE_CAP = 6;
+
+// Presentation tuning, not gameplay.
+const GRAVITY_MPS2 = 9.81;
+const DROPLET_MAX_AGE_S = 3;
+const SPRAY_DROPLETS_MIN = 2;
+const SPRAY_DROPLETS_MAX = 14;
+const SPRAY_BACK_FRACTION = 0.3;
+/** How much spray one carved cell is worth, in the damage units `spray` takes. */
+const CARVED_CELL_SPRAY_DAMAGE = 2;
+const SPLAT_LIFE_S = 90;
+const SPLAT_FADE_S = 30;
+const SPLAT_OPACITY = 0.9;
+/** Drips a second from a body at full wound severity. */
+const DRIPS_PER_SECOND = 2.5;
+const DRIP_RANGE_M = 25;
+/** A downed body drips from near the ground, not from its standing height. */
+const DOWNED_DRIP_HEIGHT_M = 0.3;
+const SEVERED_PART_SEVERITY = 0.2;
+const CARVED_CELL_SEVERITY = 0.01;
+const DROPLET_COLOR = 0x52_17_0f;
+const SPLAT_COLOR = 0x3a_0c_08;
+const FACE_NORMAL = new Vector3(0, 0, 1);
+const UP: Vec3 = [0, 1, 0];
+
+interface Droplet {
+  active: boolean;
+  readonly position: Vector3;
+  readonly velocity: Vector3;
+  ageRealSeconds: number;
+  sizeMetres: number;
+}
+
+interface Splat {
+  active: boolean;
+  ageRealSeconds: number;
+}
+
+/** A wounded body that drips. Positions are metres; `position` is its feet. */
+export interface DripSource {
+  readonly position: Vec3;
+  readonly heightMetres: number;
+  readonly halfWidthMetres: number;
+  /** 0 to 1; see woundSeverity. */
+  readonly severity: number;
+}
+
+/** How badly a body bleeds, 0 to 1, from its saved wounds: health lost across its regions, severed parts and
+ * carved flesh. Derived, so drips and the bloodied tint survive a reload with no state of their own. */
+export const woundSeverity = (zombie: Pick<Zombie, 'type' | 'regions' | 'severed' | 'carved'>): number => {
+  let full = 0;
+  let left = 0;
+  for (const [region, max] of Object.entries(zombie.type.regions)) {
+    full += max;
+    left += Math.min(max, Math.max(0, zombie.regions[region] ?? 0));
+  }
+  const lost = full > 0 ? 1 - left / full : 0;
+  return Math.min(
+    1,
+    lost + zombie.severed.length * SEVERED_PART_SEVERITY + zombie.carved.length * CARVED_CELL_SEVERITY,
+  );
+};
+
+/** The nearest wounded bodies to `listener` (blocks), as drip sources in metres. */
+export const dripSources = (zombies: Iterable<Zombie>, listener: Vec3, blockSize: number): DripSource[] =>
+  [...zombies]
+    .map((zombie) => ({
+      zombie,
+      severity: woundSeverity(zombie),
+      distanceMetres:
+        Math.hypot(
+          zombie.body.pos[0] - listener[0],
+          zombie.body.pos[1] - listener[1],
+          zombie.body.pos[2] - listener[2],
+        ) * blockSize,
+    }))
+    .filter(({ severity, distanceMetres }) => severity > 0 && distanceMetres <= DRIP_RANGE_M)
+    .sort((a, b) => a.distanceMetres - b.distanceMetres)
+    .slice(0, DRIP_SOURCE_CAP)
+    .map(({ zombie, severity }) => ({
+      position: [zombie.body.pos[0] * blockSize, zombie.body.pos[1] * blockSize, zombie.body.pos[2] * blockSize],
+      heightMetres: zombie.incapacitated ? DOWNED_DRIP_HEIGHT_M : zombie.body.height * blockSize,
+      halfWidthMetres: zombie.body.halfWidth * blockSize,
+      severity,
+    }));
+
+/** Fades each splat by its own opacity, which MeshBasicMaterial has no per-instance slot for. */
+const patchSplatOpacity = (material: MeshBasicMaterial): void => {
+  material.customProgramCacheKey = () => 'deadvox-gore-splat';
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float splatOpacity;\nvarying float vSplatOpacity;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSplatOpacity = splatOpacity;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vSplatOpacity;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.a *= vSplatOpacity;');
+  };
+};
+
+export class Gore {
+  readonly group = new Group();
+  private readonly blockSize: number;
+  private readonly rng: Rng;
+  private readonly droplets: Droplet[];
+  private readonly splats: Splat[];
+  private readonly dropletMesh: InstancedMesh<BoxGeometry, MeshBasicMaterial>;
+  private readonly splatMesh: InstancedMesh<CircleGeometry, MeshBasicMaterial>;
+  private readonly splatOpacity: InstancedBufferAttribute;
+  private readonly dummy = new Object3D();
+  private readonly turn = new Quaternion();
+  private readonly scratch = new Vector3();
+  private nextDroplet = 0;
+  private nextSplat = 0;
+  private spawnedSinceUpdate = 0;
+
+  constructor(blockSize: number, seed = 1) {
+    this.blockSize = blockSize;
+    this.rng = Rng.stream(seed, 'gore');
+    this.droplets = Array.from({ length: DROPLET_CAP }, () => ({
+      active: false,
+      position: new Vector3(),
+      velocity: new Vector3(),
+      ageRealSeconds: 0,
+      sizeMetres: 0,
+    }));
+    this.splats = Array.from({ length: SPLAT_CAP }, () => ({ active: false, ageRealSeconds: 0 }));
+    this.dropletMesh = new InstancedMesh(
+      new BoxGeometry(1, 1, 1),
+      new MeshBasicMaterial({ color: DROPLET_COLOR }),
+      DROPLET_CAP,
+    );
+    const splatMaterial = new MeshBasicMaterial({
+      color: SPLAT_COLOR,
+      transparent: true,
+      depthWrite: false,
+      side: DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+    });
+    patchSplatOpacity(splatMaterial);
+    this.splatMesh = new InstancedMesh(new CircleGeometry(1, 9), splatMaterial, SPLAT_CAP);
+    this.splatOpacity = new InstancedBufferAttribute(new Float32Array(SPLAT_CAP), 1);
+    this.splatOpacity.setUsage(DynamicDrawUsage);
+    this.splatMesh.geometry.setAttribute('splatOpacity', this.splatOpacity);
+    for (const mesh of [this.dropletMesh, this.splatMesh]) {
+      mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+      mesh.frustumCulled = false;
+      this.group.add(mesh);
+    }
+    this.dummy.scale.setScalar(0);
+    this.dummy.updateMatrix();
+    for (let slot = 0; slot < SPLAT_CAP; slot++) {
+      this.splatMesh.setMatrixAt(slot, this.dummy.matrix);
+    }
+    this.drawDroplets();
+  }
+
+  get activeDroplets(): number {
+    return this.droplets.reduce((count, droplet) => count + Number(droplet.active), 0);
+  }
+
+  get activeSplats(): number {
+    return this.splats.reduce((count, splat) => count + Number(splat.active), 0);
+  }
+
+  /** Blood thrown from a wound: most along the strike and on through the body, some back toward the attacker;
+   * more for a heavier hit. `hit` is in blocks, like the simulation's. */
+  spray(hit: HitImpulse, damage: number): void {
+    const count = Math.min(SPRAY_DROPLETS_MAX, Math.max(SPRAY_DROPLETS_MIN, Math.round(2 + damage / 5)));
+    const origin: Vec3 = [hit.point[0] * this.blockSize, hit.point[1] * this.blockSize, hit.point[2] * this.blockSize];
+    for (let i = 0; i < count; i++) {
+      const sense = this.rng.chance(SPRAY_BACK_FRACTION) ? -1 : 1;
+      const direction = this.scratch
+        .set(
+          hit.direction[0] * sense + this.rng.range(-0.5, 0.5),
+          hit.direction[1] * sense + this.rng.range(-0.2, 0.6),
+          hit.direction[2] * sense + this.rng.range(-0.5, 0.5),
+        )
+        .normalize()
+        .multiplyScalar(this.rng.range(1.5, 4.5));
+      if (!this.emit(origin, direction, this.rng.range(0.012, 0.026))) {
+        return;
+      }
+    }
+  }
+
+  /** The extra burst as flesh is carved out of an amalgam, on top of the wound's own spray: more for a
+   * bigger hole. */
+  carved(hit: HitImpulse, cells: number): void {
+    this.spray(hit, cells * CARVED_CELL_SPRAY_DAMAGE);
+  }
+
+  /** A large splat on the floor under something wet that came to rest there, such as a chunk of amalgam
+   * flesh (its centre, metres). The floor is the top of the block the centre is in. */
+  landed(centre: Vec3): void {
+    const floor = Math.floor(centre[1] / this.blockSize) * this.blockSize;
+    this.splat(new Vector3(centre[0], floor, centre[2]), new Vector3(...UP), this.rng.range(0.14, 0.24));
+  }
+
+  /** Flies the droplets, leaves a splat where each lands, fades the splats and lets the wounded drip. */
+  update(
+    dt: number,
+    isSolid: (x: number, y: number, z: number) => boolean,
+    dripping: readonly DripSource[] = [],
+  ): void {
+    const step = Math.max(0, dt);
+    const substeps = Math.max(1, Math.ceil(step / 0.02));
+    for (const droplet of this.droplets) {
+      if (!droplet.active) {
+        continue;
+      }
+      droplet.ageRealSeconds += step;
+      for (let substep = 0; substep < substeps && droplet.active; substep++) {
+        this.advance(droplet, step / substeps, isSolid);
+      }
+      if (droplet.ageRealSeconds >= DROPLET_MAX_AGE_S) {
+        droplet.active = false;
+      }
+    }
+    this.fadeSplats(step);
+    this.drip(step, dripping);
+    this.drawDroplets();
+    this.spawnedSinceUpdate = 0;
+  }
+
+  dispose(): void {
+    this.group.clear();
+    for (const mesh of [this.dropletMesh, this.splatMesh]) {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+      mesh.dispose();
+    }
+  }
+
+  /** Starts one droplet, reusing the oldest; false once this update's spawn budget is spent. */
+  private emit(origin: Vec3, velocity: Vector3, sizeMetres: number): boolean {
+    if (this.spawnedSinceUpdate >= DROPLET_SPAWNS_PER_FRAME) {
+      return false;
+    }
+    this.spawnedSinceUpdate += 1;
+    const droplet = this.droplets[this.nextDroplet]!;
+    this.nextDroplet = (this.nextDroplet + 1) % DROPLET_CAP;
+    droplet.active = true;
+    droplet.ageRealSeconds = 0;
+    droplet.sizeMetres = sizeMetres;
+    droplet.position.set(...origin);
+    droplet.velocity.copy(velocity);
+    return true;
+  }
+
+  private drip(dt: number, dripping: readonly DripSource[]): void {
+    for (const source of dripping.slice(0, DRIP_SOURCE_CAP)) {
+      if (!this.rng.chance(DRIPS_PER_SECOND * source.severity * dt)) {
+        continue;
+      }
+      const reach = source.halfWidthMetres;
+      const origin: Vec3 = [
+        source.position[0] + this.rng.range(-reach, reach),
+        source.position[1] + source.heightMetres * this.rng.range(0.35, 0.85),
+        source.position[2] + this.rng.range(-reach, reach),
+      ];
+      if (!this.emit(origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
+        return;
+      }
+    }
+  }
+
+  /** Moves one axis at a time; the first solid block met takes a splat on the face it hit. */
+  private advance(droplet: Droplet, dt: number, isSolid: (x: number, y: number, z: number) => boolean): void {
+    droplet.velocity.y -= GRAVITY_MPS2 * dt;
+    for (const axis of [0, 1, 2] as const) {
+      const speed = droplet.velocity.getComponent(axis);
+      const next = droplet.position.getComponent(axis) + speed * dt;
+      const block = [droplet.position.x, droplet.position.y, droplet.position.z].map((value, index) =>
+        Math.floor((index === axis ? next : value) / this.blockSize),
+      );
+      if (!isSolid(block[0]!, block[1]!, block[2]!)) {
+        droplet.position.setComponent(axis, next);
+        continue;
+      }
+      const face = (block[axis]! + (speed > 0 ? 0 : 1)) * this.blockSize;
+      droplet.position.setComponent(axis, face);
+      const normal = new Vector3().setComponent(axis, speed > 0 ? -1 : 1);
+      this.splat(droplet.position, normal, droplet.sizeMetres * this.rng.range(2.5, 4.5));
+      droplet.active = false;
+      return;
+    }
+  }
+
+  private splat(point: Vector3, normal: Vector3, radiusMetres: number): void {
+    const slot = this.nextSplat;
+    this.nextSplat = (this.nextSplat + 1) % SPLAT_CAP;
+    const splat = this.splats[slot]!;
+    splat.active = true;
+    splat.ageRealSeconds = 0;
+    // Successive splats sit a hair apart so overlapping ones don't fight for depth.
+    this.dummy.position.copy(point).addScaledVector(normal, 0.003 + (slot % 8) * 0.0004);
+    this.dummy.quaternion
+      .setFromUnitVectors(FACE_NORMAL, normal)
+      .multiply(this.turn.setFromAxisAngle(FACE_NORMAL, this.rng.range(0, Math.PI * 2)));
+    this.dummy.scale.set(radiusMetres * this.rng.range(0.8, 1.25), radiusMetres * this.rng.range(0.8, 1.25), 1);
+    this.dummy.updateMatrix();
+    this.splatMesh.setMatrixAt(slot, this.dummy.matrix);
+    this.splatMesh.instanceMatrix.needsUpdate = true;
+    this.splatOpacity.setX(slot, SPLAT_OPACITY);
+    this.splatOpacity.needsUpdate = true;
+  }
+
+  private fadeSplats(dt: number): void {
+    for (let slot = 0; slot < SPLAT_CAP; slot++) {
+      const splat = this.splats[slot]!;
+      if (!splat.active) {
+        continue;
+      }
+      splat.ageRealSeconds += dt;
+      const left = SPLAT_LIFE_S - splat.ageRealSeconds;
+      this.splatOpacity.setX(slot, SPLAT_OPACITY * Math.min(1, Math.max(0, left / SPLAT_FADE_S)));
+      this.splatOpacity.needsUpdate = true;
+      if (left <= 0) {
+        splat.active = false;
+        this.dummy.scale.setScalar(0);
+        this.dummy.updateMatrix();
+        this.splatMesh.setMatrixAt(slot, this.dummy.matrix);
+        this.splatMesh.instanceMatrix.needsUpdate = true;
+      }
+    }
+  }
+
+  /** Each droplet stretches along its velocity, so it reads wet in flight. */
+  private drawDroplets(): void {
+    for (let slot = 0; slot < DROPLET_CAP; slot++) {
+      const droplet = this.droplets[slot]!;
+      if (droplet.active) {
+        const speed = droplet.velocity.length();
+        this.dummy.position.copy(droplet.position);
+        this.dummy.quaternion.setFromUnitVectors(
+          FACE_NORMAL,
+          speed > 1e-6 ? this.scratch.copy(droplet.velocity).divideScalar(speed) : FACE_NORMAL,
+        );
+        this.dummy.scale.set(droplet.sizeMetres, droplet.sizeMetres, droplet.sizeMetres + speed * 0.015);
+      } else {
+        this.dummy.scale.setScalar(0);
+      }
+      this.dummy.updateMatrix();
+      this.dropletMesh.setMatrixAt(slot, this.dummy.matrix);
+    }
+    this.dropletMesh.instanceMatrix.needsUpdate = true;
+  }
+}

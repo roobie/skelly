@@ -19,6 +19,7 @@ import { PLAYER } from '../game/player.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
+import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { ImpactEffects } from './impactEffects.ts';
 import { ItemThrows } from './itemThrows.ts';
@@ -104,6 +105,7 @@ export const createPlayView = (
   const playerPalette = registry.figures.get('player')!.palette;
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
+  const gore = new Gore(s, config.seed);
   const itemThrows = new ItemThrows(registry, models, s);
   const targetCell = config.debug
     ? (block: Vec3) => {
@@ -113,10 +115,11 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
   const held = new HeldItems(inventory, models, playerPalette);
-  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group);
+  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group);
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
+    gore.dispose();
     impactEffects.dispose();
     itemThrows.dispose();
     held.dispose();
@@ -135,6 +138,7 @@ export const createPlayView = (
       ? new MobActorMeshes(s, undefined, {
           includeAmalgam: true,
           amalgamType: registry.zombies.get('amalgam'),
+          onFleshLanded: (centre) => gore.landed(centre),
         })
       : new ZombieMeshes(s);
   zombieMeshes.setWorld?.(engine.isSolid, s);
@@ -149,6 +153,7 @@ export const createPlayView = (
     models,
     piles,
     caseEffects,
+    gore,
     itemThrows,
     impactEffects,
     furniture,
