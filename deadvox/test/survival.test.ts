@@ -101,6 +101,9 @@ describe('catch-up', () => {
     const live = { ...SPAWN_NEEDS };
     const caughtBody = new Body(BODY_TUNING_FIXTURE);
     const liveBody = new Body(BODY_TUNING_FIXTURE);
+    caughtBody.impact(10, 'torso');
+    liveBody.impact(10, 'torso');
+    const initialRegionDamage = caughtBody.regionDamage.torso;
     stepNeeds(caught, caughtBody, 16);
     tickLive(live, liveBody, 16);
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {
@@ -108,6 +111,8 @@ describe('catch-up', () => {
     }
     expect(caughtBody.health).toBeCloseTo(liveBody.health, 6);
     expect(caughtBody.health).toBeLessThan(100);
+    expect(caughtBody.regionDamage.torso).toBeCloseTo(liveBody.regionDamage.torso, 6);
+    expect(caughtBody.regionDamage.torso).toBeLessThan(initialRegionDamage);
   });
 
   it('starts and stops health coming back at the right moment', () => {
