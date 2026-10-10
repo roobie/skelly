@@ -176,13 +176,16 @@ describe('Tiled spawn-window export', () => {
     } = exportLayout(map);
     const exported = { layouts: [rawLayout] };
     const tiledProject = JSON.parse(readFileSync(projectPath, 'utf8')) as {
-      propertyTypes: { name: string; values: string[] }[];
+      propertyTypes: { name: string; values?: string[]; members?: { name: string }[] }[];
     };
     const allowedTemplates = tiledProject.propertyTypes.find(({ name }) => name === 'template_id')?.values ?? [];
     expect(allowedTemplates.length).toBeGreaterThan(0);
     for (const { template } of rawLayout.buildings) {
       expect(allowedTemplates, template).toContain(template);
     }
+    expect(tiledProject.propertyTypes.find(({ name }) => name === 'horde')?.members?.map(({ name }) => name)).toContain(
+      'horde_id',
+    );
     const committed = JSON.parse(
       readFileSync(join(mapsPath, '../src/content/base/layouts-playtest.json'), 'utf8'),
     ) as unknown;

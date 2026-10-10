@@ -1341,6 +1341,57 @@ describe('authored fixed loot', () => {
     expect(inventory.entities.setOpen(door, true)).toBeUndefined();
   });
 
+  it('keeps the FOB command tent entrance and interior reachable at standing height', () => {
+    const building = layout.buildings.find(({ template }) => template === 'camp_command_tent')!;
+    const definition = result.registry.templates.get(building.template)!;
+    const tent = compileTemplate(result.registry, definition);
+    expect(templateSpatialIssues(result.registry, tent), tent.id).toEqual([]);
+    const reachable = templateReachableStandingPositions(result.registry, tent);
+    expect(reachable.length, tent.id).toBeGreaterThan(0);
+    expect(tent.pieces.length).toBeGreaterThan(0);
+    for (const piece of tent.pieces) {
+      const [x, feet, z] = piece.pos;
+      const [pieceWidth, , pieceDepth] = piece.size;
+      expect(
+        reachable.some(([px, py, pz]) => {
+          if (py !== feet) {
+            return false;
+          }
+          const dx = Math.max(x - px, 0, px - (x + pieceWidth));
+          const dz = Math.max(z - pz, 0, pz - (z + pieceDepth));
+          return Math.hypot(dx, dz) <= STAIR_BODY_HALF_WIDTH + 0.5;
+        }),
+        `${piece.furniture} at ${piece.pos.join(',')}`,
+      ).toBe(true);
+    }
+
+    const { entrance } = definition.access!;
+    const [width, , depth] = tent.size;
+    const edgeSteps = [
+      { distance: entrance[0], dx: -1, dz: 0 },
+      { distance: width - 1 - entrance[0], dx: 1, dz: 0 },
+      { distance: entrance[2], dx: 0, dz: -1 },
+      { distance: depth - 1 - entrance[2], dx: 0, dz: 1 },
+    ];
+    const nearestEdge = Math.min(...edgeSteps.map(({ distance }) => distance));
+    const pathPoints = edgeSteps
+      .filter(({ distance }) => distance === nearestEdge)
+      .map(({ dx, dz }) => [
+        building.position[0] + (entrance[0] + dx) * BLOCK_SIZE,
+        building.position[2] + (entrance[2] + dz) * BLOCK_SIZE,
+      ]);
+    const clearPath = pathPoints.some(([x, z]) =>
+      layout.buildings.every((other) => {
+        if (other.template === building.template) {
+          return true;
+        }
+        const bounds = buildingBounds(other, result.registry.templates.get(other.template)!.size);
+        return !(x! >= bounds.x0 && x! < bounds.x1 && z! >= bounds.z0 && z! < bounds.z1);
+      }),
+    );
+    expect(clearPath).toBe(true);
+  });
+
   it('places worst-case rolls from every FOB armoury container', () => {
     const armoury = layout.buildings.find(({ template: id }) => id === 'camp_armoury')!;
     const definition = result.registry.templates.get(armoury.template)!;

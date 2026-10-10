@@ -3,7 +3,7 @@ import { blocks, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
 import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { militaryLootItems } from './magazine.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { FixedLootItemDef, SiteLayoutDef } from './schema.ts';
@@ -208,6 +208,31 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
   };
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
+  const authoredHordes = layout.hordes ?? [];
+  const hordeType = registry.zombies.get(HAMLET_HORDE_TYPE);
+  if (authoredHordes.length > 0 && !hordeType) {
+    issues.push(['.hordes', `no zombie type "${HAMLET_HORDE_TYPE}"`]);
+  }
+  const hordeIds = new Set<string>();
+  authoredHordes.forEach(({ id, position }, i) => {
+    const path = `.hordes[${i}].position`;
+    if (hordeIds.has(id)) {
+      issues.push([`.hordes[${i}].id`, `horde id "${id}" is used more than once in this site`]);
+    }
+    hordeIds.add(id);
+    checkSpawn([position[0], position[2]], path);
+    supported(position, path);
+    if (hordeType) {
+      const blocked = spawnOverlappingSolidBlock(
+        blocks(position),
+        zombieBodyDimensions(hordeType, HAMLET_BLOCK_SIZE),
+        solidAt,
+      );
+      if (blocked) {
+        issues.push([path, `spawn body overlaps solid cell [${blocked.join(',')}]`]);
+      }
+    }
+  });
   layout.shamblers.forEach((spawn, i) => {
     const type = registry.zombies.get(spawn.type);
     if (!type) {

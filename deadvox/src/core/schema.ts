@@ -1018,6 +1018,7 @@ const SiteLayoutSchema = strictObject({
       window: optional(SpawnWindowSchema),
     }),
   ),
+  hordes: optional(array(strictObject({ id: Id, position: MetrePosition }))),
   woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
   tracks: array(
     strictObject({
