@@ -17,6 +17,7 @@ read_if:
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
+  - you add or change a first-person handling animation (what it may read its timing from)
   - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing the HUD defaults or why players can turn HUD elements off
@@ -394,6 +395,16 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   rest-pose owner: `HeldItems.handBases` retains the raised inspection grip for
   `HeldItems.poseRummage`. The needle's world-heading owner remains independent
   of hand motion: see `src/render/compass.ts`, `createCompass`.
+- **Handling animations follow the simulated action.** A handling pose reads
+  its phase from the running job's own elapsed time and duration, never from a
+  render clock. Time compression, cancel and interrupt then can't make the
+  hands show something the simulation didn't do. Loading a held magazine raises
+  it into view, and the other hand presses one round for each round's job.
+  Stripping plays the same press backwards. Only the raise and the lowering ease
+  over real time: each round is its own job, so the queue is empty for a frame
+  between rounds, and a short hold keeps the magazine up across that gap. See
+  `src/render/magazineLoadPose.ts`, `readMagazineLoadFrame`, `magazinePress` and
+  `stepMagazineRaise`, and `src/render/hands.ts`, `HeldItems.poseMagazineLoad`.
 - **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
   left-handed dominant is a thing we should accomodate". Quick actions, the
   dominant and off-hand activations, holds and drawing follow the character's
