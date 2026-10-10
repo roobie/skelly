@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   BoxGeometry,
+  DirectionalLight,
   Euler,
   Frustum,
   Group,
@@ -69,6 +70,27 @@ const fallbackLightHands = [...registry.items.values()]
   .flatMap((definition) => (['right', 'left'] as const).map((side) => ({ id: definition.id, definition, side })));
 
 describe('held light presentation', () => {
+  it('receives the world sun map in the camera’s world position', () => {
+    const sourceSun = new DirectionalLight();
+    sourceSun.castShadow = true;
+    const held = new HeldItems(new Inventory(registry), undefined, palette, sourceSun);
+    const camera = new PerspectiveCamera();
+    camera.position.set(12, 3, -7);
+    held.update(camera);
+
+    const { scene, camera: handCamera } = held.warmUpTarget;
+    const handSun = scene.children.find((child) => child instanceof DirectionalLight);
+    const handView = scene.getObjectByName('held-items-view')!;
+    const arm = scene.getObjectByName('first-person-arm-right')!;
+    const receiver = arm.children.find((child) => child instanceof Mesh)!;
+    expect(handSun?.castShadow).toBe(true);
+    expect((handSun as DirectionalLight | undefined)?.shadow).toBe(sourceSun.shadow);
+    expect((receiver as Mesh).receiveShadow).toBe(true);
+    expect((receiver as Mesh).castShadow).toBe(false);
+    expect(handView.position).toEqual(camera.position);
+    expect(handCamera.position).toEqual(camera.position);
+    held.dispose();
+  });
   it.each(fallbackLightHands)('$id in the $side hand draws by its light definition', ({ id, definition, side }) => {
     const inventory = new Inventory(registry);
     const light = inventory.create(id);

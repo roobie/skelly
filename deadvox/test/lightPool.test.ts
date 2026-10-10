@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { PerspectiveCamera, Scene, Vector3 } from 'three';
+import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -41,6 +41,31 @@ const registryWithTestLights = () => {
 };
 
 describe('made-light point pool', () => {
+  it('shares the active point pool with hands without adding shadow casters', () => {
+    const scene = new Scene();
+    const handScene = new Scene();
+    const pool = new LightPool(scene, handScene);
+    const inventory = new Inventory(registry);
+    const glowstick = inventory.create('glowstick');
+    expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+    expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
+    const camera = new PerspectiveCamera();
+    camera.position.set(2, 1, -3);
+    held.update(camera);
+
+    pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
+
+    const handLights = handScene.children.filter((child): child is PointLight => child instanceof PointLight);
+    expect(handLights).toHaveLength(POINT_LIGHT_POOL_SIZE);
+    expect(handLights[0]!.intensity).toBeGreaterThan(0);
+    expect(handLights[0]!.position).toEqual(pool.lights[0]!.position);
+    expect(handLights.every((light) => !light.castShadow)).toBe(true);
+    inventory.consume(glowstick);
+    pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
+    expect(handLights.every((light) => light.intensity === 0)).toBe(true);
+    held.dispose();
+  });
   it.each(['right', 'left'] as const)('places a carried fixture light at its held %s-hand position', (side) => {
     const fixtureRegistry = registryWithTestLights();
     const scene = new Scene();

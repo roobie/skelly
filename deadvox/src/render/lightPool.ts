@@ -25,16 +25,37 @@ function handPriority(location: Location): number {
 export class LightPool {
   readonly group = new Group();
   readonly lights: readonly PointLight[];
+  private readonly handLights: readonly PointLight[];
   private readonly positions = Array.from({ length: POINT_LIGHT_POOL_SIZE }, () => new Vector3());
 
-  constructor(scene: Scene) {
+  constructor(scene: Scene, handScene?: Scene) {
     this.lights = Array.from({ length: POINT_LIGHT_POOL_SIZE }, () => {
       const light = new PointLight(0xff_ff_ff, 0, 0, 1);
       light.castShadow = false;
       this.group.add(light);
       return light;
     });
+    this.handLights = handScene
+      ? this.lights.map((light) => {
+          const handLight = light.clone();
+          handLight.castShadow = false;
+          handScene.add(handLight);
+          return handLight;
+        })
+      : [];
     scene.add(this.group);
+  }
+
+  private syncHandLight(index: number, source: PointLight): void {
+    const handLight = this.handLights[index];
+    if (!handLight) {
+      return;
+    }
+    handLight.position.copy(source.position);
+    handLight.color.copy(source.color);
+    handLight.distance = source.distance;
+    handLight.intensity = source.intensity;
+    handLight.decay = source.decay;
   }
 
   update(inventory: Inventory, { held, camera, blockSize, daylightScale }: LightPoolContext): void {
@@ -73,6 +94,7 @@ export class LightPool {
       const entry = index < CARRIED_POINT_LIGHTS ? carried[index] : dropped[index - CARRIED_POINT_LIGHTS];
       if (!entry) {
         light.intensity = 0;
+        this.syncHandLight(index, light);
         continue;
       }
       const spec = inventory.registry.items.get(entry.item.type)!.light!;
@@ -91,6 +113,7 @@ export class LightPool {
       light.color.set(spec.color);
       light.distance = spec.radius;
       light.intensity = spec.intensity * daylightScale;
+      this.syncHandLight(index, light);
     }
   }
 }

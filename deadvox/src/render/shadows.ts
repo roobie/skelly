@@ -25,9 +25,9 @@
 // sits with the viewer, so a face it can't reach is one the viewer can't see, and its perspective
 // texels grow with distance past what a fixed normal offset could clear.
 //
-// The held items are drawn from their own scene (hands.ts) with lights that don't cast, so they are
-// neither in nor shaded by these maps. The player's world figure is on its own layer (shadowFlags.ts):
-// the sun's pass sees it, the torch's pass doesn't.
+// The held scene (hands.ts) receives the sun map the world pass already drew; it isn't a caster, and the
+// light-pool copies don't cast maps. The player's world figure is on its own layer (shadowFlags.ts): the
+// sun's pass sees it, the torch's pass doesn't.
 
 import {
   BackSide,
