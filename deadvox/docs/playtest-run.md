@@ -28,12 +28,20 @@ gh variable delete PAGES_FREEZE
 ```
 
 The `build` and `deploy` jobs in `.github/workflows/pages.yml` skip automatic Pages
-publishing during the freeze. At freeze start, use the commit from the `github-pages`
-environment's latest successful deployment (its deployment record or the head SHA
-of the last successful Pages run; a frozen push run is skipped), not the current
-`main` head, and tag it `playtest-1-deployed` so a hotfix has a fixed base. For a
+publishing during the freeze, while manual dispatches remain available. After setting
+the freeze, wait until no Pages run is queued or in progress. Use the head SHA from
+the latest successful run only after confirming its `deploy` job succeeded; do not
+use the current `main` head:
+
+```sh
+gh run list --workflow pages.yml --status success --limit 1 --json databaseId,headSha --jq '.[0]'
+gh run view <run id> --json jobs --jq '.jobs[] | select(.name == "deploy") | .conclusion'
+```
+
+Tag that deployed commit `playtest-1-deployed` to give a hotfix a fixed base. For a
 fix BR approves during the freeze, branch `pages-hotfix/<name>` from that tag and
-commit only the fix. Dispatch the Pages workflow from that branch:
+commit only the fix.
+Dispatch the Pages workflow from that branch:
 
 ```sh
 gh workflow run pages.yml --ref pages-hotfix/<name>
