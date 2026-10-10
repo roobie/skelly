@@ -636,7 +636,10 @@ lights out in about one real minute. See `src/core/body.ts`, `BLEEDING_TIERS`.
 - **Lights out in a real minute.** At normal speed the frame driver advances
   simulation time by real time, since an uncompressed step is the real step times
   1 (`src/game/frameDriver.ts`, `advanceLiveFrame`). So the arterial rate is full
-  blood over 60 simulation seconds. Lights out is death by blood loss, with no
+  blood over 60 simulation seconds. The minute is real only while frames come fast
+  enough: `src/game/play.ts`, `frame`, caps each frame's real step so a stall
+  doesn't jump the world, and below that rate the whole game, bleeding included,
+  runs slower than real time. Lights out is death by blood loss, with no
   faint before it: the body model already ends at no blood, and a faint would only
   cut the minute the player has to dress the wound, since nobody else can.
 - **No compression while an artery bleeds,** so the minute stays a real minute.
