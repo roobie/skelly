@@ -587,10 +587,24 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Body.** Injuries affect sight, aim, swings and movement as well as health.
   Each region recovers at health's rate while needs allow health recovery, except
   while that region is bleeding or infected. This lets injury penalties fade
-  without healing through an active wound. Treatment is applied from the held
-  item to a selected region. See `src/core/body.ts`, `Body.recoverRegionDamage`
-  and `Body.consequences`; `src/core/needs.ts`, `stepNeeds`; and
-  `src/game/survival.ts`, `Survival.use`.
+  without healing through an active wound. See `src/core/body.ts`,
+  `Body.recoverRegionDamage` and `Body.consequences`; `src/core/needs.ts`,
+  `stepNeeds`.
+
+  Treatment uses a wielded item: left-click to apply it, or hold its quickbar
+  slot. Mouse scroll selects an action for the wielded item; its selection cue
+  appears only while hints are enabled. See `src/game/survival.ts`,
+  `Survival.use` and `Survival.useFromQuickbar`; `src/game/itemActions.ts`,
+  `ItemActionSelection`; and `src/ui/playHud.ts`, `playHudText`. The default
+  action is recorded in [SLICE-3.md](SLICE-3.md), 3.4.
+
+  Infection onset is time-based, with deterministic infection risk and an
+  antiseptic window. Knockout is timed; all body tunables are content-defined so
+  mods can change them. A knockout leaves the player prone, with a black screen
+  and no sound; death after a knockout stays black. See `src/core/body.ts`,
+  `Body.advance`; `src/core/schema.ts`, `BodyTuningSchema`; `src/ui/style.css`,
+  `body.unconscious`; `src/game/audio.ts`, `GameAudio.setOutputMuted`; and
+  `src/game/play.ts`, `frame`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
 

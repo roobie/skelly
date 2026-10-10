@@ -94,21 +94,7 @@ describe('snapshot state components', () => {
     expect(actor.practice.crafting).toBe(0);
   });
 
-  it('round-trips a partially recovered body region', async () => {
-    const runtime = createRuntime();
-    runtime.sim.body.impact(20, 'head');
-    const initialRegionDamage = runtime.sim.body.regionDamage.head;
-    runtime.sim.scheduler.advance(1);
-    const regionDamage = runtime.sim.body.regionDamage.head;
-    expect(regionDamage).toBeGreaterThan(0);
-    expect(regionDamage).toBeLessThan(initialRegionDamage);
-
-    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
-    const loaded = createRuntime(decoded.snapshot);
-    expect(loaded.sim.body.regionDamage.head).toBe(regionDamage);
-  });
-
-  it('round-trips body wounds and a stopped treatment action with its item uid and progress', async () => {
+  it('round-trips body wounds, a partially recovered region and a stopped treatment action', async () => {
     const runtime = createRuntime();
     const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
@@ -127,6 +113,12 @@ describe('snapshot state components', () => {
     }
     runtime.sim.scheduler.advance(treatmentJob.duration / 2);
     runtime.sim.actions.stop();
+    runtime.sim.body.impact(10, 'head');
+    const initialHeadDamage = runtime.sim.body.regionDamage.head;
+    runtime.sim.scheduler.advance(1);
+    const recoveredHeadDamage = runtime.sim.body.regionDamage.head;
+    expect(recoveredHeadDamage).toBeGreaterThan(0);
+    expect(recoveredHeadDamage).toBeLessThan(initialHeadDamage);
 
     const snapshot = capture(runtime);
     expect(snapshot.character.longAction.job).toMatchObject({

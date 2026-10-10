@@ -127,6 +127,28 @@ describe('player body', () => {
     expect(body.regionDamage.rightArm).toBeGreaterThan(0);
   });
 
+  it('uses elapsed time when infection starts in a later health segment', () => {
+    const onsetHours = BODY_TUNING_FIXTURE.infectionOnsetGameHours / SECONDS_PER_HOUR;
+    const probeHours = onsetHours / 100;
+    const probe = new Body(BODY_TUNING_FIXTURE);
+    probe.damageHealth(1);
+    const probeHealth = probe.health;
+    stepNeeds(recoveryNeeds(), probe, probeHours, { rates: steadyNeedRates });
+    const recoveryRate = (probe.health - probeHealth) / probeHours;
+
+    const body = new Body(BODY_TUNING_FIXTURE);
+    body.impact(10, 'rightArm', { bleeding: true });
+    body.restoreHealth(10);
+    expect(body.treat('rightArm', 'bandage')).toBe(true);
+    const initialDamage = body.regionDamage.rightArm;
+    body.damageHealth((recoveryRate * onsetHours) / 2);
+
+    stepNeeds(recoveryNeeds(), body, onsetHours * 2, { rates: steadyNeedRates });
+
+    expect(body.health).toBe(100);
+    expect(initialDamage - body.regionDamage.rightArm).toBeCloseTo(recoveryRate * onsetHours, 8);
+  });
+
   it('does not recover any region while needs prevent health recovery', () => {
     const control = new Body(BODY_TUNING_FIXTURE);
     const unmet = new Body(BODY_TUNING_FIXTURE);
