@@ -6,8 +6,9 @@ import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { bodyDistance, INVENTORY_REACH } from '../src/core/reach.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ZombieDef } from '../src/core/schema.ts';
+import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
+import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
+import { compileTemplate, footprint, type Placement, placedBlockAt } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
@@ -29,7 +30,7 @@ if (issues.length > 0) {
 
 const FLAT: SolidAt = (_x, y) => y === 0;
 
-const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3 } = {}) => {
+const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3, yaw = 0 } = {}) => {
   const scale = makeScale(0.5);
   let intent: MoveIntent = { ...IDLE };
   let crouchToggle = false;
@@ -55,7 +56,7 @@ const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3 } = {}) => {
         crouchToggle = false;
         return pressed;
       },
-      yaw: () => 0,
+      yaw: () => yaw,
       pitch: () => 0,
       walking: () => intent.walk,
       descending: () => false,
@@ -255,6 +256,104 @@ describe('crouching under a low ceiling', () => {
     expect(crouched.session.body.pos[2]! + crouched.session.body.halfWidth).toBeLessThan(SlabFar);
     // Stopped against the slab's near edge.
     expect(standing.session.body.pos[2]! - standing.session.body.halfWidth).toBeCloseTo(SlabNear, 1);
+  });
+
+  it('walks through the authored FOB hole only when stance height fits', () => {
+    const { layouts } = JSON.parse(readFileSync(join(BASE, 'layouts-playtest.json'), 'utf8')) as {
+      layouts: SiteLayoutDef[];
+    };
+    const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;
+    const building = camp.buildings.find(({ template }) => template === 'camp_wall_run_crouch_hole')!;
+    const wall: Placement = {
+      template: compileTemplate(registry, registry.templates.get(building.template)!),
+      origin: building.position.map((metres) => metres / BLOCK_SIZE) as Vec3,
+      turn: (building.rotation / 90) as Placement['turn'],
+    };
+    const [wallWidth, wallDepth] = footprint(wall);
+    const groundBlock = Math.round(camp.ground / BLOCK_SIZE);
+    const wallCellSolid = (x: number, y: number, z: number): boolean => {
+      const block = placedBlockAt(wall, [x, y, z]);
+      return block !== undefined && registry.blocks[block]?.solid === true;
+    };
+    const openingZ = Array.from({ length: wallDepth }, (_value, offset) => wall.origin[2] + offset).filter((z) =>
+      Array.from({ length: wallWidth }, (_value, offset) => wall.origin[0] + offset).every(
+        (x) => !wallCellSolid(x, groundBlock + 1, z),
+      ),
+    );
+    expect(openingZ.length).toBeGreaterThan(0);
+    let openingHeightBlocks = 0;
+    for (let y = groundBlock + 1; y < wall.origin[1] + wall.template.size[1]; y += 1) {
+      if (
+        !openingZ.every((z) =>
+          Array.from({ length: wallWidth }, (_value, offset) => wall.origin[0] + offset).every(
+            (x) => !wallCellSolid(x, y, z),
+          ),
+        )
+      ) {
+        break;
+      }
+      openingHeightBlocks += 1;
+    }
+    const laneCenterZ = (openingZ[0]! + openingZ.at(-1)! + 1) / 2;
+    const walkThrough = (isCrouched: boolean, oneBlockTaller = false) => {
+      const isSolid: SolidAt = (x, y, z) => {
+        if (
+          oneBlockTaller &&
+          y === groundBlock + 1 + openingHeightBlocks &&
+          openingZ.includes(z) &&
+          x >= wall.origin[0] &&
+          x < wall.origin[0] + wallWidth
+        ) {
+          return false;
+        }
+        if (
+          x >= wall.origin[0] &&
+          x < wall.origin[0] + wallWidth &&
+          z >= wall.origin[2] &&
+          z < wall.origin[2] + wallDepth
+        ) {
+          return wallCellSolid(x, y, z);
+        }
+        return y <= groundBlock;
+      };
+      const runtime = makeRuntime({
+        isSolid,
+        spawn: [wall.origin[0] + wallWidth + 3, groundBlock + 1, laneCenterZ],
+        yaw: Math.PI / 2,
+      });
+      if (isCrouched) {
+        runtime.toggleCrouch();
+        runtime.advance(1);
+      }
+      runtime.setIntent({ ...IDLE, forward: 1, walk: true });
+      runtime.advance(600);
+      const { body } = runtime.session;
+      return {
+        passed: body.pos[0]! + body.halfWidth < wall.origin[0],
+        position: body.pos,
+        halfWidth: body.halfWidth,
+      };
+    };
+
+    const crouched = walkThrough(true);
+    const standing = walkThrough(false);
+    expect(crouched.passed, `crouched body stopped at ${crouched.position}`).toBe(true);
+    expect(crouched.position[1]).toBeCloseTo(groundBlock + 1, 2);
+    expect(standing.passed).toBe(false);
+    expect(standing.position[0]! - standing.halfWidth).toBeGreaterThanOrEqual(wall.origin[0] + wallWidth - 0.05);
+
+    const crouchedHeight = registry.senses.get('player')!.crouch.bodyHeightMetres;
+    expect(openingHeightBlocks * BLOCK_SIZE).toBeGreaterThanOrEqual(crouchedHeight);
+    expect(
+      openingZ.every((z) =>
+        Array.from({ length: wallWidth }, (_value, offset) => wall.origin[0] + offset).every((x) =>
+          wallCellSolid(x, groundBlock, z),
+        ),
+      ),
+    ).toBe(true);
+    expect(openingHeightBlocks * BLOCK_SIZE).toBeLessThan(PLAYER.height);
+    expect(openingZ.length * BLOCK_SIZE).toBeGreaterThanOrEqual(PLAYER.halfWidth * 2);
+    expect(walkThrough(false, true).passed).toBe(true);
   });
 
   it('refuses to stand up under the opening, and stands once clear of it', () => {
