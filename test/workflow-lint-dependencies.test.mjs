@@ -62,6 +62,7 @@ const nodeCacheDependencyPathsIn = (workflow) =>
 
 const lintCommands = commandsIn(parse(read('.github/workflows/lint.yml')));
 const requiredPrefixes = installPrefixes(lintCommands);
+
 test('every workflow running root CI installs lint workflow prefixes and caches their lockfiles', () => {
   assert.ok(requiredPrefixes.size > 0, 'lint workflow declares prefix installs');
   const runningRootCi = workflowPaths
