@@ -183,6 +183,7 @@ const makeActions = (
   };
   let reviewMapOpen = false;
   let spectatorCamera = false;
+  let thirdPerson = false;
   let perceptionLabels = false;
   const hooks = {
     sim,
@@ -196,6 +197,12 @@ const makeActions = (
       enabled: () => spectatorCamera,
       toggle: () => {
         spectatorCamera = !spectatorCamera;
+      },
+    },
+    thirdPerson: {
+      enabled: () => thirdPerson,
+      toggle: () => {
+        thirdPerson = !thirdPerson;
       },
     },
     perceptionLabels: {

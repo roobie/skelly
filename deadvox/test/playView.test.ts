@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { PerspectiveCamera, Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Body } from '../src/core/physics.ts';
 import { skyAt } from '../src/core/sky.ts';
@@ -21,7 +22,7 @@ const { registry } = buildRegistry(
     })),
 );
 
-const fixture = () => {
+const fixture = (isSolid: Engine['isSolid'] = () => false) => {
   const inventory = new Inventory({ ...registry, models: new Map() });
   const page = new EventTarget();
   const renderer = { toneMapping: 0, toneMappingExposure: 1 };
@@ -37,7 +38,7 @@ const fixture = () => {
     mood,
     shadows,
     sky: {},
-    isSolid: () => false,
+    isSolid,
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), page);
   return {
@@ -129,6 +130,70 @@ describe('play presentation ownership', () => {
       damage,
     );
     expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2 }));
+    view.dispose();
+  });
+
+  it('switches the presentation to third person and restores first-person hands and camera', () => {
+    const { engine, view } = fixture();
+    const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };
+    const damage = { style: { opacity: '' } } as unknown as HTMLElement;
+    const sync = vi.spyOn(view.playerMeshes, 'sync');
+    const heldDraw = vi.spyOn(view.held, 'render').mockImplementation(() => undefined);
+    const frame = {
+      dt: 0.1,
+      body,
+      paused: false,
+      noclip: false,
+      yaw: 0,
+      pitch: 0,
+      stridePhase: 0,
+      eye: [2, 4.24, 6] as Vec3,
+      sightImpaired: false,
+    };
+
+    view.updateCamera(frame, damage);
+    view.render();
+    const firstPersonRotation = engine.camera.rotation.clone();
+    expect(heldDraw).toHaveBeenCalledTimes(1);
+
+    view.updateCamera({ ...frame, thirdPerson: true }, damage);
+    const thirdPersonPosition = engine.camera.position.clone();
+    view.render();
+    expect(thirdPersonPosition.toArray()).not.toEqual([1, 2.12, 3]);
+    expect(sync).toHaveBeenLastCalledWith(expect.objectContaining({ thirdPerson: true }));
+    expect(heldDraw).toHaveBeenCalledTimes(1);
+
+    view.updateCamera(frame, damage);
+    view.render();
+    expect(engine.camera.position.toArray()).toEqual([1, 2.12, 3]);
+    expect(engine.camera.rotation.equals(firstPersonRotation)).toBe(true);
+    expect(sync).toHaveBeenLastCalledWith(expect.objectContaining({ thirdPerson: false }));
+    expect(heldDraw).toHaveBeenCalledTimes(2);
+    view.dispose();
+  });
+
+  it('pulls the third-person camera short of a solid wall behind the player', () => {
+    const { engine, view } = fixture((_x, _y, z) => z === 8);
+    const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };
+    const damage = { style: { opacity: '' } } as unknown as HTMLElement;
+    view.updateCamera(
+      {
+        dt: 0.1,
+        body,
+        paused: false,
+        noclip: false,
+        yaw: 0,
+        pitch: 0,
+        stridePhase: 0,
+        eye: [2, 4.24, 6],
+        thirdPerson: true,
+        sightImpaired: false,
+      },
+      damage,
+    );
+
+    expect(engine.camera.position.z / 0.5).toBeGreaterThan(6);
+    expect(engine.camera.position.z / 0.5).toBeLessThan(8);
     view.dispose();
   });
 

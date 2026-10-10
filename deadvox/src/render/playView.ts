@@ -10,6 +10,7 @@ import type { Item } from '../core/items.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
+import { raycast, type SolidAt } from '../core/raycast.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
@@ -43,6 +44,7 @@ export interface PlayCameraFrame {
   readonly stridePhase: number;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
+  readonly thirdPerson?: boolean;
   readonly sightImpaired: boolean;
 }
 
@@ -60,6 +62,25 @@ export interface PlayWorldFrame {
   readonly frozen: boolean;
   readonly perceptionLabels: boolean;
 }
+
+const THIRD_PERSON_DISTANCE = 3;
+const THIRD_PERSON_HEIGHT = 1.1;
+const THIRD_PERSON_TARGET_DROP = 0.6;
+const THIRD_PERSON_WALL_MARGIN = 0.15;
+
+const thirdPersonCameraPosition = (eye: Vec3, yaw: number, blockSize: number, isSolid: SolidAt): Vec3 => {
+  const offset: Vec3 = [
+    Math.sin(yaw) * THIRD_PERSON_DISTANCE,
+    THIRD_PERSON_HEIGHT,
+    Math.cos(yaw) * THIRD_PERSON_DISTANCE,
+  ];
+  const length = Math.hypot(...offset);
+  const direction: Vec3 = [offset[0] / length, offset[1] / length, offset[2] / length];
+  const maximum = length / blockSize;
+  const hit = raycast(eye, direction, maximum, isSolid);
+  const distance = Math.max(0, Math.min(maximum, (hit?.distance ?? maximum) - THIRD_PERSON_WALL_MARGIN / blockSize));
+  return [eye[0] + direction[0] * distance, eye[1] + direction[1] * distance, eye[2] + direction[2] * distance];
+};
 
 type PlayViewEngine = Readonly<
   Pick<
@@ -147,6 +168,7 @@ export const createPlayView = (
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
   const damageFeedback = new DamageFeedback();
   let cameraRoll = 0;
+  let thirdPerson = false;
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
 
@@ -213,6 +235,7 @@ export const createPlayView = (
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
       const { dt, body, paused, noclip, yaw, pitch, stridePhase, eye, spectator, sightImpaired } = frame;
+      thirdPerson = frame.thirdPerson === true && spectator === undefined;
       const offset = cameraStepOffset.update(
         [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
         body.onGround,
@@ -222,12 +245,19 @@ export const createPlayView = (
       const travel = Math.hypot(body.vel[0], body.vel[2]) * s * dt;
       const moving = travel > 0.001 && !paused;
       const gaitPhase = stridePhase * Math.PI * 2;
-      playerMeshes.sync({ body, yaw, stepOffset: offset, gaitPhase, moving, inventory });
+      playerMeshes.sync({ body, yaw, stepOffset: offset, gaitPhase, moving, inventory, thirdPerson });
       const [ex, ey, ez] = spectator?.position ?? eye;
-      camera.position.set(ex * s, ey * s + (spectator ? 0 : offset), ez * s);
       const feedback = damageFeedback.step(dt);
-      cameraRoll = spectator ? 0 : feedback.roll;
-      camera.rotation.copy(cameraRotation(spectator?.pitch ?? pitch, spectator?.yaw ?? yaw, cameraRoll));
+      cameraRoll = spectator || thirdPerson ? 0 : feedback.roll;
+      if (thirdPerson) {
+        const steppedEye: Vec3 = [eye[0], eye[1] + offset / s, eye[2]];
+        const [cx, cy, cz] = thirdPersonCameraPosition(steppedEye, yaw, s, engine.isSolid);
+        camera.position.set(cx * s, cy * s, cz * s);
+        camera.lookAt(ex * s, ey * s + offset - THIRD_PERSON_TARGET_DROP, ez * s);
+      } else {
+        camera.position.set(ex * s, ey * s + (spectator ? 0 : offset), ez * s);
+        camera.rotation.copy(cameraRotation(spectator?.pitch ?? pitch, spectator?.yaw ?? yaw, cameraRoll));
+      }
       damage.style.opacity = String(Math.max(feedback.vignetteOpacity, sightImpaired ? 0.2 : 0));
     },
     updateHeld: (
@@ -250,7 +280,14 @@ export const createPlayView = (
         return null;
       }
       const start = performance.now();
-      mood.render(() => held.render(renderer, camera, engine.sky), held.opticLensFrame);
+      mood.render(
+        () => {
+          if (!thirdPerson) {
+            held.render(renderer, camera, engine.sky);
+          }
+        },
+        thirdPerson ? undefined : held.opticLensFrame,
+      );
       return performance.now() - start;
     },
     warmUp: () => {

@@ -574,6 +574,7 @@ export const startPlay = (
   let spectatorCameraEnabled = false;
   let spectatorCameraBody: Body | undefined;
   let spectatorBodyView: { readonly yaw: number; readonly pitch: number } | undefined;
+  let thirdPersonViewEnabled = false;
   let perceptionLabelsEnabled = false;
   const session = createSession({
     registry,
@@ -1190,6 +1191,12 @@ export const startPlay = (
           ? { ...body, pos: [...eye()], vel: [0, 0, 0], onGround: false }
           : undefined;
         spectatorBodyView = spectatorCameraEnabled ? { yaw: input.yaw, pitch: input.pitch } : undefined;
+      },
+    },
+    thirdPerson: {
+      enabled: () => thirdPersonViewEnabled,
+      toggle: () => {
+        thirdPersonViewEnabled = !thirdPersonViewEnabled;
       },
     },
     perceptionLabels: {
@@ -2691,6 +2698,7 @@ export const startPlay = (
         ...(spectatorCameraEnabled && spectatorCameraBody
           ? { spectator: { position: [...spectatorCameraBody.pos], yaw: input.yaw, pitch: input.pitch } }
           : {}),
+        thirdPerson: thirdPersonViewEnabled && !spectatorCameraEnabled,
         sightImpaired: sim.body.consequences.sightImpaired,
       },
       $('damage'),
