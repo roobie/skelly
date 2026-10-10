@@ -23,7 +23,7 @@ import { CHUNK } from '../src/core/coords.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, SHADOW_DISTANCES } from '../src/core/mood.ts';
-import { skyAt, sunDirection, sunShadowStrength } from '../src/core/sky.ts';
+import { skyAt, sunShadowStrength } from '../src/core/sky.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
@@ -43,47 +43,27 @@ import {
   withinRange,
 } from '../src/render/shadows.ts';
 
-const strengthAt = (hour: number): number => sunShadowStrength(sunDirection(hour)[1], skyAt(hour).lightIntensity);
+const strengthAt = (hour: number): number => sunShadowStrength(skyAt(hour).lightIntensity);
 const cycle = dayPhaseAt(DEFAULT_DAY_CYCLE, 0);
 
 describe('sun shadow strength', () => {
-  it('shows sun shadows in daytime and none in full night', () => {
-    const solarNoon = (cycle.sunrise + cycle.sunset) / 2;
-    const fullNight = (cycle.nightfall + SECONDS_PER_DAY + cycle.dawn) / 2;
-    expect(strengthAt(solarNoon / 3600)).toBeGreaterThan(0);
-    expect(strengthAt((fullNight % SECONDS_PER_DAY) / 3600)).toBe(0);
-  });
-
-  it('fades shadows smoothly at the sun-derived horizon crossings', () => {
+  it('lets no direct light past the map at any hour, low sun and night included (#562)', () => {
     const daylight = cycle.sunset - cycle.sunrise;
-    expect(strengthAt(cycle.sunrise / 3600)).toBe(0);
-    expect(strengthAt(cycle.sunset / 3600)).toBeCloseTo(0, 6);
-    const early = strengthAt((cycle.sunrise + daylight * 0.05) / 3600);
-    const later = strengthAt((cycle.sunrise + daylight * 0.1) / 3600);
-    const beforeSet = strengthAt((cycle.sunset - daylight * 0.1) / 3600);
-    const nearSet = strengthAt((cycle.sunset - daylight * 0.05) / 3600);
-    expect(later).toBeGreaterThan(early);
-    expect(beforeSet).toBeGreaterThan(nearSet);
-
-    let previous = strengthAt(0);
-    let peak = 0;
-    for (let minute = 1; minute <= 24 * 60; minute++) {
-      const strength = strengthAt((minute / 60) % 24);
-      expect(Math.abs(strength - previous)).toBeLessThan(0.04);
-      expect(strength).toBeGreaterThanOrEqual(0);
-      expect(strength).toBeLessThanOrEqual(1);
-      peak = Math.max(peak, strength);
-      previous = strength;
+    const fullNight = (cycle.nightfall + SECONDS_PER_DAY + cycle.dawn) / 2;
+    // Low sun after sunrise and before sunset, the dusk glow, and the dead of night.
+    const times = [
+      cycle.sunrise + daylight * 0.05,
+      cycle.sunset - daylight * 0.05,
+      (cycle.sunset + cycle.nightfall) / 2,
+      fullNight % SECONDS_PER_DAY,
+    ];
+    for (const time of times) {
+      const hour = time / 3600;
+      const { lightIntensity } = skyAt(hour);
+      expect(lightIntensity).toBeGreaterThan(0);
+      // What a face the map blocks, such as a sealed room's wall, still gets of the light.
+      expect(lightIntensity * (1 - strengthAt(hour))).toBe(0);
     }
-    expect(peak).toBeGreaterThan(0);
-  });
-
-  it('fades with the light itself, so overcast weather weakens shadows and no light has none', () => {
-    const [, noon] = sunDirection(12);
-    expect(sunShadowStrength(noon, 1.6)).toBe(1);
-    expect(sunShadowStrength(noon, 0.4)).toBeLessThan(0.5);
-    expect(sunShadowStrength(noon, 0)).toBe(0);
-    expect(sunShadowStrength(-0.5, 1.6)).toBe(0);
   });
 });
 
@@ -306,13 +286,11 @@ describe('Shadows', () => {
     expect(camera.right).toBe(24);
   });
 
-  it('keeps the light casting through day and night, and fades the shadow instead of switching it', () => {
+  it('keeps the light casting with its light out, and drops the shadow strength instead of switching it', () => {
     const { frame, light, shadows } = setup();
     frame(1);
     expect(light.castShadow).toBe(true);
     expect(light.shadow.intensity).toBe(1);
-    frame(0.4);
-    expect(light.shadow.intensity).toBe(0.4);
     frame(0);
     expect(light.castShadow).toBe(true);
     expect(light.shadow.intensity).toBe(0);
@@ -332,28 +310,28 @@ describe('Shadows', () => {
     expect(frame(1, moved)).toHaveLength(0);
   });
 
-  it('draws no sun map at night, and draws it again as soon as the shadows come back', () => {
+  it('draws no sun map with its light out, and draws it again as soon as the light is back', () => {
     const { frame } = setup();
     frame(1);
     expect([frame(0), frame(0), frame(0)]).toEqual([[], [], []]);
-    expect(frame(0.2)).toHaveLength(1);
+    expect(frame(1)).toHaveLength(1);
   });
 
-  it("has three.js allocate a casting light's map before the first main pass, even at night, with no casters", () => {
+  it("has three.js allocate a casting light's map before the first main pass, even with its light out, with no casters", () => {
     const { frame, light, shadows, torch } = setup();
     expect(needsMap(light)).toBe(true);
-    // Night from the first frame: no real draw is due, but the map must exist or the programs bind a placeholder.
+    // Light out from the first frame: no real draw is due, but the map must exist or the programs bind a placeholder.
     expect(frame(0)).toEqual([light]);
     expect(light.shadow.map).not.toBeNull();
     expect(shadows.casters.sun).toBe(0);
     expect(needsMap(light)).toBe(false);
     expect([frame(0), frame(0)]).toEqual([[], []]);
-    // Day comes: the real draw follows, with casters.
-    expect(frame(0.5)).toEqual([light]);
+    // The light comes on: the real draw follows, with casters.
+    expect(frame(1)).toEqual([light]);
     expect(shadows.casters.sun).toBe(2);
     // The flashlight's map is allocated through the same pass the first frame it casts.
     torch.castShadow = true;
-    expect(frame(0.5)).toContain(torch);
+    expect(frame(1)).toContain(torch);
     expect(torch.shadow.map).not.toBeNull();
   });
 
@@ -365,7 +343,7 @@ describe('Shadows', () => {
     shadows.setSun(true);
     expect(light.castShadow).toBe(true);
     expect(frame(1)).toHaveLength(1);
-    // Switched off and on again at night: the map exists already, so nothing is drawn.
+    // Switched off and on again with the light out: the map exists already, so nothing is drawn.
     shadows.setSun(false);
     shadows.setSun(true);
     expect(frame(0)).toEqual([]);

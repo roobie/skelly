@@ -121,7 +121,7 @@ const ms = (value: number | null): string => {
   return value.toFixed(1);
 };
 
-/** One line of the readout: the shadow settings, and what the sun's fade and the casters look like right now. */
+/** One line of the readout: the shadow settings, and what the sun's strength and the casters look like right now. */
 export const shadowReadoutText = (
   state: ShadowState,
   sunStrength: number,

@@ -9,10 +9,12 @@
 // (`visible` false), which would drop the chunks behind you that shade what is in front. So this
 // takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
 // `selectShadowCasters`), draws one map per light through it, and leaves the main pass's already
-// queued draw list alone. A light's `castShadow` stays true while its setting is on, so day and
-// night don't change shader programs; the sun just fades `shadow.intensity` to 0 and stops redrawing
-// its map (but a casting light with no map yet always gets one allocated by three's pass, `needsMap`). The flashlight's `castShadow` follows its beam being on and bright (flashlight.ts), a second
-// program variant that `warmUp` compiles in advance.
+// queued draw list alone. A light's `castShadow` stays true while its setting is on, so the hour
+// doesn't change shader programs. The sun's shadow is full whenever its light shines, the night
+// stand-in included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
+// `shadow.intensity` to 0 and stops redrawing its map (but a casting light with no map yet always gets
+// one allocated by three's pass, `needsMap`). The flashlight's `castShadow` follows its beam being on
+// and bright (flashlight.ts), a second program variant that `warmUp` compiles in advance.
 //
 // The sun's map is drawn from the chunk faces that face it, where its light enters a solid, not from
 // three.js's default for a one-sided material, the back faces where light leaves. At an inside corner
@@ -187,7 +189,7 @@ export class Shadows {
     return { ...this.state };
   }
 
-  /** How strong the sun's shadows were last frame, in [0, 1] (0 at night). */
+  /** How strong the sun's shadows were last frame, in [0, 1] (0 with its light out). */
   get sunStrength(): number {
     return this.strength;
   }
@@ -225,7 +227,7 @@ export class Shadows {
   }
 
   /**
-   * Fades the sun's shadows to `strength` (core/sky.ts `sunShadowStrength`), puts its box on the player
+   * Sets the sun's shadows to `strength` (core/sky.ts `sunShadowStrength`), puts its box on the player
    * and decides whether the map is redrawn this frame. Call after `applySky` and before rendering.
    * The map is redrawn when the box moved by a texel, the sun turned, a chunk changed or the
    * distance did (all of which make the old map wrong), and otherwise every `IDLE_REFRESH_EVERY` frames,
@@ -304,7 +306,7 @@ export class Shadows {
     }
     const { light, torch, meshes } = this;
     if (!this.sunDue && needsMap(light)) {
-      // A casting light whose map three.js hasn't allocated yet (night or sun shadows just switched on):
+      // A casting light whose map three.js hasn't allocated yet (its light out, or sun shadows just switched on):
       // its programs would bind three's placeholder, which GL rejects against a sampler2DShadow in the
       // `sampler2DShadow[]` uniform path (WebGLUniforms.js setValueT1Array). Let three's own pass allocate and
       // clear it, with no casters, so it reads as fully lit; `stale` stays set so the first real draw follows.
