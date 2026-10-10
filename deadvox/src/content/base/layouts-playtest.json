@@ -546,7 +546,18 @@
           "template": "camp_sandbag_post",
           "position": [468, 21, 495],
           "rotation": 0,
-          "storeys": 1
+          "storeys": 1,
+          "fixedLoot": [
+            {
+              "at": [6, 1, 6],
+              "items": [
+                {
+                  "item": "shotshell_box",
+                  "count": 1
+                }
+              ]
+            }
+          ]
         },
         {
           "template": "camp_sandbag_post",
@@ -644,11 +655,11 @@
               "items": [
                 {
                   "item": "magazine_stanag_30",
-                  "count": 1
+                  "count": 3
                 },
                 {
                   "item": "magazine_akm_30",
-                  "count": 1
+                  "count": 3
                 }
               ]
             },
@@ -657,11 +668,11 @@
               "items": [
                 {
                   "item": "cartridge_5_d_56x45",
-                  "count": 15
+                  "count": 150
                 },
                 {
                   "item": "cartridge_7_d_62x39",
-                  "count": 15
+                  "count": 150
                 }
               ]
             }

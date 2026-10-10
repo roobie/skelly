@@ -11,7 +11,7 @@ import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { rollLoot } from '../src/core/loot.ts';
+import { fixedItems, rollLoot } from '../src/core/loot.ts';
 import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
 import { doorOptions } from '../src/core/options.ts';
 import { Rng } from '../src/core/random.ts';
@@ -85,6 +85,61 @@ const furnitureAt = ({ building, override }: OverridePlacement): string | undefi
     compileTemplate(result.registry, template).pieces.find((piece) => piece.pos.join(',') === override.at.join(','))
       ?.furniture
   );
+};
+
+type LootTable = NonNullable<ReturnType<typeof result.registry.loot.get>>;
+
+const entryDraw = (table: LootTable, index: number): number => {
+  const before = table.entries.slice(0, index).reduce((sum, entry) => sum + entry.weight, 0);
+  const total = table.entries.reduce((sum, entry) => sum + entry.weight, 0);
+  return (before + table.entries[index]!.weight / 2) / total;
+};
+
+function* entryIndexTuples(entryCount: number, tupleLength: number): Generator<number[]> {
+  if (tupleLength === 0) {
+    yield [];
+    return;
+  }
+  for (let index = 0; index < entryCount; index++) {
+    for (const suffix of entryIndexTuples(entryCount, tupleLength - 1)) {
+      yield [index, ...suffix];
+    }
+  }
+}
+
+const maximumLootRoll = (table: LootTable, entryIndexes: readonly number[]) => {
+  const values = [0.999_999_999];
+  for (const index of entryIndexes) {
+    const entry = table.entries[index]!;
+    values.push(entryDraw(table, index));
+    if (entry.item !== undefined && entry.count !== undefined) {
+      values.push(0.999_999_999);
+    }
+    if (entry.item !== undefined && entry.condition !== undefined) {
+      values.push(0.999_999_999);
+    }
+  }
+  const rng = new Rng([0, 0, 0, 0]);
+  rng.next = () => {
+    const value = values.shift();
+    if (value === undefined) {
+      throw new Error('Unexpected random draw while rolling armoury loot');
+    }
+    return value;
+  };
+  const rolled = rollLoot(result.registry, table.id, rng);
+  if (values.length > 0) {
+    throw new Error('Unconsumed random draws while rolling armoury loot');
+  }
+  return rolled;
+};
+
+const itemCounts = (items: readonly { type: string; count: number }[]): Map<string, number> => {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    counts.set(item.type, (counts.get(item.type) ?? 0) + item.count);
+  }
+  return counts;
 };
 
 const possibleLootItems = (tableId: string): Set<string> => {
@@ -1279,6 +1334,33 @@ describe('authored fixed loot', () => {
     const keyLock = result.registry.items.get(heldKey!.type)!.key!.lock;
     expect(inventory.entities.setLocked(door, false, [keyLock])).toBeUndefined();
     expect(inventory.entities.setOpen(door, true)).toBeUndefined();
+  });
+
+  it('places worst-case rolls from every FOB armoury container', () => {
+    const armoury = layout.buildings.find(({ template: id }) => id === 'camp_armoury')!;
+    const definition = result.registry.templates.get(armoury.template)!;
+    const compiled = compileTemplate(result.registry, definition);
+    const table = result.registry.loot.get('military_armoury')!;
+    const containers = compiled.pieces.filter((piece) => piece.loot === table.id);
+    expect(containers.length).toBeGreaterThan(0);
+
+    for (const piece of containers) {
+      const override = armoury.fixedLoot?.find(({ at }) => at.join(',') === piece.pos.join(','));
+      const fixed = fixedItems(result.registry, override?.items ?? []);
+      for (const entryIndexes of entryIndexTuples(table.entries.length, table.rolls[1])) {
+        const rolled = maximumLootRoll(table, entryIndexes);
+        const supplied = [...fixed, ...rolled];
+        const inventory = new Inventory(result.registry);
+        const entity = inventory.furnish(
+          { type: piece.furniture, pos: piece.pos, size: piece.size, facing: piece.facing },
+          supplied,
+        );
+        const label = `${piece.furniture}: ${entryIndexes.join(', ')}`;
+        expect(entity, label).toBeDefined();
+        const placed = (entity!.pockets?.flat() ?? []).map(({ item }) => ({ type: item.type, count: item.count }));
+        expect(itemCounts(placed), label).toEqual(itemCounts(supplied));
+      }
+    }
   });
 
   it('lets a player walk from inside the camp sandbag post template to its exit', () => {

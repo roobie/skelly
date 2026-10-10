@@ -26,19 +26,26 @@ both independently scrolling panes.
 
 ## BR's rulings
 
-- **One registry, player rebinding (2026-10-04):** “we must make it so the player
-  can rebind any keyboard input - this means we need a 100% centralised registry”.
-  See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, rather than a copied default
-  list. The controls card and settings are generated from that same catalogue;
-  see `src/game/controls.ts`, `controlsCardRows`, and `src/ui/inputOptions.ts`,
-  `mountInputOptions`.
-- **Rebindability and the debug exception (2026-10-04 12:12):** “we must make it so
-  the player can rebind any keyboard input - this means we need a 100% centralised
-  registry and as for the debug keybinds, how about gating them all behind e.g.
-  holding down F1 then pressing the debug key? Unless some special circumstance for
-  a key need it readily available”. The noclip flight keys are that special
-  circumstance; see `noclip.ascend` and `noclip.descend` in
-  `src/game/inputBindings.ts`.
+- **Keyboard controls:** The binding catalogue drives the controls card and
+  settings, so rebinding updates the displayed key labels. The main-menu controls
+  list uses case-insensitive substring search over action descriptions and key
+  labels. Plain substring matching keeps results predictable: a partial action or
+  key name returns every matching row without ranking. Native text ownership keeps
+  search keystrokes from activating game actions. Ordinary runs hide debug-marked
+  bindings and bindings scoped only to debug contexts; shared rows show only their
+  ordinary contexts, and Settings conflict messages omit context names. Ordinary
+  Settings lets an ordinary binding take a debug-only key because ordinary players
+  cannot see or use debug controls, so those controls must not block ordinary keys;
+  collisions with other ordinary bindings are refused. A debug run that loads a
+  saved layout with such a collision reports it and sets one of the colliding saved bindings
+  aside for that run, so no two controls share a key; the saved layout is kept for
+  ordinary runs. Ordinary runs name no debug-only contexts because those contexts
+  are unavailable there; debug runs list them all. Debug actions use the held gate,
+  with noclip flight controls as the readily available exception. See `src/game/inputBindings.ts`,
+  `INPUT_BINDINGS`, `DEBUG_ONLY_CONTEXTS`, `KeyboardInput.install`,
+  `noclip.ascend` and `noclip.descend`, and `src/game/controls.ts`,
+  `controlsCardRows` and `filterControlsCardRows`; settings use
+  `src/ui/inputOptions.ts`, `mountInputOptions`.
 - **No Ctrl, Cmd/Meta or Alt as game modifiers:** The browser owns them (Ctrl/Cmd
   shortcuts; Alt+Left/Right go back and forward; on Windows and Linux, Alt or
   Alt+letter opens the menu bar). The registry refuses these modifiers; see
