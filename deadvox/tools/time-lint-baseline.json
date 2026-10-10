@@ -203,10 +203,9 @@
       "p95Ms": 3
     },
     "game/melee.ts": {
-      "cooldown": 2
+      "cooldown": 3
     },
     "game/play.ts": {
-      "cooldown": 1,
       "duration": 1,
       "elapsed": 1,
       "recordSnapshotDuration": 1,

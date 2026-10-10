@@ -11,7 +11,7 @@ import { chunksFor } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
-import { startPlayerMelee } from '../src/game/melee.ts';
+import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
 import { PLAYER } from '../src/game/player.ts';
 import {
   advance,
@@ -308,7 +308,7 @@ describe('canonical save format', () => {
     }
     const id = source.zombies.add(
       registry.zombies.get('shambler')!,
-      [source.player.body.pos[0] + 5, source.player.body.pos[1], source.player.body.pos[2]],
+      [source.player.body.pos[0] + 1, source.player.body.pos[1], source.player.body.pos[2]],
       [0, 0, 1],
     );
     const zombie = source.zombies.store.get(id)!;
@@ -328,19 +328,9 @@ describe('canonical save format', () => {
     ];
     const length = Math.hypot(...delta);
     const direction = delta.map((value) => value / length) as import('../src/core/coords.ts').Vec3;
-    const bluntTuning = registry.meleeClasses.get('blunt')!;
-    const weapon: MeleeWeapon = {
-      damage: 1,
-      reach: 4,
-      cooldown: 0.8,
-      stamina: 4,
-      impulse: 4,
-      damageVariance: bluntTuning.damageVariance,
-      headDamageMultiplier: bluntTuning.headDamageMultiplier,
-      limbDamageMultiplier: bluntTuning.limbDamageMultiplier,
-      speedMultiplier: bluntTuning.speedMultiplier,
-      type: 'blunt',
-    };
+    const contentWeapon = [...registry.items.values()].find((item) => item.weapon?.melee)?.weapon?.melee;
+    expect(contentWeapon).toBeDefined();
+    const weapon: MeleeWeapon = meleeWeaponFromContent(contentWeapon!);
     expect(source.zombies.aimAt(origin, direction, weapon)?.inReach).toBe(true);
     const hands = {
       right: source.inventory.hands.right?.uid ?? null,
@@ -365,6 +355,7 @@ describe('canonical save format', () => {
     const loaded = createRuntime(decoded.snapshot);
     loaded.zombies.setFrozen(true);
     expect(loaded.session.playerCombat.activeMeleeAction?.elapsed).toBe(0);
+    expect(loaded.session.playerCombat.activeMeleeAction?.weapon).toEqual(weapon);
 
     let restoredContactHealth: number | undefined;
     for (const runtime of [source, loaded]) {
