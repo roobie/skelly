@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Group, PerspectiveCamera, Vector3 } from 'three';
+import { Group, Mesh, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -63,16 +63,23 @@ it('the physical support hand feeds a shell toward the port from the load job cl
       pose: () => undefined,
       onEjection: () => undefined,
     });
+    const probeMesh = (name: string): Mesh => {
+      const mesh = new Mesh();
+      mesh.name = name;
+      return mesh;
+    };
     const models = {
       version: 0,
       held: () => {
         const root = new Group();
         root.name = 'load-shell-probe';
+        root.add(probeMesh('load-shell-probe-mesh'));
         return { root, parts: [] };
       },
       heldLook: () => {
         const root = new Group();
         root.name = 'load-gun-probe';
+        root.add(probeMesh('load-gun-probe-mesh'));
         return { root, parts: [], slots: {} };
       },
     } as unknown as ModelLibrary;
@@ -111,6 +118,8 @@ it('the physical support hand feeds a shell toward the port from the load job cl
       expect(feeding.gun.distanceTo(rest.gun)).toBeCloseTo(0);
       const shell = scene.getObjectByName('load-shell-probe');
       expect(shell?.visible).toBe(true);
+      expect((scene.getObjectByName('load-gun-probe-mesh') as Mesh | undefined)?.receiveShadow).toBe(true);
+      expect((scene.getObjectByName('load-shell-probe-mesh') as Mesh | undefined)?.receiveShadow).toBe(true);
       const shellPosition = shell!.getWorldPosition(new Vector3());
       // Reprojection cannot advance the insertion or perturb an attached support arm.
       expect(update().wrist.distanceTo(feeding.wrist)).toBeCloseTo(0);

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Body } from '../src/core/physics.ts';
+import { skyAt } from '../src/core/sky.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { createPlayView } from '../src/render/playView.ts';
@@ -62,6 +63,20 @@ describe('play presentation ownership', () => {
       { scene: engine.scene, camera: engine.camera },
       view.held.warmUpTarget,
     ]);
+    view.dispose();
+  });
+
+  it('shares one camera sky-visibility sample with held ambient and flashlight adaptation', () => {
+    const { engine, view } = fixture();
+    const at = vi.fn(() => 0);
+    engine.skylight = { at } as unknown as NonNullable<Engine['skylight']>;
+    engine.camera.position.set(2, 1, -3);
+    const setSkyVisibility = vi.spyOn(view.held, 'setSkyVisibility');
+
+    view.prepareLighting(skyAt(12));
+
+    expect(at).toHaveBeenCalledExactlyOnceWith([2, 1, -3]);
+    expect(setSkyVisibility).toHaveBeenCalledExactlyOnceWith(0);
     view.dispose();
   });
 

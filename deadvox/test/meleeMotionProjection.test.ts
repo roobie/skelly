@@ -165,7 +165,7 @@ function measure(
     const primaryArm = internals.arms.get(side)!;
     const hand = primaryArm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
     const tip = item ? new Vector3() : hand.clone();
-    if (item && !held.lensOf(item, camera, tip)) {
+    if (item && !held.lensOf(item, tip)) {
       throw new Error(`Held ${item.type} did not expose its real GLB lens`);
     }
     const atContact = Math.abs(elapsed - contactAt) < 1e-8;
