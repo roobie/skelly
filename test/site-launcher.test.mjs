@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -28,6 +29,19 @@ const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/fo
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
 const DEADVOX_CONTENT = 'deadvox/src/content/base';
+const RELATIVE_URL_PATTERNS = [
+  /\b(?:href|src)\s*=\s*["']([^"']+)["']/g,
+  /url\(\s*["']?([^"')\s]+)["']?\s*\)/g,
+  /\bfrom\s+["']([^"']+)["']/g,
+  /\bnew URL\(\s*["']([^"']+)["']/g,
+];
+const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+.-]*:/i;
+const ROUND1_FALLBACK_PLAY_URL_PATTERN = /playtest-action|href="\.\.\/\.\.\/\.\.\/deadvox\/\?site=playtest"/;
+const PAGES_PROJECT_ROOT_PATTERN = /^(?:gungen|deadvox|mobgen)\/$/;
+const relativeUrlsIn = (source) =>
+  RELATIVE_URL_PATTERNS.flatMap((pattern) => [...source.matchAll(pattern)].map((match) => match[1])).filter(
+    (reference) => !(ABSOLUTE_URL_PATTERN.test(reference) || reference.startsWith('//')),
+  );
 
 const authoredLayoutIds = () =>
   readdirSync(join(ROOT, DEADVOX_CONTENT))
@@ -129,6 +143,20 @@ describe('playtest language and catalog', () => {
     assert.match(round1Page, ROUND1_LANGUAGE_PATTERN);
   });
 
+  it('returns no catalog text when each fetch stage fails', async () => {
+    const failingFetchers = [
+      () => {
+        throw new Error('network failure');
+      },
+      () => ({ ok: false }),
+      () => ({ ok: true, json: () => Promise.reject(new Error('invalid JSON')) }),
+    ];
+    const results = await Promise.all(
+      failingFetchers.map((fetcher) => loadPlaytestText(fetcher, new URL(ROUND1_STATIC_URL), 'en')),
+    );
+    assert.deepEqual(results, [null, null, null]);
+  });
+
   it('provides the same playtest string keys in both languages', () => {
     const catalog = JSON.parse(read('site/playtest.json'));
     const englishKeys = Object.keys(catalog.en).sort();
@@ -199,14 +227,23 @@ describe('site launchers track the games’ URL parameters', () => {
 });
 
 describe('site launcher playtest entry', () => {
-  it('keeps the Round 1 link-list card after the project cards', () => {
+  it('keeps the Round 1 link in a separate links card', () => {
     assert.doesNotMatch(page, UMBRELLA_PLAYTEST_MARKUP_PATTERN);
     const linksCard = page.match(LINKS_CARD_PATTERN);
     assert.ok(linksCard, 'the umbrella launcher has a link-list card');
     assert.ok(linksCard[1].includes('<ul>'), 'the link card presents a list');
     assert.ok(linksCard[1].includes('href="deadvox/playtest/round1/"'));
-    assert.equal(linksCard.index, page.lastIndexOf('<section class="card"'));
     assert.match(page, DEADVOX_FORM_PATTERN);
+  });
+
+  it('renders consent terms before play and withholds the play link on catalog failure', () => {
+    const termsEnd = round1Page.indexOf('</ul>');
+    const playLink = round1Page.indexOf('class="playtest-action"');
+    assert.ok(termsEnd >= 0, 'the consent terms are rendered as a list');
+    assert.ok(playLink > termsEnd, 'the play link follows all consent terms');
+
+    const fallback = round1Page.slice(round1Page.indexOf(': html`'));
+    assert.doesNotMatch(fallback, ROUND1_FALLBACK_PLAY_URL_PATTERN);
   });
 
   it('opens the authored Round 1 site without development tools', () => {
@@ -227,7 +264,21 @@ describe('site launcher playtest entry', () => {
     assert.ok(round1Html.includes(`<meta property="og:url" content="${ROUND1_STATIC_URL}"`));
     assert.ok(round1Html.includes('<meta property="og:image:alt" content="'));
     assert.ok(round1Html.includes('<meta name="twitter:card" content="summary_large_image"'));
-    assert.ok(round1Css.includes('background-image: url("../../../assets/deadvox-backdrop.jpg")'));
+    const references = [...relativeUrlsIn(round1Html), ...relativeUrlsIn(round1Css), ...relativeUrlsIn(round1Page)];
+    assert.ok(references.length > 0, 'Round 1 has relative URL references');
+    for (const reference of references) {
+      const url = new URL(reference, ROUND1_STATIC_URL);
+      assert.equal(url.origin, 'https://roobie.github.io', `${reference} stays on Pages`);
+      assert.ok(url.pathname.startsWith('/skelly/'), `${reference} stays within the Pages project`);
+      const projectPath = url.pathname.slice('/skelly/'.length);
+      if (PAGES_PROJECT_ROOT_PATTERN.test(projectPath)) {
+        continue;
+      }
+      const sitePath = join(ROOT, 'site', ...projectPath.split('/'));
+      const siteTarget = url.pathname.endsWith('/') ? join(sitePath, 'index.html') : sitePath;
+      assert.ok(existsSync(siteTarget), `${reference} resolves to a site file`);
+    }
+
     const imagePath = 'site/deadvox/playtest/round1/assets/round1-social.webp';
     const imageUrl = 'https://roobie.github.io/skelly/deadvox/playtest/round1/assets/round1-social.webp';
     assert.ok(round1Html.includes(`<meta property="og:image" content="${imageUrl}"`));

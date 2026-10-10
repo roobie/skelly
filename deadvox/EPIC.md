@@ -135,11 +135,12 @@ wear and light. Slice 3's milestone scope and gates are in
 
 #### Playtest plan
 
-Share the Pages landing-page link with at least three people, including someone
-new to both CDDA and DayZ. The Playtest link opens the authored map specified in
-[#181](https://github.com/roobie/skelly/issues/181) and detailed in
-[SLICE-3.md](SLICE-3.md), with “find the military camp” as the prompt. Each
-tester plays on their own for as long and in as many sittings as they like;
+Share the Round 1 landing page at `site/deadvox/playtest/round1/` with at least
+three people, including someone new to both CDDA and DayZ. Its play link opens
+the authored map specified in [#181](https://github.com/roobie/skelly/issues/181)
+and detailed in [SLICE-3.md](SLICE-3.md). The task prompt is “Your task: survive
+and find the military camp.” (`site/playtest.jsonnet`, `en.task`).
+Each tester plays on their own for as long and in as many sittings as they like;
 Continue resumes their run ([docs/playtest-run.md](docs/playtest-run.md),
 "Session format"). There is no scripted session or fixed play time. Do not teach
 the systems first. Testers can send feedback through the public form and may

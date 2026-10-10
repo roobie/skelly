@@ -1,8 +1,3 @@
-body {
-  background-image: url("../../../assets/deadvox-backdrop.jpg");
-  background-position: center;
-}
-
 main {
   max-width: 760px;
   min-height: 100vh;
