@@ -36,29 +36,48 @@ const rowFor = (root: HTMLElement, id: string): HTMLElement | undefined =>
   [...root.querySelectorAll<HTMLElement>('.input-binding-row')].find((row) => row.dataset.bindingId === id);
 const contextLabels = (row: HTMLElement): string[] =>
   (row.querySelector('small')?.textContent ?? '').split(',').map((label) => label.trim());
+const memoryStorage = () => {
+  let saved: string | null = null;
+  return {
+    getItem: () => saved,
+    setItem: (_key: string, value: string) => {
+      saved = value;
+    },
+    removeItem: () => {
+      saved = null;
+    },
+  };
+};
 const debugKeyCollision = () => {
-  const ordinaryBindings = INPUT_BINDINGS.filter((binding) => !bindingIsDebugOnly(binding));
-  return ordinaryBindings
-    .flatMap((ordinary) => INPUT_BINDINGS.filter(bindingIsDebugOnly).map((debug) => ({ ordinary, debug })))
-    .find(({ ordinary, debug }) => {
-      const [ordinaryChord] = ordinary.defaults;
-      const [debugChord] = debug.defaults;
-      if (
-        !(ordinaryChord && debugChord) ||
-        (ordinaryChord.code === debugChord.code && ordinaryChord.modifier === debugChord.modifier) ||
-        !ordinary.contexts.some((context) => debug.contexts.includes(context))
-      ) {
-        return false;
-      }
-      const chords = [debugChord, ...ordinary.defaults.slice(1)];
-      const candidate = new Map([[ordinary.id, chords]]);
-      const issue = bindingConflict(INPUT_BINDINGS, candidate);
-      return (
-        issue?.includes(ordinary.description) &&
-        issue.includes(debug.description) &&
-        bindingConflict(INPUT_BINDINGS, candidate, false) === undefined
-      );
-    });
+  const debugGate = INPUT_BINDINGS.find(
+    (binding) => bindingIsDebugOnly(binding) && INPUT_BINDINGS.some((candidate) => candidate.gate === binding.id),
+  );
+  if (!debugGate) {
+    return;
+  }
+  const [debugChord] = debugGate.defaults;
+  if (!debugChord) {
+    return;
+  }
+  const ordinary = INPUT_BINDINGS.filter((binding) => !bindingIsDebugOnly(binding)).find((binding) => {
+    const [ordinaryChord] = binding.defaults;
+    if (
+      !ordinaryChord ||
+      (ordinaryChord.code === debugChord.code && ordinaryChord.modifier === debugChord.modifier) ||
+      !binding.contexts.some((context) => debugGate.contexts.includes(context))
+    ) {
+      return false;
+    }
+    const chords = [debugChord, ...binding.defaults.slice(1)];
+    const candidate = new Map([[binding.id, chords]]);
+    const issue = bindingConflict(INPUT_BINDINGS, candidate);
+    return (
+      issue?.includes(binding.description) &&
+      issue.includes(debugGate.description) &&
+      bindingConflict(INPUT_BINDINGS, candidate, false) === undefined
+    );
+  });
+  return ordinary ? { ordinary, debug: debugGate } : undefined;
 };
 
 describe('input options context visibility', () => {
@@ -164,16 +183,7 @@ describe('input options context visibility', () => {
   it('reports an ordinary binding that takes a debug-only key when a debug run loads preferences', () => {
     const pair = debugKeyCollision();
     expect(pair).toBeDefined();
-    let saved: string | null = null;
-    const storage = {
-      getItem: () => saved,
-      setItem: (_key: string, value: string) => {
-        saved = value;
-      },
-      removeItem: () => {
-        saved = null;
-      },
-    };
+    const storage = memoryStorage();
     const ordinaryRun = new BindingRegistry(INPUT_BINDINGS, storage);
     const chords = [pair!.debug.defaults[0]!, ...pair!.ordinary.defaults.slice(1)];
     expect(ordinaryRun.rebind(pair!.ordinary.id, chords, false)).toBeUndefined();
@@ -187,5 +197,31 @@ describe('input options context visibility', () => {
     expect(debugRun.chords(pair!.ordinary.id)[0]).toEqual(pair!.ordinary.defaults[0]);
     expect(debugRun.chords(pair!.debug.id)[0]).toEqual(pair!.debug.defaults[0]);
     expect(debugRun.rebind(pair!.ordinary.id, chords, true)).toEqual(expect.any(String));
+  });
+
+  it('keeps a saved ordinary binding after an unrelated debug-run rebind', () => {
+    const pair = debugKeyCollision();
+    expect(pair).toBeDefined();
+    const storage = memoryStorage();
+    const ordinaryRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    const chords = [pair!.debug.defaults[0]!, ...pair!.ordinary.defaults.slice(1)];
+    expect(ordinaryRun.rebind(pair!.ordinary.id, chords, false)).toBeUndefined();
+
+    const debugRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    debugRun.setDebugRun();
+    const unrelated = INPUT_BINDINGS.find(
+      (binding) => !bindingIsDebugOnly(binding) && binding.id !== pair!.ordinary.id && binding.id !== pair!.debug.id,
+    );
+    expect(unrelated).toBeDefined();
+    expect(debugRun.rebind(unrelated!.id, unrelated!.defaults, true)).toBeUndefined();
+
+    const resumedOrdinaryRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    expect(resumedOrdinaryRun.chords(pair!.ordinary.id)[0]).toEqual(pair!.debug.defaults[0]);
+
+    const replacementDebugRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    replacementDebugRun.setDebugRun();
+    expect(replacementDebugRun.rebind(pair!.ordinary.id, pair!.ordinary.defaults, true)).toBeUndefined();
+    const replacedOrdinaryRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    expect(replacedOrdinaryRun.chords(pair!.ordinary.id)[0]).toEqual(pair!.ordinary.defaults[0]);
   });
 });

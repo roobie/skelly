@@ -36,9 +36,10 @@ both independently scrolling panes.
   ordinary contexts, and Settings conflict messages omit context names. Ordinary
   Settings lets an ordinary binding take a debug-only key because ordinary players
   cannot see or use debug controls, so those controls must not block ordinary keys;
-  collisions with other ordinary bindings are refused. Debug runs refuse the same
-  collision and report a saved-layout conflict, leaving the debug binding on its
-  default key. Ordinary runs name no debug-only contexts because those contexts
+  collisions with other ordinary bindings are refused. A debug run that loads a
+  saved layout with such a collision reports it and sets one of the two saved keys
+  aside for that run, so no two controls share a key; the saved layout is kept for
+  ordinary runs. Ordinary runs name no debug-only contexts because those contexts
   are unavailable there; debug runs list them all. Debug actions use the held gate,
   with noclip flight controls as the readily available exception. See `src/game/inputBindings.ts`,
   `INPUT_BINDINGS`, `DEBUG_ONLY_CONTEXTS`, `KeyboardInput.install`,

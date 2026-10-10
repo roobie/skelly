@@ -504,6 +504,7 @@ export class BindingRegistry {
   readonly diagnostics: string[] = [];
   revision = 0;
   private overrides = new Map<string, readonly Chord[]>();
+  private readonly suspended = new Map<string, readonly Chord[]>();
   private readonly listeners = new Set<(bindingsChanged: boolean) => void>();
   private layout: ReadonlyMap<string, string> | undefined;
   private readonly storage: PreferenceStorage | undefined;
@@ -552,6 +553,7 @@ export class BindingRegistry {
       const issue = bindingConflict(this.bindings, candidate);
       if (issue) {
         this.diagnostics.push(issue);
+        this.suspended.set(binding.id, chords);
       } else {
         accepted.set(binding.id, chords);
       }
@@ -605,6 +607,7 @@ export class BindingRegistry {
       return conflict;
     }
     this.overrides = candidate;
+    this.suspended.delete(binding.id);
     this.persist();
     this.changed(true);
     return undefined;
@@ -642,8 +645,12 @@ export class BindingRegistry {
   }
   private persist(): void {
     try {
-      if (this.overrides.size > 0) {
-        this.storage?.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(this.overrides)));
+      const preferences = new Map(this.suspended);
+      for (const [id, chords] of this.overrides) {
+        preferences.set(id, chords);
+      }
+      if (preferences.size > 0) {
+        this.storage?.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(preferences)));
       } else {
         this.storage?.removeItem(STORAGE_KEY);
       }
