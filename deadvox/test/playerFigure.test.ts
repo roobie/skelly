@@ -27,6 +27,7 @@ import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -257,7 +258,9 @@ describe('player figure', () => {
       const frustum = new Frustum().setFromProjectionMatrix(
         new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
       );
-      return parts.map((mesh) => corners(mesh).filter((point) => frustum.containsPoint(point)));
+      return parts.map((mesh) =>
+        mesh.count === 0 ? [] : corners(mesh).filter((point) => frustum.containsPoint(point)),
+      );
     };
 
     for (const pitch of [0, 0.25, 0.5, Math.PI / 3]) {
@@ -310,14 +313,15 @@ describe('player figure', () => {
     expect((hand.geometry as import('three').BoxGeometry).parameters.width).toBeCloseTo(0.09, 3);
   });
 
-  it('uses the content palette, shared headless body layout, and the configured view offset', () => {
+  it('uses the content palette, hides the head in first person, and applies the figure offset', () => {
     const meshes = new PlayerMeshes(scale.blockSize, palette);
     const parts = meshes.group.children as import('three').InstancedMesh[];
-    expect(PLAYER_ARM_PARTS).not.toContain('head');
+    expect(PLAYER_ARM_PARTS).toContain('head');
     expect(parts).toHaveLength(PLAYER_ARM_PARTS.length);
     expect(parts.map((mesh) => (mesh.material as MeshLambertMaterial).color.getHex())).toEqual(
       [
         palette.shirt,
+        palette.skin,
         palette.shirt,
         palette.shirt,
         palette.skin,
@@ -339,7 +343,27 @@ describe('player figure', () => {
     const center = new Vector3().setFromMatrixPosition(bodyMatrix);
     expect(center.z).toBeCloseTo(body.pos[2] * scale.blockSize + PLAYER_BODY_REAR_OFFSET);
     expect(PLAYER_BODY_REAR_OFFSET).toBe(0.19);
-    expect(parts.every((mesh) => mesh.count === 1)).toBe(true);
+    const headIndex = PLAYER_ARM_PARTS.indexOf('head');
+    expect(parts[headIndex]!.count).toBe(0);
+    expect(parts.every((mesh, index) => index === headIndex || mesh.count === 1)).toBe(true);
+  });
+
+  it('shows the head at its figure-box position in third person', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const meshes = new PlayerMeshes(scale.blockSize, palette);
+    const parts = meshes.group.children as import('three').InstancedMesh[];
+    const headIndex = PLAYER_ARM_PARTS.indexOf('head');
+
+    meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, thirdPerson: true });
+    const bodyMatrix = new Matrix4();
+    const headMatrix = new Matrix4();
+    parts[0]!.getMatrixAt(0, bodyMatrix);
+    parts[headIndex]!.getMatrixAt(0, headMatrix);
+    expect(parts[headIndex]!.count).toBe(1);
+    expect(new Vector3().setFromMatrixPosition(bodyMatrix).z).toBeCloseTo(body.pos[2] * scale.blockSize);
+    expect(new Vector3().setFromMatrixPosition(headMatrix).y).toBeCloseTo(
+      body.pos[1] * scale.blockSize + FIGURE_BOXES.head.at[1],
+    );
   });
 
   it('hides held arms from the world body, including both arms for a two-handed item', () => {
@@ -368,6 +392,20 @@ describe('player figure', () => {
     expect(parts[indexes.rightForearm]!.count).toBe(0);
     expect(parts[indexes.leftHand]!.count).toBe(0);
     expect(parts[indexes.rightHand]!.count).toBe(0);
+
+    meshes.sync({
+      body,
+      yaw: 0,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      inventory: batInventory,
+      thirdPerson: true,
+    });
+    expect(parts[indexes.leftForearm]!.count).toBe(1);
+    expect(parts[indexes.rightForearm]!.count).toBe(1);
+    expect(parts[indexes.leftHand]!.count).toBe(1);
+    expect(parts[indexes.rightHand]!.count).toBe(1);
   });
 
   it('keeps idle first-person grips camera-relative when the camera turns', () => {

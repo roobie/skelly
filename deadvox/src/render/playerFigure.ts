@@ -26,6 +26,7 @@ export const PLAYER_BODY_REAR_OFFSET = 0.19;
 const BODY_HIP_HEIGHT = 0.62;
 export const PLAYER_ARM_PARTS = [
   'body',
+  'head',
   'leftUpperArm',
   'rightUpperArm',
   'leftForearm',
@@ -41,6 +42,7 @@ export type PlayerArmPart = (typeof PLAYER_ARM_PARTS)[number];
 
 const PLAYER_BOXES: Readonly<Record<PlayerArmPart, FigureBox>> = {
   body: FIGURE_BOXES.body,
+  head: FIGURE_BOXES.head,
   leftUpperArm: PLAYER_ARM_BOXES.leftUpperArm,
   rightUpperArm: PLAYER_ARM_BOXES.rightUpperArm,
   leftForearm: PLAYER_ARM_BOXES.leftForearm,
@@ -55,6 +57,7 @@ const PLAYER_BOXES: Readonly<Record<PlayerArmPart, FigureBox>> = {
 
 const PLAYER_COLORS: Readonly<Record<PlayerArmPart, keyof FigureDef['palette']>> = {
   body: 'shirt',
+  head: 'skin',
   leftUpperArm: 'shirt',
   rightUpperArm: 'shirt',
   leftForearm: 'skin',
@@ -151,10 +154,11 @@ export interface PlayerFigurePose {
   stepOffset: number;
   gaitPhase: number;
   moving: boolean;
+  thirdPerson?: boolean;
   inventory?: Inventory;
 }
 
-/** A coloured, headless world figure. Its body and legs are the shared figure boxes. */
+/** A coloured world figure whose head is visible only in third person. */
 export class PlayerMeshes {
   readonly group = new Group();
   private readonly meshes = new Map<PlayerArmPart, InstancedMesh>();
@@ -178,18 +182,19 @@ export class PlayerMeshes {
   }
 
   sync(pose: PlayerFigurePose): void {
-    const { yaw, inventory } = pose;
+    const { yaw, inventory, thirdPerson = false } = pose;
     const s = this.blockSize;
-    const rearX = Math.sin(yaw) * PLAYER_BODY_REAR_OFFSET;
-    const rearZ = Math.cos(yaw) * PLAYER_BODY_REAR_OFFSET;
-    const hidden = hiddenWorldArms(inventory);
+    const rearX = thirdPerson ? 0 : Math.sin(yaw) * PLAYER_BODY_REAR_OFFSET;
+    const rearZ = thirdPerson ? 0 : Math.cos(yaw) * PLAYER_BODY_REAR_OFFSET;
+    const hidden = thirdPerson ? { right: false, left: false } : hiddenWorldArms(inventory);
     const offset = { blockSize: s, rearX, rearZ };
     for (const part of PLAYER_ARM_PARTS) {
       const mesh = this.meshes.get(part)!;
       const side = armSideOf(part);
       const hiddenHeldArm = isArmPart(part) && side !== undefined && hidden[side];
-      mesh.count = hiddenHeldArm ? 0 : 1;
-      if (!hiddenHeldArm) {
+      const hiddenInFirstPerson = part === 'head' && !thirdPerson;
+      mesh.count = hiddenHeldArm || hiddenInFirstPerson ? 0 : 1;
+      if (!(hiddenHeldArm || hiddenInFirstPerson)) {
         this.updatePart(part, mesh, pose, offset);
       }
     }

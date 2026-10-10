@@ -51,6 +51,7 @@ export interface DebugHooks {
   readonly impactLaser: { enabled: () => boolean; toggle: () => void };
   readonly reviewMap: { isOpen: () => boolean; toggle: () => void };
   readonly spectatorCamera: { enabled: () => boolean; toggle: () => void };
+  readonly thirdPerson: { enabled: () => boolean; toggle: () => void };
   readonly perceptionLabels: { enabled: () => boolean; toggle: () => void };
   /** Emits the existing `player_hurt_light` sound and its player-noise event; this debug action changes simulation state. */
   readonly emitTestNoise: () => boolean;

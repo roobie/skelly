@@ -280,9 +280,41 @@ describe('keyboard registry', () => {
   it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.binding('debug.gate')?.defaults[0]?.code).toBe('F2');
+    expect(bindings.binding('debug.panel-toggle')).toMatchObject({
+      defaults: [{ code: 'Backquote' }],
+      gate: 'debug.gate',
+    });
     expect(bindings.binding('hud.toggle-interaction-hints')?.defaults[0]?.code).toBe('Backquote');
     expect(bindings.rebind('hud.toggle-interaction-hints', [{ code: 'KeyJ' }])).toBeUndefined();
     expect(bindings.label('hud.toggle-interaction-hints')).toBe('J');
+  });
+  it('gates the third-person view behind F2 and toggles it in both directions', () => {
+    const binding = new BindingRegistry(INPUT_BINDINGS, storage());
+    expect(binding.binding('debug.third-person-toggle')).toMatchObject({
+      defaults: [{ code: 'Numpad0' }],
+      gate: 'debug.gate',
+      debug: true,
+    });
+
+    const keyboard = new KeyboardInput(binding);
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+    keyboard.context = () => ({ context: 'play', debug: false });
+    expect(keyboard.press(event('Numpad0'))).toBe(false);
+    keyboard.release(event('Numpad0'));
+    expect(commands).toEqual([]);
+
+    keyboard.context = () => ({ context: 'play', debug: true });
+    expect(keyboard.press(event('F2'))).toBe(true);
+    expect(keyboard.held('debug.gate')).toBe(true);
+    expect(keyboard.press(event('Numpad0'))).toBe(true);
+    keyboard.release(event('Numpad0'));
+    expect(keyboard.press(event('Numpad0'))).toBe(true);
+    expect(commands.filter(({ action }) => action === 'debug.third-person-toggle').map(({ phase }) => phase)).toEqual([
+      'down',
+      'up',
+      'down',
+    ]);
   });
   it('gates the review map behind F2+M and moves game freeze off M', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());

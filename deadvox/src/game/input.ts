@@ -43,6 +43,7 @@ export class Input {
   private readonly dominantUseAllowed: () => boolean;
   private readonly cancelOnBlurAllowed: () => boolean;
   private readonly viewerInputAllowed: () => boolean;
+  private mouseLookOverride: ((movementX: number, movementY: number) => boolean) | undefined;
   constructor(
     target: HTMLElement,
     dominantUseAllowed: () => boolean = () => true,
@@ -98,6 +99,9 @@ export class Input {
       if (!(this.locked && !this.menuPointer)) {
         return;
       }
+      if (this.mouseLookOverride?.(event.movementX, event.movementY)) {
+        return;
+      }
       this.yaw -= event.movementX * SENSITIVITY;
       this.pitch = adjustLookPitch(this.pitch, -event.movementY * SENSITIVITY).pitch;
     });
@@ -114,6 +118,9 @@ export class Input {
     this.dominantUsePressed = false;
     this.offUsePressed = false;
     this.crouchTogglePressed = false;
+  }
+  setMouseLookOverride(override: (movementX: number, movementY: number) => boolean): void {
+    this.mouseLookOverride = override;
   }
   setAimingDownSightsAllowed(allowed: () => boolean): void {
     this.aimingDownSightsAllowed = allowed;

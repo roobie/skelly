@@ -666,6 +666,13 @@ export const createDebugActions = ({
         run: hooks.spectatorCamera.toggle,
       },
       {
+        id: 'debug.third-person-toggle',
+        label: 'Third-person avatar view',
+        group: 'tools',
+        state: hooks.thirdPerson.enabled,
+        run: hooks.thirdPerson.toggle,
+      },
+      {
         id: 'debug.perception-labels-toggle',
         label: 'Perception labels',
         group: 'shamblers',
