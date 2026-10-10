@@ -198,6 +198,27 @@ const boundsOfPosedRegions = (regions: ReturnType<typeof posedAmalgamRegionBoxes
   return bounds;
 };
 
+/**
+ * The centre of each flesh voxel in the amalgam's own frame (facing -z, from its ground origin), and the voxel edge,
+ * in blocks: the rest pose the rendered figure stands in.
+ */
+const fleshVoxels = (figure: ReturnType<typeof amalgamFigure>): { voxel: number; centres: Vec3[] } => {
+  const { dims, owner, size, origin } = figure.realized.voxels;
+  const metres = size * figure.scale;
+  const centres: Vec3[] = [];
+  owner.forEach((bone, cell) => {
+    if (bone > 0) {
+      const [i, j, k] = [cell % dims[0], Math.floor(cell / dims[0]) % dims[1], Math.floor(cell / (dims[0] * dims[1]))];
+      centres.push([
+        ((origin[0] + i) * metres + figure.originOffset[0]) / BLOCK_SIZE,
+        ((origin[1] + j + 0.5) * metres + figure.originOffset[1]) / BLOCK_SIZE,
+        ((origin[2] + k) * metres + figure.originOffset[2]) / BLOCK_SIZE,
+      ]);
+    }
+  });
+  return { voxel: metres / BLOCK_SIZE, centres };
+};
+
 type ObstacleKind = 'fence' | 'crates';
 interface ObstacleResult {
   barrierSolid: boolean;
@@ -552,6 +573,56 @@ describe('amalgam body and combat seam', () => {
     expect(runObstacleCase(kind, 'shambler').crossed).toBe(true);
   });
 
+  it('walks through an opening its flesh fits but its old collision box does not', () => {
+    const amalgam = registry.zombies.get('amalgam')!;
+    const figure = amalgamFigureForType(amalgam, AMALGAM_FIGURE_SEED);
+    const envelope = amalgamCollisionEnvelope(figure, BLOCK_SIZE);
+    const start: Vec3 = [0.5, 1, 8];
+    // A wall at z = 0, open in each block row half a block beyond the flesh that crosses it facing -z (the
+    // flesh above and below the row by that margin too, since the body stands a skin above the floor).
+    const { voxel, centres } = fleshVoxels(figure);
+    const rows = new Map<number, [number, number]>();
+    for (const [x, y] of centres) {
+      for (let row = Math.floor(start[1] + y - voxel / 2 - 0.5); row < start[1] + y + voxel / 2 + 0.5; row++) {
+        const [low, high] = rows.get(row) ?? [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+        rows.set(row, [Math.min(low, start[0] + x - voxel / 2), Math.max(high, start[0] + x + voxel / 2)]);
+      }
+    }
+    const wall = (x: number, y: number): boolean => {
+      const open = rows.get(y);
+      return y > 0 && y <= start[1] + envelope.height + 2 && (!open || x < open[0] - 0.5 || x + 1 > open[1] + 0.5);
+    };
+    const walled = (x: number, y: number, z: number): boolean => y === 0 || (z === 0 && wall(x, y));
+    let boxBlocked = false;
+    for (let y = 1; y < start[1] + envelope.height; y++) {
+      for (let x = Math.floor(start[0] - envelope.halfWidth); x < start[0] + envelope.halfWidth; x++) {
+        boxBlocked ||= wall(x, y);
+      }
+    }
+    expect(boxBlocked).toBe(true);
+
+    // In sight from the start, and far enough beyond the wall that the amalgam clears it before it stops to strike.
+    const seenPlayer: PlayerSense = { ...player(), pos: [start[0], 1, -28] };
+    const simulation = new ZombieSystem({
+      player: () => seenPlayer,
+      isSolid: walled,
+      isOpaque: () => false,
+      dayPhase: () => dayStateAtHour(12),
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(makeScale(0.5)),
+      jumpSpeed: PLAYER.jump,
+      tuning: TEST_SENSE_TUNING,
+      hurtPlayer: () => undefined,
+    });
+    const id = simulation.add(amalgam, start, [0, 0, -1]);
+    const reached = (): number => simulation.store.get(id)!.body.pos[2];
+    const through = -envelope.halfDepth - 1;
+    for (let tick = 0; tick < 3600 && reached() > through; tick++) {
+      simulation.tick(1 / 60);
+    }
+    expect(reached()).toBeLessThan(through);
+  });
+
   it('keeps a grounded shambler from crossing a fence', () => {
     const groundedShambler = runObstacleCase('fence', 'shambler', false);
     expect(groundedShambler.crossed).toBe(false);
@@ -609,11 +680,36 @@ describe('amalgam body and combat seam', () => {
     expect(simulation.store.get(id)).toBe(zombie);
     expect(zombie.severed).toContain(member.partId);
 
+    // Blasts down one line bore through the core and later ones pass, so each follow-up aims at a patch of core
+    // flesh still there, wide enough for the spread.
+    const coreWeapon = { damage: 0, reach: rangeMetres + 4, cooldown: 0 };
+    const coreOffsets = Array.from({ length: 17 * 17 }, (_, index): [number, number] => [
+      (index % 17) / 2 - 4,
+      Math.floor(index / 17) / 2 - 4,
+    ]).sort((a, b) => Math.hypot(...a) - Math.hypot(...b));
+    const lineAt = ([dx, dy]: readonly number[]): Vec3 => [coreOrigin[0] + dx!, coreOrigin[1] + dy!, coreOrigin[2]];
+    const hitsCore = (offset: readonly number[]): boolean =>
+      simulation.aimAt(lineAt(offset), [0, 0, -1], coreWeapon)?.region === 'core.trunk';
+    const patch = [
+      [0, 0],
+      [0.5, 0],
+      [-0.5, 0],
+      [0, 0.5],
+      [0, -0.5],
+    ];
+    const coreLine = (): Vec3 | undefined => {
+      const offset =
+        coreOffsets.find(([dx, dy]) => patch.every(([ex, ey]) => hitsCore([dx + ex!, dy + ey!]))) ??
+        coreOffsets.find(hitsCore);
+      return offset && lineAt(offset);
+    };
     let followup = 0;
     const maxFollowupBlasts = 256;
     while (simulation.store.get(id) !== undefined && followup < maxFollowupBlasts) {
       const healthBefore = zombie.regions['core.trunk']!;
-      expect(fire(coreOrigin, coreBasis, `core-followup-${followup}`)).toBeGreaterThan(0);
+      const origin = coreLine();
+      expect(origin).toBeDefined();
+      expect(fire(origin!, coreBasis, `core-followup-${followup}`)).toBeGreaterThan(0);
       followup += 1;
       if (simulation.store.get(id) !== undefined) {
         expect(zombie.regions['core.trunk']).toBeLessThan(healthBefore);
@@ -939,6 +1035,45 @@ describe('amalgam flesh carving', () => {
     return { simulation: restored, zombie, input, lost };
   };
 
+  it('misses with a ray that crosses the core box beside its flesh', () => {
+    const { simulation, input } = severedAmalgam();
+    const weapon = { damage: 0, reach: 10, cooldown: 0 };
+    const along = (point: Vec3, direction: Vec3) =>
+      simulation.aimAt(
+        point.map((value, axis) => value - (direction[axis]! * 4) / BLOCK_SIZE) as Vec3,
+        direction,
+        weapon,
+      );
+    const boxes = posedAmalgamRegionBoxes(input)['core.trunk']!;
+    expect(
+      boxes.some((box) =>
+        MEMBER_RAY_DIRECTIONS.some((direction) => along(box.voxelCentroid, direction)?.region === 'core.trunk'),
+      ),
+    ).toBe(true);
+    // Lines through points just inside each corner of a core box.
+    const misses = boxes.flatMap((box) =>
+      Array.from({ length: 8 }, (_, corner) => {
+        const local = box.halfSize.map((half, axis) => ((((corner >> axis) & 1) * 2 - 1) * 0.9 * half) / BLOCK_SIZE);
+        return box.center.map(
+          (value, axis) =>
+            value + [0, 1, 2].reduce((sum, column) => sum + box.rotation[axis * 3 + column]! * local[column]!, 0),
+        ) as Vec3;
+      }).flatMap((point) => MEMBER_RAY_DIRECTIONS.filter((direction) => along(point, direction) === undefined)),
+    );
+    expect(misses.length).toBeGreaterThan(0);
+  });
+
+  it('lets a later shot through a carved hole strike the flesh behind it, or pass through', () => {
+    const target = coreTarget();
+    const weapon = { damage: 0, reach: 10, cooldown: 0 };
+    const before = target.simulation.aimAt(target.origin, target.direction, weapon);
+    expect(before?.region).toBe('core.trunk');
+    target.pellets(1, Math.min(carving.maxRadiusMetres, 2 * voxelMetres) / carving.radiusMetresPerDamage);
+    expect(target.zombie.carved.length).toBeGreaterThan(0);
+    const after = target.simulation.aimAt(target.origin, target.direction, weapon);
+    expect(after === undefined || after.distanceMetres > before!.distanceMetres).toBe(true);
+  });
+
   it('opens a hole for every shot that hits the core after its members are severed', () => {
     const { simulation, zombie, input } = severedAmalgam();
     // A ring of light pellets at each core box; some lines cross where a lost member's voxels were.
@@ -1012,21 +1147,18 @@ describe('amalgam flesh carving', () => {
     expect(play()).toEqual(first);
   });
 
-  it('leaves damage, region health and severing as they would be without holes', () => {
+  it('leaves the damage, region health and severing of the hit that carves as they would be without holes', () => {
     const play = (type: typeof amalgam) => {
       const target = coreTarget(system(), type);
-      for (const key of ['a', 'b', 'c', 'd']) {
-        target.simulation.firePellets(
-          pelletShotFromBasis({
-            ammo: buck,
-            origin: target.origin,
-            basis: aimBasis(0.2, 0.1, NEUTRAL_AIM),
-            seed: 9,
-            key,
-          }),
-        );
-      }
-      target.simulation.swing(target.origin, target.direction, { ...FISTS_MELEE, reach: 8, impulse: 0 });
+      target.simulation.firePellets(
+        pelletShotFromBasis({
+          ammo: buck,
+          origin: target.origin,
+          basis: aimBasis(0.2, 0.1, NEUTRAL_AIM),
+          seed: 9,
+          key: 'a',
+        }),
+      );
       const { regions, severed, carved } = target.zombie;
       const alive = target.simulation.store.get(target.id) !== undefined;
       return { regions: { ...regions }, severed: [...severed], carved, alive };
