@@ -104,13 +104,6 @@ local campWallRunCrouchHole = campWallRun + {
       ]
     },
     {
-      "id": "camp_hq_quarters",
-      "rolls": [1, 1],
-      "entries": [
-        { "item": "camp_hq_safe_note", "weight": 1 }
-      ]
-    },
-    {
       "id": "camp_hq_secure_cache",
       "military": true,
       "rolls": [1, 1],
@@ -859,12 +852,10 @@ local campWallRunCrouchHole = campWallRun + {
           "facing": "n"
         },
         "W": {
-          "furniture": "field_desk",
-          "loot": "camp_supplies"
+          "furniture": "field_desk"
         },
         "M": {
-          "furniture": "field_desk",
-          "loot": "camp_supplies"
+          "furniture": "field_desk"
         },
         "C": {
           "furniture": "chair"
@@ -879,8 +870,7 @@ local campWallRunCrouchHole = campWallRun + {
           "furniture": "wardrobe"
         },
         "F": {
-          "furniture": "footlocker",
-          "loot": "camp_hq_quarters"
+          "furniture": "footlocker"
         },
         "Q": {
           "furniture": "camp_hq_safe",

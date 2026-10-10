@@ -753,6 +753,7 @@ describe('content', () => {
     expect(missingHeavy).toBe(true);
   });
 
+  // Keep this registry minimal; building the full base pack here made the suite hit its timeout.
   it('lets a later file override a block without changing its runtime id', () => {
     const original = {
       source: 'base.json',

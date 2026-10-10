@@ -1098,7 +1098,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[5,1,4],\"items\":[{\"item\":\"rifle_assault\",\"count\":1,\"placement\":\"surface\"},{\"item\":\"magazine_stanag_30\",\"count\":1,\"placement\":\"surface\"}]},{\"at\":[10,1,4],\"items\":[{\"item\":\"camp_hq_safe_key\",\"count\":1,\"key\":true},{\"item\":\"portable_radio\",\"count\":1,\"placement\":\"surface\"}]},{\"at\":[11,7,5],\"items\":[{\"item\":\"baseball_cap\",\"count\":1,\"placement\":\"surface\"}]},{\"at\":[13,7,6],\"items\":[{\"item\":\"real_suppressor\",\"count\":1}]}]"
+              "value": "[{\"at\":[5,1,4],\"items\":[{\"item\":\"rifle_assault\",\"count\":1,\"placement\":\"surface\"},{\"item\":\"magazine_stanag_30\",\"count\":1,\"placement\":\"surface\"}]},{\"at\":[10,1,4],\"items\":[{\"item\":\"camp_hq_safe_key\",\"count\":1,\"key\":true},{\"item\":\"portable_radio\",\"count\":1,\"placement\":\"surface\"}]},{\"at\":[11,7,5],\"items\":[{\"item\":\"baseball_cap\",\"count\":1,\"placement\":\"surface\"}]},{\"at\":[1,7,12],\"items\":[{\"item\":\"camp_hq_safe_note\",\"count\":1}]},{\"at\":[13,7,6],\"items\":[{\"item\":\"real_suppressor\",\"count\":1}]}]"
             }
           ]
         },

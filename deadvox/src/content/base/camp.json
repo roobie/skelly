@@ -218,16 +218,6 @@
     {
       "entries": [
         {
-          "item": "camp_hq_safe_note",
-          "weight": 1
-        }
-      ],
-      "id": "camp_hq_quarters",
-      "rolls": [1, 1]
-    },
-    {
-      "entries": [
-        {
           "nothing": true,
           "weight": 1
         }
@@ -1263,13 +1253,11 @@
           "furniture": "wood_door"
         },
         "F": {
-          "furniture": "footlocker",
-          "loot": "camp_hq_quarters"
+          "furniture": "footlocker"
         },
         "G": "galvanized",
         "M": {
-          "furniture": "field_desk",
-          "loot": "camp_supplies"
+          "furniture": "field_desk"
         },
         "O": {
           "furniture": "camp_orders"
@@ -1288,8 +1276,7 @@
         },
         "S": "sandbag",
         "W": {
-          "furniture": "field_desk",
-          "loot": "camp_supplies"
+          "furniture": "field_desk"
         },
         "p": "planks",
         "z": {

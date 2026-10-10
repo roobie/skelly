@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
+import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
 import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
 import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
@@ -1209,6 +1210,33 @@ describe('authored fixed loot', () => {
     expectCampHqProperties(compiledArmoury);
   });
 
+  it('rejects a surface military item in a non-military template', () => {
+    const buildingIndex = layout.buildings.findIndex(
+      (building) =>
+        building.fixedLoot?.length && result.registry.templates.get(building.template)?.military !== true,
+    );
+    const building = layout.buildings[buildingIndex];
+    if (!building?.fixedLoot?.length) {
+      throw new Error('the layout fixture needs fixed loot in a non-military template');
+    }
+    const override = building.fixedLoot[0]!;
+    const itemIndex = override.items.length;
+    const buildings = [...layout.buildings];
+    buildings[buildingIndex] = {
+      ...building,
+      fixedLoot: [
+        { ...override, items: [...override.items, { item: 'rifle_assault', placement: 'surface' }] },
+        ...building.fixedLoot.slice(1),
+      ],
+    };
+    const issues = authoredLayoutIssues({ ...layout, buildings }, result.registry);
+
+    expect(issues).toContainEqual([
+      `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`,
+      expect.stringContaining('military loot only'),
+    ]);
+  });
+
   it('puts a readable HQ clue and matching safe key in accessible world containers', () => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
     const hqIndex = layout.buildings.findIndex(({ template }) => template === 'camp_hq');
@@ -1222,17 +1250,21 @@ describe('authored fixed loot', () => {
     const safePiece = hqPieces.find((piece) => piece.furniture === 'camp_hq_safe')!;
     const safeSpawn = spawns.find(({ spec }) => spec.pos.join(',') === safePiece.pos.join(','))!;
     const lockId = safeSpawn.spec.lock!.id;
+    const hqDefinition = result.registry.templates.get('camp_hq')!;
+    const clueOverride = layout.buildings[hqIndex]!.fixedLoot?.find(({ items }) =>
+      items.some(({ item }) => result.registry.items.get(item)?.readable !== undefined),
+    );
+    expect(clueOverride).toBeDefined();
+    const clueItem = clueOverride!.items.find(({ item }) => result.registry.items.get(item)?.readable !== undefined)!;
+    const cluePiece = compileTemplate(result.registry, hqDefinition).pieces.find(
+      (piece) => piece.pos.join(',') === clueOverride!.at.join(','),
+    );
+    expect(cluePiece?.furniture).toBe('footlocker');
+    expect(spawns.some(({ loot }) => loot.some(({ type }) => type === clueItem.item))).toBe(true);
     const keySpawn = spawns.find(({ loot }) =>
       loot.some(({ type }) => result.registry.items.get(type)?.key?.lock === lockId),
     );
     expect(keySpawn).toBeDefined();
-    expect(
-      spawns.some(
-        ({ spec, loot }) =>
-          result.registry.furniture.get(spec.type)?.container !== undefined &&
-          loot.some(({ type }) => result.registry.items.get(type)?.readable !== undefined),
-      ),
-    ).toBe(true);
 
     const inventory = furnishInOrder(site, [...columns.values()]);
     const door = inventory.entities.at(...safeSpawn.spec.pos)!;
