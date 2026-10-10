@@ -1248,6 +1248,59 @@ describe('authored fixed loot', () => {
     expectCampHqProperties(compiledArmoury);
   });
 
+  it('keeps the FOB command tent entrance and interior reachable at standing height', () => {
+    const building = layout.buildings.find(({ template }) => template === 'camp_command_tent')!;
+    const definition = result.registry.templates.get(building.template)!;
+    const tent = compileTemplate(result.registry, definition);
+    expect(templateSpatialIssues(result.registry, tent), tent.id).toEqual([]);
+    const reachable = templateReachableStandingPositions(result.registry, tent);
+    expect(reachable.length, tent.id).toBeGreaterThan(0);
+    const [width, , tentDepth] = tent.size;
+    const air = result.registry.blockIds.get('air')!;
+    const fullHeightOpeningRows = Array.from({ length: tentDepth }, (_, z) => z).filter((z) =>
+      Array.from({ length: Math.ceil(STAIR_BODY_HEIGHT) }, (_, offset) => {
+        const y = 1 + offset;
+        return tent.blocks[width - 1 + width * (z + tentDepth * y)] === air;
+      }).every(Boolean),
+    );
+    expect(fullHeightOpeningRows.length, `${tent.id} entrance width`).toBeGreaterThanOrEqual(2);
+
+    for (const furniture of ['field_desk', 'camp_orders', 'footlocker']) {
+      const pieces = tent.pieces.filter((piece) => piece.furniture === furniture);
+      expect(pieces.length, furniture).toBeGreaterThan(0);
+      for (const piece of pieces) {
+        const [x, feet, z] = piece.pos;
+        const [pieceWidth, , pieceDepth] = piece.size;
+        expect(
+          reachable.some(([px, py, pz]) => {
+            if (py !== feet) {
+              return false;
+            }
+            const dx = Math.max(x - px, 0, px - (x + pieceWidth));
+            const dz = Math.max(z - pz, 0, pz - (z + pieceDepth));
+            return Math.hypot(dx, dz) <= STAIR_BODY_HALF_WIDTH + 0.5;
+          }),
+          `${furniture} at ${piece.pos.join(',')}`,
+        ).toBe(true);
+      }
+    }
+
+    const { entrance } = definition.access!;
+    const pathPoint = [
+      building.position[0] + (entrance[0] + 1) * BLOCK_SIZE,
+      building.position[2] + entrance[2] * BLOCK_SIZE,
+    ];
+    for (const other of layout.buildings.filter(({ template }) => template !== building.template)) {
+      const bounds = buildingBounds(other, result.registry.templates.get(other.template)!.size);
+      const blocksPath =
+        pathPoint[0]! >= bounds.x0 &&
+        pathPoint[0]! < bounds.x1 &&
+        pathPoint[1]! >= bounds.z0 &&
+        pathPoint[1]! < bounds.z1;
+      expect(blocksPath, `${other.template} blocks the command tent path`).toBe(false);
+    }
+  });
+
   it('places worst-case rolls from every FOB armoury container', () => {
     const armoury = layout.buildings.find(({ template: id }) => id === 'camp_armoury')!;
     const definition = result.registry.templates.get(armoury.template)!;
