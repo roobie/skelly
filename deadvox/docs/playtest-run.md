@@ -28,10 +28,29 @@ gh variable delete PAGES_FREEZE
 ```
 
 The `build` and `deploy` jobs in `.github/workflows/pages.yml` skip automatic Pages
-publishing during the freeze. `workflow_dispatch` remains available for an approved
-fix during the playtest. Clearing the variable does not replay skipped pushes; after
-the window closes, manually dispatch the Pages workflow from `main` to publish code
-merged during the freeze.
+publishing during the freeze. At freeze start, tag the deployed commit as
+`playtest-1-deployed` so a hotfix has a fixed base. For a fix BR approves during the
+freeze, branch `pages-hotfix/<name>` from that tag and commit only the fix. Dispatch
+the Pages workflow from that branch:
+
+```sh
+gh workflow run pages.yml --ref pages-hotfix/<name>
+```
+
+The `github-pages` environment must allow `pages-hotfix/*` as a deployment branch in
+addition to `main`; without that policy the hotfix run cannot deploy. With custom
+branch policies enabled, add the rule with:
+
+```sh
+gh api --method POST repos/OWNER/REPO/environments/github-pages/deployment-branch-policies -f name='pages-hotfix/*' -f type=branch
+```
+
+After deployment, move `playtest-1-deployed` to the new deployed commit. Send the
+same fix to `main` through a normal PR. A dispatch from `main` publishes all of
+`main`, not only the approved fix; during the freeze, that means approving every
+merge since freeze start for save compatibility. Clearing the variable does not
+replay skipped pushes; after the playtest window closes, manually dispatch from
+`main` to publish code merged during the freeze.
 
 ## Session format
 
