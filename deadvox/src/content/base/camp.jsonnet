@@ -1,7 +1,8 @@
 local spawnMarker = function(type, chance) { spawn: type, chance: chance };
 local senses = import "senses.json";
 local playerSense = [sense for sense in senses.senses if sense.id == "player"][0];
-local crouchHoleHeight = std.ceil(playerSense.crouch.bodyHeightMetres / 0.5);
+local blockSizeMetres = 0.5; // Must match src/core/scale.ts, BLOCK_SIZE.
+local crouchHoleHeight = std.ceil(playerSense.crouch.bodyHeightMetres / blockSizeMetres);
 local campWallRunLayers = [
   ["================================", "================================"],
   ["================================", "================================"],

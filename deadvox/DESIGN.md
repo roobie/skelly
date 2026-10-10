@@ -117,10 +117,13 @@ Crouching lowers the player's collision body as well as the eye, so a crouched
 player fits through openings a standing one can't. The FOB's east wall has a
 low passage sized from the crouched body in `src/content/base/senses.json`,
 `crouch.bodyHeightMetres`: a crouched player fits but a standing player does
-not. Its retained base course keeps the floor level with the approach, and the
-opening remains below standing eye height. The gap sits
-away from the guarded north entrance and the southern breach, so it reads as a
-separate low route. A zombie uses it only if its existing collision body fits;
+not. Its retained base course keeps the floor level with the approach. The gap
+sits away from the guarded north entrance and the southern breach, so it reads
+as a separate low route. Sightline coverage checks several points spanning the
+finale amalgam from feet to top, and preserves the southern breach as the only
+near-ground exception; see `test/campGate.test.ts`,
+`hides the finale from approach tracks and near ground except through the southern breach`.
+A zombie uses it only if its existing collision body fits;
 zombies do not crouch and the hole adds no type-specific exception. Standing up
 is refused while the standing body would intersect a solid block overhead, and
 the player stays crouched, so a stance change never leaves the body inside a

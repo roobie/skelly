@@ -485,16 +485,11 @@ describe('camp gate templates', () => {
     const zombies = [...registry.zombies.values()];
     expect(zombies.length).toBeGreaterThan(0);
 
-    for (const type of zombies) {
-      const dimensions = zombieBodyDimensions(type, BLOCK_SIZE);
-      const halfDepth = dimensions.halfDepth ?? dimensions.halfWidth;
-      const fits = dimensions.height <= opening.height && halfDepth * 2 <= laneWidth;
+    const crossesOpening = (dimensions: { halfWidth: number; halfDepth: number; height: number }): boolean => {
       const body = {
         pos: [wall.origin[0] + opening.width + dimensions.halfWidth + 1, opening.feetY, laneCenterZ] as Point3,
         vel: [0, 0, 0] as Point3,
-        halfWidth: dimensions.halfWidth,
-        halfDepth,
-        height: dimensions.height,
+        ...dimensions,
         onGround: true,
       };
       stepBodyHorizontal(body, {
@@ -503,8 +498,25 @@ describe('camp gate templates', () => {
         isSolid,
         params: { gravity: 0, stepHeight: 0 },
       });
-      expect(body.pos[0]! + body.halfWidth < wall.origin[0], type.id).toBe(fits);
+      return body.pos[0]! + body.halfWidth < wall.origin[0];
+    };
+
+    for (const type of zombies) {
+      const dimensions = zombieBodyDimensions(type, BLOCK_SIZE);
+      const halfDepth = dimensions.halfDepth ?? dimensions.halfWidth;
+      const fits = dimensions.height <= opening.height && halfDepth * 2 <= laneWidth;
+      expect(crossesOpening({ ...dimensions, halfDepth }), type.id).toBe(fits);
     }
+
+    // This geometry-derived body proves the opening can fit independently of the zombie registry.
+    const clearance = Math.min(opening.height, laneWidth, opening.width) / 100;
+    expect(
+      crossesOpening({
+        halfWidth: opening.width / 4,
+        halfDepth: laneWidth / 2 - clearance,
+        height: opening.height - clearance,
+      }),
+    ).toBe(true);
   });
 
   it('hides the finale from approach tracks and near ground except through the southern breach', () => {
@@ -529,29 +541,38 @@ describe('camp gate templates', () => {
     expect(holeOpening.openZ.length).toBeGreaterThan(0);
     const eyeHeight = (camp.ground + BLOCK_SIZE + PLAYER.eye) / BLOCK_SIZE;
     expect(holeOpening.feetY + holeOpening.height).toBeLessThan(eyeHeight);
+    const from = (point: [number, number]): Point3 => [point[0], eyeHeight, point[1]];
     for (const marker of markers) {
       const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, BLOCK_SIZE);
-      const top: Point3 = [
+      const footY = marker.position[1] / BLOCK_SIZE;
+      const bodyTargets: Point3[] = [0, 0.25, 0.5, 0.75, 1].map((fraction) => [
         marker.position[0] / BLOCK_SIZE,
-        marker.position[1] / BLOCK_SIZE + body.height + 0.01,
+        footY + body.height * fraction + 0.01,
         marker.position[2] / BLOCK_SIZE,
-      ];
-      expect(approaches.every(([x, z]) => wallBlocksSightline(solidCells, [x, eyeHeight, z], top))).toBe(true);
-      const from = (point: [number, number]): Point3 => [point[0], eyeHeight, point[1]];
-      const openBreachSightlines = nearGround.filter((point) =>
-        sightlineCrossesBreach(from(point), top, breaches[0]!, bounds),
+      ]);
+      for (const target of bodyTargets) {
+        expect(
+          approaches.every(([x, z]) => wallBlocksSightline(solidCells, [x, eyeHeight, z], target)),
+          JSON.stringify({ target, solidCount: solidCells.length }),
+        ).toBe(true);
+      }
+      const sightlines = bodyTargets.flatMap((target) =>
+        nearGround.map((point) => ({ point, target, start: from(point) })),
       );
-      const visibleNearGround = nearGround.filter(
-        (point) =>
+      const openBreachSightlines = sightlines.filter(({ start, target }) =>
+        sightlineCrossesBreach(start, target, breaches[0]!, bounds),
+      );
+      const visibleNearGround = sightlines.filter(
+        ({ start, target }) =>
           !(
-            sightlineCrossesBreach(from(point), top, breaches[0]!, bounds) ||
-            wallBlocksSightline(solidCells, from(point), top)
+            sightlineCrossesBreach(start, target, breaches[0]!, bounds) ||
+            wallBlocksSightline(solidCells, start, target)
           ),
       );
       expect(openBreachSightlines.length).toBeGreaterThan(0);
       expect(
         visibleNearGround,
-        JSON.stringify({ visibleNearGround, breaches, bounds, eyeHeight, top, solidCount: solidCells.length }),
+        JSON.stringify({ visibleNearGround, breaches, bounds, eyeHeight, bodyTargets, solidCount: solidCells.length }),
       ).toEqual([]);
     }
   });
