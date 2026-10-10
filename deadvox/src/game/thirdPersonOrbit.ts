@@ -1,8 +1,13 @@
 const LOOK_SENSITIVITY = 0.0022;
-const ORBIT_PITCH_LIMIT = 1.2;
 
 export const isPlayerThirdPersonView = (thirdPerson: boolean, spectatorCamera: boolean): boolean =>
   thirdPerson && !spectatorCamera;
+
+export const isOrbitResetMovementAction = (action: string): boolean =>
+  action === 'movement.forward' ||
+  action === 'movement.back' ||
+  action === 'movement.left' ||
+  action === 'movement.right';
 
 export interface ThirdPersonOrbitAngle {
   readonly yaw: number;
@@ -29,7 +34,7 @@ export class ThirdPersonOrbit {
     }
     this.angleValue = {
       yaw: angle.yaw - movementX * LOOK_SENSITIVITY,
-      pitch: Math.max(-ORBIT_PITCH_LIMIT, Math.min(ORBIT_PITCH_LIMIT, angle.pitch - movementY * LOOK_SENSITIVITY)),
+      pitch: angle.pitch - movementY * LOOK_SENSITIVITY,
     };
     return true;
   }

@@ -197,7 +197,33 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('orbits the third-person camera while keeping the orbit ray clear of walls', () => {
+  it('starts orbit at the follow offset and applies orbit pitch', () => {
+    const { engine, view } = fixture();
+    const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };
+    const damage = { style: { opacity: '' } } as unknown as HTMLElement;
+    const frame = {
+      dt: 0.1,
+      body,
+      paused: false,
+      noclip: false,
+      yaw: 0,
+      pitch: 0,
+      stridePhase: 0,
+      eye: [2, 4.24, 6] as Vec3,
+      thirdPerson: true,
+      sightImpaired: false,
+    };
+    view.updateCamera(frame, damage);
+    const followPosition = engine.camera.position.clone();
+    view.updateCamera({ ...frame, thirdPersonOrbit: { yaw: 0, pitch: 0 } }, damage);
+    expect(engine.camera.position.toArray()).toEqual(followPosition.toArray());
+    view.updateCamera({ ...frame, thirdPersonOrbit: { yaw: 0, pitch: 0.4 } }, damage);
+
+    expect(engine.camera.position.y).toBeGreaterThan(followPosition.y);
+    view.dispose();
+  });
+
+  it('pulls the orbit camera short of a solid wall', () => {
     const { engine, view } = fixture((x) => x === 4);
     const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };
     const damage = { style: { opacity: '' } } as unknown as HTMLElement;

@@ -290,7 +290,6 @@ describe('keyboard registry', () => {
   });
   it('gates the third-person view behind F2 and toggles it in both directions', () => {
     const binding = new BindingRegistry(INPUT_BINDINGS, storage());
-    expect(binding.binding('debug.third-person-toggle')?.defaults[0]?.code).toBe('Numpad0');
     expect(binding.binding('debug.third-person-toggle')).toMatchObject({
       defaults: [{ code: 'Numpad0' }],
       gate: 'debug.gate',
