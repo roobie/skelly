@@ -54,7 +54,7 @@ export const DEFAULT_LOOK: LookState = { tone: AUTO_TONE, exposure: 3, srgb: tru
 
 /** Which shadows are drawn, and how far from the player the sun's reach. Render-only; the debug controls and URL change it. */
 export interface ShadowState {
-  /** The sun's shadows (fading out towards dusk, none at night). */
+  /** The main light's shadows (full whenever it shines). */
   sun: boolean;
   /** The flashlight beam's shadows, while it is on. */
   torch: boolean;
