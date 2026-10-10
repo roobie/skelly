@@ -1357,6 +1357,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   approve it.” The remaining jaggedness is a known limit BR chose not to pursue.
   Favor a stable edge near the player over sharp shadows far beyond them; see
   `src/render/shadows.ts`, `sunShadowTexelSize` and `Shadows.update`.
+- **Solid joints are light-tight (#562):** two solid blocks that share a face
+  pass no sunlight, so a sealed room stays dark by day. Furniture casts no sun
+  shadow, so light past a closed door is accepted. Why the sun's map is drawn
+  from the faces light enters: `src/render/shadows.ts`, its header.
 
 ## Audio
 

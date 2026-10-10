@@ -1,7 +1,9 @@
 import {
+  BackSide,
   Box3,
   type Camera,
   DirectionalLight,
+  FrontSide,
   Frustum,
   Group,
   type Light,
@@ -10,6 +12,7 @@ import {
   OrthographicCamera,
   PerspectiveCamera,
   Scene,
+  type Side,
   SpotLight,
   Vector3,
   type WebGLRenderer,
@@ -122,7 +125,6 @@ describe('sun shadow biases', () => {
     expect(near.bias).toBeLessThan(0);
     // Texel 2 × 40 m / 2048 = 3.9 cm; the box's depth span is 3.5 × 40 m.
     expect(-near.bias * 3.5 * 40).toBeCloseTo((2 * 40) / SUN_MAP_SIZE, 6);
-    expect(near.normalBias).toBeCloseTo(1.5 * ((2 * 40) / SUN_MAP_SIZE), 6);
     expect(sunShadowBias(64).normalBias).toBeCloseTo(near.normalBias * (64 / 40), 6);
     expect(sunShadowBias(64).bias).toBeCloseTo(near.bias, 9);
   });
@@ -210,7 +212,7 @@ describe('choosing shadow casters', () => {
 
     // The camera culled both (nothing in view); the shadow pass still gets the one in range.
     meshes.cull(new PerspectiveCamera(75, 1, 0.05, 1));
-    const cast = meshes.selectShadowCasters(withinRange(new Vector3(0, 1, 0), 40));
+    const cast = meshes.selectShadowCasters(withinRange(new Vector3(0, 1, 0), 40), BackSide);
     expect(cast).toBe(1);
     const casting = meshes.group.children.filter((child) => child.castShadow);
     expect(casting.map((child) => child.position.x)).toEqual([0]);
@@ -224,7 +226,7 @@ describe('choosing shadow casters', () => {
 
 describe('Shadows', () => {
   const setup = () => {
-    const draws: { light: Light; seesFigure: boolean }[] = [];
+    const draws: { light: Light; seesFigure: boolean; chunkSide: Side | null }[] = [];
     const figure = new Object3D();
     figure.layers.set(PLAYER_FIGURE_LAYER);
     // Stands in for three.js's own shadow map renderer, which `Shadows` takes over.
@@ -237,7 +239,11 @@ describe('Shadows', () => {
             // three.js allocates a casting light's map inside this call.
             const { shadow } = light as DirectionalLight | SpotLight;
             shadow.map ??= {} as never;
-            draws.push({ light, seesFigure: figure.layers.test(view.layers) });
+            draws.push({
+              light,
+              seesFigure: figure.layers.test(view.layers),
+              chunkSide: meshes.material.shadowSide,
+            });
           }
         },
       },
@@ -389,6 +395,22 @@ describe('Shadows', () => {
     // The sun's pass, by contrast, sees it.
     frame(1);
     expect(draws.some((draw) => draw.light !== torch && draw.seesFigure)).toBe(true);
+  });
+
+  it('draws the sun map from the chunk faces light enters, and the flashlight map from the faces it leaves', () => {
+    // A map of the faces light leaves lit a band along the inside joint of a sealed room (#562).
+    const { frame, draws, light, torch } = setup();
+    torch.castShadow = true;
+    frame(1);
+    const sideFor = (drawn: Light) => draws.filter((draw) => draw.light === drawn).at(-1)?.chunkSide;
+    expect(sideFor(light)).toBe(FrontSide);
+    expect(sideFor(torch)).toBe(BackSide);
+  });
+
+  it("offsets the sun's lookups along the normal past the PCF disk, so a lit face never shades itself", () => {
+    const { light } = setup();
+    // The disk's radius plus the texel the hardware compare blends in.
+    expect(light.shadow.normalBias).toBeGreaterThanOrEqual((light.shadow.radius + 1) * sunShadowTexelSize(40));
   });
 
   it('leaves every other scene alone, such as the held items', () => {
