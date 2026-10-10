@@ -120,7 +120,7 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
       "container": {
         "pockets": [
           {
-            "grid": [6, 5],
+            "grid": [10, 6],
             "handlingSimSeconds": 1.2
           }
         ]

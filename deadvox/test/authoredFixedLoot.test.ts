@@ -10,7 +10,7 @@ import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { rollLoot } from '../src/core/loot.ts';
+import { fixedItems, rollLoot } from '../src/core/loot.ts';
 import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
 import { Rng } from '../src/core/random.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
@@ -1188,6 +1188,59 @@ describe('authored fixed loot', () => {
     expect(compiledArmoury.spawns).toEqual([]);
 
     expectCampHqProperties(compiledArmoury);
+  });
+
+  it('places worst-case pairs from every FOB armoury container', () => {
+    const building = layout.buildings.find(({ template }) => template === 'camp_armoury')!;
+    const template = result.registry.templates.get(building.template)!;
+    const compiled = compileTemplate(result.registry, template);
+    const table = result.registry.loot.get('military_armoury')!;
+    const containers = compiled.pieces.filter(
+      (piece) => result.registry.furniture.get(piece.furniture)?.loot === table.id,
+    );
+    expect(containers.length).toBeGreaterThan(0);
+
+    for (const piece of containers) {
+      const override = building.fixedLoot?.find(({ at }) => at.join(',') === piece.pos.join(','));
+      const fixed = fixedItems(result.registry, override?.items ?? []);
+      for (const [firstIndex, first] of table.entries.entries()) {
+        for (const [secondIndex, second] of table.entries.entries()) {
+          const values = [0.999999999];
+          for (const entry of [first, second]) {
+            const totalWeight = table.entries.reduce((sum, candidate) => sum + candidate.weight, 0);
+            const weightBefore = table.entries
+              .slice(0, table.entries.indexOf(entry))
+              .reduce((sum, candidate) => sum + candidate.weight, 0);
+            values.push((weightBefore + entry.weight / 2) / totalWeight);
+            if (entry.item !== undefined && entry.count !== undefined) values.push(0.999999999);
+            if (entry.item !== undefined && entry.condition !== undefined) values.push(0.999999999);
+          }
+          const rng = new Rng([0, 0, 0, 0]);
+          rng.next = () => {
+            const value = values.shift();
+            if (value === undefined) throw new Error('Unexpected random draw while rolling armoury loot');
+            return value;
+          };
+          const rolled = rollLoot(result.registry, table.id, rng);
+          expect(values, `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toEqual([]);
+          const supplied = [...fixed, ...rolled];
+          const expected = new Map<string, number>();
+          for (const item of supplied) expected.set(item.type, (expected.get(item.type) ?? 0) + item.count);
+
+          const inventory = new Inventory(result.registry);
+          const entity = inventory.furnish(
+            { type: piece.furniture, pos: piece.pos, size: piece.size, facing: piece.facing },
+            supplied,
+          );
+          expect(entity, `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toBeDefined();
+          const placed = new Map<string, number>();
+          for (const item of entity!.pockets?.flat() ?? []) {
+            placed.set(item.item.type, (placed.get(item.item.type) ?? 0) + item.item.count);
+          }
+          expect(placed, `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toEqual(expected);
+        }
+      }
+    }
   });
 
   it('lets a player walk from inside the camp sandbag post template to its exit', () => {
