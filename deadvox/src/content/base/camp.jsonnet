@@ -1,4 +1,36 @@
 local spawnMarker = function(type, chance) { spawn: type, chance: chance };
+local senses = import "senses.json";
+local playerSense = [sense for sense in senses.senses if sense.id == "player"][0];
+local blockSizeMetres = 0.5; // Must match src/core/scale.ts, BLOCK_SIZE.
+local crouchHoleHeight = std.ceil(playerSense.crouch.bodyHeightMetres / blockSizeMetres);
+local campWallRunLayers = [
+  ["================================", "================================"],
+  ["================================", "================================"],
+  ["================================", "================================"],
+  ["================================", "================================"],
+  ["====.=======.=======.=======.===", "=.=======.=======.=======.======"],
+  ["================================", "================================"],
+  ["================================", "================================"],
+  ["================================", "================================"],
+];
+local campWallRun = {
+  id: "camp_wall_run",
+  size: [32, 8, 2],
+  palette: { ".": "air", "=": "sandbag" },
+  layers: campWallRunLayers,
+};
+local crouchHoleRow = function(row)
+  std.substr(row, 0, 15) + ".." + std.substr(row, 17, 15);
+local campWallRunCrouchHole = campWallRun + {
+  id: "camp_wall_run_crouch_hole",
+  layers: [
+    // Keep the base course: template air here clears the terrain block and leaves a sunken threshold.
+    if y >= 1 && y < 1 + crouchHoleHeight then
+      [crouchHoleRow(campWallRunLayers[y][0]), crouchHoleRow(campWallRunLayers[y][1])]
+    else campWallRunLayers[y]
+    for y in std.range(0, 7)
+  ],
+};
 {
   "items": [
     {
@@ -50,6 +82,34 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
           "weight": 3
         }
       ]
+    },
+    {
+      // The FOB armoury's own table: another military site gets its own, so tuning the FOB's stock stays local.
+      "id": "military_armoury",
+      "military": true,
+      "rolls": [1, 2],
+      "entries": [
+        { "item": "rifle_assault", "weight": 1, "condition": [0.5, 1] },
+        { "item": "rifle_ak", "weight": 1, "condition": [0.5, 1] },
+        { "item": "magazine_stanag_20", "weight": 1, "count": [3, 3] },
+        { "item": "magazine_stanag_30", "weight": 2, "count": [3, 3] },
+        { "item": "magazine_akm_30", "weight": 2, "count": [3, 3] },
+        { "item": "foregrip", "weight": 1 },
+        { "item": "optic_fixed_prism_4x", "weight": 1 },
+        { "item": "optic_high_mag_5_25x", "weight": 1 },
+        { "item": "optic_holographic", "weight": 1 },
+        { "item": "optic_lpvo_1_6x", "weight": 1 },
+        { "item": "optic_mini_reflex", "weight": 1 },
+        { "item": "optic_tube_dot", "weight": 1 },
+        { "item": "rail_front_sight", "weight": 1 },
+        { "item": "real_suppressor", "weight": 1 },
+        { "item": "tactical_flashlight_mount", "weight": 1 },
+        { "item": "cartridge_box_5_d_56x45", "weight": 3, "count": [10, 10] },
+        { "item": "cartridge_box_7_d_62x39", "weight": 3, "count": [10, 10] },
+        { "item": "cartridge_5_d_56x45", "weight": 2, "count": [50, 150] },
+        { "item": "cartridge_7_d_62x39", "weight": 2, "count": [50, 150] },
+        { "nothing": true, "weight": 27 }
+      ]
     }
   ],
   "furniture": [
@@ -92,12 +152,26 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
       "container": {
         "pockets": [
           {
-            "grid": [6, 5],
+            "grid": [10, 6],
             "handlingSimSeconds": 1.2
           }
         ]
       },
       "loot": "military_armoury"
+    },
+    {
+      "id": "ammo_can",
+      "name": "Ammunition can",
+      "size": [1, 1, 1],
+      "color": "#5b6142",
+      "container": {
+        "pockets": [
+          {
+            "grid": [4, 2],
+            "handlingSimSeconds": 0.8
+          }
+        ]
+      }
     },
     {
       "id": "footlocker",
@@ -739,35 +813,22 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
         ]
       }
     },
-    {
-      "id": "camp_wall_run",
-      "size": [32, 8, 2],
-      "palette": {
-        ".": "air",
-        "=": "sandbag"
-      },
-      "layers": [
-        ["================================", "================================"],
-        ["================================", "================================"],
-        ["================================", "================================"],
-        ["================================", "================================"],
-        ["====.=======.=======.=======.===", "=.=======.=======.=======.======"],
-        ["================================", "================================"],
-        ["================================", "================================"],
-        ["================================", "================================"]
-      ]
-    },
+    campWallRun,
+    campWallRunCrouchHole,
     {
       "id": "camp_sandbag_post",
       "size": [8, 5, 8],
       "palette": {
         ".": "air",
         "=": "planks",
-        "S": "sandbag"
+        "S": "sandbag",
+        "C": {
+          "furniture": "ammo_can"
+        }
       },
       "layers": [
         ["========", "========", "========", "========", "========", "========", "========", "========"],
-        ["SSS..SSS", "S......S", "S......S", "S......S", "S......S", "S......S", "S......S", "SSSSSSSS"],
+        ["SSS..SSS", "S......S", "S......S", "S......S", "S......S", "S......S", "S.....CS", "SSSSSSSS"],
         ["SSS..SSS", "S......S", "S......S", "S......S", "S......S", "S......S", "S......S", "SSSSSSSS"],
         ["........", "........", "........", "........", "........", "........", "........", "........"],
         ["........", "........", "........", "........", "........", "........", "........", "........"]

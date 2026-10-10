@@ -383,6 +383,11 @@ body.unconscious::after {
 #overlay dd {
   margin: 0;
 }
+#overlay #controls-search {
+  display: block;
+  width: 100%;
+  margin: 4px 0 8px;
+}
 #overlay #controls {
   grid-template-columns: minmax(0, 1fr);
   row-gap: 0;

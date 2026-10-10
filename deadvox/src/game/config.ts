@@ -6,8 +6,6 @@ import { DEFAULT_WEATHERING_PROFILE_ID } from '../core/weather.ts';
 import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
 import { BUNDLED_CONTENT } from './bundledContent.ts';
 
-/** View distances offered on the start card, in metres. 96 m is the default. */
-export const VIEW_DISTANCES: readonly number[] = [64, 96, 128];
 export const DEFAULT_RADIUS_M = 96;
 const MIN_RADIUS_M = 32;
 const MAX_RADIUS_M = 256;
