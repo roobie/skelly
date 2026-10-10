@@ -19,7 +19,8 @@ import {
 } from '../src/core/authoredTerrain.mjs';
 import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
-import { compassBearing, toChunk } from '../src/core/coords.ts';
+import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
+import { HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from '../src/core/hamlet.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
@@ -385,6 +386,38 @@ describe('authored layout acceptance', () => {
     });
   });
 
+  it('serves authored hordes only in the columns derived from their layout positions', () => {
+    const { registry: bundledRegistry } = BUNDLED_CONTENT;
+    const playtest = bundledRegistry.layouts.get('playtest')!;
+    const markers = playtest.hordes ?? [];
+    expect(markers.length).toBeGreaterThan(0);
+    const site = new AuthoredSite(1, bundledRegistry, scale, playtest);
+    const expectedIn = (cx: number, cz: number) =>
+      markers
+        .filter(
+          ({ position }) =>
+            toChunk(position[0] / scale.blockSize) === cx && toChunk(position[2] / scale.blockSize) === cz,
+        )
+        .map(({ id, position }) => ({
+          id: `${playtest.id}_${id}`,
+          type: HAMLET_HORDE_TYPE,
+          pos: position.map((metres) => metres / scale.blockSize),
+        }));
+    const minX = Math.floor(playtest.bounds.x0 / scale.blockSize / CHUNK) - 1;
+    const maxX = Math.ceil(playtest.bounds.x1 / scale.blockSize / CHUNK) + 1;
+    const minZ = Math.floor(playtest.bounds.z0 / scale.blockSize / CHUNK) - 1;
+    const maxZ = Math.ceil(playtest.bounds.z1 / scale.blockSize / CHUNK) + 1;
+    for (let cx = minX; cx <= maxX; cx++) {
+      for (let cz = minZ; cz <= maxZ; cz++) {
+        const hordes = site.hordesIn(cx, cz);
+        for (const { members } of hordes) {
+          expect(members).toBeGreaterThanOrEqual(HAMLET_HORDE_MEMBERS[0]);
+          expect(members).toBeLessThanOrEqual(HAMLET_HORDE_MEMBERS[1]);
+        }
+        expect(hordes.map(({ id, type, pos }) => ({ id, type, pos }))).toEqual(expectedIn(cx, cz));
+      }
+    }
+  });
   it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
     expect(issues).toEqual([]);
     expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');

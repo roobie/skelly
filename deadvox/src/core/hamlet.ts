@@ -66,6 +66,8 @@ export const HAMLET_TEMPLATES: readonly string[] = [...NORTH_SIDE, ...SOUTH_SIDE
 /** Also seeded by the static reachability check: roadside wanderers spawn independently of markers. */
 const HAMLET_WANDERER = 'shambler';
 const ZOMBIE_COUNT = [6, 10] as const;
+export const HAMLET_HORDE_TYPE = 'shambler';
+export const HAMLET_HORDE_MEMBERS = [20, 50] as const;
 
 /** Keeps authored-only kinds out of ordinary spawns and their static reachability sources. */
 export const ordinaryHamletSpawnWeights = (registry: Pick<Registry, 'zombies'>): Map<string, number> =>
@@ -344,9 +346,9 @@ export class Hamlet implements Site {
     const x = Math.floor(this.road.x0 + (this.road.x1 - this.road.x0) * 0.68);
     this.hordeSpawn = {
       id: 'first-horde',
-      type: 'shambler',
+      type: HAMLET_HORDE_TYPE,
       pos: [x + 0.5, this.roadHeightAt(x) + 1, (this.road.z0 + this.road.z1) / 2],
-      members: rng.int(20, 50),
+      members: rng.int(...HAMLET_HORDE_MEMBERS),
     };
   }
 

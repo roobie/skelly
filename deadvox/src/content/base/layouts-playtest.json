@@ -994,8 +994,139 @@
           "type": "amalgam",
           "position": [490, 21.5, 545],
           "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [445, 21.5, 503],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [445, 21.5, 515],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [465, 21.5, 508],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [500, 21.5, 510],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [434, 21.5, 510],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [434, 21.5, 540],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [520, 21.5, 510],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [520, 21.5, 550],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [460, 21.5, 487],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [492, 21.5, 487],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [421, 21.5, 243],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [431, 21.5, 243],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [421, 21.5, 248],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [431, 21.5, 248],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [414, 21.5, 236],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [439, 21.5, 236],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [414, 21.5, 256],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [439, 21.5, 256],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [412, 21.5, 200],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [432, 21.5, 208],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [416, 21.5, 193],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [406, 21.5, 200],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [429, 21.5, 199],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [350, 30.5, 157],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [342, 31.5, 153],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [358, 30, 163],
+          "chance": 1
         }
       ],
+      "hordes": [{ "id": "fob_east", "position": [612, 21.5, 520] }],
       "beats": [
         {
           "id": "lone_house",

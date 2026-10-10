@@ -4,6 +4,7 @@ read_if:
   - you're changing authored-site fixed loot or playtest-map scope
   - you're extending the workshop route or its multiple approaches
   - you're authoring time-windowed Tiled spawn markers
+  - you're authoring a horde marker in a Tiled map
   - you're drawing playtest beat areas or marking key fixed loot
   - you're authoring or reviewing the playtest military compound and its routes
 ---
@@ -37,3 +38,5 @@ Rectangle `beat` objects mark each beat's area by a `beat` id, and `maps/extensi
 ## Time-windowed spawns
 
 Tiled shambler markers use `window_from` and optional `window_to`; `maps/extensions/deadvox.mjs`, `exportLayout`, writes them into the spawn `window`. Named game-clock boundaries live in `src/core/clock.ts`, `SPAWN_TIMES`. See `DESIGN.md`, "Spawning", for the rule and its reason.
+
+A horde marker places a grouped threat at its standing point. The horde east of the FOB gives the playtest a large group approaching from beyond the compound walls. See `maps/extensions/deadvox.mjs`, `addHorde`; `src/core/authoredSite.ts`, `AuthoredSite.hordesIn`; and `src/core/hamlet.ts`, `HAMLET_HORDE_TYPE` and `HAMLET_HORDE_MEMBERS`, which keep authored hordes aligned with the hamlet's horde.
