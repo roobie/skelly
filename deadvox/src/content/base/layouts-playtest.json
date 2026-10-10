@@ -1126,6 +1126,7 @@
           "chance": 1
         }
       ],
+      "hordes": [{ "id": "fob_east", "position": [612, 21.5, 520] }],
       "beats": [
         {
           "id": "lone_house",

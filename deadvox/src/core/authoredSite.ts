@@ -14,12 +14,20 @@ import {
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
-import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { fixedItems, type Rolled } from './loot.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
-import { furnitureOf, grow, type PlaytestMarks, type Rect, type Site, type ZombieSpawn } from './site.ts';
+import {
+  furnitureOf,
+  grow,
+  type HordeSpawn,
+  type PlaytestMarks,
+  type Rect,
+  type Site,
+  type ZombieSpawn,
+} from './site.ts';
 import { footprint, type Placement, placedPieces, placedSpawns, stampPlacement } from './templates.ts';
 import {
   forestDensityAt,
@@ -39,6 +47,7 @@ export class AuthoredSite implements Site {
   readonly skyBounds: NonNullable<Site['skyBounds']>;
   readonly trees: readonly TreePlacement[];
   private readonly spawns: readonly ZombieSpawn[];
+  private readonly hordes: readonly HordeSpawn[];
   private readonly treeIndex: TreeIndex;
   private readonly fixedLoot = new Map<string, Rolled[]>();
   readonly playtestMarks: PlaytestMarks;
@@ -102,6 +111,7 @@ export class AuthoredSite implements Site {
     const spawnPoints: [number, number][] = [
       [layout.player.position[0], layout.player.position[2]],
       ...layout.shamblers.map((spawn): [number, number] => [spawn.position[0], spawn.position[2]]),
+      ...(layout.hordes ?? []).map((horde): [number, number] => [horde.position[0], horde.position[2]]),
       ...this.placements
         .flatMap(placedSpawns)
         .map((marker): [number, number] => [marker.pos[0] * s, marker.pos[2] * s]),
@@ -344,6 +354,12 @@ export class AuthoredSite implements Site {
         pos: spawn.pos,
         ...(spawn.window ? { window: spawn.window } : {}),
       }));
+    this.hordes = (layout.hordes ?? []).map(({ id, position }) => ({
+      id: `${layout.id}_${id}`,
+      type: HAMLET_HORDE_TYPE,
+      pos: blocks(position),
+      members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HAMLET_HORDE_MEMBERS),
+    }));
   }
 
   stamp(chunk: Chunk): void {
@@ -363,5 +379,10 @@ export class AuthoredSite implements Site {
   }
   zombiesIn(cx: number, cz: number): ZombieSpawn[] {
     return this.spawns.filter((spawn) => toChunk(spawn.pos[0]) === cx && toChunk(spawn.pos[2]) === cz);
+  }
+  hordesIn(cx: number, cz: number): HordeSpawn[] {
+    return this.hordes
+      .filter((horde) => toChunk(horde.pos[0]) === cx && toChunk(horde.pos[2]) === cz)
+      .map((horde) => ({ ...horde, pos: [...horde.pos] as Vec3 }));
   }
 }

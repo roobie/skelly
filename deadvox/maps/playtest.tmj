@@ -10,7 +10,7 @@
   "tileheight": 1,
   "infinite": false,
   "nextlayerid": 8,
-  "nextobjectid": 131,
+  "nextobjectid": 132,
   "properties": [
     {
       "name": "id",
@@ -2262,6 +2262,19 @@
           "rotation": 0,
           "visible": true,
           "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+        },
+        {
+          "id": 131,
+          "name": "Horde 100 m east of FOB",
+          "type": "horde",
+          "point": true,
+          "x": 612,
+          "y": 520,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [{ "name": "horde_id", "type": "string", "value": "fob_east" }]
         }
       ]
     },

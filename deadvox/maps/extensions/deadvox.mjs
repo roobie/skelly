@@ -9,7 +9,7 @@ import {
 
 const root = FileInfo.path(tiled.projectFilePath);
 const ID_PATTERN = /^[a-z0-9_]+$/;
-const CLASSES = ['building', 'player_spawn', 'shambler', 'woodland', 'track', 'ridge', 'hill', 'beat'];
+const CLASSES = ['building', 'player_spawn', 'shambler', 'horde', 'woodland', 'track', 'ridge', 'hill', 'beat'];
 const ENUM_TYPES = { template: 'template_id', zombie: 'zombie_type' };
 
 function readJson(path) {
@@ -214,6 +214,31 @@ function addSpawn(object, info, context) {
       : { fromGameTimeOfDay, ...(toGameTimeOfDay === undefined ? {} : { toGameTimeOfDay }) };
   layout.shamblers.push({ type, position, chance, ...(window ? { window } : {}) });
 }
+function addHorde(object, info, { layout, pack }) {
+  const { name, x, z } = info;
+  if (object.shape !== MapObject.Point) {
+    throw new Error(`${name}: horde must be a point`);
+  }
+  pointInside(layout, [x, z], name);
+  if (x === layout.bounds.x1 || z === layout.bounds.z1) {
+    throw new Error(`${name}: outside site bounds`);
+  }
+  const id = scalar(object, 'horde_id');
+  if (!ID_PATTERN.test(id)) {
+    throw new Error(`${name}: invalid horde_id`);
+  }
+  if (layout.hordes.some((horde) => horde.id === id)) {
+    throw new Error(`${name}: duplicate horde_id ${id}`);
+  }
+  const lots = layout.buildings.map((building) =>
+    lotOf(building, buildingBounds(building, pack.templates.find((t) => t.id === building.template).size)),
+  );
+  const position = [x, standingHeight(layout, lots, x, z), z];
+  if (!position.every((value) => Number.isInteger(value * 2))) {
+    throw new Error(`${name}: position must be snapped to 0.5 m`);
+  }
+  layout.hordes.push({ id, position });
+}
 function areaPoints(object, info) {
   const { name, x, z, cls } = info;
   if (object.shape !== (cls === 'woodland' ? MapObject.Polygon : MapObject.Polyline)) {
@@ -329,12 +354,14 @@ export function exportLayout(map) {
     layout.startTimeGameTimeOfDay = startTimeGameTimeOfDay;
   }
   layout.shamblers = [];
+  layout.hordes = [];
   const context = { layout, pack: content(), footprints: [], beats: [] };
   const writers = {
     building: addBuilding,
     // biome-ignore lint/style/useNamingConvention: literal Tiled object class name.
     player_spawn: addSpawn,
     shambler: addSpawn,
+    horde: addHorde,
     woodland: addWoodland,
     track: addTrack,
     ridge: addTerrain,
@@ -343,7 +370,11 @@ export function exportLayout(map) {
   };
   const entries = objects(map).map((object) => ({ object, info: objectInfo(object) }));
   // Contextual defaults depend on all terrain and lots, never layer/object ordering.
-  for (const classes of [['ridge', 'hill'], ['building'], ['player_spawn', 'shambler', 'woodland', 'track', 'beat']]) {
+  for (const classes of [
+    ['ridge', 'hill'],
+    ['building'],
+    ['player_spawn', 'shambler', 'horde', 'woodland', 'track', 'beat'],
+  ]) {
     for (const { object, info } of entries) {
       if (classes.includes(info.cls)) {
         writers[info.cls](object, info, context);
@@ -418,6 +449,7 @@ export function generatePropertyTypes() {
     { name: 'ridge', members: [member('rise', 'float', 10), member('width', 'float', 40)] },
     { name: 'hill', members: [member('rise', 'float', 4)] },
     { name: 'beat', members: [member('beat', 'string', '')] },
+    { name: 'horde', members: [member('horde_id', 'string', '')] },
   ].map((definition) => {
     const prior = existing.find((type) => type.name === definition.name);
     const id = prior ? prior.id : nextId;
