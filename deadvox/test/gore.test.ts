@@ -36,6 +36,7 @@ describe('Gore', () => {
       player: { pos: [0, 0, 0], yaw, wounds, eye, lookDirection, thirdPerson: false },
     });
 
+    expect(gore.activeDroplets).toBe(1);
     const mesh = gore.group.children.find((child): child is InstancedMesh => child instanceof InstancedMesh);
     if (!mesh) {
       throw new Error('Gore has no droplet mesh');
