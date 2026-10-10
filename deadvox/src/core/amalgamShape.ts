@@ -31,8 +31,8 @@ const PUSHES: readonly (readonly [number, number])[] = [
   [-1, -1],
 ];
 /**
- * The furthest a push moves the flesh along an axis, in blocks. A turn sinks flesh only a little way into a
- * block, so a push this short never carries it out through the block's far side.
+ * The maximum push along any axis, in blocks. The cap keeps a snapped background turn from jumping the
+ * body far.
  */
 const PUSH_LIMIT = 0.45;
 
