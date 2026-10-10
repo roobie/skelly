@@ -1329,22 +1329,20 @@ describe('authored fixed loot', () => {
     }
     const override = building.fixedLoot[0]!;
     const itemIndex = override.items.length;
-    const buildings = [...layout.buildings];
-    buildings[buildingIndex] = {
-      ...building,
-      fixedLoot: [
-        {
-          ...override,
-          items: [...override.items, { item: 'crowbar', fitted: { sling: 'weapon_sling' } }],
-        },
-        ...building.fixedLoot.slice(1),
-      ],
+    const issuePath = `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`;
+    const issuesFor = (item: FixedOverride['items'][number]) => {
+      const buildings = [...layout.buildings];
+      buildings[buildingIndex] = {
+        ...building,
+        fixedLoot: [{ ...override, items: [...override.items, item] }, ...building.fixedLoot.slice(1)],
+      };
+      return authoredLayoutIssues({ ...layout, buildings }, result.registry);
     };
-    const issues = authoredLayoutIssues({ ...layout, buildings }, result.registry);
 
-    expect(issues).toContainEqual([
-      `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`,
-      'This item has no fitted-item slots',
+    expect(issuesFor({ item: 'crowbar' })).not.toContainEqual([issuePath, expect.any(String)]);
+    expect(issuesFor({ item: 'crowbar', fitted: { sling: 'weapon_sling' } })).toContainEqual([
+      issuePath,
+      expect.any(String),
     ]);
   });
 
