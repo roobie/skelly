@@ -1,4 +1,36 @@
 local spawnMarker = function(type, chance) { spawn: type, chance: chance };
+local senses = import "senses.json";
+local playerSense = [sense for sense in senses.senses if sense.id == "player"][0];
+local blockSizeMetres = 0.5; // Must match src/core/scale.ts, BLOCK_SIZE.
+local crouchHoleHeight = std.ceil(playerSense.crouch.bodyHeightMetres / blockSizeMetres);
+local campWallRunLayers = [
+  ["================================", "================================"],
+  ["================================", "================================"],
+  ["================================", "================================"],
+  ["================================", "================================"],
+  ["====.=======.=======.=======.===", "=.=======.=======.=======.======"],
+  ["================================", "================================"],
+  ["================================", "================================"],
+  ["================================", "================================"],
+];
+local campWallRun = {
+  id: "camp_wall_run",
+  size: [32, 8, 2],
+  palette: { ".": "air", "=": "sandbag" },
+  layers: campWallRunLayers,
+};
+local crouchHoleRow = function(row)
+  std.substr(row, 0, 15) + ".." + std.substr(row, 17, 15);
+local campWallRunCrouchHole = campWallRun + {
+  id: "camp_wall_run_crouch_hole",
+  layers: [
+    // Keep the base course: template air here clears the terrain block and leaves a sunken threshold.
+    if y >= 1 && y < 1 + crouchHoleHeight then
+      [crouchHoleRow(campWallRunLayers[y][0]), crouchHoleRow(campWallRunLayers[y][1])]
+    else campWallRunLayers[y]
+    for y in std.range(0, 7)
+  ],
+};
 {
   "items": [
     {
@@ -739,24 +771,8 @@ local spawnMarker = function(type, chance) { spawn: type, chance: chance };
         ]
       }
     },
-    {
-      "id": "camp_wall_run",
-      "size": [32, 8, 2],
-      "palette": {
-        ".": "air",
-        "=": "sandbag"
-      },
-      "layers": [
-        ["================================", "================================"],
-        ["================================", "================================"],
-        ["================================", "================================"],
-        ["================================", "================================"],
-        ["====.=======.=======.=======.===", "=.=======.=======.=======.======"],
-        ["================================", "================================"],
-        ["================================", "================================"],
-        ["================================", "================================"]
-      ]
-    },
+    campWallRun,
+    campWallRunCrouchHole,
     {
       "id": "camp_sandbag_post",
       "size": [8, 5, 8],
