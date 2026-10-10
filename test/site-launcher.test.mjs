@@ -242,7 +242,9 @@ describe('site launcher playtest entry', () => {
     assert.ok(termsEnd >= 0, 'the consent terms are rendered as a list');
     assert.ok(playLink > termsEnd, 'the play link follows all consent terms');
 
-    const fallback = round1Page.slice(round1Page.indexOf(': html`'));
+    const fallbackStart = round1Page.lastIndexOf(': html`');
+    assert.ok(fallbackStart >= 0, 'the page has a catalog-failure fallback');
+    const fallback = round1Page.slice(fallbackStart);
     assert.doesNotMatch(fallback, ROUND1_FALLBACK_PLAY_URL_PATTERN);
   });
 
