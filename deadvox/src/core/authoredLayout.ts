@@ -28,7 +28,6 @@ const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
 const FOUNDATION_TOLERANCE = 1;
 type LayoutBuilding = SiteLayoutDef['buildings'][number];
 
-/** Why this item can't be fixed loot, or undefined when its source is allowed. */
 /** Fitted items must exist and pass the same slot rules a fitted item meets at runtime. */
 const fittedItemsIssue = (
   registry: Registry,
@@ -47,6 +46,7 @@ const fittedItemsIssue = (
   return slotsReason(registry, type, slots);
 };
 
+/** Why this item can't be fixed loot, or undefined when its source is allowed. */
 const fixedItemIssue = (
   registry: Registry,
   military: ReadonlySet<string>,

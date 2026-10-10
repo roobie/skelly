@@ -3,9 +3,10 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
-import { EAT_TIME, options, pocketGroundItem, quickMove, toHands } from '../src/core/options.ts';
+import { EAT_TIME, options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
 
 const directory = join(import.meta.dirname, '../src/content/base');
@@ -132,6 +133,28 @@ it('beans expose the eat time and a refusal when both hands hold other items', (
 });
 
 describe('handling move admission', () => {
+  it.each(['toHands', 'quickbarTake'] as const)(
+    'stows a sling-fitted long gun on the shoulder when %s wields a one-hand tool',
+    (route) => {
+      const t = setup();
+      const leading = dominantSide(t.inventory.character);
+      const gun = t.add('pump_shotgun', { kind: 'hand', side: leading });
+      t.inventory.fitSlot(gun, SLING_SLOT, t.inventory.create('weapon_sling'));
+      const crowbar = t.add('crowbar', { kind: 'pile', pos: [0, 0, 0] });
+
+      const refusal =
+        route === 'toHands'
+          ? toHands(t.inventory, t.queue, crowbar, [0, 0, 0])
+          : quickbarTake(t.inventory, t.queue, crowbar, [0, 0, 0]);
+      expect(refusal).toBeUndefined();
+      t.queue.tick(10);
+
+      expect(t.inventory.worn.shoulder).toBe(gun);
+      expect(t.inventory.hands[leading]).toBe(crowbar);
+      expect(t.inventory.piles.size).toBe(0);
+    },
+  );
+
   it('refuses an identical quick move and spends only the first job time', () => {
     const t = setup();
     t.add('school_backpack', { kind: 'worn' });

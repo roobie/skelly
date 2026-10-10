@@ -1321,6 +1321,33 @@ describe('authored fixed loot', () => {
     ]);
   });
 
+  it('rejects fitted-item data when fixed loot gives a sling to an item without slots', () => {
+    const buildingIndex = layout.buildings.findIndex((candidate) => candidate.fixedLoot?.length);
+    const building = layout.buildings[buildingIndex];
+    if (!building?.fixedLoot?.length) {
+      throw new Error('the layout fixture needs a fixed-loot anchor');
+    }
+    const override = building.fixedLoot[0]!;
+    const itemIndex = override.items.length;
+    const buildings = [...layout.buildings];
+    buildings[buildingIndex] = {
+      ...building,
+      fixedLoot: [
+        {
+          ...override,
+          items: [...override.items, { item: 'crowbar', fitted: { sling: 'weapon_sling' } }],
+        },
+        ...building.fixedLoot.slice(1),
+      ],
+    };
+    const issues = authoredLayoutIssues({ ...layout, buildings }, result.registry);
+
+    expect(issues).toContainEqual([
+      `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`,
+      'This item has no fitted-item slots',
+    ]);
+  });
+
   it('puts a readable HQ clue and matching safe key in accessible world containers', () => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
     const hqIndex = layout.buildings.findIndex(({ template }) => template === 'camp_hq');
