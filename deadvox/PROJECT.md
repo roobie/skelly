@@ -4,6 +4,7 @@ read_if:
   - you're running Deadvox unit tests or the opt-in CPU benchmark
   - you're checking the present implementation and known limits
   - you're investigating startup or save discovery
+  - you're using the playtest loot progression chart
 ---
 
 # deadvox — singleplayer voxel survival
@@ -131,11 +132,12 @@ npm run playtest:loot          # print loot progression by nearest authored beat
 npm run validate               # base content; add paths to validate a mod on top
 ```
 
+For d231, the loot chart uses the compiled playtest layout so building placements and template spawns match what the game uses (see `tools/playtest-loot-chart.mjs`, `placementOf`).
+
 The default suite skips the host-sensitive CPU budget check. `npm run bench:shambler-budget`
 sets `DEADVOX_BENCH` and runs that benchmark alone; its budget is defined by
 `test/zombies.test.ts`, `SHAMBLER_CPU_BUDGET_MS`. Pin the budget only when a supported-host
-performance target is agreed. `npm run playtest:loot` expands authored fixed items and
-furniture loot tables by beat area so progression can be reviewed against the playtest route.
+performance target is agreed.
 
 `npm run bench:shamblers` compares headless `ZombieSystem` tick cost. Because it runs
 outside Vite, the Node resolver (`tools/register-mobgen-alias.mjs`, `registerHooks`)
