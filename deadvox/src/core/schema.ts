@@ -298,8 +298,15 @@ const LightSchema = strictObject({
   burnTimeGameHours: optional(PositiveGameHours),
   /** Fuel units consumed per Game hour, for self-fueled sources such as a lighter. */
   fuelPerGameHour: optional(GamePerHour),
-  /** A cone of this many degrees; absent means light all around. */
-  beam: optional(pipe(Positive, maxValue(180, 'must be at most 180'))),
+  /** A cone-shaped beam; absent means light all around. */
+  beam: optional(
+    strictObject({
+      /** Full width of the cone, in degrees. */
+      angleDegrees: pipe(Positive, maxValue(180, 'must be at most 180')),
+      /** Share of the cone, from its edge inward, over which the beam fades to dark; the rest is the hotspot. */
+      penumbra: pipe(number(), minValue(0, 'must be at least 0'), maxValue(1, 'must be at most 1')),
+    }),
+  ),
   burning: optional(
     strictObject({
       ignition: picklist(['manual', 'firestarter', 'snap']),
@@ -753,40 +760,59 @@ const DoorPryingSchema = pipe(
   ),
 );
 
-const FurnitureSchema = strictObject({
-  id: Id,
-  name: Name,
-  /** Cells, in blocks: [x, y, z]. It's anchored at its lowest corner. */
-  size: Size,
-  color: Color,
-  solid: optional(vBoolean()),
-  /** A debug practice surface; hits may receive a profile-specific presentation ping. */
-  shotTarget: optional(literal(true)),
-  readable: optional(ReadableSchema),
-  container: optional(ContainerSchema),
-  /** The loot table rolled into its container when the chunk generates. */
-  loot: optional(Id),
-  /** Sound emitted when searching this furniture; it must alert hearing. */
-  searchNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
-  /** It opens and closes, taking this many Sim seconds. */
-  door: optional(
-    strictObject({
-      handlingSimSeconds: SimSeconds,
-      prying: optional(DoorPryingSchema),
-      openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
-    }),
-  ),
-  /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
-  rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
-  /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
-  workstation: optional(
-    strictObject({
-      id: Id,
-      qualities: record(Id, QualityLevel),
-      workFactorBonus: Fraction,
-    }),
-  ),
+const FurnitureShapeBoxSchema = strictObject({
+  /** Lower corner in the furniture's cell coordinates. */
+  position: tuple([NonNegative, NonNegative, NonNegative]),
+  /** Extent in cell coordinates. */
+  size: tuple([Positive, Positive, Positive]),
 });
+
+const FurnitureSchema = pipe(
+  strictObject({
+    id: Id,
+    name: Name,
+    /** Cells, in blocks: [x, y, z]. It's anchored at its lowest corner. */
+    size: Size,
+    color: Color,
+    solid: optional(vBoolean()),
+    /** A debug practice surface; hits may receive a profile-specific presentation ping. */
+    shotTarget: optional(literal(true)),
+    readable: optional(ReadableSchema),
+    container: optional(ContainerSchema),
+    /** The loot table rolled into its container when the chunk generates. */
+    loot: optional(Id),
+    /** Sound emitted when searching this furniture; it must alert hearing. */
+    searchNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
+    /** It opens and closes, taking this many Sim seconds. */
+    door: optional(
+      strictObject({
+        handlingSimSeconds: SimSeconds,
+        prying: optional(DoorPryingSchema),
+        openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
+      }),
+    ),
+    /** Render-only boxes in cell coordinates; gameplay continues to use the furniture cells. */
+    shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
+    /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
+    rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
+    /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
+    workstation: optional(
+      strictObject({
+        id: Id,
+        qualities: record(Id, QualityLevel),
+        workFactorBonus: Fraction,
+      }),
+    ),
+  }),
+  check(
+    ({ size, shape }) =>
+      shape === undefined ||
+      shape.every(
+        ({ position: [x, y, z], size: [w, h, d] }) => x + w <= size[0] && y + h <= size[1] && z + d <= size[2],
+      ),
+    'shape boxes must stay within furniture size',
+  ),
+);
 
 // ---- loot tables ----
 
