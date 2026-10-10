@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
+import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
@@ -12,6 +13,7 @@ import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { fixedItems, rollLoot } from '../src/core/loot.ts';
 import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
+import { doorOptions } from '../src/core/options.ts';
 import { Rng } from '../src/core/random.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
@@ -682,15 +684,15 @@ const blockedDoorSwingCells = (door: DoorPiece, placements: AuthoredSite['placem
 const furnishInOrder = (site: AuthoredSite, columns: [number, number][]): Inventory => {
   const inventory = new Inventory(result.registry);
   for (const [cx, cz] of columns) {
-    for (const { spec, loot } of site.furnitureIn(cx, cz)) {
-      inventory.furnish(spec, loot);
+    for (const { spec, loot, surfaceLoot } of site.furnitureIn(cx, cz)) {
+      inventory.furnish(spec, loot, surfaceLoot);
     }
   }
   return inventory;
 };
 
-const contents = (inventory: Inventory) =>
-  [...inventory.entities.all]
+const contents = (inventory: Inventory) => ({
+  furniture: [...inventory.entities.all]
     .map((entity) => [
       entity.pos.join(','),
       (entity.pockets ?? []).map((pocket) =>
@@ -699,7 +701,16 @@ const contents = (inventory: Inventory) =>
           .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
       ),
     ])
-    .sort(([a], [b]) => String(a).localeCompare(String(b)));
+    .sort(([a], [b]) => String(a).localeCompare(String(b))),
+  piles: [...inventory.piles.values()]
+    .map((pile) => [
+      pile.pos.join(','),
+      pile.items
+        .map(({ item }) => [item.type, item.count, item.condition] as const)
+        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+    ])
+    .sort(([a], [b]) => String(a).localeCompare(String(b))),
+});
 
 const fixedItemCounts = (
   site: AuthoredSite,
@@ -711,13 +722,19 @@ const fixedItemCounts = (
   const placed = placedPieces(placement)[localIndex];
   const entity = placed && inventory.entities.at(...placed.pos);
   const found = (entity?.pockets ?? []).flatMap((pocket) => pocket.map(({ item }) => item));
-  return override.items.map((fixed) => ({
-    item: fixed.item,
-    expected: fixed.count ?? 1,
-    found: found
-      .filter((item) => item.type === fixed.item && item.condition === (fixed.condition ?? 1))
-      .reduce((sum, item) => sum + item.count, 0),
-  }));
+  return override.items.map((fixed) => {
+    const items =
+      fixed.placement === 'surface'
+        ? [...inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item))
+        : found;
+    return {
+      item: fixed.item,
+      expected: fixed.count ?? 1,
+      found: items
+        .filter((item) => item.type === fixed.item && item.condition === (fixed.condition ?? 1))
+        .reduce((sum, item) => sum + item.count, 0),
+    };
+  });
 };
 
 const seededFillerCounts = (
@@ -1246,6 +1263,82 @@ describe('authored fixed loot', () => {
     expect(compiledArmoury.spawns).toEqual([]);
 
     expectCampHqProperties(compiledArmoury);
+  });
+
+  it('rejects a surface military item in a non-military template', () => {
+    const buildingIndex = layout.buildings.findIndex(
+      (candidate) =>
+        candidate.fixedLoot?.length && result.registry.templates.get(candidate.template)?.military !== true,
+    );
+    const building = layout.buildings[buildingIndex];
+    if (!building?.fixedLoot?.length) {
+      throw new Error('the layout fixture needs fixed loot in a non-military template');
+    }
+    const override = building.fixedLoot[0]!;
+    const itemIndex = override.items.length;
+    const buildings = [...layout.buildings];
+    buildings[buildingIndex] = {
+      ...building,
+      fixedLoot: [
+        { ...override, items: [...override.items, { item: 'rifle_assault', placement: 'surface' }] },
+        ...building.fixedLoot.slice(1),
+      ],
+    };
+    const issues = authoredLayoutIssues({ ...layout, buildings }, result.registry);
+
+    expect(issues).toContainEqual([
+      `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`,
+      expect.stringContaining('military loot only'),
+    ]);
+  });
+
+  it('puts a readable HQ clue and matching safe key in accessible world containers', () => {
+    const site = new AuthoredSite(73, result.registry, scale, layout);
+    const hqIndex = layout.buildings.findIndex(({ template }) => template === 'camp_hq');
+    const hqPieces = placedPieces(site.placements[hqIndex]!);
+    const columns = new Map<string, [number, number]>();
+    for (const piece of hqPieces) {
+      const column: [number, number] = [toChunk(piece.pos[0]), toChunk(piece.pos[2])];
+      columns.set(column.join(','), column);
+    }
+    const spawns = [...columns.values()].flatMap(([cx, cz]) => site.furnitureIn(cx, cz));
+    const safePiece = hqPieces.find((piece) => piece.furniture === 'camp_hq_safe')!;
+    const safeSpawn = spawns.find(({ spec }) => spec.pos.join(',') === safePiece.pos.join(','))!;
+    const lockId = safeSpawn.spec.lock!.id;
+    const hqDefinition = result.registry.templates.get('camp_hq')!;
+    const clueOverride = layout.buildings[hqIndex]!.fixedLoot?.find(({ items }) =>
+      items.some(({ item }) => result.registry.items.get(item)?.readable !== undefined),
+    );
+    expect(clueOverride).toBeDefined();
+    const clueItem = clueOverride!.items.find(({ item }) => result.registry.items.get(item)?.readable !== undefined)!;
+    const cluePiece = compileTemplate(result.registry, hqDefinition).pieces.find(
+      (piece) => piece.pos.join(',') === clueOverride!.at.join(','),
+    );
+    expect(cluePiece).toBeDefined();
+    if (!cluePiece) {
+      throw new Error('the HQ clue needs a furniture anchor');
+    }
+    expect(result.registry.furniture.get(cluePiece.furniture)?.container).toBeDefined();
+    expect(cluePiece.lock).toBeUndefined();
+    expect(spawns.some(({ loot }) => loot.some(({ type }) => type === clueItem.item))).toBe(true);
+    const keySpawn = spawns.find(({ loot }) =>
+      loot.some(({ type }) => result.registry.items.get(type)?.key?.lock === lockId),
+    );
+    expect(keySpawn).toBeDefined();
+
+    const inventory = furnishInOrder(site, [...columns.values()]);
+    const door = inventory.entities.at(...safeSpawn.spec.pos)!;
+    const heldKey = [...inventory.items()].find(
+      ({ item }) => result.registry.items.get(item.type)?.key?.lock === lockId,
+    )?.item;
+    expect(heldKey).toBeDefined();
+    inventory.entities.markSearched(inventory.entities.at(...keySpawn!.spec.pos)!);
+    const transfer = inventory.move(heldKey!, { kind: 'hand', side: 'right' });
+    expect(transfer.ok, transfer.ok ? undefined : transfer.reason).toBe(true);
+    expect(doorOptions(inventory, door)[1]!.plan.ok).toBe(true);
+    const keyLock = result.registry.items.get(heldKey!.type)!.key!.lock;
+    expect(inventory.entities.setLocked(door, false, [keyLock])).toBeUndefined();
+    expect(inventory.entities.setOpen(door, true)).toBeUndefined();
   });
 
   it('keeps the FOB command tent entrance and interior reachable at standing height', () => {

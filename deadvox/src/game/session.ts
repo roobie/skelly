@@ -1409,8 +1409,8 @@ export const createSession = (options: SessionOptions) => {
     },
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, site: Site | undefined) => {
-      for (const { spec, loot } of site?.furnitureIn(cx, cz) ?? []) {
-        inventory.furnish(spec, loot);
+      for (const { spec, loot, surfaceLoot } of site?.furnitureIn(cx, cz) ?? []) {
+        inventory.furnish(spec, loot, surfaceLoot);
       }
       if (site) {
         spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem });

@@ -33,6 +33,8 @@ export const grow = (r: Rect, by: number): Rect => ({ x0: r.x0 - by, z0: r.z0 - 
 export interface FurnitureSpawn {
   spec: EntitySpec;
   loot: Rolled[];
+  /** Fixed items laid out as a visible pile on the furniture's top surface. */
+  surfaceLoot?: Rolled[];
 }
 
 export type ZombieSpawn = {

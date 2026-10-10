@@ -972,6 +972,8 @@ const FixedLootItem = strictObject({
   condition: optional(Fraction),
   /** Observation only: playtest metrics record when the player first loots or reads this item. */
   key: optional(vBoolean()),
+  /** Surface items begin as visible world piles on their furniture's top; other items fill its container. */
+  placement: optional(picklist(['surface', 'container'], 'placement must be surface or container')),
 });
 const FixedLootOverride = strictObject({
   /** Template-local furniture anchor in half-metre block cells. */

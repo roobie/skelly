@@ -78,10 +78,16 @@ const nearestPanelHit = ({
 }): PanelHit | undefined => {
   let nearest: PanelHit | undefined;
   for (const entity of entities.all) {
-    if (!entities.defOf(entity).door) {
+    const definition = entities.defOf(entity);
+    if (!definition.door) {
       continue;
     }
-    const distance = rayPanelDistance(doorPanel(entity, blockSize), originMetres, direction, maxDistanceMetres);
+    const distance = rayPanelDistance(
+      doorPanel(entity, blockSize, definition.shape !== undefined),
+      originMetres,
+      direction,
+      maxDistanceMetres,
+    );
     if (distance !== undefined && (!nearest || distance < nearest.distance)) {
       nearest = { entity, distance };
     }
@@ -104,10 +110,11 @@ const firstPickCell = ({
 }): RayHit | undefined =>
   raycast(origin, direction, maxDistance, (x, y, z) => {
     const entity = entities.at(x, y, z);
-    if (entity && entities.defOf(entity).door) {
-      return !entity.open;
+    if (entity) {
+      const definition = entities.defOf(entity);
+      return !definition.door || definition.shape !== undefined || !entity.open;
     }
-    return entity !== undefined || isSolid(x, y, z);
+    return isSolid(x, y, z);
   });
 
 export interface FurniturePickHit {
@@ -127,12 +134,16 @@ const resolvePick = ({
   blockSize: number;
 }): FurniturePickHit | undefined => {
   const cellEntity = cellHit ? entities.at(...cellHit.block) : undefined;
-  const sameClosedDoor = panelHit && cellEntity?.uid === panelHit.entity.uid;
-  if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || sameClosedDoor)) {
+  const shapedDoor = panelHit && entities.defOf(panelHit.entity).shape !== undefined;
+  const sameUnshapedDoorCell = !shapedDoor && panelHit && cellEntity?.uid === panelHit.entity.uid;
+  if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || sameUnshapedDoorCell)) {
     return { entity: panelHit.entity, distanceBlocks: panelHit.distance / blockSize };
   }
-  if (cellEntity && !entities.defOf(cellEntity).door && cellHit) {
-    return { entity: cellEntity, distanceBlocks: cellHit.distance };
+  if (cellEntity && cellHit) {
+    const definition = entities.defOf(cellEntity);
+    if (!definition.door || (definition.shape !== undefined && cellEntity.open)) {
+      return { entity: cellEntity, distanceBlocks: cellHit.distance };
+    }
   }
   return undefined;
 };

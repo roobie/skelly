@@ -1,8 +1,7 @@
 // Block entities as simple shapes: furniture is a box in its colour, filling its
-// cells; a door is a thin panel on a hinge at one end, swung inward when open. They
-// share the sky's lights with everything else.
+// cells; a door is a thin hinged panel. They share the sky's lights with everything else.
 
-import { BoxGeometry, type BufferGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
+import { BoxGeometry, type BufferGeometry, Color, Group, Mesh, MeshLambertMaterial } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, doorPanel } from '../core/blockEntities.ts';
 import type { FurnitureDef } from '../core/schema.ts';
@@ -12,6 +11,10 @@ import { workshopCar, workshopLift } from './workshopVehicle.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
 const INSET = 0.02;
+const BODY_DOOR_SHADE = 0.62;
+const BODY_DOOR_HANDLE_COLOR = '#c6b98e';
+const BODY_DOOR_HANDLE_SIZE_M = { alongWidth: 0.1, acrossWidth: 0.06, height: 0.22 } as const;
+const BODY_DOOR_HANDLE_EDGE_OFFSET_M = 0.14;
 
 export class FurnitureMeshes {
   readonly group = new Group();
@@ -41,7 +44,7 @@ export class FurnitureMeshes {
       } else if (def.id === 'workshop_stripped_car') {
         mesh = workshopCar(entity, this.blockSize);
       } else if (def.door) {
-        mesh = this.door(entity, material);
+        mesh = this.door(entity, material, def);
       } else if (def.readable && def.solid === false) {
         mesh = this.wallBoard(entity, material);
       } else if (def.shape) {
@@ -127,15 +130,45 @@ export class FurnitureMeshes {
   }
 
   /** A panel across the doorway, hinged at its low end along the wall. */
-  private door(entity: BlockEntity, material: MeshLambertMaterial): Group {
-    const box = doorPanel(entity, this.blockSize);
+  private door(entity: BlockEntity, material: MeshLambertMaterial, body?: FurnitureDef): Group {
+    const box = doorPanel(entity, this.blockSize, body?.shape !== undefined);
+    const isBodyDoor = body?.shape !== undefined && body.door !== undefined;
+    const panelMaterial = isBodyDoor
+      ? this.material(`#${new Color(body.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
+      : material;
     const pivot = new Group();
-    const panel = new Mesh(this.geometry, material);
+    const panel = new Mesh(this.geometry, panelMaterial);
     pivot.position.set(...box.pivot);
     pivot.rotation.y = box.rotationY;
     panel.scale.set(...box.size);
     panel.position.set(...box.center);
     pivot.add(panel);
-    return pivot;
+    if (isBodyDoor) {
+      const alongX = entity.facing === 'n' || entity.facing === 's';
+      const faceOutward = entity.facing === 'n' || entity.facing === 'w' ? -1 : 1;
+      const handle = new Mesh(this.geometry, this.material(BODY_DOOR_HANDLE_COLOR));
+      handle.scale.set(
+        alongX ? BODY_DOOR_HANDLE_SIZE_M.alongWidth : BODY_DOOR_HANDLE_SIZE_M.acrossWidth,
+        BODY_DOOR_HANDLE_SIZE_M.height,
+        alongX ? BODY_DOOR_HANDLE_SIZE_M.acrossWidth : BODY_DOOR_HANDLE_SIZE_M.alongWidth,
+      );
+      const position = [...box.center] as [number, number, number];
+      if (alongX) {
+        position[0] += box.size[0] / 2 - BODY_DOOR_HANDLE_EDGE_OFFSET_M;
+        position[2] += faceOutward * (box.size[2] / 2 + handle.scale.z / 2);
+      } else {
+        position[2] += box.size[2] / 2 - BODY_DOOR_HANDLE_EDGE_OFFSET_M;
+        position[0] += faceOutward * (box.size[0] / 2 + handle.scale.x / 2);
+      }
+      handle.position.set(...position);
+      pivot.add(handle);
+    }
+    if (!body?.shape) {
+      return pivot;
+    }
+    const assembly = new Group();
+    assembly.add(this.shaped(entity, body, material));
+    assembly.add(pivot);
+    return assembly;
   }
 }

@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { type Matrix4, type Mesh, Vector3 } from 'three';
+import { Box3, type Group, type Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities, doorPanel, searchTime } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
@@ -250,6 +250,67 @@ describe('furniture', () => {
     expect(mesh.scale.x).toBeLessThan(BLOCK_SIZE);
     expect(mesh.scale.z).toBeGreaterThan(mesh.scale.x);
     expect(mesh.position.x - mesh.scale.x / 2).toBeCloseTo(board.pos[0] * BLOCK_SIZE);
+  });
+
+  it('picks the closed HQ safe only through its visible door', () => {
+    const definition = registry.furniture.get('camp_hq_safe')!;
+    const entities = new BlockEntities(registry);
+    const safe = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    furniture.sync(entities);
+    furniture.group.updateMatrixWorld(true);
+
+    const assembly = furniture.group.children[0] as Group;
+    expect(assembly.children).toHaveLength(2);
+    const body = assembly.children[0] as Mesh;
+    const door = assembly.children[1] as Group;
+    expect(door.children).toHaveLength(2);
+    const panel = door.children[0] as Mesh;
+    const handle = door.children[1] as Mesh;
+    const bodyBounds = new Box3().setFromObject(body);
+    const panelBounds = new Box3().setFromObject(panel);
+    const bodyMaterial = body.material as MeshLambertMaterial;
+    const panelMaterial = panel.material as MeshLambertMaterial;
+    const handleMaterial = handle.material as MeshLambertMaterial;
+    expect(panelMaterial.color.getHex()).not.toBe(bodyMaterial.color.getHex());
+    expect(handleMaterial.color.getHex()).not.toBe(panelMaterial.color.getHex());
+    expect(panelBounds.min.z).toBeLessThan(bodyBounds.min.z);
+    expect(panelBounds.max.z).toBeCloseTo(bodyBounds.min.z);
+    const pick = (origin: [number, number, number], direction: [number, number, number], maxDistance: number) =>
+      pickFurniture({ entities, origin, direction, maxDistance, blockSize: BLOCK_SIZE, isSolid: () => false });
+    expect(pick([5.5, 2.5, 7], [0, 0, 1], 3)).toBe(safe);
+    expect(pick([3, 2, 9], [1, 0, 0], 3)).toBeUndefined();
+    expect(pick([5.5, 2.5, 11], [0, 0, -1], 6)).toBeUndefined();
+  });
+
+  it('keeps the open HQ safe body solid and pickable while its door swings outward', () => {
+    const definition = registry.furniture.get('camp_hq_safe')!;
+    const entities = new BlockEntities(registry);
+    const safe = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
+    entities.setOpen(safe, true);
+
+    expect(entities.blocks(safe)).toBe(true);
+    expect(entities.isSolid(5, 2, 8)).toBe(true);
+    expect(
+      pickFurniture({
+        entities,
+        origin: [5.5, 2.5, 7],
+        direction: [0, 0, 1],
+        maxDistance: 3,
+        blockSize: BLOCK_SIZE,
+        isSolid: () => false,
+      }),
+    ).toBe(safe);
+
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    furniture.sync(entities);
+    furniture.group.updateMatrixWorld(true);
+    const assembly = furniture.group.children[0] as Group;
+    const bodyBounds = new Box3().setFromObject(assembly.children[0]!);
+    const door = assembly.children[1] as Group;
+    const panelBounds = new Box3().setFromObject(door.children[0]!);
+    expect(panelBounds.max.x).toBeLessThan(bodyBounds.min.x);
+    expect(panelBounds.max.z).toBeLessThanOrEqual(bodyBounds.min.z);
   });
 
   it('shares the renderer door-panel transform with the core box within 1 mm for every facing/state', () => {

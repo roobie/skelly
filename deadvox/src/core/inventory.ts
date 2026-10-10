@@ -273,7 +273,11 @@ export class Inventory {
    * pockets in order; what doesn't fit is left out. Returns undefined if it's
    * already there.
    */
-  furnish(spec: Parameters<BlockEntities['add']>[0], loot: readonly Rolled[] = []): BlockEntity | undefined {
+  furnish(
+    spec: Parameters<BlockEntities['add']>[0],
+    loot: readonly Rolled[] = [],
+    surfaceLoot: readonly Rolled[] = [],
+  ): BlockEntity | undefined {
     const entity = this.entities.add(spec);
     if (!entity) {
       return undefined;
@@ -281,6 +285,18 @@ export class Inventory {
     for (const { type, count, condition } of loot) {
       const item = this.create(type, count, condition);
       (entity.pockets ?? []).some((_, pocket) => this.add(item, { kind: 'furniture', entity, pocket }));
+    }
+    if (surfaceLoot.length > 0) {
+      const pos: Vec3 = [
+        entity.pos[0] + Math.floor(entity.size[0] / 2),
+        entity.pos[1] + entity.size[1],
+        entity.pos[2] + Math.floor(entity.size[2] / 2),
+      ];
+      for (const { type, count, condition } of surfaceLoot) {
+        if (!this.add(this.create(type, count, condition), { kind: 'pile', pos })) {
+          throw new Error(`fixed surface item "${type}" does not fit on its furniture`);
+        }
+      }
     }
     return entity;
   }

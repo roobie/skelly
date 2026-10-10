@@ -6,7 +6,7 @@ import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { militaryLootItems } from './magazine.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
-import type { SiteLayoutDef } from './schema.ts';
+import type { FixedLootItemDef, SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import {
@@ -27,19 +27,24 @@ const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
 const FOUNDATION_TOLERANCE = 1;
 type LayoutBuilding = SiteLayoutDef['buildings'][number];
 
-/** Why this item can't be fixed loot in a container rolling `loot`, or undefined when it can. */
+/** Why this item can't be fixed loot, or undefined when its source is allowed. */
 const fixedItemIssue = (
   registry: Registry,
   military: ReadonlySet<string>,
-  item: string,
-  loot: string | undefined,
+  fixed: FixedLootItemDef,
+  source: { loot: string | undefined; militaryTemplate: boolean },
 ): string | undefined => {
-  if (!registry.items.has(item)) {
-    return `no item "${item}"`;
+  if (!registry.items.has(fixed.item)) {
+    return `no item "${fixed.item}"`;
   }
-  return military.has(item) && !registry.loot.get(loot ?? '')?.military
-    ? `"${item}" is military loot only; place it where a "military" table rolls`
-    : undefined;
+  const militarySource =
+    fixed.placement === 'surface' ? source.militaryTemplate : registry.loot.get(source.loot ?? '')?.military;
+  if (!military.has(fixed.item) || militarySource) {
+    return undefined;
+  }
+  return fixed.placement === 'surface'
+    ? `"${fixed.item}" is military loot only; surface placement requires a military template`
+    : `"${fixed.item}" is military loot only; place it where a "military" table rolls`;
 };
 
 interface LootContext {
@@ -59,6 +64,7 @@ const fixedLootIssues = (
   }
   const issues: [string, string][] = [];
   const fixedAnchors = new Set<string>();
+  const militaryTemplate = registry.templates.get(building.template)?.military === true;
   for (const [j, override] of (building.fixedLoot ?? []).entries()) {
     const key = override.at.join(',');
     const path = `.buildings[${index}].fixedLoot[${j}]`;
@@ -71,11 +77,12 @@ const fixedLootIssues = (
       issues.push([`${path}.at`, `no furniture anchor at ${key}`]);
       continue;
     }
-    if (!registry.furniture.get(piece.furniture)?.container) {
+    const needsContainer = override.items.some((item) => item.placement !== 'surface');
+    if (needsContainer && !registry.furniture.get(piece.furniture)?.container) {
       issues.push([`${path}.at`, `furniture at ${key} has no container`]);
     }
     for (const [itemIndex, fixed] of override.items.entries()) {
-      const issue = fixedItemIssue(registry, military, fixed.item, piece.loot);
+      const issue = fixedItemIssue(registry, military, fixed, { loot: piece.loot, militaryTemplate });
       if (issue !== undefined) {
         issues.push([`${path}.items[${itemIndex}].item`, issue]);
       }
