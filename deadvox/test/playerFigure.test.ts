@@ -2,9 +2,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   BoxGeometry,
+  DirectionalLight,
   Euler,
   Frustum,
   Group,
+  HemisphereLight,
   type InstancedMesh,
   Matrix4,
   Mesh,
@@ -14,6 +16,7 @@ import {
   PerspectiveCamera,
   Quaternion,
   Raycaster,
+  Scene,
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
@@ -69,6 +72,57 @@ const fallbackLightHands = [...registry.items.values()]
   .flatMap((definition) => (['right', 'left'] as const).map((side) => ({ id: definition.id, definition, side })));
 
 describe('held light presentation', () => {
+  it('receives the world sun map in the camera’s world position', () => {
+    const sourceSun = new DirectionalLight();
+    sourceSun.castShadow = true;
+    const held = new HeldItems(new Inventory(registry), undefined, palette, sourceSun);
+    const camera = new PerspectiveCamera();
+    camera.position.set(12, 3, -7);
+    held.update(camera);
+
+    const { scene, camera: handCamera } = held.warmUpTarget;
+    const handSun = scene.children.find((child) => child instanceof DirectionalLight);
+    const handView = scene.getObjectByName('held-items-view')!;
+    const arm = scene.getObjectByName('first-person-arm-right')!;
+    const receiver = arm.children.find((child) => child instanceof Mesh)!;
+    expect(handSun?.castShadow).toBe(true);
+    expect((handSun as DirectionalLight | undefined)?.shadow).toBe(sourceSun.shadow);
+    expect((receiver as Mesh).receiveShadow).toBe(true);
+    expect((receiver as Mesh).castShadow).toBe(false);
+    expect(handView.position).toEqual(camera.position);
+    expect(handCamera.position).toEqual(camera.position);
+    held.dispose();
+  });
+
+  it('scales held hemisphere ambient by the camera sky visibility', () => {
+    const camera = new PerspectiveCamera();
+    const sky = {
+      scene: new Scene(),
+      light: new DirectionalLight(),
+      ambient: new HemisphereLight(),
+      camera,
+      radiusM: 1,
+    };
+    const worldAmbientIntensity = sky.ambient.intensity;
+    const held = new HeldItems(new Inventory(registry), undefined, palette);
+    held.update(camera);
+    const handAmbient = held.warmUpTarget.scene.children.find((child) => child instanceof HemisphereLight)!;
+    const renderer = {
+      autoClear: true,
+      clearDepth: () => undefined,
+      render: () => undefined,
+    } as unknown as Parameters<typeof held.render>[0];
+
+    held.setSkyVisibility(0);
+    held.render(renderer, camera, sky);
+    expect(handAmbient.intensity).toBe(0);
+
+    held.setSkyVisibility(1);
+    held.render(renderer, camera, sky);
+    expect(handAmbient.intensity).toBe(worldAmbientIntensity);
+    held.dispose();
+  });
+
   it.each(fallbackLightHands)('$id in the $side hand draws by its light definition', ({ id, definition, side }) => {
     const inventory = new Inventory(registry);
     const light = inventory.create(id);

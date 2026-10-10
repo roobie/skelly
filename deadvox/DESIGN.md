@@ -1353,8 +1353,11 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   doors and windows. Only diffuse sky light goes through the grid
   (`src/core/skylight.ts`, `buildSkylight`). The sun and the carried beam are lit
   on their own, and carried or dropped sources are the pool's shadowless point
-  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). Light from
-  torches, lamps and hot zombies through the grid is planned for Slice 4, with
+  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). First-person
+  hands share the room's sky visibility, so they do not glow in enclosed dark
+  spaces; see `src/render/playView.ts`, `prepareLighting`, and
+  `src/render/hands.ts`, `HeldItems.render`. Light from torches, lamps and hot
+  zombies through the grid is planned for Slice 4, with
   the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
@@ -1381,6 +1384,9 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   so light past a closed door is accepted. Why the sun's map is drawn from the
   faces light enters: `src/render/shadows.ts`, its header; why its shadow never
   fades: `src/core/sky.ts`, `sunShadowStrength`.
+- First-person hands must not stay sunlit when a wall blocks the player's light,
+  but nearby lights still need to reach them. Their separate scene prevents wall
+  clipping; see `src/render/hands.ts`, its file header.
 
 ## Audio
 
