@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, matchesGlob } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
@@ -11,6 +11,9 @@ const WORKFLOW_FILE = /\.ya?ml$/;
 const ROOT_CI_COMMAND = /\bnpm\s+run\s+ci(?:\s|$)/;
 const PREFIX_INSTALL = /\bnpm\s+ci\s+--prefix(?:=|\s+)([^\s\\]+)/g;
 const CACHE_PATH_SEPARATOR = /\s+/;
+const COMMAND_LINE_SEPARATOR = /\r?\n/;
+const ENV_ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=\S+$/;
+const TIMEOUT_VALUE = /^\d+$/;
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const workflowPaths = readdirSync(WORKFLOWS)
   .filter((file) => WORKFLOW_FILE.test(file))
@@ -64,28 +67,71 @@ const lintCommands = commandsIn(parse(read('.github/workflows/lint.yml')));
 const requiredPrefixes = installPrefixes(lintCommands);
 const pagesWorkflow = parse(read('.github/workflows/pages.yml'));
 const gungenWorkflow = parse(read('.github/workflows/gungen.yml'));
-
-test('Pages Gungen checks run on PRs when their imported sources change', () => {
-  const pagesGungenStep = pagesWorkflow.jobs.build.steps.find(({ name }) => name === 'Check and build gungen');
-  assert.ok(pagesGungenStep, 'Pages workflow has a Gungen build step');
-  const pagesCommands = commandsIn(pagesGungenStep);
-  const pullRequestCommands = commandsIn(gungenWorkflow.jobs.check);
-
-  for (const command of ['npm run typecheck', 'npm test', 'npx vite build']) {
-    assert.ok(
-      pagesCommands.some((run) => run.includes(command)),
-      `Pages Gungen step runs ${command}`,
-    );
-    assert.ok(
-      pullRequestCommands.some((run) => run.includes(command)),
-      `Gungen PR workflow runs ${command}`,
-    );
+const deadvoxWorkflow = parse(read('.github/workflows/deadvox.yml'));
+const mobgenWorkflow = parse(read('.github/workflows/mobgen.yml'));
+const commandLinesIn = (value) =>
+  commandsIn(value)
+    .flatMap((script) => script.split(COMMAND_LINE_SEPARATOR))
+    .map((command) => command.trim())
+    .filter((command) => command !== '' && !command.startsWith('#'));
+const normalizeCommand = (line) => {
+  const tokens = line.trim().split(CACHE_PATH_SEPARATOR);
+  while (tokens.length > 0) {
+    if (ENV_ASSIGNMENT.test(tokens[0])) {
+      tokens.shift();
+    } else if (tokens[0] === 'timeout' && TIMEOUT_VALUE.test(tokens[1] ?? '')) {
+      tokens.splice(0, 2);
+    } else {
+      break;
+    }
   }
+  return tokens.join(' ');
+};
+const commandIsCovered = (expected, actual) => {
+  const expectedCommand = normalizeCommand(expected);
+  const actualCommand = normalizeCommand(actual);
+  return actualCommand === expectedCommand || actualCommand.startsWith(`${expectedCommand} `);
+};
+const workflowIncludesPath = (workflow, event, file) => {
+  let included = false;
+  for (const pattern of workflow.on[event].paths ?? []) {
+    const excluded = pattern.startsWith('!');
+    if (matchesGlob(file, excluded ? pattern.slice(1) : pattern)) {
+      included = !excluded;
+    }
+  }
+  return included;
+};
 
+test('Pages project checks run in their PR workflows', () => {
+  const projects = [
+    { name: 'Gungen', pageStep: 'Check and build gungen', workflow: gungenWorkflow, job: 'check' },
+    { name: 'Deadvox', pageStep: 'Check and build deadvox', workflow: deadvoxWorkflow, job: 'fast' },
+    { name: 'Mobgen', pageStep: 'Check and build mobgen', workflow: mobgenWorkflow, job: 'check' },
+  ];
+
+  for (const { name, pageStep, workflow, job } of projects) {
+    const step = pagesWorkflow.jobs.build.steps.find(({ name: stepName }) => stepName === pageStep);
+    assert.ok(step, `Pages workflow has a ${name} build step`);
+    const pagesCommands = commandLinesIn(step);
+    const prCommands = commandLinesIn(workflow.jobs[job]);
+    assert.ok(pagesCommands.length > 0, `Pages ${name} step has commands`);
+
+    for (const command of pagesCommands) {
+      assert.ok(
+        prCommands.some((prCommand) => commandIsCovered(command, prCommand)),
+        `${name} PR checks run Pages command: ${command}`,
+      );
+    }
+  }
+});
+
+test('Gungen PR filters include representative Deadvox and Mobgen import files', () => {
+  const importedFiles = ['deadvox/src/core/amalgamFigure.ts', 'mobgen/src/core/generate.ts'];
   for (const event of ['push', 'pull_request']) {
-    const { paths } = gungenWorkflow.on[event];
-    assert.ok(paths.includes('deadvox/src/**'), `Gungen ${event} checks cover Deadvox source`);
-    assert.ok(paths.includes('mobgen/src/**'), `Gungen ${event} checks cover Mobgen source`);
+    for (const file of importedFiles) {
+      assert.ok(workflowIncludesPath(gungenWorkflow, event, file), `Gungen ${event} filter includes ${file}`);
+    }
   }
 });
 

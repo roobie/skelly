@@ -5,6 +5,7 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node", "vite/client"],
+    // Mirrors Deadvox's @mobgen/* source alias; tsc does not read Vite's resolve.alias.
     "paths": { "@mobgen/*": ["../mobgen/src/*"] },
     "strict": true,
     "noUncheckedIndexedAccess": true,
