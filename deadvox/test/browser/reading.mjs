@@ -910,7 +910,7 @@ try {
     assert.equal(await page.locator('#reading').isVisible(), false);
     await page.waitForFunction(() => !globalThis.readingWitness.input.locked);
     await page.evaluate(() => {
-      const requestPointerLock = Element.prototype.requestPointerLock;
+      const { requestPointerLock } = Element.prototype;
       if (typeof requestPointerLock !== 'function') {
         throw new Error('Element.requestPointerLock is unavailable');
       }
