@@ -280,6 +280,7 @@
           "item": "glowstick",
           "weight": 1
         },
+        { "item": "weapon_sling", "weight": 1 },
         {
           "item": "nails",
           "weight": 3,

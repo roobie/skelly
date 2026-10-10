@@ -4,7 +4,8 @@ import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation
 import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_TYPE } from './hamlet.ts';
-import { militaryLootItems } from './magazine.ts';
+import { ItemFactory } from './items.ts';
+import { militaryLootItems, slotsReason } from './magazine.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { FixedLootItemDef, SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
@@ -27,6 +28,24 @@ const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
 const FOUNDATION_TOLERANCE = 1;
 type LayoutBuilding = SiteLayoutDef['buildings'][number];
 
+/** Fitted items must exist and pass the same slot rules a fitted item meets at runtime. */
+const fittedItemsIssue = (
+  registry: Registry,
+  type: string,
+  fitted: Readonly<Record<string, string>>,
+): string | undefined => {
+  const missing = Object.values(fitted).find((child) => !registry.items.has(child));
+  if (missing !== undefined) {
+    return `no fitted item "${missing}"`;
+  }
+  const host = new ItemFactory().create(registry, type);
+  const slots = {
+    ...host.slots,
+    ...Object.fromEntries(Object.entries(fitted).map(([slot, child]) => [slot, { type: child }])),
+  };
+  return slotsReason(registry, type, slots);
+};
+
 /** Why this item can't be fixed loot, or undefined when its source is allowed. */
 const fixedItemIssue = (
   registry: Registry,
@@ -36,6 +55,10 @@ const fixedItemIssue = (
 ): string | undefined => {
   if (!registry.items.has(fixed.item)) {
     return `no item "${fixed.item}"`;
+  }
+  const fittedIssue = fixed.fitted && fittedItemsIssue(registry, fixed.item, fixed.fitted);
+  if (fittedIssue) {
+    return fittedIssue;
   }
   const militarySource =
     fixed.placement === 'surface' ? source.militaryTemplate : registry.loot.get(source.loot ?? '')?.military;

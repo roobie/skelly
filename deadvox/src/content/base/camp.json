@@ -314,6 +314,10 @@
           "weight": 1
         },
         {
+          "item": "weapon_sling",
+          "weight": 1
+        },
+        {
           "count": [10, 10],
           "item": "cartridge_box_5_d_56x45",
           "weight": 3
@@ -335,7 +339,7 @@
         },
         {
           "nothing": true,
-          "weight": 27
+          "weight": 28
         }
       ],
       "id": "military_armoury",

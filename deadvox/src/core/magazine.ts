@@ -1,13 +1,15 @@
 // A detachable box magazine (SLICE-3.md, 3.2): an item whose model carries gungen's fitted round column.
 // Its cartridges are item state in feed order: index 0 is the top round, the next one fed or stripped.
-import type { ModelDef, Registry } from './content.ts';
+import type { ItemDef, ModelDef, Registry } from './content.ts';
 import {
   attachmentIdFor,
   compatibilityPairCertifies,
   footprintFitsRail,
   isExportedSingleFit,
+  isLongGun,
   railFootprint,
   railFootprintsOverlap,
+  SLING_SLOT,
 } from './firearmFitting.ts';
 import type { Item } from './items.ts';
 
@@ -149,7 +151,7 @@ const attachmentSlotsReason = (
 ): string | undefined => {
   const fitted: FittedAttachment[] = [];
   for (const [slotId, child] of Object.entries(slots)) {
-    if (!child || slotId === 'magazine' || slotId === 'battery') {
+    if (!child || slotId === 'magazine' || slotId === 'battery' || slotId === SLING_SLOT) {
       continue;
     }
     const result = fittedAttachmentFor(registry, model, slotId, child);
@@ -183,6 +185,21 @@ const batterySlotReason = (
   return slots.battery ? 'Only a powered light has a battery slot' : undefined;
 };
 
+const slingSlotReason = (
+  registry: Registry,
+  definition: ItemDef | undefined,
+  slots: Readonly<Record<string, { readonly type: string } | undefined>>,
+): string | undefined => {
+  const sling = slots[SLING_SLOT];
+  if (!sling) {
+    return undefined;
+  }
+  if (!isLongGun(definition)) {
+    return 'Only a long gun takes a sling';
+  }
+  return registry.items.get(sling.type)?.sling ? undefined : 'Only a sling fits the sling mount';
+};
+
 /** Why `slots` can't be fitted to this item, or undefined when they can. */
 export const slotsReason = (
   registry: Registry,
@@ -194,7 +211,10 @@ export const slotsReason = (
   const magazineCalibre = magazineWellCalibre(registry, type);
   const batteryType = definition?.light?.power?.battery;
   const hasSlots =
-    magazineCalibre !== undefined || batteryType !== undefined || (model?.attachmentSlots?.length ?? 0) > 0;
+    magazineCalibre !== undefined ||
+    batteryType !== undefined ||
+    (model?.attachmentSlots?.length ?? 0) > 0 ||
+    isLongGun(definition);
   if (!hasSlots) {
     return slots === undefined ? undefined : 'This item has no fitted-item slots';
   }
@@ -207,7 +227,11 @@ export const slotsReason = (
   if (slots.magazine && magazineCalibre === undefined) {
     return 'Only a magazine-fed firearm has a magazine slot';
   }
-  return batterySlotReason(registry, batteryType, slots) ?? attachmentSlotsReason(registry, model, slots);
+  return (
+    batterySlotReason(registry, batteryType, slots) ??
+    slingSlotReason(registry, definition, slots) ??
+    attachmentSlotsReason(registry, model, slots)
+  );
 };
 
 /** Why `cartridges` can't be this magazine's contents, or undefined when they can. */

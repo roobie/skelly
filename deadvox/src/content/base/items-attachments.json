@@ -84,6 +84,15 @@
       "model": "tactical_flashlight_mount"
     },
     {
+      "id": "weapon_sling",
+      "name": "Weapon sling",
+      "category": "misc",
+      "weight": 150,
+      "size": [1, 1],
+      "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
+      "sling": true
+    },
+    {
       "id": "foregrip",
       "name": "Vertical foregrip",
       "category": "misc",

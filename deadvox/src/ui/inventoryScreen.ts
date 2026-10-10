@@ -10,8 +10,9 @@ import { BODY_REGIONS, type BodyRegion, type BodyState } from '../core/body.ts';
 import { practiceForNextLevel } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
+import { firearmSlotIds } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
-import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
+import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
@@ -47,8 +48,8 @@ export const targetForPackedFloorDrop = (
   return { kind: 'pile', pos };
 };
 
-/** Wear slots always shown, so there's somewhere to drop clothing. */
-const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist'];
+/** Wear slots always shown, so there's somewhere to drop clothing and a slung long gun. */
+const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist', 'shoulder'];
 const SLOT_LABEL: Record<WearSlot, string> = {
   head: 'Head',
   torso: 'Torso',
@@ -57,6 +58,7 @@ const SLOT_LABEL: Record<WearSlot, string> = {
   waist: 'Waist',
   hands: 'Hands',
   feet: 'Feet',
+  shoulder: 'Shoulder',
 };
 
 export interface ScreenHooks {
@@ -1184,10 +1186,9 @@ export class InventoryScreen {
       return { empty: true, lines: [], options: [] };
     }
     const def = defOf(this.inv.registry, item.type);
-    const firearmModelId = def.firearm ? def.model : undefined;
-    const firearmModel = firearmModelId === undefined ? undefined : this.inv.registry.models.get(firearmModelId);
-    const attachmentSlots = firearmModel?.attachmentSlots?.map((slot): AttachmentSlotViewModel => {
-      const fitted = item.slots?.[slot.id];
+    const slotIds = def.firearm ? firearmSlotIds(this.inv.registry, def) : [];
+    const attachmentSlots = slotIds.map((slotId): AttachmentSlotViewModel => {
+      const fitted = item.slots?.[slotId];
       const batteryDef = fitted && defOf(this.inv.registry, fitted.type);
       let battery: string | undefined;
       if (batteryDef?.light?.power) {
@@ -1195,13 +1196,13 @@ export class InventoryScreen {
         battery = batteryItem ? workName(this.inv.registry, batteryItem) : 'Open';
       }
       return {
-        id: slot.id,
-        label: slot.id,
+        id: slotId,
+        label: slotId,
         ...(fitted ? { occupied: workName(this.inv.registry, fitted), attachmentUid: fitted.uid } : {}),
         ...(battery === undefined ? {} : { battery }),
         candidates: fitted
           ? []
-          : (this.hooks.attachmentCandidates?.(item.uid, slot.id) ?? []).map((candidate) => ({
+          : (this.hooks.attachmentCandidates?.(item.uid, slotId) ?? []).map((candidate) => ({
               uid: candidate.uid,
               name: workName(this.inv.registry, candidate),
             })),
@@ -1215,7 +1216,7 @@ export class InventoryScreen {
       condition: conditionWord(item.condition),
       description: def.description,
       lines: this.inspect(item),
-      ...(attachmentSlots ? { attachmentSlots } : {}),
+      ...(attachmentSlots.length > 0 ? { attachmentSlots } : {}),
       options: [
         ...options(item, this.hooks.reach()).filter((option) => option.kind !== 'use'),
         ...this.hooks.workOptions(item.uid),
@@ -1423,7 +1424,7 @@ export class InventoryScreen {
 
   /** Whether the dragged item can go to a target, and why not. */
   private dropCheck(item: Item, spec: string, target: Target): { ok: boolean; reason: string } {
-    if (spec.startsWith('worn:') && defOf(this.inv.registry, item.type).wearable?.slot !== spec.slice(5)) {
+    if (spec.startsWith('worn:') && wornSlotOf(this.inv.registry, item) !== spec.slice(5)) {
       return { ok: false, reason: "It isn't worn there" };
     }
     const plan = this.inv.plan(item, target);

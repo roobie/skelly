@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
+import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { PILE_GRID } from '../src/core/inventory.ts';
 import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
@@ -186,14 +187,20 @@ it('a lit light saves its active ignition time and remaining burn', async () => 
   });
 });
 
-it('restoring a left character ignores a fresh right choice and retains the physical inventory slots', async () => {
+it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, the shoulder included', async () => {
   const source = createRuntime(undefined, 'left');
+  const shotgun = source.inventory.create('pump_shotgun');
+  source.inventory.fitSlot(shotgun, SLING_SLOT, source.inventory.create('weapon_sling'));
+  if (!source.inventory.add(shotgun, { kind: 'worn' })) {
+    throw new Error('Could not sling the shotgun for the shoulder fixture');
+  }
   const saved = capture(source);
   const decoded = await decodeSave(await encodeFixture(saved), { version: formatVersion, contentLookup });
   const restored = createRuntime(decoded.snapshot, 'right');
   expect(restored.session.character.handedness).toBe('left');
   expect(restored.inventory.character).toBe(restored.session.character);
   expect(restored.inventory.snapshotState()).toEqual(saved.character.inventory);
+  expect(restored.inventory.worn.shoulder?.slots?.[SLING_SLOT]).toBeDefined();
 });
 
 it.each([undefined, 'ambidextrous'])(

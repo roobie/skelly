@@ -126,7 +126,9 @@ const fixedLootLines = (building) =>
   (building.fixedLoot ?? []).flatMap((override) =>
     override.items.map((item) => {
       const key = item.key === true ? ' [key]' : '';
-      return `    - ${itemName(item.item)} ×${item.count ?? 1}${key}`;
+      const fitted = Object.values(item.fitted ?? {}).map(itemName);
+      const fittedText = fitted.length > 0 ? ` with ${fitted.join(', ')} fitted` : '';
+      return `    - ${itemName(item.item)} ×${item.count ?? 1}${fittedText}${key}`;
     }),
   );
 

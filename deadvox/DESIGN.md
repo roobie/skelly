@@ -26,6 +26,7 @@ read_if:
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
+  - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee weapon contact behavior, stamina recovery timing or seeded damage variation
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
@@ -439,6 +440,41 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
 - **Numbers are there when you look.** Inspecting an item shows its exact
   weight, condition, qualities and times (see [UI principles](#ui-principles)).
 
+### Shoulder and sling
+
+A slung long gun lets the player carry a melee tool and a long gun together.
+With two hands and no pocket big enough for a long gun, carrying both would
+otherwise mean dropping one.
+
+- **The shoulder holds one long gun, by its sling.** It is a worn slot for a
+  two-handed firearm with a sling fitted; a gun without one is refused, and
+  clothing never goes there. The gun keeps its loaded rounds and fitted parts,
+  because it is the same item, not a stowed copy. See `src/core/inventory.ts`,
+  `wornSlotOf`.
+- **Weight, not space.** A slung gun takes no pocket space. Its weight, with
+  everything fitted and loaded, counts toward the carried weight that slows you,
+  as a worn backpack's does. Carried weight is what play charges for worn items,
+  so the shoulder adds nothing beyond it. See `src/core/inventory.ts`,
+  `Inventory.carriedWeight`.
+- **Slinging is an ordinary worn move.** It takes the same handling time as
+  putting on or taking off any worn item. The wear key, a drag to the Shoulder
+  box, a quickbar tap and wielding all reach it. A long gun displaced from the
+  hands goes to a free shoulder before any pocket or the ground, because carrying
+  it is what the sling is for. See `src/core/options.ts`, `slingTarget`.
+- **The sling mount is deadvox's own.** Gungen certifies every exported
+  attachment, but it exports no sling, and any long gun can take one. So long
+  guns get a sling mount beside their exported mounts, with no certificate. It
+  is fitted and removed through the same attachment handling as other parts. The
+  sling has no model and no handling effect. It stays fitted while the gun is on
+  the shoulder, because the shoulder holds the gun by it. See
+  `src/core/firearmFitting.ts`, `SLING_SLOT` and `firearmSlotIds`, and
+  `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.removeReason`.
+- **Found slings.** Slings are rare loot. An authored gun can spawn with its sling
+  fitted, as Dad's shotgun in the playtest cabin does, so a beat's gun is
+  carriable when found. See `src/core/schema.ts`, `FixedLootItem`.
+- The third-person avatar does not draw the slung gun until it draws worn gear
+  (#582).
+
 ### Handling time
 
 Moving an item takes **real seconds** while the world keeps running. It's the
@@ -797,7 +833,7 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. BR's firearm ruling, planned in [SLICE-3.md](SLICE-3.md), settles real ammunition and magazine loading plus body-region damage by calibre. Visible shambler marks are desired ("ideally, yes") and await the 3.2 first look.
 - **Magazines (3.2, d114):** BR, 2026-10-05 21:04: "magazines are real, you load them one by one, like in dayz". A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (CONTROLS.md, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor, extending d62's per-shell reading to per-round handling. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
 - **Rifles (3.2, d114):** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, “Reload, rack, remove,” and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`; `src/core/pellets.ts`, `projectileShot`; `src/core/zombies.ts`, `ZombieSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
-- **Modular weapons (3.7, d118):** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. These boundaries keep rendering, saves and compatibility consistent. See `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
+- **Modular weapons (3.7, d118):** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount, which gungen does not export, is the one mount deadvox owns ("Shoulder and sling"). These boundaries keep rendering, saves and compatibility consistent. See `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
 
   Optics keep their authored reticle and use one content-authored magnification setting, preserving a recognizable sight picture without adding a cycling input. Magnification stays within gungen's supported range. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/core/opticView.ts`, `opticViewSettings` and `projectLensAperture`; `src/render/opticLens.ts`, `OpticLensRenderer`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
 
