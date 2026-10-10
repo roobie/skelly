@@ -13,6 +13,7 @@ read_if:
   - you implement or inspect input recording and replay
   - you change how a locked door advertises its crowbar fallback
   - you change stance hints or first-person held poses
+  - you're changing bleeding treatment feedback
 ---
 
 # Controls and input ownership
@@ -173,7 +174,7 @@ both independently scrolling panes.
   hand or puts it away; a hold uses an available action. See
   `src/game/quickbarInput.ts`, `QuickbarInput`, and
   `src/game/quickbarActions.ts`, `QuickbarActions`.
-- **Wound treatment (2026-10-06 08:33):** BR said “the \"treat with rag\" is not the way to go. You wield the rag and left-click apply it (or quickbar-hold)”. Wielded-item action selection is stepped by the wheel and shown in the interaction hint; see `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `ItemActionSelection`, and `src/game/survival.ts`, `wieldedItemActionHint`.
+- **Wound treatment:** Wield a treatment item such as a rag and left-click to apply it, or hold its quickbar slot; the wheel steps the wielded action, which starts on the worst bleeding. The HUD names each bleeding region's tier, and the wound drips by tier in first person and debug third person. While an artery bleeds, treatment runs at normal speed and leaves movement free, as prying does, because time compression is refused then (DESIGN.md, "Bleeding"). See `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `defaultItemAction`, `src/game/survival.ts`, `wieldedItemActionHint`, `src/ui/playHud.ts`, `playNeedsText`, and `src/render/gore.ts`, `Gore.dripPlayer`.
 - **Lighting (2026-10-05 14:43):** “lighting need the matches in your hand.”
   See `src/game/primaryAction.ts`, `selectPrimaryAction`.
 - **Interaction hints (2026-10-06 08:35):** BR said “we should make

@@ -29,6 +29,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { hasSegment } from './authoredTerrain.mjs';
+import { BLEEDING_TIERS, BODY_REGIONS } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
@@ -1405,6 +1406,27 @@ const WeatheringSchema = strictObject({
   weatheringBlend: weatheringNumber('weatheringBlend'),
 });
 
+const BleedingTierSchema = strictObject({
+  /** Blood lost per Sim second while a wound bleeds at this tier. */
+  bloodLossPerSimSecond: SimRate,
+  /** Least hit damage that can open a wound at this tier. */
+  minDamage: NonNegative,
+  /** Chance that a qualifying hit opens this tier; tiers are checked worst first. */
+  chance: Fraction,
+});
+const BleedingTreatmentSchema = pipe(
+  strictObject({
+    /** The worst tier this treatment stops. */
+    stops: picklist(BLEEDING_TIERS),
+    /** The worst tier it lowers to `stops` without stopping; omitted when it lowers none. */
+    eases: optional(picklist(BLEEDING_TIERS)),
+  }),
+  check(
+    ({ stops, eases }) => eases === undefined || BLEEDING_TIERS.indexOf(eases) > BLEEDING_TIERS.indexOf(stops),
+    'eases must be a worse tier than stops',
+  ),
+);
+
 const BodyTuningSchema = strictObject({
   id: Id,
   /** Game hours after a bleeding wound before an at-risk infection becomes early. */
@@ -1427,8 +1449,33 @@ const BodyTuningSchema = strictObject({
     Positive,
     check((value) => value < 100, 'must be below 100'),
   ),
-  /** Blood lost per Sim second while a wound bleeds. */
-  bloodLossPerSimSecond: SimRate,
+  /** Each bleeding tier's loss rate, and how a hit's damage and region pick its tier (DESIGN.md, "Bleeding"). */
+  bleeding: pipe(
+    strictObject({
+      scratch: strictObject({
+        bloodLossPerSimSecond: SimRate,
+        /** Sim seconds after which a scratch stops bleeding by itself. */
+        stopSimSeconds: PositiveSimSeconds,
+      }),
+      moderate: BleedingTierSchema,
+      heavy: BleedingTierSchema,
+      arterial: strictObject({
+        ...BleedingTierSchema.entries,
+        /** The body regions a hit can open an artery in. */
+        regions: array(picklist(BODY_REGIONS)),
+      }),
+    }),
+    check(
+      (tiers) =>
+        BLEEDING_TIERS.every(
+          (tier, index) =>
+            index === 0 || tiers[tier].bloodLossPerSimSecond > tiers[BLEEDING_TIERS[index - 1]!].bloodLossPerSimSecond,
+        ),
+      'each bleeding tier must lose blood faster than the one below it',
+    ),
+  ),
+  /** What each bleeding treatment does to a wound's tier. */
+  bleedingTreatments: strictObject({ bandage: BleedingTreatmentSchema, rag: BleedingTreatmentSchema }),
   /** Blood recovered per Sim second when no wound bleeds. */
   bloodRecoveryPerSimSecond: SimRate,
   /** Shock recovered per Sim second outside a knockout. */

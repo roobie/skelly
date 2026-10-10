@@ -6,7 +6,7 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import { BODY_REGIONS, type BodyRegion, type BodyState } from '../core/body.ts';
+import { type BleedingTier, BODY_REGIONS, type BodyRegion, type BodyState, bodyRegionLabel } from '../core/body.ts';
 import { practiceForNextLevel } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
@@ -177,9 +177,26 @@ interface DetailsViewModel {
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
 }
 
+const BLEEDING_LABEL: Readonly<Record<BleedingTier, string>> = {
+  scratch: 'Scratch',
+  moderate: 'Moderate bleeding',
+  heavy: 'Heavy bleeding',
+  arterial: 'Arterial bleeding',
+};
+
+/** A scratch is named without the warning style, since it hardly needs mention (DESIGN.md, "Bleeding"). */
+const bleedingTemplate = (tier: BleedingTier | null) => {
+  if (!tier) {
+    return nothing;
+  }
+  return tier === 'scratch'
+    ? html`<span>${BLEEDING_LABEL.scratch}</span>`
+    : html`<span class="inv-body-warning">${BLEEDING_LABEL[tier]}</span>`;
+};
+
 interface BodyRegionViewModel {
   readonly region: BodyRegion;
-  readonly bleeding: boolean;
+  readonly bleeding: BleedingTier | null;
   readonly infection: string;
   readonly damage: string;
 }
@@ -511,9 +528,9 @@ const inventoryTemplate = (
       ${vm.body.regions.map(
         (region) => html`
         <div class="inv-body-region" data-body-region=${region.region}>
-          <span class="inv-body-region-name">${region.region.replace(/([A-Z])/g, ' $1')}</span>
+          <span class="inv-body-region-name">${bodyRegionLabel(region.region)}</span>
           <span>${region.damage} damage</span>
-          ${region.bleeding ? html`<span class="inv-body-warning">Bleeding</span>` : nothing}
+          ${bleedingTemplate(region.bleeding)}
           ${region.infection !== 'none' && region.infection !== 'resolved' ? html`<span class="inv-body-warning">${region.infection} infection</span>` : nothing}
         </div>
       `,
@@ -1033,7 +1050,7 @@ export class InventoryScreen {
       regions: BODY_REGIONS.map((region) => ({
         region,
         damage: `${Math.round(body.regionDamage[region])}%`,
-        bleeding: body.wounds[region]?.bleeding ?? false,
+        bleeding: body.wounds[region]?.bleeding ?? null,
         infection: body.wounds[region]?.infection ?? 'none',
       })),
     };

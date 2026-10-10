@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
 import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
+import { bodyRegionLabel } from '../src/core/body.ts';
 import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import {
   playCrosshairFrame,
   playInteractionText,
+  playNeedsText,
   playPromptText,
   projectCrosshairScreenPosition,
   renderPlayHud,
@@ -67,6 +69,56 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
 });
 
 const root = (): HTMLElement => document.createElement('div');
+
+it('projects blood level and affected regions, with their tier, only while a wound bleeds', () => {
+  const regionLabel = bodyRegionLabel('leftArm');
+  const base = {
+    calendar: 0,
+    speed: 1,
+    paused: false,
+    needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    health: 91,
+    blood: 67,
+    bleeding: [{ region: regionLabel, tier: 'heavy' }],
+    sprinting: false,
+    lightCharge: undefined,
+  } as const;
+  const bleeding = playNeedsText(base);
+  expect(bleeding).toContain('67%');
+  expect(bleeding).toContain(regionLabel);
+  expect(bleeding).toContain('heavy');
+  const treated = playNeedsText({ ...base, bleeding: [] });
+  expect(treated).toContain('67%');
+  expect(treated).not.toContain(regionLabel);
+  const bleedingLines = bleeding.split('\n');
+  const treatedLines = treated.split('\n');
+  expect(bleedingLines).toHaveLength(treatedLines.length + 1);
+  expect(treatedLines.every((line) => bleedingLines.includes(line))).toBe(true);
+});
+
+it('keeps a scratch off the warning line while naming its region', () => {
+  const region = bodyRegionLabel('leftArm');
+  const status = {
+    calendar: 0,
+    speed: 1,
+    paused: false,
+    needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    health: 91,
+    blood: 67,
+    sprinting: false,
+    lightCharge: undefined,
+  };
+  const moderate = playNeedsText({ ...status, bleeding: [{ region, tier: 'moderate' }] });
+  const scratch = playNeedsText({ ...status, bleeding: [{ region, tier: 'scratch' }] });
+  const warningLine = moderate.split('\n').find((line) => line.includes(region));
+  if (!warningLine) {
+    throw new Error('Moderate bleeding status did not include its region');
+  }
+  const warningToken = warningLine.split(' ')[0]!;
+
+  expect(scratch).toContain(region);
+  expect(scratch.split('\n').some((line) => line.startsWith(warningToken))).toBe(false);
+});
 
 it('uses a rebound registry label for restable furniture interactions', () => {
   expect(inputBindings.rebind('world.interact', [{ code: 'KeyJ' }])).toBeUndefined();

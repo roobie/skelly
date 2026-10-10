@@ -115,7 +115,49 @@ describe('Simulation', () => {
     sim.hit(1, 'a bite', undefined, { bleeding: true });
 
     expect(sim.body.regionDamage.torso).toBeGreaterThan(0);
-    expect(sim.body.wounds.torso?.bleeding).toBe(true);
+    expect(sim.body.wounds.torso?.bleeding).toBeTruthy();
+  });
+
+  it('dies of blood loss when an untreated wound empties the blood', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.body.impact(1, 'leftLeg', { bleeding: 'arterial', infectionAtRisk: false });
+
+    sim.scheduler.advance(sim.body.blood / BODY_TUNING_FIXTURE.bleeding.arterial.bloodLossPerSimSecond + 1);
+
+    expect(sim.body.blood).toBe(0);
+    expect(sim.dead?.cause).toBe('blood loss');
+  });
+
+  it('refuses time compression while an artery bleeds, until it is dressed', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.body.impact(1, 'leftLeg', { bleeding: 'arterial', infectionAtRisk: false });
+
+    expect(sim.compress().ok).toBe(false);
+    expect(sim.actions.startWait()).toBeDefined();
+    expect(sim.compression.active).toBe(false);
+
+    expect(sim.body.treat('leftLeg', 'bandage')).toBe(true);
+    expect(sim.actions.startWait()).toBeUndefined();
+    expect(sim.compression.active).toBe(true);
+  });
+
+  it('still treats an open artery, at 1×', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.body.impact(1, 'leftLeg', { bleeding: 'arterial', infectionAtRisk: false });
+    sim.actions.treatment = {
+      validate: (region, _itemUid, treatment) =>
+        sim.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
+      finish: (region, _itemUid, treatment) =>
+        sim.body.treat(region, treatment) ? true : 'Treatment no longer applies',
+    };
+    const duration = BODY_TUNING_FIXTURE.treatmentSimSeconds;
+
+    expect(sim.actions.beginTreatment('leftLeg', 1, 'bandage', duration)).toBeUndefined();
+    const realSecondsTaken = runUntil(sim, sim.time + duration + 1);
+
+    expect(realSecondsTaken).toBeGreaterThanOrEqual(duration);
+    expect(sim.actions.job).toBeUndefined();
+    expect(sim.body.wounds.leftLeg?.bleeding).toBeNull();
   });
 
   it('replays at-risk wound decisions from the seeded simulation RNG and saves the result', () => {

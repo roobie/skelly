@@ -1,5 +1,13 @@
 import type { Body } from '../core/body.ts';
-import { BODY_REGIONS, type BodyRegion, type BodyTreatment, type BodyWounds } from '../core/body.ts';
+import {
+  BLEEDING_TIERS,
+  type BleedingTier,
+  BODY_REGIONS,
+  type BodyRegion,
+  type BodyTreatment,
+  type BodyWounds,
+  bodyRegionLabel,
+} from '../core/body.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
@@ -8,7 +16,8 @@ import { magazineSpec } from '../core/magazine.ts';
 export interface ItemAction {
   readonly id: string;
   readonly label: string;
-  readonly priority?: Readonly<{ bleeding: boolean; damage: number }>;
+  /** `bleeding` ranks the wound's tier, mildest 0, or -1 when it doesn't bleed. */
+  readonly priority?: Readonly<{ bleeding: number; damage: number }>;
   readonly treatment?: Readonly<{ region: BodyRegion; kind: BodyTreatment }>;
   /** Unloading a held magazine: R only loads one (CONTROLS.md, "Reload, rack, remove"), so stripping is an item action. */
   readonly magazine?: 'strip';
@@ -16,10 +25,13 @@ export interface ItemAction {
 
 const STRIP_ROUND: ItemAction = { id: 'magazine:strip', label: 'Strip a round', magazine: 'strip' };
 
-const regionName = (region: BodyRegion): string =>
-  region.replace(/([A-Z])/g, ' $1').replace(/\b\w/g, (letter) => letter.toUpperCase());
+const bleedingDescription = (tier: BleedingTier): string => (tier === 'scratch' ? 'scratch' : `${tier} bleeding`);
+
+/** A bleeding treatment applies only to a bleeding wound (`Body.canTreat`). */
 const woundDescription = (wound: NonNullable<BodyWounds[BodyRegion]>, treatment: BodyTreatment): string =>
-  treatment === 'bandage' || treatment === 'rag' ? 'bleeding' : `${wound.infection} infection`;
+  treatment === 'bandage' || treatment === 'rag'
+    ? bleedingDescription(wound.bleeding!)
+    : `${wound.infection} infection`;
 
 export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
   if (magazineSpec(inventory.registry, item.type)) {
@@ -38,8 +50,11 @@ export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): re
     return [
       {
         id: `${treatment}:${region}`,
-        label: `${regionName(region)} · ${condition}`,
-        priority: { bleeding: wound.bleeding, damage: body.regionDamage[region] },
+        label: `${bodyRegionLabel(region)} · ${condition}`,
+        priority: {
+          bleeding: wound.bleeding === null ? -1 : BLEEDING_TIERS.indexOf(wound.bleeding),
+          damage: body.regionDamage[region],
+        },
         treatment: { region, kind: treatment },
       },
     ];
@@ -58,7 +73,7 @@ export const defaultItemAction = (actions: readonly ItemAction[]): ItemAction | 
       return best;
     }
     if (actionPriority.bleeding !== bestPriority.bleeding) {
-      return actionPriority.bleeding ? action : best;
+      return actionPriority.bleeding > bestPriority.bleeding ? action : best;
     }
     return actionPriority.damage > bestPriority.damage ? action : best;
   }, undefined);

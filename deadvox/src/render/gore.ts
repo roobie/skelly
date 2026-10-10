@@ -15,10 +15,12 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
+import { type BleedingTier, BODY_REGIONS, type BodyWounds } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
+import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 
 /** Droplets in flight at once; a new one replaces the oldest. */
 export const DROPLET_CAP = 128;
@@ -45,6 +47,13 @@ const DRIPS_PER_SECOND = 2.5;
 const DRIP_RANGE_M = 25;
 /** A downed body drips from near the ground, not from its standing height. */
 const DOWNED_DRIP_HEIGHT_M = 0.3;
+/** A player wound's drip rate and droplet size by bleeding tier, relative to a moderate wound. */
+const PLAYER_DRIP: Readonly<Record<BleedingTier, { readonly rate: number; readonly size: number }>> = {
+  scratch: { rate: 0.2, size: 0.75 },
+  moderate: { rate: 1, size: 1 },
+  heavy: { rate: 2.5, size: 1.3 },
+  arterial: { rate: 6, size: 1.6 },
+};
 const SEVERED_PART_SEVERITY = 0.2;
 const CARVED_CELL_SEVERITY = 0.01;
 const DROPLET_COLOR = 0x52_17_0f;
@@ -78,10 +87,27 @@ interface SeverityMemo {
 }
 
 /** What drips: the bodies in the world, and where the listener is (blocks). */
+export interface GorePlayer {
+  readonly pos: Vec3;
+  readonly yaw: number;
+  readonly wounds: Readonly<BodyWounds>;
+  /** Whether the figure uses its third-person placement, without the first-person rear offset. */
+  readonly thirdPerson: boolean;
+}
+
 export interface GoreBodies {
   readonly zombies: Pick<EntityStore<Zombie>, 'entries'>;
   readonly listener: Vec3;
+  readonly player?: GorePlayer;
 }
+
+const setPlayerDripOrigin = (
+  target: Vector3,
+  placement: PlayerFigurePlacement,
+  region: (typeof BODY_REGIONS)[number],
+): void => {
+  setPlayerFigurePosition(target, placement, PLAYER_REGION_BOXES[region].at);
+};
 
 const regionNameLists = new WeakMap<Zombie['type']['regions'], readonly string[]>();
 
@@ -142,6 +168,12 @@ export class Gore {
   private readonly scratch = new Vector3();
   private readonly origin = new Vector3();
   private readonly point = new Vector3();
+  private readonly playerPlacement: PlayerFigurePlacement = {
+    bodyPosition: [0, 0, 0],
+    yaw: 0,
+    blockSize: 1,
+    thirdPerson: false,
+  };
   private readonly normal = new Vector3();
   private nextDroplet = 0;
   private nextSplat = 0;
@@ -276,6 +308,7 @@ export class Gore {
     this.fadeSplats(step);
     this.pickDrippers(bodies);
     this.drip(step);
+    this.dripPlayer(step, bodies?.player);
     this.drawDroplets();
     this.spawnedSinceUpdate = 0;
   }
@@ -360,6 +393,31 @@ export class Gore {
       const y = pos[1] * s + heightMetres * this.rng.range(0.35, 0.85);
       const z = pos[2] * s + this.rng.range(-reach, reach);
       if (!this.emit(this.origin.set(x, y, z), this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
+        return;
+      }
+    }
+  }
+
+  /** Player wounds drip from their matching world-figure region in either camera view. */
+  private dripPlayer(dt: number, player: GorePlayer | undefined): void {
+    if (!player) {
+      return;
+    }
+    this.playerPlacement.bodyPosition = player.pos;
+    this.playerPlacement.yaw = player.yaw;
+    this.playerPlacement.blockSize = this.blockSize;
+    this.playerPlacement.thirdPerson = player.thirdPerson;
+    for (const region of BODY_REGIONS) {
+      const tier = player.wounds[region]?.bleeding;
+      if (!tier) {
+        continue;
+      }
+      const drip = PLAYER_DRIP[tier];
+      if (!this.rng.chance(DRIPS_PER_SECOND * drip.rate * dt)) {
+        continue;
+      }
+      setPlayerDripOrigin(this.origin, this.playerPlacement, region);
+      if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02) * drip.size)) {
         return;
       }
     }

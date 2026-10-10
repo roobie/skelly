@@ -89,7 +89,13 @@ const body = new Body({
   bluntShockPerDamage: 2,
   treatmentSimSeconds: 1,
   wakeShock: 5,
-  bloodLossPerSimSecond: 0.004,
+  bleeding: {
+    scratch: { bloodLossPerSimSecond: 0.002, stopSimSeconds: 60 },
+    moderate: { bloodLossPerSimSecond: 0.01, minDamage: 5, chance: 0.5 },
+    heavy: { bloodLossPerSimSecond: 0.1, minDamage: 10, chance: 0.2 },
+    arterial: { bloodLossPerSimSecond: 1, minDamage: 20, chance: 0.05, regions: ['leftLeg', 'rightLeg'] },
+  },
+  bleedingTreatments: { bandage: { stops: 'arterial' }, rag: { stops: 'moderate', eases: 'heavy' } },
   bloodRecoveryPerSimSecond: 0.002,
   shockRecoveryPerSimSecond: 0.1,
   advancedInfectionHealthLossPerSimSecond: 0.0005,
@@ -98,7 +104,7 @@ const body = new Body({
   movementSlowdownPerDamage: 0.005,
   minimumMovementSpeed: 0.5,
 });
-body.impact(1, 'leftArm', { bleeding: true });
+body.impact(1, 'leftArm', { bleeding: 'moderate' });
 for (const slot of ['legs', 'torso', 'back']) {
   if (!inventory.add(inventory.create('scroll_' + slot), { kind: 'worn' })) throw Error('worn fixture failed');
 }

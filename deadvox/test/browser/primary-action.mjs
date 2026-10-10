@@ -2877,8 +2877,8 @@ try {
     r.clearHand(r.off);
     const rag = r.inventory.create('rag');
     r.setHand(r.dominant, rag);
-    r.session.sim.body.impact(1, 'leftArm', { bleeding: true });
-    r.session.sim.body.impact(3, 'rightArm', { bleeding: true });
+    r.session.sim.body.impact(1, 'leftArm', { bleeding: 'moderate' });
+    r.session.sim.body.impact(3, 'rightArm', { bleeding: 'moderate' });
     return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
   });
   await page.evaluate(() => {

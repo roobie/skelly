@@ -1,7 +1,7 @@
 // The simulation core: clock, scheduler, events, compression and pause, with the
 // systems registered on it. Pure, so scenario tests run it headless.
 
-import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
+import { Body, type BodyImpact, type BodyRegion, type BodyState, bleedingTierForHit } from './body.ts';
 import { type ClockSettings, calendarAt, defaultClock, simToGameHours } from './clock.ts';
 import { Compression, type CompressionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
@@ -25,6 +25,9 @@ export type SimEvent =
   | { kind: 'noise'; event: SoundEventId; position: Vec3; id: number; radiusMetres: number; expiresAt: number };
 
 export type Timed<E> = E & { readonly time: number };
+
+/** A hit's effects; a bleeding hit leaves its tier to the body tuning. */
+export type HitEffects = Omit<BodyImpact, 'bleeding'> & { bleeding?: boolean };
 
 export interface SimulationState {
   seed: number;
@@ -216,14 +219,20 @@ export class Simulation {
     this.takeDamage(cause, () => this.body.damageHealth(amount));
   }
 
-  hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: BodyImpact = {}): void {
+  /** A bleeding hit's tier comes from its damage and region through the body tuning (`bleedingTierForHit`). */
+  hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: HitEffects = {}): void {
+    const { bleeding: bleeds, ...impact } = effects;
     const woundAlreadyExists = this.body.wounds[region] !== null;
     const infectionAtRisk =
-      effects.infectionAtRisk ??
-      (Boolean(effects.bleeding) &&
+      impact.infectionAtRisk ??
+      (Boolean(bleeds) &&
         (woundAlreadyExists ||
           this.rng(`body-infection:${region}:${this.time}:${amount}`).next() < this.body.tuning.infectionChance));
-    this.takeDamage(cause, () => this.body.impact(amount, region, { ...effects, infectionAtRisk }));
+    const tierRoll = this.rng(`body-bleeding:${region}:${this.time}:${amount}`);
+    const bleeding = bleeds ? bleedingTierForHit(this.body.tuning, amount, region, () => tierRoll.next()) : undefined;
+    this.takeDamage(cause, () =>
+      this.body.impact(amount, region, { ...impact, infectionAtRisk, ...(bleeding ? { bleeding } : {}) }),
+    );
   }
 
   private takeDamage(cause: string, apply: () => number): void {
@@ -257,12 +266,12 @@ export class Simulation {
     if (this.actions.job?.jobType === 'pry' && !this.actions.job.stopped) {
       return { ok: false, reason: 'Stop prying first' };
     }
-    return this.compression.start(this.unsafeReason(), limits);
+    return this.compression.start(this.body.compressionRefusal ?? this.unsafeReason(), limits);
   }
 
   /** Long actions use normal fast-forward near threats; emitted interruptions still stop them. */
   compressLongAction(): { ok: true } | { ok: false; reason: string } {
-    return this.compression.start(undefined);
+    return this.compression.start(this.body.compressionRefusal);
   }
 
   private unsafeReason(): string | undefined {
@@ -326,14 +335,16 @@ export class Simulation {
     const { compression } = this;
     const action = this.actions.job;
     if (!(compression.active || compression.c > 1)) {
-      if (action?.jobType === 'pry' && emitted) {
-        this.actions.interruptPrying(emitted.reason);
+      if (action && emitted && this.actions.runsUncompressed(action.jobType)) {
+        this.actions.interruptUncompressed(emitted.reason);
         return true;
       }
       return false;
     }
     const reason =
-      emitted?.reason ?? (compression.active && !(action && !action.stopped) ? this.unsafeReason() : undefined);
+      emitted?.reason ??
+      this.body.compressionRefusal ??
+      (compression.active && !(action && !action.stopped) ? this.unsafeReason() : undefined);
     if (reason === undefined) {
       return false;
     }
