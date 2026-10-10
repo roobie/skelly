@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { metricsFile, SessionMetrics, type SessionMetricsV1 } from '../src/game/playtestTools.ts';
 import { computeMenuState, computeSaveMenuState, type MenuStateInput } from '../src/ui/menuState.ts';
 
 const base: MenuStateInput = {
@@ -12,7 +13,12 @@ const base: MenuStateInput = {
 
 type TransitionInput = MenuStateInput & { pointerLockChanged?: boolean; resumeRequested?: boolean };
 
-const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof computeMenuState> }[] = [
+const cases: {
+  name: string;
+  input: TransitionInput;
+  expected: ReturnType<typeof computeMenuState>;
+  exportDeath?: boolean;
+}[] = [
   {
     name: 'start: not started shows the overlay and pauses',
     input: base,
@@ -61,6 +67,22 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
   {
     name: 'F9 opens the main menu while locked',
     input: { ...base, started: true, pointerLocked: true },
+    expected: {
+      started: true,
+      mainMenuOpen: true,
+      inventoryOpen: false,
+      debugMenuOpen: false,
+      closeOtherMenus: false,
+      menuPointer: true,
+      overlayHidden: false,
+      paused: true,
+      goLabel: 'Paused. Click to continue',
+    },
+  },
+  {
+    name: 'F9 opens the playtest hand-back over the death screen',
+    input: { ...base, started: true, dead: true },
+    exportDeath: true,
     expected: {
       started: true,
       mainMenuOpen: true,
@@ -230,31 +252,8 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
     },
   },
   {
-    name: 'a resume request while locked and dead preserves menus and death overlay',
-    input: {
-      ...base,
-      started: true,
-      inventoryOpen: true,
-      debugMenuOpen: true,
-      pointerLocked: true,
-      dead: true,
-      resumeRequested: true,
-    },
-    expected: {
-      started: true,
-      mainMenuOpen: true,
-      inventoryOpen: true,
-      debugMenuOpen: true,
-      closeOtherMenus: false,
-      menuPointer: true,
-      overlayHidden: true,
-      paused: false,
-      goLabel: 'Paused. Click to continue',
-    },
-  },
-  {
-    name: 'after a dead resume request clears, respawn does not close the open menu',
-    input: { ...base, started: true, pointerLocked: true },
+    name: 'a resume request while locked and dead keeps the hand-back menu visible',
+    input: { ...base, started: true, pointerLocked: true, dead: true, resumeRequested: true },
     expected: {
       started: true,
       mainMenuOpen: true,
@@ -491,7 +490,15 @@ describe('menu and pause state transitions', () => {
     expect(lateResume).toMatchObject({ mainMenuOpen: false, overlayHidden: true, paused: false, menuPointer: false });
   });
 
-  it.each(cases)('$name', ({ input, expected }) => {
-    expect(computeMenuState(input)).toEqual(expected);
+  it.each(cases)('$name', async ({ input, expected, exportDeath }) => {
+    const state = computeMenuState(input);
+    expect(state).toEqual(expected);
+    if (exportDeath) {
+      const metrics = new SessionMetrics(17);
+      metrics.recordDeath('a shambler', 60);
+      const exported = JSON.parse(await metricsFile(metrics).blob.text()) as SessionMetricsV1;
+      expect(exported.deaths).toMatchObject([{ cause: 'a shambler' }]);
+      expect(exported.deaths[0]?.survivedSeconds).toBeGreaterThan(0);
+    }
   });
 });

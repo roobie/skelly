@@ -98,7 +98,7 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
     (input.pointerLocked && !mainMenuOpen) ||
     inventoryOpen ||
     readingOpen ||
-    input.dead;
+    (input.dead && !mainMenuOpen);
   return {
     started,
     mainMenuOpen,
