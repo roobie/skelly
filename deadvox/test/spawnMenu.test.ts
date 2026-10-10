@@ -105,6 +105,7 @@ describe('spawnMenuViewModel', () => {
       reviewMap: { isOpen: () => false, toggle: () => undefined },
       compress: () => undefined,
       spectatorCamera: { enabled: () => false, toggle: () => undefined },
+      thirdPerson: { enabled: () => false, toggle: () => undefined },
       perceptionLabels: { enabled: () => false, toggle: () => undefined },
       emitTestNoise: () => true,
     } as unknown as DebugHooks;

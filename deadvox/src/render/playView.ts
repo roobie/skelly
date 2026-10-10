@@ -45,6 +45,7 @@ export interface PlayCameraFrame {
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly thirdPerson?: boolean;
+  readonly thirdPersonOrbit?: { readonly yaw: number; readonly pitch: number };
   readonly sightImpaired: boolean;
 }
 
@@ -68,11 +69,29 @@ const THIRD_PERSON_HEIGHT = 1.1;
 const THIRD_PERSON_TARGET_DROP = 0.6;
 const THIRD_PERSON_WALL_MARGIN = 0.15;
 
-const thirdPersonCameraPosition = (eye: Vec3, yaw: number, blockSize: number, isSolid: SolidAt): Vec3 => {
+const thirdPersonCameraPosition = ({
+  eye,
+  yaw,
+  blockSize,
+  isSolid,
+  orbit,
+}: {
+  readonly eye: Vec3;
+  readonly yaw: number;
+  readonly blockSize: number;
+  readonly isSolid: SolidAt;
+  readonly orbit?: { readonly yaw: number; readonly pitch: number };
+}): Vec3 => {
+  const cameraYaw = orbit?.yaw ?? yaw;
+  const elevation = orbit
+    ? Math.max(-1.2, Math.min(1.2, Math.atan2(THIRD_PERSON_HEIGHT, THIRD_PERSON_DISTANCE) + orbit.pitch))
+    : undefined;
+  const horizontalDistance =
+    elevation === undefined ? THIRD_PERSON_DISTANCE : THIRD_PERSON_DISTANCE * Math.cos(elevation);
   const offset: Vec3 = [
-    Math.sin(yaw) * THIRD_PERSON_DISTANCE,
-    THIRD_PERSON_HEIGHT,
-    Math.cos(yaw) * THIRD_PERSON_DISTANCE,
+    Math.sin(cameraYaw) * horizontalDistance,
+    elevation === undefined ? THIRD_PERSON_HEIGHT : THIRD_PERSON_DISTANCE * Math.sin(elevation),
+    Math.cos(cameraYaw) * horizontalDistance,
   ];
   const length = Math.hypot(...offset);
   const direction: Vec3 = [offset[0] / length, offset[1] / length, offset[2] / length];
@@ -171,6 +190,46 @@ export const createPlayView = (
   let thirdPerson = false;
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
+  const updateThirdPersonCamera = ({
+    eye,
+    stepOffset,
+    yaw,
+    orbit,
+    target,
+  }: {
+    readonly eye: Vec3;
+    readonly stepOffset: number;
+    readonly yaw: number;
+    readonly orbit?: { readonly yaw: number; readonly pitch: number };
+    readonly target: Vec3;
+  }): void => {
+    const steppedEye: Vec3 = [eye[0], eye[1] + stepOffset / s, eye[2]];
+    const [cx, cy, cz] = thirdPersonCameraPosition({
+      eye: steppedEye,
+      yaw,
+      blockSize: s,
+      isSolid: engine.isSolid,
+      ...(orbit ? { orbit } : {}),
+    });
+    camera.position.set(cx * s, cy * s, cz * s);
+    camera.lookAt(target[0] * s, target[1] * s + stepOffset - THIRD_PERSON_TARGET_DROP, target[2] * s);
+  };
+  const updateFirstPersonCamera = ({
+    target,
+    stepOffset,
+    spectator,
+    yaw,
+    pitch,
+  }: {
+    readonly target: Vec3;
+    readonly stepOffset: number;
+    readonly spectator: PlayCameraFrame['spectator'];
+    readonly yaw: number;
+    readonly pitch: number;
+  }): void => {
+    camera.position.set(target[0] * s, target[1] * s + (spectator ? 0 : stepOffset), target[2] * s);
+    camera.rotation.copy(cameraRotation(spectator?.pitch ?? pitch, spectator?.yaw ?? yaw, cameraRoll));
+  };
 
   return {
     models,
@@ -249,14 +308,17 @@ export const createPlayView = (
       const [ex, ey, ez] = spectator?.position ?? eye;
       const feedback = damageFeedback.step(dt);
       cameraRoll = spectator || thirdPerson ? 0 : feedback.roll;
+      const target: Vec3 = [ex, ey, ez];
       if (thirdPerson) {
-        const steppedEye: Vec3 = [eye[0], eye[1] + offset / s, eye[2]];
-        const [cx, cy, cz] = thirdPersonCameraPosition(steppedEye, yaw, s, engine.isSolid);
-        camera.position.set(cx * s, cy * s, cz * s);
-        camera.lookAt(ex * s, ey * s + offset - THIRD_PERSON_TARGET_DROP, ez * s);
+        updateThirdPersonCamera({
+          eye,
+          stepOffset: offset,
+          yaw,
+          target,
+          ...(frame.thirdPersonOrbit ? { orbit: frame.thirdPersonOrbit } : {}),
+        });
       } else {
-        camera.position.set(ex * s, ey * s + (spectator ? 0 : offset), ez * s);
-        camera.rotation.copy(cameraRotation(spectator?.pitch ?? pitch, spectator?.yaw ?? yaw, cameraRoll));
+        updateFirstPersonCamera({ target, stepOffset: offset, spectator, yaw, pitch });
       }
       damage.style.opacity = String(Math.max(feedback.vignetteOpacity, sightImpaired ? 0.2 : 0));
     },

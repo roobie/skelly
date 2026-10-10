@@ -9,9 +9,10 @@ const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => 
     addEventListener: (type: string, listener: (event: MouseEvent) => void) => targetListeners.set(type, listener),
     requestPointerLock: vi.fn<() => Promise<void>>(),
   } as unknown as HTMLElement;
+  const documentListeners = new Map<string, (event: MouseEvent) => void>();
   const document = {
     pointerLockElement: target as HTMLElement | null,
-    addEventListener: vi.fn(),
+    addEventListener: (type: string, listener: (event: MouseEvent) => void) => documentListeners.set(type, listener),
     exitPointerLock: vi.fn(),
   };
   vi.stubGlobal('document', document);
@@ -35,7 +36,7 @@ const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => 
   };
   input = new Input(target, allowed, () => true, viewerInputAllowed);
   keyboardInput.cancelled = (preservePointer) => input.cancel(preservePointer);
-  return { input, target, document, targetListeners, windowListeners };
+  return { input, target, document, targetListeners, windowListeners, documentListeners };
 };
 afterEach(() => {
   keyboardInput.cancel();
@@ -66,6 +67,20 @@ describe('pointer input', () => {
     }
     expect(shouldCancelInputForViewerFocus('context-change', true)).toBe(true);
     expect(shouldCancelInputForViewerFocus('manual', true)).toBe(true);
+  });
+  it('routes orbit mouse movement without changing player look', () => {
+    const { input, target, document, documentListeners } = fixture();
+    document.pointerLockElement = target;
+    input.yaw = 0.8;
+    input.pitch = -0.2;
+    const orbitLook = vi.fn(() => true);
+    input.setMouseLookOverride(orbitLook);
+
+    documentListeners.get('mousemove')!({ movementX: 30, movementY: -12 } as MouseEvent);
+
+    expect(orbitLook).toHaveBeenCalledExactlyOnceWith(30, -12);
+    expect(input.yaw).toBe(0.8);
+    expect(input.pitch).toBe(-0.2);
   });
   it('surfaces native pointer-lock refusal without an unhandled rejection', async () => {
     const { input, target } = fixture();

@@ -193,6 +193,10 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugRow('debug.noclip-toggle', 'Noclip', 'KeyP'),
   debugRow('debug.spectator-camera-toggle', 'Spectator camera', 'F6'),
   debugRow('debug.third-person-toggle', 'Third-person avatar view', 'Numpad0'),
+  row('debug.third-person-orbit', 'Hold to orbit the third-person camera', ['play'], ['Digit6'], 'held-state', {
+    debug: true,
+    gate: 'debug.gate',
+  }),
   debugRow('debug.perception-labels-toggle', 'Perception labels', 'F7'),
   debugRow('debug.spawn-unaware-shambler', 'Spawn unaware shambler', 'Numpad3'),
   debugRow('debug.test-noise', 'Test noise', 'F8'),

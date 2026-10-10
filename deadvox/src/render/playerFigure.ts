@@ -158,7 +158,7 @@ export interface PlayerFigurePose {
   inventory?: Inventory;
 }
 
-/** A coloured, headless world figure. Its body and legs are the shared figure boxes. */
+/** A coloured world figure whose head is visible only in third person. */
 export class PlayerMeshes {
   readonly group = new Group();
   private readonly meshes = new Map<PlayerArmPart, InstancedMesh>();

@@ -138,6 +138,7 @@ import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
 import { updateStartupHintLatch } from './startupHint.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
+import { ThirdPersonOrbit } from './thirdPersonOrbit.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
@@ -575,6 +576,7 @@ export const startPlay = (
   let spectatorCameraBody: Body | undefined;
   let spectatorBodyView: { readonly yaw: number; readonly pitch: number } | undefined;
   let thirdPersonViewEnabled = false;
+  const thirdPersonOrbit = new ThirdPersonOrbit();
   let perceptionLabelsEnabled = false;
   const session = createSession({
     registry,
@@ -834,6 +836,9 @@ export const startPlay = (
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
+  input.setMouseLookOverride((movementX, movementY) =>
+    thirdPersonOrbit.rotate(movementX, movementY, thirdPersonViewEnabled && !spectatorCameraEnabled, input.yaw),
+  );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
   const damageEvents = sim.events.reader();
 
@@ -1197,6 +1202,9 @@ export const startPlay = (
       enabled: () => thirdPersonViewEnabled,
       toggle: () => {
         thirdPersonViewEnabled = !thirdPersonViewEnabled;
+        if (!thirdPersonViewEnabled) {
+          thirdPersonOrbit.reset();
+        }
       },
     },
     perceptionLabels: {
@@ -1808,9 +1816,13 @@ export const startPlay = (
   };
   const quickbarSlotFor = (action: string): number | undefined =>
     action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
-  const handleDebugCommand = (action: string): boolean => {
+  const handleDebugCommand = (action: string, at: number): boolean => {
     if (!(action.startsWith('debug.') || action.startsWith('spawn.'))) {
       return false;
+    }
+    if (action === 'debug.third-person-orbit') {
+      thirdPersonOrbit.press(at, thirdPersonViewEnabled && !spectatorCameraEnabled, input.yaw);
+      return true;
     }
     if (action === 'debug.review-map-toggle') {
       toggleReviewMap();
@@ -1848,6 +1860,10 @@ export const startPlay = (
     return true;
   };
   const releaseInputCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (action === 'debug.third-person-orbit') {
+      thirdPersonOrbit.release();
+      return;
+    }
     if (handleHintCommand(action, 'up', at)) {
       return;
     }
@@ -1858,12 +1874,15 @@ export const startPlay = (
     releaseCommand(action, at, slot);
   };
   const dispatchPressCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (action.startsWith('movement.')) {
+      thirdPersonOrbit.movementInput();
+    }
     sim.actions.cancelWaitForMovement(action);
     if (action === 'ui.main-menu-toggle') {
       modalCommand(action);
       return;
     }
-    if (handleDebugCommand(action)) {
+    if (handleDebugCommand(action, at)) {
       return;
     }
     if (rejectRefusedInput()) {
@@ -2685,6 +2704,7 @@ export const startPlay = (
         view.damage(event.amount);
       }
     }
+    const orbitAngle = thirdPersonOrbit.angle(thirdPersonViewEnabled && !spectatorCameraEnabled);
     view.updateCamera(
       {
         dt,
@@ -2699,6 +2719,7 @@ export const startPlay = (
           ? { spectator: { position: [...spectatorCameraBody.pos], yaw: input.yaw, pitch: input.pitch } }
           : {}),
         thirdPerson: thirdPersonViewEnabled && !spectatorCameraEnabled,
+        ...(orbitAngle ? { thirdPersonOrbit: orbitAngle } : {}),
         sightImpaired: sim.body.consequences.sightImpaired,
       },
       $('damage'),

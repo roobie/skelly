@@ -27,6 +27,7 @@ import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -312,7 +313,7 @@ describe('player figure', () => {
     expect((hand.geometry as import('three').BoxGeometry).parameters.width).toBeCloseTo(0.09, 3);
   });
 
-  it('uses the content palette, shared headless body layout, and the configured view offset', () => {
+  it('uses the content palette, hides the head in first person, and applies the figure offset', () => {
     const meshes = new PlayerMeshes(scale.blockSize, palette);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     expect(PLAYER_ARM_PARTS).toContain('head');
@@ -347,7 +348,7 @@ describe('player figure', () => {
     expect(parts.every((mesh, index) => index === headIndex || mesh.count === 1)).toBe(true);
   });
 
-  it('shows the head in the normal player position in third person', () => {
+  it('shows the head at its figure-box position in third person', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = new PlayerMeshes(scale.blockSize, palette);
     const parts = meshes.group.children as import('three').InstancedMesh[];
@@ -360,7 +361,9 @@ describe('player figure', () => {
     parts[headIndex]!.getMatrixAt(0, headMatrix);
     expect(parts[headIndex]!.count).toBe(1);
     expect(new Vector3().setFromMatrixPosition(bodyMatrix).z).toBeCloseTo(body.pos[2] * scale.blockSize);
-    expect(new Vector3().setFromMatrixPosition(headMatrix).y).toBeCloseTo(body.pos[1] * scale.blockSize + 1.58);
+    expect(new Vector3().setFromMatrixPosition(headMatrix).y).toBeCloseTo(
+      body.pos[1] * scale.blockSize + FIGURE_BOXES.head.at[1],
+    );
   });
 
   it('hides held arms from the world body, including both arms for a two-handed item', () => {

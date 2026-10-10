@@ -188,7 +188,7 @@ both independently scrolling panes.
   they work only while noclip is active, and WASD remains usable during flight.
   See `src/game/inputBindings.ts`, `noclip.ascend` and `noclip.descend`.
 - **Spectator camera (d106-15):** Debug viewing moves a separate camera with the noclip flight step; it never moves the player's body. While detached, the same movement context routes flight input to the camera, and toggling back restores the body view. This is a debug view, not player noclip. See `src/game/play.ts`, `stepSimulation`, and `src/render/playView.ts`, `updateCamera`.
-- **Third-person avatar (d227):** Keep the view behind F2 as a debug inspection tool, not a player-facing camera mode; Numpad0 toggles it. See `src/game/inputBindings.ts`, `debug.third-person-toggle`, and `src/render/playView.ts`, `updateCamera`.
+- **Third-person avatar (d227):** A debug view behind F2; Numpad0 toggles it. Backquote remains assigned to interaction hints and the debug panel, so hold F2+6 and move the mouse to orbit without turning the avatar. The view keeps that angle after release; double-tap 6 or move after releasing it to reset behind the avatar. Movement while holding F2+6 keeps the orbit. See `src/game/inputBindings.ts`, `debug.third-person-toggle` and `debug.third-person-orbit`, `src/game/thirdPersonOrbit.ts`, and `src/render/playView.ts`, `updateCamera`.
 - **Continue (d98; BR, 2026-10-06 11:28):** BR's choice was “1. enter”. Enter
   continues both after an interruption and a stopped craft. See
   `src/game/inputBindings.ts`, `compression.continue` and `craft.continue`.

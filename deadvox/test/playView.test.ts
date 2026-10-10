@@ -197,6 +197,32 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
+  it('orbits the third-person camera while keeping the orbit ray clear of walls', () => {
+    const { engine, view } = fixture((x) => x === 4);
+    const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };
+    const damage = { style: { opacity: '' } } as unknown as HTMLElement;
+    view.updateCamera(
+      {
+        dt: 0.1,
+        body,
+        paused: false,
+        noclip: false,
+        yaw: 0,
+        pitch: 0,
+        stridePhase: 0,
+        eye: [2, 4.24, 6],
+        thirdPerson: true,
+        thirdPersonOrbit: { yaw: Math.PI / 2, pitch: 0 },
+        sightImpaired: false,
+      },
+      damage,
+    );
+
+    expect(engine.camera.position.x / 0.5).toBeGreaterThan(2);
+    expect(engine.camera.position.x / 0.5).toBeLessThan(4);
+    view.dispose();
+  });
+
   it('projects block-space camera/player state without advancing the body', () => {
     const { engine, view } = fixture();
     const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };
