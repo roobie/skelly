@@ -78,10 +78,16 @@ const nearestPanelHit = ({
 }): PanelHit | undefined => {
   let nearest: PanelHit | undefined;
   for (const entity of entities.all) {
-    if (!entities.defOf(entity).door) {
+    const definition = entities.defOf(entity);
+    if (!definition.door) {
       continue;
     }
-    const distance = rayPanelDistance(doorPanel(entity, blockSize), originMetres, direction, maxDistanceMetres);
+    const distance = rayPanelDistance(
+      doorPanel(entity, blockSize, definition.shape !== undefined),
+      originMetres,
+      direction,
+      maxDistanceMetres,
+    );
     if (distance !== undefined && (!nearest || distance < nearest.distance)) {
       nearest = { entity, distance };
     }

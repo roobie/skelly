@@ -71,21 +71,23 @@ export interface DoorPanelBox {
 }
 
 /** The visible/pickable thin panel, open or closed, shared by renderer and core picking. */
-export const doorPanel = (entity: BlockEntity, blockSize: number): DoorPanelBox => {
+export const doorPanel = (entity: BlockEntity, blockSize: number, onBodyFace = false): DoorPanelBox => {
   const [x, y, z] = entity.pos;
   const [w, h, d] = entity.size;
   const alongX = entity.facing === 'n' || entity.facing === 's';
   const width = (alongX ? w : d) * blockSize;
   const height = h * blockSize;
+  const panelX = onBodyFace ? x + (entity.facing === 'e' ? w : 0) : x + w / 2;
+  const panelZ = onBodyFace ? z + (entity.facing === 's' ? d : 0) : z + d / 2;
   return alongX
     ? {
-        pivot: [x * blockSize, y * blockSize, (z + d / 2) * blockSize],
+        pivot: [x * blockSize, y * blockSize, panelZ * blockSize],
         center: [width / 2, height / 2, 0],
         size: [width, height, DOOR_PANEL_THICKNESS],
         rotationY: entity.open ? DOOR_OPEN_TURN[entity.facing] : 0,
       }
     : {
-        pivot: [(x + w / 2) * blockSize, y * blockSize, z * blockSize],
+        pivot: [panelX * blockSize, y * blockSize, z * blockSize],
         center: [0, height / 2, width / 2],
         size: [DOOR_PANEL_THICKNESS, height, width],
         rotationY: entity.open ? DOOR_OPEN_TURN[entity.facing] : 0,

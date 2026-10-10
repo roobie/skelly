@@ -41,7 +41,7 @@ export class FurnitureMeshes {
       } else if (def.id === 'workshop_stripped_car') {
         mesh = workshopCar(entity, this.blockSize);
       } else if (def.door) {
-        mesh = this.door(entity, material);
+        mesh = this.door(entity, material, def);
       } else if (def.readable && def.solid === false) {
         mesh = this.wallBoard(entity, material);
       } else if (def.shape) {
@@ -127,8 +127,8 @@ export class FurnitureMeshes {
   }
 
   /** A panel across the doorway, hinged at its low end along the wall. */
-  private door(entity: BlockEntity, material: MeshLambertMaterial): Group {
-    const box = doorPanel(entity, this.blockSize);
+  private door(entity: BlockEntity, material: MeshLambertMaterial, body?: FurnitureDef): Group {
+    const box = doorPanel(entity, this.blockSize, body?.shape !== undefined);
     const pivot = new Group();
     const panel = new Mesh(this.geometry, material);
     pivot.position.set(...box.pivot);
@@ -136,6 +136,12 @@ export class FurnitureMeshes {
     panel.scale.set(...box.size);
     panel.position.set(...box.center);
     pivot.add(panel);
-    return pivot;
+    if (!body?.shape) {
+      return pivot;
+    }
+    const assembly = new Group();
+    assembly.add(this.shaped(entity, body, material));
+    assembly.add(pivot);
+    return assembly;
   }
 }
