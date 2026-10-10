@@ -2,10 +2,10 @@ import { InstancedMesh, Matrix4, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BODY_REGIONS, type BodyWounds } from '../src/core/body.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
-import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
+import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { HitImpulse, Zombie } from '../src/core/zombies.ts';
-import { PLAYER_ARM_BOXES } from '../src/render/figure.ts';
 import { DROPLET_CAP, DROPLET_SPAWNS_PER_FRAME, Gore, type GoreBodies, SPLAT_CAP } from '../src/render/gore.ts';
+import { PLAYER_BODY_REAR_OFFSET, PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
 
 const floor = (_x: number, y: number, _z: number) => y < 0;
 // A heavy downward hit just above the floor, so most droplets land within a few updates.
@@ -21,13 +21,9 @@ describe('Gore', () => {
     gore.dispose();
   });
 
-  it.each(BODY_REGIONS)('keeps $0 drips on the same avatar region in both views', (region) => {
+  it.each(BODY_REGIONS)('starts $0 drips inside the drawn region in both views', (region) => {
     const yaw = 0.37;
     const playerPos: [number, number, number] = [4, 2, 7];
-    const avatarBoxes = [...Object.values(FIGURE_BOXES), ...Object.values(PLAYER_ARM_BOXES)];
-    const avatarHorizontalRadius = Math.max(
-      ...avatarBoxes.map(({ at, size }) => Math.hypot(Math.abs(at[0]) + size[0] / 2, Math.abs(at[2]) + size[2] / 2)),
-    );
     const wounds: BodyWounds = {
       head: null,
       torso: null,
@@ -39,7 +35,7 @@ describe('Gore', () => {
     wounds[region] = { bleeding: true, infection: 'none', infectionGameSeconds: 0, infectionAtRisk: false };
 
     const dripPosition = (thirdPerson: boolean): Vector3 => {
-      const gore = new Gore(1);
+      const gore = new Gore(BLOCK_SIZE);
       gore.update(1, floor, {
         zombies: new MapEntityStore<Zombie>(),
         listener: playerPos,
@@ -57,14 +53,31 @@ describe('Gore', () => {
       return position;
     };
 
-    const firstPersonOrigin = dripPosition(false);
-    const thirdPersonOrigin = dripPosition(true);
-    const horizontalOffset = new Vector3(firstPersonOrigin.x - playerPos[0], 0, firstPersonOrigin.z - playerPos[2]);
-    const lookDirection = new Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const regionBox = PLAYER_REGION_BOXES[region];
+    const assertWithinDrawnRegion = (origin: Vector3, thirdPerson: boolean): void => {
+      const rearOffset = thirdPerson ? 0 : PLAYER_BODY_REAR_OFFSET;
+      const figureOrigin = new Vector3(
+        playerPos[0] * BLOCK_SIZE + Math.sin(yaw) * rearOffset,
+        playerPos[1] * BLOCK_SIZE,
+        playerPos[2] * BLOCK_SIZE + Math.cos(yaw) * rearOffset,
+      );
+      const worldX = origin.x - figureOrigin.x;
+      const worldZ = origin.z - figureOrigin.z;
+      const local = new Vector3(
+        worldX * Math.cos(yaw) - worldZ * Math.sin(yaw),
+        origin.y - figureOrigin.y,
+        worldX * Math.sin(yaw) + worldZ * Math.cos(yaw),
+      );
+      const epsilon = 1e-5;
+      for (const axis of [0, 1, 2] as const) {
+        const halfSize = regionBox.size[axis] / 2;
+        expect(local.getComponent(axis)).toBeGreaterThanOrEqual(regionBox.at[axis] - halfSize - epsilon);
+        expect(local.getComponent(axis)).toBeLessThanOrEqual(regionBox.at[axis] + halfSize + epsilon);
+      }
+    };
 
-    expect(firstPersonOrigin.distanceTo(thirdPersonOrigin)).toBeLessThan(1e-9);
-    expect(Math.hypot(horizontalOffset.x, horizontalOffset.z)).toBeLessThan(avatarHorizontalRadius);
-    expect(Math.abs(horizontalOffset.dot(lookDirection))).toBeLessThan(1e-6);
+    assertWithinDrawnRegion(dripPosition(false), false);
+    assertWithinDrawnRegion(dripPosition(true), true);
   });
 
   it('stops player wound drips after treatment', () => {

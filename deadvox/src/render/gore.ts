@@ -20,7 +20,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
-import { PLAYER_REGION_ORIGINS } from './playerFigure.ts';
+import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 
 /** Droplets in flight at once; a new one replaces the oldest. */
 export const DROPLET_CAP = 128;
@@ -84,7 +84,7 @@ export interface GorePlayer {
   readonly pos: Vec3;
   readonly yaw: number;
   readonly wounds: Readonly<BodyWounds>;
-  /** Camera mode is carried for view coverage; wound origins stay on the same world figure. */
+  /** Whether the figure uses its third-person placement, without the first-person rear offset. */
   readonly thirdPerson: boolean;
 }
 
@@ -96,17 +96,10 @@ export interface GoreBodies {
 
 const setPlayerDripOrigin = (
   target: Vector3,
-  player: GorePlayer,
+  placement: PlayerFigurePlacement,
   region: (typeof BODY_REGIONS)[number],
-  scale: number,
 ): void => {
-  const [localX, localY, localZ] = PLAYER_REGION_ORIGINS[region];
-  const { yaw } = player;
-  target.set(
-    (player.pos[0] + localX * Math.cos(yaw) + localZ * Math.sin(yaw)) * scale,
-    player.pos[1] * scale + localY,
-    (player.pos[2] - localX * Math.sin(yaw) + localZ * Math.cos(yaw)) * scale,
-  );
+  setPlayerFigurePosition(target, placement, PLAYER_REGION_BOXES[region].at);
 };
 
 const regionNameLists = new WeakMap<Zombie['type']['regions'], readonly string[]>();
@@ -168,6 +161,12 @@ export class Gore {
   private readonly scratch = new Vector3();
   private readonly origin = new Vector3();
   private readonly point = new Vector3();
+  private readonly playerPlacement: PlayerFigurePlacement = {
+    bodyPosition: [0, 0, 0],
+    yaw: 0,
+    blockSize: 1,
+    thirdPerson: false,
+  };
   private readonly normal = new Vector3();
   private nextDroplet = 0;
   private nextSplat = 0;
@@ -397,6 +396,10 @@ export class Gore {
     if (!player) {
       return;
     }
+    this.playerPlacement.bodyPosition = player.pos;
+    this.playerPlacement.yaw = player.yaw;
+    this.playerPlacement.blockSize = this.blockSize;
+    this.playerPlacement.thirdPerson = player.thirdPerson;
     for (const region of BODY_REGIONS) {
       if (!player.wounds[region]?.bleeding) {
         continue;
@@ -404,7 +407,7 @@ export class Gore {
       if (!this.rng.chance(DRIPS_PER_SECOND * dt)) {
         continue;
       }
-      setPlayerDripOrigin(this.origin, player, region, this.blockSize);
+      setPlayerDripOrigin(this.origin, this.playerPlacement, region);
       if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
         return;
       }
