@@ -113,7 +113,7 @@ const maximumLootPair = (table: LootTable, firstIndex: number, secondIndex: numb
     return value;
   };
   const rolled = rollLoot(result.registry, table.id, rng);
-  if (values.length !== 0) {
+  if (values.length > 0) {
     throw new Error('Unconsumed random draws while rolling armoury loot');
   }
   return rolled;
