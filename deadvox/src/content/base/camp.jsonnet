@@ -130,11 +130,12 @@ local campWallRunCrouchHole = campWallRun + {
         { "item": "rail_front_sight", "weight": 1 },
         { "item": "real_suppressor", "weight": 1 },
         { "item": "tactical_flashlight_mount", "weight": 1 },
+        { "item": "weapon_sling", "weight": 1 },
         { "item": "cartridge_box_5_d_56x45", "weight": 3, "count": [10, 10] },
         { "item": "cartridge_box_7_d_62x39", "weight": 3, "count": [10, 10] },
         { "item": "cartridge_5_d_56x45", "weight": 2, "count": [50, 150] },
         { "item": "cartridge_7_d_62x39", "weight": 2, "count": [50, 150] },
-        { "nothing": true, "weight": 27 }
+        { "nothing": true, "weight": 28 }
       ]
     }
   ],

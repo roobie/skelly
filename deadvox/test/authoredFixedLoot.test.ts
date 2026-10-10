@@ -10,6 +10,7 @@ import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
 import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
+import { isLongGun } from '../src/core/firearmFitting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { fixedItems, rollLoot } from '../src/core/loot.ts';
 import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
@@ -1134,6 +1135,34 @@ describe('authored fixed loot', () => {
     expect(fixedCount(overrides, 'workshop_hall', 'portable_radio')).toBeGreaterThan(0);
     expect(fixedCount(overrides, 'workshop_hall', 'jerry_can')).toBeGreaterThan(0);
     expect(fixedCount(overrides, 'workshop_office', 'workshop_notes')).toBeGreaterThan(0);
+  });
+
+  it('furnishes the long gun in Dad’s cabin with a sling, so it can go on the shoulder', () => {
+    const site = new AuthoredSite(73, result.registry, scale, layout);
+    const cabin = placedOverrides(layout).filter(({ building }) => building.template === 'playtest_dads_cabin');
+    const placement = site.placements[cabin[0]!.buildingIndex]!;
+    const [width, depth] = footprint(placement);
+    const columns: [number, number][] = [];
+    for (let cx = toChunk(placement.origin[0]); cx <= toChunk(placement.origin[0] + width - 1); cx += 1) {
+      for (let cz = toChunk(placement.origin[2]); cz <= toChunk(placement.origin[2] + depth - 1); cz += 1) {
+        columns.push([cx, cz]);
+      }
+    }
+    const inventory = furnishInOrder(site, columns);
+    const placed = placedPieces(placement);
+    const anchored = cabin.flatMap(({ override }) => {
+      const index = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === override.at.join(','));
+      const entity = inventory.entities.at(...placed[index]!.pos);
+      if (entity) {
+        inventory.entities.markSearched(entity);
+      }
+      return (entity?.pockets ?? []).flatMap((pocket) => pocket.map(({ item }) => item));
+    });
+    const guns = anchored.filter((item) => isLongGun(result.registry.items.get(item.type)));
+    expect(guns.length).toBeGreaterThan(0);
+    for (const gun of guns) {
+      expect(inventory.plan(gun, { kind: 'worn' }).ok).toBe(true);
+    }
   });
 
   it('covers the light recipe and guarantees the quiet input at the noisy scrap pile', () => {

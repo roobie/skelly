@@ -253,7 +253,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[2,7,12],\"items\":[{\"item\":\"pump_shotgun\",\"count\":1,\"key\":true}]},{\"at\":[11,7,1],\"items\":[{\"item\":\"dad_cabin_key\",\"count\":1,\"key\":true}]},{\"at\":[4,1,12],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"shotshell_box\",\"count\":1,\"key\":true}]}]"
+              "value": "[{\"at\":[2,7,12],\"items\":[{\"item\":\"pump_shotgun\",\"count\":1,\"key\":true,\"fitted\":{\"sling\":\"weapon_sling\"}}]},{\"at\":[11,7,1],\"items\":[{\"item\":\"dad_cabin_key\",\"count\":1,\"key\":true}]},{\"at\":[4,1,12],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"shotshell_box\",\"count\":1,\"key\":true}]}]"
             }
           ]
         },

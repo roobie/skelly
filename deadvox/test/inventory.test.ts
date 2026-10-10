@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { HANDLING, Inventory } from '../src/core/inventory.ts';
 import { conditionWord, fitsAt, weightOf } from '../src/core/items.ts';
@@ -206,6 +207,31 @@ describe('hands and wearing', () => {
     expect(inv.move(jacket, { kind: 'worn' }).ok).toBe(true);
     expect(inv.worn.torso).toBe(jacket);
     expect(inv.plan(inv.create('crowbar'), { kind: 'worn' })).toEqual({ ok: false, reason: "It isn't there any more" });
+  });
+
+  it('puts a long gun on the shoulder only with a sling fitted', () => {
+    const { inv } = dressed();
+    const shotgun = onFloor(inv, 'pump_shotgun');
+    expect(inv.plan(shotgun, { kind: 'worn' }).ok).toBe(false);
+    inv.fitSlot(shotgun, SLING_SLOT, inv.create('weapon_sling'));
+    expect(inv.move(shotgun, { kind: 'worn' }).ok).toBe(true);
+    expect(inv.worn.shoulder).toBe(shotgun);
+  });
+
+  it('a slung long gun leaves both hands and the pack free, and still counts as carried weight', () => {
+    const { inv, backpack } = dressed();
+    const shotgun = onFloor(inv, 'pump_shotgun');
+    inv.fitSlot(shotgun, SLING_SLOT, inv.create('weapon_sling'));
+    const crowbar = onFloor(inv, 'crowbar');
+    const before = inv.carriedWeight();
+    inv.move(shotgun, { kind: 'hand', side: 'right' });
+    expect(inv.plan(shotgun, { kind: 'worn' })).toMatchObject({ ok: true, time: HANDLING.wear });
+    inv.move(shotgun, { kind: 'worn' });
+
+    expect(inv.move(crowbar, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(inv.worn.shoulder).toBe(shotgun);
+    expect(backpack.pockets!.every((pocket) => pocket.length === 0)).toBe(true);
+    expect(inv.carriedWeight()).toBe(before + weightOf(registry, shotgun) + weightOf(registry, crowbar));
   });
 });
 

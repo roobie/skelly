@@ -21,6 +21,7 @@ import {
   sameDisassemblyOutputs,
   validDisassemblyToolLevels,
 } from './disassembly.ts';
+import { firearmSlotIds, isLongGun, slingFitted } from './firearmFitting.ts';
 import {
   cellCount,
   couldFit,
@@ -66,6 +67,12 @@ const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter)
   }
   const level = skillEffectLevel(character.skills?.inventory_management ?? SKILL_LEVEL_MIN);
   return skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
+};
+
+/** The worn slot an item goes in: clothing's own slot, or the shoulder for a long gun (DESIGN.md, "Shoulder and sling"). */
+export const wornSlotOf = (registry: Registry, item: Item): WearSlot | undefined => {
+  const def = defOf(registry, item.type);
+  return def.wearable?.slot ?? (isLongGun(def) ? 'shoulder' : undefined);
 };
 
 /** What one block of floor holds. */
@@ -282,8 +289,8 @@ export class Inventory {
     if (!entity) {
       return undefined;
     }
-    for (const { type, count, condition } of loot) {
-      const item = this.create(type, count, condition);
+    for (const rolled of loot) {
+      const item = this.createRolled(rolled);
       (entity.pockets ?? []).some((_, pocket) => this.add(item, { kind: 'furniture', entity, pocket }));
     }
     if (surfaceLoot.length > 0) {
@@ -292,13 +299,21 @@ export class Inventory {
         entity.pos[1] + entity.size[1],
         entity.pos[2] + Math.floor(entity.size[2] / 2),
       ];
-      for (const { type, count, condition } of surfaceLoot) {
-        if (!this.add(this.create(type, count, condition), { kind: 'pile', pos })) {
-          throw new Error(`fixed surface item "${type}" does not fit on its furniture`);
+      for (const rolled of surfaceLoot) {
+        if (!this.add(this.createRolled(rolled), { kind: 'pile', pos })) {
+          throw new Error(`fixed surface item "${rolled.type}" does not fit on its furniture`);
         }
       }
     }
     return entity;
+  }
+
+  private createRolled({ type, count, condition, fitted }: Rolled): Item {
+    const item = this.create(type, count, condition);
+    for (const [slot, child] of Object.entries(fitted ?? {})) {
+      this.fitSlot(item, slot, this.create(child));
+    }
+    return item;
   }
 
   /** The sole live item-tree projection; callers hold UIDs, not ownership caches. */
@@ -427,11 +442,10 @@ export class Inventory {
   fitSlot(owner: Item, slot: string, item: Item | undefined): Item | undefined {
     const { slots } = owner;
     const ownerDef = defOf(this.registry, owner.type);
-    const model = ownerDef.model === undefined ? undefined : this.registry.models.get(ownerDef.model);
     const knownSlot =
       (slot === 'magazine' && magazineWellCalibre(this.registry, owner.type) !== undefined) ||
       (slot === 'battery' && ownerDef.light?.power !== undefined) ||
-      model?.attachmentSlots?.some(({ id }) => id === slot) === true;
+      firearmSlotIds(this.registry, ownerDef).includes(slot);
     if (!(slots && knownSlot) || (item && this.locate(item))) {
       throw new Error('Only a loose item fits a known slot');
     }
@@ -583,8 +597,8 @@ export class Inventory {
       case 'hand':
         return this.hands[target.side] ? refuse('full') : { ok: true, time: 0 };
       case 'worn': {
-        const slot = defOf(this.registry, item.type).wearable?.slot;
-        return slot && !this.worn[slot] ? { ok: true, time: 0 } : refuse('full');
+        const slot = wornSlotOf(this.registry, item);
+        return slot && !this.worn[slot] && !this.shoulderRefusal(slot, item) ? { ok: true, time: 0 } : refuse('full');
       }
       default:
         return this.gridPlacement(item, item.count, this.gridOf(target), target);
@@ -922,19 +936,27 @@ export class Inventory {
     return place?.kind !== 'furniture' || place.entity.searched;
   }
 
+  /** The shoulder carries a long gun only by its sling. */
+  private shoulderRefusal(slot: WearSlot, item: Item): string | undefined {
+    return slot === 'shoulder' && !slingFitted(item) ? 'It needs a sling to go on your shoulder' : undefined;
+  }
+
   private placement(item: Item, target: Target, count: number, from: Location): Plan {
-    const def = defOf(this.registry, item.type);
     switch (target.kind) {
       case 'hand':
         return this.handPlacement(item, target.side, from);
       case 'worn': {
-        const slot = def.wearable?.slot;
+        const slot = wornSlotOf(this.registry, item);
         if (!slot) {
           return refuse("You can't wear that");
         }
         const current = this.worn[slot];
         if (current === item) {
           return refuse("You're already wearing it");
+        }
+        const shoulder = this.shoulderRefusal(slot, item);
+        if (shoulder) {
+          return refuse(shoulder);
         }
         return current
           ? refuse(`You're already wearing the ${this.name(current).toLowerCase()} there`)
@@ -1081,7 +1103,7 @@ export class Inventory {
         this.hands[target.side] = item;
         return;
       case 'worn':
-        this.worn[defOf(this.registry, item.type).wearable!.slot] = item;
+        this.worn[wornSlotOf(this.registry, item)!] = item;
         return;
       case 'pocket':
         target.owner.pockets![target.pocket]!.push({ item, ...spot });

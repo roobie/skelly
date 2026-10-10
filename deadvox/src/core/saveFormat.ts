@@ -382,6 +382,7 @@ const inventoryCore = obj({
     waist: opt(lazy(() => itemSchema)),
     hands: opt(lazy(() => itemSchema)),
     feet: opt(lazy(() => itemSchema)),
+    shoulder: opt(lazy(() => itemSchema)),
   }),
   looted: arr(tuple(str({ id: true }), nonNegativeInt)),
   quickbarOrigins: arr(tuple(positiveInt, targetStateSchema)),

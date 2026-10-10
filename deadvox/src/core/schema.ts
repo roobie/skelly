@@ -168,7 +168,9 @@ const ITEM_CATEGORIES = [
   'misc',
 ] as const;
 
-const WEAR_SLOTS = ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
+const CLOTHING_SLOTS = ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
+/** The shoulder holds a slung long gun, never clothing (DESIGN.md, "Shoulder and sling"). */
+const WEAR_SLOTS = [...CLOTHING_SLOTS, 'shoulder'] as const;
 
 export type WearSlot = (typeof WEAR_SLOTS)[number];
 
@@ -204,7 +206,7 @@ const SaveTuningSchema = strictObject({
 });
 
 const WearableSchema = strictObject({
-  slot: picklist(WEAR_SLOTS),
+  slot: picklist(CLOTHING_SLOTS),
   /** 0–100: how much it slows and hampers you. */
   encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
   warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
@@ -439,6 +441,8 @@ const ItemSchema = strictObject({
   opticMagnification: optional(Positive),
   /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
   firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
+  /** Fits a long gun's sling mount, so the gun can be carried on the shoulder. */
+  sling: optional(vBoolean()),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
@@ -974,6 +978,8 @@ const FixedLootItem = strictObject({
   key: optional(vBoolean()),
   /** Surface items begin as visible world piles on their furniture's top; other items fill its container. */
   placement: optional(picklist(['surface', 'container'], 'placement must be surface or container')),
+  /** Item types fitted at spawn, by slot id: a found gun that comes with its sling. */
+  fitted: optional(record(Id, Id)),
 });
 const FixedLootOverride = strictObject({
   /** Template-local furniture anchor in half-metre block cells. */
