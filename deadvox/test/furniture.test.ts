@@ -208,14 +208,24 @@ describe('furniture', () => {
   });
 
   it('keeps each shaped furniture instance to one draw object', () => {
-    const entities = new BlockEntities(registry);
-    for (const [type, x] of [
-      ['chair', 0],
-      ['chair', 3],
-      ['range_table', 6],
-    ] as const) {
-      const { size } = registry.furniture.get(type)!;
-      entities.add({ type, pos: [x, 0, 0], size, facing: 'n' });
+    const fixture = {
+      id: 'fixture_shaped_furniture',
+      name: 'Fixture shaped furniture',
+      size: [1, 2, 1] as [number, number, number],
+      color: '#123456',
+      shape: [
+        { position: [0.1, 0, 0.1], size: [0.3, 0.5, 0.3] },
+        { position: [0.6, 0.5, 0.1], size: [0.3, 0.5, 0.3] },
+      ],
+    };
+    const { registry: fixtureRegistry, issues } = buildRegistry([
+      { source: 'furniture-render-fixture.json', data: { furniture: [fixture] } },
+    ]);
+    expect(issues).toEqual([]);
+
+    const entities = new BlockEntities(fixtureRegistry);
+    for (const x of [0, 3, 6]) {
+      entities.add({ type: fixture.id, pos: [x, 0, 0], size: fixture.size, facing: 'n' });
     }
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     furniture.sync(entities);
@@ -223,6 +233,7 @@ describe('furniture', () => {
     const meshes = furniture.group.children as Mesh[];
     expect(meshes).toHaveLength(3);
     expect(meshes.every((mesh) => mesh.isMesh && mesh.geometry.groups.length === 0)).toBe(true);
+    expect(meshes.every((mesh) => !Array.isArray(mesh.material))).toBe(true);
   });
 
   it('renders a nonblocking readable sign as a thin board facing into the room', () => {

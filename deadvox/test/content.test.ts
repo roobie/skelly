@@ -489,22 +489,32 @@ describe('content', () => {
     expect(rejected.issues.length).toBeGreaterThan(0);
   });
 
-  it('rejects furniture shape boxes that extend beyond the cell footprint', () => {
-    const issues = validateContent({
-      source: 'outside-furniture-shape.json',
-      data: {
-        furniture: [
-          {
-            id: 'fixture_furniture',
-            name: 'Fixture furniture',
-            size: [1, 2, 1],
-            color: '#123456',
-            shape: [{ position: [0.5, 0.5, 0.25], size: [0.75, 0.5, 0.5] }],
-          },
-        ],
+  it('rejects furniture shape boxes that leave the footprint on each axis', () => {
+    const furniture = [
+      {
+        id: 'fixture_furniture_x',
+        name: 'Fixture furniture',
+        size: [1, 2, 1],
+        color: '#123456',
+        shape: [{ position: [0.5, 0.5, 0.25], size: [0.75, 0.5, 0.5] }],
       },
-    });
-    expect(issues.map(({ path }) => path)).toEqual(['furniture[0]']);
+      {
+        id: 'fixture_furniture_y',
+        name: 'Fixture furniture',
+        size: [1, 2, 1],
+        color: '#123456',
+        shape: [{ position: [0.25, 1.5, 0.25], size: [0.5, 0.75, 0.5] }],
+      },
+      {
+        id: 'fixture_furniture_z',
+        name: 'Fixture furniture',
+        size: [1, 2, 1],
+        color: '#123456',
+        shape: [{ position: [0.25, 0.5, 0.5], size: [0.5, 0.5, 0.75] }],
+      },
+    ];
+    const issues = validateContent({ source: 'outside-furniture-shape.json', data: { furniture } });
+    expect(issues.map(({ path }) => path)).toEqual(['furniture[0]', 'furniture[1]', 'furniture[2]']);
   });
 
   it('rejects a disassembly yield of its own input while accepting a distinct output', () => {
