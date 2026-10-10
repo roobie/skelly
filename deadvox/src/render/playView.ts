@@ -114,7 +114,7 @@ export const createPlayView = (
       }
     : undefined;
   const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
-  const held = new HeldItems(inventory, models, playerPalette);
+  const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
   scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group);
   const dispose = () => {
     piles.dispose();
@@ -128,7 +128,7 @@ export const createPlayView = (
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const flashlight = new Flashlight(scene);
-  const lightPool = new LightPool(scene);
+  const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
@@ -203,10 +203,9 @@ export const createPlayView = (
       return { sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
-      flashlight.daylightScale = flashlightDaylightScale(
-        sky,
-        engine.skylight?.at([camera.position.x, camera.position.y, camera.position.z]) ?? 1,
-      );
+      const skyVisibility = engine.skylight?.at([camera.position.x, camera.position.y, camera.position.z]) ?? 1;
+      held.setSkyVisibility(skyVisibility);
+      flashlight.daylightScale = flashlightDaylightScale(sky, skyVisibility);
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (sky: ReturnType<typeof skyInWeather>) => {

@@ -25,9 +25,9 @@
 // sits with the viewer, so a face it can't reach is one the viewer can't see, and its perspective
 // texels grow with distance past what a fixed normal offset could clear.
 //
-// The held items are drawn from their own scene (hands.ts) with lights that don't cast, so they are
-// neither in nor shaded by these maps. The player's world figure is on its own layer (shadowFlags.ts):
-// the sun's pass sees it, the torch's pass doesn't.
+// The held scene (hands.ts) shares the sun map drawn by the world pass; drawing maps again for it would add
+// another per-frame shadow pass. Its point-light copies do not cast shadows. The player's world figure is on
+// its own layer (shadowFlags.ts): the sun's pass sees it, the torch's pass doesn't.
 
 import {
   BackSide,
@@ -300,7 +300,7 @@ export class Shadows {
 
   /** `renderer.shadowMap.render`, replaced: draws the sun's map when due and the flashlight's when it is casting. */
   private drawMaps(draw: DrawMaps, scene: Scene, camera: Camera): void {
-    // The held items' scene has no casting lights, and anything else is not ours to shade.
+    // The held scene samples the world's existing sun map; its render must not draw shadow maps again.
     if (scene !== this.scene) {
       return;
     }

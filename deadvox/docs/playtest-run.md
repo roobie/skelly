@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're preparing or joining the self-serve Slice 3 playtest
+  - you're starting, ending, or operating the playtest's Pages deployment freeze
   - you're changing the playtest feedback process or tester metrics export
   - you're using playtest feedback to update the game plan
 ---
@@ -14,6 +15,45 @@ feedback form. Testers without GitHub can email the organiser using the address
 provided with the link. The Playtest card gives the task, find the military camp,
 and its link opens the authored map; see [EPIC.md](../EPIC.md),
 "Playtest plan", and [#181](https://github.com/roobie/skelly/issues/181).
+
+## Deployment freeze
+
+Set the Pages deployment freeze when sharing the Playtest link and clear it when the
+playtest window closes. Keep the deployed game unchanged while testers play: their
+saves are tied to that deployed code. Set and clear the repository variable with:
+
+```sh
+gh variable set PAGES_FREEZE --body true
+gh variable delete PAGES_FREEZE
+```
+
+The `build` and `deploy` jobs in `.github/workflows/pages.yml` skip automatic Pages
+publishing during the freeze. At freeze start, use the commit from the `github-pages`
+environment's latest successful deployment (its deployment record or the head SHA
+of the last successful Pages run; a frozen push run is skipped), not the current
+`main` head, and tag it `playtest-1-deployed` so a hotfix has a fixed base. For a
+fix BR approves during the freeze, branch `pages-hotfix/<name>` from that tag and
+commit only the fix. Dispatch the Pages workflow from that branch:
+
+```sh
+gh workflow run pages.yml --ref pages-hotfix/<name>
+```
+
+The `github-pages` environment must allow `pages-hotfix/*` as a deployment branch in
+addition to `main`; without that policy the hotfix run cannot deploy. With custom
+branch policies enabled, add the rule with:
+
+```sh
+gh api --method POST repos/{owner}/{repo}/environments/github-pages/deployment-branch-policies -f name='pages-hotfix/*' -f type=branch
+```
+
+After the hotfix run's deployment succeeds, move `playtest-1-deployed` to the
+hotfix branch head. Send the same fix to `main` through a normal PR. A dispatch
+from `main` publishes all of `main`, not only the approved fix; during the freeze,
+approving a dispatch means approving every merge since freeze start for save
+compatibility. Clearing the variable does not replay skipped pushes; after the
+playtest window closes, manually dispatch from
+`main` to publish code merged during the freeze.
 
 ## Session format
 

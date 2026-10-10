@@ -1,8 +1,8 @@
 // What you hold, in first person (DESIGN.md, "Hands: what you see is what's there"):
 // the right hand, the left hand, or both for a two-handed item. Held items are drawn
 // after the world, in their own scene with the depth buffer cleared, so they never
-// clip into walls. World point lights cannot illuminate this scene; burning fallback
-// models need their own flame or self-lit material to stay visible at night. An item
+// clip into walls. The scene receives the world's sun shadow and local point lights;
+// burning fallback models still need their own flame or self-lit material. An item
 // without a model (or whose model hasn't loaded) is a plain box sized from its cells.
 
 import {
@@ -83,6 +83,15 @@ import type { SkyTargets } from './sky.ts';
 const CELL = 0.06;
 const TORSO_Y_AXIS = new Vector3(0, 1, 0);
 const VIEW_X_AXIS = new Vector3(1, 0, 0);
+
+const addShadowReceiver = (parent: Object3D, child: Object3D): void => {
+  parent.add(child);
+  child.traverse((object) => {
+    if ((object as Mesh).isMesh) {
+      object.receiveShadow = true;
+    }
+  });
+};
 /** A torso arm places its held item from its own position, so it needs no separate offset. */
 const ARM_PLACED = { offset: [0, 0, 0] as Vec3 };
 /**
@@ -126,7 +135,7 @@ export interface HeldHandlingFrame {
 export class HeldItems {
   private readonly scene = new Scene();
   private readonly camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.01, 10);
-  /** Turned like the main camera each frame, so the sky's light directions carry over as they are. */
+  /** Turned and translated with the main camera so shadow lookups use world positions. */
   private readonly view = new Group();
   private readonly opticWindow = new Mesh(
     new RingGeometry(0.01, 0.011, 64),
@@ -142,6 +151,7 @@ export class HeldItems {
   private readonly torso = new Group();
   private readonly light = new DirectionalLight();
   private readonly ambient = new HemisphereLight();
+  private skyVisibility = 1;
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly flameGeometry = new ConeGeometry(1, 1, 6);
   private readonly material = new MeshLambertMaterial({ color: 0x6b_66_60 });
@@ -149,6 +159,7 @@ export class HeldItems {
   private readonly flameMaterials = new Map<string, MeshBasicMaterial>();
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
+  private readonly sunSource: DirectionalLight | undefined;
   private drawn = '';
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
@@ -200,16 +211,28 @@ export class HeldItems {
 
   private readonly palette: FigureDef['palette'];
 
-  constructor(inventory: Inventory, models: ModelLibrary | undefined, palette: FigureDef['palette']) {
+  constructor(
+    inventory: Inventory,
+    models: ModelLibrary | undefined,
+    palette: FigureDef['palette'],
+    sunSource?: DirectionalLight,
+  ) {
+    this.view.name = 'held-items-view';
     this.inventory = inventory;
     this.models = models;
     this.palette = palette;
+    this.sunSource = sunSource;
+    if (sunSource) {
+      this.light.shadow = sunSource.shadow;
+      this.light.castShadow = sunSource.castShadow;
+    }
     this.opticWindow.visible = false;
     this.opticWindow.renderOrder = 100;
     this.view.add(this.torso, this.opticWindow);
     this.scene.add(this.view, this.light, this.ambient);
     // Hidden: gives `renderer.compile` the hand material before anything is held. `sync` only clears `view`.
     const warmUp = new Mesh(this.geometry, this.material);
+    warmUp.receiveShadow = true;
     warmUp.visible = false;
     this.scene.add(warmUp);
   }
@@ -255,7 +278,9 @@ export class HeldItems {
         loweredPitchRadians,
       });
     }
+    this.camera.position.copy(main.position);
     this.camera.quaternion.copy(main.quaternion);
+    this.view.position.copy(main.position);
     this.view.quaternion.copy(baseCameraQuaternion);
     this.view.updateMatrixWorld(true);
     this.poseRummage(renderPose, handling);
@@ -604,7 +629,7 @@ export class HeldItems {
       return undefined;
     }
     object.rotation.z = seat.tiltRadians;
-    seat.seat.add(object);
+    addShadowReceiver(seat.seat, object);
     this.magazineRound = { object, type, uid };
     return object;
   }
@@ -818,7 +843,7 @@ export class HeldItems {
     if (!(model && object)) {
       return undefined;
     }
-    slot.add(object);
+    addShadowReceiver(slot, object);
     const entry = { object, model };
     this.incomingMagazines.set(uid, entry);
     return entry;
@@ -882,7 +907,7 @@ export class HeldItems {
       const id = defOf(this.inventory.registry, roundType).model;
       shell = id ? this.models?.held(id)?.root : undefined;
       if (shell) {
-        held.add(shell);
+        addShadowReceiver(held, shell);
         this.loadingShells.set(uid, shell);
       }
     }
@@ -951,26 +976,31 @@ export class HeldItems {
   }
 
   /** Where a held item's lens is, in world metres; false if it isn't held. Call after `update`. */
-  lensOf(item: Item, main: PerspectiveCamera, out: Vector3): boolean {
+  lensOf(item: Item, out: Vector3): boolean {
     const lens = this.shown.get(item.uid)?.getObjectByName(LENS);
     if (!lens) {
       return false;
     }
-    lens.getWorldPosition(out).add(main.position);
+    lens.getWorldPosition(out);
     return true;
   }
 
   /** World position for a held light without a model-specific lens anchor. */
-  lightPositionOf(item: Item, main: PerspectiveCamera, out: Vector3): boolean {
+  lightPositionOf(item: Item, out: Vector3): boolean {
     const visual = this.shown.get(item.uid);
     if (!visual) {
       return false;
     }
-    if (this.lensOf(item, main, out)) {
+    if (this.lensOf(item, out)) {
       return true;
     }
-    visual.getWorldPosition(out).add(main.position);
+    visual.getWorldPosition(out);
     return true;
+  }
+
+  /** Sets the camera's sky visibility so the held scene shares indoor ambient darkening. */
+  setSkyVisibility(visibility: number): void {
+    this.skyVisibility = visibility;
   }
 
   /** Draws what's in your hands over the frame the main camera just rendered. */
@@ -981,9 +1011,10 @@ export class HeldItems {
     this.light.position.copy(sky.light.position);
     this.light.color.copy(sky.light.color);
     this.light.intensity = sky.light.intensity;
+    this.light.castShadow = this.sunSource?.castShadow ?? false;
     this.ambient.color.copy(sky.ambient.color);
     this.ambient.groundColor.copy(sky.ambient.groundColor);
-    this.ambient.intensity = sky.ambient.intensity;
+    this.ambient.intensity = sky.ambient.intensity * this.skyVisibility;
     if (this.camera.fov !== main.fov || this.camera.aspect !== main.aspect) {
       this.camera.fov = main.fov;
       this.camera.aspect = main.aspect;
@@ -1138,7 +1169,7 @@ export class HeldItems {
     this.arms.set(side, arm);
     this.armLengths.set(arm, [(arm.children[0] as Mesh).scale.y, (arm.children[1] as Mesh).scale.y]);
     this.handBases.set(side, localGrip);
-    parent.add(arm);
+    addShadowReceiver(parent, arm);
   }
 
   private syncFistHand(side: HandSide): void {
@@ -1160,7 +1191,7 @@ export class HeldItems {
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
-    this.view.add(held);
+    addShadowReceiver(this.view, held);
     this.shown.set(item.uid, held);
     this.heldByHand.set(side, held);
     this.addArm(side, heldAt);
