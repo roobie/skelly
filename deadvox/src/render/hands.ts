@@ -1,7 +1,7 @@
 // What you hold, in first person (DESIGN.md, "Hands: what you see is what's there"):
 // the right hand, the left hand, or both for a two-handed item. Held items are drawn
 // after the world, in their own scene with the depth buffer cleared, so they never
-// clip into walls. The scene receives the world's sun shadow and carried point lights;
+// clip into walls. The scene receives the world's sun shadow and local point lights;
 // burning fallback models still need their own flame or self-lit material. An item
 // without a model (or whose model hasn't loaded) is a plain box sized from its cells.
 
@@ -84,8 +84,9 @@ const CELL = 0.06;
 const TORSO_Y_AXIS = new Vector3(0, 1, 0);
 const VIEW_X_AXIS = new Vector3(1, 0, 0);
 
-const receiveShadows = (root: Object3D): void => {
-  root.traverse((object) => {
+const addShadowReceiver = (parent: Object3D, child: Object3D): void => {
+  parent.add(child);
+  child.traverse((object) => {
     if ((object as Mesh).isMesh) {
       object.receiveShadow = true;
     }
@@ -627,7 +628,7 @@ export class HeldItems {
       return undefined;
     }
     object.rotation.z = seat.tiltRadians;
-    seat.seat.add(object);
+    addShadowReceiver(seat.seat, object);
     this.magazineRound = { object, type, uid };
     return object;
   }
@@ -841,7 +842,7 @@ export class HeldItems {
     if (!(model && object)) {
       return undefined;
     }
-    slot.add(object);
+    addShadowReceiver(slot, object);
     const entry = { object, model };
     this.incomingMagazines.set(uid, entry);
     return entry;
@@ -905,7 +906,7 @@ export class HeldItems {
       const id = defOf(this.inventory.registry, roundType).model;
       shell = id ? this.models?.held(id)?.root : undefined;
       if (shell) {
-        held.add(shell);
+        addShadowReceiver(held, shell);
         this.loadingShells.set(uid, shell);
       }
     }
@@ -974,7 +975,7 @@ export class HeldItems {
   }
 
   /** Where a held item's lens is, in world metres; false if it isn't held. Call after `update`. */
-  lensOf(item: Item, _main: PerspectiveCamera, out: Vector3): boolean {
+  lensOf(item: Item, out: Vector3): boolean {
     const lens = this.shown.get(item.uid)?.getObjectByName(LENS);
     if (!lens) {
       return false;
@@ -984,12 +985,12 @@ export class HeldItems {
   }
 
   /** World position for a held light without a model-specific lens anchor. */
-  lightPositionOf(item: Item, _main: PerspectiveCamera, out: Vector3): boolean {
+  lightPositionOf(item: Item, out: Vector3): boolean {
     const visual = this.shown.get(item.uid);
     if (!visual) {
       return false;
     }
-    if (this.lensOf(item, _main, out)) {
+    if (this.lensOf(item, out)) {
       return true;
     }
     visual.getWorldPosition(out);
@@ -1153,7 +1154,6 @@ export class HeldItems {
       return;
     }
     const arm = createFirstPersonArm(this.palette, side, grip);
-    receiveShadows(arm);
     this.pivotPosition.set(...grip);
     for (const child of arm.children) {
       child.position.sub(this.pivotPosition);
@@ -1163,7 +1163,7 @@ export class HeldItems {
     this.arms.set(side, arm);
     this.armLengths.set(arm, [(arm.children[0] as Mesh).scale.y, (arm.children[1] as Mesh).scale.y]);
     this.handBases.set(side, localGrip);
-    parent.add(arm);
+    addShadowReceiver(parent, arm);
   }
 
   private syncFistHand(side: HandSide): void {
@@ -1185,8 +1185,7 @@ export class HeldItems {
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
-    receiveShadows(held);
-    this.view.add(held);
+    addShadowReceiver(this.view, held);
     this.shown.set(item.uid, held);
     this.heldByHand.set(side, held);
     this.addArm(side, heldAt);

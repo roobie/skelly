@@ -1375,9 +1375,8 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   faces light enters: `src/render/shadows.ts`, its header; why its shadow never
   fades: `src/core/sky.ts`, `sunShadowStrength`.
 - First-person hands must not stay sunlit when a wall blocks the player's light,
-  but nearby carried lights still need to reach them. Their separate scene is
-  necessary to keep them from clipping into walls; see `src/render/hands.ts`,
-  `HeldItems.render`.
+  but nearby lights still need to reach them. Their separate scene prevents wall
+  clipping; see `src/render/hands.ts`, its file header.
 
 ## Audio
 

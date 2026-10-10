@@ -129,7 +129,7 @@ export class Flashlight {
     inventory: Inventory;
   }): void {
     const def = lit && defOf(registry, lit.type).light;
-    const hasHeldLens = lit ? held.lensOf(lit, camera, this.at) : false;
+    const hasHeldLens = lit ? held.lensOf(lit, this.at) : false;
     const location = lit ? inventory.locate(lit) : undefined;
     const headMounted = location?.kind === 'worn' && location.slot === 'head';
     if (!(lit?.on && def?.beam !== undefined && (hasHeldLens || headMounted))) {

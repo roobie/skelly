@@ -100,7 +100,7 @@ export class LightPool {
       const spec = inventory.registry.items.get(entry.item.type)!.light!;
       const position = this.positions[index]!;
       if (entry.location.kind === 'hand') {
-        if (!held.lightPositionOf(entry.item, camera, position)) {
+        if (!held.lightPositionOf(entry.item, position)) {
           position.copy(camera.position);
         }
       } else if (entry.location.kind === 'pile') {

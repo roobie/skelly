@@ -82,7 +82,7 @@ describe('made-light point pool', () => {
     pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
 
     const expected = new Vector3();
-    expect(held.lightPositionOf(light, camera, expected)).toBe(true);
+    expect(held.lightPositionOf(light, expected)).toBe(true);
     expect(pool.lights[0]!.intensity).toBeGreaterThan(0);
     expect(pool.lights[0]!.position.distanceTo(expected)).toBeLessThan(1e-9);
     held.dispose();
