@@ -176,6 +176,21 @@
       "useAs": ["object"],
       "color": "#ff70a080",
       "drawFill": true
+    },
+    {
+      "id": 110,
+      "name": "horde",
+      "members": [
+        {
+          "name": "horde_id",
+          "type": "string",
+          "value": ""
+        }
+      ],
+      "type": "class",
+      "useAs": ["object"],
+      "color": "#ff70a080",
+      "drawFill": true
     }
   ]
 }
