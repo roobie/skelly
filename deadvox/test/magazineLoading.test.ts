@@ -161,7 +161,9 @@ describe('magazines loaded round by round', () => {
       expect(f.magazine.cartridges).toHaveLength(CAPACITY - round - 1);
       if (round < CAPACITY - 1) {
         expect(f.queue.jobs).toEqual([]);
-        expect(f.handling.advanceHeldStrip(f.magazine.uid, (round + 1) * ROUND_STRIP_SIM_SECONDS, true)).toBeUndefined();
+        expect(
+          f.handling.advanceHeldStrip(f.magazine.uid, (round + 1) * ROUND_STRIP_SIM_SECONDS, true),
+        ).toBeUndefined();
         expect(f.queue.jobs).toHaveLength(1);
       }
     }
