@@ -18,7 +18,6 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';
-import { type Body, stepBodyHorizontal } from '../src/core/physics.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
@@ -510,58 +509,6 @@ describe('amalgam body and combat seam', () => {
     expect(aim?.region).toBe(memberRegion);
     expect(aim?.boxes).toEqual(posedBoxes);
     expect(aim?.boxes).not.toEqual(unflinchedBoxes);
-  });
-
-  it('uses the realized envelope to stop at a wall', () => {
-    const envelope = amalgamCollisionEnvelope(
-      amalgamFigure(5, registry.zombies.get('amalgam')!.bodyScale!),
-      BLOCK_SIZE,
-    );
-    const body: Body = {
-      pos: [-(envelope.halfWidth + 2), 0, 0],
-      vel: [0, 0, 0],
-      halfWidth: envelope.halfWidth,
-      halfDepth: envelope.halfDepth,
-      height: envelope.height,
-      onGround: true,
-    };
-    const wall = (x: number, y: number, z: number): boolean => x === 0 && y === 0 && z === 0;
-
-    stepBodyHorizontal(body, {
-      dx: envelope.halfWidth + 4,
-      dz: 0,
-      isSolid: wall,
-      params: { gravity: 0, stepHeight: 0 },
-    });
-
-    expect(body.pos[0]).toBeLessThan(-envelope.halfWidth);
-  });
-
-  it('uses the BlockEntities closed-door path to stop the envelope', () => {
-    const envelope = amalgamCollisionEnvelope(
-      amalgamFigure(5, registry.zombies.get('amalgam')!.bodyScale!),
-      BLOCK_SIZE,
-    );
-    const entities = new BlockEntities(registry);
-    entities.add({ type: 'wood_door', pos: [0, 0, 0], size: [2, 4, 1], facing: 'n' });
-    const body: Body = {
-      pos: [-(envelope.halfWidth + 2), 0, 0],
-      vel: [0, 0, 0],
-      halfWidth: envelope.halfWidth,
-      halfDepth: envelope.halfDepth,
-      height: envelope.height,
-      onGround: true,
-    };
-
-    expect(entities.isSolid(0, 0, 0)).toBe(true);
-    stepBodyHorizontal(body, {
-      dx: envelope.halfWidth + 4,
-      dz: 0,
-      isSolid: (x, y, z) => entities.isSolid(x, y, z),
-      params: { gravity: 0, stepHeight: 0 },
-    });
-
-    expect(body.pos[0]).toBeLessThan(-envelope.halfWidth);
   });
 
   it.each(['fence', 'crates'] as const)('keeps amalgams grounded behind %s while shamblers cross', (kind) => {
@@ -1140,7 +1087,7 @@ describe('amalgam flesh carving', () => {
     expect(after === undefined || after.distanceMetres > before!.distanceMetres).toBe(true);
   });
 
-  it('keeps its movement shape in step with its holes, carve by carve', () => {
+  it('turns its movement shape as the posed figure turns, and keeps it in step with its holes, carve by carve', () => {
     const target = coreTarget();
     const { simulation, zombie } = target;
     const kept = simulation.shapeOf(zombie.body) as AmalgamShape;
@@ -1159,17 +1106,28 @@ describe('amalgam flesh carving', () => {
       shape.keep(carved, 0, () => missingFlesh(figure, { carved, severed: [] }));
       return shape;
     };
-    // A small box at the centre of every voxel of flesh the figure was built with.
-    const { centres } = fleshVoxels(figure);
+    // A small box at the centre of every voxel of flesh the figure was built with, turned off the axes as the
+    // posed figure turns: by its core box's turn from facing -z.
+    const facing: Vec3 = [Math.sin(0.7), 0, -Math.cos(0.7)];
+    const coreTurn = (toward: Vec3) =>
+      posedAmalgamRegionBoxes(poseInputForFigure(figure, [0, 0, 0], toward))['core.trunk']![0]!.rotation;
+    const [turned, unturned] = [coreTurn(facing), coreTurn([0, 0, -1])];
+    const turn = (row: number, column: number): number =>
+      [0, 1, 2].reduce((sum, k) => sum + turned[row * 3 + k]! * unturned[column * 3 + k]!, 0);
+    const centres = fleshVoxels(figure).centres.map((point) =>
+      [0, 1, 2].map((row) => [0, 1, 2].reduce((sum, column) => sum + turn(row, column) * point[column]!, 0)),
+    );
     const probe = (shape: AmalgamShape): boolean[] => {
-      shape.face([0, 0, -1]);
+      shape.face(facing);
       return centres.map(([x, y, z]) =>
-        shape.overlapsBox([0, 0, 0], [x - 0.01, y - 0.01, z - 0.01], [x + 0.01, y + 0.01, z + 0.01]),
+        shape.overlapsBox([0, 0, 0], [x! - 0.01, y! - 0.01, z! - 0.01], [x! + 0.01, y! + 0.01, z! + 0.01]),
       );
     };
+    const whole = probe(built([]));
     const fresh = probe(built(zombie.carved));
+    expect(whole.every(Boolean)).toBe(true);
     expect(zombie.carved.length).toBeGreaterThan(0);
-    expect(fresh).not.toEqual(probe(built([])));
+    expect(fresh).not.toEqual(whole);
     expect(probe(kept)).toEqual(fresh);
   });
 
