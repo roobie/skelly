@@ -94,6 +94,20 @@ describe('snapshot state components', () => {
     expect(actor.practice.crafting).toBe(0);
   });
 
+  it('round-trips a partially recovered body region', async () => {
+    const runtime = createRuntime();
+    runtime.sim.body.impact(20, 'head');
+    const initialRegionDamage = runtime.sim.body.regionDamage.head;
+    runtime.sim.scheduler.advance(1);
+    const regionDamage = runtime.sim.body.regionDamage.head;
+    expect(regionDamage).toBeGreaterThan(0);
+    expect(regionDamage).toBeLessThan(initialRegionDamage);
+
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.sim.body.regionDamage.head).toBe(regionDamage);
+  });
+
   it('round-trips body wounds and a stopped treatment action with its item uid and progress', async () => {
     const runtime = createRuntime();
     const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
