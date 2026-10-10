@@ -9,6 +9,7 @@ import type { Body } from '../src/core/physics.ts';
 import { skyAt } from '../src/core/sky.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { Engine } from '../src/game/engine.ts';
+import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { createPlayView } from '../src/render/playView.ts';
 
 const BASE = 'src/content/base';
@@ -215,11 +216,21 @@ describe('play presentation ownership', () => {
     };
     view.updateCamera(frame, damage);
     const followPosition = engine.camera.position.clone();
-    view.updateCamera({ ...frame, thirdPersonOrbit: { yaw: 0, pitch: 0 } }, damage);
+    const orbit = new ThirdPersonOrbit();
+    orbit.begin(0);
+    view.updateCamera({ ...frame, thirdPersonOrbit: orbit.angle(true)! }, damage);
     expect(engine.camera.position.toArray()).toEqual(followPosition.toArray());
-    view.updateCamera({ ...frame, thirdPersonOrbit: { yaw: 0, pitch: 0.4 } }, damage);
 
-    expect(engine.camera.position.y).toBeGreaterThan(followPosition.y);
+    expect(orbit.rotate(0, -10_000, true)).toBe(true);
+    const upwardAngle = orbit.angle(true);
+    expect(upwardAngle?.pitch).toBeGreaterThan(0);
+    view.updateCamera({ ...frame, thirdPersonOrbit: upwardAngle! }, damage);
+    const cameraAtUpperLimit = engine.camera.position.clone();
+    expect(cameraAtUpperLimit.y).toBeGreaterThan(followPosition.y);
+
+    expect(orbit.rotate(0, 10, true)).toBe(true);
+    view.updateCamera({ ...frame, thirdPersonOrbit: orbit.angle(true)! }, damage);
+    expect(engine.camera.position.y).toBeLessThan(cameraAtUpperLimit.y);
     view.dispose();
   });
 

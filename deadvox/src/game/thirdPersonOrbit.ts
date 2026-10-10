@@ -1,5 +1,16 @@
 const LOOK_SENSITIVITY = 0.0022;
 
+export const THIRD_PERSON_FOLLOW_DISTANCE = 3;
+export const THIRD_PERSON_FOLLOW_HEIGHT = 1.1;
+export const THIRD_PERSON_CAMERA_FOLLOW_ELEVATION = Math.atan2(
+  THIRD_PERSON_FOLLOW_HEIGHT,
+  THIRD_PERSON_FOLLOW_DISTANCE,
+);
+export const THIRD_PERSON_CAMERA_ELEVATION_LIMIT = 1.2;
+
+const MIN_ORBIT_PITCH = -THIRD_PERSON_CAMERA_ELEVATION_LIMIT - THIRD_PERSON_CAMERA_FOLLOW_ELEVATION;
+const MAX_ORBIT_PITCH = THIRD_PERSON_CAMERA_ELEVATION_LIMIT - THIRD_PERSON_CAMERA_FOLLOW_ELEVATION;
+
 export const isPlayerThirdPersonView = (thirdPerson: boolean, spectatorCamera: boolean): boolean =>
   thirdPerson && !spectatorCamera;
 
@@ -34,7 +45,7 @@ export class ThirdPersonOrbit {
     }
     this.angleValue = {
       yaw: angle.yaw - movementX * LOOK_SENSITIVITY,
-      pitch: angle.pitch - movementY * LOOK_SENSITIVITY,
+      pitch: Math.max(MIN_ORBIT_PITCH, Math.min(MAX_ORBIT_PITCH, angle.pitch - movementY * LOOK_SENSITIVITY)),
     };
     return true;
   }

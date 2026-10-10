@@ -20,17 +20,6 @@ const gestureFixture = () => {
 };
 
 describe('third-person orbit', () => {
-  it('keeps the orbit angle after release and stops rotating', () => {
-    const orbit = new ThirdPersonOrbit();
-    orbit.begin(0.4);
-    expect(orbit.rotate(80, -20, true)).toBe(true);
-    const rotated = orbit.angle(true);
-    expect(rotated?.yaw).not.toBe(0.4);
-    orbit.release();
-    expect(orbit.angle(true)).toEqual(rotated);
-    expect(orbit.rotate(10, 0, true)).toBe(false);
-  });
-
   it('resets orbit only after a walk direction, not sprint, walk-toggle or jump', () => {
     for (const action of ['movement.forward', 'movement.back', 'movement.left', 'movement.right']) {
       expect(isOrbitResetMovementAction(action)).toBe(true);

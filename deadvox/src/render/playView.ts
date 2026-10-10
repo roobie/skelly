@@ -17,6 +17,11 @@ import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
 import { PLAYER } from '../game/player.ts';
+import {
+  THIRD_PERSON_CAMERA_FOLLOW_ELEVATION,
+  THIRD_PERSON_FOLLOW_DISTANCE,
+  THIRD_PERSON_FOLLOW_HEIGHT,
+} from '../game/thirdPersonOrbit.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
@@ -64,11 +69,7 @@ export interface PlayWorldFrame {
   readonly perceptionLabels: boolean;
 }
 
-const THIRD_PERSON_DISTANCE = 3;
-const THIRD_PERSON_HEIGHT = 1.1;
-const THIRD_PERSON_ORBIT_DISTANCE = Math.hypot(THIRD_PERSON_DISTANCE, THIRD_PERSON_HEIGHT);
-const THIRD_PERSON_FOLLOW_ELEVATION = Math.atan2(THIRD_PERSON_HEIGHT, THIRD_PERSON_DISTANCE);
-const THIRD_PERSON_ELEVATION_LIMIT = 1.2;
+const THIRD_PERSON_ORBIT_DISTANCE = Math.hypot(THIRD_PERSON_FOLLOW_DISTANCE, THIRD_PERSON_FOLLOW_HEIGHT);
 const THIRD_PERSON_TARGET_DROP = 0.6;
 const THIRD_PERSON_WALL_MARGIN = 0.15;
 
@@ -86,17 +87,12 @@ const thirdPersonCameraPosition = ({
   readonly orbit?: { readonly yaw: number; readonly pitch: number };
 }): Vec3 => {
   const cameraYaw = orbit?.yaw ?? yaw;
-  const elevation = orbit
-    ? Math.max(
-        -THIRD_PERSON_ELEVATION_LIMIT,
-        Math.min(THIRD_PERSON_ELEVATION_LIMIT, THIRD_PERSON_FOLLOW_ELEVATION + orbit.pitch),
-      )
-    : undefined;
+  const elevation = orbit ? THIRD_PERSON_CAMERA_FOLLOW_ELEVATION + orbit.pitch : undefined;
   const horizontalDistance =
-    elevation === undefined ? THIRD_PERSON_DISTANCE : THIRD_PERSON_ORBIT_DISTANCE * Math.cos(elevation);
+    elevation === undefined ? THIRD_PERSON_FOLLOW_DISTANCE : THIRD_PERSON_ORBIT_DISTANCE * Math.cos(elevation);
   const offset: Vec3 = [
     Math.sin(cameraYaw) * horizontalDistance,
-    elevation === undefined ? THIRD_PERSON_HEIGHT : THIRD_PERSON_ORBIT_DISTANCE * Math.sin(elevation),
+    elevation === undefined ? THIRD_PERSON_FOLLOW_HEIGHT : THIRD_PERSON_ORBIT_DISTANCE * Math.sin(elevation),
     Math.cos(cameraYaw) * horizontalDistance,
   ];
   const length = Math.hypot(...offset);
