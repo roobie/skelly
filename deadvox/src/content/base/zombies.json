@@ -324,6 +324,7 @@
       "name": "Amalgam",
       "model": "amalgam",
       "canJumpObstacles": false,
+      "locomotion": "omnidirectional",
       "bodyScale": 4,
       "soundPitchMultiplier": 0.5,
       "spawnWeight": 1,

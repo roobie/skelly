@@ -248,6 +248,8 @@ export class AmalgamShape implements BodyShape {
   /** How far each of PUSHES must move the overlapping voxels to clear them, along each axis it moves on. */
   private readonly needs = new Float64Array(PUSHES.length);
   private readonly probe: Vec3 = [0, 0, 0];
+  /** The world height flesh must start below to count in a walk (see overlapsTerrainBelow). */
+  private top = Number.POSITIVE_INFINITY;
   /** Per remembered answer: x, y, z, c, s, then 1 or 0. Kept while the terrain version and the flesh stay. */
   private readonly memo = new Float64Array(MEMO * 6).fill(Number.NaN);
   private memoNext = 0;
@@ -416,7 +418,7 @@ export class AmalgamShape implements BodyShape {
     const { bounds } = this;
     const at = node * 6;
     const minX = bounds[at]!;
-    if (!(minX <= bounds[at + 3]!)) {
+    if (!(minX <= bounds[at + 3]!) || pos[1] + bounds[at + 1]! >= this.top) {
       return false;
     }
     const lx = (minX + bounds[at + 3]!) / 2;
@@ -478,6 +480,9 @@ export class AmalgamShape implements BodyShape {
       }
       const lx = base[0] + (i0 + (bit & 1)) * voxel;
       const y = pos[1] + base[1] + (j0 + ((bit >> 1) & 1)) * voxel;
+      if (y - half >= this.top) {
+        continue;
+      }
       const lz = base[2] + (k0 + (bit >> 2)) * voxel;
       const x = pos[0] + this.c * lx + this.s * lz;
       const z = pos[2] - this.s * lx + this.c * lz;
@@ -681,6 +686,13 @@ export class AmalgamShape implements BodyShape {
     memo[at + 4] = this.s;
     memo[at + 5] = hit ? 1 : 0;
     this.memoNext = (this.memoNext + 1) % MEMO;
+    return hit;
+  }
+
+  overlapsTerrainBelow(pos: Vec3, height: number): boolean {
+    this.top = pos[1] + height;
+    const hit = this.terrainHit(pos);
+    this.top = Number.POSITIVE_INFINITY;
     return hit;
   }
 

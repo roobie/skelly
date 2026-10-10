@@ -34,6 +34,8 @@ export interface PhysicsParams {
 export interface BodyShape {
   /** Whether the shape, with its base centre at `pos`, overlaps a solid block. */
   overlapsTerrain: (pos: Vec3) => boolean;
+  /** Whether its part lower than `height` above its base, with its base centre at `pos`, overlaps a solid block. */
+  overlapsTerrainBelow: (pos: Vec3, height: number) => boolean;
   /** Whether it overlaps the box from `min` to `max`. */
   overlapsBox: (pos: Vec3, min: Vec3, max: Vec3) => boolean;
 }
@@ -246,8 +248,23 @@ interface MoveContext {
   shapeOf: ShapeOf | undefined;
 }
 
-/** Tries to move along a horizontal axis from a raised position, then settles back down. */
+/** Whether a shape rests on terrain only by its part higher than `height` above its base: hung, not standing. */
+const hangs = (body: Body, shape: BodyShape, height: number): boolean => {
+  const [, y] = body.pos;
+  body.pos[1] = y - 2 * CONTACT_SKIN;
+  const hung = shape.overlapsTerrain(body.pos) && !shape.overlapsTerrainBelow(body.pos, height);
+  body.pos[1] = y;
+  return hung;
+};
+
+/**
+ * Tries to move along a horizontal axis from a raised position, then settles back down. A shape that would
+ * settle hung by higher parts, such as flesh overhanging a fence rail, stays down: a step is a ledge under its
+ * base, and higher parts taking it would let it climb what it can't step onto, step by step.
+ */
 const tryStepUp = ({ body, isSolid, stepHeight, bodies, shapeOf }: MoveContext, axis: Axis, delta: number): boolean => {
+  const [, startY] = body.pos;
+  const [, startFall] = body.vel;
   body.pos[1] += stepHeight;
   if (terrainHits(body, isSolid, shapeOf)) {
     body.pos[1] -= stepHeight;
@@ -260,6 +277,13 @@ const tryStepUp = ({ body, isSolid, stepHeight, bodies, shapeOf }: MoveContext, 
     return false;
   }
   moveAxis(body, 1, -stepHeight, { isSolid, shapeOf }); // lands on terrain, never a body
+  const shape = shapeOf?.(body);
+  if (shape && hangs(body, shape, stepHeight)) {
+    body.pos[axis] -= delta;
+    body.pos[1] = startY;
+    body.vel[1] = startFall;
+    return false;
+  }
   return true;
 };
 

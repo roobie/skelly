@@ -1095,6 +1095,12 @@ const ZombieSchema = strictObject({
   footstepSound: optional(picklist(['shambler'])),
   /** Whether this type tries to jump low obstacles when grounded. */
   canJumpObstacles: vBoolean(),
+  /**
+   * How it moves relative to its facing: `forward` walks only along its facing, so it turns before it heads
+   * somewhere new; `omnidirectional` moves straight toward its goal whatever its facing, which still turns to
+   * the goal. Omitted is `forward`.
+   */
+  locomotion: optional(picklist(['forward', 'omnidirectional'])),
   /** Metres by day. */
   sight: Positive,
   /** Metres by night. */

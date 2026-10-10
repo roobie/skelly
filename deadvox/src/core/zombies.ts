@@ -22,6 +22,7 @@ import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFo
 import { lightSenseRangeScale } from './lights.ts';
 import {
   type Body,
+  type BodyShape,
   CONTACT_SKIN,
   type PhysicsParams,
   type ShapeOf,
@@ -587,6 +588,7 @@ const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const copy = (v: Vec3): Vec3 => [v[0], v[1], v[2]];
 const angleOf = (v: Vec3): number => Math.atan2(v[0], v[2]);
 const headingAt = (angle: number): Vec3 => [Math.sin(angle), 0, Math.cos(angle)];
+const OBSTACLE_LOOKAHEAD_METRES = 0.7;
 const OBSTACLE_PROBE_DISTANCE_METRES = 0.75;
 const OBSTACLE_PROBE_SPEED = 4;
 const OBSTACLE_WANDER_ANGLES = [
@@ -638,6 +640,19 @@ const approachAngle = (current: number, target: number, amount: number): number 
   current + Math.sign(wrapAngle(target - current)) * Math.min(Math.abs(wrapAngle(target - current)), amount);
 const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
   headingAt(approachAngle(angleOf(current), angleOf(target), radians));
+/**
+ * Turns a zombie by up to `radians` and gives the heading it moves along. A forward walker turns toward `move`
+ * and moves only where it faces, so it turns before it heads somewhere new; an omnidirectional one moves along
+ * `move` at once and turns to face `goal`.
+ */
+const steer = (zombie: Zombie, move: Vec3, radians: number, goal: Vec3 = move): Vec3 => {
+  if (zombie.type.locomotion === 'omnidirectional') {
+    zombie.facing = turnToward(zombie.facing, goal, radians);
+    return move;
+  }
+  zombie.facing = turnToward(zombie.facing, move, radians);
+  return zombie.facing;
+};
 const inRange = (rng: Rng, range: { min: number; max: number }): number => rng.range(range.min, range.max);
 
 /** The player point every zombie attack aims at, in metres above the feet: the chest. */
@@ -2370,12 +2385,11 @@ export class ZombieSystem {
     scratch.direction = obstacleDirection ?? zombie.strollHeading;
     scratch.aimDirection = scratch.direction;
     scratch.desiredSpeed = obstacleDirection || zombie.modeTimer > 0 ? type.speed.wanderMetresPerSimSecond : 0;
-    zombie.facing = turnToward(
-      zombie.facing,
+    scratch.direction = steer(
+      zombie,
       scratch.direction,
       (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
     );
-    scratch.direction = zombie.facing;
     zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
 
@@ -2390,12 +2404,11 @@ export class ZombieSystem {
       scratch.target = zombie.home;
       scratch.direction = obstacleDirection ?? unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
       scratch.aimDirection = scratch.direction;
-      zombie.facing = turnToward(
-        zombie.facing,
+      scratch.direction = steer(
+        zombie,
         scratch.direction,
         (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
       );
-      scratch.direction = zombie.facing;
       scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
     } else if (zombie.searchStrolling) {
       zombie.modeTimer -= dt;
@@ -2407,12 +2420,11 @@ export class ZombieSystem {
         scratch.direction = obstacleDirection ?? zombie.searchHeading;
         scratch.aimDirection = scratch.direction;
         scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
-        zombie.facing = turnToward(
-          zombie.facing,
+        scratch.direction = steer(
+          zombie,
           scratch.direction,
           (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
         );
-        scratch.direction = zombie.facing;
         zombie.headYaw = approachAngle(
           zombie.headYaw,
           0,
@@ -2442,7 +2454,8 @@ export class ZombieSystem {
     scratch.inReach =
       zombie.mode === 'chase' &&
       withinAttackReach({ zombie, zombiePos: pos, playerPos: scratch.target, blockSize, isSolid });
-    scratch.direction = obstacleDirection ?? unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
+    const toward = unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
+    scratch.direction = obstacleDirection ?? toward;
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
     if (scratch.moving) {
       scratch.aimDirection = scratch.direction;
@@ -2454,8 +2467,7 @@ export class ZombieSystem {
         scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
       }
       const turnRadians = (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180;
-      zombie.facing = turnToward(zombie.facing, scratch.direction, turnRadians);
-      scratch.direction = zombie.facing;
+      scratch.direction = steer(zombie, scratch.direction, turnRadians, toward);
     } else {
       scratch.direction = [0, 0, 0];
     }
@@ -2481,7 +2493,7 @@ export class ZombieSystem {
     }
     const radius = horizontalDistance(scratch.pos, zombie.searchAnchor) * scratch.blockSize;
     const away = unit([scratch.pos[0] - zombie.searchAnchor[0], 0, scratch.pos[2] - zombie.searchAnchor[2]]);
-    const outward = zombie.facing[0] * away[0] + zombie.facing[2] * away[2];
+    const outward = scratch.direction[0] * away[0] + scratch.direction[2] * away[2];
     if (outward > 0) {
       const remaining = Math.max(0, type.hearingModel.searchRadiusMetres - radius);
       zombie.horizontalSpeed = Math.min(zombie.horizontalSpeed, remaining / (dt * outward));
@@ -2529,14 +2541,7 @@ export class ZombieSystem {
       this.noteRest(zombie);
     }
     scratch.travelled = horizontalDistance(scratch.beforeStep, zombie.body.pos) * blockSize;
-    scratch.wallAhead =
-      aimDirection !== undefined &&
-      raycast(
-        [scratch.beforeStep[0], scratch.beforeStep[1] + 0.1 / blockSize, scratch.beforeStep[2]],
-        aimDirection,
-        0.7 / blockSize,
-        isSolid,
-      ) !== undefined;
+    scratch.wallAhead = aimDirection !== undefined && this.wallAhead(aimDirection);
     scratch.dx = zombie.body.pos[0] - scratch.beforeStep[0];
     scratch.dz = zombie.body.pos[2] - scratch.beforeStep[2];
     scratch.forward = aimDirection ? (scratch.dx * aimDirection[0] + scratch.dz * aimDirection[2]) * blockSize : 0;
@@ -2545,6 +2550,49 @@ export class ZombieSystem {
       !scratch.jumpAttempted &&
       zombie.horizontalSpeed > 0.01 &&
       scratch.forward < zombie.horizontalSpeed * dt * 0.1;
+  }
+
+  /**
+   * Whether a wall stands just ahead along `aim`. A box-sized body casts a ray from its centre. An amalgam's
+   * flesh reaches metres past its centre, so a ray from there never meets the wall it is pressed against and it
+   * would never slide off; its shape is moved as far ahead instead.
+   */
+  private wallAhead(aim: Vec3): boolean {
+    const { zombie, beforeStep, blockSize, isSolid } = this.tickScratch;
+    const shape = this.shapeOf(zombie.body);
+    if (shape) {
+      return this.fleshMeets(shape, aim);
+    }
+    const reach = OBSTACLE_LOOKAHEAD_METRES / blockSize;
+    return raycast([beforeStep[0], beforeStep[1] + 0.1 / blockSize, beforeStep[2]], aim, reach, isSolid) !== undefined;
+  }
+
+  /** Whether an amalgam's flesh, moved the obstacle lookahead along `heading` and lifted over a step, meets terrain. */
+  private fleshMeets(shape: BodyShape, heading: Vec3): boolean {
+    const { zombie, blockSize } = this.tickScratch;
+    const { pos } = zombie.body;
+    const reach = OBSTACLE_LOOKAHEAD_METRES / blockSize;
+    const lift = this.options.physics.stepHeight + CONTACT_SKIN * 2;
+    return shape.overlapsTerrain([pos[0] + heading[0] * reach, pos[1] + lift, pos[2] + heading[2] * reach]);
+  }
+
+  /**
+   * The side an amalgam meeting a wall slides to: the one its flesh can move to. Met at a slant, that is the
+   * side the wall leads it along; caught on a door frame or wall end, the side that frees it. A random side
+   * there could back it out of the gap it was sliding into or pin it. When both sides are open, or neither
+   * side is free, it draws, as a shambler always does.
+   */
+  private openSide(aim: Vec3): -1 | 1 | undefined {
+    const shape = this.shapeOf(this.tickScratch.zombie.body);
+    if (!shape) {
+      return undefined;
+    }
+    const left = !this.fleshMeets(shape, [aim[2], 0, -aim[0]]);
+    const right = !this.fleshMeets(shape, [-aim[2], 0, aim[0]]);
+    if (left === right) {
+      return undefined;
+    }
+    return left ? 1 : -1;
   }
 
   private startObstacleWander(): void {
@@ -2578,7 +2626,8 @@ export class ZombieSystem {
     if (!obstacleContact) {
       zombie.obstacleSlideSide = 0;
     } else if (!wasObstacleContact && aimDirection && !jumpAttempted) {
-      zombie.obstacleSlideSide = rng.int(0, 1) === 0 ? -1 : 1;
+      const side = rng.int(0, 1) === 0 ? -1 : 1;
+      zombie.obstacleSlideSide = this.openSide(aimDirection) ?? side;
     } else if (zombie.obstacleSlideSide !== 0 && !jumpAttempted && travelled < 0.0001) {
       zombie.obstacleSlideSide = zombie.obstacleSlideSide === -1 ? 1 : -1;
     }
