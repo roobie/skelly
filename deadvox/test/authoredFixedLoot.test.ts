@@ -3,8 +3,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
+import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
 import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
@@ -1267,8 +1267,8 @@ describe('authored fixed loot', () => {
 
   it('rejects a surface military item in a non-military template', () => {
     const buildingIndex = layout.buildings.findIndex(
-      (building) =>
-        building.fixedLoot?.length && result.registry.templates.get(building.template)?.military !== true,
+      (candidate) =>
+        candidate.fixedLoot?.length && result.registry.templates.get(candidate.template)?.military !== true,
     );
     const building = layout.buildings[buildingIndex];
     if (!building?.fixedLoot?.length) {
