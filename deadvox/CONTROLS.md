@@ -98,8 +98,10 @@ both independently scrolling panes.
   second binding. A ray against the body's box picks it, in the same nearest-target
   choice as ground items. See `src/core/interactionPick.ts`, `pickInteractionTarget`,
   and `src/game/play.ts`, `interactionPayload`.
-- **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
-  to the browser. Escape releases pointer lock and is never a game rebind.
+- **Main menu and browser menu:** F9 opens or closes the main menu. On the death
+  screen, Escape toggles it so playtesters can reach the metrics and replay
+  exports. In play, Escape releases pointer lock; F10 belongs to the browser.
+  Escape is not rebindable.
 - **Reload, rack, remove (2026-10-07 11:20):** BR, on how R treats a rifle:
   “No, it should reload with the mag that is fullest in inventory, no matter what
   is loaded in gun”; on double-pressing R working the charging handle, “yes,

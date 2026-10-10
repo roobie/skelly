@@ -12,7 +12,11 @@ const base: MenuStateInput = {
 
 type TransitionInput = MenuStateInput & { pointerLockChanged?: boolean; resumeRequested?: boolean };
 
-const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof computeMenuState> }[] = [
+const cases: {
+  name: string;
+  input: TransitionInput;
+  expected: ReturnType<typeof computeMenuState>;
+}[] = [
   {
     name: 'start: not started shows the overlay and pauses',
     input: base,
@@ -71,6 +75,22 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
       overlayHidden: false,
       paused: true,
       goLabel: 'Paused. Click to continue',
+    },
+  },
+  {
+    name: 'F9 opens the hand-back menu over death without showing resume',
+    input: { ...base, started: true, dead: true },
+    expected: {
+      started: true,
+      mainMenuOpen: true,
+      inventoryOpen: false,
+      debugMenuOpen: false,
+      closeOtherMenus: false,
+      menuPointer: true,
+      overlayHidden: false,
+      paused: true,
+      goLabel: 'Paused. Click to continue',
+      showGo: false,
     },
   },
   {
@@ -230,6 +250,22 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
     },
   },
   {
+    name: 'a dead resume request keeps the hand-back menu visible but hides resume',
+    input: { ...base, started: true, pointerLocked: true, dead: true, resumeRequested: true },
+    expected: {
+      started: true,
+      mainMenuOpen: true,
+      inventoryOpen: false,
+      debugMenuOpen: false,
+      closeOtherMenus: false,
+      menuPointer: true,
+      overlayHidden: false,
+      paused: true,
+      goLabel: 'Paused. Click to continue',
+      showGo: false,
+    },
+  },
+  {
     name: 'a resume request while locked and dead preserves menus and death overlay',
     input: {
       ...base,
@@ -250,21 +286,7 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
       overlayHidden: true,
       paused: false,
       goLabel: 'Paused. Click to continue',
-    },
-  },
-  {
-    name: 'after a dead resume request clears, respawn does not close the open menu',
-    input: { ...base, started: true, pointerLocked: true },
-    expected: {
-      started: true,
-      mainMenuOpen: true,
-      inventoryOpen: false,
-      debugMenuOpen: false,
-      closeOtherMenus: false,
-      menuPointer: true,
-      overlayHidden: false,
-      paused: true,
-      goLabel: 'Paused. Click to continue',
+      showGo: false,
     },
   },
   {
@@ -317,6 +339,7 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
       overlayHidden: true,
       paused: false,
       goLabel: 'Paused. Click to continue',
+      showGo: false,
     },
   },
   {
@@ -332,6 +355,7 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
       overlayHidden: true,
       paused: false,
       goLabel: 'Paused. Click to continue',
+      showGo: false,
     },
   },
   {

@@ -290,7 +290,7 @@ In-game choices use the game's own combo box (`src/ui/comboBox.ts`, `comboBox`),
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; its key names come from the bindings, and it moves to the hint channel with "Order of work" item 2 |
-| Main menu (F9) | meta | meta | fine; settings, help and the playtest hand-back live here |
+| Main menu (F9 or Escape after death) | meta | meta | Settings, help and the playtest hand-back live here. F9 and Escape can open it over the death card so testers can export metrics and a replay before starting another world; death is the event the playtest most wants those records about. See `src/ui/menuState.ts`, `activeMenuState`, and `src/game/play.ts`, `die`. |
 | Inventory screen | meta | meta | grids stay; numbers remain available on request per DESIGN.md "numbers are there when you look" |
 | Refusal notices ("Quickbar 1 is empty") | voice | voice | none: they name no key or procedure (`src/game/play.ts`, `showRefusal`) |
 | Drawn menu cursor | meta | meta | fine |

@@ -908,7 +908,38 @@ try {
     });
     await page.locator('#death').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#reading').isVisible(), false);
-    proof = { sizes, endVisible };
+    await page.waitForFunction(() => !globalThis.readingWitness.input.locked);
+    await page.evaluate(() => {
+      const { requestPointerLock } = Element.prototype;
+      if (typeof requestPointerLock !== 'function') {
+        throw new Error('Element.requestPointerLock is unavailable');
+      }
+      let requests = 0;
+      Object.defineProperty(Element.prototype, 'requestPointerLock', {
+        configurable: true,
+        value(...args) {
+          requests += 1;
+          return requestPointerLock.apply(this, args);
+        },
+      });
+      Object.defineProperty(globalThis, 'deathMenuPointerLockRequests', { get: () => requests });
+    });
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(
+      () => !document.querySelector('#overlay').hidden && document.querySelector('#go').hidden,
+    );
+    const deathMenuOpened = await page.evaluate(() => ({
+      overlayHidden: document.querySelector('#overlay').hidden,
+      goHidden: document.querySelector('#go').hidden,
+    }));
+    assert.deepEqual(deathMenuOpened, { overlayHidden: false, goHidden: true });
+    await page.locator('#overlay').click({ position: { x: 8, y: 8 } });
+    assert.equal(await page.evaluate(() => globalThis.deathMenuPointerLockRequests), 0);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.querySelector('#overlay').hidden);
+    assert.equal(await page.locator('#death').isVisible(), true);
+    assert.equal(await page.getByRole('button', { name: 'New world', exact: true }).isVisible(), true);
+    proof = { sizes, endVisible, deathMenuOpened };
   }
   assert.deepEqual(errors, []);
   await writeFile(resolve(artifacts, 'result.json'), JSON.stringify({ mode, ...proof, states, errors }, null, 2));
