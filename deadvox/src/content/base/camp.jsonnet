@@ -401,8 +401,8 @@ local campWallRunCrouchHole = campWallRun + {
         ],
         [
           "TTTTTTTTTTTTTTTT",
-          "T..............T",
-          "T..........z...T",
+          "T...............",
+          "T..........z....",
           "T.....WWW......T",
           "T.....WWW......T",
           "T...OO.........T",
@@ -413,8 +413,8 @@ local campWallRunCrouchHole = campWallRun + {
         ],
         [
           "TTTTTTTTTTTTTTTT",
-          "T..............T",
-          "T..............T",
+          "T...............",
+          "T...............",
           "T.....WWW......T",
           "T.....WWW......T",
           "T...OO.........T",
@@ -425,8 +425,8 @@ local campWallRunCrouchHole = campWallRun + {
         ],
         [
           "TTTTTTTTTTTTTTTT",
-          "T..............T",
-          "T..............T",
+          "T...............",
+          "T...............",
           "T..............T",
           "T..............T",
           "T..............T",
@@ -437,8 +437,8 @@ local campWallRunCrouchHole = campWallRun + {
         ],
         [
           "TTTTTTTTTTTTTTTT",
-          "T..............T",
-          "T..............T",
+          "T...............",
+          "T...............",
           "T..............T",
           "T..............T",
           "T..............T",
@@ -471,7 +471,18 @@ local campWallRunCrouchHole = campWallRun + {
           "TTTTTTTTTTTTTTTT",
           "TTTTTTTTTTTTTTTT"
         ]
-      ]
+      ],
+      "access": {
+        "ground": "ground",
+        "entrance": [15, 1, 2],
+        "storeys": [
+          {
+            "id": "ground",
+            "floor": 1
+          }
+        ],
+        "stairs": []
+      }
     },
     {
       "id": "camp_container",
