@@ -6,6 +6,7 @@ import {
   Euler,
   Frustum,
   Group,
+  HemisphereLight,
   type InstancedMesh,
   Matrix4,
   Mesh,
@@ -15,6 +16,7 @@ import {
   PerspectiveCamera,
   Quaternion,
   Raycaster,
+  Scene,
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
@@ -91,6 +93,36 @@ describe('held light presentation', () => {
     expect(handCamera.position).toEqual(camera.position);
     held.dispose();
   });
+
+  it('scales held hemisphere ambient by the camera sky visibility', () => {
+    const camera = new PerspectiveCamera();
+    const sky = {
+      scene: new Scene(),
+      light: new DirectionalLight(),
+      ambient: new HemisphereLight(),
+      camera,
+      radiusM: 1,
+    };
+    const worldAmbientIntensity = sky.ambient.intensity;
+    const held = new HeldItems(new Inventory(registry), undefined, palette);
+    held.update(camera);
+    const handAmbient = held.warmUpTarget.scene.children.find((child) => child instanceof HemisphereLight)!;
+    const renderer = {
+      autoClear: true,
+      clearDepth: () => undefined,
+      render: () => undefined,
+    } as unknown as Parameters<typeof held.render>[0];
+
+    held.setSkyVisibility(0);
+    held.render(renderer, camera, sky);
+    expect(handAmbient.intensity).toBe(0);
+
+    held.setSkyVisibility(1);
+    held.render(renderer, camera, sky);
+    expect(handAmbient.intensity).toBe(worldAmbientIntensity);
+    held.dispose();
+  });
+
   it.each(fallbackLightHands)('$id in the $side hand draws by its light definition', ({ id, definition, side }) => {
     const inventory = new Inventory(registry);
     const light = inventory.create(id);

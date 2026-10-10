@@ -151,6 +151,7 @@ export class HeldItems {
   private readonly torso = new Group();
   private readonly light = new DirectionalLight();
   private readonly ambient = new HemisphereLight();
+  private skyVisibility = 1;
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly flameGeometry = new ConeGeometry(1, 1, 6);
   private readonly material = new MeshLambertMaterial({ color: 0x6b_66_60 });
@@ -997,6 +998,11 @@ export class HeldItems {
     return true;
   }
 
+  /** Sets the camera's sky visibility so the held scene shares indoor ambient darkening. */
+  setSkyVisibility(visibility: number): void {
+    this.skyVisibility = visibility;
+  }
+
   /** Draws what's in your hands over the frame the main camera just rendered. */
   render(renderer: WebGLRenderer, main: PerspectiveCamera, sky: SkyTargets): void {
     if (this.view.children.length === 0) {
@@ -1008,7 +1014,7 @@ export class HeldItems {
     this.light.castShadow = this.sunSource?.castShadow ?? false;
     this.ambient.color.copy(sky.ambient.color);
     this.ambient.groundColor.copy(sky.ambient.groundColor);
-    this.ambient.intensity = sky.ambient.intensity;
+    this.ambient.intensity = sky.ambient.intensity * this.skyVisibility;
     if (this.camera.fov !== main.fov || this.camera.aspect !== main.aspect) {
       this.camera.fov = main.fov;
       this.camera.aspect = main.aspect;

@@ -1346,8 +1346,11 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   doors and windows. Only diffuse sky light goes through the grid
   (`src/core/skylight.ts`, `buildSkylight`). The sun and the carried beam are lit
   on their own, and carried or dropped sources are the pool's shadowless point
-  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). Light from
-  torches, lamps and hot zombies through the grid is planned for Slice 4, with
+  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). First-person
+  hands share the room's sky visibility, so they do not glow in enclosed dark
+  spaces; see `src/render/playView.ts`, `prepareLighting`, and
+  `src/render/hands.ts`, `HeldItems.render`. Light from torches, lamps and hot
+  zombies through the grid is planned for Slice 4, with
   the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
