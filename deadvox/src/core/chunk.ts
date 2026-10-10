@@ -14,6 +14,8 @@ export class Chunk {
   readonly cz: number;
   /** Changed by play (not worldgen), so it can't be regenerated from the seed. */
   edited = false;
+  /** Goes up on every block change, so caches built from this chunk (core/solidBricks.ts) know to rebuild. */
+  revision = 0;
   private data: Uint16Array | undefined;
   private fill: number;
 
@@ -50,7 +52,11 @@ export class Chunk {
       }
       this.data = new Uint16Array(CHUNK_VOLUME).fill(this.fill);
     }
-    this.data[localIndex(x, y, z)] = id;
+    const index = localIndex(x, y, z);
+    if (this.data[index] !== id) {
+      this.data[index] = id;
+      this.revision += 1;
+    }
   }
 
   /** Goes back to storing a single id if every block is the same. Returns whether the chunk is uniform. */

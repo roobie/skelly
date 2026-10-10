@@ -279,30 +279,39 @@ export const posedRegionHit = (
 ): { readonly distance: number; readonly box: PosedBoneBox } | undefined => {
   let nearest: { distance: number; box: PosedBoneBox } | undefined;
   for (const box of boxes) {
-    if (
-      Math.abs(direction[1]) < 1e-12 &&
-      box.bottomY !== undefined &&
-      (origin[1] < box.bottomY || origin[1] > box.topY!)
-    ) {
-      continue;
-    }
-    const inverse = transpose(box.rotation);
-    const localOrigin = applyR(inverse, [
-      origin[0] - box.center[0],
-      origin[1] - box.center[1],
-      origin[2] - box.center[2],
-    ]);
-    const localDirection = applyR(inverse, direction);
-    const hit = rayBoxEntry(
-      localOrigin,
-      localDirection,
-      box.halfSize.map((size) => size / blockSize),
-    );
+    const hit = posedBoxEntry(box, origin, direction, blockSize);
     if (hit !== undefined && (nearest === undefined || hit < nearest.distance)) {
       nearest = { distance: hit, box };
     }
   }
   return nearest;
+};
+
+/** Where a ray enters one posed bone box, in block units, or undefined when it misses. */
+export const posedBoxEntry = (
+  box: PosedBoneBox,
+  origin: Vec3,
+  direction: Vec3,
+  blockSize: number,
+): number | undefined => {
+  if (
+    Math.abs(direction[1]) < 1e-12 &&
+    box.bottomY !== undefined &&
+    (origin[1] < box.bottomY || origin[1] > box.topY!)
+  ) {
+    return undefined;
+  }
+  const inverse = transpose(box.rotation);
+  const localOrigin = applyR(inverse, [
+    origin[0] - box.center[0],
+    origin[1] - box.center[1],
+    origin[2] - box.center[2],
+  ]);
+  return rayBoxEntry(
+    localOrigin,
+    applyR(inverse, direction),
+    box.halfSize.map((size) => size / blockSize),
+  );
 };
 
 /** First surface of an actual, posed, unsevered voxel bone box, in block units. */
