@@ -12,6 +12,7 @@ read_if:
   - you're authoring or changing playtest fixed loot
   - you're assigning noise to a furniture action
   - you're authoring base surface materials or procedural pattern tuning
+  - you're authoring or changing visual furniture shapes
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
   - you author or change Deadvox content sources or their build pipeline
@@ -187,6 +188,10 @@ calculated disassembly yields at top skill; the separate recipe skill-source
 check must prove that reachable practice sources can raise a recipe's required skill. Reachability
 stores no closure or runtime state; progression, crafting and disassembly remain
 separate owners.
+
+## Furniture visual shapes
+
+A furniture shape refines what is drawn without changing the entity's occupied cells. Collision, rest, search and line of sight continue to use those cells, keeping visual detail from changing gameplay. Author furniture definitions in `src/content/base/furniture.json`; `src/core/schema.ts`, `FurnitureSchema`, validates the shape bounds, and `src/render/furniture.ts`, `FurnitureMeshes`, renders the shape with one draw object per entity.
 
 ## Furniture action noise
 

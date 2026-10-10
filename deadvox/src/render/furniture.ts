@@ -2,8 +2,10 @@
 // cells; a door is a thin panel on a hinge at one end, swung inward when open. They
 // share the sky's lights with everything else.
 
-import { BoxGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
+import { BoxGeometry, type BufferGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, doorPanel } from '../core/blockEntities.ts';
+import type { FurnitureDef } from '../core/schema.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { workshopCar, workshopLift } from './workshopVehicle.ts';
@@ -15,6 +17,7 @@ export class FurnitureMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly materials = new Map<string, MeshLambertMaterial>();
+  private readonly shapeGeometries = new Map<string, BufferGeometry>();
   private readonly blockSize: number;
   private drawn = -1;
 
@@ -41,6 +44,8 @@ export class FurnitureMeshes {
         mesh = this.door(entity, material);
       } else if (def.readable && def.solid === false) {
         mesh = this.wallBoard(entity, material);
+      } else if (def.shape) {
+        mesh = this.shaped(entity, def, material);
       } else {
         mesh = this.box(entity, material);
       }
@@ -64,6 +69,36 @@ export class FurnitureMeshes {
     const mesh = new Mesh(this.geometry, material);
     mesh.scale.set(w * s - INSET, h * s - INSET / 2, d * s - INSET);
     mesh.position.set((x + w / 2) * s, (y + h / 2) * s, (z + d / 2) * s);
+    return mesh;
+  }
+
+  private shaped(entity: BlockEntity, def: FurnitureDef, material: MeshLambertMaterial): Mesh {
+    let geometry = this.shapeGeometries.get(def.id);
+    if (!geometry) {
+      const [width, , depth] = def.size;
+      const parts = def.shape!.map(({ position, size }) => {
+        const [x, y, z] = position;
+        const [w, h, d] = size;
+        return new BoxGeometry(w, h, d).translate(x + w / 2 - width / 2, y + h / 2, z + d / 2 - depth / 2);
+      });
+      geometry = mergeGeometries(parts, false);
+      for (const part of parts) {
+        part.dispose();
+      }
+      if (!geometry) {
+        throw new Error(`could not merge furniture shape "${def.id}"`);
+      }
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      this.shapeGeometries.set(def.id, geometry);
+    }
+
+    const [x, y, z] = entity.pos;
+    const [width, , depth] = entity.size;
+    const mesh = new Mesh(geometry, material);
+    mesh.position.set((x + width / 2) * this.blockSize, y * this.blockSize, (z + depth / 2) * this.blockSize);
+    mesh.rotation.y = { n: 0, e: -Math.PI / 2, s: Math.PI, w: Math.PI / 2 }[entity.facing];
+    mesh.scale.setScalar(this.blockSize);
     return mesh;
   }
 
