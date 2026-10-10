@@ -4,6 +4,7 @@ read_if:
   - you're running Deadvox unit tests or the opt-in CPU benchmark
   - you're checking the present implementation and known limits
   - you're investigating startup or save discovery
+  - you're using the playtest loot progression chart
 ---
 
 # deadvox — singleplayer voxel survival
@@ -127,8 +128,11 @@ npm run dev        # http://localhost:5173
 npm run dev:https  # https://<this-machine-lan-ip>:5173 (self-signed, dev-only cert)
 npm test
 npm run bench:shambler-budget  # opt into the host-sensitive shambler CPU-budget check
+npm run playtest:loot          # print loot progression by nearest authored beat
 npm run validate               # base content; add paths to validate a mod on top
 ```
+
+The loot chart reads placements, fixed loot and spawns from the registry's playtest layout, the one the game loads, so its sources match play; the Tiled map supplies only names and beat areas. See `tools/playtest-loot-chart.mjs` and `src/core/authoredPlacement.ts`, `placementOf`.
 
 The default suite skips the host-sensitive CPU budget check. `npm run bench:shambler-budget`
 sets `DEADVOX_BENCH` and runs that benchmark alone; its budget is defined by
