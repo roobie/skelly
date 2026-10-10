@@ -1327,14 +1327,15 @@ describe('authored fixed loot', () => {
     if (!building?.fixedLoot?.length) {
       throw new Error('the layout fixture needs a fixed-loot anchor');
     }
-    const override = building.fixedLoot[0]!;
+    const { fixedLoot } = building;
+    const override = fixedLoot[0]!;
     const itemIndex = override.items.length;
     const issuePath = `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`;
     const issuesFor = (item: FixedOverride['items'][number]) => {
       const buildings = [...layout.buildings];
       buildings[buildingIndex] = {
         ...building,
-        fixedLoot: [{ ...override, items: [...override.items, item] }, ...building.fixedLoot.slice(1)],
+        fixedLoot: [{ ...override, items: [...override.items, item] }, ...fixedLoot.slice(1)],
       };
       return authoredLayoutIssues({ ...layout, buildings }, result.registry);
     };
