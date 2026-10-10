@@ -238,7 +238,7 @@ describe('magazines loaded round by round', () => {
     for (let step = 0; step < stepsPerRound; step++) {
       expect(f.queue.jobs).toHaveLength(1);
       const result = f.queue.tick(stepSeconds);
-      noRoom ||= result.failed.some(({ reason }) => reason === 'No room for the round nearby');
+      noRoom ||= result.failed.some(({ job }) => job.kind === 'action' && job.jobType === 'magazine.strip');
       time += stepSeconds;
       expect(f.handling.advanceHeldStrip(f.magazine.uid, time, true)).toBeUndefined();
       expect(f.queue.jobs).toHaveLength(step < stepsPerRound - 1 ? 1 : 0);
