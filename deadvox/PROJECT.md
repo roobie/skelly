@@ -132,7 +132,7 @@ npm run playtest:loot          # print loot progression by nearest authored beat
 npm run validate               # base content; add paths to validate a mod on top
 ```
 
-For d231, the loot chart uses the compiled playtest layout so building placements and template spawns match what the game uses (see `tools/playtest-loot-chart.mjs`, `placementOf`).
+The loot chart reads placements, fixed loot and spawns from the registry's playtest layout, the one the game loads, so its sources match play; the Tiled map supplies only names and beat areas. See `tools/playtest-loot-chart.mjs` and `src/core/authoredPlacement.ts`, `placementOf`.
 
 The default suite skips the host-sensitive CPU budget check. `npm run bench:shambler-budget`
 sets `DEADVOX_BENCH` and runs that benchmark alone; its budget is defined by

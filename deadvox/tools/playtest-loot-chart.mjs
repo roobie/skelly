@@ -20,23 +20,42 @@ if (issues.length > 0) {
 }
 
 const map = readJson(resolve(projectRoot, 'maps/playtest.tmj'));
-const layer = (name) => {
-  const found = map.layers.find((candidate) => candidate.name === name);
-  if (!found) {
-    throw new Error(`Playtest map is missing the ${name} layer`);
+const mapObjects = (layers) => {
+  const objects = [];
+  for (const candidate of layers) {
+    if (candidate.type === 'group') {
+      objects.push(...mapObjects(candidate.layers ?? []));
+    } else if (candidate.type === 'objectgroup') {
+      objects.push(...(candidate.objects ?? []));
+    }
   }
-  return found;
+  return objects;
 };
-const beats = layer('Beats').objects;
+const tiledObjects = mapObjects(map.layers);
+const beats = tiledObjects.filter((object) => object.type === 'beat');
+const tiledBuildings = tiledObjects.filter((object) => object.type === 'building');
 const playtest = registry.layouts.get('playtest');
 if (!playtest) {
   throw new Error('Validated content is missing the playtest layout');
 }
-const buildings = playtest.buildings.map((building) => {
+if (tiledBuildings.length !== playtest.buildings.length) {
+  throw new Error(
+    `Playtest map has ${tiledBuildings.length} building labels for ${playtest.buildings.length} registry placements`,
+  );
+}
+const buildings = playtest.buildings.map((building, index) => {
+  const tiledBuilding = tiledBuildings[index];
+  const tiledTemplate = tiledBuilding.properties?.find(({ name }) => name === 'template')?.value;
+  if (tiledTemplate !== building.template) {
+    throw new Error(
+      `Playtest building ${index + 1} template mismatch: map ${String(tiledTemplate)}, registry ${building.template}`,
+    );
+  }
   const placement = placementOf(registry, building);
   const [width, depth] = footprint(placement);
   return {
     building,
+    name: tiledBuilding.name,
     placement,
     spawns: groupSpawns(placement.template.spawns),
     center: [
@@ -157,7 +176,7 @@ const templateZombieLines = (spawns) => {
   ];
 };
 
-const buildingLootLines = ({ building, placement, spawns }) => {
+const buildingLootLines = ({ building, name, placement, spawns }) => {
   const fixed = fixedLootLines(building);
   const furniture = furnitureLootLines(placement);
   const zombies = templateZombieLines(spawns);
@@ -165,7 +184,7 @@ const buildingLootLines = ({ building, placement, spawns }) => {
     return [];
   }
   return [
-    `  - \`${building.template}\``,
+    `  - ${name} (${building.template})`,
     ...(fixed.length > 0 ? ['    Fixed loot:', ...fixed] : []),
     ...furniture,
     ...zombies,
