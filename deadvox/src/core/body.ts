@@ -1,3 +1,4 @@
+import { SECONDS_PER_HOUR } from './clock.ts';
 import type { BodyTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -161,6 +162,34 @@ export class Body {
       throw new Error('Invalid health recovery');
     }
     this.state.health = clamp(this.state.health + amount);
+  }
+
+  recoverRegionDamage(ratePerGameHour: number, gameHours: number, elapsedGameHours: number): void {
+    if (
+      !Number.isFinite(ratePerGameHour) ||
+      ratePerGameHour < 0 ||
+      !Number.isFinite(gameHours) ||
+      gameHours < 0 ||
+      !Number.isFinite(elapsedGameHours) ||
+      elapsedGameHours < 0
+    ) {
+      throw new Error('Invalid body recovery step');
+    }
+    for (const region of BODY_REGIONS) {
+      const wound = this.state.wounds[region];
+      if (wound?.bleeding || wound?.infection === 'early' || wound?.infection === 'advanced') {
+        continue;
+      }
+      const untilInfectionHours =
+        wound?.infection === 'none' && wound.infectionAtRisk
+          ? (this.tuning.infectionOnsetGameHours - wound.infectionGameSeconds) / SECONDS_PER_HOUR
+          : Number.POSITIVE_INFINITY;
+      const recoverableHours = Math.max(0, Math.min(gameHours, untilInfectionHours - elapsedGameHours));
+      this.state.regionDamage[region] = Math.max(
+        0,
+        this.state.regionDamage[region] - ratePerGameHour * recoverableHours,
+      );
+    }
   }
 
   /** Applies one localized impact; unresolved hits are assigned to the torso by the caller. */

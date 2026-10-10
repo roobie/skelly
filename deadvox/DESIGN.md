@@ -585,29 +585,30 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
   are per game hour. Body temperature isn't simulated; #366's heat property
   could later serve it.
-- **Body.** BR (2026-10-06 07:23) approved the five defaults: “yes, take the five
-  defaults”. The model makes injury decisions consequential beyond a single
-  health value: see `src/core/body.ts`, `Body`; `src/core/needs.ts`, `stepNeeds`;
-  and `src/ui/inventoryScreen.ts`, `InventoryScreen`.
+- **Body.** Injuries affect sight, aim, swings and movement as well as health.
+  Each region recovers at health's rate while needs allow health recovery, except
+  while that region is bleeding or infected. This lets injury penalties fade
+  without healing through an active wound. See `src/core/body.ts`,
+  `Body.recoverRegionDamage` and `Body.consequences`; `src/core/needs.ts`,
+  `stepNeeds`.
 
-  BR's 08:33 treatment rule is “the \"treat with rag\" is not the way to go.
-  You wield the rag and left-click apply it (or quickbar-hold)”;
-  `src/game/survival.ts`, `Survival.use` and `Survival.useFromQuickbar`, own
-  that path. BR's 08:35 follow-up was “however, there need to be a \"select\"
-  mechanism in the UI for when wielded where to apply - it could be a message
-  box (visible only when messages/hints are enabled)”. BR then ruled at 08:36:
-  “scrolling on mouse changes which action is selected for the wielded item”.
-  `src/game/itemActions.ts`, `ItemActionSelection`, and `src/ui/playHud.ts`,
-  `playHudText`, cue selection and its hints-only presentation. BR's 08:41 default
-  is recorded in [SLICE-3.md](SLICE-3.md), 3.4.
+  Treatment uses a wielded item: left-click to apply it, or hold its quickbar
+  slot. Mouse scroll selects an action for the wielded item; its selection cue
+  appears only while hints are enabled. See `src/game/survival.ts`,
+  `Survival.use` and `Survival.useFromQuickbar`; `src/game/itemActions.ts`,
+  `ItemActionSelection`; and `src/ui/playHud.ts`, `playHudText`. The default
+  action is recorded in [SLICE-3.md](SLICE-3.md), 3.4.
 
-  BR (2026-10-06 11:05) agreed to time-based infection onset, an antiseptic
-  window, deterministic infection risk and a timed knockout, adding “agreed
-  with your suggestiong; but let's keep them tunable”. The wake-shock setting
-  is a starting tuning value, not a number BR chose. BR clarified at 11:32:
-  “and, just to be clear, the aim is to define all content and tunables via
-  mods - even the _core game_”, and at 11:34: “yeah, let's do it now”.
-  BR's 14:41 ruling was “knockout = totally black and no sound and prone”. BR approved the look at 16:35: “looks good - black screen and then death 👍”. See `src/game/session.ts`, `playerEyeHeightMetres`; `src/game/audio.ts`, `GameAudio.setOutputMuted`; `src/game/play.ts`, `frame`; `src/ui/style.css`, `body.unconscious`; and `src/core/schema.ts`, `BodyTuningSchema`.
+  Infection onset is time-based, with deterministic infection risk and an
+  antiseptic window. Knockout is timed; infection and knockout settings are
+  content-defined. Regional recovery follows `HEALTH.regen` in
+  `src/core/needs.ts`. A knockout leaves the player prone, with a black screen
+  and no sound. If the character
+  dies while knocked out, the black screen gives way to the death screen. See
+  `src/core/body.ts`, `Body.advance`; `src/core/schema.ts`, `BodyTuningSchema`;
+  `src/core/needs.ts`, `HEALTH.regen`; `src/game/session.ts`,
+  `playerEyeHeightMetres`; `src/ui/style.css`, `body.unconscious`;
+  `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
 
