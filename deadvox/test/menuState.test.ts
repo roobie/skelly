@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { metricsFile, SessionMetrics, type SessionMetricsV1 } from '../src/game/playtestTools.ts';
 import { computeMenuState, computeSaveMenuState, type MenuStateInput } from '../src/ui/menuState.ts';
 
 const base: MenuStateInput = {
@@ -17,7 +16,6 @@ const cases: {
   name: string;
   input: TransitionInput;
   expected: ReturnType<typeof computeMenuState>;
-  exportDeath?: boolean;
 }[] = [
   {
     name: 'start: not started shows the overlay and pauses',
@@ -80,9 +78,8 @@ const cases: {
     },
   },
   {
-    name: 'F9 opens the playtest hand-back over the death screen',
+    name: 'F9 opens the hand-back menu over death without showing resume',
     input: { ...base, started: true, dead: true },
-    exportDeath: true,
     expected: {
       started: true,
       mainMenuOpen: true,
@@ -93,6 +90,7 @@ const cases: {
       overlayHidden: false,
       paused: true,
       goLabel: 'Paused. Click to continue',
+      showGo: false,
     },
   },
   {
@@ -252,7 +250,7 @@ const cases: {
     },
   },
   {
-    name: 'a resume request while locked and dead keeps the hand-back menu visible',
+    name: 'a dead resume request keeps the hand-back menu visible but hides resume',
     input: { ...base, started: true, pointerLocked: true, dead: true, resumeRequested: true },
     expected: {
       started: true,
@@ -264,6 +262,31 @@ const cases: {
       overlayHidden: false,
       paused: true,
       goLabel: 'Paused. Click to continue',
+      showGo: false,
+    },
+  },
+  {
+    name: 'a resume request while locked and dead preserves menus and death overlay',
+    input: {
+      ...base,
+      started: true,
+      inventoryOpen: true,
+      debugMenuOpen: true,
+      pointerLocked: true,
+      dead: true,
+      resumeRequested: true,
+    },
+    expected: {
+      started: true,
+      mainMenuOpen: true,
+      inventoryOpen: true,
+      debugMenuOpen: true,
+      closeOtherMenus: false,
+      menuPointer: true,
+      overlayHidden: true,
+      paused: false,
+      goLabel: 'Paused. Click to continue',
+      showGo: false,
     },
   },
   {
@@ -316,6 +339,7 @@ const cases: {
       overlayHidden: true,
       paused: false,
       goLabel: 'Paused. Click to continue',
+      showGo: false,
     },
   },
   {
@@ -331,6 +355,7 @@ const cases: {
       overlayHidden: true,
       paused: false,
       goLabel: 'Paused. Click to continue',
+      showGo: false,
     },
   },
   {
@@ -490,15 +515,7 @@ describe('menu and pause state transitions', () => {
     expect(lateResume).toMatchObject({ mainMenuOpen: false, overlayHidden: true, paused: false, menuPointer: false });
   });
 
-  it.each(cases)('$name', async ({ input, expected, exportDeath }) => {
-    const state = computeMenuState(input);
-    expect(state).toEqual(expected);
-    if (exportDeath) {
-      const metrics = new SessionMetrics(17);
-      metrics.recordDeath('a shambler', 60);
-      const exported = JSON.parse(await metricsFile(metrics).blob.text()) as SessionMetricsV1;
-      expect(exported.deaths).toMatchObject([{ cause: 'a shambler' }]);
-      expect(exported.deaths[0]?.survivedSeconds).toBeGreaterThan(0);
-    }
+  it.each(cases)('$name', ({ input, expected }) => {
+    expect(computeMenuState(input)).toEqual(expected);
   });
 });

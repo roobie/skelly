@@ -93,9 +93,9 @@ authored in both languages in `site/playtest.jsonnet`, and
 ## Saving and sending metrics
 
 The F9 menu can save playtest metrics and a replay of recent play as files. F9
-can still open it over the death card, so testers can save both after dying and
-before starting a new world. A tester with GitHub may attach either or both to
-feedback through the [playtest feedback
+can open it during play, and Escape can open or close it on the death card, so
+testers can save both after dying and before starting a new world. A tester with
+GitHub may attach either or both to feedback through the [playtest feedback
 form](../../.github/ISSUE_TEMPLATE/playtest-feedback.md); sending them is their
 choice. Testers without GitHub can email metrics and feedback to the
 organiser using the address provided with the link. Review files before posting

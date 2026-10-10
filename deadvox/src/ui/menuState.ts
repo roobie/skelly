@@ -54,11 +54,14 @@ export interface MenuState {
   overlayHidden: boolean;
   paused: boolean;
   goLabel: string;
+  showGo?: boolean;
   saveMenu?: SaveMenuState;
 }
 
 const saveState = (input: MenuStateInput): Pick<MenuState, 'saveMenu'> =>
   input.saveMenu ? { saveMenu: computeSaveMenuState(input.saveMenu) } : {};
+
+const goVisibility = (dead: boolean): Pick<MenuState, 'showGo'> => (dead ? { showGo: false } : {});
 
 const mainMenuHasConflict = (input: MenuStateInput): boolean =>
   !input.dead && input.mainMenuOpen && Boolean(input.inventoryOpen || input.readingOpen || input.debugMenuOpen);
@@ -109,6 +112,7 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
     overlayHidden,
     paused: !overlayHidden,
     goLabel: started ? 'Paused. Click to continue' : (input.titleNewWorldLabel ?? 'Click to play'),
+    ...goVisibility(input.dead),
     ...saveState(input),
   };
 };
