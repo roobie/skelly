@@ -2,10 +2,10 @@ import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import {
   carveAround,
   centralCell,
-  gridRayForHit,
+  fleshHit,
+  type MissingFlesh,
   missingFlesh,
   protectedCoreCell,
-  struckCell,
 } from './amalgamCarving.ts';
 import {
   AMALGAM_FIGURE_SEED,
@@ -13,6 +13,7 @@ import {
   amalgamFigureForType,
   amalgamStrikeOrigin,
 } from './amalgamFigure.ts';
+import { AmalgamShape } from './amalgamShape.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
@@ -23,6 +24,7 @@ import {
   type Body,
   CONTACT_SKIN,
   type PhysicsParams,
+  type ShapeOf,
   separateBodies,
   separateBodyPair,
   stepBody,
@@ -32,6 +34,7 @@ import { Rng, type RngState } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { type SolidBricks, testedBricks } from './solidBricks.ts';
 import type { SoundEventId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
@@ -126,8 +129,10 @@ export interface ZombieAim {
   readonly health: number;
   readonly maxHealth: number;
   readonly boxes: readonly PosedBoneBox[];
-  /** The box the ray entered first, the one `distanceMetres` measures to. */
+  /** The box the ray struck: entered first, or for an amalgam, the one whose flesh it met. */
   readonly hitBox: PosedBoneBox;
+  /** The amalgam flesh cell the ray struck (core/amalgamCarving.ts, `fleshHit`). */
+  readonly cell?: number | undefined;
 }
 
 /** Where one hit struck an amalgam's flesh, before it is carved. */
@@ -137,11 +142,20 @@ interface AmalgamStrike {
   readonly hit: HitImpulse;
 }
 
+/** Where a hit struck a zombie's flesh, for its caller to carve, when the zombie carves. */
+const strikeOf = (
+  zombie: Zombie,
+  cell: number | undefined,
+  damage: number,
+  hit: HitImpulse,
+): AmalgamStrike | undefined => (cell === undefined || !zombie.type.carving ? undefined : { cell, damage, hit });
+
 interface MeleeHitContext {
   readonly id: EntityId;
   readonly zombie: Zombie;
   readonly region: ZombieHitRegion;
-  readonly hitBox: PosedBoneBox;
+  /** The amalgam flesh cell the hit struck, which a type that carves knocks out around. */
+  readonly cell: number | undefined;
   readonly origin: Vec3;
   readonly direction: Vec3;
   readonly distanceMetres: number;
@@ -446,6 +460,11 @@ export interface ZombieSystemOptions {
   seed?: number;
   /** Movement, attacks and hearing use the body's blockers. */
   isSolid: SolidAt;
+  /**
+   * `isSolid` as cached bricks, which an amalgam's exact shape moves against (core/solidBricks.ts). Without
+   * it the bricks are read from `isSolid` on every query: right, but slower.
+   */
+  solidBricks?: SolidBricks | undefined;
   /** True only while terrain at the actor's position is loaded; unloaded actors wait for Slice 4 catch-up. */
   isLoaded?: ((x: number, z: number) => boolean) | undefined;
   /** Visibility alone uses sight opacity. */
@@ -1302,16 +1321,165 @@ const snapshotZombie = (id: number, zombie: Zombie): { id: number; zombie: Zombi
 const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot =>
   projectSnapshot({ horde, rng }, hordeSnapshotProjectors) as HordeSnapshot;
 
+/** The nearest region a ray strikes, and for an amalgam the flesh cell. */
+interface RegionHit {
+  readonly id: EntityId;
+  readonly zombie: Zombie;
+  readonly region: ZombieHitRegion;
+  /** In blocks along the ray. */
+  readonly distance: number;
+  readonly boxes: readonly PosedBoneBox[];
+  readonly box: PosedBoneBox;
+  readonly cell: number | undefined;
+}
+
+/**
+ * Shoves a body off the terrain its shape's turn of `turn` radians swung into, if a push can, and drops its
+ * velocity back toward what it was pushed off; see ZombieSystem.settleTurn.
+ */
+const pushTurn = (body: Body, shape: AmalgamShape, turn: number): boolean => {
+  const { pos, vel } = body;
+  const push = shape.pushOut(pos, turn * shape.radius);
+  if (!push) {
+    return false;
+  }
+  pos[0] += push[0];
+  pos[2] += push[2];
+  const away = unit(push);
+  const back = Math.min(0, vel[0] * away[0] + vel[2] * away[2]);
+  vel[0] -= back * away[0];
+  vel[2] -= back * away[2];
+  return true;
+};
+
+/** An amalgam body's exact shape, and the last facing it turned to clear of terrain. */
+interface AmalgamCollider {
+  readonly zombie: Zombie;
+  readonly shape: AmalgamShape;
+  facing: Vec3;
+  /** Where it last came to rest on the ground, so a step that could change nothing is skipped. */
+  rest?: { readonly pos: Vec3; readonly facing: Vec3; readonly version: number } | undefined;
+}
+
 export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
   private readonly tickScratch = createZombieTickScratch();
   private readonly hordes = new Map<string, { state: Omit<HordeState, 'rng'>; rng: Rng }>();
   private frozen = false;
+  private readonly solidBricks: SolidBricks;
+  /** Per body: its amalgam's shape and the last facing it turned to without meeting terrain; null otherwise. */
+  private readonly shapes = new WeakMap<Body, AmalgamCollider | null>();
+  private readonly missing = new WeakMap<
+    Zombie,
+    { carved: readonly number[]; severed: number; missing: MissingFlesh }
+  >();
 
   constructor(options: ZombieSystemOptions) {
     this.options = options;
     this.store = options.store ?? new MapEntityStore<Zombie>();
+    this.solidBricks = options.solidBricks ?? testedBricks(options.isSolid);
+  }
+
+  /** The amalgam's flesh as its body's shape, turned to its facing; every other body moves as its box. */
+  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape;
+
+  private colliderOf(body: Body): AmalgamCollider | undefined {
+    let collider = this.shapes.get(body);
+    if (collider === undefined) {
+      const zombie = [...this.store.entries()].find(([, candidate]) => candidate.body === body)?.[1];
+      collider =
+        zombie?.type.model === 'amalgam'
+          ? {
+              zombie,
+              shape: new AmalgamShape(
+                amalgamFigureForType(zombie.type, zombie.figureSeed),
+                this.options.blockSize,
+                this.solidBricks,
+              ),
+              facing: copy(zombie.facing),
+            }
+          : null;
+      this.shapes.set(body, collider);
+    }
+    if (!collider) {
+      return undefined;
+    }
+    const { zombie, shape } = collider;
+    shape.keep(zombie.carved, zombie.severed.length, () => this.missingFor(zombie));
+    shape.face(zombie.facing);
+    return collider;
+  }
+
+  /** The flesh an amalgam has lost, rebuilt only when its holes or severed members change. */
+  private missingFor(zombie: Zombie): MissingFlesh {
+    const cached = this.missing.get(zombie);
+    if (cached && cached.carved === zombie.carved && cached.severed === zombie.severed.length) {
+      return cached.missing;
+    }
+    const missing = missingFlesh(amalgamFigureForType(zombie.type, zombie.figureSeed), zombie);
+    this.missing.set(zombie, { carved: zombie.carved, severed: zombie.severed.length, missing });
+    return missing;
+  }
+
+  /**
+   * Turns an amalgam clear of terrain. A turn that swings its flesh into terrain shoves the body off it by the
+   * shortest push that frees the turned flesh, as a body against a wall pivots off it to turn, and that tick
+   * it doesn't also move back into what it was pushed off. When no push as far as the turn moved its flesh
+   * frees it, it keeps the last facing that was clear. If both overlap (it started in terrain), the turn stands.
+   */
+  private settleTurn(zombie: Zombie): void {
+    const collider = this.colliderOf(zombie.body);
+    if (!collider) {
+      return;
+    }
+    const { facing, shape } = collider;
+    if (zombie.facing[0] === facing[0] && zombie.facing[1] === facing[1] && zombie.facing[2] === facing[2]) {
+      return;
+    }
+    const { pos } = zombie.body;
+    if (shape.overlapsTerrain(pos)) {
+      shape.face(facing);
+      const wasClear = !shape.overlapsTerrain(pos);
+      shape.face(zombie.facing);
+      const turn = Math.abs(wrapAngle(angleOf(zombie.facing) - angleOf(facing)));
+      if (wasClear && !pushTurn(zombie.body, shape, turn)) {
+        shape.face(facing);
+        zombie.facing = copy(facing);
+        return;
+      }
+    }
+    collider.facing = copy(zombie.facing);
+  }
+  /**
+   * Whether an amalgam's step this tick could change nothing, so its shape tests are skipped: it rests on
+   * the ground where it last came to rest, neither moving nor turning, and no solid block has changed.
+   */
+  private restsStill(zombie: Zombie): boolean {
+    const rest = this.colliderOf(zombie.body)?.rest;
+    const { body, facing } = zombie;
+    if (
+      !(rest && body.onGround) ||
+      body.vel[0] !== 0 ||
+      body.vel[1] > 0 ||
+      body.vel[2] !== 0 ||
+      rest.version !== this.solidBricks.version ||
+      rest.pos.some((value, axis) => value !== body.pos[axis]) ||
+      rest.facing.some((value, axis) => value !== facing[axis])
+    ) {
+      return false;
+    }
+    body.vel[1] = 0;
+    return true;
+  }
+
+  private noteRest(zombie: Zombie): void {
+    const collider = this.colliderOf(zombie.body);
+    if (collider) {
+      collider.rest = zombie.body.onGround
+        ? { pos: copy(zombie.body.pos), facing: copy(zombie.facing), version: this.solidBricks.version }
+        : undefined;
+    }
   }
 
   get isFrozen(): boolean {
@@ -1889,7 +2057,7 @@ export class ZombieSystem {
       this.updateHordes(dt, time, player, dayState.phase);
     }
     const { blockSize, isSolid } = this.options;
-    const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [] };
+    const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [], shapeOf: this.shapeOf };
     const scratch = this.tickScratch;
     scratch.dt = dt;
     scratch.time = time;
@@ -1943,6 +2111,7 @@ export class ZombieSystem {
       zombie.body.vel[0] = (direction[0] * speed) / blockSize;
       zombie.body.vel[2] = (direction[2] * speed) / blockSize;
       const before = copy(zombie.body.pos);
+      this.settleTurn(zombie);
       if (zombie.body.onGround) {
         stepBodyHorizontal(zombie.body, {
           dx: zombie.body.vel[0] * dt,
@@ -1967,7 +2136,7 @@ export class ZombieSystem {
     zombie.attackWindup = 0;
     zombie.body.vel[0] = 0;
     zombie.body.vel[2] = 0;
-    stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
+    stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [], shapeOf: this.shapeOf });
   }
 
   private updateZombieTimers(): void {
@@ -2348,12 +2517,17 @@ export class ZombieSystem {
       zombie.body.vel[1] = this.options.jumpSpeed / blockSize;
     }
     scratch.beforeStep = copy(scratch.pos);
-    const obstacles = player.body ? [player.body] : [];
-    stepBody(zombie.body, dt, isSolid, {
-      ...this.options.physics,
-      stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
-      obstacles,
-    });
+    this.settleTurn(zombie);
+    if (!this.restsStill(zombie)) {
+      const obstacles = player.body ? [player.body] : [];
+      stepBody(zombie.body, dt, isSolid, {
+        ...this.options.physics,
+        stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
+        obstacles,
+        shapeOf: this.shapeOf,
+      });
+      this.noteRest(zombie);
+    }
     scratch.travelled = horizontalDistance(scratch.beforeStep, zombie.body.pos) * blockSize;
     scratch.wallAhead =
       aimDirection !== undefined &&
@@ -2512,19 +2686,21 @@ export class ZombieSystem {
     player: PlayerSense,
   ): void {
     const { blockSize, isSolid } = this.tickScratch;
+    const { shapeOf } = this;
     separateBodies({
       bodies: entries.filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body),
       dt,
       isSolid,
       blockSize,
       obstacles: player.body ? [player.body] : [],
+      shapeOf,
     });
     if (!player.body) {
       return;
     }
     for (const [, zombie] of entries) {
       if (!zombie.incapacitated) {
-        separateBodyPair({ first: player.body, second: zombie.body, dt, isSolid, blockSize });
+        separateBodyPair({ first: player.body, second: zombie.body, dt, isSolid, blockSize, shapeOf });
       }
     }
   }
@@ -2658,34 +2834,58 @@ export class ZombieSystem {
     direction: Vec3;
     isBlocked: SolidAt;
     poseCache?: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>> | undefined;
-  }): [EntityId, Zombie, ZombieHitRegion, number, readonly PosedBoneBox[], PosedBoneBox] | undefined {
-    const { blockSize } = this.options;
-    let nearest: [EntityId, Zombie, ZombieHitRegion, number, readonly PosedBoneBox[], PosedBoneBox] | undefined;
-    let nearestDistance = Number.POSITIVE_INFINITY;
+  }): RegionHit | undefined {
+    let nearest: RegionHit | undefined;
     for (const [id, zombie] of this.store.entries()) {
-      if (zombie.incapacitated || !rayMayHitZombie(zombie, origin, direction, blockSize)) {
-        continue;
-      }
-      const posed = posedRegionsForZombie({ id, zombie, blockSize, poseCache });
-      for (const regionId of Object.keys(zombie.regions)) {
-        const region = regionId as ZombieHitRegion;
-        if (!isActiveHitRegion(zombie, region)) {
-          continue;
-        }
-        const boxes = posed[region] ?? [];
-        const hit = posedRegionHit(boxes, origin, direction, blockSize);
-        if (
-          hit === undefined ||
-          raycast(origin, direction, hit.distance, isBlocked) ||
-          hit.distance >= nearestDistance
-        ) {
-          continue;
-        }
-        nearestDistance = hit.distance;
-        nearest = [id, zombie, region, hit.distance, boxes, hit.box];
+      if (!zombie.incapacitated && rayMayHitZombie(zombie, origin, direction, this.options.blockSize)) {
+        nearest = this.nearerRegionHit({ id, zombie, origin, direction, isBlocked, poseCache }, nearest);
       }
     }
     return nearest;
+  }
+
+  /** The ray's first unblocked hit on one zombie's regions when it is nearer than `nearest`, else `nearest`. */
+  private nearerRegionHit(
+    {
+      id,
+      zombie,
+      origin,
+      direction,
+      isBlocked,
+      poseCache,
+    }: {
+      id: EntityId;
+      zombie: Zombie;
+      origin: Vec3;
+      direction: Vec3;
+      isBlocked: SolidAt;
+      poseCache?: Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>> | undefined;
+    },
+    nearest: RegionHit | undefined,
+  ): RegionHit | undefined {
+    const { blockSize } = this.options;
+    const posed = posedRegionsForZombie({ id, zombie, blockSize, poseCache });
+    const figure = zombie.type.model === 'amalgam' ? amalgamFigureForType(zombie.type, zombie.figureSeed) : undefined;
+    let found = nearest;
+    for (const regionId of Object.keys(zombie.regions)) {
+      const region = regionId as ZombieHitRegion;
+      if (!isActiveHitRegion(zombie, region)) {
+        continue;
+      }
+      const boxes = posed[region] ?? [];
+      // An amalgam is struck only on its flesh: its boxes are loose around rounded lobes (#563).
+      const hit: { readonly distance: number; readonly box: PosedBoneBox; readonly cell?: number } | undefined = figure
+        ? fleshHit({ figure, missing: this.missingFor(zombie), boxes, origin, direction, blockSize })
+        : posedRegionHit(boxes, origin, direction, blockSize);
+      if (
+        hit !== undefined &&
+        hit.distance < (found?.distance ?? Number.POSITIVE_INFINITY) &&
+        !raycast(origin, direction, hit.distance, isBlocked)
+      ) {
+        found = { id, zombie, region, distance: hit.distance, boxes, box: hit.box, cell: hit.cell };
+      }
+    }
+    return found;
   }
 
   /** Purely queries the first visible posed region along the ray, including hits beyond melee reach. */
@@ -2710,7 +2910,7 @@ export class ZombieSystem {
     if (!found) {
       return undefined;
     }
-    const [id, zombie, region, distance, boxes, hitBox] = found;
+    const { id, zombie, region, distance, boxes, box, cell } = found;
     const distanceMetres = distance * this.options.blockSize;
     const reachMetres = PLAYER_ARM_REACH_M + weapon.reach;
     return {
@@ -2722,7 +2922,8 @@ export class ZombieSystem {
       health: zombie.regions[region]!,
       maxHealth: maxZombieRegionHealth(zombie.type, region) ?? zombie.regions[region]!,
       boxes,
-      hitBox,
+      hitBox: box,
+      cell,
     };
   }
 
@@ -2758,7 +2959,7 @@ export class ZombieSystem {
         id: aim.id,
         zombie,
         region: aim.region,
-        hitBox: aim.hitBox,
+        cell: aim.cell,
         origin: shot.origin,
         direction,
         distanceMetres: aim.distanceMetres,
@@ -2807,7 +3008,7 @@ export class ZombieSystem {
       id: aim.id,
       zombie,
       region: aim.region,
-      hitBox: aim.hitBox,
+      cell: aim.cell,
       origin,
       direction,
       distanceMetres: aim.distanceMetres,
@@ -2832,7 +3033,7 @@ export class ZombieSystem {
     id,
     zombie,
     region,
-    hitBox,
+    cell,
     origin,
     direction,
     distanceMetres,
@@ -2849,7 +3050,6 @@ export class ZombieSystem {
       impulse: weapon.impulse ?? 4,
     };
     const damage = meleeDamageForContact(zombie, region, weapon, damageType);
-    const cell = this.struckFlesh(zombie, hitBox, hit);
     if (!projectile) {
       this.options.onMeleeContact?.(hit.impulse);
     }
@@ -2885,16 +3085,7 @@ export class ZombieSystem {
         ...(part === undefined ? {} : { part }),
       });
     }
-    return cell === undefined ? undefined : { cell, damage, hit };
-  }
-
-  /** The first visible flesh cell the hit's ray meets from the box it struck, for a type that carves. */
-  private struckFlesh(zombie: Zombie, hitBox: PosedBoneBox, hit: HitImpulse): number | undefined {
-    if (!zombie.type.carving) {
-      return undefined;
-    }
-    const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
-    return struckCell(figure, missingFlesh(figure, zombie), gridRayForHit(figure, hitBox, hit, this.options.blockSize));
+    return strikeOf(zombie, cell, damage, hit);
   }
 
   /** Knocks out the flesh around one hole: the strikes' central cell, sized by their summed damage. */

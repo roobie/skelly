@@ -4,16 +4,17 @@ import { type AmalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import { raycast } from './raycast.ts';
 import type { ZombieDef } from './schema.ts';
-import type { PosedBoneBox } from './zombieRegions.ts';
+import { type PosedBoneBox, posedBoxEntry } from './zombieRegions.ts';
 
 // A damaging hit on an amalgam knocks out the voxels around where it struck, leaving a hole. The hole is
-// simulation state (Zombie.carved), so it survives a save and a replay; it never changes region health,
-// damage, severing or later hit tests, which use the region boxes of the whole body.
+// simulation state (Zombie.carved), so it survives a save and a replay. It never changes region health,
+// damage or severing, but later hits see it: a shot enters a hole and strikes the flesh behind, and passes
+// through a hole that goes all the way (`fleshHit`).
 
 export type AmalgamCarving = NonNullable<ZombieDef['carving']>;
 
 /** A ray in the figure's rest voxel grid, where floor() of a point is its cell (i, j, k). */
-export interface GridRay {
+interface GridRay {
   readonly origin: Vec3;
   readonly direction: Vec3;
 }
@@ -43,10 +44,10 @@ const restBoxCenter = (figure: AmalgamFigure, bone: string): readonly number[] =
 
 /**
  * Maps a hit on a posed region box into the rest voxel grid. The posed box is the rest box moved by its
- * bone's pose and the body's yaw, so its rotation and centre undo that move: no second hit test.
+ * bone's pose and the body's yaw, so its rotation and centre undo that move.
  * `point` and `box` are in block coordinates; `direction` is a unit vector.
  */
-export const gridRayForHit = (
+const gridRayForHit = (
   figure: AmalgamFigure,
   box: PosedBoneBox,
   hit: { readonly point: Vec3; readonly direction: Vec3 },
@@ -104,16 +105,80 @@ const fleshAt = (figure: AmalgamFigure, missing: MissingFlesh, [i, j, k]: Vec3):
   return bone > 0 && !missing.severedOwners.has(bone) && !missing.carved.has(index) ? index : undefined;
 };
 
-/** The first visible flesh cell along the ray, or undefined when the line meets none in the grid. */
-export const struckCell = (figure: AmalgamFigure, missing: MissingFlesh, ray: GridRay): number | undefined => {
-  const { dims } = figure.realized.voxels;
-  const hit = raycast(
-    ray.origin,
-    ray.direction,
-    Math.hypot(...dims),
-    (i, j, k) => fleshAt(figure, missing, [i, j, k]) !== undefined,
-  );
-  return hit && cellIndex(dims, hit.block[0], hit.block[1], hit.block[2]);
+const boneOwners = new WeakMap<AmalgamFigure, ReadonlyMap<string, number>>();
+
+/** A bone's voxel owner value (bone index + 1). */
+const ownerOf = (figure: AmalgamFigure, bone: string): number => {
+  let owners = boneOwners.get(figure);
+  if (!owners) {
+    owners = new Map(figure.realized.body.bones.map((entry, index) => [entry.id, index + 1]));
+    boneOwners.set(figure, owners);
+  }
+  return owners.get(bone)!;
+};
+
+export interface FleshHit {
+  /** From the ray's origin to the struck voxel's face, in blocks. */
+  readonly distance: number;
+  readonly box: PosedBoneBox;
+  /** The struck voxel's cell in the rest grid. */
+  readonly cell: number;
+}
+
+/**
+ * The first visible flesh along a ray through an amalgam's posed region boxes, in block units. For each box
+ * the ray enters, it walks that box's own bone's voxels in the rest grid, skipping carved cells. So a ray
+ * beside the flesh but inside a box misses, a ray into a hole strikes the flesh behind it, and a ray through
+ * a hole that goes all the way meets nothing there. `direction` is a unit vector.
+ */
+export const fleshHit = ({
+  figure,
+  missing,
+  boxes,
+  origin,
+  direction,
+  blockSize,
+}: {
+  readonly figure: AmalgamFigure;
+  readonly missing: MissingFlesh;
+  readonly boxes: readonly PosedBoneBox[];
+  readonly origin: Vec3;
+  readonly direction: Vec3;
+  readonly blockSize: number;
+}): FleshHit | undefined => {
+  const { dims, owner, size } = figure.realized.voxels;
+  const cellBlocks = (size * figure.scale) / blockSize;
+  let nearest: FleshHit | undefined;
+  for (const box of boxes) {
+    const entry = posedBoxEntry(box, origin, direction, blockSize);
+    if (entry === undefined || (nearest !== undefined && entry >= nearest.distance)) {
+      continue;
+    }
+    const point: Vec3 = [
+      origin[0] + direction[0] * entry,
+      origin[1] + direction[1] * entry,
+      origin[2] + direction[2] * entry,
+    ];
+    const ray = gridRayForHit(figure, box, { point, direction }, blockSize);
+    const bone = ownerOf(figure, box.bone);
+    // The box is the bone's voxels plus half a voxel, so its far side is within its diagonal.
+    const across = (2 * Math.hypot(...box.halfSize)) / (size * figure.scale) + 1;
+    const hit = raycast(ray.origin, ray.direction, across, (i, j, k) => {
+      if (i < 0 || j < 0 || k < 0 || i >= dims[0] || j >= dims[1] || k >= dims[2]) {
+        return false;
+      }
+      const index = cellIndex(dims, i, j, k);
+      return owner[index] === bone && !missing.carved.has(index);
+    });
+    if (!hit) {
+      continue;
+    }
+    const distance = entry + hit.distance * cellBlocks;
+    if (nearest === undefined || distance < nearest.distance) {
+      nearest = { distance, box, cell: cellIndex(dims, hit.block[0], hit.block[1], hit.block[2]) };
+    }
+  }
+  return nearest;
 };
 
 const cellOf = (dims: readonly number[], index: number): Vec3 => [

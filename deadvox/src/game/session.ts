@@ -52,6 +52,7 @@ import { Simulation } from '../core/sim.ts';
 import type { Site } from '../core/site.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
+import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
@@ -499,6 +500,10 @@ const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | 
 
 const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? options.ready;
 
+/** Play's `isSolid` is core/collision.ts `worldSolid` over the world and its entities, so their bricks stand in. */
+const solidBricksFor = ({ world, registry, entities }: SessionOptions): SolidBricks | undefined =>
+  entities ? worldBricks(world, registry, entities) : undefined;
+
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const dayCycle = dayCycleFor(registry.dayCycle);
@@ -899,6 +904,7 @@ export const createSession = (options: SessionOptions) => {
     isLoaded: zombieReadinessFor(options),
     terrainFloor: options.terrainFloor,
     isSolid,
+    solidBricks: solidBricksFor(options),
     isOpaque: options.isOpaque,
     blockSize: s,
     physics,
@@ -1064,7 +1070,7 @@ export const createSession = (options: SessionOptions) => {
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
-    stepBody(body, dt, isSolid, { ...physics, obstacles: standingZombieBodies() });
+    stepBody(body, dt, isSolid, { ...physics, obstacles: standingZombieBodies(), shapeOf: zombieSystem.shapeOf });
     updatePlayerSounds(wasGrounded, previousPosition, time);
     const rustle = foliageRustle(rustleClock, {
       body,

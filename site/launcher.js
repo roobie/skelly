@@ -1,43 +1,13 @@
 // biome-ignore lint/correctness/noUnresolvedImports: the browser loads this ESM module from jsDelivr.
 import { html, render } from 'https://cdn.jsdelivr.net/npm/lit-html@3.3.3/+esm';
-import { loadPlaytestText } from './playtestCatalog.js';
-import { applyPlaytestLanguage } from './playtestLanguage.js';
-
-const playtestLanguage = applyPlaytestLanguage(navigator.languages, location.search);
-const playtestText = await loadPlaytestText(fetch, new URL('./playtest.json', import.meta.url), playtestLanguage);
 
 // The static launcher cannot import deadvox/src/core/weather.ts; keep its control range in sync with WEATHERING_STRENGTH_MAX.
 const WEATHERING_STRENGTH_MAX = 8;
 
-// force scroll to the top on load, because of big 1000px space in the middle (can get confusing otherwise)
-window.scrollTo(0, 0);
-
-const playtestBrief = playtestText
-  ? html`
-      <section class="card" lang=${playtestLanguage} aria-labelledby="playtest-title">
-        <h1 id="playtest-title">${playtestText.title}</h1>
-        <p>${playtestText.task}</p>
-        <ul>
-          <li>${playtestText.duration}</li>
-          <li>${playtestText.metrics}</li>
-          <li>${playtestText.sending}</li>
-          <li>${playtestText.analytics}</li>
-          <li>${playtestText.feedbackBefore}<a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">${playtestText.feedbackLink}</a>${playtestText.feedbackAfter}</li>
-          <li>${playtestText.email}</li>
-        </ul>
-        <p><a id="deadvox-playtest" href="deadvox/?site=playtest">${playtestText.playLink}</a></p>
-      </section>`
-  : undefined;
-
 const page = (state) => html`  <main>
-      <header class="brand">
-        <img class="site-logo" src="assets/deadvox-survival-logo.webp" alt="Deadvox Survival">
-      </header>
-      ${playtestBrief}
-      <section class="card" aria-labelledby="deadvox-title" style="margin-top: 1000px;">
+      <section class="card" aria-labelledby="deadvox-title">
         <div class="card-heading">
-          <h2 id="deadvox-title"><a href="deadvox/">deadvox</a><span>(codename)</span></h2>
-          <span>// working title = <code>Darker Yet -VOX-</code></span>
+          <h2 id="deadvox-title"><a href="deadvox/">deadvox</a> <code>(codename)</code></h2>
           <p>A singleplayer voxel survival prototype with data-driven content.</p>
         </div>
         <form id="deadvox-form" @input=${onInput} @change=${onInput} @submit=${onSubmit}>
@@ -227,6 +197,13 @@ const page = (state) => html`  <main>
           <li><a href="mobgen/?template=shambler&amp;seed=7">Generated shambler</a></li>
           <li><a href="mobgen/?template=runner&amp;seed=0">Generated runner</a></li>
           <li><a href="mobgen/?template=brute&amp;seed=11">Generated brute</a></li>
+        </ul>
+      </section>
+
+      <section class="card" aria-labelledby="links-title">
+        <h2 id="links-title">Links</h2>
+        <ul>
+          <li><a href="deadvox/playtest/round1/">Deadvox Round 1 Playtest</a></li>
         </ul>
       </section>
 

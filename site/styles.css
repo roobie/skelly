@@ -108,14 +108,6 @@ a {
   color: var(--link);
 }
 
-#deadvox-playtest {
-  color: var(--button-link);
-}
-
-#deadvox-playtest:hover {
-  color: var(--button-hover);
-}
-
 footer a {
   color: var(--moss-bright);
 }

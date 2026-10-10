@@ -8,8 +8,9 @@
     "feedbackLink": "the playtest feedback form",
     "metrics": "The game records play metrics only on your machine, in this browser.",
     "playLink": "Play the playtest map",
+    "round": "Round",
     "sending": "Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.",
-    "task": "Your task: find the military camp.",
+    "task": "Your task: survive and find the military camp.",
     "title": "Playtest"
   },
   "sv": {
@@ -21,8 +22,9 @@
     "feedbackLink": "formuläret för speltestet",
     "metrics": "Spelet sparar speldata bara på din dator, i den här webbläsaren.",
     "playLink": "Spela speltestkartan",
+    "round": "Runda",
     "sending": "Du väljer själv om du vill skicka den: i F9-menyn sparar du din speldata, och en repris av ditt senaste spelande, som filer du kan bifoga till din återkoppling.",
-    "task": "Ditt uppdrag: hitta militärlägret.",
+    "task": "Ditt uppdrag: överlev och hitta militärlägret.",
     "title": "Speltest"
   }
 }
