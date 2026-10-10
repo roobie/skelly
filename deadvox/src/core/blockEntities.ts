@@ -60,7 +60,20 @@ export interface EntitySpec {
 /** Search time in seconds: 1 s for a small container up to 3 s for a wardrobe (DESIGN.md, "Handling time"). */
 const SEARCH = { min: 1, max: 3, cellsForMax: 48 } as const;
 const DOOR_PANEL_THICKNESS = 0.06;
+const DOOR_FACE_CLEARANCE = 0.001;
 const DOOR_OPEN_TURN = { n: -Math.PI / 2, s: Math.PI / 2, e: -Math.PI / 2, w: Math.PI / 2 } as const;
+const FACE_OUTWARD = { n: -1, s: 1, e: 1, w: -1 } as const;
+
+const bodyFacePanelOffset = (facing: Facing, onBodyFace: boolean): number =>
+  onBodyFace ? FACE_OUTWARD[facing] * (DOOR_PANEL_THICKNESS / 2 + DOOR_FACE_CLEARANCE) : 0;
+
+const doorPanelTurn = (entity: BlockEntity, onBodyFace: boolean): number => {
+  if (!entity.open) {
+    return 0;
+  }
+  const turn = DOOR_OPEN_TURN[entity.facing];
+  return onBodyFace ? -turn : turn;
+};
 
 /** Oriented door-panel box: metre dimensions and local centre around a world-metre hinge. */
 export interface DoorPanelBox {
@@ -79,18 +92,20 @@ export const doorPanel = (entity: BlockEntity, blockSize: number, onBodyFace = f
   const height = h * blockSize;
   const panelX = onBodyFace ? x + (entity.facing === 'e' ? w : 0) : x + w / 2;
   const panelZ = onBodyFace ? z + (entity.facing === 's' ? d : 0) : z + d / 2;
+  const panelOffset = bodyFacePanelOffset(entity.facing, onBodyFace);
+  const openTurn = doorPanelTurn(entity, onBodyFace);
   return alongX
     ? {
         pivot: [x * blockSize, y * blockSize, panelZ * blockSize],
-        center: [width / 2, height / 2, 0],
+        center: [width / 2, height / 2, panelOffset],
         size: [width, height, DOOR_PANEL_THICKNESS],
-        rotationY: entity.open ? DOOR_OPEN_TURN[entity.facing] : 0,
+        rotationY: openTurn,
       }
     : {
         pivot: [panelX * blockSize, y * blockSize, z * blockSize],
-        center: [0, height / 2, width / 2],
+        center: [panelOffset, height / 2, width / 2],
         size: [DOOR_PANEL_THICKNESS, height, width],
-        rotationY: entity.open ? DOOR_OPEN_TURN[entity.facing] : 0,
+        rotationY: openTurn,
       };
 };
 
@@ -249,7 +264,7 @@ export class BlockEntities {
   /** Whether an entity's cell stops movement: closed doors and solid furniture do. */
   blocks(entity: BlockEntity): boolean {
     const def = this.defOf(entity);
-    return def.door ? !entity.open : def.solid !== false;
+    return def.door && !def.shape ? !entity.open : def.solid !== false;
   }
 
   isSolid(x: number, y: number, z: number): boolean {

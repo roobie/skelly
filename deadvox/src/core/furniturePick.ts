@@ -110,10 +110,11 @@ const firstPickCell = ({
 }): RayHit | undefined =>
   raycast(origin, direction, maxDistance, (x, y, z) => {
     const entity = entities.at(x, y, z);
-    if (entity && entities.defOf(entity).door) {
-      return !entity.open;
+    if (entity) {
+      const definition = entities.defOf(entity);
+      return !definition.door || definition.shape !== undefined || !entity.open;
     }
-    return entity !== undefined || isSolid(x, y, z);
+    return isSolid(x, y, z);
   });
 
 export interface FurniturePickHit {
@@ -137,8 +138,11 @@ const resolvePick = ({
   if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || sameClosedDoor)) {
     return { entity: panelHit.entity, distanceBlocks: panelHit.distance / blockSize };
   }
-  if (cellEntity && !entities.defOf(cellEntity).door && cellHit) {
-    return { entity: cellEntity, distanceBlocks: cellHit.distance };
+  if (cellEntity && cellHit) {
+    const definition = entities.defOf(cellEntity);
+    if (!definition.door || definition.shape !== undefined) {
+      return { entity: cellEntity, distanceBlocks: cellHit.distance };
+    }
   }
   return undefined;
 };
