@@ -15,10 +15,12 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
+import { BODY_REGIONS, type BodyWounds } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
+import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 
 /** Droplets in flight at once; a new one replaces the oldest. */
 export const DROPLET_CAP = 128;
@@ -78,10 +80,27 @@ interface SeverityMemo {
 }
 
 /** What drips: the bodies in the world, and where the listener is (blocks). */
+export interface GorePlayer {
+  readonly pos: Vec3;
+  readonly yaw: number;
+  readonly wounds: Readonly<BodyWounds>;
+  /** Whether the figure uses its third-person placement, without the first-person rear offset. */
+  readonly thirdPerson: boolean;
+}
+
 export interface GoreBodies {
   readonly zombies: Pick<EntityStore<Zombie>, 'entries'>;
   readonly listener: Vec3;
+  readonly player?: GorePlayer;
 }
+
+const setPlayerDripOrigin = (
+  target: Vector3,
+  placement: PlayerFigurePlacement,
+  region: (typeof BODY_REGIONS)[number],
+): void => {
+  setPlayerFigurePosition(target, placement, PLAYER_REGION_BOXES[region].at);
+};
 
 const regionNameLists = new WeakMap<Zombie['type']['regions'], readonly string[]>();
 
@@ -142,6 +161,12 @@ export class Gore {
   private readonly scratch = new Vector3();
   private readonly origin = new Vector3();
   private readonly point = new Vector3();
+  private readonly playerPlacement: PlayerFigurePlacement = {
+    bodyPosition: [0, 0, 0],
+    yaw: 0,
+    blockSize: 1,
+    thirdPerson: false,
+  };
   private readonly normal = new Vector3();
   private nextDroplet = 0;
   private nextSplat = 0;
@@ -276,6 +301,7 @@ export class Gore {
     this.fadeSplats(step);
     this.pickDrippers(bodies);
     this.drip(step);
+    this.dripPlayer(step, bodies?.player);
     this.drawDroplets();
     this.spawnedSinceUpdate = 0;
   }
@@ -360,6 +386,29 @@ export class Gore {
       const y = pos[1] * s + heightMetres * this.rng.range(0.35, 0.85);
       const z = pos[2] * s + this.rng.range(-reach, reach);
       if (!this.emit(this.origin.set(x, y, z), this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
+        return;
+      }
+    }
+  }
+
+  /** Player wounds drip from their matching world-figure region in either camera view. */
+  private dripPlayer(dt: number, player: GorePlayer | undefined): void {
+    if (!player) {
+      return;
+    }
+    this.playerPlacement.bodyPosition = player.pos;
+    this.playerPlacement.yaw = player.yaw;
+    this.playerPlacement.blockSize = this.blockSize;
+    this.playerPlacement.thirdPerson = player.thirdPerson;
+    for (const region of BODY_REGIONS) {
+      if (!player.wounds[region]?.bleeding) {
+        continue;
+      }
+      if (!this.rng.chance(DRIPS_PER_SECOND * dt)) {
+        continue;
+      }
+      setPlayerDripOrigin(this.origin, this.playerPlacement, region);
+      if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
         return;
       }
     }
