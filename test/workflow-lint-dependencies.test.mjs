@@ -62,6 +62,32 @@ const nodeCacheDependencyPathsIn = (workflow) =>
 
 const lintCommands = commandsIn(parse(read('.github/workflows/lint.yml')));
 const requiredPrefixes = installPrefixes(lintCommands);
+const pagesWorkflow = parse(read('.github/workflows/pages.yml'));
+const gungenWorkflow = parse(read('.github/workflows/gungen.yml'));
+
+test('Pages Gungen checks run on PRs when their imported sources change', () => {
+  const pagesGungenStep = pagesWorkflow.jobs.build.steps.find(({ name }) => name === 'Check and build gungen');
+  assert.ok(pagesGungenStep, 'Pages workflow has a Gungen build step');
+  const pagesCommands = commandsIn(pagesGungenStep);
+  const pullRequestCommands = commandsIn(gungenWorkflow.jobs.check);
+
+  for (const command of ['npm run typecheck', 'npm test', 'npx vite build']) {
+    assert.ok(
+      pagesCommands.some((run) => run.includes(command)),
+      `Pages Gungen step runs ${command}`,
+    );
+    assert.ok(
+      pullRequestCommands.some((run) => run.includes(command)),
+      `Gungen PR workflow runs ${command}`,
+    );
+  }
+
+  for (const event of ['push', 'pull_request']) {
+    const { paths } = gungenWorkflow.on[event];
+    assert.ok(paths.includes('deadvox/src/**'), `Gungen ${event} checks cover Deadvox source`);
+    assert.ok(paths.includes('mobgen/src/**'), `Gungen ${event} checks cover Mobgen source`);
+  }
+});
 
 test('every workflow running root CI installs lint workflow prefixes and caches their lockfiles', () => {
   assert.ok(requiredPrefixes.size > 0, 'lint workflow declares prefix installs');

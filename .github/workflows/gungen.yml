@@ -5,9 +5,29 @@ name: gungen
 on:
   push:
     branches: [main]
-    paths: ['gungen/**', 'engine/**', '!**/*.md', 'gungen/PROJECT.md', 'deadvox/package-lock.json', 'testPool.ts', '.github/workflows/gungen.yml']
+    paths:
+      - 'gungen/**'
+      - 'engine/**'
+      - 'deadvox/src/**'
+      - 'deadvox/package.json'
+      - 'deadvox/package-lock.json'
+      - 'mobgen/src/**'
+      - '!**/*.md'
+      - 'gungen/PROJECT.md'
+      - 'testPool.ts'
+      - '.github/workflows/gungen.yml'
   pull_request:
-    paths: ['gungen/**', 'engine/**', '!**/*.md', 'gungen/PROJECT.md', 'deadvox/package-lock.json', 'testPool.ts', '.github/workflows/gungen.yml']
+    paths:
+      - 'gungen/**'
+      - 'engine/**'
+      - 'deadvox/src/**'
+      - 'deadvox/package.json'
+      - 'deadvox/package-lock.json'
+      - 'mobgen/src/**'
+      - '!**/*.md'
+      - 'gungen/PROJECT.md'
+      - 'testPool.ts'
+      - '.github/workflows/gungen.yml'
 
 # PR updates replace this PR's checks; main/manual groups always remain unique.
 concurrency:

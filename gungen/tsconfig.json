@@ -5,6 +5,7 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node", "vite/client"],
+    "paths": { "@mobgen/*": ["../mobgen/src/*"] },
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,

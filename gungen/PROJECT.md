@@ -10,6 +10,7 @@ read_if:
   - you change firearm design/template calibre or AK magazine selection
   - you change STANAG magazine geometry or its Deadvox export
   - you change default sweep coverage or timeout policy
+  - you change Gungen's cross-project typechecking or CI triggers
   - you change the firearm action/ejection export contract with Deadvox
   - you author or change gungen assembly or cartridge content
 ---
@@ -1713,6 +1714,8 @@ not snapshotted; review the viewer gallery at generator-change time as recorded
 in `docs/deferred-assertions.md`.
 
 ## Testing
+
+When `gungen/test/attachments.test.ts` exercises the registry from `deadvox/src/core/content.ts`, its import graph reaches `deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and Mobgen figure code. Keep that boundary resolvable in both Gungen's typecheck and test runner, and run those checks when either imported source tree changes; otherwise the broad Pages build can be the first job to expose a broken integration.
 
 - **Say what a test protects.** Each test, or the comment above a group, states
   the behaviour it guards. Two tests that catch the same bugs are one too many,
