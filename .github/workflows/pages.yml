@@ -1,7 +1,8 @@
 name: pages
 
-# Publishes the site to GitHub Pages on runtime/build-input changes to main, subject
-# to the freeze gate described in deadvox/docs/playtest-run.md, "Deployment freeze":
+# Publishes the site to GitHub Pages on runtime/build-input changes to main or a
+# workflow dispatch (including a hotfix branch), subject to the freeze gate described
+# in deadvox/docs/playtest-run.md, "Deployment freeze":
 #   /          site/index.html (landing page)
 #   /gungen/   the gungen viewer
 #   /deadvox/  the deadvox game

@@ -10,6 +10,7 @@ const DISPATCH_CONDITION = /github\.event_name\s*==\s*['"]workflow_dispatch['"]/
 const DISPATCH_REFS = /&&|github\.ref/;
 const FREEZE_ENABLED = /vars\.PAGES_FREEZE\s*!=\s*['"]true['"]/;
 const MAIN_REF = /\bmain\b/;
+const REF_GUARD = /github\.ref|refs\/heads/;
 const EXPRESSION_START = /^\s*\$\{\{\s*/;
 const EXPRESSION_END = /\s*\}\}\s*$/;
 const DISJUNCTION = /\s*\|\|\s*/;
@@ -25,10 +26,14 @@ const disjuncts = (condition) =>
 
 test('Pages freeze gate lets workflow dispatch deploy from a hotfix ref', () => {
   assert.ok(Object.hasOwn(pages.on, 'workflow_dispatch'), 'the Pages workflow supports manual dispatch');
-  assert.equal(pages.on.workflow_dispatch?.branches, undefined, 'dispatch is not restricted to main');
 
   for (const name of ['build', 'deploy']) {
-    const clauses = disjuncts(pages.jobs[name].if);
+    const job = pages.jobs[name];
+    assert.doesNotMatch(String(job.if), REF_GUARD, `${name} gate does not restrict the ref`);
+    for (const [index, step] of job.steps.entries()) {
+      assert.doesNotMatch(String(step.if ?? ''), REF_GUARD, `${name} step ${index} does not restrict the ref`);
+    }
+    const clauses = disjuncts(job.if);
     const freeze = clauses.find((clause) => clause.includes('vars.PAGES_FREEZE'));
     assert.ok(freeze, `${name} checks the freeze variable`);
     assert.match(freeze, FREEZE_ENABLED, `${name} skips when the freeze is true`);
