@@ -580,7 +580,7 @@ and `src/core/content.ts`, `checkItemFirearm`.
 
 ## Character
 
-- **Avatar.** The avatar should reflect equipped gear. Deep customization is a long-term goal, including augmentations, armour and clothing. The third-person view is debug-only; a player-facing view is undecided. See `src/render/playerFigure.ts`, `PlayerMeshes`.
+- **Avatar.** The avatar should reflect equipped gear. Deep customization is a long-term goal, including augmentations, armour and clothing. Third person remains a debug inspection aid, not a decision for a player-facing camera; `src/game/backquoteOrbitGesture.ts`, `BackquoteOrbitGesture`, operates only while that view is active. See `src/render/playerFigure.ts`, `PlayerMeshes`.
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
   are per game hour. Body temperature isn't simulated; #366's heat property
   could later serve it.

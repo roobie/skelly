@@ -74,6 +74,7 @@ import {
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
+import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
 import { continueActionResumesJob } from './continueAction.ts';
 import type { DebugHooks, DebugModule, DebugRuntime, InputReplayStatusState } from './debugInterface.ts';
 import { debugTargetRay } from './debugTargetRay.ts';
@@ -138,7 +139,7 @@ import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
 import { updateStartupHintLatch } from './startupHint.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
-import { ThirdPersonOrbit } from './thirdPersonOrbit.ts';
+import { isPlayerThirdPersonView, ThirdPersonOrbit } from './thirdPersonOrbit.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
@@ -429,6 +430,7 @@ export const startPlay = (
   engine: Engine,
   debugModule?: DebugModule,
   options: StartPlayOptions = {},
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Backquote input dispatch is composed in this game-loop entry point; recognizer state stays isolated.
 ): { enter: () => void } => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const inputTarget = renderer?.domElement ?? $('view');
@@ -577,6 +579,7 @@ export const startPlay = (
   let spectatorBodyView: { readonly yaw: number; readonly pitch: number } | undefined;
   let thirdPersonViewEnabled = false;
   const thirdPersonOrbit = new ThirdPersonOrbit();
+  let backquoteGesture: BackquoteOrbitGesture | undefined;
   let perceptionLabelsEnabled = false;
   const session = createSession({
     registry,
@@ -837,7 +840,11 @@ export const startPlay = (
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
   input.setMouseLookOverride((movementX, movementY) =>
-    thirdPersonOrbit.rotate(movementX, movementY, thirdPersonViewEnabled && !spectatorCameraEnabled, input.yaw),
+    thirdPersonOrbit.rotate(
+      movementX,
+      movementY,
+      isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
+    ),
   );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
   const damageEvents = sim.events.reader();
@@ -1202,9 +1209,8 @@ export const startPlay = (
       enabled: () => thirdPersonViewEnabled,
       toggle: () => {
         thirdPersonViewEnabled = !thirdPersonViewEnabled;
-        if (!thirdPersonViewEnabled) {
-          thirdPersonOrbit.reset();
-        }
+        thirdPersonOrbit.reset();
+        backquoteGesture?.cancel();
       },
     },
     perceptionLabels: {
@@ -1588,15 +1594,24 @@ export const startPlay = (
     tap: () => completeWorldInteraction('pocket'),
     hold: () => completeWorldInteraction('wield'),
   });
+  const toggleInteractionHints = (): void => {
+    hudOptions.interaction = !hudOptions.interaction;
+    writeHudOptions(hudOptions);
+    drawHudOptions();
+  };
   const hintToggleInput = new PressHoldInput<string>({
     holdRealMs: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
     tap: () => undefined,
-    hold: (action) => {
-      if (action === 'hud.toggle-interaction-hints' && !sim.body.actionRefusal) {
-        hudOptions.interaction = !hudOptions.interaction;
-        writeHudOptions(hudOptions);
-        drawHudOptions();
-      }
+    hold: () => backquoteGesture?.toggleHudIfAllowed(),
+  });
+  backquoteGesture = new BackquoteOrbitGesture({
+    holdRealMs: keyboardInput.registry.binding('hud.toggle-interaction-hints')?.holdMs ?? 0,
+    orbit: thirdPersonOrbit,
+    canToggleHud: () => sim.body.actionRefusal === undefined,
+    toggleHud: toggleInteractionHints,
+    toggleDebugPanel: () => {
+      debugTools?.handleAction('debug.panel-toggle');
+      syncMenuState();
     },
   });
   globalThis.addEventListener('blur', () => {
@@ -1605,6 +1620,7 @@ export const startPlay = (
     interactInput.cancel();
     interactionPressTarget = undefined;
     hintToggleInput.cancel();
+    backquoteGesture?.cancel();
   });
 
   /** Default-view R reloads, racks and removes; menus own their own bindings (including inventory rotation). */
@@ -1685,6 +1701,7 @@ export const startPlay = (
       return;
     }
     input.cancel(preservePointer);
+    backquoteGesture?.cancel();
     cancelItemThrow();
     throwStanceInput.cancel();
     quickbarInput.cancel();
@@ -1820,35 +1837,40 @@ export const startPlay = (
     if (!(action.startsWith('debug.') || action.startsWith('spawn.'))) {
       return false;
     }
-    if (action === 'debug.third-person-orbit') {
-      thirdPersonOrbit.press(at, thirdPersonViewEnabled && !spectatorCameraEnabled, input.yaw);
-      return true;
-    }
     if (action === 'debug.review-map-toggle') {
       toggleReviewMap();
       return true;
     }
-    debugTools?.handleAction(action);
+    backquoteGesture?.routeDebugAction({
+      action,
+      at,
+      thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
+      facingYaw: input.yaw,
+      handleAction: () => debugTools?.handleAction(action),
+    });
     syncMenuState();
     return true;
   };
-  const handleHintCommand = (action: string, phase: InputCommand['phase'], at: number): boolean => {
-    if (action !== 'hud.toggle-interaction-hints') {
-      return false;
-    }
-    if (phase === 'up') {
-      hintToggleInput.keyUp(action, at);
-    } else {
-      hintToggleInput.keyDown(action, at);
-    }
-    return true;
+  const legacyHintInput = {
+    down: (at: number): void => hintToggleInput.keyDown('hud.toggle-interaction-hints', at),
+    up: (at: number): void => hintToggleInput.keyUp('hud.toggle-interaction-hints', at),
   };
+  const handleHintCommand = (action: string, phase: InputCommand['phase'], at: number): boolean =>
+    backquoteGesture?.routeInput(action, {
+      phase,
+      at,
+      thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
+      debugPanelAvailable: keyboardInput.held('debug.gate'),
+      facingYaw: input.yaw,
+      fallback: () => legacyHintInput[phase](at),
+    }) ?? false;
   const cancelHeldInput = (): void => {
     input.reload.cancel();
     throwStanceInput.cancel();
     quickbarInput.cancel();
     interactInput.cancel();
     interactionPressTarget = undefined;
+    backquoteGesture?.cancel();
   };
   const rejectRefusedInput = (): boolean => {
     const refusal = sim.body.actionRefusal;
@@ -1860,10 +1882,6 @@ export const startPlay = (
     return true;
   };
   const releaseInputCommand = (action: string, at: number, slot: number | undefined): void => {
-    if (action === 'debug.third-person-orbit') {
-      thirdPersonOrbit.release();
-      return;
-    }
     if (handleHintCommand(action, 'up', at)) {
       return;
     }
@@ -2704,7 +2722,7 @@ export const startPlay = (
         view.damage(event.amount);
       }
     }
-    const orbitAngle = thirdPersonOrbit.angle(thirdPersonViewEnabled && !spectatorCameraEnabled);
+    const orbitAngle = thirdPersonOrbit.angle(isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled));
     view.updateCamera(
       {
         dt,
@@ -2718,7 +2736,7 @@ export const startPlay = (
         ...(spectatorCameraEnabled && spectatorCameraBody
           ? { spectator: { position: [...spectatorCameraBody.pos], yaw: input.yaw, pitch: input.pitch } }
           : {}),
-        thirdPerson: thirdPersonViewEnabled && !spectatorCameraEnabled,
+        thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
         ...(orbitAngle ? { thirdPersonOrbit: orbitAngle } : {}),
         sightImpaired: sim.body.consequences.sightImpaired,
       },
@@ -3074,6 +3092,7 @@ export const startPlay = (
     }
     throwStanceInput.update(now);
     hintToggleInput.update(now);
+    backquoteGesture?.update(now);
   };
 
   // Blood holds still while the game is paused.

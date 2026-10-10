@@ -280,18 +280,16 @@ describe('keyboard registry', () => {
   it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.binding('debug.gate')?.defaults[0]?.code).toBe('F2');
+    expect(bindings.binding('debug.panel-toggle')).toMatchObject({
+      defaults: [{ code: 'Backquote' }],
+      gate: 'debug.gate',
+    });
     expect(bindings.binding('hud.toggle-interaction-hints')?.defaults[0]?.code).toBe('Backquote');
     expect(bindings.rebind('hud.toggle-interaction-hints', [{ code: 'KeyJ' }])).toBeUndefined();
     expect(bindings.label('hud.toggle-interaction-hints')).toBe('J');
   });
-  it('gates third-person controls behind F2 and exposes orbit as a held action on the free Digit6 key', () => {
+  it('gates the third-person view behind F2 and toggles it in both directions', () => {
     const binding = new BindingRegistry(INPUT_BINDINGS, storage());
-    expect(binding.binding('debug.third-person-orbit')).toMatchObject({
-      defaults: [{ code: 'Digit6' }],
-      gate: 'debug.gate',
-      debug: true,
-      commands: [{ id: 'debug.third-person-orbit', kind: 'held-state' }],
-    });
     expect(binding.binding('debug.third-person-toggle')?.defaults[0]?.code).toBe('Numpad0');
     expect(binding.binding('debug.third-person-toggle')).toMatchObject({
       defaults: [{ code: 'Numpad0' }],
@@ -317,14 +315,6 @@ describe('keyboard registry', () => {
       'down',
       'up',
       'down',
-    ]);
-    expect(keyboard.press(event('Digit6'))).toBe(true);
-    expect(keyboard.held('debug.third-person-orbit')).toBe(true);
-    keyboard.release(event('Digit6'));
-    expect(keyboard.held('debug.third-person-orbit')).toBe(false);
-    expect(commands.filter(({ action }) => action === 'debug.third-person-orbit').map(({ phase }) => phase)).toEqual([
-      'down',
-      'up',
     ]);
   });
   it('gates the review map behind F2+M and moves game freeze off M', () => {
