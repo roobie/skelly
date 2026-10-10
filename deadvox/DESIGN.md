@@ -599,12 +599,15 @@ and `src/core/content.ts`, `checkItemFirearm`.
   action is recorded in [SLICE-3.md](SLICE-3.md), 3.4.
 
   Infection onset is time-based, with deterministic infection risk and an
-  antiseptic window. Knockout is timed; all body tunables are content-defined so
-  mods can change them. A knockout leaves the player prone, with a black screen
-  and no sound; death after a knockout stays black. See `src/core/body.ts`,
-  `Body.advance`; `src/core/schema.ts`, `BodyTuningSchema`; `src/ui/style.css`,
-  `body.unconscious`; `src/game/audio.ts`, `GameAudio.setOutputMuted`; and
-  `src/game/play.ts`, `frame`.
+  antiseptic window. Knockout is timed; infection and knockout settings are
+  content-defined. Regional recovery follows `HEALTH.regen` in
+  `src/core/needs.ts`. A knockout leaves the player prone, with a black screen
+  and no sound. If the character
+  dies while knocked out, the black screen gives way to the death screen. See
+  `src/core/body.ts`, `Body.advance`; `src/core/schema.ts`, `BodyTuningSchema`;
+  `src/core/needs.ts`, `HEALTH.regen`; `src/game/session.ts`,
+  `playerEyeHeightMetres`; `src/ui/style.css`, `body.unconscious`;
+  `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
 
