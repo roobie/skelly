@@ -239,7 +239,7 @@ export const createPlayView = (
     ) => {
       meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
       const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
-      held.update(camera, pose, recoil, handling);
+      held.update(camera, pose, recoil, handling, dt);
       flashlight.update({ registry, lit: light, held, camera, inventory });
       lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: flashlight.daylightScale });
     },

@@ -16,6 +16,7 @@ import {
   Group,
   HemisphereLight,
   type Material,
+  MathUtils,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
@@ -63,7 +64,16 @@ import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
-import { type ComposedSlot, LENS, type ModelLibrary } from './models.ts';
+import {
+  createMagazineLoadFrame,
+  createMagazinePress,
+  createMagazineRaise,
+  MAGAZINE_LOAD_POSE,
+  magazinePress,
+  readMagazineLoadFrame,
+  stepMagazineRaise,
+} from './magazineLoadPose.ts';
+import { type ComposedSlot, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
@@ -72,6 +82,14 @@ import type { SkyTargets } from './sky.ts';
 /** Metres per grid cell for the stand-in box. */
 const CELL = 0.06;
 const TORSO_Y_AXIS = new Vector3(0, 1, 0);
+const VIEW_X_AXIS = new Vector3(1, 0, 0);
+/** A torso arm places its held item from its own position, so it needs no separate offset. */
+const ARM_PLACED = { offset: [0, 0, 0] as Vec3 };
+/**
+ * Presentation estimate: the pressing wrist sits beside the round, on its own side and a little above, in view
+ * metres for a magazine in the right hand; the left mirrors it. Beside, not over, so the round stays in view.
+ */
+const THUMB_PRESS_WRIST: Vec3 = [-0.05, 0.012, 0.01];
 
 export interface HeldFirearmPose {
   readonly uid: number;
@@ -139,6 +157,16 @@ export class HeldItems {
   private readonly magazineSlots = new Map<number, ComposedSlot>();
   private readonly incomingMagazines = new Map<number, { object: Object3D; model: string }>();
   private readonly loadingShells = new Map<number, Object3D>();
+  /** Each held magazine's top round seat, in its model's frame, with that round's tilt. */
+  private readonly magazineSeats = new Map<number, { readonly seat: Object3D; readonly tiltRadians: number }>();
+  /** The round the off hand presses into a magazine or strips from it; one at a time. */
+  private magazineRound: { object: Object3D; type: string; uid: number } | undefined;
+  private readonly magazineFrame = createMagazineLoadFrame();
+  private readonly magazineRaise = createMagazineRaise();
+  private readonly magazinePressPose = createMagazinePress();
+  private readonly magazineTarget = new Vector3();
+  private readonly magazineWrist = new Vector3();
+  private readonly magazineTilt = new Quaternion();
   private readonly arms = new Map<HandSide, Group>();
   private readonly armLengths = new Map<Group, readonly [number, number]>();
   private readonly handBases = new Map<HandSide, Vec3>();
@@ -189,12 +217,16 @@ export class HeldItems {
     return { scene: this.scene, camera: this.camera };
   }
 
-  /** Catches up with what's held and turns it with the main camera. Call before rendering the frame. */
+  /**
+   * Catches up with what's held and turns it with the main camera. Call before rendering the frame. `dt` is the
+   * frame's real seconds, used only to raise and lower a magazine being loaded.
+   */
   update(
     main: PerspectiveCamera,
     pose?: MeleePoseFrame,
     recoil = 0,
     handling: HeldHandlingFrame = { firearms: [] },
+    dt = 0,
   ): void {
     const { firearms: firearmPoses, readiness } = handling;
     const renderPose = handling.grab ? grabPose(pose ?? readyMeleePose(false), handling.grab.progress) : pose;
@@ -229,6 +261,7 @@ export class HeldItems {
     this.view.quaternion.copy(baseCameraQuaternion);
     this.view.updateMatrixWorld(true);
     this.poseRummage(renderPose, handling);
+    this.poseMagazineLoad(handling, dt);
     for (const compass of this.compasses.values()) {
       compass.update(main.rotation.y);
     }
@@ -498,6 +531,89 @@ export class HeldItems {
         this.placeHeldItem(held, arm, { offset: grip });
       }
       this.view.updateMatrixWorld(true);
+    }
+  }
+
+  /**
+   * Raises a held magazine while rounds go in or out of it, and has the other hand press each round from its job's
+   * progress, so the press never shows a round the simulation hasn't moved (DESIGN.md, "Hands: what you see is
+   * what's there").
+   */
+  private poseMagazineLoad(handling: HeldHandlingFrame, dt: number): void {
+    const running = readMagazineLoadFrame(this.inventory, handling.job, this.magazineFrame)
+      ? this.magazineFrame
+      : undefined;
+    stepMagazineRaise(this.magazineRaise, running, dt);
+    const { side, uid, weight } = this.magazineRaise;
+    const arm = side && this.arms.get(side);
+    const held = uid === undefined ? undefined : this.shown.get(uid);
+    if (!(side && arm && held && weight > 0 && arm.parent === this.torso && this.inventory.hands[side]?.uid === uid)) {
+      this.hideMagazineRound();
+      return;
+    }
+    const [x, y, z] = MAGAZINE_LOAD_POSE.raised;
+    this.magazineTarget.set(side === 'right' ? x : -x, y, z).applyAxisAngle(TORSO_Y_AXIS, -this.torso.rotation.y);
+    const eased = weight * weight * (3 - 2 * weight);
+    arm.position.lerp(this.magazineTarget, eased);
+    arm.quaternion.multiply(this.magazineTilt.setFromAxisAngle(VIEW_X_AXIS, MAGAZINE_LOAD_POSE.raisedTiltRadians * eased));
+    this.placeHeldItem(held, arm, ARM_PLACED);
+    this.view.updateMatrixWorld(true);
+    const seat = uid === undefined ? undefined : this.magazineSeats.get(uid);
+    const offArm = this.arms.get(side === 'right' ? 'left' : 'right');
+    if (!(running && seat && offArm?.parent)) {
+      this.hideMagazineRound();
+      return;
+    }
+    const press = this.magazinePressPose;
+    magazinePress(running, press);
+    // The fingers hold the round at `press.round`; the wrist sits beside it, where the thumb presses.
+    seat.seat.localToWorld(this.magazineTarget.set(...press.round));
+    const [wristX, wristY, wristZ] = THUMB_PRESS_WRIST;
+    this.magazineWrist
+      .set(side === 'right' ? wristX : -wristX, wristY, wristZ)
+      .applyQuaternion(this.view.quaternion);
+    this.magazineTarget.add(this.magazineWrist);
+    offArm.position.lerp(offArm.parent.worldToLocal(this.magazineTarget), press.reach);
+    const offHeld = this.heldByHand.get(side === 'right' ? 'left' : 'right');
+    if (offHeld) {
+      this.placeHeldItem(offHeld, offArm, ARM_PLACED);
+    }
+    this.view.updateMatrixWorld(true);
+    const round = this.pressedRound(running.uid, seat, running.roundType);
+    if (round) {
+      // The round rides in the fingers until it seats, without becoming a second inventory item.
+      offArm.getWorldPosition(this.magazineTarget).sub(this.magazineWrist);
+      round.position.copy(seat.seat.worldToLocal(this.magazineTarget));
+      round.visible = press.visible;
+    }
+  }
+
+  /** The round model under the thumb, built once per magazine and round type. */
+  private pressedRound(
+    uid: number,
+    seat: { readonly seat: Object3D; readonly tiltRadians: number },
+    type: string | undefined,
+  ): Object3D | undefined {
+    const current = this.magazineRound;
+    if (current && current.uid === uid && current.type === type) {
+      return current.object;
+    }
+    current?.object.removeFromParent();
+    this.magazineRound = undefined;
+    const modelId = type === undefined ? undefined : defOf(this.inventory.registry, type).model;
+    const object = modelId === undefined ? undefined : this.models?.part(modelId);
+    if (!(type && object)) {
+      return undefined;
+    }
+    object.rotation.z = seat.tiltRadians;
+    seat.seat.add(object);
+    this.magazineRound = { object, type, uid };
+    return object;
+  }
+
+  private hideMagazineRound(): void {
+    if (this.magazineRound) {
+      this.magazineRound.object.visible = false;
     }
   }
 
@@ -902,6 +1018,8 @@ export class HeldItems {
     this.magazineSlots.clear();
     this.incomingMagazines.clear();
     this.loadingShells.clear();
+    this.magazineSeats.clear();
+    this.magazineRound = undefined;
     this.armLengths.clear();
     this.handBases.clear();
     this.heldByHand.clear();
@@ -1079,6 +1197,13 @@ export class HeldItems {
     const model = look && this.models?.heldLook(look);
     if (model) {
       applyItemEmissive(model.root, item, def, this.inventory.registry.models.get(def.model!));
+      const [top] = this.inventory.registry.models.get(def.model!)?.rounds ?? [];
+      if (top) {
+        const seat = new Object3D();
+        seat.position.set(...top.at);
+        heldModelFrame(model.root).add(seat);
+        this.magazineSeats.set(item.uid, { seat, tiltRadians: MathUtils.degToRad(top.tilt) });
+      }
       const action = this.inventory.registry.models.get(def.model!)?.action;
       if (model.slots.magazine) {
         this.magazineSlots.set(item.uid, model.slots.magazine);

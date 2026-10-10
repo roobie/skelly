@@ -144,6 +144,9 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
 const modelFrame = (root: Object3D, form: 'ground' | 'held'): Object3D =>
   form === 'ground' ? root.children[0]! : root.children[0]!.children[0]!;
 
+/** A held copy's group in the model file's own frame, for points authored in that frame. */
+export const heldModelFrame = (root: Object3D): Object3D => modelFrame(root, 'held');
+
 export class ModelLibrary {
   /** Goes up each time a model loads, so what's drawn can catch up. */
   version = 0;

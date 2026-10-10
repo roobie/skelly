@@ -12,7 +12,7 @@ import type { SoundEventId } from '../core/soundEvents.ts';
 export const ROUND_LOAD_SIM_SECONDS = 0.8;
 export const ROUND_STRIP_SIM_SECONDS = 0.5;
 export const MAGAZINE_LOAD_ACTION = 'magazine.load';
-const STRIP_ACTION = 'magazine.strip';
+export const MAGAZINE_STRIP_ACTION = 'magazine.strip';
 
 export class MagazineHandling {
   private readonly inventory: Inventory;
@@ -41,7 +41,7 @@ export class MagazineHandling {
     this.reloadFactor = reloadFactor;
     this.onSound = onSound;
     queue.registerAction(MAGAZINE_LOAD_ACTION, (params) => this.completeLoad(params.uid, params.ammoUid));
-    queue.registerAction(STRIP_ACTION, (params) => this.completeStrip(params.uid));
+    queue.registerAction(MAGAZINE_STRIP_ACTION, (params) => this.completeStrip(params.uid));
   }
 
   /** A wielded magazine, which R loads; its strip item action unloads it. */
@@ -90,7 +90,7 @@ export class MagazineHandling {
     if (magazine.cartridges!.length === 0) {
       return 'Magazine is empty';
     }
-    this.queue.enqueueAction(STRIP_ACTION, 'Strip a round', ROUND_STRIP_SIM_SECONDS * this.reloadFactor(), {
+    this.queue.enqueueAction(MAGAZINE_STRIP_ACTION, 'Strip a round', ROUND_STRIP_SIM_SECONDS * this.reloadFactor(), {
       uid: magazine.uid,
     });
     this.onSound('magazine_round_strip', time);
