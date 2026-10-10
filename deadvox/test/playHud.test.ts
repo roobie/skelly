@@ -96,6 +96,30 @@ it('projects blood level and affected regions, with their tier, only while a wou
   expect(treatedLines.every((line) => bleedingLines.includes(line))).toBe(true);
 });
 
+it('keeps a scratch off the warning line while naming its region', () => {
+  const region = bodyRegionLabel('leftArm');
+  const status = {
+    calendar: 0,
+    speed: 1,
+    paused: false,
+    needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    health: 91,
+    blood: 67,
+    sprinting: false,
+    lightCharge: undefined,
+  };
+  const moderate = playNeedsText({ ...status, bleeding: [{ region, tier: 'moderate' }] });
+  const scratch = playNeedsText({ ...status, bleeding: [{ region, tier: 'scratch' }] });
+  const warningLine = moderate.split('\n').find((line) => line.includes(region));
+  if (!warningLine) {
+    throw new Error('Moderate bleeding status did not include its region');
+  }
+  const warningToken = warningLine.split(' ')[0]!;
+
+  expect(scratch).toContain(region);
+  expect(scratch.split('\n').some((line) => line.startsWith(warningToken))).toBe(false);
+});
+
 it('uses a rebound registry label for restable furniture interactions', () => {
   expect(inputBindings.rebind('world.interact', [{ code: 'KeyJ' }])).toBeUndefined();
   try {
