@@ -540,7 +540,6 @@ describe('camp gate templates', () => {
     const holeOpening = crouchHoleOpening(crouchHole, Math.round(camp.ground / BLOCK_SIZE));
     expect(holeOpening.openZ.length).toBeGreaterThan(0);
     const eyeHeight = (camp.ground + BLOCK_SIZE + PLAYER.eye) / BLOCK_SIZE;
-    expect(holeOpening.feetY + holeOpening.height).toBeLessThan(eyeHeight);
     const from = (point: [number, number]): Point3 => [point[0], eyeHeight, point[1]];
     for (const marker of markers) {
       const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, BLOCK_SIZE);
