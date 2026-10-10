@@ -13,6 +13,7 @@ import {
   amalgamFigureForType,
   amalgamStrikeOrigin,
 } from '../src/core/amalgamFigure.ts';
+import { AmalgamShape } from '../src/core/amalgamShape.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -20,6 +21,7 @@ import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';
 import { type Body, stepBodyHorizontal } from '../src/core/physics.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { zombieFigure } from '../src/core/zombieFigure.ts';
@@ -1035,32 +1037,54 @@ describe('amalgam flesh carving', () => {
     return { simulation: restored, zombie, input, lost };
   };
 
-  it('misses with a ray that crosses the core box beside its flesh', () => {
-    const { simulation, input } = severedAmalgam();
+  it('misses with a ray just beside the flesh, inside the core box', () => {
+    const { simulation, zombie, input } = severedAmalgam();
     const weapon = { damage: 0, reach: 10, cooldown: 0 };
-    const along = (point: Vec3, direction: Vec3) =>
-      simulation.aimAt(
-        point.map((value, axis) => value - (direction[axis]! * 4) / BLOCK_SIZE) as Vec3,
-        direction,
-        weapon,
+    const step = voxelMetres / BLOCK_SIZE;
+    const { pos, halfWidth, height } = zombie.body;
+    const halfDepth = zombie.body.halfDepth ?? halfWidth;
+    const within = (box: (typeof boxes)[number], point: Vec3): boolean => {
+      const offset = point.map((value, axis) => (value - box.center[axis]!) * BLOCK_SIZE);
+      const local = [0, 1, 2].map((column) =>
+        [0, 1, 2].reduce((sum, axis) => sum + box.rotation[axis * 3 + column]! * offset[axis]!, 0),
       );
+      return (
+        local.every((value, axis) => Math.abs(value) < box.halfSize[axis]!) &&
+        Math.abs(point[0] - pos[0]) < halfWidth &&
+        Math.abs(point[2] - pos[2]) < halfDepth &&
+        point[1] > pos[1] &&
+        point[1] < pos[1] + height
+      );
+    };
     const boxes = posedAmalgamRegionBoxes(input)['core.trunk']!;
-    expect(
-      boxes.some((box) =>
-        MEMBER_RAY_DIRECTIONS.some((direction) => along(box.voxelCentroid, direction)?.region === 'core.trunk'),
-      ),
-    ).toBe(true);
-    // Lines through points just inside each corner of a core box.
-    const misses = boxes.flatMap((box) =>
-      Array.from({ length: 8 }, (_, corner) => {
-        const local = box.halfSize.map((half, axis) => ((((corner >> axis) & 1) * 2 - 1) * 0.9 * half) / BLOCK_SIZE);
-        return box.center.map(
-          (value, axis) =>
-            value + [0, 1, 2].reduce((sum, column) => sum + box.rotation[axis * 3 + column]! * local[column]!, 0),
+    /** Horizontal lines along one row, outward from a core box's centre: the first to miss after one that strikes. */
+    const besideOnRow = (box: (typeof boxes)[number], direction: Vec3, row: number, sign: number): Vec3[] => {
+      const side: Vec3 = [direction[2], 0, -direction[0]];
+      let struck = false;
+      for (let out = 0; out < 40; out++) {
+        const point = box.voxelCentroid.map(
+          (value, axis) => value + (side[axis]! * sign * out + (axis === 1 ? row : 0)) * step,
         ) as Vec3;
-      }).flatMap((point) => MEMBER_RAY_DIRECTIONS.filter((direction) => along(point, direction) === undefined)),
+        if (!within(box, point)) {
+          return [];
+        }
+        const from = point.map((value, axis) => value - (direction[axis]! * 4) / BLOCK_SIZE) as Vec3;
+        const aim = simulation.aimAt(from, direction, weapon);
+        if (struck && aim === undefined) {
+          return [point];
+        }
+        struck ||= aim?.region === 'core.trunk';
+      }
+      return [];
+    };
+    const beside = boxes.flatMap((box) =>
+      MEMBER_RAY_DIRECTIONS.filter((candidate) => candidate[1] === 0).flatMap((direction) =>
+        [-12, -9, -6, -3, 0, 3, 6, 9, 12].flatMap((row) =>
+          [-1, 1].flatMap((sign) => besideOnRow(box, direction, row, sign)),
+        ),
+      ),
     );
-    expect(misses.length).toBeGreaterThan(0);
+    expect(beside.length).toBeGreaterThan(0);
   });
 
   it('lets a later shot through a carved hole strike the flesh behind it, or pass through', () => {
@@ -1072,6 +1096,39 @@ describe('amalgam flesh carving', () => {
     expect(target.zombie.carved.length).toBeGreaterThan(0);
     const after = target.simulation.aimAt(target.origin, target.direction, weapon);
     expect(after === undefined || after.distanceMetres > before!.distanceMetres).toBe(true);
+  });
+
+  it('keeps its movement shape in step with its holes, carve by carve', () => {
+    const target = coreTarget();
+    const { simulation, zombie } = target;
+    const kept = simulation.shapeOf(zombie.body) as AmalgamShape;
+    for (const [key, yaw] of [
+      ['first', 0],
+      ['second', 0.15],
+      ['third', -0.15],
+    ] as const) {
+      simulation.firePellets(
+        pelletShotFromBasis({ ammo: buck, origin: target.origin, basis: aimBasis(yaw, 0, NEUTRAL_AIM), seed: 5, key }),
+      );
+      simulation.shapeOf(zombie.body);
+    }
+    const built = (carved: readonly number[]): AmalgamShape => {
+      const shape = new AmalgamShape(figure, BLOCK_SIZE, testedBricks(FLOOR));
+      shape.keep(carved, 0, () => missingFlesh(figure, { carved, severed: [] }));
+      return shape;
+    };
+    // A small box at the centre of every voxel of flesh the figure was built with.
+    const { centres } = fleshVoxels(figure);
+    const probe = (shape: AmalgamShape): boolean[] => {
+      shape.face([0, 0, -1]);
+      return centres.map(([x, y, z]) =>
+        shape.overlapsBox([0, 0, 0], [x - 0.01, y - 0.01, z - 0.01], [x + 0.01, y + 0.01, z + 0.01]),
+      );
+    };
+    const fresh = probe(built(zombie.carved));
+    expect(zombie.carved.length).toBeGreaterThan(0);
+    expect(fresh).not.toEqual(probe(built([])));
+    expect(probe(kept)).toEqual(fresh);
   });
 
   it('opens a hole for every shot that hits the core after its members are severed', () => {

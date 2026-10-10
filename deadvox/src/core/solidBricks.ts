@@ -5,9 +5,8 @@ import { CHUNK, type Vec3 } from './coords.ts';
 import type { SolidAt } from './raycast.ts';
 import type { World } from './world.ts';
 
-// Solid blocks grouped into 4×4×4 bricks, so an exact body shape rejects an empty brick, or a wall's whole
-// brick, in one box test instead of block by block (#563). A brick is a 64-bit solid mask, as two 32-bit
-// words, plus the tight box around its solid blocks.
+// Solid blocks grouped into 4×4×4 bricks, so an exact body shape rejects an empty brick, or a wall's slice of
+// one, in a few box tests instead of block by block (#563). A brick is a 64-bit solid mask, as two 32-bit words.
 
 /** Blocks along a brick's edge; brick coordinate = block coordinate >> BRICK_BITS. */
 export const BRICK_BITS = 2;
@@ -16,14 +15,10 @@ const BRICKS_PER_CHUNK = CHUNK / BRICK;
 const CHUNK_BRICK_BITS = Math.log2(BRICKS_PER_CHUNK);
 const BRICK_SLOTS = BRICKS_PER_CHUNK ** 3;
 
-/**
- * One brick: bit x + 4z + 16y (local 0..3) is solid, y 0–1 in `lo` and y 2–3 in `hi`. `box` packs the tight
- * box around the solid blocks, 3 bits each from the low end: min x, y, z, then exclusive max x, y, z.
- */
+/** One brick: bit x + 4z + 16y (local 0..3) is solid, y 0–1 in `lo` and y 2–3 in `hi`. */
 export interface BrickOut {
   lo: number;
   hi: number;
-  box: number;
 }
 
 export interface SolidBricks {
@@ -33,34 +28,7 @@ export interface SolidBricks {
   readonly version: number;
 }
 
-const FULL_BOX = (BRICK << 9) | (BRICK << 12) | (BRICK << 15);
-
 const bitOf = (lx: number, ly: number, lz: number): number => lx + BRICK * (lz + BRICK * ly);
-
-/** The packed tight box of a non-empty mask. */
-const boxOf = (lo: number, hi: number): number => {
-  let minX = BRICK;
-  let minY = BRICK;
-  let minZ = BRICK;
-  let maxX = 0;
-  let maxY = 0;
-  let maxZ = 0;
-  for (let bit = 0; bit < 64; bit++) {
-    if ((((bit < 32 ? lo : hi) >>> (bit & 31)) & 1) === 0) {
-      continue;
-    }
-    const x = bit & 3;
-    const z = (bit >> 2) & 3;
-    const y = bit >> 4;
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    minZ = Math.min(minZ, z);
-    maxX = Math.max(maxX, x + 1);
-    maxY = Math.max(maxY, y + 1);
-    maxZ = Math.max(maxZ, z + 1);
-  }
-  return minX | (minY << 3) | (minZ << 6) | (maxX << 9) | (maxY << 12) | (maxZ << 15);
-};
 
 /** Exact numeric key for coordinates within ±2^16 of the origin. */
 const keyOf = (x: number, y: number, z: number): number =>
@@ -68,7 +36,7 @@ const keyOf = (x: number, y: number, z: number): number =>
 
 interface ChunkBricks {
   readonly revision: number;
-  /** Per brick: lo, hi, box; undefined when the chunk holds one block id throughout. */
+  /** Per brick: lo, then hi; undefined when the chunk holds one block id throughout. */
   readonly words: Uint32Array | undefined;
   readonly solid: boolean;
 }
@@ -109,37 +77,27 @@ class WorldBricks implements SolidBricks {
   brick(bx: number, by: number, bz: number, out: BrickOut): boolean {
     let lo = 0;
     let hi = 0;
-    let box = 0;
     const chunk = this.chunkAt(bx >> CHUNK_BRICK_BITS, by >> CHUNK_BRICK_BITS, bz >> CHUNK_BRICK_BITS);
     if (chunk) {
       const bricks = this.bricksOf(chunk);
       if (bricks.words) {
         const local = BRICKS_PER_CHUNK - 1;
-        const slot = ((bx & local) + BRICKS_PER_CHUNK * ((bz & local) + BRICKS_PER_CHUNK * (by & local))) * 3;
+        const slot = ((bx & local) + BRICKS_PER_CHUNK * ((bz & local) + BRICKS_PER_CHUNK * (by & local))) * 2;
         lo = bricks.words[slot]!;
         hi = bricks.words[slot + 1]!;
-        box = bricks.words[slot + 2]!;
       } else if (bricks.solid) {
         lo = 0xff_ff_ff_ff;
         hi = 0xff_ff_ff_ff;
-        box = FULL_BOX;
       }
     }
-    if (this.entities) {
-      const extra = this.furnitureLayer().get(keyOf(bx, by, bz));
-      if (extra) {
-        lo = (lo | extra[0]) >>> 0;
-        hi = (hi | extra[1]) >>> 0;
-        box = boxOf(lo, hi);
-      }
-    }
-    if (lo === 0 && hi === 0) {
-      return false;
+    const extra = this.entities ? this.furnitureLayer().get(keyOf(bx, by, bz)) : undefined;
+    if (extra) {
+      lo = (lo | extra[0]) >>> 0;
+      hi = (hi | extra[1]) >>> 0;
     }
     out.lo = lo;
     out.hi = hi;
-    out.box = box;
-    return true;
+    return lo !== 0 || hi !== 0;
   }
 
   private chunkAt(cx: number, cy: number, cz: number): Chunk | undefined {
@@ -172,7 +130,7 @@ class WorldBricks implements SolidBricks {
       return { revision: chunk.revision, words: undefined, solid: this.solidById[uniform] === 1 };
     }
     const raw = chunk.raw()!;
-    const words = new Uint32Array(BRICK_SLOTS * 3);
+    const words = new Uint32Array(BRICK_SLOTS * 2);
     for (let index = 0; index < raw.length; index++) {
       if (this.solidById[raw[index]!] !== 1) {
         continue;
@@ -183,15 +141,8 @@ class WorldBricks implements SolidBricks {
       const y = (index / (CHUNK * CHUNK)) | 0;
       const slot = (x >> BRICK_BITS) + BRICKS_PER_CHUNK * ((z >> BRICK_BITS) + BRICKS_PER_CHUNK * (y >> BRICK_BITS));
       const bit = bitOf(x & (BRICK - 1), y & (BRICK - 1), z & (BRICK - 1));
-      const word = slot * 3 + (bit < 32 ? 0 : 1);
+      const word = slot * 2 + (bit < 32 ? 0 : 1);
       words[word] = (words[word]! | (1 << (bit & 31))) >>> 0;
-    }
-    for (let slot = 0; slot < BRICK_SLOTS; slot++) {
-      const lo = words[slot * 3]!;
-      const hi = words[slot * 3 + 1]!;
-      if (lo !== 0 || hi !== 0) {
-        words[slot * 3 + 2] = boxOf(lo, hi);
-      }
     }
     return { revision: chunk.revision, words, solid: false };
   }
@@ -251,15 +202,15 @@ export const testedBricks = (isSolid: SolidAt): SolidBricks => ({
         }
       }
     }
-    if (lo === 0 && hi === 0) {
-      return false;
-    }
     out.lo = lo;
     out.hi = hi;
-    out.box = boxOf(lo, hi);
-    return true;
+    return lo !== 0 || hi !== 0;
   },
 });
+
+/** Layer `ly` of a brick, as 16 bits: bit x + 4z is solid. */
+export const brickLayer = (brick: BrickOut, ly: number): number =>
+  ((ly < 2 ? brick.lo : brick.hi) >>> (16 * (ly & 1))) & 0xff_ff;
 
 /** Whether block (lx, ly, lz), local to its brick, is solid. */
 export const brickHas = (brick: BrickOut, lx: number, ly: number, lz: number): boolean => {

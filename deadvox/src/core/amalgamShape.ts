@@ -2,7 +2,7 @@ import type { MissingFlesh } from './amalgamCarving.ts';
 import type { AmalgamFigure } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import type { BodyShape } from './physics.ts';
-import { BRICK_BITS, type BrickOut, brickHas, type SolidBricks } from './solidBricks.ts';
+import { BRICK_BITS, type BrickOut, brickHas, brickLayer, type SolidBricks } from './solidBricks.ts';
 
 // The amalgam moves as its own flesh, not a box (#563): an octree over its rest-pose voxels, in its own frame
 // and turned to its facing, is tested against the world's solid bricks (core/solidBricks.ts), and each side
@@ -11,6 +11,26 @@ import { BRICK_BITS, type BrickOut, brickHas, type SolidBricks } from './solidBr
 
 /** Leaves hold 2×2×2 voxels, one bit each (bit di + 2dj + 4dk). */
 const LEAF_BITS = 1;
+/**
+ * Terrain answers remembered, the newest overwriting the oldest: a blocked step asks the same places again,
+ * retrying the move after its step-up fails and starting the next tick where the last contact search ended.
+ */
+const MEMO = 8;
+const BRICK = 1 << BRICK_BITS;
+/** One row of a brick layer: BRICK bits along x. */
+const ROW = (1 << BRICK) - 1;
+
+/** The index of the lowest set bit. */
+const lowBit = (bits: number): number => 31 - Math.clz32(bits & -bits);
+/** One past the index of the highest set bit. */
+const highBit = (bits: number): number => 32 - Math.clz32(bits);
+/** Set bits in a 16-bit value. */
+const popCount = (bits: number): number => {
+  let count = bits - ((bits >>> 1) & 0x55_55);
+  count = (count & 0x33_33) + ((count >>> 2) & 0x33_33);
+  count = (count + (count >>> 4)) & 0x0f_0f;
+  return (count + (count >>> 8)) & 0x1f;
+};
 
 /** The octree's layout for one figure at one block size, shared by every amalgam with that figure. */
 interface ShapeTree {
@@ -26,6 +46,10 @@ interface ShapeTree {
   readonly children: Int32Array;
   /** Per leaf node: its first voxel cell (i, j, k); -1 for inner nodes. */
   readonly leafCell: Int32Array;
+  /** Per node: its parent, -1 for the root. */
+  readonly parent: Int32Array;
+  /** Per voxel cell: the leaf holding it, -1 for a cell with no flesh. */
+  readonly leafOf: Int32Array;
   /** Nodes in build order: every child comes before its parent, and the root is last. */
   readonly nodeCount: number;
 }
@@ -35,6 +59,8 @@ interface TreeNodes {
   readonly childCount: number[];
   readonly children: number[];
   readonly leafCell: number[];
+  readonly parent: number[];
+  readonly leafOf: Int32Array;
 }
 
 interface TreeLevel {
@@ -59,7 +85,9 @@ const leafLevel = (owner: Uint8Array, dims: readonly number[], tree: TreeNodes):
       tree.leafCell.push((i >> 1) * 2 + dims[0]! * ((j >> 1) * 2 + dims[1]! * ((k >> 1) * 2)));
       tree.childStart.push(0);
       tree.childCount.push(0);
+      tree.parent.push(-1);
     }
+    tree.leafOf[cell] = nodes[slot]!;
   }
   return { nodes, dims: levelDims };
 };
@@ -82,11 +110,16 @@ const parentLevel = (level: TreeLevel, tree: TreeNodes): TreeLevel => {
     grouped.set(slot, group);
   });
   for (const [slot, group] of [...grouped].sort((a, b) => a[0] - b[0])) {
-    nodes[slot] = tree.leafCell.length;
+    const node = tree.leafCell.length;
+    nodes[slot] = node;
     tree.leafCell.push(-1);
     tree.childStart.push(tree.children.length);
     tree.childCount.push(group.length);
     tree.children.push(...group);
+    tree.parent.push(-1);
+    for (const child of group) {
+      tree.parent[child] = node;
+    }
   }
   return { nodes, dims };
 };
@@ -94,7 +127,14 @@ const parentLevel = (level: TreeLevel, tree: TreeNodes): TreeLevel => {
 const buildTree = (figure: AmalgamFigure, blockSize: number): ShapeTree => {
   const { dims, owner, size, origin } = figure.realized.voxels;
   const metres = size * figure.scale;
-  const tree: TreeNodes = { childStart: [], childCount: [], children: [], leafCell: [] };
+  const tree: TreeNodes = {
+    childStart: [],
+    childCount: [],
+    children: [],
+    leafCell: [],
+    parent: [],
+    leafOf: new Int32Array(owner.length).fill(-1),
+  };
   let level = leafLevel(owner, dims, tree);
   while (level.nodes.filter((node) => node >= 0).length > 1) {
     level = parentLevel(level, tree);
@@ -112,6 +152,8 @@ const buildTree = (figure: AmalgamFigure, blockSize: number): ShapeTree => {
     childCount: Uint8Array.from(tree.childCount),
     children: Int32Array.from(tree.children),
     leafCell: Int32Array.from(tree.leafCell),
+    parent: Int32Array.from(tree.parent),
+    leafOf: tree.leafOf,
     nodeCount: tree.leafCell.length,
   };
 };
@@ -180,9 +222,19 @@ export class AmalgamShape implements BodyShape {
   private readonly target = new Float64Array(6);
   /** One unit block, laid out as `target`. */
   private readonly block = Float64Array.of(0, 0, 0, 0.5, 0.5, 0.5);
-  /** The brick being walked, and its origin and solid box in blocks: origin, min, exclusive max. */
-  private readonly brick: BrickOut = { lo: 0, hi: 0, box: 0 };
+  /** The brick being walked; then its origin and the box of the layers being walked, in blocks: min, exclusive max. */
+  private readonly brick: BrickOut = { lo: 0, hi: 0 };
   private readonly span = new Int32Array(9);
+  /** Whether those layers are solid throughout their box, so the box alone answers. */
+  private full = false;
+  /** Per remembered answer: x, y, z, c, s, then 1 or 0. Kept while the terrain version and the flesh stay. */
+  private readonly memo = new Float64Array(MEMO * 6).fill(Number.NaN);
+  private memoNext = 0;
+  private memoVersion = Number.NaN;
+  /** Per voxel cell, 1 once carved out; per bone, 1 once shed. */
+  private readonly gone: Uint8Array;
+  private goneCount = 0;
+  private readonly shed = new Uint8Array(256);
   private c = 1;
   private s = 0;
   private facingX = 0;
@@ -196,6 +248,7 @@ export class AmalgamShape implements BodyShape {
     this.masks = new Uint8Array(this.tree.nodeCount);
     this.bounds = new Float64Array(this.tree.nodeCount * 6);
     this.stack = new Int32Array(this.tree.nodeCount);
+    this.gone = new Uint8Array(this.tree.owner.length);
   }
 
   /** Turns the shape to `facing`, as the posed figure turns (core/zombiePose.ts, `yaw`). */
@@ -218,28 +271,80 @@ export class AmalgamShape implements BodyShape {
     if (carved === this.carved && severedCount === this.severedCount) {
       return;
     }
+    const missing = lost();
+    this.memo.fill(Number.NaN);
+    if (severedCount === this.severedCount && this.carveMore(missing)) {
+      this.carved = carved;
+      return;
+    }
     this.carved = carved;
     this.severedCount = severedCount;
-    const missing = lost();
+    this.gone.fill(0);
+    for (const cell of missing.carved) {
+      this.gone[cell] = 1;
+    }
+    this.goneCount = missing.carved.size;
+    this.shed.fill(0);
+    for (const bone of missing.severedOwners) {
+      this.shed[bone] = 1;
+    }
     for (let node = 0; node < this.tree.nodeCount; node++) {
       if (this.tree.leafCell[node]! >= 0) {
-        this.keepLeaf(node, missing);
+        this.keepLeaf(node);
       } else {
         this.keepParent(node);
       }
     }
   }
 
-  private keepLeaf(node: number, missing: MissingFlesh): void {
+  /**
+   * A carve only adds holes, so only the leaves that lost a voxel, and their ancestors, are redone. False when
+   * the carved cells are not the old ones plus more, which takes a full rebuild.
+   */
+  private carveMore(missing: MissingFlesh): boolean {
+    const { leafOf, parent } = this.tree;
+    const fresh: number[] = [];
+    for (const cell of missing.carved) {
+      if (this.gone[cell] === 0) {
+        fresh.push(cell);
+      }
+    }
+    if (this.goneCount + fresh.length !== missing.carved.size) {
+      return false;
+    }
+    const redo: number[] = [];
+    for (const cell of fresh) {
+      this.gone[cell] = 1;
+      if (leafOf[cell]! >= 0) {
+        redo.push(leafOf[cell]!);
+      }
+    }
+    this.goneCount = missing.carved.size;
+    // Up to the root (the loop reaches the parents it adds), then each node once, children before parents.
+    for (const node of redo) {
+      const up = parent[node]!;
+      if (up >= 0) {
+        redo.push(up);
+      }
+    }
+    for (const node of [...new Set(redo)].sort((a, b) => a - b)) {
+      if (this.tree.leafCell[node]! >= 0) {
+        this.keepLeaf(node);
+      } else {
+        this.keepParent(node);
+      }
+    }
+    return true;
+  }
+
+  private keepLeaf(node: number): void {
+    const { gone, shed } = this;
     const { owner, dims, voxel, base, leafCell } = this.tree;
     const half = voxel / 2;
     const cell = leafCell[node]!;
     const i0 = cell % dims[0];
     const j0 = Math.floor(cell / dims[0]) % dims[1];
     const k0 = Math.floor(cell / (dims[0] * dims[1]));
-    const at = node * 6;
-    this.bounds.fill(Number.POSITIVE_INFINITY, at, at + 3);
-    this.bounds.fill(Number.NEGATIVE_INFINITY, at + 3, at + 6);
     let mask = 0;
     for (let bit = 0; bit < 8; bit++) {
       const i = i0 + (bit & 1);
@@ -247,30 +352,41 @@ export class AmalgamShape implements BodyShape {
       const k = k0 + (bit >> 2);
       const index = i + dims[0] * (j + dims[1] * k);
       const bone = i < dims[0] && j < dims[1] && k < dims[2] ? owner[index]! : 0;
-      if (bone === 0 || missing.severedOwners.has(bone) || missing.carved.has(index)) {
-        continue;
-      }
-      mask |= 1 << bit;
-      const centre = [base[0] + i * voxel, base[1] + j * voxel, base[2] + k * voxel];
-      for (let axis = 0; axis < 3; axis++) {
-        this.bounds[at + axis] = Math.min(this.bounds[at + axis]!, centre[axis]! - half);
-        this.bounds[at + 3 + axis] = Math.max(this.bounds[at + 3 + axis]!, centre[axis]! + half);
+      if (bone !== 0 && shed[bone] === 0 && gone[index] === 0) {
+        mask |= 1 << bit;
       }
     }
     this.masks[node] = mask;
+    const at = node * 6;
+    if (mask === 0) {
+      this.bounds.fill(Number.POSITIVE_INFINITY, at, at + 3);
+      this.bounds.fill(Number.NEGATIVE_INFINITY, at + 3, at + 6);
+      return;
+    }
+    // The bits at the low and high voxel along each axis: 0x55 and 0xaa along i, 0x33 and 0xcc along j,
+    // 0x0f and 0xf0 along k.
+    this.bounds[at] = base[0] + (i0 + ((mask & 0x55) === 0 ? 1 : 0)) * voxel - half;
+    this.bounds[at + 1] = base[1] + (j0 + ((mask & 0x33) === 0 ? 1 : 0)) * voxel - half;
+    this.bounds[at + 2] = base[2] + (k0 + ((mask & 0x0f) === 0 ? 1 : 0)) * voxel - half;
+    this.bounds[at + 3] = base[0] + (i0 + ((mask & 0xaa) === 0 ? 0 : 1)) * voxel + half;
+    this.bounds[at + 4] = base[1] + (j0 + ((mask & 0xcc) === 0 ? 0 : 1)) * voxel + half;
+    this.bounds[at + 5] = base[2] + (k0 + ((mask & 0xf0) === 0 ? 0 : 1)) * voxel + half;
   }
 
   private keepParent(node: number): void {
     const { childStart, childCount, children } = this.tree;
+    const { bounds } = this;
     const at = node * 6;
-    this.bounds.fill(Number.POSITIVE_INFINITY, at, at + 3);
-    this.bounds.fill(Number.NEGATIVE_INFINITY, at + 3, at + 6);
-    for (let child = childStart[node]!; child < childStart[node]! + childCount[node]!; child++) {
-      const from = children[child]! * 6;
-      for (let axis = 0; axis < 3; axis++) {
-        this.bounds[at + axis] = Math.min(this.bounds[at + axis]!, this.bounds[from + axis]!);
-        this.bounds[at + 3 + axis] = Math.max(this.bounds[at + 3 + axis]!, this.bounds[from + 3 + axis]!);
+    for (let axis = 0; axis < 3; axis++) {
+      let low = Number.POSITIVE_INFINITY;
+      let high = Number.NEGATIVE_INFINITY;
+      for (let child = childStart[node]!; child < childStart[node]! + childCount[node]!; child++) {
+        const from = children[child]! * 6 + axis;
+        low = Math.min(low, bounds[from]!);
+        high = Math.max(high, bounds[from + 3]!);
       }
+      bounds[at + axis] = low;
+      bounds[at + 3 + axis] = high;
     }
   }
 
@@ -359,6 +475,9 @@ export class AmalgamShape implements BodyShape {
   private voxelInBrick(x: number, y: number, z: number): boolean {
     const { span, block } = this;
     const half = this.tree.voxel / 2;
+    if (this.full) {
+      return turnedBoxOverlaps(x, y, z, half, half, half, this.c, this.s, this.target);
+    }
     const reach = half * (Math.abs(this.c) + Math.abs(this.s));
     const toX = Math.min(span[6]! - 1, Math.ceil(x + reach) - 1);
     const toY = Math.min(span[7]! - 1, Math.ceil(y + half) - 1);
@@ -381,22 +500,54 @@ export class AmalgamShape implements BodyShape {
     return false;
   }
 
-  /** Whether the flesh overlaps the solid blocks of brick (bx, by, bz). */
+  /**
+   * Whether the flesh overlaps the solid blocks of brick (bx, by, bz). Each run of identical block layers is
+   * walked under its own box, so a floor layer under a wall doesn't widen the wall's box into the flesh above.
+   */
   private brickHits(pos: Vec3, bx: number, by: number, bz: number): boolean {
     if (!this.terrain.brick(bx, by, bz, this.brick)) {
       return false;
     }
-    const { span, target } = this;
-    const packed = this.brick.box;
+    const { span } = this;
     span[0] = bx << BRICK_BITS;
     span[1] = by << BRICK_BITS;
     span[2] = bz << BRICK_BITS;
+    let layer = 0;
+    while (layer < BRICK) {
+      const mask = brickLayer(this.brick, layer);
+      let end = layer + 1;
+      while (end < BRICK && brickLayer(this.brick, end) === mask) {
+        end += 1;
+      }
+      if (mask !== 0 && this.layersHit(pos, mask, layer, end)) {
+        return true;
+      }
+      layer = end;
+    }
+    return false;
+  }
+
+  /** Whether the flesh overlaps layers `from` to `to` (exclusive) of the brick, each solid as `mask`. */
+  private layersHit(pos: Vec3, mask: number, from: number, to: number): boolean {
+    const { span, target } = this;
+    let columns = 0;
+    let rows = 0;
+    for (let z = 0; z < BRICK; z++) {
+      const row = (mask >> (BRICK * z)) & ROW;
+      columns |= row;
+      rows |= row === 0 ? 0 : 1 << z;
+    }
+    span[3] = span[0]! + lowBit(columns);
+    span[4] = span[1]! + from;
+    span[5] = span[2]! + lowBit(rows);
+    span[6] = span[0]! + highBit(columns);
+    span[7] = span[1]! + to;
+    span[8] = span[2]! + highBit(rows);
     for (let axis = 0; axis < 3; axis++) {
-      span[3 + axis] = span[axis]! + ((packed >> (3 * axis)) & 7);
-      span[6 + axis] = span[axis]! + ((packed >> (9 + 3 * axis)) & 7);
       target[axis] = (span[3 + axis]! + span[6 + axis]!) / 2;
       target[3 + axis] = (span[6 + axis]! - span[3 + axis]!) / 2;
     }
+    this.full = popCount(mask) === (span[6]! - span[3]!) * (span[8]! - span[5]!);
     return this.walk(pos, 'brick');
   }
 
@@ -409,6 +560,36 @@ export class AmalgamShape implements BodyShape {
   }
 
   overlapsTerrain(pos: Vec3): boolean {
+    const { version } = this.terrain;
+    if (version !== this.memoVersion) {
+      this.memo.fill(Number.NaN);
+      this.memoVersion = version;
+    }
+    const { memo } = this;
+    for (let at = 0; at < memo.length; at += 6) {
+      if (
+        memo[at] === pos[0] &&
+        memo[at + 1] === pos[1] &&
+        memo[at + 2] === pos[2] &&
+        memo[at + 3] === this.c &&
+        memo[at + 4] === this.s
+      ) {
+        return memo[at + 5] === 1;
+      }
+    }
+    const hit = this.terrainHit(pos);
+    const at = this.memoNext * 6;
+    memo[at] = pos[0];
+    memo[at + 1] = pos[1];
+    memo[at + 2] = pos[2];
+    memo[at + 3] = this.c;
+    memo[at + 4] = this.s;
+    memo[at + 5] = hit ? 1 : 0;
+    this.memoNext = (this.memoNext + 1) % MEMO;
+    return hit;
+  }
+
+  private terrainHit(pos: Vec3): boolean {
     const { bounds } = this;
     const at = (this.tree.nodeCount - 1) * 6;
     if (!(bounds[at]! <= bounds[at + 3]!)) {
