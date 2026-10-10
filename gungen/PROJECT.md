@@ -1715,7 +1715,7 @@ in `docs/deferred-assertions.md`.
 
 ## Testing
 
-When `gungen/test/attachments.test.ts` exercises the registry from `deadvox/src/core/content.ts`, its import graph reaches `deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and Mobgen figure code. The aliases in `gungen/tsconfig.json`, `paths`, and `gungen/vite.config.ts`, `resolve.alias`, keep that boundary resolvable in Gungen's typecheck and test runner; run those checks when either imported source tree changes, or the broad Pages build can be the first job to expose a broken integration.
+When `gungen/test/attachments.test.ts` exercises the registry from `deadvox/src/core/content.ts`, its import graph reaches `deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and Mobgen figure code. Keep the Mobgen mapping in `gungen/tsconfig.json` (`paths`) and `gungen/vite.config.ts` (`resolve.alias`), and run Gungen's typecheck and test runner when either imported source tree changes; otherwise the broad Pages build can be the first job to expose a broken integration.
 
 - **Say what a test protects.** Each test, or the comment above a group, states
   the behaviour it guards. Two tests that catch the same bugs are one too many,
