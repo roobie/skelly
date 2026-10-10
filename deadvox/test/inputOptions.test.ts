@@ -224,4 +224,29 @@ describe('input options context visibility', () => {
     const replacedOrdinaryRun = new BindingRegistry(INPUT_BINDINGS, storage);
     expect(replacedOrdinaryRun.chords(pair!.ordinary.id)[0]).toEqual(pair!.ordinary.defaults[0]);
   });
+
+  it('resets set-aside bindings in a debug run', () => {
+    const pair = debugKeyCollision();
+    expect(pair).toBeDefined();
+    const storage = memoryStorage();
+    const ordinaryRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    const chords = [pair!.debug.defaults[0]!, ...pair!.ordinary.defaults.slice(1)];
+    expect(ordinaryRun.rebind(pair!.ordinary.id, chords, false)).toBeUndefined();
+
+    const debugRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    debugRun.setDebugRun();
+    expect(
+      debugRun.diagnostics.some(
+        (diagnostic) => diagnostic.includes(pair!.ordinary.description) && diagnostic.includes(pair!.debug.description),
+      ),
+    ).toBe(true);
+    debugRun.reset();
+
+    const resumedOrdinaryRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    expect(resumedOrdinaryRun.chords(pair!.ordinary.id)[0]).toEqual(pair!.ordinary.defaults[0]);
+
+    const resumedDebugRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    resumedDebugRun.setDebugRun();
+    expect(resumedDebugRun.diagnostics).toEqual([]);
+  });
 });

@@ -614,6 +614,7 @@ export class BindingRegistry {
   }
   reset(): void {
     this.overrides.clear();
+    this.suspended.clear();
     this.persist();
     this.changed(true);
   }
