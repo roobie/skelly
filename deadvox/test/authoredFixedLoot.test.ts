@@ -84,6 +84,49 @@ const furnitureAt = ({ building, override }: OverridePlacement): string | undefi
   );
 };
 
+type LootTable = NonNullable<ReturnType<typeof result.registry.loot.get>>;
+
+const entryDraw = (table: LootTable, index: number): number => {
+  const before = table.entries.slice(0, index).reduce((sum, entry) => sum + entry.weight, 0);
+  const total = table.entries.reduce((sum, entry) => sum + entry.weight, 0);
+  return (before + table.entries[index]!.weight / 2) / total;
+};
+
+const maximumLootPair = (table: LootTable, firstIndex: number, secondIndex: number) => {
+  const values = [0.999_999_999];
+  for (const index of [firstIndex, secondIndex]) {
+    const entry = table.entries[index]!;
+    values.push(entryDraw(table, index));
+    if (entry.item !== undefined && entry.count !== undefined) {
+      values.push(0.999_999_999);
+    }
+    if (entry.item !== undefined && entry.condition !== undefined) {
+      values.push(0.999_999_999);
+    }
+  }
+  const rng = new Rng([0, 0, 0, 0]);
+  rng.next = () => {
+    const value = values.shift();
+    if (value === undefined) {
+      throw new Error('Unexpected random draw while rolling armoury loot');
+    }
+    return value;
+  };
+  const rolled = rollLoot(result.registry, table.id, rng);
+  if (values.length !== 0) {
+    throw new Error('Unconsumed random draws while rolling armoury loot');
+  }
+  return rolled;
+};
+
+const itemCounts = (items: readonly { type: string; count: number }[]): Map<string, number> => {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    counts.set(item.type, (counts.get(item.type) ?? 0) + item.count);
+  }
+  return counts;
+};
+
 const possibleLootItems = (tableId: string): Set<string> => {
   const table = result.registry.loot.get(tableId);
   if (!table) {
@@ -1191,9 +1234,9 @@ describe('authored fixed loot', () => {
   });
 
   it('places worst-case pairs from every FOB armoury container', () => {
-    const building = layout.buildings.find(({ template }) => template === 'camp_armoury')!;
-    const template = result.registry.templates.get(building.template)!;
-    const compiled = compileTemplate(result.registry, template);
+    const armoury = layout.buildings.find(({ template: id }) => id === 'camp_armoury')!;
+    const definition = result.registry.templates.get(armoury.template)!;
+    const compiled = compileTemplate(result.registry, definition);
     const table = result.registry.loot.get('military_armoury')!;
     const containers = compiled.pieces.filter(
       (piece) => result.registry.furniture.get(piece.furniture)?.loot === table.id,
@@ -1201,43 +1244,22 @@ describe('authored fixed loot', () => {
     expect(containers.length).toBeGreaterThan(0);
 
     for (const piece of containers) {
-      const override = building.fixedLoot?.find(({ at }) => at.join(',') === piece.pos.join(','));
+      const override = armoury.fixedLoot?.find(({ at }) => at.join(',') === piece.pos.join(','));
       const fixed = fixedItems(result.registry, override?.items ?? []);
-      for (const [firstIndex, first] of table.entries.entries()) {
-        for (const [secondIndex, second] of table.entries.entries()) {
-          const values = [0.999999999];
-          for (const entry of [first, second]) {
-            const totalWeight = table.entries.reduce((sum, candidate) => sum + candidate.weight, 0);
-            const weightBefore = table.entries
-              .slice(0, table.entries.indexOf(entry))
-              .reduce((sum, candidate) => sum + candidate.weight, 0);
-            values.push((weightBefore + entry.weight / 2) / totalWeight);
-            if (entry.item !== undefined && entry.count !== undefined) values.push(0.999999999);
-            if (entry.item !== undefined && entry.condition !== undefined) values.push(0.999999999);
-          }
-          const rng = new Rng([0, 0, 0, 0]);
-          rng.next = () => {
-            const value = values.shift();
-            if (value === undefined) throw new Error('Unexpected random draw while rolling armoury loot');
-            return value;
-          };
-          const rolled = rollLoot(result.registry, table.id, rng);
-          expect(values, `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toEqual([]);
+      for (const firstIndex of table.entries.keys()) {
+        for (const secondIndex of table.entries.keys()) {
+          const rolled = maximumLootPair(table, firstIndex, secondIndex);
           const supplied = [...fixed, ...rolled];
-          const expected = new Map<string, number>();
-          for (const item of supplied) expected.set(item.type, (expected.get(item.type) ?? 0) + item.count);
-
           const inventory = new Inventory(result.registry);
           const entity = inventory.furnish(
             { type: piece.furniture, pos: piece.pos, size: piece.size, facing: piece.facing },
             supplied,
           );
           expect(entity, `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toBeDefined();
-          const placed = new Map<string, number>();
-          for (const item of entity!.pockets?.flat() ?? []) {
-            placed.set(item.item.type, (placed.get(item.item.type) ?? 0) + item.item.count);
-          }
-          expect(placed, `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toEqual(expected);
+          const placed = (entity!.pockets?.flat() ?? []).map(({ item }) => ({ type: item.type, count: item.count }));
+          expect(itemCounts(placed), `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toEqual(
+            itemCounts(supplied),
+          );
         }
       }
     }
