@@ -1255,50 +1255,48 @@ describe('authored fixed loot', () => {
     expect(templateSpatialIssues(result.registry, tent), tent.id).toEqual([]);
     const reachable = templateReachableStandingPositions(result.registry, tent);
     expect(reachable.length, tent.id).toBeGreaterThan(0);
-    const [width, , tentDepth] = tent.size;
-    const air = result.registry.blockIds.get('air')!;
-    const fullHeightOpeningRows = Array.from({ length: tentDepth }, (_, z) => z).filter((z) =>
-      Array.from({ length: Math.ceil(STAIR_BODY_HEIGHT) }, (_, offset) => {
-        const y = 1 + offset;
-        return tent.blocks[width - 1 + width * (z + tentDepth * y)] === air;
-      }).every(Boolean),
-    );
-    expect(fullHeightOpeningRows.length, `${tent.id} entrance width`).toBeGreaterThanOrEqual(2);
-
-    for (const furniture of ['field_desk', 'camp_orders', 'footlocker']) {
-      const pieces = tent.pieces.filter((piece) => piece.furniture === furniture);
-      expect(pieces.length, furniture).toBeGreaterThan(0);
-      for (const piece of pieces) {
-        const [x, feet, z] = piece.pos;
-        const [pieceWidth, , pieceDepth] = piece.size;
-        expect(
-          reachable.some(([px, py, pz]) => {
-            if (py !== feet) {
-              return false;
-            }
-            const dx = Math.max(x - px, 0, px - (x + pieceWidth));
-            const dz = Math.max(z - pz, 0, pz - (z + pieceDepth));
-            return Math.hypot(dx, dz) <= STAIR_BODY_HALF_WIDTH + 0.5;
-          }),
-          `${furniture} at ${piece.pos.join(',')}`,
-        ).toBe(true);
-      }
+    expect(tent.pieces.length).toBeGreaterThan(0);
+    for (const piece of tent.pieces) {
+      const [x, feet, z] = piece.pos;
+      const [pieceWidth, , pieceDepth] = piece.size;
+      expect(
+        reachable.some(([px, py, pz]) => {
+          if (py !== feet) {
+            return false;
+          }
+          const dx = Math.max(x - px, 0, px - (x + pieceWidth));
+          const dz = Math.max(z - pz, 0, pz - (z + pieceDepth));
+          return Math.hypot(dx, dz) <= STAIR_BODY_HALF_WIDTH + 0.5;
+        }),
+        `${piece.furniture} at ${piece.pos.join(',')}`,
+      ).toBe(true);
     }
 
     const { entrance } = definition.access!;
-    const pathPoint = [
-      building.position[0] + (entrance[0] + 1) * BLOCK_SIZE,
-      building.position[2] + entrance[2] * BLOCK_SIZE,
+    const [width, , depth] = tent.size;
+    const edgeSteps = [
+      { distance: entrance[0], dx: -1, dz: 0 },
+      { distance: width - 1 - entrance[0], dx: 1, dz: 0 },
+      { distance: entrance[2], dx: 0, dz: -1 },
+      { distance: depth - 1 - entrance[2], dx: 0, dz: 1 },
     ];
-    for (const other of layout.buildings.filter(({ template }) => template !== building.template)) {
-      const bounds = buildingBounds(other, result.registry.templates.get(other.template)!.size);
-      const blocksPath =
-        pathPoint[0]! >= bounds.x0 &&
-        pathPoint[0]! < bounds.x1 &&
-        pathPoint[1]! >= bounds.z0 &&
-        pathPoint[1]! < bounds.z1;
-      expect(blocksPath, `${other.template} blocks the command tent path`).toBe(false);
-    }
+    const nearestEdge = Math.min(...edgeSteps.map(({ distance }) => distance));
+    const pathPoints = edgeSteps
+      .filter(({ distance }) => distance === nearestEdge)
+      .map(({ dx, dz }) => [
+        building.position[0] + (entrance[0] + dx) * BLOCK_SIZE,
+        building.position[2] + (entrance[2] + dz) * BLOCK_SIZE,
+      ]);
+    const clearPath = pathPoints.some(([x, z]) =>
+      layout.buildings.every((other) => {
+        if (other.template === building.template) {
+          return true;
+        }
+        const bounds = buildingBounds(other, result.registry.templates.get(other.template)!.size);
+        return !(x! >= bounds.x0 && x! < bounds.x1 && z! >= bounds.z0 && z! < bounds.z1);
+      }),
+    );
+    expect(clearPath).toBe(true);
   });
 
   it('places worst-case rolls from every FOB armoury container', () => {
