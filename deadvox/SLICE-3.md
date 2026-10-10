@@ -414,7 +414,7 @@ Replay retains generated-column transitions because readiness determines whether
 
 ### 3.11 Authored playtest map and playtest
 
-The end-of-slice playtest uses the authored progression in [#181](https://github.com/roobie/skelly/issues/181). Testers follow the Playtest link from the Pages landing page and can explore for as long as they like; the game is not a facilitated or shadowed session. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md) for the self-serve format and how tester feedback and metrics inform Slice 4.
+The end-of-slice playtest uses the authored progression in [#181](https://github.com/roobie/skelly/issues/181). Testers follow the Playtest link from the Pages landing page and can explore for as long as they like; the game is not a facilitated or shadowed session. See [EPIC.md](EPIC.md), "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md) for the self-serve format, deployment freeze and how tester feedback and metrics inform Slice 4.
 
 **In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. The medical site's virus-sampling research is lore, not a player mission. Its wards stay dangerous because the sick brought there remain among the beds; crawler markers make that threat part of the care setting rather than a scripted encounter. Ordinary shamblers also occupy the FOB, medical site, workshop and cabins, inside and outside where clear routes and the finale remain legible. See `src/content/base/templates-medical.json`, `medical_hall`, and `maps/playtest.tmj`, its spawn layer.
 

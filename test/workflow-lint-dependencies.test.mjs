@@ -12,6 +12,7 @@ const ROOT_CI_COMMAND = /\bnpm\s+run\s+ci(?:\s|$)/;
 const PREFIX_INSTALL = /\bnpm\s+ci\s+--prefix(?:=|\s+)([^\s\\]+)/g;
 const CACHE_PATH_SEPARATOR = /\s+/;
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
+const expression = (body) => `\${{ ${body} }}`;
 const workflowPaths = readdirSync(WORKFLOWS)
   .filter((file) => WORKFLOW_FILE.test(file))
   .map((file) => join(WORKFLOWS, file));
@@ -62,6 +63,15 @@ const nodeCacheDependencyPathsIn = (workflow) =>
 
 const lintCommands = commandsIn(parse(read('.github/workflows/lint.yml')));
 const requiredPrefixes = installPrefixes(lintCommands);
+
+test('Pages deployment freeze gates automatic publication but preserves manual dispatch', () => {
+  const pages = parse(read('.github/workflows/pages.yml'));
+  const freezeGate = expression("github.event_name == 'workflow_dispatch' || vars.PAGES_FREEZE != 'true'");
+
+  assert.equal(pages.jobs.build.if, freezeGate);
+  assert.equal(pages.jobs.deploy.if, freezeGate);
+  assert.ok(Object.hasOwn(pages.on, 'workflow_dispatch'), 'manual dispatch remains available during the freeze');
+});
 
 test('every workflow running root CI installs lint workflow prefixes and caches their lockfiles', () => {
   assert.ok(requiredPrefixes.size > 0, 'lint workflow declares prefix installs');

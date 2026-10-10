@@ -42,6 +42,7 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.PAGES_FREEZE != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -105,6 +106,8 @@ jobs:
 
   deploy:
     needs: build
+    # Recheck before publication if an automatic build began before the freeze.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.PAGES_FREEZE != 'true' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
