@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { controlsCardRows } from '../src/game/controls.ts';
-import { BindingRegistry } from '../src/game/inputBindings.ts';
+import { controlsCardRows, filterControlsCardRows } from '../src/game/controls.ts';
+import { BindingRegistry, DEBUG_ONLY_CONTEXTS, INPUT_BINDINGS, INPUT_CONTEXTS } from '../src/game/inputBindings.ts';
 import {
   loadMetrics,
   measureSnapshots,
@@ -11,6 +11,8 @@ import {
   snapshotTimerQuantumForUserAgent,
 } from '../src/game/playtestTools.ts';
 import { Simulation } from './simulationFixture.ts';
+
+const contextWordSeparator = /[^a-z0-9-]+/;
 
 describe('playtest metrics', () => {
   it('accumulates looting time, deaths, compression, interruptions, and pocket uses', () => {
@@ -348,15 +350,22 @@ describe('debug time control', () => {
 
 describe('controls card', () => {
   it('derives visible actions and labels from the effective registry rather than a copied key table', () => {
-    const registry = new BindingRegistry([
+    const registry = new BindingRegistry(
+      [
+        {
+          id: 'fixture.action',
+          description: 'Fixture action',
+          contexts: ['inventory'],
+          commands: [{ id: 'fixture.action', kind: 'press' }],
+          defaults: [{ code: 'KeyJ' }],
+        },
+      ],
       {
-        id: 'fixture.action',
-        description: 'Fixture action',
-        contexts: ['inventory'],
-        commands: [{ id: 'fixture.action', kind: 'press' }],
-        defaults: [{ code: 'KeyJ' }],
+        getItem: () => null,
+        setItem: () => undefined,
+        removeItem: () => undefined,
       },
-    ]);
+    );
     const [row] = controlsCardRows(registry);
     expect(row?.id).toBe('fixture.action');
     expect(row?.keys).toContain('J');
@@ -364,5 +373,68 @@ describe('controls card', () => {
     expect(row?.action).toContain('inventory');
     expect(registry.rebind('fixture.action', [{ code: 'KeyK' }])).toBeUndefined();
     expect(controlsCardRows(registry)[0]?.keys).toBe('K');
+  });
+  it('shows only ordinary contexts in ordinary-run controls and all contexts in debug runs', () => {
+    const registry = new BindingRegistry(INPUT_BINDINGS);
+    const isDebugOnly = (binding: (typeof INPUT_BINDINGS)[number]) =>
+      binding.debug || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context));
+    const debugOnly = INPUT_BINDINGS.filter(isDebugOnly);
+    const ordinaryBindings = INPUT_BINDINGS.filter((binding) => !isDebugOnly(binding));
+    const sharedBindings = ordinaryBindings.filter(
+      (binding) =>
+        binding.contexts.some((context) => DEBUG_ONLY_CONTEXTS.has(context)) &&
+        binding.contexts.some((context) => !DEBUG_ONLY_CONTEXTS.has(context)),
+    );
+    const ordinaryRows = controlsCardRows(registry);
+    const ordinaryById = new Map(ordinaryRows.map((row) => [row.id, row]));
+    const debugRows = controlsCardRows(registry, true);
+    const words = (text: string) => text.toLowerCase().split(contextWordSeparator);
+
+    expect(INPUT_CONTEXTS.noclip).toBe(true);
+    expect(debugOnly.length).toBeGreaterThan(0);
+    expect(sharedBindings.length).toBeGreaterThan(0);
+    expect(debugOnly.every(({ id }) => !ordinaryById.has(id))).toBe(true);
+    expect(debugOnly.every(({ id }) => debugRows.some((row) => row.id === id))).toBe(true);
+    const ordinaryRowsIncludeEveryBinding = ordinaryBindings.every(
+      ({ id }) => ordinaryById.has(id) && debugRows.some((row) => row.id === id),
+    );
+    expect(ordinaryRowsIncludeEveryBinding).toBe(true);
+    expect(sharedBindings.every(({ id }) => ordinaryById.has(id))).toBe(true);
+    const ordinaryText = ordinaryRows.flatMap(({ action, description, keys }) =>
+      words(`${action} ${description} ${keys}`),
+    );
+    expect([...DEBUG_ONLY_CONTEXTS].every((context) => !ordinaryText.includes(context))).toBe(true);
+    expect(filterControlsCardRows(ordinaryRows, 'noclip')).toEqual([]);
+    expect(
+      INPUT_BINDINGS.every((binding) => {
+        const row = debugRows.find((candidate) => candidate.id === binding.id);
+        return row && binding.contexts.every((context) => words(row.action).includes(context));
+      }),
+    ).toBe(true);
+  });
+  it('filters descriptions and key labels by case-insensitive substring only', () => {
+    const registry = new BindingRegistry([
+      {
+        id: 'fixture.reload',
+        description: 'Reload magazine',
+        contexts: ['play'],
+        commands: [{ id: 'fixture.reload', kind: 'press' }],
+        defaults: [{ code: 'KeyR' }],
+      },
+      {
+        id: 'fixture.ready',
+        description: 'Ready to aim',
+        contexts: ['play'],
+        commands: [{ id: 'fixture.ready', kind: 'press' }],
+        defaults: [{ code: 'KeyQ' }],
+      },
+    ]);
+    const rows = controlsCardRows(registry);
+
+    expect(filterControlsCardRows(rows, 'LOAD MAG').map(({ id }) => id)).toContain('fixture.reload');
+    expect(filterControlsCardRows(rows, 'q').map(({ id }) => id)).toContain('fixture.ready');
+    expect(filterControlsCardRows(rows, 'play').map(({ id }) => id)).not.toContain('fixture.reload');
+    expect(filterControlsCardRows(rows, 'relad').map(({ id }) => id)).not.toContain('fixture.reload');
+    expect(filterControlsCardRows(rows, '   ')).toEqual(rows);
   });
 });

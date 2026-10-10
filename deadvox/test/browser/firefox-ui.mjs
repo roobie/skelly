@@ -213,6 +213,24 @@ try {
     null,
     { timeout: 5000 },
   );
+  const controlsSearch = page.locator('#controls-search');
+  const controlsBeforeSearch = await page.locator('#controls dt').count();
+  await controlsSearch.focus();
+  await page.keyboard.type('f');
+  const filteredControls = await page
+    .locator('#controls')
+    .evaluate((root) =>
+      [...root.querySelectorAll('dt')].map((key) =>
+        `${key.textContent} ${key.nextElementSibling?.textContent}`.toLowerCase(),
+      ),
+    );
+  assert.ok(filteredControls.length > 0 && filteredControls.length < controlsBeforeSearch);
+  assert.ok(
+    filteredControls.every((row) => row.includes('f')),
+    'search keeps only matching descriptions or key labels',
+  );
+  await controlsSearch.fill('');
+  assert.equal(await page.locator('#controls dt').count(), controlsBeforeSearch);
   assert.equal(await page.evaluate(() => document.pointerLockElement === document.querySelector('#view')), true);
   assert.ok(await page.locator('#audio-volume-master').count());
   const paused = await page.evaluate(() => ({

@@ -1,18 +1,23 @@
 // biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
 // biome-ignore-all lint/style/noExcessiveClassesPerFile: preferences and their single DOM resolver share the enforced keyboard boundary.
 
-export type InputContext =
-  | 'title'
-  | 'menu'
-  | 'inventory'
-  | 'reading'
-  | 'spawn'
-  | 'debug-panel'
-  | 'review-map'
-  | 'build'
-  | 'noclip'
-  | 'play'
-  | 'interrupted';
+export const INPUT_CONTEXTS = {
+  title: false,
+  menu: false,
+  inventory: false,
+  reading: false,
+  spawn: true,
+  'debug-panel': true,
+  'review-map': true,
+  build: true,
+  noclip: true,
+  play: false,
+  interrupted: false,
+} as const satisfies Record<string, boolean>;
+export type InputContext = keyof typeof INPUT_CONTEXTS;
+export const DEBUG_ONLY_CONTEXTS: ReadonlySet<InputContext> = new Set(
+  (Object.keys(INPUT_CONTEXTS) as InputContext[]).filter((context) => INPUT_CONTEXTS[context]),
+);
 type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold';
 export type Modifier = 'shift' | 'alt' | 'ctrl' | 'meta';
 export interface Chord {
@@ -33,6 +38,10 @@ export interface Binding {
   readonly plainKey?: boolean;
   readonly holdMs?: number;
 }
+export const bindingIsDebugOnly = (binding: Binding): boolean =>
+  binding.debug === true || binding.contexts.every((context) => DEBUG_ONLY_CONTEXTS.has(context));
+export const contextsForRun = (binding: Binding, debugRun: boolean): readonly InputContext[] =>
+  debugRun ? binding.contexts : binding.contexts.filter((context) => !DEBUG_ONLY_CONTEXTS.has(context));
 const world: readonly InputContext[] = ['play', 'noclip'];
 const moving: readonly InputContext[] = [...world, 'build'];
 const movingWhileReading: readonly InputContext[] = [...moving, 'reading'];
@@ -374,16 +383,26 @@ const pairBindingIssue = (a: Binding, b: Binding, overrides: BindingMap): string
         (isHeld(b) && modifierCodes[y.code] === x.modifier && x.modifier !== undefined),
     ),
   );
-  return overlap ? `${a.description} conflicts with ${b.description} in ${contexts.join(', ')}` : undefined;
+  return overlap ? `${a.description} conflicts with ${b.description}` : undefined;
 };
-export const bindingConflict = (bindings: readonly Binding[], overrides: BindingMap): string | undefined => {
+export const bindingConflict = (
+  bindings: readonly Binding[],
+  overrides: BindingMap,
+  debugRun = true,
+): string | undefined => {
   for (let i = 0; i < bindings.length; i++) {
     const a = bindings[i]!;
+    if (!debugRun && bindingIsDebugOnly(a)) {
+      continue;
+    }
     const issue = ownBindingIssue(a, bindings, overrides);
     if (issue) {
       return issue;
     }
     for (const b of bindings.slice(i + 1)) {
+      if (!debugRun && bindingIsDebugOnly(b)) {
+        continue;
+      }
       const conflict = pairBindingIssue(a, b, overrides);
       if (conflict) {
         return conflict;
@@ -485,9 +504,11 @@ export class BindingRegistry {
   readonly diagnostics: string[] = [];
   revision = 0;
   private overrides = new Map<string, readonly Chord[]>();
+  private readonly suspended = new Map<string, readonly Chord[]>();
   private readonly listeners = new Set<(bindingsChanged: boolean) => void>();
   private layout: ReadonlyMap<string, string> | undefined;
   private readonly storage: PreferenceStorage | undefined;
+  private debugRun = false;
   constructor(bindings = INPUT_BINDINGS, storage = browserStorage()) {
     this.bindings = bindings;
     this.storage = storage;
@@ -508,7 +529,7 @@ export class BindingRegistry {
           continue;
         }
         const candidate = new Map(this.overrides).set(binding.id, chords);
-        const issue = bindingConflict(bindings, candidate);
+        const issue = bindingConflict(bindings, candidate, false);
         if (issue) {
           this.diagnostics.push(issue);
         } else {
@@ -516,6 +537,29 @@ export class BindingRegistry {
         }
       }
     }
+  }
+  setDebugRun(): void {
+    if (this.debugRun) {
+      return;
+    }
+    this.debugRun = true;
+    const accepted = new Map<string, readonly Chord[]>();
+    for (const binding of this.bindings) {
+      const chords = this.overrides.get(binding.id);
+      if (!chords) {
+        continue;
+      }
+      const candidate = new Map(accepted).set(binding.id, chords);
+      const issue = bindingConflict(this.bindings, candidate);
+      if (issue) {
+        this.diagnostics.push(issue);
+        this.suspended.set(binding.id, chords);
+      } else {
+        accepted.set(binding.id, chords);
+      }
+    }
+    this.overrides = accepted;
+    this.changed(true);
   }
   chords(id: string): readonly Chord[] {
     const binding = this.binding(id);
@@ -542,7 +586,7 @@ export class BindingRegistry {
     const prefix = binding.gate ? `${this.label(binding.gate)} + ` : '';
     return `${prefix}${chord.modifier ? `${modifierName[chord.modifier]} + ` : ''}${codeLabel(chord.code, this.layout)}`;
   }
-  rebind(id: string, chords: readonly Chord[]): string | undefined {
+  rebind(id: string, chords: readonly Chord[], debugRun = true): string | undefined {
     const binding = this.binding(id);
     if (!binding) {
       return 'Unknown action';
@@ -558,17 +602,19 @@ export class BindingRegistry {
       binding.id,
       chords.map((chord) => ({ ...chord })),
     );
-    const conflict = bindingConflict(this.bindings, candidate);
+    const conflict = bindingConflict(this.bindings, candidate, debugRun);
     if (conflict) {
       return conflict;
     }
     this.overrides = candidate;
+    this.suspended.delete(binding.id);
     this.persist();
     this.changed(true);
     return undefined;
   }
   reset(): void {
     this.overrides.clear();
+    this.suspended.clear();
     this.persist();
     this.changed(true);
   }
@@ -600,8 +646,12 @@ export class BindingRegistry {
   }
   private persist(): void {
     try {
-      if (this.overrides.size > 0) {
-        this.storage?.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(this.overrides)));
+      const preferences = new Map(this.suspended);
+      for (const [id, chords] of this.overrides) {
+        preferences.set(id, chords);
+      }
+      if (preferences.size > 0) {
+        this.storage?.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(preferences)));
       } else {
         this.storage?.removeItem(STORAGE_KEY);
       }
