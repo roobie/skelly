@@ -134,13 +134,14 @@ const resolvePick = ({
   blockSize: number;
 }): FurniturePickHit | undefined => {
   const cellEntity = cellHit ? entities.at(...cellHit.block) : undefined;
-  const sameClosedDoor = panelHit && cellEntity?.uid === panelHit.entity.uid;
-  if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || sameClosedDoor)) {
+  const shapedDoor = panelHit && entities.defOf(panelHit.entity).shape !== undefined;
+  const sameUnshapedDoorCell = !shapedDoor && panelHit && cellEntity?.uid === panelHit.entity.uid;
+  if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || sameUnshapedDoorCell)) {
     return { entity: panelHit.entity, distanceBlocks: panelHit.distance / blockSize };
   }
   if (cellEntity && cellHit) {
     const definition = entities.defOf(cellEntity);
-    if (!definition.door || definition.shape !== undefined) {
+    if (!definition.door || (definition.shape !== undefined && cellEntity.open)) {
       return { entity: cellEntity, distanceBlocks: cellHit.distance };
     }
   }

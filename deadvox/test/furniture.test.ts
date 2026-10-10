@@ -252,7 +252,7 @@ describe('furniture', () => {
     expect(mesh.position.x - mesh.scale.x / 2).toBeCloseTo(board.pos[0] * BLOCK_SIZE);
   });
 
-  it('shows an interactable door on the closed HQ safe', () => {
+  it('picks the closed HQ safe only through its visible door', () => {
     const definition = registry.furniture.get('camp_hq_safe')!;
     const entities = new BlockEntities(registry);
     const safe = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
@@ -276,16 +276,11 @@ describe('furniture', () => {
     expect(handleMaterial.color.getHex()).not.toBe(panelMaterial.color.getHex());
     expect(panelBounds.min.z).toBeLessThan(bodyBounds.min.z);
     expect(panelBounds.max.z).toBeCloseTo(bodyBounds.min.z);
-    expect(
-      pickFurniture({
-        entities,
-        origin: [5.5, 2.5, 7],
-        direction: [0, 0, 1],
-        maxDistance: 3,
-        blockSize: BLOCK_SIZE,
-        isSolid: () => false,
-      }),
-    ).toBe(safe);
+    const pick = (origin: [number, number, number], direction: [number, number, number], maxDistance: number) =>
+      pickFurniture({ entities, origin, direction, maxDistance, blockSize: BLOCK_SIZE, isSolid: () => false });
+    expect(pick([5.5, 2.5, 7], [0, 0, 1], 3)).toBe(safe);
+    expect(pick([3, 2, 9], [1, 0, 0], 3)).toBeUndefined();
+    expect(pick([5.5, 2.5, 11], [0, 0, -1], 6)).toBeUndefined();
   });
 
   it('keeps the open HQ safe body solid and pickable while its door swings outward', () => {
