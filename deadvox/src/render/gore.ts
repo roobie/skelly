@@ -148,7 +148,7 @@ const setPlayerDripOrigin = (
   target.set(
     (player.eye[0] + player.lookDirection[0] * 1.5 + Math.cos(player.yaw) * side * 0.14) * scale,
     player.eye[1] * scale + firstPersonRegionHeight(region),
-    (player.eye[2] + player.lookDirection[2] * 1.5 + Math.sin(player.yaw) * side * 0.14) * scale,
+    (player.eye[2] + player.lookDirection[2] * 1.5 - Math.sin(player.yaw) * side * 0.14) * scale,
   );
 };
 

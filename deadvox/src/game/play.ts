@@ -4,7 +4,7 @@
 
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { BODY_REGIONS } from '../core/body.ts';
+import { BODY_REGIONS, bodyRegionLabel } from '../core/body.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
@@ -960,7 +960,7 @@ export const startPlay = (
   };
   const updateBleedingNotice = (): void => {
     const playerBleeding = BODY_REGIONS.some((region) => sim.body.wounds[region]?.bleeding);
-    playerBleedingNotice.update(playerBleeding, () => showNotice('You are bleeding. Treat the wound.'));
+    playerBleedingNotice.update(playerBleeding, () => showNotice("You're bleeding."));
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
@@ -2717,9 +2717,7 @@ export const startPlay = (
     needs: sim.needs,
     health: sim.body.health,
     blood: sim.body.blood,
-    bleedingRegions: BODY_REGIONS.filter((region) => sim.body.wounds[region]?.bleeding).map((region) =>
-      region.replace(/([A-Z])/g, ' $1').toLowerCase(),
-    ),
+    bleedingRegions: BODY_REGIONS.filter((region) => sim.body.wounds[region]?.bleeding).map(bodyRegionLabel),
     sprinting: session.sprinting,
     lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
   });

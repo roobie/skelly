@@ -3,7 +3,7 @@ id: skelly::deadvox-interface
 description: Design for what the game's interface may show and say to the player, how far it is diegetic, and how development builds are allowed to break that
 read_if:
   - you're deciding what the interface may tell the player and in what voice
-  - you're changing player-facing prompts, feedback, HUD language, or bleeding cues (#584)
+  - you're changing player-facing prompts, feedback, HUD language, or bleeding cues
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
   - you're changing how playtesters hand back metrics or replays
   - you're changing UI layer order, overlay stacking, or in-game choice controls such as the combo box
