@@ -98,6 +98,8 @@ export interface PlayStatus {
   readonly paused: boolean;
   readonly needs: Readonly<Needs>;
   readonly health: number;
+  readonly blood: number;
+  readonly bleedingRegions: readonly string[];
   readonly sprinting: boolean;
   /** Undefined means no selected light; zero means an empty selected light. */
   readonly lightCharge: number | undefined;
@@ -115,12 +117,20 @@ export interface PlayHudState extends PlayStatus {
   readonly looking: string;
 }
 
-export const playNeedsText = ({ needs, health, sprinting, lightCharge }: PlayStatus): string => {
+export const playNeedsText = ({
+  needs,
+  health,
+  blood,
+  bleedingRegions,
+  sprinting,
+  lightCharge,
+}: PlayStatus): string => {
   const { calories, hydration, fatigue, stamina } = needs;
   const light = lightCharge === undefined ? '' : `   light ${Math.round(lightCharge * 100)}%`;
   return [
-    `health ${health.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
+    `health ${health.toFixed(0)}%   blood ${blood.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
     `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}%`,
+    ...(bleedingRegions.length === 0 ? [] : [`⚠ BLEEDING — ${bleedingRegions.join(', ')}`]),
   ].join('\n');
 };
 

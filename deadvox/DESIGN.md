@@ -17,6 +17,7 @@ read_if:
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
+  - you're changing bleeding cues (#584)
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you add or change a first-person handling animation (what it may read its timing from)
   - you tune body infection or unconsciousness through content packs
@@ -890,11 +891,14 @@ without modeling armour now.
   saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps
-  the stains it fell with. Gore stays out of the simulation so that blood never
-  changes a fight, a save or a replay. Splats are decoration, so they fade
-  rather than being saved, which would add to every save. Whether bleeding
-  should matter to play is still open (below). The simulation reports each
-  wound through a one-way callback and reads nothing back, and
+  the stains it fell with. A player's bleeding also drips from the affected
+  region in first person and debug third person; the HUD shows blood level and
+  active regions, and a new bleed produces one notice. These cues derive from
+  existing body wounds; none adds simulation or save state. Gore stays out of
+  the simulation so that blood never changes a fight, a save or a replay.
+  Splats are decoration, so they fade rather than being saved, which would add
+  to every save. The simulation reports each shambler wound through a one-way
+  callback and reads nothing back, and
   `test/zombies.test.ts` checks that a run with a listener matches one without.
   Droplets and splats live in fixed pools, drips come from the nearest few
   bodies, and a cap limits the droplets started per frame. Everything here
@@ -906,7 +910,7 @@ without modeling armour now.
   saves and replays stay exact. Region and material state is simulation state:
   it goes into the save snapshot and the source fingerprint.
 Still open: the full list of damage types and each material's resistances,
-whether bleeding harms or slows a shambler, partial block damage (cracked looks),
+shambler bleeding consequences, partial block damage (cracked looks),
 blast damage by distance across body regions, explosives and breach charges, and
 the sounds for severing and destruction (the audio manifest).
 

@@ -15,6 +15,7 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
+import { BODY_REGIONS, type BodyWounds } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
@@ -78,10 +79,78 @@ interface SeverityMemo {
 }
 
 /** What drips: the bodies in the world, and where the listener is (blocks). */
+export interface GorePlayer {
+  readonly pos: Vec3;
+  readonly yaw: number;
+  readonly wounds: Readonly<BodyWounds>;
+  /** Camera eye and direction, in blocks, for first-person blood visible beside the held arms. */
+  readonly eye: Vec3;
+  readonly lookDirection: Vec3;
+  readonly thirdPerson: boolean;
+}
+
 export interface GoreBodies {
   readonly zombies: Pick<EntityStore<Zombie>, 'entries'>;
   readonly listener: Vec3;
+  readonly player?: GorePlayer;
 }
+
+const playerRegionSide = (region: (typeof BODY_REGIONS)[number]): number => {
+  if (region === 'leftArm' || region === 'leftLeg') {
+    return -1;
+  }
+  return region === 'rightArm' || region === 'rightLeg' ? 1 : 0;
+};
+
+const playerRegionHeight = (region: (typeof BODY_REGIONS)[number]): number => {
+  switch (region) {
+    case 'head':
+      return 1.58;
+    case 'torso':
+      return 1.02;
+    case 'leftArm':
+    case 'rightArm':
+      return 0.84;
+    default:
+      return 0.45;
+  }
+};
+
+const firstPersonRegionHeight = (region: (typeof BODY_REGIONS)[number]): number => {
+  switch (region) {
+    case 'head':
+      return -0.12;
+    case 'torso':
+      return -0.3;
+    case 'leftArm':
+    case 'rightArm':
+      return -0.46;
+    default:
+      return -0.72;
+  }
+};
+
+const setPlayerDripOrigin = (
+  target: Vector3,
+  player: GorePlayer,
+  region: (typeof BODY_REGIONS)[number],
+  scale: number,
+): void => {
+  const side = playerRegionSide(region);
+  if (player.thirdPerson) {
+    target.set(
+      (player.pos[0] + side * 0.2 * Math.cos(player.yaw)) * scale,
+      player.pos[1] * scale + playerRegionHeight(region),
+      (player.pos[2] - side * 0.2 * Math.sin(player.yaw)) * scale,
+    );
+    return;
+  }
+  target.set(
+    (player.eye[0] + player.lookDirection[0] * 1.5 + Math.cos(player.yaw) * side * 0.14) * scale,
+    player.eye[1] * scale + firstPersonRegionHeight(region),
+    (player.eye[2] + player.lookDirection[2] * 1.5 + Math.sin(player.yaw) * side * 0.14) * scale,
+  );
+};
 
 const regionNameLists = new WeakMap<Zombie['type']['regions'], readonly string[]>();
 
@@ -276,6 +345,7 @@ export class Gore {
     this.fadeSplats(step);
     this.pickDrippers(bodies);
     this.drip(step);
+    this.dripPlayer(step, bodies?.player);
     this.drawDroplets();
     this.spawnedSinceUpdate = 0;
   }
@@ -360,6 +430,26 @@ export class Gore {
       const y = pos[1] * s + heightMetres * this.rng.range(0.35, 0.85);
       const z = pos[2] * s + this.rng.range(-reach, reach);
       if (!this.emit(this.origin.set(x, y, z), this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
+        return;
+      }
+    }
+  }
+
+  /** Player wounds drip from their matching figure region; first person places the same droplets beside the
+   * camera-space arms so the render-only cue remains visible while the world body is out of view. */
+  private dripPlayer(dt: number, player: GorePlayer | undefined): void {
+    if (!player) {
+      return;
+    }
+    for (const region of BODY_REGIONS) {
+      if (!player.wounds[region]?.bleeding) {
+        continue;
+      }
+      if (!this.rng.chance(DRIPS_PER_SECOND * dt)) {
+        continue;
+      }
+      setPlayerDripOrigin(this.origin, player, region, this.blockSize);
+      if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
         return;
       }
     }
