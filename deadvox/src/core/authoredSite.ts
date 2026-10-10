@@ -32,7 +32,11 @@ import {
 } from './vegetation.ts';
 import type { Surface } from './worldgen.ts';
 
-const collectFixedLoot = (registry: Registry, placements: readonly Placement[], buildings: SiteLayoutDef['buildings']) => {
+const collectFixedLoot = (
+  registry: Registry,
+  placements: readonly Placement[],
+  buildings: SiteLayoutDef['buildings'],
+) => {
   const fixedLoot = new Map<string, Rolled[]>();
   const fixedSurfaceLoot = new Map<string, Rolled[]>();
   const keyLoot = new Map<string, Set<string>>();
@@ -94,10 +98,13 @@ export class AuthoredSite implements Site {
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     this.placements = layout.buildings.map((building) => placementOf(registry, building));
-    const fixedLoot = collectFixedLoot(registry, this.placements, layout.buildings);
-    this.fixedLoot = fixedLoot.fixedLoot;
-    this.fixedSurfaceLoot = fixedLoot.fixedSurfaceLoot;
-    const keyLoot = fixedLoot.keyLoot;
+    const { fixedLoot: containerLoot, fixedSurfaceLoot, keyLoot } = collectFixedLoot(
+      registry,
+      this.placements,
+      layout.buildings,
+    );
+    this.fixedLoot = containerLoot;
+    this.fixedSurfaceLoot = fixedSurfaceLoot;
     this.playtestMarks = {
       beats: (layout.beats ?? []).map((beat) => ({ id: beat.id, area: rectBlocks(beat.area) })),
       keyLoot,
