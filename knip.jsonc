@@ -2,7 +2,13 @@
   "$schema": "./node_modules/knip/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["site/launcher.js!", "test/**/*.mjs", "testPool.ts", "tools/**/*.mjs"],
+      "entry": [
+        "site/launcher.js!",
+        "site/deadvox/playtest/round1/round1.js!",
+        "test/**/*.mjs",
+        "testPool.ts",
+        "tools/**/*.mjs"
+      ],
       "project": ["site/**/*.js!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"]
     },
     "deadvox": {

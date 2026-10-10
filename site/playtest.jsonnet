@@ -1,7 +1,8 @@
 {
   en: {
+    round: 'Round',
     title: 'Playtest',
-    task: 'Your task: find the military camp.',
+    task: 'Your task: survive and find the military camp.',
     playLink: 'Play the playtest map',
     duration: 'Play for as long as you like, in as many sittings as you like. Continue picks up where you left off.',
     metrics: 'The game records play metrics only on your machine, in this browser.',
@@ -13,8 +14,9 @@
     email: 'No GitHub account? You can email your metrics, and any feedback, to the person who sent you the link.',
   },
   sv: {
+    round: 'Runda',
     title: 'Speltest',
-    task: 'Ditt uppdrag: hitta militärlägret.',
+    task: 'Ditt uppdrag: överlev och hitta militärlägret.',
     playLink: 'Spela speltestkartan',
     duration: 'Spela så länge du vill, i så många omgångar du vill. Med Continue fortsätter du där du slutade.',
     metrics: 'Spelet sparar speldata bara på din dator, i den här webbläsaren.',

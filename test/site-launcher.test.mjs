@@ -1,28 +1,29 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const selectLanguage = (languages, search) => applyPlaytestLanguage(languages, search);
 const page = read('site/launcher.js');
+const round1Page = read('site/deadvox/playtest/round1/round1.js');
+const round1Html = read('site/deadvox/playtest/round1/index.html');
+const round1Css = read('site/deadvox/playtest/round1/round1.css');
 const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
 const SELECT_PATTERN = /<select\b/;
 const WEATHERING_SITE_OPTION_PATTERN =
   /state\.deadvox\.debug && state\.deadvox\.bench === ''[\s\S]*value="weatheringTest"/;
 const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
-const PLAYTEST_LINK_PATTERN = /<a\b[^>]*\bid="deadvox-playtest"[^>]*>/;
-const PLAYTEST_ENTRY_PATTERN = /\$\{playtestBrief\}/;
-const PLAYTEST_CARD_PATTERN =
-  /<section class="card" lang=\$\{playtestLanguage\} aria-labelledby="playtest-title">([\s\S]*?)<\/section>/;
-const OPTIONAL_PLAYTEST_BRIEF_PATTERN = /const playtestBrief = playtestText\s*\?[\s\S]*?: undefined;/;
+const ROUND1_PLAY_LINK_PATTERN = /<a[^>]*href="\.\.\/\.\.\/\.\.\/deadvox\/\?site=playtest"[^>]*>/;
+const ROUND1_STATIC_URL = 'https://roobie.github.io/skelly/deadvox/playtest/round1/';
+const ROUND1_LANGUAGE_PATTERN = /lang=\$\{language\}/;
+const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title|deadvox-playtest/;
+const LINKS_CARD_PATTERN = /<section class="card" aria-labelledby="links-title">([\s\S]*?)<\/section>/;
 const ENGLISH_DOCUMENT_LANGUAGE_PATTERN = /<html lang="en">/;
-const DEADVOX_CARD_PATTERN = /<section\b[^>]*\baria-labelledby="deadvox-title"[^>]*>/;
 const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
@@ -123,22 +124,9 @@ describe('playtest language and catalog', () => {
     assert.equal(selectLanguage(['sv-SE', 'en-US'], '?lang=en'), 'en');
   });
 
-  it('keeps the page English and labels only the playtest section with its language', () => {
+  it('keeps the umbrella document English and labels the Round 1 brief by language', () => {
     assert.match(read('site/index.html'), ENGLISH_DOCUMENT_LANGUAGE_PATTERN);
-    assert.ok(PLAYTEST_CARD_PATTERN.test(page), 'the Playtest section uses the selected language');
-  });
-
-  it('keeps the rest of the page when the playtest catalog cannot be loaded', async () => {
-    assert.match(page, OPTIONAL_PLAYTEST_BRIEF_PATTERN);
-    const failingFetchers = [
-      async () => ({ ok: false }),
-      async () => ({ ok: true, json: async () => Promise.reject(new Error('invalid JSON')) }),
-      async () => Promise.reject(new Error('network failure')),
-    ];
-    const results = await Promise.all(
-      failingFetchers.map((fetcher) => loadPlaytestText(fetcher, 'playtest.json', 'en')),
-    );
-    assert.deepEqual(results, [null, null, null]);
+    assert.match(round1Page, ROUND1_LANGUAGE_PATTERN);
   });
 
   it('provides the same playtest string keys in both languages', () => {
@@ -211,30 +199,38 @@ describe('site launchers track the games’ URL parameters', () => {
 });
 
 describe('site launcher playtest entry', () => {
-  it('keeps the playtest card distinct from the developer launcher', () => {
-    const card = page.match(PLAYTEST_CARD_PATTERN);
-    const playtestEntry = page.search(PLAYTEST_ENTRY_PATTERN);
-    const deadvoxCard = page.match(DEADVOX_CARD_PATTERN)?.index ?? -1;
-    const deadvoxForm = page.match(DEADVOX_FORM_PATTERN);
-    assert.ok(card, 'the playtest has its own card');
-    assert.ok(playtestEntry >= 0, 'the playtest card is included in the launcher');
-    assert.ok(deadvoxCard > playtestEntry, 'the playtest card appears before the developer launcher');
-    assert.ok(card[1].includes('<h1 id="playtest-title">'));
-    assert.ok(card[1].indexOf('id="deadvox-playtest"') > card[1].indexOf('</ul>'), 'the play link follows the brief');
-    assert.ok(deadvoxForm, 'the developer launch form is present');
-    assert.equal(deadvoxForm[0].includes('id="deadvox-playtest"'), false);
+  it('keeps the Round 1 link-list card after the project cards', () => {
+    assert.doesNotMatch(page, UMBRELLA_PLAYTEST_MARKUP_PATTERN);
+    const linksCard = page.match(LINKS_CARD_PATTERN);
+    assert.ok(linksCard, 'the umbrella launcher has a link-list card');
+    assert.ok(linksCard[1].includes('<ul>'), 'the link card presents a list');
+    assert.ok(linksCard[1].includes('href="deadvox/playtest/round1/"'));
+    assert.equal(linksCard.index, page.lastIndexOf('<section class="card"'));
+    assert.match(page, DEADVOX_FORM_PATTERN);
   });
 
-  it('opens an authored deadvox site without development tools', () => {
-    const anchor = page.match(PLAYTEST_LINK_PATTERN)?.[0];
-    assert.ok(anchor, 'the launcher has a playtest link');
+  it('opens the authored Round 1 site without development tools', () => {
+    const anchor = round1Page.match(ROUND1_PLAY_LINK_PATTERN)?.[0];
+    assert.ok(anchor, 'the Round 1 page has a play link');
     const href = anchor.match(HREF_PATTERN)?.[1];
-    assert.ok(href, 'the playtest link has an href');
-    const base = new URL('https://pages.example/skelly/');
+    assert.ok(href, 'the play link has an href');
+    const base = new URL(ROUND1_STATIC_URL);
     const url = new URL(href, base);
-    assert.equal(`${url.origin}${url.pathname}`, new URL('deadvox/', base).href);
+    assert.equal(`${url.origin}${url.pathname}`, 'https://roobie.github.io/skelly/deadvox/');
     const site = url.searchParams.get('site');
     assert.ok(authoredLayoutIds().includes(site), `site ${site} is an authored layout`);
     assert.equal(url.searchParams.has('debug'), false);
+  });
+
+  it('serves Round 1 social metadata and the referenced static preview image', () => {
+    assert.ok(round1Html.includes(`<link rel="canonical" href="${ROUND1_STATIC_URL}"`));
+    assert.ok(round1Html.includes(`<meta property="og:url" content="${ROUND1_STATIC_URL}"`));
+    assert.ok(round1Html.includes('<meta property="og:image:alt" content="'));
+    assert.ok(round1Html.includes('<meta name="twitter:card" content="summary_large_image"'));
+    assert.ok(round1Css.includes('background-image: url("../../../assets/deadvox-backdrop.jpg")'));
+    const imagePath = 'site/deadvox/playtest/round1/assets/round1-social.webp';
+    const imageUrl = 'https://roobie.github.io/skelly/deadvox/playtest/round1/assets/round1-social.webp';
+    assert.ok(round1Html.includes(`<meta property="og:image" content="${imageUrl}"`));
+    assert.ok(existsSync(join(ROOT, imagePath)));
   });
 });
