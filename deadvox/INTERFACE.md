@@ -216,7 +216,7 @@ melee combat governs block success. The tiered practice contract is in
 
 ## HUD
 
-Blood loss can progress without immediate health loss, so make it legible during play; `playNeedsText` in `src/ui/playHud.ts` pairs it with health and flags the affected region.
+Blood loss can progress without immediate health loss, so make it legible during play; `playNeedsText` in `src/ui/playHud.ts` pairs it with health and flags each bleeding region with its tier. Moderate and worse share one warning line. A scratch gets a quiet lowercase line with no warning sign, because it hardly needs mention. The bleeding notice is class 3: it names the severity in the character's voice when the worst bleeding worsens to moderate or beyond, and stays silent for a scratch; see `src/game/playerBleedingNotice.ts`, `BLEEDING_NOTICE`. An open artery's refusal of time compression is a class-3 refusal; see `src/core/body.ts`, `Body.compressionRefusal`.
 
 The optional Handling progress HUD reuses its existing progress card for a held
 item throw. Its fill follows throw charge in simulation time; a labelled marker

@@ -247,7 +247,7 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 > 3. wound infection - treated by antiseptics, or antibiotics when has gotten far enough
 > 4. we will have fractures at some point, but let's defer them for now
 
-**In:** Damage by body part with possible consequences; health, blood and shock as separate concerns; wounds bleed until treated; wound infection is treated early by antiseptics and later with antibiotics. This milestone owns the body state used by melee, firearm hits, runner/crawler contact and the infection portions of 3.3 and 3.8. Fractures stay deferred (#277).
+**In:** Damage by body part with possible consequences; health, blood and shock as separate concerns; wounds bleed until treated, except a scratch, which stops by itself (DESIGN.md, "Bleeding"); wound infection is treated early by antiseptics and later with antibiotics. This milestone owns the body state used by melee, firearm hits, runner/crawler contact and the infection portions of 3.3 and 3.8. Fractures stay deferred (#277).
 **Saves:** Authoritative body-region damage, blood/shock state, bleeding and infection progression, plus any treatment progress that persists across interruption. Include it in the snapshot and simulation fingerprint.
 **Tests:** damage affects the struck region and its associated consequences; bleeding consumes blood until treated; antiseptic and antibiotic treatment apply at the ruled stages; save/load preserves wounds, blood and infection progress without duplicating treatment. Assert behavior and ownership, not exact damage rates or anatomical tuning.
 **Done when:** body damage has region-specific consequences, bleeding and infection can be treated, and their state survives a save round trip.
