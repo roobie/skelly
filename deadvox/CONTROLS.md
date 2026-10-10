@@ -13,6 +13,7 @@ read_if:
   - you implement or inspect input recording and replay
   - you change how a locked door advertises its crowbar fallback
   - you change stance hints or first-person held poses
+  - you're changing bleeding treatment feedback (#584)
 ---
 
 # Controls and input ownership
@@ -174,6 +175,7 @@ both independently scrolling panes.
   `src/game/quickbarInput.ts`, `QuickbarInput`, and
   `src/game/quickbarActions.ts`, `QuickbarActions`.
 - **Wound treatment (2026-10-06 08:33):** BR said “the \"treat with rag\" is not the way to go. You wield the rag and left-click apply it (or quickbar-hold)”. Wielded-item action selection is stepped by the wheel and shown in the interaction hint; see `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `ItemActionSelection`, and `src/game/survival.ts`, `wieldedItemActionHint`.
+  The HUD keeps the blood level and affected region visible while treatment is needed; see `src/ui/playHud.ts`, `playNeedsText`.
 - **Lighting (2026-10-05 14:43):** “lighting need the matches in your hand.”
   See `src/game/primaryAction.ts`, `selectPrimaryAction`.
 - **Interaction hints (2026-10-06 08:35):** BR said “we should make
