@@ -316,16 +316,18 @@ describe('amalgam body and combat seam', () => {
     expect(amalgam.attack.windupSimSeconds).toBeGreaterThan(shambler.attack.windupSimSeconds);
 
     const seenPlayer: PlayerSense = { ...player(), pos: [0, 1, 30] };
-    const chase = (type: typeof amalgam, seed = 17) => {
-      const simulation = system(() => seenPlayer, undefined, seed);
-      const id = simulation.add(type, [0, 1, 0], [0, 0, 1]);
+    const chase = (type: typeof amalgam, facing: Vec3 = [0, 0, 1]) => {
+      const simulation = system(() => seenPlayer);
+      const id = simulation.add(type, [0, 1, 0], facing);
       let checkedAmalgamHeading = false;
+      let firstStepAlignment: number | undefined;
       for (let tick = 0; tick < 120; tick++) {
         const before = [...simulation.store.get(id)!.body.pos] as Vec3;
         simulation.tick(1 / 60);
         const chasing = simulation.store.get(id)!;
+        const alignment = stepHeadingAlignment(before, chasing.body.pos, seenPlayer.pos);
+        firstStepAlignment ??= alignment;
         if (type.id === 'amalgam' && chasing.mode === 'chase') {
-          const alignment = stepHeadingAlignment(before, chasing.body.pos, seenPlayer.pos);
           expect(alignment ?? 1).toBeGreaterThan(Math.cos(Math.PI / 180));
           checkedAmalgamHeading ||= alignment !== undefined;
         }
@@ -335,13 +337,23 @@ describe('amalgam body and combat seam', () => {
       if (type.id === 'amalgam') {
         expect(checkedAmalgamHeading).toBe(true);
       }
-      return Math.hypot(seenPlayer.pos[0] - zombie.body.pos[0], seenPlayer.pos[2] - zombie.body.pos[2]) * BLOCK_SIZE;
+      return {
+        remaining:
+          Math.hypot(seenPlayer.pos[0] - zombie.body.pos[0], seenPlayer.pos[2] - zombie.body.pos[2]) * BLOCK_SIZE,
+        firstStepAlignment,
+      };
     };
     const initialDistance = seenPlayer.pos[2] * BLOCK_SIZE;
-    const amalgamRemainingDistance = chase(amalgam);
-    const shamblerRemainingDistance = chase(shambler);
+    const amalgamRemainingDistance = chase(amalgam).remaining;
+    const shamblerRemainingDistance = chase(shambler).remaining;
     expect(amalgamRemainingDistance).toBeLessThan(initialDistance);
     expect(amalgamRemainingDistance).toBeGreaterThan(shamblerRemainingDistance);
+
+    // Facing well off the player but seeing it, the omnidirectional amalgam heads straight at it from its first
+    // step, before its facing has turned; a forward shambler walks where it faces until it has turned.
+    const askew: Vec3 = [Math.sin(0.8), 0, Math.cos(0.8)];
+    expect(chase(amalgam, askew).firstStepAlignment).toBeGreaterThan(Math.cos(Math.PI / 180));
+    expect(chase(shambler, askew).firstStepAlignment).toBeLessThan(Math.cos(0.4));
 
     const closePlayer: PlayerSense = { ...player(), pos: [0, 1, 5] };
     const damage: number[] = [];
@@ -572,14 +584,25 @@ describe('amalgam body and combat seam', () => {
     expect(reached()).toBeLessThan(through);
   });
 
-  it('turns off a pillar its flesh is pressed against to strike a player behind it', () => {
-    const amalgam = registry.zombies.get('amalgam')!;
-    const pillar = (x: number, y: number, z: number): boolean => x >= 0 && x <= 1 && z >= -1 && z <= 0 && y > 0;
-    // Seen beyond the pillar, so the amalgam chases into it.
-    let sense: PlayerSense = { ...player(), pos: [0.5, 1, -8] };
+  // Each puts a wall square between it and the player, which a ray from its centre never reaches past its flesh.
+  it.each([
+    {
+      layout: 'round the open end of the L-shaped wall it stands inside',
+      wall: (x: number, z: number): boolean => (z === 0 && x >= -40 && x <= 0) || (x === -40 && z >= 0 && z <= 24),
+      start: [-8, 1, 16] as Vec3,
+      target: [-8, 1, -16] as Vec3,
+    },
+    {
+      layout: 'through a doorway its body fits, off its line to the player',
+      wall: (x: number, z: number): boolean => (z === 0 || z === 1) && !(x >= 10 && x < 26),
+      start: [0, 1, 8] as Vec3,
+      target: [4, 1, -26] as Vec3,
+    },
+  ])('chases a player it sees $layout, and strikes', ({ wall, start, target }) => {
+    const seenPlayer: PlayerSense = { ...player(), pos: target };
     const simulation = new ZombieSystem({
-      player: () => sense,
-      isSolid: (x, y, z) => y === 0 || pillar(x, y, z),
+      player: () => seenPlayer,
+      isSolid: (x, y, z) => y === 0 || wall(x, z),
       isOpaque: () => false,
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
@@ -588,20 +611,48 @@ describe('amalgam body and combat seam', () => {
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
     });
-    const id = simulation.add(amalgam, [0.5, 1, 14], [0, 0, -1]);
-    const zombie = simulation.store.get(id)!;
-    let still = 0;
-    for (let tick = 0; tick < 1200 && still < 30; tick++) {
-      const [fromX, , fromZ] = zombie.body.pos;
+    const zombie = simulation.store.get(simulation.add(registry.zombies.get('amalgam')!, start, [0, 0, -1]))!;
+    let struck = false;
+    for (let tick = 0; tick < 3600 && !struck; tick++) {
       simulation.tick(1 / 60);
-      still = fromX === zombie.body.pos[0] && fromZ === zombie.body.pos[2] ? still + 1 : 0;
+      struck = zombie.attackWindup > 0;
     }
-    const [atX, atY, atZ] = zombie.body.pos;
-    expect(simulation.shapeOf(zombie.body)!.overlapsTerrain([atX, atY, atZ - 0.05])).toBe(true);
-    expect(zombie.attackWait).toBe(0);
+    expect(struck).toBe(true);
+  });
 
-    // It hears the player jog round behind it, outside its sight.
+  it('turns off a pillar its flesh is pressed against to strike a player behind it, walking where it faces', () => {
+    // Moving freely, it carries its flesh off the pillar as it turns; walking only where it faces, it must turn
+    // first, which the pillar would block.
+    const amalgam = { ...registry.zombies.get('amalgam')!, locomotion: 'forward' as const };
+    const pillar = (x: number, y: number, z: number): boolean => x >= 0 && x <= 1 && z >= -1 && z <= 0 && y > 0;
+    let sense: PlayerSense = player();
+    const pillarSystem = () =>
+      new ZombieSystem({
+        player: () => sense,
+        isSolid: (x, y, z) => y === 0 || pillar(x, y, z),
+        isOpaque: () => false,
+        dayPhase: () => dayStateAtHour(12),
+        blockSize: BLOCK_SIZE,
+        physics: physicsFor(makeScale(0.5)),
+        jumpSpeed: PLAYER.jump,
+        tuning: TEST_SENSE_TUNING,
+        hurtPlayer: () => undefined,
+      });
+    // Facing the pillar, as near as its flesh comes to it: a step closer would meet it.
+    const facingPillar: Vec3 = [0, 0, -1];
+    const probe = pillarSystem();
+    const shape = probe.shapeOf(probe.store.get(probe.add(amalgam, [0.5, 1, 14], facingPillar))!.body)!;
+    const [atX, atY] = [0.5, 1 + 1e-3];
+    let atZ = 14;
+    while (atZ > 0 && !shape.overlapsTerrain([atX, atY, atZ - 0.05])) {
+      atZ -= 0.05;
+    }
+    expect(shape.overlapsTerrain([atX, atY, atZ - 0.05])).toBe(true);
+
+    // It hears the player jog round behind it, outside its sight, and within its reach.
     sense = { ...player(), pos: [atX + 3, 1, atZ + 10], movement: 'jogging' };
+    const simulation = pillarSystem();
+    const zombie = simulation.store.get(simulation.add(amalgam, [atX, atY, atZ], facingPillar))!;
     const [fx, , fz] = zombie.facing;
     const facingPlayer = (fx * 3 + fz * 10) / Math.hypot(3, 10);
     expect(facingPlayer).toBeLessThan(Math.cos((zombie.type.sightCone * Math.PI) / 180));
