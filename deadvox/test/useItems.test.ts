@@ -59,7 +59,7 @@ const setup = (
 describe('using what you hold', () => {
   it('refuses held and quickbar actions while unconscious and permits them after wake', () => {
     const t = setup();
-    t.sim.body.impact(1, 'torso', { bleeding: true, shockDamage: 100 });
+    t.sim.body.impact(1, 'torso', { bleeding: 'moderate', shockDamage: 100 });
     const rag = t.hold('rag', 'left');
     t.sim.actions.treatment = {
       validate: (region, _itemUid, treatment) =>
@@ -78,8 +78,8 @@ describe('using what you hold', () => {
 
   it('uses the selected wound for held treatment and lets the wheel change that target', () => {
     const t = setup();
-    t.sim.body.impact(1, 'leftArm', { bleeding: true });
-    t.sim.body.impact(3, 'rightArm', { bleeding: true });
+    t.sim.body.impact(1, 'leftArm', { bleeding: 'moderate' });
+    t.sim.body.impact(3, 'rightArm', { bleeding: 'moderate' });
     const rag = t.hold('rag');
     const initial = t.survival.selectedItemAction(rag);
     expect(initial?.treatment?.region).toBe('rightArm');

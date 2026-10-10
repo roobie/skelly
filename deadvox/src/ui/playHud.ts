@@ -2,6 +2,7 @@
 
 import { render } from 'lit-html';
 import { type Camera, Vector3 } from 'three';
+import type { BleedingTier } from '../core/body.ts';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Needs } from '../core/needs.ts';
@@ -99,7 +100,8 @@ export interface PlayStatus {
   readonly needs: Readonly<Needs>;
   readonly health: number;
   readonly blood: number;
-  readonly bleedingRegions: readonly string[];
+  /** Each bleeding region's label and tier. */
+  readonly bleeding: readonly { readonly region: string; readonly tier: BleedingTier }[];
   readonly sprinting: boolean;
   /** Undefined means no selected light; zero means an empty selected light. */
   readonly lightCharge: number | undefined;
@@ -117,20 +119,17 @@ export interface PlayHudState extends PlayStatus {
   readonly looking: string;
 }
 
-export const playNeedsText = ({
-  needs,
-  health,
-  blood,
-  bleedingRegions,
-  sprinting,
-  lightCharge,
-}: PlayStatus): string => {
+export const playNeedsText = ({ needs, health, blood, bleeding, sprinting, lightCharge }: PlayStatus): string => {
   const { calories, hydration, fatigue, stamina } = needs;
   const light = lightCharge === undefined ? '' : `   light ${Math.round(lightCharge * 100)}%`;
+  const open = bleeding.filter(({ tier }) => tier !== 'scratch');
+  const scratches = bleeding.filter(({ tier }) => tier === 'scratch');
   return [
     `health ${health.toFixed(0)}%   blood ${blood.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
     `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}%`,
-    ...(bleedingRegions.length === 0 ? [] : [`⚠ BLEEDING — ${bleedingRegions.join(', ')}`]),
+    ...(open.length === 0 ? [] : [`⚠ BLEEDING — ${open.map(({ region, tier }) => `${region} (${tier})`).join(', ')}`]),
+    // A scratch gets only a quiet lowercase mark, with no warning sign (DESIGN.md, "Bleeding").
+    ...(scratches.length === 0 ? [] : [`scratch — ${scratches.map(({ region }) => region).join(', ')}`]),
   ].join('\n');
 };
 

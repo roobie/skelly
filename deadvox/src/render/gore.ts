@@ -15,7 +15,7 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import { BODY_REGIONS, type BodyWounds } from '../core/body.ts';
+import { type BleedingTier, BODY_REGIONS, type BodyWounds } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
@@ -47,6 +47,13 @@ const DRIPS_PER_SECOND = 2.5;
 const DRIP_RANGE_M = 25;
 /** A downed body drips from near the ground, not from its standing height. */
 const DOWNED_DRIP_HEIGHT_M = 0.3;
+/** A player wound's drip rate and droplet size by bleeding tier, relative to a moderate wound. */
+const PLAYER_DRIP: Readonly<Record<BleedingTier, { readonly rate: number; readonly size: number }>> = {
+  scratch: { rate: 0.2, size: 0.75 },
+  moderate: { rate: 1, size: 1 },
+  heavy: { rate: 2.5, size: 1.3 },
+  arterial: { rate: 6, size: 1.6 },
+};
 const SEVERED_PART_SEVERITY = 0.2;
 const CARVED_CELL_SEVERITY = 0.01;
 const DROPLET_COLOR = 0x52_17_0f;
@@ -398,14 +405,16 @@ export class Gore {
       return;
     }
     for (const region of BODY_REGIONS) {
-      if (!player.wounds[region]?.bleeding) {
+      const tier = player.wounds[region]?.bleeding;
+      if (!tier) {
         continue;
       }
-      if (!this.rng.chance(DRIPS_PER_SECOND * dt)) {
+      const drip = PLAYER_DRIP[tier];
+      if (!this.rng.chance(DRIPS_PER_SECOND * drip.rate * dt)) {
         continue;
       }
       setPlayerDripOrigin(this.origin, player, region, this.blockSize);
-      if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
+      if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02) * drip.size)) {
         return;
       }
     }

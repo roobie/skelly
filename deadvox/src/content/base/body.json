@@ -11,7 +11,21 @@
       "bluntShockPerDamage": 2,
       "treatmentSimSeconds": 8,
       "wakeShock": 10,
-      "bloodLossPerSimSecond": 0.004,
+      "bleeding": {
+        "scratch": { "bloodLossPerSimSecond": 0.002, "stopSimSeconds": 180 },
+        "moderate": { "bloodLossPerSimSecond": 0.015, "minDamage": 5, "chance": 0.5 },
+        "heavy": { "bloodLossPerSimSecond": 0.12, "minDamage": 8, "chance": 0.1 },
+        "arterial": {
+          "bloodLossPerSimSecond": 1.67,
+          "minDamage": 8,
+          "chance": 0.02,
+          "regions": ["head", "leftArm", "rightArm", "leftLeg", "rightLeg"]
+        }
+      },
+      "bleedingTreatments": {
+        "bandage": { "stops": "arterial" },
+        "rag": { "stops": "moderate", "eases": "heavy" }
+      },
       "bloodRecoveryPerSimSecond": 0.002,
       "shockRecoveryPerSimSecond": 0.1,
       "advancedInfectionHealthLossPerSimSecond": 0.0005,

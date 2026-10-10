@@ -70,7 +70,7 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
 
 const root = (): HTMLElement => document.createElement('div');
 
-it('projects blood level and affected regions only while a wound bleeds', () => {
+it('projects blood level and affected regions, with their tier, only while a wound bleeds', () => {
   const regionLabel = bodyRegionLabel('leftArm');
   const base = {
     calendar: 0,
@@ -79,14 +79,15 @@ it('projects blood level and affected regions only while a wound bleeds', () => 
     needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
     health: 91,
     blood: 67,
-    bleedingRegions: [regionLabel],
+    bleeding: [{ region: regionLabel, tier: 'heavy' }],
     sprinting: false,
     lightCharge: undefined,
   } as const;
   const bleeding = playNeedsText(base);
   expect(bleeding).toContain('67%');
   expect(bleeding).toContain(regionLabel);
-  const treated = playNeedsText({ ...base, bleedingRegions: [] });
+  expect(bleeding).toContain('heavy');
+  const treated = playNeedsText({ ...base, bleeding: [] });
   expect(treated).toContain('67%');
   expect(treated).not.toContain(regionLabel);
   const bleedingLines = bleeding.split('\n');

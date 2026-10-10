@@ -168,7 +168,7 @@ describe('quickbar tap and hold actions', () => {
 
   it('quickbar-holds a treatment item on its selected wound without wielding it', () => {
     const { inventory, simulation, survival, actions } = runtime();
-    simulation.body.impact(1, 'leftArm', { bleeding: true });
+    simulation.body.impact(1, 'leftArm', { bleeding: 'moderate' });
     const rag = inventory.create('rag');
     const { bag, pocket } = carryInBag(inventory, rag);
     expect(inventory.add(rag, { kind: 'pocket', owner: bag, pocket })).toBe(true);

@@ -208,6 +208,23 @@ export class LongActions {
   private bodyActionRefusal(): string | undefined {
     return this.sim.body.actionRefusal;
   }
+  /**
+   * Prying runs at 1×, and so does treatment while an artery is open: the body refuses compression
+   * then, but the wound must still be treatable (DESIGN.md, "Bleeding").
+   */
+  runsUncompressed(jobType: LongJob['jobType']): boolean {
+    return jobType === 'pry' || (jobType === 'treatment' && this.sim.body.compressionRefusal !== undefined);
+  }
+  /** Drops to 1× for an uncompressed job, or asks for compression; returns why compression was refused. */
+  private startTiming(jobType: LongJob['jobType']): string | undefined {
+    if (this.runsUncompressed(jobType)) {
+      this.sim.compression.stop();
+      this.sim.compression.snap();
+      return undefined;
+    }
+    const result = this.sim.compressLongAction();
+    return result.ok ? undefined : result.reason;
+  }
   get job(): Readonly<LongJob> | undefined {
     return this.current;
   }
@@ -414,9 +431,9 @@ export class LongActions {
     if (!Number.isFinite(duration) || duration <= 0) {
       return 'Invalid treatment time';
     }
-    const result = this.sim.compressLongAction();
-    if (!result.ok) {
-      return result.reason;
+    const refusal = this.startTiming('treatment');
+    if (refusal) {
+      return refusal;
     }
     const elapsed =
       this.current?.jobType === 'treatment' &&
@@ -508,14 +525,9 @@ export class LongActions {
     if (reason) {
       return reason;
     }
-    if (job.jobType === 'pry') {
-      this.sim.compression.stop();
-      this.sim.compression.snap();
-    } else {
-      const result = this.sim.compressLongAction();
-      if (!result.ok) {
-        return result.reason;
-      }
+    const refusal = this.startTiming(job.jobType);
+    if (refusal) {
+      return refusal;
     }
     job.stopped = false;
     job.last = this.sim.time;
@@ -547,14 +559,14 @@ export class LongActions {
     }
     this.sim.compression.stop();
   }
-  interruptPrying(reason: string): void {
+  interruptUncompressed(reason: string): void {
     const job = this.current;
-    if (job?.jobType !== 'pry' || job.stopped) {
+    if (!job || job.stopped || !this.runsUncompressed(job.jobType)) {
       return;
     }
     this.advance(this.sim.time);
     if (this.current === job && !job.stopped) {
-      this.stopPry(job, reason);
+      this.stopUncompressed(job, reason);
     }
   }
   cancel(): void {
@@ -573,22 +585,18 @@ export class LongActions {
     // Native effects preflight before structural transfer; a refusal retains the owned work.
     this.current = job;
     const reason = error instanceof Error ? error.message : 'Action effect refused';
-    if (job.jobType === 'pry') {
-      this.stopPry(job, reason);
-    } else {
-      job.stopped = true;
-      this.sim.compression.interrupt(reason);
-    }
+    this.stopOrInterrupt(job, reason);
   }
-  private stopPry(job: Extract<LongJob, { jobType: 'pry' }>, reason: string): void {
+  /** An uncompressed job has no prompt to wait on, so its stop reason is a notice. */
+  private stopUncompressed(job: LongJob, reason: string): void {
     job.stopped = true;
     this.sim.compression.stop();
     this.sim.compression.snap();
     this.notice(reason);
   }
   private stopOrInterrupt(job: LongJob, reason: string): void {
-    if (job.jobType === 'pry') {
-      this.stopPry(job, reason);
+    if (this.runsUncompressed(job.jobType)) {
+      this.stopUncompressed(job, reason);
     } else {
       job.stopped = true;
       this.sim.compression.interrupt(reason);
@@ -600,9 +608,9 @@ export class LongActions {
       return;
     }
     const reason = this.sim.compression.interruption;
-    if (job.jobType === 'pry') {
+    if (this.runsUncompressed(job.jobType)) {
       if (reason !== undefined) {
-        this.stopPry(job, reason);
+        this.stopUncompressed(job, reason);
       }
       return;
     }
@@ -687,11 +695,12 @@ export class LongActions {
       this.sim.compression.stop();
       return;
     }
-    if (job.jobType === 'pry' && this.sim.compression.active) {
+    const uncompressed = this.runsUncompressed(job.jobType);
+    if (uncompressed && this.sim.compression.active) {
       this.sim.compression.stop();
       this.sim.compression.snap();
     }
-    if (job.stopped || (job.jobType !== 'pry' && !this.sim.compression.active)) {
+    if (job.stopped || !(uncompressed || this.sim.compression.active)) {
       return;
     }
     const { actionRefusal } = this.sim.body;

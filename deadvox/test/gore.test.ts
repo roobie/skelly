@@ -36,7 +36,13 @@ describe('Gore', () => {
       leftLeg: null,
       rightLeg: null,
     };
-    wounds[region] = { bleeding: true, infection: 'none', infectionGameSeconds: 0, infectionAtRisk: false };
+    wounds[region] = {
+      bleeding: 'moderate',
+      bleedingSimSeconds: 0,
+      infection: 'none',
+      infectionGameSeconds: 0,
+      infectionAtRisk: false,
+    };
 
     const dripPosition = (thirdPerson: boolean): Vector3 => {
       const gore = new Gore(1);
@@ -69,10 +75,16 @@ describe('Gore', () => {
 
   it('stops player wound drips after treatment', () => {
     const gore = new Gore(1);
-    const wounds = {
+    const wounds: BodyWounds = {
       head: null,
       torso: null,
-      leftArm: { bleeding: true, infection: 'none' as const, infectionGameSeconds: 0, infectionAtRisk: false },
+      leftArm: {
+        bleeding: 'moderate',
+        bleedingSimSeconds: 0,
+        infection: 'none',
+        infectionGameSeconds: 0,
+        infectionAtRisk: false,
+      },
       rightArm: null,
       leftLeg: null,
       rightLeg: null,
@@ -94,7 +106,7 @@ describe('Gore', () => {
       ...bodies,
       player: {
         ...bodies.player!,
-        wounds: { ...wounds, leftArm: { ...wounds.leftArm!, bleeding: false } },
+        wounds: { ...wounds, leftArm: { ...wounds.leftArm!, bleeding: null } },
       },
     });
     expect(gore.activeDroplets).toBe(0);

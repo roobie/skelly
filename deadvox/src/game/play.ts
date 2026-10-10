@@ -122,7 +122,7 @@ import {
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
-import { PlayerBleedingNotice } from './playerBleedingNotice.ts';
+import { BLEEDING_NOTICE, PlayerBleedingNotice } from './playerBleedingNotice.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
@@ -951,16 +951,13 @@ export const startPlay = (
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
   let noticeUntil = 0;
-  const playerBleedingNotice = new PlayerBleedingNotice(
-    BODY_REGIONS.some((region) => sim.body.wounds[region]?.bleeding),
-  );
+  const playerBleedingNotice = new PlayerBleedingNotice(sim.body.worstBleeding);
   const showNotice = (text: string) => {
     notice = text;
     noticeUntil = realNow() + 3000;
   };
   const updateBleedingNotice = (): void => {
-    const playerBleeding = BODY_REGIONS.some((region) => sim.body.wounds[region]?.bleeding);
-    playerBleedingNotice.update(playerBleeding, () => showNotice("You're bleeding."));
+    playerBleedingNotice.update(sim.body.worstBleeding, (tier) => showNotice(BLEEDING_NOTICE[tier]));
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
@@ -2717,7 +2714,10 @@ export const startPlay = (
     needs: sim.needs,
     health: sim.body.health,
     blood: sim.body.blood,
-    bleedingRegions: BODY_REGIONS.filter((region) => sim.body.wounds[region]?.bleeding).map(bodyRegionLabel),
+    bleeding: BODY_REGIONS.flatMap((region) => {
+      const tier = sim.body.wounds[region]?.bleeding;
+      return tier ? [{ region: bodyRegionLabel(region), tier }] : [];
+    }),
     sprinting: session.sprinting,
     lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
   });

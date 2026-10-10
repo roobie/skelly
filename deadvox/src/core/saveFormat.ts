@@ -1,6 +1,6 @@
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
-import { BODY_REGIONS, BODY_TREATMENTS } from './body.ts';
+import { BLEEDING_TIERS, BODY_REGIONS, BODY_TREATMENTS } from './body.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
   canonicalJsonAt as canonicalStringify,
@@ -249,7 +249,8 @@ const bodyRegionDamage = obj({
 });
 const bodyWound = nullable(
   obj({
-    bleeding: bool,
+    bleeding: nullable(enumeration(BLEEDING_TIERS)),
+    bleedingSimSeconds: nonNegative,
     infection: enumeration(['none', 'early', 'advanced', 'resolved']),
     infectionGameSeconds: nonNegative,
     infectionAtRisk: bool,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BODY_REGIONS, Body, type BodyTreatment, bodyRegionForHitArea } from '../src/core/body.ts';
+import { BODY_REGIONS, Body, type BodyTreatment, bleedingTierForHit, bodyRegionForHitArea } from '../src/core/body.ts';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import { type Needs, stepNeeds } from '../src/core/needs.ts';
 import { simSeconds } from '../src/core/time.ts';
@@ -35,7 +35,7 @@ describe('player body', () => {
 
   it('continues regional recovery after health is full and bleeding stops', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'rightArm', { bleeding: true, infectionAtRisk: false });
+    body.impact(1, 'rightArm', { bleeding: 'moderate', infectionAtRisk: false });
     const damageWhileBleeding = body.regionDamage.rightArm;
 
     stepNeeds(recoveryNeeds(), body, 100, { rates: steadyNeedRates });
@@ -52,7 +52,7 @@ describe('player body', () => {
   it('pauses only a bleeding region while other damage recovers', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
     body.impact(1, 'head');
-    body.impact(1, 'rightArm', { bleeding: true, infectionAtRisk: false });
+    body.impact(1, 'rightArm', { bleeding: 'moderate', infectionAtRisk: false });
     const headDamage = body.regionDamage.head;
     const bleedingDamage = body.regionDamage.rightArm;
 
@@ -69,7 +69,7 @@ describe('player body', () => {
     ]) {
       const body = new Body(BODY_TUNING_FIXTURE);
       body.impact(1, 'head');
-      body.impact(1, 'rightArm', { bleeding: true });
+      body.impact(1, 'rightArm', { bleeding: 'moderate' });
       body.advance(0, true, infectionTime);
       expect(body.treat('rightArm', 'bandage')).toBe(true);
       const headDamage = body.regionDamage.head;
@@ -82,7 +82,7 @@ describe('player body', () => {
     }
 
     const resolved = new Body(BODY_TUNING_FIXTURE);
-    resolved.impact(1, 'rightArm', { bleeding: true });
+    resolved.impact(1, 'rightArm', { bleeding: 'moderate' });
     resolved.advance(0, true, BODY_TUNING_FIXTURE.infectionOnsetGameHours);
     expect(resolved.treat('rightArm', 'bandage')).toBe(true);
     expect(resolved.treat('rightArm', 'antiseptic')).toBe(true);
@@ -114,7 +114,7 @@ describe('player body', () => {
 
   it('stops recovering at infection onset inside a needs step', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'rightArm', { bleeding: true });
+    body.impact(1, 'rightArm', { bleeding: 'moderate' });
     expect(body.treat('rightArm', 'bandage')).toBe(true);
     body.advance(0, true, BODY_TUNING_FIXTURE.infectionOnsetGameHours * 0.9);
     const initialDamage = body.regionDamage.rightArm;
@@ -137,7 +137,7 @@ describe('player body', () => {
     const recoveryRate = (probe.health - probeHealth) / probeHours;
 
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(10, 'rightArm', { bleeding: true });
+    body.impact(10, 'rightArm', { bleeding: 'moderate' });
     body.restoreHealth(10);
     expect(body.treat('rightArm', 'bandage')).toBe(true);
     const initialDamage = body.regionDamage.rightArm;
@@ -206,23 +206,87 @@ describe('player body', () => {
     expect(body.shock).toBeLessThan(100);
   });
 
-  it('stops blood loss when a bleeding region is dressed', () => {
+  it("loses blood at each bleeding tier's rate, summed across the bleeding regions", () => {
     const body = new Body(BODY_TUNING_FIXTURE);
     const bloodBefore = body.blood;
-    body.impact(1, 'torso', { bleeding: true });
+    body.impact(0, 'torso', { bleeding: 'moderate' });
+    body.impact(0, 'leftLeg', { bleeding: 'heavy' });
+    const seconds = 10;
+
+    body.advance(seconds);
+
+    const { moderate, heavy } = BODY_TUNING_FIXTURE.bleeding;
+    expect(bloodBefore - body.blood).toBeCloseTo(
+      (moderate.bloodLossPerSimSecond + heavy.bloodLossPerSimSecond) * seconds,
+      9,
+    );
+  });
+
+  it('recovers blood only while no wound bleeds', () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    body.impact(0, 'torso', { bleeding: 'moderate' });
+    body.impact(0, 'leftArm', { bleeding: 'moderate' });
     body.advance(100);
-    const bloodAfterBleeding = body.blood;
-    expect(bloodAfterBleeding).toBeLessThan(bloodBefore);
+    const bloodWhileBleeding = body.blood;
 
     expect(body.treat('torso', 'bandage')).toBe(true);
     body.advance(100);
-    expect(body.blood).toBeGreaterThan(bloodAfterBleeding);
-    expect(body.wounds.torso?.bleeding).toBe(false);
+    const bloodWithOneBleeding = body.blood;
+    expect(bloodWithOneBleeding).toBeLessThan(bloodWhileBleeding);
+
+    expect(body.treat('leftArm', 'bandage')).toBe(true);
+    body.advance(100);
+    expect(body.worstBleeding).toBeNull();
+    expect(body.blood).toBeGreaterThan(bloodWithOneBleeding);
+  });
+
+  it('stops a scratch by itself after its tuned time, while a moderate wound bleeds on', () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    body.impact(0, 'torso', { bleeding: 'scratch' });
+    body.impact(0, 'leftArm', { bleeding: 'moderate' });
+    const { stopSimSeconds } = BODY_TUNING_FIXTURE.bleeding.scratch;
+
+    body.advance(stopSimSeconds / 2);
+    expect(body.wounds.torso?.bleeding).toBe('scratch');
+    body.advance(stopSimSeconds / 2);
+
+    expect(body.wounds.torso?.bleeding).toBeNull();
+    expect(body.wounds.leftArm?.bleeding).toBe('moderate');
+  });
+
+  it("stops bleeding up to a treatment's tier and eases a worse one: a rag can't stop an artery, a bandage can", () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    body.impact(0, 'leftLeg', { bleeding: 'arterial' });
+    body.impact(0, 'torso', { bleeding: 'heavy' });
+
+    expect(body.canTreat('leftLeg', 'rag')).toBe(false);
+    expect(body.treat('leftLeg', 'bandage')).toBe(true);
+    expect(body.wounds.leftLeg?.bleeding).toBeNull();
+
+    expect(body.treat('torso', 'rag')).toBe(true);
+    expect(body.wounds.torso?.bleeding).toBe('moderate');
+    expect(body.treat('torso', 'rag')).toBe(true);
+    expect(body.wounds.torso?.bleeding).toBeNull();
+  });
+
+  it('picks a scratch for low damage, and an artery only for a high-damage hit on an arterial region', () => {
+    const { moderate, arterial } = BODY_TUNING_FIXTURE.bleeding;
+    const arterialRegion = arterial.regions[0]!;
+    const otherRegion = BODY_REGIONS.find((region) => !arterial.regions.includes(region))!;
+    const everyChance = () => 0;
+    const noChance = () => 1 - Number.EPSILON;
+
+    expect(bleedingTierForHit(BODY_TUNING_FIXTURE, moderate.minDamage / 2, arterialRegion, everyChance)).toBe(
+      'scratch',
+    );
+    expect(bleedingTierForHit(BODY_TUNING_FIXTURE, arterial.minDamage, arterialRegion, everyChance)).toBe('arterial');
+    expect(bleedingTierForHit(BODY_TUNING_FIXTURE, arterial.minDamage, otherRegion, everyChance)).not.toBe('arterial');
+    expect(bleedingTierForHit(BODY_TUNING_FIXTURE, arterial.minDamage, arterialRegion, noChance)).toBe('scratch');
   });
 
   it('requires antibiotics only after infection progresses', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'rightArm', { bleeding: true, infectionAtRisk: true });
+    body.impact(1, 'rightArm', { bleeding: 'moderate', infectionAtRisk: true });
     body.advance(BODY_TUNING_FIXTURE.infectionOnsetGameHours, true);
     expect(body.wounds.rightArm?.infection).toBe('early');
     expect(body.canTreat('rightArm', 'antiseptic')).toBe(true);
@@ -239,7 +303,7 @@ describe('player body', () => {
 
   it('keeps an antiseptic-treated infection resolved through later body advances', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'head', { bleeding: true, infectionAtRisk: true });
+    body.impact(1, 'head', { bleeding: 'moderate', infectionAtRisk: true });
     body.advance(BODY_TUNING_FIXTURE.infectionOnsetGameHours, true);
     expect(body.canTreat('head', 'antiseptic')).toBe(true);
     expect(body.treat('head', 'antiseptic')).toBe(true);
@@ -250,7 +314,7 @@ describe('player body', () => {
 
   it('uses each supported treatment only for its matching wound state', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'head', { bleeding: true });
+    body.impact(1, 'head', { bleeding: 'moderate' });
     const treatments: BodyTreatment[] = ['bandage', 'rag', 'antiseptic', 'antibiotics'];
     expect(treatments.filter((treatment) => body.canTreat('head', treatment))).toEqual(['bandage', 'rag']);
   });
