@@ -427,33 +427,6 @@
       ]
     },
     {
-      "id": "military_armoury",
-      "military": true,
-      "rolls": [1, 2],
-      "entries": [
-        { "item": "rifle_assault", "weight": 1, "condition": [0.5, 1] },
-        { "item": "rifle_ak", "weight": 1, "condition": [0.5, 1] },
-        { "item": "magazine_stanag_20", "weight": 1 },
-        { "item": "magazine_stanag_30", "weight": 2 },
-        { "item": "magazine_akm_30", "weight": 2 },
-        { "item": "foregrip", "weight": 1 },
-        { "item": "optic_fixed_prism_4x", "weight": 1 },
-        { "item": "optic_high_mag_5_25x", "weight": 1 },
-        { "item": "optic_holographic", "weight": 1 },
-        { "item": "optic_lpvo_1_6x", "weight": 1 },
-        { "item": "optic_mini_reflex", "weight": 1 },
-        { "item": "optic_tube_dot", "weight": 1 },
-        { "item": "rail_front_sight", "weight": 1 },
-        { "item": "real_suppressor", "weight": 1 },
-        { "item": "tactical_flashlight_mount", "weight": 1 },
-        { "item": "cartridge_box_5_d_56x45", "weight": 3 },
-        { "item": "cartridge_box_7_d_62x39", "weight": 3 },
-        { "item": "cartridge_5_d_56x45", "weight": 2, "count": [5, 15] },
-        { "item": "cartridge_7_d_62x39", "weight": 2, "count": [5, 15] },
-        { "nothing": true, "weight": 27 }
-      ]
-    },
-    {
       "id": "medical_filler",
       "rolls": [1, 2],
       "entries": [
