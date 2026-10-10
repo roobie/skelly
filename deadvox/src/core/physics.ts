@@ -1,4 +1,5 @@
-// Axis-aligned box movement against the voxel grid and other moving bodies.
+// Axis-aligned box movement against the voxel grid and other moving bodies. A body may carry an exact
+// shape (`BodyShape`), which terrain and other bodies meet instead of its box.
 
 import type { Vec3 } from './coords.ts';
 import type { SolidAt } from './raycast.ts';
@@ -22,10 +23,31 @@ export interface PhysicsParams {
   stepHeight: number;
   /** Other bodies block horizontal motion only; vertical motion always resolves against terrain. */
   obstacles?: readonly Body[];
+  /** The exact shape of a body that has one, for the moving body and its obstacles alike. */
+  shapeOf?: ShapeOf | undefined;
 }
+
+/**
+ * A body's exact shape. Terrain and other bodies meet it instead of the body's box; the box still answers
+ * whatever only needs the body's size.
+ */
+export interface BodyShape {
+  /** Whether the shape, with its base centre at `pos`, overlaps a solid block. */
+  overlapsTerrain: (pos: Vec3) => boolean;
+  /** Whether it overlaps the box from `min` to `max`. */
+  overlapsBox: (pos: Vec3, min: Vec3, max: Vec3) => boolean;
+}
+
+export type ShapeOf = (body: Body) => BodyShape | undefined;
 
 /** Separation from a contacted voxel face, in blocks; not physical travel. */
 export const CONTACT_SKIN = 1e-4;
+/**
+ * How close a shaped body's sideways contact is found, in blocks (1 cm at 0.5 m blocks). A shape has no flat
+ * face to snap to, so contact is a search; a shaped body lands to within CONTACT_SKIN, so its ground probe
+ * still finds the floor.
+ */
+const SHAPE_CONTACT_STEP = 0.02;
 const MAX_STEP = 0.45; // per-axis move per substep; below 1 so only one new block layer is touched
 
 type Axis = 0 | 1 | 2;
@@ -73,12 +95,48 @@ const overlapsBody = (body: Body, other: Body): boolean =>
   body.pos[2] - (body.halfDepth ?? body.halfWidth) < other.pos[2] + (other.halfDepth ?? other.halfWidth) &&
   body.pos[2] + (body.halfDepth ?? body.halfWidth) > other.pos[2] - (other.halfDepth ?? other.halfWidth);
 
-const overlapsSolid = (body: Body, isSolid: SolidAt, bodies: readonly Body[]): boolean =>
-  overlapsTerrain(body, isSolid) || bodies.some((other) => overlapsBody(body, other));
+const boxMin = (body: Body): Vec3 => [
+  body.pos[0] - body.halfWidth,
+  body.pos[1],
+  body.pos[2] - (body.halfDepth ?? body.halfWidth),
+];
+const boxMax = (body: Body): Vec3 => [
+  body.pos[0] + body.halfWidth,
+  body.pos[1] + body.height,
+  body.pos[2] + (body.halfDepth ?? body.halfWidth),
+];
+
+/** Two bodies overlap where a shape meets the other's box; two shaped bodies meet as shape and box. */
+const bodiesOverlap = (body: Body, other: Body, shapeOf: ShapeOf | undefined): boolean => {
+  const own = shapeOf?.(body);
+  if (own) {
+    return own.overlapsBox(body.pos, boxMin(other), boxMax(other));
+  }
+  const theirs = shapeOf?.(other);
+  return theirs ? theirs.overlapsBox(other.pos, boxMin(body), boxMax(body)) : overlapsBody(body, other);
+};
+
+const terrainHits = (body: Body, isSolid: SolidAt, shapeOf: ShapeOf | undefined): boolean => {
+  const shape = shapeOf?.(body);
+  return shape ? shape.overlapsTerrain(body.pos) : overlapsTerrain(body, isSolid);
+};
+
+const overlapsSolid = (body: Body, isSolid: SolidAt, bodies: readonly Body[], shapeOf: ShapeOf | undefined): boolean =>
+  terrainHits(body, isSolid, shapeOf) || bodies.some((other) => bodiesOverlap(body, other, shapeOf));
+
+/** Whether a shaped body rests on terrain: its shape a skin's depth lower would meet it. */
+const shapeSupported = (body: Body, shape: BodyShape): boolean => {
+  const [, y] = body.pos;
+  body.pos[1] = y - 2 * CONTACT_SKIN;
+  const supported = shape.overlapsTerrain(body.pos);
+  body.pos[1] = y;
+  return supported;
+};
 
 interface CollisionContext {
   isSolid: SolidAt;
   bodies?: readonly Body[];
+  shapeOf?: ShapeOf | undefined;
 }
 
 const bodyContact = (body: Body, other: Body, axis: Axis, delta: number): number => {
@@ -92,37 +150,88 @@ const bodyContact = (body: Body, other: Body, axis: Axis, delta: number): number
   return onNegativeSide ? other.pos[axis] - halfWidths : other.pos[axis] + halfWidths;
 };
 
-/** Moves along one axis; on contact, snaps to the nearest obstacle face. Returns true on contact. */
-const moveAxis = (body: Body, axis: Axis, delta: number, { isSolid, bodies = [] }: CollisionContext): boolean => {
+/** Where a box that moved `delta` into a block layer stops: against that layer's face. */
+const boxTerrainContact = (body: Body, axis: Axis, delta: number): number => {
+  const [lo, hi] = offsets(body, axis);
+  return delta > 0
+    ? Math.ceil(body.pos[axis]! + hi) - 1 - hi - CONTACT_SKIN
+    : Math.floor(body.pos[axis]! + lo) + 1 - lo + CONTACT_SKIN;
+};
+
+/** A move along one axis from `start` by `delta`. */
+interface AxisMove {
+  readonly axis: Axis;
+  readonly start: number;
+  readonly delta: number;
+}
+
+/**
+ * The furthest a move from the free `start` gets before `blocked`, found by halving: to within
+ * SHAPE_CONTACT_STEP sideways and CONTACT_SKIN vertically. Leaves the body at `start + delta`.
+ */
+const searchContact = (body: Body, { axis, start, delta }: AxisMove, blocked: () => boolean): number => {
+  const tolerance = (axis === 1 ? CONTACT_SKIN : SHAPE_CONTACT_STEP) / Math.abs(delta);
+  let free = 0;
+  let hit = 1;
+  while (hit - free > tolerance) {
+    const middle = (free + hit) / 2;
+    body.pos[axis] = start + middle * delta;
+    if (blocked()) {
+      hit = middle;
+    } else {
+      free = middle;
+    }
+  }
+  body.pos[axis] = start + delta;
+  return start + free * delta;
+};
+
+/**
+ * Where a shaped body that moved into terrain stops. One already in terrain where it started (spawned or
+ * restored there) moves as its box would, so it is neither held in place nor let sink.
+ */
+const shapeTerrainContact = (body: Body, shape: BodyShape, move: AxisMove, isSolid: SolidAt): number => {
+  const { axis, start, delta } = move;
+  body.pos[axis] = start;
+  const stuck = shape.overlapsTerrain(body.pos);
+  body.pos[axis] = start + delta;
+  if (stuck) {
+    return overlapsTerrain(body, isSolid) ? boxTerrainContact(body, axis, delta) : start + delta;
+  }
+  return searchContact(body, move, () => shape.overlapsTerrain(body.pos));
+};
+
+/** Moves along one axis; on contact, stops at the nearest obstacle. Returns true on contact. */
+const moveAxis = (
+  body: Body,
+  axis: Axis,
+  delta: number,
+  { isSolid, bodies = [], shapeOf }: CollisionContext,
+): boolean => {
   if (delta === 0) {
     return false;
   }
-  const alreadyOverlapping = new Set(bodies.filter((other) => overlapsBody(body, other)));
-  body.pos[axis] += delta;
-  const terrainHit = overlapsTerrain(body, isSolid);
-  const bodyHits = bodies.filter((other) => !alreadyOverlapping.has(other) && overlapsBody(body, other));
+  const shape = shapeOf?.(body);
+  const alreadyOverlapping = new Set(bodies.filter((other) => bodiesOverlap(body, other, shapeOf)));
+  const move: AxisMove = { axis, start: body.pos[axis]!, delta };
+  body.pos[axis] = move.start + delta;
+  const terrainHit = shape ? shape.overlapsTerrain(body.pos) : overlapsTerrain(body, isSolid);
+  const bodyHits = bodies.filter((other) => !alreadyOverlapping.has(other) && bodiesOverlap(body, other, shapeOf));
   if (!terrainHit && bodyHits.length === 0) {
     return false;
   }
-  let contact: number | undefined;
+  const contacts: number[] = [];
   if (terrainHit) {
-    const [lo, hi] = offsets(body, axis);
-    contact =
-      delta > 0
-        ? Math.ceil(body.pos[axis]! + hi) - 1 - hi - CONTACT_SKIN
-        : Math.floor(body.pos[axis]! + lo) + 1 - lo + CONTACT_SKIN;
+    contacts.push(shape ? shapeTerrainContact(body, shape, move, isSolid) : boxTerrainContact(body, axis, delta));
   }
   for (const other of bodyHits) {
-    const face = bodyContact(body, other, axis, delta);
-    if (contact === undefined) {
-      contact = face;
-    } else if (delta > 0) {
-      contact = Math.min(contact, face);
-    } else {
-      contact = Math.max(contact, face);
-    }
+    contacts.push(
+      shape || shapeOf?.(other)
+        ? searchContact(body, move, () => bodiesOverlap(body, other, shapeOf))
+        : bodyContact(body, other, axis, delta),
+    );
   }
-  body.pos[axis] = contact!;
+  body.pos[axis] = delta > 0 ? Math.min(...contacts) : Math.max(...contacts);
   body.vel[axis] = 0;
   return true;
 };
@@ -134,44 +243,54 @@ interface MoveContext {
   stepHeight: number;
   grounded: boolean;
   bodies: readonly Body[];
+  shapeOf: ShapeOf | undefined;
 }
 
 /** Tries to move along a horizontal axis from a raised position, then settles back down. */
-const tryStepUp = ({ body, isSolid, stepHeight, bodies }: MoveContext, axis: Axis, delta: number): boolean => {
+const tryStepUp = ({ body, isSolid, stepHeight, bodies, shapeOf }: MoveContext, axis: Axis, delta: number): boolean => {
   body.pos[1] += stepHeight;
-  if (overlapsTerrain(body, isSolid)) {
+  if (terrainHits(body, isSolid, shapeOf)) {
     body.pos[1] -= stepHeight;
     return false;
   }
   body.pos[axis] += delta;
-  if (overlapsSolid(body, isSolid, bodies)) {
+  if (overlapsSolid(body, isSolid, bodies, shapeOf)) {
     body.pos[axis] -= delta;
     body.pos[1] -= stepHeight;
     return false;
   }
-  moveAxis(body, 1, -stepHeight, { isSolid }); // lands on terrain, never a body
+  moveAxis(body, 1, -stepHeight, { isSolid, shapeOf }); // lands on terrain, never a body
   return true;
 };
 
 /** Horizontal move that climbs terrain ledges up to stepHeight when grounded, never bodies. */
 const moveHorizontal = (ctx: MoveContext, axis: Axis, delta: number): void => {
-  const { body, isSolid, stepHeight, grounded, bodies } = ctx;
+  const { body, isSolid, stepHeight, grounded, bodies, shapeOf } = ctx;
   const start = body.pos[axis]!;
   const speed = body.vel[axis]!;
-  if (!(moveAxis(body, axis, delta, { isSolid, bodies }) && grounded) || stepHeight <= 0) {
+  if (!(moveAxis(body, axis, delta, { isSolid, bodies, shapeOf }) && grounded) || stepHeight <= 0) {
     return;
   }
   // Blocked: retry the whole move from a raised position.
   body.pos[axis] = start;
   body.vel[axis] = speed;
   if (!tryStepUp(ctx, axis, delta)) {
-    moveAxis(body, axis, delta, { isSolid, bodies });
+    moveAxis(body, axis, delta, { isSolid, bodies, shapeOf });
   }
 };
+
+/**
+ * Whether a body stays on the ground at the end of a step. A box drops by two skins to find out; a shape
+ * that rests on terrain is only tested there, since a contact search to within a skin costs several tests.
+ */
+const groundProbe = (body: Body, isSolid: SolidAt, shape: BodyShape | undefined): boolean =>
+  shape ? shapeSupported(body, shape) : moveAxis(body, 1, -2 * CONTACT_SKIN, { isSolid });
 
 /** Applies gravity and velocity for dt seconds, resolving collisions axis by axis (y first). */
 export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: PhysicsParams): void => {
   const obstacles = params.obstacles ?? [];
+  const { shapeOf } = params;
+  const shape = shapeOf?.(body);
   const wasGrounded = body.onGround;
   body.vel[1] -= params.gravity * dt;
   const largest = Math.max(...body.vel.map((v) => Math.abs(v * dt)));
@@ -180,7 +299,11 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
   body.onGround = false;
   for (let i = 0; i < substeps; i++) {
     const falling = body.vel[1] < 0;
-    if (moveAxis(body, 1, body.vel[1] * h, { isSolid }) && falling) {
+    if (shape && falling && (wasGrounded || body.onGround) && shapeSupported(body, shape)) {
+      // Resting on terrain: gravity's pull would only start a contact search back to here.
+      body.vel[1] = 0;
+      body.onGround = true;
+    } else if (moveAxis(body, 1, body.vel[1] * h, { isSolid, shapeOf }) && falling) {
       body.onGround = true;
     }
     const ctx: MoveContext = {
@@ -189,11 +312,12 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
       stepHeight: params.stepHeight,
       grounded: wasGrounded || body.onGround,
       bodies: obstacles,
+      shapeOf,
     };
     moveHorizontal(ctx, 0, body.vel[0] * h);
     moveHorizontal(ctx, 2, body.vel[2] * h);
     if (body.onGround) {
-      body.onGround = moveAxis(body, 1, -2 * CONTACT_SKIN, { isSolid });
+      body.onGround = groundProbe(body, isSolid, shape);
     }
   }
 };
@@ -204,6 +328,8 @@ export const stepBodyHorizontal = (
   movement: { dx: number; dz: number; isSolid: SolidAt; params: PhysicsParams },
 ): void => {
   const { dx, dz, isSolid, params } = movement;
+  const { shapeOf } = params;
+  const shape = shapeOf?.(body);
   const largest = Math.max(Math.abs(dx), Math.abs(dz));
   const substeps = Math.max(1, Math.ceil(largest / MAX_STEP));
   for (let i = 0; i < substeps; i++) {
@@ -213,11 +339,12 @@ export const stepBodyHorizontal = (
       stepHeight: params.stepHeight,
       grounded: body.onGround,
       bodies: params.obstacles ?? [],
+      shapeOf,
     };
     moveHorizontal(ctx, 0, dx / substeps);
     moveHorizontal(ctx, 2, dz / substeps);
     if (body.onGround) {
-      body.onGround = moveAxis(body, 1, -2 * CONTACT_SKIN, { isSolid });
+      body.onGround = groundProbe(body, isSolid, shape);
     }
   }
 };
@@ -283,8 +410,13 @@ const separateOnOtherAxis = ({
   }
 };
 
-const separatePair = (first: Body, second: Body, maxPushBlocks: number, collision: CollisionContext): void => {
-  if (!overlapsBody(first, second)) {
+interface PairContext extends CollisionContext {
+  /** Whether the pair overlaps by its shapes or only by its boxes; pushes always clip by shape. */
+  meetShapes: boolean;
+}
+
+const separatePair = (first: Body, second: Body, maxPushBlocks: number, collision: PairContext): void => {
+  if (!(collision.meetShapes ? bodiesOverlap(first, second, collision.shapeOf) : overlapsBody(first, second))) {
     return;
   }
   const deltaX = second.pos[0] - first.pos[0];
@@ -315,7 +447,19 @@ const separatePair = (first: Body, second: Body, maxPushBlocks: number, collisio
   }
 };
 
-/** Pairwise horizontal shambler separation, capped per push and clipped against terrain and supplied blockers. */
+interface Separation {
+  dt: number;
+  isSolid: SolidAt;
+  blockSize: number;
+  obstacles?: readonly Body[];
+  shapeOf?: ShapeOf | undefined;
+}
+
+/**
+ * Pairwise horizontal separation, capped per push and clipped against terrain and supplied blockers. A pair
+ * with a shaped body overlaps only where the shape meets the other's box, so the player can stand against an
+ * amalgam's flesh.
+ */
 export const separateBodyPair = ({
   first,
   second,
@@ -323,35 +467,25 @@ export const separateBodyPair = ({
   isSolid,
   blockSize,
   obstacles = [],
-}: {
-  first: Body;
-  second: Body;
-  dt: number;
-  isSolid: SolidAt;
-  blockSize: number;
-  obstacles?: readonly Body[];
-}): void => {
-  separatePair(first, second, dt / blockSize, { isSolid, bodies: obstacles });
+  shapeOf,
+}: Separation & { first: Body; second: Body }): void => {
+  separatePair(first, second, dt / blockSize, { isSolid, bodies: obstacles, shapeOf, meetShapes: true });
 };
 
+/** Separates zombies from each other by their boxes, the cheap test a crowd needs; pushes clip by shape. */
 export const separateBodies = ({
   bodies,
   dt,
   isSolid,
   blockSize,
   obstacles = [],
-}: {
-  bodies: readonly Body[];
-  dt: number;
-  isSolid: SolidAt;
-  blockSize: number;
-  obstacles?: readonly Body[];
-}): void => {
+  shapeOf,
+}: Separation & { bodies: readonly Body[] }): void => {
   for (let i = 0; i < bodies.length; i++) {
     const first = bodies[i]!;
     for (let j = i + 1; j < bodies.length; j++) {
       const second = bodies[j]!;
-      separateBodyPair({ first, second, dt, isSolid, blockSize, obstacles });
+      separatePair(first, second, dt / blockSize, { isSolid, bodies: obstacles, shapeOf, meetShapes: false });
     }
   }
 };
