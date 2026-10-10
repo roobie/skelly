@@ -1314,7 +1314,12 @@ describe('authored fixed loot', () => {
     const cluePiece = compileTemplate(result.registry, hqDefinition).pieces.find(
       (piece) => piece.pos.join(',') === clueOverride!.at.join(','),
     );
-    expect(cluePiece?.furniture).toBe('footlocker');
+    expect(cluePiece).toBeDefined();
+    if (!cluePiece) {
+      throw new Error('the HQ clue needs a furniture anchor');
+    }
+    expect(result.registry.furniture.get(cluePiece.furniture)?.container).toBeDefined();
+    expect(cluePiece.lock).toBeUndefined();
     expect(spawns.some(({ loot }) => loot.some(({ type }) => type === clueItem.item))).toBe(true);
     const keySpawn = spawns.find(({ loot }) =>
       loot.some(({ type }) => result.registry.items.get(type)?.key?.lock === lockId),
