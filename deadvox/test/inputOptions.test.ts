@@ -5,6 +5,7 @@ import {
   DEBUG_ONLY_CONTEXTS,
   INPUT_BINDINGS,
   type InputContext,
+  inputBindings,
   keyboardInput,
 } from '../src/game/inputBindings.ts';
 
@@ -97,6 +98,7 @@ describe('input options context visibility', () => {
     button!.click();
     try {
       keyboardInput.capture?.(pair!.second.defaults[0]!);
+      expect(inputBindings.chords(pair!.first.id)[0]).toEqual(pair!.first.defaults[0]);
       const status = root.querySelector('.input-binding-status')?.textContent?.trim() ?? '';
       const words = status.toLowerCase().split(contextWordSeparator);
       expect(status).not.toBe('');
