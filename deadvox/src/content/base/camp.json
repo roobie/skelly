@@ -258,10 +258,12 @@
           "weight": 1
         },
         {
+          "count": [10, 10],
           "item": "cartridge_box_5_d_56x45",
           "weight": 3
         },
         {
+          "count": [10, 10],
           "item": "cartridge_box_7_d_62x39",
           "weight": 3
         },
