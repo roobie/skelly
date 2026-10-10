@@ -1,7 +1,7 @@
 import type { MissingFlesh } from './amalgamCarving.ts';
 import type { AmalgamFigure } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
-import type { BodyShape } from './physics.ts';
+import { type BodyShape, CONTACT_SKIN } from './physics.ts';
 import { BRICK_BITS, type BrickOut, brickHas, brickLayer, type SolidBricks } from './solidBricks.ts';
 
 // The amalgam moves as its own flesh, not a box (#563): an octree over its rest-pose voxels, in its own frame
@@ -19,6 +19,22 @@ const MEMO = 8;
 const BRICK = 1 << BRICK_BITS;
 /** One row of a brick layer: BRICK bits along x. */
 const ROW = (1 << BRICK) - 1;
+/** Horizontal pushes off terrain, per axis: the normals of a block's sides, then the diagonals between them. */
+const PUSHES: readonly (readonly [number, number])[] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+];
+/**
+ * The furthest a push moves the flesh along an axis, in blocks. A turn sinks flesh only a little way into a
+ * block, so a push this short never carries it out through the block's far side.
+ */
+const PUSH_LIMIT = 0.45;
 
 /** The index of the lowest set bit. */
 const lowBit = (bits: number): number => 31 - Math.clz32(bits & -bits);
@@ -227,6 +243,11 @@ export class AmalgamShape implements BodyShape {
   private readonly span = new Int32Array(9);
   /** Whether those layers are solid throughout their box, so the box alone answers. */
   private full = false;
+  /** Whether a walk notes every overlap's push needs (`pushOut`) instead of stopping at the first. */
+  private gathering = false;
+  /** How far each of PUSHES must move the overlapping voxels to clear them, along each axis it moves on. */
+  private readonly needs = new Float64Array(PUSHES.length);
+  private readonly probe: Vec3 = [0, 0, 0];
   /** Per remembered answer: x, y, z, c, s, then 1 or 0. Kept while the terrain version and the flesh stay. */
   private readonly memo = new Float64Array(MEMO * 6).fill(Number.NaN);
   private memoNext = 0;
@@ -471,12 +492,18 @@ export class AmalgamShape implements BodyShape {
     return false;
   }
 
-  /** Whether the voxel centred at (x, y, z) overlaps a solid block of the brick being walked. */
+  /**
+   * Whether the voxel centred at (x, y, z) overlaps a solid block of the brick being walked. While gathering,
+   * it notes how far each push must move the voxel off what it overlaps, and answers false so the walk goes on.
+   */
   private voxelInBrick(x: number, y: number, z: number): boolean {
     const { span, block } = this;
     const half = this.tree.voxel / 2;
     if (this.full) {
-      return turnedBoxOverlaps(x, y, z, half, half, half, this.c, this.s, this.target);
+      return (
+        turnedBoxOverlaps(x, y, z, half, half, half, this.c, this.s, this.target) &&
+        this.overlapFound(x, z, this.target)
+      );
     }
     const reach = half * (Math.abs(this.c) + Math.abs(this.s));
     const toX = Math.min(span[6]! - 1, Math.ceil(x + reach) - 1);
@@ -490,7 +517,8 @@ export class AmalgamShape implements BodyShape {
           block[2] = blockZ + 0.5;
           if (
             brickHas(this.brick, blockX - span[0]!, blockY - span[1]!, blockZ - span[2]!) &&
-            turnedBoxOverlaps(x, y, z, half, half, half, this.c, this.s, block)
+            turnedBoxOverlaps(x, y, z, half, half, half, this.c, this.s, block) &&
+            this.overlapFound(x, z, block)
           ) {
             return true;
           }
@@ -498,6 +526,36 @@ export class AmalgamShape implements BodyShape {
       }
     }
     return false;
+  }
+
+  /** A voxel at (x, z) overlaps `box`: true ends the walk; while gathering, it is noted and the walk goes on. */
+  private overlapFound(x: number, z: number, box: Float64Array): boolean {
+    if (!this.gathering) {
+      return true;
+    }
+    this.noteNeeds(x, z, box);
+    return false;
+  }
+
+  /**
+   * Widens each push's need to move the voxel centred at (x, z) clear of `box` (laid out as `target`), from the
+   * voxel's own world box: a side's push clears it past that side, a diagonal's past either of its two.
+   */
+  private noteNeeds(x: number, z: number, box: Float64Array): void {
+    const { needs } = this;
+    const reach = (this.tree.voxel / 2) * (Math.abs(this.c) + Math.abs(this.s));
+    const plusX = box[0]! + box[3]! - (x - reach);
+    const minusX = x + reach - (box[0]! - box[3]!);
+    const plusZ = box[2]! + box[5]! - (z - reach);
+    const minusZ = z + reach - (box[2]! - box[5]!);
+    needs[0] = Math.max(needs[0]!, plusX);
+    needs[1] = Math.max(needs[1]!, minusX);
+    needs[2] = Math.max(needs[2]!, plusZ);
+    needs[3] = Math.max(needs[3]!, minusZ);
+    needs[4] = Math.max(needs[4]!, Math.min(plusX, plusZ));
+    needs[5] = Math.max(needs[5]!, Math.min(plusX, minusZ));
+    needs[6] = Math.max(needs[6]!, Math.min(minusX, plusZ));
+    needs[7] = Math.max(needs[7]!, Math.min(minusX, minusZ));
   }
 
   /**
@@ -549,6 +607,43 @@ export class AmalgamShape implements BodyShape {
     }
     this.full = popCount(mask) === (span[6]! - span[3]!) * (span[8]! - span[5]!);
     return this.walk(pos, 'brick');
+  }
+
+  /**
+   * The shortest horizontal push that clears the shape at `pos` of terrain, moving it at most `reach` (and
+   * PUSH_LIMIT) along each axis: along a block side's normal or a diagonal between two. One walk notes how
+   * far every overlapping voxel must move each way, then the pushes are tried shortest first, since moving
+   * can meet blocks the shape didn't overlap. Undefined when none clears it.
+   */
+  pushOut(pos: Vec3, reach: number): Vec3 | undefined {
+    const { needs, probe } = this;
+    needs.fill(0);
+    this.gathering = true;
+    this.terrainHit(pos);
+    this.gathering = false;
+    const limit = Math.min(reach, PUSH_LIMIT);
+    const length = (push: number): number => needs[push]! * Math.hypot(...PUSHES[push]!);
+    const order = PUSHES.map((_, push) => push)
+      .filter((push) => needs[push]! <= limit)
+      .sort((a, b) => length(a) - length(b));
+    for (const push of order) {
+      const [ux, uz] = PUSHES[push]!;
+      const along = needs[push]! + CONTACT_SKIN;
+      probe[0] = pos[0] + ux * along;
+      probe[1] = pos[1];
+      probe[2] = pos[2] + uz * along;
+      if (!this.overlapsTerrain(probe)) {
+        return [ux * along, 0, uz * along];
+      }
+    }
+    return undefined;
+  }
+
+  /** How far its flesh reaches from the upright axis it turns about, at most, in blocks. */
+  get radius(): number {
+    const { bounds } = this;
+    const at = (this.tree.nodeCount - 1) * 6;
+    return Math.hypot(Math.max(-bounds[at]!, bounds[at + 3]!), Math.max(-bounds[at + 2]!, bounds[at + 5]!));
   }
 
   overlapsBox(pos: Vec3, min: Vec3, max: Vec3): boolean {

@@ -625,6 +625,48 @@ describe('amalgam body and combat seam', () => {
     expect(reached()).toBeLessThan(through);
   });
 
+  it('turns off a pillar its flesh is pressed against to strike a player behind it', () => {
+    const amalgam = registry.zombies.get('amalgam')!;
+    const pillar = (x: number, y: number, z: number): boolean => x >= 0 && x <= 1 && z >= -1 && z <= 0 && y > 0;
+    // Seen beyond the pillar, so the amalgam chases into it.
+    let sense: PlayerSense = { ...player(), pos: [0.5, 1, -8] };
+    const simulation = new ZombieSystem({
+      player: () => sense,
+      isSolid: (x, y, z) => y === 0 || pillar(x, y, z),
+      isOpaque: () => false,
+      dayPhase: () => dayStateAtHour(12),
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(makeScale(0.5)),
+      jumpSpeed: PLAYER.jump,
+      tuning: TEST_SENSE_TUNING,
+      hurtPlayer: () => undefined,
+    });
+    const id = simulation.add(amalgam, [0.5, 1, 14], [0, 0, -1]);
+    const zombie = simulation.store.get(id)!;
+    let still = 0;
+    for (let tick = 0; tick < 1200 && still < 30; tick++) {
+      const [fromX, , fromZ] = zombie.body.pos;
+      simulation.tick(1 / 60);
+      still = fromX === zombie.body.pos[0] && fromZ === zombie.body.pos[2] ? still + 1 : 0;
+    }
+    const [atX, atY, atZ] = zombie.body.pos;
+    expect(simulation.shapeOf(zombie.body)!.overlapsTerrain([atX, atY, atZ - 0.05])).toBe(true);
+    expect(zombie.attackWait).toBe(0);
+
+    // It hears the player jog round behind it, outside its sight.
+    sense = { ...player(), pos: [atX + 3, 1, atZ + 10], movement: 'jogging' };
+    const [fx, , fz] = zombie.facing;
+    const facingPlayer = (fx * 3 + fz * 10) / Math.hypot(3, 10);
+    expect(facingPlayer).toBeLessThan(Math.cos((zombie.type.sightCone * Math.PI) / 180));
+    const halfTurnTicks = (180 / amalgam.wander.bodyTurnDegreesPerSimSecond) * 60;
+    let struck = false;
+    for (let tick = 0; tick < 2 * halfTurnTicks && !struck; tick++) {
+      simulation.tick(1 / 60);
+      struck = zombie.attackWindup > 0;
+    }
+    expect(struck).toBe(true);
+  });
+
   it('keeps a grounded shambler from crossing a fence', () => {
     const groundedShambler = runObstacleCase('fence', 'shambler', false);
     expect(groundedShambler.crossed).toBe(false);

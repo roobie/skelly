@@ -1333,6 +1333,25 @@ interface RegionHit {
   readonly cell: number | undefined;
 }
 
+/**
+ * Shoves a body off the terrain its shape's turn of `turn` radians swung into, if a push can, and drops its
+ * velocity back toward what it was pushed off; see ZombieSystem.settleTurn.
+ */
+const pushTurn = (body: Body, shape: AmalgamShape, turn: number): boolean => {
+  const { pos, vel } = body;
+  const push = shape.pushOut(pos, turn * shape.radius);
+  if (!push) {
+    return false;
+  }
+  pos[0] += push[0];
+  pos[2] += push[2];
+  const away = unit(push);
+  const back = Math.min(0, vel[0] * away[0] + vel[2] * away[2]);
+  vel[0] -= back * away[0];
+  vel[2] -= back * away[2];
+  return true;
+};
+
 /** An amalgam body's exact shape, and the last facing it turned to clear of terrain. */
 interface AmalgamCollider {
   readonly zombie: Zombie;
@@ -1404,29 +1423,34 @@ export class ZombieSystem {
   }
 
   /**
-   * Refuses an amalgam a turn that would swing its flesh into terrain: it keeps the last facing that was
-   * clear. If both overlap (it started in terrain), the turn stands.
+   * Turns an amalgam clear of terrain. A turn that swings its flesh into terrain shoves the body off it by the
+   * shortest push that frees the turned flesh, as a body against a wall pivots off it to turn, and that tick
+   * it doesn't also move back into what it was pushed off. When no push as far as the turn moved its flesh
+   * frees it, it keeps the last facing that was clear. If both overlap (it started in terrain), the turn stands.
    */
   private settleTurn(zombie: Zombie): void {
     const collider = this.colliderOf(zombie.body);
     if (!collider) {
       return;
     }
-    const { facing } = collider;
+    const { facing, shape } = collider;
     if (zombie.facing[0] === facing[0] && zombie.facing[1] === facing[1] && zombie.facing[2] === facing[2]) {
       return;
     }
-    if (collider.shape.overlapsTerrain(zombie.body.pos)) {
-      collider.shape.face(facing);
-      if (!collider.shape.overlapsTerrain(zombie.body.pos)) {
+    const { pos } = zombie.body;
+    if (shape.overlapsTerrain(pos)) {
+      shape.face(facing);
+      const wasClear = !shape.overlapsTerrain(pos);
+      shape.face(zombie.facing);
+      const turn = Math.abs(wrapAngle(angleOf(zombie.facing) - angleOf(facing)));
+      if (wasClear && !pushTurn(zombie.body, shape, turn)) {
+        shape.face(facing);
         zombie.facing = copy(facing);
         return;
       }
-      collider.shape.face(zombie.facing);
     }
     collider.facing = copy(zombie.facing);
   }
-
   /**
    * Whether an amalgam's step this tick could change nothing, so its shape tests are skipped: it rests on
    * the ground where it last came to rest, neither moving nor turning, and no solid block has changed.
