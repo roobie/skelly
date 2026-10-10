@@ -331,6 +331,11 @@ describe('canonical save format', () => {
     const contentWeapon = [...registry.items.values()].find((item) => item.weapon?.melee)?.weapon?.melee;
     expect(contentWeapon).toBeDefined();
     const weapon: MeleeWeapon = meleeWeaponFromContent(contentWeapon!);
+    const weaponWithContentFields = {
+      ...weapon,
+      cooldownSimSeconds: weapon.cooldown,
+      wearPerHit: 0.1,
+    };
     expect(source.zombies.aimAt(origin, direction, weapon)?.inReach).toBe(true);
     const hands = {
       right: source.inventory.hands.right?.uid ?? null,
@@ -340,7 +345,7 @@ describe('canonical save format', () => {
       startPlayerMelee(source.session.playerCombat, source.sim.needs, {
         origin,
         direction,
-        weapon,
+        weapon: weaponWithContentFields,
         profile: 'blunt',
         hand: 'right',
         twoHanded: false,
