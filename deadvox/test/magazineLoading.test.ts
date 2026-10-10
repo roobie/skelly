@@ -13,6 +13,15 @@ import { MagazineHandling, ROUND_LOAD_SIM_SECONDS, ROUND_STRIP_SIM_SECONDS } fro
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { RELOAD_GESTURE_MS, ReloadInput } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import {
+  createMagazineLoadFrame,
+  createMagazinePress,
+  createMagazineRaise,
+  MAGAZINE_LOAD_POSE,
+  magazinePress,
+  readMagazineLoadFrame,
+  stepMagazineRaise,
+} from '../src/render/magazineLoadPose.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 const base = 'src/content/base';
@@ -201,5 +210,87 @@ describe('magazines loaded round by round', () => {
       corrupt.hands.right!.cartridges = cartridges;
       expect(() => Inventory.restoreState(f.inventory.registry, corrupt)).toThrow();
     }
+  });
+});
+
+describe('the magazine load animation follows each round’s job', () => {
+  /** Doesn't divide a round's job, so samples land mid-press and across job ends. */
+  const stepsPerRound = 3.5;
+
+  it('presses one round per round loaded, at the running job’s own progress, showing the round that goes in', () => {
+    const f = fixture(MARKED_THEN_PLAIN);
+    const frame = createMagazineLoadFrame();
+    let presses = 0;
+    let wasRunning = false;
+    let pressed: string | undefined;
+    const sample = () => {
+      const [job] = f.queue.jobs;
+      const running = readMagazineLoadFrame(f.inventory, job, frame);
+      expect(running).toBe(job !== undefined);
+      if (job) {
+        expect(frame.progress).toBeCloseTo(job.elapsed / job.duration);
+        pressed = frame.roundType;
+      } else if (pressed !== undefined) {
+        expect(f.magazine.cartridges![0]).toBe(pressed);
+        pressed = undefined;
+      }
+      presses += running && !wasRunning ? 1 : 0;
+      wasRunning = running;
+      // A press ends exactly when its round's job does, so finished presses are the rounds loaded.
+      expect(presses - (running ? 1 : 0)).toBe(f.magazine.cartridges!.length);
+    };
+    for (let step = 0; step < 10 * CAPACITY && f.magazine.cartridges!.length < CAPACITY; step++) {
+      if (!f.queue.busy) {
+        expect(f.handling.loadNext(f.magazine.uid, 0)).toBeUndefined();
+        sample();
+      }
+      f.queue.tick(ROUND_LOAD_SIM_SECONDS / stepsPerRound);
+      sample();
+    }
+    expect(presses).toBe(CAPACITY);
+  });
+
+  it('drops the press on cancel, and keeps the magazine raised only across the gap between rounds', () => {
+    const f = fixture(MARKED_THEN_PLAIN);
+    const frame = createMagazineLoadFrame();
+    const raise = createMagazineRaise();
+    const { holdRealSeconds, raiseRealSeconds } = MAGAZINE_LOAD_POSE;
+    expect(f.handling.loadNext(f.magazine.uid, 0)).toBeUndefined();
+    f.queue.tick(ROUND_LOAD_SIM_SECONDS / 2);
+    expect(readMagazineLoadFrame(f.inventory, f.queue.jobs[0], frame)).toBe(true);
+    stepMagazineRaise(raise, frame, raiseRealSeconds);
+    expect(raise.weight).toBe(1);
+    // Each round is its own job, so the queue is empty for a frame between rounds.
+    stepMagazineRaise(raise, undefined, holdRealSeconds / 2);
+    expect(raise.weight).toBe(1);
+    f.handling.cancelLoad(f.magazine.uid);
+    expect(readMagazineLoadFrame(f.inventory, f.queue.jobs[0], frame)).toBe(false);
+    expect(f.magazine.cartridges).toEqual([]);
+    stepMagazineRaise(raise, undefined, holdRealSeconds + raiseRealSeconds);
+    expect(raise).toMatchObject({ weight: 0, side: undefined });
+  });
+
+  it('strips the top round with the load press played backwards', () => {
+    const f = fixture([
+      [roundType, 1],
+      [markedRound, 5],
+    ]);
+    for (let i = 0; i < CAPACITY; i++) {
+      f.load();
+    }
+    const [top] = f.magazine.cartridges!;
+    const loose = f.loose(top!);
+    expect(f.handling.strip(f.magazine.uid, 0)).toBeUndefined();
+    const strip = createMagazineLoadFrame();
+    const stripPress = createMagazinePress();
+    const loadPress = createMagazinePress();
+    while (readMagazineLoadFrame(f.inventory, f.queue.jobs[0], strip)) {
+      expect(strip).toMatchObject({ strip: true, roundType: top });
+      magazinePress(strip, stripPress);
+      magazinePress({ ...strip, strip: false, progress: 1 - strip.progress }, loadPress);
+      expect(stripPress).toEqual(loadPress);
+      f.queue.tick(ROUND_STRIP_SIM_SECONDS / stepsPerRound);
+    }
+    expect(f.loose(top!)).toBe(loose + 1);
   });
 });
