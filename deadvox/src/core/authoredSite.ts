@@ -98,7 +98,11 @@ export class AuthoredSite implements Site {
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     this.placements = layout.buildings.map((building) => placementOf(registry, building));
-    const { fixedLoot: containerLoot, fixedSurfaceLoot, keyLoot } = collectFixedLoot(registry, this.placements, layout.buildings);
+    const {
+      fixedLoot: containerLoot,
+      fixedSurfaceLoot,
+      keyLoot,
+    } = collectFixedLoot(registry, this.placements, layout.buildings);
     this.fixedLoot = containerLoot;
     this.fixedSurfaceLoot = fixedSurfaceLoot;
     this.playtestMarks = {
