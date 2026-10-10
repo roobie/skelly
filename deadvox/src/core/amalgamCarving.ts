@@ -14,7 +14,7 @@ import { type PosedBoneBox, posedBoxEntry } from './zombieRegions.ts';
 export type AmalgamCarving = NonNullable<ZombieDef['carving']>;
 
 /** A ray in the figure's rest voxel grid, where floor() of a point is its cell (i, j, k). */
-export interface GridRay {
+interface GridRay {
   readonly origin: Vec3;
   readonly direction: Vec3;
 }
@@ -44,10 +44,10 @@ const restBoxCenter = (figure: AmalgamFigure, bone: string): readonly number[] =
 
 /**
  * Maps a hit on a posed region box into the rest voxel grid. The posed box is the rest box moved by its
- * bone's pose and the body's yaw, so its rotation and centre undo that move: no second hit test.
+ * bone's pose and the body's yaw, so its rotation and centre undo that move.
  * `point` and `box` are in block coordinates; `direction` is a unit vector.
  */
-export const gridRayForHit = (
+const gridRayForHit = (
   figure: AmalgamFigure,
   box: PosedBoneBox,
   hit: { readonly point: Vec3; readonly direction: Vec3 },
