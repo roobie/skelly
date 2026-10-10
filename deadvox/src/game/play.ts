@@ -2341,9 +2341,7 @@ export const startPlay = (
     }
     playtestObserver?.beginSearch(entity, nameOf(entity));
     search(entity);
-    if (!screen.isOpen) {
-      toggleInventory();
-    }
+    openInventory('items');
   }
 
   inputTarget.addEventListener('contextmenu', (e) => e.preventDefault());

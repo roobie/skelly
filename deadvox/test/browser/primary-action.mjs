@@ -30,6 +30,14 @@ const throwChargeSample = ({ start, seconds }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
 };
+const searchedContainerSample = ({ uid }) => {
+  const { inventory, session } = globalThis.primaryActionTest;
+  return {
+    time: session.sim.time,
+    paused: session.sim.paused,
+    reached: inventory.entities.byUid(uid)?.searched === true,
+  };
+};
 const mouseCharge = async (page) => {
   await page.mouse.down({ button: 'left' });
   // A mouse hold has no key for waitForSimulation to release in the page.
@@ -202,6 +210,116 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       'verified',
       'a clean look, movement, inventory and crafting recording reproduces its end state',
     );
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+};
+
+const verifyContainerSearchTab = async (browserInstance, port, renderOverride) => {
+  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  try {
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+      let locked = false;
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+      });
+      Element.prototype.requestPointerLock = () => {
+        locked = true;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = false;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    for (const screenWasOpen of [true, false]) {
+      await pressAction(page, 'ui.inventory-tab-skills');
+      if (!screenWasOpen) {
+        await pressAction(page, 'ui.inventory-toggle');
+      }
+      const uid = await page.evaluate(() => {
+        const r = globalThis.primaryActionTest;
+        const definition = [...r.inventory.registry.furniture.values()].find((value) => value.container);
+        if (!definition) {
+          throw new Error('The container search tab fixture needs searchable furniture');
+        }
+        const [x, y, z] = r.feet().map(Math.floor);
+        const offsets = [
+          [1, 0],
+          [0, 1],
+          [-1, 0],
+          [0, -1],
+          [2, 0],
+          [0, 2],
+          [-2, 0],
+          [0, -2],
+        ];
+        let container;
+        for (const [dx, dz] of offsets) {
+          container = r.inventory.furnish({
+            type: definition.id,
+            pos: [x + dx, y, z + dz],
+            size: definition.size,
+            facing: 'n',
+          });
+          if (container) {
+            break;
+          }
+        }
+        if (!container) {
+          throw new Error('Could not place a nearby container for the tab regression');
+        }
+        r.useTarget(container);
+        return container.uid;
+      });
+      await waitForSimulation(
+        page,
+        searchedContainerSample,
+        { uid },
+        {
+          seconds: 5,
+          label: `container search opens Items from ${screenWasOpen ? 'open' : 'remembered'} Skills tab`,
+          record: (line) => process.stderr.write(`${line}\n`),
+        },
+      );
+      const view = await page.evaluate((containerUid) => {
+        const r = globalThis.primaryActionTest;
+        r.screen.update();
+        const items = document.querySelector('#inventory [data-tab-panel="items"]');
+        const pane = items?.querySelector(`[data-entity-uid="${containerUid}"]`);
+        return {
+          activeTab: r.screen.activeTab,
+          itemsVisible: items?.hidden === false,
+          containerPane: pane !== null && pane !== undefined,
+          pocketGrid: Boolean(pane?.querySelector(`[data-target="furniture:${containerUid}:0"]`)),
+        };
+      }, uid);
+      assert.deepEqual(view, {
+        activeTab: 'items',
+        itemsVisible: true,
+        containerPane: true,
+        pocketGrid: true,
+      });
+      await pressAction(page, 'ui.inventory-toggle');
+    }
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
@@ -665,7 +783,8 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         document.querySelector('#input-replay-status')?.dataset.state === 'playing'
       );
     });
-    const viewerMouseInput = await page.evaluate(() => {
+    // Keep these reads in one evaluation so replay playback cannot advance between them.
+    const { viewerMouseInput, viewerBlurInput } = await page.evaluate(() => {
       const { input, inputTarget } = globalThis.primaryActionTest;
       const read = () => ({
         rightMousePressed: input.rightMousePressed,
@@ -685,7 +804,16 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       const locked = [click(1), click(0)];
       const pointerLocked = input.locked;
       input.unlock();
-      return { unlocked, locked, pointerLocked };
+      const readBlur = () => ({
+        readyHeld: input.rightMouseHeld,
+        aimingDownSights: input.aimingDownSights,
+      });
+      const before = readBlur();
+      globalThis.dispatchEvent(new FocusEvent('blur'));
+      return {
+        viewerMouseInput: { unlocked, locked, pointerLocked },
+        viewerBlurInput: { before, after: readBlur() },
+      };
     });
     assert.equal(viewerMouseInput.pointerLocked, true);
     assert(
@@ -694,16 +822,6 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       ),
       'viewer clicks during replay cannot change readiness, ADS or dominant-use mouse state',
     );
-    const viewerBlurInput = await page.evaluate(() => {
-      const { input } = globalThis.primaryActionTest;
-      const read = () => ({
-        readyHeld: input.rightMouseHeld,
-        aimingDownSights: input.aimingDownSights,
-      });
-      const before = read();
-      globalThis.dispatchEvent(new FocusEvent('blur'));
-      return { before, after: read() };
-    });
     assert.deepEqual(
       viewerBlurInput.before,
       { readyHeld: true, aimingDownSights: true },
@@ -2920,6 +3038,9 @@ try {
   });
 
   assert.deepEqual(pageErrors, []);
+  // Stop this live simulation before other replay contexts run, keeping their timing observations isolated.
+  await page.close();
+  await timePhase('container-search-tab-case', () => verifyContainerSearchTab(browser, address.port, renderOverride));
   await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
   await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
   await timePhase('ads-fire-replay-case', () => verifyAdsFireReplay(browser, address.port, renderOverride));
