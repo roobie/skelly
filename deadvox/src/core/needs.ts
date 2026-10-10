@@ -70,7 +70,14 @@ const isCritical = (needs: Needs, rule: (typeof CRITICAL)[number]): boolean =>
   (rule.below !== undefined && needs[rule.need] < rule.below) ||
   (rule.above !== undefined && needs[rule.need] > rule.above);
 
-/** Health's rate per game hour for the needs as they are now. */
+/** The recovery rate per game hour when the needs are met. */
+const healthRegenRate = (needs: Needs): number => {
+  const met =
+    needs.calories >= HEALTH.metAbove && needs.hydration >= HEALTH.metAbove && needs.fatigue <= HEALTH.restedBelow;
+  return met ? HEALTH.regen : 0;
+};
+
+/** Health's rate per game hour for the needs and health as they are now. */
 const healthRate = (needs: Needs, health: number): number => {
   let rate = 0;
   if (needs.calories <= 0) {
@@ -79,12 +86,10 @@ const healthRate = (needs: Needs, health: number): number => {
   if (needs.hydration <= 0) {
     rate += HEALTH.dehydrated;
   }
-  const met =
-    needs.calories >= HEALTH.metAbove && needs.hydration >= HEALTH.metAbove && needs.fatigue <= HEALTH.restedBelow;
   if (rate < 0) {
     return rate;
   }
-  return met && health < 100 ? HEALTH.regen : 0;
+  return health < 100 ? healthRegenRate(needs) : 0;
 };
 
 /** What's draining health right now, for the death screen. */
@@ -133,17 +138,21 @@ const snap = (needs: Needs): void => {
  * Health's rate over the stretch that starts now: judged a moment ahead, so a need
  * sitting exactly on a threshold counts as the side it's heading to.
  */
-const segmentRate = (needs: Needs, health: number, rates: Readonly<Record<Need, number>>): number => {
+const segmentRates = (
+  needs: Needs,
+  health: number,
+  rates: Readonly<Record<Need, number>>,
+): { health: number; regionRecovery: number } => {
   const ahead = { ...needs };
   for (const need of Object.keys(NEED_RATES) as Need[]) {
     ahead[need] = clamp(needs[need] + rates[need] * 1e-6);
   }
-  return healthRate(ahead, health);
+  return { health: healthRate(ahead, health), regionRecovery: healthRegenRate(ahead) };
 };
 
 /**
- * Advances needs and health by `hours` game hours, in place, exactly: the step is
- * split wherever a rate changes. Returns the messages for needs that became critical
+ * Advances needs, health and eligible regional recovery by `hours` game hours, in
+ * place, exactly: the step is split wherever a rate changes. Returns the messages for needs that became critical
  * during the step. `damageImmune` suppresses health loss while preserving need decay
  * and recovery. `rates` overrides the per-hour rates (resting and sleeping use it for
  * fatigue; see REST). Stamina isn't touched; it moves by the second (`stepStamina`).
@@ -152,6 +161,7 @@ export interface HealthPool {
   readonly health: number;
   damageHealth: (amount: number) => number;
   restoreHealth: (amount: number) => void;
+  recoverRegionDamage: (ratePerGameHour: number, gameHours: number, elapsedGameHours: number) => void;
 }
 
 export interface StepNeedsOptions {
@@ -168,20 +178,25 @@ export const stepNeeds = (
   const before = { ...needs };
   const beforeHealth = body.health;
   let left = hours;
+  let elapsedGameHours = 0;
   while (left > 0 && body.health > 0) {
-    const rate = segmentRate(needs, body.health, rates);
-    const healthRatePerHour = damageImmune ? Math.max(0, rate) : rate;
+    const segment = segmentRates(needs, body.health, rates);
+    const healthRatePerHour = damageImmune ? Math.max(0, segment.health) : segment.health;
     const h = Math.min(left, nextBreak(needs, body.health, healthRatePerHour, rates));
     for (const need of Object.keys(NEED_RATES) as Need[]) {
       needs[need] = clamp(needs[need] + rates[need] * h);
     }
     const healthChange = healthRatePerHour * h;
+    if (segment.regionRecovery > 0) {
+      body.recoverRegionDamage(segment.regionRecovery, h, elapsedGameHours);
+    }
     if (healthChange < 0) {
       body.damageHealth(-healthChange);
     } else {
       body.restoreHealth(healthChange);
     }
     snap(needs);
+    elapsedGameHours += h;
     left -= h;
   }
   const messages = CRITICAL.filter((rule) => !isCritical(before, rule) && isCritical(needs, rule)).map(
