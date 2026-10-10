@@ -68,7 +68,12 @@ const fixture = (carried: readonly (readonly [string, number])[]) => {
     throw new Error('Magazine fixture does not fit');
   }
   const queue = new HandlingQueue(inventory);
-  const handling = new MagazineHandling(inventory, queue, { feet: () => [0, 0, 0], reloadFactor: () => 1 });
+  const sounds: string[] = [];
+  const handling = new MagazineHandling(inventory, queue, {
+    feet: () => [0, 0, 0],
+    reloadFactor: () => 1,
+    onSound: (event) => sounds.push(event),
+  });
   const load = () => {
     const refusal = handling.loadNext(magazine.uid, 0);
     if (refusal) {
@@ -86,7 +91,7 @@ const fixture = (carried: readonly (readonly [string, number])[]) => {
   const loose = (type: string) =>
     [...inventory.items()].filter(({ item }) => item.type === type).reduce((sum, { item }) => sum + item.count, 0);
   const rounds = () => loose(roundType) + loose(markedRound) + magazine.cartridges!.length;
-  return { inventory, magazine, queue, handling, load, strip, loose, rounds };
+  return { inventory, magazine, queue, handling, load, strip, loose, rounds, sounds };
 };
 
 const MARKED_THEN_PLAIN = [
@@ -137,6 +142,49 @@ describe('magazines loaded round by round', () => {
     expect(itemActionsFor(f.magazine, f.inventory, body)).toEqual([]);
     f.load();
     expect(itemActionsFor(f.magazine, f.inventory, body).map(({ magazine }) => magazine)).toEqual(['strip']);
+  });
+
+  it('continues a held strip through one simulated job per round until empty', () => {
+    const f = fixture(MARKED_THEN_PLAIN);
+    for (let i = 0; i < CAPACITY; i++) {
+      f.load();
+    }
+    expect(f.handling.strip(f.magazine.uid, 0, true)).toBeUndefined();
+    const frame = createMagazineLoadFrame();
+
+    for (let round = 0; round < CAPACITY; round++) {
+      const [job] = f.queue.jobs;
+      expect(job).toMatchObject({ kind: 'action', jobType: 'magazine.strip' });
+      expect(readMagazineLoadFrame(f.inventory, job, frame)).toBe(true);
+      expect(frame.strip).toBe(true);
+      f.queue.tick(ROUND_STRIP_SIM_SECONDS);
+      expect(f.magazine.cartridges).toHaveLength(CAPACITY - round - 1);
+      if (round < CAPACITY - 1) {
+        expect(f.queue.jobs).toEqual([]);
+        expect(f.handling.advanceHeldStrip(f.magazine.uid, (round + 1) * ROUND_STRIP_SIM_SECONDS, true)).toBeUndefined();
+        expect(f.queue.jobs).toHaveLength(1);
+      }
+    }
+
+    expect(f.handling.advanceHeldStrip(f.magazine.uid, CAPACITY * ROUND_STRIP_SIM_SECONDS, true)).toBeUndefined();
+    expect(f.queue.jobs).toEqual([]);
+    expect(f.sounds.filter((event) => event === 'magazine_round_strip')).toHaveLength(CAPACITY);
+  });
+
+  it('stops a held strip after its in-progress round completes when released', () => {
+    const f = fixture(MARKED_THEN_PLAIN);
+    for (let i = 0; i < CAPACITY; i++) {
+      f.load();
+    }
+    expect(f.handling.strip(f.magazine.uid, 0, true)).toBeUndefined();
+    f.queue.tick(ROUND_STRIP_SIM_SECONDS / 2);
+    expect(f.handling.advanceHeldStrip(f.magazine.uid, ROUND_STRIP_SIM_SECONDS / 2, false)).toBeUndefined();
+    f.queue.tick(ROUND_STRIP_SIM_SECONDS / 2);
+
+    expect(f.magazine.cartridges).toHaveLength(CAPACITY - 1);
+    expect(f.queue.jobs).toEqual([]);
+    expect(f.handling.advanceHeldStrip(f.magazine.uid, ROUND_STRIP_SIM_SECONDS, true)).toBeUndefined();
+    expect(f.queue.jobs).toEqual([]);
   });
 
   it('R release cancels a partial load without losing a round', () => {

@@ -625,12 +625,14 @@ export const startPlay = (
         ),
       heldDominantUse: (time, pressed, triggerHeld) => {
         if (throwingStance) {
+          magazines.advanceHeldStrip(undefined, time, false);
           if (!(replayPlayer || triggerHeld) && itemThrowItemUid !== undefined) {
             finishItemThrow();
           }
           return;
         }
         if (sim.body.actionRefusal) {
+          magazines.advanceHeldStrip(undefined, time, false);
           firearmTrigger.advance(time, undefined, pressed, triggerHeld);
           if (pressed) {
             showRefusal(sim.body.actionRefusal, sim.time);
@@ -638,6 +640,12 @@ export const startPlay = (
           return;
         }
         handleHeldDominantUse(time, pressed, triggerHeld);
+        const action = selectPrimaryAction(inventory);
+        const stripUid =
+          action.kind === 'magazine' && survival.selectedItemAction(action.item)?.magazine === 'strip'
+            ? action.item.uid
+            : undefined;
+        refusalReason(magazines.advanceHeldStrip(stripUid, time, triggerHeld));
       },
       automaticFireHeld: () => {
         const weapon = automaticFireWeapon();
@@ -2524,7 +2532,7 @@ export const startPlay = (
       case 'magazine':
         refusalReason(
           survival.selectedItemAction(action.item)?.magazine === 'strip'
-            ? magazines.strip(action.item.uid, sim.time)
+            ? magazines.strip(action.item.uid, sim.time, replaySample?.intent.useDominantHeld ?? input.dominantUseHeld)
             : 'Magazine is empty',
         );
         return;

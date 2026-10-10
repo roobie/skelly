@@ -21,6 +21,7 @@ export class MagazineHandling {
   /** The firearms skill's reload-duration factor (DESIGN.md, "Firearms"). */
   private readonly reloadFactor: () => number;
   private readonly onSound: (event: SoundEventId, time: number) => void;
+  private heldStripUid: number | undefined;
 
   constructor(
     inventory: Inventory,
@@ -79,22 +80,46 @@ export class MagazineHandling {
   }
 
   /** Strips the top round into a pocket, or onto the ground at the player's feet. */
-  strip(uid: number, time: number): string | undefined {
+  strip(uid: number, time: number, held = false): string | undefined {
     const magazine = this.heldMagazine(uid);
     if (!magazine) {
+      this.heldStripUid = undefined;
       return 'Magazine is no longer held';
     }
     if (this.queue.busy) {
       return 'Already handling something';
     }
     if (magazine.cartridges!.length === 0) {
+      this.heldStripUid = undefined;
       return 'Magazine is empty';
     }
     this.queue.enqueueAction(MAGAZINE_STRIP_ACTION, 'Strip a round', ROUND_STRIP_SIM_SECONDS * this.reloadFactor(), {
       uid: magazine.uid,
     });
+    this.heldStripUid = held ? uid : undefined;
     this.onSound('magazine_round_strip', time);
     return undefined;
+  }
+
+  /** Queues the next round only after the previous simulated strip job has completed. */
+  advanceHeldStrip(uid: number | undefined, time: number, held: boolean): string | undefined {
+    if (!(held && uid !== undefined && uid === this.heldStripUid)) {
+      this.heldStripUid = undefined;
+      return undefined;
+    }
+    if (this.queue.busy) {
+      return undefined;
+    }
+    const magazine = this.heldMagazine(uid);
+    if (!magazine || magazine.cartridges!.length === 0) {
+      this.heldStripUid = undefined;
+      return undefined;
+    }
+    const reason = this.strip(uid, time, true);
+    if (reason) {
+      this.heldStripUid = undefined;
+    }
+    return reason;
   }
 
   cancelLoad(uid: number): void {
@@ -145,15 +170,18 @@ export class MagazineHandling {
   private completeStrip(uid: unknown): string | undefined {
     const magazine = typeof uid === 'number' ? this.heldMagazine(uid) : undefined;
     if (!magazine) {
+      this.heldStripUid = undefined;
       return 'Magazine is no longer held';
     }
     const [type] = magazine.cartridges!;
     if (type === undefined) {
+      this.heldStripUid = undefined;
       return 'Magazine is empty';
     }
     const round = this.inventory.create(type);
     const target = stowTarget(this.inventory, round, this.feet());
     if (!(target && this.inventory.add(round, target))) {
+      this.heldStripUid = undefined;
       return 'No room for the round nearby';
     }
     magazine.cartridges!.shift();
