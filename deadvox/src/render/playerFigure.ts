@@ -11,6 +11,7 @@ import {
   Object3D,
   Vector3,
 } from 'three';
+import type { BodyRegion } from '../core/body.ts';
 import type { FigureDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
@@ -53,6 +54,20 @@ const PLAYER_BOXES: Readonly<Record<PlayerArmPart, FigureBox>> = {
   rightLeg: FIGURE_BOXES.rightLeg,
   leftFoot: { size: [0.18, 0.12, 0.28], at: [-0.12, 0.06, -0.16] },
   rightFoot: { size: [0.18, 0.12, 0.28], at: [0.12, 0.06, -0.16] },
+};
+
+const regionOrigin = (part: PlayerArmPart, anchoredLeg = false): readonly [number, number, number] => {
+  const box = PLAYER_BOXES[part];
+  return [box.at[0], box.at[1] - (anchoredLeg ? box.size[1] / 2 : 0), box.at[2]];
+};
+
+export const PLAYER_REGION_ORIGINS: Readonly<Record<BodyRegion, readonly [number, number, number]>> = {
+  head: regionOrigin('head'),
+  torso: regionOrigin('body'),
+  leftArm: regionOrigin('leftUpperArm'),
+  rightArm: regionOrigin('rightUpperArm'),
+  leftLeg: regionOrigin('leftLeg', true),
+  rightLeg: regionOrigin('rightLeg', true),
 };
 
 const PLAYER_COLORS: Readonly<Record<PlayerArmPart, keyof FigureDef['palette']>> = {

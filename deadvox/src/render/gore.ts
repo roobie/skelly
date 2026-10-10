@@ -20,6 +20,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
+import { PLAYER_REGION_ORIGINS } from './playerFigure.ts';
 
 /** Droplets in flight at once; a new one replaces the oldest. */
 export const DROPLET_CAP = 128;
@@ -83,9 +84,7 @@ export interface GorePlayer {
   readonly pos: Vec3;
   readonly yaw: number;
   readonly wounds: Readonly<BodyWounds>;
-  /** Camera eye and direction, in blocks, for first-person blood visible beside the held arms. */
-  readonly eye: Vec3;
-  readonly lookDirection: Vec3;
+  /** Camera mode is carried for view coverage; wound origins stay on the same world figure. */
   readonly thirdPerson: boolean;
 }
 
@@ -95,60 +94,18 @@ export interface GoreBodies {
   readonly player?: GorePlayer;
 }
 
-const playerRegionSide = (region: (typeof BODY_REGIONS)[number]): number => {
-  if (region === 'leftArm' || region === 'leftLeg') {
-    return -1;
-  }
-  return region === 'rightArm' || region === 'rightLeg' ? 1 : 0;
-};
-
-const playerRegionHeight = (region: (typeof BODY_REGIONS)[number]): number => {
-  switch (region) {
-    case 'head':
-      return 1.58;
-    case 'torso':
-      return 1.02;
-    case 'leftArm':
-    case 'rightArm':
-      return 0.84;
-    default:
-      return 0.45;
-  }
-};
-
-const firstPersonRegionHeight = (region: (typeof BODY_REGIONS)[number]): number => {
-  switch (region) {
-    case 'head':
-      return -0.12;
-    case 'torso':
-      return -0.3;
-    case 'leftArm':
-    case 'rightArm':
-      return -0.46;
-    default:
-      return -0.72;
-  }
-};
-
 const setPlayerDripOrigin = (
   target: Vector3,
   player: GorePlayer,
   region: (typeof BODY_REGIONS)[number],
   scale: number,
 ): void => {
-  const side = playerRegionSide(region);
-  if (player.thirdPerson) {
-    target.set(
-      (player.pos[0] + side * 0.2 * Math.cos(player.yaw)) * scale,
-      player.pos[1] * scale + playerRegionHeight(region),
-      (player.pos[2] - side * 0.2 * Math.sin(player.yaw)) * scale,
-    );
-    return;
-  }
+  const [localX, localY, localZ] = PLAYER_REGION_ORIGINS[region];
+  const { yaw } = player;
   target.set(
-    (player.eye[0] + player.lookDirection[0] * 1.5 + Math.cos(player.yaw) * side * 0.14) * scale,
-    player.eye[1] * scale + firstPersonRegionHeight(region),
-    (player.eye[2] + player.lookDirection[2] * 1.5 - Math.sin(player.yaw) * side * 0.14) * scale,
+    (player.pos[0] + localX * Math.cos(yaw) + localZ * Math.sin(yaw)) * scale,
+    player.pos[1] * scale + localY,
+    (player.pos[2] - localX * Math.sin(yaw) + localZ * Math.cos(yaw)) * scale,
   );
 };
 
@@ -435,8 +392,7 @@ export class Gore {
     }
   }
 
-  /** Player wounds drip from their matching figure region; first person places the same droplets beside the
-   * camera-space arms so the render-only cue remains visible while the world body is out of view. */
+  /** Player wounds drip from their matching world-figure region in either camera view. */
   private dripPlayer(dt: number, player: GorePlayer | undefined): void {
     if (!player) {
       return;

@@ -3166,8 +3166,6 @@ export const startPlay = (
         pos: body.pos,
         yaw: input.yaw,
         wounds: sim.body.wounds,
-        eye: eye(),
-        lookDirection: lookDir(),
         thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
       },
     });

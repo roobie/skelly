@@ -892,8 +892,9 @@ without modeling armour now.
   saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps
-  the stains it fell with. A player's bleeding also drips from the affected
-  region in first person and debug third person; the HUD shows blood level and
+  the stains it fell with. A player's bleeding drips from the same avatar region
+  in both views; in first person, the droplets enter view only when looking down
+  or near the screen edge. The HUD shows blood level and
   active regions, and starting to bleed produces one notice. These cues derive from
   existing body wounds; none adds simulation or save state. Gore stays out of
   the simulation so that blood never changes a fight, a save or a replay.

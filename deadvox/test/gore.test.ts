@@ -1,7 +1,10 @@
 import { InstancedMesh, Matrix4, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { BODY_REGIONS, type BodyWounds } from '../src/core/body.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
+import { FIGURE_BOXES } from '../src/core/zombieRegions.ts';
 import type { HitImpulse, Zombie } from '../src/core/zombies.ts';
+import { PLAYER_ARM_BOXES } from '../src/render/figure.ts';
 import { DROPLET_CAP, DROPLET_SPAWNS_PER_FRAME, Gore, type GoreBodies, SPLAT_CAP } from '../src/render/gore.ts';
 
 const floor = (_x: number, y: number, _z: number) => y < 0;
@@ -18,47 +21,53 @@ describe('Gore', () => {
     gore.dispose();
   });
 
-  it.each([Math.PI / 2, -Math.PI / 2])('places a left-arm drip to the left of a side-on view (%s)', (yaw) => {
-    const gore = new Gore(1);
-    const eye: [number, number, number] = [0, 1.62, 0];
-    const lookDirection: [number, number, number] = [0, 0, -1];
-    const wounds = {
+  it.each(BODY_REGIONS)('keeps $0 drips on the same avatar region in both views', (region) => {
+    const yaw = 0.37;
+    const playerPos: [number, number, number] = [4, 2, 7];
+    const avatarBoxes = [...Object.values(FIGURE_BOXES), ...Object.values(PLAYER_ARM_BOXES)];
+    const avatarHorizontalRadius = Math.max(
+      ...avatarBoxes.map(({ at, size }) => Math.hypot(Math.abs(at[0]) + size[0] / 2, Math.abs(at[2]) + size[2] / 2)),
+    );
+    const wounds: BodyWounds = {
       head: null,
       torso: null,
-      leftArm: { bleeding: true, infection: 'none' as const, infectionGameSeconds: 0, infectionAtRisk: false },
+      leftArm: null,
       rightArm: null,
       leftLeg: null,
       rightLeg: null,
     };
-    gore.update(1, floor, {
-      zombies: new MapEntityStore<Zombie>(),
-      listener: [0, 0, 0],
-      player: { pos: [0, 0, 0], yaw, wounds, eye, lookDirection, thirdPerson: false },
-    });
+    wounds[region] = { bleeding: true, infection: 'none', infectionGameSeconds: 0, infectionAtRisk: false };
 
-    expect(gore.activeDroplets).toBe(1);
-    const mesh = gore.group.children.find((child): child is InstancedMesh => child instanceof InstancedMesh);
-    if (!mesh) {
-      throw new Error('Gore has no droplet mesh');
-    }
-    const matrix = new Matrix4();
-    mesh.getMatrixAt(0, matrix);
-    const position = new Vector3().setFromMatrixPosition(matrix);
-    const cameraRightX = Math.cos(yaw);
-    const cameraRightZ = -Math.sin(yaw);
-    const viewCenterX = eye[0] + lookDirection[0] * 1.5;
-    const viewCenterZ = eye[2] + lookDirection[2] * 1.5;
-    const offsetAlongCameraRight =
-      (position.x - viewCenterX) * cameraRightX + (position.z - viewCenterZ) * cameraRightZ;
+    const dripPosition = (thirdPerson: boolean): Vector3 => {
+      const gore = new Gore(1);
+      gore.update(1, floor, {
+        zombies: new MapEntityStore<Zombie>(),
+        listener: playerPos,
+        player: { pos: playerPos, yaw, wounds, thirdPerson },
+      });
+      expect(gore.activeDroplets).toBe(1);
+      const mesh = gore.group.children.find((child): child is InstancedMesh => child instanceof InstancedMesh);
+      if (!mesh) {
+        throw new Error('Gore has no droplet mesh');
+      }
+      const matrix = new Matrix4();
+      mesh.getMatrixAt(0, matrix);
+      const position = new Vector3().setFromMatrixPosition(matrix);
+      gore.dispose();
+      return position;
+    };
 
-    expect(offsetAlongCameraRight).toBeLessThan(0);
-    gore.dispose();
+    const firstPersonOrigin = dripPosition(false);
+    const thirdPersonOrigin = dripPosition(true);
+    const horizontalOffset = new Vector3(firstPersonOrigin.x - playerPos[0], 0, firstPersonOrigin.z - playerPos[2]);
+    const lookDirection = new Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+
+    expect(firstPersonOrigin.distanceTo(thirdPersonOrigin)).toBeLessThan(1e-9);
+    expect(Math.hypot(horizontalOffset.x, horizontalOffset.z)).toBeLessThan(avatarHorizontalRadius);
+    expect(Math.abs(horizontalOffset.dot(lookDirection))).toBeLessThan(1e-6);
   });
 
-  it.each([
-    { thirdPerson: false, view: 'first person' },
-    { thirdPerson: true, view: 'third person' },
-  ])('drips from player wounds in $view and stops after treatment', ({ thirdPerson }) => {
+  it('stops player wound drips after treatment', () => {
     const gore = new Gore(1);
     const wounds = {
       head: null,
@@ -75,9 +84,7 @@ describe('Gore', () => {
         pos: [0, 0, 0],
         yaw: 0,
         wounds,
-        eye: [0, 1.62, 0],
-        lookDirection: [0, 0, -1],
-        thirdPerson,
+        thirdPerson: false,
       },
     };
 
