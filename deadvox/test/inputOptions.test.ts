@@ -1,6 +1,8 @@
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
+  BindingRegistry,
+  bindingConflict,
   bindingIsDebugOnly,
   DEBUG_ONLY_CONTEXTS,
   INPUT_BINDINGS,
@@ -34,6 +36,30 @@ const rowFor = (root: HTMLElement, id: string): HTMLElement | undefined =>
   [...root.querySelectorAll<HTMLElement>('.input-binding-row')].find((row) => row.dataset.bindingId === id);
 const contextLabels = (row: HTMLElement): string[] =>
   (row.querySelector('small')?.textContent ?? '').split(',').map((label) => label.trim());
+const debugKeyCollision = () => {
+  const ordinaryBindings = INPUT_BINDINGS.filter((binding) => !bindingIsDebugOnly(binding));
+  return ordinaryBindings
+    .flatMap((ordinary) => INPUT_BINDINGS.filter(bindingIsDebugOnly).map((debug) => ({ ordinary, debug })))
+    .find(({ ordinary, debug }) => {
+      const [ordinaryChord] = ordinary.defaults;
+      const [debugChord] = debug.defaults;
+      if (
+        !(ordinaryChord && debugChord) ||
+        (ordinaryChord.code === debugChord.code && ordinaryChord.modifier === debugChord.modifier) ||
+        !ordinary.contexts.some((context) => debug.contexts.includes(context))
+      ) {
+        return false;
+      }
+      const chords = [debugChord, ...ordinary.defaults.slice(1)];
+      const candidate = new Map([[ordinary.id, chords]]);
+      const issue = bindingConflict(INPUT_BINDINGS, candidate);
+      return (
+        issue?.includes(ordinary.description) &&
+        issue.includes(debug.description) &&
+        bindingConflict(INPUT_BINDINGS, candidate, false) === undefined
+      );
+    });
+};
 
 describe('input options context visibility', () => {
   it('hides debug-only rows and context names in ordinary runs but keeps them in debug runs', () => {
@@ -80,11 +106,15 @@ describe('input options context visibility', () => {
       INPUT_BINDINGS.slice(index + 1).map((second) => ({ first, second })),
     ).find(({ first, second }) => {
       const shared = first.contexts.filter((context) => second.contexts.includes(context));
+      const [firstChord] = first.defaults;
+      const [secondChord] = second.defaults;
       return (
         !(bindingIsDebugOnly(first) || bindingIsDebugOnly(second)) &&
         first.gate === second.gate &&
         shared.some((context) => !DEBUG_ONLY_CONTEXTS.has(context)) &&
-        shared.some((context) => DEBUG_ONLY_CONTEXTS.has(context))
+        firstChord !== undefined &&
+        secondChord !== undefined &&
+        (firstChord.code !== secondChord.code || firstChord.modifier !== secondChord.modifier)
       );
     });
     expect(pair).toBeDefined();
@@ -106,5 +136,56 @@ describe('input options context visibility', () => {
     } finally {
       keyboardInput.capture = undefined;
     }
+  });
+
+  it('allows an ordinary binding to take a debug-only key without naming the debug control', () => {
+    const pair = debugKeyCollision();
+    expect(pair).toBeDefined();
+    const root = document.createElement('div');
+    document.body.append(root);
+    mountInputOptions(root);
+    const button = rowFor(root, pair!.ordinary.id)?.querySelector<HTMLButtonElement>(
+      'button[data-binding-alternative="0"]',
+    );
+    expect(button).toBeDefined();
+    button!.click();
+    try {
+      keyboardInput.capture?.(pair!.debug.defaults[0]!);
+      expect(inputBindings.chords(pair!.ordinary.id)[0]).toEqual(pair!.debug.defaults[0]);
+      const status = root.querySelector('.input-binding-status')?.textContent?.trim() ?? '';
+      expect(status).not.toBe('');
+      expect(status).not.toContain(pair!.debug.description);
+    } finally {
+      keyboardInput.capture = undefined;
+      inputBindings.reset();
+    }
+  });
+
+  it('reports an ordinary binding that takes a debug-only key when a debug run loads preferences', () => {
+    const pair = debugKeyCollision();
+    expect(pair).toBeDefined();
+    let saved: string | null = null;
+    const storage = {
+      getItem: () => saved,
+      setItem: (_key: string, value: string) => {
+        saved = value;
+      },
+      removeItem: () => {
+        saved = null;
+      },
+    };
+    const ordinaryRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    const chords = [pair!.debug.defaults[0]!, ...pair!.ordinary.defaults.slice(1)];
+    expect(ordinaryRun.rebind(pair!.ordinary.id, chords, false)).toBeUndefined();
+    const debugRun = new BindingRegistry(INPUT_BINDINGS, storage);
+    debugRun.setDebugRun();
+    expect(
+      debugRun.diagnostics.some(
+        (diagnostic) => diagnostic.includes(pair!.ordinary.description) && diagnostic.includes(pair!.debug.description),
+      ),
+    ).toBe(true);
+    expect(debugRun.chords(pair!.ordinary.id)[0]).toEqual(pair!.ordinary.defaults[0]);
+    expect(debugRun.chords(pair!.debug.id)[0]).toEqual(pair!.debug.defaults[0]);
+    expect(debugRun.rebind(pair!.ordinary.id, chords, true)).toEqual(expect.any(String));
   });
 });

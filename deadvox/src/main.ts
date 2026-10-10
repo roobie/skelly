@@ -127,6 +127,9 @@ if (bench === 'report') {
   if (pendingReplay) {
     config.debug = true;
   }
+  if (config.debug) {
+    inputBindings.setDebugRun();
+  }
   mountInputOptions(document.getElementById('input-options')!, config.debug);
   mountControlsCard(
     document.getElementById('controls')!,

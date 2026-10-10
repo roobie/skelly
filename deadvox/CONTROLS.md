@@ -34,8 +34,12 @@ both independently scrolling panes.
   search keystrokes from activating game actions. Ordinary runs hide debug-marked
   bindings and bindings scoped only to debug contexts; shared rows show only their
   ordinary contexts, and Settings conflict messages omit context names. Ordinary
-  runs name no debug-only contexts because those contexts are unavailable there;
-  debug runs list them all. Debug actions use the held gate,
+  Settings lets an ordinary binding take a debug-only key because ordinary players
+  cannot see or use debug controls, so those controls must not block ordinary keys;
+  collisions with other ordinary bindings are refused. Debug runs refuse the same
+  collision and report a saved-layout conflict, leaving the debug binding on its
+  default key. Ordinary runs name no debug-only contexts because those contexts
+  are unavailable there; debug runs list them all. Debug actions use the held gate,
   with noclip flight controls as the readily available exception. See `src/game/inputBindings.ts`,
   `INPUT_BINDINGS`, `DEBUG_ONLY_CONTEXTS`, `KeyboardInput.install`,
   `noclip.ascend` and `noclip.descend`, and `src/game/controls.ts`,

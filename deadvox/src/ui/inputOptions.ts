@@ -35,7 +35,7 @@ export const mountInputOptions = (root: HTMLElement, debugRun = false): void => 
       }
       const chords = [...inputBindings.chords(capture.id)];
       chords[capture.alternative] = chord;
-      const issue = inputBindings.rebind(capture.id, chords);
+      const issue = inputBindings.rebind(capture.id, chords, debugRun);
       status = issue ?? 'Binding saved';
       if (issue) {
         draw();
