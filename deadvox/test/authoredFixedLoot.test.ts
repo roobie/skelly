@@ -1257,9 +1257,7 @@ describe('authored fixed loot', () => {
           );
           expect(entity, `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toBeDefined();
           const placed = (entity!.pockets?.flat() ?? []).map(({ item }) => ({ type: item.type, count: item.count }));
-          expect(itemCounts(placed), `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toEqual(
-            itemCounts(supplied),
-          );
+          expect(itemCounts(placed), `${piece.furniture}: ${firstIndex}, ${secondIndex}`).toEqual(itemCounts(supplied));
         }
       }
     }
