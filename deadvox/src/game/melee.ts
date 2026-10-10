@@ -1,7 +1,7 @@
 import type { MeleeClassDef } from '../core/content.ts';
 import type { Needs } from '../core/needs.ts';
 import { spendStamina } from '../core/needs.ts';
-import { copyMeleeWeapon, type BeginMeleeSwing, type PlayerCombat } from '../core/playerCombat.ts';
+import { type BeginMeleeSwing, copyMeleeWeapon, type PlayerCombat } from '../core/playerCombat.ts';
 import type { ItemDef } from '../core/schema.ts';
 import type { MeleeWeapon } from '../core/zombies.ts';
 
