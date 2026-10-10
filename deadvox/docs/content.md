@@ -52,6 +52,8 @@ and `test/firearmSave.test.ts`, `fixtureRegistry`.
 
 An authored floor course cut into an exterior wall reads as an unfinished recess. Keep the shell visually continuous while doors and solid window frames remain authored openings. See `src/core/content.ts`, `floorCourseWallGap`.
 
+A door opens onto clear space on both sides, so players can walk through it. `src/core/content.ts`, `checkTemplateSpace`, uses `src/core/templateSpatial.ts`, `templateDoorIssues`, to reject shapeless doors that face only solid in-template cells.
+
 ## Site-generation tuning
 
 `siteGeneration` definitions in `src/core/schema.ts` keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into `layouts-playtest.json`. `src/content/base/site-generation.json` supplies the authored-site profile consumed by `src/core/authoredSite.ts`, `AuthoredSite`; tune that profile to balance natural variation against playable structures and routes.
