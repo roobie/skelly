@@ -2791,6 +2791,7 @@ export const startPlay = (
       job: handlingJob,
       ...(grabProgress === undefined ? {} : { grab: { progress: grabProgress } }),
       ...throwingPresentation(),
+      dt,
     });
   };
 

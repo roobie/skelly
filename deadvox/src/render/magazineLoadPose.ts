@@ -9,10 +9,10 @@ export const MAGAZINE_LOAD_POSE = {
   raised: [0.05, -0.1, -0.4] as Vec3,
   /** How far the raised magazine tips its top toward the eye. */
   raisedTiltRadians: 0.35,
-  /** Real seconds to raise or lower the magazine. */
-  raiseSeconds: 0.18,
-  /** Real seconds the magazine stays up once no round's job is running. */
-  holdSeconds: 0.12,
+  /** To raise or lower the magazine. */
+  raiseRealSeconds: 0.18,
+  /** The magazine stays up this long once no round's job is running. */
+  holdRealSeconds: 0.12,
   /** Shares of a round's job: the hand reaches the lips, presses the round down, slides it back under them. */
   reachEnd: 0.3,
   pressEnd: 0.55,
@@ -50,8 +50,12 @@ export const readMagazineLoadFrame = (
   out: MagazineLoadFrame,
 ): boolean => {
   if (
-    !(job?.kind === 'action' && (job.jobType === MAGAZINE_LOAD_ACTION || job.jobType === MAGAZINE_STRIP_ACTION)) ||
-    !(job.duration > 0 && job.elapsed < job.duration)
+    !(
+      job?.kind === 'action' &&
+      (job.jobType === MAGAZINE_LOAD_ACTION || job.jobType === MAGAZINE_STRIP_ACTION) &&
+      job.duration > 0 &&
+      job.elapsed < job.duration
+    )
   ) {
     return false;
   }
@@ -66,11 +70,11 @@ export const readMagazineLoadFrame = (
   out.progress = Math.max(0, job.elapsed / job.duration);
   out.strip = job.jobType === MAGAZINE_STRIP_ACTION;
   const { ammoUid } = job.params;
-  out.roundType = out.strip
-    ? magazine.cartridges?.[0]
-    : typeof ammoUid === 'number'
-      ? inventory.itemByUid(ammoUid)?.type
-      : undefined;
+  if (out.strip) {
+    out.roundType = magazine.cartridges?.[0];
+  } else {
+    out.roundType = typeof ammoUid === 'number' ? inventory.itemByUid(ammoUid)?.type : undefined;
+  }
   return true;
 };
 
@@ -146,13 +150,12 @@ export const stepMagazineRaise = (
   if (running) {
     raise.side = running.holdingSide;
     raise.uid = running.uid;
-    raise.hold = MAGAZINE_LOAD_POSE.holdSeconds;
+    raise.hold = MAGAZINE_LOAD_POSE.holdRealSeconds;
   } else {
     raise.hold = Math.max(0, raise.hold - dt);
   }
-  const step = dt / MAGAZINE_LOAD_POSE.raiseSeconds;
-  raise.weight =
-    running || raise.hold > 0 ? Math.min(1, raise.weight + step) : Math.max(0, raise.weight - step);
+  const step = dt / MAGAZINE_LOAD_POSE.raiseRealSeconds;
+  raise.weight = running || raise.hold > 0 ? Math.min(1, raise.weight + step) : Math.max(0, raise.weight - step);
   if (raise.weight === 0 && !running) {
     raise.side = undefined;
     raise.uid = undefined;

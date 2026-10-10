@@ -119,6 +119,8 @@ export interface HeldHandlingFrame {
   readonly aim?: AimFrame;
   readonly job?: Readonly<Job> | undefined;
   readonly grab?: { readonly progress: number };
+  /** The frame's real seconds, used only to raise and lower a magazine being loaded. */
+  readonly dt?: number;
 }
 
 export class HeldItems {
@@ -217,16 +219,12 @@ export class HeldItems {
     return { scene: this.scene, camera: this.camera };
   }
 
-  /**
-   * Catches up with what's held and turns it with the main camera. Call before rendering the frame. `dt` is the
-   * frame's real seconds, used only to raise and lower a magazine being loaded.
-   */
+  /** Catches up with what's held and turns it with the main camera. Call before rendering the frame. */
   update(
     main: PerspectiveCamera,
     pose?: MeleePoseFrame,
     recoil = 0,
     handling: HeldHandlingFrame = { firearms: [] },
-    dt = 0,
   ): void {
     const { firearms: firearmPoses, readiness } = handling;
     const renderPose = handling.grab ? grabPose(pose ?? readyMeleePose(false), handling.grab.progress) : pose;
@@ -261,7 +259,7 @@ export class HeldItems {
     this.view.quaternion.copy(baseCameraQuaternion);
     this.view.updateMatrixWorld(true);
     this.poseRummage(renderPose, handling);
-    this.poseMagazineLoad(handling, dt);
+    this.poseMagazineLoad(handling);
     for (const compass of this.compasses.values()) {
       compass.update(main.rotation.y);
     }
@@ -539,11 +537,11 @@ export class HeldItems {
    * progress, so the press never shows a round the simulation hasn't moved (DESIGN.md, "Hands: what you see is
    * what's there").
    */
-  private poseMagazineLoad(handling: HeldHandlingFrame, dt: number): void {
+  private poseMagazineLoad(handling: HeldHandlingFrame): void {
     const running = readMagazineLoadFrame(this.inventory, handling.job, this.magazineFrame)
       ? this.magazineFrame
       : undefined;
-    stepMagazineRaise(this.magazineRaise, running, dt);
+    stepMagazineRaise(this.magazineRaise, running, handling.dt ?? 0);
     const { side, uid, weight } = this.magazineRaise;
     const arm = side && this.arms.get(side);
     const held = uid === undefined ? undefined : this.shown.get(uid);
@@ -555,7 +553,9 @@ export class HeldItems {
     this.magazineTarget.set(side === 'right' ? x : -x, y, z).applyAxisAngle(TORSO_Y_AXIS, -this.torso.rotation.y);
     const eased = weight * weight * (3 - 2 * weight);
     arm.position.lerp(this.magazineTarget, eased);
-    arm.quaternion.multiply(this.magazineTilt.setFromAxisAngle(VIEW_X_AXIS, MAGAZINE_LOAD_POSE.raisedTiltRadians * eased));
+    arm.quaternion.multiply(
+      this.magazineTilt.setFromAxisAngle(VIEW_X_AXIS, MAGAZINE_LOAD_POSE.raisedTiltRadians * eased),
+    );
     this.placeHeldItem(held, arm, ARM_PLACED);
     this.view.updateMatrixWorld(true);
     const seat = uid === undefined ? undefined : this.magazineSeats.get(uid);
@@ -569,9 +569,7 @@ export class HeldItems {
     // The fingers hold the round at `press.round`; the wrist sits beside it, where the thumb presses.
     seat.seat.localToWorld(this.magazineTarget.set(...press.round));
     const [wristX, wristY, wristZ] = THUMB_PRESS_WRIST;
-    this.magazineWrist
-      .set(side === 'right' ? wristX : -wristX, wristY, wristZ)
-      .applyQuaternion(this.view.quaternion);
+    this.magazineWrist.set(side === 'right' ? wristX : -wristX, wristY, wristZ).applyQuaternion(this.view.quaternion);
     this.magazineTarget.add(this.magazineWrist);
     offArm.position.lerp(offArm.parent.worldToLocal(this.magazineTarget), press.reach);
     const offHeld = this.heldByHand.get(side === 'right' ? 'left' : 'right');
