@@ -51,6 +51,7 @@ interface OverridePlacement {
 }
 type Point = [number, number];
 type Bounds = ReturnType<typeof buildingBounds>;
+const FOB_WALL_RUN_TEMPLATES = new Set(['camp_wall_run', 'camp_wall_run_crouch_hole']);
 
 const compactFixture = (): SiteLayoutDef => ({
   ...layout,
@@ -187,7 +188,7 @@ const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
   expect(hqBounds.z1).toBe(armouryBounds.z0);
   expect(Math.min(hqBounds.x1, armouryBounds.x1)).toBeGreaterThan(Math.max(hqBounds.x0, armouryBounds.x0));
   const fenceRects = layout.buildings
-    .filter(({ template }) => template === 'camp_wall_run')
+    .filter(({ template }) => FOB_WALL_RUN_TEMPLATES.has(template))
     .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
   expect(fenceRects.length).toBeGreaterThan(0);
   const fenceBounds = {
@@ -836,7 +837,9 @@ describe('authored fixed loot', () => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
     const jumpReachMeters = PLAYER.jump ** 2 / (2 * physicsFor(scale).gravity * scale.blockSize);
     const wallPlacements = site.placements.filter(({ template }) =>
-      ['camp_wall_run', 'camp_gate', 'camp_gate_damaged', 'camp_gate_return'].includes(template.id),
+      ['camp_wall_run', 'camp_wall_run_crouch_hole', 'camp_gate', 'camp_gate_damaged', 'camp_gate_return'].includes(
+        template.id,
+      ),
     );
     expect(wallPlacements.length).toBeGreaterThan(0);
     for (const placement of wallPlacements) {
@@ -847,7 +850,7 @@ describe('authored fixed loot', () => {
   it('routes through the north double gate while keeping the south wall breach open', () => {
     const campSite = new AuthoredSite(73, result.registry, scale, layout);
     const wallRects = layout.buildings
-      .filter(({ template }) => template === 'camp_wall_run')
+      .filter(({ template }) => FOB_WALL_RUN_TEMPLATES.has(template))
       .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
     expect(wallRects.length).toBeGreaterThan(0);
     const northEdge = Math.min(...wallRects.map(({ z0 }) => z0));
@@ -1522,7 +1525,7 @@ describe('authored fixed loot', () => {
     expect(roadsideThreats).toHaveLength(2);
     const campSoldiers = layout.shamblers.filter(({ type }) => type === 'military_shambler');
     const fenceRects = layout.buildings
-      .filter(({ template }) => template === 'camp_wall_run')
+      .filter(({ template }) => FOB_WALL_RUN_TEMPLATES.has(template))
       .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
     const fenceBounds = {
       x0: Math.min(...fenceRects.map(({ x0 }) => x0)),

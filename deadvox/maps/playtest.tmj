@@ -1556,7 +1556,7 @@
         },
         {
           "id": 89,
-          "name": "Camp wall east 511",
+          "name": "Camp wall east crouch gap",
           "type": "building",
           "x": 512,
           "y": 511,
@@ -1569,7 +1569,7 @@
               "name": "template",
               "type": "string",
               "propertytype": "template_id",
-              "value": "camp_wall_run"
+              "value": "camp_wall_run_crouch_hole"
             },
             {
               "name": "fixed_loot",
