@@ -141,6 +141,13 @@ both independently scrolling panes.
   - you wield the box and activante it in oder to unpack”. A key acts on the
   door from a hand; an ammunition box is wielded and activated to unpack. See
   `src/game/primaryAction.ts`, `selectPrimaryAction`.
+- **Magazine stripping:** A left-click strips one round; holding continues after
+  each round's handling job completes. Releasing lets the in-progress round
+  finish but starts no next one; repeating stops when the magazine is empty or
+  the round cannot be stowed. Each round stays a separate job so its timing,
+  animation and sound follow simulation. See `src/game/magazineHandling.ts`,
+  `MagazineHandling.advanceHeldStrip`, and `src/render/magazineLoadPose.ts`,
+  `readMagazineLoadFrame`.
 - **One world-interaction route for prying:** `world.interact` remains the only
   door action; on a locked door that supports prying it advertises the carried
   tool behind the interaction-hints toggle. This avoids adding a modifier or a

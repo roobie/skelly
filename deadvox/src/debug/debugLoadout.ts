@@ -16,7 +16,7 @@ export const equipDebugFirearms = (
 ): boolean => {
   const choice = new URLSearchParams(search).get('loadout');
   if (
-    !((choice === 'ar' || choice === 'ak' || choice === 'pump') && debugMode && newGame) ||
+    !((choice === 'ar' || choice === 'ak' || choice === 'pump' || choice === 'magazine') && debugMode && newGame) ||
     inventory.hands.left ||
     inventory.hands.right
   ) {
@@ -30,8 +30,31 @@ export const equipDebugFirearms = (
     equipPump(inventory, backpack);
     return true;
   }
+  if (choice === 'magazine') {
+    equipEmptyMagazine(inventory, backpack);
+    return true;
+  }
   equipRifles(inventory, backpack, choice);
   return true;
+};
+
+/** An empty STANAG magazine in hand and loose rounds of its calibre packed, to load round by round with R. */
+const equipEmptyMagazine = (inventory: Inventory, backpack: Item): void => {
+  const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
+  const round = 'cartridge_5_d_56x45';
+  const stack = inventory.registry.items.get(round)?.stack ?? 1;
+  if (
+    !(
+      inventory.add(inventory.create('magazine_stanag_30'), {
+        kind: 'hand',
+        side: dominantSide(inventory.character),
+      }) &&
+      inventory.add(inventory.create(round, stack), pocket) &&
+      inventory.add(inventory.create(round, stack), pocket)
+    )
+  ) {
+    throw new Error('Could not equip magazine preview loadout');
+  }
 };
 
 /** The empty pump in hand; a sealed shell box and a stack of loose shells of the kind it holds packed, to load now. */

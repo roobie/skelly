@@ -91,6 +91,7 @@ const page = (state) => html`  <main>
                 <option value="pump">Pump</option>
                 <option value="ar">AR</option>
                 <option value="ak">AK</option>
+                <option value="magazine">Empty magazine</option>
               </select>
             </label>
             <label id="deadvox-at-field" ?hidden=${!visible('deadvox-at-field', state)}>Debug start position (m): x,z[,yaw°]
