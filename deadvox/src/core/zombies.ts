@@ -2579,8 +2579,8 @@ export class ZombieSystem {
   /**
    * The side an amalgam meeting a wall slides to: the one its flesh can move to. Met at a slant, that is the
    * side the wall leads it along; caught on a door frame or wall end, the side that frees it. A random side
-   * there could back it out of the gap it was sliding into or pin it. Head-on to a flat wall both sides are
-   * open and it draws, as a shambler always does.
+   * there could back it out of the gap it was sliding into or pin it. When both sides are open, or neither
+   * side is free, it draws, as a shambler always does.
    */
   private openSide(aim: Vec3): -1 | 1 | undefined {
     const shape = this.shapeOf(this.tickScratch.zombie.body);
