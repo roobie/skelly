@@ -21,7 +21,7 @@ import {
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
-import { templateSpatialIssues, templateSpawnClearanceIssues } from './templateSpatial.ts';
+import { templateDoorIssues, templateSpatialIssues, templateSpawnClearanceIssues } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 
 export type {
@@ -780,6 +780,9 @@ const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: R
     return;
   }
   const compiled = compileTemplate(registry, template);
+  for (const [path, message] of templateDoorIssues(registry, compiled)) {
+    report('templates', template.id, path, message);
+  }
   for (const [path, message] of templateSpawnClearanceIssues(registry, compiled)) {
     report('templates', template.id, path, message);
   }

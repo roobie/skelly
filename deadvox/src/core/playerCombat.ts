@@ -28,6 +28,20 @@ export interface BeginMeleeSwing {
   aimPitch?: number;
 }
 
+/** Copies only fields that belong to a saved melee weapon, excluding caller-owned metadata. */
+export const copyMeleeWeapon = (weapon: MeleeWeapon): MeleeWeapon => ({
+  damage: weapon.damage,
+  reach: weapon.reach,
+  cooldown: weapon.cooldown,
+  ...(weapon.stamina === undefined ? {} : { stamina: weapon.stamina }),
+  ...(weapon.impulse === undefined ? {} : { impulse: weapon.impulse }),
+  ...(weapon.damageVariance === undefined ? {} : { damageVariance: weapon.damageVariance }),
+  ...(weapon.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: weapon.headDamageMultiplier }),
+  ...(weapon.limbDamageMultiplier === undefined ? {} : { limbDamageMultiplier: weapon.limbDamageMultiplier }),
+  ...(weapon.speedMultiplier === undefined ? {} : { speedMultiplier: weapon.speedMultiplier }),
+  ...(weapon.type === undefined ? {} : { type: weapon.type }),
+});
+
 export interface PlayerCombatState {
   playerAttackWait: number;
   meleeAction: MeleeActionState | null;
@@ -171,7 +185,7 @@ export class PlayerCombat {
       origin: copy(start.origin),
       direction,
       hands: { ...start.hands },
-      weapon: { ...weapon },
+      weapon: copyMeleeWeapon(weapon),
     };
     this.targets.playPlayerMeleeSwing(copy(start.origin));
     return true;

@@ -112,7 +112,13 @@ import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '.
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
-import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
+import {
+  meleeWeaponFromContent,
+  resolvePlayerMeleeWeapon,
+  shouldBlockFromEnGarde,
+  shouldEnterMeleeReady,
+  startPlayerMelee,
+} from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
@@ -2410,7 +2416,7 @@ export const startPlay = (
       const weapon = item && registry.items.get(item.type)?.weapon?.melee;
       if (item && weapon) {
         return {
-          weapon: { ...weapon, cooldown: weapon.cooldownSimSeconds },
+          weapon: meleeWeaponFromContent(weapon),
           profile: weapon.type,
           hand,
           twoHanded: registry.items.get(item.type)?.twoHanded ?? false,

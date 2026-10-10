@@ -140,6 +140,26 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
+  it('rejects a shapeless door that opens onto solid cells', () => {
+    const fixture: TemplateDef = {
+      id: 'door_clearance_fixture',
+      size: [6, 5, 4],
+      palette: { '.': 'air', '#': 'planks', D: { furniture: 'wood_door', facing: 'n' } },
+      layers: [
+        ['######', '######', '######', '######'],
+        ['......', '..DD..', '..##..', '......'],
+        ['......', '..DD..', '..##..', '......'],
+        ['......', '..DD..', '..##..', '......'],
+        ['......', '..DD..', '..##..', '......'],
+      ],
+    };
+    const result = buildRegistry([...base, { source: 'door-fixture.json', data: { templates: [fixture] } }]);
+
+    expect(result.issues.filter(({ source }) => source === 'door-fixture.json').map(({ path }) => path)).toContain(
+      'templates[0].pieces[0]',
+    );
+  });
+
   it('rejects a template marker whose zombie envelope intersects a solid', () => {
     const fixture: TemplateDef = {
       id: 'spawn_clearance_fixture',

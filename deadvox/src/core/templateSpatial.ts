@@ -251,6 +251,60 @@ class TemplateSpace {
   }
 }
 
+function* doorFaceCells(
+  template: CompiledTemplate,
+  piece: CompiledTemplate['pieces'][number],
+  across: number,
+): Generator<Vec3> {
+  const [sx, , sz] = template.size;
+  const [x0, y0, z0] = piece.pos;
+  const [width, height, depth] = piece.size;
+  const acrossX = piece.facing === 'e' || piece.facing === 'w';
+  if (across < 0 || across >= (acrossX ? sx : sz)) {
+    return;
+  }
+  const alongStart = acrossX ? z0 : x0;
+  const alongLength = acrossX ? depth : width;
+  for (let y = y0; y < y0 + height; y += 1) {
+    for (let along = alongStart; along < alongStart + alongLength; along += 1) {
+      yield acrossX ? [across, y, along] : [along, y, across];
+    }
+  }
+}
+
+const solidDoorFace = (
+  template: CompiledTemplate,
+  solids: Set<number>,
+  piece: CompiledTemplate['pieces'][number],
+  across: number,
+): boolean => {
+  let cells = 0;
+  for (const [x, y, z] of doorFaceCells(template, piece, across)) {
+    cells += 1;
+    if (!solids.has(template.blocks[x + template.size[0] * (z + template.size[2] * y)]!)) {
+      return false;
+    }
+  }
+  return cells > 0;
+};
+
+export const templateDoorIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {
+  const solids = new Set(registry.blocks.flatMap((block, index) => (block.solid ? [index] : [])));
+  return template.pieces.flatMap((piece, index) => {
+    const def = registry.furniture.get(piece.furniture);
+    if (!def?.door || def.shape) {
+      return [];
+    }
+    const acrossX = piece.facing === 'e' || piece.facing === 'w';
+    const [x, , z] = piece.pos;
+    const [width, , depth] = piece.size;
+    const face = acrossX ? x : z;
+    const thickness = acrossX ? width : depth;
+    const blocked = [-1, thickness].some((offset) => solidDoorFace(template, solids, piece, face + offset));
+    return blocked ? [[`.pieces[${index}]`, 'opens onto solid cells on one side'] as SpatialIssue] : [];
+  });
+};
+
 export const templateSpawnClearanceIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {
   const space = new TemplateSpace(registry, template);
   const [sx, sy, sz] = template.size;
