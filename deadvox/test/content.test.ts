@@ -726,12 +726,16 @@ describe('content', () => {
   });
 
   it('lets a later file override a block without changing its runtime id', () => {
+    const original = {
+      source: 'base.json',
+      data: { blocks: [{ id: 'grass', name: 'Grass', color: '#6b8e4e', solid: true }] },
+    };
     const mod = {
       source: 'mod.json',
       data: { blocks: [{ id: 'grass', name: 'Dead grass', color: '#8a7a40', solid: true }] },
     };
-    const before = baseRegistry;
-    const after = buildRegistry([...base, mod]).registry;
+    const before = buildRegistry([original]).registry;
+    const after = buildRegistry([original, mod]).registry;
     expect(after.blockIds.get('grass')).toBe(before.blockIds.get('grass'));
     expect(after.blocks[after.blockIds.get('grass')!]!.name).toBe('Dead grass');
     expect(after.blocks.length).toBe(before.blocks.length);

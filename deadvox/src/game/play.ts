@@ -780,8 +780,8 @@ export const startPlay = (
   // Furniture, with the loot rolled for it, arrives with its column.
   const applyColumnLoad = (cx: number, cz: number): void => {
     session.onColumn(cx, cz, engine.site);
-    for (const { spec, loot } of engine.furnitureIn(cx, cz)) {
-      inventory.furnish(spec, loot);
+    for (const { spec, loot, surfaceLoot } of engine.furnitureIn(cx, cz)) {
+      inventory.furnish(spec, loot, surfaceLoot);
     }
   };
   const applyColumnUnload = (cx: number, cz: number): void => session.onColumnUnload(cx, cz);

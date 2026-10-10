@@ -41,6 +41,7 @@ export class AuthoredSite implements Site {
   private readonly spawns: readonly ZombieSpawn[];
   private readonly treeIndex: TreeIndex;
   private readonly fixedLoot = new Map<string, Rolled[]>();
+  private readonly fixedSurfaceLoot = new Map<string, Rolled[]>();
   readonly playtestMarks: PlaytestMarks;
   readonly seed: number;
   readonly registry: Registry;
@@ -73,7 +74,14 @@ export class AuthoredSite implements Site {
         );
         if (localIndex >= 0) {
           const anchor = placed[localIndex]!.pos.join(',');
-          this.fixedLoot.set(anchor, fixedItems(registry, override.items));
+          const inContainer = override.items.filter((item) => item.placement !== 'surface');
+          const onSurface = override.items.filter((item) => item.placement === 'surface');
+          if (inContainer.length > 0) {
+            this.fixedLoot.set(anchor, fixedItems(registry, inContainer));
+          }
+          if (onSurface.length > 0) {
+            this.fixedSurfaceLoot.set(anchor, fixedItems(registry, onSurface));
+          }
           const keys = override.items.filter((entry) => entry.key).map((entry) => entry.item);
           if (keys.length > 0) {
             keyLoot.set(anchor, new Set(keys));
@@ -357,8 +365,14 @@ export class AuthoredSite implements Site {
     return this.placements
       .flatMap((placement) => furnitureOf(this, placement, [cx, cz]))
       .map((spawn) => {
-        const fixed = this.fixedLoot.get(spawn.spec.pos.join(','));
-        return fixed ? { ...spawn, loot: [...fixed, ...spawn.loot] } : spawn;
+        const anchor = spawn.spec.pos.join(',');
+        const fixed = this.fixedLoot.get(anchor);
+        const surfaceLoot = this.fixedSurfaceLoot.get(anchor);
+        return {
+          ...spawn,
+          ...(fixed ? { loot: [...fixed, ...spawn.loot] } : {}),
+          ...(surfaceLoot ? { surfaceLoot } : {}),
+        };
       });
   }
   zombiesIn(cx: number, cz: number): ZombieSpawn[] {

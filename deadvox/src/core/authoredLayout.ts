@@ -33,11 +33,12 @@ const fixedItemIssue = (
   military: ReadonlySet<string>,
   item: string,
   loot: string | undefined,
+  placement: 'container' | 'surface' | undefined,
 ): string | undefined => {
   if (!registry.items.has(item)) {
     return `no item "${item}"`;
   }
-  return military.has(item) && !registry.loot.get(loot ?? '')?.military
+  return military.has(item) && placement !== 'surface' && !registry.loot.get(loot ?? '')?.military
     ? `"${item}" is military loot only; place it where a "military" table rolls`
     : undefined;
 };
@@ -71,11 +72,12 @@ const fixedLootIssues = (
       issues.push([`${path}.at`, `no furniture anchor at ${key}`]);
       continue;
     }
-    if (!registry.furniture.get(piece.furniture)?.container) {
+    const needsContainer = override.items.some((item) => item.placement !== 'surface');
+    if (needsContainer && !registry.furniture.get(piece.furniture)?.container) {
       issues.push([`${path}.at`, `furniture at ${key} has no container`]);
     }
     for (const [itemIndex, fixed] of override.items.entries()) {
-      const issue = fixedItemIssue(registry, military, fixed.item, piece.loot);
+      const issue = fixedItemIssue(registry, military, fixed.item, piece.loot, fixed.placement);
       if (issue !== undefined) {
         issues.push([`${path}.items[${itemIndex}].item`, issue]);
       }
