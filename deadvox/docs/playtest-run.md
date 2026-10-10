@@ -12,15 +12,17 @@ The Slice 3 playtest is self-serve. The organiser shares the landing-page link
 with a few people; each tester plays on their own until they want to stop. The
 organiser may invite them to share feedback and any metrics through the playtest
 feedback form. Testers without GitHub can email the organiser using the address
-provided with the link. The Playtest card gives the task, find the military camp,
-and its link opens the authored map; see [EPIC.md](../EPIC.md),
+provided with the link. The Round 1 page asks testers to survive and find the
+military camp, and its play link opens the authored map; see [EPIC.md](../EPIC.md),
 "Playtest plan", and [#181](https://github.com/roobie/skelly/issues/181).
 
 ## Deployment freeze
 
-Set the Pages deployment freeze when sharing the Playtest link and clear it when the
-playtest window closes. Keep the deployed game unchanged while testers play: their
-saves are tied to that deployed code. Set and clear the repository variable with:
+Set the Pages deployment freeze when sharing the Round 1 landing page
+(`site/deadvox/playtest/round1/`) and clear it when the playtest window closes.
+Testers enter the authored map through that page's play link. Keep the deployed
+game unchanged while testers play: their saves are tied to that deployed code.
+Set and clear the repository variable with:
 
 ```sh
 gh variable set PAGES_FREEZE --body true
@@ -67,7 +69,7 @@ playtest window closes, manually dispatch from
 
 There is no fixed play time or number of sittings. Testers may stop whenever
 they like and use Continue to resume later. Each person plays in their own
-browser from the Pages landing page, using its Playtest link.
+browser from the Round 1 landing page, using its play link.
 
 There is no wristwatch in playtest 1, although #181's beat 2 lists one; it comes
 with version 1.
@@ -83,10 +85,10 @@ link, not in project files.
 
 ## Consent
 
-The localized Playtest card is the testers' consent; there is no separate
-consent step. Its wording is authored in both languages in
-`site/playtest.jsonnet`, and `site/launcher.js`, `playtestBrief`, lays it out.
-Testers read the card before following the Playtest link.
+The localized Round 1 brief is the testers' consent; there is no separate
+consent step because it gives the task and terms before play. Its wording is
+authored in both languages in `site/playtest.jsonnet`, and
+`site/deadvox/playtest/round1/round1.js`, `text`, renders it before the play link.
 
 ## Saving and sending metrics
 

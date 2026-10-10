@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, matchesGlob } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -94,6 +96,33 @@ test('Gungen filters include representative Deadvox and Mobgen import files', ()
     for (const file of importedFiles) {
       assert.ok(workflowIncludesPath(gungen, event, file), `Gungen ${event} filter includes ${file}`);
     }
+  }
+});
+
+test('Pages assembly puts project builds beside the Round 1 page', () => {
+  const assembly = pages.jobs.build.steps.find((step) => step.name === 'Assemble the site');
+  assert.ok(assembly?.run, 'Pages workflow has an assembly command');
+
+  const temp = mkdtempSync(join(tmpdir(), 'skelly-pages-assembly-'));
+  try {
+    cpSync(join(ROOT, 'site'), join(temp, 'site'), { recursive: true });
+    for (const project of ['gungen', 'deadvox', 'mobgen']) {
+      const dist = join(temp, project, 'dist');
+      mkdirSync(dist, { recursive: true });
+      writeFileSync(join(dist, 'index.html'), `<main>${project}</main>`);
+    }
+
+    execFileSync('bash', ['-euo', 'pipefail', '-c', assembly.run], { cwd: temp });
+
+    for (const project of ['gungen', 'deadvox', 'mobgen']) {
+      assert.ok(existsSync(join(temp, '_site', project, 'index.html')), `${project} index is at its Pages path`);
+    }
+    assert.ok(
+      existsSync(join(temp, '_site', 'deadvox', 'playtest', 'round1', 'index.html')),
+      'the Round 1 page stays beside the Deadvox game',
+    );
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
   }
 });
 

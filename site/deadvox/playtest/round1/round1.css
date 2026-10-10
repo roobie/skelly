@@ -1,0 +1,58 @@
+main {
+  max-width: 760px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.site-logo {
+  width: min(100%, 560px);
+}
+
+.playtest-card {
+  padding: clamp(20px, 5vw, 40px);
+}
+
+.eyebrow {
+  color: var(--ember-light);
+  font-size: 0.9rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.playtest-card h1.eyebrow {
+  margin: 0 0 12px;
+}
+
+.round-intro {
+  color: var(--rock-bright);
+  font-size: 1.15rem;
+}
+
+.playtest-action {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 6px;
+  background: var(--button);
+  color: var(--button-text);
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.playtest-action:hover {
+  background: var(--button-hover);
+}
+
+.playtest-card ul {
+  padding-left: 1.4em;
+}
+
+.playtest-card li + li {
+  margin-top: 0.65em;
+}
+
+footer {
+  padding: 0 4px 20px;
+}
