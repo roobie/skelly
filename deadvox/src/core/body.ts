@@ -380,7 +380,7 @@ const advanceBleeding = (
   };
 };
 
-export const worstBleeding = (wounds: Readonly<BodyWounds>): BleedingTier | null =>
+const worstBleeding = (wounds: Readonly<BodyWounds>): BleedingTier | null =>
   BODY_REGIONS.reduce<BleedingTier | null>((worst, region) => {
     const tier = wounds[region]?.bleeding ?? null;
     return tier && (!worst || tierRank(tier) > tierRank(worst)) ? tier : worst;
