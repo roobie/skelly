@@ -783,6 +783,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         document.querySelector('#input-replay-status')?.dataset.state === 'playing'
       );
     });
+    // Keep these reads in one evaluation so replay playback cannot advance between them.
     const { viewerMouseInput, viewerBlurInput } = await page.evaluate(() => {
       const { input, inputTarget } = globalThis.primaryActionTest;
       const read = () => ({
@@ -2962,7 +2963,7 @@ try {
   await page.goto(
     browserStageUrl(
       'primary-action',
-      `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=hamlet&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
       renderOverride,
     ),
   );
@@ -3037,6 +3038,7 @@ try {
   });
 
   assert.deepEqual(pageErrors, []);
+  // Stop this live simulation before other replay contexts run, keeping their timing observations isolated.
   await page.close();
   await timePhase('container-search-tab-case', () => verifyContainerSearchTab(browser, address.port, renderOverride));
   await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
