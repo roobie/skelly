@@ -6,7 +6,7 @@ import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { militaryLootItems } from './magazine.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
-import type { SiteLayoutDef } from './schema.ts';
+import type { FixedLootItemDef, SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import {
@@ -31,15 +31,14 @@ type LayoutBuilding = SiteLayoutDef['buildings'][number];
 const fixedItemIssue = (
   registry: Registry,
   military: ReadonlySet<string>,
-  item: string,
+  fixed: FixedLootItemDef,
   loot: string | undefined,
-  placement: 'container' | 'surface' | undefined,
 ): string | undefined => {
-  if (!registry.items.has(item)) {
-    return `no item "${item}"`;
+  if (!registry.items.has(fixed.item)) {
+    return `no item "${fixed.item}"`;
   }
-  return military.has(item) && placement !== 'surface' && !registry.loot.get(loot ?? '')?.military
-    ? `"${item}" is military loot only; place it where a "military" table rolls`
+  return military.has(fixed.item) && fixed.placement !== 'surface' && !registry.loot.get(loot ?? '')?.military
+    ? `"${fixed.item}" is military loot only; place it where a "military" table rolls`
     : undefined;
 };
 
@@ -77,7 +76,7 @@ const fixedLootIssues = (
       issues.push([`${path}.at`, `furniture at ${key} has no container`]);
     }
     for (const [itemIndex, fixed] of override.items.entries()) {
-      const issue = fixedItemIssue(registry, military, fixed.item, piece.loot, fixed.placement);
+      const issue = fixedItemIssue(registry, military, fixed, piece.loot);
       if (issue !== undefined) {
         issues.push([`${path}.items[${itemIndex}].item`, issue]);
       }

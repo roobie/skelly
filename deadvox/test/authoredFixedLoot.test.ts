@@ -10,9 +10,9 @@ import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { doorOptions } from '../src/core/options.ts';
 import { rollLoot } from '../src/core/loot.ts';
 import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
+import { doorOptions } from '../src/core/options.ts';
 import { Rng } from '../src/core/random.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
@@ -1236,8 +1236,9 @@ describe('authored fixed loot', () => {
 
     const inventory = furnishInOrder(site, [...columns.values()]);
     const door = inventory.entities.at(...safeSpawn.spec.pos)!;
-    const heldKey = [...inventory.items()].find(({ item }) => result.registry.items.get(item.type)?.key?.lock === lockId)
-      ?.item;
+    const heldKey = [...inventory.items()].find(
+      ({ item }) => result.registry.items.get(item.type)?.key?.lock === lockId,
+    )?.item;
     expect(heldKey).toBeDefined();
     inventory.entities.markSearched(inventory.entities.at(...keySpawn!.spec.pos)!);
     const transfer = inventory.move(heldKey!, { kind: 'hand', side: 'right' });

@@ -606,15 +606,11 @@
             },
             {
               "at": [11, 7, 5],
-              "items": [
-                { "item": "baseball_cap", "count": 1, "placement": "surface" }
-              ]
+              "items": [{ "item": "baseball_cap", "count": 1, "placement": "surface" }]
             },
             {
               "at": [13, 7, 6],
-              "items": [
-                { "item": "real_suppressor", "count": 1 }
-              ]
+              "items": [{ "item": "real_suppressor", "count": 1 }]
             }
           ]
         },
