@@ -7,7 +7,7 @@
 // parameters, not something to launch from the site page.
 
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
-import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
+import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather } from '../core/weather.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { applyLook } from '../render/look.ts';
@@ -52,7 +52,7 @@ export const benchDraw = (
   shadows.restore(DEFAULT_SHADOWS);
   const sky = skyInWeather(skyAt(hour), { fogginess: DEFAULT_FOGGINESS });
   mood.setSky(sky);
-  const sunStrength = sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity);
+  const sunStrength = sunShadowStrength(sky.lightIntensity);
   return () => {
     shadows.update(sunStrength, camera.position);
     mood.render(report);

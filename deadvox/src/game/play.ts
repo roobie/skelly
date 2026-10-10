@@ -3114,7 +3114,7 @@ export const startPlay = (
     ) {
       saveMetrics();
     }
-    const { hour, sky } = view.syncWorld({
+    const { sky } = view.syncWorld({
       calendar: sim.calendar,
       time: sim.time,
       playerEye: eye().map((coordinate) => coordinate * s) as Vec3,
@@ -3178,7 +3178,7 @@ export const startPlay = (
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling);
     view.prepareLighting(sky);
-    view.updateShadows(hour, sky);
+    view.updateShadows(sky);
     renderMs = view.render();
     frameWork.record(now, realNow() - workStart);
     if (sim.dead) {

@@ -1368,6 +1368,12 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   approve it.” The remaining jaggedness is a known limit BR chose not to pursue.
   Favor a stable edge near the player over sharp shadows far beyond them; see
   `src/render/shadows.ts`, `sunShadowTexelSize` and `Shadows.update`.
+- **Sealed rooms stay dark at every hour (#562):** two solid blocks that share a
+  face pass no sunlight, and the main light shades at full strength whenever it
+  shines, low sun and the night light included. Furniture casts no sun shadow,
+  so light past a closed door is accepted. Why the sun's map is drawn from the
+  faces light enters: `src/render/shadows.ts`, its header; why its shadow never
+  fades: `src/core/sky.ts`, `sunShadowStrength`.
 
 ## Audio
 

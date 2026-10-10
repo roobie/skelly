@@ -10,7 +10,7 @@ import type { Item } from '../core/items.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
-import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
+import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
@@ -200,7 +200,7 @@ export const createPlayView = (
       zombieMeshes.setPlayerChestPosition?.(playerChest);
       zombieMeshes.setPerceptionLabels?.(perceptionLabels);
       zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha, time);
-      return { hour, sky };
+      return { sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
       flashlight.daylightScale = flashlightDaylightScale(
@@ -209,8 +209,8 @@ export const createPlayView = (
       );
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
-    updateShadows: (hour: number, sky: ReturnType<typeof skyInWeather>) => {
-      engine.shadows?.update(sunShadowStrength(sunDirection(hour, dayCycle)[1], sky.lightIntensity), camera.position);
+    updateShadows: (sky: ReturnType<typeof skyInWeather>) => {
+      engine.shadows?.update(sunShadowStrength(sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
       const { dt, body, paused, noclip, yaw, pitch, stridePhase, eye, spectator, sightImpaired } = frame;

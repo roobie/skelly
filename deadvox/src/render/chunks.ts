@@ -9,6 +9,7 @@ import {
   Matrix4,
   Mesh,
   MeshLambertMaterial,
+  type Side,
   Sphere,
   Vector3,
 } from 'three';
@@ -402,12 +403,14 @@ export class ChunkMeshes {
   }
 
   /**
-   * Makes the meshes whose tight box passes `casts` the shadow casters, and shows exactly those: the
+   * Makes the meshes whose tight box passes `casts` the shadow casters, drawn from their `side` faces
+   * (shadows.ts says which light takes which), and shows exactly those: the
    * shadow pass skips hidden meshes, so a chunk behind the camera can still shade what is in front of it.
    * The render's main pass is already queued when this runs (from the shadow hook), and `cull` sets
    * visibility afresh before the next one. Returns how many cast.
    */
-  selectShadowCasters(casts: (box: Box3) => boolean): number {
+  selectShadowCasters(casts: (box: Box3) => boolean, side: Side): number {
+    this.material.shadowSide = side;
     let count = 0;
     for (const [mesh, box] of this.boxes) {
       const on = casts(box);

@@ -9,19 +9,32 @@
 // (`visible` false), which would drop the chunks behind you that shade what is in front. So this
 // takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
 // `selectShadowCasters`), draws one map per light through it, and leaves the main pass's already
-// queued draw list alone. A light's `castShadow` stays true while its setting is on, so day and
-// night don't change shader programs; the sun just fades `shadow.intensity` to 0 and stops redrawing
-// its map (but a casting light with no map yet always gets one allocated by three's pass, `needsMap`). The flashlight's `castShadow` follows its beam being on and bright (flashlight.ts), a second
-// program variant that `warmUp` compiles in advance.
+// queued draw list alone. A light's `castShadow` stays true while its setting is on, so the hour
+// doesn't change shader programs. The sun's shadow is full whenever its light shines, the night
+// stand-in included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
+// `shadow.intensity` to 0 and stops redrawing its map (but a casting light with no map yet always gets
+// one allocated by three's pass, `needsMap`). The flashlight's `castShadow` follows its beam being on
+// and bright (flashlight.ts), a second program variant that `warmUp` compiles in advance.
+//
+// The sun's map is drawn from the chunk faces that face it, where its light enters a solid, not from
+// three.js's default for a one-sided material, the back faces where light leaves. At an inside corner
+// the lit wall and the block that shades it are one joined solid, and a back-face map stores that
+// solid's far side, behind the wall, so the PCF disk lit a band along every joint of a sealed room
+// (#562). Front faces keep such a room dark; `sunShadowBias` then offsets lookups past the disk so a
+// lit face never compares against its own depth. The flashlight's map keeps the back faces: its light
+// sits with the viewer, so a face it can't reach is one the viewer can't see, and its perspective
+// texels grow with distance past what a fixed normal offset could clear.
 //
 // The held items are drawn from their own scene (hands.ts) with lights that don't cast, so they are
 // neither in nor shaded by these maps. The player's world figure is on its own layer (shadowFlags.ts):
 // the sun's pass sees it, the torch's pass doesn't.
 
 import {
+  BackSide,
   type Box3,
   type Camera,
   type DirectionalLight,
+  FrontSide,
   type Frustum,
   type Light,
   type Object3D,
@@ -54,13 +67,16 @@ export interface ShadowBias {
 }
 
 /**
- * Starting biases for the sun's map at `distance` metres: a texel of depth, and a texel and a half along the
- * surface normal. Both scale with the texel size, so they stay a similar share of a 0.5 m block at any distance.
+ * Biases for the sun's map at `distance` metres: a texel of depth, and along the surface normal the PCF
+ * disk's reach, its radius plus the texel the hardware compare blends in. The map holds the faces that face
+ * the sun (see the header), so a lit face is in it; a shorter offset lets the disk's sunward taps find that
+ * face in front of the lookup and speckle it. Both scale with the texel size, so they stay a similar share of
+ * a 0.5 m block at any distance.
  */
 export const sunShadowBias = (distance: number, mapSize = SUN_MAP_SIZE): ShadowBias => {
   const texel = sunShadowTexelSize(distance, mapSize);
   const span = (BOX_TOWARDS_SUN + BOX_AWAY_FROM_SUN) * distance;
-  return { bias: -texel / span, normalBias: 1.5 * texel };
+  return { bias: -texel / span, normalBias: (SUN_SHADOW_RADIUS + 1) * texel };
 };
 
 const right = new Vector3();
@@ -173,7 +189,7 @@ export class Shadows {
     return { ...this.state };
   }
 
-  /** How strong the sun's shadows were last frame, in [0, 1] (0 at night). */
+  /** How strong the sun's shadows were last frame, in [0, 1] (0 with its light out). */
   get sunStrength(): number {
     return this.strength;
   }
@@ -211,7 +227,7 @@ export class Shadows {
   }
 
   /**
-   * Fades the sun's shadows to `strength` (core/sky.ts `sunShadowStrength`), puts its box on the player
+   * Sets the sun's shadows to `strength` (core/sky.ts `sunShadowStrength`), puts its box on the player
    * and decides whether the map is redrawn this frame. Call after `applySky` and before rendering.
    * The map is redrawn when the box moved by a texel, the sun turned, a chunk changed or the
    * distance did (all of which make the old map wrong), and otherwise every `IDLE_REFRESH_EVERY` frames,
@@ -290,16 +306,16 @@ export class Shadows {
     }
     const { light, torch, meshes } = this;
     if (!this.sunDue && needsMap(light)) {
-      // A casting light whose map three.js hasn't allocated yet (night or sun shadows just switched on):
+      // A casting light whose map three.js hasn't allocated yet (its light out, or sun shadows just switched on):
       // its programs would bind three's placeholder, which GL rejects against a sampler2DShadow in the
       // `sampler2DShadow[]` uniform path (WebGLUniforms.js setValueT1Array). Let three's own pass allocate and
       // clear it, with no casters, so it reads as fully lit; `stale` stays set so the first real draw follows.
-      this.sunCasters = meshes.selectShadowCasters(noBoxes);
+      this.sunCasters = meshes.selectShadowCasters(noBoxes, FrontSide);
       draw([light], scene, camera);
     }
     if (this.sunDue) {
       light.shadow.updateMatrices(light);
-      this.sunCasters = meshes.selectShadowCasters(inFrustum(light.shadow.getFrustum()));
+      this.sunCasters = meshes.selectShadowCasters(inFrustum(light.shadow.getFrustum()), FrontSide);
       draw([light], scene, camera);
       this.drawnAt.copy(this.snapped);
       this.drawnToSun.copy(this.toSun);
@@ -309,7 +325,7 @@ export class Shadows {
       this.sunDue = false;
     }
     if (torch?.castShadow) {
-      this.torchCasters = meshes.selectShadowCasters(withinRange(torch.position, torch.distance));
+      this.torchCasters = meshes.selectShadowCasters(withinRange(torch.position, torch.distance), BackSide);
       draw([torch], scene, this.torchView);
     }
   }
