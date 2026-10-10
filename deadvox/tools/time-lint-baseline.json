@@ -85,7 +85,7 @@
       "time": 5
     },
     "core/playerCombat.ts": {
-      "cooldown": 1,
+      "cooldown": 2,
       "elapsed": 2
     },
     "core/prying.ts": {
