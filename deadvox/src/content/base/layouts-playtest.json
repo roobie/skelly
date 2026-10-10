@@ -821,7 +821,7 @@
           "storeys": 1
         },
         {
-          "template": "camp_wall_run",
+          "template": "camp_wall_run_crouch_hole",
           "position": [511, 21, 511],
           "rotation": 90,
           "storeys": 1
