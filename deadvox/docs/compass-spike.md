@@ -46,9 +46,9 @@ Run the normal dev server, then open:
 
 `/?debug=1&loadout=compass&site=testHouse&time=12%3A00&seed=7&radius=64&god=1`
 
-A fresh debug game puts the compass in the dominant hand and the existing
-flashlight in the off hand. See `src/core/character.ts`, `dominantSide` and
-`offSide`, and `src/debug/index.ts`, `attachDebugTools`, for loadout role resolution.
+A fresh debug game with this loadout wears the debug backpack, puts the compass in
+the dominant hand and leaves the off hand empty. See `src/core/character.ts`,
+`dominantSide`, and `src/debug/index.ts`, `attachDebugTools`, for loadout role resolution.
 The special loadout never alters restored physical hands. For night use
 `time=00%3A00`. HUD elements start enabled and can be turned off individually;
 new players need them to understand the game, while experienced players can hide

@@ -1556,15 +1556,13 @@ try {
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.session.sim.godMode), true);
   const loadout = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
-    const item = [...r.inventory.items()].find(({ item: candidate }) => {
-      const def = r.inventory.registry.items.get(candidate.type);
-      return def.weapon && !def.twoHanded;
-    })?.item;
-    if (!item) {
-      throw new Error('Debug loadout has no one-handed melee fixture');
+    const tool = [...r.inventory.registry.items.values()].find((def) => def.weapon && !def.twoHanded);
+    if (!tool) {
+      throw new Error('Registry has no one-handed melee fixture');
     }
+    const item = r.inventory.create(tool.id);
     r.setHand(r.dominant, item);
-    return { uid: item.uid, profile: r.inventory.registry.items.get(item.type).weapon.melee.type };
+    return { uid: item.uid, profile: tool.weapon.melee.type };
   });
   const first = await strike();
   assert.deepEqual(first.swings[0], { result: true, profile: loadout.profile, hand: 'left' });
@@ -2741,6 +2739,7 @@ try {
       if (!door) {
         throw new Error('Could not find the locked-door prying fixture');
       }
+      r.setHand(r.dominant, r.inventory.create('crowbar'));
       const target = [door.pos[0] + door.size[0] / 2, door.pos[1] + door.size[1] / 2, door.pos[2] + door.size[2] / 2];
       const eye = [
         r.session.body.pos[0],

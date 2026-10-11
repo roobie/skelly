@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
+import { dominantSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -11,8 +12,8 @@ import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, ZombieSystem } from '../src/core/zombies.ts';
-import { debugWeaponIds, equipDebugStartWeapons } from '../src/debug/debugLoadout.ts';
-import { copyTextOrSelect, equipDebugStartLight, formatMeleeResult } from '../src/debug/index.ts';
+import { equipDebugBackpack, equipDebugLoadout } from '../src/debug/debugLoadout.ts';
+import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
@@ -197,78 +198,40 @@ describe('debug starting equipment', () => {
     expect(launchImpulse).toBe(10);
   });
 
-  it('puts a switched-off flashlight in the left hand of a fresh debug game, leaving the right free', () => {
+  it('gives a fresh debug game an empty worn hiking backpack and nothing else', () => {
     const inventory = new Inventory(registry);
     startingLoadout(inventory);
-    equipDebugStartLight({ inventory, debugMode: true, newGame: true });
-    const light = inventory.hands.left;
-    expect(light?.type).toBe('flashlight');
-    expect(light?.on).toBeFalsy();
-    expect(inventory.hands.right).toBeUndefined();
+    const before = new Set(Array.from(inventory.items(), ({ item }) => item));
+    equipDebugBackpack(inventory, true, true);
+
+    const added = Array.from(inventory.items(), ({ item }) => item).filter((item) => !before.has(item));
+    expect(added).toEqual([inventory.worn.back]);
+    expect(inventory.worn.back?.type).toBe('hiking_backpack');
+    expect(inventory.worn.back?.pockets?.flat()).toEqual([]);
   });
 
-  it('does not replace occupied hands or add equipment to a restored or non-debug game', () => {
-    const inventory = new Inventory(registry);
-    const bat = inventory.create('baseball_bat');
-    expect(inventory.add(bat, { kind: 'hand', side: 'right' })).toBe(true);
-    equipDebugStartLight({ inventory, debugMode: true, newGame: true });
-    expect(inventory.hands.right).toBe(bat);
-    expect(inventory.hands.left).toBeUndefined();
-
-    const restored = new Inventory(registry);
-    const savedLight = restored.create('flashlight');
-    expect(restored.add(savedLight, { kind: 'hand', side: 'right' })).toBe(true);
-    equipDebugStartLight({ inventory: restored, debugMode: true, newGame: false });
-    expect(restored.hands.right).toBe(savedLight);
-    expect(restored.hands.left).toBeUndefined();
-
-    const nonDebug = new Inventory(registry);
-    equipDebugStartLight({ inventory: nonDebug, debugMode: false, newGame: true });
-    expect(nonDebug.hands).toEqual({});
-  });
-
-  it('equips a real backpack with every content-derived melee weapon in debug games', () => {
-    const extraWeapon = {
-      ...registry.items.get('baseball_bat')!,
-      id: 'debug_test_melee',
-      name: 'Debug test melee',
-      size: [1, 1] as [number, number],
-    };
-    const extendedRegistry = { ...registry, items: new Map(registry.items).set(extraWeapon.id, extraWeapon) };
-    const inventory = new Inventory(extendedRegistry);
-    const expected = debugWeaponIds(extendedRegistry);
-    expect(expected).toContain('debug_test_melee');
-    expect(expected).toContain('machete');
-    expect(expected).toContain('kabar');
-    equipDebugStartWeapons({ inventory, debugMode: true, newGame: true });
-
-    const backpack = inventory.worn.back;
-    expect(backpack?.type).toBe('hiking_backpack');
-    const packedIds = backpack?.pockets?.[0]?.map(({ item }) => item.type).sort();
-    expect(packedIds).toEqual(expected);
-    for (const id of expected) {
-      expect(inventory.locate(backpack!.pockets![0]!.find(({ item }) => item.type === id)!.item)).toMatchObject({
-        kind: 'pocket',
-        owner: backpack,
-      });
-    }
-  });
-
-  it('does not add the weapon backpack to normal, restored, or already-equipped inventories', () => {
+  it('adds no backpack to a non-debug or restored game, nor over a worn one', () => {
     const normal = new Inventory(registry);
-    equipDebugStartWeapons({ inventory: normal, debugMode: false, newGame: true });
+    equipDebugBackpack(normal, false, true);
     expect(normal.worn.back).toBeUndefined();
 
     const restored = new Inventory(registry);
-    equipDebugStartWeapons({ inventory: restored, debugMode: true, newGame: false });
+    equipDebugBackpack(restored, true, false);
     expect(restored.worn.back).toBeUndefined();
 
     const occupied = new Inventory(registry);
-    const hikingPack = occupied.create('hiking_backpack');
-    expect(occupied.add(hikingPack, { kind: 'worn' })).toBe(true);
-    equipDebugStartWeapons({ inventory: occupied, debugMode: true, newGame: true });
-    expect(occupied.worn.back).toBe(hikingPack);
-    expect(hikingPack.pockets?.flat()).toEqual([]);
+    const pack = occupied.create('hiking_backpack');
+    expect(occupied.add(pack, { kind: 'worn' })).toBe(true);
+    equipDebugBackpack(occupied, true, true);
+    expect(Array.from(occupied.items(), ({ item }) => item)).toEqual([pack]);
+  });
+
+  it('loadout=grenade holds a grenade in the dominant hand with a couple more packed', () => {
+    const inventory = new Inventory(registry);
+    expect(equipDebugLoadout(inventory, true, true, '?loadout=grenade')).toBe(true);
+    expect(inventory.hands[dominantSide(inventory.character)]?.type).toBe('frag_grenade');
+    const packed = inventory.worn.back?.pockets?.flat().filter(({ item }) => item.type === 'frag_grenade') ?? [];
+    expect(packed.length).toBeGreaterThan(1);
   });
 
   it('keeps ordinary starting hands empty', () => {

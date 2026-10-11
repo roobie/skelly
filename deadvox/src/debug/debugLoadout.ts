@@ -1,41 +1,68 @@
 import { dominantSide } from '../core/character.ts';
-import type { Registry } from '../core/content.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
-import type { ItemDef } from '../core/schema.ts';
 
-export type IncludeDebugWeapon = (item: ItemDef) => boolean;
+const LOADOUTS = ['ar', 'ak', 'pump', 'magazine', 'grenade'] as const;
+type LoadoutChoice = (typeof LOADOUTS)[number];
+const isLoadoutChoice = (choice: string | null): choice is LoadoutChoice =>
+  (LOADOUTS as readonly (string | null)[]).includes(choice);
 
-/** Explicit fresh-game firearm preview, never a replacement for restored hands. */
-export const equipDebugFirearms = (
+/** The back's hiking backpack, worn first when the back is empty. */
+const wornBackpack = (inventory: Inventory): Item | undefined => {
+  if (inventory.worn.back) {
+    return inventory.worn.back;
+  }
+  const backpack = inventory.create('hiking_backpack');
+  return inventory.add(backpack, { kind: 'worn' }) ? backpack : undefined;
+};
+
+/** A fresh debug game wears an empty hiking backpack and is given nothing else. */
+export const equipDebugBackpack = (inventory: Inventory, debugMode: boolean, newGame: boolean): void => {
+  if (debugMode && newGame) {
+    wornBackpack(inventory);
+  }
+};
+
+/** Explicit fresh-game `loadout` preview, never a replacement for restored hands. */
+export const equipDebugLoadout = (
   inventory: Inventory,
   debugMode: boolean,
   newGame: boolean,
   search: string,
 ): boolean => {
   const choice = new URLSearchParams(search).get('loadout');
-  if (
-    !((choice === 'ar' || choice === 'ak' || choice === 'pump' || choice === 'magazine') && debugMode && newGame) ||
-    inventory.hands.left ||
-    inventory.hands.right
-  ) {
+  if (!(isLoadoutChoice(choice) && debugMode && newGame) || inventory.hands.left || inventory.hands.right) {
     return false;
   }
-  const backpack = inventory.worn.back ?? inventory.create('hiking_backpack');
-  if (!(inventory.worn.back || inventory.add(backpack, { kind: 'worn' }))) {
-    throw new Error('Could not equip firearm preview backpack');
+  const backpack = wornBackpack(inventory);
+  if (!backpack) {
+    throw new Error('Could not equip preview backpack');
   }
   if (choice === 'pump') {
     equipPump(inventory, backpack);
-    return true;
-  }
-  if (choice === 'magazine') {
+  } else if (choice === 'magazine') {
     equipEmptyMagazine(inventory, backpack);
-    return true;
+  } else if (choice === 'grenade') {
+    equipGrenades(inventory, backpack);
+  } else {
+    equipRifles(inventory, backpack, choice);
   }
-  equipRifles(inventory, backpack, choice);
   return true;
+};
+
+/** A grenade in the dominant hand to throw now and a couple packed to follow it. */
+const equipGrenades = (inventory: Inventory, backpack: Item): void => {
+  const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
+  if (
+    !(
+      inventory.add(inventory.create('frag_grenade'), { kind: 'hand', side: dominantSide(inventory.character) }) &&
+      inventory.add(inventory.create('frag_grenade'), pocket) &&
+      inventory.add(inventory.create('frag_grenade'), pocket)
+    )
+  ) {
+    throw new Error('Could not equip grenade preview loadout');
+  }
 };
 
 /** An empty STANAG magazine in hand and loose rounds of its calibre packed, to load round by round with R. */
@@ -100,41 +127,5 @@ const equipRifles = (inventory: Inventory, backpack: Item, choice: 'ar' | 'ak'):
     )
   ) {
     throw new Error('Could not equip firearm preview loadout');
-  }
-};
-
-/** Selects the melee tools at runtime; a future caller can include ranged weapons with another predicate. */
-export const debugWeaponIds = (
-  registry: Registry,
-  include: IncludeDebugWeapon = (item) => item.weapon?.melee !== undefined,
-): string[] =>
-  [...registry.items.values()]
-    .filter(include)
-    .map(({ id }) => id)
-    .sort((a, b) => a.localeCompare(b));
-
-/** A fresh debug game gets an equipped backpack containing every selected weapon. */
-export const equipDebugStartWeapons = ({
-  inventory,
-  debugMode,
-  newGame,
-  include,
-}: {
-  inventory: Inventory;
-  debugMode: boolean;
-  newGame: boolean;
-  include?: IncludeDebugWeapon;
-}): void => {
-  if (!(debugMode && newGame) || inventory.worn.back) {
-    return;
-  }
-  const backpack = inventory.create('hiking_backpack');
-  if (!inventory.add(backpack, { kind: 'worn' })) {
-    return;
-  }
-  for (const id of debugWeaponIds(inventory.registry, include)) {
-    if (!inventory.add(inventory.create(id), { kind: 'pocket', owner: backpack, pocket: 0 })) {
-      throw new Error(`Debug backpack cannot fit ${id}`);
-    }
   }
 };
