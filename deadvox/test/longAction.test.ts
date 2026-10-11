@@ -24,6 +24,35 @@ const baseContent = readdirSync('src/content/base')
     data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
   }));
 const { registry } = buildRegistry(baseContent);
+// Built once at load: a full registry build inside the test body pushed it past the test timeout under load.
+const readingFixtureRegistry = buildRegistry([
+  ...baseContent,
+  {
+    source: 'reading-fixture.json',
+    data: {
+      items: [
+        {
+          id: 'reading_fixture_book',
+          name: 'Fixture manual',
+          category: 'book',
+          weight: 1,
+          size: [1, 1],
+          book: { title: 'Fixture manual', recipes: ['reading_fixture'], readingGameMinutes: 1 },
+        },
+      ],
+      recipes: [
+        {
+          id: 'reading_fixture',
+          result: { item: 'torch', count: 1 },
+          timeGameMinutes: 1,
+          skills: {},
+          qualities: {},
+          components: [[{ item: 'rag', count: 1 }]],
+        },
+      ],
+    },
+  },
+]).registry;
 const make = (
   saved?: {
     inventory: ReturnType<Inventory['snapshotState']>;
@@ -351,32 +380,7 @@ describe('core long actions', () => {
   });
 
   it('resumes reading the held book and teaches its recipes only once on completion', () => {
-    const fixtureContent = {
-      items: [
-        {
-          id: 'reading_fixture_book',
-          name: 'Fixture manual',
-          category: 'book',
-          weight: 1,
-          size: [1, 1],
-          book: { title: 'Fixture manual', recipes: ['reading_fixture'], readingGameMinutes: 1 },
-        },
-      ],
-      recipes: [
-        {
-          id: 'reading_fixture',
-          result: { item: 'torch', count: 1 },
-          timeGameMinutes: 1,
-          skills: {},
-          qualities: {},
-          components: [[{ item: 'rag', count: 1 }]],
-        },
-      ],
-    };
-    const fixtureRegistry = buildRegistry([
-      ...baseContent,
-      { source: 'reading-fixture.json', data: fixtureContent },
-    ]).registry;
+    const fixtureRegistry = readingFixtureRegistry;
     const runtime = make(undefined, fixtureRegistry);
     const item = runtime.inv.create('reading_fixture_book');
     const startingSkills = { ...runtime.character.skills };
