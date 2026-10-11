@@ -23,7 +23,7 @@ read_if:
   - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing the HUD defaults or why players can turn HUD elements off
-  - you're changing content-defined UI spacing or HUD scale
+  - you're changing content-defined UI spacing or HUD scale, or choosing rem or px for a UI length
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
@@ -1551,12 +1551,29 @@ decoration.
   affordances grow. See `src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. Utilities
   such as the compass and the wristwatch are items the player finds and holds
   (#183).
-- Core mods can pack the UI for smaller screens and adjust its HUD size
-  independently of browser zoom. `src/content/base/ui.jsonnet`, the `ui`
+- **Core mods set the UI's spacing and size.** `spacing` multiplies every
+  margin, padding and gap, so a value below 1 packs the UI for smaller screens.
+  `hudScale` sizes the HUD and menus, so a player can leave page zoom to the
+  browser and still tweak the HUD. `src/content/base/ui.jsonnet`, the `ui`
   section, owns the values; `src/ui/uiTokens.ts`, `applyUiTokens`, installs them
-  once on the document root. CSS `zoom` scales the DOM interface but leaves
-  the world canvas at its native scale, while browser hit testing and client
-  geometry remain aligned for inventory dragging.
+  on the document root at startup, and validation requires the core entry
+  (`src/core/content.ts`, `requiredUiIssues`).
+- **UI lengths are in rem.** The root font size is the browser's font size times
+  `hudScale`, so one factor scales every rem length and the player's font
+  setting still counts. Scaling through the root size, not CSS `zoom`, keeps
+  client coordinates true: pointer events, `elementFromPoint` and element rects
+  agree at any scale. Code that turns a rem length into pointer maths reads the
+  rendered root size (`src/ui/inventoryScreen.ts`, `cellPx`).
+- **What stays in px:** borders, outlines and hairlines (grid lines, the
+  crosshair's bars, the splitter's line), so they stay one crisp line at any
+  scale; shadows; the game cursor, a bitmap sprite kept at its native size;
+  positions computed from viewport coordinates (the crosshair, the drag ghost,
+  combo-box lists); and the world canvas, which sizes from the viewport.
+- The inventory's breakpoints are viewport media queries, so they don't follow
+  `hudScale`: at a large scale its columns can overflow before the window is
+  narrow enough to stack them. Container queries don't fit here, because a
+  query container becomes the containing block of its fixed descendants, such
+  as a combo-box list.
 
 ## Tone
 
