@@ -205,6 +205,22 @@ const SaveTuningSchema = strictObject({
   checkpointSimSeconds: PositiveSimSeconds,
 });
 
+/** A dimensionless time multiplier; 1 runs at the normal Sim rate. */
+const CompressionCap = pipe(number(), minValue(1, 'must be at least 1'));
+
+const CompressionTuningSchema = strictObject({
+  id: Id,
+  /** The highest compression each compressing long action ramps to; prying always runs at 1×. */
+  caps: strictObject({
+    wait: CompressionCap,
+    rest: CompressionCap,
+    sleep: CompressionCap,
+    craft: CompressionCap,
+    reading: CompressionCap,
+    treatment: CompressionCap,
+  }),
+});
+
 const WearableSchema = strictObject({
   slot: picklist(CLOTHING_SLOTS),
   /** 0–100: how much it slows and hampers you. */
@@ -1512,6 +1528,7 @@ const SECTION_DESCRIPTOR = {
   weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
+  compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1540,6 +1557,7 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'];
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;

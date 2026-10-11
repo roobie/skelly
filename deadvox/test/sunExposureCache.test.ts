@@ -1,6 +1,5 @@
 import { expect, it } from 'vitest';
 import { parseTimeOfDay } from '../src/core/clock.ts';
-import { COMPRESSION } from '../src/core/compression.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { SunExposureCache, sunExposedAt } from '../src/core/lights.ts';
 import { realSeconds } from '../src/core/time.ts';
@@ -101,7 +100,7 @@ it('bounds daytime opacity queries to one column scan per source in a compressed
   for (let frame = 0; frame < 120; frame++) {
     opaqueCalls = 0;
     runtime.session.frame(planRealFrame(runtime.sim.compression, realSeconds(1 / 60)));
-    if (runtime.sim.compression.c === COMPRESSION.cap && opaqueCalls > 0) {
+    if (runtime.sim.compression.c === runtime.sim.compression.limits.cap && opaqueCalls > 0) {
       compressedFrameCalls = opaqueCalls;
       break;
     }

@@ -1,0 +1,15 @@
+{
+  "compression": [
+    {
+      "caps": {
+        "craft": 30,
+        "reading": 30,
+        "rest": 360,
+        "sleep": 360,
+        "treatment": 30,
+        "wait": 360
+      },
+      "id": "player"
+    }
+  ]
+}

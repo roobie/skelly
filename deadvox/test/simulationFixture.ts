@@ -1,4 +1,4 @@
-import type { BodyTuningDef } from '../src/core/schema.ts';
+import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
 import { gameHours, simRate, simSeconds } from '../src/core/time.ts';
 
@@ -23,8 +23,27 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   minimumMovementSpeed: 0.5,
 };
 
+/** Passing time and working get different caps, so a test can tell which one a start used. */
+export const COMPRESSION_CAPS_FIXTURE: CompressionCaps = {
+  wait: 360,
+  rest: 360,
+  sleep: 360,
+  craft: 30,
+  reading: 30,
+  treatment: 30,
+};
+
 export class Simulation extends CoreSimulation {
-  constructor(options: Omit<SimOptions, 'bodyTuning'> & { bodyTuning?: BodyTuningDef }) {
-    super({ ...options, bodyTuning: options.bodyTuning ?? BODY_TUNING_FIXTURE });
+  constructor(
+    options: Omit<SimOptions, 'bodyTuning' | 'compressionCaps'> & {
+      bodyTuning?: BodyTuningDef;
+      compressionCaps?: CompressionCaps;
+    },
+  ) {
+    super({
+      ...options,
+      bodyTuning: options.bodyTuning ?? BODY_TUNING_FIXTURE,
+      compressionCaps: options.compressionCaps ?? COMPRESSION_CAPS_FIXTURE,
+    });
   }
 }

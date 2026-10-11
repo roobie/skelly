@@ -278,7 +278,6 @@ export interface SessionAudio {
 /** The part of the debug tools that changes what the simulation does. */
 interface SessionDebug {
   readonly noclip: boolean;
-  dangerReason: () => string | undefined;
   stepNoclip: (step: DebugNoclipStep) => void;
 }
 
@@ -430,6 +429,14 @@ const playerBodyTuning = (registry: Registry) => {
     throw new Error('Missing player body tuning');
   }
   return tuning;
+};
+
+const playerCompressionCaps = (registry: Registry) => {
+  const tuning = registry.compression.get('player');
+  if (!tuning) {
+    throw new Error('Missing player compression tuning');
+  }
+  return tuning.caps;
 };
 
 const playerSenseTuning = (registry: Registry) => {
@@ -591,8 +598,8 @@ export const createSession = (options: SessionOptions) => {
   const sim = new Simulation({
     seed,
     bodyTuning,
+    compressionCaps: playerCompressionCaps(registry),
     clock: { ratio: CLOCK_RATIO, start: options.start },
-    unsafe: () => debug?.()?.dangerReason() ?? zombieSystem.unsafeReason(),
     restRate: () => sim.actions.restRate,
   });
   const { compression } = sim;

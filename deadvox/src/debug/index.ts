@@ -565,8 +565,6 @@ interface ActionContext {
   isNoclip: () => boolean;
   toggleNoclip: () => void;
   spawnUnawareShambler: () => void;
-  isDanger: () => boolean;
-  toggleDanger: () => void;
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
   spawnZombie: (typeId: string, count: number) => void;
@@ -590,8 +588,6 @@ export const createDebugActions = ({
   isNoclip,
   toggleNoclip,
   spawnUnawareShambler,
-  isDanger,
-  toggleDanger,
   shamblerCount,
   spawnShambler,
   spawnZombie,
@@ -698,7 +694,6 @@ export const createDebugActions = ({
         group: 'survival',
         run: () => hooks.sim.emit({ kind: 'interrupt', reason: 'You hear something outside' }),
       },
-      { id: 'debug.danger-test', label: 'Danger test', group: 'survival', state: isDanger, run: toggleDanger },
       {
         id: 'debug.hurt',
         label: 'Take 25 damage',
@@ -1124,7 +1119,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let readout = emptyReadout;
   let shellKey = '';
   let noclip = false;
-  let danger = false;
   const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize);
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   let shamblerCount = readShamblerCount();
@@ -1269,10 +1263,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       if (placed) {
         hooks.showNotice('An unaware shambler is nearby');
       }
-    },
-    isDanger: () => danger,
-    toggleDanger: () => {
-      danger = !danger;
     },
     shamblerCount: () => shamblerCount,
     isAimEnabled: () => aimEnabled,
@@ -1797,7 +1787,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     get revealZombies() {
       return revealZombies;
     },
-    dangerReason: () => (danger ? 'Something is close' : undefined),
     handleAction,
     closeMenus() {
       panelOpen = false;

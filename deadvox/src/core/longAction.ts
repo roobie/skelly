@@ -254,6 +254,14 @@ export class LongActions {
       }
     }
     this.current = state.job === null ? undefined : structuredClone(state.job);
+    this.restoreCompressionCap();
+  }
+  /** A restored running action compresses up to its own cap, not the unowned default. */
+  private restoreCompressionCap(): void {
+    const job = this.current;
+    if (job && !job.stopped && job.jobType !== 'pry' && this.sim.compression.active) {
+      this.sim.compressLongAction(job.jobType);
+    }
   }
   startWait(): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
@@ -263,7 +271,7 @@ export class LongActions {
     if (this.current && !this.current.stopped) {
       return 'Stop the current action first';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('wait');
     if (!result.ok) {
       return result.reason;
     }
@@ -287,7 +295,7 @@ export class LongActions {
     if (this.current?.jobType === 'pry' && !this.current.stopped) {
       return 'Stop prying first';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction(kind);
     if (!result.ok) {
       return result.reason;
     }
@@ -325,7 +333,7 @@ export class LongActions {
     if (reason) {
       return reason;
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('craft');
     if (!result.ok) {
       return result.reason;
     }
@@ -414,7 +422,7 @@ export class LongActions {
     if (!Number.isFinite(duration) || duration <= 0) {
       return 'Invalid treatment time';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('treatment');
     if (!result.ok) {
       return result.reason;
     }
@@ -456,7 +464,7 @@ export class LongActions {
     if (duration === undefined || !Number.isFinite(duration) || duration <= 0) {
       return 'Invalid reading time';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('reading');
     if (!result.ok) {
       return result.reason;
     }
@@ -485,7 +493,7 @@ export class LongActions {
     if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
       return 'Another craft is active';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('craft');
     if (!result.ok) {
       return result.reason;
     }
@@ -512,7 +520,7 @@ export class LongActions {
       this.sim.compression.stop();
       this.sim.compression.snap();
     } else {
-      const result = this.sim.compressLongAction();
+      const result = this.sim.compressLongAction(job.jobType);
       if (!result.ok) {
         return result.reason;
       }

@@ -5,6 +5,10 @@
       "output": "deadvox/src/content/base/camp.json"
     },
     {
+      "source": "deadvox/src/content/base/compression.jsonnet",
+      "output": "deadvox/src/content/base/compression.json"
+    },
+    {
       "source": "deadvox/src/content/base/items-tools.jsonnet",
       "output": "deadvox/src/content/base/items-tools.json"
     },

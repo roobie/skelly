@@ -6,18 +6,12 @@ import { Body } from '../src/core/body.ts';
 import { defaultClock, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { NEED_RATES, REST, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { SimOptions } from '../src/core/sim.ts';
 import { realSeconds, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
-import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock);
@@ -28,11 +22,7 @@ const { registry } = buildRegistry(
     .sort()
     .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown })),
 );
-const SHAMBLER = registry.zombies.get('shambler')!;
 const SCALE = makeScale(0.5);
-const BLOCK_SIZE = SCALE.blockSize;
-const PHYSICS = physicsFor(SCALE);
-const FLOOR: SolidAt = (_x, y) => y === 0;
 
 /** A Simulation wired to a RestController, the way play.ts wires them: the sim's fatigue rate
  * comes from whatever the controller's action asks for. */
@@ -41,12 +31,9 @@ const tickReal = (sim: Simulation, elapsed: number): void => {
   advanceLiveFrame(sim, realSeconds(elapsed));
 };
 
-const makeRest = (
-  simOptions: Partial<SimOptions> = {},
-  hooks: Partial<RestHooks> = {},
-): { sim: Simulation; rest: RestController } => {
+const makeRest = (hooks: Partial<RestHooks> = {}): { sim: Simulation; rest: RestController } => {
   let rest: RestController | undefined;
-  const sim = new Simulation({ seed: 1, ...simOptions, restRate: () => rest?.action?.rate });
+  const sim = new Simulation({ seed: 1, restRate: () => rest?.action?.rate });
   rest = new RestController(sim, {
     furniture: hooks.furniture ?? ((uid) => (uid === REST_ANCHOR ? { quality: 1, sleepable: true } : undefined)),
     withinReach: hooks.withinReach ?? (() => true),
@@ -54,19 +41,6 @@ const makeRest = (
   });
   return { sim, rest };
 };
-
-/** A ZombieSystem with a fixed player sense and a flat floor, for the scenarios below. */
-const zombieHooks = (player: PlayerSense, hour = 23) => ({
-  isSolid: FLOOR,
-  isOpaque: FLOOR,
-  blockSize: BLOCK_SIZE,
-  physics: PHYSICS,
-  jumpSpeed: PLAYER.jump,
-  tuning: TEST_SENSE_TUNING,
-  player: () => player,
-  dayPhase: () => dayStateAtHour(hour),
-  hurtPlayer: () => undefined,
-});
 
 describe('restKindForFurniture', () => {
   it('maps restable furniture to rest or sleep and leaves ordinary furniture unchanged', () => {
@@ -111,7 +85,7 @@ describe('RestController.rateFor', () => {
 describe('RestController start/resume/stop', () => {
   it('starts only while the selected furniture is in reach', () => {
     let reachable = false;
-    const { rest } = makeRest({}, { withinReach: () => reachable });
+    const { rest } = makeRest({ withinReach: () => reachable });
     expect(rest.start('rest', REST_ANCHOR)).toBeTruthy();
     expect(rest.action).toBeUndefined();
     reachable = true;
@@ -126,58 +100,9 @@ describe('RestController start/resume/stop', () => {
     expect(sim.compression.active).toBe(false);
   });
 
-  it('keeps fast-forwarding as an aware shambler closes in, then wakes on a hit', () => {
-    const player: PlayerSense = {
-      pos: [0, 1, 0],
-      facing: [0, 0, -1],
-      movement: 'still',
-      lit: true,
-      lightSeenFrom: 50,
-    };
-    const zombieSystem = new ZombieSystem(zombieHooks(player, 23));
-    const id = zombieSystem.add(SHAMBLER, [70, 1, 0], [-1, 0, 0]);
-    zombieSystem.tick(1 / 60, 1 / 60);
-    expect(zombieSystem.store.get(id)?.mode).toBe('chase');
-    expect(zombieSystem.unsafeReason()).toBeTruthy();
-    const messages: string[] = [];
-    const { sim, rest } = makeRest(
-      { unsafe: () => zombieSystem.unsafeReason() },
-      { notice: (message) => messages.push(message) },
-    );
-
-    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
-    const start = sim.time;
-    const {
-      body: {
-        pos: [startX],
-      },
-    } = zombieSystem.store.get(id)!;
-    for (let i = 1; i <= 30; i++) {
-      zombieSystem.tick(0.1, i * 0.1);
-      tickReal(sim, 1 / 60);
-      expect(sim.compression.active).toBe(true);
-      expect(sim.compression.interruption).toBeUndefined();
-    }
-    expect(sim.time).toBeGreaterThan(start);
-    expect(zombieSystem.store.get(id)!.body.pos[0]).toBeLessThan(startX!);
-
-    const emittedInterruption = sim.events.reader();
-    sim.hurt(1, 'a shambler');
-    const wakeReason = emittedInterruption.read().find((event) => event.kind === 'interrupt')?.reason;
-    if (wakeReason === undefined) {
-      throw new Error('Damage did not emit a wake interruption');
-    }
-    tickReal(sim, 1 / 60);
-    expect(rest.action).toBeUndefined();
-    expect(sim.compression.locksInput).toBe(false);
-    expect(sim.compression.interruption).toBeUndefined();
-    expect(messages).toHaveLength(1);
-    expect(messages[0]).toContain(wakeReason);
-  });
-
   it('ends on its own once fully rested, back at 1x', () => {
     const messages: string[] = [];
-    const { sim, rest } = makeRest({}, { notice: (m) => messages.push(m) });
+    const { sim, rest } = makeRest({ notice: (m) => messages.push(m) });
     sim.needs.fatigue = 5;
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 10_000 && rest.action !== undefined; i++) {
@@ -228,13 +153,10 @@ describe('RestController start/resume/stop', () => {
       [REST_ANCHOR, { quality: 1, sleepable: true }],
       [2, { quality: 1, sleepable: true }],
     ]);
-    const { sim, rest } = makeRest(
-      {},
-      {
-        furniture: (uid) => furniture.get(uid),
-        withinReach: (uid) => reachable.has(uid),
-      },
-    );
+    const { sim, rest } = makeRest({
+      furniture: (uid) => furniture.get(uid),
+      withinReach: (uid) => reachable.has(uid),
+    });
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     sim.hurt(5, 'a debug key');
     tickReal(sim, 1 / 60);
@@ -450,6 +372,73 @@ describe('Session long-action input lock', () => {
 });
 
 describe('long-action interruptions', () => {
+  it('sleeps on at the cap while a shambler closes in, and wakes at its first hit having taken only that hit', () => {
+    const entities = new BlockEntities(registry);
+    const bed = [...registry.furniture.values()].find((def) => def.rest?.sleep);
+    if (!bed) {
+      throw new Error('Sleep fixture has no bed');
+    }
+    const anchor = entities.add({ type: bed.id, pos: [2, 1, 0], size: bed.size, facing: 'n' });
+    if (!anchor) {
+      throw new Error('Could not place the sleep fixture bed');
+    }
+    const session = createSession({
+      registry,
+      world: new World(),
+      isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      entities,
+      scale: SCALE,
+      seed: 1,
+      // Daylight, so the shambler sees the sleeper.
+      start: defaultClock.start,
+      spawn: [0, 1, 0],
+      ready: () => true,
+      controls: {
+        active: () => false,
+        intent: () => IDLE,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
+      },
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in sleep fixture');
+      },
+    });
+    const { sim } = session;
+    const frame = (): void => {
+      advanceLiveFrame(sim, realSeconds(1 / 60), undefined, (dt, until) => session.frame(dt, until));
+    };
+    sim.needs.fatigue = 80;
+    expect(session.rest.start('sleep', anchor.uid)).toBeUndefined();
+    for (let i = 0; i < 600 && sim.compression.c < sim.compression.limits.cap; i++) {
+      frame();
+    }
+    expect(sim.compression.c).toBe(registry.compression.get('player')!.caps.sleep);
+
+    const { health } = sim.body;
+    const events = sim.events.reader();
+    const id = session.zombies.add(registry.zombies.get('shambler')!, [60, 1, 0], [-1, 0, 0]);
+    let chasedAtCap = false;
+    for (let i = 0; i < 600 && session.rest.action; i++) {
+      frame();
+      chasedAtCap ||=
+        session.zombieStore.get(id)!.mode === 'chase' &&
+        sim.compression.active &&
+        sim.compression.c === sim.compression.limits.cap;
+    }
+    const hits = events.read().filter((event) => event.kind === 'damage');
+
+    expect(chasedAtCap).toBe(true);
+    expect(session.rest.action).toBeUndefined();
+    expect(sim.compression.c).toBe(1);
+    expect(hits).toHaveLength(1);
+    expect(health - sim.body.health).toBeCloseTo(hits[0]!.amount, 9);
+  });
+
   it('stops resting at most one step after you take damage', () => {
     const { sim, rest } = makeRest();
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
@@ -465,7 +454,7 @@ describe('long-action interruptions', () => {
 
   it('wakes when a need turns critical', () => {
     const messages: string[] = [];
-    const { sim, rest } = makeRest({}, { notice: (message) => messages.push(message) });
+    const { sim, rest } = makeRest({ notice: (message) => messages.push(message) });
     sim.needs.hydration = 10.05;
     expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
     const emittedInterruptions = sim.events.reader();

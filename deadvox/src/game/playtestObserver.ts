@@ -54,7 +54,6 @@ const inspectLiveSession = (session: Session): unknown => ({
     state: session.sim.snapshotState(),
     paused: session.sim.paused,
     godMode: session.sim.godMode,
-    ignoreUnsafe: session.sim.ignoreUnsafe,
   },
   body: structuredClone(session.body),
   worldDiffs: session.worldDiffs(),

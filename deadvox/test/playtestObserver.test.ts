@@ -268,7 +268,6 @@ describe('playtest observer snapshot oracle', () => {
         actions: { snapshotState: () => ({ job: null }) },
         paused: false,
         godMode: false,
-        ignoreUnsafe: false,
         snapshotState: () => ({ health: runtime.sim.body.health }),
       },
       body: { pos: [1, 2, 3], vel: [0, -1, 0], onGround: false },
