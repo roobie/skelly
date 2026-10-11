@@ -1,89 +1,130 @@
 ---
 read_if:
-  - you design, change or run the principles review of a PR
-  - you review a PR or self-check one before pushing
-  - you add a pillar, principle or engineering rule that reviews should apply
+  - you write or run a code review (cr-*) and need its principles section
+  - you add a pillar, principle or engineering rule that code reviews should apply
+  - you change review verdicts, FIX causes or what blocks a merge on principle
 ---
 
 # Principles review skill (draft)
 
-A proposed harness-neutral skill that checks a PR against the project's pillars,
-principles and engineering rules. It complements correctness review; it does not
-replace it or grant approval to merge.
+A proposed harness-neutral skill: the principles section that every code review
+(cr-*) includes. It checks a change against the project's pillars, principles and
+engineering rules, inside the code review's single verdict.
 
 ## Why
 
-A correctness review checks a change against its brief. It can miss a broken
-principle that the brief didn't name, including code that owns decisions which
-belong to content. Making the principles lens routine avoids relying on a
-reviewer to remember it.
+`docs/PROCESS.md`, "The life of a change", step 4, already has the code review
+check zero drift, and "Continuous consolidation" asks every review to name the
+ownership or duplicated decision and to review callers and secondary consumers.
+The gap is in how those rules are applied: from memory, with no list of which
+rules apply, so a review can skip one and nobody sees it. Content-versus-code
+ownership is the easiest to skip: outside deadvox's own pillars it has no settled
+rule until r74. Listing every lens with its owner, and reporting a status for
+each, makes a skipped lens visible.
 
-## Shape: one skill, several lenses
+## Shape: a required section of the code review
 
-One skill, one entry point and one report shape. Run it alongside every
-correctness review. Consider every lens, scaling inspection depth to the change,
-not skipping coverage because a PR is small. Separate skills multiply context
-and make it easier to forget a lens.
+The lenses are a required section of the code review, not a separate pass. There
+is one review, one verdict and one owner, so the principles section can't
+disagree with the review it sits in. Consider every lens, scaling inspection
+depth to the change; a small PR doesn't skip coverage.
 
-Each lens cites its owning doc and section; read the rule there at review time
-instead of maintaining a second copy in the skill:
+Each lens cites its owning doc and section. Read the rule there at review time;
+the skill keeps no second copy.
 
-1. **Principles:** `README.md`, "Pillars"; `AGENTS.md`, "Project stage",
-   "No host-specific information in tracked files" and "Dependency age".
-   Content forward compatibility awaits r74's settled rule and owner document.
-2. **Zero drift and docs:** `README.md`, "Zero drift"; `AGENTS.md`, "Zero drift".
-3. **Test hygiene:** `AGENTS.md`, "Tests" and "Before pushing: tiered checks".
-4. **BR's rulings:** the applicable topic's owner documents;
-   `docs/PROCESS.md`, "Recording decisions". Check implementation against the
-   settled ruling and its provenance, not against an inferred preference.
-5. **Player impact and approval gates:** `docs/PROCESS.md`, "Reviews by eye and
-   by play", "Slice decision rules" and "The life of a change". Docs-only work
-   is not automatically exempt: control guidance can affect play.
+1. **Engineering pillars and repository rules:** `README.md`, "Pillars", "Static
+   analysis" and "Maintainability"; `AGENTS.md`, "Project stage", "No
+   host-specific information in tracked files" and "Dependency age".
+2. **Subproject pillars and content ownership:** each subproject's own pillars,
+   such as `deadvox/DESIGN.md`, "Pillars", whose "Depth through data" covers
+   deadvox code that owns a decision belonging to content; for performance,
+   `deadvox/DESIGN.md`, "Reference hardware"; for authored data, `docs/jsonnet.md`,
+   its opening rule and "Team rules"; and `docs/PROCESS.md`, "Continuous
+   consolidation", for ownership and duplicated decisions.
+3. **Zero drift and docs:** `README.md`, "Zero drift"; `AGENTS.md`, "Zero drift";
+   `docs/PROCESS.md`, "The life of a change", step 4.
+4. **Tests:** `AGENTS.md`, "Tests". From "Before pushing: tiered checks", a review
+   checks what it can see: a red CI job is fixed in the next push, and no
+   `--no-verify` push went over a real failure.
+5. **BR's rulings:** the topic's owner documents; `docs/PROCESS.md`, "Recording
+   decisions". Check the change against the settled ruling and its provenance (the
+   verbatim quote and stamp in the commit), not against an inferred preference.
+6. **Player impact and approval gates:** `docs/PROCESS.md`, "Reviews by eye and by
+   play", "Slice decision rules" and "The life of a change". A change with no code
+   isn't exempt when it changes what the player sees or reads, such as item
+   descriptions or controls help.
+
+Out of scope: `docs/git-workflow.md` and `AGENTS.md`, "Work item IDs". The lead
+checks them when opening and merging a PR.
 
 ## Scope and inspection
 
-Review violations introduced or materially worsened by the change, including
-its affected consumers outside the diff. Report unrelated existing problems
-separately; this is not a repository-wide audit.
+Review violations the change introduces or extends; a new instance of an existing
+violation counts. Report unrelated existing problems separately; this is not a
+repository-wide audit.
 
-Follow changed decisions through their owners, callers and secondary consumers.
-Ask whether adding another content value requires editing code that should
-merely interpret content. Apply `docs/PROCESS.md`, "Continuous consolidation",
-when assessing ownership and duplicated decisions; a diff-only checklist can
-miss the wrong authority surviving elsewhere.
+Follow each changed decision one call or import hop past its owner, and to every
+consumer of a changed content field. Ask whether adding another content value
+would need an edit to code that should only interpret content.
 
-Delegate unambiguous patterns to scripts. Content-id literals and closed unions
-are not inherently violations: fixtures and structural discriminants may
-legitimately use them. Judgement determines whether code owns a decision that
-belongs to content. A passing checker is evidence only for the constraint it
-checks, not proof of principle compliance.
+Delegate unambiguous patterns to scripts. A passing checker is evidence only for
+the constraint it checks, not for the principle. Content-id literals and closed
+unions are not violations by themselves: fixtures and structural discriminants
+may use them. When r74's owner doc lands, its allowlist decides which closed lists
+may stay.
 
-Coders run the same lenses before pushing. Self-check uses the same rules and
-finding contract with less reporting overhead, not weaker standards.
+Coders don't run the skill as a pre-push check; `AGENTS.md`, "Before pushing:
+tiered checks", lists none. Add one only if reviews show misses a coder could have
+caught, and list it there.
 
-## Findings and completion
+## Findings and verdict
 
 Each finding states:
 
 - its lens and the owning rule, cited by path and section;
-- evidence at the affected path and symbol, showing the concrete violation;
-- the consequence and smallest adequate correction.
+- evidence at the affected path and symbol;
+- the consequence and the smallest adequate correction.
 
-Apply `AGENTS.md`, "Tests", for the FIX threshold: actual defects and test-hygiene
-failures block; improvements and style preferences remain nonblocking. Keep the
-review verdict and cause reporting consistent with `docs/PROCESS.md`, "Slice
-decision rules", rather than inventing a second verdict system.
+Evidence for a behaviour claim is a reproducing probe, a mutant or a base A/B
+where one can be run. Otherwise the finding says "reasoned, not run" and gives the
+reasoning.
 
-The report identifies the reviewed base and head and marks every lens as
-assessed, not applicable with a reason, or not assessed with the missing evidence
-or dependency. Not assessed is never a pass. An applicable rule whose evidence
-is missing leaves the principles review incomplete, even if no defect has yet
-been demonstrated.
+What blocks is set by its owners: `AGENTS.md`, "Tests" (a real defect or a
+test-hygiene problem); `AGENTS.md`, "Zero drift" (a false doc, or an amendment
+trail in a touched section); `README.md`, "Zero drift" (an amendment trail); and
+`docs/PROCESS.md`, "The life of a change", step 4 (a false doc). Other
+improvements and style points are listed and don't block.
 
-Report an outstanding BR approval as an open gate, not approval the reviewer can
-grant. A completed principles review does not substitute for correctness review,
-CI or BR's verdict; merge conditions remain owned by `docs/PROCESS.md`, "The life
-of a change".
+The code review gives one verdict, SHIP or FIX, with its `Cause:` line as
+`docs/PROCESS.md`, "Slice decision rules", "FIX causes", requires. The report names
+the reviewed base and head, the ownership or duplicated decision (or none), and a
+status for every lens:
+
+- **assessed;**
+- **not applicable**, with the reason;
+- **not assessed**, only when the lens's rule isn't settled yet; the report names
+  the item that settles it (r74). This never blocks the merge, and the lens is
+  listed as open.
+
+For a settled rule, missing evidence is not a status. The reviewer gets it before
+the verdict, by fetching it, probing or asking the lead. If the change itself lacks
+what the rule requires, such as a verbatim quote and stamp, a `read_if` or a test
+that fails before the fix, that is a FIX.
+
+An outstanding BR approval is an open gate, not one the reviewer can grant. Merge
+conditions stay with `docs/PROCESS.md`, "The life of a change", step 6.
+
+## Changes to PROCESS when r75 lands
+
+This proposal doesn't edit `docs/PROCESS.md`. The PR that lands the skill makes
+these changes:
+
+- **"The life of a change", step 4:** the code review includes the principles
+  section in this doc. Step 4's zero-drift list stays in step 4, as the rule lens 3
+  cites.
+- **"Slice decision rules", "FIX causes":** two more causes, "docs" for a
+  zero-drift FIX and "ownership" for content-versus-code ownership, so the
+  retrospective tally shows them.
 
 ## Canonical home
 
@@ -94,11 +135,13 @@ contract without creating competing rule owners.
 
 ## Unresolved dependencies
 
-- **r74:** settle content forward compatibility and cite its owner document before
-  that lens can be assessed. Distinguish supporting additional authored values
-  from preserving old schemas or saves; it must not silently introduce a
-  backwards-compatibility obligation. Until settled, report this part of the
-  principles lens as not assessed when content extensibility is relevant.
-- **Additional lenses:** identify an applicable project rule and its owner before
-  adding performance, accessibility or other checks. The skill applies settled
-  rules; it does not create policy through review findings.
+- **r74** settles what deadvox's "Depth through data" doesn't cover: gungen and
+  mobgen templates, the selector and closed-list rule, the modifier point, and the
+  ratchet checks for content-id literals and closed lists. Until its owner doc
+  lands, those parts of lens 2 are not assessed. Forward compatibility, accepting
+  new authored values, stays apart from backwards compatibility; it must not bring
+  in an obligation to keep old schemas or saves working (`AGENTS.md`, "Project
+  stage").
+- **Additional lenses:** a lens such as accessibility needs an owning project rule
+  first. The skill applies settled rules; it doesn't make policy through review
+  findings.
