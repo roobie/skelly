@@ -14,7 +14,7 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
-import { equipDebugFirearms } from '../src/debug/debugLoadout.ts';
+import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,
@@ -271,7 +271,7 @@ describe('real pump ammunition', () => {
 
   it('gives the pump loadout one stack of loose shells, which the pump loads from', () => {
     const inventory = new Inventory(registry);
-    expect(equipDebugFirearms(inventory, true, true, '?loadout=pump')).toBe(true);
+    expect(equipDebugLoadout(inventory, true, true, '?loadout=pump')).toBe(true);
     const gun = inventory.hands[dominantSide(inventory.character)]!;
     const looseShells = () => [...inventory.items()].map(({ item }) => item).filter(({ type }) => type === shellType);
     expect(looseShells()).toHaveLength(1);

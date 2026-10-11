@@ -354,6 +354,29 @@ const LightSchema = strictObject({
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
 
+/** A thrown charge whose fuse starts when it leaves the hand (DESIGN.md, "Hand grenade"). */
+const ExplosiveSchema = strictObject({
+  fuseSimSeconds: PositiveSimSeconds,
+  /**
+   * Region health taken from every region of a body whose centre the blast sees, and the push in N·s on it, both
+   * falling to none at the radius.
+   */
+  blast: strictObject({ radiusMetres: Positive, damage: Positive, impulse: Positive }),
+  /**
+   * Seeded rays through the shot hit test; each takes `damage` from the region it strikes. Every ray is traced
+   * against the bodies in range when the charge goes off, so the count sets that moment's cost.
+   */
+  fragments: strictObject({
+    count: pipe(Count, minValue(1, 'must be at least 1'), maxValue(1000, 'must be at most 1000')),
+    damage: Positive,
+    rangeMetres: Positive,
+    /** Push in N·s on the struck body. */
+    impulse: Positive,
+  }),
+  /** Sound event at detonation; its noise draws zombies. */
+  sound: picklist(SOUND_EVENT_IDS),
+});
+
 const FirearmAttachmentEffectsSchema = strictObject({
   /** Fraction of the firearm's committed recoil kick removed at full condition. */
   recoilReduction: optional(Fraction),
@@ -476,6 +499,7 @@ const ItemSchema = strictObject({
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
+  explosive: optional(ExplosiveSchema),
   readable: optional(ReadableSchema),
   /** Display capability shown in first person; later devices can share this rendering seam. */
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),

@@ -6,6 +6,7 @@ import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { PILE_GRID } from '../src/core/inventory.ts';
+import { restoreItem } from '../src/core/items.ts';
 import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { chunksFor } from '../src/core/scale.ts';
@@ -654,6 +655,19 @@ describe('canonical save format', () => {
         ).rejects.toThrow();
       }),
     );
+  });
+
+  it('rejects fuse state saved on a non-explosive item with the saved-fuse error', () => {
+    expect(() =>
+      restoreItem(registry, {
+        uid: 1,
+        type: 'school_backpack',
+        count: 1,
+        condition: 1,
+        pinPulled: true,
+        fuseRemainingSimSeconds: 1,
+      }),
+    ).toThrow('Invalid saved explosive pin or fuse');
   });
 
   it('rejects truncated, corrupted, non-canonical, over-limit, invalid-version, and malformed payloads', async () => {

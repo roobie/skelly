@@ -14,6 +14,7 @@ type PrimaryItemAction =
   | 'firearm'
   | 'key'
   | 'unpack'
+  | 'pin'
   | 'read'
   | 'use'
   | 'magazine'
@@ -21,7 +22,7 @@ type PrimaryItemAction =
 
 export type PrimaryActionSelection =
   | {
-      kind: 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'read' | 'use' | 'magazine';
+      kind: 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'pin' | 'read' | 'use' | 'magazine';
       hand: HandSide;
       item: Item;
     }
@@ -42,6 +43,7 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   { kind: 'firearm', supports: (definition) => definition.firearm !== undefined },
   { kind: 'key', supports: (definition) => definition.key !== undefined },
   { kind: 'unpack', supports: (definition) => definition.unpack !== undefined },
+  { kind: 'pin', supports: (definition) => definition.explosive !== undefined },
   { kind: 'read', supports: (definition) => definition.book !== undefined },
   {
     kind: 'use',

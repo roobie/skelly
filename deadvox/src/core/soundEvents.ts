@@ -31,6 +31,7 @@ export const SOUND_EVENT_IDS = [
   'shotgun_rack_forward',
   'shotgun_insert',
   'shotgun_hull_drop',
+  'grenade_blast',
   'magazine_round_insert',
   'magazine_round_strip',
   'magazine_change',
