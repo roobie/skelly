@@ -1330,7 +1330,8 @@ const SkillSchema = pipe(
           activity('shot', 'practice') &&
           activity('hit', 'practice') &&
           activity('attachment', 'practice'))) &&
-      (id !== 'melee_combat' || (combat?.melee !== undefined && activity('block', 'practice'))) &&
+      (id !== 'melee_combat' ||
+        (combat?.melee !== undefined && activity('block', 'practice') && activity('hit', 'practice'))) &&
       (id !== 'inventory_management' || (inventory !== undefined && activity('handling', 'practice')));
     const firearm = combat?.firearms;
     const melee = combat?.melee;

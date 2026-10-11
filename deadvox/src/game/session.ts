@@ -1009,7 +1009,15 @@ export const createSession = (options: SessionOptions) => {
       options.zombieEffects?.onDeath?.(id, zombie);
     },
   });
-  const playerCombat = new PlayerCombat(zombieSystem, (uid) => wearMeleeWeaponOnHit(inventory, uid), character);
+  const playerCombat = new PlayerCombat(
+    zombieSystem,
+    (uid) => wearMeleeWeaponOnHit(inventory, uid),
+    character,
+    () => {
+      const training = skillActivityPractice(registry, 'melee_combat', 'hit');
+      character.awardPractice('melee_combat', training.practice, training.tier);
+    },
+  );
   let lastZombieStep = 0;
   let lastBackgroundStep = 0;
   let backgroundSliceIndex = 0;
