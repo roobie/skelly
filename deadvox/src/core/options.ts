@@ -4,7 +4,7 @@ import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandlingQueue, MoveJob } from './handling.ts';
-import { dropSpots, type HandSide, Inventory, type Plan, type Target } from './inventory.ts';
+import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
@@ -108,6 +108,12 @@ export const dropTarget = (
   return first!;
 };
 
+/** A sling-fitted long gun goes on a free shoulder before any pocket or the ground: the sling is for carrying it. */
+const slingTarget = (inv: Inventory, item: Item): Target | undefined => {
+  const target: Target = { kind: 'worn' };
+  return wornSlotOf(inv.registry, item) === 'shoulder' && inv.plan(item, target).ok ? target : undefined;
+};
+
 /** Where an item leaving a held one goes: the first player pocket with room, else the ground at the feet. */
 export const stowTarget = (inv: Inventory, item: Item, feet: Vec3): Target | undefined => {
   const inPocket = playerPockets(inv)
@@ -138,7 +144,7 @@ export const pocketGroundItem = (inv: Inventory, queue: HandlingQueue, item: Ite
   const target: Target | undefined =
     defOf(inv.registry, item.type).wearable?.slot === 'back' && inv.worn.back === undefined
       ? { kind: 'worn' }
-      : bestPocket(inv, item)?.target;
+      : (slingTarget(inv, item) ?? bestPocket(inv, item)?.target);
   if (!target) {
     return 'No room on you';
   }
@@ -175,7 +181,10 @@ export const quickMove = (item: Item, view: ReachSnapshot): MoveOption => {
   let target: Target = { kind: 'pile', pos: view.feet };
   if (at && ((at.kind === 'hand' && at.side === dominantSide(inv.character)) || inv.placeOf(at) !== undefined)) {
     const wear: Target = { kind: 'worn' };
-    if (at.kind === 'pile' && item.pockets && inv.plan(item, wear).ok) {
+    const sling = slingTarget(inv, item);
+    if (sling) {
+      target = sling;
+    } else if (at.kind === 'pile' && item.pockets && inv.plan(item, wear).ok) {
       target = wear;
     } else {
       const pocket = inventoryPocket(inv, item);
@@ -300,8 +309,10 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
     const target: Target = { kind: 'hand', side };
     return { kind: 'move', label: `${side === 'right' ? 'Right' : 'Left'} hand`, target, plan: inv.plan(item, target) };
   });
-  if (defOf(inv.registry, item.type).wearable) {
-    out.push({ kind: 'move', label: 'Wear it', target: { kind: 'worn' }, plan: inv.plan(item, { kind: 'worn' }) });
+  const wornSlot = wornSlotOf(inv.registry, item);
+  if (wornSlot) {
+    const label = wornSlot === 'shoulder' ? 'Sling it' : 'Wear it';
+    out.push({ kind: 'move', label, target: { kind: 'worn' }, plan: inv.plan(item, { kind: 'worn' }) });
   }
   for (const { owner, pocket, label } of playerPockets(inv)) {
     const target: Target = { kind: 'pocket', owner, pocket };
@@ -320,6 +331,27 @@ const quickbarHand = (inv: Inventory, item: Item): HandSide => {
   return def.light && !def.twoHanded ? offSide(inv.character) : dominantSide(inv.character);
 };
 
+/** Where a displaced held item goes without being dropped: a free shoulder, else the best pocket's planned spot. */
+const carryTarget = (inv: Inventory, item: Item): Target | undefined => {
+  const sling = slingTarget(inv, item);
+  if (sling) {
+    return sling;
+  }
+  const pocket = bestPocket(inv, item);
+  if (!(pocket?.plan.ok && pocket.target.kind === 'pocket')) {
+    return undefined;
+  }
+  return pocket.plan.at ? { ...pocket.target, at: pocket.plan.at } : pocket.target;
+};
+
+const liveTargetFor = (inv: Inventory, target: Target): Target | undefined => {
+  if (target.kind !== 'pocket') {
+    return target;
+  }
+  const owner = inv.itemByUid(target.owner.uid);
+  return owner ? { ...target, owner } : undefined;
+};
+
 const queueQuickbarStows = (
   inventory: Inventory,
   queue: HandlingQueue,
@@ -330,18 +362,12 @@ const queueQuickbarStows = (
   let queued = 0;
   for (const held of displaced) {
     const plannedItem = plannedInventory.itemByUid(held.uid);
-    const pocket = plannedItem && bestPocket(plannedInventory, plannedItem);
-    if (!(plannedItem && pocket?.plan.ok && pocket.target.kind === 'pocket')) {
+    const plannedTarget = plannedItem && carryTarget(plannedInventory, plannedItem);
+    const target = plannedTarget && liveTargetFor(inventory, plannedTarget);
+    if (!(plannedItem && plannedTarget && target)) {
       unable.push(held);
       continue;
     }
-    const plannedTarget: Target = pocket.plan.at ? { ...pocket.target, at: pocket.plan.at } : pocket.target;
-    const owner = inventory.itemByUid(pocket.target.owner.uid);
-    if (!owner) {
-      unable.push(held);
-      continue;
-    }
-    const target: Target = plannedTarget.kind === 'pocket' ? { ...plannedTarget, owner } : plannedTarget;
     const stow = queue.enqueue(held, target);
     if (!stow.ok) {
       unable.push(held);
@@ -385,7 +411,10 @@ export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, _
 export const quickbarPutAway = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {
   const origin = inv.quickbarOrigin(item);
   const remembered = origin && inv.resolveTarget(origin);
-  const target = remembered && inv.plan(item, remembered).ok ? remembered : bestPocket(inv, item)?.target;
+  const target =
+    remembered && inv.plan(item, remembered).ok
+      ? remembered
+      : (slingTarget(inv, item) ?? bestPocket(inv, item)?.target);
   if (!target) {
     return 'Your pockets are full';
   }
@@ -400,20 +429,12 @@ const cancelStows = (queue: HandlingQueue, jobs: readonly MoveJob[]): void => {
 };
 
 const plannedStowTarget = (inv: Inventory, item: Item, feet: Vec3): Target | undefined => {
-  const pocket = bestPocket(inv, item)?.target;
-  if (pocket) {
-    return pocket;
+  const carried = slingTarget(inv, item) ?? bestPocket(inv, item)?.target;
+  if (carried) {
+    return carried;
   }
   const drop = dropTarget(inv, item, feet);
   return drop.plan.ok ? drop.target : undefined;
-};
-
-const liveTargetFor = (inv: Inventory, target: Target): Target | undefined => {
-  if (target.kind !== 'pocket') {
-    return target;
-  }
-  const owner = inv.itemByUid(target.owner.uid);
-  return owner ? { ...target, owner } : undefined;
 };
 
 const stowTwoHandDisplacements = (args: {
@@ -494,7 +515,7 @@ export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
   if (!held || held === item) {
     return inv.plan(item, { kind: 'hand', side: preferred }).ok ? undefined : 'Your hands are full';
   }
-  const away = bestPocket(inv, held)?.target ?? dropTarget(inv, held, feet).target;
+  const away = slingTarget(inv, held) ?? bestPocket(inv, held)?.target ?? dropTarget(inv, held, feet).target;
   const stow = queue.enqueue(held, away);
   if (!stow.ok) {
     return stow.reason;

@@ -10,6 +10,7 @@ import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
 import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
+import { isLongGun } from '../src/core/firearmFitting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { fixedItems, rollLoot } from '../src/core/loot.ts';
 import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
@@ -1136,6 +1137,34 @@ describe('authored fixed loot', () => {
     expect(fixedCount(overrides, 'workshop_office', 'workshop_notes')).toBeGreaterThan(0);
   });
 
+  it('furnishes the long gun in Dad’s cabin with a sling, so it can go on the shoulder', () => {
+    const site = new AuthoredSite(73, result.registry, scale, layout);
+    const cabin = placedOverrides(layout).filter(({ building }) => building.template === 'playtest_dads_cabin');
+    const placement = site.placements[cabin[0]!.buildingIndex]!;
+    const [width, depth] = footprint(placement);
+    const columns: [number, number][] = [];
+    for (let cx = toChunk(placement.origin[0]); cx <= toChunk(placement.origin[0] + width - 1); cx += 1) {
+      for (let cz = toChunk(placement.origin[2]); cz <= toChunk(placement.origin[2] + depth - 1); cz += 1) {
+        columns.push([cx, cz]);
+      }
+    }
+    const inventory = furnishInOrder(site, columns);
+    const placed = placedPieces(placement);
+    const anchored = cabin.flatMap(({ override }) => {
+      const index = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === override.at.join(','));
+      const entity = inventory.entities.at(...placed[index]!.pos);
+      if (entity) {
+        inventory.entities.markSearched(entity);
+      }
+      return (entity?.pockets ?? []).flatMap((pocket) => pocket.map(({ item }) => item));
+    });
+    const guns = anchored.filter((item) => isLongGun(result.registry.items.get(item.type)));
+    expect(guns.length).toBeGreaterThan(0);
+    for (const gun of guns) {
+      expect(inventory.plan(gun, { kind: 'worn' }).ok).toBe(true);
+    }
+  });
+
   it('covers the light recipe and guarantees the quiet input at the noisy scrap pile', () => {
     const overrides = placedOverrides(layout);
     const garageTemplates = ['workshop_hall', 'workshop_office', 'workshop_parts_store'];
@@ -1289,6 +1318,32 @@ describe('authored fixed loot', () => {
     expect(issues).toContainEqual([
       `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`,
       expect.stringContaining('military loot only'),
+    ]);
+  });
+
+  it('rejects fitted-item data when fixed loot gives a sling to an item without slots', () => {
+    const buildingIndex = layout.buildings.findIndex((candidate) => candidate.fixedLoot?.length);
+    const building = layout.buildings[buildingIndex];
+    if (!building?.fixedLoot?.length) {
+      throw new Error('the layout fixture needs a fixed-loot anchor');
+    }
+    const { fixedLoot } = building;
+    const override = fixedLoot[0]!;
+    const itemIndex = override.items.length;
+    const issuePath = `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`;
+    const issuesFor = (item: FixedOverride['items'][number]) => {
+      const buildings = [...layout.buildings];
+      buildings[buildingIndex] = {
+        ...building,
+        fixedLoot: [{ ...override, items: [...override.items, item] }, ...fixedLoot.slice(1)],
+      };
+      return authoredLayoutIssues({ ...layout, buildings }, result.registry);
+    };
+
+    expect(issuesFor({ item: 'crowbar' })).not.toContainEqual([issuePath, expect.any(String)]);
+    expect(issuesFor({ item: 'crowbar', fitted: { sling: 'weapon_sling' } })).toContainEqual([
+      issuePath,
+      expect.any(String),
     ]);
   });
 

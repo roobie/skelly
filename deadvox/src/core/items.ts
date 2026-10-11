@@ -3,6 +3,7 @@
 // items stack up to their type's limit.
 
 import type { ItemDef, Registry } from './content.ts';
+import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -254,11 +255,10 @@ const addDefaultAttachments = (
 };
 
 const initializeFittedSlots = (factory: ItemFactory, registry: Registry, item: Item, def: ItemDef): void => {
-  const model = def.model === undefined ? undefined : registry.models.get(def.model);
   if (magazineWellCalibre(registry, def.id) !== undefined) {
     item.firearm = { chamber: 'empty' };
     item.slots = {};
-  } else if (def.firearm && (model?.attachmentSlots?.length ?? 0) > 0) {
+  } else if (def.firearm && firearmSlotIds(registry, def).length > 0) {
     item.slots = {};
   }
   if (def.light?.power) {

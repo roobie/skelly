@@ -12,6 +12,8 @@ export interface Rolled {
   count: number;
   /** 0 to 1, rounded to hundredths so identical rolls stack. */
   condition: number;
+  /** Item types fitted to each one, by slot id; only authored fixed loot sets them. */
+  fitted?: Readonly<Record<string, string>>;
 }
 
 const pick = (entries: readonly LootEntry[], rng: Rng): LootEntry => {
@@ -41,7 +43,9 @@ const itemsOf = (registry: Registry, type: string, count: number, condition: num
 
 /** Turns authored fixed items into worldgen records while respecting each item's stack limit. */
 export const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[]): Rolled[] =>
-  items.flatMap(({ item, count = 1, condition = 1 }) => itemsOf(registry, item, count, condition));
+  items.flatMap(({ item, count = 1, condition = 1, fitted }) =>
+    itemsOf(registry, item, count, condition).map((rolled) => (fitted ? { ...rolled, fitted } : rolled)),
+  );
 
 /** Rolls a table. The validator has already ruled out missing ids and loops. */
 export const rollLoot = (registry: Registry, tableId: string, rng: Rng): Rolled[] => {
