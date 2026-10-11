@@ -541,13 +541,16 @@ HTML over the game view, and keyboard-first:
   `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
   shows its handling time. Weight, exact condition and times are in the item's
-  details. Names must tell similar items apart while scanning: at the original
-  text size the grid wraps a name at spaces onto the lines that fit and elides an
+  details. Names must tell similar items apart while scanning: at the base text
+  size the grid wraps a name at spaces onto the lines that fit and elides an
   overlong word rather than splitting it. Tall footprints use their long edge;
   full names remain in inspection and hand or worn slots. `validate` uses the same
-  layout as the grid when checking for indistinguishable labels. See
-  `src/ui/inventoryScreen.ts`, `gridItemName`, and
-  `src/core/inventoryGridName.ts`, `inventoryGridName`.
+  layout as the grid when checking for indistinguishable labels. The layout is
+  measured at the 16 px root the UI is authored at, and `hudScale` scales the
+  cell, the text and the insets together, so the fit holds at any scale; a
+  `spacing` above 1 widens the item's padding past what the layout assumes, so a
+  fitted name can clip. See `src/ui/inventoryScreen.ts`, `gridItemName`, and
+  `src/core/inventoryGridName.ts`, `inventoryGridName` and `GRID_CELL_REM`.
 - Filters and search, and item details on hover or focus.
 - A **quickbar** of shortcuts to items you carry. BR (2026-10-05, 00:02):
   "one thing that feels not quite right to me is that pressing the quickbar
@@ -1666,9 +1669,12 @@ decoration.
   such as the compass and the wristwatch are items the player finds and holds
   (#183).
 - **Core mods set the UI's spacing and size.** `spacing` multiplies every
-  margin, padding and gap, so a value below 1 packs the UI for smaller screens.
+  margin, padding and gap, so a value below 1 packs the UI for smaller screens;
+  padding that reserves room for a label or glyph follows the text size instead.
   `hudScale` sizes the HUD and menus, so a player can leave page zoom to the
-  browser and still tweak the HUD. `src/content/base/ui.jsonnet`, the `ui`
+  browser and still tweak the HUD. Edge insets, such as the HUD's offset from the
+  screen edge and the inventory's inset from the window, follow `hudScale`, not
+  `spacing`. `src/content/base/ui.jsonnet`, the `ui`
   section, owns the values; `src/ui/uiTokens.ts`, `applyUiTokens`, installs them
   on the document root at startup, and validation requires the core entry
   (`src/core/content.ts`, `requiredUiIssues`).
@@ -1678,16 +1684,14 @@ decoration.
   client coordinates true: pointer events, `elementFromPoint` and element rects
   agree at any scale. Code that turns a rem length into pointer maths reads the
   rendered root size (`src/ui/inventoryScreen.ts`, `cellPx`).
-- **What stays in px:** borders, outlines and hairlines (grid lines, the
-  crosshair's bars, the splitter's line), so they stay one crisp line at any
-  scale; shadows; the game cursor, a bitmap sprite kept at its native size;
+- **What stays in px:** borders, outlines, hairlines and stripes (grid lines, the
+  crosshair's bars, the splitter's line, a blocked drop's hatching), so they stay
+  crisp at any scale; shadows; the game cursor, a bitmap sprite kept at its native size;
   positions computed from viewport coordinates (the crosshair, the drag ghost,
   combo-box lists); and the world canvas, which sizes from the viewport.
 - The inventory's breakpoints are viewport media queries, so they don't follow
   `hudScale`: at a large scale its columns can overflow before the window is
-  narrow enough to stack them. Container queries don't fit here, because a
-  query container becomes the containing block of its fixed descendants, such
-  as a combo-box list.
+  narrow enough to stack them.
 
 ## Tone
 
