@@ -6,7 +6,7 @@ import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { BODY_REGIONS, bodyRegionLabel } from '../core/body.ts';
 import { dominantSide, offSide } from '../core/character.ts';
-import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
+import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
@@ -34,6 +34,7 @@ import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
+import { configurePlayErrorReport, type ErrorReportContext } from '../ui/errorReport.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import {
   type HandlingPresentationSource,
@@ -158,6 +159,54 @@ import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const STARTUP_MESH_RADIUS = 1;
+
+interface PlayErrorReportPorts {
+  readonly config: Engine['config'];
+  readonly sim: ReturnType<typeof createSession>['sim'];
+  readonly input: Input;
+  readonly metrics: SessionMetrics;
+  readonly exportReplay: () => Promise<Uint8Array>;
+}
+
+const stopPlayAfterError = (sim: PlayErrorReportPorts['sim'], input: Input): void => {
+  sim.paused = true;
+  input.unlock();
+  input.cancel();
+};
+
+const bindPlayErrorReport = ({ config, sim, input, metrics, exportReplay }: PlayErrorReportPorts): void => {
+  const context: ErrorReportContext = {
+    seed: config.seed,
+    site: config.site,
+    clockText: () => formatClock(sim.calendar),
+    stop: () => stopPlayAfterError(sim, input),
+    metricsFile: () => metricsFile(metrics),
+    replayFile: async () => replayFile(await exportReplay(), new Date()),
+  };
+  configurePlayErrorReport(context);
+};
+
+const debugErrorEnabled = (debug: boolean, search: string): boolean => {
+  if (!debug) {
+    return false;
+  }
+  return new URLSearchParams(search).get('debug-error') === '1';
+};
+
+const guardDebugErrorFrame = (
+  frame: (now: RealTimestamp) => boolean,
+  enabled: boolean,
+  pointerLocked: () => boolean,
+): ((now: RealTimestamp) => boolean) => {
+  let pending = enabled;
+  return (now) => {
+    if (pending && pointerLocked()) {
+      pending = false;
+      throw new Error('Debug-triggered game-loop error');
+    }
+    return frame(now);
+  };
+};
 const STARTUP_COLUMN_COUNT = (STARTUP_MESH_RADIUS * 2 + 1) ** 2;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 export const USE_REACH = 2;
@@ -1172,6 +1221,7 @@ export const startPlay = (
     },
     import: importReplay,
   };
+  bindPlayErrorReport({ config, sim, input, metrics, exportReplay: inputReplayHooks.export });
   const handBackStatus = $('playtest-export-status');
   const handBack = async (file: () => HandBackFile | Promise<HandBackFile>): Promise<void> => {
     try {
@@ -3336,7 +3386,7 @@ export const startPlay = (
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
-  startRealFrames(frame);
+  startRealFrames(guardDebugErrorFrame(frame, debugErrorEnabled(config.debug, location.search), () => input.locked));
   return {
     enter: () => {
       audio.unlock();

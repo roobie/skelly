@@ -3,7 +3,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative consumer/presentation assertions.
 // biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -32,11 +32,12 @@ const vite = await createServer({
         if (!id.endsWith('/src/game/play.ts')) {
           return;
         }
-        const marker = 'startRealFrames(frame);';
+        const marker =
+          'startRealFrames(guardDebugErrorFrame(frame, debugErrorEnabled(config.debug, location.search), () => input.locked));';
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
+          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; const gameFrame=guardDebugErrorFrame(frame, debugErrorEnabled(config.debug, location.search), () => input.locked); reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return gameFrame(now);});`,
         );
       },
     },
@@ -52,12 +53,17 @@ try {
   });
   const errors = [];
   const states = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('pageerror', (error) => {
+    if (error.message !== 'Browser-stage game-loop failure') {
+      errors.push(error.message);
+    }
+  });
   page.on('console', (message) => {
-    if (message.type() === 'error') {
+    if (message.type() === 'error' && !message.text().includes('Browser-stage game-loop failure')) {
       errors.push(message.text());
     }
   });
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(
     browserStageUrl(
       'reading',
@@ -831,14 +837,47 @@ try {
     await page.locator('#reading').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
-    await page.keyboard.press('Escape');
-    assert.equal(await page.locator('#reading').isVisible(), false);
-    const escaped = await page.evaluate(() => ({
-      locked: globalThis.readingWitness.input.locked,
-      overlayHidden: document.querySelector('#overlay').hidden,
-    }));
-    assert.equal(escaped.overlayHidden, escaped.locked);
-    proof = { before, during, escaped, menu, resumed: pageResumed };
+    await page.evaluate(() => globalThis.readingWitness.triggerGameLoopError());
+    await page.locator('#error-report').waitFor({ state: 'visible' });
+    await page.waitForFunction(
+      () => globalThis.readingWitness.session.sim.paused && !globalThis.readingWitness.input.locked,
+    );
+    const errorText = await page.locator('[data-error-text]').textContent();
+    assert.ok(errorText?.includes('Browser-stage game-loop failure'));
+    assert.equal(await page.locator('[data-error-feedback]').isVisible(), true);
+    const feedbackLink = await page.locator('[data-error-feedback]').evaluate((link) => link.href);
+    const menuFeedbackLink = await page.locator('#playtest-feedback').evaluate((link) => link.href);
+    assert.equal(
+      new URL(feedbackLink).origin + new URL(feedbackLink).pathname,
+      new URL(menuFeedbackLink).origin + new URL(menuFeedbackLink).pathname,
+    );
+    assert.equal(
+      new URL(feedbackLink).searchParams.get('template'),
+      new URL(menuFeedbackLink).searchParams.get('template'),
+    );
+    await page.locator('[data-error-copy]').click();
+    await page.waitForFunction(async () =>
+      (await navigator.clipboard.readText()).includes('Browser-stage game-loop failure'),
+    );
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    assert.equal(copied, errorText);
+    const downloadEvent = page.waitForEvent('download');
+    await page.locator('[data-error-download]').click();
+    const download = await downloadEvent;
+    const reportPath = await download.path();
+    assert.ok(reportPath);
+    const report = JSON.parse(await readFile(reportPath, 'utf8'));
+    assert.equal(report.error.message, 'Browser-stage game-loop failure');
+    assert.ok(report.error.stack.includes('Browser-stage game-loop failure'));
+    assert.equal(report.world.seed, 1);
+    assert.equal(report.world.site, 'testHouse');
+    assert.equal(typeof report.world.gameTime, 'string');
+    assert.equal(report.userAgent, await page.evaluate(() => navigator.userAgent));
+    assert.equal(typeof report.buildRevision, 'string');
+    assert.ok(report.buildRevision.length > 0);
+    assert.equal(report.playtest.metrics.seed, 1);
+    assert.ok(report.playtest.replay || report.playtest.replayUnavailable);
+    proof = { before, during, menu, resumed: pageResumed, report: { error: report.error, world: report.world } };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';
