@@ -12,6 +12,7 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
+import type { PinState } from '../core/explosive.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
@@ -230,6 +231,12 @@ export const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
+const PIN_LINES: Readonly<Record<PinState, string>> = {
+  in: 'Pin: in',
+  pulled: 'Pin: pulled',
+  burning: 'Fuse: burning',
+};
+const pinDescription = (state: PinState | undefined): string[] => (state ? [PIN_LINES[state]] : []);
 const isGestureAction = (action: string): boolean =>
   action === 'firearm.reload' ||
   action === 'player.throw' ||
@@ -842,7 +849,7 @@ export const startPlay = (
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onFirearmEjection: (effect) => caseEffects.spawn(effect),
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
-    onDetonation: (at) => view.blastFlashes.spawn(at),
+    onDetonation: (at, radiusMetres) => view.blastFlashes.spawn(at, radiusMetres),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ZombieMeshes leaves
@@ -1108,7 +1115,12 @@ export const startPlay = (
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
-    describe: (item) => [...survival.describe(item), ...firearms.describe(item), ...magazines.describe(item)],
+    describe: (item) => [
+      ...survival.describe(item),
+      ...firearms.describe(item),
+      ...magazines.describe(item),
+      ...pinDescription(session.fuses.state(item)),
+    ],
     workOptions: (uid) => session.crafting.options(uid),
     character: () => session.character,
     body: () => sim.body,
@@ -2458,7 +2470,6 @@ export const startPlay = (
       showRefusal("Couldn't land the item there", sim.time);
       return;
     }
-    session.fuses.arm(item);
     const throwOffset: Vec3 = throwingStance
       ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
       : [0, 0, 0];
@@ -2674,6 +2685,16 @@ export const startPlay = (
     }
     showRefusal(firearms.fireReason(item.uid) ?? 'Firearm is not ready', sim.time);
   };
+  const togglePin = (item: Item): void => {
+    const state = session.fuses.togglePin(item);
+    if (state === 'pulled') {
+      showNotice('Pin pulled: the fuse lights when it leaves your hand');
+    } else if (state === 'in') {
+      showNotice('Pin back in');
+    } else if (state === 'burning') {
+      showRefusal('The fuse is already burning', sim.time);
+    }
+  };
   performHandUse = (hand: 'right' | 'left') => {
     if (sim.body.actionRefusal) {
       showRefusal(sim.body.actionRefusal, sim.time);
@@ -2686,6 +2707,9 @@ export const startPlay = (
     switch (action.kind) {
       case 'unpack':
         refusalReason(unpacking.activate(action.item));
+        return;
+      case 'pin':
+        togglePin(action.item);
         return;
       case 'melee':
         swing(action.hand);

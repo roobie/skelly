@@ -353,11 +353,17 @@ const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive }
 /** A thrown charge whose fuse starts when it leaves the hand (DESIGN.md, "Hand grenade"). */
 const ExplosiveSchema = strictObject({
   fuseSimSeconds: PositiveSimSeconds,
-  /** Region health taken from every region of a body whose centre the blast sees, falling to none at the radius. */
-  blast: strictObject({ radiusMetres: Positive, damage: Positive }),
-  /** Seeded rays through the shot hit test; each takes `damage` from the region it strikes. */
+  /**
+   * Region health taken from every region of a body whose centre the blast sees, and the push in N·s on it, both
+   * falling to none at the radius.
+   */
+  blast: strictObject({ radiusMetres: Positive, damage: Positive, impulse: Positive }),
+  /**
+   * Seeded rays through the shot hit test; each takes `damage` from the region it strikes. Every ray is traced
+   * against the bodies in range when the charge goes off, so the count sets that moment's cost.
+   */
   fragments: strictObject({
-    count: pipe(Count, minValue(1, 'must be at least 1'), maxValue(2000, 'must be at most 2000')),
+    count: pipe(Count, minValue(1, 'must be at least 1'), maxValue(1000, 'must be at most 1000')),
     damage: Positive,
     rangeMetres: Positive,
     /** Push in N·s on the struck body. */

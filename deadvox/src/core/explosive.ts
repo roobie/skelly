@@ -11,12 +11,17 @@ import { rayBoxEntry } from './zombieRegions.ts';
 /** A thrown charge's content (DESIGN.md, "Hand grenade"). */
 export type ExplosiveSpec = NonNullable<ItemDef['explosive']>;
 
+/** Where an explosive's pin and fuse stand: pin in, pin pulled while still held, or fuse burning. */
+export type PinState = 'in' | 'pulled' | 'burning';
+
 /**
- * Thrown explosives counting down. The fuse is saved on the item, so a restored game picks up the fuses it finds
- * in `items` where they left off.
+ * Explosives with the pin pulled, and the fuses burning. Pin and fuse are saved on the item, so a restored game
+ * picks up the ones it finds in `items` where they left off.
  */
 export class Fuses {
   private readonly burning = new Set<Item>();
+  /** Pin pulled, fuse waiting for the item to leave the hand. */
+  private readonly live = new Set<Item>();
   private readonly registry: Registry;
 
   constructor(registry: Registry, items: Iterable<Item>) {
@@ -24,21 +29,44 @@ export class Fuses {
     for (const item of items) {
       if (item.fuseRemainingSimSeconds !== undefined) {
         this.burning.add(item);
+      } else if (item.pinPulled) {
+        this.live.add(item);
       }
     }
   }
 
-  /** Starts a thrown explosive's fuse; a fuse already burning keeps its time. Other items are ignored. */
-  arm(item: Item): void {
-    const spec = this.registry.items.get(item.type)?.explosive;
-    if (spec) {
-      item.fuseRemainingSimSeconds ??= spec.fuseSimSeconds;
-      this.burning.add(item);
+  /** The pin's state, or undefined for an item that isn't an explosive. */
+  state(item: Item): PinState | undefined {
+    if (!this.registry.items.get(item.type)?.explosive) {
+      return undefined;
     }
+    if (item.fuseRemainingSimSeconds !== undefined) {
+      return 'burning';
+    }
+    return item.pinPulled ? 'pulled' : 'in';
   }
 
-  /** Burns every fuse by `dt` Sim seconds and returns the explosives whose fuse ran out, by uid. */
-  advance(dt: number): Item[] {
+  /** Pulls the pin, or pushes a pulled one back in; nothing stops a burning fuse. Returns the state after. */
+  togglePin(item: Item): PinState | undefined {
+    const state = this.state(item);
+    if (state === 'in') {
+      item.pinPulled = true;
+      this.live.add(item);
+      return 'pulled';
+    }
+    if (state === 'pulled') {
+      item.pinPulled = undefined;
+      this.live.delete(item);
+      return 'in';
+    }
+    return state;
+  }
+
+  /**
+   * Burns every fuse by `dt` Sim seconds, then lights the fuse of each explosive with its pin pulled that is no
+   * longer `held`. Returns the explosives whose fuse ran out, by uid.
+   */
+  advance(dt: number, held: (item: Item) => boolean): Item[] {
     const done: Item[] = [];
     for (const item of this.burning) {
       item.fuseRemainingSimSeconds = Math.max(0, item.fuseRemainingSimSeconds! - dt);
@@ -47,13 +75,20 @@ export class Fuses {
         done.push(item);
       }
     }
+    for (const item of this.live) {
+      if (!held(item)) {
+        this.live.delete(item);
+        item.fuseRemainingSimSeconds = this.registry.items.get(item.type)!.explosive!.fuseSimSeconds;
+        this.burning.add(item);
+      }
+    }
     return done.sort((a, b) => a.uid - b.uid);
   }
 }
 
-/** Blast damage at a distance: full at the centre, falling linearly to none at the radius. */
-export const blastDamage = ({ radiusMetres, damage }: ExplosiveSpec['blast'], distanceMetres: number): number =>
-  damage * Math.max(0, 1 - distanceMetres / radiusMetres);
+/** The share of a blast's damage and push at a distance: all of it at the centre, falling linearly to none at the radius. */
+export const blastShare = ({ radiusMetres }: ExplosiveSpec['blast'], distanceMetres: number): number =>
+  Math.max(0, 1 - distanceMetres / radiusMetres);
 
 /** A body's centre, in blocks. */
 export const bodyCentre = (body: Body): Vec3 => [body.pos[0], body.pos[1] + body.height / 2, body.pos[2]];
@@ -68,7 +103,7 @@ export const inSight = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
   );
 };
 
-/** `count` directions spread evenly over the sphere. */
+/** `count` directions drawn uniformly at random over the sphere. */
 export const fragmentDirections = (rng: Rng, count: number): Vec3[] =>
   Array.from({ length: count }, (): Vec3 => {
     const y = 2 * rng.next() - 1;

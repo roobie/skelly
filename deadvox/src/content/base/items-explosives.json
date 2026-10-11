@@ -2,16 +2,17 @@
   "items": [
     {
       "category": "weapon",
-      "description": "A fragmentation grenade. The fuse burns from the moment it leaves the hand.",
+      "description": "A fragmentation grenade. With the pin pulled, its fuse lights as it leaves the hand.",
       "explosive": {
         "blast": {
-          "damage": 80,
-          "radiusMetres": 4
+          "damage": 180,
+          "impulse": 30,
+          "radiusMetres": 7
         },
         "fragments": {
           "count": 600,
-          "damage": 20,
-          "impulse": 0.34999999999999998,
+          "damage": 30,
+          "impulse": 0.5,
           "rangeMetres": 15
         },
         "fuseSimSeconds": 4,

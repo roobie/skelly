@@ -69,7 +69,7 @@ export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_F
 /** Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it. */
 export const PLAYER_ARM_REACH_M = 1.2;
 
-import { blastDamage, bodyCentre, type ExplosiveSpec, inSight } from './explosive.ts';
+import { blastShare, bodyCentre, type ExplosiveSpec, inSight } from './explosive.ts';
 import type { PelletShot } from './pellets.ts';
 
 export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
@@ -3074,16 +3074,14 @@ export class ZombieSystem {
       const centre = bodyCentre(zombie.body);
       const distance = Math.hypot(centre[0] - origin[0], centre[1] - origin[1], centre[2] - origin[2]);
       const distanceMetres = distance * this.options.blockSize;
-      const damage = blastDamage(blast, distanceMetres);
-      if (zombie.incapacitated || damage <= 0 || !inSight(origin, centre, this.options.isSolid)) {
+      const share = blastShare(blast, distanceMetres);
+      if (zombie.incapacitated || share <= 0 || !inSight(origin, centre, this.options.isSolid)) {
         continue;
       }
       reached += 1;
       const toward: Vec3 =
-        distance > 0
-          ? [(centre[0] - origin[0]) / distance, (centre[1] - origin[1]) / distance, (centre[2] - origin[2]) / distance]
-          : [0, 1, 0];
-      const weapon = projectileWeapon(damage, blast.radiusMetres, fragments.impulse);
+        distance > 0 ? [centre[0] - origin[0], centre[1] - origin[1], centre[2] - origin[2]] : [0, 1, 0];
+      const weapon = projectileWeapon(blast.damage * share, blast.radiusMetres, blast.impulse * share);
       for (const region of blastOrder(zombie)) {
         if (this.store.get(id) !== zombie) {
           break;

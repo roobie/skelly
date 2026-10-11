@@ -424,11 +424,11 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const { session, played, advance } = scenario;
     const grenade = session.inventory.create('frag_grenade');
     const feet = session.feet();
+    session.fuses.togglePin(grenade);
     // Far beyond its reach, so the player is whole for the scenes that follow.
     const landed = session.inventory.add(grenade, { kind: 'pile', pos: [feet[0] + 80, feet[1], feet[2]] });
     observe(scenario, 'grenade lands', landed);
-    session.fuses.arm(grenade);
-    advance(Math.ceil(registry.items.get('frag_grenade')!.explosive!.fuseSimSeconds * 60) + 2);
+    advance(Math.ceil(registry.items.get('frag_grenade')!.explosive!.fuseSimSeconds * 60) + 10);
     observe(scenario, 'grenade goes off', session.inventory.itemByUid(grenade.uid) === undefined);
     observe(
       scenario,

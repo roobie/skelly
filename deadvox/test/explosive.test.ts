@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { dominantSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { fragmentDirections } from '../src/core/explosive.ts';
@@ -20,6 +21,7 @@ import { World } from '../src/core/world.ts';
 import { SEVERED_ITEM, ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import type { ZombieRegions } from '../src/core/zombieRegions.ts';
 import type { Detonation } from '../src/core/zombies.ts';
+import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -82,13 +84,25 @@ const runtime = (isSolid: SolidAt = OPEN, restore?: Readonly<SaveSnapshot>) =>
   });
 type Runtime = ReturnType<typeof runtime>;
 
-/** A grenade that has just landed in a pile at block `pos`, its fuse burning. */
-const landedGrenade = (session: Runtime, pos: Vec3): Item => {
+/** A grenade that has just landed in a pile at block `pos`; with its pin pulled, its fuse lights on the next step. */
+const landedGrenade = (session: Runtime, pos: Vec3, pinPulled = true): Item => {
   const grenade = session.inventory.create(GRENADE);
+  if (pinPulled) {
+    session.fuses.togglePin(grenade);
+  }
   if (!session.inventory.add(grenade, { kind: 'pile', pos })) {
     throw new Error('Could not land the grenade fixture');
   }
-  session.fuses.arm(grenade);
+  return grenade;
+};
+
+/** A grenade in the player's right hand, its pin pulled. */
+const liveInHand = (session: Runtime): Item => {
+  const grenade = session.inventory.create(GRENADE);
+  if (!session.inventory.add(grenade, { kind: 'hand', side: 'right' })) {
+    throw new Error('Could not hold the grenade fixture');
+  }
+  session.fuses.togglePin(grenade);
   return grenade;
 };
 
@@ -108,6 +122,50 @@ const detonation = (origin: Vec3, blast: Detonation['blast'], fragmentCount = 0)
 });
 
 describe('hand grenade', () => {
+  it('is pinned and unpinned by its primary action in hand', () => {
+    const session = runtime();
+    const grenade = session.inventory.create(GRENADE);
+    expect(session.inventory.add(grenade, { kind: 'hand', side: dominantSide(session.inventory.character) })).toBe(
+      true,
+    );
+    expect(selectPrimaryAction(session.inventory)).toMatchObject({ kind: 'pin', item: grenade });
+    expect(session.fuses.state(grenade)).toBe('in');
+    expect([session.fuses.togglePin(grenade), session.fuses.togglePin(grenade)]).toEqual(['pulled', 'in']);
+  });
+
+  it('lights only when it leaves the hand with its pin pulled, and a lit fuse cannot be stopped', () => {
+    const session = runtime();
+    const dud = landedGrenade(session, [1, 0, 0], false);
+    const held = liveInHand(session);
+    const { health } = session.sim.body;
+    session.sim.scheduler.advance(FUSE + 0.5);
+    expect([session.inventory.itemByUid(dud.uid), session.inventory.itemByUid(held.uid)]).toEqual([dud, held]);
+    expect(session.fuses.togglePin(held)).toBe('in');
+    expect(session.inventory.move(held, { kind: 'pile', pos: [1, 0, 1] }).ok).toBe(true);
+    session.sim.scheduler.advance(FUSE + 0.5);
+    expect([session.inventory.itemByUid(held.uid), session.sim.body.health]).toEqual([held, health]);
+
+    expect(session.inventory.move(held, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(session.fuses.togglePin(held)).toBe('pulled');
+    expect(session.inventory.move(held, { kind: 'pile', pos: [1, 0, 1] }).ok).toBe(true);
+    session.sim.scheduler.advance(0.5);
+    expect(session.fuses.togglePin(held)).toBe('burning');
+    session.sim.scheduler.advance(FUSE);
+    expect(session.inventory.itemByUid(held.uid)).toBeUndefined();
+    expect(session.sim.body.health).toBeLessThan(health);
+  });
+
+  it('goes off in the hand of whoever picks it up while its fuse burns', () => {
+    const session = runtime();
+    const grenade = landedGrenade(session, [1, 0, 0]);
+    session.sim.scheduler.advance(FUSE / 2);
+    expect(session.inventory.move(grenade, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    const { health } = session.sim.body;
+    session.sim.scheduler.advance(FUSE);
+    expect(session.inventory.itemByUid(grenade.uid)).toBeUndefined();
+    expect(session.sim.body.health).toBeLessThan(health);
+  });
+
   it('goes off where it landed once its fuse runs out, hurting the player beside it', () => {
     const session = runtime();
     const grenade = landedGrenade(session, [1, 0, 0]);
@@ -128,9 +186,10 @@ describe('hand grenade', () => {
     expect(session.sim.body.health).toBe(health);
   });
 
-  it('keeps its burning fuse through a save, so the loaded grenade still goes off', async () => {
+  it('keeps a pulled pin and a burning fuse through a save, so the loaded grenades still go off', async () => {
     const original = runtime();
     const grenade = landedGrenade(original, [1, 0, 0]);
+    const held = liveInHand(original);
     original.sim.scheduler.advance(FUSE / 2);
     const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
       generation: 1,
@@ -140,10 +199,15 @@ describe('hand grenade', () => {
     const resumed = runtime(OPEN, (await decodeSave(bytes, { version, contentLookup })).snapshot);
     const remaining = resumed.inventory.itemByUid(grenade.uid)?.fuseRemainingSimSeconds;
     expect(remaining).toBe(grenade.fuseRemainingSimSeconds);
+    const resumedHeld = resumed.inventory.itemByUid(held.uid)!;
+    expect(resumed.fuses.state(resumedHeld)).toBe('pulled');
     const { health } = resumed.sim.body;
     resumed.sim.scheduler.advance(remaining! + 0.5);
     expect(resumed.inventory.itemByUid(grenade.uid)).toBeUndefined();
     expect(resumed.sim.body.health).toBeLessThan(health);
+    expect(resumed.inventory.move(resumedHeld, { kind: 'pile', pos: [1, 0, 1] }).ok).toBe(true);
+    resumed.sim.scheduler.advance(FUSE + 0.5);
+    expect(resumed.inventory.itemByUid(held.uid)).toBeUndefined();
   });
 
   it('hurts a nearer shambler more, and none beyond the blast radius', () => {
@@ -153,7 +217,7 @@ describe('hand grenade', () => {
     const far = session.zombieStore.get(session.zombies.add(SHAMBLER, [-6, 0, 0]))!;
     const beyond = session.zombieStore.get(session.zombies.add(SHAMBLER, [0, 0, 14]))!;
     const before = [near, far, beyond].map(({ regions }) => ({ ...regions }));
-    session.zombies.detonate(detonation(origin, { radiusMetres: 6, damage: 20 }));
+    session.zombies.detonate(detonation(origin, { radiusMetres: 6, damage: 20, impulse: 1 }));
     const [nearLoss, farLoss, beyondLoss] = [near, far, beyond].map(({ regions }, i) =>
       healthLost(before[i]!, regions),
     );
@@ -167,7 +231,7 @@ describe('hand grenade', () => {
     const sheltered = session.zombieStore.get(session.zombies.add(SHAMBLER, [6, 0, 0.5]))!;
     const open = session.zombieStore.get(session.zombies.add(SHAMBLER, [-5, 0, 0.5]))!;
     const before = [sheltered, open].map(({ regions }) => ({ ...regions }));
-    session.zombies.detonate(detonation([0.5, 1, 0.5], { radiusMetres: 6, damage: 20 }, 400));
+    session.zombies.detonate(detonation([0.5, 1, 0.5], { radiusMetres: 6, damage: 20, impulse: 1 }, 400));
     expect(healthLost(before[0]!, sheltered.regions)).toBe(0);
     expect(healthLost(before[1]!, open.regions)).toBeGreaterThan(0);
   });
@@ -175,7 +239,7 @@ describe('hand grenade', () => {
   it('tears every limb off a shambler before a lethal blast drops it', () => {
     const session = runtime();
     const id = session.zombies.add(SHAMBLER, [1, 0, 0]);
-    session.zombies.detonate(detonation([0, 1, 0], { radiusMetres: 6, damage: 1000 }));
+    session.zombies.detonate(detonation([0, 1, 0], { radiusMetres: 6, damage: 1000, impulse: 1 }));
     expect(session.zombieStore.get(id)).toBeUndefined();
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
     const limbs = (['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const).map((region) => SEVERED_ITEM[region]);

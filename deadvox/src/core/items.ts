@@ -42,7 +42,9 @@ export interface ItemFields<Node> {
   burnRemainingGameSeconds?: number;
   /** Game-clock timestamp at the last burn-state update; present only while lit. */
   litAtGameTimestamp?: number | undefined;
-  /** An explosive's fuse left in Sim seconds; present once it has been thrown (core/explosive.ts). */
+  /** An explosive whose pin is out (core/explosive.ts). */
+  pinPulled?: true | undefined;
+  /** An explosive's fuse left in Sim seconds; present once it has left the hand with the pin out. */
   fuseRemainingSimSeconds?: number;
   /**
    * Game-clock timestamp when it was made; absent means before the world began (day 1,
@@ -96,6 +98,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.on === undefined ? {} : { on: item.on }),
     ...(item.burnRemainingGameSeconds === undefined ? {} : { burnRemainingGameSeconds: item.burnRemainingGameSeconds }),
     ...(item.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: item.litAtGameTimestamp }),
+    ...(item.pinPulled === undefined ? {} : { pinPulled: item.pinPulled }),
     ...(item.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: item.fuseRemainingSimSeconds }),
     ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
@@ -148,13 +151,15 @@ const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
   }
 };
 
+/** A pin is pulled on one explosive, and only an explosive with its pin pulled has a fuse burning. */
 const assertSavedFuse = (def: ItemDef, state: ItemState): void => {
   const fuse = state.fuseRemainingSimSeconds;
-  if (
-    fuse !== undefined &&
-    !(def.explosive && state.count === 1 && Number.isFinite(fuse) && fuse >= 0 && fuse <= def.explosive.fuseSimSeconds)
-  ) {
-    throw new Error('Invalid saved explosive fuse');
+  const pinValid = state.pinPulled === undefined || (state.pinPulled === true && def.explosive && state.count === 1);
+  const fuseValid =
+    fuse === undefined ||
+    (state.pinPulled && Number.isFinite(fuse) && fuse >= 0 && fuse <= def.explosive!.fuseSimSeconds);
+  if (!(pinValid && fuseValid)) {
+    throw new Error('Invalid saved explosive pin or fuse');
   }
 };
 
@@ -217,6 +222,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
       ? {}
       : { burnRemainingGameSeconds: state.burnRemainingGameSeconds }),
     ...(state.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: state.litAtGameTimestamp }),
+    ...(state.pinPulled === undefined ? {} : { pinPulled: state.pinPulled }),
     ...(state.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: state.fuseRemainingSimSeconds }),
     ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
     ...(firearm === undefined ? {} : { firearm }),

@@ -236,7 +236,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger: 'A thrown hand grenade goes off when its fuse runs out.',
       debugHint:
-        '?debug=1&loadout=grenade: tap T for the throwing stance, hold then release the primary mouse button to throw, and step back.',
+        '?debug=1&loadout=grenade: click the primary mouse button to pull the pin, tap T for the throwing stance, hold then release the primary mouse button to throw, and step back.',
       note: 'Placeholder: the shotgun recording pitched down until a recorded blast is chosen.',
     },
   ],

@@ -1,6 +1,9 @@
 // Thrown explosives (DESIGN.md, "Hand grenade").
 
-// Spike tuning, roughly a fragmentation grenade: killing close by, wounding out to its fragment range.
+// Tuned so one grenade in the middle of a horde shreds it: against shamblers the blast kills within about two
+// thirds of its radius and severs limbs nearly to its edge, and one fragment severs a limb. A full-strength throw
+// lands past the radius, so a hard throw spares the thrower the blast but not every fragment. The fragment count
+// stays where one blast into a full horde costs about a frame.
 local items = [
   {
     id: 'frag_grenade',
@@ -8,11 +11,11 @@ local items = [
     category: 'weapon',
     weight: 400,
     size: [1, 1],
-    description: 'A fragmentation grenade. The fuse burns from the moment it leaves the hand.',
+    description: 'A fragmentation grenade. With the pin pulled, its fuse lights as it leaves the hand.',
     explosive: {
       fuseSimSeconds: 4,
-      blast: { radiusMetres: 4, damage: 80 },
-      fragments: { count: 600, damage: 20, rangeMetres: 15, impulse: 0.35 },
+      blast: { radiusMetres: 7, damage: 180, impulse: 30 },
+      fragments: { count: 600, damage: 30, rangeMetres: 15, impulse: 0.5 },
       sound: 'grenade_blast',
     },
   },

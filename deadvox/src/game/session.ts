@@ -17,7 +17,7 @@ import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { dayCycleFor, dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
-import { blastDamage, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
+import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
 import {
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
@@ -318,8 +318,8 @@ export interface SessionOptions {
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
   onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
-  /** Presentation-only: an explosive went off here, in metres. */
-  onDetonation?: (at: Vec3) => void;
+  /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
+  onDetonation?: (at: Vec3, radiusMetres: number) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
@@ -1085,14 +1085,16 @@ export const createSession = (options: SessionOptions) => {
     const { damage, impulse, rangeMetres } = spec.fragments;
     zombieSystem.detonate({ blast: spec.blast, fragments: { origin: at, directions, damage, impulse, rangeMetres } });
     const centre = bodyCentre(body);
-    const blast = blastDamage(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
+    const blast =
+      spec.blast.damage *
+      blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
     if (blast > 0 && inSight(at, centre, isSolid)) {
       sim.hit(blast, 'a grenade', 'torso', { kind: 'blunt' });
     }
     for (const region of fragmentHitsOnBody({ origin: at, directions, rangeBlocks: rangeMetres / s, body, isSolid })) {
       sim.hit(damage, 'a grenade', region, { kind: 'pierce' });
     }
-    options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s]);
+    options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);
     // The blast is the player's doing, so it is heard as their noise, from where it went off.
     admitSound(spec.sound, at, sim.time, { player: true, sourceLabel: 'grenade' });
   };
@@ -1100,7 +1102,7 @@ export const createSession = (options: SessionOptions) => {
     id: 'zombies',
     rate: ZOMBIE_RATE,
     tick: (dt, time) => {
-      for (const item of fuses.advance(dt)) {
+      for (const item of fuses.advance(dt, (live) => inventory.locate(live)?.kind === 'hand')) {
         detonate(item);
       }
       spawner.advance({ calendar: sim.calendar, registry, zombies: zombieSystem });
@@ -1400,7 +1402,7 @@ export const createSession = (options: SessionOptions) => {
     firearms,
     firearmAttachments,
     magazines,
-    /** Thrown explosives counting down; a throw arms its item here. */
+    /** Explosives' pins and burning fuses; a pin is pulled here, and the fuse lights once the item leaves the hand. */
     fuses,
     aim,
     get firearmsSkillZeroHandling() {
