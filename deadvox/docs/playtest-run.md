@@ -19,10 +19,14 @@ military camp, and its play link opens the authored map; see [EPIC.md](../EPIC.m
 
 ## Deployment freeze
 
-Set the Pages deployment freeze when sharing the Round 1 landing page
-(`site/deadvox/playtest/round1/`) and clear it when the playtest window closes.
-Testers enter the authored map through that page's play link. Keep the deployed
-game unchanged while testers play: their saves are tied to that deployed code.
+For [#181](https://github.com/roobie/skelly/issues/181), set the Pages
+deployment freeze only after the round's in-flight changes have merged and BR
+has played a run of the deployed build without finding a blocker. BR gives the
+go-ahead. Then share the Round 1 landing page
+(`site/deadvox/playtest/round1/`) and clear the freeze when the playtest window
+closes. Testers enter the authored map through that page's play link. Keep the
+deployed game unchanged while testers play: their saves are tied to that
+deployed code.
 Set and clear the repository variable with:
 
 ```sh
