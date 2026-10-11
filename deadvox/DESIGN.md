@@ -507,7 +507,10 @@ HTML over the game view, and keyboard-first:
   `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
   shows its handling time. Weight, exact condition and times are in the item's
-  details.
+  details. Small cells can collapse similar names to the same visible prefix,
+  making items hard to distinguish while scanning; keeping a distinct glanceable
+  identity prevents confusion, while inspection keeps the full name. See
+  `src/core/schema.ts`, `ItemSchema`, and `src/ui/inventoryScreen.ts`, `itemViewModel`.
 - Filters and search, and item details on hover or focus.
 - A **quickbar** of shortcuts to items you carry. BR (2026-10-05, 00:02):
   "one thing that feels not quite right to me is that pressing the quickbar

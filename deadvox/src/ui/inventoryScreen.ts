@@ -1156,13 +1156,18 @@ export class InventoryScreen {
                 width: `${w * CELL - 2}px`,
                 height: `${h * CELL - 2}px`,
               },
+          true,
         );
       }),
     };
   }
 
-  private itemViewModel(item: Item, className: string, style?: Record<string, string>): ItemViewModel {
+  private itemViewModel(item: Item, className: string, style?: Record<string, string>, compact = false): ItemViewModel {
     const def = defOf(this.inv.registry, item.type);
+    const itemStyle = {
+      ...style,
+      ...(compact && def.inventoryColor ? { 'background-color': def.inventoryColor } : {}),
+    };
     this.byUid.set(item.uid, item);
     this.order.push(item);
     return {
@@ -1170,13 +1175,14 @@ export class InventoryScreen {
       uid: String(item.uid),
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}`,
       title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(item.condition)}`,
-      name: workName(this.inv.registry, item),
+      name: compact && !item.work ? (def.inventoryLabel ?? def.name) : workName(this.inv.registry, item),
       count: item.count > 1 ? `×${item.count}` : undefined,
-      style: style
-        ? Object.entries(style)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join('; ')
-        : undefined,
+      style:
+        Object.keys(itemStyle).length > 0
+          ? Object.entries(itemStyle)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join('; ')
+          : undefined,
     };
   }
 
