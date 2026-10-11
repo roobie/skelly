@@ -145,6 +145,15 @@ describe('hand grenade', () => {
     session.sim.scheduler.advance(FUSE + 0.5);
     expect([session.inventory.itemByUid(held.uid), session.sim.body.health]).toEqual([held, health]);
 
+    const stowed = liveInHand(session);
+    const fannyPack = session.inventory.create('fanny_pack');
+    expect(session.inventory.add(fannyPack, { kind: 'worn' })).toBe(true);
+    expect(session.inventory.move(stowed, { kind: 'pocket', owner: fannyPack, pocket: 0 }).ok).toBe(true);
+    const healthBeforeStowedDetonation = session.sim.body.health;
+    session.sim.scheduler.advance(FUSE + 0.5);
+    expect(session.inventory.itemByUid(stowed.uid)).toBeUndefined();
+    expect(session.sim.body.health).toBeLessThan(healthBeforeStowedDetonation);
+
     expect(session.inventory.move(held, { kind: 'hand', side: 'right' }).ok).toBe(true);
     expect(session.fuses.togglePin(held)).toBe('pulled');
     expect(session.inventory.move(held, { kind: 'pile', pos: [1, 0, 1] }).ok).toBe(true);

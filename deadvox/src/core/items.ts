@@ -157,7 +157,11 @@ const assertSavedFuse = (def: ItemDef, state: ItemState): void => {
   const pinValid = state.pinPulled === undefined || (state.pinPulled === true && def.explosive && state.count === 1);
   const fuseValid =
     fuse === undefined ||
-    (state.pinPulled && Number.isFinite(fuse) && fuse >= 0 && fuse <= def.explosive!.fuseSimSeconds);
+    (def.explosive !== undefined &&
+      state.pinPulled &&
+      Number.isFinite(fuse) &&
+      fuse >= 0 &&
+      fuse <= def.explosive.fuseSimSeconds);
   if (!(pinValid && fuseValid)) {
     throw new Error('Invalid saved explosive pin or fuse');
   }
