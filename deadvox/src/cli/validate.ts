@@ -11,7 +11,7 @@ import { basename, dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
-import { buildRegistry, type ContentSource, requiredSoundIssues } from '../core/content.ts';
+import { buildRegistry, type ContentSource, requiredSoundIssues, requiredUiIssues } from '../core/content.ts';
 import { checkReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 
@@ -65,6 +65,7 @@ export const validate = (
   write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
   write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
   issues.push(...requiredSoundIssues(registry, join(BASE, 'sounds.json')));
+  issues.push(...requiredUiIssues(registry, join(BASE, 'ui.json')));
   let assets = 0;
   for (const source of manifests) {
     const data = read(source);

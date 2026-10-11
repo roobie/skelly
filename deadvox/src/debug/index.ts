@@ -492,7 +492,7 @@ const panelTemplate = ({
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · ${labelForAction('debug.freeze-game')}</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
     <div id="debug-look-readout" class="debug-aim-readout debug-look-readout"></div>
-    <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
+    <div id="debug-mouse-readout" class="debug-aim-readout" style="left:0.375rem;top:auto;bottom:0.375rem;transform:none"></div>
     <section class="debug-panel" data-debug-controls ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (${labelForAction('debug.panel-toggle')})</button></header>
     <p>F4 toggles the performance overlay.</p>

@@ -28,6 +28,11 @@
 * {
   box-sizing: border-box;
 }
+/* The UI is measured in rem and scales through the root size, so the browser's font setting still counts and
+   client coordinates stay true for hit testing; the world canvas sizes from the viewport (DESIGN.md, "UI principles"). */
+html {
+  font-size: calc(100% * var(--ui-scale));
+}
 html,
 body {
   margin: 0;
@@ -35,8 +40,10 @@ body {
   overflow: hidden;
   background: #0e1013;
   color: var(--text);
+}
+body {
   font:
-    14px / 1.4 system-ui,
+    0.875rem / 1.4 system-ui,
     sans-serif;
 }
 #startup-screen {
@@ -46,15 +53,15 @@ body {
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 12px;
+  gap: calc(var(--ui-spacing) * 0.75rem);
   background: #000;
 }
 #startup-screen[hidden] {
   display: none;
 }
 #startup-progress {
-  width: min(240px, 60vw);
-  height: 3px;
+  width: min(15rem, 60vw);
+  height: 0.1875rem;
   overflow: hidden;
   background: #30343a;
 }
@@ -69,7 +76,7 @@ body {
   overflow-wrap: anywhere;
 }
 #startup-screen #save-status {
-  max-width: min(420px, calc(100vw - 32px));
+  max-width: min(26.25rem, calc(100vw - 2rem));
   margin: 0;
   color: #b8bcc2;
   text-align: center;
@@ -106,6 +113,7 @@ body.unconscious::after {
   pointer-events: none;
   mix-blend-mode: difference;
 }
+/* A bitmap sprite, so it stays at its native px size to stay crisp. */
 #game-cursor {
   position: absolute;
   width: 32px;
@@ -137,16 +145,16 @@ body.unconscious::after {
 .debug-aim-readout {
   position: fixed;
   left: 50%;
-  top: calc(50% + 18px);
+  top: calc(50% + 1.125rem);
   z-index: var(--ui-layer-debug-aim-readout);
   transform: translateX(-50%);
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: calc(var(--ui-spacing) * 0.125rem) calc(var(--ui-spacing) * 0.375rem);
+  border-radius: 0.1875rem;
   pointer-events: none;
   background: rgb(12 16 12 / 80%);
   color: #fff;
   font:
-    12px / 1.4 ui-monospace,
+    0.75rem / 1.4 ui-monospace,
     monospace;
   white-space: nowrap;
   text-shadow: 0 1px 2px #000;
@@ -163,9 +171,9 @@ body.unconscious::after {
   position: fixed;
   left: 50%;
   top: 50%;
-  width: 14px;
-  height: 14px;
-  margin: -7px 0 0 -7px;
+  width: 0.875rem;
+  height: 0.875rem;
+  transform: translate(-50%, -50%);
   pointer-events: none;
   background:
     linear-gradient(var(--text), var(--text)) center / 2px 100% no-repeat,
@@ -175,31 +183,31 @@ body.unconscious::after {
 }
 #hud {
   position: fixed;
-  left: 12px;
-  top: 12px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  left: 0.75rem;
+  top: 0.75rem;
+  padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.625rem);
+  border-radius: 0.375rem;
   pointer-events: none;
   background: var(--panel);
   font:
-    12px / 1.5 ui-monospace,
+    0.75rem / 1.5 ui-monospace,
     monospace;
   white-space: pre;
 }
 #hotbar {
   position: fixed;
   left: 50%;
-  bottom: 16px;
+  bottom: 1rem;
   transform: translateX(-50%);
   display: flex;
-  gap: 6px;
+  gap: calc(var(--ui-spacing) * 0.375rem);
   pointer-events: none;
 }
 #hotbar div {
   white-space: nowrap;
-  padding: 6px 10px;
+  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.625rem);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: var(--panel);
   color: var(--muted);
 }
@@ -209,24 +217,24 @@ body.unconscious::after {
 }
 #hotbar span {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 6px;
-  border-radius: 2px;
-  vertical-align: -1px;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-right: calc(var(--ui-spacing) * 0.375rem);
+  border-radius: 0.125rem;
+  vertical-align: -0.0625rem;
 }
 
 #throw-stance {
   position: fixed;
   left: 50%;
-  top: calc(50% - 44px);
+  top: calc(50% - 2.75rem);
   transform: translateX(-50%);
-  padding: 3px 8px;
+  padding: calc(var(--ui-spacing) * 0.1875rem) calc(var(--ui-spacing) * 0.5rem);
   border: 1px solid var(--accent);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background: var(--panel);
   color: var(--text);
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   pointer-events: none;
 }
@@ -237,11 +245,11 @@ body.unconscious::after {
 #prompt {
   position: fixed;
   left: 50%;
-  top: calc(50% + 48px);
+  top: calc(50% + 3rem);
   transform: translateX(-50%);
-  padding: 8px 14px;
+  padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.875rem);
   border: 1px solid var(--accent);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   pointer-events: none;
   background: var(--panel);
   text-align: center;
@@ -254,15 +262,15 @@ body.unconscious::after {
 #save-recovery {
   position: fixed;
   z-index: var(--ui-layer-save-recovery);
-  left: 12px;
-  bottom: 12px;
-  max-width: min(680px, calc(100vw - 24px));
+  left: 0.75rem;
+  bottom: 0.75rem;
+  max-width: min(42.5rem, calc(100vw - 1.5rem));
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  padding: calc(var(--ui-spacing) * 0.625rem) calc(var(--ui-spacing) * 0.75rem);
   border: 1px solid #d47b62;
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: rgb(24 18 18 / 94%);
   box-shadow: 0 2px 12px #0008;
 }
@@ -278,14 +286,14 @@ body.unconscious::after {
   position: fixed;
   z-index: var(--ui-layer-startup-hint);
   left: 50%;
-  bottom: 24px;
+  bottom: 1.5rem;
   display: grid;
-  gap: 6px;
-  width: min(360px, calc(100vw - 32px));
+  gap: calc(var(--ui-spacing) * 0.375rem);
+  width: min(22.5rem, calc(100vw - 2rem));
   transform: translateX(-50%);
-  padding: 10px 14px;
+  padding: calc(var(--ui-spacing) * 0.625rem) calc(var(--ui-spacing) * 0.875rem);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: var(--panel);
   box-shadow: 0 2px 12px #0008;
   text-align: center;
@@ -296,7 +304,7 @@ body.unconscious::after {
 }
 #startup-hint progress {
   width: 100%;
-  height: 8px;
+  height: 0.5rem;
   accent-color: var(--accent);
 }
 
@@ -319,20 +327,20 @@ body.unconscious::after {
 }
 #overlay .card-scroll-shell {
   position: relative;
-  width: min(360px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
-  margin-right: 16px;
+  width: min(22.5rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  margin-right: calc(var(--ui-spacing) * 1rem);
 }
 /* This card is opaque because there is no dimming layer behind it. */
 #overlay .card {
   width: 100%;
   max-width: 100%;
-  max-height: calc(100vh - 32px);
+  max-height: calc(100vh - 2rem);
   overflow-y: auto;
   margin: 0;
-  padding: 24px;
+  padding: calc(var(--ui-spacing) * 1.5rem);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   background: rgb(18 20 24);
 }
 #overlay .card:focus-within {
@@ -346,9 +354,9 @@ body.unconscious::after {
   right: 1px;
   display: grid;
   place-items: center;
-  height: 34px;
+  height: 2.125rem;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem;
   pointer-events: none;
   text-shadow: 0 1px 3px #000;
 }
@@ -364,18 +372,18 @@ body.unconscious::after {
   display: none;
 }
 #overlay h1 {
-  margin: 0 0 4px;
-  font-size: 22px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.25rem);
+  font-size: 1.375rem;
 }
 #overlay p {
-  margin: 0 0 12px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.75rem);
   color: var(--muted);
 }
 #overlay dl {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 2px 14px;
-  margin: 0 0 16px;
+  gap: calc(var(--ui-spacing) * 0.125rem) calc(var(--ui-spacing) * 0.875rem);
+  margin: 0 0 calc(var(--ui-spacing) * 1rem);
 }
 #overlay dt {
   font-family: ui-monospace, monospace;
@@ -387,17 +395,17 @@ body.unconscious::after {
 #overlay #controls-search {
   display: block;
   width: 100%;
-  margin: 4px 0 8px;
+  margin: calc(var(--ui-spacing) * 0.25rem) 0 calc(var(--ui-spacing) * 0.5rem);
 }
 #overlay #controls {
   grid-template-columns: minmax(0, 1fr);
   row-gap: 0;
 }
 #overlay #controls dt {
-  margin-top: 6px;
+  margin-top: calc(var(--ui-spacing) * 0.375rem);
 }
 #overlay #controls dd {
-  margin-bottom: 4px;
+  margin-bottom: calc(var(--ui-spacing) * 0.25rem);
 }
 #overlay .go {
   color: var(--text);
@@ -423,10 +431,10 @@ body.unconscious::after {
 #save-export,
 #save-replace-confirm,
 #save-replace-cancel {
-  margin: 0 0 12px;
-  padding: 6px 14px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.75rem);
+  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.875rem);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: var(--text);
   color: #121418;
   font: inherit;
@@ -449,25 +457,25 @@ body.unconscious::after {
   display: none;
 }
 #death .card {
-  max-width: 420px;
-  padding: 24px;
+  max-width: 26.25rem;
+  padding: calc(var(--ui-spacing) * 1.5rem);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   background: var(--panel);
 }
 #death h1 {
-  margin: 0 0 8px;
-  font-size: 22px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.5rem);
+  font-size: 1.375rem;
 }
 #death p {
-  margin: 0 0 12px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.75rem);
   color: var(--muted);
 }
 #death button {
   font: inherit;
-  padding: 6px 14px;
+  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.875rem);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: var(--text);
   color: #121418;
   cursor: pointer;
@@ -475,21 +483,21 @@ body.unconscious::after {
 
 /* ---- inventory screen ---- */
 #inventory {
-  --inv-pane-padding-inline: 12px;
+  --inv-pane-padding-inline: calc(var(--ui-spacing) * 0.75rem);
   --inv-pane-border-width: 1px;
   /* Bound tall nearby grids so their scrollports don't expand the pane. */
-  --inv-around-grid-max-height: max(96px, 40vh);
+  --inv-around-grid-max-height: max(6rem, 40vh);
   position: fixed;
   z-index: var(--ui-layer-inventory);
-  inset: 24px;
+  inset: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: calc(var(--ui-spacing) * 0.625rem);
   min-width: 0;
   min-height: 0;
-  padding: 14px 16px;
+  padding: calc(var(--ui-spacing) * 0.875rem) calc(var(--ui-spacing) * 1rem);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   background: rgb(16 18 22 / 96%);
   user-select: none;
 }
@@ -497,46 +505,46 @@ body.unconscious::after {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
+  gap: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 1rem);
   min-width: 0;
 }
 .inv-title {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: calc(var(--ui-spacing) * 0.75rem);
 }
 .inv-head h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 .inv-weight {
   font:
-    13px ui-monospace,
+    0.8125rem ui-monospace,
     monospace;
 }
 .inv-help {
   margin-left: auto;
   max-width: 100%;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .inv-help summary {
   cursor: pointer;
 }
 #inventory .inv-help span {
   display: block;
-  max-width: min(72ch, calc(100vw - 64px));
-  padding-top: 6px;
+  max-width: min(72ch, calc(100vw - 4rem));
+  padding-top: calc(var(--ui-spacing) * 0.375rem);
 }
 .inv-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: calc(var(--ui-spacing) * 0.375rem);
 }
 .inv-tab {
-  padding: 6px 12px;
+  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.75rem);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: #22262c;
   color: var(--muted);
   font: inherit;
@@ -553,14 +561,14 @@ body.unconscious::after {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px;
+  gap: calc(var(--ui-spacing) * 0.625rem);
   overflow: auto;
 }
 .inv-body[hidden] {
   display: none;
 }
 .inv-skills {
-  grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
+  grid-template-columns: minmax(11.25rem, 1fr) minmax(0, 2fr);
   grid-template-rows: minmax(0, 1fr);
 }
 /* Gives `scrollbarWidth` in inventoryScreen.ts a gutter like the panes' to measure. */
@@ -576,7 +584,7 @@ body.unconscious::after {
 /* The side panes' floors are their min-widths too, so the splitter's clamp reads the same values. */
 #inventory .inv-body[data-tab-panel="items"] {
   --inv-details-width: 20%;
-  --inv-you-min: 220px;
+  --inv-you-min: 13.75rem;
   /* A cap-wide container section (its grid plus scroll gutter) beside the pane's own scroll gutter, inside the pane's padding and border. */
   --inv-around-min: calc(
     var(--inv-around-container-width-cap, 0px) +
@@ -588,7 +596,7 @@ body.unconscious::after {
     var(--inv-pane-border-width)
   );
   grid-template-columns:
-    minmax(var(--inv-you-min), var(--inv-you-fr, 1fr)) 12px minmax(0, var(--inv-details-width))
+    minmax(var(--inv-you-min), var(--inv-you-fr, 1fr)) 0.75rem minmax(0, var(--inv-details-width))
     minmax(var(--inv-around-min), var(--inv-around-fr, 1fr));
   grid-template-rows: minmax(0, 1fr);
   column-gap: 0;
@@ -598,18 +606,31 @@ body.unconscious::after {
   grid-row: 1;
   min-width: var(--inv-you-min);
 }
+/* The splitter's line is a hairline centred in it, so it stays crisp at any scale. */
 #inventory .inv-body[data-tab-panel="items"] .inv-splitter {
   grid-column: 2;
   grid-row: 1;
   align-self: stretch;
   justify-self: center;
-  width: 12px;
+  width: 0.75rem;
   cursor: col-resize;
   touch-action: none;
-  background: linear-gradient(90deg, transparent 5px, #39414b 5px, #39414b 7px, transparent 7px);
+  background: linear-gradient(
+    90deg,
+    transparent calc(50% - 1px),
+    #39414b calc(50% - 1px),
+    #39414b calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
 }
 #inventory .inv-body[data-tab-panel="items"] .inv-splitter:hover {
-  background: linear-gradient(90deg, transparent 4px, var(--accent) 4px, var(--accent) 8px, transparent 8px);
+  background: linear-gradient(
+    90deg,
+    transparent calc(50% - 2px),
+    var(--accent) calc(50% - 2px),
+    var(--accent) calc(50% + 2px),
+    transparent calc(50% + 2px)
+  );
 }
 #inventory .inv-body[data-tab-panel="items"] [data-pane="details"] {
   grid-column: 3;
@@ -631,8 +652,8 @@ body.unconscious::after {
 @media (max-width: 790px) {
   #inventory .inv-body[data-tab-panel="items"] {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: repeat(3, minmax(160px, 1fr));
-    row-gap: 10px;
+    grid-template-rows: repeat(3, minmax(10rem, 1fr));
+    row-gap: calc(var(--ui-spacing) * 0.625rem);
   }
   #inventory .inv-body[data-tab-panel="items"] [data-pane="you"] {
     grid-column: 1;
@@ -659,28 +680,28 @@ body.unconscious::after {
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px var(--inv-pane-padding-inline);
+  gap: calc(var(--ui-spacing) * 0.625rem);
+  padding: calc(var(--ui-spacing) * 0.625rem) var(--inv-pane-padding-inline);
   border: var(--inv-pane-border-width) solid #2a3038;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: #15171b;
 }
 #inventory .inv-details {
-  gap: 6px;
+  gap: calc(var(--ui-spacing) * 0.375rem);
   background: #1b1e23;
 }
 .inv-body-panel {
-  gap: 8px;
+  gap: calc(var(--ui-spacing) * 0.5rem);
 }
 .inv-body-vitals,
 .inv-body-region {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .inv-body-region {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 6px 0;
+  gap: calc(var(--ui-spacing) * 0.1875rem);
+  padding: calc(var(--ui-spacing) * 0.375rem) 0;
   border-top: 1px solid #2a3038;
 }
 .inv-body-region-name {
@@ -693,40 +714,40 @@ body.unconscious::after {
 .inv-pane h3,
 .inv-details h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .inv-details h3 {
-  font-size: 19px;
+  font-size: 1.1875rem;
 }
 .inv-hands {
   display: flex;
-  gap: 10px;
+  gap: calc(var(--ui-spacing) * 0.625rem);
 }
 .inv-slot {
   position: relative;
-  min-width: 170px;
-  min-height: 44px;
+  min-width: 10.625rem;
+  min-height: 2.75rem;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
   border: 1px dashed #39414b;
-  border-radius: 6px;
+  border-radius: 0.375rem;
 }
 .inv-slot-worn {
-  min-height: 34px;
+  min-height: 2.125rem;
   align-self: flex-start;
 }
 .inv-slot-label,
 .inv-kicker {
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
 }
 .inv-kicker {
-  margin-top: 6px;
+  margin-top: calc(var(--ui-spacing) * 0.375rem);
 }
 .inv-worn,
 .inv-pocket,
@@ -734,29 +755,29 @@ body.unconscious::after {
 .inv-bag {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(var(--ui-spacing) * 0.25rem);
 }
 .inv-pockets {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 14px;
-  padding-left: 12px;
+  gap: calc(var(--ui-spacing) * 0.625rem) calc(var(--ui-spacing) * 0.875rem);
+  padding-left: calc(var(--ui-spacing) * 0.75rem);
 }
 #inventory .inv-around-sections {
   display: flex;
   flex-wrap: wrap;
   align-content: start;
-  gap: 10px;
+  gap: calc(var(--ui-spacing) * 0.625rem);
   min-width: 0;
 }
 #inventory .inv-around-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(var(--ui-spacing) * 0.25rem);
   min-width: 0;
 }
 #inventory .inv-around-section[data-around-section="floor"] {
-  flex: 1 1 132px;
+  flex: 1 1 8.25rem;
 }
 #inventory .inv-around-section[data-around-section="container"] {
   flex: 0 0 auto;
@@ -770,7 +791,7 @@ body.unconscious::after {
 .inv-pocket-label,
 .inv-pile-label {
   font:
-    11px ui-monospace,
+    0.6875rem ui-monospace,
     monospace;
   color: var(--muted);
 }
@@ -780,7 +801,7 @@ body.unconscious::after {
 .inv-grid-scroll {
   flex: 1;
   min-width: 0;
-  min-height: 96px;
+  min-height: 6rem;
   max-width: 100%;
   overflow: auto;
   overscroll-behavior: contain;
@@ -790,10 +811,11 @@ body.unconscious::after {
   max-height: var(--inv-around-grid-max-height);
   scrollbar-gutter: stable;
 }
+/* One grid cell is 3rem: `GRID_CELL_REM` in src/core/inventoryGridName.ts. */
 #inventory .inv-grid-packed {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 48px);
-  grid-auto-rows: 48px;
+  grid-template-columns: repeat(auto-fill, 3rem);
+  grid-auto-rows: 3rem;
   grid-auto-flow: row;
   align-content: start;
   width: min(100%, var(--inv-grid-max-width));
@@ -803,17 +825,17 @@ body.unconscious::after {
   position: relative;
   background-color: #111317;
   background-image: linear-gradient(#262b31 1px, transparent 1px), linear-gradient(90deg, #262b31 1px, transparent 1px);
-  background-size: 48px 48px;
+  background-size: 3rem 3rem;
   outline: 1px solid #39414b;
-  border-radius: 2px;
+  border-radius: 0.125rem;
 }
 .inv-item,
 .inv-ghost {
   box-sizing: border-box;
-  padding: 2px 4px;
+  padding: calc(var(--ui-spacing) * 0.125rem) calc(var(--ui-spacing) * 0.25rem);
   border: 1px solid #4a525c;
-  border-radius: 3px;
-  font-size: 11px;
+  border-radius: 0.1875rem;
+  font-size: 0.6875rem;
   line-height: 1.15;
   overflow: hidden;
 }
@@ -827,8 +849,8 @@ body.unconscious::after {
 }
 .inv-item-slot {
   position: relative;
-  padding: 4px 8px;
-  font-size: 13px;
+  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
+  font-size: 0.8125rem;
 }
 .inv-item.selected {
   border: 2px solid var(--accent);
@@ -852,13 +874,13 @@ body.unconscious::after {
 }
 .inv-item-count {
   position: absolute;
-  right: 3px;
-  bottom: 1px;
-  font-size: 10px;
+  right: 0.1875rem;
+  bottom: 0.0625rem;
+  font-size: 0.625rem;
 }
 .inv-item-slot .inv-item-count {
   position: static;
-  margin-left: 6px;
+  margin-left: calc(var(--ui-spacing) * 0.375rem);
 }
 .cat-food,
 .cat-drink {
@@ -895,7 +917,7 @@ body.unconscious::after {
   position: absolute;
   box-sizing: border-box;
   pointer-events: none;
-  border-radius: 3px;
+  border-radius: 0.1875rem;
 }
 .inv-preview[data-drop-shape="will-land"],
 .inv-slot[data-drop-shape="will-land"] {
@@ -918,7 +940,7 @@ body.unconscious::after {
   height: var(--preview-height);
   box-sizing: border-box;
   pointer-events: none;
-  border-radius: 3px;
+  border-radius: 0.1875rem;
 }
 .inv-grid[data-drop-shape="will-land"]::after {
   background: rgb(224 176 74 / 22%);
@@ -934,9 +956,9 @@ body.unconscious::after {
   content: attr(data-drop-mark);
   position: absolute;
   top: 50%;
-  right: 6px;
-  width: 24px;
-  height: 24px;
+  right: 0.375rem;
+  width: 1.5rem;
+  height: 1.5rem;
   display: grid;
   place-items: center;
   transform: translateY(-50%);
@@ -944,27 +966,28 @@ body.unconscious::after {
   border-radius: 50%;
   background: #111317;
   color: #fff;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   line-height: 1;
   text-shadow: 0 1px 2px #000;
   pointer-events: none;
 }
+/* Centred on the preview: the mark's outer size is its width plus its two borders. */
 .inv-grid[data-drop-mark]::before {
   content: attr(data-drop-mark);
   position: absolute;
-  left: calc(var(--preview-left) + (var(--preview-width) - 28px) / 2);
-  top: calc(var(--preview-top) + (var(--preview-height) - 28px) / 2);
+  left: calc(var(--preview-left) + (var(--preview-width) - (1.5rem + 4px)) / 2);
+  top: calc(var(--preview-top) + (var(--preview-height) - (1.5rem + 4px)) / 2);
   z-index: var(--ui-layer-inventory);
-  width: 24px;
-  height: 24px;
+  width: 1.5rem;
+  height: 1.5rem;
   display: grid;
   place-items: center;
   border: 2px solid #fff;
   border-radius: 50%;
   background: #111317;
   color: #fff;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   line-height: 1;
   text-shadow: 0 1px 2px #000;
@@ -976,22 +999,22 @@ body.unconscious::after {
 }
 .inv-line {
   font:
-    12px ui-monospace,
+    0.75rem ui-monospace,
     monospace;
   color: #c4cad2;
 }
 .inv-muted {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .inv-option {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 6px;
-  font-size: 13px;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  padding: calc(var(--ui-spacing) * 0.3125rem) calc(var(--ui-spacing) * 0.5rem);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
   text-align: left;
 }
 button.inv-option {
@@ -999,7 +1022,7 @@ button.inv-option {
   background: #22262c;
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 button.inv-option:hover,
@@ -1013,7 +1036,7 @@ button.inv-option.game-cursor-hover {
 .inv-wake-step {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: calc(var(--ui-spacing) * 0.375rem);
 }
 .inv-reason {
   color: #e0876e;
@@ -1021,7 +1044,7 @@ button.inv-option.game-cursor-hover {
 }
 .inv-time {
   font:
-    12px ui-monospace,
+    0.75rem ui-monospace,
     monospace;
   color: var(--accent);
   white-space: nowrap;
@@ -1029,25 +1052,25 @@ button.inv-option.game-cursor-hover {
 .inv-queue {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-height: 48px;
-  padding: 8px 12px;
+  gap: calc(var(--ui-spacing) * 0.25rem);
+  min-height: 3rem;
+  padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.75rem);
   border: 1px solid #2a3038;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: #15171b;
 }
 .inv-queue-title {
   display: flex;
-  gap: 10px;
+  gap: calc(var(--ui-spacing) * 0.625rem);
   align-items: baseline;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .inv-job {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) 120px 52px;
-  gap: 8px;
+  grid-template-columns: 1.125rem minmax(0, 1fr) 7.5rem 3.25rem;
+  gap: calc(var(--ui-spacing) * 0.5rem);
   align-items: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .inv-job-n {
   color: var(--muted);
@@ -1060,17 +1083,18 @@ button.inv-option.game-cursor-hover {
 .inv-bar,
 .hd-bar {
   display: block;
-  height: 6px;
+  height: 0.375rem;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 0.1875rem;
   background: #262a30;
 }
 .hd-bar {
   position: relative;
 }
+/* The padding is room for the minimum's label under the bar, so it follows the label's size, not the spacing. */
 .hd-meter {
   position: relative;
-  padding-bottom: 14px;
+  padding-bottom: 0.875rem;
 }
 .hd-minimum {
   position: absolute;
@@ -1082,10 +1106,10 @@ button.inv-option.game-cursor-hover {
 }
 .hd-meter-minimum {
   position: absolute;
-  top: 8px;
+  top: 0.5rem;
   transform: translateX(-50%);
   color: #f6c766;
-  font-size: 10px;
+  font-size: 0.625rem;
   white-space: nowrap;
 }
 .inv-bar-fill,
@@ -1099,21 +1123,21 @@ button.inv-option.game-cursor-hover {
 #quickbar {
   position: fixed;
   left: 50%;
-  bottom: 16px;
+  bottom: 1rem;
   transform: translateX(-50%);
   display: flex;
-  gap: 6px;
+  gap: calc(var(--ui-spacing) * 0.375rem);
   pointer-events: none;
 }
 .qb-slot {
-  width: 150px;
+  width: 9.375rem;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 5px 8px;
+  gap: calc(var(--ui-spacing) * 0.0625rem);
+  padding: calc(var(--ui-spacing) * 0.3125rem) calc(var(--ui-spacing) * 0.5rem);
   border: 1px solid #39414b;
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: var(--panel);
 }
 .qb-empty {
@@ -1122,7 +1146,7 @@ button.inv-option.game-cursor-hover {
 }
 .qb-key {
   font:
-    11px ui-monospace,
+    0.6875rem ui-monospace,
     monospace;
   color: var(--accent);
 }
@@ -1133,71 +1157,71 @@ button.inv-option.game-cursor-hover {
   white-space: nowrap;
 }
 .qb-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .qb-where {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
 }
 #handling {
   position: fixed;
   left: 50%;
-  bottom: 88px;
+  bottom: 5.5rem;
   transform: translateX(-50%);
-  width: 440px;
+  width: 27.5rem;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 8px 12px;
+  gap: calc(var(--ui-spacing) * 0.3125rem);
+  padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.75rem);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: var(--panel);
   pointer-events: none;
 }
 .hd-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
+  gap: calc(var(--ui-spacing) * 0.75rem);
+  font-size: 0.8125rem;
 }
 .hd-muted {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 .hd-time {
   font:
-    12px ui-monospace,
+    0.75rem ui-monospace,
     monospace;
   color: #c4cad2;
 }
 .hd-slow {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--accent);
 }
 .inv-skill-list {
-  gap: 8px;
+  gap: calc(var(--ui-spacing) * 0.5rem);
 }
 .inv-skill {
-  padding: 8px 0;
+  padding: calc(var(--ui-spacing) * 0.5rem) 0;
   border-top: 1px solid #2a3038;
 }
 .inv-skill-heading {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 4px 12px;
+  gap: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.75rem);
 }
 #inventory .inv-skill-heading span,
 #inventory .inv-skill-practice {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .inv-skill-progress {
-  height: 5px;
-  margin-top: 5px;
+  height: 0.3125rem;
+  margin-top: calc(var(--ui-spacing) * 0.3125rem);
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 0.1875rem;
   background: #262a30;
 }
 #inventory .inv-skill-progress span {
@@ -1226,15 +1250,15 @@ body.resting #handling {
 }
 #errors {
   position: fixed;
-  left: 12px;
-  bottom: 12px;
+  left: 0.75rem;
+  bottom: 0.75rem;
   max-width: 60ch;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.625rem);
+  border-radius: 0.375rem;
   background: #5a1d1d;
   white-space: pre-wrap;
   font:
-    12px ui-monospace,
+    0.75rem ui-monospace,
     monospace;
 }
 #errors:empty {
@@ -1246,7 +1270,7 @@ body.resting #handling {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: calc(var(--ui-spacing) * 1.25rem);
   overflow: auto;
   background: rgb(0 0 0 / 88%);
 }
@@ -1254,21 +1278,21 @@ body.resting #handling {
   display: none;
 }
 .error-report-card {
-  width: min(760px, 100%);
+  width: min(47.5rem, 100%);
   max-height: 100%;
-  padding: 24px;
+  padding: calc(var(--ui-spacing) * 1.5rem);
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: #15181d;
   box-shadow: 0 16px 64px #000;
 }
 .error-report-card pre {
   max-height: 38vh;
-  padding: 12px;
+  padding: calc(var(--ui-spacing) * 0.75rem);
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background: #090a0c;
   color: var(--text);
   white-space: pre-wrap;
@@ -1278,7 +1302,7 @@ body.resting #handling {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: calc(var(--ui-spacing) * 0.625rem);
 }
 .error-report-card [data-error-status] {
   min-height: 1.4em;
@@ -1286,47 +1310,47 @@ body.resting #handling {
 }
 
 .inv-needs {
-  flex: 1 1 200px;
+  flex: 1 1 12.5rem;
   max-width: 38ch;
   min-width: 0;
   color: var(--muted);
   white-space: pre;
   font:
-    11px / 1.3 ui-monospace,
+    0.6875rem / 1.3 ui-monospace,
     monospace;
 }
 .hud-options {
-  margin-top: 14px;
-  padding-top: 10px;
+  margin-top: calc(var(--ui-spacing) * 0.875rem);
+  padding-top: calc(var(--ui-spacing) * 0.625rem);
   border-top: 1px solid var(--line);
 }
 .hud-options h2 {
-  margin: 0 0 6px;
-  font-size: 15px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.375rem);
+  font-size: 0.9375rem;
 }
 .hud-options label {
   display: block;
-  margin: 3px 0;
+  margin: calc(var(--ui-spacing) * 0.1875rem) 0;
   cursor: pointer;
 }
 .hud-options input {
   accent-color: var(--accent);
 }
 .audio-options {
-  margin-top: 14px;
-  padding-top: 10px;
+  margin-top: calc(var(--ui-spacing) * 0.875rem);
+  padding-top: calc(var(--ui-spacing) * 0.625rem);
   border-top: 1px solid var(--line);
 }
 .audio-options h2 {
-  margin: 0 0 6px;
-  font-size: 15px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.375rem);
+  font-size: 0.9375rem;
 }
 .audio-options__row {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) 38px;
-  gap: 8px;
+  grid-template-columns: 3.375rem minmax(0, 1fr) 2.375rem;
+  gap: calc(var(--ui-spacing) * 0.5rem);
   align-items: center;
-  margin: 5px 0;
+  margin: calc(var(--ui-spacing) * 0.3125rem) 0;
   color: var(--muted);
   cursor: pointer;
 }
@@ -1337,28 +1361,28 @@ body.resting #handling {
 .audio-options__row output {
   text-align: right;
   font:
-    11px ui-monospace,
+    0.6875rem ui-monospace,
     monospace;
 }
 
 #overlay .scale {
-  margin: 12px 0 0;
-  font-size: 13px;
+  margin: calc(var(--ui-spacing) * 0.75rem) 0 0;
+  font-size: 0.8125rem;
 }
 #overlay a {
   color: var(--accent);
 }
 #credits {
-  max-height: calc(100vh - 80px);
+  max-height: calc(100vh - 5rem);
   overflow: auto;
   cursor: default;
 }
 #overlay .credits {
-  margin: 0 0 12px;
-  padding-left: 18px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.75rem);
+  padding-left: calc(var(--ui-spacing) * 1.125rem);
 }
 #overlay .credits li {
-  margin: 0 0 8px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.5rem);
 }
 
 /* ---- spawn menu (debug) ---- */
@@ -1373,14 +1397,14 @@ body.resting #handling {
   display: none;
 }
 #spawn .card {
-  width: min(480px, calc(100vw - 32px));
-  max-height: calc(100vh - 48px);
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 3rem);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 20px;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  padding: calc(var(--ui-spacing) * 1.25rem);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   background: var(--panel);
 }
 #spawn h2,
@@ -1392,9 +1416,9 @@ body.resting #handling {
 }
 #spawn input {
   font: inherit;
-  padding: 6px 8px;
+  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.5rem);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: #0e1013;
   color: var(--text);
 }
@@ -1403,19 +1427,19 @@ body.resting #handling {
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(var(--ui-spacing) * 0.25rem);
 }
 #spawn button {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  padding: calc(var(--ui-spacing) * 0.3125rem) calc(var(--ui-spacing) * 0.5rem);
   border: 1px solid #39414b;
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: #22262c;
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: 0.8125rem;
   text-align: left;
   cursor: pointer;
 }
@@ -1430,7 +1454,7 @@ body.resting #handling {
 }
 #spawn button span:last-child {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 #spawn .spawn-status {
   min-height: 1.4em;
@@ -1444,22 +1468,22 @@ body.bench #quickbar {
   display: none;
 }
 #overlay .card.report {
-  max-width: min(1100px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
+  max-width: min(68.75rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
   overflow: auto;
   cursor: default;
 }
 #overlay .card.report table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
-  margin: 8px 0 12px;
+  margin: calc(var(--ui-spacing) * 0.5rem) 0 calc(var(--ui-spacing) * 0.75rem);
 }
 #overlay .card.report th,
 #overlay .card.report td {
   border-bottom: 1px solid var(--line);
-  padding: 4px 6px;
+  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.375rem);
   text-align: right;
   white-space: nowrap;
 }
@@ -1468,21 +1492,21 @@ body.bench #quickbar {
   text-align: left;
 }
 #overlay .card.report ul {
-  margin: 0 0 12px;
-  padding-left: 18px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.75rem);
+  padding-left: calc(var(--ui-spacing) * 1.125rem);
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 #overlay .card.report .buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: calc(var(--ui-spacing) * 0.5rem);
   align-items: center;
 }
 #overlay .card.report button {
   font: inherit;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.75rem);
+  border-radius: 0.375rem;
   border: 1px solid var(--line);
   background: #2a3038;
   color: var(--text);
@@ -1490,23 +1514,23 @@ body.bench #quickbar {
 }
 #overlay .card.report textarea {
   width: 100%;
-  min-height: 140px;
-  margin-top: 8px;
+  min-height: 8.75rem;
+  margin-top: calc(var(--ui-spacing) * 0.5rem);
   background: #0e1013;
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   font:
-    11px / 1.4 ui-monospace,
+    0.6875rem / 1.4 ui-monospace,
     monospace;
 }
 
 /* ---- crafting tab ---- */
 #crafting {
-  padding: 16px;
+  padding: calc(var(--ui-spacing) * 1rem);
   overflow-y: auto;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   background: rgb(16 18 22 / 96%);
 }
 body.inventory-open:not(.inventory-tab-crafting) #crafting,
@@ -1516,13 +1540,13 @@ body.inventory-open:not(.inventory-tab-crafting) #crafting,
 body.inventory-open.inventory-tab-crafting #crafting {
   position: fixed;
   z-index: var(--ui-layer-crafting);
-  top: 126px;
-  right: 40px;
-  bottom: 106px;
-  left: 40px;
+  top: 7.875rem;
+  right: 2.5rem;
+  bottom: 6.625rem;
+  left: 2.5rem;
   width: auto;
   min-width: 0;
-  padding: 14px;
+  padding: calc(var(--ui-spacing) * 0.875rem);
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -1531,8 +1555,8 @@ body.inventory-open.inventory-tab-crafting #crafting {
   display: none;
 }
 #crafting h2 {
-  margin: 0 0 8px;
-  font-size: 20px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.5rem);
+  font-size: 1.25rem;
 }
 #crafting header p,
 .craft-time {
@@ -1540,28 +1564,28 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 .craft-recipe {
   border-top: 1px solid var(--line);
-  padding: 14px 0;
+  padding: calc(var(--ui-spacing) * 0.875rem) 0;
 }
 .craft-recipe h3 {
-  margin: 0 0 6px;
+  margin: 0 0 calc(var(--ui-spacing) * 0.375rem);
 }
 .craft-components {
-  margin: 8px 0;
+  margin: calc(var(--ui-spacing) * 0.5rem) 0;
 }
 .craft-gap {
   color: #efb78b;
 }
 .craft-reason {
-  margin: 8px 0 0;
+  margin: calc(var(--ui-spacing) * 0.5rem) 0 0;
 }
 .craft-start {
-  margin-top: 10px;
+  margin-top: calc(var(--ui-spacing) * 0.625rem);
 }
 .craft-use {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
+  gap: calc(var(--ui-spacing) * 0.375rem);
+  margin-top: calc(var(--ui-spacing) * 0.375rem);
 }
 
 /* ---- combo box: src/ui/comboBox.ts ---- */
@@ -1575,17 +1599,18 @@ body.inventory-open.inventory-tab-crafting #crafting {
 .combo-box::after {
   content: "▾";
   position: absolute;
-  right: 8px;
+  right: 0.5rem;
   color: var(--muted);
   pointer-events: none;
 }
+/* The right padding is room for the ▾, so it follows the glyph's size, not the spacing. */
 .combo-box-field {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 4px 22px 4px 8px;
+  padding: calc(var(--ui-spacing) * 0.25rem) 1.375rem calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: #0e1013;
   color: var(--text);
   font: inherit;
@@ -1605,12 +1630,12 @@ body.inventory-open.inventory-tab-crafting #crafting {
   position: fixed;
   box-sizing: border-box;
   margin: 0;
-  padding: 4px;
+  padding: calc(var(--ui-spacing) * 0.25rem);
   overflow-y: auto;
   overscroll-behavior: contain;
   list-style: none;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: rgb(16 18 22 / 98%);
   box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
 }
@@ -1619,9 +1644,9 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 .combo-box-option {
   overflow: hidden;
-  padding: 4px 8px;
+  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 0.25rem;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
@@ -1640,23 +1665,23 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 .inv-occupied-hand {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 #craft-status {
   position: fixed;
-  bottom: 76px;
+  bottom: 4.75rem;
   left: 50%;
   transform: translateX(-50%);
-  padding: 12px 16px;
+  padding: calc(var(--ui-spacing) * 0.75rem) calc(var(--ui-spacing) * 1rem);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: var(--panel);
-  min-width: 300px;
+  min-width: 18.75rem;
 }
 #craft-status progress {
   display: block;
   width: 100%;
-  margin: 8px 0;
+  margin: calc(var(--ui-spacing) * 0.5rem) 0;
 }
 /* ---- rest and sleep (1.8) ---- */
 #rest {
@@ -1676,20 +1701,20 @@ body.inventory-open.inventory-tab-crafting #crafting {
   box-shadow: inset 0 0 140px 50px rgb(0 0 0 / 85%);
 }
 .rest-card {
-  width: min(360px, calc(100vw - 32px));
-  padding: 20px 24px;
+  width: min(22.5rem, calc(100vw - 2rem));
+  padding: calc(var(--ui-spacing) * 1.25rem) calc(var(--ui-spacing) * 1.5rem);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   background: var(--panel);
   text-align: center;
 }
 #rest h2 {
-  margin: 10px 0 14px;
-  font-size: 18px;
+  margin: calc(var(--ui-spacing) * 0.625rem) 0 calc(var(--ui-spacing) * 0.875rem);
+  font-size: 1.125rem;
 }
 .rest-clock {
-  width: 48px;
-  height: 48px;
+  width: 3rem;
+  height: 3rem;
   margin: 0 auto;
   border: 2px solid var(--accent);
   border-radius: 50%;
@@ -1700,7 +1725,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   left: 50%;
   top: 50%;
   width: 2px;
-  height: 16px;
+  height: 1rem;
   background: var(--accent);
   transform-origin: 50% 0%;
   animation: rest-spin 2s linear infinite;
@@ -1714,14 +1739,14 @@ body.inventory-open.inventory-tab-crafting #crafting {
   }
 }
 .rest-time {
-  margin: 10px 0 0;
+  margin: calc(var(--ui-spacing) * 0.625rem) 0 0;
   color: var(--muted);
   font:
-    12px ui-monospace,
+    0.75rem ui-monospace,
     monospace;
 }
 .rest-prompt {
-  margin: 10px 0 0;
+  margin: calc(var(--ui-spacing) * 0.625rem) 0 0;
   color: var(--accent);
 }
 
@@ -1736,8 +1761,8 @@ body.inventory-open.inventory-tab-crafting #crafting {
   position: fixed;
   left: 50%;
   top: 50%;
-  width: 14px;
-  height: 14px;
+  width: 0.875rem;
+  height: 0.875rem;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -1756,34 +1781,34 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 #debug-ui-root .debug-marker {
   position: fixed;
-  top: 8px;
-  right: 10px;
-  padding: 2px 6px;
+  top: 0.5rem;
+  right: 0.625rem;
+  padding: calc(var(--ui-spacing) * 0.125rem) calc(var(--ui-spacing) * 0.375rem);
   color: var(--muted);
   background: rgb(18 20 24 / 70%);
   font:
-    10px ui-monospace,
+    0.625rem ui-monospace,
     monospace;
   cursor: pointer;
   pointer-events: auto;
 }
 #debug-ui-root .debug-marker.debug-frozen {
   right: auto;
-  left: 10px;
+  left: 0.625rem;
   color: var(--accent);
   cursor: default;
   pointer-events: none;
 }
 #debug-ui-root .debug-panel {
   position: fixed;
-  top: 36px;
-  right: 12px;
-  width: min(440px, calc(100vw - 24px));
-  max-height: calc(100vh - 48px);
+  top: 2.25rem;
+  right: 0.75rem;
+  width: min(27.5rem, calc(100vw - 1.5rem));
+  max-height: calc(100vh - 3rem);
   overflow: auto;
-  padding: 12px;
+  padding: calc(var(--ui-spacing) * 0.75rem);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: var(--panel);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%);
   pointer-events: auto;
@@ -1794,8 +1819,8 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #debug-ui-root .debug-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: calc(var(--ui-spacing) * 0.375rem);
+  margin-bottom: calc(var(--ui-spacing) * 0.5rem);
 }
 #debug-ui-root .debug-panel .debug-panel-header {
   justify-content: space-between;
@@ -1804,8 +1829,8 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #debug-ui-root .debug-snapshot-result-row {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  margin: 6px 0;
+  gap: calc(var(--ui-spacing) * 0.375rem);
+  margin: calc(var(--ui-spacing) * 0.375rem) 0;
 }
 #debug-ui-root .debug-snapshot-result {
   flex: 1;
@@ -1813,7 +1838,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   margin: 0;
   overflow-wrap: anywhere;
   font:
-    11px / 1.5 ui-monospace,
+    0.6875rem / 1.5 ui-monospace,
     monospace;
   user-select: text;
   -webkit-user-select: text;
@@ -1826,7 +1851,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   color: var(--text);
   background: rgb(0 0 0 / 35%);
   font:
-    11px / 1.4 ui-monospace,
+    0.6875rem / 1.4 ui-monospace,
     monospace;
   cursor: text;
   pointer-events: auto;
@@ -1841,13 +1866,13 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 #debug-ui-root #copy-snapshot-result {
   flex: none;
-  padding: 4px 7px;
+  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.4375rem);
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background: rgb(0 0 0 / 22%);
   color: var(--text);
   font:
-    11px ui-monospace,
+    0.6875rem ui-monospace,
     monospace;
   cursor: pointer;
 }
@@ -1861,13 +1886,13 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #debug-ui-root .debug-panel .debug-shambler-count output,
 #debug-ui-root .debug-panel .debug-actions button,
 #debug-ui-root .debug-panel .debug-panel-header button {
-  padding: 4px 7px;
+  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.4375rem);
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background: rgb(0 0 0 / 22%);
   color: var(--text);
   font:
-    11px ui-monospace,
+    0.6875rem ui-monospace,
     monospace;
 }
 #debug-ui-root .debug-panel .debug-actions button,
@@ -1890,21 +1915,21 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 /* A group: a full-width header button (title left, keys right) over its buttons. */
 #debug-ui-root .debug-panel .debug-group {
-  margin-top: 6px;
+  margin-top: calc(var(--ui-spacing) * 0.375rem);
 }
 #debug-ui-root .debug-panel .debug-group-header {
   display: flex;
   width: 100%;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
-  padding: 4px 7px;
+  gap: calc(var(--ui-spacing) * 0.625rem);
+  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.4375rem);
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   background: rgb(0 0 0 / 35%);
   color: var(--text);
   font:
-    11px ui-monospace,
+    0.6875rem ui-monospace,
     monospace;
   text-align: left;
   cursor: pointer;
@@ -1929,18 +1954,18 @@ body.inventory-open.inventory-tab-crafting #crafting {
   white-space: nowrap;
 }
 #debug-ui-root .debug-panel .debug-group-body {
-  padding-top: 6px;
+  padding-top: calc(var(--ui-spacing) * 0.375rem);
 }
 #debug-ui-root .debug-panel .debug-firearms-skill-tuning {
   display: grid;
-  grid-template-columns: minmax(105px, 1fr) minmax(90px, 1.2fr) 3.5em;
+  grid-template-columns: minmax(6.5625rem, 1fr) minmax(5.625rem, 1.2fr) 3.5em;
   align-items: center;
-  gap: 4px 8px;
-  margin: 8px 0;
+  gap: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
+  margin: calc(var(--ui-spacing) * 0.5rem) 0;
   border: 1px solid var(--line);
-  padding: 6px;
+  padding: calc(var(--ui-spacing) * 0.375rem);
   color: var(--text);
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 #debug-ui-root .debug-panel .debug-firearms-skill-tuning legend {
   color: var(--muted);
@@ -1952,7 +1977,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #debug-ui-root .debug-panel .debug-firearms-skill-tuning output {
   color: var(--text);
   font:
-    10px ui-monospace,
+    0.625rem ui-monospace,
     monospace;
   text-align: right;
 }
@@ -1961,26 +1986,26 @@ body.inventory-open.inventory-tab-crafting #crafting {
   grid-column: 1 / -1;
 }
 #debug-ui-root .debug-panel p {
-  margin: 6px 0 0;
+  margin: calc(var(--ui-spacing) * 0.375rem) 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 #debug-ui-root .debug-sound-log {
-  margin-top: 10px;
+  margin-top: calc(var(--ui-spacing) * 0.625rem);
   border-top: 1px solid var(--line);
-  padding-top: 8px;
+  padding-top: calc(var(--ui-spacing) * 0.5rem);
   font:
-    10px / 1.5 ui-monospace,
+    0.625rem / 1.5 ui-monospace,
     monospace;
 }
 #debug-ui-root .debug-sound-log ol {
-  max-height: 400px;
+  max-height: 25rem;
   overflow: auto;
-  margin: 5px 0 0;
-  padding-left: 20px;
+  margin: calc(var(--ui-spacing) * 0.3125rem) 0 0;
+  padding-left: calc(var(--ui-spacing) * 1.25rem);
 }
 #debug-ui-root .debug-sound-log li {
-  padding: 4px 0;
+  padding: calc(var(--ui-spacing) * 0.25rem) 0;
   overflow-wrap: anywhere;
 }
 #debug-ui-root .debug-sound-log li + li {
@@ -1993,11 +2018,11 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #debug-ui-root .debug-axis-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 8px;
+  gap: calc(var(--ui-spacing) * 0.375rem);
+  margin: 0 0 calc(var(--ui-spacing) * 0.5rem);
   color: var(--text);
   font:
-    11px ui-monospace,
+    0.6875rem ui-monospace,
     monospace;
 }
 #debug-ui-root .debug-axis-toggle input {
@@ -2005,10 +2030,10 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 #debug-axis-gizmo {
   position: fixed;
-  right: 12px;
-  bottom: 12px;
-  width: 72px;
-  height: 72px;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  width: 4.5rem;
+  height: 4.5rem;
   pointer-events: none;
 }
 #debug-axis-gizmo[hidden] {
@@ -2016,13 +2041,13 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 #debug-target-range {
   position: fixed;
-  right: 92px;
-  bottom: 36px;
-  padding: 3px 5px;
+  right: 5.75rem;
+  bottom: 2.25rem;
+  padding: calc(var(--ui-spacing) * 0.1875rem) calc(var(--ui-spacing) * 0.3125rem);
   color: #eee;
   background: rgb(0 0 0 / 65%);
   font:
-    11px ui-monospace,
+    0.6875rem ui-monospace,
     monospace;
   pointer-events: none;
 }
@@ -2037,12 +2062,12 @@ body.inventory-open.inventory-tab-crafting #crafting {
   left: 0.5rem;
   max-width: min(48rem, calc(100vw - 1rem));
   display: grid;
-  gap: 0.2rem;
-  padding: 0.5rem 0.65rem;
+  gap: calc(var(--ui-spacing) * 0.2rem);
+  padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.65rem);
   color: #d7f7c7;
   background: rgb(0 0 0 / 78%);
   font:
-    12px / 1.35 ui-monospace,
+    0.75rem / 1.35 ui-monospace,
     monospace;
   pointer-events: none;
 }
@@ -2070,7 +2095,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   display: grid;
   place-items: center;
   background: #0003;
-  padding: 16px;
+  padding: calc(var(--ui-spacing) * 1rem);
 }
 #reading[hidden] {
   display: none;
@@ -2078,29 +2103,29 @@ body.inventory-open.inventory-tab-crafting #crafting {
 .reading-paper {
   display: flex;
   flex-direction: column;
-  width: min(740px, 100%);
-  max-height: calc(100dvh - 32px);
-  padding: clamp(18px, 4vw, 40px);
+  width: min(46.25rem, 100%);
+  max-height: calc(100dvh - 2rem);
+  padding: clamp(calc(var(--ui-spacing) * 1.125rem), 4vw, calc(var(--ui-spacing) * 2.5rem));
   box-sizing: border-box;
   color: #282117;
   background: linear-gradient(115deg, #e8ddbb, #f8efd5 48%, #ecdfbc);
   box-shadow: 0 10px 35px #0009;
   border: 1px solid #b0a17f;
   font:
-    20px / 1.6 Georgia,
+    1.25rem / 1.6 Georgia,
     serif;
 }
 .reading-paper header {
   display: flex;
   align-items: start;
-  gap: 16px;
+  gap: calc(var(--ui-spacing) * 1rem);
 }
 .reading-paper .reading-title {
   font:
-    bold clamp(22px, 4vw, 30px) / 1.25 Georgia,
+    bold clamp(1.375rem, 4vw, 1.875rem) / 1.25 Georgia,
     serif;
   flex: 1;
-  margin: 0 0 22px;
+  margin: 0 0 calc(var(--ui-spacing) * 1.375rem);
   overflow-wrap: anywhere;
 }
 .reading-paper .reading-dismiss {
@@ -2111,8 +2136,8 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 .reading-progress {
   width: 100%;
-  height: 8px;
-  margin: 0 0 14px;
+  height: 0.5rem;
+  margin: 0 0 calc(var(--ui-spacing) * 0.875rem);
   accent-color: #735e31;
 }
 .reading-text {
@@ -2122,8 +2147,8 @@ body.inventory-open.inventory-tab-crafting #crafting {
   overflow-wrap: anywhere;
 }
 .reading-paper footer {
-  margin-top: 18px;
-  font: 13px / 1.4 sans-serif;
+  margin-top: calc(var(--ui-spacing) * 1.125rem);
+  font: 0.8125rem / 1.4 sans-serif;
   color: #65553b;
 }
 .reading-paper :focus-visible {
@@ -2135,6 +2160,6 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 #error-report .error-report-card .error-report-actions button,
 #error-report .error-report-card .error-report-actions a {
-  min-height: 40px;
-  padding: 8px 12px;
+  min-height: 2.5rem;
+  padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.75rem);
 }

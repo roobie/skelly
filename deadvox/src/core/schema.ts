@@ -200,6 +200,14 @@ const InventoryTuningSchema = strictObject({
   containerMaxWidthCells: Cells,
 });
 
+const UiTuningSchema = strictObject({
+  id: Id,
+  /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
+  spacing: Positive,
+  /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
+  hudScale: Positive,
+});
+
 const SaveTuningSchema = strictObject({
   id: Id,
   /** Simulated seconds of play between periodic checkpoints, independent of the clock ratio. */
@@ -1635,6 +1643,7 @@ const SECTION_DESCRIPTOR = {
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
   compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
+  ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };

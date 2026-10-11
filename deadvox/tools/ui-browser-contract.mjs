@@ -270,6 +270,45 @@ try {
     window.__pointerCalls.request = 0;
   })()`);
   await waitFor(() => evaluate("Boolean(document.querySelector('#debug-ui-root'))"), 'post-acceptance debug UI mount');
+  // The tokens go to a document of the probe's own (an iframe with the game's style sheet), so the live game's root
+  // and HUD stay untouched. Spacing and scale are measured apart, so neither passes on the other's change.
+  const uiTokens = await evaluate(`(async () => {
+    const { buildRegistry } = await import('/src/core/content.ts');
+    const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 640px; height: 360px; visibility: hidden';
+    frame.srcdoc = '<!doctype html><link rel="stylesheet" href="/src/ui/style.css"><button class="inv-option">Probe</button>';
+    const loaded = new Promise((done) => frame.addEventListener('load', done, { once: true }));
+    document.body.append(frame);
+    await loaded;
+    const probe = frame.contentDocument.querySelector('.inv-option');
+    const measure = (tuning) => {
+      const { registry, issues } = buildRegistry([{ source: 'ui-probe.json', data: { ui: [{ id: 'core', ...tuning }] } }]);
+      if (issues.length) throw new Error('Invalid UI probe fixture: ' + JSON.stringify(issues));
+      applyUiTokens(registry, frame.contentDocument.documentElement);
+      const style = frame.contentWindow.getComputedStyle(probe);
+      return { padding: Number.parseFloat(style.paddingLeft), fontSize: Number.parseFloat(style.fontSize) };
+    };
+    const base = measure({ spacing: 1, hudScale: 1 });
+    const spaced = measure({ spacing: 2, hudScale: 1 });
+    const scaled = measure({ spacing: 1, hudScale: 1.25 });
+    frame.remove();
+    return { base, spaced, scaled };
+  })()`);
+  const near = (actual, expected) => Math.abs(actual - expected) < 0.01;
+  assert.ok(
+    uiTokens.base.padding > 0 && uiTokens.base.fontSize > 0,
+    `the probe takes the game's style sheet: ${JSON.stringify(uiTokens)}`,
+  );
+  assert.ok(
+    near(uiTokens.spaced.padding, 2 * uiTokens.base.padding) && near(uiTokens.spaced.fontSize, uiTokens.base.fontSize),
+    `spacing scales padding and leaves text size alone: ${JSON.stringify(uiTokens)}`,
+  );
+  assert.ok(
+    near(uiTokens.scaled.fontSize, 1.25 * uiTokens.base.fontSize) &&
+      near(uiTokens.scaled.padding, 1.25 * uiTokens.base.padding),
+    `HUD scale scales text and spacing together: ${JSON.stringify(uiTokens)}`,
+  );
   graphics = await evaluate(`({
     renderMode: ${JSON.stringify(renderMode)},
     webglContextRequests: window.__webglContextRequests.slice(),
