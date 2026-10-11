@@ -1,6 +1,6 @@
 import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
-import { gameHours, simRate, simSeconds } from '../src/core/time.ts';
+import { gameHours, gamePerHour, simRate, simSeconds } from '../src/core/time.ts';
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   id: 'player-fixture',
@@ -17,6 +17,12 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   bloodRecoveryPerSimSecond: simRate(0.002),
   shockRecoveryPerSimSecond: simRate(0.1),
   advancedInfectionHealthLossPerSimSecond: simRate(0.0005),
+  fatigueRisePerGameHour: gamePerHour(4),
+  restFatigueRecoveryPerGameHour: gamePerHour(5),
+  sleepFatigueRecoveryPerGameHour: gamePerHour(10),
+  roughSleepShare: 0.5,
+  healthRecoveryPerGameHour: gamePerHour(2),
+  sleepRecoveryFactor: 3,
   aimSwayPerDamage: 0.01,
   swingSlowdownPerDamage: 0.01,
   movementSlowdownPerDamage: 0.005,

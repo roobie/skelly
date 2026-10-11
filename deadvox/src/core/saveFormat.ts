@@ -235,7 +235,7 @@ const body = obj({
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
   hydration: num({ min: 0, max: 100 }),
-  fatigue: num({ min: 0, max: 100 }),
+  fatigue: nonNegative,
   stamina: num({ min: 0, max: 100 }),
   staminaRegenDelayRemainingSimSeconds: nonNegative,
 });
@@ -428,7 +428,8 @@ const longAction = obj({
           furnitureUid: positiveInt,
           label: str({ nonEmpty: true }),
           rate: finite,
-          startFatigue: num({ min: 0, max: 100 }),
+          startFatigue: nonNegative,
+          wakeAt: opt(finite),
         }),
       ),
     }),

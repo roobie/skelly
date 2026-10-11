@@ -12,7 +12,7 @@ import {
 } from '../src/core/clock.ts';
 import { SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
-import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
+import { awakeRates, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
@@ -199,9 +199,10 @@ describe('Simulation', () => {
     expect(fast.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * fast.time, 6);
     expect(plain.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * plain.time, 6);
     // Needs lag by at most one grown step: 30 s, 4 game minutes.
-    const tolerance = (Math.max(...Object.values(NEED_RATES).map(Math.abs)) * 4) / 60;
+    const rates = awakeRates(plain.body);
+    const tolerance = (Math.max(...Object.values(rates).map(Math.abs)) * 4) / 60;
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {
-      expect(plain.needs[need]).toBeCloseTo(SPAWN_NEEDS[need] + NEED_RATES[need], 6);
+      expect(plain.needs[need]).toBeCloseTo(SPAWN_NEEDS[need] + rates[need], 6);
       expect(Math.abs(fast.needs[need] - plain.needs[need])).toBeLessThanOrEqual(tolerance);
     }
   });

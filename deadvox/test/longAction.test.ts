@@ -62,7 +62,7 @@ const make = (
   contentRegistry: Registry = registry,
 ) => {
   const inv = saved ? Inventory.restoreState(contentRegistry, saved.inventory) : new Inventory(contentRegistry);
-  const sim = new Simulation({ seed: 1, restRate: () => sim.actions.restRate });
+  const sim = new Simulation({ seed: 1 });
   const character = new Character(contentRegistry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5 });
   sim.actions.craft = craftActionHooks(inv, character, reach, () => [0, 0, 0]);

@@ -117,6 +117,34 @@ export class Body {
     };
   }
 
+  // Needs and sleep read their content rates here, once each, so the body's modifier point can wrap them.
+  // Content rates load per Game second; the needs step works in Game hours.
+
+  /** Sleep debt accrued per Game hour awake. */
+  get fatigueRisePerGameHour(): number {
+    return this.tuning.fatigueRisePerGameHour * SECONDS_PER_HOUR;
+  }
+
+  /** Health, and each region's damage, recovered per Game hour while the needs are met. */
+  get healthRecoveryPerGameHour(): number {
+    return this.tuning.healthRecoveryPerGameHour * SECONDS_PER_HOUR;
+  }
+
+  /** What sleep multiplies health, regional and blood recovery by. */
+  get sleepRecoveryFactor(): number {
+    return this.tuning.sleepRecoveryFactor;
+  }
+
+  /** Fatigue's change per Game hour resting or sleeping on furniture of this rest quality. */
+  fatigueRecoveryRate(kind: 'rest' | 'sleep', quality: number): number {
+    const { restFatigueRecoveryPerGameHour, sleepFatigueRecoveryPerGameHour, roughSleepShare } = this.tuning;
+    const perHour =
+      kind === 'rest'
+        ? restFatigueRecoveryPerGameHour * quality
+        : sleepFatigueRecoveryPerGameHour * (roughSleepShare + (1 - roughSleepShare) * quality);
+    return -perHour * SECONDS_PER_HOUR;
+  }
+
   snapshotState(): Readonly<BodyState> {
     return freezeSnapshot(structuredClone(this.state));
   }
@@ -222,9 +250,19 @@ export class Body {
     return applied;
   }
 
-  /** Advances body consequences by simulation seconds and returns a terminal cause, if any. */
-  advance(seconds: number, damageImmune = false, gameSeconds = seconds): string | undefined {
-    if (!Number.isFinite(seconds) || seconds < 0 || !Number.isFinite(gameSeconds) || gameSeconds < 0) {
+  /**
+   * Advances body consequences by simulation seconds and returns a terminal cause, if any.
+   * `recoveryFactor` multiplies blood recovery (sleep's `sleepRecoveryFactor`).
+   */
+  advance(seconds: number, damageImmune = false, gameSeconds = seconds, recoveryFactor = 1): string | undefined {
+    if (
+      !Number.isFinite(seconds) ||
+      seconds < 0 ||
+      !Number.isFinite(gameSeconds) ||
+      gameSeconds < 0 ||
+      !Number.isFinite(recoveryFactor) ||
+      recoveryFactor < 0
+    ) {
       throw new Error('Invalid body step');
     }
     let shockRecoverySeconds = seconds;
@@ -259,9 +297,19 @@ export class Body {
       }
     }
     if (!damageImmune) {
-      this.state.blood = advanceBlood(this.state.blood, bleedingRegions, seconds, this.tuning);
+      this.advanceBlood(bleedingRegions, seconds, recoveryFactor);
     }
     return this.terminalCause();
+  }
+
+  /** Blood drains per bleeding region, or recovers at `recoveryFactor` times its rate while nothing bleeds. */
+  private advanceBlood(bleedingRegions: number, seconds: number, recoveryFactor: number): void {
+    const { bloodLossPerSimSecond, bloodRecoveryPerSimSecond } = this.tuning;
+    const change =
+      bleedingRegions > 0
+        ? -bloodLossPerSimSecond * bleedingRegions * seconds
+        : bloodRecoveryPerSimSecond * recoveryFactor * seconds;
+    this.state.blood = clamp(this.state.blood + change);
   }
 
   private terminalCause(): string | undefined {
@@ -323,14 +371,6 @@ const advanceInfection = (wound: BodyWound, gameSeconds: number, tuning: BodyTun
     infection = infectionGameSeconds >= onset + tuning.antisepticWindowGameHours ? 'advanced' : 'early';
   }
   return { ...wound, infection, infectionGameSeconds };
-};
-
-const advanceBlood = (blood: number, bleedingRegions: number, seconds: number, tuning: BodyTuningDef): number => {
-  const change =
-    bleedingRegions > 0
-      ? -tuning.bloodLossPerSimSecond * bleedingRegions * seconds
-      : tuning.bloodRecoveryPerSimSecond * seconds;
-  return clamp(blood + change);
 };
 
 export function bodyRegionForHitArea(area: 'head' | 'torso' | 'leftLeg' | 'rightLeg'): BodyRegion;

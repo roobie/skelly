@@ -204,9 +204,13 @@ compression on and shows a progress bar and the game time passing.
   (`src/game/frameDriver.ts`, `RAMP_DOWN_SIM_SECONDS`). A ramp of fixed Real
   length from a high cap would run the world on for tens of Sim seconds after
   the player stopped waiting.
-- **Sleep length:** sleep ends when fatigue reaches zero
-  (`LongActions.advanceJob`), which a bed does in a few game hours. Whether
-  sleep should last a full night is BR's open question on #594.
+- **How sleep ends:** sleep ends once fatigue reaches zero, which takes a
+  normal night from 100 (see [Character](#character)). Carrying an item with
+  `alarm` lets the player pick a wake hour on the Actions tab instead; sleep
+  then runs to that hour with fatigue held at zero, and recovery continues.
+  Without a clock you can't time your waking, so the choice needs one. The
+  events above still wake a sleeper. See `LongActions.advanceJob` and
+  `RestAction.wakeAt`; `src/game/rest.ts`, `RestController.wakeGameHour`.
 - **Short handling** (moving an item, reloading, wielding) is not compressed.
   It takes real seconds while the world runs at 1× (see
   [Items](#items-and-inventory)).
@@ -643,6 +647,20 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
   are per game hour. Body temperature isn't simulated; #366's heat property
   could later serve it.
+- **Fatigue is sleep debt.** Zero is rested and 100 is what a normal 8-hour
+  sleep in a good bed clears, at a steady rate. It has no upper cap, because a
+  person can stay awake far past the point of tiredness, so the HUD shows a
+  number, not a percentage. A furniture piece's rest quality scales sleep: at
+  quality 1 it is a normal sleep, and lower quality clears a smaller share, down
+  to `roughSleepShare` of it at 0. Resting clears debt more slowly than any
+  sleep. The rates are content, in `src/content/base/body.jsonnet`.
+- **Sleep's main value is recovery.** While asleep, health, regional and blood
+  recovery run at `sleepRecoveryFactor` times their awake rate, so a night's
+  sleep is how a hurt player heals, not only how they clear debt. Body modifiers
+  wrap these rates where they are read: `src/core/body.ts`, the `Body`
+  getters `fatigueRisePerGameHour`, `healthRecoveryPerGameHour` and
+  `sleepRecoveryFactor`, and `Body.fatigueRecoveryRate`; blood takes the factor
+  in `Body.advanceBlood`.
 - **Body.** Injuries affect sight, aim, swings and movement as well as health.
   Each region recovers at health's rate while needs allow health recovery, except
   while that region is bleeding or infected. This lets injury penalties fade
@@ -659,12 +677,12 @@ and `src/core/content.ts`, `checkItemFirearm`.
 
   Infection onset is time-based, with deterministic infection risk and an
   antiseptic window. Knockout is timed; infection and knockout settings are
-  content-defined. Regional recovery follows `HEALTH.regen` in
-  `src/core/needs.ts`. A knockout leaves the player prone, with a black screen
+  content-defined. Regional recovery follows health's content rate,
+  `healthRecoveryPerGameHour`. A knockout leaves the player prone, with a black screen
   and no sound. If the character
   dies while knocked out, the black screen gives way to the death screen. See
   `src/core/body.ts`, `Body.advance`; `src/core/schema.ts`, `BodyTuningSchema`;
-  `src/core/needs.ts`, `HEALTH.regen`; `src/game/session.ts`,
+  `src/core/needs.ts`, `stepNeeds`; `src/game/session.ts`,
   `playerEyeHeightMetres`; `src/ui/style.css`, `body.unconscious`;
   `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
 - **Death is permanent.** A new run is a new world, or the same world with a

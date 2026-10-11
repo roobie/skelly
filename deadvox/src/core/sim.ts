@@ -7,7 +7,7 @@ import { Compression, type CompressionLimits, longActionLimits } from './compres
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
-import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
+import { awakeRates, causeOf, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
 import type { BodyTuningDef, CompressionCaps } from './schema.ts';
@@ -44,11 +44,6 @@ export interface SimOptions {
   /** The content cap of each compressing long action. */
   compressionCaps: CompressionCaps;
   clock?: ClockSettings;
-  /**
-   * The fatigue rate a resting or sleeping long action wants right now, in percent
-   * per game hour, or undefined for the normal rate. Asked once per needs tick.
-   */
-  restRate?: () => number | undefined;
 }
 
 /** Needs tick at 1 Hz; under compression their step grows to 30 s, 4 game minutes at 1:8. */
@@ -73,7 +68,6 @@ export class Simulation {
   private readonly interrupts: EventReader<Timed<SimEvent>>;
   private pendingInterrupt: string | undefined;
   private readonly compressionCaps: CompressionCaps;
-  private readonly restRate: () => number | undefined;
 
   constructor(options: SimOptions) {
     this.seed = options.seed;
@@ -82,18 +76,18 @@ export class Simulation {
     this.compressionCaps = options.compressionCaps;
     // Unowned compression (the debug compression test, a restored debug skip) passes time like a wait.
     this.compression = new Compression(longActionLimits(options.compressionCaps.wait));
-    this.restRate = options.restRate ?? (() => undefined);
     this.interrupts = this.events.reader();
     this.scheduler.register({
       id: 'needs',
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        const rate = this.restRate();
-        const rates = rate === undefined ? NEED_RATES : { ...NEED_RATES, fatigue: rate };
+        const { restRate } = this.actions;
+        const awake = awakeRates(this.body);
         for (const reason of stepNeeds(this.needs, this.body, simToGameHours(this.clock, dt), {
           damageImmune: this.godMode,
-          rates,
+          rates: restRate === undefined ? awake : { ...awake, fatigue: restRate },
+          recoveryFactor: this.recoveryFactor,
         })) {
           this.emit({ kind: 'interrupt', reason });
         }
@@ -109,12 +103,17 @@ export class Simulation {
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        const cause = this.body.advance(dt, this.godMode, dt * this.clock.ratio);
+        const cause = this.body.advance(dt, this.godMode, dt * this.clock.ratio, this.recoveryFactor);
         if (cause) {
           this.die(cause);
         }
       },
     });
+  }
+
+  /** Sleep multiplies health, regional and blood recovery. */
+  private get recoveryFactor(): number {
+    return this.actions.asleep ? this.body.sleepRecoveryFactor : 1;
   }
 
   /** Isolated plain-data continuation state; an unread interrupt is carried to the next frame. */

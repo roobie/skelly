@@ -1,24 +1,30 @@
 {
   "body": [
     {
-      "id": "player",
-      "infectionOnsetGameHours": 2,
-      "antisepticWindowGameHours": 12,
-      "infectionChance": 0.5,
-      "knockoutSimSeconds": 20,
-      "staminaRegenDelaySimSeconds": 5,
-      "proneEyeHeightMetres": 0.3,
-      "bluntShockPerDamage": 2,
-      "treatmentSimSeconds": 8,
-      "wakeShock": 10,
-      "bloodLossPerSimSecond": 0.004,
-      "bloodRecoveryPerSimSecond": 0.002,
-      "shockRecoveryPerSimSecond": 0.1,
-      "advancedInfectionHealthLossPerSimSecond": 0.0005,
+      "advancedInfectionHealthLossPerSimSecond": 0.00050000000000000001,
       "aimSwayPerDamage": 0.01,
+      "antisepticWindowGameHours": 12,
+      "bloodLossPerSimSecond": 0.0040000000000000001,
+      "bloodRecoveryPerSimSecond": 0.002,
+      "bluntShockPerDamage": 2,
+      "fatigueRisePerGameHour": 4,
+      "healthRecoveryPerGameHour": 2,
+      "id": "player",
+      "infectionChance": 0.5,
+      "infectionOnsetGameHours": 2,
+      "knockoutSimSeconds": 20,
+      "minimumMovementSpeed": 0.5,
+      "movementSlowdownPerDamage": 0.0050000000000000001,
+      "proneEyeHeightMetres": 0.29999999999999999,
+      "restFatigueRecoveryPerGameHour": 3.75,
+      "roughSleepShare": 0.59999999999999998,
+      "shockRecoveryPerSimSecond": 0.10000000000000001,
+      "sleepFatigueRecoveryPerGameHour": 12.5,
+      "sleepRecoveryFactor": 2,
+      "staminaRegenDelaySimSeconds": 5,
       "swingSlowdownPerDamage": 0.01,
-      "movementSlowdownPerDamage": 0.005,
-      "minimumMovementSpeed": 0.5
+      "treatmentSimSeconds": 8,
+      "wakeShock": 10
     }
   ]
 }

@@ -1,13 +1,13 @@
-// Needs change in percent per game hour; stamina is spent and recovered by the
-// second. `stepNeeds` advances exactly across need thresholds so catch-up and
-// compressed time land where ticking every second would. Health belongs to Body.
+// Needs change per game hour; stamina is spent and recovered by the second.
+// `stepNeeds` advances exactly across need thresholds so catch-up and compressed
+// time land where ticking every second would. Health belongs to Body.
 
 export interface Needs {
   /** 100 is full. */
   calories: number;
   /** 100 is fully hydrated. */
   hydration: number;
-  /** 0 is rested, 100 is exhausted. */
+  /** Sleep debt: 0 is rested, 100 is what a normal sleep clears, and it has no upper cap. */
   fatigue: number;
   /** 100 is fresh; sprinting spends it. */
   stamina: number;
@@ -17,18 +17,13 @@ export interface Needs {
 
 export type Need = 'calories' | 'hydration' | 'fatigue';
 
-/** Change per game hour while awake; resting or sleeping overrides fatigue's rate (see REST). */
-export const NEED_RATES: Readonly<Record<Need, number>> = { calories: -3, hydration: -5, fatigue: 4 };
+const NEEDS: readonly Need[] = ['calories', 'hydration', 'fatigue'];
 
-export const REST = {
-  rest: -15,
-  sleep: -30,
-  bedBonus: -20,
-} as const;
+/** Change per game hour. Fatigue's comes from the body, and resting or sleeping overrides it. */
+export const NEED_RATES: Readonly<Record<Exclude<Need, 'fatigue'>, number>> = { calories: -3, hydration: -5 };
 
 const HEALTH = {
-  /** Coming back while calories and hydration are at least `metAbove` and fatigue is at most `restedBelow`. */
-  regen: 2,
+  /** Health recovers while calories and hydration are at least `metAbove` and fatigue is at most `restedBelow`. */
   metAbove: 25,
   restedBelow: 80,
   /** Lost while starving (calories at 0) and while dehydrated (hydration at 0); both add up. */
@@ -66,19 +61,22 @@ const CRITICAL: readonly { need: Need; below?: number; above?: number; message: 
 
 const clamp = (v: number): number => Math.min(100, Math.max(0, v));
 
+/** Fatigue is sleep debt and only has a floor; the other needs run from 0 to 100. */
+const bound = (need: Need, v: number): number => (need === 'fatigue' ? Math.max(0, v) : clamp(v));
+
 const isCritical = (needs: Needs, rule: (typeof CRITICAL)[number]): boolean =>
   (rule.below !== undefined && needs[rule.need] < rule.below) ||
   (rule.above !== undefined && needs[rule.need] > rule.above);
 
-/** The recovery rate per game hour when the needs are met. */
-const healthRegenRate = (needs: Needs): number => {
+/** The recovery rate per game hour: `recovery` when the needs are met, else none. */
+const healthRegenRate = (needs: Needs, recovery: number): number => {
   const met =
     needs.calories >= HEALTH.metAbove && needs.hydration >= HEALTH.metAbove && needs.fatigue <= HEALTH.restedBelow;
-  return met ? HEALTH.regen : 0;
+  return met ? recovery : 0;
 };
 
 /** Health's rate per game hour for the needs and health as they are now. */
-const healthRate = (needs: Needs, health: number): number => {
+const healthRate = (needs: Needs, health: number, recovery: number): number => {
   let rate = 0;
   if (needs.calories <= 0) {
     rate += HEALTH.starving;
@@ -89,7 +87,7 @@ const healthRate = (needs: Needs, health: number): number => {
   if (rate < 0) {
     return rate;
   }
-  return health < 100 ? healthRegenRate(needs) : 0;
+  return health < 100 ? healthRegenRate(needs, recovery) : 0;
 };
 
 /** What's draining health right now, for the death screen. */
@@ -111,7 +109,6 @@ const LEVELS: readonly [Need, number][] = [
   ['hydration', 0],
   ['hydration', HEALTH.metAbove],
   ['fatigue', HEALTH.restedBelow],
-  ['fatigue', 100],
 ];
 
 /** Hours until the next level. */
@@ -142,23 +139,20 @@ const segmentRates = (
   needs: Needs,
   health: number,
   rates: Readonly<Record<Need, number>>,
+  recovery: number,
 ): { health: number; regionRecovery: number } => {
   const ahead = { ...needs };
-  for (const need of Object.keys(NEED_RATES) as Need[]) {
-    ahead[need] = clamp(needs[need] + rates[need] * 1e-6);
+  for (const need of NEEDS) {
+    ahead[need] = bound(need, needs[need] + rates[need] * 1e-6);
   }
-  return { health: healthRate(ahead, health), regionRecovery: healthRegenRate(ahead) };
+  return { health: healthRate(ahead, health, recovery), regionRecovery: healthRegenRate(ahead, recovery) };
 };
 
-/**
- * Advances needs, health and eligible regional recovery by `hours` game hours, in
- * place, exactly: the step is split wherever a rate changes. Returns the messages for needs that became critical
- * during the step. `damageImmune` suppresses health loss while preserving need decay
- * and recovery. `rates` overrides the per-hour rates (resting and sleeping use it for
- * fatigue; see REST). Stamina isn't touched; it moves by the second (`stepStamina`).
- */
+/** The body as the needs step uses it. */
 export interface HealthPool {
   readonly health: number;
+  readonly fatigueRisePerGameHour: number;
+  readonly healthRecoveryPerGameHour: number;
   damageHealth: (amount: number) => number;
   restoreHealth: (amount: number) => void;
   recoverRegionDamage: (ratePerGameHour: number, gameHours: number, elapsedGameHours: number) => void;
@@ -166,25 +160,41 @@ export interface HealthPool {
 
 export interface StepNeedsOptions {
   damageImmune?: boolean;
+  /** Per game hour; resting and sleeping override fatigue's. Defaults to awake. */
   rates?: Readonly<Record<Need, number>>;
+  /** Multiplies health and regional recovery: sleep's factor, or 1 awake. */
+  recoveryFactor?: number;
 }
 
+/** The rates while awake: fatigue accrues at the body's rate. */
+export const awakeRates = (body: Pick<HealthPool, 'fatigueRisePerGameHour'>): Readonly<Record<Need, number>> => ({
+  ...NEED_RATES,
+  fatigue: body.fatigueRisePerGameHour,
+});
+
+/**
+ * Advances needs, health and eligible regional recovery by `hours` game hours, in
+ * place, exactly: the step is split wherever a rate changes. Returns the messages for needs that became critical
+ * during the step. `damageImmune` suppresses health loss while preserving need decay
+ * and recovery. Stamina isn't touched; it moves by the second (`stepStamina`).
+ */
 export const stepNeeds = (
   needs: Needs,
   body: HealthPool,
   hours: number,
-  { damageImmune = false, rates = NEED_RATES }: StepNeedsOptions = {},
+  { damageImmune = false, rates = awakeRates(body), recoveryFactor = 1 }: StepNeedsOptions = {},
 ): string[] => {
   const before = { ...needs };
   const beforeHealth = body.health;
+  const recovery = body.healthRecoveryPerGameHour * recoveryFactor;
   let left = hours;
   let elapsedGameHours = 0;
   while (left > 0 && body.health > 0) {
-    const segment = segmentRates(needs, body.health, rates);
+    const segment = segmentRates(needs, body.health, rates, recovery);
     const healthRatePerHour = damageImmune ? Math.max(0, segment.health) : segment.health;
     const h = Math.min(left, nextBreak(needs, body.health, healthRatePerHour, rates));
-    for (const need of Object.keys(NEED_RATES) as Need[]) {
-      needs[need] = clamp(needs[need] + rates[need] * h);
+    for (const need of NEEDS) {
+      needs[need] = bound(need, needs[need] + rates[need] * h);
     }
     const healthChange = healthRatePerHour * h;
     if (segment.regionRecovery > 0) {

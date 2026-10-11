@@ -1,6 +1,6 @@
 // Rest controls/rate selection only. Core LongActions owns saved state and stepping.
+import { nextSimTimeAt, SECONDS_PER_HOUR } from '../core/clock.ts';
 import type { RestAction, RestKind } from '../core/longAction.ts';
-import { REST } from '../core/needs.ts';
 import type { Simulation } from '../core/sim.ts';
 import { simSeconds } from '../core/time.ts';
 
@@ -13,6 +13,8 @@ export interface RestHooks {
   furniture: (uid: number) => RestFurniture | undefined;
   withinReach: (uid: number) => boolean;
   notice: (text: string) => void;
+  /** Whether the player carries a working alarm clock (an item with `alarm`). */
+  hasAlarm: () => boolean;
 }
 
 export const restKindForFurniture = (furniture: {
@@ -25,6 +27,11 @@ export const restKindForFurniture = (furniture: {
 };
 
 export class RestController {
+  /**
+   * The hour of day (0–23) the player wants to wake at, or undefined to sleep until rested. It only
+   * applies while an alarm is carried: without a clock you can't time your waking.
+   */
+  wakeGameHour: number | undefined;
   private readonly sim: Simulation;
   private readonly hooks: RestHooks;
   constructor(sim: Simulation, hooks: RestHooks) {
@@ -38,8 +45,9 @@ export class RestController {
   get canStop(): boolean {
     return this.action !== undefined && this.action.kind !== 'sleep';
   }
-  rateFor(kind: RestKind, quality: number): number {
-    return kind === 'rest' ? REST.rest * quality : REST.sleep + REST.bedBonus * quality;
+  /** Whether the player can pick a wake time: only with an alarm clock. */
+  get canSetWakeTime(): boolean {
+    return this.hooks.hasAlarm();
   }
   start(kind: RestKind, furnitureUid: number): string | undefined {
     const furniture = this.hooks.furniture(furnitureUid);
@@ -49,7 +57,12 @@ export class RestController {
     if (!this.hooks.withinReach(furnitureUid)) {
       return 'Too far away';
     }
-    return this.sim.actions.startRest(kind, this.rateFor(kind, furniture.quality), furnitureUid);
+    const wakeAt =
+      kind === 'sleep' && this.wakeGameHour !== undefined && this.canSetWakeTime
+        ? nextSimTimeAt(this.sim.clock, this.sim.time, this.wakeGameHour * SECONDS_PER_HOUR)
+        : undefined;
+    const rate = this.sim.body.fatigueRecoveryRate(kind, furniture.quality);
+    return this.sim.actions.startRest(kind, rate, furnitureUid, wakeAt);
   }
   resume(): string | undefined {
     const { action } = this;

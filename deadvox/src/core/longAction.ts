@@ -14,6 +14,8 @@ export interface RestAction {
   label: string;
   rate: number;
   startFatigue: number;
+  /** The Sim time a sleep set with an alarm ends at; without one, sleep ends once rested. */
+  wakeAt?: number;
 }
 const WAIT_CANCELLING_MOVEMENTS = new Set([
   'movement.forward',
@@ -91,7 +93,7 @@ const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
     !Number.isFinite(rest.rate) ||
     !Number.isFinite(rest.startFatigue) ||
     rest.startFatigue < 0 ||
-    rest.startFatigue > 100 ||
+    (rest.wakeAt !== undefined && (rest.kind !== 'sleep' || !Number.isFinite(rest.wakeAt))) ||
     !Number.isSafeInteger(rest.furnitureUid) ||
     rest.furnitureUid < 1 ||
     typeof rest.label !== 'string'
@@ -222,6 +224,10 @@ export class LongActions {
   get restRate(): number | undefined {
     return this.current && !this.current.stopped && this.sim.compression.active ? this.rest?.rate : undefined;
   }
+  /** Asleep: a sleep is running, so recovery runs at the body's sleep factor. */
+  get asleep(): boolean {
+    return this.restRate !== undefined && this.rest?.kind === 'sleep';
+  }
   snapshotState(): Readonly<LongActionState> {
     const staleStoppedReading =
       this.current?.jobType === 'reading' &&
@@ -278,12 +284,16 @@ export class LongActions {
     this.current = { jobType: 'wait', stopped: false, last: this.sim.time };
     return undefined;
   }
-  startRest(kind: RestKind, rate: number, furnitureUid: number): string | undefined {
+  /** `wakeAt` (Sim time) runs a sleep to that time instead of until rested; the caller checks for an alarm. */
+  startRest(kind: RestKind, rate: number, furnitureUid: number, wakeAt?: number): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
     if (actionRefusal) {
       return actionRefusal;
     }
-    if (this.sim.needs.fatigue <= 0) {
+    if (wakeAt !== undefined && (kind !== 'sleep' || !(wakeAt > this.sim.time))) {
+      return 'Invalid wake time';
+    }
+    if (wakeAt === undefined && this.sim.needs.fatigue <= 0) {
       return "You're not tired";
     }
     if (this.current?.jobType === 'craft' && !this.current.stopped) {
@@ -304,7 +314,14 @@ export class LongActions {
       stopped: false,
       last: this.sim.time,
       elapsed: 0,
-      rest: { kind, furnitureUid, label: REST_LABEL[kind], rate, startFatigue: this.sim.needs.fatigue },
+      rest: {
+        kind,
+        furnitureUid,
+        label: REST_LABEL[kind],
+        rate,
+        startFatigue: this.sim.needs.fatigue,
+        ...(wakeAt === undefined ? {} : { wakeAt }),
+      },
     };
     return undefined;
   }
@@ -660,7 +677,8 @@ export class LongActions {
       return false;
     }
     job.elapsed += seconds;
-    return this.sim.needs.fatigue <= 0;
+    // An alarm wakes you at its time, with fatigue held at its floor of 0 once rested.
+    return job.rest.wakeAt === undefined ? this.sim.needs.fatigue <= 0 : job.last >= job.rest.wakeAt;
   }
   private finishJob(job: LongJob): void {
     try {

@@ -1,5 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
-import { formatClock } from '../core/clock.ts';
+import { calendarAt, formatClock } from '../core/clock.ts';
 import type { RestAction } from '../core/longAction.ts';
 import type { Simulation } from '../core/sim.ts';
 import { labelForAction } from '../game/inputBindings.ts';
@@ -28,15 +28,19 @@ export const restViewModel = (
     return { visible: false, label: '', clock: '', percent: 0, stopHint: '', canStop: false, prompt: undefined };
   }
   let percent = 0;
+  let label: string = action.label;
   if ('startFatigue' in action) {
     percent =
       action.startFatigue > 0
         ? Math.min(100, Math.max(0, ((action.startFatigue - sim.needs.fatigue) / action.startFatigue) * 100))
         : 100;
+    if (action.wakeAt !== undefined) {
+      label = `${label} until ${formatClock(calendarAt(sim.clock, action.wakeAt))}`;
+    }
   }
   return {
     visible: true,
-    label: action.label,
+    label,
     clock: formatClock(sim.calendar),
     percent,
     stopHint: canStop ? `${labelForAction('handling.stop')} to stop` : '',

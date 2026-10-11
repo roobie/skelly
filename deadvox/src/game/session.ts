@@ -600,7 +600,6 @@ export const createSession = (options: SessionOptions) => {
     bodyTuning,
     compressionCaps: playerCompressionCaps(registry),
     clock: { ratio: CLOCK_RATIO, start: options.start },
-    restRate: () => sim.actions.restRate,
   });
   const { compression } = sim;
   const audioEvents = sim.events.reader();
@@ -788,6 +787,7 @@ export const createSession = (options: SessionOptions) => {
       return entity !== undefined && inventory.canReachEntity(entity);
     },
     notice: options.notice,
+    hasAlarm: () => [...inventory.carriedTree()].some(({ item }) => registry.items.get(item.type)?.alarm === true),
   });
 
   const {

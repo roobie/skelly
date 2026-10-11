@@ -1,6 +1,10 @@
 {
   "files": [
     {
+      "source": "deadvox/src/content/base/body.jsonnet",
+      "output": "deadvox/src/content/base/body.json"
+    },
+    {
       "source": "deadvox/src/content/base/camp.jsonnet",
       "output": "deadvox/src/content/base/camp.json"
     },

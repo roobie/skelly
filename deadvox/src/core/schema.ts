@@ -453,6 +453,8 @@ const ItemSchema = strictObject({
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
+  /** A working alarm clock: carried, it lets a sleep run to a chosen wake hour. */
+  alarm: optional(literal(true)),
   /** Fixed ADS power for a variable-power optic; constrained by its exported range. */
   opticMagnification: optional(Positive),
   /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
@@ -1457,6 +1459,18 @@ const BodyTuningSchema = strictObject({
   shockRecoveryPerSimSecond: SimRate,
   /** Health lost per Sim second while infection is advanced. */
   advancedInfectionHealthLossPerSimSecond: SimRate,
+  /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
+  fatigueRisePerGameHour: GamePerHour,
+  /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
+  restFatigueRecoveryPerGameHour: GamePerHour,
+  /** Fatigue cleared per Game hour asleep at rest quality 1: a normal sleep. */
+  sleepFatigueRecoveryPerGameHour: GamePerHour,
+  /** The share of a normal sleep's recovery at rest quality 0; it rises linearly to all of it at 1. */
+  roughSleepShare: Fraction,
+  /** Health, and each region's damage, recovered per Game hour while fed, watered and rested enough. */
+  healthRecoveryPerGameHour: GamePerHour,
+  /** Multiplies health, regional and blood recovery while asleep. */
+  sleepRecoveryFactor: Positive,
   /** Aim sway added per point of torso damage. */
   aimSwayPerDamage: Positive,
   /** Swing slowdown added per point of arm damage. */
