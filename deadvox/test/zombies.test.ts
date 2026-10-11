@@ -4,6 +4,7 @@ import process from 'node:process';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
+import type { BodyRegion } from '../src/core/body.ts';
 import { SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -38,6 +39,8 @@ import {
   hearVocalNoise,
   type PlayerSense,
   perceivePlayer,
+  pickZombieHitRegion,
+  pickZombieMove,
   ZombieSystem,
 } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
@@ -56,6 +59,7 @@ const { registry } = buildRegistry(
 const DAY_CYCLE = dayCycleFor(registry.dayCycle);
 const dayStateAtHour = (hour: number) => dayPhaseAt(DAY_CYCLE, hour * 3600);
 const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack.moves.map(({ damage }) => damage);
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
 const runtimeWeapon = <T extends { cooldownSimSeconds: number }>(weapon: T) => ({
@@ -83,7 +87,11 @@ const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
   hourFn: () => number = () => 12,
-  hurtPlayer: (amount: number, area?: 'head' | 'torso' | 'legs', attacker?: number) => void = () => undefined,
+  hurtPlayer: (
+    amount: number,
+    hitRegions?: readonly { region: BodyRegion; weight: number }[],
+    attacker?: number,
+  ) => void = () => undefined,
 ) => ({
   player: playerFn,
   isSolid,
@@ -322,6 +330,45 @@ const instanceBox = (mesh: import('three').InstancedMesh, index = 0) => {
   }
   return { center, size, points };
 };
+
+describe('zombie attack moves', () => {
+  it('picks the move of a landed hit by its share of the weights', () => {
+    const move = (id: string, weight: number) => ({
+      id,
+      weight,
+      damage: 1,
+      damageKind: 'blunt' as const,
+      hitRegions: [{ region: 'torso' as const, weight: 1 }],
+    });
+    const moves = [move('heavy', 3), move('light', 1)];
+
+    expect([0, 0.74, 0.76, 0.999].map((roll) => pickZombieMove(moves, roll).id)).toEqual([
+      'heavy',
+      'heavy',
+      'light',
+      'light',
+    ]);
+  });
+
+  it('picks every positively weighted body region in a move and no unlisted region', () => {
+    const choices = [
+      { region: 'head', weight: 2 },
+      { region: 'torso', weight: 6 },
+      { region: 'leftArm', weight: 1 },
+      { region: 'rightArm', weight: 1 },
+    ] as const;
+    const totalWeight = choices.reduce((sum, { weight }) => sum + weight, 0);
+    let precedingWeight = 0;
+    const picks = choices.map(({ weight }) => {
+      const roll = (precedingWeight + weight / 2) / totalWeight;
+      precedingWeight += weight;
+      return pickZombieHitRegion(choices, roll);
+    });
+    const regions = new Set<BodyRegion>(choices.map(({ region }) => region));
+
+    expect(new Set(picks)).toEqual(regions);
+  });
+});
 
 describe('melee hit sounds', () => {
   const emittedFor = (weapon: import('../src/core/zombies.ts').MeleeWeapon): { hit: boolean; events: string[] } => {
@@ -869,7 +916,7 @@ describe('shambler scenarios', () => {
     );
     system.add(SHAMBLER, [5, 1, 1.56], [0, 0, -1]);
     run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
-    expect(damage).toBe(8);
+    expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
   });
 
   it('C: reaches the last-perceived point, loses sight, then returns within 3 m in 120 seconds', () => {
@@ -1658,16 +1705,18 @@ describe('shambler scenarios', () => {
     expect(runner.body.pos[0]).toBeGreaterThan(Math.abs(runner.body.pos[2]));
   });
 
-  it('crawler attacks wear the player legs region and identify their attacker', () => {
-    const hitAreas: ('head' | 'torso' | 'legs')[] = [];
+  it('crawler attacks offer only leg hit regions and identify their attacker', () => {
+    const hitChoices: (readonly { region: BodyRegion; weight: number }[])[] = [];
     const attackers: number[] = [];
     const system = new ZombieSystem(
       senses(
         () => player([1.5, 1, 0]),
         FLOOR,
         () => 12,
-        (_damage, area, attacker) => {
-          hitAreas.push(area ?? 'torso');
+        (_damage, choices, attacker) => {
+          if (choices) {
+            hitChoices.push(choices);
+          }
           if (attacker !== undefined) {
             attackers.push(attacker);
           }
@@ -1676,7 +1725,12 @@ describe('shambler scenarios', () => {
     );
     system.add(CRAWLER, [0, 1, 0], [1, 0, 0]);
     run(system, 2);
-    expect(hitAreas).toContain('legs');
+    expect(hitChoices.length).toBeGreaterThan(0);
+    expect(
+      hitChoices.every(
+        (choices) => choices.length > 0 && choices.every(({ region }) => region === 'leftLeg' || region === 'rightLeg'),
+      ),
+    ).toBe(true);
     expect(attackers.some((id) => system.store.get(id)?.type.name === CRAWLER.name)).toBe(true);
   });
 
@@ -1750,7 +1804,7 @@ describe('shambler scenarios', () => {
         FLOOR,
         () => 12,
         (damage) => {
-          expect(damage).toBe(8);
+          expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
           hitTimes.push(elapsed);
         },
       ),
@@ -3131,17 +3185,19 @@ describe('attack windup', () => {
     expect(zombie.attackWait).toBeCloseTo(SHAMBLER.attack.cooldownSimSeconds, 5);
   });
 
-  it('damages the player exactly once on the torso when the windup elapses in reach', () => {
+  it("passes one move's weighted body regions when the attack windup elapses in reach", () => {
     let damage = 0;
-    const areas: ('head' | 'torso' | 'legs' | undefined)[] = [];
+    const hitChoices: (readonly { region: BodyRegion; weight: number }[])[] = [];
     const system = new ZombieSystem(
       senses(
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount, area) => {
+        (amount, choices) => {
           damage += amount;
-          areas.push(area);
+          if (choices) {
+            hitChoices.push(choices);
+          }
         },
       ),
     );
@@ -3149,8 +3205,9 @@ describe('attack windup', () => {
     system.tick(1 / 60);
     expect(damage).toBe(0);
     run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
-    expect(damage).toBe(8);
-    expect(areas).toEqual(['torso']);
+    expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
+    expect(hitChoices).toHaveLength(1);
+    expect(SHAMBLER.attack.moves.map(({ hitRegions }) => hitRegions)).toContainEqual(hitChoices[0]);
   });
 
   it('a miss: no damage if the player steps out of reach during the windup', () => {
@@ -3211,13 +3268,14 @@ describe('attack windup', () => {
     );
     const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
     run(system, SHAMBLER.attack.windupSimSeconds + 0.05); // resolves the first attack
-    expect(damage).toBe(8);
+    expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
+    const firstHit = damage;
     const afterFirstHit = system.store.get(id)!.attackWait;
     expect(afterFirstHit).toBeGreaterThan(0);
     // Well within the remaining cooldown: no second windup should start yet.
     run(system, afterFirstHit - 0.1);
     expect(system.store.get(id)!.attackWindup).toBe(0);
-    expect(damage).toBe(8);
+    expect(damage).toBe(firstHit);
   });
 
   it('keeps simulation-backed hit flinch through save/restore and freeze', () => {
@@ -3568,7 +3626,7 @@ describe('dismemberment', () => {
     const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
     system.store.get(id)!.severed.push('hand.L', 'hand.R');
     run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
-    expect(damage).toBe(8);
+    expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
   });
 
   it('only severs the head on a killing blow, never on a hit the zombie survives', () => {

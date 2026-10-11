@@ -3,11 +3,19 @@
 
 import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
 import { type ClockSettings, calendarAt, defaultClock, simToGameHours } from './clock.ts';
-import { Compression, type CompressionLimits, longActionLimits } from './compression.ts';
+import { Compression, type CompressionLimits, type CompressionOwner, longActionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
-import { awakeRates, causeOf, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
+import {
+  awakeRates,
+  causeOf,
+  type Needs,
+  needsAllowRecovery,
+  type RecoveryState,
+  SPAWN_NEEDS,
+  stepNeeds,
+} from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
 import type { BodyTuningDef, CompressionCaps } from './schema.ts';
@@ -26,6 +34,9 @@ export type SimEvent =
 
 export type Timed<E> = E & { readonly time: number };
 
+/** A hit's effects; the body's bleeding tiers decide from its kind whether and how badly it bleeds. */
+export type HitEffects = Omit<BodyImpact, 'bleeding'>;
+
 export interface SimulationState {
   seed: number;
   clock: ClockSettings;
@@ -33,7 +44,7 @@ export interface SimulationState {
   scheduler: SchedulerState;
   needs: Needs;
   body: BodyState;
-  compression: { c: number; active: boolean; interruption?: string };
+  compression: { c: number; active: boolean; owner: CompressionOwner; interruption?: string };
   pendingInterrupt?: string;
   dead?: { cause: string; time: number };
 }
@@ -74,7 +85,7 @@ export class Simulation {
     this.clock = options.clock ?? defaultClock;
     this.body = new Body(options.bodyTuning);
     this.compressionCaps = options.compressionCaps;
-    // Unowned compression (the debug compression test, a restored debug skip) passes time like a wait.
+    // A start without its own limits (debug compression, a restored skip) passes time like a wait.
     this.compression = new Compression(longActionLimits(options.compressionCaps.wait));
     this.interrupts = this.events.reader();
     this.scheduler.register({
@@ -88,7 +99,7 @@ export class Simulation {
           damageImmune: this.godMode,
           rates: restRate === undefined ? awake : { ...awake, fatigue: restRate },
           recoveryFactor: this.recoveryFactor,
-          state: this.actions.asleep ? 'asleep' : 'awake',
+          state: this.recoveryState,
         })) {
           this.emit({ kind: 'interrupt', reason });
         }
@@ -104,7 +115,10 @@ export class Simulation {
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        const cause = this.body.advance(dt, this.godMode, dt * this.clock.ratio, this.recoveryFactor);
+        const cause = this.body.advance(dt, this.godMode, dt * this.clock.ratio, {
+          recovering: needsAllowRecovery(this.needs, this.body, this.recoveryState),
+          recoveryFactor: this.recoveryFactor,
+        });
         if (cause) {
           this.die(cause);
         }
@@ -115,6 +129,11 @@ export class Simulation {
   /** Sleep multiplies health, regional and blood recovery. */
   private get recoveryFactor(): number {
     return this.actions.asleep ? this.body.sleepRecoveryFactor : 1;
+  }
+
+  /** Picks the body's fatigue ceiling for the recovery gate. */
+  private get recoveryState(): RecoveryState {
+    return this.actions.asleep ? 'asleep' : 'awake';
   }
 
   /** Isolated plain-data continuation state; an unread interrupt is carried to the next frame. */
@@ -129,6 +148,7 @@ export class Simulation {
       compression: {
         c: this.compression.c,
         active: this.compression.active,
+        owner: this.compression.owner,
         ...(this.compression.interruption === undefined ? {} : { interruption: this.compression.interruption }),
       },
       ...(this.dead === undefined && this.pendingInterrupt !== undefined
@@ -163,9 +183,10 @@ export class Simulation {
     this.compression.c = state.compression.c;
     this.compression.active = state.compression.active;
     this.compression.interruption = state.compression.interruption;
+    this.compression.owner = state.compression.owner;
     if (state.compression.active) {
       // Limits aren't saved: active compression resumes with the defaults until a restored long action sets its own.
-      this.compression.start(undefined);
+      this.compression.start(undefined, state.compression.owner);
     }
     this.dead = state.dead === undefined ? undefined : { ...state.dead };
     this.pendingInterrupt = undefined;
@@ -216,14 +237,30 @@ export class Simulation {
     this.takeDamage(cause, () => this.body.damageHealth(amount));
   }
 
-  hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: BodyImpact = {}): void {
+  /** A hit of a damage kind may open a bleeding wound (`Body.bleedingTierForHit`). */
+  hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: HitEffects = {}): void {
+    const bleeding =
+      effects.kind === undefined
+        ? undefined
+        : this.body.bleedingTierForHit(
+            amount,
+            region,
+            effects.kind,
+            this.rng(`body-bleeding:${region}:${this.time}:${amount}`).next(),
+          );
     const woundAlreadyExists = this.body.wounds[region] !== null;
     const infectionAtRisk =
       effects.infectionAtRisk ??
-      (Boolean(effects.bleeding) &&
+      (bleeding !== undefined &&
         (woundAlreadyExists ||
           this.rng(`body-infection:${region}:${this.time}:${amount}`).next() < this.body.tuning.infectionChance));
-    this.takeDamage(cause, () => this.body.impact(amount, region, { ...effects, infectionAtRisk }));
+    this.takeDamage(cause, () =>
+      this.body.impact(amount, region, {
+        ...effects,
+        infectionAtRisk,
+        ...(bleeding === undefined ? {} : { bleeding }),
+      }),
+    );
   }
 
   private takeDamage(cause: string, apply: () => number): void {
@@ -253,19 +290,26 @@ export class Simulation {
   }
 
   /**
-   * Starts unowned compression, such as the debug skip. Shamblers nearby never refuse it: only an
+   * Starts debug compression, such as the skip. Neither shamblers nearby nor bleeding refuse it: only an
    * emitted interruption, such as a hit, stops it (DESIGN.md, "Long actions").
    */
   compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
     if (this.actions.job?.jobType === 'pry' && !this.actions.job.stopped) {
       return { ok: false, reason: 'Stop prying first' };
     }
-    return this.compression.start(undefined, limits);
+    return this.compression.start(undefined, 'debug', limits);
   }
 
-  /** Compresses a long action up to its content cap; emitted interruptions still stop it. */
+  /**
+   * Compresses a player long action up to its content cap. Bleeding refuses it, and stops it once it bleeds
+   * too fast; emitted interruptions still stop it.
+   */
   compressLongAction(jobType: keyof CompressionCaps): { ok: true } | { ok: false; reason: string } {
-    return this.compression.start(undefined, longActionLimits(this.compressionCaps[jobType]));
+    return this.compression.start(
+      this.body.compressionRefusal,
+      'long-action',
+      longActionLimits(this.compressionCaps[jobType]),
+    );
   }
 
   /** Processes events emitted between frames before the outer driver sizes this frame. */
@@ -322,17 +366,20 @@ export class Simulation {
     const { compression } = this;
     const action = this.actions.job;
     if (!(compression.active || compression.c > 1)) {
-      if (action?.jobType === 'pry' && emitted) {
-        this.actions.interruptPrying(emitted.reason);
+      if (action && emitted && this.actions.runsUncompressed(action.jobType)) {
+        this.actions.interruptUncompressed(emitted.reason);
         return true;
       }
       return false;
     }
-    if (emitted === undefined) {
+    const bleedingRefusal =
+      compression.active && compression.owner === 'long-action' ? this.body.compressionRefusal : undefined;
+    const reason = emitted?.reason ?? bleedingRefusal;
+    if (reason === undefined) {
       return false;
     }
     if (compression.active) {
-      compression.interrupt(emitted.reason);
+      compression.interrupt(reason);
     } else {
       compression.snap();
     }

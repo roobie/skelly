@@ -1,23 +1,28 @@
 import type { Body } from '../core/body.ts';
-import { BODY_REGIONS, type BodyRegion, type BodyTreatment, type BodyWounds, bodyRegionLabel } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
+import type { TreatmentDef } from '../core/schema.ts';
 
 export interface ItemAction {
   readonly id: string;
   readonly label: string;
-  readonly priority?: Readonly<{ bleeding: boolean; damage: number }>;
-  readonly treatment?: Readonly<{ region: BodyRegion; kind: BodyTreatment }>;
+  /** `bleeding` is the wound's bleeding severity, 0 when it doesn't bleed. */
+  readonly priority?: Readonly<{ bleeding: number; damage: number }>;
+  readonly treatment?: Readonly<{ region: BodyRegion; itemType: string }>;
   /** Unloading a held magazine: R only loads one (CONTROLS.md, "Reload, rack, remove"), so stripping is an item action. */
   readonly magazine?: 'strip';
 }
 
 const STRIP_ROUND: ItemAction = { id: 'magazine:strip', label: 'Strip a round', magazine: 'strip' };
 
-const woundDescription = (wound: NonNullable<BodyWounds[BodyRegion]>, treatment: BodyTreatment): string =>
-  treatment === 'bandage' || treatment === 'rag' ? 'bleeding' : `${wound.infection} infection`;
+/** What the treatment treats in the wound (`Body.canTreat`): its bleeding tier, else its infection stage. */
+const woundDescription = (body: Body, region: BodyRegion, treatment: TreatmentDef): string => {
+  const tier = treatment.bleeding === undefined ? undefined : body.bleedingTier(region);
+  return tier?.label ?? `${body.wounds[region]!.infection} infection`;
+};
 
 export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
   if (magazineSpec(inventory.registry, item.type)) {
@@ -32,13 +37,12 @@ export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): re
       return [];
     }
     const wound = body.wounds[region]!;
-    const condition = woundDescription(wound, treatment);
     return [
       {
-        id: `${treatment}:${region}`,
-        label: `${bodyRegionLabel(region)} · ${condition}`,
+        id: `${item.type}:${region}`,
+        label: `${bodyRegionLabel(region)} · ${woundDescription(body, region, treatment)}`,
         priority: { bleeding: wound.bleeding, damage: body.regionDamage[region] },
-        treatment: { region, kind: treatment },
+        treatment: { region, itemType: item.type },
       },
     ];
   });
@@ -56,7 +60,7 @@ export const defaultItemAction = (actions: readonly ItemAction[]): ItemAction | 
       return best;
     }
     if (actionPriority.bleeding !== bestPriority.bleeding) {
-      return actionPriority.bleeding ? action : best;
+      return actionPriority.bleeding > bestPriority.bleeding ? action : best;
     }
     return actionPriority.damage > bestPriority.damage ? action : best;
   }, undefined);

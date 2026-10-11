@@ -315,6 +315,59 @@ describe('content', () => {
     }
   });
 
+  it('requires unique ids within zombie attack move lists', () => {
+    const zombieFile = base.find(({ source }) => source === 'zombies.json')!;
+    const data = structuredClone(zombieFile.data) as {
+      zombies: { id: string; attack: { moves: { id: string }[] } }[];
+    };
+    const {
+      attack: { moves },
+    } = data.zombies.find(({ attack }) => attack.moves.length > 1)!;
+    moves[1]!.id = moves[0]!.id;
+
+    expect(
+      validateContent({ source: zombieFile.source, data }).some(
+        ({ message }) => message === 'zombie move ids must be unique',
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps runner attack damage within the shambler damage ceilings', () => {
+    const shambler = baseRegistry.zombies.get('shambler')!;
+    const runner = baseRegistry.zombies.get('runner')!;
+    const highestShamblerDamage = Math.max(...shambler.attack.moves.map(({ damage }) => damage));
+    const weightedDamage = (moves: typeof shambler.attack.moves) =>
+      moves.reduce((total, { damage, weight }) => total + damage * weight, 0) /
+      moves.reduce((total, { weight }) => total + weight, 0);
+
+    expect(runner.attack.moves.length).toBeGreaterThan(0);
+    expect(Math.max(...runner.attack.moves.map(({ damage }) => damage))).toBeLessThanOrEqual(highestShamblerDamage);
+    expect(weightedDamage(runner.attack.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack.moves));
+  });
+
+  it('makes arterial bleeding less likely but possible on the torso', () => {
+    const arterial = baseRegistry.body.get('player')!.bleeding.tiers.find(({ id }) => id === 'arterial')!;
+
+    expect(arterial.regionFactor?.torso).toBeLessThan(1);
+    expect(arterial.chance.pierce * arterial.regionFactor!.torso!).toBeGreaterThan(0);
+  });
+
+  it('rejects negative and unknown bleeding region factors', () => {
+    const body = baseRegistry.body.get('player')!;
+    const withRegionFactor = (regionFactor: Record<string, number>) => ({
+      ...body,
+      bleeding: {
+        ...body.bleeding,
+        tiers: body.bleeding.tiers.map((tier) => (tier.id === 'arterial' ? { ...tier, regionFactor } : tier)),
+      },
+    });
+
+    expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ torso: -0.1 })] } })).not.toEqual(
+      [],
+    );
+    expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ chest: 1 })] } })).not.toEqual([]);
+  });
+
   it('requires amalgam zombie regions to match the manifest classes exactly', () => {
     for (const [regionId, change] of [
       ['member.leftLeg', 'remove'],
@@ -861,7 +914,20 @@ describe('content', () => {
             nightSight: 10,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
-            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
+            attack: {
+              reach: 1,
+              cooldownSimSeconds: 1.5,
+              windupSimSeconds: 0.3,
+              moves: [
+                {
+                  id: 'swipe',
+                  weight: 1,
+                  damage: 5,
+                  damageKind: 'blunt',
+                  hitRegions: [{ region: 'torso', weight: 1 }],
+                },
+              ],
+            },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
           },
@@ -886,7 +952,20 @@ describe('content', () => {
             sightCone: 60,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
-            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
+            attack: {
+              reach: 1,
+              cooldownSimSeconds: 1.5,
+              windupSimSeconds: 0.3,
+              moves: [
+                {
+                  id: 'swipe',
+                  weight: 1,
+                  damage: 5,
+                  damageKind: 'blunt',
+                  hitRegions: [{ region: 'torso', weight: 1 }],
+                },
+              ],
+            },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
           },
@@ -1535,7 +1614,20 @@ describe('content references', () => {
               stumbleSpeedFraction: 0.04,
               stumbleDecelerationMetresPerSimSecondSquared: 14,
             },
-            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
+            attack: {
+              reach: 1,
+              cooldownSimSeconds: 1.5,
+              windupSimSeconds: 0.3,
+              moves: [
+                {
+                  id: 'swipe',
+                  weight: 1,
+                  damage: 5,
+                  damageKind: 'blunt',
+                  hitRegions: [{ region: 'torso', weight: 1 }],
+                },
+              ],
+            },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             downed: {
               finishOff: { simSeconds: 3 },

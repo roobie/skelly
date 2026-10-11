@@ -312,7 +312,8 @@ describe('amalgam body and combat seam', () => {
     const amalgam = registry.zombies.get('amalgam')!;
     const shambler = registry.zombies.get('shambler')!;
     expect(amalgam.speed.chaseMetresPerSimSecond).toBeLessThan(shambler.speed.chaseMetresPerSimSecond);
-    expect(amalgam.attack.damage).toBeGreaterThan(shambler.attack.damage);
+    const heaviest = (type: typeof amalgam) => Math.max(...type.attack.moves.map((move) => move.damage));
+    expect(heaviest(amalgam)).toBeGreaterThan(heaviest(shambler));
     expect(amalgam.attack.windupSimSeconds).toBeGreaterThan(shambler.attack.windupSimSeconds);
 
     const seenPlayer: PlayerSense = { ...player(), pos: [0, 1, 30] };

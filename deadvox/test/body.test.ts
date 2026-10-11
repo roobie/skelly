@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { BODY_REGIONS, Body, type BodyTreatment, bodyRegionForHitArea } from '../src/core/body.ts';
+import { BODY_REGIONS, Body, type BodyRegion } from '../src/core/body.ts';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import { type Needs, stepNeeds } from '../src/core/needs.ts';
+import { Rng } from '../src/core/random.ts';
+import type { TreatmentDef } from '../src/core/schema.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
 const recoveryNeeds = (calories = 80): Needs => ({
   calories,
@@ -13,6 +15,19 @@ const recoveryNeeds = (calories = 80): Needs => ({
   staminaRegenDelayRemainingSimSeconds: 0,
 });
 const steadyNeedRates = { calories: 0, hydration: 0, fatigue: 0 } as const;
+
+// The test's own treatments. STRONG closes every fixture band even at the lowest roll of the spread.
+const STRONG: TreatmentDef = { bleeding: 100 };
+const WEAK: TreatmentDef = { bleeding: 1 };
+const ANTISEPTIC: TreatmentDef = { infection: { stages: ['early'], chance: 1 } };
+const ANTIBIOTICS: TreatmentDef = { infection: { stages: ['advanced'], chance: 1 } };
+/** A roll that multiplies a treatment's strength by exactly 1 within the fixture's spread of 0.5 to 1.5. */
+const evenRoll = () => 0.5;
+
+const { tiers } = BODY_TUNING_FIXTURE.bleeding;
+const MINOR = fixtureTier('minor');
+const SERIOUS = fixtureTier('serious');
+const CRITICAL = fixtureTier('critical');
 
 describe('player body', () => {
   it('recovers each damaged region with health when needs are met', () => {
@@ -35,13 +50,13 @@ describe('player body', () => {
 
   it('continues regional recovery after health is full and bleeding stops', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'rightArm', { bleeding: true, infectionAtRisk: false });
+    body.impact(1, 'rightArm', { bleeding: SERIOUS, infectionAtRisk: false });
     const damageWhileBleeding = body.regionDamage.rightArm;
 
     stepNeeds(recoveryNeeds(), body, 100, { rates: steadyNeedRates });
     expect(body.health).toBe(100);
     expect(body.regionDamage.rightArm).toBe(damageWhileBleeding);
-    expect(body.treat('rightArm', 'bandage')).toBe(true);
+    expect(body.treat('rightArm', STRONG, evenRoll)).toBe(true);
 
     stepNeeds(recoveryNeeds(), body, 1, { rates: steadyNeedRates });
 
@@ -52,7 +67,7 @@ describe('player body', () => {
   it('pauses only a bleeding region while other damage recovers', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
     body.impact(1, 'head');
-    body.impact(1, 'rightArm', { bleeding: true, infectionAtRisk: false });
+    body.impact(1, 'rightArm', { bleeding: SERIOUS, infectionAtRisk: false });
     const headDamage = body.regionDamage.head;
     const bleedingDamage = body.regionDamage.rightArm;
 
@@ -69,9 +84,9 @@ describe('player body', () => {
     ]) {
       const body = new Body(BODY_TUNING_FIXTURE);
       body.impact(1, 'head');
-      body.impact(1, 'rightArm', { bleeding: true });
+      body.impact(1, 'rightArm', { bleeding: SERIOUS });
       body.advance(0, true, infectionTime);
-      expect(body.treat('rightArm', 'bandage')).toBe(true);
+      expect(body.treat('rightArm', STRONG, evenRoll)).toBe(true);
       const headDamage = body.regionDamage.head;
       const infectedDamage = body.regionDamage.rightArm;
 
@@ -82,10 +97,10 @@ describe('player body', () => {
     }
 
     const resolved = new Body(BODY_TUNING_FIXTURE);
-    resolved.impact(1, 'rightArm', { bleeding: true });
+    resolved.impact(1, 'rightArm', { bleeding: SERIOUS });
     resolved.advance(0, true, BODY_TUNING_FIXTURE.infectionOnsetGameHours);
-    expect(resolved.treat('rightArm', 'bandage')).toBe(true);
-    expect(resolved.treat('rightArm', 'antiseptic')).toBe(true);
+    expect(resolved.treat('rightArm', STRONG, evenRoll)).toBe(true);
+    expect(resolved.treat('rightArm', ANTISEPTIC, evenRoll)).toBe(true);
     const resolvedDamage = resolved.regionDamage.rightArm;
 
     stepNeeds(recoveryNeeds(), resolved, 1, { rates: steadyNeedRates });
@@ -114,8 +129,8 @@ describe('player body', () => {
 
   it('stops recovering at infection onset inside a needs step', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'rightArm', { bleeding: true });
-    expect(body.treat('rightArm', 'bandage')).toBe(true);
+    body.impact(1, 'rightArm', { bleeding: SERIOUS });
+    expect(body.treat('rightArm', STRONG, evenRoll)).toBe(true);
     body.advance(0, true, BODY_TUNING_FIXTURE.infectionOnsetGameHours * 0.9);
     const initialDamage = body.regionDamage.rightArm;
 
@@ -137,9 +152,9 @@ describe('player body', () => {
     const recoveryRate = (probe.health - probeHealth) / probeHours;
 
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(10, 'rightArm', { bleeding: true });
+    body.impact(10, 'rightArm', { bleeding: SERIOUS });
     body.restoreHealth(10);
-    expect(body.treat('rightArm', 'bandage')).toBe(true);
+    expect(body.treat('rightArm', STRONG, evenRoll)).toBe(true);
     const initialDamage = body.regionDamage.rightArm;
     body.damageHealth((recoveryRate * onsetHours) / 2);
 
@@ -184,10 +199,10 @@ describe('player body', () => {
     expect(BODY_REGIONS).toContain('rightLeg');
   });
 
-  it('can cause unconsciousness while health remains above zero', () => {
+  it("can cause unconsciousness from a kind's shock while health remains above zero", () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(30, 'torso', { blunt: true });
-    body.impact(30, 'torso', { blunt: true });
+    body.impact(30, 'torso', { kind: 'blunt' });
+    body.impact(30, 'torso', { kind: 'blunt' });
 
     expect(body.health).toBeGreaterThan(0);
     expect(body.unconscious).toBe(true);
@@ -206,61 +221,244 @@ describe('player body', () => {
     expect(body.shock).toBeLessThan(100);
   });
 
-  it('stops blood loss when a bleeding region is dressed', () => {
+  it("loses blood at each bleeding tier's rate, summed across the bleeding regions", () => {
     const body = new Body(BODY_TUNING_FIXTURE);
     const bloodBefore = body.blood;
-    body.impact(1, 'torso', { bleeding: true });
-    body.advance(100);
-    const bloodAfterBleeding = body.blood;
-    expect(bloodAfterBleeding).toBeLessThan(bloodBefore);
+    body.impact(0, 'torso', { bleeding: SERIOUS });
+    body.impact(0, 'leftLeg', { bleeding: CRITICAL });
+    const seconds = 10;
 
-    expect(body.treat('torso', 'bandage')).toBe(true);
-    body.advance(100);
-    expect(body.blood).toBeGreaterThan(bloodAfterBleeding);
-    expect(body.wounds.torso?.bleeding).toBe(false);
+    body.advance(seconds);
+
+    expect(bloodBefore - body.blood).toBeCloseTo(
+      (tiers[SERIOUS]!.bloodLossPerSimSecond + tiers[CRITICAL]!.bloodLossPerSimSecond) * seconds,
+      9,
+    );
   });
 
-  it('requires antibiotics only after infection progresses', () => {
+  it('recovers blood only while no wound bleeds', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'rightArm', { bleeding: true, infectionAtRisk: true });
+    body.impact(0, 'torso', { bleeding: SERIOUS });
+    body.impact(0, 'leftArm', { bleeding: SERIOUS });
+    body.advance(100);
+    const bloodWhileBleeding = body.blood;
+
+    expect(body.treat('torso', STRONG, evenRoll)).toBe(true);
+    body.advance(100);
+    const bloodWithOneBleeding = body.blood;
+    expect(bloodWithOneBleeding).toBeLessThan(bloodWhileBleeding);
+
+    expect(body.treat('leftArm', STRONG, evenRoll)).toBe(true);
+    body.advance(100);
+    expect(body.worstBleedingTier).toBeUndefined();
+    expect(body.blood).toBeGreaterThan(bloodWithOneBleeding);
+  });
+
+  it("closes every wound by itself, band by band at each tier's rate, only while the body recovers", () => {
+    const wounded = (): Body => {
+      const body = new Body(BODY_TUNING_FIXTURE);
+      body.impact(0, 'torso', { bleeding: MINOR, infectionAtRisk: false });
+      body.impact(0, 'leftArm', { bleeding: SERIOUS, infectionAtRisk: false });
+      return body;
+    };
+    const minorClose = tiers[MINOR]!.closeSimSeconds;
+    const seriousClose = tiers[SERIOUS]!.closeSimSeconds;
+
+    const recovering = wounded();
+    recovering.advance(minorClose, false, minorClose, { recovering: true });
+    expect(recovering.bleedingTier('torso')).toBeUndefined();
+    expect(recovering.bleedingTier('leftArm')).toBe(tiers[SERIOUS]);
+    expect(recovering.wounds.leftArm!.bleeding).toBeLessThan(SERIOUS + 1);
+    recovering.advance(seriousClose + minorClose, false, seriousClose + minorClose, { recovering: true });
+    expect(recovering.worstBleedingTier).toBeUndefined();
+
+    const notRecovering = wounded();
+    notRecovering.advance(seriousClose + minorClose, false, seriousClose + minorClose, { recovering: false });
+    expect(notRecovering.wounds.torso!.bleeding).toBe(MINOR + 1);
+    expect(notRecovering.wounds.leftArm!.bleeding).toBe(SERIOUS + 1);
+  });
+
+  it('keeps an infected wound from closing by itself', () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    body.impact(0, 'torso', { bleeding: MINOR, infectionAtRisk: true });
+    body.advance(0, true, BODY_TUNING_FIXTURE.infectionOnsetGameHours);
+    expect(body.wounds.torso?.infection).toBe('early');
+
+    body.advance(tiers[MINOR]!.closeSimSeconds, true, 0, { recovering: true });
+
+    expect(body.wounds.torso!.bleeding).toBe(MINOR + 1);
+  });
+
+  it("spends a treatment's strength band by band, carrying what's left into the next band down", () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    body.impact(0, 'leftLeg', { bleeding: CRITICAL });
+    const halfOfSerious = tiers[SERIOUS]!.treatmentEffort / 2;
+
+    expect(body.treat('leftLeg', { bleeding: tiers[CRITICAL]!.treatmentEffort + halfOfSerious }, evenRoll)).toBe(true);
+
+    expect(body.wounds.leftLeg!.bleeding).toBeCloseTo(SERIOUS + 0.5, 9);
+    expect(body.bleedingTier('leftLeg')).toBe(tiers[SERIOUS]);
+  });
+
+  it("rolls each application's effect within the body's treatment spread", () => {
+    const { min, max } = BODY_TUNING_FIXTURE.treatmentSpread;
+    const effect = (roll: number): number => {
+      const body = new Body(BODY_TUNING_FIXTURE);
+      body.impact(0, 'leftLeg', { bleeding: CRITICAL });
+      body.treat('leftLeg', WEAK, () => roll);
+      return CRITICAL + 1 - body.wounds.leftLeg!.bleeding;
+    };
+    const cost = tiers[CRITICAL]!.treatmentEffort;
+
+    expect(effect(0)).toBeCloseTo((WEAK.bleeding! * min) / cost, 9);
+    expect(effect(1 - Number.EPSILON)).toBeCloseTo((WEAK.bleeding! * max) / cost, 9);
+  });
+
+  it('stacks applications: a weak treatment applied again and again stops even the worst wound', () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    body.impact(0, 'leftLeg', { bleeding: CRITICAL });
+    const rolls = Rng.stream(1, 'body-test-treatment');
+    const totalEffort = tiers.reduce((sum, tier) => sum + tier.treatmentEffort, 0);
+    const mostApplications = Math.ceil(totalEffort / (WEAK.bleeding! * BODY_TUNING_FIXTURE.treatmentSpread.min));
+
+    const severities = [body.wounds.leftLeg!.bleeding];
+    while (body.wounds.leftLeg!.bleeding > 0 && severities.length <= mostApplications) {
+      body.treat('leftLeg', WEAK, () => rolls.next());
+      severities.push(body.wounds.leftLeg!.bleeding);
+    }
+
+    expect(body.wounds.leftLeg!.bleeding).toBe(0);
+    expect(severities.every((severity, i) => i === 0 || severity < severities[i - 1]!)).toBe(true);
+  });
+
+  it('passes treatment quality through the modifier point', () => {
+    const plain = new Body(BODY_TUNING_FIXTURE);
+    const modified = new Body(BODY_TUNING_FIXTURE, undefined, [{ effect: 'treatment.quality', multiply: 100 }]);
+    for (const body of [plain, modified]) {
+      body.impact(0, 'leftLeg', { bleeding: CRITICAL });
+      body.treat('leftLeg', WEAK, evenRoll);
+    }
+
+    expect(plain.bleedingTier('leftLeg')).toBe(tiers[CRITICAL]);
+    expect(modified.worstBleedingTier).toBeUndefined();
+  });
+
+  it("opens the tier a roll lands in among those the hit's damage and region allow, or none", () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    const critical = tiers[CRITICAL]!;
+    const limb = 'leftLeg';
+    const torso = 'torso';
+    const allPierce = tiers.reduce((sum, tier) => sum + tier.chance.pierce, 0);
+
+    expect(body.bleedingTierForHit(critical.minDamage, limb, 'pierce', 0)).toBe(CRITICAL);
+    expect(body.bleedingTierForHit(critical.minDamage, torso, 'pierce', 0)).toBe(CRITICAL);
+    expect(body.bleedingTierForHit(critical.minDamage / 2, torso, 'pierce', 0)).not.toBe(CRITICAL);
+    expect(body.bleedingTierForHit(tiers[SERIOUS]!.minDamage / 2, limb, 'pierce', 0)).toBe(MINOR);
+    expect(body.bleedingTierForHit(critical.minDamage, limb, 'pierce', allPierce)).toBeUndefined();
+  });
+
+  it('uses zero and fractional region factors to scale a fixture tier chance', () => {
+    const tuningWithFactor = (region: BodyRegion, factor: number) => ({
+      ...BODY_TUNING_FIXTURE,
+      bleeding: {
+        ...BODY_TUNING_FIXTURE.bleeding,
+        tiers: tiers.map((tier) =>
+          tier.id === 'critical' ? { ...tier, regionFactor: { ...tier.regionFactor, [region]: factor } } : tier,
+        ),
+      },
+    });
+    const withFactor = (region: BodyRegion, factor: number) => new Body(tuningWithFactor(region, factor));
+    const critical = tiers[CRITICAL]!;
+    const boundaryRoll = critical.chance.pierce * 0.75;
+    const zeroTorso = withFactor('torso', 0);
+    const halfTorso = withFactor('torso', 0.5);
+    const fullTorso = withFactor('torso', 1);
+
+    for (const roll of [0, boundaryRoll, 0.999]) {
+      expect(zeroTorso.bleedingTierForHit(critical.minDamage, 'torso', 'pierce', roll)).not.toBe(CRITICAL);
+    }
+    expect(fullTorso.bleedingTierForHit(critical.minDamage, 'torso', 'pierce', boundaryRoll)).toBe(CRITICAL);
+    expect(halfTorso.bleedingTierForHit(critical.minDamage, 'torso', 'pierce', boundaryRoll)).not.toBe(CRITICAL);
+  });
+
+  it('keeps a zero-factor region excluded when bleeding chance has an additive modifier', () => {
+    const critical = tiers[CRITICAL]!;
+    const tuning = {
+      ...BODY_TUNING_FIXTURE,
+      bleeding: {
+        ...BODY_TUNING_FIXTURE.bleeding,
+        tiers: tiers.map((tier) =>
+          tier.id === 'critical' ? { ...tier, regionFactor: { ...tier.regionFactor, head: 0 } } : tier,
+        ),
+      },
+    };
+    const body = new Body(tuning, undefined, [{ effect: 'bleeding.chance', add: 1 }]);
+
+    expect(body.bleedingTierForHit(critical.minDamage, 'head', 'pierce', 0)).not.toBe(CRITICAL);
+  });
+
+  it('lets a blunt hit bleed, just far less often than a piercing one', () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    const damage = tiers[CRITICAL]!.minDamage;
+    const rolls = Rng.stream(1, 'body-test-kind');
+    const bleeds = { blunt: 0, pierce: 0 };
+    for (let i = 0; i < 2000; i++) {
+      const roll = rolls.next();
+      for (const kind of ['blunt', 'pierce'] as const) {
+        bleeds[kind] += body.bleedingTierForHit(damage, 'leftLeg', kind, roll) === undefined ? 0 : 1;
+      }
+    }
+
+    expect(bleeds.blunt).toBeGreaterThan(0);
+    expect(bleeds.blunt).toBeLessThan(bleeds.pierce / 2);
+  });
+
+  it('requires the later-stage treatment only after infection progresses', () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    body.impact(1, 'rightArm', { bleeding: SERIOUS, infectionAtRisk: true });
     body.advance(BODY_TUNING_FIXTURE.infectionOnsetGameHours, true);
     expect(body.wounds.rightArm?.infection).toBe('early');
-    expect(body.canTreat('rightArm', 'antiseptic')).toBe(true);
-    expect(body.canTreat('rightArm', 'antibiotics')).toBe(false);
+    expect(body.canTreat('rightArm', ANTISEPTIC)).toBe(true);
+    expect(body.canTreat('rightArm', ANTIBIOTICS)).toBe(false);
 
     body.advance(BODY_TUNING_FIXTURE.antisepticWindowGameHours, true);
     expect(body.wounds.rightArm?.infection).toBe('advanced');
-    expect(body.canTreat('rightArm', 'antiseptic')).toBe(false);
-    expect(body.canTreat('rightArm', 'antibiotics')).toBe(true);
-    expect(body.treat('rightArm', 'antibiotics')).toBe(true);
+    expect(body.canTreat('rightArm', ANTISEPTIC)).toBe(false);
+    expect(body.canTreat('rightArm', ANTIBIOTICS)).toBe(true);
+    expect(body.treat('rightArm', ANTIBIOTICS, evenRoll)).toBe(true);
     expect(body.wounds.rightArm?.infection).toBe('resolved');
-    expect(body.canTreat('rightArm', 'antibiotics')).toBe(false);
+    expect(body.canTreat('rightArm', ANTIBIOTICS)).toBe(false);
+  });
+
+  it("resolves an infection only when the treatment's chance comes up", () => {
+    const halfChance: TreatmentDef = { infection: { stages: ['early'], chance: 0.5 } };
+    const outcome = (roll: number): string | undefined => {
+      const body = new Body(BODY_TUNING_FIXTURE);
+      body.impact(1, 'head', { bleeding: SERIOUS, infectionAtRisk: true });
+      body.advance(BODY_TUNING_FIXTURE.infectionOnsetGameHours, true);
+      body.treat('head', halfChance, () => roll);
+      return body.wounds.head?.infection;
+    };
+
+    expect(outcome(0.4)).toBe('resolved');
+    expect(outcome(0.6)).toBe('early');
   });
 
   it('keeps an antiseptic-treated infection resolved through later body advances', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'head', { bleeding: true, infectionAtRisk: true });
+    body.impact(1, 'head', { bleeding: SERIOUS, infectionAtRisk: true });
     body.advance(BODY_TUNING_FIXTURE.infectionOnsetGameHours, true);
-    expect(body.canTreat('head', 'antiseptic')).toBe(true);
-    expect(body.treat('head', 'antiseptic')).toBe(true);
+    expect(body.canTreat('head', ANTISEPTIC)).toBe(true);
+    expect(body.treat('head', ANTISEPTIC, evenRoll)).toBe(true);
     body.advance(1, true);
     expect(body.wounds.head?.infection).toBe('resolved');
-    expect(body.canTreat('head', 'antiseptic')).toBe(false);
+    expect(body.canTreat('head', ANTISEPTIC)).toBe(false);
   });
 
-  it('uses each supported treatment only for its matching wound state', () => {
+  it('applies a treatment only to the wound state its content fields treat', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
-    body.impact(1, 'head', { bleeding: true });
-    const treatments: BodyTreatment[] = ['bandage', 'rag', 'antiseptic', 'antibiotics'];
-    expect(treatments.filter((treatment) => body.canTreat('head', treatment))).toEqual(['bandage', 'rag']);
-  });
-
-  it('routes a leg-area hit to either selected leg instead of biasing left', () => {
-    for (const side of ['leftLeg', 'rightLeg'] as const) {
-      const body = new Body(BODY_TUNING_FIXTURE);
-      const region = bodyRegionForHitArea('legs', side);
-      body.impact(1, region);
-      expect(body.regionDamage[side]).toBeGreaterThan(0);
-    }
+    body.impact(1, 'head', { bleeding: SERIOUS });
+    const treatments = [STRONG, WEAK, ANTISEPTIC, ANTIBIOTICS];
+    expect(treatments.filter((treatment) => body.canTreat('head', treatment))).toEqual([STRONG, WEAK]);
   });
 });

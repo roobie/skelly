@@ -14,7 +14,7 @@ import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
-import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const baseContent = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json'))
@@ -364,6 +364,61 @@ describe('core long actions', () => {
       bookUid: book.uid,
       elapsed: 10,
     });
+  });
+
+  it('crafts at 1× while bleeding refuses compression, and compresses again once the wound is dressed', () => {
+    const { sim } = start();
+    sim.actions.stop();
+    sim.body.impact(0, 'leftArm', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+    expect(sim.actions.startWait()).toBe(BODY_TUNING_FIXTURE.bleeding.refusal);
+
+    expect(sim.actions.resume()).toBeUndefined();
+    sim.frame(1);
+    expect(sim.actions.job).toMatchObject({ jobType: 'craft', stopped: false });
+    expect(sim.compression.active).toBe(false);
+
+    expect(sim.body.treat('leftArm', { bleeding: 100 }, () => 0.5)).toBe(true);
+    sim.frame(1);
+    expect(sim.actions.job).toMatchObject({ jobType: 'craft', stopped: false });
+    expect(sim.compression.active).toBe(true);
+  });
+
+  it('does not resume compression for a craft stopped while bleeding after the wound is dressed', () => {
+    const { sim } = start();
+    sim.actions.stop();
+    sim.body.impact(0, 'leftArm', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+    expect(sim.actions.startWait()).toBe(BODY_TUNING_FIXTURE.bleeding.refusal);
+    expect(sim.actions.resume()).toBeUndefined();
+    sim.frame(1);
+    expect(sim.actions.job).toMatchObject({ jobType: 'craft', stopped: false });
+    expect(sim.compression.active).toBe(false);
+
+    sim.actions.stop();
+    expect(sim.actions.job).toMatchObject({ jobType: 'craft', stopped: true });
+    expect(sim.compression.active).toBe(false);
+    expect(sim.body.treat('leftArm', { bleeding: 100 }, () => 0.5)).toBe(true);
+
+    sim.frame(1);
+
+    expect(sim.actions.job).toMatchObject({ jobType: 'craft', stopped: true });
+    expect(sim.compression.active).toBe(false);
+  });
+
+  it('reads at 1× while bleeding refuses compression', () => {
+    const { inv, sim } = make();
+    const book = inv.create('field_manual');
+    expect(inv.add(book, { kind: 'hand', side: 'right' })).toBe(true);
+    sim.body.impact(0, 'leftArm', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+
+    expect(sim.actions.beginReading(book.uid)).toBeUndefined();
+    sim.frame(1);
+    const { job } = sim.actions;
+    if (job?.jobType !== 'reading') {
+      throw new Error('The reading action did not start');
+    }
+    expect(job.stopped).toBe(false);
+    expect(job.elapsed).toBeGreaterThan(0);
+    expect(sim.compression.active).toBe(false);
   });
 
   it('snaps compression when closing a book after reading has finished', () => {

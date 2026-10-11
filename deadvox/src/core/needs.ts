@@ -77,6 +77,19 @@ interface Recovery {
   readonly fatigueCeiling: number;
 }
 
+/** The body as the recovery gate reads it. */
+type RecoveryBody = Pick<
+  HealthPool,
+  'healthRecoveryPerGameHour' | 'healthRecoveryNeedsFloor' | 'healthRecoveryFatigueCeiling'
+>;
+
+/** Reads the gate's rate and limits from the body once, for a state. */
+const recoveryOf = (body: RecoveryBody, state: RecoveryState, recoveryFactor = 1): Recovery => ({
+  perGameHour: body.healthRecoveryPerGameHour * recoveryFactor,
+  needsFloor: body.healthRecoveryNeedsFloor,
+  fatigueCeiling: body.healthRecoveryFatigueCeiling(state),
+});
+
 /** The one gate deciding whether health and regions recover now. */
 const healthRecovers = (needs: Needs, { needsFloor, fatigueCeiling }: Recovery): boolean =>
   needs.calories >= needsFloor.calories && needs.hydration >= needsFloor.hydration && needs.fatigue <= fatigueCeiling;
@@ -84,6 +97,10 @@ const healthRecovers = (needs: Needs, { needsFloor, fatigueCeiling }: Recovery):
 /** The recovery rate per game hour: `recovery.perGameHour` while the gate is open, else none. */
 const healthRegenRate = (needs: Needs, recovery: Recovery): number =>
   healthRecovers(needs, recovery) ? recovery.perGameHour : 0;
+
+/** Whether the needs let the body recover in this state: health and region damage come back, and wounds close by themselves. */
+export const needsAllowRecovery = (needs: Needs, body: RecoveryBody, state: RecoveryState): boolean =>
+  healthRegenRate(needs, recoveryOf(body, state)) > 0;
 
 /** Health's rate per game hour for the needs and health as they are now. */
 const healthRate = (needs: Needs, health: number, recovery: Recovery): number => {
@@ -195,11 +212,7 @@ export const stepNeeds = (
 ): string[] => {
   const before = { ...needs };
   const beforeHealth = body.health;
-  const recovery: Recovery = {
-    perGameHour: body.healthRecoveryPerGameHour * recoveryFactor,
-    needsFloor: body.healthRecoveryNeedsFloor,
-    fatigueCeiling: body.healthRecoveryFatigueCeiling(state),
-  };
+  const recovery = recoveryOf(body, state, recoveryFactor);
   const levels = levelsFor(recovery);
   let left = hours;
   let elapsedGameHours = 0;

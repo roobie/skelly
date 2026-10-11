@@ -15,7 +15,7 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import { BODY_REGIONS, type BodyWounds } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
@@ -42,7 +42,7 @@ const CARVED_CELL_SPRAY_DAMAGE = 2;
 const SPLAT_LIFE_S = 90;
 const SPLAT_FADE_S = 30;
 const SPLAT_OPACITY = 0.9;
-/** Drips a second from a body at full wound severity. */
+/** Drips a second from a body at full wound severity, and a player wound's base rate. */
 const DRIPS_PER_SECOND = 2.5;
 const DRIP_RANGE_M = 25;
 /** A downed body drips from near the ground, not from its standing height. */
@@ -83,7 +83,8 @@ interface SeverityMemo {
 export interface GorePlayer {
   readonly pos: Vec3;
   readonly yaw: number;
-  readonly wounds: Readonly<BodyWounds>;
+  /** A bleeding region's drip from its content tier, relative to the base rate and size; undefined if dry. */
+  readonly drip: (region: BodyRegion) => Readonly<{ rate: number; size: number }> | undefined;
   /** Whether the figure uses its third-person placement, without the first-person rear offset. */
   readonly thirdPerson: boolean;
 }
@@ -401,14 +402,12 @@ export class Gore {
     this.playerPlacement.blockSize = this.blockSize;
     this.playerPlacement.thirdPerson = player.thirdPerson;
     for (const region of BODY_REGIONS) {
-      if (!player.wounds[region]?.bleeding) {
-        continue;
-      }
-      if (!this.rng.chance(DRIPS_PER_SECOND * dt)) {
+      const drip = player.drip(region);
+      if (!(drip && this.rng.chance(DRIPS_PER_SECOND * drip.rate * dt))) {
         continue;
       }
       setPlayerDripOrigin(this.origin, this.playerPlacement, region);
-      if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
+      if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02) * drip.size)) {
         return;
       }
     }
