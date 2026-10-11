@@ -171,21 +171,13 @@ try {
   let proof;
   if (mode === 'consumer') {
     await pressAction(page, 'ui.main-menu-toggle');
-    const interactionOption = await page.evaluate(
-      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('interaction'))",
-    );
-    assert.ok(interactionOption >= 0);
-    const interactionCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(interactionOption);
+    const interactionCheckbox = page.locator('#hud-options [data-hud-option="interaction"] input');
     // The prompt oracle requires player-enabled hints, not a particular HUD default.
     if (!(await interactionCheckbox.isChecked())) {
       await uiClick(interactionCheckbox);
     }
     assert.equal(await interactionCheckbox.isChecked(), true);
-    const handlingOption = await page.evaluate(
-      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('handling'))",
-    );
-    assert.ok(handlingOption >= 0);
-    const handlingCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(handlingOption);
+    const handlingCheckbox = page.locator('#hud-options [data-hud-option="handling"] input');
     if (await handlingCheckbox.isChecked()) {
       await uiClick(handlingCheckbox);
     }

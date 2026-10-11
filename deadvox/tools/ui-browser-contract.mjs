@@ -468,17 +468,20 @@ try {
     "[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)",
   );
   assert.ok(initialHudToggles.every(Boolean), 'HUD options start enabled');
-  const [statsOptionInitiallyChecked, clockOptionInitiallyChecked] = initialHudToggles;
-  const clockOption = "document.querySelectorAll('#hud-options input')[1]";
-  if (!(await evaluate(`${clockOption}.checked`))) {
-    await clickAt('#hud-options label:nth-of-type(2)');
+  const statsLabel = '#hud-options [data-hud-option="stats"]';
+  const clockLabel = '#hud-options [data-hud-option="clock"]';
+  const statsOption = `document.querySelector('${statsLabel} input')`;
+  const clockOption = `document.querySelector('${clockLabel} input')`;
+  const statsOptionInitiallyChecked = await evaluate(`${statsOption}.checked`);
+  const clockOptionInitiallyChecked = await evaluate(`${clockOption}.checked`);
+  if (!clockOptionInitiallyChecked) {
+    await clickAt(clockLabel);
   }
   assert.equal(await evaluate(`${clockOption}.checked`), true, 'clock is enabled for the pause readout');
-  const hudOptionBeforeClick = await evaluate("document.querySelectorAll('#hud-options input')[0].checked");
-  await clickAt('#hud-options label:nth-of-type(1)');
+  await clickAt(statsLabel);
   assert.equal(
-    await evaluate("document.querySelectorAll('#hud-options input')[0].checked"),
-    !hudOptionBeforeClick,
+    await evaluate(`${statsOption}.checked`),
+    !statsOptionInitiallyChecked,
     'drawn cursor toggles F9 menu controls from either default state',
   );
   await delay(300);
@@ -504,18 +507,17 @@ try {
     'audio volume remains selected when the menu reopens',
   );
   const clockOptionBeforeReset = await evaluate(`${clockOption}.checked`);
-  await clickAt('#hud-options label:nth-of-type(2)');
+  await clickAt(clockLabel);
   assert.equal(
     await evaluate(`${clockOption}.checked`),
     !clockOptionBeforeReset,
     'drawn cursor toggles the clock option',
   );
   if ((await evaluate(`${clockOption}.checked`)) !== clockOptionInitiallyChecked) {
-    await clickAt('#hud-options label:nth-of-type(2)');
+    await clickAt(clockLabel);
   }
-  const statsOption = "document.querySelectorAll('#hud-options input')[0]";
   if ((await evaluate(`${statsOption}.checked`)) !== statsOptionInitiallyChecked) {
-    await clickAt('#hud-options label:nth-of-type(1)');
+    await clickAt(statsLabel);
   }
   assert.deepEqual(
     await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)"),

@@ -76,7 +76,7 @@ const optionTemplate = (
   state: HudSettings,
   change: (key: HudSettingKey, value: boolean) => void,
 ): TemplateResult => html`
-  <label><input type="checkbox" .checked=${state[key]} @change=${(e: Event) => change(key, (e.target as HTMLInputElement).checked)} /> ${label}</label>
+  <label data-hud-option=${key}><input type="checkbox" .checked=${state[key]} @change=${(e: Event) => change(key, (e.target as HTMLInputElement).checked)} /> ${label}</label>
 `;
 
 const optionsTemplate = (
