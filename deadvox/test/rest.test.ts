@@ -231,7 +231,10 @@ describe('waking with an alarm', () => {
     const brokenClock = items.find((item) => item.id === 'broken_clock')!;
     const { registry: fixtureRegistry, issues } = buildRegistry([
       ...BASE_SOURCES,
-      { source: 'alarm-fixture.json', data: { items: [{ ...brokenClock, id: 'alarm_fixture', alarm: true }] } },
+      {
+        source: 'alarm-fixture.json',
+        data: { items: [{ ...brokenClock, id: 'alarm_fixture', name: 'Fixture alarm', alarm: true }] },
+      },
     ]);
     expect(issues).toEqual([]);
     const entities = new BlockEntities(fixtureRegistry);
