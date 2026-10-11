@@ -29,6 +29,7 @@ describe('screen command routing', () => {
       'character',
       'body',
       'needs',
+      'wakeGameHour',
       'actionRefusal',
       'attachmentCandidates',
     ]);

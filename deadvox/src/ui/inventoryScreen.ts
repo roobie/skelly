@@ -88,6 +88,8 @@ export interface ScreenHooks {
   };
   body: () => Readonly<BodyState>;
   needs: () => string;
+  /** The alarm's wake hour (undefined: when rested), or undefined while no alarm is carried. */
+  wakeGameHour?: () => { readonly gameHour: number | undefined } | undefined;
   actionRefusal?: () => string | undefined;
   attachmentCandidates?: (firearmUid: number, slotId: string) => readonly Item[];
 }
@@ -203,6 +205,8 @@ interface InventoryScreenViewModel {
   };
   readonly skills: readonly SkillViewModel[];
   readonly needs: string;
+  /** Shown only while an alarm is carried. */
+  readonly wakeAt?: string | undefined;
   readonly containerMaxWidthCells?: number | undefined;
   readonly weight: string;
   readonly hands: readonly SlotViewModel[];
@@ -373,6 +377,15 @@ const detailsTemplate = (
   `;
 };
 
+/** Steps through "when rested" (undefined) and the 24 hours of the day, wrapping both ways. */
+const stepWakeGameHour = (gameHour: number | undefined, step: 1 | -1): number | undefined => {
+  const next = ((gameHour === undefined ? 0 : gameHour + 1) + step + 25) % 25;
+  return next === 0 ? undefined : next - 1;
+};
+
+const wakeLabel = (gameHour: number | undefined): string =>
+  gameHour === undefined ? 'when rested' : `${String(gameHour).padStart(2, '0')}:00`;
+
 const furnitureBodyTemplate = (
   furniture: FurnitureViewModel,
   search: (uid: number) => void,
@@ -400,11 +413,13 @@ const inventoryTemplate = (
     search,
     attachmentAction,
     wait,
+    stepWake,
   }: {
     queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
     search: (uid: number) => void;
     attachmentAction: (payload: ReplayActionPayload) => void;
     wait: () => void;
+    stepWake: (step: 1 | -1) => void;
   },
 ): TemplateResult => html`
   <header class="inv-head">
@@ -554,6 +569,20 @@ const inventoryTemplate = (
     <section class="inv-pane inv-body-panel" aria-label="Actions">
       <h3>Actions</h3>
       <button class="inv-option" type="button" data-action="wait" @click=${wait}>Wait</button>
+      ${
+        vm.wakeAt === undefined
+          ? nothing
+          : html`
+        <div class="inv-option" role="group" aria-label="Wake at">
+          <span>Wake at</span>
+          <span class="inv-wake-step">
+            <button class="inv-option" type="button" data-action="wake-earlier" aria-label="Earlier" @click=${() => stepWake(-1)}>−</button>
+            <span class="inv-time" data-wake-at>${vm.wakeAt}</span>
+            <button class="inv-option" type="button" data-action="wake-later" aria-label="Later" @click=${() => stepWake(1)}>+</button>
+          </span>
+        </div>
+      `
+      }
     </section>
   </div>
   <footer class="inv-queue"></footer>
@@ -757,7 +786,8 @@ export class InventoryScreen {
     const bodyKey = JSON.stringify(this.hooks.body());
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
-    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}`;
+    const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
+    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -975,6 +1005,16 @@ export class InventoryScreen {
             this.report(this.hooks.dispatch({ kind: 'action.wait' }));
           }
         },
+        stepWake: (step) => {
+          const alarm = this.hooks.wakeGameHour?.();
+          const refusal = this.hooks.actionRefusal?.();
+          if (refusal) {
+            this.refuse(refusal);
+          } else if (alarm) {
+            const gameHour = stepWakeGameHour(alarm.gameHour, step) ?? null;
+            this.report(this.hooks.dispatch({ kind: 'action.wake-hour', gameHour }));
+          }
+        },
       }),
       this.root,
     );
@@ -1032,6 +1072,7 @@ export class InventoryScreen {
   private viewModel(): InventoryScreenViewModel {
     const body = this.hooks.body();
     const character = this.hooks.character();
+    const alarm = this.hooks.wakeGameHour?.();
     const bodyView = {
       health: `${Math.round(body.health)}%`,
       blood: `${Math.round(body.blood)}%`,
@@ -1117,6 +1158,7 @@ export class InventoryScreen {
       body: bodyView,
       skills,
       needs: this.hooks.needs(),
+      wakeAt: alarm && wakeLabel(alarm.gameHour),
       containerMaxWidthCells: this.inv.registry.inventory.get('player')?.containerMaxWidthCells,
       weight: kg(this.inv.carriedWeight()),
       hands,

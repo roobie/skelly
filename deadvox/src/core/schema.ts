@@ -205,6 +205,22 @@ const SaveTuningSchema = strictObject({
   checkpointSimSeconds: PositiveSimSeconds,
 });
 
+/** A dimensionless time multiplier; 1 runs at the normal Sim rate. */
+const CompressionCap = pipe(number(), minValue(1, 'must be at least 1'));
+
+const CompressionTuningSchema = strictObject({
+  id: Id,
+  /** The highest compression each compressing long action ramps to; prying always runs at 1×. */
+  caps: strictObject({
+    wait: CompressionCap,
+    rest: CompressionCap,
+    sleep: CompressionCap,
+    craft: CompressionCap,
+    reading: CompressionCap,
+    treatment: CompressionCap,
+  }),
+});
+
 const WearableSchema = strictObject({
   slot: picklist(CLOTHING_SLOTS),
   /** 0–100: how much it slows and hampers you. */
@@ -437,6 +453,8 @@ const ItemSchema = strictObject({
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
+  /** A working alarm clock: carried, it lets a sleep run to a chosen wake hour. */
+  alarm: optional(literal(true)),
   /** Fixed ADS power for a variable-power optic; constrained by its exported range. */
   opticMagnification: optional(Positive),
   /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
@@ -1442,6 +1460,22 @@ const BodyTuningSchema = strictObject({
   shockRecoveryPerSimSecond: SimRate,
   /** Health lost per Sim second while infection is advanced. */
   advancedInfectionHealthLossPerSimSecond: SimRate,
+  /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
+  fatigueRisePerGameHour: GamePerHour,
+  /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
+  restFatigueRecoveryPerGameHour: GamePerHour,
+  /** Fatigue cleared per Game hour asleep at rest quality 1: a normal sleep. */
+  sleepFatigueRecoveryPerGameHour: GamePerHour,
+  /** The share of a normal sleep's recovery at rest quality 0; it rises linearly to all of it at 1. */
+  roughSleepShare: Fraction,
+  /** Health, and each region's damage, recovered per Game hour while needs are at their floor or above and fatigue under its ceiling. */
+  healthRecoveryPerGameHour: GamePerHour,
+  /** The lowest calories and hydration at which health and regions still recover. */
+  healthRecoveryNeedsFloor: strictObject({ calories: NonNegative, hydration: NonNegative }),
+  /** The highest fatigue at which health and regions still recover, awake and asleep; a state left out has none. */
+  healthRecoveryFatigueCeiling: strictObject({ awake: optional(NonNegative), asleep: optional(NonNegative) }),
+  /** Multiplies health, regional and blood recovery while asleep. */
+  sleepRecoveryFactor: Positive,
   /** Aim sway added per point of torso damage. */
   aimSwayPerDamage: Positive,
   /** Swing slowdown added per point of arm damage. */
@@ -1513,6 +1547,7 @@ const SECTION_DESCRIPTOR = {
   weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
+  compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1541,6 +1576,7 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'];
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;

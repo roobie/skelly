@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { formatClock } from '../src/core/clock.ts';
+import { formatClock, simSecondsPerHour } from '../src/core/clock.ts';
 import type { RestAction } from '../src/core/longAction.ts';
+import { realSeconds } from '../src/core/time.ts';
+import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { restViewModel } from '../src/ui/rest.ts';
@@ -22,6 +24,22 @@ describe('restViewModel', () => {
     expect(vm.percent).toBe(50);
     expect(vm.prompt).toBeUndefined();
     expect(vm.clock).toBe(formatClock(sim.calendar));
+  });
+
+  it('tracks an alarm sleep toward its wake time, not toward rested', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.needs.fatigue = 0;
+    const wakeAt = sim.time + simSecondsPerHour(sim.clock) * 8;
+    expect(sim.actions.startRest('sleep', -10, 1, wakeAt)).toBeUndefined();
+    expect(restViewModel(sim.actions.rest, false, sim, false)).toMatchObject({ visible: true, percent: 0 });
+    const slept = () => (sim.actions.job?.jobType === 'sleep' ? sim.actions.job.elapsed : 0);
+    for (let i = 0; i < 5000 && slept() === 0; i++) {
+      advanceLiveFrame(sim, realSeconds(1 / 60));
+    }
+    const { visible, percent } = restViewModel(sim.actions.rest, false, sim, false);
+    expect(visible).toBe(true);
+    expect(percent).toBeGreaterThan(0);
+    expect(percent).toBeLessThan(100);
   });
 
   it('offers cancellation for rest but not sleep', () => {

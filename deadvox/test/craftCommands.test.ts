@@ -27,11 +27,11 @@ const { registry } = buildRegistry(
       data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
     })),
 );
-const make = (unsafe?: () => string | undefined, handedness?: HandSide) => {
+const make = (handedness?: HandSide) => {
   const character = new Character(registry, handedness ? { handedness } : {});
   const inventory = new Inventory(registry, undefined, undefined, character);
   const queue = new HandlingQueue(inventory);
-  const sim = new Simulation({ seed: 1, ...(unsafe ? { unsafe } : {}) });
+  const sim = new Simulation({ seed: 1 });
   const position: [number, number, number] = [0, 0, 0];
   const reach = bindReach({ inventory, position, blockSize: 0.5 });
   sim.actions.craft = craftActionHooks(inventory, character, reach, () => position);
@@ -115,7 +115,7 @@ describe('live craft commands', () => {
   it.each(['right', 'left'] as const)(
     '%s-dominant work refuses the other slot without changing its owning tree',
     (handedness) => {
-      const r = make(undefined, handedness);
+      const r = make(handedness);
       expect(r.commands.start('torch')).toBeUndefined();
       r.sim.actions.stop();
       const item = r.inventory.hands[dominantSide(r.character)]!;
@@ -185,14 +185,6 @@ describe('live craft commands', () => {
     const before = r.inventory.snapshotState();
     expect(r.sim.actions.cancelCraft(work.uid)).toBeDefined();
     expect(r.inventory.snapshotState()).toEqual(before);
-  });
-  it('starts crafting despite an unsafe compression reason', () => {
-    const refusal = 'test-owned unsafe reason';
-    const r = make(() => refusal);
-    expect(r.commands.start('torch')).toBeUndefined();
-    expect(r.sim.actions.job?.jobType).toBe('craft');
-    expect(r.sim.compression.active).toBe(true);
-    expect(r.sim.compression.interruption).toBeUndefined();
   });
   it('refuses occupied hands without creating work or moving any inputs', () => {
     const r = make();

@@ -12,7 +12,7 @@ import { createSession, IDLE } from '../src/game/session.ts';
 import { Survival } from '../src/game/survival.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const readable = { title: 'Placeholder', text: 'PLAIN\tPLACEHOLDER\r\n\nSecond paragraph.' };
 const admit = (value: Readable) =>
@@ -23,6 +23,7 @@ const admit = (value: Readable) =>
         items: [{ id: 'note', name: 'Note', category: 'book', weight: 5, size: [1, 1], readable: value }],
         furniture: [{ id: 'sign', name: 'Sign', size: [2, 2, 1], color: '#99794c', readable: value }],
         body: [{ ...BODY_TUNING_FIXTURE, id: 'player' }],
+        compression: [{ id: 'player', caps: COMPRESSION_CAPS_FIXTURE }],
         senses: [TEST_SENSE_TUNING],
         skills: [structuredClone(BUNDLED_CONTENT.registry.skills.get('firearms_combat')!)],
       },

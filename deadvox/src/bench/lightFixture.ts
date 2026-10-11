@@ -61,6 +61,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
   const simulation = new Simulation({
     seed: config.seed,
     bodyTuning: registry.body.get('player')!,
+    compressionCaps: registry.compression.get('player')!.caps,
     clock: { ratio: CLOCK_RATIO, start: calendar },
   });
   const queue = new HandlingQueue(inventory);

@@ -118,6 +118,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     const simulation = new Simulation({
       seed: run.seed,
       bodyTuning: engine.registry.body.get('player')!,
+      compressionCaps: engine.registry.compression.get('player')!.caps,
       clock: { ratio: CLOCK_RATIO, start: startTime },
     });
     simulation.godMode = true;

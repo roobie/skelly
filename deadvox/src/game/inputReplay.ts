@@ -47,6 +47,7 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'firearm.attachment.remove',
   'craft.start',
   'action.wait',
+  'action.wake-hour',
   'craft.continue',
   'craft.stop',
   'item.throw.cancel',
@@ -70,6 +71,7 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'firearm.attachment.remove',
   'craft.start',
   'action.wait',
+  'action.wake-hour',
   'craft.continue',
   'craft.stop',
   ...Array.from({ length: QUICKBAR_SLOTS }, (_, index) => [

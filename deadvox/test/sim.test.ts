@@ -10,12 +10,12 @@ import {
   simSecondsPerHour,
   skipTarget,
 } from '../src/core/clock.ts';
-import { COMPRESSION, SKIP_COMPRESSION } from '../src/core/compression.ts';
+import { SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
-import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
+import { awakeRates, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
 const HOUR = simSecondsPerHour(defaultClock);
@@ -70,10 +70,10 @@ describe('Simulation', () => {
       },
     });
     expect(sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
-    for (let frames = 0; sim.compression.c < COMPRESSION.cap && frames < 120; frames += 1) {
+    for (let frames = 0; sim.compression.c < COMPRESSION_CAPS_FIXTURE.sleep && frames < 120; frames += 1) {
       advanceLiveFrame(sim, realSeconds(FRAME));
     }
-    expect(sim.compression.c).toBe(COMPRESSION.cap);
+    expect(sim.compression.c).toBe(COMPRESSION_CAPS_FIXTURE.sleep);
     ticks = 0;
     const recordedCompression = sim.compression.c;
 
@@ -199,9 +199,10 @@ describe('Simulation', () => {
     expect(fast.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * fast.time, 6);
     expect(plain.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * plain.time, 6);
     // Needs lag by at most one grown step: 30 s, 4 game minutes.
-    const tolerance = (Math.max(...Object.values(NEED_RATES).map(Math.abs)) * 4) / 60;
+    const rates = awakeRates(plain.body);
+    const tolerance = (Math.max(...Object.values(rates).map(Math.abs)) * 4) / 60;
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {
-      expect(plain.needs[need]).toBeCloseTo(SPAWN_NEEDS[need] + NEED_RATES[need], 6);
+      expect(plain.needs[need]).toBeCloseTo(SPAWN_NEEDS[need] + rates[need], 6);
       expect(Math.abs(fast.needs[need] - plain.needs[need])).toBeLessThanOrEqual(tolerance);
     }
   });
@@ -209,13 +210,13 @@ describe('Simulation', () => {
   it('keeps the cost per frame bounded under compression', () => {
     const sim = new Simulation({ seed: 1 });
     sim.compress();
-    runUntil(sim, 20); // ramp up
-    expect(sim.compression.c).toBe(COMPRESSION.cap);
+    runUntil(sim, 200); // ramp up
+    expect(sim.compression.c).toBe(COMPRESSION_CAPS_FIXTURE.wait);
     const before = sim.scheduler.tickCounts().get('needs')!;
-    advanceLiveFrame(sim, realSeconds(FRAME));
-    // One frame at 30× is half a simulation second: at most one needs tick, not 30.
+    const advanced = advanceLiveFrame(sim, realSeconds(FRAME));
+    // One frame at the cap is a few simulation seconds: at most one needs tick, not one per second.
+    expect(advanced).toBeLessThanOrEqual(sim.compression.limits.maxSimPerFrame);
     expect(sim.scheduler.tickCounts().get('needs')! - before).toBeLessThanOrEqual(1);
-    expect(sim.scheduler.stepOf('needs', COMPRESSION.cap)).toBe(30);
   });
 
   it('stops within one step of an interruption and waits for the player', () => {
@@ -234,9 +235,9 @@ describe('Simulation', () => {
       },
     });
     sim.compress();
-    runUntil(sim, 60);
-    fireAt = sim.time + 7.05;
-    advanceLiveFrame(sim, realSeconds(1)); // 30 simulation seconds at the cap
+    runUntil(sim, 200);
+    fireAt = sim.time + sim.compression.limits.maxSimPerFrame / 2;
+    advanceLiveFrame(sim, realSeconds(1)); // a full step-bounded frame at the cap
     expect(sim.compression.c).toBe(1);
     expect(sim.compression.interruption).toBe('You hear something outside');
     expect(sim.time).toBeCloseTo(firedAt[0]!, 9);
@@ -247,22 +248,6 @@ describe('Simulation', () => {
     advanceLiveFrame(sim, realSeconds(0.5));
     expect(sim.compression.c).toBeGreaterThan(1);
     expect(sim.compression.interruption).toBeUndefined();
-  });
-
-  it('refuses compression when unsafe, and interrupts when it stops being safe', () => {
-    let danger: string | undefined = 'Something is close';
-    const sim = new Simulation({ seed: 1, unsafe: () => danger });
-    expect(sim.compress()).toEqual({ ok: false, reason: 'Something is close' });
-    expect(sim.compression.active).toBe(false);
-
-    danger = undefined;
-    sim.compress();
-    runUntil(sim, 30);
-    expect(sim.compression.c).toBeGreaterThan(1);
-    danger = 'A shambler noticed you';
-    advanceLiveFrame(sim, realSeconds(FRAME));
-    expect(sim.compression.c).toBe(1);
-    expect(sim.compression.interruption).toBe('A shambler noticed you');
   });
 
   it('interrupts when a need becomes critical', () => {
@@ -321,21 +306,8 @@ describe('Simulation', () => {
       expect(skipTarget({ ratio: 4, start: 0 }, 10, 2)).toBe(10 + 2 * 900);
     });
 
-    it('advances the calendar by exactly the skipped game hours, danger notwithstanding', () => {
-      const sim = new Simulation({ seed: 1, unsafe: () => 'A shambler is close' });
-      expect(sim.compress().ok).toBe(false);
-      sim.ignoreUnsafe = true;
-      expect(sim.compress().ok).toBe(true);
-      const until = skipTarget(sim.clock, sim.time, 1);
-      runUntil(sim, until);
-      expect(sim.time).toBeCloseTo(until, 6);
-      expect(sim.compression.interruption).toBeUndefined();
-      expect(sim.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * sim.time, 6);
-    });
-
     it('runs the needs for the whole span, so a long skip is cut short when one turns critical', () => {
       const sim = new Simulation({ seed: 1 });
-      sim.ignoreUnsafe = true;
       sim.compress();
       const until = skipTarget(sim.clock, sim.time, 23);
       for (let frames = 0; sim.compression.interruption === undefined && frames < 100_000; frames++) {
@@ -391,7 +363,6 @@ describe('Simulation', () => {
           ticks += 1;
         },
       });
-      sim.ignoreUnsafe = true;
       expect(sim.compress(SKIP_COMPRESSION).ok).toBe(true);
       const until = skipTarget(sim.clock, sim.time, 23);
       let frames = 0;
@@ -414,38 +385,20 @@ describe('Simulation', () => {
 
     it('reaches +1 h in under a second', () => {
       const sim = new Simulation({ seed: 1 });
-      sim.ignoreUnsafe = true;
       sim.compress(SKIP_COMPRESSION);
       expect(runUntil(sim, skipTarget(sim.clock, sim.time, 1))).toBeLessThan(1);
     });
 
-    it('keeps the normal cap for a later start without the skip limits', () => {
+    it('keeps the default cap for a later start without the skip limits', () => {
       const sim = new Simulation({ seed: 1 });
       sim.compress(SKIP_COMPRESSION);
       runUntil(sim, 200);
-      expect(sim.compression.c).toBeGreaterThan(COMPRESSION.cap);
+      expect(sim.compression.c).toBeGreaterThan(COMPRESSION_CAPS_FIXTURE.wait);
       sim.compression.stop();
       sim.compression.snap();
       sim.compress();
-      runUntil(sim, sim.time + 100);
-      expect(sim.compression.c).toBe(COMPRESSION.cap);
-    });
-
-    it('still stops at a real interruption, and refuses danger again once ignoreUnsafe is off', () => {
-      let danger: string | undefined = 'A shambler is close';
-      const sim = new Simulation({ seed: 1, unsafe: () => danger });
-      sim.ignoreUnsafe = true;
-      sim.compress();
-      sim.frame(FRAME, HOUR);
-      sim.emit({ kind: 'interrupt', reason: "You're hurt" });
-      sim.frame(FRAME, HOUR);
-      expect(sim.compression.interruption).toBe("You're hurt");
-
-      sim.compression.stop();
-      sim.ignoreUnsafe = false;
-      expect(sim.compress()).toEqual({ ok: false, reason: danger });
-      danger = undefined;
-      expect(sim.compress().ok).toBe(true);
+      runUntil(sim, sim.time + 200);
+      expect(sim.compression.c).toBe(COMPRESSION_CAPS_FIXTURE.wait);
     });
   });
 
