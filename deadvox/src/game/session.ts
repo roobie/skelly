@@ -7,7 +7,6 @@
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { AimController, type AimWobbleNoiseTuning } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import { bodyRegionForHitArea } from '../core/body.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
@@ -35,6 +34,7 @@ import {
 } from '../core/footsteps.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
+import { defOf } from '../core/items.ts';
 import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
@@ -67,6 +67,7 @@ import {
   type HitImpulse,
   type MeleeResult,
   type PlayerMovement,
+  pickZombieHitRegion,
   type VocalNoise,
   type Zombie,
   ZombieSystem,
@@ -451,16 +452,18 @@ const playerTreatmentHooks = (
   inventory: Inventory,
   sim: Simulation,
 ): NonNullable<Simulation['actions']['treatment']> => ({
-  validate: (region, itemUid, treatment) => {
+  validate: (region, itemUid, itemType) => {
     const item = inventory.itemByUid(itemUid);
-    if (!item || item.type !== treatment) {
+    const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
+    if (!treatment) {
       return 'Treatment item is unavailable';
     }
     return sim.body.canTreat(region, treatment) ? undefined : 'That treatment does not apply';
   },
-  finish: (region, itemUid, treatment) => {
+  finish: (region, itemUid, itemType) => {
     const item = inventory.itemByUid(itemUid);
-    if (!item || item.type !== treatment) {
+    const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
+    if (!(item && treatment)) {
       return 'Treatment item is no longer available';
     }
     if (!sim.body.canTreat(region, treatment)) {
@@ -469,7 +472,8 @@ const playerTreatmentHooks = (
     if (!inventory.consume(item)) {
       return 'Treatment item is no longer available';
     }
-    if (!sim.body.treat(region, treatment)) {
+    const roll = sim.rng(`treatment:${region}:${itemUid}:${sim.time}`);
+    if (!sim.body.treat(region, treatment, () => roll.next())) {
       throw new Error('Body treatment changed during completion');
     }
     return true;
@@ -921,7 +925,7 @@ export const createSession = (options: SessionOptions) => {
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
-    hurtPlayer: (amount, area, attacker) => {
+    hurtPlayer: (amount, hitRegions, attacker, kind) => {
       if (
         controls.blocking?.() &&
         meleeCombatTuning !== undefined &&
@@ -935,14 +939,10 @@ export const createSession = (options: SessionOptions) => {
         character.awardPractice('melee_combat', training.practice, training.tier);
         return;
       }
-      wearOnPlayerHit(inventory, area);
-      const legSide = sim.rng(`player-leg-hit:${sim.time}`).int(0, 1) === 0 ? 'leftLeg' : 'rightLeg';
-      const region =
-        area === 'legs'
-          ? bodyRegionForHitArea('legs', legSide)
-          : bodyRegionForHitArea(area === 'head' ? 'head' : 'torso');
+      const region = pickZombieHitRegion(hitRegions, sim.rng(`player-hit-region:${attacker}:${sim.time}`).next());
+      wearOnPlayerHit(inventory, region);
       const attackerType = zombieStore.get(attacker)?.type.name.toLowerCase() ?? 'zombie';
-      sim.hit(amount, `a ${attackerType}`, region, { bleeding: true, blunt: true });
+      sim.hit(amount, `a ${attackerType}`, region, { kind });
     },
     onSound: (event, position, zombie) => {
       if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {

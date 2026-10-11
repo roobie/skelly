@@ -99,7 +99,8 @@ export interface PlayStatus {
   readonly needs: Readonly<Needs>;
   readonly health: number;
   readonly blood: number;
-  readonly bleedingRegions: readonly string[];
+  /** Each bleeding region's label, with its content tier's label and warning style. */
+  readonly bleeding: readonly { readonly region: string; readonly label: string; readonly warn: boolean }[];
   readonly sprinting: boolean;
   /** Undefined means no selected light; zero means an empty selected light. */
   readonly lightCharge: number | undefined;
@@ -117,21 +118,15 @@ export interface PlayHudState extends PlayStatus {
   readonly looking: string;
 }
 
-export const playNeedsText = ({
-  needs,
-  health,
-  blood,
-  bleedingRegions,
-  sprinting,
-  lightCharge,
-}: PlayStatus): string => {
+export const playNeedsText = ({ needs, health, blood, bleeding, sprinting, lightCharge }: PlayStatus): string => {
   const { calories, hydration, fatigue, stamina } = needs;
   const light = lightCharge === undefined ? '' : `   light ${Math.round(lightCharge * 100)}%`;
   return [
     `health ${health.toFixed(0)}%   blood ${blood.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
     // Fatigue is sleep debt, not a share: 100 is a normal night's sleep and it can go past it.
     `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}`,
-    ...(bleedingRegions.length === 0 ? [] : [`⚠ BLEEDING — ${bleedingRegions.join(', ')}`]),
+    // Only a tier content marks `warn` gets the warning sign (DESIGN.md, "Bleeding").
+    ...bleeding.map(({ region, label, warn }) => `${warn ? '⚠ ' : ''}${label} — ${region}`),
   ].join('\n');
 };
 

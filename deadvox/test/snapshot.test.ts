@@ -94,7 +94,7 @@ describe('snapshot state components', () => {
     expect(actor.practice.crafting).toBe(0);
   });
 
-  it('round-trips body wounds, a partially recovered region and a stopped treatment action', async () => {
+  it('round-trips body wounds with their bleeding tiers, a partially recovered region and a stopped treatment action', async () => {
     const runtime = createRuntime();
     const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
@@ -104,7 +104,8 @@ describe('snapshot state components', () => {
     }
     const rag = runtime.inventory.create('rag');
     expect(runtime.inventory.add(rag, { kind: 'hand', side: 'right' })).toBe(true);
-    runtime.sim.body.impact(1, 'leftArm', { bleeding: true });
+    const worstTier = runtime.sim.body.tuning.bleeding.tiers.length - 1;
+    runtime.sim.body.impact(1, 'leftArm', { bleeding: 0 });
     expect(runtime.survival.use(rag)).toBeUndefined();
     expect(runtime.sim.actions.job).toMatchObject({ jobType: 'treatment', region: 'leftArm', itemUid: rag.uid });
     const treatmentJob = runtime.sim.actions.job;
@@ -114,11 +115,17 @@ describe('snapshot state components', () => {
     runtime.sim.scheduler.advance(treatmentJob.duration / 2);
     runtime.sim.actions.stop();
     runtime.sim.body.impact(10, 'head');
+    runtime.sim.body.impact(1, 'rightLeg', { bleeding: worstTier });
+    runtime.sim.body.impact(1, 'torso', { bleeding: 0 });
     const initialHeadDamage = runtime.sim.body.regionDamage.head;
     runtime.sim.scheduler.advance(1);
     const recoveredHeadDamage = runtime.sim.body.regionDamage.head;
     expect(recoveredHeadDamage).toBeGreaterThan(0);
     expect(recoveredHeadDamage).toBeLessThan(initialHeadDamage);
+    expect(runtime.sim.body.wounds.rightLeg?.bleeding).toBeGreaterThan(worstTier);
+    // Partly closed by itself, so the save carries a severity between band edges.
+    expect(runtime.sim.body.wounds.torso?.bleeding).toBeGreaterThan(0);
+    expect(runtime.sim.body.wounds.torso?.bleeding).toBeLessThan(1);
 
     const snapshot = capture(runtime);
     expect(snapshot.character.longAction.job).toMatchObject({
@@ -126,7 +133,7 @@ describe('snapshot state components', () => {
       stopped: true,
       region: 'leftArm',
       itemUid: rag.uid,
-      treatment: 'rag',
+      itemType: 'rag',
     });
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     const loaded = createRuntime(decoded.snapshot);
@@ -136,7 +143,7 @@ describe('snapshot state components', () => {
       stopped: true,
       region: 'leftArm',
       itemUid: rag.uid,
-      treatment: 'rag',
+      itemType: 'rag',
       elapsed: (snapshot.character.longAction.job as { elapsed: number }).elapsed,
     });
     expect(loaded.sim.actions.resume()).toBeUndefined();
@@ -148,7 +155,6 @@ describe('snapshot state components', () => {
     loaded.sim.scheduler.advance(remainingSimSeconds);
     expect(loaded.sim.actions.job).toBeUndefined();
     expect(loaded.inventory.itemByUid(rag.uid)).toBeUndefined();
-    expect(loaded.sim.body.wounds.leftArm?.bleeding).toBe(false);
   });
 
   it('round-trips a worn, active headlamp as the selected light', async () => {
