@@ -70,4 +70,4 @@ Lenses:
 - Other lenses: performance budgets, save-format impact (from v1.0 beta),
   accessibility?
 - Where does the skill live so that every agent can use it: a tracked
-  `.claude/skills/` entry, a doc under `docs/`, or both?
+  Claude Code skill, a doc under `docs/`, or both?
