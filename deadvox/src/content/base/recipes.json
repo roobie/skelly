@@ -54,7 +54,12 @@
     {
       "id": "melee_combat",
       "name": "Melee Combat (MC)",
-      "training": { "activities": { "block": { "practice": 1, "tier": 5 } } },
+      "training": {
+        "activities": {
+          "block": { "practice": 1, "tier": 5 },
+          "hit": { "practice": 1, "tier": 5 }
+        }
+      },
       "combat": {
         "melee": {
           "blockChanceMinimum": 0.12,

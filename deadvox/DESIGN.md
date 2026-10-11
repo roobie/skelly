@@ -28,7 +28,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
-  - you're changing melee weapon contact behavior, stamina recovery timing or seeded damage variation
+  - you're changing melee weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
@@ -662,10 +662,11 @@ and `src/core/content.ts`, `checkItemFirearm`.
   (d113-1, 2026-10-06 23:52): “calling it 'cosmetic' seems like a bug”. Holding right
   mouse with a melee weapon or empty hands enters en-garde; holding S while
   en-garde attempts to block incoming melee, with success by melee-combat skill.
-  En-garde does not change movement pace. See `src/game/melee.ts`,
-  `shouldEnterMeleeReady` and `shouldBlockFromEnGarde`, `src/game/session.ts`,
-  `hurtPlayer`, `src/core/meleeCombat.ts`, `blocksAttack`, and
-  `src/game/player.ts`, `movementPace`. First-person motions use shared blunt-arc,
+  En-garde does not change movement pace. Following #606, successful blocks and
+  landed player melee hits train melee combat: fighting should train fighting.
+  See `src/game/melee.ts`, `shouldEnterMeleeReady` and `shouldBlockFromEnGarde`,
+  `src/game/session.ts`, `hurtPlayer` and the `PlayerCombat` setup, and
+  `src/core/playerCombat.ts`, `PlayerCombat.resolveContact`. First-person motions use shared blunt-arc,
   cut-slash, pierce-thrust and alternating-fist profiles; two-handed items
   animate both arms. Confirmed hits add only clamped first-person recoil.
 
