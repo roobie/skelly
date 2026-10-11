@@ -36,6 +36,21 @@
     <section id="reading" hidden></section>
     <div id="inventory-drag-root"></div>
     <div id="errors"></div>
+    <section id="error-report" hidden role="alertdialog" aria-modal="true" aria-labelledby="error-report-title">
+      <div class="error-report-card">
+        <h1 id="error-report-title" tabindex="-1">Something went wrong</h1>
+        <p>Please report this and send the full error text exactly as shown below.</p>
+        <p>The downloaded file contains the error and stack, build identity, seed and site, game time, browser user agent, and recent replay and playtest metrics when available. It stays on your device unless you choose to share it.</p>
+        <pre data-error-text></pre>
+        <div class="error-report-actions">
+          <button type="button" data-error-copy>Copy error</button>
+          <button type="button" data-error-download>Download error report</button>
+          <a data-error-feedback href="#playtest-feedback" target="_blank" rel="noopener">Report on GitHub</a>
+          <a data-error-download-link href="#error-report" aria-label="Download error report" hidden>Download error report</a>
+        </div>
+        <p data-error-status role="status" aria-live="polite"></p>
+      </div>
+    </section>
     <div id="death" hidden></div>
     <div id="overlay">
       <div class="card-scroll-shell">

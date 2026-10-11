@@ -67,6 +67,7 @@ describe('UI layer order', () => {
     for (const { name } of layers) {
       if (
         name !== '--ui-layer-game-cursor' &&
+        name !== '--ui-layer-error-report' &&
         name !== '--ui-layer-startup-screen' &&
         name !== '--ui-layer-review-map'
       ) {
@@ -74,6 +75,7 @@ describe('UI layer order', () => {
       }
     }
     expect(positionOf('startup-screen')).toBeGreaterThan(cursorPosition);
-    expect(positionOf('review-map')).toBe(layers.length - 1);
+    expect(positionOf('review-map')).toBeLessThan(positionOf('error-report'));
+    expect(positionOf('error-report')).toBe(layers.length - 1);
   });
 });
