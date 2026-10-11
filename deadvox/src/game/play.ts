@@ -3381,9 +3381,12 @@ export const startPlay = (
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
   const die = ({ cause, time }: { cause: string; time: number }) => {
+    options.saveController?.finishDeath();
     input.unlock();
     metrics.recordDeath(cause, time * sim.clock.ratio);
     saveMetrics();
+    mainMenuOpen = false;
+    debugTools?.closeMenus();
     reading.close();
     closeInventoryScreen();
     inventoryPanel.hidden = true;

@@ -36,7 +36,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
+          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
         );
       },
     },
@@ -1036,11 +1036,34 @@ try {
     assert.equal(await page.locator('#overlay').isVisible(), true);
     await page.locator('#go').click();
     await page.waitForFunction(() => globalThis.readingWitness.input.locked);
+    const generationBeforeLiveCheckpoint = await page.evaluate(
+      () => globalThis.readingWitness.saveController.savedGeneration,
+    );
+    await page.evaluate(() => {
+      const controller = globalThis.readingWitness.saveController;
+      controller.checkpoints.nextAt = 0;
+      controller.afterFrame();
+    });
+    await page.waitForFunction(
+      (generation) => globalThis.readingWitness.saveController.savedGeneration > generation,
+      generationBeforeLiveCheckpoint,
+    );
+    const generationBeforeDeath = await page.evaluate(() => globalThis.readingWitness.saveController.savedGeneration);
     await page.evaluate(() => {
       globalThis.readingWitness.reading.open({ title: 'Death closes paper', text: 'Placeholder' });
       globalThis.readingWitness.session.sim.hurt(9999, 'reading browser fixture');
     });
     await page.locator('#death').waitFor({ state: 'visible' });
+    await page.evaluate(() => {
+      const controller = globalThis.readingWitness.saveController;
+      controller.checkpoints.nextAt = 0;
+      controller.afterFrame();
+    });
+    await page.waitForFunction(
+      (generation) => globalThis.readingWitness.saveController.savedGeneration > generation,
+      generationBeforeDeath,
+    );
+    assert.equal(await page.locator('#overlay').isVisible(), false);
     assert.equal(await page.locator('#reading').isVisible(), false);
     await page.waitForFunction(() => !globalThis.readingWitness.input.locked);
     await page.evaluate(() => {
@@ -1091,6 +1114,24 @@ try {
     assert.equal(await page.locator('#death').isVisible(), true);
     assert.equal(await page.getByRole('button', { name: 'New world', exact: true }).isVisible(), true);
     assert.equal(await page.evaluate(() => globalThis.deathMenuPointerLockRequests), 0);
+
+    const playtestUrl = page.url();
+    await page.getByRole('button', { name: 'New world', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#continue').isVisible(), false);
+    await page.goto(playtestUrl, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#continue').isVisible(), false);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#continue').isVisible(), false);
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.readingWitness && globalThis.readingWitness.session.sim.dead === undefined,
+      undefined,
+      { timeout: 60_000 },
+    );
+    assert.equal(await page.locator('#save-confirmation').isVisible(), false);
     proof = { sizes, endVisible, deathMenuOpened, feedbackHref: deathFeedbackHref };
   }
   assert.deepEqual(triggeredErrors, mode === 'consumer' ? ['Browser-stage game-loop failure'] : []);

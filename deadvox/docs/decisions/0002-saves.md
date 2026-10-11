@@ -53,6 +53,13 @@ committed generation remains the recovery point. See
 `src/ui/saveController.ts`, `SaveController`, and `test/browser/save-storage.mjs`.
 These safeguards reduce corruption risk but are not backups.
 
+When a survivor dies, neither a death-bearing record nor a record whose world
+is marked dead is offered for Continue; New world replaces it without asking.
+The marker is written before the asynchronous A/B write so an unfinished final
+save cannot revive the survivor, and it clears only after a different world's
+snapshot is saved. See `src/ui/saveController.ts`, `SaveController.finishDeath`,
+and `SaveController.inspectCurrentNamespace`.
+
 Autosave checkpoints often enough that a crash or a killed tab loses only a
 little play. Periodic checkpoints count simulated play time, not wall-clock time
 or game hours, so a paused game takes no periodic checkpoint and the cadence

@@ -68,9 +68,9 @@ playtest window closes, manually dispatch from
 
 ## Session format
 
-There is no fixed play time or number of sittings. Testers may stop whenever
-they like and use Continue to resume later. Each person plays in their own
-browser from the Round 1 landing page, using its play link.
+There is no fixed play time or number of sittings. Continue resumes a living
+survivor; death ends the run. Each person plays in their own browser from the
+Round 1 landing page, using its play link.
 
 There is no wristwatch in playtest 1, although #181's beat 2 lists one; it comes
 with version 1.
