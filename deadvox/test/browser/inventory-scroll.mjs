@@ -525,7 +525,8 @@ try {
   // Every grid name fits its box in this browser's UI font at the base tuning. The boxes copy the rendered rack token,
   // so they keep its classes and gutter. Scroll sizes are read along the lines only: across them, Firefox counts a
   // font's content area as overflow where it is taller than the line height, so the lines' own box is compared with
-  // the item's content box instead.
+  // the item's content box instead. The browser must also render the model's lines, so a line the browser wraps
+  // can't pass in a box with lines to spare.
   const nameFit = await page.evaluate((edge) => {
     const token = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
     const grid = token?.closest('.inv-grid');
@@ -553,8 +554,12 @@ try {
       const box = node.getBoundingClientRect();
       const lines = span.getBoundingClientRect();
       const lineOverflow = h > w ? span.scrollHeight > span.clientHeight : span.scrollWidth > span.clientWidth;
+      const renderedLines = Math.round(
+        (h > w ? lines.width : lines.height) / Number.parseFloat(getComputedStyle(span).lineHeight),
+      );
       if (
         lineOverflow ||
+        renderedLines !== name.split('\n').length ||
         lines.left < box.left + inset('Left') - edge ||
         lines.right > box.right - inset('Right') + edge ||
         lines.top < box.top + inset('Top') - edge ||
