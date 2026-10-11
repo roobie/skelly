@@ -1,4 +1,5 @@
 import { html, render } from 'lit-html';
+import { getBuildRevision } from '../core/buildInfo.ts';
 import type { HandBackFile } from '../game/playtestTools.ts';
 
 export interface ErrorReportContext {
@@ -72,15 +73,15 @@ export const errorReportText = async ({
       playtest.replayUnavailable = true;
     }
   }
-  let world: { seed: number; site: string; gameTime: string | null } | null = null;
+  let world: { seed: number; site: string; clock: string | null } | null = null;
   if (context) {
-    let gameTime: string | null = null;
+    let clock: string | null = null;
     try {
-      gameTime = context.clockText();
+      clock = context.clockText();
     } catch {
-      gameTime = null;
+      clock = null;
     }
-    world = { seed: context.seed, site: context.site, gameTime };
+    world = { seed: context.seed, site: context.site, clock };
   }
   return `${JSON.stringify(
     {
@@ -99,22 +100,8 @@ export const errorReportText = async ({
 let reportContext: ErrorReportContext | undefined;
 let shown = false;
 
-const setErrorReportContext = (context: ErrorReportContext): void => {
+export const setErrorReportContext = (context: ErrorReportContext): void => {
   reportContext = context;
-};
-
-export const configurePlayErrorReport = (context: ErrorReportContext): void => {
-  setErrorReportContext(context);
-};
-
-// Vite supplies this same revision to saved-world identity and debug look dumps.
-declare const __DEADVOX_BUILD_REVISION__: string;
-const getBuildRevision = (): string => {
-  try {
-    return __DEADVOX_BUILD_REVISION__;
-  } catch {
-    return 'unavailable';
-  }
 };
 
 export const installErrorReportHandler = (): void => {
@@ -150,6 +137,11 @@ export const installErrorReportHandler = (): void => {
     render(html`${currentText}`, textNode);
     const feedback = feedbackUrlForError(currentText, feedbackSource.href);
     feedbackLink.href = feedback.href;
+    for (const sibling of panel.parentElement?.children ?? []) {
+      if (sibling !== panel && sibling instanceof HTMLElement) {
+        sibling.inert = true;
+      }
+    }
     panel.hidden = false;
     document.getElementById('error-report-title')?.focus();
     render(
@@ -163,11 +155,9 @@ export const installErrorReportHandler = (): void => {
   };
 
   globalThis.addEventListener('error', (event) => {
-    event.preventDefault();
     show(event.error ?? event.message);
   });
   globalThis.addEventListener('unhandledrejection', (event) => {
-    event.preventDefault();
     show(event.reason);
   });
   copyButton.addEventListener('click', async () => {

@@ -93,7 +93,7 @@ authored in both languages in `site/playtest.jsonnet`, and
 
 ## If an error report appears
 
-Stop playing when the blocking error panel appears. Use Copy error to include the full displayed text exactly, and download the local error report; the game does not send it anywhere automatically. The report may include the build revision, seed and site, game time, browser user agent, and the same recent replay and playtest metrics offered by the F9 menu. Use Report on GitHub to open the playtest feedback form. If the error is too long to prefill, attach the downloaded report. Review the file before posting it publicly. See `src/ui/errorReport.ts`, `errorReportText`.
+Stop playing when the blocking error panel appears. The game stays halted, releases pointer lock, will not resume or start another save, and does not try to recover; reload starts from the latest save that completed successfully. Use Copy error to include the full displayed text exactly, and download the local error report; the game does not send it anywhere automatically. The report may include the build revision, seed and site, game clock, browser user agent, and the same recent replay and playtest metrics offered by the F9 menu. Use Report on GitHub to open the playtest feedback form. If the error is too long to prefill, attach the downloaded report. Review the file before posting it publicly. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
 
 ## Saving and sending metrics
 

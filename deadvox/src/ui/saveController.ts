@@ -123,6 +123,7 @@ export class SaveController {
   private writing = false;
   private requestingPersistence = false;
   private pageIsLeaving = false;
+  private playHalted = false;
 
   constructor(backend: SaveBackendPreference = 'auto') {
     this.environmentProblem = saveEnvironmentProblem();
@@ -412,6 +413,12 @@ export class SaveController {
     return { worldId: this.worldId, characterId: this.characterId };
   }
 
+  /** Stops this session from capturing or retrying saves after an unrecoverable play error. */
+  halt(): void {
+    this.playHalted = true;
+    this.queued = undefined;
+  }
+
   /** Move the next checkpoint to the first interval after an explicit forward debug-time seek. */
   rearmAutosaveAfterTimeSeek(): void {
     const time = this.simTime?.();
@@ -434,7 +441,12 @@ export class SaveController {
   }
 
   private capture(reason: string): void {
-    if (!(this.snapshot && this.namespace && this.entered) || this.protectedCurrent || this.storageUnavailable) {
+    if (
+      this.playHalted ||
+      !(this.snapshot && this.namespace && this.entered) ||
+      this.protectedCurrent ||
+      this.storageUnavailable
+    ) {
       return;
     }
     const startedAt = performance.now();
@@ -447,6 +459,11 @@ export class SaveController {
   }
 
   private async flush(): Promise<void> {
+    if (this.playHalted) {
+      this.queued = undefined;
+      this.writing = false;
+      return;
+    }
     const task = this.queued;
     if (!task) {
       this.writing = false;
@@ -548,7 +565,7 @@ export class SaveController {
   }
 
   private retrySave(): void {
-    if (!(this.entered && this.snapshot) || this.protectedCurrent || this.storageUnavailable) {
+    if (this.playHalted || !(this.entered && this.snapshot) || this.protectedCurrent || this.storageUnavailable) {
       return;
     }
     this.queued = { snapshot: this.snapshot(), reason: 'manual retry' };

@@ -34,7 +34,7 @@ import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
-import { configurePlayErrorReport, type ErrorReportContext } from '../ui/errorReport.ts';
+import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import {
   type HandlingPresentationSource,
@@ -166,24 +166,33 @@ interface PlayErrorReportPorts {
   readonly input: Input;
   readonly metrics: SessionMetrics;
   readonly exportReplay: () => Promise<Uint8Array>;
+  readonly halted: { value: boolean };
+  readonly saveController: SaveController | undefined;
 }
 
-const stopPlayAfterError = (sim: PlayErrorReportPorts['sim'], input: Input): void => {
+const stopPlayAfterError = (
+  sim: PlayErrorReportPorts['sim'],
+  input: Input,
+  halted: PlayErrorReportPorts['halted'],
+  saveController: SaveController | undefined,
+): void => {
+  halted.value = true;
   sim.paused = true;
+  saveController?.halt();
   input.unlock();
   input.cancel();
 };
 
-const bindPlayErrorReport = ({ config, sim, input, metrics, exportReplay }: PlayErrorReportPorts): void => {
+const bindPlayErrorReport = ({ config, sim, input, metrics, exportReplay, halted, saveController }: PlayErrorReportPorts): void => {
   const context: ErrorReportContext = {
     seed: config.seed,
     site: config.site,
     clockText: () => formatClock(sim.calendar),
-    stop: () => stopPlayAfterError(sim, input),
+    stop: () => stopPlayAfterError(sim, input, halted, saveController),
     metricsFile: () => metricsFile(metrics),
     replayFile: async () => replayFile(await exportReplay(), new Date()),
   };
-  configurePlayErrorReport(context);
+  setErrorReportContext(context);
 };
 
 const debugErrorEnabled = (debug: boolean, search: string): boolean => {
@@ -860,6 +869,7 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
+  const playHalted = { value: false };
   const hasActiveFirearmInput = (): boolean =>
     replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
   const isFirearmReady = (uid: number): boolean =>
@@ -1221,7 +1231,15 @@ export const startPlay = (
     },
     import: importReplay,
   };
-  bindPlayErrorReport({ config, sim, input, metrics, exportReplay: inputReplayHooks.export });
+  bindPlayErrorReport({
+    config,
+    sim,
+    input,
+    metrics,
+    exportReplay: inputReplayHooks.export,
+    halted: playHalted,
+    saveController: options.saveController,
+  });
   const handBackStatus = $('playtest-export-status');
   const handBack = async (file: () => HandBackFile | Promise<HandBackFile>): Promise<void> => {
     try {
@@ -1417,7 +1435,7 @@ export const startPlay = (
     startupHint.hidden = !latch.visible;
   };
   const resume = () => {
-    if (replayPlayer || sim.dead) {
+    if (replayPlayer || sim.dead || playHalted.value) {
       return;
     }
     resumeRequested = true;
@@ -3231,7 +3249,7 @@ export const startPlay = (
     });
   };
 
-  const frame = (now: RealTimestamp) => {
+  const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
     const dt = realDuration(Math.min(0.1, elapsedReal));
@@ -3347,6 +3365,11 @@ export const startPlay = (
     }
     return true;
   };
+  const frame = guardDebugErrorFrame(
+    (now) => !playHalted.value && updateFrame(now),
+    debugErrorEnabled(config.debug, location.search),
+    () => input.locked,
+  );
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
   const die = ({ cause, time }: { cause: string; time: number }) => {
@@ -3386,7 +3409,7 @@ export const startPlay = (
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
-  startRealFrames(guardDebugErrorFrame(frame, debugErrorEnabled(config.debug, location.search), () => input.locked));
+  startRealFrames(frame);
   return {
     enter: () => {
       audio.unlock();

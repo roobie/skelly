@@ -303,9 +303,6 @@
     "ui/craftReadout.ts": {
       "time": 2
     },
-    "ui/errorReport.ts": {
-      "gameTime": 1
-    },
     "ui/hud.ts": {
       "duration": 1,
       "elapsed": 1

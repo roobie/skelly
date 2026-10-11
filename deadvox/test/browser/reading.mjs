@@ -32,12 +32,11 @@ const vite = await createServer({
         if (!id.endsWith('/src/game/play.ts')) {
           return;
         }
-        const marker =
-          'startRealFrames(guardDebugErrorFrame(frame, debugErrorEnabled(config.debug, location.search), () => input.locked));';
+        const marker = 'startRealFrames(frame);';
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; const gameFrame=guardDebugErrorFrame(frame, debugErrorEnabled(config.debug, location.search), () => input.locked); reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return gameFrame(now);});`,
+          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; const gameFrame=guardDebugErrorFrame(frame,debugErrorEnabled(config.debug,location.search),()=>input.locked); reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return gameFrame(now);});`,
         );
       },
     },
@@ -52,9 +51,12 @@ try {
     viewport: mode === 'consumer' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
   });
   const errors = [];
+  const triggeredErrors = [];
   const states = [];
   page.on('pageerror', (error) => {
-    if (error.message !== 'Browser-stage game-loop failure') {
+    if (error.message === 'Browser-stage game-loop failure') {
+      triggeredErrors.push(error.message);
+    } else {
       errors.push(error.message);
     }
   });
@@ -67,7 +69,7 @@ try {
   await page.goto(
     browserStageUrl(
       'reading',
-      `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0&save-test=1`,
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -837,11 +839,40 @@ try {
     await page.locator('#reading').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
+    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    await page.waitForFunction(() => {
+      const { controller } = globalThis.deadvoxSaveTest;
+      return controller.savedGeneration > 0 && !controller.writing && !controller.queued;
+    });
+    const generationBeforeError = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration);
+    assert.ok(generationBeforeError > 0, 'the error test begins with a committed save');
+    const beforeError = await page.evaluate(() => ({
+      paused: globalThis.readingWitness.session.sim.paused,
+      locked: globalThis.readingWitness.input.locked,
+    }));
+    assert.deepEqual(beforeError, { paused: false, locked: true });
     await page.evaluate(() => globalThis.readingWitness.triggerGameLoopError());
     await page.locator('#error-report').waitFor({ state: 'visible' });
     await page.waitForFunction(
       () => globalThis.readingWitness.session.sim.paused && !globalThis.readingWitness.input.locked,
     );
+    const stopped = await page.evaluate(() => {
+      const { session, playFrame, requestResume } = globalThis.readingWitness;
+      const { sim } = session;
+      const time = sim.time;
+      requestResume();
+      const frameContinues = playFrame(performance.now());
+      return { paused: sim.paused, frameContinues, time, after: sim.time };
+    });
+    assert.equal(stopped.paused, true, 'resume remains refused after a play error');
+    assert.equal(stopped.frameContinues, false, 'the frame driver stops after a play error');
+    assert.equal(stopped.after, stopped.time, 'a post-error frame does not advance simulation time');
+    const backgroundIsInert = await page.evaluate(() =>
+      [...document.body.children]
+        .filter((element) => element.id !== 'error-report')
+        .every((element) => element.inert),
+    );
+    assert.equal(backgroundIsInert, true, 'the error panel makes every background surface inert');
     const errorText = await page.locator('[data-error-text]').textContent();
     assert.ok(errorText?.includes('Browser-stage game-loop failure'));
     assert.equal(await page.locator('[data-error-feedback]').isVisible(), true);
@@ -871,12 +902,25 @@ try {
     assert.ok(report.error.stack.includes('Browser-stage game-loop failure'));
     assert.equal(report.world.seed, 1);
     assert.equal(report.world.site, 'testHouse');
-    assert.equal(typeof report.world.gameTime, 'string');
+    assert.equal(typeof report.world.clock, 'string');
     assert.equal(report.userAgent, await page.evaluate(() => navigator.userAgent));
     assert.equal(typeof report.buildRevision, 'string');
     assert.ok(report.buildRevision.length > 0);
     assert.equal(report.playtest.metrics.seed, 1);
     assert.ok(report.playtest.replay || report.playtest.replayUnavailable);
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForFunction(() => {
+      const { controller } = globalThis.deadvoxSaveTest;
+      return !(controller.writing || controller.queued);
+    });
+    assert.equal(
+      await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration),
+      generationBeforeError,
+      'hiding the tab after the error leaves the last committed save unchanged',
+    );
     proof = { before, during, menu, resumed: pageResumed, report: { error: report.error, world: report.world } };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
@@ -1033,8 +1077,12 @@ try {
     assert.equal(await page.evaluate(() => globalThis.deathMenuPointerLockRequests), 0);
     proof = { sizes, endVisible, deathMenuOpened, feedbackHref: deathFeedbackHref };
   }
+  assert.deepEqual(triggeredErrors, mode === 'consumer' ? ['Browser-stage game-loop failure'] : []);
   assert.deepEqual(errors, []);
-  await writeFile(resolve(artifacts, 'result.json'), JSON.stringify({ mode, ...proof, states, errors }, null, 2));
+  await writeFile(
+    resolve(artifacts, 'result.json'),
+    JSON.stringify({ mode, ...proof, states, errors, triggeredErrors }, null, 2),
+  );
 } finally {
   await browser?.close();
   await vite.close();

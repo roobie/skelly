@@ -47,7 +47,8 @@ import {
   writeClosedGroups,
 } from './groups.ts';
 import { LookControls } from './look.ts';
-import { buildRevision, lookDump, lookDumpFilename } from './lookDump.ts';
+import { getBuildRevision } from '../core/buildInfo.ts';
+import { lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
 import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
 import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
@@ -1642,7 +1643,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       positionM: hooks.body.pos.map((v) => v * metres) as Vec3,
       yawRad: hooks.input.yaw,
       pitchRad: hooks.input.pitch,
-      buildRevision: buildRevision(),
+      buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
       url: camUrl(lookUrl(location.href, lookState()), {
         position: hooks.body.pos.map((v) => v * metres) as Vec3,

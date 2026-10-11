@@ -51,7 +51,7 @@ describe('error reports', () => {
     );
     expect(report.error.message).toBe(error.message);
     expect(report.error.stack).toBe(error.stack);
-    expect(report.world).toEqual({ seed: 73, site: 'testHouse', gameTime: '23:30' });
+    expect(report.world).toEqual({ seed: 73, site: 'testHouse', clock: '23:30' });
     expect(report.userAgent).toBe('browser user agent');
     expect(report.buildRevision).toBe('build revision');
     expect(report.playtest.metrics.seed).toBe(73);

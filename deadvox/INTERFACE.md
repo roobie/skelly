@@ -235,7 +235,7 @@ keeps its progress. See `src/ui/reading.ts`, `ReadingProgress` and `mountReading
 
 ## Development and playtest
 
-An uncaught runtime error or unhandled rejection opens a blocking meta panel. During gameplay it pauses the simulation and releases pointer lock rather than leaving the player in a broken world. It shows the full error text for copying and offers a local report download; nothing is sent automatically. The downloaded report may include the build revision, world identity and game time, browser user agent, and the same recent replay and playtest metrics the F9 menu exports. See `src/ui/errorReport.ts`, `installErrorReportHandler` and `errorReportText`, and `src/game/play.ts`, `configurePlayErrorReport`.
+An uncaught runtime error or unhandled rejection opens a blocking meta panel. During gameplay the game stops, releases pointer lock, refuses to resume, and prevents further saves rather than trying to recover. The panel shows the full error text for copying and offers a local report download; nothing is sent automatically. The downloaded report may include the build revision, world identity and game clock, browser user agent, and the same recent replay and playtest metrics the F9 menu exports. See `src/ui/errorReport.ts`, `installErrorReportHandler` and `errorReportText`, and `src/game/play.ts`, `bindPlayErrorReport` and `stopPlayAfterError`.
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in
   `src/debug` and load only there. They can say anything. The target ping and the
