@@ -3,9 +3,9 @@
 // feet level with the ladder's top, where moving toward the ladder steps off onto what it serves.
 
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
-import { offSide } from './character.ts';
+import { dominantSide, offSide } from './character.ts';
 import type { HandSide, Inventory } from './inventory.ts';
-import { defOf } from './items.ts';
+import { defOf, type Item } from './items.ts';
 import type { Body } from './physics.ts';
 import type { Facing } from './templates.ts';
 
@@ -69,6 +69,9 @@ export const climb = (
   return true;
 };
 
+/** A ladder hold as a save keeps it: on a ladder, or grabbed with F and not reached yet. */
+export type LadderHoldState = { readonly on: true } | { readonly on: false; readonly grabbedUid: number };
+
 export interface LadderHoldOptions {
   readonly entities: BlockEntities;
   readonly body: Body;
@@ -77,18 +80,36 @@ export interface LadderHoldOptions {
   readonly reachBelow: number;
   /** Blocks from a grabbed ladder's centre the player walks before letting go of it. */
   readonly reach: number;
-  /** Restored from a save, which keeps a climb; a grab not yet reached is let go. */
-  readonly onLadder: boolean;
+  readonly restored?: LadderHoldState | null | undefined;
 }
 
-/** The player's hold on a ladder: grabbed with F but not reached yet, or climbed with the off hand on it. */
+/**
+ * The player's hold on a ladder: grabbed with F but not reached yet, or climbed with the off hand on it. Every hand
+ * use and every move into or out of a hand is admitted through it, so the hand on the ladder does nothing else.
+ */
 export class LadderHold {
   private readonly options: LadderHoldOptions;
   private hold: { readonly on: true } | { readonly on: false; readonly grabbed: BlockEntity } | undefined;
 
   constructor(options: LadderHoldOptions) {
     this.options = options;
-    this.hold = options.onLadder ? { on: true } : undefined;
+    const { restored } = options;
+    if (restored && !restored.on) {
+      const grabbed = options.entities.byUid(restored.grabbedUid);
+      if (!(grabbed && options.entities.defOf(grabbed).climbable)) {
+        throw new Error(`Invalid grabbed ladder ${restored.grabbedUid}`);
+      }
+      this.hold = { on: false, grabbed };
+    } else {
+      this.hold = restored ? { on: true } : undefined;
+    }
+  }
+
+  snapshotState(): LadderHoldState | null {
+    if (!this.hold) {
+      return null;
+    }
+    return this.hold.on ? { on: true } : { on: false, grabbedUid: this.hold.grabbed.uid };
   }
 
   /** Whether the player climbs a ladder, rather than only having grabbed one. */
@@ -101,15 +122,33 @@ export class LadderHold {
     return this.on ? offSide(this.options.inventory.character) : undefined;
   }
 
+  /** The hand an action that would use `hand` (or either, when undefined) uses: the free one while one holds a ladder. */
+  freeHand<Hand extends HandSide | undefined>(hand: Hand): Hand | HandSide {
+    return this.on ? dominantSide(this.options.inventory.character) : hand;
+  }
+
   /** Why `hand` can't act while a hand holds a ladder: it is that hand, or its item needs both hands. */
   refusal(hand: HandSide): string | undefined {
+    const item = this.options.inventory.hands[hand];
+    return hand === this.hand() || (item && this.bothHands(item)) ? this.holding() : undefined;
+  }
+
+  /**
+   * Why a move can't take `item` out of hand `from` or into hand `to` while a hand holds a ladder: it needs that
+   * hand, or the item needs both hands to hold.
+   */
+  moveRefusal(item: Item, from: HandSide | undefined, to: HandSide | undefined): string | undefined {
     const holding = this.hand();
-    const { inventory } = this.options;
-    const item = inventory.hands[hand];
-    const bothHands = item !== undefined && defOf(inventory.registry, item.type).twoHanded === true;
-    return holding !== undefined && (hand === holding || bothHands)
-      ? `Your ${holding} hand is holding the ladder`
-      : undefined;
+    const needed = from === holding || to === holding || (to !== undefined && this.bothHands(item));
+    return holding !== undefined && needed ? this.holding() : undefined;
+  }
+
+  private holding(): string {
+    return `Your ${this.hand()} hand is holding the ladder`;
+  }
+
+  private bothHands(item: Item): boolean {
+    return this.on && defOf(this.options.inventory.registry, item.type).twoHanded === true;
   }
 
   /** F at a ladder grabs it; the climb starts once the body reaches it. */

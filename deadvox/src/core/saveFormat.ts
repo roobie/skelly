@@ -542,7 +542,8 @@ const playerState = obj({
   sprinting: bool,
   firearmReadyWalking: bool,
   handlingPausedForKnockout: bool,
-  onLadder: bool,
+  /** `LadderHoldState` (src/core/ladders.ts): on a ladder, or grabbed and not reached yet. */
+  ladder: nullable(union(obj({ on: enumeration([true]) }), obj({ on: enumeration([false]), grabbedUid: positiveInt }))),
 });
 const meleeAction = nullable(
   obj({

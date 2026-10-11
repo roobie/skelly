@@ -104,6 +104,7 @@ import { RestController } from './rest.ts';
 import { shamblerBodyPitch } from './shamblerAudio.ts';
 import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
+import { ThrowCharge } from './throwCharge.ts';
 import { UNPACK_ACTION } from './unpacking.ts';
 
 export const PHYSICS_RATE = 60;
@@ -826,8 +827,10 @@ export const createSession = (options: SessionOptions) => {
     inventory,
     reachBelow: physics.stepHeight,
     reach: PLAYER.reach / s,
-    onLadder: restoredPlayer?.onLadder === true,
+    restored: restoredPlayer?.ladder,
   });
+  inventory.handRefusal = (item, from, to) => ladderHold.moveRefusal(item, from, to);
+  const throwCharge = new ThrowCharge(inventory, ladderHold);
   const currentIntent = (): MoveIntent => {
     const input = sampledInput();
     return input.active && !input.inputLocked ? input.intent : IDLE;
@@ -1152,7 +1155,7 @@ export const createSession = (options: SessionOptions) => {
     const previousPosition: Vec3 = [...body.pos];
     const jumpStarted = pacedIntent.jump && wasGrounded;
     // A climber uses its free hand standing still: the ladder holds it while an item action runs.
-    const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined;
+    const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined || throwCharge.active;
     const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
     steer(body, scale, sampledInput().yaw, steered);
     if (jumpStarted) {
@@ -1526,6 +1529,8 @@ export const createSession = (options: SessionOptions) => {
     },
     /** Whether the player climbs a ladder, so the pick reaches through it, and which hand is on it. */
     ladderHold,
+    /** A held item's throw from press to release; play throws it and shows its notices. */
+    throwCharge,
     /** F at a ladder grabs it; returns why not. */
     grabLadder: (entity: BlockEntity): string | undefined => {
       if (sim.body.actionRefusal) {
@@ -1623,7 +1628,7 @@ export const createSession = (options: SessionOptions) => {
           sprinting,
           firearmReadyWalking,
           handlingPausedForKnockout,
-          onLadder: ladderHold.on,
+          ladder: ladderHold.snapshotState(),
         }),
         aim,
         survival,

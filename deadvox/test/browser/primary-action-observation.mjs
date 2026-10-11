@@ -134,7 +134,11 @@ export const observationPlugin = {
         : undefined;
       return { target, fits: Boolean(target && inventory.planAdd(item, target).ok), landingDistance };
     },
-    getItemThrowState: () => ({ startedAt: itemThrowStartedAt, itemUid: itemThrowItemUid, hand: itemThrowHand }),
+    getItemThrowState: () => ({
+      startedAt: session.throwCharge.startedAt,
+      itemUid: session.throwCharge.itemUid,
+      hand: session.throwCharge.hand,
+    }),
     selectPrimaryAction,
     ignitionTargetForHand,
     interactionTargetAt,
@@ -143,7 +147,7 @@ export const observationPlugin = {
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     initialPlayerPosition: [...session.body.pos],
     getNotice: () => notice,
-    isChargingItemThrow: () => itemThrowStartedAt !== undefined,
+    isChargingItemThrow: () => session.throwCharge.startedAt !== undefined,
     isThrowingStance: () => throwingStance,
     clearNotice: () => showNotice(''),
     clearHand: (side) => {

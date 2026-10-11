@@ -332,27 +332,32 @@ hordes stay as they are, and winning should still feel like an achievement.
   moving toward the ladder climbs and moving away climbs down. Holding jump lets
   go anywhere, which is the way off mid-ladder; stepping off its top, bottom or
   side and being knocked out also let go, as does walking away from a ladder
-  grabbed but not reached. The climber is held on the ladder's centre line, so
-  the body fits through a hatch above. Climbing has a fixed speed, so sprinting,
-  load and injury neither help nor slow it, and it spends no stamina. See
-  `src/core/ladders.ts`, `LadderHold`, `ladderAt` and `climb`, and
-  `src/game/session.ts`, `advancePlayerBody`.
+  grabbed but not reached. A save keeps the hold, a grab not yet reached
+  included, so a loaded game climbs as the saved one would have. The climber is
+  held on the ladder's centre line, so the body fits through a hatch above.
+  Climbing has a fixed speed, so sprinting, load and injury neither help nor
+  slow it, and it spends no stamina. See `src/core/ladders.ts`, `LadderHold`,
+  `ladderAt` and `climb`, and `src/game/session.ts`, `advancePlayerBody`.
 - **One hand.** A climber holds on with the off hand, so the dominant hand stays
   free and the climb waits while it works. A one-handed action works on a
-  ladder (an attack, a throw, eating, the interact key at a hatch), and the
-  climber stays still while a swing, a firearm's handling or a timed action such
-  as eating runs. Using the off hand, or anything that needs both hands (using or
-  readying a two-handed item, or reloading a firearm), is refused through the
-  usual refusal notice; an item in the off hand stays held.
-  See `src/core/ladders.ts`, `LadderHold.refusal`, and `src/game/session.ts`,
-  `dispatchPlayerActions`.
+  ladder (an attack, a throw, eating, the interact key at a hatch), and always
+  with the free hand, even where it would otherwise use the off hand, as a throw
+  does. The climber stays still while a swing, a firearm's handling, a held
+  throw or a timed action such as eating runs. Anything that needs the off hand
+  or both hands is refused through the usual refusal notice: using the off
+  hand, using or readying a two-handed item, reloading a firearm, and moving an
+  item into or out of the off hand, or a two-handed item into a hand. So an item
+  already in the off hand stays held. `LadderHold` admits every one of these
+  (`src/core/ladders.ts`, `refusal`, `freeHand` and `moveRefusal`, which
+  `Inventory.plan` asks through `handRefusal`), and the session owns the throw
+  charge so a replay holds still alike (`src/game/throwCharge.ts`).
 - **The top.** A climb ends with the feet level with the top piece, where moving
   toward the ladder carries the climber off onto what it serves. So a ladder up a
   roof edge reaches through the roof's layer, and the climber walks off at roof
-  level. A ladder under a hatch can't reach into the layer the hatch fills, so it
-  ends just below, and a climber going up steps up through the open hatch the way
-  a walker steps up a ledge (`src/content/base/ladders.jsonnet`, and
-  `src/core/physics.ts`, `braced`).
+  level. A ladder under a hatch is the exception: it can't reach into the roof
+  layer, because the hatch fills it, so it ends just below, and a climber going
+  up steps up through the open hatch the way a walker steps up a ledge
+  (`src/content/base/ladders.jsonnet`, and `src/core/physics.ts`, `braced`).
 - **No fall.** Climbing down is not a fall: a hard landing is measured from where
   the climber let go of the ladder.
 - **Shamblers don't climb.** A shambler passes through a ladder's cells like any

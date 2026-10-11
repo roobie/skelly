@@ -2,11 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
-import { dominantSide } from '../src/core/character.ts';
+import { dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { HARD_LANDING_METRES } from '../src/core/footsteps.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
+import type { HandSide } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
@@ -131,10 +132,10 @@ const grabAndClimbTo = (runtime: Runtime, cell: Vec3, height: number): void => {
   }
 };
 
-const holdInDominantHand = (runtime: Runtime, type: string): Item => {
+const holdInHand = (runtime: Runtime, type: string, side?: HandSide): Item => {
   const { inventory } = runtime.session;
   const item = inventory.create(type);
-  if (!inventory.add(item, { kind: 'hand', side: dominantSide(inventory.character) })) {
+  if (!inventory.add(item, { kind: 'hand', side: side ?? dominantSide(inventory.character) })) {
     throw new Error(`Could not hold the ${type} fixture`);
   }
   return item;
@@ -157,6 +158,15 @@ const houseWithLadder = (spawn: Vec3, restore?: Readonly<SaveSnapshot>) => {
     entities.add({ type: 'ladder', pos: [-1, y, 0], size: ladderSize('w'), facing: 'w' });
   }
   return makeRuntime(house, spawn, entities, restore);
+};
+/** A session loaded from `original`'s save and unpaused, as play resumes a loaded game. */
+const resume = (original: Runtime): Runtime => {
+  const resumed = houseWithLadder(
+    [-3, 1, 1],
+    original.session.snapshot({ worldId: 'world', characterId: 'character' }),
+  );
+  resumed.session.sim.paused = false;
+  return resumed;
 };
 
 describe('ladders', () => {
@@ -231,16 +241,26 @@ describe('ladders', () => {
   it('keeps a climber on the ladder through a save', () => {
     const original = houseWithLadder([-3, 1, 1]);
     grabAndClimbTo(original, LADDER_FOOT, 1.5);
-    const resumed = houseWithLadder(
-      [-3, 1, 1],
-      original.session.snapshot({ worldId: 'world', characterId: 'character' }),
-    );
+    const resumed = resume(original);
     const { body } = resumed.session;
     const [, height] = body.pos;
     expect(height).toBeGreaterThanOrEqual(1.5);
+    resumed.set(IDLE);
     resumed.advance(30);
     expect(resumed.session.ladderHold.on).toBe(true);
     expect(body.pos[1]).toBeCloseTo(height, 3);
+  });
+
+  it('keeps a ladder grabbed but not reached through a save, so the same input climbs it', () => {
+    const original = houseWithLadder([-3, 1, 1]);
+    expect(original.session.grabLadder(original.session.entities.at(...LADDER_FOOT)!)).toBeUndefined();
+    const resumed = resume(original);
+    for (const runtime of [original, resumed]) {
+      runtime.set({ ...IDLE, forward: 1, walk: true });
+      runtime.advance(climbFrames(1));
+    }
+    expect(original.session.body.pos[1]).toBeGreaterThan(1);
+    expect(resumed.session.body.pos).toEqual(original.session.body.pos);
   });
 
   it('does not spend stamina when sprint is held on a ladder', () => {
@@ -268,7 +288,7 @@ describe('ladders', () => {
 describe('one hand on a ladder', () => {
   it('refuses a two-handed item through the refusal notice on a ladder, and uses it off one', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
-    holdInDominantHand(runtime, twoHandedType);
+    holdInHand(runtime, twoHandedType);
     let uses = 0;
     runtime.onDominantUse(() => {
       uses += 1;
@@ -286,7 +306,7 @@ describe('one hand on a ladder', () => {
   it('uses a one-handed item on a ladder, holding the climb still until the action ends', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
     const { session } = runtime;
-    const food = holdInDominantHand(runtime, oneHandedFoodType);
+    const food = holdInHand(runtime, oneHandedFoodType);
     runtime.onDominantUse(() => {
       expect(session.survival.use(food)).toBeUndefined();
     });
@@ -306,6 +326,50 @@ describe('one hand on a ladder', () => {
     expect(frames).toBeGreaterThan(1);
     runtime.advance(30);
     expect(body.pos[1]).toBeGreaterThan(height);
+  });
+
+  it('throws from the free hand on a ladder, holding the climb still until the throw is released or cancelled', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    const { session } = runtime;
+    const { throwCharge } = session;
+    const thrown = holdInHand(runtime, oneHandedFoodType);
+    holdInHand(runtime, oneHandedFoodType, offSide(session.inventory.character));
+    // The press begins the throw as play's `beginItemThrow` does.
+    runtime.onDominantUse(() => throwCharge.begin(session.sim.time, session.queue.busy || session.firearms.busy));
+    grabAndClimbTo(runtime, LADDER_FOOT, 1.5);
+    const { body } = session;
+    for (const end of [() => throwCharge.release(session.sim.time), () => throwCharge.cancel()]) {
+      runtime.pressDominantUse();
+      expect(throwCharge.itemUid).toBe(thrown.uid);
+      const [, height] = body.pos;
+      runtime.advance(30);
+      expect(body.pos[1]).toBeCloseTo(height, 6);
+      end();
+      runtime.advance(30);
+      expect(body.pos[1]).toBeGreaterThan(height);
+    }
+  });
+
+  it('refuses moves into or out of the hand on the ladder, which keeps its item', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    const { session } = runtime;
+    const { inventory, queue } = session;
+    const kept = holdInHand(runtime, oneHandedFoodType, offSide(inventory.character));
+    grabAndClimbTo(runtime, LADDER_FOOT, 1.5);
+    const ladderHand = session.ladderHold.hand()!;
+    const holding = session.ladderHold.refusal(ladderHand);
+    const loose = inventory.create(oneHandedFoodType);
+    expect(inventory.add(loose, { kind: 'pile', pos: session.feet() })).toBe(true);
+
+    expect(queue.enqueue(loose, { kind: 'hand', side: ladderHand })).toEqual({ ok: false, reason: holding });
+    expect(queue.enqueue(kept, { kind: 'pile', pos: session.feet() })).toEqual({ ok: false, reason: holding });
+    expect(queue.enqueue(loose, { kind: 'hand', side: dominantSide(inventory.character) }).ok).toBe(true);
+    runtime.set(IDLE);
+    for (let frame = 0; queue.busy && frame < 60 * 60; frame++) {
+      runtime.advance(1);
+    }
+    expect(inventory.hands[ladderHand]).toBe(kept);
+    expect(inventory.hands[dominantSide(inventory.character)]).toBe(loose);
   });
 });
 
