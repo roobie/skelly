@@ -866,11 +866,13 @@ body.unconscious::after {
 .inv-item-slot .inv-item-name {
   display: inline;
 }
+/* A grid name breaks where the next glyph would cross the border, mid-word, and shows only the whole lines that fit
+   (DESIGN.md, "Inventory screen"). The block size is logical, so a tall name clips across its width. */
 .inv-ghost .inv-item-name,
 .inv-item:not(.inv-item-slot) .inv-item-name {
-  white-space: pre-line;
-  overflow-wrap: normal;
-  word-break: normal;
+  white-space: normal;
+  line-break: anywhere;
+  max-block-size: round(down, 100%, 1lh);
 }
 .inv-item-count {
   position: absolute;

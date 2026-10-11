@@ -13,7 +13,7 @@ import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import { firearmSlotIds } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
-import { GRID_CELL_REM as CELL_REM, inventoryGridName } from '../core/inventoryGridName.ts';
+import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
@@ -286,11 +286,6 @@ const scrollItemWithinAncestor = (row: HTMLElement, parent: HTMLElement, axis: '
   } else if (itemEnd > viewportStart + viewportSize) {
     addScrollOffset(parent, axis, itemEnd - viewportStart - viewportSize);
   }
-};
-
-const gridItemName = (registry: Inventory['registry'], item: Item, widthCells: number, heightCells: number): string => {
-  const def = defOf(registry, item.type);
-  return inventoryGridName(item.work ? workName(registry, item) : def.name, widthCells, heightCells);
 };
 
 const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
@@ -1218,18 +1213,12 @@ export class InventoryScreen {
                 width: `calc(${w * CELL_REM}rem - 2px)`,
                 height: `calc(${h * CELL_REM}rem - 2px)`,
               },
-          { widthCells: w, heightCells: h },
         );
       }),
     };
   }
 
-  private itemViewModel(
-    item: Item,
-    className: string,
-    style?: Record<string, string>,
-    compact?: { widthCells: number; heightCells: number },
-  ): ItemViewModel {
+  private itemViewModel(item: Item, className: string, style?: Record<string, string>): ItemViewModel {
     const def = defOf(this.inv.registry, item.type);
     const itemStyle = style ?? {};
     this.byUid.set(item.uid, item);
@@ -1239,9 +1228,7 @@ export class InventoryScreen {
       uid: String(item.uid),
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}`,
       title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(item.condition)}`,
-      name: compact
-        ? gridItemName(this.inv.registry, item, compact.widthCells, compact.heightCells)
-        : workName(this.inv.registry, item),
+      name: workName(this.inv.registry, item),
       count: item.count > 1 ? `×${item.count}` : undefined,
       style:
         Object.keys(itemStyle).length > 0
@@ -1481,7 +1468,7 @@ export class InventoryScreen {
       html`<div
         class=${`inv-ghost${h > w ? ' inv-item-tall' : ''} cat-${def.category}`}
         style=${`left: ${drag.position[0]}px; top: ${drag.position[1]}px; width: calc(${w * CELL_REM}rem - 2px); height: calc(${h * CELL_REM}rem - 2px)`}
-      ><span class="inv-item-name">${gridItemName(this.inv.registry, drag.item, w, h)}</span></div>`,
+      ><span class="inv-item-name">${workName(this.inv.registry, drag.item)}</span></div>`,
       this.dragRoot,
     );
   }
