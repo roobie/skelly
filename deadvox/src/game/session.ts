@@ -17,6 +17,7 @@ import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { dayCycleFor, dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
+import { blastDamage, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
 import {
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
@@ -34,7 +35,7 @@ import {
 } from '../core/footsteps.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
-import { defOf } from '../core/items.ts';
+import { defOf, type Item } from '../core/items.ts';
 import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
@@ -317,6 +318,8 @@ export interface SessionOptions {
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
   onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
+  /** Presentation-only: an explosive went off here, in metres. */
+  onDetonation?: (at: Vec3) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
@@ -556,6 +559,10 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
+  const fuses = new Fuses(
+    registry,
+    Array.from(inventory.items(), ({ item }) => item),
+  );
   const aim = createSessionAim({
     tuning: currentFirearmsCombatTuning(),
     seed,
@@ -1051,10 +1058,51 @@ export const createSession = (options: SessionOptions) => {
       controls.useOff?.();
     }
   };
+  /** Where an explosive goes off, in blocks: its pile, its furniture, or the player carrying it. */
+  const detonationPoint = (item: Item): Vec3 | undefined => {
+    let location = inventory.locate(item);
+    while (location?.kind === 'pocket' || location?.kind === 'slot' || location?.kind === 'work') {
+      location = inventory.locate(location.owner);
+    }
+    if (location?.kind === 'pile') {
+      const [x, y, z] = location.pile.pos;
+      return [x + 0.5, y + 0.25, z + 0.5];
+    }
+    if (location?.kind === 'furniture') {
+      const [x, y, z] = location.entity.pos;
+      return [x + 0.5, y + 0.5, z + 0.5];
+    }
+    return location ? bodyCentre(body) : undefined;
+  };
+  /** The explosive is used up; the blast and its fragments hurt zombies and the player alike (DESIGN.md, "Hand grenade"). */
+  const detonate = (item: Item): void => {
+    const spec = registry.items.get(item.type)?.explosive;
+    const at = detonationPoint(item);
+    if (!(spec && at && inventory.consume(item))) {
+      return;
+    }
+    const directions = fragmentDirections(sim.rng(`fragments:${item.uid}`), spec.fragments.count);
+    const { damage, impulse, rangeMetres } = spec.fragments;
+    zombieSystem.detonate({ blast: spec.blast, fragments: { origin: at, directions, damage, impulse, rangeMetres } });
+    const centre = bodyCentre(body);
+    const blast = blastDamage(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
+    if (blast > 0 && inSight(at, centre, isSolid)) {
+      sim.hit(blast, 'a grenade', 'torso', { kind: 'blunt' });
+    }
+    for (const region of fragmentHitsOnBody({ origin: at, directions, rangeBlocks: rangeMetres / s, body, isSolid })) {
+      sim.hit(damage, 'a grenade', region, { kind: 'pierce' });
+    }
+    options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s]);
+    // The blast is the player's doing, so it is heard as their noise, from where it went off.
+    admitSound(spec.sound, at, sim.time, { player: true, sourceLabel: 'grenade' });
+  };
   sim.scheduler.register({
     id: 'zombies',
     rate: ZOMBIE_RATE,
     tick: (dt, time) => {
+      for (const item of fuses.advance(dt)) {
+        detonate(item);
+      }
       spawner.advance({ calendar: sim.calendar, registry, zombies: zombieSystem });
       zombieSystem.tickActive(dt, time, heldItemUids());
       lastZombieStep = time;
@@ -1352,6 +1400,8 @@ export const createSession = (options: SessionOptions) => {
     firearms,
     firearmAttachments,
     magazines,
+    /** Thrown explosives counting down; a throw arms its item here. */
+    fuses,
     aim,
     get firearmsSkillZeroHandling() {
       return sessionFirearmsSkillZeroHandling(

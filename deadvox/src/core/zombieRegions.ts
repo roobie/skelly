@@ -29,7 +29,8 @@ export const FIGURE_BOXES: Readonly<Record<FigurePart, FigureBox>> = {
 };
 export const FIGURE_PARTS: readonly FigurePart[] = ['body', 'head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
 
-const rayBoxEntry = (origin: Vec3, direction: Vec3, halfSize: readonly number[]): number | undefined => {
+/** Where a ray from `origin`, relative to a box's centre, enters the box; undefined when it misses. */
+export const rayBoxEntry = (origin: Vec3, direction: Vec3, halfSize: readonly number[]): number | undefined => {
   let near = Number.NEGATIVE_INFINITY;
   let far = Number.POSITIVE_INFINITY;
   for (let axis = 0; axis < 3; axis++) {

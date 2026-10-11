@@ -1,0 +1,115 @@
+import type { BodyRegion } from './body.ts';
+import type { Registry } from './content.ts';
+import type { Vec3 } from './coords.ts';
+import type { Item } from './items.ts';
+import type { Body } from './physics.ts';
+import type { Rng } from './random.ts';
+import { raycast, type SolidAt } from './raycast.ts';
+import type { ItemDef } from './schema.ts';
+import { rayBoxEntry } from './zombieRegions.ts';
+
+/** A thrown charge's content (DESIGN.md, "Hand grenade"). */
+export type ExplosiveSpec = NonNullable<ItemDef['explosive']>;
+
+/**
+ * Thrown explosives counting down. The fuse is saved on the item, so a restored game picks up the fuses it finds
+ * in `items` where they left off.
+ */
+export class Fuses {
+  private readonly burning = new Set<Item>();
+  private readonly registry: Registry;
+
+  constructor(registry: Registry, items: Iterable<Item>) {
+    this.registry = registry;
+    for (const item of items) {
+      if (item.fuseRemainingSimSeconds !== undefined) {
+        this.burning.add(item);
+      }
+    }
+  }
+
+  /** Starts a thrown explosive's fuse; a fuse already burning keeps its time. Other items are ignored. */
+  arm(item: Item): void {
+    const spec = this.registry.items.get(item.type)?.explosive;
+    if (spec) {
+      item.fuseRemainingSimSeconds ??= spec.fuseSimSeconds;
+      this.burning.add(item);
+    }
+  }
+
+  /** Burns every fuse by `dt` Sim seconds and returns the explosives whose fuse ran out, by uid. */
+  advance(dt: number): Item[] {
+    const done: Item[] = [];
+    for (const item of this.burning) {
+      item.fuseRemainingSimSeconds = Math.max(0, item.fuseRemainingSimSeconds! - dt);
+      if (item.fuseRemainingSimSeconds === 0) {
+        this.burning.delete(item);
+        done.push(item);
+      }
+    }
+    return done.sort((a, b) => a.uid - b.uid);
+  }
+}
+
+/** Blast damage at a distance: full at the centre, falling linearly to none at the radius. */
+export const blastDamage = ({ radiusMetres, damage }: ExplosiveSpec['blast'], distanceMetres: number): number =>
+  damage * Math.max(0, 1 - distanceMetres / radiusMetres);
+
+/** A body's centre, in blocks. */
+export const bodyCentre = (body: Body): Vec3 => [body.pos[0], body.pos[1] + body.height / 2, body.pos[2]];
+
+/** Whether nothing solid lies on the straight line between two points, in blocks. */
+export const inSight = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
+  const delta: Vec3 = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
+  const distance = Math.hypot(...delta);
+  return (
+    distance === 0 ||
+    raycast(from, [delta[0] / distance, delta[1] / distance, delta[2] / distance], distance, isSolid) === undefined
+  );
+};
+
+/** `count` directions spread evenly over the sphere. */
+export const fragmentDirections = (rng: Rng, count: number): Vec3[] =>
+  Array.from({ length: count }, (): Vec3 => {
+    const y = 2 * rng.next() - 1;
+    const angle = 2 * Math.PI * rng.next();
+    const ring = Math.sqrt(1 - y * y);
+    return [ring * Math.cos(angle), y, ring * Math.sin(angle)];
+  });
+
+/**
+ * The regions of an upright body that fragments strike, one per hit: each ray that enters the body's box within
+ * range with nothing solid before it. The struck height picks the region, and the side of the body's centre picks
+ * a leg; arms aren't told apart from the torso.
+ */
+export const fragmentHitsOnBody = ({
+  origin,
+  directions,
+  rangeBlocks,
+  body,
+  isSolid,
+}: {
+  origin: Vec3;
+  directions: readonly Vec3[];
+  rangeBlocks: number;
+  body: Body;
+  isSolid: SolidAt;
+}): BodyRegion[] => {
+  const centre = bodyCentre(body);
+  const local: Vec3 = [origin[0] - centre[0], origin[1] - centre[1], origin[2] - centre[2]];
+  const half = [body.halfWidth, body.height / 2, body.halfDepth ?? body.halfWidth];
+  return directions.flatMap((direction) => {
+    const distance = rayBoxEntry(local, direction, half);
+    if (distance === undefined || distance > rangeBlocks || raycast(origin, direction, distance, isSolid)) {
+      return [];
+    }
+    const height = (local[1] + direction[1] * distance) / body.height + 0.5;
+    if (height >= 0.85) {
+      return ['head'];
+    }
+    if (height >= 0.45) {
+      return ['torso'];
+    }
+    return [local[0] + direction[0] * distance < 0 ? 'leftLeg' : 'rightLeg'];
+  });
+};

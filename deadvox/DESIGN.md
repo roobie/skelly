@@ -36,6 +36,7 @@ read_if:
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
+  - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
   - you're choosing or changing the building-weathering look and its dilapidation direction
   - you're authoring dilapidated structures or breached perimeters
   - you're changing player-facing item descriptions or their boundary with control guidance
@@ -1123,8 +1124,9 @@ without modeling armour now.
   it goes into the save snapshot and the source fingerprint.
 Still open: the full list of damage types and each material's resistances,
 shambler bleeding consequences, partial block damage (cracked looks),
-blast damage by distance across body regions, explosives and breach charges, and
-the sounds for severing and destruction (the audio manifest).
+explosives damaging blocks, breach charges, and the sounds for severing and
+destruction (the audio manifest). Blast damage by distance is the hand grenade's
+rule ("Hand grenade").
 
 ## Light
 
@@ -1198,7 +1200,21 @@ baked into chunks; voxel sunlight can then join AO in vertex colour. See
 
 A throw preserves the held item's identity and state through flight and landing, so fitted parts, loaded ammunition and a lit glowstick remain the same item rather than a throw-specific copy. Item mass limits its range through arm speed and energy. The flight presentation uses the ground item's look, keeping firearm attachments and light markers visible; the handling HUD makes force and the release minimum legible. See `src/core/itemThrow.ts`, `throwDistanceForItem` and `traceItemLanding`, `src/render/itemThrows.ts`, `ItemThrows.spawn`, `src/ui/hud.ts`, `handlingViewModel`, and `src/game/play.ts`, `throwHeldItem`.
 
-Mass limits range so a light item does not fly as far as a heavy one; when #368 adds atmospheric drag, it can further limit light items without replacing that mass-based limit. Throwing adds no hit damage or landing lure.
+Mass limits range so a light item does not fly as far as a heavy one; when #368 adds atmospheric drag, it can further limit light items without replacing that mass-based limit. A throw itself adds no hit damage or landing lure; a grenade's blast is its own rule ("Hand grenade").
+
+## Hand grenade
+
+A grenade thrown into the horde is meant to be the playtest's climax: the one moment the player can answer a whole crowd at once, with the gore to show it. The FOB armoury holds the grenades, and the horde outside the FOB's east wall stands within earshot of prying the armoury lock through that wall, so forcing the armoury brings the crowd the grenades are for, while the key leaves the horde where it stands. See `src/content/base/items-explosives.jsonnet`, `frag_grenade`; `src/content/base/layouts-playtest.json`, `fob_east`; and `src/core/zombies.ts`, `hearVocalNoise`, for how far a horde hears.
+
+- **The fuse starts on release.** A held or packed grenade never arms, and there is no cooking. The fuse counts down in simulation time and is saved on the item, so a save mid-flight restores a live grenade. It ticks inside the zombies system's step rather than in a system of its own, because the scheduler's set of systems is part of the save. See `src/core/explosive.ts`, `Fuses`, and `src/game/session.ts`, `detonate`.
+- **It goes off where it is:** in the pile it landed in, or with whoever picked it up again.
+- **The blast needs line of sight.** It reaches every body whose centre it sees, falling to nothing at its radius; a wall between stops it. It strikes the limbs before the region that kills, so a close blast tears limbs off before it drops the body: the giblets are the point. See `src/core/explosive.ts`, `blastDamage`, and `src/core/zombies.ts`, `ZombieSystem.detonate`.
+- **Fragments are seeded shots.** They are rays through the same hit test as shotgun pellets, so walls and bodies stop them and fewer reach a farther body. See `src/core/explosive.ts`, `fragmentDirections`, and `ZombieSystem.firePellets`.
+- **The player is hit by the same rules,** blast and fragments alike, so a short throw hurts the thrower. See `src/core/explosive.ts`, `fragmentHitsOnBody`.
+- **The blast is the player's noise, heard from where it went off.** It carries further than any other sound, so it draws zombies from far around to the blast rather than to the thrower.
+- **Presentation is a placeholder.** The sound is the shotgun recording pitched down, and the flash is a brief additive fireball that takes no light from the fixed shader-light budget. See `src/render/blastFlashes.ts`, `BlastFlashes`.
+
+`?debug=1&loadout=grenade` starts with one in hand and more packed (`src/debug/debugLoadout.ts`, `equipDebugLoadout`).
 
 ## Zombies
 

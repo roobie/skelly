@@ -42,6 +42,8 @@ export interface ItemFields<Node> {
   burnRemainingGameSeconds?: number;
   /** Game-clock timestamp at the last burn-state update; present only while lit. */
   litAtGameTimestamp?: number | undefined;
+  /** An explosive's fuse left in Sim seconds; present once it has been thrown (core/explosive.ts). */
+  fuseRemainingSimSeconds?: number;
   /**
    * Game-clock timestamp when it was made; absent means before the world began (day 1,
    * 00:00). Food rots from then (core/food.ts).
@@ -94,6 +96,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.on === undefined ? {} : { on: item.on }),
     ...(item.burnRemainingGameSeconds === undefined ? {} : { burnRemainingGameSeconds: item.burnRemainingGameSeconds }),
     ...(item.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: item.litAtGameTimestamp }),
+    ...(item.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: item.fuseRemainingSimSeconds }),
     ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
@@ -145,6 +148,16 @@ const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
   }
 };
 
+const assertSavedFuse = (def: ItemDef, state: ItemState): void => {
+  const fuse = state.fuseRemainingSimSeconds;
+  if (
+    fuse !== undefined &&
+    !(def.explosive && state.count === 1 && Number.isFinite(fuse) && fuse >= 0 && fuse <= def.explosive.fuseSimSeconds)
+  ) {
+    throw new Error('Invalid saved explosive fuse');
+  }
+};
+
 const assertSavedLootCount = (state: ItemState): void => {
   if (
     state.lootedCount !== undefined &&
@@ -184,6 +197,7 @@ const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): 
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
   assertSavedBurnState(def, state);
+  assertSavedFuse(def, state);
   assertSavedLootCount(state);
   const firearm = restoreFirearmState(registry, def, state);
   const magazineReason =
@@ -203,6 +217,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
       ? {}
       : { burnRemainingGameSeconds: state.burnRemainingGameSeconds }),
     ...(state.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: state.litAtGameTimestamp }),
+    ...(state.fuseRemainingSimSeconds === undefined ? {} : { fuseRemainingSimSeconds: state.fuseRemainingSimSeconds }),
     ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),

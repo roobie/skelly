@@ -69,9 +69,18 @@ export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_F
 /** Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it. */
 export const PLAYER_ARM_REACH_M = 1.2;
 
+import { blastDamage, bodyCentre, type ExplosiveSpec, inSight } from './explosive.ts';
 import type { PelletShot } from './pellets.ts';
 
 export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
+
+/** A shot's or a blast's hit, dealt through the melee hit path without a swing to recover from. */
+const projectileWeapon = (damage: number, reach: number, impulse: number): MeleeWeapon => ({
+  damage,
+  reach,
+  cooldown: 0,
+  impulse,
+});
 
 const zombieRegionClass = (region: ZombieHitRegion): string =>
   region === 'core.trunk' ? 'torso' : (region.split('.').at(-1) ?? region);
@@ -222,6 +231,12 @@ export interface MeleeResult {
   readonly healthAfter?: number | undefined;
   readonly outcome: 'nothing' | 'severed' | 'incapacitated' | 'killed' | 'decapitated';
   readonly part?: string | undefined;
+}
+
+/** A blast and the fragments flying from its centre, the fragments' origin. */
+export interface Detonation {
+  readonly blast: ExplosiveSpec['blast'];
+  readonly fragments: Omit<PelletShot, 'diameterMm'>;
 }
 
 export interface HitImpulse {
@@ -594,6 +609,13 @@ const rayMayHitZombie = (zombie: Zombie, origin: Vec3, direction: Vec3, blockSiz
 const isActiveHitRegion = (zombie: Zombie, region: ZombieHitRegion): boolean => {
   const memberPart = zombie.type.model === 'amalgam' ? AMALGAM_MEMBER_REGION.exec(region)?.[1] : undefined;
   return zombie.regions[region]! > 0 && !(memberPart !== undefined && zombie.severed.includes(memberPart));
+};
+/** A body's regions with the one whose loss kills last, so a blast severs limbs before it kills. */
+const blastOrder = (zombie: Zombie): ZombieHitRegion[] => {
+  const regions = Object.keys(zombie.regions) as ZombieHitRegion[];
+  const lethal = (region: ZombieHitRegion): boolean =>
+    region === 'core.trunk' || (zombie.type.model !== 'amalgam' && zombieRegionClass(region) === 'head');
+  return [...regions.filter((region) => !lethal(region)), ...regions.filter(lethal)];
 };
 const sameInvestigationFloor = (
   a: Vec3,
@@ -2991,14 +3013,11 @@ export class ZombieSystem {
 
   /** Hitscan pellets use the same posed regions, solid occlusion, HP/death and dismemberment path as melee.
    * They do not consume melee stamina, advance its cooldown or emit fist/swing sounds. */
-  firePellets(shot: PelletShot): number {
+  firePellets(shot: Omit<PelletShot, 'diameterMm'>): number {
     let hits = 0;
     const poseCache = new Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>>();
     const weapon: MeleeWeapon = {
-      damage: shot.damage,
-      reach: shot.rangeMetres,
-      cooldown: 0,
-      impulse: shot.impulse,
+      ...projectileWeapon(shot.damage, shot.rangeMetres, shot.impulse),
       type: 'pierce',
       ...(shot.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: shot.headDamageMultiplier }),
     };
@@ -3041,6 +3060,53 @@ export class ZombieSystem {
       this.carve(id, entry.zombie, entry.strikes);
     }
     return hits;
+  }
+
+  /**
+   * A detonation at the fragments' origin (DESIGN.md, "Hand grenade"). The blast takes its falloff damage from
+   * every region of each standing body whose centre it sees, the lethal region last so limbs come off before the
+   * kill; then the fragments fly as a shot does. Returns the bodies the blast reached.
+   */
+  detonate({ blast, fragments }: Detonation): number {
+    const { origin } = fragments;
+    let reached = 0;
+    for (const [id, zombie] of [...this.store.entries()]) {
+      const centre = bodyCentre(zombie.body);
+      const distance = Math.hypot(centre[0] - origin[0], centre[1] - origin[1], centre[2] - origin[2]);
+      const distanceMetres = distance * this.options.blockSize;
+      const damage = blastDamage(blast, distanceMetres);
+      if (zombie.incapacitated || damage <= 0 || !inSight(origin, centre, this.options.isSolid)) {
+        continue;
+      }
+      reached += 1;
+      const toward: Vec3 =
+        distance > 0
+          ? [(centre[0] - origin[0]) / distance, (centre[1] - origin[1]) / distance, (centre[2] - origin[2]) / distance]
+          : [0, 1, 0];
+      const weapon = projectileWeapon(damage, blast.radiusMetres, fragments.impulse);
+      for (const region of blastOrder(zombie)) {
+        if (this.store.get(id) !== zombie) {
+          break;
+        }
+        if (isActiveHitRegion(zombie, region)) {
+          this.applyMeleeHit({
+            id,
+            zombie,
+            region,
+            cell: undefined,
+            origin,
+            direction: toward,
+            distanceMetres,
+            weapon,
+            damageType: 'blunt',
+            isFist: false,
+            projectile: true,
+          });
+        }
+      }
+    }
+    this.firePellets(fragments);
+    return reached;
   }
 
   playPlayerMeleeSwing(origin: Vec3): void {

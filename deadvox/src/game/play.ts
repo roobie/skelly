@@ -842,6 +842,7 @@ export const startPlay = (
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onFirearmEjection: (effect) => caseEffects.spawn(effect),
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
+    onDetonation: (at) => view.blastFlashes.spawn(at),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ZombieMeshes leaves
@@ -2457,6 +2458,7 @@ export const startPlay = (
       showRefusal("Couldn't land the item there", sim.time);
       return;
     }
+    session.fuses.arm(item);
     const throwOffset: Vec3 = throwingStance
       ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
       : [0, 0, 0];
