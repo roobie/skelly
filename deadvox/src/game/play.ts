@@ -25,7 +25,7 @@ import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
-import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
@@ -51,6 +51,7 @@ import {
   writeHudOptions,
 } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
+import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
@@ -557,12 +558,12 @@ const configureRestoreFailure = (streamer: Engine['streamer'], saveController: S
   }
 };
 
-const autosaveCheckpointSimSeconds = (registry: Engine['registry']): number => {
+const autosaveTuning = (registry: Engine['registry']) => {
   const autosave = registry.saves.get('autosave');
   if (!autosave) {
     throw new Error('Missing autosave tuning');
   }
-  return autosave.checkpointSimSeconds;
+  return autosave;
 };
 
 export const startPlay = (
@@ -571,6 +572,7 @@ export const startPlay = (
   options: StartPlayOptions = {},
 ): { enter: () => void } => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
+  const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
   const startupHint = $('startup-hint');
   const startupProgress = $('startup-hint-progress') as HTMLProgressElement;
@@ -1390,6 +1392,21 @@ export const startPlay = (
   });
 
   let started = options.restore !== undefined;
+  globalThis.addEventListener('beforeunload', (event) => {
+    if (
+      shouldConfirmPageLeave({
+        gameRunning: started,
+        gameDead: sim.dead !== undefined,
+        saveAvailable: options.saveController?.canSaveCurrentGame ?? false,
+        lastSaveCompletedAtRealTimestamp: options.saveController?.lastCompletedSaveRealTimestamp,
+        nowRealTimestamp: realTimestamp(performance.now() / 1000),
+        confirmationWindowRealSeconds: autosave.leaveConfirmationRealSeconds,
+      })
+    ) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
   let mainMenuOpen = !options.replay;
   let startupHintPending = !options.replay;
   let resumeRequested = false;
@@ -3409,7 +3426,7 @@ export const startPlay = (
       () => sim.time,
       { blockSize: s, site: config.site, storeys: config.storeys, density: config.density },
       {
-        checkpointSimSeconds: autosaveCheckpointSimSeconds(registry),
+        checkpointSimSeconds: autosave.checkpointSimSeconds,
         recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs),
       },
     );
