@@ -36,7 +36,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
+          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
         );
       },
     },
@@ -942,6 +942,7 @@ try {
       globalThis.readingWitness.session.sim.hurt(9999, 'reading browser fixture');
     });
     await page.locator('#death').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#overlay').isVisible(), false);
     assert.equal(await page.locator('#reading').isVisible(), false);
     await page.waitForFunction(() => !globalThis.readingWitness.input.locked);
     await page.evaluate(() => {
@@ -992,6 +993,24 @@ try {
     assert.equal(await page.locator('#death').isVisible(), true);
     assert.equal(await page.getByRole('button', { name: 'New world', exact: true }).isVisible(), true);
     assert.equal(await page.evaluate(() => globalThis.deathMenuPointerLockRequests), 0);
+
+    const playtestUrl = page.url();
+    await page.getByRole('button', { name: 'New world', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#continue').isVisible(), false);
+    await page.goto(playtestUrl, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#continue').isVisible(), false);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#continue').isVisible(), false);
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.readingWitness && globalThis.readingWitness.session.sim.dead === undefined,
+      undefined,
+      { timeout: 60_000 },
+    );
+    assert.equal(await page.locator('#save-confirmation').isVisible(), false);
     proof = { sizes, endVisible, deathMenuOpened, feedbackHref: deathFeedbackHref };
   }
   assert.deepEqual(errors, []);
