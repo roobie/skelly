@@ -283,14 +283,15 @@ try {
     const rootStyle = document.documentElement.style;
     const previousUnit = rootStyle.getPropertyValue('--ui-unit');
     const previousScale = rootStyle.getPropertyValue('--ui-scale');
-    const previousText = hud.textContent;
     const previousHidden = hud.hidden;
+    const fixture = document.createElement('span');
+    fixture.textContent = 'UI scale fixture';
     hud.hidden = false;
-    hud.textContent = 'UI scale fixture';
+    hud.append(fixture);
     const before = hud.getBoundingClientRect();
     applyUiTokens(registry, document.documentElement);
     const after = hud.getBoundingClientRect();
-    hud.textContent = previousText;
+    fixture.remove();
     hud.hidden = previousHidden;
     rootStyle.setProperty('--ui-unit', previousUnit);
     rootStyle.setProperty('--ui-scale', previousScale);
