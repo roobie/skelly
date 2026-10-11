@@ -55,7 +55,7 @@ const entered: readonly InputContext[] = [
   'interrupted',
 ];
 const all: readonly InputContext[] = ['title', ...entered];
-export const HUD_TOGGLE_HOLD_MS = 1000;
+const HUD_TOGGLE_HOLD_MS = 1000;
 // biome-ignore lint/complexity/useMaxParams: compact declarations keep alternative keys and gesture metadata in one catalogue.
 const row = (
   id: string,

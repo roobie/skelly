@@ -11,7 +11,7 @@ export const HUD_OPTION_KEYS = [
   'handling',
   'messages',
 ] as const;
-export type HudOptionKey = (typeof HUD_OPTION_KEYS)[number];
+type HudOptionKey = (typeof HUD_OPTION_KEYS)[number];
 export type HudOptionsState = Record<HudOptionKey, boolean>;
 // The master switch hides the whole HUD without touching each option, so showing it again restores what was shown.
 export type HudSettings = HudOptionsState & { shown: boolean };
