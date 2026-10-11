@@ -2265,16 +2265,16 @@
         },
         {
           "id": 131,
-          "name": "Horde outside the FOB east wall, in earshot of the armoury",
+          "name": "Horde outside the FOB west wall, in earshot of the armoury",
           "type": "horde",
           "point": true,
-          "x": 526,
-          "y": 528,
+          "x": 427,
+          "y": 526,
           "width": 0,
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "horde_id", "type": "string", "value": "fob_east" }]
+          "properties": [{ "name": "horde_id", "type": "string", "value": "fob_west" }]
         }
       ]
     },
