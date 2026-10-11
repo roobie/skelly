@@ -164,13 +164,14 @@ keeps mobgen source imports available; its obstruction predicate must match play
   charged by hand, with exported automatic and hand cycles (DESIGN.md, "Rifles
   (3.2, d114)"). Only a `military` loot table holds them (DESIGN.md, "Military loot
   (3.2, d114)"). The playtest camp's `camp_armoury` rolls `military_armoury`
-  (`src/content/base/camp.jsonnet`); `?debug=1&loadout=ar|ak` remains the shortcut. The debug
-  pump item (no loot table; spawns through the gated debug menu under `?debug=1`)
-  exercises a model in hands and piles. The playable pump uses real 00-buck shells,
+  (`src/content/base/camp.jsonnet`); `?debug=1&loadout=ar|ak` remains the shortcut. The
+  pump item has no loot table: the playtest's `playtest_dads_cabin` holds one
+  (`src/content/base/layouts-playtest.json`), and the gated debug menu under `?debug=1`
+  spawns it. The playable pump uses real 00-buck shells,
   a four-shell tube plus chamber, one-shell loading jobs and manual exported
   hand racking. Its ammunition, nine pellets and loud F4 hearing require no
-  automatic action metadata. It has a fresh `?debug=1&loadout=pump` fixture,
-  but no loot placement yet. That loadout packs a stack of loose shells beside
+  automatic action metadata. It has a fresh `?debug=1&loadout=pump` fixture.
+  That loadout packs a stack of loose shells beside
   the sealed box, so hold R loads from the stack straight away
   (`src/debug/debugLoadout.ts`, `equipDebugLoadout`). Sound/look/feel remain awaiting BR.
   See [pump-shotgun.md](docs/pump-shotgun.md) for controls, estimates and provenance.
