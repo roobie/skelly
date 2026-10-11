@@ -288,7 +288,7 @@ catches up in closed form where it can, and in coarse steps otherwise:
 
 ## Saves
 
-Leaving or reloading a live save-backed game asks the browser to confirm when its last completed storage write is older than the content-defined real-time window. The warning protects progress that closing the tab would lose, while a recent save avoids nagging. Real time measures the interval since the saved snapshot even while the game is paused or its Sim clock is accelerated. Title screens, dead games and games running without save storage do not prompt. Save timing and triggers are owned by `docs/decisions/0002-saves.md`. See `src/game/play.ts`, `startPlay`; `src/ui/saveController.ts`, `SaveController.flush`; and `src/ui/leaveConfirmation.ts`, `shouldConfirmPageLeave`.
+Leaving or reloading a live save-backed game asks the browser to confirm when its latest completed storage write or successful saved-world load is older than the content-defined real-time window; nothing can be lost right after a load. For saves, the window counts from the completed storage write, not from the saved snapshot. It uses real time because the page, not the game, is what the player closes, so it keeps counting while paused or while the Sim clock is sped up. Title screens, dead games, halted play and games without save storage do not prompt. Save timing and triggers are owned by `docs/decisions/0002-saves.md`. See `src/game/play.ts`, `startPlay`; `src/ui/saveController.ts`, `SaveController`; and `src/ui/leaveConfirmation.ts`, `shouldConfirmPageLeave`.
 
 ## World
 
