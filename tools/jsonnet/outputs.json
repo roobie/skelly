@@ -17,6 +17,10 @@
       "output": "deadvox/src/content/base/saves.json"
     },
     {
+      "source": "deadvox/src/content/base/ui.jsonnet",
+      "output": "deadvox/src/content/base/ui.json"
+    },
+    {
       "source": "site/playtest.jsonnet",
       "output": "site/playtest.json"
     }

@@ -38,6 +38,10 @@ body {
     14px / 1.4 system-ui,
     sans-serif;
 }
+/* CSS zoom keeps scaled DOM hit testing and client geometry aligned; leave the world canvas at its native scale. */
+body > :not(#view):not(script) {
+  zoom: var(--ui-scale);
+}
 #startup-screen {
   position: fixed;
   z-index: var(--ui-layer-startup-screen);
@@ -176,7 +180,7 @@ body.unconscious::after {
   position: fixed;
   left: 12px;
   top: 12px;
-  padding: 8px 10px;
+  padding: calc(var(--ui-unit) * 1) 10px;
   border-radius: 6px;
   pointer-events: none;
   background: var(--panel);
@@ -220,7 +224,7 @@ body.unconscious::after {
   left: 50%;
   top: calc(50% - 44px);
   transform: translateX(-50%);
-  padding: 3px 8px;
+  padding: 3px calc(var(--ui-unit) * 1);
   border: 1px solid var(--accent);
   border-radius: 4px;
   background: var(--panel);
@@ -238,7 +242,7 @@ body.unconscious::after {
   left: 50%;
   top: calc(50% + 48px);
   transform: translateX(-50%);
-  padding: 8px 14px;
+  padding: calc(var(--ui-unit) * 1) 14px;
   border: 1px solid var(--accent);
   border-radius: 6px;
   pointer-events: none;
@@ -258,7 +262,7 @@ body.unconscious::after {
   max-width: min(680px, calc(100vw - 24px));
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: calc(var(--ui-unit) * 1);
   padding: 10px 12px;
   border: 1px solid #d47b62;
   border-radius: 6px;
@@ -320,7 +324,7 @@ body.unconscious::after {
   position: relative;
   width: min(360px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
-  margin-right: 16px;
+  margin-right: calc(var(--ui-unit) * 2);
 }
 /* This card is opaque because there is no dimming layer behind it. */
 #overlay .card {
@@ -329,7 +333,7 @@ body.unconscious::after {
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   margin: 0;
-  padding: 24px;
+  padding: calc(var(--ui-unit) * 3);
   border: 1px solid var(--line);
   border-radius: 10px;
   background: rgb(18 20 24);
@@ -374,7 +378,7 @@ body.unconscious::after {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 2px 14px;
-  margin: 0 0 16px;
+  margin: 0 0 calc(var(--ui-unit) * 2);
 }
 #overlay dt {
   font-family: ui-monospace, monospace;
@@ -386,7 +390,7 @@ body.unconscious::after {
 #overlay #controls-search {
   display: block;
   width: 100%;
-  margin: 4px 0 8px;
+  margin: 4px 0 calc(var(--ui-unit) * 1);
 }
 #overlay #controls {
   grid-template-columns: minmax(0, 1fr);
@@ -449,13 +453,13 @@ body.unconscious::after {
 }
 #death .card {
   max-width: 420px;
-  padding: 24px;
+  padding: calc(var(--ui-unit) * 3);
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel);
 }
 #death h1 {
-  margin: 0 0 8px;
+  margin: 0 0 calc(var(--ui-unit) * 1);
   font-size: 22px;
 }
 #death p {
@@ -486,7 +490,7 @@ body.unconscious::after {
   gap: 10px;
   min-width: 0;
   min-height: 0;
-  padding: 14px 16px;
+  padding: 14px calc(var(--ui-unit) * 2);
   border: 1px solid var(--line);
   border-radius: 10px;
   background: rgb(16 18 22 / 96%);
@@ -496,7 +500,7 @@ body.unconscious::after {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
+  gap: calc(var(--ui-unit) * 1) calc(var(--ui-unit) * 2);
   min-width: 0;
 }
 .inv-title {
@@ -669,7 +673,7 @@ body.unconscious::after {
   background: #1b1e23;
 }
 .inv-body-panel {
-  gap: 8px;
+  gap: calc(var(--ui-unit) * 1);
 }
 .inv-body-vitals,
 .inv-body-region {
@@ -708,8 +712,8 @@ body.unconscious::after {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: calc(var(--ui-unit) * 1);
+  padding: 4px calc(var(--ui-unit) * 1);
   border: 1px dashed #39414b;
   border-radius: 6px;
 }
@@ -825,7 +829,7 @@ body.unconscious::after {
 }
 .inv-item-slot {
   position: relative;
-  padding: 4px 8px;
+  padding: 4px calc(var(--ui-unit) * 1);
   font-size: 13px;
 }
 .inv-item.selected {
@@ -938,8 +942,8 @@ body.unconscious::after {
 .inv-option {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: calc(var(--ui-unit) * 1);
+  padding: 5px calc(var(--ui-unit) * 1);
   border-radius: 6px;
   font-size: 13px;
   text-align: left;
@@ -976,7 +980,7 @@ button.inv-option.game-cursor-hover {
   flex-direction: column;
   gap: 4px;
   min-height: 48px;
-  padding: 8px 12px;
+  padding: calc(var(--ui-unit) * 1) 12px;
   border: 1px solid #2a3038;
   border-radius: 8px;
   background: #15171b;
@@ -990,7 +994,7 @@ button.inv-option.game-cursor-hover {
 .inv-job {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) 120px 52px;
-  gap: 8px;
+  gap: calc(var(--ui-unit) * 1);
   align-items: center;
   font-size: 13px;
 }
@@ -1056,7 +1060,7 @@ button.inv-option.game-cursor-hover {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 5px 8px;
+  padding: 5px calc(var(--ui-unit) * 1);
   border: 1px solid #39414b;
   border-radius: 6px;
   background: var(--panel);
@@ -1094,7 +1098,7 @@ button.inv-option.game-cursor-hover {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: 8px 12px;
+  padding: calc(var(--ui-unit) * 1) 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -1121,10 +1125,10 @@ button.inv-option.game-cursor-hover {
   color: var(--accent);
 }
 .inv-skill-list {
-  gap: 8px;
+  gap: calc(var(--ui-unit) * 1);
 }
 .inv-skill {
-  padding: 8px 0;
+  padding: calc(var(--ui-unit) * 1) 0;
   border-top: 1px solid #2a3038;
 }
 .inv-skill-heading {
@@ -1174,7 +1178,7 @@ body.resting #handling {
   left: 12px;
   bottom: 12px;
   max-width: 60ch;
-  padding: 8px 10px;
+  padding: calc(var(--ui-unit) * 1) 10px;
   border-radius: 6px;
   background: #5a1d1d;
   white-space: pre-wrap;
@@ -1225,7 +1229,7 @@ body.resting #handling {
 .audio-options__row {
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr) 38px;
-  gap: 8px;
+  gap: calc(var(--ui-unit) * 1);
   align-items: center;
   margin: 5px 0;
   color: var(--muted);
@@ -1259,7 +1263,7 @@ body.resting #handling {
   padding-left: 18px;
 }
 #overlay .credits li {
-  margin: 0 0 8px;
+  margin: 0 0 calc(var(--ui-unit) * 1);
 }
 
 /* ---- spawn menu (debug) ---- */
@@ -1278,7 +1282,7 @@ body.resting #handling {
   max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: calc(var(--ui-unit) * 1);
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -1293,7 +1297,7 @@ body.resting #handling {
 }
 #spawn input {
   font: inherit;
-  padding: 6px 8px;
+  padding: 6px calc(var(--ui-unit) * 1);
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #0e1013;
@@ -1309,8 +1313,8 @@ body.resting #handling {
 #spawn button {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: calc(var(--ui-unit) * 1);
+  padding: 5px calc(var(--ui-unit) * 1);
   border: 1px solid #39414b;
   border-radius: 6px;
   background: #22262c;
@@ -1355,7 +1359,7 @@ body.bench #quickbar {
   border-collapse: collapse;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  margin: 8px 0 12px;
+  margin: calc(var(--ui-unit) * 1) 0 12px;
 }
 #overlay .card.report th,
 #overlay .card.report td {
@@ -1377,7 +1381,7 @@ body.bench #quickbar {
 #overlay .card.report .buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: calc(var(--ui-unit) * 1);
   align-items: center;
 }
 #overlay .card.report button {
@@ -1392,7 +1396,7 @@ body.bench #quickbar {
 #overlay .card.report textarea {
   width: 100%;
   min-height: 140px;
-  margin-top: 8px;
+  margin-top: calc(var(--ui-unit) * 1);
   background: #0e1013;
   color: var(--text);
   border: 1px solid var(--line);
@@ -1404,7 +1408,7 @@ body.bench #quickbar {
 
 /* ---- crafting tab ---- */
 #crafting {
-  padding: 16px;
+  padding: calc(var(--ui-unit) * 2);
   overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -1432,7 +1436,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   display: none;
 }
 #crafting h2 {
-  margin: 0 0 8px;
+  margin: 0 0 calc(var(--ui-unit) * 1);
   font-size: 20px;
 }
 #crafting header p,
@@ -1447,13 +1451,13 @@ body.inventory-open.inventory-tab-crafting #crafting {
   margin: 0 0 6px;
 }
 .craft-components {
-  margin: 8px 0;
+  margin: calc(var(--ui-unit) * 1) 0;
 }
 .craft-gap {
   color: #efb78b;
 }
 .craft-reason {
-  margin: 8px 0 0;
+  margin: calc(var(--ui-unit) * 1) 0 0;
 }
 .craft-start {
   margin-top: 10px;
@@ -1484,7 +1488,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 4px 22px 4px 8px;
+  padding: 4px 22px 4px calc(var(--ui-unit) * 1);
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #0e1013;
@@ -1520,7 +1524,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 .combo-box-option {
   overflow: hidden;
-  padding: 4px 8px;
+  padding: 4px calc(var(--ui-unit) * 1);
   border: 1px solid transparent;
   border-radius: 4px;
   text-overflow: ellipsis;
@@ -1548,7 +1552,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   bottom: 76px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 12px 16px;
+  padding: 12px calc(var(--ui-unit) * 2);
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -1557,7 +1561,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #craft-status progress {
   display: block;
   width: 100%;
-  margin: 8px 0;
+  margin: calc(var(--ui-unit) * 1) 0;
 }
 /* ---- rest and sleep (1.8) ---- */
 #rest {
@@ -1578,7 +1582,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 .rest-card {
   width: min(360px, calc(100vw - 32px));
-  padding: 20px 24px;
+  padding: 20px calc(var(--ui-unit) * 3);
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel);
@@ -1696,7 +1700,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: calc(var(--ui-unit) * 1);
 }
 #debug-ui-root .debug-panel .debug-panel-header {
   justify-content: space-between;
@@ -1836,8 +1840,8 @@ body.inventory-open.inventory-tab-crafting #crafting {
   display: grid;
   grid-template-columns: minmax(105px, 1fr) minmax(90px, 1.2fr) 3.5em;
   align-items: center;
-  gap: 4px 8px;
-  margin: 8px 0;
+  gap: 4px calc(var(--ui-unit) * 1);
+  margin: calc(var(--ui-unit) * 1) 0;
   border: 1px solid var(--line);
   padding: 6px;
   color: var(--text);
@@ -1869,7 +1873,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #debug-ui-root .debug-sound-log {
   margin-top: 10px;
   border-top: 1px solid var(--line);
-  padding-top: 8px;
+  padding-top: calc(var(--ui-unit) * 1);
   font:
     10px / 1.5 ui-monospace,
     monospace;
@@ -1895,7 +1899,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 0 0 8px;
+  margin: 0 0 calc(var(--ui-unit) * 1);
   color: var(--text);
   font:
     11px ui-monospace,
@@ -1971,7 +1975,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   display: grid;
   place-items: center;
   background: #0003;
-  padding: 16px;
+  padding: calc(var(--ui-unit) * 2);
 }
 #reading[hidden] {
   display: none;
@@ -1981,7 +1985,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   flex-direction: column;
   width: min(740px, 100%);
   max-height: calc(100dvh - 32px);
-  padding: clamp(18px, 4vw, 40px);
+  padding: clamp(18px, 4vw, calc(var(--ui-unit) * 5));
   box-sizing: border-box;
   color: #282117;
   background: linear-gradient(115deg, #e8ddbb, #f8efd5 48%, #ecdfbc);
@@ -1994,7 +1998,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
 .reading-paper header {
   display: flex;
   align-items: start;
-  gap: 16px;
+  gap: calc(var(--ui-unit) * 2);
 }
 .reading-paper .reading-title {
   font:

@@ -270,6 +270,40 @@ try {
     window.__pointerCalls.request = 0;
   })()`);
   await waitFor(() => evaluate("Boolean(document.querySelector('#debug-ui-root'))"), 'post-acceptance debug UI mount');
+  const scaledHud = await evaluate(`(async () => {
+    const { buildRegistry } = await import('/src/core/content.ts');
+    const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
+    const { registry, issues } = buildRegistry([{
+      source: 'ui-scale-fixture.json',
+      data: { ui: [{ id: 'core', spacingUnit: 12, hudScale: 1.25 }] },
+    }]);
+    if (issues.length) throw new Error('Invalid UI scale fixture: ' + JSON.stringify(issues));
+    const hud = document.querySelector('#hud');
+    if (!hud) throw new Error('The live HUD is missing');
+    const rootStyle = document.documentElement.style;
+    const previousUnit = rootStyle.getPropertyValue('--ui-unit');
+    const previousScale = rootStyle.getPropertyValue('--ui-scale');
+    const previousText = hud.textContent;
+    const previousHidden = hud.hidden;
+    hud.hidden = false;
+    hud.textContent = 'UI scale fixture';
+    const before = hud.getBoundingClientRect();
+    applyUiTokens(registry, document.documentElement);
+    const after = hud.getBoundingClientRect();
+    hud.textContent = previousText;
+    hud.hidden = previousHidden;
+    rootStyle.setProperty('--ui-unit', previousUnit);
+    rootStyle.setProperty('--ui-scale', previousScale);
+    return { before: { width: before.width, height: before.height }, after: { width: after.width, height: after.height } };
+  })()`);
+  assert.ok(
+    scaledHud.before.width > 0 && scaledHud.before.height > 0,
+    `visible HUD element: ${JSON.stringify(scaledHud)}`,
+  );
+  assert.ok(
+    scaledHud.after.width > scaledHud.before.width && scaledHud.after.height > scaledHud.before.height,
+    `non-default core-mod spacing and HUD scale increase a live HUD element's computed size: ${JSON.stringify(scaledHud)}`,
+  );
   graphics = await evaluate(`({
     renderMode: ${JSON.stringify(renderMode)},
     webglContextRequests: window.__webglContextRequests.slice(),

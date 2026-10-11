@@ -199,6 +199,14 @@ const InventoryTuningSchema = strictObject({
   containerMaxWidthCells: Cells,
 });
 
+const UiTuningSchema = strictObject({
+  id: Id,
+  /** Base spacing unit in CSS pixels. */
+  spacingUnit: Positive,
+  /** Scale for DOM HUD and UI chrome; the world canvas is not scaled. */
+  hudScale: Positive,
+});
+
 const SaveTuningSchema = strictObject({
   id: Id,
   /** Simulated seconds of play between periodic checkpoints, independent of the clock ratio. */
@@ -1513,6 +1521,7 @@ const SECTION_DESCRIPTOR = {
   weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
+  ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 19 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1543,6 +1552,7 @@ export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type UiTuningDef = InferOutput<typeof UiTuningSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof typeof SECTION_DESCRIPTOR;

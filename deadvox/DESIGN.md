@@ -23,6 +23,7 @@ read_if:
   - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing the HUD defaults or why players can turn HUD elements off
+  - you're changing content-defined UI spacing or HUD scale
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
@@ -1504,6 +1505,12 @@ decoration.
   affordances grow. See `src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. Utilities
   such as the compass and the wristwatch are items the player finds and holds
   (#183).
+- Core mods can pack the UI for smaller screens and adjust its HUD size
+  independently of browser zoom. `src/content/base/ui.jsonnet`, the `ui`
+  section, owns the values; `src/ui/uiTokens.ts`, `applyUiTokens`, installs them
+  once on the document root. CSS `zoom` scales the DOM interface but leaves
+  the world canvas at its native scale, while browser hit testing and client
+  geometry remain aligned for inventory dragging.
 
 ## Tone
 
