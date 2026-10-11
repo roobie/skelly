@@ -34,6 +34,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'furniture.door.prying.timeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.door.prying.fastestTimeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'furniture.door.prying.strikeIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'furniture.climbable.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'models.action.fire.durationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.action.fire.rearwardSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'models.action.fire.dwellSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

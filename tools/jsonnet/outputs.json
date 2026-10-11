@@ -17,6 +17,10 @@
       "output": "deadvox/src/content/base/items-tools.json"
     },
     {
+      "source": "deadvox/src/content/base/ladders.jsonnet",
+      "output": "deadvox/src/content/base/ladders.json"
+    },
+    {
       "source": "deadvox/src/content/base/locks.jsonnet",
       "output": "deadvox/src/content/base/locks.json"
     },

@@ -109,6 +109,29 @@ export const doorPanel = (entity: BlockEntity, blockSize: number, onBodyFace = f
       };
 };
 
+/** A hatch's panel: flat across the top of its cells while shut, upright on its hinge edge (its facing side) when open. */
+export const hatchPanel = (entity: BlockEntity, blockSize: number): DoorPanelBox => {
+  const w = entity.size[0] * blockSize;
+  const h = entity.size[1] * blockSize;
+  const d = entity.size[2] * blockSize;
+  const t = DOOR_PANEL_THICKNESS;
+  const pivot: Vec3 = [entity.pos[0] * blockSize, entity.pos[1] * blockSize, entity.pos[2] * blockSize];
+  if (!entity.open) {
+    return { pivot, center: [w / 2, h - t / 2, d / 2], size: [w, t, d], rotationY: 0 };
+  }
+  const upright: Record<Facing, Pick<DoorPanelBox, 'center' | 'size'>> = {
+    n: { center: [w / 2, h + d / 2, t / 2], size: [w, d, t] },
+    s: { center: [w / 2, h + d / 2, d - t / 2], size: [w, d, t] },
+    e: { center: [w - t / 2, h + w / 2, d / 2], size: [t, w, d] },
+    w: { center: [t / 2, h + w / 2, d / 2], size: [t, w, d] },
+  };
+  return { pivot, ...upright[entity.facing], rotationY: 0 };
+};
+
+/** The panel a door shows and is picked by: a hatch's, or an upright door's. */
+export const panelFor = (entity: BlockEntity, definition: FurnitureDef, blockSize: number): DoorPanelBox =>
+  definition.door?.hatch ? hatchPanel(entity, blockSize) : doorPanel(entity, blockSize, definition.shape !== undefined);
+
 export const searchTime = (def: FurnitureDef): number => {
   const cells = (def.container?.pockets ?? []).reduce((sum, p) => sum + p.grid[0] * p.grid[1], 0);
   return SEARCH.min + (SEARCH.max - SEARCH.min) * Math.min(1, cells / SEARCH.cellsForMax);

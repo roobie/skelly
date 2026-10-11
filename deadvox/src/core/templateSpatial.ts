@@ -292,7 +292,8 @@ export const templateDoorIssues = (registry: Registry, template: CompiledTemplat
   const solids = new Set(registry.blocks.flatMap((block, index) => (block.solid ? [index] : [])));
   return template.pieces.flatMap((piece, index) => {
     const def = registry.furniture.get(piece.furniture);
-    if (!def?.door || def.shape) {
+    // A hatch opens into the space above and below it, not across a wall.
+    if (!def?.door || def.shape || def.door.hatch) {
       return [];
     }
     const acrossX = piece.facing === 'e' || piece.facing === 'w';

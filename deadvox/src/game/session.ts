@@ -35,6 +35,7 @@ import {
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
+import { climb, ladderAt } from '../core/ladders.ts';
 import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
@@ -1085,8 +1086,26 @@ export const createSession = (options: SessionOptions) => {
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
-    stepBody(body, dt, isSolid, { ...physics, obstacles: standingZombieBodies(), shapeOf: zombieSystem.shapeOf });
+    // Holding jump lets go of a ladder.
+    const ladder = pacedIntent.jump ? undefined : ladderAt(entities, body, physics.stepHeight);
+    const climbing =
+      ladder !== undefined &&
+      climb(body, ladder, {
+        speed: entities.defOf(ladder).climbable!.speedMetresPerSimSecond / s,
+        dt,
+        strafing: pacedIntent.right !== 0,
+      });
+    stepBody(body, dt, isSolid, {
+      ...physics,
+      ...(climbing ? { gravity: 0 } : {}),
+      obstacles: standingZombieBodies(),
+      shapeOf: zombieSystem.shapeOf,
+    });
     updatePlayerSounds(wasGrounded, previousPosition, time);
+    if (climbing) {
+      // A climb down is not a fall: a drop is measured from where the ladder was let go.
+      [, airbornePeakY] = body.pos;
+    }
     const rustle = foliageRustle(rustleClock, {
       body,
       world,
