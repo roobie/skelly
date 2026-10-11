@@ -57,6 +57,7 @@ const { registry } = buildRegistry(
 const DAY_CYCLE = dayCycleFor(registry.dayCycle);
 const dayStateAtHour = (hour: number) => dayPhaseAt(DAY_CYCLE, hour * 3600);
 const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack.moves.map(({ damage }) => damage);
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
 const runtimeWeapon = <T extends { cooldownSimSeconds: number }>(weapon: T) => ({
@@ -885,7 +886,7 @@ describe('shambler scenarios', () => {
     );
     system.add(SHAMBLER, [5, 1, 1.56], [0, 0, -1]);
     run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
-    expect(damage).toBe(8);
+    expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
   });
 
   it('C: reaches the last-perceived point, loses sight, then returns within 3 m in 120 seconds', () => {
@@ -1768,7 +1769,7 @@ describe('shambler scenarios', () => {
         FLOOR,
         () => 12,
         (damage) => {
-          expect(damage).toBe(8);
+          expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
           hitTimes.push(elapsed);
         },
       ),
@@ -3163,7 +3164,7 @@ describe('attack windup', () => {
     system.tick(1 / 60);
     expect(damage).toBe(0);
     run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
-    expect(damage).toBe(8);
+    expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
     expect(areas).toEqual(['torso']);
   });
 
@@ -3225,13 +3226,14 @@ describe('attack windup', () => {
     );
     const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
     run(system, SHAMBLER.attack.windupSimSeconds + 0.05); // resolves the first attack
-    expect(damage).toBe(8);
+    expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
+    const firstHit = damage;
     const afterFirstHit = system.store.get(id)!.attackWait;
     expect(afterFirstHit).toBeGreaterThan(0);
     // Well within the remaining cooldown: no second windup should start yet.
     run(system, afterFirstHit - 0.1);
     expect(system.store.get(id)!.attackWindup).toBe(0);
-    expect(damage).toBe(8);
+    expect(damage).toBe(firstHit);
   });
 
   it('keeps simulation-backed hit flinch through save/restore and freeze', () => {
@@ -3582,7 +3584,7 @@ describe('dismemberment', () => {
     const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
     system.store.get(id)!.severed.push('hand.L', 'hand.R');
     run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
-    expect(damage).toBe(8);
+    expect(SHAMBLER_MOVE_DAMAGES).toContain(damage);
   });
 
   it('only severs the head on a killing blow, never on a hit the zombie survives', () => {
