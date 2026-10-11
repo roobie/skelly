@@ -30,6 +30,7 @@ read_if:
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
+  - you're changing what the death-screen loot tally counts
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
@@ -711,6 +712,11 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `src/core/needs.ts`, `stepNeeds`; `src/game/session.ts`,
   `playerEyeHeightMetres`; `src/ui/style.css`, `body.unconscious`;
   `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
+The death-screen loot tally represents distinct item units taken from
+containers, not inventory actions. Returning an item and taking it again is not
+another find; see `src/core/inventory.ts`, `Inventory.countLooted`, and
+`src/core/items.ts`, `ItemFactory.split`.
+
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
 

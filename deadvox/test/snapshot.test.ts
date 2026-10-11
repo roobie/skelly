@@ -33,6 +33,30 @@ describe('snapshot state components', () => {
     expect(restored.sim.actions.job).toMatchObject({ jobType: 'wait', stopped: false });
     expect(restored.sim.compression.active).toBe(true);
   });
+  it('round-trips loot identity so returning and retaking an item does not recount it', async () => {
+    const source = createRuntime();
+    const pos = source.player.body.pos.map(Math.floor) as [number, number, number];
+    const cupboard = source.inventory.furnish({ type: 'kitchen_cupboard', pos, size: [2, 2, 1], facing: 'n' })!;
+    const beans = source.inventory.create('canned_beans');
+    expect(source.inventory.add(beans, { kind: 'furniture', entity: cupboard, pocket: 0 })).toBe(true);
+    source.inventory.entities.markSearched(cupboard);
+    const pile = { kind: 'pile', pos } as const;
+    expect(source.inventory.move(beans, pile).ok).toBe(true);
+
+    const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    const restoredBeans = restored.inventory.itemByUid(beans.uid)!;
+    const restoredCupboard = restored.entities.byUid(cupboard.uid)!;
+    expect(restoredBeans.lootedCount).toBe(1);
+    expect(restored.inventory.looted.get('canned_beans')).toBe(1);
+
+    expect(restored.inventory.move(restoredBeans, { kind: 'furniture', entity: restoredCupboard, pocket: 0 }).ok).toBe(
+      true,
+    );
+    expect(restored.inventory.move(restoredBeans, pile).ok).toBe(true);
+    expect(restored.inventory.looted.get('canned_beans')).toBe(1);
+  });
+
   it('keeps a crouch toggle and its body height through an inactive long action and deterministic save continuation', () => {
     const uninterrupted = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'rest')).toBeUndefined();

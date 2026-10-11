@@ -333,6 +333,7 @@ const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
   uid: item.uid,
   type: item.type,
   count: item.count,
+  lootedCount: item.lootedCount,
   condition: item.condition,
   charges: item.charges,
   on: item.on,

@@ -30,6 +30,8 @@ type CraftWork<Node> =
 /** Scalar and pocket fields are shared by live items and their saved tree. */
 export interface ItemFields<Node> {
   count: number;
+  /** Units in this stack already included in the death-screen loot tally. */
+  lootedCount?: number;
   /** 0 (ruined) to 1 (pristine). */
   condition: number;
   /** Battery charge, fuel and the like; absent means full (as found). */
@@ -86,6 +88,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     uid: item.uid,
     type: item.type,
     count: item.count,
+    ...(item.lootedCount === undefined ? {} : { lootedCount: item.lootedCount }),
     condition: item.condition,
     ...(item.charges === undefined ? {} : { charges: item.charges }),
     ...(item.on === undefined ? {} : { on: item.on }),
@@ -142,6 +145,15 @@ const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
   }
 };
 
+const assertSavedLootCount = (state: ItemState): void => {
+  if (
+    state.lootedCount !== undefined &&
+    (!Number.isSafeInteger(state.lootedCount) || state.lootedCount < 0 || state.lootedCount > state.count)
+  ) {
+    throw new Error('Invalid saved looted item count');
+  }
+};
+
 const restoreFirearmState = (registry: Registry, def: ItemDef, state: ItemState): FirearmState | undefined => {
   const { firearm } = state;
   if (firearm === undefined) {
@@ -172,6 +184,7 @@ const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): 
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
   assertSavedBurnState(def, state);
+  assertSavedLootCount(state);
   const firearm = restoreFirearmState(registry, def, state);
   const magazineReason =
     magazineContentsReason(registry, state.type, state.cartridges) ?? slotsReason(registry, state.type, state.slots);
@@ -182,6 +195,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     uid: state.uid,
     type: state.type,
     count: state.count,
+    ...(state.lootedCount === undefined ? {} : { lootedCount: state.lootedCount }),
     condition: state.condition,
     ...(state.charges === undefined ? {} : { charges: state.charges }),
     ...(state.on === undefined ? {} : { on: state.on }),
@@ -307,6 +321,11 @@ export class ItemFactory {
     }
     item.count -= count;
     const part: Item = { uid: this.nextUid, type: item.type, count, condition: item.condition };
+    const splitLootedCount = Math.min(item.lootedCount ?? 0, count);
+    if (splitLootedCount > 0) {
+      part.lootedCount = splitLootedCount;
+      item.lootedCount = (item.lootedCount ?? 0) - splitLootedCount;
+    }
     this.nextUid += 1;
     if (item.charges !== undefined) {
       part.charges = item.charges;
