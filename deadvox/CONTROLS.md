@@ -14,6 +14,7 @@ read_if:
   - you change how a locked door advertises its crowbar fallback
   - you change stance hints or first-person held poses
   - you're changing bleeding treatment feedback
+  - you're changing the Backquote HUD toggle or its third-person gestures
 ---
 
 # Controls and input ownership
@@ -177,19 +178,21 @@ both independently scrolling panes.
 - **Wound treatment:** Wield a treatment item such as a rag and left-click to apply it, or hold its quickbar slot; the wheel steps the wielded action. The HUD shows blood and bleeding regions, and the affected wound drips in first person and debug third person. See `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `ItemActionSelection`, `src/game/survival.ts`, `wieldedItemActionHint`, `src/ui/playHud.ts`, `playNeedsText`, and `src/render/gore.ts`, `Gore.dripPlayer`.
 - **Lighting (2026-10-05 14:43):** “lighting need the matches in your hand.”
   See `src/game/primaryAction.ts`, `selectPrimaryAction`.
-- **Interaction hints (2026-10-06 08:35):** BR said “we should make
-  press-and-hold-for-1-second tilde key to toggle messages/hints”. A hold on the
-  rebindable tilde-position key toggles the existing HUD option; a tap does
-  nothing. Debug panel access remains gated. `PressHoldInput` in
-  `src/game/pressHoldInput.ts` owns the elapsed-time gesture;
-  `HUD_HINTS_HOLD_MS` in `src/game/inputBindings.ts` owns its threshold.
+- **HUD toggle:** A hold on the rebindable tilde-position key hides or shows the
+  whole HUD, in first and third person. It is a hold, not a tap, because a tap
+  starts the third-person camera gestures and, with F2 held, toggles the debug
+  panel. Hiding never changes an individual HUD option, so the next hold brings
+  back exactly what was shown; INTERFACE.md, "Development and playtest", says
+  what the HUD covers. See `src/game/inputBindings.ts`, `hud.toggle` and
+  `HUD_TOGGLE_HOLD_MS`, and `src/game/backquoteOrbitGesture.ts`,
+  `BackquoteOrbitGesture`.
 - **Noclip flight (2026-10-06 11:22):** “we should use Space for UP and C for
   DOWN” and “and no, F2 is not required for these (in debug mode when noclip is
   active)”. These are the special-circumstance exception to the debug gate;
   they work only while noclip is active, and WASD remains usable during flight.
   See `src/game/inputBindings.ts`, `noclip.ascend` and `noclip.descend`.
 - **Spectator camera (d106-15):** Debug viewing moves a separate camera with the noclip flight step; it never moves the player's body. While detached, the same movement context routes flight input to the camera, and toggling back restores the body view. This is a debug view, not player noclip. See `src/game/play.ts`, `stepSimulation`, and `src/render/playView.ts`, `updateCamera`.
-- **Third-person avatar (d227):** A debug view behind F2; Numpad0 toggles it. In this view, holding Backquote toggles interaction hints; tap then hold Backquote to orbit without turning the avatar, and tap twice to return behind it. The orbit lets you see the avatar from the front and sides, which the follow camera cannot. Orbit persists after release and during the held orbit gesture; pressing a walk direction after release resets it, while sprint, walk-toggle or jump alone does not. A single tap still toggles the debug panel when F2 is held, after a short gesture-disambiguation delay. In first person, Backquote keeps its existing behavior. See `src/game/inputBindings.ts`, `hud.toggle-interaction-hints` and `debug.panel-toggle`, `src/game/backquoteOrbitGesture.ts`, `BackquoteOrbitGesture`, `src/game/thirdPersonOrbit.ts`, `ThirdPersonOrbit`, and `src/render/playView.ts`, `updateCamera`.
+- **Third-person avatar (d227):** A debug view behind F2; Numpad0 toggles it. In this view, holding Backquote toggles the HUD as in first person; tap then hold Backquote to orbit without turning the avatar, and tap twice to return behind it. The orbit lets you see the avatar from the front and sides, which the follow camera cannot. Orbit persists after release and during the held orbit gesture; pressing a walk direction after release resets it, while sprint, walk-toggle or jump alone does not. A single tap toggles the debug panel when F2 is held, after a short gesture-disambiguation delay. First person has no orbit, and there F2 with Backquote toggles the panel at once. See `src/game/inputBindings.ts`, `hud.toggle` and `debug.panel-toggle`, `src/game/backquoteOrbitGesture.ts`, `BackquoteOrbitGesture`, `src/game/thirdPersonOrbit.ts`, `ThirdPersonOrbit`, and `src/render/playView.ts`, `updateCamera`.
 - **Continue (d98; BR, 2026-10-06 11:28):** BR's choice was “1. enter”. Enter
   continues both after an interruption and a stopped craft. See
   `src/game/inputBindings.ts`, `compression.continue` and `craft.continue`.
