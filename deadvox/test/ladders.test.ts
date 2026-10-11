@@ -144,6 +144,55 @@ describe('ladders', () => {
     expect(body.pos[1]).toBeLessThan(letGo);
   });
 
+  it('lets go when strafing across a ladder', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    runtime.set({ ...IDLE, forward: 1, walk: true });
+    const { body } = runtime.session;
+    for (let frame = 0; frame < climbFrames(roofHeight) && body.pos[1] < 1.5; frame++) {
+      runtime.advance(1);
+    }
+    expect(body.pos[1]).toBeGreaterThan(1);
+    runtime.set({ ...IDLE, right: 1 });
+    runtime.advance(1);
+    const [, letGo] = body.pos;
+    runtime.advance(30);
+    expect(body.pos[1]).toBeLessThan(letGo);
+  });
+
+  it('lets go of the ladder while unconscious', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    runtime.set({ ...IDLE, forward: 1, walk: true });
+    const { body } = runtime.session;
+    const simulationBody = runtime.session.sim.body;
+    for (let frame = 0; frame < climbFrames(roofHeight) && body.pos[1] < 1.2; frame++) {
+      runtime.advance(1);
+    }
+    expect(body.pos[1]).toBeGreaterThan(1);
+    simulationBody.impact(30, 'torso', { kind: 'blunt' });
+    simulationBody.impact(30, 'torso', { kind: 'blunt' });
+    expect(simulationBody.actionRefusal).toBeDefined();
+    const [, height] = body.pos;
+    runtime.set(IDLE);
+    runtime.advance(30);
+    expect(body.pos[1]).toBeLessThan(height);
+  });
+
+  it('does not spend stamina when sprint is held on a ladder', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    runtime.set({ ...IDLE, forward: 1, walk: true });
+    const { body } = runtime.session;
+    for (let frame = 0; frame < climbFrames(roofHeight) && body.pos[1] < 1.2; frame++) {
+      runtime.advance(1);
+    }
+    expect(body.pos[1]).toBeGreaterThan(1);
+    const { needs } = runtime.session.sim;
+    const { stamina } = needs;
+    runtime.set({ ...IDLE, forward: 1, sprint: true });
+    runtime.advance(60);
+    expect(runtime.session.sprinting).toBe(false);
+    expect(needs.stamina).toBeGreaterThanOrEqual(stamina);
+  });
+
   it('is not climbed by a shambler under a player on the roof', () => {
     const runtime = houseWithLadder([1, roofTop, 1]);
     const id = runtime.session.zombies.add(registry.zombies.get('shambler')!, [-3, 1, 1], [1, 0, 0]);
@@ -166,7 +215,7 @@ describe('roof hatches', () => {
     const hatch = entities.add({ type: 'roof_hatch', pos: [-1, slab, 0], size: hatchSize('w'), facing: 'w' })!;
     const terrain: SolidAt = (x, y, z) =>
       y === 0 || (y === slab && !(x >= -1 && x < 2 && z >= 0 && z < 2) && Math.abs(x) < 12 && Math.abs(z) < 12);
-    return { hatch, runtime: makeRuntime(terrain, [-2, 1, 1], entities) };
+    return { hatch, runtime: makeRuntime(terrain, [-2, 1, 0.4], entities) };
   };
 
   it('stops the climb while shut and lets the climber out onto the roof once open', () => {
@@ -188,6 +237,8 @@ describe('roof hatches', () => {
     expect(session.body.onGround).toBe(true);
     expect(session.body.pos[1]).toBeCloseTo(slab + 1, 3);
     expect(droppedBack).toBe(false);
+    const topLadder = session.entities.at(0, slab - 1, 1)!;
+    expect(session.body.pos[2]).toBeCloseTo(topLadder.pos[2] + topLadder.size[2] / 2, 2);
   });
 
   it('is picked by its panel from the ladder below while shut and from above while open', () => {

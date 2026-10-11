@@ -327,10 +327,11 @@ hordes stay as they are, and winning should still feel like an achievement.
 - **Climbing.** A ladder is furniture marked `climbable` and stacked one piece
   per layer; its facing is the side the climber stands on. The player climbs by
   walking into it: moving toward the ladder climbs, moving away climbs down,
-  strafing steps off its side, and holding jump lets go. The climber is held on
-  the ladder's centre line, so the body fits through a hatch above. See
-  `src/core/ladders.ts`, `ladderAt` and `climb`, and `src/game/session.ts`,
-  `advancePlayerBody`.
+  strafing steps off its side, and holding jump or being knocked out lets go.
+  The climber is held on the ladder's centre line, so the body fits through a
+  hatch above. Climbing has a fixed speed, so sprinting does not help or spend
+  stamina. See `src/core/ladders.ts`, `ladderAt` and `climb`, and
+  `src/game/session.ts`, `advancePlayerBody` and `advancePlayerMovement`.
 - **The top.** A climb ends with the feet a step above the top piece, where moving
   toward the ladder carries the climber onto the roof. So a ladder that serves a
   roof ends one layer below the roof's top (`src/content/base/ladders.jsonnet`).
@@ -344,13 +345,12 @@ hordes stay as they are, and winning should still feel like an achievement.
   saves its open state; it takes no lock. A ladder is an open frame, so a
   climber reaches through it to the hatch above (`src/core/furniturePick.ts`,
   `firstPickCell`).
-- **Placement.** The workshop ladder stands against the hall's west wall, which
-  has no door to block. The armoury ladder stands free in the room, a body's
-  width from the magazine crate, and climbs east through its hatch, so the
-  climber steps out onto the middle of the roof rather than onto the strip above
-  a wall. See `src/content/base/camp.jsonnet`, `camp_armoury`, and
-  `maps/playtest.tmj`, "Mike's place — ladder up the workshop's west wall to its
-  roof".
+- **Placement.** A roof ladder stands against a wall without a door to block the
+  climb, or free beneath a hatch; either placement lets the climber come out
+  onto the roof rather than the strip above a wall. Leave room for a body in
+  front of the ladder. See
+  `src/content/base/ladders.jsonnet`, `workshop_roof_ladder`, and
+  `src/content/base/camp.jsonnet`, `camp_armoury`.
 
 ### Generating the world in layers
 

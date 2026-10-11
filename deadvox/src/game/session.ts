@@ -1086,8 +1086,9 @@ export const createSession = (options: SessionOptions) => {
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
-    // Holding jump lets go of a ladder.
-    const ladder = pacedIntent.jump ? undefined : ladderAt(entities, body, physics.stepHeight);
+    // Jumping or being unable to act lets go of a ladder.
+    const ladder =
+      pacedIntent.jump || sim.body.actionRefusal ? undefined : ladderAt(entities, body, physics.stepHeight);
     const climbing =
       ladder !== undefined &&
       climb(body, ladder, {
@@ -1186,8 +1187,9 @@ export const createSession = (options: SessionOptions) => {
     time: number,
     { intent, handling, readyGait }: ReturnType<typeof preparePlayerStep>,
   ): void => {
+    const onLadder = ladderAt(entities, body, physics.stepHeight) !== undefined;
     sprinting =
-      !crouching &&
+      !(crouching || onLadder) &&
       intent.sprint &&
       (intent.forward !== 0 || intent.right !== 0) &&
       !handling &&
