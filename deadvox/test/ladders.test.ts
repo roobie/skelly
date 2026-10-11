@@ -2,11 +2,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
+import { dominantSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { HARD_LANDING_METRES } from '../src/core/footsteps.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
+import type { Item } from '../src/core/items.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
+import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { pieceSize } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
@@ -43,10 +46,12 @@ const advanceUntilStandingAt = (runtime: Runtime, height: number, frames: number
   }
 };
 
-const makeRuntime = (terrain: SolidAt, spawn: Vec3, entities: BlockEntities) => {
+const makeRuntime = (terrain: SolidAt, spawn: Vec3, entities: BlockEntities, restore?: Readonly<SaveSnapshot>) => {
   let intent: MoveIntent = { ...IDLE };
   let yaw = FACING_EAST;
+  let dominantUse: () => void = () => undefined;
   const sounds: string[] = [];
+  const refusals: string[] = [];
   const isSolid: SolidAt = (x, y, z) => terrain(x, y, z) || entities.isSolid(x, y, z);
   const session = createSession({
     registry,
@@ -68,6 +73,7 @@ const makeRuntime = (terrain: SolidAt, spawn: Vec3, entities: BlockEntities) => 
       pitch: () => 0,
       walking: () => intent.walk,
       descending: () => false,
+      useDominant: () => dominantUse(),
     },
     audio: {
       play: ({ event }) => {
@@ -75,55 +81,112 @@ const makeRuntime = (terrain: SolidAt, spawn: Vec3, entities: BlockEntities) => 
       },
     },
     notice: () => undefined,
-    refusal: () => undefined,
+    refusal: (text) => {
+      refusals.push(text);
+    },
     onRead: () => undefined,
+    ...(restore ? { restore } : {}),
   });
+  const advance = (frames: number) => {
+    for (let i = 0; i < frames; i++) {
+      session.frame(1 / 60);
+    }
+  };
   return {
     session,
     sounds,
-    advance: (frames: number) => {
-      for (let i = 0; i < frames; i++) {
-        session.frame(1 / 60);
-      }
-    },
+    refusals,
+    advance,
     set: (next: MoveIntent, facing = yaw) => {
       intent = next;
       yaw = facing;
     },
+    /** What the dominant hand's use does, standing in for play's item actions. */
+    onDominantUse: (act: () => void) => {
+      dominantUse = act;
+    },
+    /** Presses the dominant hand's use for one frame, keeping the movement held. */
+    pressDominantUse: () => {
+      const held = intent;
+      intent = { ...held, useDominant: true };
+      advance(1);
+      intent = held;
+    },
   };
 };
 
+/** Grabs the ladder piece in `cell`, as F does, and climbs until the feet reach `height`. */
+const grabAndClimbTo = (runtime: Runtime, cell: Vec3, height: number): void => {
+  const { session } = runtime;
+  const refused = session.grabLadder(session.entities.at(...cell)!);
+  if (refused) {
+    throw new Error(`Could not grab the ladder fixture: ${refused}`);
+  }
+  runtime.set({ ...IDLE, forward: 1, walk: true });
+  for (let frame = 0; frame < climbFrames(height) && session.body.pos[1] < height; frame++) {
+    runtime.advance(1);
+  }
+  if (session.body.pos[1] < height) {
+    throw new Error(`The climb stopped at ${session.body.pos[1]}, short of ${height}`);
+  }
+};
+
+const holdInDominantHand = (runtime: Runtime, type: string): Item => {
+  const { inventory } = runtime.session;
+  const item = inventory.create(type);
+  if (!inventory.add(item, { kind: 'hand', side: dominantSide(inventory.character) })) {
+    throw new Error(`Could not hold the ${type} fixture`);
+  }
+  return item;
+};
+const itemDefs = [...registry.items.values()];
+const twoHandedType = itemDefs.find((def) => def.twoHanded)!.id;
+const oneHandedFoodType = itemDefs.find((def) => def.food && !def.twoHanded)!.id;
+
 /**
  * A windowless block house whose flat roof stands higher than a hard landing, with a ladder of pieces against its
- * west wall that ends a step below the roof, as authored ladders do.
+ * west wall up through the roof's layer, as authored roof-edge ladders are.
  */
 const roofHeight = Math.ceil(HARD_LANDING_METRES / scale.blockSize) + 2;
 const house: SolidAt = (x, y, z) => y === 0 || (x >= 0 && x < 8 && y >= 1 && y < 1 + roofHeight && z >= -4 && z < 6);
 const roofTop = 1 + roofHeight;
-const houseWithLadder = (spawn: Vec3) => {
+const LADDER_FOOT: Vec3 = [-1, 1, 0];
+const houseWithLadder = (spawn: Vec3, restore?: Readonly<SaveSnapshot>) => {
   const entities = new BlockEntities(registry);
-  for (let y = 1; y < roofTop - 1; y++) {
+  for (let y = 1; y < roofTop; y++) {
     entities.add({ type: 'ladder', pos: [-1, y, 0], size: ladderSize('w'), facing: 'w' });
   }
-  return makeRuntime(house, spawn, entities);
+  return makeRuntime(house, spawn, entities, restore);
 };
 
 describe('ladders', () => {
-  it('climbs a ladder walked into and steps off its top onto the roof it serves', () => {
+  it('is climbed once grabbed, not when walked into, and stepped off at its top onto the roof', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
+    const { session } = runtime;
+    const { body } = session;
     runtime.set({ ...IDLE, forward: 1, walk: true });
+    runtime.advance(climbFrames(1));
+    expect(body.pos[0] + body.halfWidth).toBeGreaterThan(LADDER_FOOT[0]);
+    expect(body.pos[1]).toBeCloseTo(1, 3);
+    expect(session.ladderHold.on).toBe(false);
+
+    expect(session.grabLadder(session.entities.at(...LADDER_FOOT)!)).toBeUndefined();
+    runtime.advance(1);
+    expect(session.ladderHold.on).toBe(true);
     advanceUntilStandingAt(runtime, roofTop, climbFrames(roofHeight));
-    const { body } = runtime.session;
     expect(body.onGround).toBe(true);
     expect(body.pos[1]).toBeCloseTo(roofTop, 3);
     expect(body.pos[0] + body.halfWidth).toBeGreaterThan(0);
+    expect(session.ladderHold.on).toBe(false);
   });
 
   it('climbs back down from the roof, which is no fall', () => {
     const runtime = houseWithLadder([1, roofTop, 1]);
+    const { session } = runtime;
+    expect(session.grabLadder(session.entities.at(-1, roofTop - 1, 0)!)).toBeUndefined();
     runtime.set({ ...IDLE, forward: 1, walk: true }, FACING_WEST);
     runtime.advance(climbFrames(roofHeight));
-    const { body } = runtime.session;
+    const { body } = session;
     expect(body.onGround).toBe(true);
     expect(body.pos[1]).toBeCloseTo(1, 3);
     expect(runtime.sounds).not.toContain('player_landing_hard');
@@ -131,12 +194,8 @@ describe('ladders', () => {
 
   it('lets go while jump is held', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
-    runtime.set({ ...IDLE, forward: 1, walk: true });
+    grabAndClimbTo(runtime, LADDER_FOOT, roofTop - 3);
     const { body } = runtime.session;
-    for (let frame = 0; frame < climbFrames(roofHeight) && body.pos[1] < roofTop - 3; frame++) {
-      runtime.advance(1);
-    }
-    expect(body.pos[1]).toBeGreaterThanOrEqual(roofTop - 3);
     runtime.set({ ...IDLE, jump: true });
     runtime.advance(1);
     const [, letGo] = body.pos;
@@ -146,12 +205,8 @@ describe('ladders', () => {
 
   it('lets go when strafing across a ladder', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
-    runtime.set({ ...IDLE, forward: 1, walk: true });
+    grabAndClimbTo(runtime, LADDER_FOOT, 1.5);
     const { body } = runtime.session;
-    for (let frame = 0; frame < climbFrames(roofHeight) && body.pos[1] < 1.5; frame++) {
-      runtime.advance(1);
-    }
-    expect(body.pos[1]).toBeGreaterThan(1);
     runtime.set({ ...IDLE, right: 1 });
     runtime.advance(1);
     const [, letGo] = body.pos;
@@ -161,13 +216,9 @@ describe('ladders', () => {
 
   it('lets go of the ladder while unconscious', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
-    runtime.set({ ...IDLE, forward: 1, walk: true });
+    grabAndClimbTo(runtime, LADDER_FOOT, 1.2);
     const { body } = runtime.session;
     const simulationBody = runtime.session.sim.body;
-    for (let frame = 0; frame < climbFrames(roofHeight) && body.pos[1] < 1.2; frame++) {
-      runtime.advance(1);
-    }
-    expect(body.pos[1]).toBeGreaterThan(1);
     simulationBody.impact(30, 'torso', { kind: 'blunt' });
     simulationBody.impact(30, 'torso', { kind: 'blunt' });
     expect(simulationBody.actionRefusal).toBeDefined();
@@ -177,14 +228,24 @@ describe('ladders', () => {
     expect(body.pos[1]).toBeLessThan(height);
   });
 
+  it('keeps a climber on the ladder through a save', () => {
+    const original = houseWithLadder([-3, 1, 1]);
+    grabAndClimbTo(original, LADDER_FOOT, 1.5);
+    const resumed = houseWithLadder(
+      [-3, 1, 1],
+      original.session.snapshot({ worldId: 'world', characterId: 'character' }),
+    );
+    const { body } = resumed.session;
+    const [, height] = body.pos;
+    expect(height).toBeGreaterThanOrEqual(1.5);
+    resumed.advance(30);
+    expect(resumed.session.ladderHold.on).toBe(true);
+    expect(body.pos[1]).toBeCloseTo(height, 3);
+  });
+
   it('does not spend stamina when sprint is held on a ladder', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
-    runtime.set({ ...IDLE, forward: 1, walk: true });
-    const { body } = runtime.session;
-    for (let frame = 0; frame < climbFrames(roofHeight) && body.pos[1] < 1.2; frame++) {
-      runtime.advance(1);
-    }
-    expect(body.pos[1]).toBeGreaterThan(1);
+    grabAndClimbTo(runtime, LADDER_FOOT, 1.2);
     const { needs } = runtime.session.sim;
     const { stamina } = needs;
     runtime.set({ ...IDLE, forward: 1, sprint: true });
@@ -201,6 +262,50 @@ describe('ladders', () => {
     // It came for the player as far as the wall, into the ladder's cells, and stayed on the ground.
     expect(shambler.body.pos[0] + shambler.body.halfWidth).toBeGreaterThan(-1);
     expect(shambler.body.pos[1]).toBeLessThan(1 + PLAYER.stepHeight / scale.blockSize);
+  });
+});
+
+describe('one hand on a ladder', () => {
+  it('refuses a two-handed item through the refusal notice on a ladder, and uses it off one', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    holdInDominantHand(runtime, twoHandedType);
+    let uses = 0;
+    runtime.onDominantUse(() => {
+      uses += 1;
+    });
+    runtime.pressDominantUse();
+    expect(uses).toBe(1);
+    expect(runtime.refusals).toEqual([]);
+
+    grabAndClimbTo(runtime, LADDER_FOOT, 1.5);
+    runtime.pressDominantUse();
+    expect(uses).toBe(1);
+    expect(runtime.refusals).toHaveLength(1);
+  });
+
+  it('uses a one-handed item on a ladder, holding the climb still until the action ends', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    const { session } = runtime;
+    const food = holdInDominantHand(runtime, oneHandedFoodType);
+    runtime.onDominantUse(() => {
+      expect(session.survival.use(food)).toBeUndefined();
+    });
+    grabAndClimbTo(runtime, LADDER_FOOT, 1.5);
+    runtime.pressDominantUse();
+    expect(runtime.refusals).toEqual([]);
+    expect(session.queue.busy).toBe(true);
+
+    const { body } = session;
+    const [, height] = body.pos;
+    let frames = 0;
+    for (; session.queue.busy && frames < 60 * 60; frames++) {
+      runtime.advance(1);
+      expect(body.pos[1]).toBeCloseTo(height, 6);
+    }
+    expect(session.queue.busy).toBe(false);
+    expect(frames).toBeGreaterThan(1);
+    runtime.advance(30);
+    expect(body.pos[1]).toBeGreaterThan(height);
   });
 });
 
@@ -221,6 +326,7 @@ describe('roof hatches', () => {
   it('stops the climb while shut and lets the climber out onto the roof once open', () => {
     const { hatch, runtime } = underHatch();
     const { session } = runtime;
+    expect(session.grabLadder(session.entities.at(0, 1, 0)!)).toBeUndefined();
     runtime.set({ ...IDLE, forward: 1, walk: true });
     runtime.advance(climbFrames(slab));
     expect(session.body.pos[1] + session.body.height).toBeLessThanOrEqual(slab + 1e-3);
@@ -241,10 +347,10 @@ describe('roof hatches', () => {
     expect(session.body.pos[2]).toBeCloseTo(topLadder.pos[2] + topLadder.size[2] / 2, 2);
   });
 
-  it('is picked by its panel from the ladder below while shut and from above while open', () => {
+  it('is picked through the ladder by a climber, shut from below and open from above, while the ground picks the ladder', () => {
     const { hatch, runtime } = underHatch();
     const { session } = runtime;
-    const pick = (origin: Vec3, direction: Vec3) =>
+    const pick = (origin: Vec3, direction: Vec3, throughLadders: boolean) =>
       pickFurniture({
         entities: session.entities,
         origin,
@@ -252,14 +358,17 @@ describe('roof hatches', () => {
         maxDistance: PLAYER.reach / scale.blockSize,
         blockSize: scale.blockSize,
         isSolid: (x, y, z) => y === slab && !session.entities.at(x, y, z),
+        throughLadders,
       });
+    const groundEye: Vec3 = [-2, 1 + PLAYER.eye / scale.blockSize, 1];
+    expect(session.entities.defOf(pick(groundEye, [1, 0, 0], false)!).climbable).toBeDefined();
     // A climber's eye under the hatch, inside the ladder's top piece on its centre line.
     const below: Vec3 = [0.5, slab - 0.3, 1];
     expect(session.entities.defOf(session.entities.at(0, slab - 1, 1)!).climbable).toBeDefined();
-    expect(pick(below, [0, 1, 0])).toBe(hatch);
+    expect(pick(below, [0, 1, 0], true)).toBe(hatch);
 
     session.entities.setOpen(hatch, true);
-    expect(pick(below, [0, 1, 0])).toBeUndefined();
-    expect(pick([4, slab + 2, 1], [-1, 0, 0])).toBe(hatch);
+    expect(pick(below, [0, 1, 0], true)).toBeUndefined();
+    expect(pick([4, slab + 2, 1], [-1, 0, 0], false)).toBe(hatch);
   });
 });

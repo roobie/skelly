@@ -1820,13 +1820,18 @@ export const startPlay = (
     if (!target) {
       return;
     }
+    // A reload works the firearm with both hands, so a hand on a ladder refuses it.
+    const ladder = (): string | undefined => {
+      const hand = session.ladderHold.hand();
+      return hand && session.ladderHold.refusal(hand);
+    };
     return {
       uid: target.uid,
       busy: () => queue.busy || firearms.busy,
       oneAction: target.oneAction,
-      load: () => admit('firearm.load', target.load(sim.time)),
-      rack: () => admit('firearm.rack', target.rack(sim.time)),
-      remove: () => admit('firearm.remove', target.remove(sim.time)),
+      load: () => admit('firearm.load', ladder() ?? target.load(sim.time)),
+      rack: () => admit('firearm.rack', ladder() ?? target.rack(sim.time)),
+      remove: () => admit('firearm.remove', ladder() ?? target.remove(sim.time)),
       ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
       cancelLoad: target.cancelLoad,
     };
@@ -2187,6 +2192,7 @@ export const startPlay = (
       blockSize: s,
       worldSeed: config.seed,
       isSolid: engine.isOpaque,
+      throughLadders: session.ladderHold.on,
       hasModel: (id) => view.models.has(id),
       downedBodies: [...session.zombieStore.entries()]
         .filter(([, zombie]) => zombie.incapacitated)
@@ -2251,6 +2257,7 @@ export const startPlay = (
       open: entity.open,
       container: Boolean(entity.pockets),
       readable: Boolean(entities.defOf(entity).readable),
+      climbable: Boolean(entities.defOf(entity).climbable),
       restAction: restKindForFurniture(entities.defOf(entity)),
       searched: entity.searched,
       name: nameOf(entity),
@@ -2526,6 +2533,10 @@ export const startPlay = (
       toggleDoor(entity);
       return;
     }
+    if (def.climbable) {
+      refusalReason(session.grabLadder(entity));
+      return;
+    }
     if (def.readable) {
       const reason = session.readFurniture(entity);
       if (reason) {
@@ -2750,7 +2761,8 @@ export const startPlay = (
         );
         return;
       case 'fists':
-        swing(action.hand);
+        // On a ladder only the free hand swings.
+        swing(session.ladderHold.on ? dominantSide(inventory.character) : action.hand);
         return;
       case 'noop':
         return;

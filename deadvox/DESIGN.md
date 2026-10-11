@@ -326,16 +326,33 @@ perch is a thank-you for getting there, not a removed threat: the amalgam and th
 hordes stay as they are, and winning should still feel like an achievement.
 
 - **Climbing.** A ladder is furniture marked `climbable` and stacked one piece
-  per layer; its facing is the side the climber stands on. The player climbs by
-  walking into it: moving toward the ladder climbs, moving away climbs down,
-  strafing steps off its side, and holding jump or being knocked out lets go.
-  The climber is held on the ladder's centre line, so the body fits through a
-  hatch above. Climbing has a fixed speed, so sprinting does not help or spend
-  stamina. See `src/core/ladders.ts`, `ladderAt` and `climb`, and
-  `src/game/session.ts`, `advancePlayerBody` and `advancePlayerMovement`.
-- **The top.** A climb ends with the feet a step above the top piece, where moving
-  toward the ladder carries the climber onto the roof. So a ladder that serves a
-  roof ends one layer below the roof's top (`src/content/base/ladders.jsonnet`).
+  per layer; its facing is the side the climber stands on. Getting on is a
+  choice, like opening a door: the interact key grabs a ladder, and the climb
+  starts once the body reaches it, while walking into one does nothing. On it,
+  moving toward the ladder climbs and moving away climbs down. Holding jump lets
+  go anywhere, which is the way off mid-ladder; stepping off its top, bottom or
+  side and being knocked out also let go, as does walking away from a ladder
+  grabbed but not reached. The climber is held on the ladder's centre line, so
+  the body fits through a hatch above. Climbing has a fixed speed, so sprinting,
+  load and injury neither help nor slow it, and it spends no stamina. See
+  `src/core/ladders.ts`, `LadderHold`, `ladderAt` and `climb`, and
+  `src/game/session.ts`, `advancePlayerBody`.
+- **One hand.** A climber holds on with the off hand, so the dominant hand stays
+  free and the climb waits while it works. A one-handed action works on a
+  ladder (an attack, a throw, eating, the interact key at a hatch), and the
+  climber stays still while a swing, a firearm's handling or a timed action such
+  as eating runs. Using the off hand, or anything that needs both hands (using or
+  readying a two-handed item, or reloading a firearm), is refused through the
+  usual refusal notice; an item in the off hand stays held.
+  See `src/core/ladders.ts`, `LadderHold.refusal`, and `src/game/session.ts`,
+  `dispatchPlayerActions`.
+- **The top.** A climb ends with the feet level with the top piece, where moving
+  toward the ladder carries the climber off onto what it serves. So a ladder up a
+  roof edge reaches through the roof's layer, and the climber walks off at roof
+  level. A ladder under a hatch can't reach into the layer the hatch fills, so it
+  ends just below, and a climber going up steps up through the open hatch the way
+  a walker steps up a ledge (`src/content/base/ladders.jsonnet`, and
+  `src/core/physics.ts`, `braced`).
 - **No fall.** Climbing down is not a fall: a hard landing is measured from where
   the climber let go of the ladder.
 - **Shamblers don't climb.** A shambler passes through a ladder's cells like any
@@ -344,8 +361,9 @@ hordes stay as they are, and winning should still feel like an achievement.
   facing side (`door.hatch`; `src/core/blockEntities.ts`, `hatchPanel`). Like a
   door, it blocks while shut, opens with the interact key from either side and
   saves its open state; it takes no lock. A ladder is an open frame, so a
-  climber reaches through it to the hatch above (`src/core/furniturePick.ts`,
-  `firstPickCell`).
+  climber reaches through it to the hatch above, while a player off the ladder
+  picks the ladder itself to grab it (`src/core/furniturePick.ts`,
+  `throughLadders`).
 - **Placement.** A roof ladder stands against a wall without a door to block the
   climb, or free beneath a hatch; either placement lets the climber come out
   onto the roof rather than the strip above a wall. Leave room for a body in

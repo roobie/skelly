@@ -56,6 +56,8 @@ export interface FurniturePickOptions {
   maxDistance: number;
   blockSize: number;
   isSolid: SolidAt;
+  /** A climber's ray passes through ladders, an open frame, to reach the hatch above. */
+  throughLadders?: boolean;
 }
 
 interface PanelHit {
@@ -101,18 +103,19 @@ const firstPickCell = ({
   direction,
   maxDistance,
   isSolid,
+  throughLadders,
 }: {
   entities: BlockEntities;
   origin: Vec3;
   direction: Vec3;
   maxDistance: number;
   isSolid: SolidAt;
+  throughLadders: boolean;
 }): RayHit | undefined =>
   raycast(origin, direction, maxDistance, (x, y, z) => {
     const entity = entities.at(x, y, z);
     const definition = entity && entities.defOf(entity);
-    // A ladder is an open frame: a climber reaches through it to the hatch above.
-    if (!definition || definition.climbable) {
+    if (!definition || (throughLadders && definition.climbable)) {
       return isSolid(x, y, z);
     }
     return !definition.door || definition.shape !== undefined || !entity!.open;
@@ -163,6 +166,7 @@ export const pickFurnitureAndObstruction = ({
   maxDistance,
   blockSize,
   isSolid,
+  throughLadders = false,
 }: FurniturePickOptions): FurnitureAndObstructionHit => {
   const magnitude = Math.hypot(...direction);
   if (magnitude === 0 || maxDistance < 0 || blockSize <= 0) {
@@ -178,7 +182,7 @@ export const pickFurnitureAndObstruction = ({
     maxDistanceMetres: maxMetres,
     blockSize,
   });
-  const cellHit = firstPickCell({ entities, origin, direction: dir, maxDistance, isSolid });
+  const cellHit = firstPickCell({ entities, origin, direction: dir, maxDistance, isSolid, throughLadders });
   return {
     furniture: resolvePick({ entities, panelHit, cellHit, blockSize }),
     obstructionDistanceBlocks: cellHit?.distance,

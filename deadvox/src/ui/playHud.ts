@@ -186,6 +186,7 @@ export interface InteractionHint {
   readonly open: boolean;
   readonly container: boolean;
   readonly readable: boolean;
+  readonly climbable: boolean;
   readonly restAction: 'rest' | 'sleep' | undefined;
   readonly searched: boolean;
   readonly name: string;
@@ -212,6 +213,7 @@ export const playInteractionText = ({
   prying,
   container,
   readable,
+  climbable,
   restAction,
   searched,
   name,
@@ -219,6 +221,9 @@ export const playInteractionText = ({
 }: InteractionHint): string => {
   if (door) {
     return doorInteractionText({ open, doorReason, lock, prying, name });
+  }
+  if (climbable) {
+    return `${labelForAction('world.interact')}: climb the ${name}`;
   }
   if (readable) {
     return `${labelForAction('world.interact')}: read the ${name}`;

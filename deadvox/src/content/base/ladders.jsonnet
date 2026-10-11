@@ -1,6 +1,6 @@
 // Ladders and roof hatches (DESIGN.md, "Ladders and hatches"). A ladder is stacked one piece per layer, so one
-// piece serves any height; a ladder reaching a roof ends one layer below the roof's top, because the climb carries
-// the feet a step above the last piece.
+// piece serves any height. A ladder up a roof edge reaches the roof's layer, so the climb ends with the feet level
+// with the roof; one under a hatch ends below it, and the climber steps up through the open hatch.
 local rail = function(x) { position: [x, 0, 0.55], size: [0.12, 1, 0.12] };
 local rung = function(y) { position: [0.1, y, 0.6], size: [1.8, 0.08, 0.08] };
 // A free-standing ladder template: a concrete footing at the foundation layer, flush with the ground like a
@@ -32,8 +32,8 @@ local ladderOnFooting = function(pieces, facing) {
     },
   ],
   templates: [
-    // Against the workshop hall's west wall, which has no door, up to its roof (`workshop_hall` in
+    // Against the workshop hall's west wall, which has no door, up through its roof layer (`workshop_hall` in
     // templates-workshop.json).
-    { id: "workshop_roof_ladder" } + ladderOnFooting(10, "w"),
+    { id: "workshop_roof_ladder" } + ladderOnFooting(11, "w"),
   ],
 }

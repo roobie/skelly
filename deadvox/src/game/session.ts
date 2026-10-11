@@ -36,7 +36,7 @@ import {
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import { climb, ladderAt } from '../core/ladders.ts';
+import { climb, LadderHold } from '../core/ladders.ts';
 import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
@@ -819,6 +819,15 @@ export const createSession = (options: SessionOptions) => {
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
+  /** DESIGN.md, "Ladders and hatches". */
+  const ladderHold = new LadderHold({
+    entities,
+    body,
+    inventory,
+    reachBelow: physics.stepHeight,
+    reach: PLAYER.reach / s,
+    onLadder: restoredPlayer?.onLadder === true,
+  });
   const currentIntent = (): MoveIntent => {
     const input = sampledInput();
     return input.active && !input.inputLocked ? input.intent : IDLE;
@@ -1044,19 +1053,29 @@ export const createSession = (options: SessionOptions) => {
       worldReady: false,
     };
   const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
+    // On a ladder, a hand that holds it, or an item that needs it too, refuses its use.
+    const dominantRefusal = ladderHold.refusal(dominantSide(character));
+    const dominantFree = moving && dominantRefusal === undefined;
     controls.heldDominantUse?.(
       sim.time,
-      moving && Boolean(intent.useDominant),
-      moving && Boolean(intent.useDominantHeld),
+      dominantFree && Boolean(intent.useDominant),
+      dominantFree && Boolean(intent.useDominantHeld),
     );
     if (!moving) {
       return;
     }
+    const use = (refusal: string | undefined, act: (() => void) | undefined): void => {
+      if (refusal) {
+        (options.refusal ?? options.notice)(refusal);
+      } else {
+        act?.();
+      }
+    };
     if (intent.useDominant) {
-      controls.useDominant?.();
+      use(dominantRefusal, controls.useDominant);
     }
     if (intent.useOff) {
-      controls.useOff?.();
+      use(ladderHold.refusal(offSide(character)), controls.useOff);
     }
   };
   /** Where an explosive goes off, in blocks: its pile, its furniture, or the player carrying it. */
@@ -1132,23 +1151,25 @@ export const createSession = (options: SessionOptions) => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
     const jumpStarted = pacedIntent.jump && wasGrounded;
-    steer(body, scale, sampledInput().yaw, pacedIntent);
+    // A climber uses its free hand standing still: the ladder holds it while an item action runs.
+    const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined;
+    const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
+    steer(body, scale, sampledInput().yaw, steered);
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
-    // Jumping or being unable to act lets go of a ladder.
-    const ladder =
-      pacedIntent.jump || sim.body.actionRefusal ? undefined : ladderAt(entities, body, physics.stepHeight);
+    const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
     const climbing =
       ladder !== undefined &&
       climb(body, ladder, {
         speed: entities.defOf(ladder).climbable!.speedMetresPerSimSecond / s,
         dt,
-        strafing: pacedIntent.right !== 0,
+        strafing: steered.right !== 0,
       });
     stepBody(body, dt, isSolid, {
       ...physics,
-      ...(climbing ? { gravity: 0 } : {}),
+      // Only a climb up steps up a ledge: one down would step back onto the roof edge it is leaving.
+      ...(climbing ? { gravity: 0, braced: body.vel[1] >= 0 } : {}),
       obstacles: standingZombieBodies(),
       shapeOf: zombieSystem.shapeOf,
     });
@@ -1184,7 +1205,13 @@ export const createSession = (options: SessionOptions) => {
 
   const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
     const heldFirearm = firearmInHands();
-    const readyInput = moving && Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning);
+    const firearmHand =
+      inventory.hands[dominantSide(character)] === heldFirearm ? dominantSide(character) : offSide(character);
+    // A firearm is raised in the hand that holds it; on a ladder that hand must be free of it.
+    const readyInput =
+      moving &&
+      Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning) &&
+      ladderHold.refusal(firearmHand) === undefined;
     const readyGait = readyInput && !queue.busy;
     const [activeJob] = queue.jobs;
     const preservingReady =
@@ -1237,9 +1264,8 @@ export const createSession = (options: SessionOptions) => {
     time: number,
     { intent, handling, readyGait }: ReturnType<typeof preparePlayerStep>,
   ): void => {
-    const onLadder = ladderAt(entities, body, physics.stepHeight) !== undefined;
     sprinting =
-      !(crouching || onLadder) &&
+      !(crouching || ladderHold.on) &&
       intent.sprint &&
       (intent.forward !== 0 || intent.right !== 0) &&
       !handling &&
@@ -1498,6 +1524,16 @@ export const createSession = (options: SessionOptions) => {
     get crouching() {
       return crouching;
     },
+    /** Whether the player climbs a ladder, so the pick reaches through it, and which hand is on it. */
+    ladderHold,
+    /** F at a ladder grabs it; returns why not. */
+    grabLadder: (entity: BlockEntity): string | undefined => {
+      if (sim.body.actionRefusal) {
+        return sim.body.actionRefusal;
+      }
+      ladderHold.grab(entity);
+      return undefined;
+    },
     get playerEyeHeightMetres() {
       return playerEyeHeightMetres();
     },
@@ -1587,6 +1623,7 @@ export const createSession = (options: SessionOptions) => {
           sprinting,
           firearmReadyWalking,
           handlingPausedForKnockout,
+          onLadder: ladderHold.on,
         }),
         aim,
         survival,

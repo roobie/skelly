@@ -44,6 +44,7 @@ export interface PlayerState {
   sprinting: boolean;
   firearmReadyWalking: boolean;
   handlingPausedForKnockout: boolean;
+  onLadder: boolean;
 }
 
 export const snapshotPlayer = (body: Body, state: Omit<PlayerState, 'body'>): Readonly<PlayerState> =>
@@ -73,6 +74,7 @@ export const restorePlayer = (state: PlayerState): PlayerState => ({
   sprinting: state.sprinting,
   firearmReadyWalking: state.firearmReadyWalking,
   handlingPausedForKnockout: state.handlingPausedForKnockout,
+  onLadder: state.onLadder,
 });
 
 export interface MoveIntent {

@@ -542,6 +542,7 @@ const playerState = obj({
   sprinting: bool,
   firearmReadyWalking: bool,
   handlingPausedForKnockout: bool,
+  onLadder: bool,
 });
 const meleeAction = nullable(
   obj({
