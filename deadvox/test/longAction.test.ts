@@ -295,6 +295,27 @@ describe('core long actions', () => {
     expect(sim.compression.active).toBe(true);
   });
 
+  it('does not resume compression for a craft stopped while bleeding after the wound is dressed', () => {
+    const { sim } = start();
+    sim.actions.stop();
+    sim.body.impact(0, 'leftArm', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+    expect(sim.actions.startWait()).toBe(BODY_TUNING_FIXTURE.bleeding.refusal);
+    expect(sim.actions.resume()).toBeUndefined();
+    sim.frame(1);
+    expect(sim.actions.job).toMatchObject({ jobType: 'craft', stopped: false });
+    expect(sim.compression.active).toBe(false);
+
+    sim.actions.stop();
+    expect(sim.actions.job).toMatchObject({ jobType: 'craft', stopped: true });
+    expect(sim.compression.active).toBe(false);
+    expect(sim.body.treat('leftArm', { bleeding: 100 }, () => 0.5)).toBe(true);
+
+    sim.frame(1);
+
+    expect(sim.actions.job).toMatchObject({ jobType: 'craft', stopped: true });
+    expect(sim.compression.active).toBe(false);
+  });
+
   it('reads at 1× while bleeding refuses compression', () => {
     const { inv, sim } = make();
     const book = inv.create('field_manual');

@@ -86,7 +86,7 @@ const bleedingTierIndex = (severity: number): number | undefined =>
 export class Body implements ModifierActor {
   private readonly state: BodyState;
   readonly tuning: BodyTuningDef;
-  /** The modifiers on the body's bleeding and treatment numbers (`modifiers.ts`); content declares none yet. */
+  /** The modifiers on the body's bleeding and treatment numbers (`modifiers.ts`). */
   readonly modifiers: readonly Modifier[];
 
   constructor(tuning: BodyTuningDef, state: BodyState = BODY_START as BodyState, modifiers: readonly Modifier[] = []) {
@@ -250,8 +250,9 @@ export class Body implements ModifierActor {
     if (!Number.isFinite(amount) || amount < 0) {
       throw new Error('Invalid body damage');
     }
-    const shockDamage =
-      effects.shockDamage ?? (effects.kind === undefined ? 0 : amount * this.tuning.shockPerDamage[effects.kind]);
+    const shockPerDamage =
+      effects.kind === undefined ? 0 : this.modified('body.shockPerDamage', this.tuning.shockPerDamage[effects.kind]);
+    const shockDamage = effects.shockDamage ?? amount * shockPerDamage;
     if (!Number.isFinite(shockDamage) || shockDamage < 0) {
       throw new Error('Invalid shock damage');
     }
@@ -330,7 +331,10 @@ export class Body implements ModifierActor {
     if (!damageImmune) {
       // Blood recovers only in a step where no wound bled.
       this.state.blood = clamp(
-        this.state.blood + (bleeding ? -bloodLoss : this.tuning.bloodRecoveryPerSimSecond * seconds),
+        this.state.blood +
+          (bleeding
+            ? -bloodLoss
+            : this.modified('body.bloodRecoveryPerSimSecond', this.tuning.bloodRecoveryPerSimSecond) * seconds),
       );
     }
     return this.terminalCause();
@@ -431,7 +435,10 @@ export class Body implements ModifierActor {
       const effort = this.modified('treatment.quality', strength) * (min + (max - min) * roll());
       wound = { ...wound, bleeding: dress(wound.bleeding, effort, this.tuning.bleeding.tiers) };
     }
-    if (infection?.stages.some((stage) => stage === wound.infection) && roll() < infection.chance) {
+    if (
+      infection?.stages.some((stage) => stage === wound.infection) &&
+      roll() < this.modified('treatment.infectionChance', infection.chance)
+    ) {
       wound = { ...wound, infection: 'resolved' };
     }
     this.state.wounds[region] = wound;

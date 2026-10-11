@@ -10,6 +10,12 @@ const MODIFIED_EFFECTS = [
   'bleeding.blockCompressionAtLossPerSimSecond',
   /** The strength one treatment application brings; a wound care skill would raise it. */
   'treatment.quality',
+  /** Shock damage per point of localized hit damage. */
+  'body.shockPerDamage',
+  /** Blood recovered per simulation second when no wound bleeds. */
+  'body.bloodRecoveryPerSimSecond',
+  /** The chance that an infection treatment succeeds. */
+  'treatment.infectionChance',
 ] as const;
 export type ModifiedEffect = (typeof MODIFIED_EFFECTS)[number];
 
@@ -20,7 +26,7 @@ export interface Modifier {
   readonly add?: number;
 }
 
-/** Whatever carries modifiers: the body for now. */
+/** Whatever carries modifiers: the body. */
 export interface ModifierActor {
   readonly modifiers: readonly Modifier[];
 }
@@ -28,8 +34,7 @@ export interface ModifierActor {
 /**
  * The one point where modifiers change a number a mechanism reads from content, so a modifier added later
  * reaches every mechanism that reads through it (DESIGN.md, "Bleeding"): the product of the multipliers,
- * then the sum of the adds. It returns `base` unchanged when nothing applies, as for now, while no content
- * declares a modifier.
+ * then the sum of the adds. It returns `base` unchanged when nothing applies. Content declares no modifiers.
  */
 export const modified = (effect: ModifiedEffect, base: number, actor: ModifierActor): number => {
   let product = 1;

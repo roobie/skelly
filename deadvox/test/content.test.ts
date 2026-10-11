@@ -284,6 +284,23 @@ describe('content', () => {
     }
   });
 
+  it('requires unique ids within zombie attack move lists', () => {
+    const zombieFile = base.find(({ source }) => source === 'zombies.json')!;
+    const data = structuredClone(zombieFile.data) as {
+      zombies: { id: string; attack: { moves: { id: string }[] } }[];
+    };
+    const {
+      attack: { moves },
+    } = data.zombies.find(({ attack }) => attack.moves.length > 1)!;
+    moves[1]!.id = moves[0]!.id;
+
+    expect(
+      validateContent({ source: zombieFile.source, data }).some(
+        ({ message }) => message === 'zombie move ids must be unique',
+      ),
+    ).toBe(true);
+  });
+
   it('requires amalgam zombie regions to match the manifest classes exactly', () => {
     for (const [regionId, change] of [
       ['member.leftLeg', 'remove'],

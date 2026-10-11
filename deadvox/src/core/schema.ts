@@ -1217,6 +1217,7 @@ const ZombieSchema = strictObject({
       ),
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
+    check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
   ),
   /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/amalgamCarving.ts): the struck voxel
    * and every voxel within the radius of it. Amalgams only. */

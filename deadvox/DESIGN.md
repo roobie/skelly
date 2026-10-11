@@ -702,9 +702,7 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
   and the rest need treatment. See `Body.advance` and `src/core/needs.ts`,
   `needsAllowRecovery`.
 - **Lights out in a real minute.** At normal speed, the frame driver advances
-  simulation time by real time, since an uncompressed step is the real step times 1
-  (`src/game/frameDriver.ts`, `advanceLiveFrame`). So base content's worst tier
-  loses full blood in about 60 simulation seconds.
+  simulation time at real time (`src/game/frameDriver.ts`, `advanceLiveFrame`).
   - The minute is real only while frames come fast enough. `src/game/play.ts`,
     `frame`, caps each frame's real step so a stall doesn't jump the world. Below
     that rate the whole game runs slower than real time, bleeding included.
@@ -737,11 +735,11 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
 
   See `Body.canTreat` and `Body.treat`, and `src/content/base/items-other.json`.
 - **Modifiers.** `src/core/modifiers.ts`, `modified`, is the one point where
-  modifiers (skills, traits, conditions) change a content number. Treatment
-  quality, loss, closure, the tier chance and the compression threshold all read
-  through it, so a new modifier reaches every mechanism at once. No content
-  declares a modifier yet. A wound care skill would raise treatment quality there,
-  until a skilled player can stop an artery with a rag.
+  modifiers (skills, traits, conditions) change a content number. Every body and
+  treatment number from content passes through it, so a modifier reaches each
+  mechanism that uses that value. `MODIFIED_EFFECTS` in the same module defines
+  the contract; content defines no actor modifiers. A wound care skill could
+  raise treatment quality, letting a skilled player stop an artery with a rag.
 - **Presentation.** Each tier's content sets whether the HUD warns, the notice
   spoken when the worst wound reaches that tier, and how its drips look.
   INTERFACE.md, "HUD", has the wording rules. The inventory body panel names the
