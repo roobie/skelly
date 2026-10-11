@@ -498,7 +498,9 @@ HTML over the game view, and keyboard-first:
 
 - Two panes: **you** (hands, then each worn item with its pockets drawn as
   grids) and **around** (piles, and containers within reach, also as grids).
-  Items move by drag and drop with a destination preview, or with keys. R rotates.
+  Items move by drag and drop with a destination preview, or with keys. The preview
+  shows whether a drop will land by shape, not colour alone, because colour-only
+  status failed to distinguish the outcomes in a playtest. R rotates.
 - So Items fits small zoomed screens, the compact view leaves unused cells out of
   the empty **At your feet** target, and a content-owned width limit keeps an
   oversized locker from dominating the nearby pane; wider containers carry a reason
@@ -507,11 +509,13 @@ HTML over the game view, and keyboard-first:
   `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
   shows its handling time. Weight, exact condition and times are in the item's
-  details. Grid names wrap within the cell and stop after two lines so their
-  visible text distinguishes items; inspection and hand or worn slots keep the
-  full name. `validate` rejects identical visible names among items sharing a
-  category and footprint. See `src/ui/inventoryScreen.ts`, `gridItemName`, and
-  `src/core/content.ts`, `checkItems`.
+  details. Grid names keep their original text size, wrap at word boundaries for
+  all lines that fit, and elide only the remaining suffix; a word breaks only when
+  it is wider than the cell. Full names remain in inspection and hand or worn
+  slots. `validate` catches identical visible names among items sharing a category
+  and footprint using the same layout helper as the grid. See
+  `src/ui/inventoryScreen.ts`, `gridItemName`, and
+  `src/core/inventoryGridName.ts`, `inventoryGridName`.
 - Filters and search, and item details on hover or focus.
 - A **quickbar** of shortcuts to items you carry. BR (2026-10-05, 00:02):
   "one thing that feels not quite right to me is that pressing the quickbar

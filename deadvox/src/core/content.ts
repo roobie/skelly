@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { inventoryGridName } from './inventoryGridName.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import {
   type BlockDef,
@@ -494,37 +495,22 @@ const checkContainerWidth = ({
   });
 };
 
-const GRID_CELL_PX = 48;
-const GRID_NAME_FONT_PX = 14;
-const GRID_NAME_INSETS_PX = 12;
-const GRID_AVERAGE_GLYPH_WIDTH_EM = 0.55;
-const GRID_NAME_LINES = 2;
-
-/** Models the CSS line clamp with average glyph width and the cell's padding and border removed. */
-const approximateVisibleGridName = (name: string, widthCells: number): string => {
-  const charsPerLine = Math.max(
-    1,
-    Math.floor((GRID_CELL_PX * widthCells - GRID_NAME_INSETS_PX) / (GRID_NAME_FONT_PX * GRID_AVERAGE_GLYPH_WIDTH_EM)),
-  );
-  const characters = Array.from(name.replace(/\s+/gu, ' ').trim());
-  const visible = characters.slice(0, charsPerLine * GRID_NAME_LINES);
-  const firstLine = visible.slice(0, charsPerLine).join('').trimEnd();
-  const secondLine = visible.slice(charsPerLine).join('').trimStart();
-  return `${firstLine}\n${secondLine}${characters.length > visible.length ? '…' : ''}`;
+const itemGridNames = (item: ItemDef): Set<string> => {
+  const [width, height] = item.size;
+  return new Set([inventoryGridName(item.name, width, height), inventoryGridName(item.name, height, width)]);
 };
 
 const checkInventoryNameCollisions = (items: readonly ItemDef[], report: Report): void => {
   for (let firstIndex = 0; firstIndex < items.length; firstIndex += 1) {
     const first = items[firstIndex]!;
     const firstFootprint = [...first.size].sort((a, b) => a - b).join('x');
-    const firstWidth = Math.min(...first.size);
-    const firstText = approximateVisibleGridName(first.name, firstWidth);
+    const firstNames = itemGridNames(first);
     for (const second of items.slice(firstIndex + 1)) {
       if (second.category !== first.category || [...second.size].sort((a, b) => a - b).join('x') !== firstFootprint) {
         continue;
       }
-      const secondText = approximateVisibleGridName(second.name, Math.min(...second.size));
-      if (secondText === firstText) {
+      const secondNames = itemGridNames(second);
+      if ([...secondNames].some((name) => firstNames.has(name))) {
         report('items', second.id, '.name', `visible grid name collides with "${first.id}"`);
       }
     }

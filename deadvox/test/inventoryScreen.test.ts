@@ -230,8 +230,8 @@ describe('inventory screen Lit rendering', () => {
 
   it('shows distinct item names in grid cells and uses the same name in the drag ghost', () => {
     const items = new Map(registry.items);
-    const alphaName = `Alpha ${'fixture '.repeat(12)}`;
-    const betaName = `Beta ${'fixture '.repeat(12)}`;
+    const alphaName = 'Can of beans';
+    const betaName = 'Box of matches';
     items.set('fixture_inventory_alpha', {
       id: 'fixture_inventory_alpha',
       name: alphaName,
@@ -265,7 +265,7 @@ describe('inventory screen Lit rendering', () => {
     const cells = [alpha, beta].map((item) => root.querySelector<HTMLElement>(`.inv-item[data-uid="${item.uid}"]`)!);
     const names = cells.map((cell) => cell.querySelector('.inv-item-name')?.textContent?.trim() ?? '');
     const handNode = root.querySelector<HTMLElement>(`.inv-item-slot[data-uid="${handItem.uid}"]`);
-    expect(names.every(Boolean)).toBe(true);
+    expect(names.map((name) => name.replace(/\n/gu, '').trim())).toEqual([alphaName, betaName]);
     expect(names[0]).not.toBe(names[1]);
     expect(cells[0]!.title.startsWith(inv.name(alpha))).toBe(true);
     expect(handNode?.querySelector('.inv-item-name')?.textContent).toBe(inv.name(handItem));
@@ -281,6 +281,36 @@ describe('inventory screen Lit rendering', () => {
     globalThis.window.dispatchEvent(
       new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
     );
+    screen.close();
+  });
+
+  it('marks successful and refused drop previews with distinct shapes', () => {
+    const { root, screen, beans } = setup();
+    const beansSlot = root.querySelector<HTMLElement>(`.inv-item-slot[data-uid="${beans.uid}"]`)!;
+    const floorGrid = root.querySelector<HTMLElement>('.inv-grid[data-target^="pile:"]')!;
+    const wornSlot = root.querySelector<HTMLElement>('.inv-slot-worn[data-target]')!;
+    let hitTarget: HTMLElement = floorGrid;
+    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [hitTarget]);
+
+    beansSlot.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+    );
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    expect(floorGrid.dataset.dropShape).toBe('will-land');
+    expect(floorGrid.dataset.dropMark).toBe('✓');
+
+    hitTarget = wornSlot;
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    expect(wornSlot.dataset.dropShape).toBe('blocked');
+    expect(wornSlot.dataset.dropMark).toBe('×');
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    hitTest.mockRestore();
     screen.close();
   });
 

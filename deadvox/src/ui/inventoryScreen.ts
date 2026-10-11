@@ -13,6 +13,7 @@ import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import { firearmSlotIds } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
+import { inventoryGridName } from '../core/inventoryGridName.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
@@ -270,9 +271,9 @@ const scrollItemWithinAncestor = (row: HTMLElement, parent: HTMLElement, axis: '
   }
 };
 
-const gridItemName = (registry: Inventory['registry'], item: Item): string => {
+const gridItemName = (registry: Inventory['registry'], item: Item, widthCells: number, heightCells: number): string => {
   const def = defOf(registry, item.type);
-  return item.work ? workName(registry, item) : def.name;
+  return inventoryGridName(item.work ? workName(registry, item) : def.name, widthCells, heightCells);
 };
 
 const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
@@ -1161,13 +1162,18 @@ export class InventoryScreen {
                 width: `${w * CELL - 2}px`,
                 height: `${h * CELL - 2}px`,
               },
-          true,
+          { widthCells: w, heightCells: h },
         );
       }),
     };
   }
 
-  private itemViewModel(item: Item, className: string, style?: Record<string, string>, compact = false): ItemViewModel {
+  private itemViewModel(
+    item: Item,
+    className: string,
+    style?: Record<string, string>,
+    compact?: { widthCells: number; heightCells: number },
+  ): ItemViewModel {
     const def = defOf(this.inv.registry, item.type);
     const itemStyle = style ?? {};
     this.byUid.set(item.uid, item);
@@ -1177,7 +1183,9 @@ export class InventoryScreen {
       uid: String(item.uid),
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}`,
       title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(item.condition)}`,
-      name: compact ? gridItemName(this.inv.registry, item) : workName(this.inv.registry, item),
+      name: compact
+        ? gridItemName(this.inv.registry, item, compact.widthCells, compact.heightCells)
+        : workName(this.inv.registry, item),
       count: item.count > 1 ? `×${item.count}` : undefined,
       style:
         Object.keys(itemStyle).length > 0
@@ -1416,7 +1424,7 @@ export class InventoryScreen {
       html`<div
         class=${`inv-ghost cat-${def.category}`}
         style=${`left: ${drag.position[0]}px; top: ${drag.position[1]}px; width: ${w * CELL - 2}px; height: ${h * CELL - 2}px`}
-      ><span class="inv-item-name">${gridItemName(this.inv.registry, drag.item)}</span></div>`,
+      ><span class="inv-item-name">${gridItemName(this.inv.registry, drag.item, w, h)}</span></div>`,
       this.dragRoot,
     );
   }
@@ -1424,6 +1432,8 @@ export class InventoryScreen {
   private clearPreview(): void {
     for (const node of this.root.querySelectorAll<HTMLElement>('.drop-ok, .drop-no')) {
       node.classList.remove('drop-ok', 'drop-no');
+      delete node.dataset.dropShape;
+      delete node.dataset.dropMark;
       for (const property of ['--preview-left', '--preview-top', '--preview-width', '--preview-height']) {
         node.style.removeProperty(property);
       }
@@ -1476,6 +1486,8 @@ export class InventoryScreen {
     const { ok, reason } = this.dropCheck(drag.item, spec, target);
     drag.hover = { target, ok, reason };
     zone.classList.add(ok ? 'drop-ok' : 'drop-no');
+    zone.dataset.dropShape = ok ? 'will-land' : 'blocked';
+    zone.dataset.dropMark = ok ? '✓' : '×';
     if (packedFloor) {
       zone.style.setProperty('--preview-left', '0px');
       zone.style.setProperty('--preview-top', '0px');
