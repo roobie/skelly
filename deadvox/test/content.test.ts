@@ -575,7 +575,7 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_input',
-          name: 'Fixture input',
+          name: 'Input part',
           category: 'tool',
           weight: 1,
           size: [1, 1],
@@ -585,7 +585,7 @@ describe('content', () => {
             yields: [{ item: 'fixture_input', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
           },
         },
-        { id: 'fixture_output', name: 'Fixture output', category: 'tool', weight: 1, size: [1, 1] },
+        { id: 'fixture_output', name: 'Output part', category: 'tool', weight: 1, size: [1, 1] },
       ],
     };
     const valid = structuredClone(data);
