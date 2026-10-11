@@ -658,14 +658,14 @@ and `src/core/content.ts`, `checkItemFirearm`.
   contact after `min(0.4 × cooldown, 0.25 s)`, with recovery filling the rest of
   cooldown. Misses and wall-blocked swings still spend stamina and cooldown.
   Active swings are saved and fingerprinted so Continue preserves one pending
-  hit; changing held items cancels that hit without refunding cooldown. BR
-  (d113-1, 2026-10-06 23:52): “calling it 'cosmetic' seems like a bug”. Holding right
+  hit; changing held items cancels that hit without refunding cooldown. Hit
+  resolution is gameplay, not cosmetic. Holding right
   mouse with a melee weapon or empty hands enters en-garde; holding S while
   en-garde attempts to block incoming melee, with success by melee-combat skill.
-  En-garde does not change movement pace. Following #606, successful blocks and
-  landed player melee hits train melee combat: fighting should train fighting.
-  See `src/game/melee.ts`, `shouldEnterMeleeReady` and `shouldBlockFromEnGarde`,
-  `src/game/session.ts`, `hurtPlayer` and the `PlayerCombat` setup, and
+  En-garde does not change movement pace. Successful blocks and landed player
+  melee hits train melee combat: fighting should train fighting. See
+  `src/game/melee.ts`, `shouldEnterMeleeReady` and `shouldBlockFromEnGarde`,
+  `src/game/session.ts`, `hurtPlayer` and `createSession`, and
   `src/core/playerCombat.ts`, `PlayerCombat.resolveContact`. First-person motions use shared blunt-arc,
   cut-slash, pierce-thrust and alternating-fist profiles; two-handed items
   animate both arms. Confirmed hits add only clamped first-person recoil.
