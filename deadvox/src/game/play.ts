@@ -1346,6 +1346,7 @@ export const startPlay = (
     input.menuPointer = state.menuPointer;
     keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
+    $('go').hidden = state.showGo === false;
     if (options.saveController) {
       options.saveController.setGoLabel(state.goLabel);
     } else {
@@ -1366,7 +1367,7 @@ export const startPlay = (
     startupHint.hidden = !latch.visible;
   };
   const resume = () => {
-    if (replayPlayer) {
+    if (replayPlayer || sim.dead) {
       return;
     }
     resumeRequested = true;
@@ -1771,7 +1772,12 @@ export const startPlay = (
     quickbarInput.cancel();
   };
   keyboardInput.escape = () => {
-    if (reviewMapOpen) {
+    if (sim.dead) {
+      if (reviewMapOpen) {
+        toggleReviewMap(false);
+      }
+      modalCommand('ui.main-menu-toggle');
+    } else if (reviewMapOpen) {
       toggleReviewMap(false);
     } else {
       reading.close();
