@@ -74,7 +74,7 @@ import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
-import { inventoryGridName } from '/src/core/inventoryGridName.ts';
+import { visibleGridName } from '/src/core/inventoryGridName.ts';
 import { BUNDLED_CONTENT } from '/src/game/bundledContent.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
@@ -159,17 +159,16 @@ target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu, bodyRegions: BODY_REGIONS,
   containerMaxWidthCells: registry.inventory.get('player')?.containerMaxWidthCells,
   populatePiles,
-  // Base items upright and turned, plus wide-glyph names that fill every line of small and tall footprints whatever
-  // the base names are.
+  // Base items upright and turned, plus wide-glyph names that overflow small and tall footprints whatever the base
+  // names are. A name's visible start is what validate predicts its cell shows.
   gridNames: [
     ...[...BUNDLED_CONTENT.registry.items.values()].map(({ name, size }) => ({ name, size })),
-    ...['WM mw WM mw WM mw WM mw WM mw WM mw', 'WmWmWmWmWmWmWmWmWm'].flatMap((name) =>
+    ...['WM mw WM mw WM mw WM mw WM mw WM mw', 'WmWmWmWmWmWmWmWmWmWmWmWmWmWm'].flatMap((name) =>
       [[1, 1], [2, 1], [1, 3], [2, 2]].map((size) => ({ name, size })),
     ),
-  ].flatMap(({ name, size: [w, h] }) => [
-    { name: inventoryGridName(name, w, h), w, h },
-    ...(w === h ? [] : [{ name: inventoryGridName(name, h, w), w: h, h: w }]),
-  ]),
+  ].flatMap(({ name, size: [w, h] }) =>
+    (w === h ? [[w, h]] : [[w, h], [h, w]]).map(([cw, ch]) => ({ name, w: cw, h: ch, visible: visibleGridName(name, cw, ch) })),
+  ),
   get capTokenUid() { return capToken?.uid; },
   useUiTuning(tuning) {
     const ui = buildRegistry([{ source: 'ui-tuning-fixture', data: { ui: [{ id: 'core', ...tuning }] } }]);
@@ -522,11 +521,11 @@ try {
   );
   assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
-  // Every grid name fits its box in this browser's UI font at the base tuning. The boxes copy the rendered rack token,
-  // so they keep its classes and gutter. Scroll sizes are read along the lines only: across them, Firefox counts a
-  // font's content area as overflow where it is taller than the line height, so the lines' own box is compared with
-  // the item's content box instead. The browser must also render the model's lines, so a line the browser wraps
-  // can't pass in a box with lines to spare.
+  // Grid names in this browser's UI font at the base tuning, in boxes that copy the rendered rack token, so they keep
+  // its classes and gutter. Each line but the last runs until the next glyph would cross the border, nothing shows
+  // past the border, and the cell shows at least the start validate predicts. Scroll sizes are read along the lines
+  // only: across them, Firefox counts a font's content area as overflow where it is taller than the line height, so
+  // the lines' own box is compared with the item's content box instead.
   const nameFit = await page.evaluate((edge) => {
     const token = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
     const grid = token?.closest('.inv-grid');
@@ -535,8 +534,7 @@ try {
     }
     const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
     const tokenBox = token.getBoundingClientRect();
-    const clipped = [];
-    for (const { name, w, h } of globalThis.scrollFixture.gridNames) {
+    const place = (name, w, h) => {
       const node = token.cloneNode(false);
       node.removeAttribute('data-uid');
       node.classList.remove('selected');
@@ -548,30 +546,101 @@ try {
       span.textContent = name;
       node.append(span);
       grid.append(node);
+      return { node, span };
+    };
+    const contentBox = (node) => {
       const style = getComputedStyle(node);
       const inset = (side) =>
         Number.parseFloat(style[`border${side}Width`]) + Number.parseFloat(style[`padding${side}`]);
       const box = node.getBoundingClientRect();
-      const lines = span.getBoundingClientRect();
-      const lineOverflow = h > w ? span.scrollHeight > span.clientHeight : span.scrollWidth > span.clientWidth;
-      const renderedLines = Math.round(
-        (h > w ? lines.width : lines.height) / Number.parseFloat(getComputedStyle(span).lineHeight),
-      );
+      return {
+        left: box.left + inset('Left'),
+        right: box.right - inset('Right'),
+        top: box.top + inset('Top'),
+        bottom: box.bottom - inset('Bottom'),
+      };
+    };
+    // The centres of a name's glyphs, grouped into the rendered lines by where they sit across the lines.
+    const renderedLines = (span, name, tall) => {
+      const lineHeight = Number.parseFloat(getComputedStyle(span).lineHeight);
+      const lines = [];
+      for (const index of name.split('').keys()) {
+        if (name[index] !== ' ') {
+          const range = document.createRange();
+          range.setStart(span.firstChild, index);
+          range.setEnd(span.firstChild, index + 1);
+          const rect = range.getBoundingClientRect();
+          const glyph = { index, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+          const across = tall ? glyph.x : glyph.y;
+          const line = lines.at(-1);
+          if (line && Math.abs(across - line.across) < lineHeight / 2) {
+            line.glyphs.push(glyph);
+          } else {
+            lines.push({ across, glyphs: [glyph] });
+          }
+        }
+      }
+      return lines;
+    };
+    // The inline size of a run set unbroken in the name's font.
+    const runSize = (span, run, tall) => {
+      const probe = document.createElement('span');
+      probe.style.cssText = 'position: absolute; white-space: pre; visibility: hidden';
+      probe.textContent = run;
+      span.append(probe);
+      const rect = probe.getBoundingClientRect();
+      probe.remove();
+      return tall ? rect.height : rect.width;
+    };
+    const check = ({ name, w, h, visible }) => {
+      const tall = h > w;
+      const { node, span } = place(name, w, h);
+      const inner = contentBox(node);
+      const clip = span.getBoundingClientRect();
+      const lines = renderedLines(span, name, tall);
+      const inlineSize = tall ? inner.bottom - inner.top : inner.right - inner.left;
+      const problems = [];
+      // A line breaks only where its text and the next line's first glyph, set unbroken, overrun the border.
+      const runs = lines.slice(1).map(({ glyphs }, at) => name.slice(lines[at].glyphs[0].index, glyphs[0].index + 1));
+      for (const run of runs.filter((text) => runSize(span, text, tall) <= inlineSize - edge)) {
+        problems.push(`breaks before filling "${run}"`);
+      }
+      const shown = lines
+        .flatMap(({ glyphs }) => glyphs)
+        .filter(({ x, y }) => x > clip.left && x < clip.right && y > clip.top && y < clip.bottom).length;
+      if (shown < visible.replaceAll(' ', '').length) {
+        problems.push(`shows ${shown} glyphs, validate predicts "${visible}"`);
+      }
+      if (tall ? span.scrollHeight > span.clientHeight : span.scrollWidth > span.clientWidth) {
+        problems.push('a line overflows');
+      }
       if (
-        lineOverflow ||
-        renderedLines !== name.split('\n').length ||
-        lines.left < box.left + inset('Left') - edge ||
-        lines.right > box.right - inset('Right') + edge ||
-        lines.top < box.top + inset('Top') - edge ||
-        lines.bottom > box.bottom - inset('Bottom') + edge
+        clip.left < inner.left - edge ||
+        clip.right > inner.right + edge ||
+        clip.top < inner.top - edge ||
+        clip.bottom > inner.bottom + edge
       ) {
-        clipped.push(`${name.replaceAll('\n', '⏎')} [${w}×${h}]`);
+        problems.push('shows past the border');
       }
       node.remove();
-    }
-    return clipped;
+      return {
+        label: `${name} [${w}×${h}]`,
+        problems,
+        runs: runs.length,
+        clipped: shown < name.replaceAll(' ', '').length,
+      };
+    };
+    const results = globalThis.scrollFixture.gridNames.map(check);
+    return {
+      failures: results
+        .filter(({ problems }) => problems.length > 0)
+        .map(({ label, problems }) => `${label}: ${problems.join('; ')}`),
+      filledLines: results.reduce((sum, { runs }) => sum + runs, 0),
+      clippedNames: results.filter(({ clipped }) => clipped).length,
+    };
   }, EDGE);
-  assert.deepEqual(nameFit, [], 'every grid name fits its box');
+  assert.deepEqual(nameFit.failures, [], 'every grid name fills its lines to the border and stays inside it');
+  assert.ok(nameFit.filledLines > 0 && nameFit.clippedNames > 0, `names wrap and clip: ${JSON.stringify(nameFit)}`);
   // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
   await page.setViewportSize({ width: 1280, height: 400 });
   await dragSplitter(0);

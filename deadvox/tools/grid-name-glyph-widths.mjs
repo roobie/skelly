@@ -20,7 +20,9 @@ const SIZES_PX = [8.25, 11, 13.75, 16.5];
 const GLYPHS = [
   ...new Set([
     ...Array.from({ length: 95 }, (_, i) => String.fromCodePoint(0x20 + i)),
-    ...Array.from({ length: 95 }, (_, i) => String.fromCodePoint(0xa1 + i)).filter((glyph) => glyph !== '­'),
+    ...Array.from({ length: 95 }, (_, i) => String.fromCodePoint(0xa1 + i)).filter(
+      (glyph) => glyph.codePointAt(0) !== 0xad,
+    ),
     ...'–—‘’“”…',
   ]),
 ];
