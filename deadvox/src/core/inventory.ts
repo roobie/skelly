@@ -639,7 +639,9 @@ export class Inventory {
   private mergeStack(target: Item, source: Item): void {
     target.count += source.count;
     const lootedCount = (target.lootedCount ?? 0) + (source.lootedCount ?? 0);
-    target.lootedCount = lootedCount;
+    if (lootedCount > 0) {
+      target.lootedCount = lootedCount;
+    }
   }
 
   private validCraftPlan(

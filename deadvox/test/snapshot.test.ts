@@ -57,6 +57,24 @@ describe('snapshot state components', () => {
     expect(restored.inventory.looted.get('canned_beans')).toBe(1);
   });
 
+  it('round-trips a consumed unit from a looted stack without invalidating its marker', async () => {
+    const source = createRuntime();
+    const pos = source.player.body.pos.map(Math.floor) as [number, number, number];
+    const cupboard = source.inventory.furnish({ type: 'kitchen_cupboard', pos, size: [2, 2, 1], facing: 'n' })!;
+    const shells = source.inventory.create('shell_12_gauge_00_buck', 2);
+    expect(source.inventory.add(shells, { kind: 'furniture', entity: cupboard, pocket: 0 })).toBe(true);
+    source.inventory.entities.markSearched(cupboard);
+    expect(source.inventory.move(shells, { kind: 'pile', pos }).ok).toBe(true);
+    expect(source.inventory.looted.get(shells.type)).toBe(2);
+
+    expect(source.inventory.consume(shells, 1)).toBe(true);
+    expect(shells).toMatchObject({ count: 1, lootedCount: 1 });
+    const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    expect(restored.inventory.itemByUid(shells.uid)).toMatchObject({ count: 1, lootedCount: 1 });
+    expect(restored.inventory.looted.get(shells.type)).toBe(2);
+  });
+
   it('keeps a crouch toggle and its body height through an inactive long action and deterministic save continuation', () => {
     const uninterrupted = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'rest')).toBeUndefined();

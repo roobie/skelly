@@ -712,13 +712,13 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `src/core/needs.ts`, `stepNeeds`; `src/game/session.ts`,
   `playerEyeHeightMetres`; `src/ui/style.css`, `body.unconscious`;
   `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
-The death-screen loot tally represents distinct item units taken from
-containers, not inventory actions. Returning an item and taking it again is not
-another find; see `src/core/inventory.ts`, `Inventory.countLooted`, and
-`src/core/items.ts`, `ItemFactory.split`.
-
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
+
+  The death-screen loot tally represents distinct item units taken from
+  containers, not inventory actions. Returning an item and taking it again is not
+  another find; see `src/core/inventory.ts`, `Inventory.countLooted`, and
+  `src/core/items.ts`, `ItemFactory.split`.
 
 ### Bleeding
 
