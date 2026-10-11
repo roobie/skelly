@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { skyAt } from '../src/core/sky.ts';
 import { clampFogginess, DEFAULT_FOGGINESS, skyInWeather } from '../src/core/weather.ts';
+import { phaseMidpoint } from './dayPhaseFixture.ts';
 
 const HOURS = Array.from({ length: 48 }, (_, i) => i / 2);
 const STEPS = [0, 0.1, 0.2, 0.3, 0.5, 0.8, 1];
@@ -49,11 +50,16 @@ describe('fogginess in the sky', () => {
   });
 
   it('keeps dawn and night mistier than noon at the same fogginess', () => {
+    const dawn = phaseMidpoint('dawn') / 3600;
+    const night = phaseMidpoint('night') / 3600;
+    const noon = phaseMidpoint('day') / 3600;
     for (const fogginess of STEPS.filter((f) => f > 0)) {
       const mist = (hour: number) => skyInWeather(skyAt(hour), { fogginess }).heightFog;
-      expect(mist(6.5)).toBeGreaterThan(mist(12));
-      expect(mist(23)).toBeGreaterThan(mist(12));
-      expect(skyInWeather(skyAt(1), { fogginess }).fogFar).toBeLessThan(skyInWeather(skyAt(12), { fogginess }).fogFar);
+      expect(mist(dawn)).toBeGreaterThan(mist(noon));
+      expect(mist(night)).toBeGreaterThan(mist(noon));
+      expect(skyInWeather(skyAt(night), { fogginess }).fogFar).toBeLessThan(
+        skyInWeather(skyAt(noon), { fogginess }).fogFar,
+      );
     }
   });
 

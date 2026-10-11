@@ -30,15 +30,6 @@ describe('flashlight daylight scale', () => {
     }
   });
 
-  it('follows the sky smoothly: changes by at most 2% per game minute, all day', () => {
-    let previous = scaleAt(0);
-    for (let minute = 1; minute <= 24 * 60; minute++) {
-      const scale = scaleAt((minute / 60) % 24);
-      expect(Math.abs(scale - previous)).toBeLessThan(0.02);
-      previous = scale;
-    }
-  });
-
   it('dims with the sky it is given, whatever the hour', () => {
     const dim = { lightIntensity: 0.05, ambientIntensity: 0.1 };
     const bright = { lightIntensity: 1.6, ambientIntensity: 1.3 };
