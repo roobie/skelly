@@ -20,81 +20,53 @@ const gridNameCapacity = (widthCells: number, heightCells: number) => ({
   ),
 });
 
-interface WrappedName {
-  lines: string[];
-  separators: string[];
-}
+const elideWord = (word: string, capacity: number): string =>
+  word.length <= capacity ? word : `${word.slice(0, Math.max(0, capacity - 1))}…`;
 
-const pushLine = (wrapped: WrappedName, text: string, separator: string): void => {
-  wrapped.lines.push(text);
-  wrapped.separators.push(separator);
-};
-
-const appendLongWord = (wrapped: WrappedName, current: string, word: string, capacity: number): string => {
-  if (current) {
-    pushLine(wrapped, current, ' ');
-  }
-  const parts = Array.from({ length: Math.ceil(word.length / capacity) }, (_, index) =>
-    word.slice(index * capacity, (index + 1) * capacity),
-  );
-  for (const part of parts.slice(0, -1)) {
-    pushLine(wrapped, part, '');
-  }
-  return parts.at(-1) ?? '';
-};
-
-const wrapAtWords = (name: string, capacity: number): WrappedName => {
-  const wrapped: WrappedName = { lines: [], separators: [] };
+const wrapAtWords = (name: string, capacity: number): string[] => {
+  const lines: string[] = [];
   let current = '';
-  for (const word of name.replace(/\s+/gu, ' ').trim().split(' ')) {
-    if (!word) {
+  for (const sourceWord of name.replace(/\s+/gu, ' ').trim().split(' ')) {
+    if (!sourceWord) {
       continue;
     }
-    if (word.length > capacity) {
-      current = appendLongWord(wrapped, current, word, capacity);
-      continue;
-    }
+    const word = elideWord(sourceWord, capacity);
     const candidate = current ? `${current} ${word}` : word;
     if (candidate.length <= capacity) {
       current = candidate;
     } else {
-      pushLine(wrapped, current, ' ');
+      lines.push(current);
       current = word;
     }
   }
   if (current) {
-    wrapped.lines.push(current);
+    lines.push(current);
   }
-  return wrapped;
+  return lines;
 };
 
-const appendEllipsis = (line: string, capacity: number, continuesLongWord: boolean): string => {
-  let visible = line;
-  while (visible.length + 1 > capacity) {
-    const lastWord = visible.lastIndexOf(' ');
-    if (lastWord >= 0) {
-      visible = visible.slice(0, lastWord);
-      continue;
-    }
-    visible = continuesLongWord ? visible.slice(0, capacity - 1) : '';
-    break;
+const appendEllipsis = (line: string, capacity: number): string => {
+  if (line.endsWith('…')) {
+    return line;
   }
-  return `${visible}…`;
+  const words = line.split(' ');
+  while (words.length > 0 && words.join(' ').length + 1 > capacity) {
+    words.pop();
+  }
+  return `${words.join(' ')}…`;
 };
 
 /** Approximate the compact grid label at the original font size and the item's cell footprint. */
 export const inventoryGridName = (name: string, widthCells: number, heightCells: number): string => {
-  const { charsPerLine, lines: maxLines } = gridNameCapacity(widthCells, heightCells);
+  const tall = heightCells > widthCells;
+  const { charsPerLine, lines: maxLines } = tall
+    ? gridNameCapacity(heightCells, widthCells)
+    : gridNameCapacity(widthCells, heightCells);
   const wrapped = wrapAtWords(name, charsPerLine);
-  if (wrapped.lines.length <= maxLines) {
-    return wrapped.lines.map((line, index) => line + (wrapped.separators[index] ?? '')).join('\n');
+  if (wrapped.length <= maxLines) {
+    return wrapped.join('\n');
   }
-  const visible = wrapped.lines.slice(0, maxLines);
-  const lastLine = maxLines - 1;
-  visible[lastLine] = appendEllipsis(
-    visible[lastLine]!,
-    charsPerLine,
-    lastLine > 0 && wrapped.separators[lastLine - 1] === '',
-  );
-  return visible.map((line, index) => line + (wrapped.separators[index] ?? '')).join('\n');
+  const visible = wrapped.slice(0, maxLines);
+  visible[maxLines - 1] = appendEllipsis(visible[maxLines - 1]!, charsPerLine);
+  return visible.join('\n');
 };

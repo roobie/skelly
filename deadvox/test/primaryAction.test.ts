@@ -90,9 +90,9 @@ const { registry, issues } = buildRegistry([
           components: [[{ item: 'held_plain', count: 1 }]],
         },
       ],
-      items: capabilities.map(({ kind, ...fields }) => ({
+      items: capabilities.map(({ kind, ...fields }, index) => ({
         ...fields,
-        name: fields.id,
+        name: `F${index}`,
         category: ('category' in fields ? fields.category : undefined) ?? (kind === 'read' ? 'book' : 'tool'),
         weight: 1,
         size: [1, 1],

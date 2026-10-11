@@ -1153,7 +1153,7 @@ export class InventoryScreen {
         const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated);
         return this.itemViewModel(
           item,
-          'inv-item',
+          h > w ? 'inv-item inv-item-tall' : 'inv-item',
           packed
             ? { 'grid-column': `span ${w}`, 'grid-row': `span ${h}` }
             : {
@@ -1422,7 +1422,7 @@ export class InventoryScreen {
     const [w, h] = footprint(def, drag.rotated);
     render(
       html`<div
-        class=${`inv-ghost cat-${def.category}`}
+        class=${`inv-ghost${h > w ? ' inv-item-tall' : ''} cat-${def.category}`}
         style=${`left: ${drag.position[0]}px; top: ${drag.position[1]}px; width: ${w * CELL - 2}px; height: ${h * CELL - 2}px`}
       ><span class="inv-item-name">${gridItemName(this.inv.registry, drag.item, w, h)}</span></div>`,
       this.dragRoot,

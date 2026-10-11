@@ -836,13 +836,18 @@ body.unconscious::after {
   display: block;
   overflow: hidden;
 }
+.inv-item-tall .inv-item-name {
+  writing-mode: vertical-rl;
+  max-height: 100%;
+}
 .inv-item-slot .inv-item-name {
   display: inline;
 }
 .inv-ghost .inv-item-name,
 .inv-item:not(.inv-item-slot) .inv-item-name {
   white-space: pre-line;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .inv-item-count {
   position: absolute;

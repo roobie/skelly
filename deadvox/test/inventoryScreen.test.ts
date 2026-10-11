@@ -9,6 +9,7 @@ import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { inventoryGridName } from '../src/core/inventoryGridName.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
@@ -24,6 +25,23 @@ import { applyReplayActionPayload, type ReplayActionPayload } from '../src/game/
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
+
+const WHITESPACE = /\s+/u;
+
+const gridNameUsesWholeWords = (name: string, rendered: string): boolean => {
+  const sourceWords = name.split(WHITESPACE);
+  return rendered
+    .split('\n')
+    .filter(Boolean)
+    .every((line) =>
+      line.split(WHITESPACE).every((token) => {
+        const elidedWord = token.endsWith('…') ? token.slice(0, -1) : undefined;
+        return elidedWord === undefined
+          ? sourceWords.includes(token)
+          : sourceWords.some((word) => word.startsWith(elidedWord));
+      }),
+    );
+};
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
 const { registry } = buildRegistry(
@@ -265,9 +283,9 @@ describe('inventory screen Lit rendering', () => {
     const cells = [alpha, beta].map((item) => root.querySelector<HTMLElement>(`.inv-item[data-uid="${item.uid}"]`)!);
     const names = cells.map((cell) => cell.querySelector('.inv-item-name')?.textContent?.trim() ?? '');
     const handNode = root.querySelector<HTMLElement>(`.inv-item-slot[data-uid="${handItem.uid}"]`);
-    expect(names.map((name) => name.replace(/\n/gu, '').trim())).toEqual([alphaName, betaName]);
     expect(names[0]).not.toBe(names[1]);
-    expect(cells[0]!.title.startsWith(inv.name(alpha))).toBe(true);
+    expect(cells[0]!.title.startsWith(alphaName)).toBe(true);
+    expect(cells[1]!.title.startsWith(betaName)).toBe(true);
     expect(handNode?.querySelector('.inv-item-name')?.textContent).toBe(inv.name(handItem));
 
     cells[0]!.dispatchEvent(
@@ -281,6 +299,51 @@ describe('inventory screen Lit rendering', () => {
     globalThis.window.dispatchEvent(
       new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
     );
+    screen.close();
+  });
+
+  it('keeps grid-name lines on word boundaries and uses the long edge for tall items', () => {
+    const items = new Map(registry.items);
+    const fixtures = [
+      { id: 'fixture_tall_name', name: 'Fixture baseball bat', size: [1, 4] as [number, number] },
+      { id: 'fixture_knife_name', name: 'Fixture utility knife', size: [1, 3] as [number, number] },
+      {
+        id: 'fixture_long_word_name',
+        name: 'Fixture extraordinarilylongword',
+        size: [1, 1] as [number, number],
+      },
+    ];
+    for (const fixture of fixtures) {
+      items.set(fixture.id, {
+        id: fixture.id,
+        name: fixture.name,
+        category: 'misc',
+        weight: 1,
+        size: fixture.size,
+      });
+    }
+    const { root, screen, inv } = setup({ ...registry, items });
+    const position: [number, number, number] = [1, 0, 0];
+    const placed = fixtures.map((fixture, x) => {
+      const item = inv.create(fixture.id);
+      if (!inv.add(item, { kind: 'pile', pos: position, at: { x, y: 0, rotated: false } })) {
+        throw new Error(`Could not place ${fixture.id} display fixture`);
+      }
+      return { fixture, item };
+    });
+    screen.update();
+
+    for (const { fixture, item } of placed) {
+      const node = root.querySelector<HTMLElement>(`.inv-item[data-uid="${item.uid}"]`)!;
+      const renderedName = node.querySelector('.inv-item-name')?.textContent ?? '';
+      expect(gridNameUsesWholeWords(fixture.name, renderedName)).toBe(true);
+      if (fixture.size[1] > fixture.size[0]) {
+        expect(node.classList.contains('inv-item-tall')).toBe(true);
+      }
+    }
+    const longWordNode = root.querySelector<HTMLElement>(`.inv-item[data-uid="${placed[2]!.item.uid}"]`)!;
+    expect(longWordNode.querySelector('.inv-item-name')?.textContent).toContain('…');
+    expect(inventoryGridName(fixtures[0]!.name, ...fixtures[0]!.size)).not.toContain('\n');
     screen.close();
   });
 
