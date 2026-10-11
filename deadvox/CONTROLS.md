@@ -146,7 +146,9 @@ both independently scrolling panes.
   Neither has a registry entry. Eligible furniture starts these actions through
   the world-interaction binding; see `src/game/play.ts`, `startPlay`.
 - Passing time can't be diegetic, so the character screen offers a Wait button.
-  It is a button, not a rest key, so the no-rest-key ruling stands. Character-screen
+  It is a button, not a rest key, so the no-rest-key ruling stands. A movement
+  key ends the wait, and so does a hit or another emitted interruption, but a
+  shambler nearby never does (DESIGN.md, "Long actions"). Character-screen
   actions reuse movement keys because movement is unused there. See
   `src/game/inputBindings.ts`, `INVENTORY_TAB_BINDINGS` and `inventory.hands`.
 - **Wield, then activate (2026-10-04):** “that's not a thing you do in inventory

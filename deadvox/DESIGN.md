@@ -175,18 +175,38 @@ Crafting, reading, building, disassembly, repair, searching and sleeping are
 **long actions**. A long action has a duration in game time. It runs with
 compression on and shows a progress bar and the game time passing.
 
-- **Starting an action:** a nearby or aware hostile does not block a long
-  action, and time still fast-forwards. BR (2026-10-05 20:09) answered
-  "fast forward". BR (2026-10-05 22:28) chose option B; the lead's wording for
-  B was "No: only a hit or another real event (hunger, thirst...) wakes you".
-  BR said "it's up to the player to make the area safe for them to do the long
-  action. We're not holding hands".
-- **Interruptions:** emitted events such as a hit, loud noise, fire, or a need
-  hitting a threshold stop the action. A shambler noticing the player does not
-  interrupt it. `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
-  emitted events; `src/core/longAction.ts`, `LongActions.syncInterruption`,
-  wakes a sleeper, clears the interruption and frees input. Other actions drop
-  back to real time and ask *Continue* or *Stop*. Progress made so far is kept.
+- **How fast:** each compressing long action ramps up to its own cap, set in
+  content (`src/content/base/compression.jsonnet`), so how fast time passes is
+  tuned without code. Waiting, resting and sleeping get far higher caps than
+  crafting, reading and treatment. Waiting at the work pace was slow and
+  wearing, and a player should be able to sleep through most of a night, while
+  work stays at a pace its progress can be read at. Prying runs at 1×.
+- **Frame cost:** at a high cap one frame covers several Sim seconds, so a
+  long action's Sim step per frame is bounded (`src/core/compression.ts`,
+  `longActionLimits`). The bound lets the highest cap run in full at 60 frames
+  a second in a quiet world. Where many shamblers are active, the frame's cost
+  stays bounded and the fast-forward runs slower instead
+  ([CHALLENGES.md](CHALLENGES.md), 3).
+- **Only an event stops it:** nothing refuses or stops compression because a
+  shambler is near or aware of the player, the debug skip included. A player may
+  wait in a walled-off area with enemies about that can't find or harm them, and
+  whether an area is safe enough is a judgement only the player can make, so the
+  game never makes them clear it first. Emitted events stop the action: a hit or
+  other damage, a need crossing its threshold, a carried light dying, and the
+  debug noise key. `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
+  them and halts the scheduler after the tick that emitted one, so a frame of
+  many Sim seconds still stops at the first hit.
+  `src/core/longAction.ts`, `LongActions.syncInterruption`, wakes a sleeper,
+  clears the interruption and frees input. Other actions drop back to real time
+  and ask *Continue* or *Stop*. Progress made so far is kept.
+- **Stopping:** after a stop, the world runs on for at most a few Sim seconds
+  while compression ramps back down, however high the cap
+  (`src/game/frameDriver.ts`, `RAMP_DOWN_SIM_SECONDS`). A ramp of fixed Real
+  length from a high cap would run the world on for tens of Sim seconds after
+  the player stopped waiting.
+- **Sleep length:** sleep ends when fatigue reaches zero
+  (`LongActions.advanceJob`), which a bed does in a few game hours. Whether
+  sleep should last a full night is BR's open question on #594.
 - **Short handling** (moving an item, reloading, wielding) is not compressed.
   It takes real seconds while the world runs at 1× (see
   [Items](#items-and-inventory)).
@@ -236,7 +256,9 @@ catches up in closed form where it can, and in coarse steps otherwise:
   | Region map (hordes, evolution) | once per game minute |
 
   During compression, the per-tick step for the slow systems grows instead of
-  the number of ticks, so the cost per frame stays bounded.
+  the number of ticks. The fixed-rate systems keep their step, so a frame's Sim
+  step is bounded instead (see [Long actions](#long-actions)), which keeps the
+  cost per frame bounded.
 - **Entities.** Slice 1 uses plain objects behind a small `EntityStore`
   interface. When we have hundreds of zombies, that storage moves to
   structure-of-arrays typed arrays in a worker, without changing the systems'
