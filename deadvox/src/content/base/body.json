@@ -11,6 +11,10 @@
       "healthRecoveryFatigueCeiling": {
         "awake": 80
       },
+      "healthRecoveryNeedsFloor": {
+        "calories": 25,
+        "hydration": 25
+      },
       "healthRecoveryPerGameHour": 2,
       "id": "player",
       "infectionChance": 0.5,

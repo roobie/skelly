@@ -136,6 +136,11 @@ export class Body {
     return this.tuning.sleepRecoveryFactor;
   }
 
+  /** The lowest calories and hydration at which health and regions still recover. */
+  get healthRecoveryNeedsFloor(): Readonly<{ calories: number; hydration: number }> {
+    return this.tuning.healthRecoveryNeedsFloor;
+  }
+
   /** The highest fatigue at which health and regions still recover in this state; none where content sets none. */
   healthRecoveryFatigueCeiling(state: RecoveryState): number {
     return this.tuning.healthRecoveryFatigueCeiling[state] ?? Number.POSITIVE_INFINITY;

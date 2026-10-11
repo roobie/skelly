@@ -659,15 +659,14 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Sleep's main value is recovery.** While asleep, health, regional and blood
   recovery run at `sleepRecoveryFactor` times their awake rate, so a night's
   sleep is how a hurt player heals, not only how they clear debt. Health and
-  regions recover only under a fatigue ceiling that content sets per state.
-  Base content sets one awake and none asleep, so someone too tired heals
-  nothing until they sleep, and sleep heals at any fatigue. One gate decides it
-  (`src/core/needs.ts`, `healthRecovers`); it becomes a content predicate when
-  the expression language lands (#393). Each rate is
-  read once, in `src/core/body.ts` (the `Body` getters
-  `fatigueRisePerGameHour`, `healthRecoveryPerGameHour` and
-  `sleepRecoveryFactor`, `Body.fatigueRecoveryRate`, and `Body.advanceBlood` for
-  blood), so #592's modifier point can wrap it there.
+  regions recover only while calories and hydration are at their floor or above
+  and fatigue is under a ceiling. Content sets all three limits, the fatigue
+  ceiling per state. Base content sets an awake ceiling and none asleep, so
+  someone too tired heals nothing until they sleep, and sleep heals at any
+  fatigue. One gate decides it (`src/core/needs.ts`, `healthRecovers`); it
+  becomes a content predicate when the expression language lands (#393). Each
+  rate and limit is read once, through `Body` in `src/core/body.ts`, so #592's
+  modifier point can wrap it there.
 - **Body.** Injuries affect sight, aim, swings and movement as well as health.
   Each region recovers at health's rate while needs allow health recovery, except
   while that region is bleeding or infected. This lets injury penalties fade

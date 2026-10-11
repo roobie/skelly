@@ -26,8 +26,6 @@ export const NEED_RATES: Readonly<Record<Exclude<Need, 'fatigue'>, number>> = { 
 export type RecoveryState = 'awake' | 'asleep';
 
 const HEALTH = {
-  /** Health recovers while calories and hydration are at least `metAbove` and fatigue is under the state's ceiling. */
-  metAbove: 25,
   /** Lost while starving (calories at 0) and while dehydrated (hydration at 0); both add up. */
   starving: -4,
   dehydrated: -8,
@@ -70,15 +68,18 @@ const isCritical = (needs: Needs, rule: (typeof CRITICAL)[number]): boolean =>
   (rule.below !== undefined && needs[rule.need] < rule.below) ||
   (rule.above !== undefined && needs[rule.need] > rule.above);
 
-/** Recovery per game hour while the needs are met, and the highest fatigue it still runs at. */
+type NeedsFloor = Readonly<{ calories: number; hydration: number }>;
+
+/** Recovery per game hour while the gate is open, and the gate's limits, all from body content. */
 interface Recovery {
   readonly perGameHour: number;
+  readonly needsFloor: NeedsFloor;
   readonly fatigueCeiling: number;
 }
 
-/** The one gate deciding whether health and regions recover now; its fatigue ceiling comes from content per state. */
-const healthRecovers = (needs: Needs, recovery: Recovery): boolean =>
-  needs.calories >= HEALTH.metAbove && needs.hydration >= HEALTH.metAbove && needs.fatigue <= recovery.fatigueCeiling;
+/** The one gate deciding whether health and regions recover now. */
+const healthRecovers = (needs: Needs, { needsFloor, fatigueCeiling }: Recovery): boolean =>
+  needs.calories >= needsFloor.calories && needs.hydration >= needsFloor.hydration && needs.fatigue <= fatigueCeiling;
 
 /** The recovery rate per game hour: `recovery.perGameHour` while the gate is open, else none. */
 const healthRegenRate = (needs: Needs, recovery: Recovery): number =>
@@ -113,12 +114,13 @@ const hoursTo = (value: number, rate: number, level: number): number => {
 
 type Level = readonly [Need, number];
 
-/** The levels where a rate changes: a need emptying, or health's conditions. The fatigue ceiling joins them per step. */
-const NEED_LEVELS: readonly Level[] = [
+/** The levels where a rate changes: a need emptying, or a limit of the recovery gate. */
+const levelsFor = ({ needsFloor, fatigueCeiling }: Recovery): readonly Level[] => [
   ['calories', 0],
-  ['calories', HEALTH.metAbove],
+  ['calories', needsFloor.calories],
   ['hydration', 0],
-  ['hydration', HEALTH.metAbove],
+  ['hydration', needsFloor.hydration],
+  ['fatigue', fatigueCeiling],
 ];
 
 /** Hours until a need reaches the next level. */
@@ -156,6 +158,7 @@ export interface HealthPool {
   readonly health: number;
   readonly fatigueRisePerGameHour: number;
   readonly healthRecoveryPerGameHour: number;
+  readonly healthRecoveryNeedsFloor: NeedsFloor;
   healthRecoveryFatigueCeiling: (state: RecoveryState) => number;
   damageHealth: (amount: number) => number;
   restoreHealth: (amount: number) => void;
@@ -194,9 +197,10 @@ export const stepNeeds = (
   const beforeHealth = body.health;
   const recovery: Recovery = {
     perGameHour: body.healthRecoveryPerGameHour * recoveryFactor,
+    needsFloor: body.healthRecoveryNeedsFloor,
     fatigueCeiling: body.healthRecoveryFatigueCeiling(state),
   };
-  const levels: readonly Level[] = [...NEED_LEVELS, ['fatigue', recovery.fatigueCeiling]];
+  const levels = levelsFor(recovery);
   let left = hours;
   let elapsedGameHours = 0;
   while (left > 0 && body.health > 0) {

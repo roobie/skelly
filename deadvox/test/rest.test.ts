@@ -5,8 +5,9 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Body } from '../src/core/body.ts';
 import { defaultClock, hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { NEED_RATES, type RecoveryState, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
+import { NEED_RATES, type Needs, type RecoveryState, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { BodyTuningDef } from '../src/core/schema.ts';
 import { realSeconds, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
@@ -83,27 +84,43 @@ describe('stepNeeds with a custom fatigue rate', () => {
   });
 });
 
-describe('the healing fatigue gate', () => {
-  /** Health a fed, watered body at 50 regains in half a game hour at this fatigue, with these content ceilings. */
-  const healed = (ceiling: { awake?: number; asleep?: number }, state: RecoveryState, fatigue: number): number => {
-    const body = new Body({ ...BODY_TUNING_FIXTURE, healthRecoveryFatigueCeiling: ceiling });
+describe('the healing gate', () => {
+  /** Health a body at 50 regains in half a game hour with these needs held still, under this body content. */
+  const healed = (tuning: Partial<BodyTuningDef>, held: Partial<Needs>, state: RecoveryState = 'awake'): number => {
+    const body = new Body({ ...BODY_TUNING_FIXTURE, ...tuning });
     body.damageHealth(50);
-    const needs = { ...SPAWN_NEEDS, calories: 100, hydration: 100, fatigue };
+    const needs = { ...SPAWN_NEEDS, calories: 100, hydration: 100, ...held };
     stepNeeds(needs, body, 0.5, { rates: { calories: 0, hydration: 0, fatigue: 0 }, state });
     return body.health - 50;
   };
+  const awakeOnly = { healthRecoveryFatigueCeiling: { awake: 80 } };
 
   it('stops healing awake above the awake ceiling', () => {
-    expect(healed({ awake: 80 }, 'awake', 150)).toBe(0);
-    expect(healed({ awake: 80 }, 'awake', 50)).toBeGreaterThan(0);
+    expect(healed(awakeOnly, { fatigue: 150 })).toBe(0);
+    expect(healed(awakeOnly, { fatigue: 50 })).toBeGreaterThan(0);
   });
 
   it('gates sleep too when content sets an asleep ceiling', () => {
-    expect(healed({ awake: 80, asleep: 100 }, 'asleep', 150)).toBe(0);
-    expect(healed({ awake: 80 }, 'asleep', 150)).toBeGreaterThan(0);
+    expect(healed({ healthRecoveryFatigueCeiling: { awake: 80, asleep: 100 } }, { fatigue: 150 }, 'asleep')).toBe(0);
+    expect(healed(awakeOnly, { fatigue: 150 }, 'asleep')).toBeGreaterThan(0);
   });
 
-  it('heals a sleeper at fatigue 150 from the first step, with no asleep ceiling in content', () => {
+  it('stops healing below each need its content floor', () => {
+    const floor = { healthRecoveryNeedsFloor: { calories: 50, hydration: 30 } };
+    expect(healed(floor, { calories: 40 })).toBe(0);
+    expect(healed(floor, { hydration: 20 })).toBe(0);
+    expect(healed(floor, { calories: 50, hydration: 30 })).toBeGreaterThan(0);
+  });
+
+  it('starts healing the moment sleep brings fatigue under an asleep ceiling, mid-step', () => {
+    const body = new Body({ ...BODY_TUNING_FIXTURE, healthRecoveryFatigueCeiling: { awake: 80, asleep: 100 } });
+    body.damageHealth(50);
+    const needs = { ...SPAWN_NEEDS, calories: 100, hydration: 100, fatigue: 150 };
+    stepNeeds(needs, body, 10, { rates: { calories: 0, hydration: 0, fatigue: -10 }, state: 'asleep' });
+    expect(body.health - 50).toBeCloseTo(5 * body.healthRecoveryPerGameHour, 6);
+  });
+
+  it('heals while fatigue is above the awake ceiling', () => {
     const { sim, rest } = makeRest();
     sim.needs.calories = 100;
     sim.needs.hydration = 100;

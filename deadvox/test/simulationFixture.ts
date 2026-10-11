@@ -22,6 +22,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   sleepFatigueRecoveryPerGameHour: gamePerHour(10),
   roughSleepShare: 0.5,
   healthRecoveryPerGameHour: gamePerHour(2),
+  healthRecoveryNeedsFloor: { calories: 25, hydration: 25 },
   healthRecoveryFatigueCeiling: { awake: 80 },
   sleepRecoveryFactor: 3,
   aimSwayPerDamage: 0.01,
