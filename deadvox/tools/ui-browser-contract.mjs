@@ -758,7 +758,7 @@ try {
   );
   await press('Tab', 'Tab', 9);
   const nearbyAfterEnter = await evaluate(
-    '[...document.querySelectorAll(\'#inventory [data-pane="around"] .inv-item-name\')].map((item) => item.textContent)',
+    "[...document.querySelectorAll('#inventory [data-pane=\"around\"] .inv-item')].map((item) => item.title.split(',')[0])",
   );
   assert.ok(nearbyAfterEnter.includes(selectedSpawnName), 'Enter spawned the selected item');
   await press('Tab', 'Tab', 9);
@@ -771,7 +771,7 @@ try {
   await press('Tab', 'Tab', 9);
   assert.deepEqual(
     await evaluate(
-      '[...document.querySelectorAll(\'#inventory [data-pane="around"] .inv-item-name\')].map((item) => item.textContent)',
+      "[...document.querySelectorAll('#inventory [data-pane=\"around\"] .inv-item')].map((item) => item.title.split(',')[0])",
     ),
     nearbyAfterEnter,
     'Tab dismissed without spawning',
@@ -855,7 +855,7 @@ try {
       overflow: pane.scrollHeight - pane.clientHeight,
       uid: visible?.dataset.uid,
       target: visible?.closest('.inv-grid')?.dataset.target,
-      name: visible?.querySelector('.inv-item-name')?.textContent,
+      name: visible?.title.split(',')[0],
     };
   })()`);
   assert.ok(inventoryScroll.overflow > 1, 'nearby pane has enough items to scroll');
@@ -896,7 +896,7 @@ try {
   await dragInventoryDivider(0.5);
   await page.setViewportSize({ width: 1280, height: 900 });
   const transfer = await evaluate(`(() => {
-    const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans');
+    const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.title.startsWith('Can of beans,'));
     const legs = [...document.querySelectorAll('#inventory .inv-worn')].find((node) => node.querySelector('.inv-slot-label')?.textContent === 'Legs');
     const grid = [...legs.querySelectorAll('.inv-grid')].find((node) => !node.querySelector('[data-uid]'));
     const around = document.querySelector('#inventory [data-pane="around"]');
@@ -1000,7 +1000,7 @@ try {
   );
   const transferTarget = () =>
     evaluate(
-      "[...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans')?.closest('.inv-grid')?.dataset.target",
+      "[...document.querySelectorAll('#inventory .inv-item')].find((node) => node.title.startsWith('Can of beans,'))?.closest('.inv-grid')?.dataset.target",
     );
   await waitFor(
     () => transferTarget().then((target) => target === transfer.target),

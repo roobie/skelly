@@ -31,9 +31,9 @@ const template = (id: string, lock: string, door = 'lock_test_door') => ({
   palette: { D: { furniture: door, lock: { id: lock, locked: true } } },
   layers: [['D']],
 });
-const key = (id: string, lock: string) => ({
+const key = (id: string, lock: string, name: string) => ({
   id,
-  name: 'Test key',
+  name,
   category: 'tool',
   weight: 10,
   size: [1, 1],
@@ -42,7 +42,7 @@ const key = (id: string, lock: string) => ({
 const fixture = () => ({
   furniture: [furniture],
   templates: [template('lock_test_a', 'test_a'), template('lock_test_b', 'test_b')],
-  items: [key('lock_test_key_a', 'test_a'), key('lock_test_key_b', 'test_b')],
+  items: [key('lock_test_key_a', 'test_a', 'A test key'), key('lock_test_key_b', 'test_b', 'B test key')],
 });
 const { registry, issues } = buildRegistry([...base, { source: 'lock-test.json', data: fixture() }]);
 if (issues.length > 0) {
@@ -87,7 +87,7 @@ describe('door locks', () => {
         data: {
           templates: [bedroom, cellar],
           layouts: [layout],
-          items: [key('bedroom_key', 'bedroom'), key('cellar_key', 'cellar')],
+          items: [key('bedroom_key', 'bedroom', 'Bedroom key'), key('cellar_key', 'cellar', 'Cellar key')],
         },
       },
     ]);

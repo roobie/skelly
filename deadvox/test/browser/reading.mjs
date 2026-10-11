@@ -496,7 +496,7 @@ try {
       { seconds: 5, from: searchStart, label: 'crate search (2.25 simulated seconds)', record },
     );
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
-    const note = page.locator('.inv-item').filter({ hasText: 'Placeholder note' });
+    const note = page.locator('.inv-item[title^="Placeholder note,"]');
     await note.waitFor();
     const noteRowUid = Number(await note.getAttribute('data-uid'));
     const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.order.length);

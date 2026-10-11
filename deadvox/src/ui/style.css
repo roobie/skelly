@@ -811,11 +811,11 @@ body.unconscious::after {
   max-height: var(--inv-around-grid-max-height);
   scrollbar-gutter: stable;
 }
-/* One grid cell is 2rem: `CELL_REM` in inventoryScreen.ts. */
+/* One grid cell is 3rem: `GRID_CELL_REM` in src/core/inventoryGridName.ts. */
 #inventory .inv-grid-packed {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 2rem);
-  grid-auto-rows: 2rem;
+  grid-template-columns: repeat(auto-fill, 3rem);
+  grid-auto-rows: 3rem;
   grid-auto-flow: row;
   align-content: start;
   width: min(100%, var(--inv-grid-max-width));
@@ -825,7 +825,7 @@ body.unconscious::after {
   position: relative;
   background-color: #111317;
   background-image: linear-gradient(#262b31 1px, transparent 1px), linear-gradient(90deg, #262b31 1px, transparent 1px);
-  background-size: 2rem 2rem;
+  background-size: 3rem 3rem;
   outline: 1px solid #39414b;
   border-radius: 0.125rem;
 }
@@ -845,6 +845,7 @@ body.unconscious::after {
 }
 .inv-grid-packed > .inv-item {
   position: relative;
+  margin: 1px;
 }
 .inv-item-slot {
   position: relative;
@@ -857,11 +858,19 @@ body.unconscious::after {
 .inv-item-name {
   display: block;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .inv-item-tall .inv-item-name {
   writing-mode: vertical-rl;
   max-height: 100%;
+}
+.inv-item-slot .inv-item-name {
+  display: inline;
+}
+.inv-ghost .inv-item-name,
+.inv-item:not(.inv-item-slot) .inv-item-name {
+  white-space: pre-line;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .inv-item-count {
   position: absolute;
@@ -872,9 +881,6 @@ body.unconscious::after {
 .inv-item-slot .inv-item-count {
   position: static;
   margin-left: calc(var(--ui-spacing) * 0.375rem);
-}
-.inv-item-slot .inv-item-name {
-  display: inline;
 }
 .cat-food,
 .cat-drink {
@@ -913,15 +919,16 @@ body.unconscious::after {
   pointer-events: none;
   border-radius: 0.1875rem;
 }
-.inv-preview.drop-ok,
-.inv-slot.drop-ok {
+.inv-preview[data-drop-shape="will-land"],
+.inv-slot[data-drop-shape="will-land"] {
   background: rgb(224 176 74 / 22%);
-  border: 1px dashed var(--accent);
+  border: 2px solid var(--accent);
 }
-.inv-preview.drop-no,
-.inv-slot.drop-no {
-  background: rgb(224 135 110 / 22%);
-  border: 1px dashed #e0876e;
+.inv-preview[data-drop-shape="blocked"],
+.inv-slot[data-drop-shape="blocked"] {
+  background-color: rgb(224 135 110 / 22%);
+  background-image: repeating-linear-gradient(135deg, transparent 0 5px, rgb(20 20 20 / 45%) 5px 7px);
+  border: 2px dashed #e0876e;
 }
 .inv-grid.drop-ok::after,
 .inv-grid.drop-no::after {
@@ -935,13 +942,56 @@ body.unconscious::after {
   pointer-events: none;
   border-radius: 0.1875rem;
 }
-.inv-grid.drop-ok::after {
+.inv-grid[data-drop-shape="will-land"]::after {
   background: rgb(224 176 74 / 22%);
-  border: 1px dashed var(--accent);
+  border: 2px solid var(--accent);
 }
-.inv-grid.drop-no::after {
-  background: rgb(224 135 110 / 22%);
-  border: 1px dashed #e0876e;
+.inv-grid[data-drop-shape="blocked"]::after {
+  background-color: rgb(224 135 110 / 22%);
+  background-image: repeating-linear-gradient(135deg, transparent 0 5px, rgb(20 20 20 / 45%) 5px 7px);
+  border: 2px dashed #e0876e;
+}
+.inv-preview[data-drop-mark]::before,
+.inv-slot[data-drop-mark]::before {
+  content: attr(data-drop-mark);
+  position: absolute;
+  top: 50%;
+  right: 0.375rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #111317;
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+/* Centred on the preview: the mark's outer size is its width plus its two borders. */
+.inv-grid[data-drop-mark]::before {
+  content: attr(data-drop-mark);
+  position: absolute;
+  left: calc(var(--preview-left) + (var(--preview-width) - (1.5rem + 4px)) / 2);
+  top: calc(var(--preview-top) + (var(--preview-height) - (1.5rem + 4px)) / 2);
+  z-index: var(--ui-layer-inventory);
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #111317;
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
 }
 .inv-condition {
   color: #f3dca6;

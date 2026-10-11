@@ -48,6 +48,37 @@ const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: '
   return validateContent({ source: zombieFile.source, data });
 };
 
+it('rejects inventory names that collide within a category and footprint', () => {
+  const item = (id: string, name: string) => ({ id, name, category: 'medical', weight: 1, size: [1, 1] });
+  const sharedPrefix = 'Shared inventory name '.repeat(8);
+  const collision = buildRegistry([
+    {
+      source: 'inventory-name-fixture.json',
+      data: {
+        items: [
+          item('fixture_collision_a', `${sharedPrefix}alpha`),
+          item('fixture_collision_b', `${sharedPrefix}beta`),
+        ],
+      },
+    },
+  ]).issues.filter((issue) => issue.message.includes('visible grid name'));
+  const distinct = buildRegistry([
+    {
+      source: 'inventory-name-fixture.json',
+      data: {
+        items: [
+          item('fixture_distinct_a', `Alpha ${sharedPrefix}`),
+          item('fixture_distinct_b', `Beta ${sharedPrefix}`),
+        ],
+      },
+    },
+  ]).issues.filter((issue) => issue.message.includes('visible grid name'));
+
+  expect(collision).toHaveLength(1);
+  expect(collision[0]?.path).toContain('.name');
+  expect(distinct).toHaveLength(0);
+});
+
 it('validates weathering profile bounds without pinning authored tuning', () => {
   const profile = baseRegistry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID)!;
   const validate = (candidate: typeof profile) =>
@@ -597,7 +628,7 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_input',
-          name: 'Fixture input',
+          name: 'Input part',
           category: 'tool',
           weight: 1,
           size: [1, 1],
@@ -607,7 +638,7 @@ describe('content', () => {
             yields: [{ item: 'fixture_input', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
           },
         },
-        { id: 'fixture_output', name: 'Fixture output', category: 'tool', weight: 1, size: [1, 1] },
+        { id: 'fixture_output', name: 'Output part', category: 'tool', weight: 1, size: [1, 1] },
       ],
     };
     const valid = structuredClone(data);
