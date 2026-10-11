@@ -1,6 +1,7 @@
 /** One inventory grid cell in rem, so grids scale with the UI. */
 export const GRID_CELL_REM = 3;
-// Names are laid out at the 16 px root the UI is authored at; hudScale scales cell, font and insets alike.
+// Names are laid out at the 16 px root the UI is authored at. hudScale scales cell, font and padding, but the px
+// border and gutter don't, so a fitted name can clip below a scale of 1.
 const GRID_CELL_PX = GRID_CELL_REM * 16;
 const GRID_NAME_FONT_PX = 11;
 const GRID_NAME_LINE_HEIGHT = 1.15;
@@ -59,7 +60,7 @@ const appendEllipsis = (line: string, capacity: number): string => {
   return `${words.join(' ')}…`;
 };
 
-/** Approximate the compact grid label at the original font size and the item's cell footprint. */
+/** Approximate the compact grid label at the base text size and the item's cell footprint. */
 export const inventoryGridName = (name: string, widthCells: number, heightCells: number): string => {
   const tall = heightCells > widthCells;
   const { charsPerLine, lines: maxLines } = tall
