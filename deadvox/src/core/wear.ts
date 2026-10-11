@@ -1,14 +1,23 @@
+import type { BodyRegion } from './body.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import type { WearSlot } from './schema.ts';
 
-export type PlayerHitArea = Extract<WearSlot, 'head' | 'torso' | 'legs'>;
+type PlayerHitArea = Extract<WearSlot, 'head' | 'torso' | 'legs'>;
 
-/** Maps the supplied hit area to its outermost worn item; later body models own area selection. */
+/** Maps a body region to the outermost worn item covering it. */
 const outermostWornOver = (inventory: Inventory, area: PlayerHitArea): Item | undefined => inventory.worn[area];
 
-/** Maps the supplied hit area to its outermost worn item. */
-export const wearOnPlayerHit = (inventory: Inventory, area: PlayerHitArea): void => {
+/** Wear the outermost worn item covering the struck body region. */
+export const wearOnPlayerHit = (inventory: Inventory, region: BodyRegion): void => {
+  let area: PlayerHitArea;
+  if (region === 'head') {
+    area = 'head';
+  } else if (region === 'leftLeg' || region === 'rightLeg') {
+    area = 'legs';
+  } else {
+    area = 'torso';
+  }
   const item = outermostWornOver(inventory, area);
   const rate = item && defOf(inventory.registry, item.type).wearable?.wearPerHit;
   if (item && rate !== undefined) {

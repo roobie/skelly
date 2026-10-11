@@ -677,19 +677,18 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
   - Every tier has a chance for every kind, so blunt can open any tier, just far
     less often than a cut or a stab.
   - A hit on a bleeding wound keeps the worse severity.
-  - Base content leaves the torso out of the arterial tier's regions. The torso is
-    where a shambler's lunge lands, and an artery from an ordinary fight would make
-    the playtest a death trap, so an artery opens only from a hit to the head (the
-    neck) or a limb.
+  - Base content includes the torso in the arterial tier, so a strong attack can
+    cause an arterial wound there. Its threshold is above an average shambler bite,
+    keeping ordinary attacks unlikely to trigger it.
 
   See `Body.bleedingTierForHit` and `src/core/sim.ts`, `Simulation.hit`.
-- **Attacks.** A zombie type's attack is a weighted list of moves. Each move has its
-  own damage, damage kind and hit region, so a shambler can clobber or bite with
-  different odds and damage. A landed hit picks its move by weight. See
-  `src/content/base/zombies.json`, `attack.moves`, and `src/core/zombies.ts`,
-  `pickZombieMove`. Worn armour and clothing only take wear from a hit; they don't
-  change its damage, its kind or its bleed chance. See `src/core/wear.ts`,
-  `wearOnPlayerHit`.
+- **Attacks.** Content weights choose both a move and that move's possible body
+  regions. Naming left and right directly avoids a second side-selection rule, while
+  keyed region rolls keep changes to those choices from shifting other simulation
+  draws. See `src/content/base/zombies.json`, `attack.moves`, `src/core/zombies.ts`,
+  `pickZombieHitRegion`, and `src/game/session.ts`, `createSession`. Worn armour and
+  clothing only take wear from a hit; they don't change its damage, kind or bleed
+  chance. See `src/core/wear.ts`, `wearOnPlayerHit`.
 - **Loss.** Each bleeding wound loses blood at its severity's rate, and the losses
   of all wounds add up. Blood recovers only while no wound bleeds. With no blood
   left, the character dies of blood loss. See `Body.advance`.
@@ -726,8 +725,8 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
   `LongActions.runsUncompressed` and `LongActions.syncInterruption`.
 - **Treatment.** An item's content `treatment` gives a fixed bleeding strength, the
   infection stages it treats with a chance, or both.
-  - Each application rolls its effect within body content's `treatmentSpread`. The
-    variability comes from applying the treatment, not from the item.
+  - For bleeding, an item's configured strength is its average bandage application;
+    body content's `treatmentSpread` varies each application's effect around it.
   - The effect is spent band by band. Each band costs its tier's treatment effort,
     and what's left carries into the band below.
   - Every bleeding treatment can help every tier, as a matter of quality, and
@@ -1195,13 +1194,12 @@ It keeps a shambler's decisions, the same senses, targets and modes, but steers 
 
 The renderer rebuilds a holed amalgam's mesh without its removed voxels, and the faces the hole exposes take the type's interior colour. They are marked as wound faces (`CARVED_NEIGHBOUR`). The removed voxels fly off along the shot as a render-only rigid chunk that lands, lies, sinks and is removed, with a cap on live chunks. Gore covers the amalgam as it does shamblers ("Gore is presentation only" above): carving throws an extra burst of blood, and a chunk leaves a large splat where it lands. Neither the chunk nor the rebuilt mesh enters the simulation, and the corpse keeps the holes. See `src/render/amalgamFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
 
-Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
-sight-driven pursuit an immediate sprint threat, while the crawler uses the body's
-leg region as its attack target. Keep their selection, attack target and sound
-mapping authored with the type; see `src/content/base/zombies.json` and the spawn
-markers in `src/content/base/templates.json`. Type weights scale authored marker
-chances and choose hamlet wanderers, keeping rarity a content property rather than
-an inference from generated counts.
+The runner's threat comes from speed rather than stronger attacks; the crawler's
+low posture confines its bite to the legs. Keep their moves, hit regions, sounds and
+spawn chance authored with the type. See `src/content/base/zombies.json` and the
+spawn markers in `src/content/base/templates.json`. Type weights scale authored
+marker chances and choose hamlet wanderers, keeping rarity a content property
+rather than an inference from generated counts.
 
 BR's crawler ruling (2026-10-06–07): the question was whether the crawler should be
 (a) a prone ground-crawler dragging itself on its arms with trailing legs, (b) a

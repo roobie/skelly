@@ -420,8 +420,8 @@ export class Body implements ModifierActor {
   }
 
   /**
-   * Applies one treatment, rolling its effect (`roll` gives numbers in [0, 1)). The item's bleeding strength,
-   * through the modifiers and then times a roll within the body's `treatmentSpread`, closes severity band by
+   * Applies one treatment, rolling its effect (`roll` gives numbers in [0, 1)). The item's bleeding strength is
+   * its average bandage application; through modifiers and the body's `treatmentSpread`, it closes severity band by
    * band, each band costing its tier's `treatmentEffort`; applications stack (DESIGN.md, "Bleeding").
    */
   treat(region: BodyRegion, treatment: TreatmentDef, roll: () => number): boolean {
@@ -484,18 +484,3 @@ const dress = (severity: number, effort: number, tiers: readonly BleedingTierDef
   }
   return current;
 };
-
-export function bodyRegionForHitArea(area: 'head' | 'torso' | 'leftLeg' | 'rightLeg'): BodyRegion;
-export function bodyRegionForHitArea(area: 'legs', legSide: 'leftLeg' | 'rightLeg'): BodyRegion;
-export function bodyRegionForHitArea(
-  area: 'head' | 'torso' | 'legs' | 'leftLeg' | 'rightLeg',
-  legSide?: 'leftLeg' | 'rightLeg',
-): BodyRegion {
-  if (area === 'legs') {
-    if (!legSide) {
-      throw new Error('A leg hit requires a selected side');
-    }
-    return legSide;
-  }
-  return area;
-}

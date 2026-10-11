@@ -1210,7 +1210,10 @@ const ZombieSchema = strictObject({
             weight: Positive,
             damage: Positive,
             damageKind: picklist(DAMAGE_KINDS),
-            hitRegion: picklist(['torso', 'legs']),
+            hitRegions: pipe(
+              array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
+              nonEmpty('needs at least one hit region'),
+            ),
           }),
         ),
         nonEmpty('needs at least one move'),

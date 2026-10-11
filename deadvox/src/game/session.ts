@@ -7,7 +7,6 @@
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { AimController, type AimWobbleNoiseTuning } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import { bodyRegionForHitArea } from '../core/body.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
@@ -68,6 +67,7 @@ import {
   type HitImpulse,
   type MeleeResult,
   type PlayerMovement,
+  pickZombieHitRegion,
   type VocalNoise,
   type Zombie,
   ZombieSystem,
@@ -918,7 +918,7 @@ export const createSession = (options: SessionOptions) => {
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
-    hurtPlayer: (amount, area, attacker, kind) => {
+    hurtPlayer: (amount, hitRegions, attacker, kind) => {
       if (
         controls.blocking?.() &&
         meleeCombatTuning !== undefined &&
@@ -932,12 +932,8 @@ export const createSession = (options: SessionOptions) => {
         character.awardPractice('melee_combat', training.practice, training.tier);
         return;
       }
-      wearOnPlayerHit(inventory, area);
-      const legSide = sim.rng(`player-leg-hit:${sim.time}`).int(0, 1) === 0 ? 'leftLeg' : 'rightLeg';
-      const region =
-        area === 'legs'
-          ? bodyRegionForHitArea('legs', legSide)
-          : bodyRegionForHitArea(area === 'head' ? 'head' : 'torso');
+      const region = pickZombieHitRegion(hitRegions, sim.rng(`player-hit-region:${attacker}:${sim.time}`).next());
+      wearOnPlayerHit(inventory, region);
       const attackerType = zombieStore.get(attacker)?.type.name.toLowerCase() ?? 'zombie';
       sim.hit(amount, `a ${attackerType}`, region, { kind });
     },

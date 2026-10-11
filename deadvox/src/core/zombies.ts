@@ -14,7 +14,7 @@ import {
   amalgamStrikeOrigin,
 } from './amalgamFigure.ts';
 import { AmalgamShape } from './amalgamShape.ts';
-import type { DamageKind } from './body.ts';
+import type { BodyRegion, DamageKind } from './body.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
@@ -41,7 +41,6 @@ import type { SoundEventId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
-import type { PlayerHitArea } from './wear.ts';
 import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 import {
@@ -109,18 +108,25 @@ const validStepOffset = (offset: number | undefined): boolean =>
 
 type MeleeDamageType = DamageKind;
 type ZombieMove = ZombieDef['attack']['moves'][number];
+type ZombieHitRegionChoice = ZombieMove['hitRegions'][number];
 
-/** The move a landed hit is: picked by weight with a roll in [0, 1) (DESIGN.md, "Bleeding"). */
-export const pickZombieMove = (moves: readonly ZombieMove[], roll: number): ZombieMove => {
-  let left = roll * moves.reduce((sum, move) => sum + move.weight, 0);
-  for (const move of moves) {
-    left -= move.weight;
+const pickByWeight = <T extends { weight: number }>(choices: readonly T[], roll: number): T => {
+  let left = roll * choices.reduce((sum, choice) => sum + choice.weight, 0);
+  for (const choice of choices) {
+    left -= choice.weight;
     if (left < 0) {
-      return move;
+      return choice;
     }
   }
-  return moves.at(-1)!;
+  return choices.at(-1)!;
 };
+
+/** The move of a landed hit, selected by its content weight. */
+export const pickZombieMove = (moves: readonly ZombieMove[], roll: number): ZombieMove => pickByWeight(moves, roll);
+
+/** The body region a landed move strikes, selected by its content weight. */
+export const pickZombieHitRegion = (choices: readonly ZombieHitRegionChoice[], roll: number): BodyRegion =>
+  pickByWeight(choices, roll).region;
 
 export interface MeleeWeapon {
   readonly damage: number;
@@ -492,7 +498,12 @@ export interface ZombieSystemOptions {
   player: () => PlayerSense;
   dayPhase: () => DayPhaseState;
   isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
-  hurtPlayer: (amount: number, area: PlayerHitArea, attacker: EntityId, kind: DamageKind) => void;
+  hurtPlayer: (
+    amount: number,
+    hitRegions: readonly ZombieHitRegionChoice[],
+    attacker: EntityId,
+    kind: DamageKind,
+  ) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
@@ -2719,7 +2730,7 @@ export class ZombieSystem {
         withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
       ) {
         const move = pickZombieMove(type.attack.moves, scratch.rng.next());
-        this.options.hurtPlayer(move.damage, move.hitRegion, scratch.id, move.damageKind);
+        this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
       }
     } else if (
       zombie.mode === 'chase' &&

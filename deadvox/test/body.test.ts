@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BODY_REGIONS, Body, bodyRegionForHitArea } from '../src/core/body.ts';
+import { BODY_REGIONS, Body } from '../src/core/body.ts';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import { type Needs, stepNeeds } from '../src/core/needs.ts';
 import { Rng } from '../src/core/random.ts';
@@ -346,13 +346,14 @@ describe('player body', () => {
   it("opens the tier a roll lands in among those the hit's damage and region allow, or none", () => {
     const body = new Body(BODY_TUNING_FIXTURE);
     const critical = tiers[CRITICAL]!;
-    const limb = critical.regions![0]!;
+    const limb = critical.regions!.find((region) => region !== 'torso')!;
     const torso = 'torso';
-    expect(critical.regions).not.toContain(torso);
+    expect(critical.regions).toContain(torso);
     const allPierce = tiers.reduce((sum, tier) => sum + tier.chance.pierce, 0);
 
     expect(body.bleedingTierForHit(critical.minDamage, limb, 'pierce', 0)).toBe(CRITICAL);
-    expect(body.bleedingTierForHit(critical.minDamage, torso, 'pierce', 0)).toBe(SERIOUS);
+    expect(body.bleedingTierForHit(critical.minDamage, torso, 'pierce', 0)).toBe(CRITICAL);
+    expect(body.bleedingTierForHit(critical.minDamage / 2, torso, 'pierce', 0)).not.toBe(CRITICAL);
     expect(body.bleedingTierForHit(tiers[SERIOUS]!.minDamage / 2, limb, 'pierce', 0)).toBe(MINOR);
     expect(body.bleedingTierForHit(critical.minDamage, limb, 'pierce', allPierce)).toBeUndefined();
   });
@@ -420,14 +421,5 @@ describe('player body', () => {
     body.impact(1, 'head', { bleeding: SERIOUS });
     const treatments = [STRONG, WEAK, ANTISEPTIC, ANTIBIOTICS];
     expect(treatments.filter((treatment) => body.canTreat('head', treatment))).toEqual([STRONG, WEAK]);
-  });
-
-  it('routes a leg-area hit to either selected leg instead of biasing left', () => {
-    for (const side of ['leftLeg', 'rightLeg'] as const) {
-      const body = new Body(BODY_TUNING_FIXTURE);
-      const region = bodyRegionForHitArea('legs', side);
-      body.impact(1, region);
-      expect(body.regionDamage[side]).toBeGreaterThan(0);
-    }
   });
 });

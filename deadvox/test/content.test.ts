@@ -301,6 +301,21 @@ describe('content', () => {
     ).toBe(true);
   });
 
+  it('keeps runner attacks equivalent to the shambler attacks', () => {
+    const shambler = baseRegistry.zombies.get('shambler')!;
+    const runner = baseRegistry.zombies.get('runner')!;
+
+    expect(runner.attack.moves).toEqual(shambler.attack.moves);
+  });
+
+  it('keeps arterial bleeding possible on the torso and above shambler bite damage', () => {
+    const arterial = baseRegistry.body.get('player')!.bleeding.tiers.find(({ id }) => id === 'arterial')!;
+    const shamblerBite = baseRegistry.zombies.get('shambler')!.attack.moves.find(({ id }) => id === 'bite')!;
+
+    expect(arterial.regions).toContain('torso');
+    expect(arterial.minDamage).toBeGreaterThan(shamblerBite.damage);
+  });
+
   it('requires amalgam zombie regions to match the manifest classes exactly', () => {
     for (const [regionId, change] of [
       ['member.leftLeg', 'remove'],
@@ -851,7 +866,15 @@ describe('content', () => {
               reach: 1,
               cooldownSimSeconds: 1.5,
               windupSimSeconds: 0.3,
-              moves: [{ id: 'swipe', weight: 1, damage: 5, damageKind: 'blunt', hitRegion: 'torso' }],
+              moves: [
+                {
+                  id: 'swipe',
+                  weight: 1,
+                  damage: 5,
+                  damageKind: 'blunt',
+                  hitRegions: [{ region: 'torso', weight: 1 }],
+                },
+              ],
             },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
@@ -881,7 +904,15 @@ describe('content', () => {
               reach: 1,
               cooldownSimSeconds: 1.5,
               windupSimSeconds: 0.3,
-              moves: [{ id: 'swipe', weight: 1, damage: 5, damageKind: 'blunt', hitRegion: 'torso' }],
+              moves: [
+                {
+                  id: 'swipe',
+                  weight: 1,
+                  damage: 5,
+                  damageKind: 'blunt',
+                  hitRegions: [{ region: 'torso', weight: 1 }],
+                },
+              ],
             },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
@@ -1535,7 +1566,15 @@ describe('content references', () => {
               reach: 1,
               cooldownSimSeconds: 1.5,
               windupSimSeconds: 0.3,
-              moves: [{ id: 'swipe', weight: 1, damage: 5, damageKind: 'blunt', hitRegion: 'torso' }],
+              moves: [
+                {
+                  id: 'swipe',
+                  weight: 1,
+                  damage: 5,
+                  damageKind: 'blunt',
+                  hitRegions: [{ region: 'torso', weight: 1 }],
+                },
+              ],
             },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             downed: {
