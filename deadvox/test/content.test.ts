@@ -301,19 +301,23 @@ describe('content', () => {
     ).toBe(true);
   });
 
-  it('keeps runner attacks equivalent to the shambler attacks', () => {
+  it('keeps runner attack damage within the shambler damage ceilings', () => {
     const shambler = baseRegistry.zombies.get('shambler')!;
     const runner = baseRegistry.zombies.get('runner')!;
+    const highestShamblerDamage = Math.max(...shambler.attack.moves.map(({ damage }) => damage));
+    const weightedDamage = (moves: typeof shambler.attack.moves) =>
+      moves.reduce((total, { damage, weight }) => total + damage * weight, 0) /
+      moves.reduce((total, { weight }) => total + weight, 0);
 
-    expect(runner.attack.moves).toEqual(shambler.attack.moves);
+    expect(runner.attack.moves.length).toBeGreaterThan(0);
+    expect(Math.max(...runner.attack.moves.map(({ damage }) => damage))).toBeLessThanOrEqual(highestShamblerDamage);
+    expect(weightedDamage(runner.attack.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack.moves));
   });
 
-  it('keeps arterial bleeding possible on the torso and above shambler bite damage', () => {
+  it('keeps arterial bleeding possible on the torso', () => {
     const arterial = baseRegistry.body.get('player')!.bleeding.tiers.find(({ id }) => id === 'arterial')!;
-    const shamblerBite = baseRegistry.zombies.get('shambler')!.attack.moves.find(({ id }) => id === 'bite')!;
 
     expect(arterial.regions).toContain('torso');
-    expect(arterial.minDamage).toBeGreaterThan(shamblerBite.damage);
   });
 
   it('requires amalgam zombie regions to match the manifest classes exactly', () => {

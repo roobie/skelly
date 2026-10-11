@@ -420,9 +420,10 @@ export class Body implements ModifierActor {
   }
 
   /**
-   * Applies one treatment, rolling its effect (`roll` gives numbers in [0, 1)). The item's bleeding strength is
-   * its average bandage application; through modifiers and the body's `treatmentSpread`, it closes severity band by
-   * band, each band costing its tier's `treatmentEffort`; applications stack (DESIGN.md, "Bleeding").
+   * Applies one treatment, rolling its effect (`roll` gives numbers in [0, 1)). Under base content, the body's
+   * `treatmentSpread` is centred on its neutral multiplier, so the item's bleeding strength is its average bandage
+   * application; other content can change that relationship. Through modifiers and `treatmentSpread`, it closes
+   * severity band by band, each band costing its tier's `treatmentEffort`; applications stack (DESIGN.md, "Bleeding").
    */
   treat(region: BodyRegion, treatment: TreatmentDef, roll: () => number): boolean {
     if (!this.canTreat(region, treatment)) {

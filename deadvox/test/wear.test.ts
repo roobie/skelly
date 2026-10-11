@@ -15,6 +15,31 @@ const { registry } = buildRegistry(
     })),
 );
 
+const hitRegistry = buildRegistry([
+  ...readdirSync('src/content/base')
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+    .map((file) => ({
+      source: file,
+      data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
+    })),
+  {
+    source: 'test-headwear.json',
+    data: {
+      items: [
+        {
+          id: 'test_cap',
+          name: 'Test cap',
+          category: 'clothing',
+          weight: 100,
+          size: [1, 1],
+          wearable: { slot: 'head', encumbrance: 0, wearPerHit: 0.1 },
+        },
+      ],
+    },
+  },
+]).registry;
+
 describe('item wear', () => {
   it('subtracts a melee weapon’s content rate and clamps its condition at ruin', () => {
     const inventory = new Inventory(registry);
@@ -31,15 +56,21 @@ describe('item wear', () => {
     expect(weapon.condition).toBe(0);
   });
 
-  it('wears only the clothing over the supplied torso area', () => {
-    const inventory = new Inventory(registry);
-    const jacket = inventory.create('jacket');
-    const jeans = inventory.create('jeans');
-    expect(inventory.add(jacket, { kind: 'worn' })).toBe(true);
-    expect(inventory.add(jeans, { kind: 'worn' })).toBe(true);
-    const torsoRate = registry.items.get(jacket.type)!.wearable!.wearPerHit!;
-    wearOnPlayerHit(inventory, 'torso');
-    expect(jacket.condition).toBe(1 - torsoRate);
-    expect(jeans.condition).toBe(1);
+  it.each([
+    { region: 'head', item: 'test_cap', other: 'jacket' },
+    { region: 'leftArm', item: 'jacket', other: 'jeans' },
+    { region: 'rightLeg', item: 'jeans', other: 'jacket' },
+  ] as const)('wears the $item covering a $region hit', ({ region, item, other }) => {
+    const inventory = new Inventory(hitRegistry);
+    const worn = inventory.create(item);
+    const otherWorn = inventory.create(other);
+    expect(inventory.add(worn, { kind: 'worn' })).toBe(true);
+    expect(inventory.add(otherWorn, { kind: 'worn' })).toBe(true);
+    const rate = hitRegistry.items.get(item)!.wearable!.wearPerHit!;
+
+    wearOnPlayerHit(inventory, region);
+
+    expect(worn.condition).toBe(1 - rate);
+    expect(otherWorn.condition).toBe(1);
   });
 });

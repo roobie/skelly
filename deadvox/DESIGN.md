@@ -725,8 +725,9 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
   `LongActions.runsUncompressed` and `LongActions.syncInterruption`.
 - **Treatment.** An item's content `treatment` gives a fixed bleeding strength, the
   infection stages it treats with a chance, or both.
-  - For bleeding, an item's configured strength is its average bandage application;
-    body content's `treatmentSpread` varies each application's effect around it.
+  - Under base content, `treatmentSpread` is centred on its neutral multiplier, so
+    an item's configured strength is its average bandage application. Other content
+    can change that relationship.
   - The effect is spent band by band. Each band costs its tier's treatment effort,
     and what's left carries into the band below.
   - Every bleeding treatment can help every tier, as a matter of quality, and

@@ -11,12 +11,23 @@ const outermostWornOver = (inventory: Inventory, area: PlayerHitArea): Item | un
 /** Wear the outermost worn item covering the struck body region. */
 export const wearOnPlayerHit = (inventory: Inventory, region: BodyRegion): void => {
   let area: PlayerHitArea;
-  if (region === 'head') {
-    area = 'head';
-  } else if (region === 'leftLeg' || region === 'rightLeg') {
-    area = 'legs';
-  } else {
-    area = 'torso';
+  switch (region) {
+    case 'head':
+      area = 'head';
+      break;
+    case 'torso':
+    case 'leftArm':
+    case 'rightArm':
+      area = 'torso';
+      break;
+    case 'leftLeg':
+    case 'rightLeg':
+      area = 'legs';
+      break;
+    default: {
+      const exhaustive: never = region;
+      throw exhaustive;
+    }
   }
   const item = outermostWornOver(inventory, area);
   const rate = item && defOf(inventory.registry, item.type).wearable?.wearPerHit;

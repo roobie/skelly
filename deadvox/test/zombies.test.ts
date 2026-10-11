@@ -367,7 +367,6 @@ describe('zombie attack moves', () => {
     const regions = new Set<BodyRegion>(choices.map(({ region }) => region));
 
     expect(new Set(picks)).toEqual(regions);
-    expect(picks.every((region) => regions.has(region))).toBe(true);
   });
 });
 
