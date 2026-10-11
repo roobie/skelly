@@ -171,26 +171,61 @@ try {
   let proof;
   if (mode === 'consumer') {
     await pressAction(page, 'ui.main-menu-toggle');
-    const interactionOption = await page.evaluate(
-      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('interaction'))",
-    );
-    assert.ok(interactionOption >= 0);
-    const interactionCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(interactionOption);
+    const interactionCheckbox = page.locator('#hud-options [data-hud-option="interaction"] input');
     // The prompt oracle requires player-enabled hints, not a particular HUD default.
     if (!(await interactionCheckbox.isChecked())) {
       await uiClick(interactionCheckbox);
     }
     assert.equal(await interactionCheckbox.isChecked(), true);
-    const handlingOption = await page.evaluate(
-      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('handling'))",
-    );
-    assert.ok(handlingOption >= 0);
-    const handlingCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(handlingOption);
+    const handlingCheckbox = page.locator('#hud-options [data-hud-option="handling"] input');
     if (await handlingCheckbox.isChecked()) {
       await uiClick(handlingCheckbox);
     }
     assert.equal(await handlingCheckbox.isChecked(), false);
     await pressAction(page, 'ui.main-menu-toggle');
+    const otherHudOptions = async () =>
+      page
+        .locator('#hud-options input')
+        .evaluateAll((inputs) =>
+          inputs
+            .filter((input) => input.closest('[data-hud-option]')?.getAttribute('data-hud-option') !== 'shown')
+            .map((input) => input.checked),
+        );
+    await page.waitForFunction(() => {
+      const hud = document.querySelector('#hud');
+      const shown = document.querySelector('#hud-options [data-hud-option="shown"] input');
+      return hud !== null && (hud.textContent?.trim().length ?? 0) > 0 && shown?.checked === true;
+    });
+    const otherOptionsBeforeToggle = await otherHudOptions();
+    assert.ok(otherOptionsBeforeToggle.length > 0, 'HUD options besides shown exist');
+    const hideHud = await holdInputAction(page, 'hud.toggle');
+    try {
+      await page.waitForFunction(() => {
+        const hud = document.querySelector('#hud');
+        const shown = document.querySelector('#hud-options [data-hud-option="shown"] input');
+        return hud?.textContent?.trim() === '' && shown?.checked === false;
+      });
+    } finally {
+      await hideHud();
+    }
+    const showHud = await holdInputAction(page, 'hud.toggle');
+    try {
+      await page.waitForFunction((otherOptions) => {
+        const hud = document.querySelector('#hud');
+        const shown = document.querySelector('#hud-options [data-hud-option="shown"] input');
+        const other = [...document.querySelectorAll('#hud-options input')]
+          .filter((input) => input.closest('[data-hud-option]')?.getAttribute('data-hud-option') !== 'shown')
+          .map((input) => input.checked);
+        return (
+          hud !== null &&
+          (hud.textContent?.trim().length ?? 0) > 0 &&
+          shown?.checked === true &&
+          JSON.stringify(other) === JSON.stringify(otherOptions)
+        );
+      }, otherOptionsBeforeToggle);
+    } finally {
+      await showHud();
+    }
     const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(

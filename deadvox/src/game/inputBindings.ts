@@ -55,7 +55,7 @@ const entered: readonly InputContext[] = [
   'interrupted',
 ];
 const all: readonly InputContext[] = ['title', ...entered];
-export const HUD_HINTS_HOLD_MS = 1000;
+const HUD_TOGGLE_HOLD_MS = 1000;
 // biome-ignore lint/complexity/useMaxParams: compact declarations keep alternative keys and gesture metadata in one catalogue.
 const row = (
   id: string,
@@ -132,8 +132,8 @@ export const INPUT_BINDINGS: readonly Binding[] = [
     row(action, description, [...moving, 'inventory'], [code]),
   ),
   row('ui.main-menu-toggle', 'Main menu', entered, ['F9'], 'press', { text: true }),
-  row('hud.toggle-interaction-hints', 'Hold to toggle interaction hints', entered, ['Backquote'], 'hold', {
-    holdMs: HUD_HINTS_HOLD_MS,
+  row('hud.toggle', 'Hold to hide or show the HUD', entered, ['Backquote'], 'hold', {
+    holdMs: HUD_TOGGLE_HOLD_MS,
   }),
   row('handling.stop', 'Stop handling or a long action', [...moving, 'inventory', 'interrupted'], ['KeyX']),
   row('craft.continue', 'Continue stopped crafting', ['play'], ['Enter']),

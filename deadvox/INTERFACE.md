@@ -4,6 +4,7 @@ description: Design for what the game's interface may show and say to the player
 read_if:
   - you're deciding what the interface may tell the player and in what voice
   - you're changing player-facing prompts, feedback, HUD language, or bleeding cues
+  - you're changing what the HUD options or the HUD toggle hide
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
   - you're changing how playtesters hand back metrics or replays
   - you're changing UI layer order, overlay stacking, or in-game choice controls such as the combo box
@@ -273,6 +274,16 @@ keeps its progress. See `src/ui/reading.ts`, `ReadingProgress` and `mountReading
   and the rest card's stop hint ignore those options ("How it's encoded"). The
   crosshair follows its HUD option; a separate center X is part of `?debug=1` and
   never ships.
+- **The HUD toggle hides everything the HUD options cover, at once.** The HUD
+  options panel is the list of what the HUD owns, so the hold hides every element
+  on it, the crosshair included. It also hides the throw-stance cue, which
+  follows the interaction option. The world, the bodily cues and a held compass's
+  lit screen stay, because they belong to the world rather than the HUD. So do
+  the inventory help line and the rest card's stop hint, which ignore the options.
+  Hiding is a separate switch in the options panel that leaves each option as
+  set, so showing the HUD again restores exactly what was shown. The switch
+  persists with the options. See `src/ui/hudOptions.ts`, `HudSettings` and
+  `hudVisibility`.
 
 ## UI layers
 

@@ -3,14 +3,14 @@ import { BACKQUOTE_DOUBLE_TAP_WINDOW_MS, BackquoteOrbitGesture } from '../src/ga
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { isOrbitResetMovementAction, ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 
-const hintHoldMs = INPUT_BINDINGS.find(({ id }) => id === 'hud.toggle-interaction-hints')?.holdMs ?? 0;
+const hudHoldMs = INPUT_BINDINGS.find(({ id }) => id === 'hud.toggle')?.holdMs ?? 0;
 
 const gestureFixture = () => {
   const orbit = new ThirdPersonOrbit();
   const hudToggles: number[] = [];
   const panelToggles: number[] = [];
   const gesture = new BackquoteOrbitGesture({
-    holdRealMs: hintHoldMs,
+    holdRealMs: hudHoldMs,
     orbit,
     canToggleHud: () => true,
     toggleHud: () => hudToggles.push(1),
@@ -42,15 +42,15 @@ describe('third-person orbit', () => {
   });
 
   it('maps a plain press-and-hold to the HUD toggle', () => {
-    expect(hintHoldMs).toBeGreaterThan(0);
+    expect(hudHoldMs).toBeGreaterThan(0);
     const { gesture, orbit, hudToggles, panelToggles } = gestureFixture();
-    expect(gesture.keyDown(0, true, true, 0)).toBe(true);
-    gesture.update(hintHoldMs - 1);
+    gesture.keyDown(0, true, true, 0);
+    gesture.update(hudHoldMs - 1);
     expect(hudToggles).toEqual([]);
-    gesture.update(hintHoldMs);
+    gesture.update(hudHoldMs);
     expect(hudToggles).toEqual([1]);
-    gesture.keyUp(hintHoldMs + 1);
-    gesture.update(hintHoldMs + BACKQUOTE_DOUBLE_TAP_WINDOW_MS + 2);
+    gesture.keyUp(hudHoldMs + 1);
+    gesture.update(hudHoldMs + BACKQUOTE_DOUBLE_TAP_WINDOW_MS + 2);
     expect(panelToggles).toEqual([]);
     expect(orbit.angle(true)).toBeUndefined();
   });
@@ -60,7 +60,7 @@ describe('third-person orbit', () => {
     gesture.keyDown(0, true, true, 0.4);
     gesture.keyUp(10);
     const secondDown = 10 + BACKQUOTE_DOUBLE_TAP_WINDOW_MS;
-    expect(gesture.keyDown(secondDown, true, true, 0.4)).toBe(true);
+    gesture.keyDown(secondDown, true, true, 0.4);
     expect(orbit.rotate(80, -20, true)).toBe(true);
     const rotated = orbit.angle(true);
     expect(rotated?.yaw).not.toBe(0.4);
@@ -130,7 +130,6 @@ describe('third-person orbit', () => {
         thirdPerson: true,
         debugPanelAvailable: true,
         facingYaw: 0.4,
-        fallback: handleAction,
       }),
     ).toBe(true);
     gesture.update(11 + BACKQUOTE_DOUBLE_TAP_WINDOW_MS);
@@ -153,13 +152,33 @@ describe('third-person orbit', () => {
     expect(handled).toBe(2);
   });
 
-  it('leaves first-person Backquote handling to its existing input path', () => {
-    const { gesture, orbit, hudToggles, panelToggles } = gestureFixture();
-    expect(gesture.keyDown(0, false, true, 0.4)).toBe(false);
-    expect(gesture.keyUp(10)).toBe(false);
-    gesture.update(10 + BACKQUOTE_DOUBLE_TAP_WINDOW_MS * 2);
+  it('toggles the HUD on a first-person hold, and not on a tap', () => {
+    const { gesture, hudToggles } = gestureFixture();
+    const firstPerson = (phase: 'down' | 'up', at: number) =>
+      gesture.routeInput('hud.toggle', { phase, at, thirdPerson: false, debugPanelAvailable: false, facingYaw: 0 });
+    firstPerson('down', 0);
+    firstPerson('up', hudHoldMs - 1);
+    gesture.update(hudHoldMs * 2);
     expect(hudToggles).toEqual([]);
-    expect(panelToggles).toEqual([]);
+    const held = hudHoldMs * 3;
+    firstPerson('down', held);
+    gesture.update(held + hudHoldMs);
+    expect(hudToggles).toEqual([1]);
+    firstPerson('up', held + hudHoldMs + 1);
+    expect(hudToggles).toEqual([1]);
+  });
+
+  it('never orbits or opens the debug panel from a first-person tap-then-hold', () => {
+    const { gesture, orbit, hudToggles, panelToggles } = gestureFixture();
+    gesture.keyDown(0, false, true, 0.4);
+    gesture.keyUp(10);
+    const secondDown = 10 + BACKQUOTE_DOUBLE_TAP_WINDOW_MS;
+    gesture.keyDown(secondDown, false, true, 0.4);
+    expect(orbit.rotate(80, -20, true)).toBe(false);
+    gesture.update(secondDown + hudHoldMs);
+    gesture.keyUp(secondDown + hudHoldMs + 1);
     expect(orbit.angle(true)).toBeUndefined();
+    expect(panelToggles).toEqual([]);
+    expect(hudToggles).toEqual([1]);
   });
 });
