@@ -1552,7 +1552,6 @@ export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
-export type UiTuningDef = InferOutput<typeof UiTuningSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof typeof SECTION_DESCRIPTOR;

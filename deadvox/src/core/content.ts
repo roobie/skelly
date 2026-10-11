@@ -34,7 +34,6 @@ export type {
   RecipeDef,
   SoundDef,
   TemplateDef,
-  UiTuningDef,
   ZombieDef,
 } from './schema.ts';
 
