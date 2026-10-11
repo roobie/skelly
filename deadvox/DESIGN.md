@@ -1151,10 +1151,11 @@ worse the world gets.
 - **Senses:** sight (a view cone and range, blended smoothly from day range to
   night range through twilight and reduced when you crouch), hearing (noise events)
   and smell (a trail the player leaves, which rain washes out). The base pack's
-  late-June cycle at a mid-latitude with nautical twilight defines the playtest's
-  sun-derived phases, giving the world long daylight without modeling seasonal
-  change. Sky, sight blending, horde roaming and named spawn windows follow solar
-  boundaries rather than fixed clock hours. Hordes roam from sunset through dawn
+  day cycle applies to every site; its late-June, mid-latitude cycle with nautical
+  twilight gives long daylight without modeling seasonal change. See
+  `src/content/base/dayCycle.json`, `dayCycle`, for its authored settings. Sky,
+  sight blending, horde roaming and named spawn windows follow solar boundaries
+  rather than fixed clock hours. Hordes roam from sunset through dawn
   until sunrise, and spawn words resolve from those same boundaries. Terrain height
   alone should not end a clear pursuit; sight over a rise is bounded by occlusion,
   not by spending range on vertical distance.
