@@ -1,4 +1,4 @@
-import { COMPRESSION, type Compression } from '../core/compression.ts';
+import type { Compression } from '../core/compression.ts';
 import type { Simulation } from '../core/sim.ts';
 import {
   type RealSeconds,
@@ -10,18 +10,23 @@ import {
 } from '../core/time.ts';
 
 const RAMP_PROFILES = {
-  normal: { up: realSeconds(1.5), down: realSeconds(0.4) },
-  skip: { up: realSeconds(0.4), down: realSeconds(0.4) },
+  normal: { up: realSeconds(1.5) },
+  skip: { up: realSeconds(0.4) },
 } as const;
-const NORMAL_DOWN_RATE = Math.log(COMPRESSION.cap) / RAMP_PROFILES.normal.down;
+/**
+ * At most this much Sim time passes while compression ramps back down after a stop. The bound is in
+ * Sim time, so the decay quickens with the start's cap: a fixed Real-time ramp from ×360 would run
+ * the world on for tens of Sim seconds after the player stops waiting.
+ */
+export const RAMP_DOWN_SIM_SECONDS = simSeconds(3);
 
 /** Turns an elapsed Real frame duration into the ready-to-consume Sim step. */
 export const planRealFrame = (compression: Compression, elapsed: RealSeconds): SimSeconds => {
-  const ramp = RAMP_PROFILES[compression.limits.ramp];
+  const { cap, maxSimPerFrame, ramp } = compression.limits;
   compression.c = compression.active
-    ? Math.min(compression.limits.cap, compression.c * Math.exp((Math.log(compression.limits.cap) / ramp.up) * elapsed))
-    : Math.max(1, compression.c * Math.exp(-NORMAL_DOWN_RATE * elapsed));
-  return simSeconds(Math.min(elapsed * compression.c, compression.limits.maxSimPerFrame));
+    ? Math.min(cap, compression.c * Math.exp((Math.log(cap) / RAMP_PROFILES[ramp].up) * elapsed))
+    : Math.max(1, compression.c * Math.exp(-(cap / RAMP_DOWN_SIM_SECONDS) * elapsed));
+  return simSeconds(Math.min(elapsed * compression.c, maxSimPerFrame));
 };
 
 type AdvanceStep = (simDt: SimSeconds, until?: number) => void;

@@ -14,6 +14,8 @@ export interface RestAction {
   label: string;
   rate: number;
   startFatigue: number;
+  /** The Sim time a sleep set with an alarm ends at; without one, sleep ends once rested. */
+  wakeAt?: number;
 }
 const WAIT_CANCELLING_MOVEMENTS = new Set([
   'movement.forward',
@@ -65,6 +67,8 @@ export interface TreatmentActionHooks {
 }
 export interface LongActionState {
   job: LongJob | null;
+  /** The hour of day (0–23) an alarm sleep wakes at; unset sleeps until rested. */
+  wakeGameHour?: number;
 }
 /** Per-kind effects stay in the native craft owner, never in saved closures. */
 export interface CraftRepair {
@@ -91,7 +95,7 @@ const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
     !Number.isFinite(rest.rate) ||
     !Number.isFinite(rest.startFatigue) ||
     rest.startFatigue < 0 ||
-    rest.startFatigue > 100 ||
+    (rest.wakeAt !== undefined && (rest.kind !== 'sleep' || !Number.isFinite(rest.wakeAt))) ||
     !Number.isSafeInteger(rest.furnitureUid) ||
     rest.furnitureUid < 1 ||
     typeof rest.label !== 'string'
@@ -193,6 +197,12 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
   }
 };
 
+const validateWakeGameHour = (wakeGameHour: number | undefined): void => {
+  if (wakeGameHour !== undefined && !(Number.isSafeInteger(wakeGameHour) && wakeGameHour >= 0 && wakeGameHour < 24)) {
+    throw new Error('Invalid wake hour');
+  }
+};
+
 export class LongActions {
   private current: LongJob | undefined;
   craft: CraftActionHooks | undefined;
@@ -200,6 +210,11 @@ export class LongActions {
   prying: PryActionHooks | undefined;
   treatment: TreatmentActionHooks | undefined;
   notice: (text: string) => void = () => undefined;
+  /**
+   * The hour of day (0–23) the player set to wake at, or undefined to sleep until rested. It is
+   * saved, so Continue and a replay starting after it was set keep it.
+   */
+  wakeGameHour: number | undefined;
   private readonly sim: Simulation;
   constructor(sim: Simulation) {
     this.sim = sim;
@@ -222,19 +237,24 @@ export class LongActions {
   get restRate(): number | undefined {
     return this.current && !this.current.stopped && this.sim.compression.active ? this.rest?.rate : undefined;
   }
+  /** Asleep: a sleep is running, so recovery runs at the body's sleep factor. */
+  get asleep(): boolean {
+    return this.restRate !== undefined && this.rest?.kind === 'sleep';
+  }
   snapshotState(): Readonly<LongActionState> {
     const staleStoppedReading =
       this.current?.jobType === 'reading' &&
       this.current.stopped &&
       this.reading !== undefined &&
       !this.reading.owns(this.current.bookUid);
-    if (staleStoppedReading) {
-      return freezeSnapshot({ job: null });
-    }
-    return freezeSnapshot({ job: this.current ? structuredClone(this.current) : null });
+    const job = this.current && !staleStoppedReading ? structuredClone(this.current) : null;
+    const { wakeGameHour } = this;
+    return freezeSnapshot({ job, ...(wakeGameHour === undefined ? {} : { wakeGameHour }) });
   }
   restoreState(state: LongActionState): void {
     validateLongJob(state.job, this.sim.time);
+    const { wakeGameHour } = state;
+    validateWakeGameHour(wakeGameHour);
     if (state.job?.jobType === 'craft' && !this.craft?.owns(state.job.workUid)) {
       throw new Error('Missing craft work item');
     }
@@ -254,6 +274,15 @@ export class LongActions {
       }
     }
     this.current = state.job === null ? undefined : structuredClone(state.job);
+    this.wakeGameHour = wakeGameHour;
+    this.restoreCompressionCap();
+  }
+  /** A restored running action compresses up to its own cap, not the unowned default. */
+  private restoreCompressionCap(): void {
+    const job = this.current;
+    if (job && !job.stopped && job.jobType !== 'pry' && this.sim.compression.active) {
+      this.sim.compressLongAction(job.jobType);
+    }
   }
   startWait(): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
@@ -263,19 +292,23 @@ export class LongActions {
     if (this.current && !this.current.stopped) {
       return 'Stop the current action first';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('wait');
     if (!result.ok) {
       return result.reason;
     }
     this.current = { jobType: 'wait', stopped: false, last: this.sim.time };
     return undefined;
   }
-  startRest(kind: RestKind, rate: number, furnitureUid: number): string | undefined {
+  /** `wakeAt` (Sim time) runs a sleep to that time instead of until rested; the caller checks for an alarm. */
+  startRest(kind: RestKind, rate: number, furnitureUid: number, wakeAt?: number): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
     if (actionRefusal) {
       return actionRefusal;
     }
-    if (this.sim.needs.fatigue <= 0) {
+    if (wakeAt !== undefined && (kind !== 'sleep' || !(wakeAt > this.sim.time))) {
+      return 'Invalid wake time';
+    }
+    if (wakeAt === undefined && this.sim.needs.fatigue <= 0) {
       return "You're not tired";
     }
     if (this.current?.jobType === 'craft' && !this.current.stopped) {
@@ -287,7 +320,7 @@ export class LongActions {
     if (this.current?.jobType === 'pry' && !this.current.stopped) {
       return 'Stop prying first';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction(kind);
     if (!result.ok) {
       return result.reason;
     }
@@ -296,7 +329,14 @@ export class LongActions {
       stopped: false,
       last: this.sim.time,
       elapsed: 0,
-      rest: { kind, furnitureUid, label: REST_LABEL[kind], rate, startFatigue: this.sim.needs.fatigue },
+      rest: {
+        kind,
+        furnitureUid,
+        label: REST_LABEL[kind],
+        rate,
+        startFatigue: this.sim.needs.fatigue,
+        ...(wakeAt === undefined ? {} : { wakeAt }),
+      },
     };
     return undefined;
   }
@@ -325,7 +365,7 @@ export class LongActions {
     if (reason) {
       return reason;
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('craft');
     if (!result.ok) {
       return result.reason;
     }
@@ -414,7 +454,7 @@ export class LongActions {
     if (!Number.isFinite(duration) || duration <= 0) {
       return 'Invalid treatment time';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('treatment');
     if (!result.ok) {
       return result.reason;
     }
@@ -456,7 +496,7 @@ export class LongActions {
     if (duration === undefined || !Number.isFinite(duration) || duration <= 0) {
       return 'Invalid reading time';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('reading');
     if (!result.ok) {
       return result.reason;
     }
@@ -485,7 +525,7 @@ export class LongActions {
     if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
       return 'Another craft is active';
     }
-    const result = this.sim.compressLongAction();
+    const result = this.sim.compressLongAction('craft');
     if (!result.ok) {
       return result.reason;
     }
@@ -512,7 +552,7 @@ export class LongActions {
       this.sim.compression.stop();
       this.sim.compression.snap();
     } else {
-      const result = this.sim.compressLongAction();
+      const result = this.sim.compressLongAction(job.jobType);
       if (!result.ok) {
         return result.reason;
       }
@@ -652,7 +692,8 @@ export class LongActions {
       return false;
     }
     job.elapsed += seconds;
-    return this.sim.needs.fatigue <= 0;
+    // An alarm wakes you at its time, with fatigue held at its floor of 0 once rested.
+    return job.rest.wakeAt === undefined ? this.sim.needs.fatigue <= 0 : job.last >= job.rest.wakeAt;
   }
   private finishJob(job: LongJob): void {
     try {

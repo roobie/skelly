@@ -166,6 +166,20 @@ describe('snapshot state components', () => {
     expect(restored.survival.lit?.uid).toBe(headlamp.uid);
   });
 
+  it('round-trips sleep debt past 100, the alarm wake hour and a running alarm sleep with its wake time', async () => {
+    const runtime = createRuntime();
+    runtime.sim.needs.fatigue = 150;
+    runtime.sim.actions.wakeGameHour = 7;
+    const wakeAt = runtime.sim.time + 3600;
+    expect(runtime.sim.actions.startRest('sleep', -10, 1, wakeAt)).toBeUndefined();
+
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.sim.needs.fatigue).toBe(150);
+    expect(loaded.sim.actions.wakeGameHour).toBe(7);
+    expect(loaded.sim.actions.rest).toMatchObject({ kind: 'sleep', wakeAt });
+  });
+
   it('round-trips a stopped reading action with its held book uid and progress', async () => {
     const runtime = createRuntime();
     const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;

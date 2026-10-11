@@ -961,6 +961,11 @@ button.inv-option.game-cursor-hover {
 .inv-option-no {
   color: #8a929c;
 }
+.inv-wake-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .inv-reason {
   color: #e0876e;
   text-align: right;

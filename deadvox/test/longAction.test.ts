@@ -14,7 +14,7 @@ import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
-import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const baseContent = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json'))
@@ -24,6 +24,35 @@ const baseContent = readdirSync('src/content/base')
     data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
   }));
 const { registry } = buildRegistry(baseContent);
+// Built once at load: a full registry build inside the test body pushed it past the test timeout under load.
+const readingFixtureRegistry = buildRegistry([
+  ...baseContent,
+  {
+    source: 'reading-fixture.json',
+    data: {
+      items: [
+        {
+          id: 'reading_fixture_book',
+          name: 'Fixture manual',
+          category: 'book',
+          weight: 1,
+          size: [1, 1],
+          book: { title: 'Fixture manual', recipes: ['reading_fixture'], readingGameMinutes: 1 },
+        },
+      ],
+      recipes: [
+        {
+          id: 'reading_fixture',
+          result: { item: 'torch', count: 1 },
+          timeGameMinutes: 1,
+          skills: {},
+          qualities: {},
+          components: [[{ item: 'rag', count: 1 }]],
+        },
+      ],
+    },
+  },
+]).registry;
 const make = (
   saved?: {
     inventory: ReturnType<Inventory['snapshotState']>;
@@ -33,7 +62,7 @@ const make = (
   contentRegistry: Registry = registry,
 ) => {
   const inv = saved ? Inventory.restoreState(contentRegistry, saved.inventory) : new Inventory(contentRegistry);
-  const sim = new Simulation({ seed: 1, restRate: () => sim.actions.restRate });
+  const sim = new Simulation({ seed: 1 });
   const character = new Character(contentRegistry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5 });
   sim.actions.craft = craftActionHooks(inv, character, reach, () => [0, 0, 0]);
@@ -125,6 +154,65 @@ describe('core long actions', () => {
     restored.sim.actions.stop();
     expect(restored.sim.actions.job).toBeUndefined();
     expect(restored.sim.compression.interruption).toBeUndefined();
+  });
+  it('ramps each long action up to its own content cap', () => {
+    const caps = { wait: 100, rest: 110, sleep: 120, craft: 20, reading: 25, treatment: 15 };
+    const starts: [keyof typeof caps, (sim: Simulation) => string | undefined][] = [
+      ['wait', (sim) => sim.actions.startWait()],
+      ['rest', (sim) => sim.actions.startRest('rest', -10, 1)],
+      ['sleep', (sim) => sim.actions.startRest('sleep', -10, 1)],
+      [
+        'treatment',
+        (sim) => {
+          sim.actions.treatment = { validate: () => undefined, finish: () => true };
+          return sim.actions.beginTreatment('torso', 1, 'rag', 3600);
+        },
+      ],
+      [
+        'reading',
+        (sim) => {
+          sim.actions.reading = {
+            owns: () => true,
+            validate: () => undefined,
+            duration: () => 3600,
+            finish: () => undefined,
+          };
+          return sim.actions.beginReading(1);
+        },
+      ],
+      [
+        'craft',
+        (sim) => {
+          sim.actions.craft = {
+            admit: () => undefined,
+            begin: () => 1,
+            owns: () => true,
+            validate: () => undefined,
+            advance: () => false,
+            finish: () => undefined,
+            cancel: () => undefined,
+          };
+          return sim.actions.startCraft(1);
+        },
+      ],
+    ];
+    for (const [jobType, begin] of starts) {
+      const sim = new Simulation({ seed: 1, compressionCaps: caps });
+      expect(begin(sim)).toBeUndefined();
+      for (let frame = 0; frame < 240; frame++) {
+        advanceLiveFrame(sim, realSeconds(1 / 60));
+      }
+      expect(sim.actions.job?.jobType).toBe(jobType);
+      expect(sim.compression.c).toBe(caps[jobType]);
+    }
+  });
+  it('a restored running action ramps to its own cap, not the one unowned compression uses', () => {
+    const restored = make(snapshot(start()));
+    for (let frame = 0; frame < 240; frame++) {
+      advanceLiveFrame(restored.sim, realSeconds(1 / 60));
+    }
+    expect(restored.sim.actions.job).toMatchObject({ jobType: 'craft', stopped: false });
+    expect(restored.sim.compression.c).toBe(COMPRESSION_CAPS_FIXTURE.craft);
   });
   it('movement stops wait without leaving a continuation prompt', () => {
     const { sim } = make();
@@ -320,32 +408,7 @@ describe('core long actions', () => {
   });
 
   it('resumes reading the held book and teaches its recipes only once on completion', () => {
-    const fixtureContent = {
-      items: [
-        {
-          id: 'reading_fixture_book',
-          name: 'Fixture manual',
-          category: 'book',
-          weight: 1,
-          size: [1, 1],
-          book: { title: 'Fixture manual', recipes: ['reading_fixture'], readingGameMinutes: 1 },
-        },
-      ],
-      recipes: [
-        {
-          id: 'reading_fixture',
-          result: { item: 'torch', count: 1 },
-          timeGameMinutes: 1,
-          skills: {},
-          qualities: {},
-          components: [[{ item: 'rag', count: 1 }]],
-        },
-      ],
-    };
-    const fixtureRegistry = buildRegistry([
-      ...baseContent,
-      { source: 'reading-fixture.json', data: fixtureContent },
-    ]).registry;
+    const fixtureRegistry = readingFixtureRegistry;
     const runtime = make(undefined, fixtureRegistry);
     const item = runtime.inv.create('reading_fixture_book');
     const startingSkills = { ...runtime.character.skills };

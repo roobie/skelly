@@ -1115,6 +1115,7 @@ export const startPlay = (
     character: () => session.character,
     body: () => sim.body.snapshotState(),
     needs: () => needsText(),
+    wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
     attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
   });
@@ -1497,14 +1498,13 @@ export const startPlay = (
   /** Ends the skip exactly on target: snapping c to 1 keeps the ramp-down from running past it. */
   const endSkip = (): void => {
     skipUntil = undefined;
-    sim.ignoreUnsafe = false;
     compression.stop();
     compression.snap();
   };
 
   /**
    * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
-   * stepping as rest (needs, scheduler and shamblers all run), ignoring danger. Another call
+   * stepping as rest (needs, scheduler and shamblers all run). Another call
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {
@@ -1515,7 +1515,6 @@ export const startPlay = (
     }
     queue.cancel();
     skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);
-    sim.ignoreUnsafe = true;
     sim.compress(SKIP_COMPRESSION);
   };
 
@@ -1623,6 +1622,9 @@ export const startPlay = (
       stopAction();
     },
     wait: () => sim.actions.startWait(),
+    setWakeGameHour: (gameHour) => {
+      rest.wakeGameHour = gameHour;
+    },
     cancelItemThrow,
     throwItem: throwRecordedItem,
   };

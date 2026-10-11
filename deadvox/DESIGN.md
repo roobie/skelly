@@ -175,18 +175,43 @@ Crafting, reading, building, disassembly, repair, searching and sleeping are
 **long actions**. A long action has a duration in game time. It runs with
 compression on and shows a progress bar and the game time passing.
 
-- **Starting an action:** a nearby or aware hostile does not block a long
-  action, and time still fast-forwards. BR (2026-10-05 20:09) answered
-  "fast forward". BR (2026-10-05 22:28) chose option B; the lead's wording for
-  B was "No: only a hit or another real event (hunger, thirst...) wakes you".
-  BR said "it's up to the player to make the area safe for them to do the long
-  action. We're not holding hands".
-- **Interruptions:** emitted events such as a hit, loud noise, fire, or a need
-  hitting a threshold stop the action. A shambler noticing the player does not
-  interrupt it. `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
-  emitted events; `src/core/longAction.ts`, `LongActions.syncInterruption`,
-  wakes a sleeper, clears the interruption and frees input. Other actions drop
-  back to real time and ask *Continue* or *Stop*. Progress made so far is kept.
+- **How fast:** each compressing long action ramps up to its own cap, set in
+  content (`src/content/base/compression.jsonnet`), so how fast time passes is
+  tuned without code. Waiting, resting and sleeping get far higher caps than
+  crafting, reading and treatment. Waiting at the work pace was slow and
+  wearing, and a player should be able to sleep through most of a night, while
+  work stays at a pace its progress can be read at. Prying runs at 1×.
+- **Frame cost:** at a high cap one frame covers several Sim seconds, so a
+  long action's Sim step per frame is bounded (`src/core/compression.ts`,
+  `longActionLimits`). The bound lets the base content's highest cap run in
+  full at 60 frames a second in a quiet world. Where many shamblers are active, the frame's cost
+  stays bounded and the fast-forward runs slower instead
+  ([CHALLENGES.md](CHALLENGES.md), 3).
+- **Only an event stops it:** nothing refuses or stops compression because a
+  shambler is near or aware of the player, the debug skip included. A player may
+  wait in a walled-off area with enemies about that can't find or harm them, and
+  whether an area is safe enough is a judgement only the player can make, so the
+  game never makes them clear it first. Emitted events stop the action: a hit or
+  other damage, a need crossing its threshold, a carried light dying, and the
+  debug noise key. `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
+  them and halts the scheduler after the tick that emitted one, so a frame of
+  many Sim seconds still stops at the first hit.
+  `src/core/longAction.ts`, `LongActions.syncInterruption`, wakes a sleeper,
+  clears the interruption and frees input. Other actions drop back to real time
+  and ask *Continue* or *Stop*. Progress made so far is kept.
+- **Stopping:** after a stop, the world runs on for at most a few Sim seconds
+  while compression ramps back down, however high the cap
+  (`src/game/frameDriver.ts`, `RAMP_DOWN_SIM_SECONDS`). A ramp of fixed Real
+  length from a high cap would run the world on for tens of Sim seconds after
+  the player stopped waiting.
+- **How sleep ends:** sleep ends once fatigue reaches zero, which takes a
+  normal night from 100 (see [Character](#character)). Carrying an item with
+  `alarm` lets the player pick a wake hour on the Actions tab instead; sleep
+  then runs to that hour with fatigue held at zero, and recovery continues.
+  Without a clock you can't time your waking, so the choice needs one. The
+  chosen hour is saved, so Continue and replays keep it. The events above still
+  wake a sleeper. See `LongActions.advanceJob`, `LongActions.wakeGameHour` and
+  `RestAction.wakeAt`.
 - **Short handling** (moving an item, reloading, wielding) is not compressed.
   It takes real seconds while the world runs at 1× (see
   [Items](#items-and-inventory)).
@@ -236,7 +261,9 @@ catches up in closed form where it can, and in coarse steps otherwise:
   | Region map (hordes, evolution) | once per game minute |
 
   During compression, the per-tick step for the slow systems grows instead of
-  the number of ticks, so the cost per frame stays bounded.
+  the number of ticks. The fixed-rate systems keep their step, so a frame's Sim
+  step is bounded instead (see [Long actions](#long-actions)), which keeps the
+  cost per frame bounded.
 - **Entities.** Slice 1 uses plain objects behind a small `EntityStore`
   interface. When we have hundreds of zombies, that storage moves to
   structure-of-arrays typed arrays in a worker, without changing the systems'
@@ -621,6 +648,25 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
   are per game hour. Body temperature isn't simulated; #366's heat property
   could later serve it.
+- **Fatigue is sleep debt.** Zero is rested and 100 is what a normal 8-hour
+  sleep in a good bed clears, at a steady rate. It has no upper cap, because a
+  person can stay awake far past the point of tiredness, so the HUD shows a
+  number, not a percentage. Awake, it rises at a baseline rate, as if standing
+  at rest. A furniture piece's rest quality scales sleep: at
+  quality 1 it is a normal sleep, and lower quality clears a smaller share, down
+  to `roughSleepShare` of it at 0. Resting clears debt more slowly than any
+  sleep. The rates are content, in `src/content/base/body.jsonnet`.
+- **Sleep's main value is recovery.** While asleep, health, regional and blood
+  recovery run at `sleepRecoveryFactor` times their awake rate, so a night's
+  sleep is how a hurt player heals, not only how they clear debt. Health and
+  regions recover only while calories and hydration are at their floor or above
+  and fatigue is under a ceiling. Content sets all three limits, the fatigue
+  ceiling per state. Base content sets an awake ceiling and none asleep, so
+  someone too tired heals nothing until they sleep, and sleep heals at any
+  fatigue. One gate decides it (`src/core/needs.ts`, `healthRecovers`); it
+  becomes a content predicate when the expression language lands (#393). Each
+  rate and limit is read once, through `Body` in `src/core/body.ts`, so #592's
+  modifier point can wrap it there.
 - **Body.** Injuries affect sight, aim, swings and movement as well as health.
   Each region recovers at health's rate while needs allow health recovery, except
   while that region is bleeding or infected. This lets injury penalties fade
@@ -637,12 +683,12 @@ and `src/core/content.ts`, `checkItemFirearm`.
 
   Infection onset is time-based, with deterministic infection risk and an
   antiseptic window. Knockout is timed; infection and knockout settings are
-  content-defined. Regional recovery follows `HEALTH.regen` in
-  `src/core/needs.ts`. A knockout leaves the player prone, with a black screen
+  content-defined. Regional recovery follows health's content rate,
+  `healthRecoveryPerGameHour`. A knockout leaves the player prone, with a black screen
   and no sound. If the character
   dies while knocked out, the black screen gives way to the death screen. See
   `src/core/body.ts`, `Body.advance`; `src/core/schema.ts`, `BodyTuningSchema`;
-  `src/core/needs.ts`, `HEALTH.regen`; `src/game/session.ts`,
+  `src/core/needs.ts`, `stepNeeds`; `src/game/session.ts`,
   `playerEyeHeightMetres`; `src/ui/style.css`, `body.unconscious`;
   `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
 - **Death is permanent.** A new run is a new world, or the same world with a
