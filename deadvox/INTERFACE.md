@@ -299,7 +299,7 @@ In-game choices use the game's own combo box (`src/ui/comboBox.ts`, `comboBox`),
 
 Selected-item details sit between the two places items move between: inspection and actions read down, not across, and the player can see both destinations while reading. The side-by-side layout keeps the nearby pane wide enough for a cap-limited locker; at narrower windows the details pane joins the vertical stack instead of squeezing the locker. See `src/ui/inventoryScreen.ts`, `inventoryTemplate` and `detailsTemplate`.
 
-The worn column always shows the Shoulder box, even empty. Dragging a long gun over it previews whether the gun can go there and, if not, why, so the slot teaches itself without an instruction ("Afford, don't instruct"). See `src/ui/inventoryScreen.ts`, `SHOWN_SLOTS`.
+The worn column puts the Shoulder box first, directly below the hands, even when empty. This keeps the long-gun sling destination easy to find without making the player search among clothing. Dragging a long gun over it previews whether the gun can go there and, if not, why, so the slot teaches itself without an instruction ("Afford, don't instruct"). See `src/ui/inventoryScreen.ts`, `SHOWN_SLOTS`.
 
 ## Numbers and diegesis
 

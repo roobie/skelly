@@ -49,7 +49,7 @@ export const targetForPackedFloorDrop = (
 };
 
 /** Wear slots always shown, so there's somewhere to drop clothing and a slung long gun. */
-const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist', 'shoulder'];
+const SHOWN_SLOTS: readonly WearSlot[] = ['shoulder', 'torso', 'legs', 'back', 'waist'];
 const SLOT_LABEL: Record<WearSlot, string> = {
   head: 'Head',
   torso: 'Torso',
