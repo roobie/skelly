@@ -5,9 +5,9 @@ read_if:
   - you change review verdicts, FIX causes or what blocks a merge on principle
 ---
 
-# Principles review skill (draft)
+# Principles review skill
 
-A proposed harness-neutral skill: the principles section that every code review
+This harness-neutral skill defines the principles section that every code review
 (cr-*) includes. It checks a change against the project's pillars, principles and
 engineering rules, inside the code review's single verdict.
 
@@ -130,21 +130,6 @@ the verdict, by fetching it, probing or asking the lead.
 
 An outstanding BR approval is an open gate, not one the reviewer can grant. Merge
 conditions stay with `docs/PROCESS.md`, "The life of a change", step 6.
-
-## Changes to PROCESS when r75 lands
-
-This proposal doesn't edit `docs/PROCESS.md`. The PR that lands the skill makes
-these changes:
-
-- **"The life of a change", step 4:** the code review includes the principles
-  section in this doc. Step 4's zero-drift list stays in step 4, as the rule lens 3
-  cites.
-- **"Slice decision rules", "FIX causes":** two more causes, "docs" for a
-  zero-drift FIX and "ownership" for content-versus-code ownership, so the
-  retrospective tally shows them.
-
-After applying these edits to `docs/PROCESS.md`, the landing PR deletes this
-section and the "(draft)" mark, so the landed doc stays a current record.
 
 ## Canonical home
 
