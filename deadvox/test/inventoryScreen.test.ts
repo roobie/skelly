@@ -96,9 +96,10 @@ function setup(contentRegistry = registry) {
   });
   const notices: string[] = [];
   const refusals: string[] = [];
-  let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0%';
+  let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0';
   let lastPayload: ReplayActionPayload | undefined;
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
+  let alarm: { gameHour: number | undefined } | undefined;
   const hooks = {
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
     feet: () => [0, 0, 0] as [number, number, number],
@@ -128,6 +129,9 @@ function setup(contentRegistry = registry) {
         craftContinue: () => undefined,
         craftStop: () => undefined,
         wait: () => undefined,
+        setWakeGameHour: (gameHour) => {
+          alarm = alarm && { gameHour };
+        },
         cancelItemThrow: () => undefined,
         throwItem: () => undefined,
       });
@@ -140,6 +144,7 @@ function setup(contentRegistry = registry) {
     character: () => character,
     body: () => body.snapshotState(),
     needs: () => needs,
+    wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
     attachmentCandidates: (_firearmUid: number, _slotId: string) => [beans],
   };
@@ -165,6 +170,9 @@ function setup(contentRegistry = registry) {
     },
     setNeeds: (value: string) => {
       needs = value;
+    },
+    carryAlarm: () => {
+      alarm = { gameHour: undefined };
     },
   };
 }
@@ -253,6 +261,27 @@ describe('inventory screen Lit rendering', () => {
     button!.click();
     expect(lastPayload()).toEqual({ kind: 'action.wait' });
   });
+  it('offers a wake hour only while an alarm is carried, stepping it through the replay owner', () => {
+    const { screen, root, lastPayload, carryAlarm } = setup();
+    screen.selectTab('actions');
+    const panel = root.querySelector<HTMLElement>('[data-tab-panel="actions"]')!;
+    expect(panel.querySelector('[data-wake-at]')).toBeNull();
+    carryAlarm();
+    screen.update();
+    const shown = () => panel.querySelector('[data-wake-at]')?.textContent;
+    const step = (action: 'wake-earlier' | 'wake-later') => {
+      panel.querySelector<HTMLButtonElement>(`button[data-action="${action}"]`)!.click();
+      screen.update();
+    };
+    expect(shown()).toBe('when rested');
+    step('wake-earlier');
+    expect(lastPayload()).toEqual({ kind: 'action.wake-hour', gameHour: 23 });
+    expect(shown()).toBe('23:00');
+    step('wake-later');
+    expect(lastPayload()).toEqual({ kind: 'action.wake-hour', gameHour: null });
+    step('wake-later');
+    expect(shown()).toBe('00:00');
+  });
   it('routes a hotkey to an open screen before its generic action handler', () => {
     const { screen } = setup();
     const handled = routeModalCommand('ui.inventory-tab-skills', {
@@ -314,9 +343,9 @@ describe('inventory screen Lit rendering', () => {
     screen.selectTab('crafting');
     expect(needs()).toContain('food 100%');
 
-    setNeeds('health 80% · stamina 60% · food 40% · water 20% · fatigue 90%');
+    setNeeds('health 80% · stamina 60% · food 40% · water 20% · fatigue 130');
     screen.update();
-    expect(needs()).toContain('fatigue 90%');
+    expect(needs()).toContain('fatigue 130');
   });
 
   it('renders a skill level from the live character progression', () => {
@@ -390,6 +419,7 @@ describe('inventory screen Lit rendering', () => {
         craftContinue: () => undefined,
         craftStop: () => undefined,
         wait: () => undefined,
+        setWakeGameHour: () => undefined,
         cancelItemThrow: () => undefined,
         throwItem: () => undefined,
       });

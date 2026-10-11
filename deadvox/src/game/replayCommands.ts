@@ -21,6 +21,7 @@ export type ReplayActionPayload =
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
   | { kind: 'action.wait' }
+  | { kind: 'action.wake-hour'; gameHour: number | null }
   | { kind: 'item.throw.cancel' }
   | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
 
@@ -71,6 +72,10 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.firearmUid) &&
   typeof payload.slotId === 'string' &&
   (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
+
+/** An hour of the day, or null to sleep until rested. */
+const isWakeGameHour = (value: unknown): boolean =>
+  value === null || (Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) < 24);
 
 export const isReplayActionPayload = (value: unknown): value is ReplayActionPayload => {
   if (!(value && typeof value === 'object' && !Array.isArray(value))) {
@@ -123,6 +128,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'action.wait':
     case 'item.throw.cancel':
       return Object.keys(payload).length === 1;
+    case 'action.wake-hour':
+      return isWakeGameHour(payload.gameHour);
     case 'item.throw':
       return (
         isUid(payload.itemUid) &&
@@ -163,6 +170,8 @@ export interface ReplayCommandOwners {
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   wait: () => string | undefined;
+  /** The hour of day a sleep wakes at with an alarm carried; undefined sleeps until rested. */
+  setWakeGameHour: (gameHour: number | undefined) => void;
   cancelItemThrow: () => void;
   throwItem: (itemUid: number, hand: 'left' | 'right', distance: number) => void;
 }
@@ -220,6 +229,9 @@ export const applyReplayActionPayload = (
       return owners.craftStop();
     case 'action.wait':
       return owners.wait();
+    case 'action.wake-hour':
+      owners.setWakeGameHour(payload.gameHour ?? undefined);
+      return undefined;
     case 'item.throw.cancel':
       owners.cancelItemThrow();
       return undefined;

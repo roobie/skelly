@@ -1048,6 +1048,7 @@ export const startPlay = (
     character: () => session.character,
     body: () => sim.body.snapshotState(),
     needs: () => needsText(),
+    wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
     attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
   });
@@ -1545,6 +1546,9 @@ export const startPlay = (
       stopAction();
     },
     wait: () => sim.actions.startWait(),
+    setWakeGameHour: (gameHour) => {
+      rest.wakeGameHour = gameHour;
+    },
     cancelItemThrow,
     throwItem: throwRecordedItem,
   };
