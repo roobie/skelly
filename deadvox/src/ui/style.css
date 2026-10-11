@@ -949,7 +949,7 @@ body.unconscious::after {
   position: absolute;
   left: calc(var(--preview-left) + (var(--preview-width) - 28px) / 2);
   top: calc(var(--preview-top) + (var(--preview-height) - 28px) / 2);
-  z-index: 1;
+  z-index: var(--ui-layer-inventory);
   width: 24px;
   height: 24px;
   display: grid;
