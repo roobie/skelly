@@ -138,7 +138,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 44;
+export const SAVE_SCHEMA_VERSION = 45;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -290,6 +290,7 @@ itemSchema = obj({
   uid: positiveInt,
   type: str({ id: true }),
   count: positiveInt,
+  lootedCount: opt(nonNegativeInt),
   condition: num({ min: 0, max: 1 }),
   charges: opt(nonNegative),
   on: opt(bool),

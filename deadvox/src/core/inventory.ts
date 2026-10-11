@@ -572,18 +572,18 @@ export class Inventory {
     const from = this.locate(item)!;
     const origin =
       from.kind === 'hand' ? this.quickbarOrigins.get(item.uid) : this.targetState(this.targetForLocation(from));
-    if (from.kind === 'furniture' && target.kind !== 'furniture') {
-      this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + count);
-    }
     let moving = item;
     if (count < item.count) {
       moving = this.factory.split(item, count);
     } else {
       this.remove(from);
     }
+    if (from.kind === 'furniture' && target.kind !== 'furniture') {
+      this.countLooted(moving);
+    }
     this.version += 1;
     if (plan.merge) {
-      plan.merge.count += moving.count;
+      this.mergeStack(plan.merge, moving);
       if (count === item.count) {
         this.quickbarOrigins.delete(item.uid);
       }
@@ -620,11 +620,28 @@ export class Inventory {
     }
     this.version += 1;
     if (placement.merge) {
-      placement.merge.count += item.count;
+      this.mergeStack(placement.merge, item);
     } else {
       this.put(item, target, placement.at);
     }
     return true;
+  }
+
+  private countLooted(item: Item): void {
+    const alreadyCounted = Math.min(item.lootedCount ?? 0, item.count);
+    const newlyCounted = item.count - alreadyCounted;
+    if (newlyCounted > 0) {
+      this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + newlyCounted);
+    }
+    item.lootedCount = item.count;
+  }
+
+  private mergeStack(target: Item, source: Item): void {
+    target.count += source.count;
+    const lootedCount = (target.lootedCount ?? 0) + (source.lootedCount ?? 0);
+    if (lootedCount > 0) {
+      target.lootedCount = lootedCount;
+    }
   }
 
   private validCraftPlan(
@@ -707,14 +724,14 @@ export class Inventory {
       if (from.kind === 'hand') {
         this.quickbarOrigins.delete(item.uid);
       }
+      const component = count < item.count ? this.factory.split(item, count) : item;
+      if (component === item) {
+        this.remove(from);
+      }
       if (from.kind === 'furniture') {
-        this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + count);
+        this.countLooted(component);
       }
-      if (count < item.count) {
-        return this.factory.split(item, count);
-      }
-      this.remove(from);
-      return item;
+      return component;
     });
     work.work = {
       kind: 'craft',
@@ -728,12 +745,12 @@ export class Inventory {
 
   private escrowDisassembly(plan: Extract<WorkPlan, { kind: 'disassembly' }>, work: Item): void {
     const from = this.locate(plan.source)!;
-    if (from.kind === 'furniture') {
-      this.looted.set(plan.source.type, (this.looted.get(plan.source.type) ?? 0) + 1);
-    }
     const input = plan.source.count > 1 ? this.factory.split(plan.source, 1) : plan.source;
     if (input === plan.source) {
       this.remove(from);
+    }
+    if (from.kind === 'furniture') {
+      this.countLooted(input);
     }
     work.work = {
       kind: 'disassembly',
@@ -1065,6 +1082,9 @@ export class Inventory {
     }
     if (count < item.count) {
       item.count -= count;
+      if (item.lootedCount !== undefined) {
+        item.lootedCount = Math.min(item.lootedCount, item.count);
+      }
     } else {
       this.remove(at);
       this.quickbarOrigins.delete(item.uid);

@@ -110,6 +110,7 @@ describe('stacking', () => {
     inv.move(a, pocket);
     expect(inv.move(b, pocket)).toMatchObject({ ok: true, merge: a });
     expect(a.count).toBe(10);
+    expect(inv.snapshotState().worn.torso!.pockets![0]![0]!.item).not.toHaveProperty('lootedCount');
     // The stack is full (10), so the next two take a cell of their own.
     expect(inv.move(c, pocket)).toMatchObject({ ok: true, at: { x: 1, y: 0 } });
     expect(hoodie.pockets![0]!.map((p) => p.item.count)).toEqual([10, 2]);
