@@ -171,6 +171,30 @@ describe('Simulation', () => {
     expect(sim.compression.active).toBe(true);
   });
 
+  it.each(['wait', 'rest', 'sleep'] as const)(
+    'stops a running %s when a bleeding wound reaches the compression threshold',
+    (kind) => {
+      const sim = new Simulation({ seed: 1 });
+      const notices: string[] = [];
+      sim.actions.notice = (text) => notices.push(text);
+      const refused = kind === 'wait' ? sim.actions.startWait() : sim.actions.startRest(kind, -10, 1);
+      expect(refused).toBeUndefined();
+      expect(sim.compression.active).toBe(true);
+
+      sim.body.impact(1, 'leftLeg', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+      sim.frame(1);
+
+      expect(sim.compression.active).toBe(false);
+      if (kind === 'sleep') {
+        expect(sim.actions.job).toBeUndefined();
+        expect(notices).toContain(`You wake up: ${BODY_TUNING_FIXTURE.bleeding.refusal}`);
+      } else {
+        expect(sim.compression.interruption).toBe(BODY_TUNING_FIXTURE.bleeding.refusal);
+        expect(sim.actions.job).toMatchObject({ jobType: kind, stopped: true });
+      }
+    },
+  );
+
   it("refuses time compression only once bleeding reaches content's loss rate", () => {
     const serious = fixtureTier('serious');
     const { bleeding } = BODY_TUNING_FIXTURE;

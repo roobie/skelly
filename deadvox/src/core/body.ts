@@ -402,7 +402,7 @@ export class Body implements ModifierActor {
       if (damage < tier.minDamage) {
         continue;
       }
-      share += this.modified('bleeding.chance', tier.chance[kind] * (tier.regionFactor?.[region] ?? 1));
+      share += this.modified('bleeding.chance', tier.chance[kind]) * (tier.regionFactor?.[region] ?? 1);
       if (roll < share) {
         return index;
       }

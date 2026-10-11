@@ -7,7 +7,7 @@ import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 describe('outer frame time planning', () => {
   it('converts a Real frame duration using the compression state after its ramp update', () => {
     const compression = new Compression();
-    compression.start(undefined);
+    compression.start(undefined, 'debug');
     const elapsed = realSeconds(0.025);
     const planned = planRealFrame(compression, elapsed);
 
@@ -16,7 +16,7 @@ describe('outer frame time planning', () => {
 
   it('bounds a Real-driven Sim step by the configured Sim-time frame limit', () => {
     const compression = new Compression();
-    compression.start(undefined, { cap: 2400, maxSimPerFrame: simSeconds(2), ramp: 'skip' });
+    compression.start(undefined, 'debug', { cap: 2400, maxSimPerFrame: simSeconds(2), ramp: 'skip' });
     const planned = planRealFrame(compression, realSeconds(10));
 
     expect(planned).toBe(2);

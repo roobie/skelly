@@ -358,16 +358,16 @@ describe('player body', () => {
   });
 
   it('uses zero and fractional region factors to scale a fixture tier chance', () => {
-    const withFactor = (region: BodyRegion, factor: number) =>
-      new Body({
-        ...BODY_TUNING_FIXTURE,
-        bleeding: {
-          ...BODY_TUNING_FIXTURE.bleeding,
-          tiers: tiers.map((tier) =>
-            tier.id === 'critical' ? { ...tier, regionFactor: { ...tier.regionFactor, [region]: factor } } : tier,
-          ),
-        },
-      });
+    const tuningWithFactor = (region: BodyRegion, factor: number) => ({
+      ...BODY_TUNING_FIXTURE,
+      bleeding: {
+        ...BODY_TUNING_FIXTURE.bleeding,
+        tiers: tiers.map((tier) =>
+          tier.id === 'critical' ? { ...tier, regionFactor: { ...tier.regionFactor, [region]: factor } } : tier,
+        ),
+      },
+    });
+    const withFactor = (region: BodyRegion, factor: number) => new Body(tuningWithFactor(region, factor));
     const critical = tiers[CRITICAL]!;
     const boundaryRoll = critical.chance.pierce * 0.75;
     const zeroTorso = withFactor('torso', 0);
@@ -379,6 +379,22 @@ describe('player body', () => {
     }
     expect(fullTorso.bleedingTierForHit(critical.minDamage, 'torso', 'pierce', boundaryRoll)).toBe(CRITICAL);
     expect(halfTorso.bleedingTierForHit(critical.minDamage, 'torso', 'pierce', boundaryRoll)).not.toBe(CRITICAL);
+  });
+
+  it('keeps a zero-factor region excluded when bleeding chance has an additive modifier', () => {
+    const critical = tiers[CRITICAL]!;
+    const tuning = {
+      ...BODY_TUNING_FIXTURE,
+      bleeding: {
+        ...BODY_TUNING_FIXTURE.bleeding,
+        tiers: tiers.map((tier) =>
+          tier.id === 'critical' ? { ...tier, regionFactor: { ...tier.regionFactor, head: 0 } } : tier,
+        ),
+      },
+    };
+    const body = new Body(tuning, undefined, [{ effect: 'bleeding.chance', add: 1 }]);
+
+    expect(body.bleedingTierForHit(critical.minDamage, 'head', 'pierce', 0)).not.toBe(CRITICAL);
   });
 
   it('lets a blunt hit bleed, just far less often than a piercing one', () => {

@@ -674,8 +674,8 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
 - **Tier from the hit.** One roll per bleeding hit picks its tier.
   - The roll runs worst tier first, over the tiers whose least damage the hit
     meets. Each adds its chance for the hit's damage kind, scaled by a content
-    factor for the hit region. A zero factor excludes that region, so one factor
-    replaces a separate region allowlist.
+    factor for the hit region. A zero factor excludes that region, so content
+    needs no separate region list.
   - Every tier has a chance for every kind, so blunt can open any tier, just far
     less often than a cut or a stab.
   - A hit on a bleeding wound keeps the worse severity.
@@ -715,8 +715,9 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
   at or above that rate. The default, 0, means any bleeding, so a wound runs its
   course in real time.
   - Rest, sleep and waiting are refused with content's line, and player
-    long-action compression that is already running drops to 1×. Bleeding does
-    not refuse or stop debug compression; emitted interrupts still stop it.
+    long-action compression that is already running drops to 1×. Debug time
+    controls exist to move time while testing, bleeding included, so those
+    refusals don't apply; a real emitted interrupt still stops debug compression.
   - Treatment, crafting and reading are never refused. Like prying, they run at 1×
     and leave movement free, and they go back to compression once the bleeding no
     longer refuses it.

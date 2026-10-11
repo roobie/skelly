@@ -3,7 +3,7 @@
 
 import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
 import { type ClockSettings, calendarAt, defaultClock, simToGameHours } from './clock.ts';
-import { Compression, type CompressionLimits } from './compression.ts';
+import { Compression, type CompressionLimits, type CompressionOwner } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
@@ -36,7 +36,7 @@ export interface SimulationState {
   scheduler: SchedulerState;
   needs: Needs;
   body: BodyState;
-  compression: { c: number; active: boolean; owner: 'debug' | 'long-action'; interruption?: string };
+  compression: { c: number; active: boolean; owner: CompressionOwner; interruption?: string };
   pendingInterrupt?: string;
   dead?: { cause: string; time: number };
 }
@@ -82,7 +82,6 @@ export class Simulation {
   private pendingInterrupt: string | undefined;
   private readonly unsafe: () => string | undefined;
   private readonly restRate: () => number | undefined;
-  private compressionOwner: 'debug' | 'long-action' = 'debug';
 
   constructor(options: SimOptions) {
     this.seed = options.seed;
@@ -136,7 +135,7 @@ export class Simulation {
       compression: {
         c: this.compression.c,
         active: this.compression.active,
-        owner: this.compressionOwner,
+        owner: this.compression.owner,
         ...(this.compression.interruption === undefined ? {} : { interruption: this.compression.interruption }),
       },
       ...(this.dead === undefined && this.pendingInterrupt !== undefined
@@ -171,7 +170,7 @@ export class Simulation {
     this.compression.c = state.compression.c;
     this.compression.active = state.compression.active;
     this.compression.interruption = state.compression.interruption;
-    this.compressionOwner = state.compression.owner;
+    this.compression.owner = state.compression.owner;
     this.dead = state.dead === undefined ? undefined : { ...state.dead };
     this.pendingInterrupt = undefined;
     this.scheduler.restoreState(state.scheduler);
@@ -279,20 +278,12 @@ export class Simulation {
     if (this.actions.job?.jobType === 'pry' && !this.actions.job.stopped) {
       return { ok: false, reason: 'Stop prying first' };
     }
-    const result = this.compression.start(this.unsafeReason(), limits);
-    if (result.ok) {
-      this.compressionOwner = 'debug';
-    }
-    return result;
+    return this.compression.start(this.unsafeReason(), 'debug', limits);
   }
 
   /** Player long actions refuse bleeding compression; emitted interruptions still stop them. */
   compressLongAction(): { ok: true } | { ok: false; reason: string } {
-    const result = this.compression.start(this.body.compressionRefusal);
-    if (result.ok) {
-      this.compressionOwner = 'long-action';
-    }
-    return result;
+    return this.compression.start(this.body.compressionRefusal, 'long-action');
   }
 
   private unsafeReason(): string | undefined {
@@ -363,7 +354,7 @@ export class Simulation {
       return false;
     }
     const bleedingRefusal =
-      compression.active && this.compressionOwner === 'long-action' ? this.body.compressionRefusal : undefined;
+      compression.active && compression.owner === 'long-action' ? this.body.compressionRefusal : undefined;
     const reason =
       emitted?.reason ??
       bleedingRefusal ??

@@ -2,6 +2,7 @@ import { simSeconds } from './time.ts';
 
 /** The owner-specific ramp profiles are applied only by the outer Real-time frame driver. */
 type CompressionRamp = 'normal' | 'skip';
+export type CompressionOwner = 'debug' | 'long-action';
 
 /** A per-start override of simulation-side compression limits. */
 export interface CompressionLimits {
@@ -28,6 +29,8 @@ export class Compression {
   c = 1;
   /** Limits of the current start; reset to normal by every `start` without an override. */
   limits: CompressionLimits = COMPRESSION;
+  /** Whether debug controls or a player long action started compression. */
+  owner: CompressionOwner = 'debug';
   /** A long action wants compression. */
   active = false;
   /** Why compression was interrupted; set until the player continues or stops. */
@@ -36,12 +39,14 @@ export class Compression {
   /** Asks for compression. Refused, with the reason, when it isn't safe. */
   start(
     unsafe: string | undefined,
+    owner: CompressionOwner,
     limits: CompressionLimits = COMPRESSION,
   ): { ok: true } | { ok: false; reason: string } {
     if (unsafe !== undefined) {
       return { ok: false, reason: unsafe };
     }
     this.limits = limits;
+    this.owner = owner;
     this.interruption = undefined;
     this.active = true;
     return { ok: true };
