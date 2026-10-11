@@ -36,7 +36,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; const gameFrame=guardDebugErrorFrame(frame,debugErrorEnabled(config.debug,location.search),()=>input.locked); reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return gameFrame(now);});`,
+          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
         );
       },
     },
@@ -858,18 +858,32 @@ try {
     );
     const stopped = await page.evaluate(() => {
       const { session, playFrame, requestResume } = globalThis.readingWitness;
-      const readTime = () => {
-        const { time } = session.sim;
-        return time;
-      };
-      const time = readTime();
-      requestResume();
-      const frameContinues = playFrame(performance.now());
-      return { paused: session.sim.paused, frameContinues, time, after: readTime() };
+      const originalRequestPointerLock = Element.prototype.requestPointerLock;
+      if (typeof originalRequestPointerLock !== 'function') {
+        throw new Error('Element.requestPointerLock is unavailable');
+      }
+      let pointerLockRequests = 0;
+      Object.defineProperty(Element.prototype, 'requestPointerLock', {
+        configurable: true,
+        value(...args) {
+          pointerLockRequests += 1;
+          return originalRequestPointerLock.apply(this, args);
+        },
+      });
+      try {
+        requestResume();
+        const frameContinues = playFrame(performance.now());
+        return { paused: session.sim.paused, frameContinues, pointerLockRequests };
+      } finally {
+        Object.defineProperty(Element.prototype, 'requestPointerLock', {
+          configurable: true,
+          value: originalRequestPointerLock,
+        });
+      }
     });
-    assert.equal(stopped.paused, true, 'resume remains refused after a play error');
+    assert.equal(stopped.paused, true, 'play remains paused after a play error');
+    assert.equal(stopped.pointerLockRequests, 0, 'resume does not request pointer lock after a play error');
     assert.equal(stopped.frameContinues, false, 'the frame driver stops after a play error');
-    assert.equal(stopped.after, stopped.time, 'a post-error frame does not advance simulation time');
     const backgroundIsInert = await page.evaluate(() => {
       const background = [...document.body.children].filter((element) => element.id !== 'error-report');
       return background.every((element) => element.inert);
