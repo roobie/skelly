@@ -4,6 +4,7 @@
 
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
+import { BODY_REGIONS, bodyRegionLabel } from '../core/body.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
@@ -121,6 +122,7 @@ import {
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
+import { PlayerBleedingNotice } from './playerBleedingNotice.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
@@ -949,9 +951,16 @@ export const startPlay = (
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
   let noticeUntil = 0;
+  const playerBleedingNotice = new PlayerBleedingNotice(
+    BODY_REGIONS.some((region) => sim.body.wounds[region]?.bleeding),
+  );
   const showNotice = (text: string) => {
     notice = text;
     noticeUntil = realNow() + 3000;
+  };
+  const updateBleedingNotice = (): void => {
+    const playerBleeding = BODY_REGIONS.some((region) => sim.body.wounds[region]?.bleeding);
+    playerBleedingNotice.update(playerBleeding, () => showNotice("You're bleeding."));
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
@@ -2707,6 +2716,8 @@ export const startPlay = (
     paused: sim.paused,
     needs: sim.needs,
     health: sim.body.health,
+    blood: sim.body.blood,
+    bleedingRegions: BODY_REGIONS.filter((region) => sim.body.wounds[region]?.bleeding).map(bodyRegionLabel),
     sprinting: session.sprinting,
     lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
   });
@@ -3148,7 +3159,16 @@ export const startPlay = (
 
   // Blood holds still while the game is paused.
   const updateGore = (dt: RealSeconds): void => {
-    view.gore.update(sim.paused ? 0 : dt, engine.isSolid, { zombies: zombieStore, listener: body.pos });
+    view.gore.update(sim.paused ? 0 : dt, engine.isSolid, {
+      zombies: zombieStore,
+      listener: body.pos,
+      player: {
+        pos: body.pos,
+        yaw: input.yaw,
+        wounds: sim.body.wounds,
+        thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
+      },
+    });
   };
   const waitViewAction = (): WaitViewAction | undefined => {
     const { job } = sim.actions;
@@ -3187,6 +3207,7 @@ export const startPlay = (
     playtestObserver?.beforeFrame(queue, inventory);
     mark = realNow();
     const gameFrozen = stepSimulation(dt, menuState.paused);
+    updateBleedingNotice();
     advancePendingItemThrow();
     syncThrowingStance();
     caseEffects.update(dt, engine.isSolid);
