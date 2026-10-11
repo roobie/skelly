@@ -370,7 +370,7 @@ export class SaveController {
   }
 
   get isRestored(): boolean {
-    return this.requestedContinue && !this.deadRecord && this.restored !== undefined;
+    return this.requestedContinue && this.restored !== undefined;
   }
 
   get isEntered(): boolean {

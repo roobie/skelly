@@ -937,11 +937,33 @@ try {
     assert.equal(await page.locator('#overlay').isVisible(), true);
     await page.locator('#go').click();
     await page.waitForFunction(() => globalThis.readingWitness.input.locked);
+    const generationBeforeLiveCheckpoint = await page.evaluate(
+      () => globalThis.readingWitness.saveController.savedGeneration,
+    );
+    await page.evaluate(() => {
+      const controller = globalThis.readingWitness.saveController;
+      controller.checkpoints.nextAt = 0;
+      controller.afterFrame();
+    });
+    await page.waitForFunction(
+      (generation) => globalThis.readingWitness.saveController.savedGeneration > generation,
+      generationBeforeLiveCheckpoint,
+    );
+    const generationBeforeDeath = await page.evaluate(() => globalThis.readingWitness.saveController.savedGeneration);
     await page.evaluate(() => {
       globalThis.readingWitness.reading.open({ title: 'Death closes paper', text: 'Placeholder' });
       globalThis.readingWitness.session.sim.hurt(9999, 'reading browser fixture');
     });
     await page.locator('#death').waitFor({ state: 'visible' });
+    await page.evaluate(() => {
+      const controller = globalThis.readingWitness.saveController;
+      controller.checkpoints.nextAt = 0;
+      controller.afterFrame();
+    });
+    await page.waitForFunction(
+      (generation) => globalThis.readingWitness.saveController.savedGeneration > generation,
+      generationBeforeDeath,
+    );
     assert.equal(await page.locator('#overlay').isVisible(), false);
     assert.equal(await page.locator('#reading').isVisible(), false);
     await page.waitForFunction(() => !globalThis.readingWitness.input.locked);

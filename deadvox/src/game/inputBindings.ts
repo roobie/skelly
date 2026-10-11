@@ -925,7 +925,7 @@ export class KeyboardInput {
       Boolean(target.closest('button,a,[role="button"],input[type="checkbox"]')?.closest('[data-debug-controls]'));
     const keyDown = (event: KeyboardEvent) => {
       // Chrome owns DevTools shortcuts, but cancel their page default where the browser exposes a cancelable event.
-      if (event.cancelable && chromeDevtoolsShortcut(event) && !editable(event.target)) {
+      if (event.cancelable && chromeDevtoolsShortcut(event) && !editable(event.target) && !this.capture) {
         event.preventDefault();
         return;
       }

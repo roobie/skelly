@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import {
   type Binding,
@@ -442,6 +443,42 @@ describe('keyboard registry', () => {
     expect(keyboard.press(event('KeyF', { ctrlKey: true }), true)).toBe(false);
     expect(keyboard.press(event('KeyF', { altKey: true }), true)).toBe(false);
     expect(commands).toEqual([]);
+  });
+  it('cancels Chrome DevTools shortcuts except in editable targets or while reporting binding refusal', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: false });
+    const remove = keyboard.install();
+    const dispatch = (target: EventTarget, code: string, modifiers: KeyboardEventInit = {}, cancelable = true) => {
+      const key = new KeyboardEvent('keydown', { code, bubbles: true, cancelable, ...modifiers });
+      target.dispatchEvent(key);
+      return key;
+    };
+
+    try {
+      for (const code of ['KeyC', 'KeyI', 'KeyJ']) {
+        expect(dispatch(globalThis, code, { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(true);
+      }
+      expect(dispatch(globalThis, 'F12').defaultPrevented).toBe(true);
+      expect(dispatch(globalThis, 'KeyC', { metaKey: true, shiftKey: true }).defaultPrevented).toBe(true);
+      for (const code of ['KeyI', 'KeyJ']) {
+        expect(dispatch(globalThis, code, { metaKey: true, altKey: true }).defaultPrevented).toBe(true);
+      }
+
+      const input = document.createElement('input');
+      document.body.append(input);
+      expect(dispatch(input, 'KeyI', { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(false);
+      expect(dispatch(globalThis, 'KeyI', { ctrlKey: true, shiftKey: true }, false).defaultPrevented).toBe(false);
+      expect(dispatch(globalThis, 'KeyK', { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(false);
+
+      let refusal: Chord | string | undefined;
+      keyboard.capture = (value) => {
+        refusal = value;
+      };
+      expect(dispatch(globalThis, 'KeyI', { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(false);
+      expect(refusal).toEqual(expect.any(String));
+    } finally {
+      remove();
+    }
   });
   it('routes a gate chord exclusively, suppresses repeats, and requires release after an owner transition', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
