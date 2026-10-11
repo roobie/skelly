@@ -1,4 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
+import { labelForAction } from '../game/inputBindings.ts';
 
 export const HUD_OPTION_KEYS = [
   'stats',
@@ -12,6 +13,9 @@ export const HUD_OPTION_KEYS = [
 ] as const;
 export type HudOptionKey = (typeof HUD_OPTION_KEYS)[number];
 export type HudOptionsState = Record<HudOptionKey, boolean>;
+// The master switch hides the whole HUD without touching each option, so showing it again restores what was shown.
+export type HudSettings = HudOptionsState & { shown: boolean };
+type HudSettingKey = keyof HudSettings;
 
 // New players need the HUD to understand the game; experienced players can turn it off as diegetic affordances grow.
 export const DEFAULT_HUD_OPTIONS: HudOptionsState = {
@@ -25,27 +29,29 @@ export const DEFAULT_HUD_OPTIONS: HudOptionsState = {
   messages: true,
 };
 
-export const hudVisibility = (state: HudOptionsState, debug = false): HudOptionsState =>
-  Object.fromEntries(HUD_OPTION_KEYS.map((key) => [key, debug || state[key]])) as HudOptionsState;
+export const hudVisibility = (state: HudSettings, debug = false): HudOptionsState =>
+  Object.fromEntries(HUD_OPTION_KEYS.map((key) => [key, debug || (state.shown && state[key])])) as HudOptionsState;
 
 const STORAGE_KEY = 'deadvox.hud-options';
 
-export const readHudOptions = (): HudOptionsState => {
+export const readHudOptions = (): HudSettings => {
   try {
     const saved = globalThis.localStorage?.getItem(STORAGE_KEY);
     if (!saved) {
-      return { ...DEFAULT_HUD_OPTIONS };
+      return { ...DEFAULT_HUD_OPTIONS, shown: true };
     }
-    const parsed = JSON.parse(saved) as Partial<HudOptionsState>;
-    return Object.fromEntries(
+    const parsed = JSON.parse(saved) as Partial<HudSettings>;
+    const options = Object.fromEntries(
       HUD_OPTION_KEYS.map((key) => [key, typeof parsed[key] === 'boolean' ? parsed[key] : false]),
     ) as HudOptionsState;
+    // Only an explicit hide keeps the HUD hidden; a missing switch must not blank every option at once.
+    return { ...options, shown: parsed.shown !== false };
   } catch {
-    return { ...DEFAULT_HUD_OPTIONS };
+    return { ...DEFAULT_HUD_OPTIONS, shown: true };
   }
 };
 
-export const writeHudOptions = (state: HudOptionsState): void => {
+export const writeHudOptions = (state: HudSettings): void => {
   try {
     globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
@@ -64,24 +70,30 @@ const LABELS: Record<HudOptionKey, string> = {
   messages: 'Messages and interruptions',
 };
 
+const optionTemplate = (
+  key: HudSettingKey,
+  label: string,
+  state: HudSettings,
+  change: (key: HudSettingKey, value: boolean) => void,
+): TemplateResult => html`
+  <label><input type="checkbox" .checked=${state[key]} @change=${(e: Event) => change(key, (e.target as HTMLInputElement).checked)} /> ${label}</label>
+`;
+
 const optionsTemplate = (
-  state: HudOptionsState,
-  change: (key: HudOptionKey, value: boolean) => void,
+  state: HudSettings,
+  change: (key: HudSettingKey, value: boolean) => void,
 ): TemplateResult => html`
   <section class="hud-options">
     <h2>HUD</h2>
-    ${HUD_OPTION_KEYS.map(
-      (key) => html`
-      <label><input type="checkbox" .checked=${state[key]} @change=${(e: Event) => change(key, (e.target as HTMLInputElement).checked)} /> ${LABELS[key]}</label>
-    `,
-    )}
+    ${optionTemplate('shown', `Show the HUD (hold ${labelForAction('hud.toggle')} in play)`, state, change)}
+    ${HUD_OPTION_KEYS.map((key) => optionTemplate(key, LABELS[key], state, change))}
   </section>
 `;
 
 export const renderHudOptions = (
   root: HTMLElement,
-  state: HudOptionsState,
-  change: (key: HudOptionKey, value: boolean) => void,
+  state: HudSettings,
+  change: (key: HudSettingKey, value: boolean) => void,
 ): void => {
   render(optionsTemplate(state, change), root);
 };

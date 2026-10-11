@@ -30,7 +30,7 @@ export class BackquoteOrbitGesture {
     this.toggleDebugPanel = options.toggleDebugPanel;
   }
 
-  toggleHudIfAllowed(): void {
+  private toggleHudIfAllowed(): void {
     if (this.canToggleHud()) {
       this.toggleHud();
     }
@@ -58,46 +58,40 @@ export class BackquoteOrbitGesture {
       readonly thirdPerson: boolean;
       readonly debugPanelAvailable: boolean;
       readonly facingYaw: number;
-      readonly fallback: () => void;
     },
   ): boolean {
     if (action === 'debug.panel-toggle') {
       return options.phase === 'up' && this.keyUp(options.at);
     }
-    if (action !== 'hud.toggle-interaction-hints') {
+    if (action !== 'hud.toggle') {
       return false;
     }
-    const handled =
-      options.phase === 'up'
-        ? this.keyUp(options.at)
-        : this.keyDown(options.at, options.thirdPerson, options.debugPanelAvailable, options.facingYaw);
-    if (!handled) {
-      options.fallback();
+    if (options.phase === 'up') {
+      this.keyUp(options.at);
+    } else {
+      this.keyDown(options.at, options.thirdPerson, options.debugPanelAvailable, options.facingYaw);
     }
     return true;
   }
 
-  keyDown(at: number, thirdPerson: boolean, debugPanelAvailable: boolean, facingYaw: number): boolean {
-    if (!thirdPerson) {
-      return false;
-    }
+  // The HUD hold works in either view; orbit and the debug-panel tap need the third-person camera.
+  keyDown(at: number, thirdPerson: boolean, debugPanelAvailable: boolean, facingYaw: number): void {
     this.update(at);
     if (this.downKind) {
-      return true;
+      return;
     }
-    if (this.tapAt !== undefined && at - this.tapAt <= BACKQUOTE_DOUBLE_TAP_WINDOW_MS) {
+    if (thirdPerson && this.tapAt !== undefined && at - this.tapAt <= BACKQUOTE_DOUBLE_TAP_WINDOW_MS) {
       this.tapAt = undefined;
       this.panelPending = false;
       this.downAt = at;
       this.downKind = 'orbit';
       this.orbit.begin(facingYaw);
-      return true;
+      return;
     }
     this.downAt = at;
     this.downKind = 'hud';
     this.hudToggled = false;
-    this.panelOnTap = debugPanelAvailable;
-    return true;
+    this.panelOnTap = thirdPerson && debugPanelAvailable;
   }
 
   keyUp(at: number): boolean {
