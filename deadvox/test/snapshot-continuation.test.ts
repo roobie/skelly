@@ -331,7 +331,7 @@ describe('hamlet save/load continuation', () => {
     const start = parseTimeOfDay('10:00')!;
     const source = createRuntime(undefined, true, oneColumn, { start });
     expect(startRest(source, 'sleep')).toBeUndefined();
-    advanceReal(source, 120);
+    advanceReal(source, 30);
     expect(source.sim.compression.active).toBe(true);
     expect(source.sim.compression.c).toBeGreaterThan(1);
     expect(source.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
@@ -345,8 +345,12 @@ describe('hamlet save/load continuation', () => {
 
     const schedulerSystems = ['needs', 'lights', 'long-action'] as const;
     const savedTicks = new Map(snapshot.character.simulation.scheduler.systems.map(({ id, ticks }) => [id, ticks]));
-    advanceReal(source, 4);
-    advanceReal(loaded, 4);
+    const sourceTicked = () =>
+      schedulerSystems.every((id) => source.sim.scheduler.tickCounts().get(id)! > savedTicks.get(id)!);
+    for (let frame = 0; frame < 120 && !sourceTicked(); frame++) {
+      advanceReal(source, 1);
+      advanceReal(loaded, 1);
+    }
 
     for (const id of schedulerSystems) {
       const saved = savedTicks.get(id);

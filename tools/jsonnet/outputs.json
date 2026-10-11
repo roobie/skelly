@@ -1,8 +1,16 @@
 {
   "files": [
     {
+      "source": "deadvox/src/content/base/body.jsonnet",
+      "output": "deadvox/src/content/base/body.json"
+    },
+    {
       "source": "deadvox/src/content/base/camp.jsonnet",
       "output": "deadvox/src/content/base/camp.json"
+    },
+    {
+      "source": "deadvox/src/content/base/compression.jsonnet",
+      "output": "deadvox/src/content/base/compression.json"
     },
     {
       "source": "deadvox/src/content/base/items-tools.jsonnet",

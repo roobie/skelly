@@ -129,7 +129,8 @@ export const playNeedsText = ({
   const light = lightCharge === undefined ? '' : `   light ${Math.round(lightCharge * 100)}%`;
   return [
     `health ${health.toFixed(0)}%   blood ${blood.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
-    `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}%`,
+    // Fatigue is sleep debt, not a share: 100 is a normal night's sleep and it can go past it.
+    `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}`,
     ...(bleedingRegions.length === 0 ? [] : [`⚠ BLEEDING — ${bleedingRegions.join(', ')}`]),
   ].join('\n');
 };

@@ -19,6 +19,7 @@ import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
 import { mountCredits } from './ui/credits.ts';
+import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
 import { contentLookup, SaveController } from './ui/saveController.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
@@ -28,6 +29,7 @@ applyUiTokens(BUNDLED_CONTENT.registry, document.documentElement);
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
 const startupScreen = document.getElementById('startup-screen')!;
+installErrorReportHandler();
 const overlay = document.getElementById('overlay')!;
 overlay.inert = true;
 const saveStatus = document.getElementById('save-status')!;
@@ -47,19 +49,6 @@ const showStartupFailure = (message: string) => {
   document.getElementById('errors')!.textContent = message;
   hideStartupScreen();
 };
-// The opaque loading screen covers errors, so surface failures from module startup as well as replay setup.
-globalThis.addEventListener('error', (event) => {
-  if (!startupScreen.hidden) {
-    showStartupFailure(`Startup failed: ${event.error instanceof Error ? event.error.message : event.message}`);
-  }
-});
-globalThis.addEventListener('unhandledrejection', (event) => {
-  if (!startupScreen.hidden) {
-    event.preventDefault();
-    const detail = event.reason instanceof Error ? event.reason.message : String(event.reason);
-    showStartupFailure(`Startup failed: ${detail}`);
-  }
-});
 const menuCard = document.querySelector<HTMLElement>('#overlay .card');
 const scrollUpCue = document.getElementById('card-scroll-up');
 const scrollDownCue = document.getElementById('card-scroll-down');

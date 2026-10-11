@@ -272,6 +272,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       const simulation = new Simulation({
         seed: config.seed,
         bodyTuning: engine.registry.body.get('player')!,
+        compressionCaps: engine.registry.compression.get('player')!.caps,
         clock: { ratio: CLOCK_RATIO, start: startTime },
       });
       simulation.godMode = true;

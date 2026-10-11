@@ -6,7 +6,7 @@ import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { BODY_REGIONS, bodyRegionLabel } from '../core/body.ts';
 import { dominantSide, offSide } from '../core/character.ts';
-import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
+import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
@@ -34,6 +34,7 @@ import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
+import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import {
   type HandlingPresentationSource,
@@ -158,6 +159,71 @@ import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const STARTUP_MESH_RADIUS = 1;
+
+interface PlayErrorReportPorts {
+  readonly config: Engine['config'];
+  readonly sim: ReturnType<typeof createSession>['sim'];
+  readonly input: Input;
+  readonly metrics: SessionMetrics;
+  readonly exportReplay: () => Promise<Uint8Array>;
+  readonly halted: { value: boolean };
+  readonly saveController: SaveController | undefined;
+}
+
+const stopPlayAfterError = (
+  sim: PlayErrorReportPorts['sim'],
+  input: Input,
+  halted: PlayErrorReportPorts['halted'],
+  saveController: SaveController | undefined,
+): void => {
+  halted.value = true;
+  sim.paused = true;
+  saveController?.halt();
+  input.unlock();
+  input.cancel();
+};
+
+const bindPlayErrorReport = ({
+  config,
+  sim,
+  input,
+  metrics,
+  exportReplay,
+  halted,
+  saveController,
+}: PlayErrorReportPorts): void => {
+  const context: ErrorReportContext = {
+    seed: config.seed,
+    site: config.site,
+    clockText: () => formatClock(sim.calendar),
+    stop: () => stopPlayAfterError(sim, input, halted, saveController),
+    metricsFile: () => metricsFile(metrics),
+    replayFile: async () => replayFile(await exportReplay(), new Date()),
+  };
+  setErrorReportContext(context);
+};
+
+const debugErrorEnabled = (debug: boolean, search: string): boolean => {
+  if (!debug) {
+    return false;
+  }
+  return new URLSearchParams(search).get('debug-error') === '1';
+};
+
+const guardDebugErrorFrame = (
+  frame: (now: RealTimestamp) => boolean,
+  enabled: boolean,
+  pointerLocked: () => boolean,
+): ((now: RealTimestamp) => boolean) => {
+  let pending = enabled;
+  return (now) => {
+    if (pending && pointerLocked()) {
+      pending = false;
+      throw new Error('Debug-triggered game-loop error');
+    }
+    return frame(now);
+  };
+};
 const STARTUP_COLUMN_COUNT = (STARTUP_MESH_RADIUS * 2 + 1) ** 2;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 export const USE_REACH = 2;
@@ -811,6 +877,7 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
+  const playHalted = { value: false };
   const hasActiveFirearmInput = (): boolean =>
     replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
   const isFirearmReady = (uid: number): boolean =>
@@ -1048,6 +1115,7 @@ export const startPlay = (
     character: () => session.character,
     body: () => sim.body.snapshotState(),
     needs: () => needsText(),
+    wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
     attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
   });
@@ -1172,6 +1240,15 @@ export const startPlay = (
     },
     import: importReplay,
   };
+  bindPlayErrorReport({
+    config,
+    sim,
+    input,
+    metrics,
+    exportReplay: inputReplayHooks.export,
+    halted: playHalted,
+    saveController: options.saveController,
+  });
   const handBackStatus = $('playtest-export-status');
   const handBack = async (file: () => HandBackFile | Promise<HandBackFile>): Promise<void> => {
     try {
@@ -1367,7 +1444,7 @@ export const startPlay = (
     startupHint.hidden = !latch.visible;
   };
   const resume = () => {
-    if (replayPlayer || sim.dead) {
+    if (replayPlayer || sim.dead || playHalted.value) {
       return;
     }
     resumeRequested = true;
@@ -1421,14 +1498,13 @@ export const startPlay = (
   /** Ends the skip exactly on target: snapping c to 1 keeps the ramp-down from running past it. */
   const endSkip = (): void => {
     skipUntil = undefined;
-    sim.ignoreUnsafe = false;
     compression.stop();
     compression.snap();
   };
 
   /**
    * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
-   * stepping as rest (needs, scheduler and shamblers all run), ignoring danger. Another call
+   * stepping as rest (needs, scheduler and shamblers all run). Another call
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {
@@ -1439,7 +1515,6 @@ export const startPlay = (
     }
     queue.cancel();
     skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);
-    sim.ignoreUnsafe = true;
     sim.compress(SKIP_COMPRESSION);
   };
 
@@ -1547,6 +1622,9 @@ export const startPlay = (
       stopAction();
     },
     wait: () => sim.actions.startWait(),
+    setWakeGameHour: (gameHour) => {
+      rest.wakeGameHour = gameHour;
+    },
     cancelItemThrow,
     throwItem: throwRecordedItem,
   };
@@ -3181,7 +3259,7 @@ export const startPlay = (
     });
   };
 
-  const frame = (now: RealTimestamp) => {
+  const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
     const dt = realDuration(Math.min(0.1, elapsedReal));
@@ -3297,6 +3375,11 @@ export const startPlay = (
     }
     return true;
   };
+  const frame = guardDebugErrorFrame(
+    (now) => !playHalted.value && updateFrame(now),
+    debugErrorEnabled(config.debug, location.search),
+    () => input.locked,
+  );
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
   const die = ({ cause, time }: { cause: string; time: number }) => {

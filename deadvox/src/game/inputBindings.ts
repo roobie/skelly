@@ -198,7 +198,6 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugRow('debug.test-noise', 'Test noise', 'F8'),
   debugRow('debug.compression-test', 'Compression test', 'KeyT'),
   debugRow('debug.interruption-test', 'Emit interruption', 'KeyN'),
-  debugRow('debug.danger-test', 'Danger test', 'KeyU'),
   debugRow('debug.hurt', 'Take damage', 'KeyK'),
   debugRow('debug.spawn-shamblers', 'Spawn shamblers', 'KeyV'),
   debugRow('debug.spawn-runner', 'Spawn runner', 'Numpad1'),

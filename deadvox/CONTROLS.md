@@ -146,9 +146,16 @@ both independently scrolling panes.
   Neither has a registry entry. Eligible furniture starts these actions through
   the world-interaction binding; see `src/game/play.ts`, `startPlay`.
 - Passing time can't be diegetic, so the character screen offers a Wait button.
-  It is a button, not a rest key, so the no-rest-key ruling stands. Character-screen
+  It is a button, not a rest key, so the no-rest-key ruling stands. A movement
+  key ends the wait, and so does a hit or another emitted interruption, but a
+  shambler nearby never does (DESIGN.md, "Long actions"). Character-screen
   actions reuse movement keys because movement is unused there. See
   `src/game/inputBindings.ts`, `INVENTORY_TAB_BINDINGS` and `inventory.hands`.
+- While an alarm is carried, the Actions tab also sets the wake hour, stepped
+  with − and + through "when rested" and each hour. It is a setting, not a
+  sleep key, so the no-sleep-key ruling stands; a sleep begun on a bed runs to
+  it (DESIGN.md, "Long actions"). See `src/ui/inventoryScreen.ts`,
+  `stepWakeGameHour`.
 - **Wield, then activate (2026-10-04):** “that's not a thing you do in inventory
   - you wield the box and activante it in oder to unpack”. A key acts on the
   door from a hand; an ammunition box is wielded and activated to unpack. See

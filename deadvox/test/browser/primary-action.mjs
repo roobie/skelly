@@ -2572,7 +2572,6 @@ try {
     r.setHand(r.dominant, book);
     return book.uid;
   });
-  // The test-house fixture admits reading through ordinary safety, not an unsafe override.
   await page.mouse.click(640, 450);
   await page.waitForFunction(
     (uid) => {
@@ -2588,7 +2587,7 @@ try {
   await page.waitForFunction(
     () => {
       const { sim } = globalThis.primaryActionTest.session;
-      return sim.actions.job?.jobType === 'reading' && sim.actions.job.stopped && !sim.ignoreUnsafe;
+      return sim.actions.job?.jobType === 'reading' && sim.actions.job.stopped;
     },
     undefined,
     { timeout: 10_000 },
