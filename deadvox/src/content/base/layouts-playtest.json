@@ -695,6 +695,10 @@
                 {
                   "item": "magazine_akm_30",
                   "count": 3
+                },
+                {
+                  "item": "frag_grenade",
+                  "count": 3
                 }
               ]
             },
@@ -1189,7 +1193,7 @@
           "chance": 1
         }
       ],
-      "hordes": [{ "id": "fob_east", "position": [612, 21.5, 520] }],
+      "hordes": [{ "id": "fob_west", "position": [427, 21.5, 526] }],
       "beats": [
         {
           "id": "lone_house",

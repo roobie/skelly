@@ -18,6 +18,7 @@ import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
 import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
+import { BlastFlashes } from './blastFlashes.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
@@ -152,14 +153,16 @@ export const createPlayView = (
       }
     : undefined;
   const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
+  const blastFlashes = new BlastFlashes();
   const held = new HeldItems(inventory, models, playerPalette, engine.sky.light);
-  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group);
+  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group, gore.group, blastFlashes.group);
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
     gore.dispose();
     impactEffects.dispose();
     itemThrows.dispose();
+    blastFlashes.dispose();
     held.dispose();
   };
   page.addEventListener('pagehide', dispose);
@@ -236,6 +239,7 @@ export const createPlayView = (
     gore,
     itemThrows,
     impactEffects,
+    blastFlashes,
     furniture,
     playerMeshes,
     held,
@@ -266,6 +270,7 @@ export const createPlayView = (
       perceptionLabels,
     }: PlayWorldFrame) => {
       itemThrows.update(dt);
+      blastFlashes.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
       applySky(engine.sky, sky);

@@ -296,6 +296,8 @@ itemSchema = obj({
   on: opt(bool),
   burnRemainingGameSeconds: opt(nonNegative),
   litAtGameTimestamp: opt(nonNegative),
+  pinPulled: opt(bool),
+  fuseRemainingSimSeconds: opt(nonNegative),
   madeAtGameTimestamp: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
