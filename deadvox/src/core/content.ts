@@ -1032,6 +1032,12 @@ export const requiredSoundIssues = (registry: Registry, source = 'sounds.json'):
     message: `missing required sound event "${id}"`,
   }));
 
+/** The `ui` entry the game installs at startup; see `applyUiTokens`. */
+export const CORE_UI_ID = 'core';
+
+export const requiredUiIssues = (registry: Registry, source = 'ui.json'): ContentIssue[] =>
+  registry.ui.has(CORE_UI_ID) ? [] : [{ source, path: 'ui', message: `missing required UI tuning "${CORE_UI_ID}"` }];
+
 /**
  * Merges content files in order into a registry. A file with a shape issue is
  * skipped. Then references are checked; files with broken references are dropped

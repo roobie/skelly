@@ -201,9 +201,9 @@ const InventoryTuningSchema = strictObject({
 
 const UiTuningSchema = strictObject({
   id: Id,
-  /** Base spacing unit in CSS pixels. */
-  spacingUnit: Positive,
-  /** Scale for DOM HUD and UI chrome; the world canvas is not scaled. */
+  /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
+  spacing: Positive,
+  /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
 });
 

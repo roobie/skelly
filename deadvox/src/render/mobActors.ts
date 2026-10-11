@@ -784,11 +784,11 @@ export class MobActorMeshes implements ZombieRenderer {
         position: 'fixed',
         transform: 'translate(-50%, -100%)',
         whiteSpace: 'nowrap',
-        padding: '2px 4px',
-        borderRadius: '2px',
+        padding: 'calc(var(--ui-spacing) * 0.125rem) calc(var(--ui-spacing) * 0.25rem)',
+        borderRadius: '0.125rem',
         background: 'rgba(0, 0, 0, 0.75)',
         color: '#fff',
-        font: '12px monospace',
+        font: '0.75rem monospace',
       });
       perceptionLabelRoot.append(label);
       this.perceptionLabels.set(id, label);

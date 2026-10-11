@@ -1,7 +1,7 @@
 {
   ui: [{
     id: 'core',
-    spacingUnit: 8,
+    spacing: 1,
     hudScale: 1,
   }],
 }

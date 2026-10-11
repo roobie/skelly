@@ -1,14 +1,21 @@
 import { html, render } from 'lit-html';
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
 import soundFile from './content/base/sounds.json' with { type: 'json' };
+import uiFile from './content/base/ui.json' with { type: 'json' };
 import type { Manifest } from './core/assets.ts';
 import { buildRegistry } from './core/content.ts';
 import type { SoundEventId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
+import { applyUiTokens } from './ui/uiTokens.ts';
 
 const source = '../content/base/sounds.json';
-const { registry, issues } = buildRegistry([{ source, data: soundFile }]);
+const { registry, issues } = buildRegistry([
+  { source, data: soundFile },
+  { source: '../content/base/ui.json', data: uiFile },
+]);
+// The page shares the game's style sheet, which is measured in these tokens.
+applyUiTokens(registry, document.documentElement);
 const guide = buildSoundGuide([...registry.sounds.values()], assetManifest as Manifest);
 const heartbeat = buildHeartbeatSoundGuide(assetManifest as Manifest);
 const errorRoot = document.createElement('p');

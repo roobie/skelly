@@ -22,8 +22,13 @@ import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
 import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 
-/** Pixels per inventory cell. */
-const CELL = 32;
+/** One inventory cell in rem, so grids scale with the UI. */
+const CELL_REM = 2;
+/** One cell's rendered size in a node's document, for maths against pointer coordinates. */
+const cellPx = (node: Element): number => {
+  const { defaultView, documentElement } = node.ownerDocument;
+  return CELL_REM * Number.parseFloat(defaultView!.getComputedStyle(documentElement).fontSize);
+};
 const EMPTY_DROP_GRID: GridSize = { w: 2, h: 2 };
 
 export const targetForPackedFloorDrop = (
@@ -285,7 +290,7 @@ const gridTemplate = (vm: GridViewModel): TemplateResult => html`
   <div
     class=${vm.packed ? 'inv-grid inv-grid-packed' : 'inv-grid'}
     data-target=${vm.target}
-    style=${vm.packed ? `--inv-grid-max-width: ${vm.width}px` : `width: ${vm.width}px; height: ${vm.height}px`}
+    style=${vm.packed ? `--inv-grid-max-width: ${vm.width}rem` : `width: ${vm.width}rem; height: ${vm.height}rem`}
   >
     ${vm.items.map(itemTemplate)}
   </div>
@@ -443,7 +448,7 @@ const inventoryTemplate = (
       `--inv-around-fr: ${splitFactors(splitRatio).around}`,
       vm.containerMaxWidthCells === undefined
         ? ''
-        : `--inv-around-container-width-cap: ${vm.containerMaxWidthCells * CELL}px`,
+        : `--inv-around-container-width-cap: ${vm.containerMaxWidthCells * CELL_REM}rem`,
     ]
       .filter(Boolean)
       .join('; ')}
@@ -505,7 +510,7 @@ const inventoryTemplate = (
             ? nothing
             : html`
           <div class="inv-around-section inv-around-floor" data-around-section="floor">
-            <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL, height: EMPTY_DROP_GRID.h * CELL, items: [] })}
+            <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL_REM, height: EMPTY_DROP_GRID.h * CELL_REM, items: [] })}
           </div>
         `
         }
@@ -810,7 +815,8 @@ export class InventoryScreen {
       return false;
     }
     this.drag.rotated = !this.drag.rotated;
-    this.drag.grab = [CELL / 2, CELL / 2];
+    const halfCell = cellPx(this.root) / 2;
+    this.drag.grab = [halfCell, halfCell];
     this.renderDrag();
     return true;
   }
@@ -1182,8 +1188,8 @@ export class InventoryScreen {
   private gridViewModel(size: GridSize, placed: readonly Placed[], target: string, packed = false): GridViewModel {
     return {
       target,
-      width: size.w * CELL,
-      height: size.h * CELL,
+      width: size.w * CELL_REM,
+      height: size.h * CELL_REM,
       packed,
       items: placed.map(({ item, x, y, rotated }) => {
         const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated);
@@ -1193,10 +1199,10 @@ export class InventoryScreen {
           packed
             ? { 'grid-column': `span ${w}`, 'grid-row': `span ${h}` }
             : {
-                left: `${x * CELL + 1}px`,
-                top: `${y * CELL + 1}px`,
-                width: `${w * CELL - 2}px`,
-                height: `${h * CELL - 2}px`,
+                left: `calc(${x * CELL_REM}rem + 1px)`,
+                top: `calc(${y * CELL_REM}rem + 1px)`,
+                width: `calc(${w * CELL_REM}rem - 2px)`,
+                height: `calc(${h * CELL_REM}rem - 2px)`,
               },
         );
       }),
@@ -1375,9 +1381,10 @@ export class InventoryScreen {
     const rect = node.getBoundingClientRect();
     const at = this.inv.locate(item);
     const rotated = (at && spotOf(at)?.rotated) ?? false;
+    const halfCell = cellPx(node) / 2;
     this.drag = {
       item,
-      grab: [Math.min(e.clientX - rect.left, CELL / 2), Math.min(e.clientY - rect.top, CELL / 2)],
+      grab: [Math.min(e.clientX - rect.left, halfCell), Math.min(e.clientY - rect.top, halfCell)],
       rotated,
       start: [e.clientX, e.clientY],
       moved: false,
@@ -1448,7 +1455,7 @@ export class InventoryScreen {
     render(
       html`<div
         class=${`inv-ghost cat-${defOf(this.inv.registry, drag.item.type).category}`}
-        style=${`left: ${drag.position[0]}px; top: ${drag.position[1]}px; width: ${w * CELL - 2}px; height: ${h * CELL - 2}px`}
+        style=${`left: ${drag.position[0]}px; top: ${drag.position[1]}px; width: calc(${w * CELL_REM}rem - 2px); height: calc(${h * CELL_REM}rem - 2px)`}
         >${this.inv.name(drag.item)}</div
       >`,
       this.dragRoot,
@@ -1487,9 +1494,10 @@ export class InventoryScreen {
     }
     const spec = zone.dataset.target!;
     const rect = zone.getBoundingClientRect();
+    const cell = cellPx(zone);
     const spot = {
-      x: Math.round((left - rect.left) / CELL),
-      y: Math.round((top - rect.top) / CELL),
+      x: Math.round((left - rect.left) / cell),
+      y: Math.round((top - rect.top) / cell),
       rotated: drag.rotated,
     };
     const packedFloor = spec.startsWith('pile:') && zone.classList.contains('inv-grid-packed');
@@ -1517,10 +1525,10 @@ export class InventoryScreen {
       zone.style.setProperty('--preview-height', `${zone.clientHeight}px`);
     } else if (spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:')) {
       const [w, h] = footprint(defOf(this.inv.registry, drag.item.type), drag.rotated);
-      zone.style.setProperty('--preview-left', `${spot.x * CELL}px`);
-      zone.style.setProperty('--preview-top', `${spot.y * CELL}px`);
-      zone.style.setProperty('--preview-width', `${w * CELL}px`);
-      zone.style.setProperty('--preview-height', `${h * CELL}px`);
+      zone.style.setProperty('--preview-left', `${spot.x * CELL_REM}rem`);
+      zone.style.setProperty('--preview-top', `${spot.y * CELL_REM}rem`);
+      zone.style.setProperty('--preview-width', `${w * CELL_REM}rem`);
+      zone.style.setProperty('--preview-height', `${h * CELL_REM}rem`);
     }
   }
 
