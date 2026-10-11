@@ -51,6 +51,7 @@ import {
   writeHudOptions,
 } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
+import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
@@ -563,6 +564,14 @@ const autosaveCheckpointSimSeconds = (registry: Engine['registry']): number => {
     throw new Error('Missing autosave tuning');
   }
   return autosave.checkpointSimSeconds;
+};
+
+const leaveConfirmationRealSeconds = (registry: Engine['registry']): number => {
+  const autosave = registry.saves.get('autosave');
+  if (!autosave) {
+    throw new Error('Missing autosave tuning');
+  }
+  return autosave.leaveConfirmationRealSeconds;
 };
 
 export const startPlay = (
@@ -1390,6 +1399,21 @@ export const startPlay = (
   });
 
   let started = options.restore !== undefined;
+  globalThis.addEventListener('beforeunload', (event) => {
+    if (
+      shouldConfirmPageLeave({
+        gameRunning: started,
+        gameDead: sim.dead !== undefined,
+        saveAvailable: options.saveController?.canSaveCurrentGame ?? false,
+        lastSaveCompletedAtRealSeconds: options.saveController?.lastCompletedSaveRealSeconds,
+        nowRealSeconds: realDuration(performance.now() / 1000),
+        confirmationWindowRealSeconds: leaveConfirmationRealSeconds(registry),
+      })
+    ) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
   let mainMenuOpen = !options.replay;
   let startupHintPending = !options.replay;
   let resumeRequested = false;
