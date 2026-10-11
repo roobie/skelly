@@ -1151,11 +1151,14 @@ worse the world gets.
 - **Senses:** sight (a view cone and range, blended smoothly from day range to
   night range through twilight and reduced when you crouch), hearing (noise events)
   and smell (a trail the player leaves, which rain washes out). The base pack's
-  latitude, fixed date and nautical-twilight choice own the sun-derived day phases;
-  the date and any seasonal change remain BR's decision. Hordes roam from sunset
-  through dusk, night and dawn until sunrise, and spawn words resolve from those
-  same boundaries. Terrain height alone should not end a clear pursuit; sight
-  over a rise is bounded by occlusion, not by spending range on vertical distance.
+  day cycle applies to every site; its late-June, mid-latitude cycle with nautical
+  twilight gives long daylight without modeling seasonal change. See
+  `src/content/base/dayCycle.json`, `dayCycle`, for its authored settings. Sky,
+  sight blending, horde roaming and named spawn windows follow solar boundaries
+  rather than fixed clock hours. Hordes roam from sunset through dawn
+  until sunrise, and spawn words resolve from those same boundaries. Terrain height
+  alone should not end a clear pursuit; sight over a rise is bounded by occlusion,
+  not by spending range on vertical distance.
   See `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/zombies.ts`, `seesPlayer`
   and `ZombieSystem.updateHordes`; and `src/core/clock.ts`, `parseSpawnTime`.
 - **Movement (BR, 2026-10-05 20:27–20:33):** “also, it's still the case that the shamblers are stalling when the player moves”; “i think we should greatly simplify how the shamblers brains work”; “they aren't smart creatures”; “they beeline towards whatever grabs their attention”; and at 20:33, “yes, I think we should make them primarily beeline and slide off of obstacles like walls / if low enough, they prefer jumping over / but they should have some randomness in that even if they normally beeline, when they hit an obstacle they might just randomly wander a bit - e.g. pick an open direction and try to walk 10 meters (for example) / but if something bashable is in the way, they would tend to bash it (e.g. doors) / (what is bashable is depending on the strength of the mob - but we haven't modelled this, right? I mean a 2nd evolution brute might breach a brick wall, for example)”. A shambler moves directly toward its current attention target in the horizontal plane. Collision resolution preserves available tangential motion; when a head-on intent has none, `ZombieSystem.tick` uses the seeded `obstacleSlideSide` to supply it. `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the distance configured in `src/content/base/zombies.json`, then resumes toward its current target. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
@@ -1317,9 +1320,10 @@ a set. A place feels real when things happen in it that the player didn't cause,
 and when it answers what the player does. Each layer below should also do
 something in play, not only decorate it.
 
-- **Vegetation:** trees, shrubs, hedges, tall grass, and overgrowth a few weeks
-  old: gardens gone wild, weeds through cracked asphalt, leaves blown into open
-  doorways. What it does in play:
+- **Vegetation:** trees, shrubs, hedges, tall grass, and overgrowth after weeks
+  without care: gardens gone wild, weeds through cracked asphalt, and accumulated
+  leaf litter in open doorways. Leaf litter is residue from earlier leaf fall, not
+  a cue to the current season. What it does in play:
   - **Cover (BR, 2026-10-03):** leaves and hedges are passable but opaque to
     zombie sight, player aim and LOS. Trunks/branches are solid and opaque.
     Movement rules apply to player, zombies and physical bodies alike. A hedge
