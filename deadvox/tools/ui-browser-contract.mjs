@@ -270,40 +270,44 @@ try {
     window.__pointerCalls.request = 0;
   })()`);
   await waitFor(() => evaluate("Boolean(document.querySelector('#debug-ui-root'))"), 'post-acceptance debug UI mount');
-  const scaledHud = await evaluate(`(async () => {
+  // The tokens go to a document of the probe's own (an iframe with the game's style sheet), so the live game's root
+  // and HUD stay untouched. Spacing and scale are measured apart, so neither passes on the other's change.
+  const uiTokens = await evaluate(`(async () => {
     const { buildRegistry } = await import('/src/core/content.ts');
     const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
-    const { registry, issues } = buildRegistry([{
-      source: 'ui-scale-fixture.json',
-      data: { ui: [{ id: 'core', spacingUnit: 12, hudScale: 1.25 }] },
-    }]);
-    if (issues.length) throw new Error('Invalid UI scale fixture: ' + JSON.stringify(issues));
-    const hud = document.querySelector('#hud');
-    if (!hud) throw new Error('The live HUD is missing');
-    const rootStyle = document.documentElement.style;
-    const previousUnit = rootStyle.getPropertyValue('--ui-unit');
-    const previousScale = rootStyle.getPropertyValue('--ui-scale');
-    const previousHidden = hud.hidden;
-    const fixture = document.createElement('span');
-    fixture.textContent = 'UI scale fixture';
-    hud.hidden = false;
-    hud.append(fixture);
-    const before = hud.getBoundingClientRect();
-    applyUiTokens(registry, document.documentElement);
-    const after = hud.getBoundingClientRect();
-    fixture.remove();
-    hud.hidden = previousHidden;
-    rootStyle.setProperty('--ui-unit', previousUnit);
-    rootStyle.setProperty('--ui-scale', previousScale);
-    return { before: { width: before.width, height: before.height }, after: { width: after.width, height: after.height } };
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 640px; height: 360px; visibility: hidden';
+    frame.srcdoc = '<!doctype html><link rel="stylesheet" href="/src/ui/style.css"><button class="inv-option">Probe</button>';
+    const loaded = new Promise((done) => frame.addEventListener('load', done, { once: true }));
+    document.body.append(frame);
+    await loaded;
+    const probe = frame.contentDocument.querySelector('.inv-option');
+    const measure = (tuning) => {
+      const { registry, issues } = buildRegistry([{ source: 'ui-probe.json', data: { ui: [{ id: 'core', ...tuning }] } }]);
+      if (issues.length) throw new Error('Invalid UI probe fixture: ' + JSON.stringify(issues));
+      applyUiTokens(registry, frame.contentDocument.documentElement);
+      const style = frame.contentWindow.getComputedStyle(probe);
+      return { padding: Number.parseFloat(style.paddingLeft), fontSize: Number.parseFloat(style.fontSize) };
+    };
+    const base = measure({ spacing: 1, hudScale: 1 });
+    const spaced = measure({ spacing: 2, hudScale: 1 });
+    const scaled = measure({ spacing: 1, hudScale: 1.25 });
+    frame.remove();
+    return { base, spaced, scaled };
   })()`);
+  const near = (actual, expected) => Math.abs(actual - expected) < 0.01;
   assert.ok(
-    scaledHud.before.width > 0 && scaledHud.before.height > 0,
-    `visible HUD element: ${JSON.stringify(scaledHud)}`,
+    uiTokens.base.padding > 0 && uiTokens.base.fontSize > 0,
+    `the probe takes the game's style sheet: ${JSON.stringify(uiTokens)}`,
   );
   assert.ok(
-    scaledHud.after.width > scaledHud.before.width && scaledHud.after.height > scaledHud.before.height,
-    `non-default core-mod spacing and HUD scale increase a live HUD element's computed size: ${JSON.stringify(scaledHud)}`,
+    near(uiTokens.spaced.padding, 2 * uiTokens.base.padding) && near(uiTokens.spaced.fontSize, uiTokens.base.fontSize),
+    `spacing scales padding and leaves text size alone: ${JSON.stringify(uiTokens)}`,
+  );
+  assert.ok(
+    near(uiTokens.scaled.fontSize, 1.25 * uiTokens.base.fontSize) &&
+      near(uiTokens.scaled.padding, 1.25 * uiTokens.base.padding),
+    `HUD scale scales text and spacing together: ${JSON.stringify(uiTokens)}`,
   );
   graphics = await evaluate(`({
     renderMode: ${JSON.stringify(renderMode)},
