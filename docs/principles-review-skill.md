@@ -89,16 +89,21 @@ Evidence for a behaviour claim is a reproducing probe, a mutant or a base A/B
 where one can be run. Otherwise the finding says "reasoned, not run" and gives the
 reasoning.
 
-What blocks is set by its owners: `AGENTS.md`, "Tests" (a real defect or a
-test-hygiene problem); `AGENTS.md`, "Zero drift" (a false doc, or an amendment
-trail in a touched section); `README.md`, "Zero drift" (an amendment trail); and
-`docs/PROCESS.md`, "The life of a change", step 4 (a false doc). Other
-improvements and style points are listed and don't block.
+A change that breaks a settled rule a lens cites, or lacks what that rule
+requires (a verbatim quote and stamp, a `read_if`, a test that fails before the
+fix), is a FIX. For example, deadvox code that decides one item's behaviour, a
+decision `deadvox/DESIGN.md`, "Pillars", "Depth through data", gives to content,
+is a FIX. A violation of a settled rule is a real defect in the sense of
+`AGENTS.md`, "Tests", whose FIX threshold the review applies. The rules' owners
+also set what blocks: `AGENTS.md`, "Tests" and "Zero drift"; `README.md`, "Zero
+drift"; and `docs/PROCESS.md`, "The life of a change", step 4. Anything else is
+listed and doesn't block.
 
 The code review gives one verdict, SHIP or FIX, with its `Cause:` line as
 `docs/PROCESS.md`, "Slice decision rules", "FIX causes", requires. The report names
-the reviewed base and head, the ownership or duplicated decision (or none), and a
-status for every lens:
+the reviewed base and head, carries the consolidation line that `docs/PROCESS.md`,
+"Continuous consolidation", asks of every review, and gives a status for every
+lens:
 
 - **assessed;**
 - **not applicable**, with the reason;
@@ -107,9 +112,7 @@ status for every lens:
   listed as open.
 
 For a settled rule, missing evidence is not a status. The reviewer gets it before
-the verdict, by fetching it, probing or asking the lead. If the change itself lacks
-what the rule requires, such as a verbatim quote and stamp, a `read_if` or a test
-that fails before the fix, that is a FIX.
+the verdict, by fetching it, probing or asking the lead.
 
 An outstanding BR approval is an open gate, not one the reviewer can grant. Merge
 conditions stay with `docs/PROCESS.md`, "The life of a change", step 6.
