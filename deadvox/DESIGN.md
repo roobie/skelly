@@ -5,6 +5,7 @@ read_if:
   - you're choosing world scale, view distance or performance targets
   - you change the player's collision body, or what crouching lets the player fit through
   - you're changing world block shapes or slab geometry
+  - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
@@ -307,6 +308,44 @@ an item container (see below), so furniture and backpacks share one system.
 A block entity can span several cells: a door is 2 × 4 and a fridge is
 2 × 4 × 2. It's anchored at its lowest corner cell, and the other cells point
 at the anchor.
+
+### Ladders and hatches
+
+Two roofs are deliberate perches: the workshop hall's, by a ladder up its outside
+wall, and the FOB armoury's, by a ladder inside that climbs through a roof hatch.
+More shamblers and a grenade that doesn't always land where it's thrown make the
+finale hard to fight on the ground, so a player who finds a perch may cheese the
+fight a little and throw grenades into a horde from above without stress. The
+perch is a thank-you for getting there, not a removed threat: the amalgam and the
+hordes stay as they are, and winning should still feel like an achievement.
+
+- **Climbing.** A ladder is furniture marked `climbable` and stacked one piece
+  per layer; its facing is the side the climber stands on. The player climbs by
+  walking into it: moving toward the ladder climbs, moving away climbs down,
+  strafing steps off its side, and holding jump lets go. The climber is held on
+  the ladder's centre line, so the body fits through a hatch above. See
+  `src/core/ladders.ts`, `ladderAt` and `climb`, and `src/game/session.ts`,
+  `advancePlayerBody`.
+- **The top.** A climb ends with the feet a step above the top piece, where moving
+  toward the ladder carries the climber onto the roof. So a ladder that serves a
+  roof ends one layer below the roof's top (`src/content/base/ladders.jsonnet`).
+- **No fall.** Climbing down is not a fall: a hard landing is measured from where
+  the climber let go of the ladder.
+- **Shamblers don't climb.** A shambler passes through a ladder's cells like any
+  non-solid furniture and stays on the ground, so a perch is out of its reach.
+- **Hatches.** A hatch is a door that lies flat in a roof or floor, hinged on its
+  facing side (`door.hatch`; `src/core/blockEntities.ts`, `hatchPanel`). Like a
+  door, it blocks while shut, opens with the interact key from either side and
+  saves its open state; it takes no lock. A ladder is an open frame, so a
+  climber reaches through it to the hatch above (`src/core/furniturePick.ts`,
+  `firstPickCell`).
+- **Placement.** The workshop ladder stands against the hall's west wall, which
+  has no door to block. The armoury ladder stands free in the room, a body's
+  width from the magazine crate, and climbs east through its hatch, so the
+  climber steps out onto the middle of the roof rather than onto the strip above
+  a wall. See `src/content/base/camp.jsonnet`, `camp_armoury`, and
+  `maps/playtest.tmj`, "Mike's place — ladder up the workshop's west wall to its
+  roof".
 
 ### Generating the world in layers
 
