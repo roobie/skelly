@@ -30,7 +30,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
-  - you're changing melee weapon contact behavior, stamina recovery timing or seeded damage variation
+  - you're changing melee weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
@@ -177,18 +177,45 @@ Crafting, reading, building, disassembly, repair, searching and sleeping are
 **long actions**. A long action has a duration in game time. It runs with
 compression on and shows a progress bar and the game time passing.
 
-- **Starting an action:** a nearby or aware hostile does not block a long
-  action, and time still fast-forwards. BR (2026-10-05 20:09) answered
-  "fast forward". BR (2026-10-05 22:28) chose option B; the lead's wording for
-  B was "No: only a hit or another real event (hunger, thirst...) wakes you".
-  BR said "it's up to the player to make the area safe for them to do the long
-  action. We're not holding hands".
-- **Interruptions:** emitted events such as a hit, loud noise, fire, or a need
-  hitting a threshold stop the action. A shambler noticing the player does not
-  interrupt it. `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
-  emitted events; `src/core/longAction.ts`, `LongActions.syncInterruption`,
-  wakes a sleeper, clears the interruption and frees input. Other actions drop
-  back to real time and ask *Continue* or *Stop*. Progress made so far is kept.
+- **How fast:** each compressing long action ramps up to its own cap, set in
+  content (`src/content/base/compression.jsonnet`), so how fast time passes is
+  tuned without code. Waiting, resting and sleeping get far higher caps than
+  crafting, reading and treatment. Waiting at the work pace was slow and
+  wearing, and a player should be able to sleep through most of a night, while
+  work stays at a pace its progress can be read at. Prying runs at 1×.
+- **Frame cost:** at a high cap one frame covers several Sim seconds, so a
+  long action's Sim step per frame is bounded (`src/core/compression.ts`,
+  `longActionLimits`). The bound lets the base content's highest cap run in
+  full at 60 frames a second in a quiet world. Where many shamblers are active, the frame's cost
+  stays bounded and the fast-forward runs slower instead
+  ([CHALLENGES.md](CHALLENGES.md), 3).
+- **Only an event, or bleeding for player long actions, stops it:** nothing
+  refuses or stops compression because a shambler is near or aware of the player,
+  the debug skip included. A player may wait in a walled-off area with enemies
+  about that can't find or harm them, and whether an area is safe enough is a
+  judgement only the player can make, so the game never makes them clear it
+  first. Emitted events stop the action: a hit or other damage, a need crossing
+  its threshold, a carried light dying, and the debug noise key. Bleeding refuses
+  and stops a player long action's compression, but not debug compression (see
+  [Bleeding](#bleeding)). `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
+  them and halts the scheduler after the tick that emitted one, so a frame of
+  many Sim seconds still stops at the first hit.
+  `src/core/longAction.ts`, `LongActions.syncInterruption`, wakes a sleeper,
+  clears the interruption and frees input. Other actions drop back to real time
+  and ask *Continue* or *Stop*. Progress made so far is kept.
+- **Stopping:** after a stop, the world runs on for at most a few Sim seconds
+  while compression ramps back down, however high the cap
+  (`src/game/frameDriver.ts`, `RAMP_DOWN_SIM_SECONDS`). A ramp of fixed Real
+  length from a high cap would run the world on for tens of Sim seconds after
+  the player stopped waiting.
+- **How sleep ends:** sleep ends once fatigue reaches zero, which takes a
+  normal night from 100 (see [Character](#character)). Carrying an item with
+  `alarm` lets the player pick a wake hour on the Actions tab instead; sleep
+  then runs to that hour with fatigue held at zero, and recovery continues.
+  Without a clock you can't time your waking, so the choice needs one. The
+  chosen hour is saved, so Continue and replays keep it. The events above still
+  wake a sleeper. See `LongActions.advanceJob`, `LongActions.wakeGameHour` and
+  `RestAction.wakeAt`.
 - **Short handling** (moving an item, reloading, wielding) is not compressed.
   It takes real seconds while the world runs at 1× (see
   [Items](#items-and-inventory)).
@@ -238,7 +265,9 @@ catches up in closed form where it can, and in coarse steps otherwise:
   | Region map (hordes, evolution) | once per game minute |
 
   During compression, the per-tick step for the slow systems grows instead of
-  the number of ticks, so the cost per frame stays bounded.
+  the number of ticks. The fixed-rate systems keep their step, so a frame's Sim
+  step is bounded instead (see [Long actions](#long-actions)), which keeps the
+  cost per frame bounded.
 - **Entities.** Slice 1 uses plain objects behind a small `EntityStore`
   interface. When we have hundreds of zombies, that storage moves to
   structure-of-arrays typed arrays in a worker, without changing the systems'
@@ -624,6 +653,25 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
   are per game hour. Body temperature isn't simulated; #366's heat property
   could later serve it.
+- **Fatigue is sleep debt.** Zero is rested and 100 is what a normal 8-hour
+  sleep in a good bed clears, at a steady rate. It has no upper cap, because a
+  person can stay awake far past the point of tiredness, so the HUD shows a
+  number, not a percentage. Awake, it rises at a baseline rate, as if standing
+  at rest. A furniture piece's rest quality scales sleep: at
+  quality 1 it is a normal sleep, and lower quality clears a smaller share, down
+  to `roughSleepShare` of it at 0. Resting clears debt more slowly than any
+  sleep. The rates are content, in `src/content/base/body.jsonnet`.
+- **Sleep's main value is recovery.** While asleep, health, regional and blood
+  recovery run at `sleepRecoveryFactor` times their awake rate, so a night's
+  sleep is how a hurt player heals, not only how they clear debt. Health and
+  regions recover only while calories and hydration are at their floor or above
+  and fatigue is under a ceiling. Content sets all three limits, the fatigue
+  ceiling per state. Base content sets an awake ceiling and none asleep, so
+  someone too tired heals nothing until they sleep, and sleep heals at any
+  fatigue. One gate decides it (`src/core/needs.ts`, `healthRecovers`); it
+  becomes a content predicate when the expression language lands (#393). Each
+  rate and limit is read once, through `Body` in `src/core/body.ts`, so #592's
+  modifier point can wrap it there.
 - **Body.** Injuries affect sight, aim, swings and movement as well as health.
   Each region recovers at health's rate while needs allow health recovery, except
   while that region is bleeding or infected. This lets injury penalties fade
@@ -641,12 +689,12 @@ and `src/core/content.ts`, `checkItemFirearm`.
 
   Infection onset is time-based, with deterministic infection risk and an
   antiseptic window. Knockout is timed; infection and knockout settings are
-  content-defined. Regional recovery follows `HEALTH.regen` in
-  `src/core/needs.ts`. A knockout leaves the player prone, with a black screen
+  content-defined. Regional recovery follows health's content rate,
+  `healthRecoveryPerGameHour`. A knockout leaves the player prone, with a black screen
   and no sound. If the character
   dies while knocked out, the black screen gives way to the death screen. See
   `src/core/body.ts`, `Body.advance`; `src/core/schema.ts`, `BodyTuningSchema`;
-  `src/core/needs.ts`, `HEALTH.regen`; `src/game/session.ts`,
+  `src/core/needs.ts`, `stepNeeds`; `src/game/session.ts`,
   `playerEyeHeightMetres`; `src/ui/style.css`, `body.unconscious`;
   `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
 - **Death is permanent.** A new run is a new world, or the same world with a
@@ -654,7 +702,7 @@ and `src/core/content.ts`, `checkItemFirearm`.
 
 ### Bleeding
 
-Bleeding is content, and nothing in it is absolute. `src/content/base/body.json`,
+Bleeding is content, and nothing in it is absolute. `src/content/base/body.jsonnet`,
 `bleeding`, lists the tiers mildest first. Each tier has its own:
 - label;
 - loss rate and closure time;
@@ -762,14 +810,15 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
   contact after `min(0.4 × cooldown, 0.25 s)`, with recovery filling the rest of
   cooldown. Misses and wall-blocked swings still spend stamina and cooldown.
   Active swings are saved and fingerprinted so Continue preserves one pending
-  hit; changing held items cancels that hit without refunding cooldown. BR
-  (d113-1, 2026-10-06 23:52): “calling it 'cosmetic' seems like a bug”. Holding right
+  hit; changing held items cancels that hit without refunding cooldown. Hit
+  resolution is gameplay, not cosmetic. Holding right
   mouse with a melee weapon or empty hands enters en-garde; holding S while
   en-garde attempts to block incoming melee, with success by melee-combat skill.
-  En-garde does not change movement pace. See `src/game/melee.ts`,
-  `shouldEnterMeleeReady` and `shouldBlockFromEnGarde`, `src/game/session.ts`,
-  `hurtPlayer`, `src/core/meleeCombat.ts`, `blocksAttack`, and
-  `src/game/player.ts`, `movementPace`. First-person motions use shared blunt-arc,
+  En-garde does not change movement pace. Successful blocks and landed player
+  melee hits train melee combat: fighting should train fighting. See
+  `src/game/melee.ts`, `shouldEnterMeleeReady` and `shouldBlockFromEnGarde`,
+  `src/game/session.ts`, `hurtPlayer` and `createSession`, and
+  `src/core/playerCombat.ts`, `PlayerCombat.resolveContact`. First-person motions use shared blunt-arc,
   cut-slash, pierce-thrust and alternating-fist profiles; two-handed items
   animate both arms. Confirmed hits add only clamped first-person recoil.
 
@@ -1255,11 +1304,14 @@ worse the world gets.
 - **Senses:** sight (a view cone and range, blended smoothly from day range to
   night range through twilight and reduced when you crouch), hearing (noise events)
   and smell (a trail the player leaves, which rain washes out). The base pack's
-  latitude, fixed date and nautical-twilight choice own the sun-derived day phases;
-  the date and any seasonal change remain BR's decision. Hordes roam from sunset
-  through dusk, night and dawn until sunrise, and spawn words resolve from those
-  same boundaries. Terrain height alone should not end a clear pursuit; sight
-  over a rise is bounded by occlusion, not by spending range on vertical distance.
+  day cycle applies to every site; its late-June, mid-latitude cycle with nautical
+  twilight gives long daylight without modeling seasonal change. See
+  `src/content/base/dayCycle.json`, `dayCycle`, for its authored settings. Sky,
+  sight blending, horde roaming and named spawn windows follow solar boundaries
+  rather than fixed clock hours. Hordes roam from sunset through dawn
+  until sunrise, and spawn words resolve from those same boundaries. Terrain height
+  alone should not end a clear pursuit; sight over a rise is bounded by occlusion,
+  not by spending range on vertical distance.
   See `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/zombies.ts`, `seesPlayer`
   and `ZombieSystem.updateHordes`; and `src/core/clock.ts`, `parseSpawnTime`.
 - **Movement (BR, 2026-10-05 20:27–20:33):** “also, it's still the case that the shamblers are stalling when the player moves”; “i think we should greatly simplify how the shamblers brains work”; “they aren't smart creatures”; “they beeline towards whatever grabs their attention”; and at 20:33, “yes, I think we should make them primarily beeline and slide off of obstacles like walls / if low enough, they prefer jumping over / but they should have some randomness in that even if they normally beeline, when they hit an obstacle they might just randomly wander a bit - e.g. pick an open direction and try to walk 10 meters (for example) / but if something bashable is in the way, they would tend to bash it (e.g. doors) / (what is bashable is depending on the strength of the mob - but we haven't modelled this, right? I mean a 2nd evolution brute might breach a brick wall, for example)”. A shambler moves directly toward its current attention target in the horizontal plane. Collision resolution preserves available tangential motion; when a head-on intent has none, `ZombieSystem.tick` uses the seeded `obstacleSlideSide` to supply it. `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the distance configured in `src/content/base/zombies.json`, then resumes toward its current target. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
@@ -1421,9 +1473,10 @@ a set. A place feels real when things happen in it that the player didn't cause,
 and when it answers what the player does. Each layer below should also do
 something in play, not only decorate it.
 
-- **Vegetation:** trees, shrubs, hedges, tall grass, and overgrowth a few weeks
-  old: gardens gone wild, weeds through cracked asphalt, leaves blown into open
-  doorways. What it does in play:
+- **Vegetation:** trees, shrubs, hedges, tall grass, and overgrowth after weeks
+  without care: gardens gone wild, weeds through cracked asphalt, and accumulated
+  leaf litter in open doorways. Leaf litter is residue from earlier leaf fall, not
+  a cue to the current season. What it does in play:
   - **Cover (BR, 2026-10-03):** leaves and hedges are passable but opaque to
     zombie sight, player aim and LOS. Trunks/branches are solid and opaque.
     Movement rules apply to player, zombies and physical bodies alike. A hedge

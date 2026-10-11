@@ -198,7 +198,6 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugRow('debug.test-noise', 'Test noise', 'F8'),
   debugRow('debug.compression-test', 'Compression test', 'KeyT'),
   debugRow('debug.interruption-test', 'Emit interruption', 'KeyN'),
-  debugRow('debug.danger-test', 'Danger test', 'KeyU'),
   debugRow('debug.hurt', 'Take damage', 'KeyK'),
   debugRow('debug.spawn-shamblers', 'Spawn shamblers', 'KeyV'),
   debugRow('debug.spawn-runner', 'Spawn runner', 'Numpad1'),
@@ -699,6 +698,13 @@ export const capturedChord = (event: KeyEvent): Chord | string => {
   return chordIssue(chord) ?? chord;
 };
 const browserEscape = (event: Pick<KeyboardEvent, 'code'>): boolean => event.code === 'Escape';
+const chromeDevtoolsShortcut = (
+  event: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'shiftKey' | 'metaKey' | 'altKey'>,
+): boolean =>
+  event.code === 'F12' ||
+  (event.ctrlKey && event.shiftKey && ['KeyC', 'KeyI', 'KeyJ'].includes(event.code)) ||
+  (event.metaKey && event.altKey && ['KeyI', 'KeyJ'].includes(event.code)) ||
+  (event.metaKey && event.shiftKey && event.code === 'KeyC');
 const nativeActivation = (event: Pick<KeyboardEvent, 'code'>): boolean =>
   event.code === 'Enter' || event.code === 'Space';
 /** What a key does in the game's combo box (`src/ui/comboBox.ts`). Like a native list control's keys, these are fixed. */
@@ -917,6 +923,11 @@ export class KeyboardInput {
       target instanceof HTMLElement &&
       Boolean(target.closest('button,a,[role="button"],input[type="checkbox"]')?.closest('[data-debug-controls]'));
     const keyDown = (event: KeyboardEvent) => {
+      // Chrome owns DevTools shortcuts, but cancel their page default where the browser exposes a cancelable event.
+      if (event.cancelable && chromeDevtoolsShortcut(event) && !editable(event.target) && !this.capture) {
+        event.preventDefault();
+        return;
+      }
       if (debugControl(event.target) && nativeActivation(event) && !this.capture && !this.held('debug.gate')) {
         event.preventDefault();
         return;

@@ -265,15 +265,15 @@ describe('player body', () => {
     const seriousClose = tiers[SERIOUS]!.closeSimSeconds;
 
     const recovering = wounded();
-    recovering.advance(minorClose, false, minorClose, true);
+    recovering.advance(minorClose, false, minorClose, { recovering: true });
     expect(recovering.bleedingTier('torso')).toBeUndefined();
     expect(recovering.bleedingTier('leftArm')).toBe(tiers[SERIOUS]);
     expect(recovering.wounds.leftArm!.bleeding).toBeLessThan(SERIOUS + 1);
-    recovering.advance(seriousClose + minorClose, false, seriousClose + minorClose, true);
+    recovering.advance(seriousClose + minorClose, false, seriousClose + minorClose, { recovering: true });
     expect(recovering.worstBleedingTier).toBeUndefined();
 
     const notRecovering = wounded();
-    notRecovering.advance(seriousClose + minorClose, false, seriousClose + minorClose, false);
+    notRecovering.advance(seriousClose + minorClose, false, seriousClose + minorClose, { recovering: false });
     expect(notRecovering.wounds.torso!.bleeding).toBe(MINOR + 1);
     expect(notRecovering.wounds.leftArm!.bleeding).toBe(SERIOUS + 1);
   });
@@ -284,7 +284,7 @@ describe('player body', () => {
     body.advance(0, true, BODY_TUNING_FIXTURE.infectionOnsetGameHours);
     expect(body.wounds.torso?.infection).toBe('early');
 
-    body.advance(tiers[MINOR]!.closeSimSeconds, true, 0, true);
+    body.advance(tiers[MINOR]!.closeSimSeconds, true, 0, { recovering: true });
 
     expect(body.wounds.torso!.bleeding).toBe(MINOR + 1);
   });

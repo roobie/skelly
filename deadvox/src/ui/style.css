@@ -17,6 +17,7 @@
   --ui-layer-game-cursor: 2003;
   --ui-layer-startup-screen: 3000;
   --ui-layer-review-map: 10000;
+  --ui-layer-error-report: 11000;
   --panel: rgb(18 20 24 / 88%);
   --text: #e3e6ea;
   --muted: #98a0aa;
@@ -960,6 +961,11 @@ button.inv-option.game-cursor-hover {
 .inv-option-no {
   color: #8a929c;
 }
+.inv-wake-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .inv-reason {
   color: #e0876e;
   text-align: right;
@@ -1184,6 +1190,50 @@ body.resting #handling {
 }
 #errors:empty {
   display: none;
+}
+#error-report {
+  position: fixed;
+  z-index: var(--ui-layer-error-report);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow: auto;
+  background: rgb(0 0 0 / 88%);
+}
+#error-report[hidden] {
+  display: none;
+}
+.error-report-card {
+  width: min(760px, 100%);
+  max-height: 100%;
+  padding: 24px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #15181d;
+  box-shadow: 0 16px 64px #000;
+}
+.error-report-card pre {
+  max-height: 38vh;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #090a0c;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.error-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.error-report-card [data-error-status] {
+  min-height: 1.4em;
+  color: var(--muted);
 }
 
 .inv-needs {
@@ -2030,4 +2080,12 @@ body.inventory-open.inventory-tab-crafting #crafting {
 .reading-paper :focus-visible {
   outline: 2px solid #735e31;
   outline-offset: 3px;
+}
+#error-report h1 {
+  margin-top: 0;
+}
+#error-report .error-report-card .error-report-actions button,
+#error-report .error-report-card .error-report-actions a {
+  min-height: 40px;
+  padding: 8px 12px;
 }

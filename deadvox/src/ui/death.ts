@@ -54,16 +54,21 @@ export const deathViewModel = (registry: Registry, summary: DeathSummary): Death
   };
 };
 
-const deathTemplate = (vm: DeathViewModel, newWorld: () => void): TemplateResult => html`
+const deathTemplate = (vm: DeathViewModel, feedbackHref: string, newWorld: () => void): TemplateResult => html`
   <div class="card">
     <h1>You died</h1>
     <p>Of ${vm.cause}, after ${vm.span}.</p>
     <p>${vm.summary}</p>
+    <p><a href=${feedbackHref} target="_blank" rel="noopener">Send feedback</a></p>
     <button type="button" @click=${newWorld}>New world</button>
   </div>
 `;
 
 export const showDeath = (root: HTMLElement, registry: Registry, summary: DeathSummary, newWorld: () => void): void => {
-  render(deathTemplate(deathViewModel(registry, summary), newWorld), root);
+  const feedbackHref = root.ownerDocument.querySelector<HTMLAnchorElement>('#playtest-feedback')?.href;
+  if (!feedbackHref) {
+    throw new Error('Missing #playtest-feedback link');
+  }
+  render(deathTemplate(deathViewModel(registry, summary), feedbackHref, newWorld), root);
   root.hidden = false;
 };

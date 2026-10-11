@@ -279,7 +279,6 @@ export interface SessionAudio {
 /** The part of the debug tools that changes what the simulation does. */
 interface SessionDebug {
   readonly noclip: boolean;
-  dangerReason: () => string | undefined;
   stepNoclip: (step: DebugNoclipStep) => void;
 }
 
@@ -431,6 +430,14 @@ const playerBodyTuning = (registry: Registry) => {
     throw new Error('Missing player body tuning');
   }
   return tuning;
+};
+
+const playerCompressionCaps = (registry: Registry) => {
+  const tuning = registry.compression.get('player');
+  if (!tuning) {
+    throw new Error('Missing player compression tuning');
+  }
+  return tuning.caps;
 };
 
 const playerSenseTuning = (registry: Registry) => {
@@ -595,9 +602,8 @@ export const createSession = (options: SessionOptions) => {
   const sim = new Simulation({
     seed,
     bodyTuning,
+    compressionCaps: playerCompressionCaps(registry),
     clock: { ratio: CLOCK_RATIO, start: options.start },
-    unsafe: () => debug?.()?.dangerReason() ?? zombieSystem.unsafeReason(),
-    restRate: () => sim.actions.restRate,
   });
   const { compression } = sim;
   const audioEvents = sim.events.reader();
@@ -785,6 +791,7 @@ export const createSession = (options: SessionOptions) => {
       return entity !== undefined && inventory.canReachEntity(entity);
     },
     notice: options.notice,
+    hasAlarm: () => [...inventory.carriedTree()].some(({ item }) => registry.items.get(item.type)?.alarm === true),
   });
 
   const {
@@ -1002,7 +1009,15 @@ export const createSession = (options: SessionOptions) => {
       options.zombieEffects?.onDeath?.(id, zombie);
     },
   });
-  const playerCombat = new PlayerCombat(zombieSystem, (uid) => wearMeleeWeaponOnHit(inventory, uid), character);
+  const playerCombat = new PlayerCombat(
+    zombieSystem,
+    (uid) => wearMeleeWeaponOnHit(inventory, uid),
+    character,
+    () => {
+      const training = skillActivityPractice(registry, 'melee_combat', 'hit');
+      character.awardPractice('melee_combat', training.practice, training.tier);
+    },
+  );
   let lastZombieStep = 0;
   let lastBackgroundStep = 0;
   let backgroundSliceIndex = 0;

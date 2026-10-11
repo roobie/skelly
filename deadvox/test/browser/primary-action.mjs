@@ -2572,7 +2572,6 @@ try {
     r.setHand(r.dominant, book);
     return book.uid;
   });
-  // The test-house fixture admits reading through ordinary safety, not an unsafe override.
   await page.mouse.click(640, 450);
   await page.waitForFunction(
     (uid) => {
@@ -2588,7 +2587,7 @@ try {
   await page.waitForFunction(
     () => {
       const { sim } = globalThis.primaryActionTest.session;
-      return sim.actions.job?.jobType === 'reading' && sim.actions.job.stopped && !sim.ignoreUnsafe;
+      return sim.actions.job?.jobType === 'reading' && sim.actions.job.stopped;
     },
     undefined,
     { timeout: 10_000 },
@@ -2888,9 +2887,24 @@ try {
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.interaction = true;
   });
-  await page.waitForFunction(() => !document.querySelector('#prompt').hidden);
+  let hintWaitError;
+  try {
+    await page.waitForFunction(
+      () => document.querySelector('#prompt')?.textContent?.includes('›') === true,
+      undefined,
+      { timeout: 5000 },
+    );
+  } catch (error) {
+    hintWaitError = error;
+  }
   const actionHint = await page.locator('#prompt').textContent();
-  assert.equal((actionHint?.match(/›/g) ?? []).length, 1);
+  const hintCount = (actionHint?.match(/›/g) ?? []).length;
+  const hintWaitFailure = hintWaitError ? `; hint wait failed: ${hintWaitError}` : '';
+  assert.equal(
+    hintWaitError === undefined && hintCount === 1,
+    true,
+    `expected exactly one treatment hint marker within 5 seconds; prompt was ${JSON.stringify(actionHint)}${hintWaitFailure}`,
+  );
   const selectedBeforeWheel = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;

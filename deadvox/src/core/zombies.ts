@@ -2886,19 +2886,6 @@ export class ZombieSystem {
     this.tick(dt, time, hands, 'active');
   }
 
-  unsafeReason(playerPos = this.options.player().pos): string | undefined {
-    const { blockSize } = this.options;
-    for (const [, zombie] of this.store.entries()) {
-      if (
-        !zombie.incapacitated &&
-        (zombie.mode === 'chase' || horizontalDistance(zombie.body.pos, playerPos) * blockSize <= 30)
-      ) {
-        return 'A shambler is close';
-      }
-    }
-    return undefined;
-  }
-
   private firstRegionHit({
     origin,
     direction,

@@ -1659,7 +1659,6 @@ describe('shambler scenarios', () => {
     const id = system.add(type, [1, 1, 0], [0, 0, -1]);
     const zombie = system.store.get(id)!;
     zombie.mode = 'chase';
-    expect(system.unsafeReason([1, 1, 0.5])).toBe('A shambler is close');
     const start: Vec3 = [...zombie.body.pos];
     const { mode } = zombie;
     const behaviorRng = zombie.behaviorRng.state();
@@ -1684,7 +1683,6 @@ describe('shambler scenarios', () => {
     expect(zombie.mode).toBe(mode);
     expect(zombie.behaviorRng.state()).toEqual(behaviorRng);
     expect(emitted).toHaveLength(soundsAfterHit);
-    expect(system.unsafeReason([1, 1, 0.5])).toBeUndefined();
 
     const restored = new ZombieSystem(options);
     restored.restoreState(system.snapshotState(), (restoreId) => (restoreId === type.id ? type : undefined));
@@ -1883,7 +1881,11 @@ describe('shambler scenarios', () => {
 
   it('god mode blocks shambler damage without stopping attacks or their cooldown', () => {
     const simulateAttacks = (godMode: boolean) => {
-      const sim = new Simulation({ seed: 9, bodyTuning: registry.body.get('player')! });
+      const sim = new Simulation({
+        seed: 9,
+        bodyTuning: registry.body.get('player')!,
+        compressionCaps: registry.compression.get('player')!.caps,
+      });
       sim.godMode = godMode;
       let hits = 0;
       const system = new ZombieSystem(

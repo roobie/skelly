@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're reviewing or changing procedural surface weathering and the building dilapidation look
+  - you're changing or reviewing solar-phase sky tone-mapping keyframes
 ---
 
 # deadvox — graphics
@@ -35,9 +36,9 @@ Set in `src/core/mood.ts` (`DEFAULT_LOOK`, `DEFAULT_MOOD`, `DEFAULT_SHADOWS`) an
 - `auto` tone mapping, exposure 3.0, sRGB block-colour decode, surface patterns on. Auto blends three's Neutral
   and ACES Filmic by time of day: by eye, Neutral looks best in bright daylight, ACES (or AgX) at dawn and dusk,
   and ACES at night, where it gives the dark and the flashlight their depth. The weathering layer adds render-only signs of age while preserving surface patterns; the default profile keeps material hue, while `overgrown` may shift it. The blend is bounded below full replacement; see [DESIGN.md](DESIGN.md#a-world-that-feels-real) for why, and `src/render/chunks.ts`, `chunkMaterial`, applies it. Layouts select a named profile or use the default. The debug Weathering group edits and shares profile values without reloading or remeshing; the debug comparison pad and Firefox pixel stage compare concrete, brick and wood on clean and weathered halves. The weight (0 is Neutral, 1 is ACES)
-  is the sky keyframes' `tone` field (`src/core/sky.ts`), interpolated like `bloom`: 0 for full day (08:30 to
-  17:30), 0.85 at dawn (06:30) and dusk (19:30), 1 at night (21:00 to 05:00). It ramps linearly between the keyframes,
-  so sunrise has no step, and the weather does not move it. `aces`, `agx`, `neutral` and `none` stay selectable
+  is the sky keyframes' `tone` field (`src/core/sky.ts`, `KEYS`), interpolated like `bloom`: 0 through most of the day,
+  0.85 at sunrise and sunset, and 1 through deep night. Keyframe positions follow the solar phases, so the ramp moves
+  with the cycle and sunrise has no step; weather does not move it. `aces`, `agx`, `neutral` and `none` stay selectable
   (debug key J cycles through all, `?tone=`).
   - How it is wired: `src/render/autoTone.ts` replaces the empty `CustomToneMapping` stub in three's
     `tonemapping_pars_fragment` with `mix(NeutralToneMapping(c), ACESFilmicToneMapping(c), autoToneWeight)`, so each
@@ -109,7 +110,7 @@ The weathering rationale and geometry scope are in [DESIGN.md](DESIGN.md#a-world
   not found and `test/autoTone.test.ts` checks that, so an upgrade fails loudly, but it needs a proper solution (like
   the hooks above) before merging. The ends of the keyframe weights (0 by day, 1 at night) follow the by-eye findings on
   a real GPU; 0.85 at dawn and dusk and the linear ramps are first guesses, not yet looked at on one (dusk starts easing
-  towards ACES at 17:30, while the sun is still high).
+  towards ACES while the sun is still high).
 - **Wide occlusion is tuned by eye on the test house only.** Floor 0.35 and gamma 1 are first
   guesses; revisit them with indoor scenes once skylight (item 5) lands, which will
   overlap with it. The extra quads (up to 47% in the city) are the main cost to watch.

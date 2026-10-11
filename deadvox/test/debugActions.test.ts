@@ -227,7 +227,6 @@ const makeActions = (
   };
   const spawnMenu = { isOpen: false };
   let noclip = false;
-  let danger = false;
   let aimEnabled = false;
   let frozen = false;
   let gameFrozen = false;
@@ -248,10 +247,6 @@ const makeActions = (
       noclip = !noclip;
     },
     spawnUnawareShambler: () => undefined,
-    isDanger: () => danger,
-    toggleDanger: () => {
-      danger = !danger;
-    },
     shamblerCount: () => shamblerCount,
     spawnShambler(count) {
       spawnCounts.push(count);

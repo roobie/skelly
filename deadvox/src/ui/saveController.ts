@@ -33,6 +33,7 @@ const SCHEDULER_IDS = new Set([
 ]);
 const CONTINUE_KEY = 'deadvox.continue-namespace';
 const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
+const DEAD_WORLD_KEY = 'deadvox.dead-world';
 
 export const contentLookup = (registry: Registry, kind: SaveContentKind, id: string): boolean => {
   switch (kind) {
@@ -106,6 +107,7 @@ export class SaveController {
   private protectedCurrent = false;
   private corruptRecords = false;
   private requestedContinue = false;
+  private deadRecord = false;
   private entered = false;
   private ready = false;
   private newWorldLauncher: ((creation: HandedCharacter) => { enter: () => void }) | undefined;
@@ -123,6 +125,7 @@ export class SaveController {
   private writing = false;
   private requestingPersistence = false;
   private pageIsLeaving = false;
+  private playHalted = false;
 
   constructor(backend: SaveBackendPreference = 'auto') {
     this.environmentProblem = saveEnvironmentProblem();
@@ -220,7 +223,7 @@ export class SaveController {
       this.statusText = refusal;
     }
     const requested = sessionStorage.getItem(CONTINUE_KEY);
-    this.requestedContinue = !refusal && requested === this.namespace;
+    this.requestedContinue = !(refusal || this.deadRecord) && requested === this.namespace;
     if (requested !== null && !this.requestedContinue) {
       sessionStorage.removeItem(CONTINUE_KEY);
     }
@@ -262,11 +265,44 @@ export class SaveController {
     this.corruptRecords = this.currentRecord.corruptSlots.length > 0;
     try {
       const decoded = await decodeSave(this.currentRecord.payload, { contentLookup: () => true });
+      const markedDeadWorld = this.readDeadWorldId();
+      this.deadRecord =
+        decoded.snapshot.character.simulation.dead !== undefined || markedDeadWorld === decoded.snapshot.world.id;
+      if (this.deadRecord) {
+        this.candidate = undefined;
+        this.restoreWorldOptions = undefined;
+        this.restored = undefined;
+        this.statusText = 'The saved survivor died. Continue is unavailable; start a new world.';
+        return;
+      }
+      if (markedDeadWorld) {
+        this.clearDeadWorldMarker();
+      }
       this.restoreWorldOptions = decoded.worldOptions;
       this.statusText = `Saved world available · ${versionLabel(this.currentRecord.payload)}${this.currentRecord.corruptSlots.length > 0 ? ` · inactive slot(s) ${this.currentRecord.corruptSlots.join(', ')} are corrupt but retained` : ''}`;
     } catch (error) {
       this.protectedCurrent = true;
       this.statusText = `Saved world cannot be loaded and was left untouched: ${errorMessage(error)}`;
+    }
+  }
+
+  private deadWorldStorageKey(): string {
+    return `${DEAD_WORLD_KEY}:${this.namespace}`;
+  }
+
+  private readDeadWorldId(): string | undefined {
+    try {
+      return globalThis.localStorage.getItem(this.deadWorldStorageKey()) ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private clearDeadWorldMarker(): void {
+    try {
+      globalThis.localStorage.removeItem(this.deadWorldStorageKey());
+    } catch {
+      // Save discovery must remain available when browser preferences are blocked.
     }
   }
 
@@ -412,6 +448,12 @@ export class SaveController {
     return { worldId: this.worldId, characterId: this.characterId };
   }
 
+  /** Stops this session from capturing or retrying saves after an unrecoverable play error. */
+  halt(): void {
+    this.playHalted = true;
+    this.queued = undefined;
+  }
+
   /** Move the next checkpoint to the first interval after an explicit forward debug-time seek. */
   rearmAutosaveAfterTimeSeek(): void {
     const time = this.simTime?.();
@@ -434,7 +476,12 @@ export class SaveController {
   }
 
   private capture(reason: string): void {
-    if (!(this.snapshot && this.namespace && this.entered) || this.protectedCurrent || this.storageUnavailable) {
+    if (
+      this.playHalted ||
+      !(this.snapshot && this.namespace && this.entered) ||
+      this.protectedCurrent ||
+      this.storageUnavailable
+    ) {
       return;
     }
     const startedAt = performance.now();
@@ -447,6 +494,11 @@ export class SaveController {
   }
 
   private async flush(): Promise<void> {
+    if (this.playHalted) {
+      this.queued = undefined;
+      this.writing = false;
+      return;
+    }
     const task = this.queued;
     if (!task) {
       this.writing = false;
@@ -463,6 +515,9 @@ export class SaveController {
         }),
       );
       this.savedGeneration = result.generation;
+      if (this.readDeadWorldId() && this.readDeadWorldId() !== task.snapshot.world.id) {
+        this.clearDeadWorldMarker();
+      }
       this.statusText = `Saved generation ${result.generation} · ${task.reason}`;
       this.failure = '';
     } catch (error) {
@@ -492,7 +547,7 @@ export class SaveController {
       this.render();
       return;
     }
-    if (this.currentRecord) {
+    if (this.currentRecord && !this.deadRecord) {
       event.preventDefault();
       event.stopImmediatePropagation();
       $('save-confirmation').hidden = false;
@@ -527,6 +582,7 @@ export class SaveController {
       this.render();
       return;
     }
+    this.deadRecord = false;
     this.entered = true;
     $('save-confirmation').hidden = true;
     $('continue').hidden = true;
@@ -537,10 +593,24 @@ export class SaveController {
     entry.enter();
   }
 
+  /** Durably marks this survivor dead before queuing the final snapshot. */
+  finishDeath(): void {
+    this.deadRecord = true;
+    if (this.namespace && this.worldId) {
+      try {
+        globalThis.localStorage.setItem(this.deadWorldStorageKey(), this.worldId);
+      } catch {
+        // The final checkpoint below still records death when local storage is unavailable.
+      }
+    }
+    this.capture('death');
+    this.render();
+  }
+
   private continueWorld(event: Event): void {
     event.preventDefault();
     event.stopPropagation();
-    if (!(this.ready && this.restored) || this.protectedCurrent || this.storageUnavailable) {
+    if (!(this.ready && this.restored) || this.deadRecord || this.protectedCurrent || this.storageUnavailable) {
       return;
     }
     sessionStorage.setItem(CONTINUE_KEY, this.namespace);
@@ -548,7 +618,7 @@ export class SaveController {
   }
 
   private retrySave(): void {
-    if (!(this.entered && this.snapshot) || this.protectedCurrent || this.storageUnavailable) {
+    if (this.playHalted || !(this.entered && this.snapshot) || this.protectedCurrent || this.storageUnavailable) {
       return;
     }
     this.queued = { snapshot: this.snapshot(), reason: 'manual retry' };

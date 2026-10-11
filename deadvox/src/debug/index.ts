@@ -1,5 +1,6 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
+import { getBuildRevision } from '../core/buildInfo.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock, SPAWN_TIME } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -48,7 +49,7 @@ import {
   writeClosedGroups,
 } from './groups.ts';
 import { LookControls } from './look.ts';
-import { buildRevision, lookDump, lookDumpFilename } from './lookDump.ts';
+import { lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
 import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
 import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
@@ -566,8 +567,6 @@ interface ActionContext {
   isNoclip: () => boolean;
   toggleNoclip: () => void;
   spawnUnawareShambler: () => void;
-  isDanger: () => boolean;
-  toggleDanger: () => void;
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
   spawnZombie: (typeId: string, count: number) => void;
@@ -591,8 +590,6 @@ export const createDebugActions = ({
   isNoclip,
   toggleNoclip,
   spawnUnawareShambler,
-  isDanger,
-  toggleDanger,
   shamblerCount,
   spawnShambler,
   spawnZombie,
@@ -699,7 +696,6 @@ export const createDebugActions = ({
         group: 'survival',
         run: () => hooks.sim.emit({ kind: 'interrupt', reason: 'You hear something outside' }),
       },
-      { id: 'debug.danger-test', label: 'Danger test', group: 'survival', state: isDanger, run: toggleDanger },
       {
         id: 'debug.hurt',
         label: 'Take 25 damage',
@@ -1126,7 +1122,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let readout = emptyReadout;
   let shellKey = '';
   let noclip = false;
-  let danger = false;
   const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize);
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   let shamblerCount = readShamblerCount();
@@ -1271,10 +1266,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       if (placed) {
         hooks.showNotice('An unaware shambler is nearby');
       }
-    },
-    isDanger: () => danger,
-    toggleDanger: () => {
-      danger = !danger;
     },
     shamblerCount: () => shamblerCount,
     isAimEnabled: () => aimEnabled,
@@ -1644,7 +1635,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       positionM: hooks.body.pos.map((v) => v * metres) as Vec3,
       yawRad: hooks.input.yaw,
       pitchRad: hooks.input.pitch,
-      buildRevision: buildRevision(),
+      buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
       url: camUrl(lookUrl(location.href, lookState()), {
         position: hooks.body.pos.map((v) => v * metres) as Vec3,
@@ -1799,7 +1790,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     get revealZombies() {
       return revealZombies;
     },
-    dangerReason: () => (danger ? 'Something is close' : undefined),
     handleAction,
     closeMenus() {
       panelOpen = false;

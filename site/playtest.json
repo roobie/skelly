@@ -1,7 +1,7 @@
 {
   "en": {
     "analytics": "This site, the game included, loads Simple Analytics to count visits. It is anonymous, stores no cookies on your device, and gets none of your play metrics.",
-    "duration": "Play for as long as you like, in as many sittings as you like. Continue picks up where you left off.",
+    "duration": "Play for as long as you like, in as many sittings as you like. Continue resumes a living survivor; death ends the run.",
     "email": "No GitHub account? You can email your metrics, and any feedback, to the person who sent you the link.",
     "feedbackAfter": ". It opens a public GitHub issue and needs a GitHub account.",
     "feedbackBefore": "Send feedback through ",
@@ -15,7 +15,7 @@
   },
   "sv": {
     "analytics": "Den här webbplatsen, spelet inräknat, använder Simple Analytics för att räkna besök. Det är anonymt, sparar inga kakor på din enhet och får inte ta del av din speldata.",
-    "duration": "Spela så länge du vill, i så många omgångar du vill. Med Continue fortsätter du där du slutade.",
+    "duration": "Spela så länge du vill, i så många omgångar du vill. Continue återupptar en överlevare som fortfarande lever; vid dödsfall tar omgången slut.",
     "email": "Har du inget GitHub-konto? Då kan du mejla din speldata, och eventuell återkoppling, till den som skickade länken till dig.",
     "feedbackAfter": ". Det öppnar ett offentligt ärende på GitHub och kräver ett GitHub-konto.",
     "feedbackBefore": "Skicka återkoppling via ",

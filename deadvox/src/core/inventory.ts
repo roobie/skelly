@@ -517,6 +517,13 @@ export class Inventory {
     return [...SIDES.map((s) => this.hands[s]), ...Object.values(this.worn)].filter((i): i is Item => i !== undefined);
   }
 
+  /** Items held or worn, with everything inside them. */
+  carriedTree() {
+    return walkItemTree(
+      itemRoots<Item, Pile, BlockEntity>({ hands: this.hands, worn: this.worn, piles: [], entities: [] }),
+    );
+  }
+
   /** Grams held and worn, with everything inside. */
   carriedWeight(): number {
     return this.carried().reduce((sum, item) => sum + weightOf(this.registry, item), 0);

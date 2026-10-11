@@ -1,5 +1,6 @@
 import { SECONDS_PER_HOUR } from './clock.ts';
 import { type ModifiedEffect, type Modifier, type ModifierActor, modified } from './modifiers.ts';
+import type { RecoveryState } from './needs.ts';
 import type { BodyTuningDef, TreatmentDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -54,6 +55,12 @@ export interface BodyImpact {
   bleeding?: number;
   shockDamage?: number;
   infectionAtRisk?: boolean;
+}
+
+/** What a body step may recover: whether the needs allow it, and sleep's factor on blood recovery. */
+interface BodyRecovery {
+  recovering?: boolean;
+  recoveryFactor?: number;
 }
 
 const BODY_START: Readonly<BodyState> = Object.freeze({
@@ -164,6 +171,44 @@ export class Body implements ModifierActor {
         1 - Math.max(regionDamage.leftLeg, regionDamage.rightLeg) * this.tuning.movementSlowdownPerDamage,
       ),
     };
+  }
+
+  // Needs and sleep read their content rates here, once each, so the body's modifier point can wrap them.
+  // Content rates load per Game second; the needs step works in Game hours.
+
+  /** Sleep debt accrued per Game hour awake. */
+  get fatigueRisePerGameHour(): number {
+    return this.tuning.fatigueRisePerGameHour * SECONDS_PER_HOUR;
+  }
+
+  /** Health, and each region's damage, recovered per Game hour while the needs are met. */
+  get healthRecoveryPerGameHour(): number {
+    return this.tuning.healthRecoveryPerGameHour * SECONDS_PER_HOUR;
+  }
+
+  /** What sleep multiplies health, regional and blood recovery by. */
+  get sleepRecoveryFactor(): number {
+    return this.tuning.sleepRecoveryFactor;
+  }
+
+  /** The lowest calories and hydration at which health and regions still recover. */
+  get healthRecoveryNeedsFloor(): Readonly<{ calories: number; hydration: number }> {
+    return this.tuning.healthRecoveryNeedsFloor;
+  }
+
+  /** The highest fatigue at which health and regions still recover in this state; none where content sets none. */
+  healthRecoveryFatigueCeiling(state: RecoveryState): number {
+    return this.tuning.healthRecoveryFatigueCeiling[state] ?? Number.POSITIVE_INFINITY;
+  }
+
+  /** Fatigue's change per Game hour resting or sleeping on furniture of this rest quality. */
+  fatigueRecoveryRate(kind: 'rest' | 'sleep', quality: number): number {
+    const { restFatigueRecoveryPerGameHour, sleepFatigueRecoveryPerGameHour, roughSleepShare } = this.tuning;
+    const perHour =
+      kind === 'rest'
+        ? restFatigueRecoveryPerGameHour * quality
+        : sleepFatigueRecoveryPerGameHour * (roughSleepShare + (1 - roughSleepShare) * quality);
+    return -perHour * SECONDS_PER_HOUR;
   }
 
   snapshotState(): Readonly<BodyState> {
@@ -286,10 +331,22 @@ export class Body implements ModifierActor {
   /**
    * Advances body consequences by simulation seconds and returns a terminal cause, if any. `recovering` says
    * the needs let the body recover (needs.ts, `needsAllowRecovery`); then every uninfected wound also closes
-   * by itself (DESIGN.md, "Bleeding").
+   * by itself (DESIGN.md, "Bleeding"). `recoveryFactor` multiplies blood recovery (sleep's `sleepRecoveryFactor`).
    */
-  advance(seconds: number, damageImmune = false, gameSeconds = seconds, recovering = false): string | undefined {
-    if (!Number.isFinite(seconds) || seconds < 0 || !Number.isFinite(gameSeconds) || gameSeconds < 0) {
+  advance(
+    seconds: number,
+    damageImmune = false,
+    gameSeconds = seconds,
+    { recovering = false, recoveryFactor = 1 }: BodyRecovery = {},
+  ): string | undefined {
+    if (
+      !Number.isFinite(seconds) ||
+      seconds < 0 ||
+      !Number.isFinite(gameSeconds) ||
+      gameSeconds < 0 ||
+      !Number.isFinite(recoveryFactor) ||
+      recoveryFactor < 0
+    ) {
       throw new Error('Invalid body step');
     }
     let shockRecoverySeconds = seconds;
@@ -329,15 +386,23 @@ export class Body implements ModifierActor {
       }
     }
     if (!damageImmune) {
-      // Blood recovers only in a step where no wound bled.
-      this.state.blood = clamp(
-        this.state.blood +
-          (bleeding
-            ? -bloodLoss
-            : this.modified('body.bloodRecoveryPerSimSecond', this.tuning.bloodRecoveryPerSimSecond) * seconds),
-      );
+      this.advanceBlood(bleeding ? bloodLoss : undefined, seconds, recoveryFactor);
     }
     return this.terminalCause();
+  }
+
+  /**
+   * Blood drains by what the wounds lost; only in a step where no wound bled does it recover, at
+   * `recoveryFactor` times its rate.
+   */
+  private advanceBlood(bloodLoss: number | undefined, seconds: number, recoveryFactor: number): void {
+    const change =
+      bloodLoss === undefined
+        ? this.modified('body.bloodRecoveryPerSimSecond', this.tuning.bloodRecoveryPerSimSecond) *
+          recoveryFactor *
+          seconds
+        : -bloodLoss;
+    this.state.blood = clamp(this.state.blood + change);
   }
 
   private terminalCause(): string | undefined {

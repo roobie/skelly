@@ -149,6 +149,9 @@ const applyCommand = (
       runtime.sim.actions.stop();
     },
     wait: () => runtime.sim.actions.startWait(),
+    setWakeGameHour: (gameHour) => {
+      runtime.session.rest.wakeGameHour = gameHour;
+    },
     cancelItemThrow: () => undefined,
     throwItem: (itemUid, hand, distance) => throwItem?.(itemUid, hand, distance),
   });
@@ -1282,18 +1285,24 @@ describe('input replay', () => {
     );
   });
 
-  it('round-trips a Wait command from the inventory', async () => {
+  it('round-trips the Actions tab commands: Wait and the alarm wake hour', async () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
-    const payload = { kind: 'action.wait' } as const;
-    recorder.queueAction(payload.kind, 'down', 'inventory', { payload });
-    recorder.recordTick(replaySample);
+    const commands = [
+      { kind: 'action.wait' },
+      { kind: 'action.wake-hour', gameHour: 7 },
+      { kind: 'action.wake-hour', gameHour: null },
+    ] as const;
+    for (const payload of commands) {
+      recorder.queueAction(payload.kind, 'down', 'inventory', { payload });
+      recorder.recordTick(replaySample);
+    }
 
     const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
-    expect(decoded.inputs.actions).toEqual([
-      { tick: 0, action: payload.kind, phase: 'down', context: 'inventory', payload },
-    ]);
+    expect(decoded.inputs.actions).toEqual(
+      commands.map((payload, tick) => ({ tick, action: payload.kind, phase: 'down', context: 'inventory', payload })),
+    );
   });
 
   it('validates replay command identities and pickup modes', () => {
@@ -1304,6 +1313,9 @@ describe('input replay', () => {
     expect(isReplayActionPayload({ kind: 'item.throw', itemUid: 1, hand: 'left', distance: 2 })).toBe(true);
     expect(isReplayActionPayload({ kind: 'item.throw', itemUid: 0, hand: 'left', distance: 2 })).toBe(false);
     expect(isReplayActionPayload({ kind: 'furniture.interact', entityUid: 1 })).toBe(true);
+    expect(isReplayActionPayload({ kind: 'action.wake-hour', gameHour: 23 })).toBe(true);
+    expect(isReplayActionPayload({ kind: 'action.wake-hour', gameHour: 24 })).toBe(false);
+    expect(isReplayActionPayload({ kind: 'action.wake-hour', gameHour: 6.5 })).toBe(false);
   });
 
   it('rejects an invalid inventory payload while decoding a replay', async () => {

@@ -235,6 +235,8 @@ keeps its progress. See `src/ui/reading.ts`, `ReadingProgress` and `mountReading
 
 ## Development and playtest
 
+An uncaught runtime error or unhandled rejection opens a blocking meta panel. During gameplay the game stops, releases pointer lock, refuses to resume, and prevents further saves rather than trying to recover. The panel shows the full error text for copying and offers a local report download; nothing is sent automatically. The downloaded report may include the build revision, world identity and game clock, browser user agent, and the same recent replay and playtest metrics the F9 menu exports. See `src/ui/errorReport.ts`, `installErrorReportHandler` and `errorReportText`, and `src/game/play.ts`, `bindPlayErrorReport` and `stopPlayAfterError`.
+
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in
   `src/debug` and load only there. They can say anything. The target ping and the
   impact laser (`debug.impact-laser` in `src/game/inputBindings.ts`,
@@ -303,7 +305,7 @@ In-game choices use the game's own combo box (`src/ui/comboBox.ts`, `comboBox`),
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; its key names come from the bindings, and it moves to the hint channel with "Order of work" item 2 |
-| Main menu (F9) | meta | meta | fine; settings, help and the playtest hand-back live here |
+| Main menu (F9 or Escape after death) | meta | meta | Settings, help and the playtest hand-back live here. F9 and Escape can open it over the death card so testers can export metrics and a replay before starting another world; a separate death-card feedback link keeps reporting available without choosing New world. See `src/ui/menuState.ts`, `activeMenuState`, `src/game/play.ts`, `die`, and `src/ui/death.ts`, `showDeath`. |
 | Inventory screen | meta | meta | grids stay; numbers remain available on request per DESIGN.md "numbers are there when you look" |
 | Refusal notices ("Quickbar 1 is empty") | voice | voice | none: they name no key or procedure (`src/game/play.ts`, `showRefusal`) |
 | Drawn menu cursor | meta | meta | fine |
