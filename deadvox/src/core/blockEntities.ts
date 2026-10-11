@@ -110,7 +110,7 @@ export const doorPanel = (entity: BlockEntity, blockSize: number, onBodyFace = f
 };
 
 /** A hatch's panel: flat across the top of its cells while shut, upright on its hinge edge (its facing side) when open. */
-export const hatchPanel = (entity: BlockEntity, blockSize: number): DoorPanelBox => {
+const hatchPanel = (entity: BlockEntity, blockSize: number): DoorPanelBox => {
   const w = entity.size[0] * blockSize;
   const h = entity.size[1] * blockSize;
   const d = entity.size[2] * blockSize;
