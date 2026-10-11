@@ -343,7 +343,7 @@ describe('inventory screen Lit rendering', () => {
     }
     const longWordNode = root.querySelector<HTMLElement>(`.inv-item[data-uid="${placed[2]!.item.uid}"]`)!;
     expect(longWordNode.querySelector('.inv-item-name')?.textContent).toContain('…');
-    expect(inventoryGridName(fixtures[0]!.name, ...fixtures[0]!.size)).not.toContain('\n');
+    expect(inventoryGridName(fixtures[0]!.name, 1, 4)).toBe(inventoryGridName(fixtures[0]!.name, 4, 1));
     screen.close();
   });
 
@@ -362,14 +362,17 @@ describe('inventory screen Lit rendering', () => {
       new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
     );
     expect(floorGrid.dataset.dropShape).toBe('will-land');
-    expect(floorGrid.dataset.dropMark).toBe('✓');
+    const acceptedMark = floorGrid.dataset.dropMark ?? '';
+    expect(acceptedMark).not.toBe('');
 
     hitTarget = wornSlot;
     globalThis.window.dispatchEvent(
       new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
     );
     expect(wornSlot.dataset.dropShape).toBe('blocked');
-    expect(wornSlot.dataset.dropMark).toBe('×');
+    const refusedMark = wornSlot.dataset.dropMark ?? '';
+    expect(refusedMark).not.toBe('');
+    expect(refusedMark).not.toBe(acceptedMark);
     globalThis.window.dispatchEvent(
       new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
     );

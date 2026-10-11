@@ -13,7 +13,7 @@ import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import { firearmSlotIds } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
-import { inventoryGridName } from '../core/inventoryGridName.ts';
+import { GRID_CELL_PX as CELL, inventoryGridName } from '../core/inventoryGridName.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
@@ -23,8 +23,6 @@ import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
 import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 
-/** Pixels per inventory cell. */
-const CELL = 48;
 const EMPTY_DROP_GRID: GridSize = { w: 2, h: 2 };
 
 export const targetForPackedFloorDrop = (

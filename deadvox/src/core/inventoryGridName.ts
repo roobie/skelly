@@ -1,4 +1,4 @@
-const GRID_CELL_PX = 48;
+export const GRID_CELL_PX = 48;
 const GRID_NAME_FONT_PX = 11;
 const GRID_NAME_LINE_HEIGHT = 1.15;
 const GRID_NAME_AVERAGE_GLYPH_WIDTH_EM = 0.5;

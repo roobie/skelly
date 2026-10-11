@@ -509,9 +509,10 @@ HTML over the game view, and keyboard-first:
   `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
   shows its handling time. Weight, exact condition and times are in the item's
-  details. For #607, the compact grid must keep names readable without shrinking
-  text or splitting words into fragments; tall footprints use their long edge.
-  Full names remain in inspection and hand or worn slots. `validate` uses the same
+  details. Names must tell similar items apart while scanning: at the original
+  text size the grid wraps a name at spaces onto the lines that fit and elides an
+  overlong word rather than splitting it. Tall footprints use their long edge;
+  full names remain in inspection and hand or worn slots. `validate` uses the same
   layout as the grid when checking for indistinguishable labels. See
   `src/ui/inventoryScreen.ts`, `gridItemName`, and
   `src/core/inventoryGridName.ts`, `inventoryGridName`.
