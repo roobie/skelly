@@ -95,6 +95,16 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
+      "id": "grenade_blast",
+      "variants": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"],
+      "gain": 1,
+      "pitchJitter": [0.55, 0.65],
+      "gainJitter": [1, 1],
+      "minIntervalSimSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 300 }
+    },
+    {
       "id": "player_hurt_light",
       "variants": [
         "assets/audio/player-hurt-light-01.ogg",

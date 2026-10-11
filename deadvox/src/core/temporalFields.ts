@@ -26,6 +26,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.food.rotsAfterGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'items.weapon.melee.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.light.burnTimeGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
+  { path: 'items.explosive.fuseSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.light.fuelPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'items.light.power.chargePerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'items.book.readingGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },

@@ -52,6 +52,7 @@ interface ScenarioState {
   actor?: Zombie;
   swingOrigin?: Vec3;
   doorPosition?: Vec3;
+  blastPosition?: Vec3;
   meleeStarted?: boolean;
 }
 interface Observation {
@@ -89,6 +90,9 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     }
     if (sound.event === 'melee_swing') {
       return state.swingOrigin!;
+    }
+    if (sound.event === 'grenade_blast') {
+      return state.blastPosition!;
     }
     if (sound.event.startsWith('shambler_') || sound.event === 'melee_hit_fist') {
       return state.actor!.body.pos;
@@ -152,6 +156,9 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       notice: () => undefined,
       onRead: () => {
         throw new Error('Unexpected reading in noise fixture');
+      },
+      onDetonation: (at) => {
+        state.blastPosition = at.map((metres) => metres / scale.blockSize) as Vec3;
       },
     });
     session.sim.paused = false;
@@ -413,6 +420,23 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     observe(scenario, 'shotgun dropped', session.inventory.add(gun, { kind: 'pile', pos: session.feet() }));
   };
 
+  const exerciseGrenade = (scenario: NoiseScenario) => {
+    const { session, played, advance } = scenario;
+    const grenade = session.inventory.create('frag_grenade');
+    const feet = session.feet();
+    session.fuses.togglePin(grenade);
+    // Far beyond its reach, so the player is whole for the scenes that follow.
+    const landed = session.inventory.add(grenade, { kind: 'pile', pos: [feet[0] + 80, feet[1], feet[2]] });
+    observe(scenario, 'grenade lands', landed);
+    advance(Math.ceil(registry.items.get('frag_grenade')!.explosive!.fuseSimSeconds * 60) + 10);
+    observe(scenario, 'grenade goes off', session.inventory.itemByUid(grenade.uid) === undefined);
+    observe(
+      scenario,
+      'grenade blast is played from where it went off',
+      played.some(({ sound, expectedPosition }) => sound.event === 'grenade_blast' && expectedPosition),
+    );
+  };
+
   const exerciseFight = (scenario: NoiseScenario) => {
     const { session, state, played, advance } = scenario;
     const shambler = registry.zombies.get('shambler')!;
@@ -523,6 +547,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   exerciseRustle(fixture);
   exerciseDoors(fixture);
   exerciseShotgun(fixture);
+  exerciseGrenade(fixture);
   exerciseFight(fixture);
   exercisePlayerPain(fixture);
   const result = pairingChecks(fixture);

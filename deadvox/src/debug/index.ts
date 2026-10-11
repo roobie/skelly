@@ -1,7 +1,7 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { getBuildRevision } from '../core/buildInfo.ts';
-import { dominantSide, offSide } from '../core/character.ts';
+import { dominantSide } from '../core/character.ts';
 import { formatClock, SPAWN_TIME } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
@@ -11,7 +11,6 @@ import {
   type FirearmsSkillZeroEffect,
   type FirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
-import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { WEATHERING_RANGES } from '../core/weather.ts';
@@ -38,7 +37,7 @@ import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
 import { setDebugFirearmsSkill } from './debugFirearmsSkill.ts';
 import { setDebugInventoryManagementSkill } from './debugInventoryManagementSkill.ts';
-import { equipDebugFirearms, equipDebugStartWeapons } from './debugLoadout.ts';
+import { equipDebugBackpack, equipDebugLoadout } from './debugLoadout.ts';
 import { setDebugWound } from './debugWound.ts';
 import {
   actionsByGroup,
@@ -1041,39 +1040,12 @@ export const copyTextOrSelect = async (
   return false;
 };
 
-const DEBUG_START_LIGHT = 'flashlight';
-
-/** A fresh debug game starts with a switched-off flashlight in the left hand, which leaves the right free. */
-export const equipDebugStartLight = ({
-  inventory,
-  debugMode,
-  newGame,
-}: {
-  inventory: Inventory;
-  debugMode: boolean;
-  newGame: boolean;
-}): void => {
-  if (!(debugMode && newGame) || inventory.hands.left || inventory.hands.right) {
-    return;
-  }
-  inventory.add(inventory.create(DEBUG_START_LIGHT), { kind: 'hand', side: offSide(inventory.character) });
-};
-
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
   setDebugFirearmsSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
   setDebugInventoryManagementSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
   setDebugWound(hooks.sim.body, location.search, hooks.engine.config.debug, hooks.newGame);
-  if (!equipDebugFirearms(hooks.inventory, hooks.engine.config.debug, hooks.newGame, location.search)) {
-    equipDebugStartLight({
-      inventory: hooks.inventory,
-      debugMode: hooks.engine.config.debug,
-      newGame: hooks.newGame,
-    });
-    equipDebugStartWeapons({
-      inventory: hooks.inventory,
-      debugMode: hooks.engine.config.debug,
-      newGame: hooks.newGame,
-    });
+  if (!equipDebugLoadout(hooks.inventory, hooks.engine.config.debug, hooks.newGame, location.search)) {
+    equipDebugBackpack(hooks.inventory, hooks.engine.config.debug, hooks.newGame);
     if (
       hooks.newGame &&
       new URLSearchParams(location.search).get('loadout') === COMPASS_DEBUG_LOADOUT &&
