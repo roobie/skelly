@@ -15,7 +15,7 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import { type BleedingTier, BODY_REGIONS, type BodyWounds } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
@@ -42,18 +42,11 @@ const CARVED_CELL_SPRAY_DAMAGE = 2;
 const SPLAT_LIFE_S = 90;
 const SPLAT_FADE_S = 30;
 const SPLAT_OPACITY = 0.9;
-/** Drips a second from a body at full wound severity. */
+/** Drips a second from a body at full wound severity, and a player wound's base rate. */
 const DRIPS_PER_SECOND = 2.5;
 const DRIP_RANGE_M = 25;
 /** A downed body drips from near the ground, not from its standing height. */
 const DOWNED_DRIP_HEIGHT_M = 0.3;
-/** A player wound's drip rate and droplet size by bleeding tier, relative to a moderate wound. */
-const PLAYER_DRIP: Readonly<Record<BleedingTier, { readonly rate: number; readonly size: number }>> = {
-  scratch: { rate: 0.2, size: 0.75 },
-  moderate: { rate: 1, size: 1 },
-  heavy: { rate: 2.5, size: 1.3 },
-  arterial: { rate: 6, size: 1.6 },
-};
 const SEVERED_PART_SEVERITY = 0.2;
 const CARVED_CELL_SEVERITY = 0.01;
 const DROPLET_COLOR = 0x52_17_0f;
@@ -90,7 +83,8 @@ interface SeverityMemo {
 export interface GorePlayer {
   readonly pos: Vec3;
   readonly yaw: number;
-  readonly wounds: Readonly<BodyWounds>;
+  /** A bleeding region's drip from its content tier, relative to the base rate and size; undefined if dry. */
+  readonly drip: (region: BodyRegion) => Readonly<{ rate: number; size: number }> | undefined;
   /** Whether the figure uses its third-person placement, without the first-person rear offset. */
   readonly thirdPerson: boolean;
 }
@@ -408,12 +402,8 @@ export class Gore {
     this.playerPlacement.blockSize = this.blockSize;
     this.playerPlacement.thirdPerson = player.thirdPerson;
     for (const region of BODY_REGIONS) {
-      const tier = player.wounds[region]?.bleeding;
-      if (!tier) {
-        continue;
-      }
-      const drip = PLAYER_DRIP[tier];
-      if (!this.rng.chance(DRIPS_PER_SECOND * drip.rate * dt)) {
+      const drip = player.drip(region);
+      if (!(drip && this.rng.chance(DRIPS_PER_SECOND * drip.rate * dt))) {
         continue;
       }
       setPlayerDripOrigin(this.origin, this.playerPlacement, region);

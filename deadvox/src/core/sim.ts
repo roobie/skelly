@@ -1,13 +1,13 @@
 // The simulation core: clock, scheduler, events, compression and pause, with the
 // systems registered on it. Pure, so scenario tests run it headless.
 
-import { Body, type BodyImpact, type BodyRegion, type BodyState, bleedingTierForHit } from './body.ts';
+import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
 import { type ClockSettings, calendarAt, defaultClock, simToGameHours } from './clock.ts';
 import { Compression, type CompressionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
-import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
+import { causeOf, NEED_RATES, type Needs, needsAllowRecovery, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
 import type { BodyTuningDef } from './schema.ts';
@@ -26,8 +26,8 @@ export type SimEvent =
 
 export type Timed<E> = E & { readonly time: number };
 
-/** A hit's effects; a bleeding hit leaves its tier to the body tuning. */
-export type HitEffects = Omit<BodyImpact, 'bleeding'> & { bleeding?: boolean };
+/** A hit's effects; the body's bleeding tiers decide from its kind whether and how badly it bleeds. */
+export type HitEffects = Omit<BodyImpact, 'bleeding'>;
 
 export interface SimulationState {
   seed: number;
@@ -115,7 +115,7 @@ export class Simulation {
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        const cause = this.body.advance(dt, this.godMode, dt * this.clock.ratio);
+        const cause = this.body.advance(dt, this.godMode, dt * this.clock.ratio, needsAllowRecovery(this.needs));
         if (cause) {
           this.die(cause);
         }
@@ -219,19 +219,29 @@ export class Simulation {
     this.takeDamage(cause, () => this.body.damageHealth(amount));
   }
 
-  /** A bleeding hit's tier comes from its damage and region through the body tuning (`bleedingTierForHit`). */
+  /** A hit of a damage kind may open a bleeding wound (`Body.bleedingTierForHit`). */
   hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: HitEffects = {}): void {
-    const { bleeding: bleeds, ...impact } = effects;
+    const bleeding =
+      effects.kind === undefined
+        ? undefined
+        : this.body.bleedingTierForHit(
+            amount,
+            region,
+            effects.kind,
+            this.rng(`body-bleeding:${region}:${this.time}:${amount}`).next(),
+          );
     const woundAlreadyExists = this.body.wounds[region] !== null;
     const infectionAtRisk =
-      impact.infectionAtRisk ??
-      (Boolean(bleeds) &&
+      effects.infectionAtRisk ??
+      (bleeding !== undefined &&
         (woundAlreadyExists ||
           this.rng(`body-infection:${region}:${this.time}:${amount}`).next() < this.body.tuning.infectionChance));
-    const tierRoll = this.rng(`body-bleeding:${region}:${this.time}:${amount}`);
-    const bleeding = bleeds ? bleedingTierForHit(this.body.tuning, amount, region, () => tierRoll.next()) : undefined;
     this.takeDamage(cause, () =>
-      this.body.impact(amount, region, { ...impact, infectionAtRisk, ...(bleeding ? { bleeding } : {}) }),
+      this.body.impact(amount, region, {
+        ...effects,
+        infectionAtRisk,
+        ...(bleeding === undefined ? {} : { bleeding }),
+      }),
     );
   }
 

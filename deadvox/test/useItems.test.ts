@@ -12,7 +12,7 @@ import { EAT_TIME } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
-import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
 const { registry } = buildRegistry(
@@ -59,13 +59,14 @@ const setup = (
 describe('using what you hold', () => {
   it('refuses held and quickbar actions while unconscious and permits them after wake', () => {
     const t = setup();
-    t.sim.body.impact(1, 'torso', { bleeding: 'moderate', shockDamage: 100 });
+    t.sim.body.impact(1, 'torso', { bleeding: fixtureTier('serious'), shockDamage: 100 });
     const rag = t.hold('rag', 'left');
+    const treatmentOf = (itemType: string) => registry.items.get(itemType)!.treatment!;
     t.sim.actions.treatment = {
-      validate: (region, _itemUid, treatment) =>
-        t.sim.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
-      finish: (region, _itemUid, treatment) =>
-        t.sim.body.treat(region, treatment) ? true : 'Treatment no longer applies',
+      validate: (region, _itemUid, itemType) =>
+        t.sim.body.canTreat(region, treatmentOf(itemType)) ? undefined : 'Treatment no longer applies',
+      finish: (region, _itemUid, itemType) =>
+        t.sim.body.treat(region, treatmentOf(itemType), () => 0.5) ? true : 'Treatment no longer applies',
     };
     expect(t.survival.use(rag)).toBeDefined();
     expect(t.survival.useFromQuickbar(rag)).toBeDefined();
@@ -78,8 +79,8 @@ describe('using what you hold', () => {
 
   it('uses the selected wound for held treatment and lets the wheel change that target', () => {
     const t = setup();
-    t.sim.body.impact(1, 'leftArm', { bleeding: 'moderate' });
-    t.sim.body.impact(3, 'rightArm', { bleeding: 'moderate' });
+    t.sim.body.impact(1, 'leftArm', { bleeding: fixtureTier('serious') });
+    t.sim.body.impact(3, 'rightArm', { bleeding: fixtureTier('serious') });
     const rag = t.hold('rag');
     const initial = t.survival.selectedItemAction(rag);
     expect(initial?.treatment?.region).toBe('rightArm');

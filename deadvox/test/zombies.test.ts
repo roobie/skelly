@@ -38,6 +38,7 @@ import {
   hearVocalNoise,
   type PlayerSense,
   perceivePlayer,
+  pickZombieMove,
   ZombieSystem,
 } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
@@ -322,6 +323,21 @@ const instanceBox = (mesh: import('three').InstancedMesh, index = 0) => {
   }
   return { center, size, points };
 };
+
+describe('zombie attack moves', () => {
+  it('picks the move of a landed hit by its share of the weights', () => {
+    const move = (id: string, weight: number) =>
+      ({ id, weight, damage: 1, damageKind: 'blunt', hitRegion: 'torso' }) as const;
+    const moves = [move('heavy', 3), move('light', 1)];
+
+    expect([0, 0.74, 0.76, 0.999].map((roll) => pickZombieMove(moves, roll).id)).toEqual([
+      'heavy',
+      'heavy',
+      'light',
+      'light',
+    ]);
+  });
+});
 
 describe('melee hit sounds', () => {
   const emittedFor = (weapon: import('../src/core/zombies.ts').MeleeWeapon): { hit: boolean; events: string[] } => {

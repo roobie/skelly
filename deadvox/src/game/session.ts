@@ -35,6 +35,7 @@ import {
 } from '../core/footsteps.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
+import { defOf } from '../core/items.ts';
 import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
@@ -444,16 +445,18 @@ const playerTreatmentHooks = (
   inventory: Inventory,
   sim: Simulation,
 ): NonNullable<Simulation['actions']['treatment']> => ({
-  validate: (region, itemUid, treatment) => {
+  validate: (region, itemUid, itemType) => {
     const item = inventory.itemByUid(itemUid);
-    if (!item || item.type !== treatment) {
+    const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
+    if (!treatment) {
       return 'Treatment item is unavailable';
     }
     return sim.body.canTreat(region, treatment) ? undefined : 'That treatment does not apply';
   },
-  finish: (region, itemUid, treatment) => {
+  finish: (region, itemUid, itemType) => {
     const item = inventory.itemByUid(itemUid);
-    if (!item || item.type !== treatment) {
+    const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
+    if (!(item && treatment)) {
       return 'Treatment item is no longer available';
     }
     if (!sim.body.canTreat(region, treatment)) {
@@ -462,7 +465,8 @@ const playerTreatmentHooks = (
     if (!inventory.consume(item)) {
       return 'Treatment item is no longer available';
     }
-    if (!sim.body.treat(region, treatment)) {
+    const roll = sim.rng(`treatment:${region}:${itemUid}:${sim.time}`);
+    if (!sim.body.treat(region, treatment, () => roll.next())) {
       throw new Error('Body treatment changed during completion');
     }
     return true;
@@ -914,7 +918,7 @@ export const createSession = (options: SessionOptions) => {
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
-    hurtPlayer: (amount, area, attacker) => {
+    hurtPlayer: (amount, area, attacker, kind) => {
       if (
         controls.blocking?.() &&
         meleeCombatTuning !== undefined &&
@@ -935,7 +939,7 @@ export const createSession = (options: SessionOptions) => {
           ? bodyRegionForHitArea('legs', legSide)
           : bodyRegionForHitArea(area === 'head' ? 'head' : 'torso');
       const attackerType = zombieStore.get(attacker)?.type.name.toLowerCase() ?? 'zombie';
-      sim.hit(amount, `a ${attackerType}`, region, { bleeding: true, blunt: true });
+      sim.hit(amount, `a ${attackerType}`, region, { kind });
     },
     onSound: (event, position, zombie) => {
       if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {

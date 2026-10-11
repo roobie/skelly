@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultItemAction, type ItemAction, ItemActionSelection } from '../src/game/itemActions.ts';
 
 const sameTier: readonly ItemAction[] = [
-  { id: 'damaged-nonbleeding', label: 'nonbleeding', priority: { bleeding: -1, damage: 90 } },
+  { id: 'damaged-nonbleeding', label: 'nonbleeding', priority: { bleeding: 0, damage: 90 } },
   { id: 'less-damaged-bleeding', label: 'bleeding', priority: { bleeding: 1, damage: 10 } },
   { id: 'more-damaged-bleeding', label: 'bleeding and damaged', priority: { bleeding: 1, damage: 20 } },
 ];

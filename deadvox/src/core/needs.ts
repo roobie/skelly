@@ -77,6 +77,9 @@ const healthRegenRate = (needs: Needs): number => {
   return met ? HEALTH.regen : 0;
 };
 
+/** Whether the needs let the body recover: health and region damage come back, and wounds close by themselves. */
+export const needsAllowRecovery = (needs: Needs): boolean => healthRegenRate(needs) > 0;
+
 /** Health's rate per game hour for the needs and health as they are now. */
 const healthRate = (needs: Needs, health: number): number => {
   let rate = 0;

@@ -1,28 +1,22 @@
-import { BLEEDING_TIERS, type BleedingTier } from '../core/body.ts';
+import type { BodyTuningDef } from '../core/schema.ts';
 
-/** The tiers the notice speaks for; a scratch passes without mention (DESIGN.md, "Bleeding"). */
-type NoticedTier = Exclude<BleedingTier, 'scratch'>;
+type BleedingTierDef = BodyTuningDef['bleeding']['tiers'][number];
 
-/** The character's voice for each noticed tier (INTERFACE.md, class 3). */
-export const BLEEDING_NOTICE: Readonly<Record<NoticedTier, string>> = {
-  moderate: "You're bleeding moderately.",
-  heavy: "You're bleeding heavily.",
-  arterial: "You're bleeding from an artery.",
-};
-
-const rank = (tier: BleedingTier | null): number => (tier === null ? -1 : BLEEDING_TIERS.indexOf(tier));
-
-/** Emits once each time the player's worst bleeding worsens to moderate or beyond. */
+/**
+ * Speaks a tier's notice (INTERFACE.md, class 3) once each time the player's worst bleeding worsens to a tier
+ * that has one; content leaves the notice off a tier that passes without mention (DESIGN.md, "Bleeding").
+ */
 export class PlayerBleedingNotice {
-  private worst: BleedingTier | null;
+  private worst: number | undefined;
 
-  constructor(initialWorst: BleedingTier | null) {
+  constructor(initialWorst: number | undefined) {
     this.worst = initialWorst;
   }
 
-  update(worst: BleedingTier | null, notify: (tier: NoticedTier) => void): void {
-    if (worst !== null && worst !== 'scratch' && rank(worst) > rank(this.worst)) {
-      notify(worst);
+  update(worst: number | undefined, tiers: readonly BleedingTierDef[], notify: (notice: string) => void): void {
+    const notice = worst === undefined ? undefined : tiers[worst]?.notice;
+    if (notice !== undefined && worst! > (this.worst ?? -1)) {
+      notify(notice);
     }
     this.worst = worst;
   }

@@ -29,7 +29,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { hasSegment } from './authoredTerrain.mjs';
-import { BLEEDING_TIERS, BODY_REGIONS } from './body.ts';
+import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
@@ -248,12 +248,12 @@ const WeaponSchema = strictObject({
     limbDamageMultiplier: optional(Positive),
     /** Overrides the weapon class's swing-speed multiplier. */
     speedMultiplier: optional(Positive),
-    type: picklist(['blunt', 'cut', 'pierce']),
+    type: picklist(DAMAGE_KINDS),
   }),
 });
 
 const MeleeClassSchema = strictObject({
-  id: picklist(['blunt', 'cut', 'pierce']),
+  id: picklist(DAMAGE_KINDS),
   /** Fractional spread applied symmetrically around base weapon damage. */
   damageVariance: Fraction,
   headDamageMultiplier: Positive,
@@ -401,6 +401,24 @@ const DisassemblySchema = strictObject({
   skill: Id,
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
 });
+/** What one application does to a body wound (DESIGN.md, "Bleeding"). */
+const TreatmentSchema = pipe(
+  strictObject({
+    /** Strength: the bleeding one application closes before its roll and modifiers, in `treatmentEffort` units. */
+    bleeding: optional(Positive),
+    /** The infection stages one application can resolve, and its chance to. */
+    infection: optional(
+      strictObject({
+        stages: pipe(array(picklist(['early', 'advanced'])), nonEmpty('must name a stage')),
+        chance: Fraction,
+      }),
+    ),
+  }),
+  check(
+    (treatment) => treatment.bleeding !== undefined || treatment.infection !== undefined,
+    'must treat bleeding or infection',
+  ),
+);
 
 const ItemSchema = strictObject({
   id: Id,
@@ -417,8 +435,7 @@ const ItemSchema = strictObject({
   container: optional(ContainerSchema),
   wearable: optional(WearableSchema),
   food: optional(FoodSchema),
-  /** An item that applies a named treatment to one body wound. */
-  treatment: optional(picklist(['bandage', 'rag', 'antiseptic', 'antibiotics'])),
+  treatment: optional(TreatmentSchema),
   tool: optional(ToolSchema),
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),
@@ -1182,11 +1199,22 @@ const ZombieSchema = strictObject({
   ),
   attack: pipe(
     strictObject({
-      damage: Positive,
       reach: Positive,
       cooldownSimSeconds: PositiveSimSeconds,
       windupSimSeconds: PositiveSimSeconds,
-      hitRegion: optional(picklist(['torso', 'legs'])),
+      /** What a landed hit can be, picked by weight as it lands (DESIGN.md, "Bleeding"). */
+      moves: pipe(
+        array(
+          strictObject({
+            id: Id,
+            weight: Positive,
+            damage: Positive,
+            damageKind: picklist(DAMAGE_KINDS),
+            hitRegion: picklist(['torso', 'legs']),
+          }),
+        ),
+        nonEmpty('needs at least one move'),
+      ),
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
   ),
@@ -1412,26 +1440,34 @@ const WeatheringSchema = strictObject({
   weatheringBlend: weatheringNumber('weatheringBlend'),
 });
 
+/** One value for every damage kind, so no kind is ever left out. */
+const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) =>
+  strictObject(Object.fromEntries(DAMAGE_KINDS.map((kind) => [kind, value])) as Record<DamageKind, S>);
+
+/** One bleeding tier; the list runs mildest first (DESIGN.md, "Bleeding"). */
 const BleedingTierSchema = strictObject({
-  /** Blood lost per Sim second while a wound bleeds at this tier. */
+  id: Id,
+  /** How the HUD, inventory and item actions name a wound bleeding at this tier. */
+  label: Name,
+  /** Shown with the warning style and sign. */
+  warn: vBoolean(),
+  /** The character's line when their worst bleeding worsens to this tier; omitted tiers pass unspoken. */
+  notice: optional(Name),
+  /** Blood lost per Sim second at the top of this tier's band. */
   bloodLossPerSimSecond: SimRate,
-  /** Least hit damage that can open a wound at this tier. */
+  /** Sim seconds a wound takes to close through this tier's band by itself while the body recovers. */
+  closeSimSeconds: PositiveSimSeconds,
+  /** Treatment quality it takes to close this tier's band. */
+  treatmentEffort: Positive,
+  /** Least hit damage that can open this tier. */
   minDamage: NonNegative,
-  /** Chance that a qualifying hit opens this tier; tiers are checked worst first. */
-  chance: Fraction,
+  /** The regions a hit can open this tier in; omitted is every region. */
+  regions: optional(pipe(array(picklist(BODY_REGIONS)), nonEmpty('must name a region'))),
+  /** The chance a qualifying hit of each kind opens this tier. */
+  chance: perDamageKind(Fraction),
+  /** Drips per second relative to the base rate, and droplet size relative to the base size. */
+  drip: strictObject({ rate: Positive, size: Positive }),
 });
-const BleedingTreatmentSchema = pipe(
-  strictObject({
-    /** The worst tier this treatment stops. */
-    stops: picklist(BLEEDING_TIERS),
-    /** The worst tier it lowers to `stops` without stopping; omitted when it lowers none. */
-    eases: optional(picklist(BLEEDING_TIERS)),
-  }),
-  check(
-    ({ stops, eases }) => eases === undefined || BLEEDING_TIERS.indexOf(eases) > BLEEDING_TIERS.indexOf(stops),
-    'eases must be a worse tier than stops',
-  ),
-);
 
 const BodyTuningSchema = strictObject({
   id: Id,
@@ -1446,42 +1482,42 @@ const BodyTuningSchema = strictObject({
   staminaRegenDelaySimSeconds: PositiveSimSeconds,
   /** Player eye height in metres while unconscious and prone. */
   proneEyeHeightMetres: Positive,
-  /** Blunt-force shock damage per point of health damage. */
-  bluntShockPerDamage: Positive,
+  /** Shock damage per point of health damage, by the hit's damage kind. */
+  shockPerDamage: perDamageKind(NonNegative),
   /** Sim seconds required to apply wound treatment. */
   treatmentSimSeconds: PositiveSimSeconds,
+  /** The range each treatment application's strength is multiplied by, rolled per application. */
+  treatmentSpread: pipe(
+    strictObject({ min: NonNegative, max: Positive }),
+    check(({ min, max }) => min <= max, 'min must not be more than max'),
+  ),
   /** Shock restored when the player wakes, on a 0–100 scale. */
   wakeShock: pipe(
     Positive,
     check((value) => value < 100, 'must be below 100'),
   ),
-  /** Each bleeding tier's loss rate, and how a hit's damage and region pick its tier (DESIGN.md, "Bleeding"). */
-  bleeding: pipe(
-    strictObject({
-      scratch: strictObject({
-        bloodLossPerSimSecond: SimRate,
-        /** Sim seconds after which a scratch stops bleeding by itself. */
-        stopSimSeconds: PositiveSimSeconds,
-      }),
-      moderate: BleedingTierSchema,
-      heavy: BleedingTierSchema,
-      arterial: strictObject({
-        ...BleedingTierSchema.entries,
-        /** The body regions a hit can open an artery in. */
-        regions: array(picklist(BODY_REGIONS)),
-      }),
-    }),
-    check(
-      (tiers) =>
-        BLEEDING_TIERS.every(
-          (tier, index) =>
-            index === 0 || tiers[tier].bloodLossPerSimSecond > tiers[BLEEDING_TIERS[index - 1]!].bloodLossPerSimSecond,
-        ),
-      'each bleeding tier must lose blood faster than the one below it',
+  /** The bleeding tiers, and when and with what line bleeding refuses time compression. */
+  bleeding: strictObject({
+    refusal: Name,
+    /** Total blood loss per Sim second at or above which bleeding refuses compression; 0 means any bleeding. */
+    blockCompressionAtLossPerSimSecond: NonNegativeSimRate,
+    tiers: pipe(
+      array(BleedingTierSchema),
+      nonEmpty('needs at least one tier'),
+      check((tiers) => new Set(tiers.map(({ id }) => id)).size === tiers.length, 'bleeding tier ids must be unique'),
+      check(
+        (tiers) =>
+          tiers.every(
+            (tier, index) => index === 0 || tier.bloodLossPerSimSecond > tiers[index - 1]!.bloodLossPerSimSecond,
+          ),
+        'each bleeding tier must lose blood faster than the one before it',
+      ),
+      check(
+        (tiers) => DAMAGE_KINDS.every((kind) => tiers.reduce((sum, tier) => sum + tier.chance[kind], 0) <= 1),
+        "each damage kind's tier chances must add up to 1 or less",
+      ),
     ),
-  ),
-  /** What each bleeding treatment does to a wound's tier. */
-  bleedingTreatments: strictObject({ bandage: BleedingTreatmentSchema, rag: BleedingTreatmentSchema }),
+  }),
   /** Blood recovered per Sim second when no wound bleeds. */
   bloodRecoveryPerSimSecond: SimRate,
   /** Shock recovered per Sim second outside a knockout. */
@@ -1587,6 +1623,7 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type TreatmentDef = InferOutput<typeof TreatmentSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;

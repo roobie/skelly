@@ -70,8 +70,9 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
 
 const root = (): HTMLElement => document.createElement('div');
 
-it('projects blood level and affected regions, with their tier, only while a wound bleeds', () => {
+it("projects blood level and affected regions, with their tier's label, only while a wound bleeds", () => {
   const regionLabel = bodyRegionLabel('leftArm');
+  const tierLabel = 'Fixture tier';
   const base = {
     calendar: 0,
     speed: 1,
@@ -79,14 +80,14 @@ it('projects blood level and affected regions, with their tier, only while a wou
     needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
     health: 91,
     blood: 67,
-    bleeding: [{ region: regionLabel, tier: 'heavy' }],
+    bleeding: [{ region: regionLabel, label: tierLabel, warn: true }],
     sprinting: false,
     lightCharge: undefined,
   } as const;
   const bleeding = playNeedsText(base);
   expect(bleeding).toContain('67%');
   expect(bleeding).toContain(regionLabel);
-  expect(bleeding).toContain('heavy');
+  expect(bleeding).toContain(tierLabel);
   const treated = playNeedsText({ ...base, bleeding: [] });
   expect(treated).toContain('67%');
   expect(treated).not.toContain(regionLabel);
@@ -96,7 +97,7 @@ it('projects blood level and affected regions, with their tier, only while a wou
   expect(treatedLines.every((line) => bleedingLines.includes(line))).toBe(true);
 });
 
-it('keeps a scratch off the warning line while naming its region', () => {
+it('gives only a tier content marks to warn the warning sign, while naming every region', () => {
   const region = bodyRegionLabel('leftArm');
   const status = {
     calendar: 0,
@@ -108,16 +109,16 @@ it('keeps a scratch off the warning line while naming its region', () => {
     sprinting: false,
     lightCharge: undefined,
   };
-  const moderate = playNeedsText({ ...status, bleeding: [{ region, tier: 'moderate' }] });
-  const scratch = playNeedsText({ ...status, bleeding: [{ region, tier: 'scratch' }] });
-  const warningLine = moderate.split('\n').find((line) => line.includes(region));
+  const warned = playNeedsText({ ...status, bleeding: [{ region, label: 'Warned', warn: true }] });
+  const quiet = playNeedsText({ ...status, bleeding: [{ region, label: 'Quiet', warn: false }] });
+  const warningLine = warned.split('\n').find((line) => line.includes(region));
   if (!warningLine) {
-    throw new Error('Moderate bleeding status did not include its region');
+    throw new Error('Warned bleeding status did not include its region');
   }
   const warningToken = warningLine.split(' ')[0]!;
 
-  expect(scratch).toContain(region);
-  expect(scratch.split('\n').some((line) => line.startsWith(warningToken))).toBe(false);
+  expect(quiet).toContain(region);
+  expect(quiet.split('\n').some((line) => line.startsWith(warningToken))).toBe(false);
 });
 
 it('uses a rebound registry label for restable furniture interactions', () => {

@@ -6,7 +6,7 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import { type BleedingTier, BODY_REGIONS, type BodyRegion, type BodyState, bodyRegionLabel } from '../core/body.ts';
+import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { practiceForNextLevel } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
@@ -87,7 +87,7 @@ export interface ScreenHooks {
     readonly skills: Readonly<Record<string, number>>;
     readonly practice: Readonly<Record<string, number>>;
   };
-  body: () => Readonly<BodyState>;
+  body: () => Pick<Body, 'health' | 'blood' | 'shock' | 'regionDamage' | 'wounds' | 'bleedingTier'>;
   needs: () => string;
   actionRefusal?: () => string | undefined;
   attachmentCandidates?: (firearmUid: number, slotId: string) => readonly Item[];
@@ -179,26 +179,19 @@ interface DetailsViewModel {
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
 }
 
-const BLEEDING_LABEL: Readonly<Record<BleedingTier, string>> = {
-  scratch: 'Scratch',
-  moderate: 'Moderate bleeding',
-  heavy: 'Heavy bleeding',
-  arterial: 'Arterial bleeding',
-};
-
-/** A scratch is named without the warning style, since it hardly needs mention (DESIGN.md, "Bleeding"). */
-const bleedingTemplate = (tier: BleedingTier | null) => {
-  if (!tier) {
+/** Only a tier content marks `warn` gets the warning style (DESIGN.md, "Bleeding"). */
+const bleedingTemplate = (bleeding: BodyRegionViewModel['bleeding']) => {
+  if (!bleeding) {
     return nothing;
   }
-  return tier === 'scratch'
-    ? html`<span>${BLEEDING_LABEL.scratch}</span>`
-    : html`<span class="inv-body-warning">${BLEEDING_LABEL[tier]}</span>`;
+  return bleeding.warn
+    ? html`<span class="inv-body-warning">${bleeding.label}</span>`
+    : html`<span>${bleeding.label}</span>`;
 };
 
 interface BodyRegionViewModel {
   readonly region: BodyRegion;
-  readonly bleeding: BleedingTier | null;
+  readonly bleeding: Readonly<{ label: string; warn: boolean }> | undefined;
   readonly infection: string;
   readonly damage: string;
 }
@@ -1052,7 +1045,7 @@ export class InventoryScreen {
       regions: BODY_REGIONS.map((region) => ({
         region,
         damage: `${Math.round(body.regionDamage[region])}%`,
-        bleeding: body.wounds[region]?.bleeding ?? null,
+        bleeding: body.bleedingTier(region),
         infection: body.wounds[region]?.infection ?? 'none',
       })),
     };

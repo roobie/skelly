@@ -4,7 +4,7 @@
 
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { BODY_REGIONS, bodyRegionLabel } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
@@ -122,7 +122,7 @@ import {
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
-import { BLEEDING_NOTICE, PlayerBleedingNotice } from './playerBleedingNotice.ts';
+import { PlayerBleedingNotice } from './playerBleedingNotice.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
@@ -951,13 +951,13 @@ export const startPlay = (
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
   let noticeUntil = 0;
-  const playerBleedingNotice = new PlayerBleedingNotice(sim.body.worstBleeding);
+  const playerBleedingNotice = new PlayerBleedingNotice(sim.body.worstBleedingTier);
   const showNotice = (text: string) => {
     notice = text;
     noticeUntil = realNow() + 3000;
   };
   const updateBleedingNotice = (): void => {
-    playerBleedingNotice.update(sim.body.worstBleeding, (tier) => showNotice(BLEEDING_NOTICE[tier]));
+    playerBleedingNotice.update(sim.body.worstBleedingTier, sim.body.tuning.bleeding.tiers, showNotice);
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
@@ -1044,7 +1044,7 @@ export const startPlay = (
     describe: (item) => [...survival.describe(item), ...firearms.describe(item), ...magazines.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     character: () => session.character,
-    body: () => sim.body.snapshotState(),
+    body: () => sim.body,
     needs: () => needsText(),
     actionRefusal: () => sim.body.actionRefusal,
     attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
@@ -2715,8 +2715,8 @@ export const startPlay = (
     health: sim.body.health,
     blood: sim.body.blood,
     bleeding: BODY_REGIONS.flatMap((region) => {
-      const tier = sim.body.wounds[region]?.bleeding;
-      return tier ? [{ region: bodyRegionLabel(region), tier }] : [];
+      const tier = sim.body.bleedingTier(region);
+      return tier ? [{ region: bodyRegionLabel(region), label: tier.label, warn: tier.warn }] : [];
     }),
     sprinting: session.sprinting,
     lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
@@ -3157,6 +3157,7 @@ export const startPlay = (
     updateBackquoteGesture(backquoteGesture, now);
   };
 
+  const playerDrip = (region: BodyRegion) => sim.body.bleedingTier(region)?.drip;
   // Blood holds still while the game is paused.
   const updateGore = (dt: RealSeconds): void => {
     view.gore.update(sim.paused ? 0 : dt, engine.isSolid, {
@@ -3165,7 +3166,7 @@ export const startPlay = (
       player: {
         pos: body.pos,
         yaw: input.yaw,
-        wounds: sim.body.wounds,
+        drip: playerDrip,
         thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
       },
     });

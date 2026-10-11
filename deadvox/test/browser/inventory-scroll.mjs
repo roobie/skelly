@@ -86,16 +86,18 @@ const body = new Body({
   knockoutSimSeconds: 1,
   staminaRegenDelaySimSeconds: 5,
   proneEyeHeightMetres: 0.2,
-  bluntShockPerDamage: 2,
+  shockPerDamage: { blunt: 2, cut: 0, pierce: 0 },
   treatmentSimSeconds: 1,
+  treatmentSpread: { min: 0.5, max: 1.5 },
   wakeShock: 5,
   bleeding: {
-    scratch: { bloodLossPerSimSecond: 0.002, stopSimSeconds: 60 },
-    moderate: { bloodLossPerSimSecond: 0.01, minDamage: 5, chance: 0.5 },
-    heavy: { bloodLossPerSimSecond: 0.1, minDamage: 10, chance: 0.2 },
-    arterial: { bloodLossPerSimSecond: 1, minDamage: 20, chance: 0.05, regions: ['leftLeg', 'rightLeg'] },
+    refusal: 'Fixture bleeding',
+    blockCompressionAtLossPerSimSecond: 0,
+    tiers: [{
+      id: 'fixture', label: 'Fixture bleeding', warn: true, bloodLossPerSimSecond: 0.01, closeSimSeconds: 600,
+      treatmentEffort: 1, minDamage: 0, chance: { blunt: 0, cut: 0, pierce: 0 }, drip: { rate: 1, size: 1 },
+    }],
   },
-  bleedingTreatments: { bandage: { stops: 'arterial' }, rag: { stops: 'moderate', eases: 'heavy' } },
   bloodRecoveryPerSimSecond: 0.002,
   shockRecoveryPerSimSecond: 0.1,
   advancedInfectionHealthLossPerSimSecond: 0.0005,
@@ -104,7 +106,7 @@ const body = new Body({
   movementSlowdownPerDamage: 0.005,
   minimumMovementSpeed: 0.5,
 });
-body.impact(1, 'leftArm', { bleeding: 'moderate' });
+body.impact(1, 'leftArm', { bleeding: 0 });
 for (const slot of ['legs', 'torso', 'back']) {
   if (!inventory.add(inventory.create('scroll_' + slot), { kind: 'worn' })) throw Error('worn fixture failed');
 }
@@ -121,7 +123,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: () => undefined, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
-  body: () => body.snapshotState(), character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
+  body: () => body, character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');

@@ -14,6 +14,7 @@ import {
   amalgamStrikeOrigin,
 } from './amalgamFigure.ts';
 import { AmalgamShape } from './amalgamShape.ts';
+import type { DamageKind } from './body.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
@@ -106,7 +107,20 @@ const validStanceWeight = (weight: number | undefined): boolean =>
 const validStepOffset = (offset: number | undefined): boolean =>
   offset === undefined || (Number.isFinite(offset) && Math.abs(offset) <= 0.5001);
 
-type MeleeDamageType = 'blunt' | 'cut' | 'pierce';
+type MeleeDamageType = DamageKind;
+type ZombieMove = ZombieDef['attack']['moves'][number];
+
+/** The move a landed hit is: picked by weight with a roll in [0, 1) (DESIGN.md, "Bleeding"). */
+export const pickZombieMove = (moves: readonly ZombieMove[], roll: number): ZombieMove => {
+  let left = roll * moves.reduce((sum, move) => sum + move.weight, 0);
+  for (const move of moves) {
+    left -= move.weight;
+    if (left < 0) {
+      return move;
+    }
+  }
+  return moves.at(-1)!;
+};
 
 export interface MeleeWeapon {
   readonly damage: number;
@@ -478,7 +492,7 @@ export interface ZombieSystemOptions {
   player: () => PlayerSense;
   dayPhase: () => DayPhaseState;
   isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
-  hurtPlayer: (amount: number, area: PlayerHitArea, attacker: EntityId) => void;
+  hurtPlayer: (amount: number, area: PlayerHitArea, attacker: EntityId, kind: DamageKind) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
@@ -2704,7 +2718,8 @@ export class ZombieSystem {
         zombie.attackWindup <= 0 &&
         withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
       ) {
-        this.options.hurtPlayer(type.attack.damage, type.attack.hitRegion ?? 'torso', scratch.id);
+        const move = pickZombieMove(type.attack.moves, scratch.rng.next());
+        this.options.hurtPlayer(move.damage, move.hitRegion, scratch.id, move.damageKind);
       }
     } else if (
       zombie.mode === 'chase' &&
