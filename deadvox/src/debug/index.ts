@@ -1,5 +1,6 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
+import { getBuildRevision } from '../core/buildInfo.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock, SPAWN_TIME } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -47,7 +48,6 @@ import {
   writeClosedGroups,
 } from './groups.ts';
 import { LookControls } from './look.ts';
-import { getBuildRevision } from '../core/buildInfo.ts';
 import { lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
 import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';

@@ -858,20 +858,22 @@ try {
     );
     const stopped = await page.evaluate(() => {
       const { session, playFrame, requestResume } = globalThis.readingWitness;
-      const { sim } = session;
-      const time = sim.time;
+      const readTime = () => {
+        const { time } = session.sim;
+        return time;
+      };
+      const time = readTime();
       requestResume();
       const frameContinues = playFrame(performance.now());
-      return { paused: sim.paused, frameContinues, time, after: sim.time };
+      return { paused: session.sim.paused, frameContinues, time, after: readTime() };
     });
     assert.equal(stopped.paused, true, 'resume remains refused after a play error');
     assert.equal(stopped.frameContinues, false, 'the frame driver stops after a play error');
     assert.equal(stopped.after, stopped.time, 'a post-error frame does not advance simulation time');
-    const backgroundIsInert = await page.evaluate(() =>
-      [...document.body.children]
-        .filter((element) => element.id !== 'error-report')
-        .every((element) => element.inert),
-    );
+    const backgroundIsInert = await page.evaluate(() => {
+      const background = [...document.body.children].filter((element) => element.id !== 'error-report');
+      return background.every((element) => element.inert);
+    });
     assert.equal(backgroundIsInert, true, 'the error panel makes every background surface inert');
     const errorText = await page.locator('[data-error-text]').textContent();
     assert.ok(errorText?.includes('Browser-stage game-loop failure'));

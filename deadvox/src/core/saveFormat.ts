@@ -1,7 +1,7 @@
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
-import { getBuildRevision } from './buildInfo.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import { BODY_REGIONS, BODY_TREATMENTS } from './body.ts';
+import { getBuildRevision } from './buildInfo.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
   canonicalJsonAt as canonicalStringify,

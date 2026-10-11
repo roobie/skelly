@@ -183,7 +183,15 @@ const stopPlayAfterError = (
   input.cancel();
 };
 
-const bindPlayErrorReport = ({ config, sim, input, metrics, exportReplay, halted, saveController }: PlayErrorReportPorts): void => {
+const bindPlayErrorReport = ({
+  config,
+  sim,
+  input,
+  metrics,
+  exportReplay,
+  halted,
+  saveController,
+}: PlayErrorReportPorts): void => {
   const context: ErrorReportContext = {
     seed: config.seed,
     site: config.site,
