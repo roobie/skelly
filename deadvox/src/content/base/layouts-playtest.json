@@ -817,6 +817,12 @@
           ]
         },
         {
+          "template": "workshop_roof_ladder",
+          "position": [409.5, 21, 203],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
           "template": "camp_wall_run",
           "position": [440, 21, 494],
           "rotation": 0,
