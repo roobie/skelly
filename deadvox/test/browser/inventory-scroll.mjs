@@ -74,6 +74,8 @@ import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
+import { inventoryGridName } from '/src/core/inventoryGridName.ts';
+import { BUNDLED_CONTENT } from '/src/game/bundledContent.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
@@ -157,6 +159,17 @@ target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu, bodyRegions: BODY_REGIONS,
   containerMaxWidthCells: registry.inventory.get('player')?.containerMaxWidthCells,
   populatePiles,
+  // Base items upright and turned, plus wide-glyph names that fill every line of small and tall footprints whatever
+  // the base names are.
+  gridNames: [
+    ...[...BUNDLED_CONTENT.registry.items.values()].map(({ name, size }) => ({ name, size })),
+    ...['WM mw WM mw WM mw WM mw WM mw WM mw', 'WmWmWmWmWmWmWmWmWm'].flatMap((name) =>
+      [[1, 1], [2, 1], [1, 3], [2, 2]].map((size) => ({ name, size })),
+    ),
+  ].flatMap(({ name, size: [w, h] }) => [
+    { name: inventoryGridName(name, w, h), w, h },
+    ...(w === h ? [] : [{ name: inventoryGridName(name, h, w), w: h, h: w }]),
+  ]),
   get capTokenUid() { return capToken?.uid; },
   useUiTuning(tuning) {
     const ui = buildRegistry([{ source: 'ui-tuning-fixture', data: { ui: [{ id: 'core', ...tuning }] } }]);
@@ -509,6 +522,42 @@ try {
   );
   assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
+  // Every grid name fits its box in this browser's UI font at the base tuning. The boxes copy the rendered rack token,
+  // so they keep its classes and gutter.
+  const nameFit = await page.evaluate(() => {
+    const token = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
+    const grid = token?.closest('.inv-grid');
+    if (!grid) {
+      throw new Error('cap-rack token or its grid is missing');
+    }
+    const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+    const tokenBox = token.getBoundingClientRect();
+    const clipped = [];
+    for (const { name, w, h } of globalThis.scrollFixture.gridNames) {
+      const node = token.cloneNode(false);
+      node.removeAttribute('data-uid');
+      node.classList.remove('selected');
+      node.classList.toggle('inv-item-tall', h > w);
+      node.style.width = `${w * cell - (cell - tokenBox.width)}px`;
+      node.style.height = `${h * cell - (cell - tokenBox.height)}px`;
+      const span = document.createElement('span');
+      span.className = 'inv-item-name';
+      span.textContent = name;
+      node.append(span);
+      grid.append(node);
+      if (
+        span.scrollWidth > span.clientWidth ||
+        span.scrollHeight > span.clientHeight ||
+        node.scrollWidth > node.clientWidth ||
+        node.scrollHeight > node.clientHeight
+      ) {
+        clipped.push(`${name.replaceAll('\n', '⏎')} [${w}×${h}]`);
+      }
+      node.remove();
+    }
+    return clipped;
+  });
+  assert.deepEqual(nameFit, [], 'every grid name fits its box');
   // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
   await page.setViewportSize({ width: 1280, height: 400 });
   await dragSplitter(0);
