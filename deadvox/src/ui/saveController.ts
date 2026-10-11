@@ -10,7 +10,7 @@ import {
   type SaveWorldOptions,
 } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { type RealSeconds, realSeconds } from '../core/time.ts';
+import { type RealTimestamp, realTimestamp } from '../core/time.ts';
 import {
   type SaveBackendPreference,
   type SaveLoadResult,
@@ -101,7 +101,7 @@ export class SaveController {
   storageStatus: SaveStorageStatus | undefined;
   private currentRecord: SaveLoadResult | undefined;
   private savedGeneration = 0;
-  private lastSaveCompletedAtRealSeconds: RealSeconds | undefined;
+  private lastSaveCompletedAtRealTimestamp: RealTimestamp | undefined;
   private candidate: SaveLoadResult | undefined;
   private oldVersionLabel = '';
   private failure = '';
@@ -381,11 +381,11 @@ export class SaveController {
   }
 
   get canSaveCurrentGame(): boolean {
-    return this.entered && !this.storageUnavailable && Boolean(this.namespace);
+    return this.entered && !this.playHalted && !this.storageUnavailable && Boolean(this.namespace);
   }
 
-  get lastCompletedSaveRealSeconds(): RealSeconds | undefined {
-    return this.lastSaveCompletedAtRealSeconds;
+  get lastCompletedSaveRealTimestamp(): RealTimestamp | undefined {
+    return this.lastSaveCompletedAtRealTimestamp;
   }
 
   setNewWorldLauncher(launcher: (creation: HandedCharacter) => { enter: () => void }): void {
@@ -525,7 +525,7 @@ export class SaveController {
         }),
       );
       this.savedGeneration = result.generation;
-      this.lastSaveCompletedAtRealSeconds = realSeconds(performance.now() / 1000);
+      this.lastSaveCompletedAtRealTimestamp = realTimestamp(performance.now() / 1000);
       if (this.readDeadWorldId() && this.readDeadWorldId() !== task.snapshot.world.id) {
         this.clearDeadWorldMarker();
       }
