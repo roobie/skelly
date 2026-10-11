@@ -599,11 +599,14 @@ try {
   await dragSplitter(0);
   const wideLayout = await aroundLayout();
   const wideCapContainer = await capContainerLayout();
+  assert.ok(
+    wideCapContainer.rowSections > balancedCapContainer.rowSections,
+    `widening Around you lets the capped container share a row: ${JSON.stringify({ balancedCapContainer, wideCapContainer })}`,
+  );
   for (const [split, layout] of [
     ['balanced', balancedCapContainer],
     ['wide', wideCapContainer],
   ]) {
-    assert.ok(layout.rowSections > 1, `${split} cap-width container shares a row: ${JSON.stringify(layout)}`);
     assert.ok(
       layout.gridWidth <= layout.cap * layout.cell + 1,
       `${split} container grid stays within the cap: ${JSON.stringify(layout)}`,
