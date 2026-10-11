@@ -523,8 +523,10 @@ try {
   assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
   // Every grid name fits its box in this browser's UI font at the base tuning. The boxes copy the rendered rack token,
-  // so they keep its classes and gutter.
-  const nameFit = await page.evaluate(() => {
+  // so they keep its classes and gutter. Scroll sizes are read along the lines only: across them, Firefox counts a
+  // font's content area as overflow where it is taller than the line height, so the lines' own box is compared with
+  // the item's content box instead.
+  const nameFit = await page.evaluate((edge) => {
     const token = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
     const grid = token?.closest('.inv-grid');
     if (!grid) {
@@ -545,18 +547,25 @@ try {
       span.textContent = name;
       node.append(span);
       grid.append(node);
+      const style = getComputedStyle(node);
+      const inset = (side) =>
+        Number.parseFloat(style[`border${side}Width`]) + Number.parseFloat(style[`padding${side}`]);
+      const box = node.getBoundingClientRect();
+      const lines = span.getBoundingClientRect();
+      const lineOverflow = h > w ? span.scrollHeight > span.clientHeight : span.scrollWidth > span.clientWidth;
       if (
-        span.scrollWidth > span.clientWidth ||
-        span.scrollHeight > span.clientHeight ||
-        node.scrollWidth > node.clientWidth ||
-        node.scrollHeight > node.clientHeight
+        lineOverflow ||
+        lines.left < box.left + inset('Left') - edge ||
+        lines.right > box.right - inset('Right') + edge ||
+        lines.top < box.top + inset('Top') - edge ||
+        lines.bottom > box.bottom - inset('Bottom') + edge
       ) {
         clipped.push(`${name.replaceAll('\n', '⏎')} [${w}×${h}]`);
       }
       node.remove();
     }
     return clipped;
-  });
+  }, EDGE);
   assert.deepEqual(nameFit, [], 'every grid name fits its box');
   // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
   await page.setViewportSize({ width: 1280, height: 400 });
