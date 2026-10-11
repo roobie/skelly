@@ -7,67 +7,98 @@ read_if:
 
 # Principles review skill (draft)
 
-A draft for an agent skill that checks a PR against the project's pillars,
-principles, guidelines and engineering rules. It goes through several passes
-before the skill itself is written.
+A proposed harness-neutral skill that checks a PR against the project's pillars,
+principles and engineering rules. It complements correctness review; it does not
+replace it or grant approval to merge.
 
 ## Why
 
-A correctness review checks a change against its brief. It misses a broken
-principle that the brief didn't name. PR #592's bleeding tiers had two review
-SHIPs while the code still hard-coded which tier stops by itself, which tier
-has a region rule, and the `bandage` and `rag` treatments. Content should have
-decided all of them. The pillars only got applied when someone remembered them.
-A skill makes that lens routine.
+A correctness review checks a change against its brief. It can miss a broken
+principle that the brief didn't name, including code that owns decisions which
+belong to content. Making the principles lens routine avoids relying on a
+reviewer to remember it.
 
 ## Shape: one skill, several lenses
 
-One skill, one entry point and one report shape. Each lens can be skipped as not
-relevant: a docs-only PR skips the player view.
+One skill, one entry point and one report shape. Run it alongside every
+correctness review. Consider every lens, scaling inspection depth to the change,
+not skipping coverage because a PR is small. Separate skills multiply context
+and make it easier to forget a lens.
 
-Separate skills multiply tokens per review, and a reviewer picks some and
-forgets the rest.
+Each lens cites its owning doc and section; read the rule there at review time
+instead of maintaining a second copy in the skill:
 
-Lenses:
+1. **Principles:** `README.md`, "Pillars"; `AGENTS.md`, "Project stage",
+   "No host-specific information in tracked files" and "Dependency age".
+   Content forward compatibility awaits r74's settled rule and owner document.
+2. **Zero drift and docs:** `README.md`, "Zero drift"; `AGENTS.md`, "Zero drift".
+3. **Test hygiene:** `AGENTS.md`, "Tests" and "Before pushing: tiered checks".
+4. **BR's rulings:** the applicable topic's owner documents;
+   `docs/PROCESS.md`, "Recording decisions". Check implementation against the
+   settled ruling and its provenance, not against an inferred preference.
+5. **Player impact and approval gates:** `docs/PROCESS.md`, "Reviews by eye and
+   by play", "Slice decision rules" and "The life of a change". Docs-only work
+   is not automatically exempt: control guidance can affect play.
 
-1. **Principles:**
-   - content forward compatibility (r74, once its owner doc lands);
-   - no backwards compatibility at this stage (AGENTS.md);
-   - maintainability over short-term churn (README "Pillars");
-   - no host-specific information (AGENTS.md).
-2. **Zero drift and docs:**
-   - code cues instead of copies, and no amendment trails;
-   - `read_if` front matter;
-   - the reason recorded in a tracked doc before merge (README "Zero drift", AGENTS.md).
-3. **Test hygiene** (AGENTS.md "Tests"): already must-fix.
-4. **BR's rulings:**
-   - does the change match what BR ruled;
-   - are the rulings quoted in commit messages, not docs?
-5. **Player view** (optional): does it change what BR sees, and so need a look?
+## Scope and inspection
 
-## Design rules
+Review violations introduced or materially worsened by the change, including
+its affected consumers outside the diff. Report unrelated existing problems
+separately; this is not a repository-wide audit.
 
-1. **It cites; it doesn't copy.** Each lens names the owning doc and section, and
-   the skill reads the rule from there at review time, so it can't drift from the
-   rules. This is zero drift applied to the skill itself.
-2. **Mechanical checks go to scripts.** Anything a script can catch belongs in a
-   checker or lint, not in a model's attention: content-id literals in code,
-   closed unions of content values, host paths. The skill covers what needs
-   judgement.
-3. **Each finding names its lens and the rule it breaks,** so a FIX is traceable
-   and can be argued with.
-4. **Coders run it too, before pushing,** in a lighter self-check form, so fewer
-   issues reach review. It is plain markdown that any agent can read, not tied
-   to one agent harness.
+Follow changed decisions through their owners, callers and secondary consumers.
+Ask whether adding another content value requires editing code that should
+merely interpret content. Apply `docs/PROCESS.md`, "Continuous consolidation",
+when assessing ownership and duplicated decisions; a diff-only checklist can
+miss the wrong authority surviving elsewhere.
 
-## Open questions
+Delegate unambiguous patterns to scripts. Content-id literals and closed unions
+are not inherently violations: fixtures and structural discriminants may
+legitimately use them. Judgement determines whether code owns a decision that
+belongs to content. A passing checker is evidence only for the constraint it
+checks, not proof of principle compliance.
 
-- Should it run on every review, or only on PRs past a size or risk threshold?
-  The lead suggests every review, with lenses skipped by relevance, because the
-  #592 miss was a mid-sized PR.
-- Who writes the skill? A reviewer-first pass like r74 fits, and it needs r74's
-  rule settled first.
-- Other lenses: performance budgets, save-format impact (from v1.0 beta),
-  accessibility?
-- Where does the skill live so that every agent can use it: a tracked
-  Claude Code skill, a doc under `docs/`, or both?
+Coders run the same lenses before pushing. Self-check uses the same rules and
+finding contract with less reporting overhead, not weaker standards.
+
+## Findings and completion
+
+Each finding states:
+
+- its lens and the owning rule, cited by path and section;
+- evidence at the affected path and symbol, showing the concrete violation;
+- the consequence and smallest adequate correction.
+
+Apply `AGENTS.md`, "Tests", for the FIX threshold: actual defects and test-hygiene
+failures block; improvements and style preferences remain nonblocking. Keep the
+review verdict and cause reporting consistent with `docs/PROCESS.md`, "Slice
+decision rules", rather than inventing a second verdict system.
+
+The report identifies the reviewed base and head and marks every lens as
+assessed, not applicable with a reason, or not assessed with the missing evidence
+or dependency. Not assessed is never a pass. An applicable rule whose evidence
+is missing leaves the principles review incomplete, even if no defect has yet
+been demonstrated.
+
+Report an outstanding BR approval as an open gate, not approval the reviewer can
+grant. A completed principles review does not substitute for correctness review,
+CI or BR's verdict; merge conditions remain owned by `docs/PROCESS.md`, "The life
+of a change".
+
+## Canonical home
+
+Keep one tracked, harness-neutral skill document under `docs/`. Add thin
+harness-specific entry points only if needed; they point to the canonical text
+rather than copy its instructions. This gives every agent the same review
+contract without creating competing rule owners.
+
+## Unresolved dependencies
+
+- **r74:** settle content forward compatibility and cite its owner document before
+  that lens can be assessed. Distinguish supporting additional authored values
+  from preserving old schemas or saves; it must not silently introduce a
+  backwards-compatibility obligation. Until settled, report this part of the
+  principles lens as not assessed when content extensibility is relevant.
+- **Additional lenses:** identify an applicable project rule and its owner before
+  adding performance, accessibility or other checks. The skill applies settled
+  rules; it does not create policy through review findings.
