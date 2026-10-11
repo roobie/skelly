@@ -1465,8 +1465,17 @@ const BleedingTierSchema = strictObject({
   treatmentEffort: Positive,
   /** Least hit damage that can open this tier. */
   minDamage: NonNegative,
-  /** The regions a hit can open this tier in; omitted is every region. */
-  regions: optional(pipe(array(picklist(BODY_REGIONS)), nonEmpty('must name a region'))),
+  /** Per-region chance multipliers; omitted regions use 1, and 0 excludes that region. */
+  regionFactor: optional(
+    strictObject({
+      head: optional(NonNegative),
+      torso: optional(NonNegative),
+      leftArm: optional(NonNegative),
+      rightArm: optional(NonNegative),
+      leftLeg: optional(NonNegative),
+      rightLeg: optional(NonNegative),
+    }),
+  ),
   /** The chance a qualifying hit of each kind opens this tier. */
   chance: perDamageKind(Fraction),
   /** Drips per second relative to the base rate, and droplet size relative to the base size. */

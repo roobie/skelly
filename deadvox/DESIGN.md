@@ -659,7 +659,7 @@ Bleeding is content, and nothing in it is absolute. `src/content/base/body.json`
 - label;
 - loss rate and closure time;
 - treatment effort;
-- least damage and regions;
+- least damage and per-region chance factors;
 - chance per damage kind;
 - presentation.
 
@@ -672,14 +672,16 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
   closure and dressing lower a wound gradually instead of in tier-sized jumps. See
   `Body.lossRate`.
 - **Tier from the hit.** One roll per bleeding hit picks its tier.
-  - The roll runs worst tier first, over the tiers whose least damage and regions
-    the hit meets. Each one adds its chance for the hit's damage kind.
+  - The roll runs worst tier first, over the tiers whose least damage the hit
+    meets. Each adds its chance for the hit's damage kind, scaled by a content
+    factor for the hit region. A zero factor excludes that region, so one factor
+    replaces a separate region allowlist.
   - Every tier has a chance for every kind, so blunt can open any tier, just far
     less often than a cut or a stab.
   - A hit on a bleeding wound keeps the worse severity.
-  - Base content includes the torso in the arterial tier, so a strong attack can
-    cause an arterial wound there. Its threshold is above an average shambler bite,
-    keeping ordinary attacks unlikely to trigger it.
+  - Arteries can be hit in the torso, but that is harder than in other regions.
+    Base content lowers the torso chance without excluding it; the factor makes
+    that tuning content-owned rather than a tier-specific code branch.
 
   See `Body.bleedingTierForHit` and `src/core/sim.ts`, `Simulation.hit`.
 - **Attacks.** Content weights choose both a move and that move's possible body
@@ -712,17 +714,19 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
   sets when bleeding refuses time compression: once all wounds together lose blood
   at or above that rate. The default, 0, means any bleeding, so a wound runs its
   course in real time.
-  - Rest, sleep, waiting and the debug skip are refused with content's line, and
-    compression that is already running drops to 1×.
+  - Rest, sleep and waiting are refused with content's line, and player
+    long-action compression that is already running drops to 1×. Bleeding does
+    not refuse or stop debug compression; emitted interrupts still stop it.
   - Treatment, crafting and reading are never refused. Like prying, they run at 1×
     and leave movement free, and they go back to compression once the bleeding no
     longer refuses it.
   - Crafting stays open because a bleeding player may need to craft something to
     stop the bleeding, at any rate, as a last effort.
 
-  See `Body.compressionRefusal`; `src/core/sim.ts`, `Simulation.compress` and
-  `Simulation.compressLongAction`; and `src/core/longAction.ts`,
-  `LongActions.runsUncompressed` and `LongActions.syncInterruption`.
+  See `Body.compressionRefusal`; `src/core/sim.ts`, `Simulation.compress`,
+  `Simulation.compressLongAction` and `Simulation.checkInterruptions`; and
+  `src/core/longAction.ts`, `LongActions.runsUncompressed` and
+  `LongActions.syncInterruption`.
 - **Treatment.** An item's content `treatment` gives a fixed bleeding strength, the
   infection stages it treats with a chance, or both.
   - Under base content, `treatmentSpread` is centred on its neutral multiplier, so

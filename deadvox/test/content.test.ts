@@ -314,10 +314,27 @@ describe('content', () => {
     expect(weightedDamage(runner.attack.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack.moves));
   });
 
-  it('keeps arterial bleeding possible on the torso', () => {
+  it('makes arterial bleeding less likely but possible on the torso', () => {
     const arterial = baseRegistry.body.get('player')!.bleeding.tiers.find(({ id }) => id === 'arterial')!;
 
-    expect(arterial.regions).toContain('torso');
+    expect(arterial.regionFactor?.torso).toBeLessThan(1);
+    expect(arterial.chance.pierce * arterial.regionFactor!.torso!).toBeGreaterThan(0);
+  });
+
+  it('rejects negative and unknown bleeding region factors', () => {
+    const body = baseRegistry.body.get('player')!;
+    const withRegionFactor = (regionFactor: Record<string, number>) => ({
+      ...body,
+      bleeding: {
+        ...body.bleeding,
+        tiers: body.bleeding.tiers.map((tier) => (tier.id === 'arterial' ? { ...tier, regionFactor } : tier)),
+      },
+    });
+
+    expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ torso: -0.1 })] } })).not.toEqual(
+      [],
+    );
+    expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ chest: 1 })] } })).not.toEqual([]);
   });
 
   it('requires amalgam zombie regions to match the manifest classes exactly', () => {

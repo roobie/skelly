@@ -60,7 +60,7 @@
             "closeSimSeconds": 86400,
             "treatmentEffort": 4,
             "minDamage": 12,
-            "regions": ["head", "torso", "leftArm", "rightArm", "leftLeg", "rightLeg"],
+            "regionFactor": { "torso": 0.5 },
             "chance": { "blunt": 0.002, "cut": 0.05, "pierce": 0.03 },
             "drip": { "rate": 6, "size": 1.6 }
           }

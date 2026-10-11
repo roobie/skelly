@@ -51,7 +51,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         closeSimSeconds: simSeconds(6000),
         treatmentEffort: 4,
         minDamage: 20,
-        regions: ['torso', 'leftLeg', 'rightLeg'],
+        regionFactor: { head: 0, torso: 0.5, leftArm: 0, rightArm: 0 },
         chance: { blunt: 0.01, cut: 0.1, pierce: 0.1 },
         drip: { rate: 4, size: 1.5 },
       },

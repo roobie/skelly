@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BODY_REGIONS, Body } from '../src/core/body.ts';
+import { BODY_REGIONS, Body, type BodyRegion } from '../src/core/body.ts';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import { type Needs, stepNeeds } from '../src/core/needs.ts';
 import { Rng } from '../src/core/random.ts';
@@ -346,9 +346,8 @@ describe('player body', () => {
   it("opens the tier a roll lands in among those the hit's damage and region allow, or none", () => {
     const body = new Body(BODY_TUNING_FIXTURE);
     const critical = tiers[CRITICAL]!;
-    const limb = critical.regions!.find((region) => region !== 'torso')!;
+    const limb = 'leftLeg';
     const torso = 'torso';
-    expect(critical.regions).toContain(torso);
     const allPierce = tiers.reduce((sum, tier) => sum + tier.chance.pierce, 0);
 
     expect(body.bleedingTierForHit(critical.minDamage, limb, 'pierce', 0)).toBe(CRITICAL);
@@ -356,6 +355,30 @@ describe('player body', () => {
     expect(body.bleedingTierForHit(critical.minDamage / 2, torso, 'pierce', 0)).not.toBe(CRITICAL);
     expect(body.bleedingTierForHit(tiers[SERIOUS]!.minDamage / 2, limb, 'pierce', 0)).toBe(MINOR);
     expect(body.bleedingTierForHit(critical.minDamage, limb, 'pierce', allPierce)).toBeUndefined();
+  });
+
+  it('uses zero and fractional region factors to scale a fixture tier chance', () => {
+    const withFactor = (region: BodyRegion, factor: number) =>
+      new Body({
+        ...BODY_TUNING_FIXTURE,
+        bleeding: {
+          ...BODY_TUNING_FIXTURE.bleeding,
+          tiers: tiers.map((tier) =>
+            tier.id === 'critical' ? { ...tier, regionFactor: { ...tier.regionFactor, [region]: factor } } : tier,
+          ),
+        },
+      });
+    const critical = tiers[CRITICAL]!;
+    const boundaryRoll = critical.chance.pierce * 0.75;
+    const zeroTorso = withFactor('torso', 0);
+    const halfTorso = withFactor('torso', 0.5);
+    const fullTorso = withFactor('torso', 1);
+
+    for (const roll of [0, boundaryRoll, 0.999]) {
+      expect(zeroTorso.bleedingTierForHit(critical.minDamage, 'torso', 'pierce', roll)).not.toBe(CRITICAL);
+    }
+    expect(fullTorso.bleedingTierForHit(critical.minDamage, 'torso', 'pierce', boundaryRoll)).toBe(CRITICAL);
+    expect(halfTorso.bleedingTierForHit(critical.minDamage, 'torso', 'pierce', boundaryRoll)).not.toBe(CRITICAL);
   });
 
   it('lets a blunt hit bleed, just far less often than a piercing one', () => {
