@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { Character, type HandedCharacter } from '../src/core/character.ts';
 import type { ItemDef, ModelDef, Registry } from '../src/core/content.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf, type Item } from '../src/core/items.ts';
@@ -185,6 +186,28 @@ describe('certified firearm fitting', () => {
       expect(fixture.firearm.slots?.[slot]).toBeUndefined();
       expect(fixture.inventory.locate(fixture.foregrip)?.kind).toBe('pile');
     }
+  });
+
+  it('fits a sling to a long gun by handling and keeps it fitted while the gun is slung', () => {
+    const inventory = new Inventory(baseRegistry);
+    const queue = new HandlingQueue(inventory);
+    const handling = new FirearmAttachmentHandling(inventory, queue, () => [0, 0, 0]);
+    const shotgun = inventory.create('pump_shotgun');
+    const sling = inventory.create('weapon_sling');
+    inventory.add(shotgun, { kind: 'hand', side: 'right' });
+    inventory.add(sling, { kind: 'pile', pos: [0, 0, 0] });
+
+    expect(handling.fit(shotgun.uid, SLING_SLOT, sling.uid)).toBeUndefined();
+    queue.tick(10);
+    expect(shotgun.slots?.[SLING_SLOT]).toBe(sling);
+    expect(inventory.move(shotgun, { kind: 'worn' }).ok).toBe(true);
+    expect(handling.remove(shotgun.uid, SLING_SLOT)).toBeDefined();
+    expect(shotgun.slots?.[SLING_SLOT]).toBe(sling);
+
+    inventory.move(shotgun, { kind: 'hand', side: 'right' });
+    expect(handling.remove(shotgun.uid, SLING_SLOT)).toBeUndefined();
+    queue.tick(10);
+    expect(shotgun.slots?.[SLING_SLOT]).toBeUndefined();
   });
 
   it('times attachment fitting and removal by Firearms Combat, not Inventory Management', () => {

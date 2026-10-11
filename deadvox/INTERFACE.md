@@ -3,7 +3,7 @@ id: skelly::deadvox-interface
 description: Design for what the game's interface may show and say to the player, how far it is diegetic, and how development builds are allowed to break that
 read_if:
   - you're deciding what the interface may tell the player and in what voice
-  - you're changing player-facing prompts, feedback, or HUD language
+  - you're changing player-facing prompts, feedback, HUD language, or bleeding cues
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
   - you're changing how playtesters hand back metrics or replays
   - you're changing UI layer order, overlay stacking, or in-game choice controls such as the combo box
@@ -216,6 +216,8 @@ melee combat governs block success. The tiered practice contract is in
 
 ## HUD
 
+Blood loss can progress without immediate health loss, so make it legible during play; `playNeedsText` in `src/ui/playHud.ts` pairs it with health and flags the affected region.
+
 The optional Handling progress HUD reuses its existing progress card for a held
 item throw. Its fill follows throw charge in simulation time; a labelled marker
 shows the minimum-release point. The meter appears only while `handling` is on, T is held, and the throw is
@@ -298,6 +300,8 @@ In-game choices use the game's own combo box (`src/ui/comboBox.ts`, `comboBox`),
 ### Inventory layout
 
 Selected-item details sit between the two places items move between: inspection and actions read down, not across, and the player can see both destinations while reading. The side-by-side layout keeps the nearby pane wide enough for a cap-limited locker; at narrower windows the details pane joins the vertical stack instead of squeezing the locker. See `src/ui/inventoryScreen.ts`, `inventoryTemplate` and `detailsTemplate`.
+
+The worn column puts the Shoulder box first, directly below the hands, even when empty. This keeps the long-gun sling destination easy to find without making the player search among clothing. Dragging a long gun over it previews whether the gun can go there and, if not, why, so the slot teaches itself without an instruction ("Afford, don't instruct"). See `src/ui/inventoryScreen.ts`, `SHOWN_SLOTS`.
 
 ## Numbers and diegesis
 

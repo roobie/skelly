@@ -1,6 +1,6 @@
 import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { attachmentIdFor } from '../core/firearmFitting.ts';
+import { attachmentIdFor, firearmSlotIds, SLING_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
 import { HANDLING, type Inventory, type Location, type Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -70,14 +70,21 @@ export class FirearmAttachmentHandling {
     if (!available(this.inventory, attachment)) {
       return 'Attachment is no longer accessible';
     }
-    const modelId = defOf(this.inventory.registry, firearm.type).model;
-    const model = modelId === undefined ? undefined : this.inventory.registry.models.get(modelId);
-    if (!model?.attachmentSlots?.some((slot) => slot.id === slotId)) {
+    if (!firearmSlotIds(this.inventory.registry, defOf(this.inventory.registry, firearm.type)).includes(slotId)) {
       return 'Firearm has no such attachment slot';
     }
     if (firearm.slots?.[slotId]) {
       return 'That slot is occupied';
     }
+    const reason = slotId === SLING_SLOT ? this.slingReason(attachment) : this.exportedAttachmentReason(attachment);
+    return reason ?? slotsReason(this.inventory.registry, firearm.type, { ...firearm.slots, [slotId]: attachment });
+  }
+
+  private slingReason(attachment: Item): string | undefined {
+    return defOf(this.inventory.registry, attachment.type).sling ? undefined : 'Only a sling fits the sling mount';
+  }
+
+  private exportedAttachmentReason(attachment: Item): string | undefined {
     const attachmentId = attachmentIdFor(this.inventory.registry, attachment);
     if (!attachmentId) {
       return 'Item is not an exported firearm attachment';
@@ -89,20 +96,22 @@ export class FirearmAttachmentHandling {
     if (attachmentModel?.attachment?.kind === 'optic' && !opticViewSettings(attachmentDefinition, attachmentModel)) {
       return 'This optic has no supported view';
     }
-    return slotsReason(this.inventory.registry, firearm.type, { ...firearm.slots, [slotId]: attachment });
+    return undefined;
   }
 
   removeReason(firearm: Item, slotId: string): string | undefined {
     if (!(available(this.inventory, firearm) && defOf(this.inventory.registry, firearm.type).firearm)) {
       return 'Firearm is no longer accessible';
     }
-    const modelId = defOf(this.inventory.registry, firearm.type).model;
-    const model = modelId === undefined ? undefined : this.inventory.registry.models.get(modelId);
-    if (!model?.attachmentSlots?.some((slot) => slot.id === slotId)) {
+    if (!firearmSlotIds(this.inventory.registry, defOf(this.inventory.registry, firearm.type)).includes(slotId)) {
       return 'Firearm has no such attachment slot';
     }
     if (!firearm.slots?.[slotId]) {
       return 'That slot is empty';
+    }
+    // The shoulder holds the gun by its sling, so the sling stays while the gun is slung.
+    if (slotId === SLING_SLOT && this.inventory.locate(firearm)?.kind === 'worn') {
+      return 'Take it off your shoulder first';
     }
     return undefined;
   }

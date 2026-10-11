@@ -13,6 +13,8 @@ read_if:
   - you implement or inspect input recording and replay
   - you change how a locked door advertises its crowbar fallback
   - you change stance hints or first-person held poses
+  - you change how a long gun is slung or drawn from the shoulder
+  - you're changing bleeding treatment feedback
 ---
 
 # Controls and input ownership
@@ -82,8 +84,9 @@ both independently scrolling panes.
   remain reserved. Reserve their physical positions across contexts, including
   debug, rather than inventing no-op lean commands.
 - **Loose-item pickup:** Players grab ground items from the normal game view by
-  tapping F to wear a back-wearable when the back slot is free, otherwise pocket
-  it; holding F wields it. The pickup uses the inventory's ordinary handling
+  tapping F to wear a back-wearable when the back slot is free, sling a
+  sling-fitted long gun when the shoulder is free, and otherwise pocket it;
+  holding F wields it. The pickup uses the inventory's ordinary handling
   path, so wearing and pocketing retain their normal handling time. The reach
   animation is the same for either destination. Doors and containers
   keep their tap interaction. F uses one shared reach and target choice: exact
@@ -93,6 +96,12 @@ both independently scrolling panes.
   `interactionTargetAt` and `completeWorldInteraction`, route the gesture through
   the existing inventory handling owner; `src/render/grabPose.ts`, `grabPose`,
   supplies the visual-only reach.
+- **Slinging a long gun has no key of its own.** The inventory's wear-or-remove
+  key slings the selected long gun or takes it from the shoulder into the hands.
+  A quickbar tap draws a slung gun and puts it back on the shoulder. Wielding
+  something else moves a sling-fitted long gun to a free shoulder. A dedicated
+  key would only duplicate these routes. See `src/game/inputBindings.ts`,
+  `inventory.wear`, and `src/core/options.ts`, `quickbarPutAway` and `toHands`.
 - **Downed bodies:** F on a downed shambler follows the same tap and hold: a tap
   finishes it off, and a hold dismembers it. Two ways to clear a body need no
   second binding. A ray against the body's box picks it, in the same nearest-target
@@ -175,7 +184,7 @@ both independently scrolling panes.
   hand or puts it away; a hold uses an available action. See
   `src/game/quickbarInput.ts`, `QuickbarInput`, and
   `src/game/quickbarActions.ts`, `QuickbarActions`.
-- **Wound treatment (2026-10-06 08:33):** BR said “the \"treat with rag\" is not the way to go. You wield the rag and left-click apply it (or quickbar-hold)”. Wielded-item action selection is stepped by the wheel and shown in the interaction hint; see `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `ItemActionSelection`, and `src/game/survival.ts`, `wieldedItemActionHint`.
+- **Wound treatment:** Wield a treatment item such as a rag and left-click to apply it, or hold its quickbar slot; the wheel steps the wielded action. The HUD shows blood and bleeding regions, and the affected wound drips in first person and debug third person. See `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `ItemActionSelection`, `src/game/survival.ts`, `wieldedItemActionHint`, `src/ui/playHud.ts`, `playNeedsText`, and `src/render/gore.ts`, `Gore.dripPlayer`.
 - **Lighting (2026-10-05 14:43):** “lighting need the matches in your hand.”
   See `src/game/primaryAction.ts`, `selectPrimaryAction`.
 - **Interaction hints (2026-10-06 08:35):** BR said “we should make
