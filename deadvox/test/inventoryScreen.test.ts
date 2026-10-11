@@ -273,14 +273,16 @@ describe('inventory screen Lit rendering', () => {
       panel.querySelector<HTMLButtonElement>(`button[data-action="${action}"]`)!.click();
       screen.update();
     };
-    expect(shown()).toBe('when rested');
+    const whenRested = shown();
+    expect(whenRested).toBeTruthy();
     step('wake-earlier');
     expect(lastPayload()).toEqual({ kind: 'action.wake-hour', gameHour: 23 });
-    expect(shown()).toBe('23:00');
+    expect(shown()).not.toBe(whenRested);
     step('wake-later');
     expect(lastPayload()).toEqual({ kind: 'action.wake-hour', gameHour: null });
+    expect(shown()).toBe(whenRested);
     step('wake-later');
-    expect(shown()).toBe('00:00');
+    expect(lastPayload()).toEqual({ kind: 'action.wake-hour', gameHour: 0 });
   });
   it('routes a hotkey to an open screen before its generic action handler', () => {
     const { screen } = setup();

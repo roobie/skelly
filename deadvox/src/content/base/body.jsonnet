@@ -19,9 +19,10 @@ local normalSleep = 100 / normalSleepGameHours;
     shockRecoveryPerSimSecond: 0.1,
     advancedInfectionHealthLossPerSimSecond: 0.0005,
     fatigueRisePerGameHour: 4,
-    // Resting and sleeping rough keep the shares of a bed's sleep they had before sleep was set to 8 h.
+    // Resting clears a fixed share of a normal sleep, so sitting never beats sleeping.
     restFatigueRecoveryPerGameHour: normalSleep * 0.3,
     sleepFatigueRecoveryPerGameHour: normalSleep,
+    // Sleeping rough (rest quality 0) clears this share of a normal sleep.
     roughSleepShare: 0.6,
     healthRecoveryPerGameHour: 2,
     sleepRecoveryFactor: 2,

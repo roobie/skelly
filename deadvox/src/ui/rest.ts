@@ -29,14 +29,18 @@ export const restViewModel = (
   }
   let percent = 0;
   let label: string = action.label;
-  if ('startFatigue' in action) {
+  if ('startFatigue' in action && action.wakeAt !== undefined) {
+    // An alarm sleep runs to its wake time, not to rested, so its bar tracks the time slept.
+    const { job } = sim.actions;
+    const slept = job?.jobType === 'sleep' ? job.elapsed : 0;
+    const remaining = Math.max(0, action.wakeAt - sim.time);
+    percent = slept + remaining > 0 ? (slept / (slept + remaining)) * 100 : 100;
+    label = `${label} until ${formatClock(calendarAt(sim.clock, action.wakeAt))}`;
+  } else if ('startFatigue' in action) {
     percent =
       action.startFatigue > 0
         ? Math.min(100, Math.max(0, ((action.startFatigue - sim.needs.fatigue) / action.startFatigue) * 100))
         : 100;
-    if (action.wakeAt !== undefined) {
-      label = `${label} until ${formatClock(calendarAt(sim.clock, action.wakeAt))}`;
-    }
   }
   return {
     visible: true,

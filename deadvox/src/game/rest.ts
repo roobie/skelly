@@ -27,11 +27,6 @@ export const restKindForFurniture = (furniture: {
 };
 
 export class RestController {
-  /**
-   * The hour of day (0–23) the player wants to wake at, or undefined to sleep until rested. It only
-   * applies while an alarm is carried: without a clock you can't time your waking.
-   */
-  wakeGameHour: number | undefined;
   private readonly sim: Simulation;
   private readonly hooks: RestHooks;
   constructor(sim: Simulation, hooks: RestHooks) {
@@ -41,6 +36,16 @@ export class RestController {
   }
   get action(): RestAction | undefined {
     return this.sim.actions.rest;
+  }
+  /**
+   * The saved wake hour (`LongActions.wakeGameHour`). It only applies while an alarm is carried:
+   * without a clock you can't time your waking.
+   */
+  get wakeGameHour(): number | undefined {
+    return this.sim.actions.wakeGameHour;
+  }
+  set wakeGameHour(gameHour: number | undefined) {
+    this.sim.actions.wakeGameHour = gameHour;
   }
   get canStop(): boolean {
     return this.action !== undefined && this.action.kind !== 'sleep';

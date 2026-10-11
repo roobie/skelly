@@ -434,6 +434,7 @@ const longAction = obj({
       ),
     }),
   ),
+  wakeGameHour: opt(num({ integer: true, safe: true, min: 0, max: 23 })),
 });
 const vocalNoise = obj({ id: positiveInt, pos: vec3, radiusMetres: positive, expiresAt: finite });
 const soundPicker = obj({

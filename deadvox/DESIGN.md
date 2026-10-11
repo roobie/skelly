@@ -209,8 +209,9 @@ compression on and shows a progress bar and the game time passing.
   `alarm` lets the player pick a wake hour on the Actions tab instead; sleep
   then runs to that hour with fatigue held at zero, and recovery continues.
   Without a clock you can't time your waking, so the choice needs one. The
-  events above still wake a sleeper. See `LongActions.advanceJob` and
-  `RestAction.wakeAt`; `src/game/rest.ts`, `RestController.wakeGameHour`.
+  chosen hour is saved, so Continue and replays keep it. The events above still
+  wake a sleeper. See `LongActions.advanceJob`, `LongActions.wakeGameHour` and
+  `RestAction.wakeAt`.
 - **Short handling** (moving an item, reloading, wielding) is not compressed.
   It takes real seconds while the world runs at 1× (see
   [Items](#items-and-inventory)).
@@ -656,11 +657,11 @@ and `src/core/content.ts`, `checkItemFirearm`.
   sleep. The rates are content, in `src/content/base/body.jsonnet`.
 - **Sleep's main value is recovery.** While asleep, health, regional and blood
   recovery run at `sleepRecoveryFactor` times their awake rate, so a night's
-  sleep is how a hurt player heals, not only how they clear debt. Body modifiers
-  wrap these rates where they are read: `src/core/body.ts`, the `Body`
-  getters `fatigueRisePerGameHour`, `healthRecoveryPerGameHour` and
-  `sleepRecoveryFactor`, and `Body.fatigueRecoveryRate`; blood takes the factor
-  in `Body.advanceBlood`.
+  sleep is how a hurt player heals, not only how they clear debt. Each rate is
+  read once, in `src/core/body.ts` (the `Body` getters
+  `fatigueRisePerGameHour`, `healthRecoveryPerGameHour` and
+  `sleepRecoveryFactor`, `Body.fatigueRecoveryRate`, and `Body.advanceBlood` for
+  blood), so #592's modifier point can wrap it there.
 - **Body.** Injuries affect sight, aim, swings and movement as well as health.
   Each region recovers at health's rate while needs allow health recovery, except
   while that region is bleeding or infected. This lets injury penalties fade

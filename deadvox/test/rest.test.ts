@@ -112,22 +112,26 @@ describe('sleep length and sleep debt', () => {
     expect(sim.needs.fatigue).toBeCloseTo(99 + sim.body.fatigueRisePerGameHour, 6);
   });
 
-  it('recovers health asleep at the sleep factor times the awake rate', () => {
+  it('recovers health and blood asleep at the sleep factor times the awake rate', () => {
     // Waiting and sleeping share the fixture's cap, so both runs step through the same Sim times.
-    const recovered = (sleeping: boolean): { health: number; hours: number; rate: number; factor: number } => {
+    const recovered = (sleeping: boolean) => {
       const { sim, rest } = makeRest();
       sim.needs.calories = 100;
       sim.needs.hydration = 100;
       sim.needs.fatigue = 50;
       sim.body.damageHealth(50);
+      // Blood lost to a wound that has stopped bleeding, as a save after treatment holds it.
+      sim.body.restoreState({ ...sim.body.snapshotState(), blood: 20 });
       expect(sleeping ? rest.start('sleep', REST_ANCHOR) : sim.actions.startWait()).toBeUndefined();
-      const { health } = sim.body;
+      const { health, blood } = sim.body;
       const start = sim.time;
       for (let i = 0; i < 120; i++) {
         tickReal(sim, 1 / 60);
       }
+      expect(sim.body.blood).toBeLessThan(100);
       return {
         health: sim.body.health - health,
+        blood: sim.body.blood - blood,
         hours: simToGameHours(sim.clock, sim.time - start),
         rate: sim.body.healthRecoveryPerGameHour,
         factor: sim.body.sleepRecoveryFactor,
@@ -138,6 +142,8 @@ describe('sleep length and sleep debt', () => {
     expect(asleep.hours).toBe(awake.hours);
     expect(awake.health / awake.hours).toBeCloseTo(awake.rate, 0);
     expect(asleep.health / awake.health).toBeCloseTo(asleep.factor, 6);
+    expect(awake.blood).toBeGreaterThan(0);
+    expect(asleep.blood / awake.blood).toBeCloseTo(asleep.factor, 6);
   });
 });
 

@@ -67,6 +67,8 @@ export interface TreatmentActionHooks {
 }
 export interface LongActionState {
   job: LongJob | null;
+  /** The hour of day (0–23) an alarm sleep wakes at; unset sleeps until rested. */
+  wakeGameHour?: number;
 }
 /** Per-kind effects stay in the native craft owner, never in saved closures. */
 export interface CraftRepair {
@@ -195,6 +197,12 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
   }
 };
 
+const validateWakeGameHour = (wakeGameHour: number | undefined): void => {
+  if (wakeGameHour !== undefined && !(Number.isSafeInteger(wakeGameHour) && wakeGameHour >= 0 && wakeGameHour < 24)) {
+    throw new Error('Invalid wake hour');
+  }
+};
+
 export class LongActions {
   private current: LongJob | undefined;
   craft: CraftActionHooks | undefined;
@@ -202,6 +210,11 @@ export class LongActions {
   prying: PryActionHooks | undefined;
   treatment: TreatmentActionHooks | undefined;
   notice: (text: string) => void = () => undefined;
+  /**
+   * The hour of day (0–23) the player set to wake at, or undefined to sleep until rested. It is
+   * saved, so Continue and a replay starting after it was set keep it.
+   */
+  wakeGameHour: number | undefined;
   private readonly sim: Simulation;
   constructor(sim: Simulation) {
     this.sim = sim;
@@ -234,13 +247,14 @@ export class LongActions {
       this.current.stopped &&
       this.reading !== undefined &&
       !this.reading.owns(this.current.bookUid);
-    if (staleStoppedReading) {
-      return freezeSnapshot({ job: null });
-    }
-    return freezeSnapshot({ job: this.current ? structuredClone(this.current) : null });
+    const job = this.current && !staleStoppedReading ? structuredClone(this.current) : null;
+    const { wakeGameHour } = this;
+    return freezeSnapshot({ job, ...(wakeGameHour === undefined ? {} : { wakeGameHour }) });
   }
   restoreState(state: LongActionState): void {
     validateLongJob(state.job, this.sim.time);
+    const { wakeGameHour } = state;
+    validateWakeGameHour(wakeGameHour);
     if (state.job?.jobType === 'craft' && !this.craft?.owns(state.job.workUid)) {
       throw new Error('Missing craft work item');
     }
@@ -260,6 +274,7 @@ export class LongActions {
       }
     }
     this.current = state.job === null ? undefined : structuredClone(state.job);
+    this.wakeGameHour = wakeGameHour;
     this.restoreCompressionCap();
   }
   /** A restored running action compresses up to its own cap, not the unowned default. */
