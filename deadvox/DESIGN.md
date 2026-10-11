@@ -183,8 +183,8 @@ compression on and shows a progress bar and the game time passing.
   work stays at a pace its progress can be read at. Prying runs at 1×.
 - **Frame cost:** at a high cap one frame covers several Sim seconds, so a
   long action's Sim step per frame is bounded (`src/core/compression.ts`,
-  `longActionLimits`). The bound lets the highest cap run in full at 60 frames
-  a second in a quiet world. Where many shamblers are active, the frame's cost
+  `longActionLimits`). The bound lets the base content's highest cap run in
+  full at 60 frames a second in a quiet world. Where many shamblers are active, the frame's cost
   stays bounded and the fast-forward runs slower instead
   ([CHALLENGES.md](CHALLENGES.md), 3).
 - **Only an event stops it:** nothing refuses or stops compression because a

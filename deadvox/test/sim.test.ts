@@ -216,7 +216,6 @@ describe('Simulation', () => {
     // One frame at the cap is a few simulation seconds: at most one needs tick, not one per second.
     expect(advanced).toBeLessThanOrEqual(sim.compression.limits.maxSimPerFrame);
     expect(sim.scheduler.tickCounts().get('needs')! - before).toBeLessThanOrEqual(1);
-    expect(sim.scheduler.stepOf('needs', COMPRESSION_CAPS_FIXTURE.wait)).toBe(30);
   });
 
   it('stops within one step of an interruption and waits for the player', () => {

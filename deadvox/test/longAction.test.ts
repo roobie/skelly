@@ -159,12 +159,40 @@ describe('core long actions', () => {
     const caps = { wait: 100, rest: 110, sleep: 120, craft: 20, reading: 25, treatment: 15 };
     const starts: [keyof typeof caps, (sim: Simulation) => string | undefined][] = [
       ['wait', (sim) => sim.actions.startWait()],
+      ['rest', (sim) => sim.actions.startRest('rest', -10, 1)],
       ['sleep', (sim) => sim.actions.startRest('sleep', -10, 1)],
       [
         'treatment',
         (sim) => {
           sim.actions.treatment = { validate: () => undefined, finish: () => true };
           return sim.actions.beginTreatment('torso', 1, 'rag', 3600);
+        },
+      ],
+      [
+        'reading',
+        (sim) => {
+          sim.actions.reading = {
+            owns: () => true,
+            validate: () => undefined,
+            duration: () => 3600,
+            finish: () => undefined,
+          };
+          return sim.actions.beginReading(1);
+        },
+      ],
+      [
+        'craft',
+        (sim) => {
+          sim.actions.craft = {
+            admit: () => undefined,
+            begin: () => 1,
+            owns: () => true,
+            validate: () => undefined,
+            advance: () => false,
+            finish: () => undefined,
+            cancel: () => undefined,
+          };
+          return sim.actions.startCraft(1);
         },
       ],
     ];
