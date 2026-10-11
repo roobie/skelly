@@ -4,6 +4,10 @@ import { freezeSnapshot } from './snapshotData.ts';
 
 export const BODY_REGIONS = ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const;
 export type BodyRegion = (typeof BODY_REGIONS)[number];
+const BODY_REGION_WORD_BOUNDARY = /([A-Z])/g;
+const BODY_REGION_INITIAL = /^[a-z]/;
+export const bodyRegionLabel = (region: BodyRegion): string =>
+  region.replace(BODY_REGION_WORD_BOUNDARY, ' $1').replace(BODY_REGION_INITIAL, (first) => first.toUpperCase());
 type InfectionStage = 'none' | 'early' | 'advanced' | 'resolved';
 export const BODY_TREATMENTS = ['bandage', 'rag', 'antiseptic', 'antibiotics'] as const;
 export type BodyTreatment = (typeof BODY_TREATMENTS)[number];

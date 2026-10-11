@@ -1,5 +1,5 @@
 import type { Body } from '../core/body.ts';
-import { BODY_REGIONS, type BodyRegion, type BodyTreatment, type BodyWounds } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion, type BodyTreatment, type BodyWounds, bodyRegionLabel } from '../core/body.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
@@ -16,8 +16,6 @@ export interface ItemAction {
 
 const STRIP_ROUND: ItemAction = { id: 'magazine:strip', label: 'Strip a round', magazine: 'strip' };
 
-const regionName = (region: BodyRegion): string =>
-  region.replace(/([A-Z])/g, ' $1').replace(/\b\w/g, (letter) => letter.toUpperCase());
 const woundDescription = (wound: NonNullable<BodyWounds[BodyRegion]>, treatment: BodyTreatment): string =>
   treatment === 'bandage' || treatment === 'rag' ? 'bleeding' : `${wound.infection} infection`;
 
@@ -38,7 +36,7 @@ export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): re
     return [
       {
         id: `${treatment}:${region}`,
-        label: `${regionName(region)} · ${condition}`,
+        label: `${bodyRegionLabel(region)} · ${condition}`,
         priority: { bleeding: wound.bleeding, damage: body.regionDamage[region] },
         treatment: { region, kind: treatment },
       },

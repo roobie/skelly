@@ -11,6 +11,7 @@ import {
   Object3D,
   Vector3,
 } from 'three';
+import type { BodyRegion } from '../core/body.ts';
 import type { FigureDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
@@ -24,6 +25,31 @@ import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 /** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
 export const PLAYER_BODY_REAR_OFFSET = 0.19;
 const BODY_HIP_HEIGHT = 0.62;
+
+export interface PlayerFigurePlacement {
+  bodyPosition: Vec3;
+  yaw: number;
+  blockSize: number;
+  thirdPerson: boolean;
+}
+
+/** Places a metre offset from the block-based body base exactly as the world figure is drawn. */
+export const setPlayerFigurePosition = (
+  target: Vector3,
+  placement: PlayerFigurePlacement,
+  localPosition: readonly [number, number, number],
+): void => {
+  const { bodyPosition, yaw, blockSize, thirdPerson } = placement;
+  const [localX, localY, localZ] = localPosition;
+  const rearOffset = thirdPerson ? 0 : PLAYER_BODY_REAR_OFFSET;
+  const cos = Math.cos(yaw);
+  const sin = Math.sin(yaw);
+  target.set(
+    bodyPosition[0] * blockSize + sin * rearOffset + localX * cos + localZ * sin,
+    bodyPosition[1] * blockSize + localY,
+    bodyPosition[2] * blockSize + cos * rearOffset - localX * sin + localZ * cos,
+  );
+};
 export const PLAYER_ARM_PARTS = [
   'body',
   'head',
@@ -53,6 +79,23 @@ const PLAYER_BOXES: Readonly<Record<PlayerArmPart, FigureBox>> = {
   rightLeg: FIGURE_BOXES.rightLeg,
   leftFoot: { size: [0.18, 0.12, 0.28], at: [-0.12, 0.06, -0.16] },
   rightFoot: { size: [0.18, 0.12, 0.28], at: [0.12, 0.06, -0.16] },
+};
+
+const regionBox = (part: PlayerArmPart, anchoredLeg = false): FigureBox => {
+  const box = PLAYER_BOXES[part];
+  return {
+    size: box.size,
+    at: [box.at[0], box.at[1] - (anchoredLeg ? box.size[1] / 2 : 0), box.at[2]],
+  };
+};
+
+export const PLAYER_REGION_BOXES: Readonly<Record<BodyRegion, FigureBox>> = {
+  head: regionBox('head'),
+  torso: regionBox('body'),
+  leftArm: regionBox('leftUpperArm'),
+  rightArm: regionBox('rightUpperArm'),
+  leftLeg: regionBox('leftLeg', true),
+  rightLeg: regionBox('rightLeg', true),
 };
 
 const PLAYER_COLORS: Readonly<Record<PlayerArmPart, keyof FigureDef['palette']>> = {
@@ -163,10 +206,11 @@ export class PlayerMeshes {
   readonly group = new Group();
   private readonly meshes = new Map<PlayerArmPart, InstancedMesh>();
   private readonly dummy = new Object3D();
-  private readonly blockSize: number;
+  private readonly placement: PlayerFigurePlacement;
+  private readonly localPosition: Vec3 = [0, 0, 0];
 
   constructor(blockSize: number, palette: FigureDef['palette']) {
-    this.blockSize = blockSize;
+    this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize, thirdPerson: false };
     for (const part of PLAYER_ARM_PARTS) {
       const mesh = new InstancedMesh(
         new BoxGeometry(1, 1, 1),
@@ -182,12 +226,11 @@ export class PlayerMeshes {
   }
 
   sync(pose: PlayerFigurePose): void {
-    const { yaw, inventory, thirdPerson = false } = pose;
-    const s = this.blockSize;
-    const rearX = thirdPerson ? 0 : Math.sin(yaw) * PLAYER_BODY_REAR_OFFSET;
-    const rearZ = thirdPerson ? 0 : Math.cos(yaw) * PLAYER_BODY_REAR_OFFSET;
+    const { inventory, thirdPerson = false } = pose;
+    this.placement.bodyPosition = pose.body.pos;
+    this.placement.yaw = pose.yaw;
+    this.placement.thirdPerson = thirdPerson;
     const hidden = thirdPerson ? { right: false, left: false } : hiddenWorldArms(inventory);
-    const offset = { blockSize: s, rearX, rearZ };
     for (const part of PLAYER_ARM_PARTS) {
       const mesh = this.meshes.get(part)!;
       const side = armSideOf(part);
@@ -195,19 +238,13 @@ export class PlayerMeshes {
       const hiddenInFirstPerson = part === 'head' && !thirdPerson;
       mesh.count = hiddenHeldArm || hiddenInFirstPerson ? 0 : 1;
       if (!(hiddenHeldArm || hiddenInFirstPerson)) {
-        this.updatePart(part, mesh, pose, offset);
+        this.updatePart(part, mesh, pose);
       }
     }
   }
 
-  private updatePart(
-    part: PlayerArmPart,
-    mesh: InstancedMesh,
-    pose: PlayerFigurePose,
-    offset: { blockSize: number; rearX: number; rearZ: number },
-  ): void {
-    const { body, yaw, stepOffset, gaitPhase, moving } = pose;
-    const { blockSize, rearX, rearZ } = offset;
+  private updatePart(part: PlayerArmPart, mesh: InstancedMesh, pose: PlayerFigurePose): void {
+    const { yaw, stepOffset, gaitPhase, moving } = pose;
     const box = PLAYER_BOXES[part];
     const isLeg = part === 'leftLeg' || part === 'rightLeg';
     const isFoot = part === 'leftFoot' || part === 'rightFoot';
@@ -219,11 +256,10 @@ export class PlayerMeshes {
     const localZ = isFoot
       ? (box.at[1] - BODY_HIP_HEIGHT) * Math.sin(footStride) + box.at[2] * Math.cos(footStride)
       : box.at[2];
-    this.dummy.position.set(
-      body.pos[0] * blockSize + rearX + box.at[0] * Math.cos(yaw) + localZ * Math.sin(yaw),
-      body.pos[1] * blockSize + stepOffset + localY,
-      body.pos[2] * blockSize + rearZ - box.at[0] * Math.sin(yaw) + localZ * Math.cos(yaw),
-    );
+    this.localPosition[0] = box.at[0];
+    this.localPosition[1] = stepOffset + localY;
+    this.localPosition[2] = localZ;
+    setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
     this.dummy.rotation.order = 'YXZ';
     this.dummy.rotation.set(footStride, yaw, 0);
     if (isLeg && moving) {

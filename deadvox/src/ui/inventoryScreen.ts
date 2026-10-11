@@ -6,7 +6,7 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import { BODY_REGIONS, type BodyRegion, type BodyState } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion, type BodyState, bodyRegionLabel } from '../core/body.ts';
 import { practiceForNextLevel } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
@@ -511,7 +511,7 @@ const inventoryTemplate = (
       ${vm.body.regions.map(
         (region) => html`
         <div class="inv-body-region" data-body-region=${region.region}>
-          <span class="inv-body-region-name">${region.region.replace(/([A-Z])/g, ' $1')}</span>
+          <span class="inv-body-region-name">${bodyRegionLabel(region.region)}</span>
           <span>${region.damage} damage</span>
           ${region.bleeding ? html`<span class="inv-body-warning">Bleeding</span>` : nothing}
           ${region.infection !== 'none' && region.infection !== 'resolved' ? html`<span class="inv-body-warning">${region.infection} infection</span>` : nothing}
