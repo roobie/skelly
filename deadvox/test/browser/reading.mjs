@@ -939,7 +939,25 @@ try {
     await page.waitForFunction(() => document.querySelector('#overlay').hidden);
     assert.equal(await page.locator('#death').isVisible(), true);
     assert.equal(await page.getByRole('button', { name: 'New world', exact: true }).isVisible(), true);
-    proof = { sizes, endVisible, deathMenuOpened };
+    const feedbackLink = page.locator('#death a');
+    assert.equal(await feedbackLink.isVisible(), true);
+    const [deathFeedbackHref, menuFeedbackHref] = await Promise.all([
+      feedbackLink.getAttribute('href'),
+      page.locator('#playtest-feedback').getAttribute('href'),
+    ]);
+    assert.ok(menuFeedbackHref);
+    assert.equal(deathFeedbackHref, menuFeedbackHref);
+    await page.context().route('https://github.com/**', (route) => route.fulfill({ status: 200, body: '' }));
+    const feedbackPopupPromise = page.waitForEvent('popup');
+    await feedbackLink.click();
+    const feedbackPopup = await feedbackPopupPromise;
+    await feedbackPopup.waitForLoadState('domcontentloaded');
+    await feedbackPopup.close();
+    await page.context().unroute('https://github.com/**');
+    assert.equal(await page.locator('#death').isVisible(), true);
+    assert.equal(await page.getByRole('button', { name: 'New world', exact: true }).isVisible(), true);
+    assert.equal(await page.evaluate(() => globalThis.deathMenuPointerLockRequests), 0);
+    proof = { sizes, endVisible, deathMenuOpened, feedbackHref: deathFeedbackHref };
   }
   assert.deepEqual(errors, []);
   await writeFile(resolve(artifacts, 'result.json'), JSON.stringify({ mode, ...proof, states, errors }, null, 2));
