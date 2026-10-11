@@ -107,7 +107,8 @@ try {
     await page.goto(
       browserStageUrl(
         'primary-action-pixel',
-        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=64&time=21:00&post=0&sunshadow=0&torchshadow=0`,
+        // The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle.
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=64&time=23:30&post=0&sunshadow=0&torchshadow=0`,
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

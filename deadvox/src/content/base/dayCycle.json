@@ -1,9 +1,9 @@
 {
   "dayCycle": {
-    "latitudeDegrees": 60,
+    "latitudeDegrees": 40,
     "date": {
-      "month": 10,
-      "day": 15
+      "month": 6,
+      "day": 25
     },
     "twilight": "nautical"
   }
