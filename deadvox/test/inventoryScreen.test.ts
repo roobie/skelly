@@ -228,53 +228,60 @@ describe('inventory screen Lit rendering', () => {
     expect(plan.merge).toBe(visibleStack);
   });
 
-  it('renders content-owned compact labels and colors for inventory items', () => {
+  it('shows distinct item names in grid cells and uses the same name in the drag ghost', () => {
     const items = new Map(registry.items);
-    items.set('fixture_antibiotic', {
-      id: 'fixture_antibiotic',
-      name: 'Fixture antibiotics',
+    const alphaName = `Alpha ${'fixture '.repeat(12)}`;
+    const betaName = `Beta ${'fixture '.repeat(12)}`;
+    items.set('fixture_inventory_alpha', {
+      id: 'fixture_inventory_alpha',
+      name: alphaName,
       category: 'medical',
       weight: 1,
       size: [1, 1],
-      inventoryLabel: 'AB',
-      inventoryColor: '#78551f',
     });
-    items.set('fixture_antiseptic', {
-      id: 'fixture_antiseptic',
-      name: 'Fixture antiseptic',
+    items.set('fixture_inventory_beta', {
+      id: 'fixture_inventory_beta',
+      name: betaName,
       category: 'medical',
       weight: 1,
       size: [1, 1],
-      inventoryLabel: 'AS',
-      inventoryColor: '#285b57',
     });
     const { root, screen, inv } = setup({ ...registry, items });
-    const antibiotic = inv.create('fixture_antibiotic');
-    const antiseptic = inv.create('fixture_antiseptic');
-    const handAntibiotic = inv.create('fixture_antibiotic');
+    const alpha = inv.create('fixture_inventory_alpha');
+    const beta = inv.create('fixture_inventory_beta');
+    const handItem = inv.create('fixture_inventory_alpha');
     const pos: [number, number, number] = [1, 0, 0];
     if (
       !(
-        inv.add(antibiotic, { kind: 'pile', pos, at: { x: 0, y: 0, rotated: false } }) &&
-        inv.add(antiseptic, { kind: 'pile', pos, at: { x: 1, y: 0, rotated: false } }) &&
-        inv.add(handAntibiotic, { kind: 'hand', side: 'left' })
+        inv.add(alpha, { kind: 'pile', pos, at: { x: 0, y: 0, rotated: false } }) &&
+        inv.add(beta, { kind: 'pile', pos, at: { x: 1, y: 0, rotated: false } }) &&
+        inv.add(handItem, { kind: 'hand', side: 'left' })
       )
     ) {
-      throw new Error('Could not place medical inventory display fixtures');
+      throw new Error('Could not place inventory display fixtures');
     }
     screen.update();
 
-    const nodes = [antibiotic, antiseptic].map(
-      (item) => root.querySelector<HTMLElement>(`.inv-item[data-uid="${item.uid}"]`)!,
+    const cells = [alpha, beta].map((item) => root.querySelector<HTMLElement>(`.inv-item[data-uid="${item.uid}"]`)!);
+    const names = cells.map((cell) => cell.querySelector('.inv-item-name')?.textContent?.trim() ?? '');
+    const handNode = root.querySelector<HTMLElement>(`.inv-item-slot[data-uid="${handItem.uid}"]`);
+    expect(names.every(Boolean)).toBe(true);
+    expect(names[0]).not.toBe(names[1]);
+    expect(cells[0]!.title.startsWith(inv.name(alpha))).toBe(true);
+    expect(handNode?.querySelector('.inv-item-name')?.textContent).toBe(inv.name(handItem));
+
+    cells[0]!.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
     );
-    const labels = nodes.map((node) => node.querySelector('.inv-item-name')?.textContent);
-    const colors = nodes.map((node) => node.style.backgroundColor);
-    const handNode = root.querySelector<HTMLElement>(`.inv-item-slot[data-uid="${handAntibiotic.uid}"]`);
-    expect(labels).toEqual(['AB', 'AS']);
-    expect(new Set(labels).size).toBe(labels.length);
-    expect(handNode?.querySelector('.inv-item-name')?.textContent).toBe('Fixture antibiotics');
-    expect(colors.every(Boolean)).toBe(true);
-    expect(new Set(colors).size).toBe(colors.length);
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    const ghost = document.querySelector<HTMLElement>('.inv-ghost');
+    expect(ghost?.textContent?.trim()).toBe(names[0]);
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    screen.close();
   });
 
   it('opens directly on a requested tab and remembers it across toggles', () => {

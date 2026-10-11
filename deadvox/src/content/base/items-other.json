@@ -32,8 +32,6 @@
     {
       "id": "antiseptic",
       "name": "Antiseptic",
-      "inventoryLabel": "AS",
-      "inventoryColor": "#285b57",
       "category": "medical",
       "weight": 100,
       "size": [1, 1],
@@ -44,8 +42,6 @@
     {
       "id": "antibiotics",
       "name": "Antibiotics",
-      "inventoryLabel": "AB",
-      "inventoryColor": "#78551f",
       "category": "medical",
       "weight": 50,
       "size": [1, 1],

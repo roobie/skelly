@@ -53,7 +53,6 @@ const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 const Id = pipe(string(), regex(ID_PATTERN, 'must be lowercase letters, digits and _'));
 const CalibreId = pipe(string(), regex(CALIBRE_ID_PATTERN, 'must be a cartridge-data id'));
 const Name = pipe(string(), nonEmpty('must not be empty'));
-const InventoryLabel = pipe(string(), nonEmpty('must not be empty'), maxLength(2, 'must be at most 2 characters'));
 const Color = pipe(string(), regex(/^#[0-9a-fA-F]{6}$/, 'expected "#rrggbb"'));
 const NonNegative = pipe(number(), minValue(0, 'must be 0 or more'));
 const Positive = pipe(number(), minValue(Number.MIN_VALUE, 'must be more than 0'));
@@ -405,8 +404,6 @@ const DisassemblySchema = strictObject({
 const ItemSchema = strictObject({
   id: Id,
   name: Name,
-  inventoryLabel: optional(InventoryLabel),
-  inventoryColor: optional(Color),
   category: picklist(ITEM_CATEGORIES),
   weight: NonNegative,
   /** Cells it takes in a grid, as [w, h]; it can be rotated. */
