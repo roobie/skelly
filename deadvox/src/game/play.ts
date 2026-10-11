@@ -180,7 +180,6 @@ const thirdPersonOrbitFrame = (angle: ThirdPersonOrbitAngle | undefined) => (ang
 
 const cancelBackquoteGesture = (gesture: BackquoteOrbitGesture | undefined): void => gesture?.cancel();
 const updateBackquoteGesture = (gesture: BackquoteOrbitGesture | undefined, at: number): void => gesture?.update(at);
-const toggleBackquoteHud = (gesture: BackquoteOrbitGesture | undefined): void => gesture?.toggleHudIfAllowed();
 const toggleBackquoteDebugPanel = (debugTools: DebugRuntime | undefined, sync: () => unknown): void => {
   debugTools?.handleAction('debug.panel-toggle');
   sync();
@@ -1665,21 +1664,16 @@ export const startPlay = (
     tap: () => completeWorldInteraction('pocket'),
     hold: () => completeWorldInteraction('wield'),
   });
-  const toggleInteractionHints = (): void => {
-    hudOptions.interaction = !hudOptions.interaction;
+  const toggleHud = (): void => {
+    hudOptions.shown = !hudOptions.shown;
     writeHudOptions(hudOptions);
     drawHudOptions();
   };
-  const hintToggleInput = new PressHoldInput<string>({
-    holdRealMs: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
-    tap: () => undefined,
-    hold: () => toggleBackquoteHud(backquoteGesture),
-  });
   backquoteGesture = new BackquoteOrbitGesture({
-    holdRealMs: keyboardInput.registry.binding('hud.toggle-interaction-hints')?.holdMs ?? 0,
+    holdRealMs: keyboardInput.registry.binding('hud.toggle')?.holdMs ?? 0,
     orbit: thirdPersonOrbit,
     canToggleHud: () => sim.body.actionRefusal === undefined,
-    toggleHud: toggleInteractionHints,
+    toggleHud,
     toggleDebugPanel: () => toggleBackquoteDebugPanel(debugTools, syncMenuState),
   });
   globalThis.addEventListener('blur', () => {
@@ -1687,7 +1681,6 @@ export const startPlay = (
     throwStanceInput.cancel();
     interactInput.cancel();
     interactionPressTarget = undefined;
-    hintToggleInput.cancel();
     cancelBackquoteGesture(backquoteGesture);
   });
 
@@ -1773,7 +1766,6 @@ export const startPlay = (
     cancelItemThrow();
     throwStanceInput.cancel();
     quickbarInput.cancel();
-    hintToggleInput.cancel();
   };
   keyboardInput.escape = () => {
     if (reviewMapOpen) {
@@ -1910,10 +1902,6 @@ export const startPlay = (
       toggleReviewMap,
       syncMenuState,
     });
-  const legacyHintInput = {
-    down: (at: number): void => hintToggleInput.keyDown('hud.toggle-interaction-hints', at),
-    up: (at: number): void => hintToggleInput.keyUp('hud.toggle-interaction-hints', at),
-  };
   const handleHintCommand = (action: string, phase: InputCommand['phase'], at: number): boolean =>
     routeBackquoteInput(backquoteGesture, action, {
       phase,
@@ -1921,7 +1909,6 @@ export const startPlay = (
       thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
       debugPanelAvailable: keyboardInput.held('debug.gate'),
       facingYaw: input.yaw,
-      fallback: () => legacyHintInput[phase](at),
     });
   const cancelHeldInput = (): void => {
     input.reload.cancel();
@@ -2704,8 +2691,8 @@ export const startPlay = (
   let meshingQueueMs = 0;
 
   const displayCalendar = (): number => sim.calendar;
-  const throwStanceCueVisible = (): boolean =>
-    throwingStance && hudOptions.interaction && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
+  const throwStanceCueVisible = (interactionVisible: boolean): boolean =>
+    throwingStance && interactionVisible && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
 
   const statusView = (): PlayStatus => ({
     calendar: displayCalendar(),
@@ -3153,7 +3140,6 @@ export const startPlay = (
       interactInput.update(now);
     }
     throwStanceInput.update(now);
-    hintToggleInput.update(now);
     updateBackquoteGesture(backquoteGesture, now);
   };
 
@@ -3263,7 +3249,7 @@ export const startPlay = (
 
     const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
     debugTools?.setCrosshairVisible(visible.crosshair);
-    $('throw-stance').hidden = !throwStanceCueVisible();
+    $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
       {

@@ -224,7 +224,7 @@ it('keeps an in-view firearm crosshair beyond the camera far plane', () => {
 });
 
 it('omits expired notices and the duplicated rest interruption but retains the selected hint', () => {
-  const visible = hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true, interaction: true });
+  const visible = hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true, interaction: true });
   const state = Object.freeze({
     now: 20,
     notice: 'old',
@@ -254,6 +254,8 @@ it('shows a refusal reason only when the messages option is on', () => {
     interruption: undefined,
     resting: false,
   });
-  expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: false }))).toBe('');
-  expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true }))).toContain(reason);
+  expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }))).toBe('');
+  expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }))).toContain(
+    reason,
+  );
 });

@@ -52,13 +52,13 @@ describe('restViewModel', () => {
       action,
       true,
       sim,
-      hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: false }).messages,
+      hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }).messages,
     );
     const visible = restViewModel(
       action,
       true,
       sim,
-      hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true }).messages,
+      hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }).messages,
     );
     expect(hidden.prompt).toBeUndefined();
     expect(visible.prompt).toBe(reason);

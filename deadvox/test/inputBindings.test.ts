@@ -277,16 +277,16 @@ describe('keyboard registry', () => {
     expect(wield?.defaults[0]?.code).toBe('KeyW');
     expect(wield?.contexts).toEqual(['inventory']);
   });
-  it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {
+  it('keeps debug behind F2 and allows rebinding the Backquote HUD hold', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.binding('debug.gate')?.defaults[0]?.code).toBe('F2');
     expect(bindings.binding('debug.panel-toggle')).toMatchObject({
       defaults: [{ code: 'Backquote' }],
       gate: 'debug.gate',
     });
-    expect(bindings.binding('hud.toggle-interaction-hints')?.defaults[0]?.code).toBe('Backquote');
-    expect(bindings.rebind('hud.toggle-interaction-hints', [{ code: 'KeyJ' }])).toBeUndefined();
-    expect(bindings.label('hud.toggle-interaction-hints')).toBe('J');
+    expect(bindings.binding('hud.toggle')?.defaults[0]?.code).toBe('Backquote');
+    expect(bindings.rebind('hud.toggle', [{ code: 'KeyJ' }])).toBeUndefined();
+    expect(bindings.label('hud.toggle')).toBe('J');
   });
   it('gates the third-person view behind F2 and toggles it in both directions', () => {
     const binding = new BindingRegistry(INPUT_BINDINGS, storage());

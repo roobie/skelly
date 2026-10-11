@@ -108,11 +108,11 @@ describe('crafting read-only presentation', () => {
     const job = { jobType: 'craft' as const, workUid: item.uid, stopped: true, last: sim.time };
     const hidden = craftStatus(inventory, item.uid, job, {
       reason: sim.compression.interruption,
-      messagesVisible: hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: false }).messages,
+      messagesVisible: hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }).messages,
     })!;
     const visible = craftStatus(inventory, item.uid, job, {
       reason: sim.compression.interruption,
-      messagesVisible: hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true }).messages,
+      messagesVisible: hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }).messages,
     })!;
     const root = document.createElement('section');
     const actions = { continue: vi.fn(), stop: vi.fn() };
