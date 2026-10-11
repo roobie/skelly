@@ -106,6 +106,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/gameCursor.ts',
   'src/ui/hud.ts',
   'src/ui/hudOptions.ts',
+  // Page-leave warning timing is lifecycle presentation, not simulation or saved state.
+  'src/ui/leaveConfirmation.ts',
   // Read-only HUD/status/prompt projection; target selection and execution stay in play.ts.
   'src/ui/playHud.ts',
   // Read-only debug readout formatting and byte-count estimates.

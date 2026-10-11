@@ -40,6 +40,7 @@ import {
   gameMinutes,
   gamePerHour,
   gameTimeOfDay,
+  realSeconds,
   simAcceleration,
   simPerMinute,
   simRate,
@@ -79,6 +80,7 @@ const FirearmsSkillZeroHandlingSchema = strictObject({
 const QualityLevel = pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5));
 const SimSeconds = pipe(NonNegative, transform(simSeconds));
 const PositiveSimSeconds = pipe(Positive, transform(simSeconds));
+const PositiveRealSeconds = pipe(Positive, transform(realSeconds));
 const SimRate = pipe(Positive, transform(simRate));
 const NonNegativeSimRate = pipe(NonNegative, transform(simRate));
 const SimAcceleration = pipe(Positive, transform(simAcceleration));
@@ -212,6 +214,8 @@ const SaveTuningSchema = strictObject({
   id: Id,
   /** Simulated seconds of play between periodic checkpoints, independent of the clock ratio. */
   checkpointSimSeconds: PositiveSimSeconds,
+  /** Real seconds without a completed save before a running game confirms page exit. */
+  leaveConfirmationRealSeconds: PositiveRealSeconds,
 });
 
 /** A dimensionless time multiplier; 1 runs at the normal Sim rate. */

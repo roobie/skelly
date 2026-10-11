@@ -30,6 +30,7 @@ read_if:
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
+  - you're changing when a running game warns before page exit relative to its last save
   - you're changing what the death-screen loot tally counts
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
@@ -285,6 +286,10 @@ catches up in closed form where it can, and in coarse steps otherwise:
 - **Threads.** Meshing and worldgen run in workers. The simulation starts on the
   main thread and moves to a worker when its cost needs it. The pure core is
   what makes that move cheap.
+
+## Saves
+
+Leaving or reloading a live save-backed game asks the browser to confirm when its last completed storage write is older than the content-defined real-time window. The warning protects progress that closing the tab would lose, while a recent save avoids nagging. Real time measures the interval since the saved snapshot even while the game is paused or its Sim clock is accelerated. Title screens, dead games and games running without save storage do not prompt. Save timing and triggers are owned by `docs/decisions/0002-saves.md`. See `src/game/play.ts`, `startPlay`; `src/ui/saveController.ts`, `SaveController.flush`; and `src/ui/leaveConfirmation.ts`, `shouldConfirmPageLeave`.
 
 ## World
 
