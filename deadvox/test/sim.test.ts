@@ -151,11 +151,18 @@ describe('Simulation', () => {
     expect(sim.dead?.cause).toBe('blood loss');
   });
 
-  it("refuses time compression while even the mildest wound bleeds, with content's line, until it is dressed", () => {
+  it('keeps debug compression running while bleeding refuses a player wait', () => {
     const sim = new Simulation({ seed: 1 });
     sim.body.impact(1, 'leftLeg', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
 
-    expect(sim.compress()).toEqual({ ok: false, reason: BODY_TUNING_FIXTURE.bleeding.refusal });
+    const startTime = sim.time;
+    expect(sim.compress()).toEqual({ ok: true });
+    runUntil(sim, startTime + 1);
+    expect(sim.time).toBeGreaterThan(startTime);
+    expect(sim.compression.active).toBe(true);
+    expect(sim.compression.interruption).toBeUndefined();
+
+    sim.compression.stop();
     expect(sim.actions.startWait()).toBe(BODY_TUNING_FIXTURE.bleeding.refusal);
     expect(sim.compression.active).toBe(false);
 

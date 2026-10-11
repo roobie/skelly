@@ -36,7 +36,7 @@ export interface SimulationState {
   scheduler: SchedulerState;
   needs: Needs;
   body: BodyState;
-  compression: { c: number; active: boolean; interruption?: string };
+  compression: { c: number; active: boolean; owner: 'debug' | 'long-action'; interruption?: string };
   pendingInterrupt?: string;
   dead?: { cause: string; time: number };
 }
@@ -82,6 +82,7 @@ export class Simulation {
   private pendingInterrupt: string | undefined;
   private readonly unsafe: () => string | undefined;
   private readonly restRate: () => number | undefined;
+  private compressionOwner: 'debug' | 'long-action' = 'debug';
 
   constructor(options: SimOptions) {
     this.seed = options.seed;
@@ -135,6 +136,7 @@ export class Simulation {
       compression: {
         c: this.compression.c,
         active: this.compression.active,
+        owner: this.compressionOwner,
         ...(this.compression.interruption === undefined ? {} : { interruption: this.compression.interruption }),
       },
       ...(this.dead === undefined && this.pendingInterrupt !== undefined
@@ -169,6 +171,7 @@ export class Simulation {
     this.compression.c = state.compression.c;
     this.compression.active = state.compression.active;
     this.compression.interruption = state.compression.interruption;
+    this.compressionOwner = state.compression.owner;
     this.dead = state.dead === undefined ? undefined : { ...state.dead };
     this.pendingInterrupt = undefined;
     this.scheduler.restoreState(state.scheduler);
@@ -271,17 +274,25 @@ export class Simulation {
     this.emit({ kind: 'death', cause });
   }
 
-  /** Starts unowned compression, such as the debug skip, only while it is safe. */
+  /** Starts debug compression while safe; bleeding never refuses it, but emitted interrupts still stop it. */
   compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
     if (this.actions.job?.jobType === 'pry' && !this.actions.job.stopped) {
       return { ok: false, reason: 'Stop prying first' };
     }
-    return this.compression.start(this.body.compressionRefusal ?? this.unsafeReason(), limits);
+    const result = this.compression.start(this.unsafeReason(), limits);
+    if (result.ok) {
+      this.compressionOwner = 'debug';
+    }
+    return result;
   }
 
-  /** Long actions use normal fast-forward near threats; emitted interruptions still stop them. */
+  /** Player long actions refuse bleeding compression; emitted interruptions still stop them. */
   compressLongAction(): { ok: true } | { ok: false; reason: string } {
-    return this.compression.start(this.body.compressionRefusal);
+    const result = this.compression.start(this.body.compressionRefusal);
+    if (result.ok) {
+      this.compressionOwner = 'long-action';
+    }
+    return result;
   }
 
   private unsafeReason(): string | undefined {
@@ -351,9 +362,11 @@ export class Simulation {
       }
       return false;
     }
+    const bleedingRefusal =
+      compression.active && this.compressionOwner === 'long-action' ? this.body.compressionRefusal : undefined;
     const reason =
       emitted?.reason ??
-      this.body.compressionRefusal ??
+      bleedingRefusal ??
       (compression.active && !(action && !action.stopped) ? this.unsafeReason() : undefined);
     if (reason === undefined) {
       return false;

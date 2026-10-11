@@ -281,7 +281,12 @@ const simulationFields = {
   scheduler,
   needs,
   body: bodyState,
-  compression: obj({ c: num({ min: 1, max: 30 }), active: bool, interruption: opt(str()) }),
+  compression: obj({
+    c: num({ min: 1, max: 30 }),
+    active: bool,
+    owner: enumeration(['debug', 'long-action']),
+    interruption: opt(str()),
+  }),
   pendingInterrupt: opt(str()),
   dead: opt(obj({ cause: str({ nonEmpty: true }), time: nonNegative })),
 };
