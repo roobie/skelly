@@ -94,6 +94,42 @@ describe('furniture', () => {
     expect(plan.ok && plan.time).toBeCloseTo(expected);
   });
 
+  it('counts a container item once when it is returned and taken again', () => {
+    const { inv, cupboard, beans } = kitchen();
+    inv.entities.markSearched(cupboard);
+    const pile = { kind: 'pile', pos: [0, 0, 0] as [number, number, number] } as const;
+    const furniture = { kind: 'furniture', entity: cupboard, pocket: 0 } as const;
+
+    expect(inv.move(beans, pile).ok).toBe(true);
+    expect(inv.move(beans, furniture).ok).toBe(true);
+    expect(inv.move(beans, pile).ok).toBe(true);
+    expect(inv.looted.get('canned_beans')).toBe(1);
+  });
+
+  it('carries the counted units through stack splits and counts new units only', () => {
+    const { inv, cupboard } = kitchen();
+    const nails = inv.create('nails', 20);
+    const furniture = { kind: 'furniture', entity: cupboard, pocket: 0 } as const;
+    const pile = { kind: 'pile', pos: [0, 0, 0] as [number, number, number] } as const;
+    expect(inv.add(nails, furniture)).toBe(true);
+    inv.entities.markSearched(cupboard);
+
+    expect(inv.move(nails, pile, 8).ok).toBe(true);
+    const firstTake = inv.pileAt(pile.pos)!.items.find(({ item }) => item.type === 'nails')!.item;
+    expect(firstTake.lootedCount).toBe(8);
+    expect(inv.move(firstTake, furniture).ok).toBe(true);
+    expect(nails).toMatchObject({ count: 20, lootedCount: 8 });
+    expect(inv.move(nails, pile, 5).ok).toBe(true);
+    expect(inv.looted.get('nails')).toBe(8);
+
+    expect(inv.move(nails, pile).ok).toBe(true);
+    expect(inv.looted.get('nails')).toBe(20);
+    expect(inv.pileAt(pile.pos)!.items.find(({ item }) => item.type === 'nails')!.item).toMatchObject({
+      count: 20,
+      lootedCount: 20,
+    });
+  });
+
   it('is out of reach when the game says so', () => {
     const { inv, hoodie, cupboard, beans } = kitchen();
     inv.entities.markSearched(cupboard);

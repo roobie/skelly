@@ -1,6 +1,6 @@
 import { InstancedMesh, Matrix4, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { BODY_REGIONS, type BodyWounds } from '../src/core/body.ts';
+import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { HitImpulse, Zombie } from '../src/core/zombies.ts';
@@ -10,6 +10,8 @@ import { PLAYER_BODY_REAR_OFFSET, PLAYER_REGION_BOXES } from '../src/render/play
 const floor = (_x: number, y: number, _z: number) => y < 0;
 // A heavy downward hit just above the floor, so most droplets land within a few updates.
 const lowHit: HitImpulse = { point: [0.5, 0.05, 0.5], direction: [0, -1, 0], impulse: 4 };
+/** A wound dripping at the base rate and size. */
+const BASE_DRIP = { rate: 1, size: 1 };
 
 describe('Gore', () => {
   it('starts at most the per-frame budget of droplets between two updates, however much is sprayed', () => {
@@ -24,22 +26,14 @@ describe('Gore', () => {
   it.each(BODY_REGIONS)('starts $0 drips inside the drawn region in both views', (region) => {
     const yaw = 0.37;
     const playerPos: [number, number, number] = [4, 2, 7];
-    const wounds: BodyWounds = {
-      head: null,
-      torso: null,
-      leftArm: null,
-      rightArm: null,
-      leftLeg: null,
-      rightLeg: null,
-    };
-    wounds[region] = { bleeding: true, infection: 'none', infectionGameSeconds: 0, infectionAtRisk: false };
+    const drip = (bleeding: BodyRegion) => (bleeding === region ? BASE_DRIP : undefined);
 
     const dripPosition = (thirdPerson: boolean): Vector3 => {
       const gore = new Gore(BLOCK_SIZE);
       gore.update(1, floor, {
         zombies: new MapEntityStore<Zombie>(),
         listener: playerPos,
-        player: { pos: playerPos, yaw, wounds, thirdPerson },
+        player: { pos: playerPos, yaw, drip, thirdPerson },
       });
       expect(gore.activeDroplets).toBe(1);
       const mesh = gore.group.children.find((child): child is InstancedMesh => child instanceof InstancedMesh);
@@ -80,36 +74,22 @@ describe('Gore', () => {
     assertWithinDrawnRegion(dripPosition(true), true);
   });
 
-  it('stops player wound drips after treatment', () => {
+  it('stops player wound drips once the wound stops bleeding', () => {
     const gore = new Gore(1);
-    const wounds = {
-      head: null,
-      torso: null,
-      leftArm: { bleeding: true, infection: 'none' as const, infectionGameSeconds: 0, infectionAtRisk: false },
-      rightArm: null,
-      leftLeg: null,
-      rightLeg: null,
-    };
     const bodies: GoreBodies = {
       zombies: new MapEntityStore<Zombie>(),
       listener: [0, 0, 0],
       player: {
         pos: [0, 0, 0],
         yaw: 0,
-        wounds,
+        drip: (region) => (region === 'leftArm' ? BASE_DRIP : undefined),
         thirdPerson: false,
       },
     };
 
     gore.update(1, floor, bodies);
     expect(gore.activeDroplets).toBeGreaterThan(0);
-    gore.update(3, floor, {
-      ...bodies,
-      player: {
-        ...bodies.player!,
-        wounds: { ...wounds, leftArm: { ...wounds.leftArm!, bleeding: false } },
-      },
-    });
+    gore.update(3, floor, { ...bodies, player: { ...bodies.player!, drip: () => undefined } });
     expect(gore.activeDroplets).toBe(0);
     gore.dispose();
   });

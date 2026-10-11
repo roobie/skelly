@@ -400,7 +400,7 @@ try {
     await page.waitForFunction(() => globalThis.firefoxUiTest.session.queue.jobs.length === 0, null, { timeout: 5000 });
     await pressAction(page, 'ui.inventory-toggle');
   };
-  const floorItem = page.locator('#inventory .inv-grid[data-target^="pile:"] .inv-item').filter({ hasText: 'Bandage' });
+  const floorItem = page.locator('#inventory .inv-grid[data-target^="pile:"] .inv-item[title^="Bandage,"]');
   const pocketTarget = page.locator('#inventory .inv-grid[data-target="pocket:1:0"]');
   assert.equal(await floorItem.count(), 1, 'spawned bandage is in the floor pile');
   const [youBox, pocketBox] = await Promise.all([
@@ -420,9 +420,7 @@ try {
   await page.waitForFunction(
     () =>
       [...document.querySelectorAll('#inventory .inv-item')].some(
-        (item) =>
-          item.querySelector('.inv-item-name')?.textContent === 'Bandage' &&
-          item.closest('.inv-grid')?.dataset.target === 'pocket:1:0',
+        (item) => item.title.startsWith('Bandage,') && item.closest('.inv-grid')?.dataset.target === 'pocket:1:0',
       ),
     null,
     { timeout: 5000 },
@@ -433,9 +431,7 @@ try {
   await page.waitForFunction(
     () =>
       [...document.querySelectorAll('#inventory .inv-item')].some(
-        (item) =>
-          item.querySelector('.inv-item-name')?.textContent === 'Can of beans' &&
-          item.closest('.inv-grid')?.dataset.target === 'pocket:1:1',
+        (item) => item.title.startsWith('Can of beans,') && item.closest('.inv-grid')?.dataset.target === 'pocket:1:1',
       ),
     null,
     { timeout: 5000 },

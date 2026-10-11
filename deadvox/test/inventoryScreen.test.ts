@@ -96,9 +96,10 @@ function setup(contentRegistry = registry) {
   });
   const notices: string[] = [];
   const refusals: string[] = [];
-  let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0%';
+  let needs = 'health 100% · stamina 100% · food 100% · water 100% · fatigue 0';
   let lastPayload: ReplayActionPayload | undefined;
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
+  let alarm: { gameHour: number | undefined } | undefined;
   const hooks = {
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
     feet: () => [0, 0, 0] as [number, number, number],
@@ -128,6 +129,9 @@ function setup(contentRegistry = registry) {
         craftContinue: () => undefined,
         craftStop: () => undefined,
         wait: () => undefined,
+        setWakeGameHour: (gameHour) => {
+          alarm = alarm && { gameHour };
+        },
         cancelItemThrow: () => undefined,
         throwItem: () => undefined,
       });
@@ -138,8 +142,9 @@ function setup(contentRegistry = registry) {
     describe: (_item: typeof beans) => ['test description'],
     workOptions: (_uid: number): WorkOption[] => [],
     character: () => character,
-    body: () => body.snapshotState(),
+    body: () => body,
     needs: () => needs,
+    wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
     attachmentCandidates: (_firearmUid: number, _slotId: string) => [beans],
   };
@@ -165,6 +170,9 @@ function setup(contentRegistry = registry) {
     },
     setNeeds: (value: string) => {
       needs = value;
+    },
+    carryAlarm: () => {
+      alarm = { gameHour: undefined };
     },
   };
 }
@@ -228,6 +236,134 @@ describe('inventory screen Lit rendering', () => {
     expect(plan.merge).toBe(visibleStack);
   });
 
+  it('shows distinct item names in grid cells and uses the same name in the drag ghost', () => {
+    const items = new Map(registry.items);
+    const alphaName = 'Can of beans';
+    const betaName = 'Box of matches';
+    items.set('fixture_inventory_alpha', {
+      id: 'fixture_inventory_alpha',
+      name: alphaName,
+      category: 'medical',
+      weight: 1,
+      size: [1, 1],
+    });
+    items.set('fixture_inventory_beta', {
+      id: 'fixture_inventory_beta',
+      name: betaName,
+      category: 'medical',
+      weight: 1,
+      size: [1, 1],
+    });
+    const { root, screen, inv } = setup({ ...registry, items });
+    const alpha = inv.create('fixture_inventory_alpha');
+    const beta = inv.create('fixture_inventory_beta');
+    const handItem = inv.create('fixture_inventory_alpha');
+    const pos: [number, number, number] = [1, 0, 0];
+    if (
+      !(
+        inv.add(alpha, { kind: 'pile', pos, at: { x: 0, y: 0, rotated: false } }) &&
+        inv.add(beta, { kind: 'pile', pos, at: { x: 1, y: 0, rotated: false } }) &&
+        inv.add(handItem, { kind: 'hand', side: 'left' })
+      )
+    ) {
+      throw new Error('Could not place inventory display fixtures');
+    }
+    screen.update();
+
+    const cells = [alpha, beta].map((item) => root.querySelector<HTMLElement>(`.inv-item[data-uid="${item.uid}"]`)!);
+    const names = cells.map((cell) => cell.querySelector('.inv-item-name')?.textContent?.trim() ?? '');
+    const handNode = root.querySelector<HTMLElement>(`.inv-item-slot[data-uid="${handItem.uid}"]`);
+    expect(names[0]).not.toBe(names[1]);
+    expect(cells[0]!.title.startsWith(alphaName)).toBe(true);
+    expect(cells[1]!.title.startsWith(betaName)).toBe(true);
+    expect(handNode?.querySelector('.inv-item-name')?.textContent).toBe(inv.name(handItem));
+
+    cells[0]!.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+    );
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    const ghost = document.querySelector<HTMLElement>('.inv-ghost');
+    expect(ghost?.textContent?.trim()).toBe(names[0]);
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    screen.close();
+  });
+
+  // The browser breaks and clips a grid name (style.css, `.inv-item-name`), so the screen hands it the whole name.
+  it('renders whole grid names and runs tall items along the long edge', () => {
+    const items = new Map(registry.items);
+    const fixtures = [
+      { id: 'fixture_tall_name', name: 'Fixture baseball bat', size: [1, 4] as [number, number] },
+      {
+        id: 'fixture_long_word_name',
+        name: 'Fixture extraordinarilylongword',
+        size: [1, 1] as [number, number],
+      },
+    ];
+    for (const fixture of fixtures) {
+      items.set(fixture.id, {
+        id: fixture.id,
+        name: fixture.name,
+        category: 'misc',
+        weight: 1,
+        size: fixture.size,
+      });
+    }
+    const { root, screen, inv } = setup({ ...registry, items });
+    const position: [number, number, number] = [1, 0, 0];
+    const placed = fixtures.map((fixture, x) => {
+      const item = inv.create(fixture.id);
+      if (!inv.add(item, { kind: 'pile', pos: position, at: { x, y: 0, rotated: false } })) {
+        throw new Error(`Could not place ${fixture.id} display fixture`);
+      }
+      return { fixture, item };
+    });
+    screen.update();
+
+    for (const { fixture, item } of placed) {
+      const node = root.querySelector<HTMLElement>(`.inv-item[data-uid="${item.uid}"]`)!;
+      expect(node.querySelector('.inv-item-name')?.textContent).toBe(fixture.name);
+      expect(node.classList.contains('inv-item-tall')).toBe(fixture.size[1] > fixture.size[0]);
+    }
+    screen.close();
+  });
+
+  it('marks successful and refused drop previews with distinct shapes', () => {
+    const { root, screen, beans } = setup();
+    const beansSlot = root.querySelector<HTMLElement>(`.inv-item-slot[data-uid="${beans.uid}"]`)!;
+    const floorGrid = root.querySelector<HTMLElement>('.inv-grid[data-target^="pile:"]')!;
+    const wornSlot = root.querySelector<HTMLElement>('.inv-slot-worn[data-target]')!;
+    let hitTarget: HTMLElement = floorGrid;
+    const hitTest = vi.spyOn(document, 'elementsFromPoint').mockImplementation(() => [hitTarget]);
+
+    beansSlot.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 10, clientY: 10 }),
+    );
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    expect(floorGrid.dataset.dropShape).toBe('will-land');
+    const acceptedMark = floorGrid.dataset.dropMark ?? '';
+    expect(acceptedMark).not.toBe('');
+
+    hitTarget = wornSlot;
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    expect(wornSlot.dataset.dropShape).toBe('blocked');
+    const refusedMark = wornSlot.dataset.dropMark ?? '';
+    expect(refusedMark).not.toBe('');
+    expect(refusedMark).not.toBe(acceptedMark);
+    globalThis.window.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, clientX: 30, clientY: 10 }),
+    );
+    hitTest.mockRestore();
+    screen.close();
+  });
+
   it('opens directly on a requested tab and remembers it across toggles', () => {
     const { screen, root } = setup();
     screen.close();
@@ -252,6 +388,29 @@ describe('inventory screen Lit rendering', () => {
     expect(panel.querySelectorAll('button')).toHaveLength(1);
     button!.click();
     expect(lastPayload()).toEqual({ kind: 'action.wait' });
+  });
+  it('offers a wake hour only while an alarm is carried, stepping it through the replay owner', () => {
+    const { screen, root, lastPayload, carryAlarm } = setup();
+    screen.selectTab('actions');
+    const panel = root.querySelector<HTMLElement>('[data-tab-panel="actions"]')!;
+    expect(panel.querySelector('[data-wake-at]')).toBeNull();
+    carryAlarm();
+    screen.update();
+    const shown = () => panel.querySelector('[data-wake-at]')?.textContent;
+    const step = (action: 'wake-earlier' | 'wake-later') => {
+      panel.querySelector<HTMLButtonElement>(`button[data-action="${action}"]`)!.click();
+      screen.update();
+    };
+    const whenRested = shown();
+    expect(whenRested).toBeTruthy();
+    step('wake-earlier');
+    expect(lastPayload()).toEqual({ kind: 'action.wake-hour', gameHour: 23 });
+    expect(shown()).not.toBe(whenRested);
+    step('wake-later');
+    expect(lastPayload()).toEqual({ kind: 'action.wake-hour', gameHour: null });
+    expect(shown()).toBe(whenRested);
+    step('wake-later');
+    expect(lastPayload()).toEqual({ kind: 'action.wake-hour', gameHour: 0 });
   });
   it('routes a hotkey to an open screen before its generic action handler', () => {
     const { screen } = setup();
@@ -314,9 +473,9 @@ describe('inventory screen Lit rendering', () => {
     screen.selectTab('crafting');
     expect(needs()).toContain('food 100%');
 
-    setNeeds('health 80% · stamina 60% · food 40% · water 20% · fatigue 90%');
+    setNeeds('health 80% · stamina 60% · food 40% · water 20% · fatigue 130');
     screen.update();
-    expect(needs()).toContain('fatigue 90%');
+    expect(needs()).toContain('fatigue 130');
   });
 
   it('renders a skill level from the live character progression', () => {
@@ -390,6 +549,7 @@ describe('inventory screen Lit rendering', () => {
         craftContinue: () => undefined,
         craftStop: () => undefined,
         wait: () => undefined,
+        setWakeGameHour: () => undefined,
         cancelItemThrow: () => undefined,
         throwItem: () => undefined,
       });

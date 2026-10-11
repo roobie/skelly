@@ -270,6 +270,45 @@ try {
     window.__pointerCalls.request = 0;
   })()`);
   await waitFor(() => evaluate("Boolean(document.querySelector('#debug-ui-root'))"), 'post-acceptance debug UI mount');
+  // The tokens go to a document of the probe's own (an iframe with the game's style sheet), so the live game's root
+  // and HUD stay untouched. Spacing and scale are measured apart, so neither passes on the other's change.
+  const uiTokens = await evaluate(`(async () => {
+    const { buildRegistry } = await import('/src/core/content.ts');
+    const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 640px; height: 360px; visibility: hidden';
+    frame.srcdoc = '<!doctype html><link rel="stylesheet" href="/src/ui/style.css"><button class="inv-option">Probe</button>';
+    const loaded = new Promise((done) => frame.addEventListener('load', done, { once: true }));
+    document.body.append(frame);
+    await loaded;
+    const probe = frame.contentDocument.querySelector('.inv-option');
+    const measure = (tuning) => {
+      const { registry, issues } = buildRegistry([{ source: 'ui-probe.json', data: { ui: [{ id: 'core', ...tuning }] } }]);
+      if (issues.length) throw new Error('Invalid UI probe fixture: ' + JSON.stringify(issues));
+      applyUiTokens(registry, frame.contentDocument.documentElement);
+      const style = frame.contentWindow.getComputedStyle(probe);
+      return { padding: Number.parseFloat(style.paddingLeft), fontSize: Number.parseFloat(style.fontSize) };
+    };
+    const base = measure({ spacing: 1, hudScale: 1 });
+    const spaced = measure({ spacing: 2, hudScale: 1 });
+    const scaled = measure({ spacing: 1, hudScale: 1.25 });
+    frame.remove();
+    return { base, spaced, scaled };
+  })()`);
+  const near = (actual, expected) => Math.abs(actual - expected) < 0.01;
+  assert.ok(
+    uiTokens.base.padding > 0 && uiTokens.base.fontSize > 0,
+    `the probe takes the game's style sheet: ${JSON.stringify(uiTokens)}`,
+  );
+  assert.ok(
+    near(uiTokens.spaced.padding, 2 * uiTokens.base.padding) && near(uiTokens.spaced.fontSize, uiTokens.base.fontSize),
+    `spacing scales padding and leaves text size alone: ${JSON.stringify(uiTokens)}`,
+  );
+  assert.ok(
+    near(uiTokens.scaled.fontSize, 1.25 * uiTokens.base.fontSize) &&
+      near(uiTokens.scaled.padding, 1.25 * uiTokens.base.padding),
+    `HUD scale scales text and spacing together: ${JSON.stringify(uiTokens)}`,
+  );
   graphics = await evaluate(`({
     renderMode: ${JSON.stringify(renderMode)},
     webglContextRequests: window.__webglContextRequests.slice(),
@@ -468,17 +507,20 @@ try {
     "[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)",
   );
   assert.ok(initialHudToggles.every(Boolean), 'HUD options start enabled');
-  const [statsOptionInitiallyChecked, clockOptionInitiallyChecked] = initialHudToggles;
-  const clockOption = "document.querySelectorAll('#hud-options input')[1]";
-  if (!(await evaluate(`${clockOption}.checked`))) {
-    await clickAt('#hud-options label:nth-of-type(2)');
+  const statsLabel = '#hud-options [data-hud-option="stats"]';
+  const clockLabel = '#hud-options [data-hud-option="clock"]';
+  const statsOption = `document.querySelector('${statsLabel} input')`;
+  const clockOption = `document.querySelector('${clockLabel} input')`;
+  const statsOptionInitiallyChecked = await evaluate(`${statsOption}.checked`);
+  const clockOptionInitiallyChecked = await evaluate(`${clockOption}.checked`);
+  if (!clockOptionInitiallyChecked) {
+    await clickAt(clockLabel);
   }
   assert.equal(await evaluate(`${clockOption}.checked`), true, 'clock is enabled for the pause readout');
-  const hudOptionBeforeClick = await evaluate("document.querySelectorAll('#hud-options input')[0].checked");
-  await clickAt('#hud-options label:nth-of-type(1)');
+  await clickAt(statsLabel);
   assert.equal(
-    await evaluate("document.querySelectorAll('#hud-options input')[0].checked"),
-    !hudOptionBeforeClick,
+    await evaluate(`${statsOption}.checked`),
+    !statsOptionInitiallyChecked,
     'drawn cursor toggles F9 menu controls from either default state',
   );
   await delay(300);
@@ -504,18 +546,17 @@ try {
     'audio volume remains selected when the menu reopens',
   );
   const clockOptionBeforeReset = await evaluate(`${clockOption}.checked`);
-  await clickAt('#hud-options label:nth-of-type(2)');
+  await clickAt(clockLabel);
   assert.equal(
     await evaluate(`${clockOption}.checked`),
     !clockOptionBeforeReset,
     'drawn cursor toggles the clock option',
   );
   if ((await evaluate(`${clockOption}.checked`)) !== clockOptionInitiallyChecked) {
-    await clickAt('#hud-options label:nth-of-type(2)');
+    await clickAt(clockLabel);
   }
-  const statsOption = "document.querySelectorAll('#hud-options input')[0]";
   if ((await evaluate(`${statsOption}.checked`)) !== statsOptionInitiallyChecked) {
-    await clickAt('#hud-options label:nth-of-type(1)');
+    await clickAt(statsLabel);
   }
   assert.deepEqual(
     await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)"),
@@ -717,7 +758,7 @@ try {
   );
   await press('Tab', 'Tab', 9);
   const nearbyAfterEnter = await evaluate(
-    '[...document.querySelectorAll(\'#inventory [data-pane="around"] .inv-item-name\')].map((item) => item.textContent)',
+    "[...document.querySelectorAll('#inventory [data-pane=\"around\"] .inv-item')].map((item) => item.title.split(',')[0])",
   );
   assert.ok(nearbyAfterEnter.includes(selectedSpawnName), 'Enter spawned the selected item');
   await press('Tab', 'Tab', 9);
@@ -730,7 +771,7 @@ try {
   await press('Tab', 'Tab', 9);
   assert.deepEqual(
     await evaluate(
-      '[...document.querySelectorAll(\'#inventory [data-pane="around"] .inv-item-name\')].map((item) => item.textContent)',
+      "[...document.querySelectorAll('#inventory [data-pane=\"around\"] .inv-item')].map((item) => item.title.split(',')[0])",
     ),
     nearbyAfterEnter,
     'Tab dismissed without spawning',
@@ -814,7 +855,7 @@ try {
       overflow: pane.scrollHeight - pane.clientHeight,
       uid: visible?.dataset.uid,
       target: visible?.closest('.inv-grid')?.dataset.target,
-      name: visible?.querySelector('.inv-item-name')?.textContent,
+      name: visible?.title.split(',')[0],
     };
   })()`);
   assert.ok(inventoryScroll.overflow > 1, 'nearby pane has enough items to scroll');
@@ -855,7 +896,7 @@ try {
   await dragInventoryDivider(0.5);
   await page.setViewportSize({ width: 1280, height: 900 });
   const transfer = await evaluate(`(() => {
-    const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans');
+    const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.title.startsWith('Can of beans,'));
     const legs = [...document.querySelectorAll('#inventory .inv-worn')].find((node) => node.querySelector('.inv-slot-label')?.textContent === 'Legs');
     const grid = [...legs.querySelectorAll('.inv-grid')].find((node) => !node.querySelector('[data-uid]'));
     const around = document.querySelector('#inventory [data-pane="around"]');
@@ -959,7 +1000,7 @@ try {
   );
   const transferTarget = () =>
     evaluate(
-      "[...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans')?.closest('.inv-grid')?.dataset.target",
+      "[...document.querySelectorAll('#inventory .inv-item')].find((node) => node.title.startsWith('Can of beans,'))?.closest('.inv-grid')?.dataset.target",
     );
   await waitFor(
     () => transferTarget().then((target) => target === transfer.target),

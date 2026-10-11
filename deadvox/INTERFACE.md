@@ -4,6 +4,7 @@ description: Design for what the game's interface may show and say to the player
 read_if:
   - you're deciding what the interface may tell the player and in what voice
   - you're changing player-facing prompts, feedback, HUD language, or bleeding cues
+  - you're changing what the HUD options or the HUD toggle hide
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
   - you're changing how playtesters hand back metrics or replays
   - you're changing UI layer order, overlay stacking, or in-game choice controls such as the combo box
@@ -216,7 +217,7 @@ melee combat governs block success. The tiered practice contract is in
 
 ## HUD
 
-Blood loss can progress without immediate health loss, so make it legible during play; `playNeedsText` in `src/ui/playHud.ts` pairs it with health and flags the affected region.
+Blood loss can progress without immediate health loss, so make it legible during play; `playNeedsText` in `src/ui/playHud.ts` pairs it with health and gives each bleeding region one line with its tier's content label. A tier that content marks `warn` gets a warning sign; one that doesn't stays quiet, because a wound that hardly needs mention shouldn't alarm. The bleeding notice is class 3: when the worst bleeding worsens to a tier with a content `notice`, it speaks that line in the character's voice; see `src/game/playerBleedingNotice.ts`, `PlayerBleedingNotice`. Bleeding's refusal of time compression is a class-3 refusal, with content's `bleeding.refusal` line; see `src/core/body.ts`, `Body.compressionRefusal`.
 
 The optional Handling progress HUD reuses its existing progress card for a held
 item throw. Its fill follows throw charge in simulation time; a labelled marker
@@ -233,6 +234,8 @@ meter is shown only while the book is open; closing it pauses the action and
 keeps its progress. See `src/ui/reading.ts`, `ReadingProgress` and `mountReading`.
 
 ## Development and playtest
+
+An uncaught runtime error or unhandled rejection opens a blocking meta panel. During gameplay the game stops, releases pointer lock, refuses to resume, and prevents further saves rather than trying to recover. The panel shows the full error text for copying and offers a local report download; nothing is sent automatically. The downloaded report may include the build revision, world identity and game clock, browser user agent, and the same recent replay and playtest metrics the F9 menu exports. See `src/ui/errorReport.ts`, `installErrorReportHandler` and `errorReportText`, and `src/game/play.ts`, `bindPlayErrorReport` and `stopPlayAfterError`.
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in
   `src/debug` and load only there. They can say anything. The target ping and the
@@ -273,6 +276,16 @@ keeps its progress. See `src/ui/reading.ts`, `ReadingProgress` and `mountReading
   and the rest card's stop hint ignore those options ("How it's encoded"). The
   crosshair follows its HUD option; a separate center X is part of `?debug=1` and
   never ships.
+- **The HUD toggle hides everything the HUD options cover, at once.** The HUD
+  options panel is the list of what the HUD owns, so the hold hides every element
+  on it, the crosshair included. It also hides the throw-stance cue, which
+  follows the interaction option. The world, the bodily cues and a held compass's
+  lit screen stay, because they belong to the world rather than the HUD. So do
+  the inventory help line and the rest card's stop hint, which ignore the options.
+  Hiding is a separate switch in the options panel that leaves each option as
+  set, so showing the HUD again restores exactly what was shown. The switch
+  persists with the options. See `src/ui/hudOptions.ts`, `HudSettings` and
+  `hudVisibility`.
 
 ## UI layers
 
@@ -292,7 +305,7 @@ In-game choices use the game's own combo box (`src/ui/comboBox.ts`, `comboBox`),
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; its key names come from the bindings, and it moves to the hint channel with "Order of work" item 2 |
-| Main menu (F9) | meta | meta | fine; settings, help and the playtest hand-back live here |
+| Main menu (F9 or Escape after death) | meta | meta | Settings, help and the playtest hand-back live here. F9 and Escape can open it over the death card so testers can export metrics and a replay before starting another world; a separate death-card feedback link keeps reporting available without choosing New world. See `src/ui/menuState.ts`, `activeMenuState`, `src/game/play.ts`, `die`, and `src/ui/death.ts`, `showDeath`. |
 | Inventory screen | meta | meta | grids stay; numbers remain available on request per DESIGN.md "numbers are there when you look" |
 | Refusal notices ("Quickbar 1 is empty") | voice | voice | none: they name no key or procedure (`src/game/play.ts`, `showRefusal`) |
 | Drawn menu cursor | meta | meta | fine |

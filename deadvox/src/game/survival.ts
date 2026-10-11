@@ -186,7 +186,7 @@ export class Survival {
     return this.sim.actions.beginTreatment(
       treatment.region,
       item.uid,
-      treatment.kind,
+      treatment.itemType,
       this.sim.body.tuning.treatmentSimSeconds,
     );
   }

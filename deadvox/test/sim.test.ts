@@ -10,14 +10,36 @@ import {
   simSecondsPerHour,
   skipTarget,
 } from '../src/core/clock.ts';
-import { COMPRESSION, SKIP_COMPRESSION } from '../src/core/compression.ts';
+import { SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
-import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
+import { awakeRates, SPAWN_NEEDS } from '../src/core/needs.ts';
+import type { BodyTuningDef, TreatmentDef } from '../src/core/schema.ts';
 import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
+const { tiers } = BODY_TUNING_FIXTURE.bleeding;
+/** Fixture tuning where every piercing hit opens the mildest tier, for tests that need a wound. */
+const PIERCE_ALWAYS_BLEEDS: BodyTuningDef = {
+  ...BODY_TUNING_FIXTURE,
+  bleeding: {
+    ...BODY_TUNING_FIXTURE.bleeding,
+    tiers: tiers.map((tier, index) => ({ ...tier, chance: { ...tier.chance, pierce: index === 0 ? 1 : 0 } })),
+  },
+};
+/** The test's own treatments by item type; the dressing closes every fixture band at any roll. */
+const TREATMENTS: Readonly<Record<string, TreatmentDef>> = {
+  dressing: { bleeding: 100 },
+  antiseptic: { infection: { stages: ['early'], chance: 1 } },
+  antibiotics: { infection: { stages: ['advanced'], chance: 1 } },
+};
+const treatmentHooks = (sim: Simulation): NonNullable<Simulation['actions']['treatment']> => ({
+  validate: (region, _itemUid, itemType) =>
+    sim.body.canTreat(region, TREATMENTS[itemType]!) ? undefined : 'Treatment no longer applies',
+  finish: (region, _itemUid, itemType) =>
+    sim.body.treat(region, TREATMENTS[itemType]!, () => 0.5) ? true : 'Treatment no longer applies',
+});
 const HOUR = simSecondsPerHour(defaultClock);
 
 /** Runs 60 fps frames until the simulation reaches `until`. Returns the real seconds taken. */
@@ -70,10 +92,10 @@ describe('Simulation', () => {
       },
     });
     expect(sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
-    for (let frames = 0; sim.compression.c < COMPRESSION.cap && frames < 120; frames += 1) {
+    for (let frames = 0; sim.compression.c < COMPRESSION_CAPS_FIXTURE.sleep && frames < 120; frames += 1) {
       advanceLiveFrame(sim, realSeconds(FRAME));
     }
-    expect(sim.compression.c).toBe(COMPRESSION.cap);
+    expect(sim.compression.c).toBe(COMPRESSION_CAPS_FIXTURE.sleep);
     ticks = 0;
     const recordedCompression = sim.compression.c;
 
@@ -111,19 +133,144 @@ describe('Simulation', () => {
   });
 
   it('defaults unresolved hits to the torso region', () => {
-    const sim = new Simulation({ seed: 1 });
-    sim.hit(1, 'a bite', undefined, { bleeding: true });
+    const sim = new Simulation({ seed: 1, bodyTuning: PIERCE_ALWAYS_BLEEDS });
+    sim.hit(1, 'a bite', undefined, { kind: 'pierce' });
 
     expect(sim.body.regionDamage.torso).toBeGreaterThan(0);
-    expect(sim.body.wounds.torso?.bleeding).toBe(true);
+    expect(sim.body.wounds.torso?.bleeding).toBeGreaterThan(0);
+  });
+
+  it('dies of blood loss when an untreated wound empties the blood', () => {
+    const sim = new Simulation({ seed: 1 });
+    const critical = fixtureTier('critical');
+    sim.body.impact(1, 'leftLeg', { bleeding: critical, infectionAtRisk: false });
+
+    sim.scheduler.advance((sim.body.blood / tiers[critical]!.bloodLossPerSimSecond) * 1.1);
+
+    expect(sim.body.blood).toBe(0);
+    expect(sim.dead?.cause).toBe('blood loss');
+  });
+
+  it('keeps debug compression running while bleeding refuses a player wait', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.body.impact(1, 'leftLeg', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+
+    const startTime = sim.time;
+    expect(sim.compress()).toEqual({ ok: true });
+    runUntil(sim, startTime + 1);
+    expect(sim.time).toBeGreaterThan(startTime);
+    expect(sim.compression.active).toBe(true);
+    expect(sim.compression.interruption).toBeUndefined();
+
+    sim.compression.stop();
+    expect(sim.actions.startWait()).toBe(BODY_TUNING_FIXTURE.bleeding.refusal);
+    expect(sim.compression.active).toBe(false);
+
+    expect(sim.body.treat('leftLeg', TREATMENTS.dressing!, () => 0.5)).toBe(true);
+    expect(sim.actions.startWait()).toBeUndefined();
+    expect(sim.compression.active).toBe(true);
+  });
+
+  it.each(['wait', 'rest', 'sleep'] as const)(
+    'stops a running %s when a bleeding wound reaches the compression threshold',
+    (kind) => {
+      const sim = new Simulation({ seed: 1 });
+      const notices: string[] = [];
+      sim.actions.notice = (text) => notices.push(text);
+      const refused = kind === 'wait' ? sim.actions.startWait() : sim.actions.startRest(kind, -10, 1);
+      expect(refused).toBeUndefined();
+      expect(sim.compression.active).toBe(true);
+
+      sim.body.impact(1, 'leftLeg', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+      sim.frame(1);
+
+      expect(sim.compression.active).toBe(false);
+      if (kind === 'sleep') {
+        expect(sim.actions.job).toBeUndefined();
+        expect(notices.some((text) => text.includes(BODY_TUNING_FIXTURE.bleeding.refusal))).toBe(true);
+      } else {
+        expect(sim.compression.interruption).toBe(BODY_TUNING_FIXTURE.bleeding.refusal);
+        expect(sim.actions.job).toMatchObject({ jobType: kind, stopped: true });
+      }
+    },
+  );
+
+  it('closes a wound by itself while asleep above the awake fatigue ceiling', () => {
+    const { bleeding } = BODY_TUNING_FIXTURE;
+    const minor = fixtureTier('minor');
+    const sim = new Simulation({
+      seed: 1,
+      bodyTuning: {
+        ...BODY_TUNING_FIXTURE,
+        bleeding: {
+          ...bleeding,
+          blockCompressionAtLossPerSimSecond: tiers[fixtureTier('serious')]!.bloodLossPerSimSecond,
+        },
+      },
+    });
+    Object.assign(sim.needs, { calories: 100, hydration: 100, fatigue: 150 });
+    sim.body.impact(0, 'leftLeg', { bleeding: minor, infectionAtRisk: false });
+    expect(sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
+
+    runUntil(sim, sim.time + tiers[minor]!.closeSimSeconds * 2);
+
+    expect(sim.needs.fatigue).toBeGreaterThan(BODY_TUNING_FIXTURE.healthRecoveryFatigueCeiling.awake!);
+    expect(sim.body.worstBleedingTier).toBeUndefined();
+  });
+
+  it("refuses time compression only once bleeding reaches content's loss rate", () => {
+    const serious = fixtureTier('serious');
+    const { bleeding } = BODY_TUNING_FIXTURE;
+    const sim = new Simulation({
+      seed: 1,
+      bodyTuning: {
+        ...BODY_TUNING_FIXTURE,
+        bleeding: { ...bleeding, blockCompressionAtLossPerSimSecond: tiers[serious]!.bloodLossPerSimSecond },
+      },
+    });
+    sim.body.impact(1, 'leftLeg', { bleeding: fixtureTier('minor'), infectionAtRisk: false });
+    expect(sim.actions.startWait()).toBeUndefined();
+    sim.actions.stop();
+
+    sim.body.impact(1, 'rightLeg', { bleeding: serious, infectionAtRisk: false });
+    expect(sim.actions.startWait()).toBe(bleeding.refusal);
+  });
+
+  it('closes a wound by itself only while the needs let the body recover', () => {
+    const minor = fixtureTier('minor');
+    const { closeSimSeconds } = tiers[minor]!;
+    const fed = new Simulation({ seed: 1 });
+    const starving = new Simulation({ seed: 1 });
+    starving.needs.calories = 0;
+    for (const sim of [fed, starving]) {
+      sim.body.impact(0, 'leftArm', { bleeding: minor, infectionAtRisk: false });
+      sim.scheduler.advance(closeSimSeconds + 1);
+    }
+
+    expect(fed.body.wounds.leftArm?.bleeding).toBe(0);
+    expect(starving.body.wounds.leftArm?.bleeding).toBe(minor + 1);
+  });
+
+  it('still treats a bleeding wound, at 1×', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.body.impact(1, 'leftLeg', { bleeding: fixtureTier('critical'), infectionAtRisk: false });
+    sim.actions.treatment = treatmentHooks(sim);
+    const duration = BODY_TUNING_FIXTURE.treatmentSimSeconds;
+
+    expect(sim.actions.beginTreatment('leftLeg', 1, 'dressing', duration)).toBeUndefined();
+    const realSecondsTaken = runUntil(sim, sim.time + duration + 1);
+
+    expect(realSecondsTaken).toBeGreaterThanOrEqual(duration);
+    expect(sim.actions.job).toBeUndefined();
+    expect(sim.body.wounds.leftLeg?.bleeding).toBe(0);
   });
 
   it('replays at-risk wound decisions from the seeded simulation RNG and saves the result', () => {
-    const first = new Simulation({ seed: 31 });
-    const replay = new Simulation({ seed: 31 });
+    const first = new Simulation({ seed: 31, bodyTuning: PIERCE_ALWAYS_BLEEDS });
+    const replay = new Simulation({ seed: 31, bodyTuning: PIERCE_ALWAYS_BLEEDS });
     for (const region of BODY_REGIONS) {
-      first.hit(1, 'a bite', region, { bleeding: true });
-      replay.hit(1, 'a bite', region, { bleeding: true });
+      first.hit(1, 'a bite', region, { kind: 'pierce' });
+      replay.hit(1, 'a bite', region, { kind: 'pierce' });
     }
 
     const firstRisks = Object.fromEntries(
@@ -133,7 +280,7 @@ describe('Simulation', () => {
       BODY_REGIONS.map((region) => [region, replay.body.wounds[region]?.infectionAtRisk]),
     );
     expect(firstRisks).toEqual(replayRisks);
-    const restored = new Simulation({ seed: 31 });
+    const restored = new Simulation({ seed: 31, bodyTuning: PIERCE_ALWAYS_BLEEDS });
     restored.restoreState(first.snapshotState());
     expect(
       Object.fromEntries(BODY_REGIONS.map((region) => [region, restored.body.wounds[region]?.infectionAtRisk])),
@@ -143,31 +290,26 @@ describe('Simulation', () => {
   it('uses the body tuning chance to decide which bleeding wounds are infection risks', () => {
     const noRisk = new Simulation({
       seed: 31,
-      bodyTuning: { ...BODY_TUNING_FIXTURE, infectionChance: 0 },
+      bodyTuning: { ...PIERCE_ALWAYS_BLEEDS, infectionChance: 0 },
     });
     const certainRisk = new Simulation({
       seed: 31,
-      bodyTuning: { ...BODY_TUNING_FIXTURE, infectionChance: 1 },
+      bodyTuning: { ...PIERCE_ALWAYS_BLEEDS, infectionChance: 1 },
     });
-    noRisk.hit(1, 'a bite', 'torso', { bleeding: true });
-    certainRisk.hit(1, 'a bite', 'torso', { bleeding: true });
+    noRisk.hit(1, 'a bite', 'torso', { kind: 'pierce' });
+    certainRisk.hit(1, 'a bite', 'torso', { kind: 'pierce' });
 
     expect(noRisk.body.wounds.torso?.infectionAtRisk).toBe(false);
     expect(certainRisk.body.wounds.torso?.infectionAtRisk).toBe(true);
   });
 
   it('resolves prompt antiseptic through the scheduler but requires antibiotics after its window', () => {
-    const onsetSimulation = new Simulation({ seed: 1 });
-    onsetSimulation.hit(1, 'a bite', 'head', { bleeding: true, infectionAtRisk: true });
+    const onsetSimulation = new Simulation({ seed: 1, bodyTuning: PIERCE_ALWAYS_BLEEDS });
+    onsetSimulation.hit(1, 'a bite', 'head', { kind: 'pierce', infectionAtRisk: true });
     const onsetSimSeconds = gameToSimSeconds(onsetSimulation.clock, BODY_TUNING_FIXTURE.infectionOnsetGameHours);
     onsetSimulation.scheduler.advance(onsetSimSeconds + 1);
-    expect(onsetSimulation.body.canTreat('head', 'antiseptic')).toBe(true);
-    onsetSimulation.actions.treatment = {
-      validate: (region, _itemUid, treatment) =>
-        onsetSimulation.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
-      finish: (region, _itemUid, treatment) =>
-        onsetSimulation.body.treat(region, treatment) ? true : 'Treatment no longer applies',
-    };
+    expect(onsetSimulation.body.canTreat('head', TREATMENTS.antiseptic!)).toBe(true);
+    onsetSimulation.actions.treatment = treatmentHooks(onsetSimulation);
     expect(
       onsetSimulation.actions.beginTreatment('head', 1, 'antiseptic', BODY_TUNING_FIXTURE.treatmentSimSeconds),
     ).toBeUndefined();
@@ -175,14 +317,14 @@ describe('Simulation', () => {
     expect(onsetSimulation.body.wounds.head?.infection).toBe('resolved');
     expect(onsetSimulation.actions.job).toBeUndefined();
 
-    const lateSimulation = new Simulation({ seed: 1 });
-    lateSimulation.hit(1, 'a bite', 'head', { bleeding: true, infectionAtRisk: true });
+    const lateSimulation = new Simulation({ seed: 1, bodyTuning: PIERCE_ALWAYS_BLEEDS });
+    lateSimulation.hit(1, 'a bite', 'head', { kind: 'pierce', infectionAtRisk: true });
     const infectionCutoffGameSeconds = gameSeconds(
       BODY_TUNING_FIXTURE.infectionOnsetGameHours + BODY_TUNING_FIXTURE.antisepticWindowGameHours,
     );
     lateSimulation.scheduler.advance(gameToSimSeconds(lateSimulation.clock, infectionCutoffGameSeconds) + 1);
-    expect(lateSimulation.body.canTreat('head', 'antiseptic')).toBe(false);
-    expect(lateSimulation.body.canTreat('head', 'antibiotics')).toBe(true);
+    expect(lateSimulation.body.canTreat('head', TREATMENTS.antiseptic!)).toBe(false);
+    expect(lateSimulation.body.canTreat('head', TREATMENTS.antibiotics!)).toBe(true);
   });
 
   it('gives the same clock and needs for a compressed and an uncompressed hour', () => {
@@ -199,9 +341,10 @@ describe('Simulation', () => {
     expect(fast.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * fast.time, 6);
     expect(plain.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * plain.time, 6);
     // Needs lag by at most one grown step: 30 s, 4 game minutes.
-    const tolerance = (Math.max(...Object.values(NEED_RATES).map(Math.abs)) * 4) / 60;
+    const rates = awakeRates(plain.body);
+    const tolerance = (Math.max(...Object.values(rates).map(Math.abs)) * 4) / 60;
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {
-      expect(plain.needs[need]).toBeCloseTo(SPAWN_NEEDS[need] + NEED_RATES[need], 6);
+      expect(plain.needs[need]).toBeCloseTo(SPAWN_NEEDS[need] + rates[need], 6);
       expect(Math.abs(fast.needs[need] - plain.needs[need])).toBeLessThanOrEqual(tolerance);
     }
   });
@@ -209,13 +352,13 @@ describe('Simulation', () => {
   it('keeps the cost per frame bounded under compression', () => {
     const sim = new Simulation({ seed: 1 });
     sim.compress();
-    runUntil(sim, 20); // ramp up
-    expect(sim.compression.c).toBe(COMPRESSION.cap);
+    runUntil(sim, 200); // ramp up
+    expect(sim.compression.c).toBe(COMPRESSION_CAPS_FIXTURE.wait);
     const before = sim.scheduler.tickCounts().get('needs')!;
-    advanceLiveFrame(sim, realSeconds(FRAME));
-    // One frame at 30× is half a simulation second: at most one needs tick, not 30.
+    const advanced = advanceLiveFrame(sim, realSeconds(FRAME));
+    // One frame at the cap is a few simulation seconds: at most one needs tick, not one per second.
+    expect(advanced).toBeLessThanOrEqual(sim.compression.limits.maxSimPerFrame);
     expect(sim.scheduler.tickCounts().get('needs')! - before).toBeLessThanOrEqual(1);
-    expect(sim.scheduler.stepOf('needs', COMPRESSION.cap)).toBe(30);
   });
 
   it('stops within one step of an interruption and waits for the player', () => {
@@ -234,9 +377,9 @@ describe('Simulation', () => {
       },
     });
     sim.compress();
-    runUntil(sim, 60);
-    fireAt = sim.time + 7.05;
-    advanceLiveFrame(sim, realSeconds(1)); // 30 simulation seconds at the cap
+    runUntil(sim, 200);
+    fireAt = sim.time + sim.compression.limits.maxSimPerFrame / 2;
+    advanceLiveFrame(sim, realSeconds(1)); // a full step-bounded frame at the cap
     expect(sim.compression.c).toBe(1);
     expect(sim.compression.interruption).toBe('You hear something outside');
     expect(sim.time).toBeCloseTo(firedAt[0]!, 9);
@@ -247,22 +390,6 @@ describe('Simulation', () => {
     advanceLiveFrame(sim, realSeconds(0.5));
     expect(sim.compression.c).toBeGreaterThan(1);
     expect(sim.compression.interruption).toBeUndefined();
-  });
-
-  it('refuses compression when unsafe, and interrupts when it stops being safe', () => {
-    let danger: string | undefined = 'Something is close';
-    const sim = new Simulation({ seed: 1, unsafe: () => danger });
-    expect(sim.compress()).toEqual({ ok: false, reason: 'Something is close' });
-    expect(sim.compression.active).toBe(false);
-
-    danger = undefined;
-    sim.compress();
-    runUntil(sim, 30);
-    expect(sim.compression.c).toBeGreaterThan(1);
-    danger = 'A shambler noticed you';
-    advanceLiveFrame(sim, realSeconds(FRAME));
-    expect(sim.compression.c).toBe(1);
-    expect(sim.compression.interruption).toBe('A shambler noticed you');
   });
 
   it('interrupts when a need becomes critical', () => {
@@ -321,21 +448,8 @@ describe('Simulation', () => {
       expect(skipTarget({ ratio: 4, start: 0 }, 10, 2)).toBe(10 + 2 * 900);
     });
 
-    it('advances the calendar by exactly the skipped game hours, danger notwithstanding', () => {
-      const sim = new Simulation({ seed: 1, unsafe: () => 'A shambler is close' });
-      expect(sim.compress().ok).toBe(false);
-      sim.ignoreUnsafe = true;
-      expect(sim.compress().ok).toBe(true);
-      const until = skipTarget(sim.clock, sim.time, 1);
-      runUntil(sim, until);
-      expect(sim.time).toBeCloseTo(until, 6);
-      expect(sim.compression.interruption).toBeUndefined();
-      expect(sim.calendar - calendarAt(defaultClock, 0)).toBeCloseTo(defaultClock.ratio * sim.time, 6);
-    });
-
     it('runs the needs for the whole span, so a long skip is cut short when one turns critical', () => {
       const sim = new Simulation({ seed: 1 });
-      sim.ignoreUnsafe = true;
       sim.compress();
       const until = skipTarget(sim.clock, sim.time, 23);
       for (let frames = 0; sim.compression.interruption === undefined && frames < 100_000; frames++) {
@@ -391,7 +505,6 @@ describe('Simulation', () => {
           ticks += 1;
         },
       });
-      sim.ignoreUnsafe = true;
       expect(sim.compress(SKIP_COMPRESSION).ok).toBe(true);
       const until = skipTarget(sim.clock, sim.time, 23);
       let frames = 0;
@@ -414,38 +527,20 @@ describe('Simulation', () => {
 
     it('reaches +1 h in under a second', () => {
       const sim = new Simulation({ seed: 1 });
-      sim.ignoreUnsafe = true;
       sim.compress(SKIP_COMPRESSION);
       expect(runUntil(sim, skipTarget(sim.clock, sim.time, 1))).toBeLessThan(1);
     });
 
-    it('keeps the normal cap for a later start without the skip limits', () => {
+    it('keeps the default cap for a later start without the skip limits', () => {
       const sim = new Simulation({ seed: 1 });
       sim.compress(SKIP_COMPRESSION);
       runUntil(sim, 200);
-      expect(sim.compression.c).toBeGreaterThan(COMPRESSION.cap);
+      expect(sim.compression.c).toBeGreaterThan(COMPRESSION_CAPS_FIXTURE.wait);
       sim.compression.stop();
       sim.compression.snap();
       sim.compress();
-      runUntil(sim, sim.time + 100);
-      expect(sim.compression.c).toBe(COMPRESSION.cap);
-    });
-
-    it('still stops at a real interruption, and refuses danger again once ignoreUnsafe is off', () => {
-      let danger: string | undefined = 'A shambler is close';
-      const sim = new Simulation({ seed: 1, unsafe: () => danger });
-      sim.ignoreUnsafe = true;
-      sim.compress();
-      sim.frame(FRAME, HOUR);
-      sim.emit({ kind: 'interrupt', reason: "You're hurt" });
-      sim.frame(FRAME, HOUR);
-      expect(sim.compression.interruption).toBe("You're hurt");
-
-      sim.compression.stop();
-      sim.ignoreUnsafe = false;
-      expect(sim.compress()).toEqual({ ok: false, reason: danger });
-      danger = undefined;
-      expect(sim.compress().ok).toBe(true);
+      runUntil(sim, sim.time + 200);
+      expect(sim.compression.c).toBe(COMPRESSION_CAPS_FIXTURE.wait);
     });
   });
 

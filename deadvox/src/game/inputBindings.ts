@@ -55,7 +55,7 @@ const entered: readonly InputContext[] = [
   'interrupted',
 ];
 const all: readonly InputContext[] = ['title', ...entered];
-export const HUD_HINTS_HOLD_MS = 1000;
+const HUD_TOGGLE_HOLD_MS = 1000;
 // biome-ignore lint/complexity/useMaxParams: compact declarations keep alternative keys and gesture metadata in one catalogue.
 const row = (
   id: string,
@@ -132,8 +132,8 @@ export const INPUT_BINDINGS: readonly Binding[] = [
     row(action, description, [...moving, 'inventory'], [code]),
   ),
   row('ui.main-menu-toggle', 'Main menu', entered, ['F9'], 'press', { text: true }),
-  row('hud.toggle-interaction-hints', 'Hold to toggle interaction hints', entered, ['Backquote'], 'hold', {
-    holdMs: HUD_HINTS_HOLD_MS,
+  row('hud.toggle', 'Hold to hide or show the HUD', entered, ['Backquote'], 'hold', {
+    holdMs: HUD_TOGGLE_HOLD_MS,
   }),
   row('handling.stop', 'Stop handling or a long action', [...moving, 'inventory', 'interrupted'], ['KeyX']),
   row('craft.continue', 'Continue stopped crafting', ['play'], ['Enter']),
@@ -198,7 +198,6 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugRow('debug.test-noise', 'Test noise', 'F8'),
   debugRow('debug.compression-test', 'Compression test', 'KeyT'),
   debugRow('debug.interruption-test', 'Emit interruption', 'KeyN'),
-  debugRow('debug.danger-test', 'Danger test', 'KeyU'),
   debugRow('debug.hurt', 'Take damage', 'KeyK'),
   debugRow('debug.spawn-shamblers', 'Spawn shamblers', 'KeyV'),
   debugRow('debug.spawn-runner', 'Spawn runner', 'Numpad1'),
@@ -699,6 +698,13 @@ export const capturedChord = (event: KeyEvent): Chord | string => {
   return chordIssue(chord) ?? chord;
 };
 const browserEscape = (event: Pick<KeyboardEvent, 'code'>): boolean => event.code === 'Escape';
+const chromeDevtoolsShortcut = (
+  event: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'shiftKey' | 'metaKey' | 'altKey'>,
+): boolean =>
+  event.code === 'F12' ||
+  (event.ctrlKey && event.shiftKey && ['KeyC', 'KeyI', 'KeyJ'].includes(event.code)) ||
+  (event.metaKey && event.altKey && ['KeyI', 'KeyJ'].includes(event.code)) ||
+  (event.metaKey && event.shiftKey && event.code === 'KeyC');
 const nativeActivation = (event: Pick<KeyboardEvent, 'code'>): boolean =>
   event.code === 'Enter' || event.code === 'Space';
 /** What a key does in the game's combo box (`src/ui/comboBox.ts`). Like a native list control's keys, these are fixed. */
@@ -917,6 +923,11 @@ export class KeyboardInput {
       target instanceof HTMLElement &&
       Boolean(target.closest('button,a,[role="button"],input[type="checkbox"]')?.closest('[data-debug-controls]'));
     const keyDown = (event: KeyboardEvent) => {
+      // Chrome owns DevTools shortcuts, but cancel their page default where the browser exposes a cancelable event.
+      if (event.cancelable && chromeDevtoolsShortcut(event) && !editable(event.target) && !this.capture) {
+        event.preventDefault();
+        return;
+      }
       if (debugControl(event.target) && nativeActivation(event) && !this.capture && !this.held('debug.gate')) {
         event.preventDefault();
         return;

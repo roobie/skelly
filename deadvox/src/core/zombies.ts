@@ -14,6 +14,7 @@ import {
   amalgamStrikeOrigin,
 } from './amalgamFigure.ts';
 import { AmalgamShape } from './amalgamShape.ts';
+import type { BodyRegion, DamageKind } from './body.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
@@ -40,7 +41,6 @@ import type { SoundEventId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
-import type { PlayerHitArea } from './wear.ts';
 import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 import {
@@ -106,7 +106,27 @@ const validStanceWeight = (weight: number | undefined): boolean =>
 const validStepOffset = (offset: number | undefined): boolean =>
   offset === undefined || (Number.isFinite(offset) && Math.abs(offset) <= 0.5001);
 
-type MeleeDamageType = 'blunt' | 'cut' | 'pierce';
+type MeleeDamageType = DamageKind;
+type ZombieMove = ZombieDef['attack']['moves'][number];
+type ZombieHitRegionChoice = ZombieMove['hitRegions'][number];
+
+const pickByWeight = <T extends { weight: number }>(choices: readonly T[], roll: number): T => {
+  let left = roll * choices.reduce((sum, choice) => sum + choice.weight, 0);
+  for (const choice of choices) {
+    left -= choice.weight;
+    if (left < 0) {
+      return choice;
+    }
+  }
+  return choices.at(-1)!;
+};
+
+/** The move of a landed hit, selected by its content weight. */
+export const pickZombieMove = (moves: readonly ZombieMove[], roll: number): ZombieMove => pickByWeight(moves, roll);
+
+/** The body region a landed move strikes, selected by its content weight. */
+export const pickZombieHitRegion = (choices: readonly ZombieHitRegionChoice[], roll: number): BodyRegion =>
+  pickByWeight(choices, roll).region;
 
 export interface MeleeWeapon {
   readonly damage: number;
@@ -478,7 +498,12 @@ export interface ZombieSystemOptions {
   player: () => PlayerSense;
   dayPhase: () => DayPhaseState;
   isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
-  hurtPlayer: (amount: number, area: PlayerHitArea, attacker: EntityId) => void;
+  hurtPlayer: (
+    amount: number,
+    hitRegions: readonly ZombieHitRegionChoice[],
+    attacker: EntityId,
+    kind: DamageKind,
+  ) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
@@ -2704,7 +2729,8 @@ export class ZombieSystem {
         zombie.attackWindup <= 0 &&
         withinAttackReach({ zombie, zombiePos: pos, playerPos: player.pos, blockSize, isSolid })
       ) {
-        this.options.hurtPlayer(type.attack.damage, type.attack.hitRegion ?? 'torso', scratch.id);
+        const move = pickZombieMove(type.attack.moves, scratch.rng.next());
+        this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
       }
     } else if (
       zombie.mode === 'chase' &&
@@ -2858,19 +2884,6 @@ export class ZombieSystem {
 
   tickActive(dt: number, time = 0, hands?: { right: number | null; left: number | null }): void {
     this.tick(dt, time, hands, 'active');
-  }
-
-  unsafeReason(playerPos = this.options.player().pos): string | undefined {
-    const { blockSize } = this.options;
-    for (const [, zombie] of this.store.entries()) {
-      if (
-        !zombie.incapacitated &&
-        (zombie.mode === 'chase' || horizontalDistance(zombie.body.pos, playerPos) * blockSize <= 30)
-      ) {
-        return 'A shambler is close';
-      }
-    }
-    return undefined;
   }
 
   private firstRegionHit({

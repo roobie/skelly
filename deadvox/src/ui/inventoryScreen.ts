@@ -6,13 +6,14 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import { BODY_REGIONS, type BodyRegion, type BodyState, bodyRegionLabel } from '../core/body.ts';
+import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { practiceForNextLevel } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import { firearmSlotIds } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
+import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
@@ -22,8 +23,11 @@ import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
 import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 
-/** Pixels per inventory cell. */
-const CELL = 32;
+/** One cell's rendered size in a node's document, for maths against pointer coordinates. */
+const cellPx = (node: Element): number => {
+  const { defaultView, documentElement } = node.ownerDocument;
+  return CELL_REM * Number.parseFloat(defaultView!.getComputedStyle(documentElement).fontSize);
+};
 const EMPTY_DROP_GRID: GridSize = { w: 2, h: 2 };
 
 export const targetForPackedFloorDrop = (
@@ -87,8 +91,10 @@ export interface ScreenHooks {
     readonly skills: Readonly<Record<string, number>>;
     readonly practice: Readonly<Record<string, number>>;
   };
-  body: () => Readonly<BodyState>;
+  body: () => Pick<Body, 'health' | 'blood' | 'shock' | 'regionDamage' | 'wounds' | 'bleedingTier'>;
   needs: () => string;
+  /** The alarm's wake hour (undefined: when rested), or undefined while no alarm is carried. */
+  wakeGameHour?: () => { readonly gameHour: number | undefined } | undefined;
   actionRefusal?: () => string | undefined;
   attachmentCandidates?: (firearmUid: number, slotId: string) => readonly Item[];
 }
@@ -179,9 +185,19 @@ interface DetailsViewModel {
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
 }
 
+/** Only a tier content marks `warn` gets the warning style (DESIGN.md, "Bleeding"). */
+const bleedingTemplate = (bleeding: BodyRegionViewModel['bleeding']) => {
+  if (!bleeding) {
+    return nothing;
+  }
+  return bleeding.warn
+    ? html`<span class="inv-body-warning">${bleeding.label}</span>`
+    : html`<span>${bleeding.label}</span>`;
+};
+
 interface BodyRegionViewModel {
   readonly region: BodyRegion;
-  readonly bleeding: boolean;
+  readonly bleeding: Readonly<{ label: string; warn: boolean }> | undefined;
   readonly infection: string;
   readonly damage: string;
 }
@@ -204,6 +220,8 @@ interface InventoryScreenViewModel {
   };
   readonly skills: readonly SkillViewModel[];
   readonly needs: string;
+  /** Shown only while an alarm is carried. */
+  readonly wakeAt?: string | undefined;
   readonly containerMaxWidthCells?: number | undefined;
   readonly weight: string;
   readonly hands: readonly SlotViewModel[];
@@ -281,7 +299,7 @@ const gridTemplate = (vm: GridViewModel): TemplateResult => html`
   <div
     class=${vm.packed ? 'inv-grid inv-grid-packed' : 'inv-grid'}
     data-target=${vm.target}
-    style=${vm.packed ? `--inv-grid-max-width: ${vm.width}px` : `width: ${vm.width}px; height: ${vm.height}px`}
+    style=${vm.packed ? `--inv-grid-max-width: ${vm.width}rem` : `width: ${vm.width}rem; height: ${vm.height}rem`}
   >
     ${vm.items.map(itemTemplate)}
   </div>
@@ -369,6 +387,15 @@ const detailsTemplate = (
   `;
 };
 
+/** Steps through "when rested" (undefined) and the 24 hours of the day, wrapping both ways. */
+const stepWakeGameHour = (gameHour: number | undefined, step: 1 | -1): number | undefined => {
+  const next = ((gameHour === undefined ? 0 : gameHour + 1) + step + 25) % 25;
+  return next === 0 ? undefined : next - 1;
+};
+
+const wakeLabel = (gameHour: number | undefined): string =>
+  gameHour === undefined ? 'when rested' : `${String(gameHour).padStart(2, '0')}:00`;
+
 const furnitureBodyTemplate = (
   furniture: FurnitureViewModel,
   search: (uid: number) => void,
@@ -396,11 +423,13 @@ const inventoryTemplate = (
     search,
     attachmentAction,
     wait,
+    stepWake,
   }: {
     queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
     search: (uid: number) => void;
     attachmentAction: (payload: ReplayActionPayload) => void;
     wait: () => void;
+    stepWake: (step: 1 | -1) => void;
   },
 ): TemplateResult => html`
   <header class="inv-head">
@@ -428,7 +457,7 @@ const inventoryTemplate = (
       `--inv-around-fr: ${splitFactors(splitRatio).around}`,
       vm.containerMaxWidthCells === undefined
         ? ''
-        : `--inv-around-container-width-cap: ${vm.containerMaxWidthCells * CELL}px`,
+        : `--inv-around-container-width-cap: ${vm.containerMaxWidthCells * CELL_REM}rem`,
     ]
       .filter(Boolean)
       .join('; ')}
@@ -490,7 +519,7 @@ const inventoryTemplate = (
             ? nothing
             : html`
           <div class="inv-around-section inv-around-floor" data-around-section="floor">
-            <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL, height: EMPTY_DROP_GRID.h * CELL, items: [] })}
+            <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL_REM, height: EMPTY_DROP_GRID.h * CELL_REM, items: [] })}
           </div>
         `
         }
@@ -515,7 +544,7 @@ const inventoryTemplate = (
         <div class="inv-body-region" data-body-region=${region.region}>
           <span class="inv-body-region-name">${bodyRegionLabel(region.region)}</span>
           <span>${region.damage} damage</span>
-          ${region.bleeding ? html`<span class="inv-body-warning">Bleeding</span>` : nothing}
+          ${bleedingTemplate(region.bleeding)}
           ${region.infection !== 'none' && region.infection !== 'resolved' ? html`<span class="inv-body-warning">${region.infection} infection</span>` : nothing}
         </div>
       `,
@@ -550,6 +579,20 @@ const inventoryTemplate = (
     <section class="inv-pane inv-body-panel" aria-label="Actions">
       <h3>Actions</h3>
       <button class="inv-option" type="button" data-action="wait" @click=${wait}>Wait</button>
+      ${
+        vm.wakeAt === undefined
+          ? nothing
+          : html`
+        <div class="inv-option" role="group" aria-label="Wake at">
+          <span>Wake at</span>
+          <span class="inv-wake-step">
+            <button class="inv-option" type="button" data-action="wake-earlier" aria-label="Earlier" @click=${() => stepWake(-1)}>−</button>
+            <span class="inv-time" data-wake-at>${vm.wakeAt}</span>
+            <button class="inv-option" type="button" data-action="wake-later" aria-label="Later" @click=${() => stepWake(1)}>+</button>
+          </span>
+        </div>
+      `
+      }
     </section>
   </div>
   <footer class="inv-queue"></footer>
@@ -753,7 +796,8 @@ export class InventoryScreen {
     const bodyKey = JSON.stringify(this.hooks.body());
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
-    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}`;
+    const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
+    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -780,7 +824,8 @@ export class InventoryScreen {
       return false;
     }
     this.drag.rotated = !this.drag.rotated;
-    this.drag.grab = [CELL / 2, CELL / 2];
+    const halfCell = cellPx(this.root) / 2;
+    this.drag.grab = [halfCell, halfCell];
     this.renderDrag();
     return true;
   }
@@ -971,6 +1016,16 @@ export class InventoryScreen {
             this.report(this.hooks.dispatch({ kind: 'action.wait' }));
           }
         },
+        stepWake: (step) => {
+          const alarm = this.hooks.wakeGameHour?.();
+          const refusal = this.hooks.actionRefusal?.();
+          if (refusal) {
+            this.refuse(refusal);
+          } else if (alarm) {
+            const gameHour = stepWakeGameHour(alarm.gameHour, step) ?? null;
+            this.report(this.hooks.dispatch({ kind: 'action.wake-hour', gameHour }));
+          }
+        },
       }),
       this.root,
     );
@@ -1028,6 +1083,7 @@ export class InventoryScreen {
   private viewModel(): InventoryScreenViewModel {
     const body = this.hooks.body();
     const character = this.hooks.character();
+    const alarm = this.hooks.wakeGameHour?.();
     const bodyView = {
       health: `${Math.round(body.health)}%`,
       blood: `${Math.round(body.blood)}%`,
@@ -1035,7 +1091,7 @@ export class InventoryScreen {
       regions: BODY_REGIONS.map((region) => ({
         region,
         damage: `${Math.round(body.regionDamage[region])}%`,
-        bleeding: body.wounds[region]?.bleeding ?? false,
+        bleeding: body.bleedingTier(region),
         infection: body.wounds[region]?.infection ?? 'none',
       })),
     };
@@ -1113,6 +1169,7 @@ export class InventoryScreen {
       body: bodyView,
       skills,
       needs: this.hooks.needs(),
+      wakeAt: alarm && wakeLabel(alarm.gameHour),
       containerMaxWidthCells: this.inv.registry.inventory.get('player')?.containerMaxWidthCells,
       weight: kg(this.inv.carriedWeight()),
       hands,
@@ -1140,8 +1197,8 @@ export class InventoryScreen {
   private gridViewModel(size: GridSize, placed: readonly Placed[], target: string, packed = false): GridViewModel {
     return {
       target,
-      width: size.w * CELL,
-      height: size.h * CELL,
+      width: size.w * CELL_REM,
+      height: size.h * CELL_REM,
       packed,
       items: placed.map(({ item, x, y, rotated }) => {
         const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated);
@@ -1151,10 +1208,10 @@ export class InventoryScreen {
           packed
             ? { 'grid-column': `span ${w}`, 'grid-row': `span ${h}` }
             : {
-                left: `${x * CELL + 1}px`,
-                top: `${y * CELL + 1}px`,
-                width: `${w * CELL - 2}px`,
-                height: `${h * CELL - 2}px`,
+                left: `calc(${x * CELL_REM}rem + 1px)`,
+                top: `calc(${y * CELL_REM}rem + 1px)`,
+                width: `calc(${w * CELL_REM}rem - 2px)`,
+                height: `calc(${h * CELL_REM}rem - 2px)`,
               },
         );
       }),
@@ -1163,6 +1220,7 @@ export class InventoryScreen {
 
   private itemViewModel(item: Item, className: string, style?: Record<string, string>): ItemViewModel {
     const def = defOf(this.inv.registry, item.type);
+    const itemStyle = style ?? {};
     this.byUid.set(item.uid, item);
     this.order.push(item);
     return {
@@ -1172,11 +1230,12 @@ export class InventoryScreen {
       title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(item.condition)}`,
       name: workName(this.inv.registry, item),
       count: item.count > 1 ? `×${item.count}` : undefined,
-      style: style
-        ? Object.entries(style)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join('; ')
-        : undefined,
+      style:
+        Object.keys(itemStyle).length > 0
+          ? Object.entries(itemStyle)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join('; ')
+          : undefined,
     };
   }
 
@@ -1333,9 +1392,10 @@ export class InventoryScreen {
     const rect = node.getBoundingClientRect();
     const at = this.inv.locate(item);
     const rotated = (at && spotOf(at)?.rotated) ?? false;
+    const halfCell = cellPx(node) / 2;
     this.drag = {
       item,
-      grab: [Math.min(e.clientX - rect.left, CELL / 2), Math.min(e.clientY - rect.top, CELL / 2)],
+      grab: [Math.min(e.clientX - rect.left, halfCell), Math.min(e.clientY - rect.top, halfCell)],
       rotated,
       start: [e.clientX, e.clientY],
       moved: false,
@@ -1402,13 +1462,13 @@ export class InventoryScreen {
       render(nothing, this.dragRoot);
       return;
     }
-    const [w, h] = footprint(defOf(this.inv.registry, drag.item.type), drag.rotated);
+    const def = defOf(this.inv.registry, drag.item.type);
+    const [w, h] = footprint(def, drag.rotated);
     render(
       html`<div
-        class=${`inv-ghost cat-${defOf(this.inv.registry, drag.item.type).category}`}
-        style=${`left: ${drag.position[0]}px; top: ${drag.position[1]}px; width: ${w * CELL - 2}px; height: ${h * CELL - 2}px`}
-        >${this.inv.name(drag.item)}</div
-      >`,
+        class=${`inv-ghost${h > w ? ' inv-item-tall' : ''} cat-${def.category}`}
+        style=${`left: ${drag.position[0]}px; top: ${drag.position[1]}px; width: calc(${w * CELL_REM}rem - 2px); height: calc(${h * CELL_REM}rem - 2px)`}
+      ><span class="inv-item-name">${workName(this.inv.registry, drag.item)}</span></div>`,
       this.dragRoot,
     );
   }
@@ -1416,6 +1476,8 @@ export class InventoryScreen {
   private clearPreview(): void {
     for (const node of this.root.querySelectorAll<HTMLElement>('.drop-ok, .drop-no')) {
       node.classList.remove('drop-ok', 'drop-no');
+      delete node.dataset.dropShape;
+      delete node.dataset.dropMark;
       for (const property of ['--preview-left', '--preview-top', '--preview-width', '--preview-height']) {
         node.style.removeProperty(property);
       }
@@ -1445,9 +1507,10 @@ export class InventoryScreen {
     }
     const spec = zone.dataset.target!;
     const rect = zone.getBoundingClientRect();
+    const cell = cellPx(zone);
     const spot = {
-      x: Math.round((left - rect.left) / CELL),
-      y: Math.round((top - rect.top) / CELL),
+      x: Math.round((left - rect.left) / cell),
+      y: Math.round((top - rect.top) / cell),
       rotated: drag.rotated,
     };
     const packedFloor = spec.startsWith('pile:') && zone.classList.contains('inv-grid-packed');
@@ -1468,6 +1531,8 @@ export class InventoryScreen {
     const { ok, reason } = this.dropCheck(drag.item, spec, target);
     drag.hover = { target, ok, reason };
     zone.classList.add(ok ? 'drop-ok' : 'drop-no');
+    zone.dataset.dropShape = ok ? 'will-land' : 'blocked';
+    zone.dataset.dropMark = ok ? '✓' : '×';
     if (packedFloor) {
       zone.style.setProperty('--preview-left', '0px');
       zone.style.setProperty('--preview-top', '0px');
@@ -1475,10 +1540,10 @@ export class InventoryScreen {
       zone.style.setProperty('--preview-height', `${zone.clientHeight}px`);
     } else if (spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:')) {
       const [w, h] = footprint(defOf(this.inv.registry, drag.item.type), drag.rotated);
-      zone.style.setProperty('--preview-left', `${spot.x * CELL}px`);
-      zone.style.setProperty('--preview-top', `${spot.y * CELL}px`);
-      zone.style.setProperty('--preview-width', `${w * CELL}px`);
-      zone.style.setProperty('--preview-height', `${h * CELL}px`);
+      zone.style.setProperty('--preview-left', `${spot.x * CELL_REM}rem`);
+      zone.style.setProperty('--preview-top', `${spot.y * CELL_REM}rem`);
+      zone.style.setProperty('--preview-width', `${w * CELL_REM}rem`);
+      zone.style.setProperty('--preview-height', `${h * CELL_REM}rem`);
     }
   }
 

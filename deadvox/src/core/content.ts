@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { visibleGridName } from './inventoryGridName.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import {
   type BlockDef,
@@ -494,8 +495,31 @@ const checkContainerWidth = ({
   });
 };
 
+const itemGridNames = (item: ItemDef): Set<string> => {
+  const [width, height] = item.size;
+  return new Set([visibleGridName(item.name, width, height), visibleGridName(item.name, height, width)]);
+};
+
+const checkInventoryNameCollisions = (items: readonly ItemDef[], report: Report): void => {
+  for (let firstIndex = 0; firstIndex < items.length; firstIndex += 1) {
+    const first = items[firstIndex]!;
+    const firstFootprint = [...first.size].sort((a, b) => a - b).join('x');
+    const firstNames = itemGridNames(first);
+    for (const second of items.slice(firstIndex + 1)) {
+      if (second.category !== first.category || [...second.size].sort((a, b) => a - b).join('x') !== firstFootprint) {
+        continue;
+      }
+      const secondNames = itemGridNames(second);
+      if ([...secondNames].some((name) => firstNames.has(name))) {
+        report('items', second.id, '.name', `visible grid name collides with "${first.id}"`);
+      }
+    }
+  }
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
+  checkInventoryNameCollisions(items, report);
   const obtainable = obtainableItems(registry);
   const qualities = new Set(items.flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const hasIgniter = items.some((item) => item.igniter !== undefined);
@@ -1031,6 +1055,12 @@ export const requiredSoundIssues = (registry: Registry, source = 'sounds.json'):
     path: 'sounds',
     message: `missing required sound event "${id}"`,
   }));
+
+/** The `ui` entry the game installs at startup; see `applyUiTokens`. */
+export const CORE_UI_ID = 'core';
+
+export const requiredUiIssues = (registry: Registry, source = 'ui.json'): ContentIssue[] =>
+  registry.ui.has(CORE_UI_ID) ? [] : [{ source, path: 'ui', message: `missing required UI tuning "${CORE_UI_ID}"` }];
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is

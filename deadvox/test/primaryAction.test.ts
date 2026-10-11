@@ -19,7 +19,7 @@ const capabilities = [
   { id: 'held_food', kind: 'use', category: 'food', food: { calories: 1, water: 0 } },
   { id: 'held_drink', kind: 'use', category: 'drink', food: { calories: 0, water: 1 } },
   { id: 'held_bandage', kind: 'use', category: 'medical' },
-  { id: 'held_rag', kind: 'use', category: 'material', treatment: 'rag' },
+  { id: 'held_rag', kind: 'use', category: 'material', treatment: { bleeding: 1 } },
   { id: 'held_gun', kind: 'firearm', firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01 }, twoHanded: true },
   {
     id: 'held_igniter',
@@ -90,9 +90,9 @@ const { registry, issues } = buildRegistry([
           components: [[{ item: 'held_plain', count: 1 }]],
         },
       ],
-      items: capabilities.map(({ kind, ...fields }) => ({
+      items: capabilities.map(({ kind, ...fields }, index) => ({
         ...fields,
-        name: fields.id,
+        name: `F${index}`,
         category: ('category' in fields ? fields.category : undefined) ?? (kind === 'read' ? 'book' : 'tool'),
         weight: 1,
         size: [1, 1],

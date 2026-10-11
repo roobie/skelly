@@ -1,6 +1,7 @@
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
-import { BODY_REGIONS, BODY_TREATMENTS } from './body.ts';
+import { BODY_REGIONS, DAMAGE_KINDS } from './body.ts';
+import { getBuildRevision } from './buildInfo.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
   canonicalJsonAt as canonicalStringify,
@@ -137,7 +138,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 44;
+export const SAVE_SCHEMA_VERSION = 45;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -146,7 +147,6 @@ const REGION_KEY = /^(0|-?[1-9]\d*),(0|-?[1-9]\d*)$/;
 
 // `vite.config.ts` supplies source, Git diagnostic, and canonical base-content identities.
 declare const __DEADVOX_SIMULATION_HASH__: string;
-declare const __DEADVOX_BUILD_REVISION__: string;
 declare const __DEADVOX_BASE_CONTENT_HASH__: string;
 
 function defaultVersion(): SaveVersionComponents {
@@ -159,14 +159,6 @@ function defaultVersion(): SaveVersionComponents {
     };
   } catch (error) {
     throw new Error('Explicit save version components are required outside a Vite build', { cause: error });
-  }
-}
-
-function defaultBuildRevision(): string {
-  try {
-    return __DEADVOX_BUILD_REVISION__;
-  } catch {
-    return 'unavailable';
   }
 }
 
@@ -235,7 +227,7 @@ const body = obj({
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
   hydration: num({ min: 0, max: 100 }),
-  fatigue: num({ min: 0, max: 100 }),
+  fatigue: nonNegative,
   stamina: num({ min: 0, max: 100 }),
   staminaRegenDelayRemainingSimSeconds: nonNegative,
 });
@@ -249,7 +241,7 @@ const bodyRegionDamage = obj({
 });
 const bodyWound = nullable(
   obj({
-    bleeding: bool,
+    bleeding: nonNegative,
     infection: enumeration(['none', 'early', 'advanced', 'resolved']),
     infectionGameSeconds: nonNegative,
     infectionAtRisk: bool,
@@ -281,7 +273,12 @@ const simulationFields = {
   scheduler,
   needs,
   body: bodyState,
-  compression: obj({ c: num({ min: 1, max: 30 }), active: bool, interruption: opt(str()) }),
+  compression: obj({
+    c: num({ min: 1, max: 30 }),
+    active: bool,
+    owner: enumeration(['debug', 'long-action']),
+    interruption: opt(str()),
+  }),
   pendingInterrupt: opt(str()),
   dead: opt(obj({ cause: str({ nonEmpty: true }), time: nonNegative })),
 };
@@ -293,6 +290,7 @@ itemSchema = obj({
   uid: positiveInt,
   type: str({ id: true }),
   count: positiveInt,
+  lootedCount: opt(nonNegativeInt),
   condition: num({ min: 0, max: 1 }),
   charges: opt(nonNegative),
   on: opt(bool),
@@ -418,7 +416,7 @@ const longAction = obj({
       toolUid: opt(positiveInt),
       region: opt(enumeration(bodyRegionValues)),
       itemUid: opt(positiveInt),
-      treatment: opt(enumeration(BODY_TREATMENTS)),
+      itemType: opt(str({ id: true })),
       duration: opt(positive),
       strikeInterval: opt(positive),
       nextStrike: opt(positive),
@@ -428,11 +426,13 @@ const longAction = obj({
           furnitureUid: positiveInt,
           label: str({ nonEmpty: true }),
           rate: finite,
-          startFatigue: num({ min: 0, max: 100 }),
+          startFatigue: nonNegative,
+          wakeAt: opt(finite),
         }),
       ),
     }),
   ),
+  wakeGameHour: opt(num({ integer: true, safe: true, min: 0, max: 23 })),
 });
 const vocalNoise = obj({ id: positiveInt, pos: vec3, radiusMetres: positive, expiresAt: finite });
 const soundPicker = obj({
@@ -543,7 +543,7 @@ const playerState = obj({
 });
 const meleeAction = nullable(
   obj({
-    profile: enumeration(['blunt', 'cut', 'pierce', 'fists']),
+    profile: enumeration([...DAMAGE_KINDS, 'fists']),
     hand: enumeration(['right', 'left']),
     twoHanded: bool,
     cooldown: positive,
@@ -565,7 +565,7 @@ const meleeAction = nullable(
       headDamageMultiplier: opt(positive),
       limbDamageMultiplier: opt(positive),
       speedMultiplier: opt(positive),
-      type: opt(enumeration(['blunt', 'cut', 'pierce'])),
+      type: opt(enumeration(DAMAGE_KINDS)),
     }),
   }),
 );
@@ -855,7 +855,7 @@ export async function currentSaveVersionIdentity(): Promise<SaveVersionIdentity>
   return {
     digest: await versionDigest(components),
     components,
-    buildRevision: defaultBuildRevision(),
+    buildRevision: getBuildRevision(),
   };
 }
 
@@ -1252,7 +1252,7 @@ function ownsLongActionItem(
     return tree.some(({ item }) => item.uid === job.toolUid && item.type !== WORK_IN_PROGRESS);
   }
   if (job?.jobType === 'treatment') {
-    return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.treatment);
+    return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.itemType);
   }
   return true;
 }
@@ -1469,7 +1469,7 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
   const identity: SaveVersionIdentity = {
     digest: await versionDigest(version),
     components: structuredClone(version),
-    buildRevision: requestedBuildRevision ?? defaultBuildRevision(),
+    buildRevision: requestedBuildRevision ?? getBuildRevision(),
   };
   const envelope: Envelope = {
     magic: MAGIC,
@@ -1544,7 +1544,7 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   ) {
     const differences = versionDifferences(parsed.versionIdentity.components, running);
     throw new Error(
-      `Save version mismatch (${differences.join('; ')}): saved simulation ${parsed.versionIdentity.components.simulationHash} (build ${parsed.versionIdentity.buildRevision}), running simulation ${running.simulationHash} (build ${runningBuildRevision ?? defaultBuildRevision()})`,
+      `Save version mismatch (${differences.join('; ')}): saved simulation ${parsed.versionIdentity.components.simulationHash} (build ${parsed.versionIdentity.buildRevision}), running simulation ${running.simulationHash} (build ${runningBuildRevision ?? getBuildRevision()})`,
     );
   }
   const payloadBytes = canonicalBytes(parsed.payload, { acceptTaggedNegativeZero: true });

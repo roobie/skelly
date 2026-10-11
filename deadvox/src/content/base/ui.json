@@ -1,0 +1,9 @@
+{
+  "ui": [
+    {
+      "hudScale": 1,
+      "id": "core",
+      "spacing": 1
+    }
+  ]
+}

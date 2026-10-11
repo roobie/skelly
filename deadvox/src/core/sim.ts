@@ -3,14 +3,22 @@
 
 import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
 import { type ClockSettings, calendarAt, defaultClock, simToGameHours } from './clock.ts';
-import { Compression, type CompressionLimits } from './compression.ts';
+import { Compression, type CompressionLimits, type CompressionOwner, longActionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
-import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
+import {
+  awakeRates,
+  causeOf,
+  type Needs,
+  needsAllowRecovery,
+  type RecoveryState,
+  SPAWN_NEEDS,
+  stepNeeds,
+} from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
-import type { BodyTuningDef } from './schema.ts';
+import type { BodyTuningDef, CompressionCaps } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
 import type { SoundEmission } from './soundPicker.ts';
@@ -26,6 +34,9 @@ export type SimEvent =
 
 export type Timed<E> = E & { readonly time: number };
 
+/** A hit's effects; the body's bleeding tiers decide from its kind whether and how badly it bleeds. */
+export type HitEffects = Omit<BodyImpact, 'bleeding'>;
+
 export interface SimulationState {
   seed: number;
   clock: ClockSettings;
@@ -33,7 +44,7 @@ export interface SimulationState {
   scheduler: SchedulerState;
   needs: Needs;
   body: BodyState;
-  compression: { c: number; active: boolean; interruption?: string };
+  compression: { c: number; active: boolean; owner: CompressionOwner; interruption?: string };
   pendingInterrupt?: string;
   dead?: { cause: string; time: number };
 }
@@ -41,17 +52,9 @@ export interface SimulationState {
 export interface SimOptions {
   seed: number;
   bodyTuning: BodyTuningDef;
+  /** The content cap of each compressing long action. */
+  compressionCaps: CompressionCaps;
   clock?: ClockSettings;
-  /**
-   * Why unowned compression isn't safe right now (a hostile is aware of the player,
-   * or one is near). Long actions ignore proximity; emitted interrupt events still stop them.
-   */
-  unsafe?: () => string | undefined;
-  /**
-   * The fatigue rate a resting or sleeping long action wants right now, in percent
-   * per game hour, or undefined for the normal rate. Asked once per needs tick.
-   */
-  restRate?: () => number | undefined;
 }
 
 /** Needs tick at 1 Hz; under compression their step grows to 30 s, 4 game minutes at 1:8. */
@@ -63,7 +66,7 @@ export class Simulation {
   readonly clock: ClockSettings;
   readonly scheduler = new Scheduler();
   readonly events = new EventQueue<Timed<SimEvent>>();
-  readonly compression = new Compression();
+  readonly compression: Compression;
   readonly actions: LongActions;
   readonly needs: Needs = { ...SPAWN_NEEDS };
   readonly body: Body;
@@ -73,30 +76,30 @@ export class Simulation {
   dead: { cause: string; time: number } | undefined;
   /** Debug-only control is owned by the game; damage sources still run normally. */
   godMode = false;
-  /** Debug-only: compression ignores `unsafe` (a hostile nearby), as in the debug time skip. Interrupt events still stop it. */
-  ignoreUnsafe = false;
   private readonly interrupts: EventReader<Timed<SimEvent>>;
   private pendingInterrupt: string | undefined;
-  private readonly unsafe: () => string | undefined;
-  private readonly restRate: () => number | undefined;
+  private readonly compressionCaps: CompressionCaps;
 
   constructor(options: SimOptions) {
     this.seed = options.seed;
     this.clock = options.clock ?? defaultClock;
     this.body = new Body(options.bodyTuning);
-    this.unsafe = options.unsafe ?? (() => undefined);
-    this.restRate = options.restRate ?? (() => undefined);
+    this.compressionCaps = options.compressionCaps;
+    // A start without its own limits (debug compression, a restored skip) passes time like a wait.
+    this.compression = new Compression(longActionLimits(options.compressionCaps.wait));
     this.interrupts = this.events.reader();
     this.scheduler.register({
       id: 'needs',
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        const rate = this.restRate();
-        const rates = rate === undefined ? NEED_RATES : { ...NEED_RATES, fatigue: rate };
+        const { restRate } = this.actions;
+        const awake = awakeRates(this.body);
         for (const reason of stepNeeds(this.needs, this.body, simToGameHours(this.clock, dt), {
           damageImmune: this.godMode,
-          rates,
+          rates: restRate === undefined ? awake : { ...awake, fatigue: restRate },
+          recoveryFactor: this.recoveryFactor,
+          state: this.recoveryState,
         })) {
           this.emit({ kind: 'interrupt', reason });
         }
@@ -112,12 +115,25 @@ export class Simulation {
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        const cause = this.body.advance(dt, this.godMode, dt * this.clock.ratio);
+        const cause = this.body.advance(dt, this.godMode, dt * this.clock.ratio, {
+          recovering: needsAllowRecovery(this.needs, this.body, this.recoveryState),
+          recoveryFactor: this.recoveryFactor,
+        });
         if (cause) {
           this.die(cause);
         }
       },
     });
+  }
+
+  /** Sleep multiplies health, regional and blood recovery. */
+  private get recoveryFactor(): number {
+    return this.actions.asleep ? this.body.sleepRecoveryFactor : 1;
+  }
+
+  /** Picks the body's fatigue ceiling for the recovery gate. */
+  private get recoveryState(): RecoveryState {
+    return this.actions.asleep ? 'asleep' : 'awake';
   }
 
   /** Isolated plain-data continuation state; an unread interrupt is carried to the next frame. */
@@ -132,6 +148,7 @@ export class Simulation {
       compression: {
         c: this.compression.c,
         active: this.compression.active,
+        owner: this.compression.owner,
         ...(this.compression.interruption === undefined ? {} : { interruption: this.compression.interruption }),
       },
       ...(this.dead === undefined && this.pendingInterrupt !== undefined
@@ -166,6 +183,11 @@ export class Simulation {
     this.compression.c = state.compression.c;
     this.compression.active = state.compression.active;
     this.compression.interruption = state.compression.interruption;
+    this.compression.owner = state.compression.owner;
+    if (state.compression.active) {
+      // Limits aren't saved: active compression resumes with the defaults until a restored long action sets its own.
+      this.compression.start(undefined, state.compression.owner);
+    }
     this.dead = state.dead === undefined ? undefined : { ...state.dead };
     this.pendingInterrupt = undefined;
     this.scheduler.restoreState(state.scheduler);
@@ -174,7 +196,6 @@ export class Simulation {
     }
     this.paused = true;
     this.godMode = false;
-    this.ignoreUnsafe = false;
   }
 
   /** Simulation seconds since the start. */
@@ -216,14 +237,30 @@ export class Simulation {
     this.takeDamage(cause, () => this.body.damageHealth(amount));
   }
 
-  hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: BodyImpact = {}): void {
+  /** A hit of a damage kind may open a bleeding wound (`Body.bleedingTierForHit`). */
+  hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: HitEffects = {}): void {
+    const bleeding =
+      effects.kind === undefined
+        ? undefined
+        : this.body.bleedingTierForHit(
+            amount,
+            region,
+            effects.kind,
+            this.rng(`body-bleeding:${region}:${this.time}:${amount}`).next(),
+          );
     const woundAlreadyExists = this.body.wounds[region] !== null;
     const infectionAtRisk =
       effects.infectionAtRisk ??
-      (Boolean(effects.bleeding) &&
+      (bleeding !== undefined &&
         (woundAlreadyExists ||
           this.rng(`body-infection:${region}:${this.time}:${amount}`).next() < this.body.tuning.infectionChance));
-    this.takeDamage(cause, () => this.body.impact(amount, region, { ...effects, infectionAtRisk }));
+    this.takeDamage(cause, () =>
+      this.body.impact(amount, region, {
+        ...effects,
+        infectionAtRisk,
+        ...(bleeding === undefined ? {} : { bleeding }),
+      }),
+    );
   }
 
   private takeDamage(cause: string, apply: () => number): void {
@@ -252,21 +289,27 @@ export class Simulation {
     this.emit({ kind: 'death', cause });
   }
 
-  /** Starts unowned compression, such as the debug skip, only while it is safe. */
+  /**
+   * Starts debug compression, such as the skip. Neither shamblers nearby nor bleeding refuse it: only an
+   * emitted interruption, such as a hit, stops it (DESIGN.md, "Long actions").
+   */
   compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
     if (this.actions.job?.jobType === 'pry' && !this.actions.job.stopped) {
       return { ok: false, reason: 'Stop prying first' };
     }
-    return this.compression.start(this.unsafeReason(), limits);
+    return this.compression.start(undefined, 'debug', limits);
   }
 
-  /** Long actions use normal fast-forward near threats; emitted interruptions still stop them. */
-  compressLongAction(): { ok: true } | { ok: false; reason: string } {
-    return this.compression.start(undefined);
-  }
-
-  private unsafeReason(): string | undefined {
-    return this.ignoreUnsafe ? undefined : this.unsafe();
+  /**
+   * Compresses a player long action up to its content cap. Bleeding refuses it, and stops it once it bleeds
+   * too fast; emitted interruptions still stop it.
+   */
+  compressLongAction(jobType: keyof CompressionCaps): { ok: true } | { ok: false; reason: string } {
+    return this.compression.start(
+      this.body.compressionRefusal,
+      'long-action',
+      longActionLimits(this.compressionCaps[jobType]),
+    );
   }
 
   /** Processes events emitted between frames before the outer driver sizes this frame. */
@@ -315,10 +358,7 @@ export class Simulation {
     return advanced;
   }
 
-  /**
-   * Drops compression to 1× on an emitted interrupt, or when unowned active
-   * compression stops being safe. Returns true so the scheduler stops before the next step.
-   */
+  /** Drops compression to 1× on an emitted interrupt. Returns true so the scheduler stops before the next step. */
   private checkInterruptions(): boolean {
     const events = this.interrupts.read();
     this.pendingInterrupt = undefined;
@@ -326,14 +366,15 @@ export class Simulation {
     const { compression } = this;
     const action = this.actions.job;
     if (!(compression.active || compression.c > 1)) {
-      if (action?.jobType === 'pry' && emitted) {
-        this.actions.interruptPrying(emitted.reason);
+      if (action && emitted && this.actions.runsUncompressed(action.jobType)) {
+        this.actions.interruptUncompressed(emitted.reason);
         return true;
       }
       return false;
     }
-    const reason =
-      emitted?.reason ?? (compression.active && !(action && !action.stopped) ? this.unsafeReason() : undefined);
+    const bleedingRefusal =
+      compression.active && compression.owner === 'long-action' ? this.body.compressionRefusal : undefined;
+    const reason = emitted?.reason ?? bleedingRefusal;
     if (reason === undefined) {
       return false;
     }

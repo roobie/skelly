@@ -1,24 +1,128 @@
 {
   "body": [
     {
-      "id": "player",
-      "infectionOnsetGameHours": 2,
-      "antisepticWindowGameHours": 12,
-      "infectionChance": 0.5,
-      "knockoutSimSeconds": 20,
-      "staminaRegenDelaySimSeconds": 5,
-      "proneEyeHeightMetres": 0.3,
-      "bluntShockPerDamage": 2,
-      "treatmentSimSeconds": 8,
-      "wakeShock": 10,
-      "bloodLossPerSimSecond": 0.004,
-      "bloodRecoveryPerSimSecond": 0.002,
-      "shockRecoveryPerSimSecond": 0.1,
-      "advancedInfectionHealthLossPerSimSecond": 0.0005,
+      "advancedInfectionHealthLossPerSimSecond": 0.00050000000000000001,
       "aimSwayPerDamage": 0.01,
+      "antisepticWindowGameHours": 12,
+      "bleeding": {
+        "blockCompressionAtLossPerSimSecond": 0,
+        "refusal": "You're bleeding",
+        "tiers": [
+          {
+            "bloodLossPerSimSecond": 0.002,
+            "chance": {
+              "blunt": 0.10000000000000001,
+              "cut": 0.40000000000000002,
+              "pierce": 0.29999999999999999
+            },
+            "closeSimSeconds": 180,
+            "drip": {
+              "rate": 0.20000000000000001,
+              "size": 0.75
+            },
+            "id": "scratch",
+            "label": "Scratch",
+            "minDamage": 0,
+            "treatmentEffort": 1,
+            "warn": false
+          },
+          {
+            "bloodLossPerSimSecond": 0.014999999999999999,
+            "chance": {
+              "blunt": 0.029999999999999999,
+              "cut": 0.34999999999999998,
+              "pierce": 0.40000000000000002
+            },
+            "closeSimSeconds": 7200,
+            "drip": {
+              "rate": 1,
+              "size": 1
+            },
+            "id": "moderate",
+            "label": "Moderate bleeding",
+            "minDamage": 5,
+            "notice": "You're bleeding moderately.",
+            "treatmentEffort": 1,
+            "warn": true
+          },
+          {
+            "bloodLossPerSimSecond": 0.12,
+            "chance": {
+              "blunt": 0.01,
+              "cut": 0.14999999999999999,
+              "pierce": 0.14999999999999999
+            },
+            "closeSimSeconds": 21600,
+            "drip": {
+              "rate": 2.5,
+              "size": 1.3
+            },
+            "id": "heavy",
+            "label": "Heavy bleeding",
+            "minDamage": 8,
+            "notice": "You're bleeding heavily.",
+            "treatmentEffort": 2,
+            "warn": true
+          },
+          {
+            "bloodLossPerSimSecond": 1.6699999999999999,
+            "chance": {
+              "blunt": 0.002,
+              "cut": 0.050000000000000003,
+              "pierce": 0.029999999999999999
+            },
+            "closeSimSeconds": 86400,
+            "drip": {
+              "rate": 6,
+              "size": 1.6000000000000001
+            },
+            "id": "arterial",
+            "label": "Arterial bleeding",
+            "minDamage": 12,
+            "notice": "You're bleeding from an artery.",
+            "regionFactor": {
+              "torso": 0.5
+            },
+            "treatmentEffort": 4,
+            "warn": true
+          }
+        ]
+      },
+      "bloodRecoveryPerSimSecond": 0.002,
+      "fatigueRisePerGameHour": 4,
+      "healthRecoveryFatigueCeiling": {
+        "awake": 80
+      },
+      "healthRecoveryNeedsFloor": {
+        "calories": 25,
+        "hydration": 25
+      },
+      "healthRecoveryPerGameHour": 2,
+      "id": "player",
+      "infectionChance": 0.5,
+      "infectionOnsetGameHours": 2,
+      "knockoutSimSeconds": 20,
+      "minimumMovementSpeed": 0.5,
+      "movementSlowdownPerDamage": 0.0050000000000000001,
+      "proneEyeHeightMetres": 0.29999999999999999,
+      "restFatigueRecoveryPerGameHour": 3.75,
+      "roughSleepShare": 0.59999999999999998,
+      "shockPerDamage": {
+        "blunt": 2,
+        "cut": 0,
+        "pierce": 0
+      },
+      "shockRecoveryPerSimSecond": 0.10000000000000001,
+      "sleepFatigueRecoveryPerGameHour": 12.5,
+      "sleepRecoveryFactor": 2,
+      "staminaRegenDelaySimSeconds": 5,
       "swingSlowdownPerDamage": 0.01,
-      "movementSlowdownPerDamage": 0.005,
-      "minimumMovementSpeed": 0.5
+      "treatmentSimSeconds": 8,
+      "treatmentSpread": {
+        "max": 1.5,
+        "min": 0.5
+      },
+      "wakeShock": 10
     }
   ]
 }

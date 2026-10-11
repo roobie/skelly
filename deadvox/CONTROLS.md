@@ -15,6 +15,7 @@ read_if:
   - you change stance hints or first-person held poses
   - you change how a long gun is slung or drawn from the shoulder
   - you're changing bleeding treatment feedback
+  - you're changing the Backquote HUD toggle or its third-person gestures
 ---
 
 # Controls and input ownership
@@ -107,8 +108,10 @@ both independently scrolling panes.
   second binding. A ray against the body's box picks it, in the same nearest-target
   choice as ground items. See `src/core/interactionPick.ts`, `pickInteractionTarget`,
   and `src/game/play.ts`, `interactionPayload`.
-- **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
-  to the browser. Escape releases pointer lock and is never a game rebind.
+- **Main menu and browser menu:** F9 opens or closes the main menu. On the death
+  screen, Escape toggles it so playtesters can reach the metrics and replay
+  exports. In play, Escape releases pointer lock; F10 belongs to the browser.
+  Escape is not rebindable.
 - **Reload, rack, remove (2026-10-07 11:20):** BR, on how R treats a rifle:
   “No, it should reload with the mag that is fullest in inventory, no matter what
   is loaded in gun”; on double-pressing R working the charging handle, “yes,
@@ -143,9 +146,16 @@ both independently scrolling panes.
   Neither has a registry entry. Eligible furniture starts these actions through
   the world-interaction binding; see `src/game/play.ts`, `startPlay`.
 - Passing time can't be diegetic, so the character screen offers a Wait button.
-  It is a button, not a rest key, so the no-rest-key ruling stands. Character-screen
+  It is a button, not a rest key, so the no-rest-key ruling stands. A movement
+  key ends the wait, and so does a hit or another emitted interruption, but a
+  shambler nearby never does (DESIGN.md, "Long actions"). Character-screen
   actions reuse movement keys because movement is unused there. See
   `src/game/inputBindings.ts`, `INVENTORY_TAB_BINDINGS` and `inventory.hands`.
+- While an alarm is carried, the Actions tab also sets the wake hour, stepped
+  with − and + through "when rested" and each hour. It is a setting, not a
+  sleep key, so the no-sleep-key ruling stands; a sleep begun on a bed runs to
+  it (DESIGN.md, "Long actions"). See `src/ui/inventoryScreen.ts`,
+  `stepWakeGameHour`.
 - **Wield, then activate (2026-10-04):** “that's not a thing you do in inventory
   - you wield the box and activante it in oder to unpack”. A key acts on the
   door from a hand; an ammunition box is wielded and activated to unpack. See
@@ -182,22 +192,24 @@ both independently scrolling panes.
   hand or puts it away; a hold uses an available action. See
   `src/game/quickbarInput.ts`, `QuickbarInput`, and
   `src/game/quickbarActions.ts`, `QuickbarActions`.
-- **Wound treatment:** Wield a treatment item such as a rag and left-click to apply it, or hold its quickbar slot; the wheel steps the wielded action. The HUD shows blood and bleeding regions, and the affected wound drips in first person and debug third person. See `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `ItemActionSelection`, `src/game/survival.ts`, `wieldedItemActionHint`, `src/ui/playHud.ts`, `playNeedsText`, and `src/render/gore.ts`, `Gore.dripPlayer`.
+- **Wound treatment:** Wield a treatment item such as a rag and left-click to apply it, or hold its quickbar slot; the wheel steps the wielded action, which starts on the worst bleeding. Each application helps by a rolled amount, and applications stack. The HUD names each bleeding region's tier, and the wound drips by tier in first person and debug third person. While bleeding refuses time compression, treatment runs at normal speed and leaves movement free, as prying does (DESIGN.md, "Bleeding"). See `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `defaultItemAction`, `src/game/survival.ts`, `wieldedItemActionHint`, `src/ui/playHud.ts`, `playNeedsText`, and `src/render/gore.ts`, `Gore.dripPlayer`.
 - **Lighting (2026-10-05 14:43):** “lighting need the matches in your hand.”
   See `src/game/primaryAction.ts`, `selectPrimaryAction`.
-- **Interaction hints (2026-10-06 08:35):** BR said “we should make
-  press-and-hold-for-1-second tilde key to toggle messages/hints”. A hold on the
-  rebindable tilde-position key toggles the existing HUD option; a tap does
-  nothing. Debug panel access remains gated. `PressHoldInput` in
-  `src/game/pressHoldInput.ts` owns the elapsed-time gesture;
-  `HUD_HINTS_HOLD_MS` in `src/game/inputBindings.ts` owns its threshold.
+- **HUD toggle:** A hold on the rebindable tilde-position key hides or shows the
+  whole HUD, in first and third person. It is a hold, not a tap, because a tap
+  starts the third-person camera gestures and, with F2 held, toggles the debug
+  panel. Hiding never changes an individual HUD option, so the next hold brings
+  back exactly what was shown; INTERFACE.md, "Development and playtest", says
+  what the HUD covers. See `src/game/inputBindings.ts`, `hud.toggle` and
+  `HUD_TOGGLE_HOLD_MS`, and `src/game/backquoteOrbitGesture.ts`,
+  `BackquoteOrbitGesture`.
 - **Noclip flight (2026-10-06 11:22):** “we should use Space for UP and C for
   DOWN” and “and no, F2 is not required for these (in debug mode when noclip is
   active)”. These are the special-circumstance exception to the debug gate;
   they work only while noclip is active, and WASD remains usable during flight.
   See `src/game/inputBindings.ts`, `noclip.ascend` and `noclip.descend`.
 - **Spectator camera (d106-15):** Debug viewing moves a separate camera with the noclip flight step; it never moves the player's body. While detached, the same movement context routes flight input to the camera, and toggling back restores the body view. This is a debug view, not player noclip. See `src/game/play.ts`, `stepSimulation`, and `src/render/playView.ts`, `updateCamera`.
-- **Third-person avatar (d227):** A debug view behind F2; Numpad0 toggles it. In this view, holding Backquote toggles interaction hints; tap then hold Backquote to orbit without turning the avatar, and tap twice to return behind it. The orbit lets you see the avatar from the front and sides, which the follow camera cannot. Orbit persists after release and during the held orbit gesture; pressing a walk direction after release resets it, while sprint, walk-toggle or jump alone does not. A single tap still toggles the debug panel when F2 is held, after a short gesture-disambiguation delay. In first person, Backquote keeps its existing behavior. See `src/game/inputBindings.ts`, `hud.toggle-interaction-hints` and `debug.panel-toggle`, `src/game/backquoteOrbitGesture.ts`, `BackquoteOrbitGesture`, `src/game/thirdPersonOrbit.ts`, `ThirdPersonOrbit`, and `src/render/playView.ts`, `updateCamera`.
+- **Third-person avatar (d227):** A debug view behind F2; Numpad0 toggles it. In this view, holding Backquote toggles the HUD as in first person; tap then hold Backquote to orbit without turning the avatar, and tap twice to return behind it. The orbit lets you see the avatar from the front and sides, which the follow camera cannot. Orbit persists after release and during the held orbit gesture; pressing a walk direction after release resets it, while sprint, walk-toggle or jump alone does not. A single tap toggles the debug panel when F2 is held, after a short gesture-disambiguation delay. First person has no orbit, and there F2 with Backquote toggles the panel at once. See `src/game/inputBindings.ts`, `hud.toggle` and `debug.panel-toggle`, `src/game/backquoteOrbitGesture.ts`, `BackquoteOrbitGesture`, `src/game/thirdPersonOrbit.ts`, `ThirdPersonOrbit`, and `src/render/playView.ts`, `updateCamera`.
 - **Continue (d98; BR, 2026-10-06 11:28):** BR's choice was “1. enter”. Enter
   continues both after an interruption and a stopped craft. See
   `src/game/inputBindings.ts`, `compression.continue` and `craft.continue`.

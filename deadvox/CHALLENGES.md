@@ -82,24 +82,31 @@ section 1 still holds.
 
 ## 3. Compressed time
 
-**Why it's hard.** During a long action the whole simulation runs up to 30×
-faster. Running every system 30 times per frame is too expensive. Making each
-step 30 times larger breaks physics (entities skip through walls) and can miss
-an interruption (a runner covers 30 m between two checks). Daylight sensing can
-multiply the cost when repeated perception asks whether the same vertical block
-column is open.
+**Why it's hard.** During a long action the whole simulation runs up to the
+action's content cap faster, and far faster for waiting and sleeping than for
+work. Running every system that many times per frame is too expensive. Making each
+step that much larger breaks physics (entities skip through walls) and can miss
+an interruption (a runner covers tens of metres between two checks). Daylight
+sensing can multiply the cost when repeated perception asks whether the same
+vertical block column is open.
 
 **Plan.**
 
-- **Danger and compression:** unowned compression (such as the debug skip) is
-  admitted only while safe. Long actions fast-forward despite nearby or aware
-  hostiles; a real interrupt event, such as a hit or critical need, still
-  ends the action. The player is responsible for making the area safe before
-  starting. In `src/core/sim.ts`, `Simulation.compress`
-  retains the safety check for unowned compression; `Simulation.compressLongAction`
-  does not apply it to long actions.
+- **Only an event stops compression:** nearby or aware hostiles neither refuse
+  nor stop it; an emitted event, such as a hit or a critical need, does
+  (DESIGN.md, "Long actions", has the reason). `src/core/sim.ts`,
+  `Simulation.checkInterruptions`, halts the scheduler after the tick that
+  emitted one.
 - **Bigger steps, not more ticks,** for slow systems (needs, fire, power), and
   closed-form updates where they exist.
+- **A bounded Sim step per frame** for long actions (`src/core/compression.ts`,
+  `longActionLimits`), because physics and active zombies keep their fixed
+  rates. On a 7-CPU desktop-class Linux machine, a quiet world costs about
+  1.5 ms per simulated second of waiting, so the bound lets the highest cap run
+  at 60 frames a second. At night, with 15 or 60 active shamblers about, a
+  simulated second costs about 8 or 38 ms. There a bounded frame takes up to a
+  few hundred milliseconds, so the frame rate drops and the fast-forward slows,
+  and a hit still stops it at once.
 - **Background entities** use the beeline movement brain from d84, taking
   larger, cheaper steps with approximate collision; attention selection is
   unchanged. Each step is capped so the fastest entity moves at most about 2 m

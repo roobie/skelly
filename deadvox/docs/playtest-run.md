@@ -3,6 +3,7 @@ read_if:
   - you're preparing or joining the self-serve Slice 3 playtest
   - you're starting, ending, or operating the playtest's Pages deployment freeze
   - you're changing the playtest feedback process or tester metrics export
+  - you're documenting how testers handle runtime errors
   - you're using playtest feedback to update the game plan
 ---
 
@@ -18,10 +19,14 @@ military camp, and its play link opens the authored map; see [EPIC.md](../EPIC.m
 
 ## Deployment freeze
 
-Set the Pages deployment freeze when sharing the Round 1 landing page
-(`site/deadvox/playtest/round1/`) and clear it when the playtest window closes.
-Testers enter the authored map through that page's play link. Keep the deployed
-game unchanged while testers play: their saves are tied to that deployed code.
+For [#181](https://github.com/roobie/skelly/issues/181), set the Pages
+deployment freeze only after the round's in-flight changes have merged and BR
+has played a run of the deployed build without finding a blocker. BR gives the
+go-ahead. Then share the Round 1 landing page
+(`site/deadvox/playtest/round1/`) and clear the freeze when the playtest window
+closes. Testers enter the authored map through that page's play link. Keep the
+deployed game unchanged while testers play: their saves are tied to that
+deployed code.
 Set and clear the repository variable with:
 
 ```sh
@@ -67,9 +72,9 @@ playtest window closes, manually dispatch from
 
 ## Session format
 
-There is no fixed play time or number of sittings. Testers may stop whenever
-they like and use Continue to resume later. Each person plays in their own
-browser from the Round 1 landing page, using its play link.
+There is no fixed play time or number of sittings. Continue resumes a living
+survivor; death ends the run. Each person plays in their own browser from the
+Round 1 landing page, using its play link.
 
 There is no wristwatch in playtest 1, although #181's beat 2 lists one; it comes
 with version 1.
@@ -90,14 +95,21 @@ consent step because it gives the task and terms before play. Its wording is
 authored in both languages in `site/playtest.jsonnet`, and
 `site/deadvox/playtest/round1/round1.js`, `text`, renders it before the play link.
 
+## If an error report appears
+
+Stop playing when the blocking error panel appears. The game stays halted, releases pointer lock, will not resume or start another save, and does not try to recover; reload starts from the latest save that completed successfully. Use Copy error to include the full displayed text exactly, and download the local error report; the game does not send it anywhere automatically. The report may include the build revision, seed and site, game clock, browser user agent, and the same recent replay and playtest metrics offered by the F9 menu. Use Report on GitHub to open the playtest feedback form. If the error is too long to prefill, attach the downloaded report. Review the file before posting it publicly. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
+
 ## Saving and sending metrics
 
-The F9 menu can save playtest metrics and a replay of recent play as files. A
-tester with GitHub may attach either or both to feedback through the [playtest
-feedback form](../../.github/ISSUE_TEMPLATE/playtest-feedback.md); sending them
-is their choice. Testers without GitHub can email metrics and feedback to the
-organiser using the address provided with the link. Review files before posting
-them in a public issue or sending them by email.
+The F9 menu can save playtest metrics and a replay of recent play as files. F9
+can open it during play. On the death card, both F9 and Escape can open or close
+the menu, so testers can save both after dying and before starting a new world.
+The death card also links to that feedback form in a new tab, separately from
+New world. A tester with GitHub may attach either or both exports through the
+[playtest feedback form](../../.github/ISSUE_TEMPLATE/playtest-feedback.md);
+sending them is their choice. Testers without GitHub can email metrics and
+feedback to the organiser using the address provided with the link. Review files
+before posting them in a public issue or sending them by email.
 
 ## What the metrics export records
 

@@ -1,5 +1,6 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
+import { getBuildRevision } from '../core/buildInfo.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock, SPAWN_TIME } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -38,6 +39,7 @@ import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
 import { setDebugFirearmsSkill } from './debugFirearmsSkill.ts';
 import { setDebugInventoryManagementSkill } from './debugInventoryManagementSkill.ts';
 import { equipDebugFirearms, equipDebugStartWeapons } from './debugLoadout.ts';
+import { setDebugWound } from './debugWound.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -47,7 +49,7 @@ import {
   writeClosedGroups,
 } from './groups.ts';
 import { LookControls } from './look.ts';
-import { buildRevision, lookDump, lookDumpFilename } from './lookDump.ts';
+import { lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
 import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
 import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
@@ -490,7 +492,7 @@ const panelTemplate = ({
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · ${labelForAction('debug.freeze-game')}</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
     <div id="debug-look-readout" class="debug-aim-readout debug-look-readout"></div>
-    <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
+    <div id="debug-mouse-readout" class="debug-aim-readout" style="left:0.375rem;top:auto;bottom:0.375rem;transform:none"></div>
     <section class="debug-panel" data-debug-controls ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (${labelForAction('debug.panel-toggle')})</button></header>
     <p>F4 toggles the performance overlay.</p>
@@ -565,8 +567,6 @@ interface ActionContext {
   isNoclip: () => boolean;
   toggleNoclip: () => void;
   spawnUnawareShambler: () => void;
-  isDanger: () => boolean;
-  toggleDanger: () => void;
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
   spawnZombie: (typeId: string, count: number) => void;
@@ -590,8 +590,6 @@ export const createDebugActions = ({
   isNoclip,
   toggleNoclip,
   spawnUnawareShambler,
-  isDanger,
-  toggleDanger,
   shamblerCount,
   spawnShambler,
   spawnZombie,
@@ -698,7 +696,6 @@ export const createDebugActions = ({
         group: 'survival',
         run: () => hooks.sim.emit({ kind: 'interrupt', reason: 'You hear something outside' }),
       },
-      { id: 'debug.danger-test', label: 'Danger test', group: 'survival', state: isDanger, run: toggleDanger },
       {
         id: 'debug.hurt',
         label: 'Take 25 damage',
@@ -1065,6 +1062,7 @@ export const equipDebugStartLight = ({
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
   setDebugFirearmsSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
   setDebugInventoryManagementSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
+  setDebugWound(hooks.sim.body, location.search, hooks.engine.config.debug, hooks.newGame);
   if (!equipDebugFirearms(hooks.inventory, hooks.engine.config.debug, hooks.newGame, location.search)) {
     equipDebugStartLight({
       inventory: hooks.inventory,
@@ -1124,7 +1122,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let readout = emptyReadout;
   let shellKey = '';
   let noclip = false;
-  let danger = false;
   const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize);
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   let shamblerCount = readShamblerCount();
@@ -1269,10 +1266,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       if (placed) {
         hooks.showNotice('An unaware shambler is nearby');
       }
-    },
-    isDanger: () => danger,
-    toggleDanger: () => {
-      danger = !danger;
     },
     shamblerCount: () => shamblerCount,
     isAimEnabled: () => aimEnabled,
@@ -1642,7 +1635,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       positionM: hooks.body.pos.map((v) => v * metres) as Vec3,
       yawRad: hooks.input.yaw,
       pitchRad: hooks.input.pitch,
-      buildRevision: buildRevision(),
+      buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
       url: camUrl(lookUrl(location.href, lookState()), {
         position: hooks.body.pos.map((v) => v * metres) as Vec3,
@@ -1797,7 +1790,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     get revealZombies() {
       return revealZombies;
     },
-    dangerReason: () => (danger ? 'Something is close' : undefined),
     handleAction,
     closeMenus() {
       panelOpen = false;

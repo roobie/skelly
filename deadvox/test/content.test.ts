@@ -48,6 +48,37 @@ const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: '
   return validateContent({ source: zombieFile.source, data });
 };
 
+it('rejects inventory names that collide within a category and footprint', () => {
+  const item = (id: string, name: string) => ({ id, name, category: 'medical', weight: 1, size: [1, 1] });
+  const sharedPrefix = 'Shared inventory name '.repeat(8);
+  const collision = buildRegistry([
+    {
+      source: 'inventory-name-fixture.json',
+      data: {
+        items: [
+          item('fixture_collision_a', `${sharedPrefix}alpha`),
+          item('fixture_collision_b', `${sharedPrefix}beta`),
+        ],
+      },
+    },
+  ]).issues.filter((issue) => issue.message.includes('visible grid name'));
+  const distinct = buildRegistry([
+    {
+      source: 'inventory-name-fixture.json',
+      data: {
+        items: [
+          item('fixture_distinct_a', `Alpha ${sharedPrefix}`),
+          item('fixture_distinct_b', `Beta ${sharedPrefix}`),
+        ],
+      },
+    },
+  ]).issues.filter((issue) => issue.message.includes('visible grid name'));
+
+  expect(collision).toHaveLength(1);
+  expect(collision[0]?.path).toContain('.name');
+  expect(distinct).toHaveLength(0);
+});
+
 it('validates weathering profile bounds without pinning authored tuning', () => {
   const profile = baseRegistry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID)!;
   const validate = (candidate: typeof profile) =>
@@ -282,6 +313,59 @@ describe('content', () => {
         ),
       ).toBe(true);
     }
+  });
+
+  it('requires unique ids within zombie attack move lists', () => {
+    const zombieFile = base.find(({ source }) => source === 'zombies.json')!;
+    const data = structuredClone(zombieFile.data) as {
+      zombies: { id: string; attack: { moves: { id: string }[] } }[];
+    };
+    const {
+      attack: { moves },
+    } = data.zombies.find(({ attack }) => attack.moves.length > 1)!;
+    moves[1]!.id = moves[0]!.id;
+
+    expect(
+      validateContent({ source: zombieFile.source, data }).some(
+        ({ message }) => message === 'zombie move ids must be unique',
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps runner attack damage within the shambler damage ceilings', () => {
+    const shambler = baseRegistry.zombies.get('shambler')!;
+    const runner = baseRegistry.zombies.get('runner')!;
+    const highestShamblerDamage = Math.max(...shambler.attack.moves.map(({ damage }) => damage));
+    const weightedDamage = (moves: typeof shambler.attack.moves) =>
+      moves.reduce((total, { damage, weight }) => total + damage * weight, 0) /
+      moves.reduce((total, { weight }) => total + weight, 0);
+
+    expect(runner.attack.moves.length).toBeGreaterThan(0);
+    expect(Math.max(...runner.attack.moves.map(({ damage }) => damage))).toBeLessThanOrEqual(highestShamblerDamage);
+    expect(weightedDamage(runner.attack.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack.moves));
+  });
+
+  it('makes arterial bleeding less likely but possible on the torso', () => {
+    const arterial = baseRegistry.body.get('player')!.bleeding.tiers.find(({ id }) => id === 'arterial')!;
+
+    expect(arterial.regionFactor?.torso).toBeLessThan(1);
+    expect(arterial.chance.pierce * arterial.regionFactor!.torso!).toBeGreaterThan(0);
+  });
+
+  it('rejects negative and unknown bleeding region factors', () => {
+    const body = baseRegistry.body.get('player')!;
+    const withRegionFactor = (regionFactor: Record<string, number>) => ({
+      ...body,
+      bleeding: {
+        ...body.bleeding,
+        tiers: body.bleeding.tiers.map((tier) => (tier.id === 'arterial' ? { ...tier, regionFactor } : tier)),
+      },
+    });
+
+    expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ torso: -0.1 })] } })).not.toEqual(
+      [],
+    );
+    expect(validateContent({ source: 'body.json', data: { body: [withRegionFactor({ chest: 1 })] } })).not.toEqual([]);
   });
 
   it('requires amalgam zombie regions to match the manifest classes exactly', () => {
@@ -544,7 +628,7 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_input',
-          name: 'Fixture input',
+          name: 'Input part',
           category: 'tool',
           weight: 1,
           size: [1, 1],
@@ -554,7 +638,7 @@ describe('content', () => {
             yields: [{ item: 'fixture_input', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
           },
         },
-        { id: 'fixture_output', name: 'Fixture output', category: 'tool', weight: 1, size: [1, 1] },
+        { id: 'fixture_output', name: 'Output part', category: 'tool', weight: 1, size: [1, 1] },
       ],
     };
     const valid = structuredClone(data);
@@ -830,7 +914,20 @@ describe('content', () => {
             nightSight: 10,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
-            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
+            attack: {
+              reach: 1,
+              cooldownSimSeconds: 1.5,
+              windupSimSeconds: 0.3,
+              moves: [
+                {
+                  id: 'swipe',
+                  weight: 1,
+                  damage: 5,
+                  damageKind: 'blunt',
+                  hitRegions: [{ region: 'torso', weight: 1 }],
+                },
+              ],
+            },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
           },
@@ -855,7 +952,20 @@ describe('content', () => {
             sightCone: 60,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
-            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
+            attack: {
+              reach: 1,
+              cooldownSimSeconds: 1.5,
+              windupSimSeconds: 0.3,
+              moves: [
+                {
+                  id: 'swipe',
+                  weight: 1,
+                  damage: 5,
+                  damageKind: 'blunt',
+                  hitRegions: [{ region: 'torso', weight: 1 }],
+                },
+              ],
+            },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
           },
@@ -1504,7 +1614,20 @@ describe('content references', () => {
               stumbleSpeedFraction: 0.04,
               stumbleDecelerationMetresPerSimSecondSquared: 14,
             },
-            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
+            attack: {
+              reach: 1,
+              cooldownSimSeconds: 1.5,
+              windupSimSeconds: 0.3,
+              moves: [
+                {
+                  id: 'swipe',
+                  weight: 1,
+                  damage: 5,
+                  damageKind: 'blunt',
+                  hitRegions: [{ region: 'torso', weight: 1 }],
+                },
+              ],
+            },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             downed: {
               finishOff: { simSeconds: 3 },

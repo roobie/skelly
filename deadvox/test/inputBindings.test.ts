@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import {
   type Binding,
@@ -277,16 +278,16 @@ describe('keyboard registry', () => {
     expect(wield?.defaults[0]?.code).toBe('KeyW');
     expect(wield?.contexts).toEqual(['inventory']);
   });
-  it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {
+  it('keeps debug behind F2 and allows rebinding the Backquote HUD hold', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.binding('debug.gate')?.defaults[0]?.code).toBe('F2');
     expect(bindings.binding('debug.panel-toggle')).toMatchObject({
       defaults: [{ code: 'Backquote' }],
       gate: 'debug.gate',
     });
-    expect(bindings.binding('hud.toggle-interaction-hints')?.defaults[0]?.code).toBe('Backquote');
-    expect(bindings.rebind('hud.toggle-interaction-hints', [{ code: 'KeyJ' }])).toBeUndefined();
-    expect(bindings.label('hud.toggle-interaction-hints')).toBe('J');
+    expect(bindings.binding('hud.toggle')?.defaults[0]?.code).toBe('Backquote');
+    expect(bindings.rebind('hud.toggle', [{ code: 'KeyJ' }])).toBeUndefined();
+    expect(bindings.label('hud.toggle')).toBe('J');
   });
   it('gates the third-person view behind F2 and toggles it in both directions', () => {
     const binding = new BindingRegistry(INPUT_BINDINGS, storage());
@@ -442,6 +443,42 @@ describe('keyboard registry', () => {
     expect(keyboard.press(event('KeyF', { ctrlKey: true }), true)).toBe(false);
     expect(keyboard.press(event('KeyF', { altKey: true }), true)).toBe(false);
     expect(commands).toEqual([]);
+  });
+  it('cancels Chrome DevTools shortcuts except in editable targets or while reporting binding refusal', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: false });
+    const remove = keyboard.install();
+    const dispatch = (target: EventTarget, code: string, modifiers: KeyboardEventInit = {}, cancelable = true) => {
+      const key = new KeyboardEvent('keydown', { code, bubbles: true, cancelable, ...modifiers });
+      target.dispatchEvent(key);
+      return key;
+    };
+
+    try {
+      for (const code of ['KeyC', 'KeyI', 'KeyJ']) {
+        expect(dispatch(globalThis, code, { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(true);
+      }
+      expect(dispatch(globalThis, 'F12').defaultPrevented).toBe(true);
+      expect(dispatch(globalThis, 'KeyC', { metaKey: true, shiftKey: true }).defaultPrevented).toBe(true);
+      for (const code of ['KeyI', 'KeyJ']) {
+        expect(dispatch(globalThis, code, { metaKey: true, altKey: true }).defaultPrevented).toBe(true);
+      }
+
+      const input = document.createElement('input');
+      document.body.append(input);
+      expect(dispatch(input, 'KeyI', { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(false);
+      expect(dispatch(globalThis, 'KeyI', { ctrlKey: true, shiftKey: true }, false).defaultPrevented).toBe(false);
+      expect(dispatch(globalThis, 'KeyK', { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(false);
+
+      let refusal: Chord | string | undefined;
+      keyboard.capture = (value) => {
+        refusal = value;
+      };
+      expect(dispatch(globalThis, 'KeyI', { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(false);
+      expect(refusal).toEqual(expect.any(String));
+    } finally {
+      remove();
+    }
   });
   it('routes a gate chord exclusively, suppresses repeats, and requires release after an owner transition', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));

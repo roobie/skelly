@@ -64,6 +64,12 @@ export const nextTimeOfDay = (calendar: number, timeOfDay: number): number => {
   return today > calendar ? today : today + SECONDS_PER_DAY;
 };
 
+/** The simulation time the clock next shows a time of day, strictly after `simTime`. */
+export const nextSimTimeAt = (clock: ClockSettings, simTime: number, timeOfDay: number): number => {
+  const calendar = calendarAt(clock, simTime);
+  return simTime + (nextTimeOfDay(calendar, timeOfDay) - calendar) / clock.ratio;
+};
+
 /** Day number, starting at 1. */
 const dayOf = (calendar: number): number => Math.floor(calendar / SECONDS_PER_DAY) + 1;
 

@@ -4,9 +4,9 @@
 
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { BODY_REGIONS, bodyRegionLabel } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { dominantSide, offSide } from '../core/character.ts';
-import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
+import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
@@ -25,7 +25,7 @@ import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
-import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
@@ -34,6 +34,7 @@ import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
+import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import {
   type HandlingPresentationSource,
@@ -50,6 +51,7 @@ import {
   writeHudOptions,
 } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
+import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
@@ -158,6 +160,71 @@ import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const STARTUP_MESH_RADIUS = 1;
+
+interface PlayErrorReportPorts {
+  readonly config: Engine['config'];
+  readonly sim: ReturnType<typeof createSession>['sim'];
+  readonly input: Input;
+  readonly metrics: SessionMetrics;
+  readonly exportReplay: () => Promise<Uint8Array>;
+  readonly halted: { value: boolean };
+  readonly saveController: SaveController | undefined;
+}
+
+const stopPlayAfterError = (
+  sim: PlayErrorReportPorts['sim'],
+  input: Input,
+  halted: PlayErrorReportPorts['halted'],
+  saveController: SaveController | undefined,
+): void => {
+  halted.value = true;
+  sim.paused = true;
+  saveController?.halt();
+  input.unlock();
+  input.cancel();
+};
+
+const bindPlayErrorReport = ({
+  config,
+  sim,
+  input,
+  metrics,
+  exportReplay,
+  halted,
+  saveController,
+}: PlayErrorReportPorts): void => {
+  const context: ErrorReportContext = {
+    seed: config.seed,
+    site: config.site,
+    clockText: () => formatClock(sim.calendar),
+    stop: () => stopPlayAfterError(sim, input, halted, saveController),
+    metricsFile: () => metricsFile(metrics),
+    replayFile: async () => replayFile(await exportReplay(), new Date()),
+  };
+  setErrorReportContext(context);
+};
+
+const debugErrorEnabled = (debug: boolean, search: string): boolean => {
+  if (!debug) {
+    return false;
+  }
+  return new URLSearchParams(search).get('debug-error') === '1';
+};
+
+const guardDebugErrorFrame = (
+  frame: (now: RealTimestamp) => boolean,
+  enabled: boolean,
+  pointerLocked: () => boolean,
+): ((now: RealTimestamp) => boolean) => {
+  let pending = enabled;
+  return (now) => {
+    if (pending && pointerLocked()) {
+      pending = false;
+      throw new Error('Debug-triggered game-loop error');
+    }
+    return frame(now);
+  };
+};
 const STARTUP_COLUMN_COUNT = (STARTUP_MESH_RADIUS * 2 + 1) ** 2;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 export const USE_REACH = 2;
@@ -180,7 +247,6 @@ const thirdPersonOrbitFrame = (angle: ThirdPersonOrbitAngle | undefined) => (ang
 
 const cancelBackquoteGesture = (gesture: BackquoteOrbitGesture | undefined): void => gesture?.cancel();
 const updateBackquoteGesture = (gesture: BackquoteOrbitGesture | undefined, at: number): void => gesture?.update(at);
-const toggleBackquoteHud = (gesture: BackquoteOrbitGesture | undefined): void => gesture?.toggleHudIfAllowed();
 const toggleBackquoteDebugPanel = (debugTools: DebugRuntime | undefined, sync: () => unknown): void => {
   debugTools?.handleAction('debug.panel-toggle');
   sync();
@@ -492,12 +558,12 @@ const configureRestoreFailure = (streamer: Engine['streamer'], saveController: S
   }
 };
 
-const autosaveCheckpointSimSeconds = (registry: Engine['registry']): number => {
+const autosaveTuning = (registry: Engine['registry']) => {
   const autosave = registry.saves.get('autosave');
   if (!autosave) {
     throw new Error('Missing autosave tuning');
   }
-  return autosave.checkpointSimSeconds;
+  return autosave;
 };
 
 export const startPlay = (
@@ -506,6 +572,7 @@ export const startPlay = (
   options: StartPlayOptions = {},
 ): { enter: () => void } => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
+  const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
   const startupHint = $('startup-hint');
   const startupProgress = $('startup-hint-progress') as HTMLProgressElement;
@@ -812,6 +879,7 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
+  const playHalted = { value: false };
   const hasActiveFirearmInput = (): boolean =>
     replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
   const isFirearmReady = (uid: number): boolean =>
@@ -951,16 +1019,13 @@ export const startPlay = (
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
   let noticeUntil = 0;
-  const playerBleedingNotice = new PlayerBleedingNotice(
-    BODY_REGIONS.some((region) => sim.body.wounds[region]?.bleeding),
-  );
+  const playerBleedingNotice = new PlayerBleedingNotice(sim.body.worstBleedingTier);
   const showNotice = (text: string) => {
     notice = text;
     noticeUntil = realNow() + 3000;
   };
   const updateBleedingNotice = (): void => {
-    const playerBleeding = BODY_REGIONS.some((region) => sim.body.wounds[region]?.bleeding);
-    playerBleedingNotice.update(playerBleeding, () => showNotice("You're bleeding."));
+    playerBleedingNotice.update(sim.body.worstBleedingTier, sim.body.tuning.bleeding.tiers, showNotice);
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
@@ -1047,8 +1112,9 @@ export const startPlay = (
     describe: (item) => [...survival.describe(item), ...firearms.describe(item), ...magazines.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     character: () => session.character,
-    body: () => sim.body.snapshotState(),
+    body: () => sim.body,
     needs: () => needsText(),
+    wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
     attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
   });
@@ -1173,6 +1239,15 @@ export const startPlay = (
     },
     import: importReplay,
   };
+  bindPlayErrorReport({
+    config,
+    sim,
+    input,
+    metrics,
+    exportReplay: inputReplayHooks.export,
+    halted: playHalted,
+    saveController: options.saveController,
+  });
   const handBackStatus = $('playtest-export-status');
   const handBack = async (file: () => HandBackFile | Promise<HandBackFile>): Promise<void> => {
     try {
@@ -1317,6 +1392,21 @@ export const startPlay = (
   });
 
   let started = options.restore !== undefined;
+  globalThis.addEventListener('beforeunload', (event) => {
+    if (
+      shouldConfirmPageLeave({
+        gameRunning: started,
+        gameDead: sim.dead !== undefined,
+        saveAvailable: options.saveController?.canSaveCurrentGame ?? false,
+        lastSaveCompletedAtRealTimestamp: options.saveController?.lastCompletedSaveRealTimestamp,
+        nowRealTimestamp: realTimestamp(performance.now() / 1000),
+        confirmationWindowRealSeconds: autosave.leaveConfirmationRealSeconds,
+      })
+    ) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
   let mainMenuOpen = !options.replay;
   let startupHintPending = !options.replay;
   let resumeRequested = false;
@@ -1347,6 +1437,7 @@ export const startPlay = (
     input.menuPointer = state.menuPointer;
     keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
+    $('go').hidden = state.showGo === false;
     if (options.saveController) {
       options.saveController.setGoLabel(state.goLabel);
     } else {
@@ -1367,7 +1458,7 @@ export const startPlay = (
     startupHint.hidden = !latch.visible;
   };
   const resume = () => {
-    if (replayPlayer) {
+    if (replayPlayer || sim.dead || playHalted.value) {
       return;
     }
     resumeRequested = true;
@@ -1421,14 +1512,13 @@ export const startPlay = (
   /** Ends the skip exactly on target: snapping c to 1 keeps the ramp-down from running past it. */
   const endSkip = (): void => {
     skipUntil = undefined;
-    sim.ignoreUnsafe = false;
     compression.stop();
     compression.snap();
   };
 
   /**
    * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
-   * stepping as rest (needs, scheduler and shamblers all run), ignoring danger. Another call
+   * stepping as rest (needs, scheduler and shamblers all run). Another call
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {
@@ -1439,7 +1529,6 @@ export const startPlay = (
     }
     queue.cancel();
     skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);
-    sim.ignoreUnsafe = true;
     sim.compress(SKIP_COMPRESSION);
   };
 
@@ -1547,6 +1636,9 @@ export const startPlay = (
       stopAction();
     },
     wait: () => sim.actions.startWait(),
+    setWakeGameHour: (gameHour) => {
+      rest.wakeGameHour = gameHour;
+    },
     cancelItemThrow,
     throwItem: throwRecordedItem,
   };
@@ -1668,21 +1760,16 @@ export const startPlay = (
     tap: () => completeWorldInteraction('pocket'),
     hold: () => completeWorldInteraction('wield'),
   });
-  const toggleInteractionHints = (): void => {
-    hudOptions.interaction = !hudOptions.interaction;
+  const toggleHud = (): void => {
+    hudOptions.shown = !hudOptions.shown;
     writeHudOptions(hudOptions);
     drawHudOptions();
   };
-  const hintToggleInput = new PressHoldInput<string>({
-    holdRealMs: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
-    tap: () => undefined,
-    hold: () => toggleBackquoteHud(backquoteGesture),
-  });
   backquoteGesture = new BackquoteOrbitGesture({
-    holdRealMs: keyboardInput.registry.binding('hud.toggle-interaction-hints')?.holdMs ?? 0,
+    holdRealMs: keyboardInput.registry.binding('hud.toggle')?.holdMs ?? 0,
     orbit: thirdPersonOrbit,
     canToggleHud: () => sim.body.actionRefusal === undefined,
-    toggleHud: toggleInteractionHints,
+    toggleHud,
     toggleDebugPanel: () => toggleBackquoteDebugPanel(debugTools, syncMenuState),
   });
   globalThis.addEventListener('blur', () => {
@@ -1690,7 +1777,6 @@ export const startPlay = (
     throwStanceInput.cancel();
     interactInput.cancel();
     interactionPressTarget = undefined;
-    hintToggleInput.cancel();
     cancelBackquoteGesture(backquoteGesture);
   });
 
@@ -1776,10 +1862,14 @@ export const startPlay = (
     cancelItemThrow();
     throwStanceInput.cancel();
     quickbarInput.cancel();
-    hintToggleInput.cancel();
   };
   keyboardInput.escape = () => {
-    if (reviewMapOpen) {
+    if (sim.dead) {
+      if (reviewMapOpen) {
+        toggleReviewMap(false);
+      }
+      modalCommand('ui.main-menu-toggle');
+    } else if (reviewMapOpen) {
       toggleReviewMap(false);
     } else {
       reading.close();
@@ -1913,10 +2003,6 @@ export const startPlay = (
       toggleReviewMap,
       syncMenuState,
     });
-  const legacyHintInput = {
-    down: (at: number): void => hintToggleInput.keyDown('hud.toggle-interaction-hints', at),
-    up: (at: number): void => hintToggleInput.keyUp('hud.toggle-interaction-hints', at),
-  };
   const handleHintCommand = (action: string, phase: InputCommand['phase'], at: number): boolean =>
     routeBackquoteInput(backquoteGesture, action, {
       phase,
@@ -1924,7 +2010,6 @@ export const startPlay = (
       thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
       debugPanelAvailable: keyboardInput.held('debug.gate'),
       facingYaw: input.yaw,
-      fallback: () => legacyHintInput[phase](at),
     });
   const cancelHeldInput = (): void => {
     input.reload.cancel();
@@ -2707,8 +2792,8 @@ export const startPlay = (
   let meshingQueueMs = 0;
 
   const displayCalendar = (): number => sim.calendar;
-  const throwStanceCueVisible = (): boolean =>
-    throwingStance && hudOptions.interaction && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
+  const throwStanceCueVisible = (interactionVisible: boolean): boolean =>
+    throwingStance && interactionVisible && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
 
   const statusView = (): PlayStatus => ({
     calendar: displayCalendar(),
@@ -2717,7 +2802,10 @@ export const startPlay = (
     needs: sim.needs,
     health: sim.body.health,
     blood: sim.body.blood,
-    bleedingRegions: BODY_REGIONS.filter((region) => sim.body.wounds[region]?.bleeding).map(bodyRegionLabel),
+    bleeding: BODY_REGIONS.flatMap((region) => {
+      const tier = sim.body.bleedingTier(region);
+      return tier ? [{ region: bodyRegionLabel(region), label: tier.label, warn: tier.warn }] : [];
+    }),
     sprinting: session.sprinting,
     lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
   });
@@ -3153,10 +3241,10 @@ export const startPlay = (
       interactInput.update(now);
     }
     throwStanceInput.update(now);
-    hintToggleInput.update(now);
     updateBackquoteGesture(backquoteGesture, now);
   };
 
+  const playerDrip = (region: BodyRegion) => sim.body.bleedingTier(region)?.drip;
   // Blood holds still while the game is paused.
   const updateGore = (dt: RealSeconds): void => {
     view.gore.update(sim.paused ? 0 : dt, engine.isSolid, {
@@ -3165,7 +3253,7 @@ export const startPlay = (
       player: {
         pos: body.pos,
         yaw: input.yaw,
-        wounds: sim.body.wounds,
+        drip: playerDrip,
         thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
       },
     });
@@ -3189,7 +3277,7 @@ export const startPlay = (
     });
   };
 
-  const frame = (now: RealTimestamp) => {
+  const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
     const dt = realDuration(Math.min(0.1, elapsedReal));
@@ -3262,7 +3350,7 @@ export const startPlay = (
 
     const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
     debugTools?.setCrosshairVisible(visible.crosshair);
-    $('throw-stance').hidden = !throwStanceCueVisible();
+    $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
       {
@@ -3305,12 +3393,20 @@ export const startPlay = (
     }
     return true;
   };
+  const frame = guardDebugErrorFrame(
+    (now) => !playHalted.value && updateFrame(now),
+    debugErrorEnabled(config.debug, location.search),
+    () => input.locked,
+  );
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
   const die = ({ cause, time }: { cause: string; time: number }) => {
+    options.saveController?.finishDeath();
     input.unlock();
     metrics.recordDeath(cause, time * sim.clock.ratio);
     saveMetrics();
+    mainMenuOpen = false;
+    debugTools?.closeMenus();
     reading.close();
     closeInventoryScreen();
     inventoryPanel.hidden = true;
@@ -3330,7 +3426,7 @@ export const startPlay = (
       () => sim.time,
       { blockSize: s, site: config.site, storeys: config.storeys, density: config.density },
       {
-        checkpointSimSeconds: autosaveCheckpointSimSeconds(registry),
+        checkpointSimSeconds: autosave.checkpointSimSeconds,
         recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs),
       },
     );

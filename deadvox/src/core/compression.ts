@@ -2,6 +2,7 @@ import { simSeconds } from './time.ts';
 
 /** The owner-specific ramp profiles are applied only by the outer Real-time frame driver. */
 type CompressionRamp = 'normal' | 'skip';
+export type CompressionOwner = 'debug' | 'long-action';
 
 /** A per-start override of simulation-side compression limits. */
 export interface CompressionLimits {
@@ -13,8 +14,21 @@ export interface CompressionLimits {
   readonly ramp: CompressionRamp;
 }
 
-/** Normal long-action compression; frame-driver timing is owned outside the simulation. */
-export const COMPRESSION: CompressionLimits = { cap: 30, maxSimPerFrame: Number.POSITIVE_INFINITY, ramp: 'normal' };
+/**
+ * The largest Sim step one frame of a long action takes: enough for the highest content cap at 60
+ * frames a second, and a bound on a frame's cost when many shamblers are active (DESIGN.md, "Long actions").
+ */
+const LONG_ACTION_MAX_SIM_PER_FRAME = simSeconds(6);
+
+/** Long-action compression up to a content cap; frame-driver timing is owned outside the simulation. */
+export const longActionLimits = (cap: number): CompressionLimits => ({
+  cap,
+  maxSimPerFrame: LONG_ACTION_MAX_SIM_PER_FRAME,
+  ramp: 'normal',
+});
+
+/** Before any start: no compression and no Sim step bound. */
+const UNCOMPRESSED: CompressionLimits = { cap: 1, maxSimPerFrame: Number.POSITIVE_INFINITY, ramp: 'normal' };
 
 /** Debug skip: a high Sim multiplier, bounded by Sim step size for scheduler cost. */
 export const SKIP_COMPRESSION: CompressionLimits = {
@@ -26,22 +40,31 @@ export const SKIP_COMPRESSION: CompressionLimits = {
 export class Compression {
   /** Current dimensionless simulation multiplier; 1 is uncompressed. */
   c = 1;
-  /** Limits of the current start; reset to normal by every `start` without an override. */
-  limits: CompressionLimits = COMPRESSION;
+  /** Limits of the latest start; a start without its own uses the defaults. */
+  limits = UNCOMPRESSED;
+  /** Whether debug controls or a player long action started compression. */
+  owner: CompressionOwner = 'debug';
   /** A long action wants compression. */
   active = false;
   /** Why compression was interrupted; set until the player continues or stops. */
   interruption: string | undefined;
+  private readonly defaults: CompressionLimits;
 
-  /** Asks for compression. Refused, with the reason, when it isn't safe. */
+  constructor(defaults: CompressionLimits) {
+    this.defaults = defaults;
+  }
+
+  /** Asks for compression. Refused, with the reason, when the caller has one. */
   start(
-    unsafe: string | undefined,
-    limits: CompressionLimits = COMPRESSION,
+    refusal: string | undefined,
+    owner: CompressionOwner,
+    limits: CompressionLimits = this.defaults,
   ): { ok: true } | { ok: false; reason: string } {
-    if (unsafe !== undefined) {
-      return { ok: false, reason: unsafe };
+    if (refusal !== undefined) {
+      return { ok: false, reason: refusal };
     }
     this.limits = limits;
+    this.owner = owner;
     this.interruption = undefined;
     this.active = true;
     return { ok: true };

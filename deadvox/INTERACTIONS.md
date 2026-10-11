@@ -225,7 +225,7 @@ and each recipe's result is cached against the reach it was planned from.
 ### The long action
 
 A craft is a **long action**: one object in the core, registered with the
-scheduler like needs (1 Hz, steps up to 30 s under compression), so it advances
+scheduler like needs (1 Hz, with bigger steps under compression), so it advances
 at any compression and in catch-up by the same code.
 
 1. **Start.** Both hands must be empty. Nothing puts away what you hold for
@@ -236,15 +236,16 @@ at any compression and in catch-up by the same code.
    generic `work_in_progress` type that holds the recipe id, the progress, and
    the components in its own pocket. It goes into your hands, both of them, as
    DESIGN.md asks ("both hands busy"), so the half-made thing shows in first
-   person. Then compression starts (`Simulation.compress`).
+   person. Then compression starts, up to the craft's content cap
+   (`Simulation.compressLongAction`).
 2. **Working.** Progress goes up by the game seconds that pass: gathering
    first, then work. Every step checks that the tools and the workstation are
    still within reach and usable. If one has been moved away, destroyed or
    otherwise lost, the craft stops at once, as if you had chosen Stop, with
    the reason; the work item keeps its progress, and "Continue" works again
    once the tool is back.
-3. **Interrupted.** Compression drops to 1× and asks Continue or Stop
-   (the compression controller does this already; 1.8 gives it its screen). Stop leaves the work item in your hands with its
+3. **Interrupted.** Compression drops to 1× and asks Continue or Stop. Stop
+   leaves the work item in your hands with its
    progress. You can walk away with it, put it down, and later choose
    "Continue: torch" from its options.
 4. **Finishing.** When progress reaches the total, the work item becomes the
@@ -373,18 +374,20 @@ with the HUD off. See `src/game/play.ts`, `readingMovementAction` and
 
 Each other action keeps its own close, cancel or wake behavior:
 
+- Wait starts from the character screen's Wait button; a movement key stops it.
 - Rest can be cancelled with F on its anchor or X; movement does not stop it.
 - Sleep starts at sleepable furniture. Movement and X do not stop it; an emitted
   interruption wakes the player and clears sleep.
 - Craft is stopped by its cancel key or an emitted interruption; Enter resumes
   it after an interruption.
 
-A nearby or aware hostile does not block admission or interrupt by itself. The
-player decides whether the area is safe before starting a long action. Real
-emitted events, such as a hit or critical need, interrupt it. Long actions run
-in compressed time. `src/core/longAction.ts`, `LongActions.syncInterruption`,
-wakes sleepers, and `src/core/sim.ts`, `Simulation.checkInterruptions`, keeps
-events live.
+A nearby or aware hostile neither refuses a long action nor interrupts it. The
+player decides whether the area is safe enough, for example waiting behind
+walls the shamblers can't get through. Emitted events, such as a hit or a
+critical need, interrupt it. Long actions run in compressed time, each up to
+its content cap (DESIGN.md, "Long actions"). `src/core/longAction.ts`,
+`LongActions.syncInterruption`, wakes sleepers, and `src/core/sim.ts`,
+`Simulation.checkInterruptions`, keeps events live.
 
 ## Decisions
 
@@ -419,8 +422,7 @@ These contracts define the interaction boundary:
    charge is spent. Whether matches alone strike a brief light remains open for
    BR. See `src/game/primaryAction.ts`, `ignitionTargetForHand`, and
    `src/game/survival.ts`, `Survival.use`.
-9. **Held consumables.** Food and drink use their `food` component; medical items
-   are selected by category. The primary action calls `Survival.use`, while
-   quickbar actions remain owned by `Survival.useFromQuickbar`. Until the Slice 3
-   body model includes wounds, using a bandage is refused. See
-   `src/game/survival.ts`, `Survival.use`.
+9. **Held consumables.** Food and drink use their `food` component; a treatment
+   item uses its content `treatment`, on a wound it can help. The primary action
+   calls `Survival.use`, while quickbar actions remain owned by
+   `Survival.useFromQuickbar`. See `src/game/survival.ts`, `Survival.use`.

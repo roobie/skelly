@@ -121,7 +121,6 @@ export interface DebugRuntime {
   readonly frozen: boolean;
   readonly spawnOpen: boolean;
   readonly revealZombies: boolean;
-  dangerReason: () => string | undefined;
   handleAction: (action: string) => boolean;
   closeMenus: () => void;
   target: (eye: Vec3, dir: Vec3, active: boolean) => string;

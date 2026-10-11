@@ -33,6 +33,48 @@ describe('snapshot state components', () => {
     expect(restored.sim.actions.job).toMatchObject({ jobType: 'wait', stopped: false });
     expect(restored.sim.compression.active).toBe(true);
   });
+  it('round-trips loot identity so returning and retaking an item does not recount it', async () => {
+    const source = createRuntime();
+    const pos = source.player.body.pos.map(Math.floor) as [number, number, number];
+    const cupboard = source.inventory.furnish({ type: 'kitchen_cupboard', pos, size: [2, 2, 1], facing: 'n' })!;
+    const beans = source.inventory.create('canned_beans');
+    expect(source.inventory.add(beans, { kind: 'furniture', entity: cupboard, pocket: 0 })).toBe(true);
+    source.inventory.entities.markSearched(cupboard);
+    const pile = { kind: 'pile', pos } as const;
+    expect(source.inventory.move(beans, pile).ok).toBe(true);
+
+    const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    const restoredBeans = restored.inventory.itemByUid(beans.uid)!;
+    const restoredCupboard = restored.entities.byUid(cupboard.uid)!;
+    expect(restoredBeans.lootedCount).toBe(1);
+    expect(restored.inventory.looted.get('canned_beans')).toBe(1);
+
+    expect(restored.inventory.move(restoredBeans, { kind: 'furniture', entity: restoredCupboard, pocket: 0 }).ok).toBe(
+      true,
+    );
+    expect(restored.inventory.move(restoredBeans, pile).ok).toBe(true);
+    expect(restored.inventory.looted.get('canned_beans')).toBe(1);
+  });
+
+  it('round-trips a consumed unit from a looted stack without invalidating its marker', async () => {
+    const source = createRuntime();
+    const pos = source.player.body.pos.map(Math.floor) as [number, number, number];
+    const cupboard = source.inventory.furnish({ type: 'kitchen_cupboard', pos, size: [2, 2, 1], facing: 'n' })!;
+    const shells = source.inventory.create('shell_12_gauge_00_buck', 2);
+    expect(source.inventory.add(shells, { kind: 'furniture', entity: cupboard, pocket: 0 })).toBe(true);
+    source.inventory.entities.markSearched(cupboard);
+    expect(source.inventory.move(shells, { kind: 'pile', pos }).ok).toBe(true);
+    expect(source.inventory.looted.get(shells.type)).toBe(2);
+
+    expect(source.inventory.consume(shells, 1)).toBe(true);
+    expect(shells).toMatchObject({ count: 1, lootedCount: 1 });
+    const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    expect(restored.inventory.itemByUid(shells.uid)).toMatchObject({ count: 1, lootedCount: 1 });
+    expect(restored.inventory.looted.get(shells.type)).toBe(2);
+  });
+
   it('keeps a crouch toggle and its body height through an inactive long action and deterministic save continuation', () => {
     const uninterrupted = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'rest')).toBeUndefined();
@@ -94,7 +136,7 @@ describe('snapshot state components', () => {
     expect(actor.practice.crafting).toBe(0);
   });
 
-  it('round-trips body wounds, a partially recovered region and a stopped treatment action', async () => {
+  it('round-trips body wounds with their bleeding tiers, a partially recovered region and a stopped treatment action', async () => {
     const runtime = createRuntime();
     const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
@@ -104,7 +146,8 @@ describe('snapshot state components', () => {
     }
     const rag = runtime.inventory.create('rag');
     expect(runtime.inventory.add(rag, { kind: 'hand', side: 'right' })).toBe(true);
-    runtime.sim.body.impact(1, 'leftArm', { bleeding: true });
+    const worstTier = runtime.sim.body.tuning.bleeding.tiers.length - 1;
+    runtime.sim.body.impact(1, 'leftArm', { bleeding: 0 });
     expect(runtime.survival.use(rag)).toBeUndefined();
     expect(runtime.sim.actions.job).toMatchObject({ jobType: 'treatment', region: 'leftArm', itemUid: rag.uid });
     const treatmentJob = runtime.sim.actions.job;
@@ -114,11 +157,17 @@ describe('snapshot state components', () => {
     runtime.sim.scheduler.advance(treatmentJob.duration / 2);
     runtime.sim.actions.stop();
     runtime.sim.body.impact(10, 'head');
+    runtime.sim.body.impact(1, 'rightLeg', { bleeding: worstTier });
+    runtime.sim.body.impact(1, 'torso', { bleeding: 0 });
     const initialHeadDamage = runtime.sim.body.regionDamage.head;
     runtime.sim.scheduler.advance(1);
     const recoveredHeadDamage = runtime.sim.body.regionDamage.head;
     expect(recoveredHeadDamage).toBeGreaterThan(0);
     expect(recoveredHeadDamage).toBeLessThan(initialHeadDamage);
+    expect(runtime.sim.body.wounds.rightLeg?.bleeding).toBeGreaterThan(worstTier);
+    // Partly closed by itself, so the save carries a severity between band edges.
+    expect(runtime.sim.body.wounds.torso?.bleeding).toBeGreaterThan(0);
+    expect(runtime.sim.body.wounds.torso?.bleeding).toBeLessThan(1);
 
     const snapshot = capture(runtime);
     expect(snapshot.character.longAction.job).toMatchObject({
@@ -126,7 +175,7 @@ describe('snapshot state components', () => {
       stopped: true,
       region: 'leftArm',
       itemUid: rag.uid,
-      treatment: 'rag',
+      itemType: 'rag',
     });
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     const loaded = createRuntime(decoded.snapshot);
@@ -136,7 +185,7 @@ describe('snapshot state components', () => {
       stopped: true,
       region: 'leftArm',
       itemUid: rag.uid,
-      treatment: 'rag',
+      itemType: 'rag',
       elapsed: (snapshot.character.longAction.job as { elapsed: number }).elapsed,
     });
     expect(loaded.sim.actions.resume()).toBeUndefined();
@@ -148,7 +197,6 @@ describe('snapshot state components', () => {
     loaded.sim.scheduler.advance(remainingSimSeconds);
     expect(loaded.sim.actions.job).toBeUndefined();
     expect(loaded.inventory.itemByUid(rag.uid)).toBeUndefined();
-    expect(loaded.sim.body.wounds.leftArm?.bleeding).toBe(false);
   });
 
   it('round-trips a worn, active headlamp as the selected light', async () => {
@@ -164,6 +212,20 @@ describe('snapshot state components', () => {
     expect(restored.inventory.locate(restoredHeadlamp)).toMatchObject({ kind: 'worn', slot: 'head' });
     expect(restoredHeadlamp.on).toBe(true);
     expect(restored.survival.lit?.uid).toBe(headlamp.uid);
+  });
+
+  it('round-trips sleep debt past 100, the alarm wake hour and a running alarm sleep with its wake time', async () => {
+    const runtime = createRuntime();
+    runtime.sim.needs.fatigue = 150;
+    runtime.sim.actions.wakeGameHour = 7;
+    const wakeAt = runtime.sim.time + 3600;
+    expect(runtime.sim.actions.startRest('sleep', -10, 1, wakeAt)).toBeUndefined();
+
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.sim.needs.fatigue).toBe(150);
+    expect(loaded.sim.actions.wakeGameHour).toBe(7);
+    expect(loaded.sim.actions.rest).toMatchObject({ kind: 'sleep', wakeAt });
   });
 
   it('round-trips a stopped reading action with its held book uid and progress', async () => {

@@ -47,7 +47,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
       items: [
         {
           id: 'fixture_light_gun',
-          name: 'Fixture light gun',
+          name: 'Light test firearm',
           category: 'weapon',
           weight: 1,
           size: [1, 1],
@@ -62,7 +62,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
         },
         {
           id: 'fixture_heavy_gun',
-          name: 'Fixture heavy gun',
+          name: 'Heavy test firearm',
           category: 'weapon',
           weight: 1,
           size: [1, 1],
@@ -77,7 +77,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
         },
         {
           id: 'fixture_shared_gun',
-          name: 'Fixture shared gun',
+          name: 'Shared test firearm',
           category: 'weapon',
           weight: 1,
           size: [1, 1],

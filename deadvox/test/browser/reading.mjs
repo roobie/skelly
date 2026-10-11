@@ -3,7 +3,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative consumer/presentation assertions.
 // biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -36,7 +36,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
+          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
         );
       },
     },
@@ -51,17 +51,25 @@ try {
     viewport: mode === 'consumer' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
   });
   const errors = [];
+  const triggeredErrors = [];
   const states = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('pageerror', (error) => {
+    if (error.message === 'Browser-stage game-loop failure') {
+      triggeredErrors.push(error.message);
+    } else {
+      errors.push(error.message);
+    }
+  });
   page.on('console', (message) => {
-    if (message.type() === 'error') {
+    if (message.type() === 'error' && !message.text().includes('Browser-stage game-loop failure')) {
       errors.push(message.text());
     }
   });
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(
     browserStageUrl(
       'reading',
-      `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0&save-test=1`,
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -171,26 +179,61 @@ try {
   let proof;
   if (mode === 'consumer') {
     await pressAction(page, 'ui.main-menu-toggle');
-    const interactionOption = await page.evaluate(
-      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('interaction'))",
-    );
-    assert.ok(interactionOption >= 0);
-    const interactionCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(interactionOption);
+    const interactionCheckbox = page.locator('#hud-options [data-hud-option="interaction"] input');
     // The prompt oracle requires player-enabled hints, not a particular HUD default.
     if (!(await interactionCheckbox.isChecked())) {
       await uiClick(interactionCheckbox);
     }
     assert.equal(await interactionCheckbox.isChecked(), true);
-    const handlingOption = await page.evaluate(
-      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('handling'))",
-    );
-    assert.ok(handlingOption >= 0);
-    const handlingCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(handlingOption);
+    const handlingCheckbox = page.locator('#hud-options [data-hud-option="handling"] input');
     if (await handlingCheckbox.isChecked()) {
       await uiClick(handlingCheckbox);
     }
     assert.equal(await handlingCheckbox.isChecked(), false);
     await pressAction(page, 'ui.main-menu-toggle');
+    const otherHudOptions = async () =>
+      page
+        .locator('#hud-options input')
+        .evaluateAll((inputs) =>
+          inputs
+            .filter((input) => input.closest('[data-hud-option]')?.getAttribute('data-hud-option') !== 'shown')
+            .map((input) => input.checked),
+        );
+    await page.waitForFunction(() => {
+      const hud = document.querySelector('#hud');
+      const shown = document.querySelector('#hud-options [data-hud-option="shown"] input');
+      return hud !== null && (hud.textContent?.trim().length ?? 0) > 0 && shown?.checked === true;
+    });
+    const otherOptionsBeforeToggle = await otherHudOptions();
+    assert.ok(otherOptionsBeforeToggle.length > 0, 'HUD options besides shown exist');
+    const hideHud = await holdInputAction(page, 'hud.toggle');
+    try {
+      await page.waitForFunction(() => {
+        const hud = document.querySelector('#hud');
+        const shown = document.querySelector('#hud-options [data-hud-option="shown"] input');
+        return hud?.textContent?.trim() === '' && shown?.checked === false;
+      });
+    } finally {
+      await hideHud();
+    }
+    const showHud = await holdInputAction(page, 'hud.toggle');
+    try {
+      await page.waitForFunction((otherOptions) => {
+        const hud = document.querySelector('#hud');
+        const shown = document.querySelector('#hud-options [data-hud-option="shown"] input');
+        const other = [...document.querySelectorAll('#hud-options input')]
+          .filter((input) => input.closest('[data-hud-option]')?.getAttribute('data-hud-option') !== 'shown')
+          .map((input) => input.checked);
+        return (
+          hud !== null &&
+          (hud.textContent?.trim().length ?? 0) > 0 &&
+          shown?.checked === true &&
+          JSON.stringify(other) === JSON.stringify(otherOptions)
+        );
+      }, otherOptionsBeforeToggle);
+    } finally {
+      await showHud();
+    }
     const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
@@ -453,7 +496,7 @@ try {
       { seconds: 5, from: searchStart, label: 'crate search (2.25 simulated seconds)', record },
     );
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
-    const note = page.locator('.inv-item').filter({ hasText: 'Placeholder note' });
+    const note = page.locator('.inv-item[title^="Placeholder note,"]');
     await note.waitFor();
     const noteRowUid = Number(await note.getAttribute('data-uid'));
     const itemCount = await page.evaluate(() => globalThis.readingWitness.screen.order.length);
@@ -796,14 +839,105 @@ try {
     await page.locator('#reading').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
-    await page.keyboard.press('Escape');
-    assert.equal(await page.locator('#reading').isVisible(), false);
-    const escaped = await page.evaluate(() => ({
+    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    await page.waitForFunction(() => {
+      const { controller } = globalThis.deadvoxSaveTest;
+      return controller.savedGeneration > 0 && !controller.writing && !controller.queued;
+    });
+    const generationBeforeError = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration);
+    assert.ok(generationBeforeError > 0, 'the error test begins with a committed save');
+    const beforeError = await page.evaluate(() => ({
+      paused: globalThis.readingWitness.session.sim.paused,
       locked: globalThis.readingWitness.input.locked,
-      overlayHidden: document.querySelector('#overlay').hidden,
     }));
-    assert.equal(escaped.overlayHidden, escaped.locked);
-    proof = { before, during, escaped, menu, resumed: pageResumed };
+    assert.deepEqual(beforeError, { paused: false, locked: true });
+    await page.evaluate(() => globalThis.readingWitness.triggerGameLoopError());
+    await page.locator('#error-report').waitFor({ state: 'visible' });
+    await page.waitForFunction(
+      () => globalThis.readingWitness.session.sim.paused && !globalThis.readingWitness.input.locked,
+    );
+    const stopped = await page.evaluate(() => {
+      const { session, playFrame, requestResume } = globalThis.readingWitness;
+      const originalRequestPointerLock = Element.prototype.requestPointerLock;
+      if (typeof originalRequestPointerLock !== 'function') {
+        throw new Error('Element.requestPointerLock is unavailable');
+      }
+      let pointerLockRequests = 0;
+      Object.defineProperty(Element.prototype, 'requestPointerLock', {
+        configurable: true,
+        value(...args) {
+          pointerLockRequests += 1;
+          return originalRequestPointerLock.apply(this, args);
+        },
+      });
+      try {
+        requestResume();
+        const frameContinues = playFrame(performance.now());
+        return { paused: session.sim.paused, frameContinues, pointerLockRequests };
+      } finally {
+        Object.defineProperty(Element.prototype, 'requestPointerLock', {
+          configurable: true,
+          value: originalRequestPointerLock,
+        });
+      }
+    });
+    assert.equal(stopped.paused, true, 'play remains paused after a play error');
+    assert.equal(stopped.pointerLockRequests, 0, 'resume does not request pointer lock after a play error');
+    assert.equal(stopped.frameContinues, false, 'the frame driver stops after a play error');
+    const backgroundIsInert = await page.evaluate(() => {
+      const background = [...document.body.children].filter((element) => element.id !== 'error-report');
+      return background.every((element) => element.inert);
+    });
+    assert.equal(backgroundIsInert, true, 'the error panel makes every background surface inert');
+    const errorText = await page.locator('[data-error-text]').textContent();
+    assert.ok(errorText?.includes('Browser-stage game-loop failure'));
+    assert.equal(await page.locator('[data-error-feedback]').isVisible(), true);
+    const feedbackLink = await page.locator('[data-error-feedback]').evaluate((link) => link.href);
+    const menuFeedbackLink = await page.locator('#playtest-feedback').evaluate((link) => link.href);
+    assert.equal(
+      new URL(feedbackLink).origin + new URL(feedbackLink).pathname,
+      new URL(menuFeedbackLink).origin + new URL(menuFeedbackLink).pathname,
+    );
+    assert.equal(
+      new URL(feedbackLink).searchParams.get('template'),
+      new URL(menuFeedbackLink).searchParams.get('template'),
+    );
+    await page.locator('[data-error-copy]').click();
+    await page.waitForFunction(async () =>
+      (await navigator.clipboard.readText()).includes('Browser-stage game-loop failure'),
+    );
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    assert.equal(copied, errorText);
+    const downloadEvent = page.waitForEvent('download');
+    await page.locator('[data-error-download]').click();
+    const download = await downloadEvent;
+    const reportPath = await download.path();
+    assert.ok(reportPath);
+    const report = JSON.parse(await readFile(reportPath, 'utf8'));
+    assert.equal(report.error.message, 'Browser-stage game-loop failure');
+    assert.ok(report.error.stack.includes('Browser-stage game-loop failure'));
+    assert.equal(report.world.seed, 1);
+    assert.equal(report.world.site, 'testHouse');
+    assert.equal(typeof report.world.clock, 'string');
+    assert.equal(report.userAgent, await page.evaluate(() => navigator.userAgent));
+    assert.equal(typeof report.buildRevision, 'string');
+    assert.ok(report.buildRevision.length > 0);
+    assert.equal(report.playtest.metrics.seed, 1);
+    assert.ok(report.playtest.replay || report.playtest.replayUnavailable);
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForFunction(() => {
+      const { controller } = globalThis.deadvoxSaveTest;
+      return !(controller.writing || controller.queued);
+    });
+    assert.equal(
+      await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration),
+      generationBeforeError,
+      'hiding the tab after the error leaves the last committed save unchanged',
+    );
+    proof = { before, during, menu, resumed: pageResumed, report: { error: report.error, world: report.world } };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';
@@ -902,16 +1036,110 @@ try {
     assert.equal(await page.locator('#overlay').isVisible(), true);
     await page.locator('#go').click();
     await page.waitForFunction(() => globalThis.readingWitness.input.locked);
+    const generationBeforeLiveCheckpoint = await page.evaluate(
+      () => globalThis.readingWitness.saveController.savedGeneration,
+    );
+    await page.evaluate(() => {
+      const controller = globalThis.readingWitness.saveController;
+      controller.checkpoints.nextAt = 0;
+      controller.afterFrame();
+    });
+    await page.waitForFunction(
+      (generation) => globalThis.readingWitness.saveController.savedGeneration > generation,
+      generationBeforeLiveCheckpoint,
+    );
+    const generationBeforeDeath = await page.evaluate(() => globalThis.readingWitness.saveController.savedGeneration);
     await page.evaluate(() => {
       globalThis.readingWitness.reading.open({ title: 'Death closes paper', text: 'Placeholder' });
       globalThis.readingWitness.session.sim.hurt(9999, 'reading browser fixture');
     });
     await page.locator('#death').waitFor({ state: 'visible' });
+    await page.evaluate(() => {
+      const controller = globalThis.readingWitness.saveController;
+      controller.checkpoints.nextAt = 0;
+      controller.afterFrame();
+    });
+    await page.waitForFunction(
+      (generation) => globalThis.readingWitness.saveController.savedGeneration > generation,
+      generationBeforeDeath,
+    );
+    assert.equal(await page.locator('#overlay').isVisible(), false);
     assert.equal(await page.locator('#reading').isVisible(), false);
-    proof = { sizes, endVisible };
+    await page.waitForFunction(() => !globalThis.readingWitness.input.locked);
+    await page.evaluate(() => {
+      const { requestPointerLock } = Element.prototype;
+      if (typeof requestPointerLock !== 'function') {
+        throw new Error('Element.requestPointerLock is unavailable');
+      }
+      let requests = 0;
+      Object.defineProperty(Element.prototype, 'requestPointerLock', {
+        configurable: true,
+        value(...args) {
+          requests += 1;
+          return requestPointerLock.apply(this, args);
+        },
+      });
+      Object.defineProperty(globalThis, 'deathMenuPointerLockRequests', { get: () => requests });
+    });
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(
+      () => !document.querySelector('#overlay').hidden && document.querySelector('#go').hidden,
+    );
+    const deathMenuOpened = await page.evaluate(() => ({
+      overlayHidden: document.querySelector('#overlay').hidden,
+      goHidden: document.querySelector('#go').hidden,
+    }));
+    assert.deepEqual(deathMenuOpened, { overlayHidden: false, goHidden: true });
+    await page.locator('#overlay').click({ position: { x: 8, y: 8 } });
+    assert.equal(await page.evaluate(() => globalThis.deathMenuPointerLockRequests), 0);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.querySelector('#overlay').hidden);
+    assert.equal(await page.locator('#death').isVisible(), true);
+    assert.equal(await page.getByRole('button', { name: 'New world', exact: true }).isVisible(), true);
+    const feedbackLink = page.locator('#death a');
+    assert.equal(await feedbackLink.isVisible(), true);
+    const [deathFeedbackHref, menuFeedbackHref] = await Promise.all([
+      feedbackLink.getAttribute('href'),
+      page.locator('#playtest-feedback').getAttribute('href'),
+    ]);
+    assert.ok(menuFeedbackHref);
+    assert.equal(deathFeedbackHref, menuFeedbackHref);
+    await page.context().route('https://github.com/**', (route) => route.fulfill({ status: 200, body: '' }));
+    const feedbackPopupPromise = page.waitForEvent('popup');
+    await feedbackLink.click();
+    const feedbackPopup = await feedbackPopupPromise;
+    await feedbackPopup.waitForLoadState('domcontentloaded');
+    await feedbackPopup.close();
+    await page.context().unroute('https://github.com/**');
+    assert.equal(await page.locator('#death').isVisible(), true);
+    assert.equal(await page.getByRole('button', { name: 'New world', exact: true }).isVisible(), true);
+    assert.equal(await page.evaluate(() => globalThis.deathMenuPointerLockRequests), 0);
+
+    const playtestUrl = page.url();
+    await page.getByRole('button', { name: 'New world', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#continue').isVisible(), false);
+    await page.goto(playtestUrl, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#continue').isVisible(), false);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    assert.equal(await page.locator('#continue').isVisible(), false);
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.readingWitness && globalThis.readingWitness.session.sim.dead === undefined,
+      undefined,
+      { timeout: 60_000 },
+    );
+    assert.equal(await page.locator('#save-confirmation').isVisible(), false);
+    proof = { sizes, endVisible, deathMenuOpened, feedbackHref: deathFeedbackHref };
   }
+  assert.deepEqual(triggeredErrors, mode === 'consumer' ? ['Browser-stage game-loop failure'] : []);
   assert.deepEqual(errors, []);
-  await writeFile(resolve(artifacts, 'result.json'), JSON.stringify({ mode, ...proof, states, errors }, null, 2));
+  await writeFile(
+    resolve(artifacts, 'result.json'),
+    JSON.stringify({ mode, ...proof, states, errors, triggeredErrors }, null, 2),
+  );
 } finally {
   await browser?.close();
   await vite.close();

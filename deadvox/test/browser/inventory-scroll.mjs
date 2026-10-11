@@ -15,6 +15,7 @@ const { firefox } = await loadPlaywright();
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
+const RACK_GRID = [5, 6];
 // Owned overflowing containers/items: changing shipped clothes or loadouts cannot turn this into a no-op.
 const content = [
   {
@@ -27,7 +28,7 @@ const content = [
           name: 'Scroll rack',
           size: [1, 1, 1],
           color: '#494b4e',
-          container: { pockets: [{ name: 'Rack', grid: [5, 6], handlingSimSeconds: 0.1 }] },
+          container: { pockets: [{ name: 'Rack', grid: RACK_GRID, handlingSimSeconds: 0.1 }] },
         },
         {
           id: 'scroll_small_container',
@@ -68,15 +69,20 @@ const content = [
 ];
 const fixture = `
 import '/src/ui/style.css';
+import uiFile from '/src/content/base/ui.json';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
+import { visibleGridName } from '/src/core/inventoryGridName.ts';
+import { BUNDLED_CONTENT } from '/src/game/bundledContent.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
-const { registry, issues } = buildRegistry(${JSON.stringify(content)});
+import { applyUiTokens } from '/src/ui/uiTokens.ts';
+const { registry, issues } = buildRegistry([...${JSON.stringify(content)}, { source: 'ui.json', data: uiFile }]);
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
+applyUiTokens(registry, document.documentElement);
 const inventory = new Inventory(registry);
 const body = new Body({
   id: 'scroll-fixture',
@@ -86,10 +92,18 @@ const body = new Body({
   knockoutSimSeconds: 1,
   staminaRegenDelaySimSeconds: 5,
   proneEyeHeightMetres: 0.2,
-  bluntShockPerDamage: 2,
+  shockPerDamage: { blunt: 2, cut: 0, pierce: 0 },
   treatmentSimSeconds: 1,
+  treatmentSpread: { min: 0.5, max: 1.5 },
   wakeShock: 5,
-  bloodLossPerSimSecond: 0.004,
+  bleeding: {
+    refusal: 'Fixture bleeding',
+    blockCompressionAtLossPerSimSecond: 0,
+    tiers: [{
+      id: 'fixture', label: 'Fixture bleeding', warn: true, bloodLossPerSimSecond: 0.01, closeSimSeconds: 600,
+      treatmentEffort: 1, minDamage: 0, chance: { blunt: 0, cut: 0, pierce: 0 }, drip: { rate: 1, size: 1 },
+    }],
+  },
   bloodRecoveryPerSimSecond: 0.002,
   shockRecoveryPerSimSecond: 0.1,
   advancedInfectionHealthLossPerSimSecond: 0.0005,
@@ -98,7 +112,7 @@ const body = new Body({
   movementSlowdownPerDamage: 0.005,
   minimumMovementSpeed: 0.5,
 });
-body.impact(1, 'leftArm', { bleeding: true });
+body.impact(1, 'leftArm', { bleeding: 0 });
 for (const slot of ['legs', 'torso', 'back']) {
   if (!inventory.add(inventory.create('scroll_' + slot), { kind: 'worn' })) throw Error('worn fixture failed');
 }
@@ -110,12 +124,14 @@ const populatePiles = () => {
   screen.update();
 };
 let needsText = 'health 100% · stamina 100%';
+const dispatches = [];
+let capToken;
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
-  containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: () => undefined, searching: () => false,
+  containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
-  body: () => body.snapshotState(), character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
+  body: () => body, character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
@@ -140,16 +156,34 @@ const target = document.querySelector('#view');
 const menu = mountMenuPointer({ input, canvas: target, cursor: document.querySelector('#game-cursor') });
 let gameplayWheels = 0;
 target.addEventListener('wheel', () => gameplayWheels++);
-globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions: BODY_REGIONS,
+globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu, bodyRegions: BODY_REGIONS,
   containerMaxWidthCells: registry.inventory.get('player')?.containerMaxWidthCells,
   populatePiles,
+  // Base items upright and turned, plus wide-glyph names that overflow small and tall footprints whatever the base
+  // names are. A name's visible start is what validate predicts its cell shows.
+  gridNames: [
+    ...[...BUNDLED_CONTENT.registry.items.values()].map(({ name, size }) => ({ name, size })),
+    ...['WM mw WM mw WM mw WM mw WM mw WM mw', 'WmWmWmWmWmWmWmWmWmWmWmWmWmWm'].flatMap((name) =>
+      [[1, 1], [2, 1], [1, 3], [2, 2]].map((size) => ({ name, size })),
+    ),
+  ].flatMap(({ name, size: [w, h] }) =>
+    (w === h ? [[w, h]] : [[w, h], [h, w]]).map(([cw, ch]) => ({ name, w: cw, h: ch, visible: visibleGridName(name, cw, ch) })),
+  ),
+  get capTokenUid() { return capToken?.uid; },
+  useUiTuning(tuning) {
+    const ui = buildRegistry([{ source: 'ui-tuning-fixture', data: { ui: [{ id: 'core', ...tuning }] } }]);
+    if (ui.issues.length) throw Error('Invalid UI tuning fixture: ' + JSON.stringify(ui.issues));
+    applyUiTokens(ui.registry, document.documentElement);
+    screen.update();
+  },
   addCapRack() {
     const width = registry.inventory.get('player')?.containerMaxWidthCells;
     if (width === undefined) throw Error('content width cap is missing');
     const rack = inventory.entities.add({ type: 'scroll_rack', pos: [0, 0, 0], size: [1, 1, 1], facing: 'n' });
     if (!rack) throw Error('cap-width rack fixture failed');
     rack.searched = true;
-    if (!inventory.add(inventory.create('scroll_token'), { kind: 'furniture', entity: rack, pocket: 0, at: { x: width - 1, y: 0, rotated: false } })) {
+    capToken = inventory.create('scroll_token');
+    if (!inventory.add(capToken, { kind: 'furniture', entity: rack, pocket: 0, at: { x: width - 1, y: 0, rotated: false } })) {
       throw Error('last-column item fixture failed');
     }
     const small = inventory.entities.add({ type: 'scroll_small_container', pos: [1, 0, 0], size: [1, 1, 1], facing: 'n' });
@@ -458,7 +492,7 @@ try {
       clientWidth: scroll.clientWidth,
       scrollWidth: scroll.scrollWidth,
       scrollLeft: scroll.scrollLeft,
-      itemLeft: Number.parseFloat(item.style.left),
+      itemLeft: itemBox.x - grid.getBoundingClientRect().x,
       itemRect: { x: itemBox.x, y: itemBox.y, width: itemBox.width, height: itemBox.height },
       cell,
       cap: globalThis.scrollFixture.containerMaxWidthCells,
@@ -487,6 +521,126 @@ try {
   );
   assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll its grid sideways');
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
+  // Grid names in this browser's UI font at the base tuning, in boxes that copy the rendered rack token, so they keep
+  // its classes and gutter. Each line but the last runs until the next glyph would cross the border, nothing shows
+  // past the border, and the cell shows at least the start validate predicts. Scroll sizes are read along the lines
+  // only: across them, Firefox counts a font's content area as overflow where it is taller than the line height, so
+  // the lines' own box is compared with the item's content box instead.
+  const nameFit = await page.evaluate((edge) => {
+    const token = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
+    const grid = token?.closest('.inv-grid');
+    if (!grid) {
+      throw new Error('cap-rack token or its grid is missing');
+    }
+    const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+    const tokenBox = token.getBoundingClientRect();
+    const place = (name, w, h) => {
+      const node = token.cloneNode(false);
+      node.removeAttribute('data-uid');
+      node.classList.remove('selected');
+      node.classList.toggle('inv-item-tall', h > w);
+      node.style.width = `${w * cell - (cell - tokenBox.width)}px`;
+      node.style.height = `${h * cell - (cell - tokenBox.height)}px`;
+      const span = document.createElement('span');
+      span.className = 'inv-item-name';
+      span.textContent = name;
+      node.append(span);
+      grid.append(node);
+      return { node, span };
+    };
+    const contentBox = (node) => {
+      const style = getComputedStyle(node);
+      const inset = (side) =>
+        Number.parseFloat(style[`border${side}Width`]) + Number.parseFloat(style[`padding${side}`]);
+      const box = node.getBoundingClientRect();
+      return {
+        left: box.left + inset('Left'),
+        right: box.right - inset('Right'),
+        top: box.top + inset('Top'),
+        bottom: box.bottom - inset('Bottom'),
+      };
+    };
+    // The centres of a name's glyphs, grouped into the rendered lines by where they sit across the lines.
+    const renderedLines = (span, name, tall) => {
+      const lineHeight = Number.parseFloat(getComputedStyle(span).lineHeight);
+      const lines = [];
+      for (const index of name.split('').keys()) {
+        if (name[index] !== ' ') {
+          const range = document.createRange();
+          range.setStart(span.firstChild, index);
+          range.setEnd(span.firstChild, index + 1);
+          const rect = range.getBoundingClientRect();
+          const glyph = { index, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+          const across = tall ? glyph.x : glyph.y;
+          const line = lines.at(-1);
+          if (line && Math.abs(across - line.across) < lineHeight / 2) {
+            line.glyphs.push(glyph);
+          } else {
+            lines.push({ across, glyphs: [glyph] });
+          }
+        }
+      }
+      return lines;
+    };
+    // The inline size of a run set unbroken in the name's font.
+    const runSize = (span, run, tall) => {
+      const probe = document.createElement('span');
+      probe.style.cssText = 'position: absolute; white-space: pre; visibility: hidden';
+      probe.textContent = run;
+      span.append(probe);
+      const rect = probe.getBoundingClientRect();
+      probe.remove();
+      return tall ? rect.height : rect.width;
+    };
+    const check = ({ name, w, h, visible }) => {
+      const tall = h > w;
+      const { node, span } = place(name, w, h);
+      const inner = contentBox(node);
+      const clip = span.getBoundingClientRect();
+      const lines = renderedLines(span, name, tall);
+      const inlineSize = tall ? inner.bottom - inner.top : inner.right - inner.left;
+      const problems = [];
+      // A line breaks only where its text and the next line's first glyph, set unbroken, overrun the border.
+      const runs = lines.slice(1).map(({ glyphs }, at) => name.slice(lines[at].glyphs[0].index, glyphs[0].index + 1));
+      for (const run of runs.filter((text) => runSize(span, text, tall) <= inlineSize - edge)) {
+        problems.push(`breaks before filling "${run}"`);
+      }
+      const shown = lines
+        .flatMap(({ glyphs }) => glyphs)
+        .filter(({ x, y }) => x > clip.left && x < clip.right && y > clip.top && y < clip.bottom).length;
+      if (shown < visible.replaceAll(' ', '').length) {
+        problems.push(`shows ${shown} glyphs, validate predicts "${visible}"`);
+      }
+      if (tall ? span.scrollHeight > span.clientHeight : span.scrollWidth > span.clientWidth) {
+        problems.push('a line overflows');
+      }
+      if (
+        clip.left < inner.left - edge ||
+        clip.right > inner.right + edge ||
+        clip.top < inner.top - edge ||
+        clip.bottom > inner.bottom + edge
+      ) {
+        problems.push('shows past the border');
+      }
+      node.remove();
+      return {
+        label: `${name} [${w}×${h}]`,
+        problems,
+        runs: runs.length,
+        clipped: shown < name.replaceAll(' ', '').length,
+      };
+    };
+    const results = globalThis.scrollFixture.gridNames.map(check);
+    return {
+      failures: results
+        .filter(({ problems }) => problems.length > 0)
+        .map(({ label, problems }) => `${label}: ${problems.join('; ')}`),
+      filledLines: results.reduce((sum, { runs }) => sum + runs, 0),
+      clippedNames: results.filter(({ clipped }) => clipped).length,
+    };
+  }, EDGE);
+  assert.deepEqual(nameFit.failures, [], 'every grid name fills its lines to the border and stays inside it');
+  assert.ok(nameFit.filledLines > 0 && nameFit.clippedNames > 0, `names wrap and clip: ${JSON.stringify(nameFit)}`);
   // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
   await page.setViewportSize({ width: 1280, height: 400 });
   await dragSplitter(0);
@@ -599,11 +753,14 @@ try {
   await dragSplitter(0);
   const wideLayout = await aroundLayout();
   const wideCapContainer = await capContainerLayout();
+  assert.ok(
+    wideCapContainer.rowSections > balancedCapContainer.rowSections,
+    `widening Around you lets the capped container share a row: ${JSON.stringify({ balancedCapContainer, wideCapContainer })}`,
+  );
   for (const [split, layout] of [
     ['balanced', balancedCapContainer],
     ['wide', wideCapContainer],
   ]) {
-    assert.ok(layout.rowSections > 1, `${split} cap-width container shares a row: ${JSON.stringify(layout)}`);
     assert.ok(
       layout.gridWidth <= layout.cap * layout.cell + 1,
       `${split} container grid stays within the cap: ${JSON.stringify(layout)}`,
@@ -778,6 +935,93 @@ try {
   );
   assert.deepEqual(errors, []);
   assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
+
+  // A HUD scale other than 1 changes the root size the UI is measured in, so a drag and the drawn cursor are right
+  // only if their maths use rendered sizes. The target cell is far enough from the origin that a base-size cell
+  // would round to a neighbour.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.locator('#inventory .inv-tab[data-tab="items"]').click();
+  const baseRootSize = await page.evaluate(() =>
+    Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+  );
+  await page.evaluate(() => {
+    globalThis.scrollFixture.input.setPointerModeForTest(false);
+    globalThis.scrollFixture.menu.update();
+    globalThis.scrollFixture.useUiTuning({ spacing: 0.75, hudScale: 1.25 });
+  });
+  await nextFrames();
+  const scaled = await page.evaluate(() => {
+    const item = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
+    const grid = item?.closest('.inv-grid');
+    if (!grid) {
+      throw new Error('cap-rack token or its grid is missing');
+    }
+    grid.scrollIntoView({ block: 'center', inline: 'nearest' });
+    return {
+      rootSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+      item: item.getBoundingClientRect().toJSON(),
+      grid: grid.getBoundingClientRect().toJSON(),
+    };
+  });
+  assert.ok(
+    Math.abs(scaled.rootSize - 1.25 * baseRootSize) < 0.01,
+    `the fixture HUD scale scales the root size: ${JSON.stringify({ baseRootSize, scaled })}`,
+  );
+  const cell = scaled.grid.width / RACK_GRID[0];
+  const press = { x: scaled.item.x + scaled.item.width / 2, y: scaled.item.y + scaled.item.height / 2 };
+  const grab = { x: Math.min(press.x - scaled.item.x, cell / 2), y: Math.min(press.y - scaled.item.y, cell / 2) };
+  const dropCell = { x: 2, y: 4 };
+  const pointer = { x: scaled.grid.x + (dropCell.x + 0.5) * cell, y: scaled.grid.y + (dropCell.y + 0.5) * cell };
+  assert.ok(
+    await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('.inv-grid') !== null, pointer),
+    `the drop point is on the visible rack grid: ${JSON.stringify({ scaled, pointer })}`,
+  );
+  await page.mouse.move(press.x, press.y);
+  await page.mouse.down();
+  await page.mouse.move(pointer.x, pointer.y, { steps: 8 });
+  const ghost = await page.locator('#inventory-drag-root .inv-ghost').boundingBox();
+  await page.mouse.up();
+  assert.ok(
+    ghost && Math.abs(ghost.x - (pointer.x - grab.x)) <= 0.5 && Math.abs(ghost.y - (pointer.y - grab.y)) <= 0.5,
+    `the drag ghost's origin is the pointer less the grab offset: ${JSON.stringify({ ghost, pointer, grab })}`,
+  );
+  const drop = await page.evaluate(() => {
+    const { dispatches, capTokenUid } = globalThis.scrollFixture;
+    const move = dispatches.findLast(({ kind, itemUid }) => kind === 'inventory.move' && itemUid === capTokenUid);
+    return move && { kind: move.target.kind, at: move.target.at && { x: move.target.at.x, y: move.target.at.y } };
+  });
+  assert.deepEqual(drop, { kind: 'furniture', at: dropCell }, 'the drop lands in the cell under the pointer');
+  const cursorStart = await page.evaluate(() => {
+    const { input, menu } = globalThis.scrollFixture;
+    input.setPointerModeForTest(true);
+    menu.update();
+    return { x: input.cursorX, y: input.cursorY };
+  });
+  await page.evaluate(dispatchMenuPointerMove, {
+    canvasSelector: '#view',
+    movementX: pointer.x - cursorStart.x,
+    movementY: pointer.y - cursorStart.y,
+  });
+  const cursor = await page.evaluate(() => {
+    const { input, menu } = globalThis.scrollFixture;
+    menu.update();
+    const drawn = document.querySelector('#game-cursor');
+    const box = drawn.getBoundingClientRect();
+    return {
+      cursorX: input.cursorX,
+      cursorY: input.cursorY,
+      tip: { x: box.left + (drawn.classList.contains('hand') ? 4 : 0), y: box.top },
+      visible: box.width > 0 && !drawn.hidden,
+    };
+  });
+  assert.ok(
+    Math.abs(cursor.cursorX - pointer.x) <= 0.5 && Math.abs(cursor.cursorY - pointer.y) <= 0.5,
+    `the menu cursor moved to the drop point: ${JSON.stringify({ cursor, pointer })}`,
+  );
+  assert.ok(
+    cursor.visible && Math.abs(cursor.tip.x - cursor.cursorX) <= 0.5 && Math.abs(cursor.tip.y - cursor.cursorY) <= 0.5,
+    `the drawn cursor sits at the menu cursor position: ${JSON.stringify(cursor)}`,
+  );
   if (engine === 'chromium') {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.addInitScript(() => {

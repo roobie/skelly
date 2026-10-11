@@ -29,6 +29,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { hasSegment } from './authoredTerrain.mjs';
+import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
@@ -39,6 +40,7 @@ import {
   gameMinutes,
   gamePerHour,
   gameTimeOfDay,
+  realSeconds,
   simAcceleration,
   simPerMinute,
   simRate,
@@ -78,6 +80,7 @@ const FirearmsSkillZeroHandlingSchema = strictObject({
 const QualityLevel = pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5));
 const SimSeconds = pipe(NonNegative, transform(simSeconds));
 const PositiveSimSeconds = pipe(Positive, transform(simSeconds));
+const PositiveRealSeconds = pipe(Positive, transform(realSeconds));
 const SimRate = pipe(Positive, transform(simRate));
 const NonNegativeSimRate = pipe(NonNegative, transform(simRate));
 const SimAcceleration = pipe(Positive, transform(simAcceleration));
@@ -199,10 +202,36 @@ const InventoryTuningSchema = strictObject({
   containerMaxWidthCells: Cells,
 });
 
+const UiTuningSchema = strictObject({
+  id: Id,
+  /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
+  spacing: Positive,
+  /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
+  hudScale: Positive,
+});
+
 const SaveTuningSchema = strictObject({
   id: Id,
   /** Simulated seconds of play between periodic checkpoints, independent of the clock ratio. */
   checkpointSimSeconds: PositiveSimSeconds,
+  /** Real seconds without a completed save before a running game confirms page exit. */
+  leaveConfirmationRealSeconds: PositiveRealSeconds,
+});
+
+/** A dimensionless time multiplier; 1 runs at the normal Sim rate. */
+const CompressionCap = pipe(number(), minValue(1, 'must be at least 1'));
+
+const CompressionTuningSchema = strictObject({
+  id: Id,
+  /** The highest compression each compressing long action ramps to; prying always runs at 1×. */
+  caps: strictObject({
+    wait: CompressionCap,
+    rest: CompressionCap,
+    sleep: CompressionCap,
+    craft: CompressionCap,
+    reading: CompressionCap,
+    treatment: CompressionCap,
+  }),
 });
 
 const WearableSchema = strictObject({
@@ -247,12 +276,12 @@ const WeaponSchema = strictObject({
     limbDamageMultiplier: optional(Positive),
     /** Overrides the weapon class's swing-speed multiplier. */
     speedMultiplier: optional(Positive),
-    type: picklist(['blunt', 'cut', 'pierce']),
+    type: picklist(DAMAGE_KINDS),
   }),
 });
 
 const MeleeClassSchema = strictObject({
-  id: picklist(['blunt', 'cut', 'pierce']),
+  id: picklist(DAMAGE_KINDS),
   /** Fractional spread applied symmetrically around base weapon damage. */
   damageVariance: Fraction,
   headDamageMultiplier: Positive,
@@ -400,6 +429,24 @@ const DisassemblySchema = strictObject({
   skill: Id,
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
 });
+/** What one application does to a body wound (DESIGN.md, "Bleeding"). */
+const TreatmentSchema = pipe(
+  strictObject({
+    /** Strength: the bleeding one application closes before its roll and modifiers, in `treatmentEffort` units. */
+    bleeding: optional(Positive),
+    /** The infection stages one application can resolve, and its chance to. */
+    infection: optional(
+      strictObject({
+        stages: pipe(array(picklist(['early', 'advanced'])), nonEmpty('must name a stage')),
+        chance: Fraction,
+      }),
+    ),
+  }),
+  check(
+    (treatment) => treatment.bleeding !== undefined || treatment.infection !== undefined,
+    'must treat bleeding or infection',
+  ),
+);
 
 const ItemSchema = strictObject({
   id: Id,
@@ -416,8 +463,7 @@ const ItemSchema = strictObject({
   container: optional(ContainerSchema),
   wearable: optional(WearableSchema),
   food: optional(FoodSchema),
-  /** An item that applies a named treatment to one body wound. */
-  treatment: optional(picklist(['bandage', 'rag', 'antiseptic', 'antibiotics'])),
+  treatment: optional(TreatmentSchema),
   tool: optional(ToolSchema),
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),
@@ -437,6 +483,8 @@ const ItemSchema = strictObject({
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
+  /** A working alarm clock: carried, it lets a sleep run to a chosen wake hour. */
+  alarm: optional(literal(true)),
   /** Fixed ADS power for a variable-power optic; constrained by its exported range. */
   opticMagnification: optional(Positive),
   /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
@@ -1181,13 +1229,28 @@ const ZombieSchema = strictObject({
   ),
   attack: pipe(
     strictObject({
-      damage: Positive,
       reach: Positive,
       cooldownSimSeconds: PositiveSimSeconds,
       windupSimSeconds: PositiveSimSeconds,
-      hitRegion: optional(picklist(['torso', 'legs'])),
+      /** What a landed hit can be, picked by weight as it lands (DESIGN.md, "Bleeding"). */
+      moves: pipe(
+        array(
+          strictObject({
+            id: Id,
+            weight: Positive,
+            damage: Positive,
+            damageKind: picklist(DAMAGE_KINDS),
+            hitRegions: pipe(
+              array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
+              nonEmpty('needs at least one hit region'),
+            ),
+          }),
+        ),
+        nonEmpty('needs at least one move'),
+      ),
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
+    check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
   ),
   /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/amalgamCarving.ts): the struck voxel
    * and every voxel within the radius of it. Amalgams only. */
@@ -1312,7 +1375,8 @@ const SkillSchema = pipe(
           activity('shot', 'practice') &&
           activity('hit', 'practice') &&
           activity('attachment', 'practice'))) &&
-      (id !== 'melee_combat' || (combat?.melee !== undefined && activity('block', 'practice'))) &&
+      (id !== 'melee_combat' ||
+        (combat?.melee !== undefined && activity('block', 'practice') && activity('hit', 'practice'))) &&
       (id !== 'inventory_management' || (inventory !== undefined && activity('handling', 'practice')));
     const firearm = combat?.firearms;
     const melee = combat?.melee;
@@ -1411,6 +1475,35 @@ const WeatheringSchema = strictObject({
   weatheringBlend: weatheringNumber('weatheringBlend'),
 });
 
+/** One value for every damage kind, so no kind is ever left out. */
+const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) =>
+  strictObject(Object.fromEntries(DAMAGE_KINDS.map((kind) => [kind, value])) as Record<DamageKind, S>);
+
+/** One bleeding tier; the list runs mildest first (DESIGN.md, "Bleeding"). */
+const BleedingTierSchema = strictObject({
+  id: Id,
+  /** How the HUD, inventory and item actions name a wound bleeding at this tier. */
+  label: Name,
+  /** Shown with the warning style and sign. */
+  warn: vBoolean(),
+  /** The character's line when their worst bleeding worsens to this tier; omitted tiers pass unspoken. */
+  notice: optional(Name),
+  /** Blood lost per Sim second at the top of this tier's band. */
+  bloodLossPerSimSecond: SimRate,
+  /** Sim seconds a wound takes to close through this tier's band by itself while the body recovers. */
+  closeSimSeconds: PositiveSimSeconds,
+  /** Treatment quality it takes to close this tier's band. */
+  treatmentEffort: Positive,
+  /** Least hit damage that can open this tier. */
+  minDamage: NonNegative,
+  /** Per-region chance multipliers; omitted regions use 1, and 0 excludes that region. */
+  regionFactor: optional(record(picklist(BODY_REGIONS), NonNegative)),
+  /** The chance a qualifying hit of each kind opens this tier. */
+  chance: perDamageKind(Fraction),
+  /** Drips per second relative to the base rate, and droplet size relative to the base size. */
+  drip: strictObject({ rate: Positive, size: Positive }),
+});
+
 const BodyTuningSchema = strictObject({
   id: Id,
   /** Game hours after a bleeding wound before an at-risk infection becomes early. */
@@ -1424,23 +1517,64 @@ const BodyTuningSchema = strictObject({
   staminaRegenDelaySimSeconds: PositiveSimSeconds,
   /** Player eye height in metres while unconscious and prone. */
   proneEyeHeightMetres: Positive,
-  /** Blunt-force shock damage per point of health damage. */
-  bluntShockPerDamage: Positive,
+  /** Shock damage per point of health damage, by the hit's damage kind. */
+  shockPerDamage: perDamageKind(NonNegative),
   /** Sim seconds required to apply wound treatment. */
   treatmentSimSeconds: PositiveSimSeconds,
+  /** The range each treatment application's strength is multiplied by, rolled per application. */
+  treatmentSpread: pipe(
+    strictObject({ min: NonNegative, max: Positive }),
+    check(({ min, max }) => min <= max, 'min must not be more than max'),
+  ),
   /** Shock restored when the player wakes, on a 0–100 scale. */
   wakeShock: pipe(
     Positive,
     check((value) => value < 100, 'must be below 100'),
   ),
-  /** Blood lost per Sim second while a wound bleeds. */
-  bloodLossPerSimSecond: SimRate,
+  /** The bleeding tiers, and when and with what line bleeding refuses time compression. */
+  bleeding: strictObject({
+    refusal: Name,
+    /** Total blood loss per Sim second at or above which bleeding refuses compression; 0 means any bleeding. */
+    blockCompressionAtLossPerSimSecond: NonNegativeSimRate,
+    tiers: pipe(
+      array(BleedingTierSchema),
+      nonEmpty('needs at least one tier'),
+      check((tiers) => new Set(tiers.map(({ id }) => id)).size === tiers.length, 'bleeding tier ids must be unique'),
+      check(
+        (tiers) =>
+          tiers.every(
+            (tier, index) => index === 0 || tier.bloodLossPerSimSecond > tiers[index - 1]!.bloodLossPerSimSecond,
+          ),
+        'each bleeding tier must lose blood faster than the one before it',
+      ),
+      check(
+        (tiers) => DAMAGE_KINDS.every((kind) => tiers.reduce((sum, tier) => sum + tier.chance[kind], 0) <= 1),
+        "each damage kind's tier chances must add up to 1 or less",
+      ),
+    ),
+  }),
   /** Blood recovered per Sim second when no wound bleeds. */
   bloodRecoveryPerSimSecond: SimRate,
   /** Shock recovered per Sim second outside a knockout. */
   shockRecoveryPerSimSecond: SimRate,
   /** Health lost per Sim second while infection is advanced. */
   advancedInfectionHealthLossPerSimSecond: SimRate,
+  /** Fatigue is sleep debt with no upper cap; this much accrues per Game hour awake. */
+  fatigueRisePerGameHour: GamePerHour,
+  /** Fatigue cleared per Game hour resting, scaled by the furniture's rest quality. */
+  restFatigueRecoveryPerGameHour: GamePerHour,
+  /** Fatigue cleared per Game hour asleep at rest quality 1: a normal sleep. */
+  sleepFatigueRecoveryPerGameHour: GamePerHour,
+  /** The share of a normal sleep's recovery at rest quality 0; it rises linearly to all of it at 1. */
+  roughSleepShare: Fraction,
+  /** Health, and each region's damage, recovered per Game hour while needs are at their floor or above and fatigue under its ceiling. */
+  healthRecoveryPerGameHour: GamePerHour,
+  /** The lowest calories and hydration at which health and regions still recover. */
+  healthRecoveryNeedsFloor: strictObject({ calories: NonNegative, hydration: NonNegative }),
+  /** The highest fatigue at which health and regions still recover, awake and asleep; a state left out has none. */
+  healthRecoveryFatigueCeiling: strictObject({ awake: optional(NonNegative), asleep: optional(NonNegative) }),
+  /** Multiplies health, regional and blood recovery while asleep. */
+  sleepRecoveryFactor: Positive,
   /** Aim sway added per point of torso damage. */
   aimSwayPerDamage: Positive,
   /** Swing slowdown added per point of arm damage. */
@@ -1512,6 +1646,8 @@ const SECTION_DESCRIPTOR = {
   weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
+  compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
+  ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1540,6 +1676,8 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type TreatmentDef = InferOutput<typeof TreatmentSchema>;
+export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'];
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;

@@ -1,3 +1,4 @@
+import { DAMAGE_KINDS } from './body.ts';
 import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import {
@@ -73,7 +74,7 @@ const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean 
   (weapon.limbDamageMultiplier === undefined ||
     (Number.isFinite(weapon.limbDamageMultiplier) && weapon.limbDamageMultiplier > 0)) &&
   (weapon.speedMultiplier === undefined || (Number.isFinite(weapon.speedMultiplier) && weapon.speedMultiplier > 0)) &&
-  (weapon.type === undefined || ['blunt', 'cut', 'pierce'].includes(weapon.type));
+  (weapon.type === undefined || DAMAGE_KINDS.includes(weapon.type));
 
 export class PlayerCombat {
   private playerAttackWait = 0;
@@ -82,16 +83,19 @@ export class PlayerCombat {
   private nextFistHand: MeleeHand;
   private readonly targets: MeleeTargetResolver;
   private readonly onWeaponHit: (uid: number) => void;
+  private readonly onLandedHit: () => void;
 
   constructor(
     targets: MeleeTargetResolver,
     onWeaponHit: (uid: number) => void = () => undefined,
     character: HandedCharacter = DEFAULT_HANDED_CHARACTER,
+    onLandedHit: () => void = () => undefined,
   ) {
     this.character = character;
     this.nextFistHand = dominantSide(character);
     this.targets = targets;
     this.onWeaponHit = onWeaponHit;
+    this.onLandedHit = onLandedHit;
   }
 
   get activeMeleeAction(): Readonly<MeleeActionState> | undefined {
@@ -131,8 +135,11 @@ export class PlayerCombat {
       action.profile === 'fists',
     );
     const weaponUid = action.profile === 'fists' ? null : action.hands[action.hand];
-    if (hit && weaponUid !== null) {
-      this.onWeaponHit(weaponUid);
+    if (hit) {
+      this.onLandedHit();
+      if (weaponUid !== null) {
+        this.onWeaponHit(weaponUid);
+      }
     }
   }
 
@@ -199,7 +206,7 @@ export class PlayerCombat {
       Array.isArray(value) && value.length === 3 && value.every((component) => Number.isFinite(component));
     const validUid = (uid: number | null): boolean => uid === null || (Number.isSafeInteger(uid) && uid > 0);
     if (
-      !['blunt', 'cut', 'pierce', 'fists'].includes(action.profile) ||
+      !(action.profile === 'fists' || DAMAGE_KINDS.includes(action.profile)) ||
       (action.hand !== 'right' && action.hand !== 'left') ||
       typeof action.twoHanded !== 'boolean' ||
       !Number.isFinite(action.cooldown) ||

@@ -127,11 +127,9 @@ queue or timer. Native tagged descriptors distinguish rest, sleep and craft.
 Rest descriptors own their rate/start fatigue/elapsed time; craft descriptors
 hold only a non-owning work UID and the active-time cursor/status.
 
-`RestController` now selects rates and forwards controls only; its mutable action,
-frame-completion logic and separate snapshot/restore authority are retired. Stop
-keeps the core descriptor/progress, while the existing rest UI hides a manually
-stopped action. Continue preserves it. Interruption UI, safety checks, fatigue
-recovery/bed bonus and normal compression ramp-down remain unchanged in intent.
+`RestController` selects rates and forwards controls only; the core descriptor
+owns the action, its progress and its saved state. Stop keeps the descriptor and
+progress, while the rest UI hides a manually stopped action; Continue resumes it.
 Stopped actions do not recover fatigue or accumulate work while the world advances.
 
 The `work` field on `work_in_progress` owns the tagged craft or disassembly

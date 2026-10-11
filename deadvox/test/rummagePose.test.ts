@@ -190,13 +190,13 @@ it('held-display capability selects the raised compass display and rummage grip 
         items: [
           {
             id: 'fixture_display',
-            name: 'Fixture display',
+            name: 'Compass fixture',
             category: 'misc',
             weight: 17,
             size: [1, 1],
             heldDisplay: 'compass',
           },
-          { id: 'fixture_plain', name: 'Fixture plain item', category: 'misc', weight: 17, size: [1, 1] },
+          { id: 'fixture_plain', name: 'Plain fixture', category: 'misc', weight: 17, size: [1, 1] },
         ],
       },
     },

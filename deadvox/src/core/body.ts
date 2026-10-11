@@ -1,5 +1,7 @@
 import { SECONDS_PER_HOUR } from './clock.ts';
-import type { BodyTuningDef } from './schema.ts';
+import { type ModifiedEffect, type Modifier, type ModifierActor, modified } from './modifiers.ts';
+import type { RecoveryState } from './needs.ts';
+import type { BodyTuningDef, TreatmentDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 export const BODY_REGIONS = ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const;
@@ -8,12 +10,20 @@ const BODY_REGION_WORD_BOUNDARY = /([A-Z])/g;
 const BODY_REGION_INITIAL = /^[a-z]/;
 export const bodyRegionLabel = (region: BodyRegion): string =>
   region.replace(BODY_REGION_WORD_BOUNDARY, ' $1').replace(BODY_REGION_INITIAL, (first) => first.toUpperCase());
-type InfectionStage = 'none' | 'early' | 'advanced' | 'resolved';
-export const BODY_TREATMENTS = ['bandage', 'rag', 'antiseptic', 'antibiotics'] as const;
-export type BodyTreatment = (typeof BODY_TREATMENTS)[number];
+/** What a hit does to flesh; weapons, enemy attacks, bleeding and shock all read it. */
+export const DAMAGE_KINDS = ['blunt', 'cut', 'pierce'] as const;
+export type DamageKind = (typeof DAMAGE_KINDS)[number];
+const INFECTION_STAGES = ['none', 'early', 'advanced', 'resolved'] as const;
+type InfectionStage = (typeof INFECTION_STAGES)[number];
+type BleedingTierDef = BodyTuningDef['bleeding']['tiers'][number];
+const BAND_EPSILON = 1e-9;
 
 interface BodyWound {
-  bleeding: boolean;
+  /**
+   * Bleeding severity: 0 has stopped, and the content tier at index i covers (i, i + 1] (DESIGN.md,
+   * "Bleeding").
+   */
+  bleeding: number;
   infection: InfectionStage;
   infectionGameSeconds: number;
   infectionAtRisk: boolean;
@@ -39,10 +49,18 @@ export interface BodyConsequences {
 }
 
 export interface BodyImpact {
-  bleeding?: boolean;
-  blunt?: boolean;
+  /** Shock follows the kind's `shockPerDamage` unless `shockDamage` overrides it. */
+  kind?: DamageKind;
+  /** The index of the bleeding tier the hit opens. */
+  bleeding?: number;
   shockDamage?: number;
   infectionAtRisk?: boolean;
+}
+
+/** What a body step may recover: whether the needs allow it, and sleep's factor on blood recovery. */
+interface BodyRecovery {
+  recovering?: boolean;
+  recoveryFactor?: number;
 }
 
 const BODY_START: Readonly<BodyState> = Object.freeze({
@@ -56,24 +74,37 @@ const BODY_START: Readonly<BodyState> = Object.freeze({
 
 const clamp = (value: number): number => Math.max(0, Math.min(100, value));
 const validVitals = (value: number): boolean => Number.isFinite(value) && value >= 0 && value <= 100;
-const validWound = (value: unknown): value is BodyWound | null =>
+const validWound = (value: unknown, tierCount: number): value is BodyWound | null =>
   value === null ||
   (typeof value === 'object' &&
     value !== null &&
-    typeof (value as BodyWound).bleeding === 'boolean' &&
-    ['none', 'early', 'advanced', 'resolved'].includes((value as BodyWound).infection) &&
+    Number.isFinite((value as BodyWound).bleeding) &&
+    (value as BodyWound).bleeding >= 0 &&
+    (value as BodyWound).bleeding <= tierCount &&
+    INFECTION_STAGES.includes((value as BodyWound).infection) &&
     Number.isFinite((value as BodyWound).infectionGameSeconds) &&
     (value as BodyWound).infectionGameSeconds >= 0 &&
     typeof (value as BodyWound).infectionAtRisk === 'boolean');
 
-export class Body {
+/** The index of the tier a bleeding severity falls in, or undefined once it has stopped. */
+const bleedingTierIndex = (severity: number): number | undefined =>
+  severity > 0 ? Math.ceil(severity) - 1 : undefined;
+
+export class Body implements ModifierActor {
   private readonly state: BodyState;
   readonly tuning: BodyTuningDef;
+  /** The modifiers on the body's bleeding and treatment numbers (`modifiers.ts`). */
+  readonly modifiers: readonly Modifier[];
 
-  constructor(tuning: BodyTuningDef, state: BodyState = BODY_START as BodyState) {
+  constructor(tuning: BodyTuningDef, state: BodyState = BODY_START as BodyState, modifiers: readonly Modifier[] = []) {
     this.tuning = tuning;
+    this.modifiers = modifiers;
     this.state = structuredClone(state);
     this.validate();
+  }
+
+  private modified(effect: ModifiedEffect, base: number): number {
+    return modified(effect, base, this);
   }
 
   get health(): number {
@@ -96,6 +127,31 @@ export class Body {
     return this.unconscious ? 'You are unconscious' : undefined;
   }
 
+  /** Bleeding at or above content's loss rate refuses time compression (DESIGN.md, "Bleeding"). */
+  get compressionRefusal(): string | undefined {
+    const loss = this.bloodLossPerSimSecond;
+    const { blockCompressionAtLossPerSimSecond: threshold, refusal } = this.tuning.bleeding;
+    return loss > 0 && loss >= this.modified('bleeding.blockCompressionAtLossPerSimSecond', threshold)
+      ? refusal
+      : undefined;
+  }
+
+  /** Blood all bleeding wounds lose per Sim second together. */
+  private get bloodLossPerSimSecond(): number {
+    return BODY_REGIONS.reduce((sum, region) => sum + this.lossRate(this.state.wounds[region]?.bleeding ?? 0), 0);
+  }
+
+  /** The index of the worst tier any wound bleeds at, or undefined when none bleeds. */
+  get worstBleedingTier(): number | undefined {
+    return bleedingTierIndex(Math.max(...BODY_REGIONS.map((region) => this.state.wounds[region]?.bleeding ?? 0)));
+  }
+
+  /** The content tier a region's wound bleeds at, or undefined when it doesn't bleed. */
+  bleedingTier(region: BodyRegion): BleedingTierDef | undefined {
+    const index = bleedingTierIndex(this.state.wounds[region]?.bleeding ?? 0);
+    return index === undefined ? undefined : this.tuning.bleeding.tiers[index];
+  }
+
   get regionDamage(): Readonly<BodyRegionDamage> {
     return this.state.regionDamage;
   }
@@ -115,6 +171,44 @@ export class Body {
         1 - Math.max(regionDamage.leftLeg, regionDamage.rightLeg) * this.tuning.movementSlowdownPerDamage,
       ),
     };
+  }
+
+  // Needs and sleep read their content rates here, once each, so the body's modifier point can wrap them.
+  // Content rates load per Game second; the needs step works in Game hours.
+
+  /** Sleep debt accrued per Game hour awake. */
+  get fatigueRisePerGameHour(): number {
+    return this.tuning.fatigueRisePerGameHour * SECONDS_PER_HOUR;
+  }
+
+  /** Health, and each region's damage, recovered per Game hour while the needs are met. */
+  get healthRecoveryPerGameHour(): number {
+    return this.tuning.healthRecoveryPerGameHour * SECONDS_PER_HOUR;
+  }
+
+  /** What sleep multiplies health, regional and blood recovery by. */
+  get sleepRecoveryFactor(): number {
+    return this.tuning.sleepRecoveryFactor;
+  }
+
+  /** The lowest calories and hydration at which health and regions still recover. */
+  get healthRecoveryNeedsFloor(): Readonly<{ calories: number; hydration: number }> {
+    return this.tuning.healthRecoveryNeedsFloor;
+  }
+
+  /** The highest fatigue at which health and regions still recover in this state; none where content sets none. */
+  healthRecoveryFatigueCeiling(state: RecoveryState): number {
+    return this.tuning.healthRecoveryFatigueCeiling[state] ?? Number.POSITIVE_INFINITY;
+  }
+
+  /** Fatigue's change per Game hour resting or sleeping on furniture of this rest quality. */
+  fatigueRecoveryRate(kind: 'rest' | 'sleep', quality: number): number {
+    const { restFatigueRecoveryPerGameHour, sleepFatigueRecoveryPerGameHour, roughSleepShare } = this.tuning;
+    const perHour =
+      kind === 'rest'
+        ? restFatigueRecoveryPerGameHour * quality
+        : sleepFatigueRecoveryPerGameHour * (roughSleepShare + (1 - roughSleepShare) * quality);
+    return -perHour * SECONDS_PER_HOUR;
   }
 
   snapshotState(): Readonly<BodyState> {
@@ -141,7 +235,11 @@ export class Body {
       throw new Error('Invalid body vitals');
     }
     for (const region of BODY_REGIONS) {
-      if (!(validVitals(state.regionDamage[region]) && validWound(state.wounds[region]))) {
+      if (
+        !(
+          validVitals(state.regionDamage[region]) && validWound(state.wounds[region], this.tuning.bleeding.tiers.length)
+        )
+      ) {
         throw new Error(`Invalid body region ${region}`);
       }
     }
@@ -177,7 +275,7 @@ export class Body {
     }
     for (const region of BODY_REGIONS) {
       const wound = this.state.wounds[region];
-      if (wound?.bleeding || wound?.infection === 'early' || wound?.infection === 'advanced') {
+      if ((wound?.bleeding ?? 0) > 0 || wound?.infection === 'early' || wound?.infection === 'advanced') {
         continue;
       }
       const untilInfectionHours =
@@ -197,9 +295,21 @@ export class Body {
     if (!Number.isFinite(amount) || amount < 0) {
       throw new Error('Invalid body damage');
     }
-    const shockDamage = effects.shockDamage ?? (effects.blunt ? amount * this.tuning.bluntShockPerDamage : 0);
+    const shockPerDamage =
+      effects.kind === undefined ? 0 : this.modified('body.shockPerDamage', this.tuning.shockPerDamage[effects.kind]);
+    const shockDamage = effects.shockDamage ?? amount * shockPerDamage;
     if (!Number.isFinite(shockDamage) || shockDamage < 0) {
       throw new Error('Invalid shock damage');
+    }
+    if (
+      effects.bleeding !== undefined &&
+      !(
+        Number.isInteger(effects.bleeding) &&
+        effects.bleeding >= 0 &&
+        effects.bleeding < this.tuning.bleeding.tiers.length
+      )
+    ) {
+      throw new Error('Invalid bleeding tier');
     }
     const applied = this.damageHealth(amount);
     this.state.regionDamage[region] = clamp(this.state.regionDamage[region] + amount);
@@ -208,23 +318,35 @@ export class Body {
     if (this.state.shock === 0 && (previousShock > 0 || shockDamage > 0)) {
       this.state.knockoutElapsed = 0;
     }
-    if (effects.bleeding) {
-      const wound = this.state.wounds[region];
-      this.state.wounds[region] = wound
-        ? { ...wound, bleeding: true }
-        : {
-            bleeding: true,
-            infection: 'none',
-            infectionGameSeconds: 0,
-            infectionAtRisk: effects.infectionAtRisk ?? true,
-          };
+    if (effects.bleeding !== undefined) {
+      this.state.wounds[region] = bleedingWound(
+        this.state.wounds[region],
+        effects.bleeding,
+        effects.infectionAtRisk ?? true,
+      );
     }
     return applied;
   }
 
-  /** Advances body consequences by simulation seconds and returns a terminal cause, if any. */
-  advance(seconds: number, damageImmune = false, gameSeconds = seconds): string | undefined {
-    if (!Number.isFinite(seconds) || seconds < 0 || !Number.isFinite(gameSeconds) || gameSeconds < 0) {
+  /**
+   * Advances body consequences by simulation seconds and returns a terminal cause, if any. `recovering` says
+   * the needs let the body recover (needs.ts, `needsAllowRecovery`); then every uninfected wound also closes
+   * by itself (DESIGN.md, "Bleeding"). `recoveryFactor` multiplies blood recovery (sleep's `sleepRecoveryFactor`).
+   */
+  advance(
+    seconds: number,
+    damageImmune = false,
+    gameSeconds = seconds,
+    { recovering = false, recoveryFactor = 1 }: BodyRecovery = {},
+  ): string | undefined {
+    if (
+      !Number.isFinite(seconds) ||
+      seconds < 0 ||
+      !Number.isFinite(gameSeconds) ||
+      gameSeconds < 0 ||
+      !Number.isFinite(recoveryFactor) ||
+      recoveryFactor < 0
+    ) {
       throw new Error('Invalid body step');
     }
     let shockRecoverySeconds = seconds;
@@ -239,18 +361,23 @@ export class Body {
       }
     }
     this.state.shock = clamp(this.state.shock + this.tuning.shockRecoveryPerSimSecond * shockRecoverySeconds);
-    let bleedingRegions = 0;
+    let bleeding = false;
+    let bloodLoss = 0;
     for (const region of BODY_REGIONS) {
       const wound = this.state.wounds[region];
       if (!wound) {
         continue;
       }
-      const updatedWound = advanceInfection(wound, gameSeconds, this.tuning);
-      const { infection } = updatedWound;
-      this.state.wounds[region] = updatedWound;
-      if (wound.bleeding) {
-        bleedingRegions += 1;
-      }
+      const advanced = advanceInfection(wound, gameSeconds, this.tuning);
+      const { infection } = advanced;
+      const bled = this.bleed(
+        advanced.bleeding,
+        seconds,
+        recovering && infection !== 'early' && infection !== 'advanced',
+      );
+      this.state.wounds[region] = { ...advanced, bleeding: bled.severity };
+      bleeding ||= wound.bleeding > 0;
+      bloodLoss += bled.loss;
       if (!damageImmune && infection === 'advanced') {
         this.state.health = Math.max(
           0,
@@ -259,9 +386,23 @@ export class Body {
       }
     }
     if (!damageImmune) {
-      this.state.blood = advanceBlood(this.state.blood, bleedingRegions, seconds, this.tuning);
+      this.advanceBlood(bleeding ? bloodLoss : undefined, seconds, recoveryFactor);
     }
     return this.terminalCause();
+  }
+
+  /**
+   * Blood drains by what the wounds lost; only in a step where no wound bled does it recover, at
+   * `recoveryFactor` times its rate.
+   */
+  private advanceBlood(bloodLoss: number | undefined, seconds: number, recoveryFactor: number): void {
+    const change =
+      bloodLoss === undefined
+        ? this.modified('body.bloodRecoveryPerSimSecond', this.tuning.bloodRecoveryPerSimSecond) *
+          recoveryFactor *
+          seconds
+        : -bloodLoss;
+    this.state.blood = clamp(this.state.blood + change);
   }
 
   private terminalCause(): string | undefined {
@@ -274,41 +415,100 @@ export class Body {
     return undefined;
   }
 
-  canTreat(region: BodyRegion, treatment: BodyTreatment): boolean {
-    const wound = this.state.wounds[region];
-    if (!wound) {
-      return false;
+  /** Blood lost per Sim second at a severity: from the tier below's rate up to its own tier's across its band. */
+  private lossRate(severity: number): number {
+    const index = bleedingTierIndex(severity);
+    if (index === undefined) {
+      return 0;
     }
-    switch (treatment) {
-      case 'bandage':
-      case 'rag':
-        return wound.bleeding;
-      case 'antiseptic':
-        return wound.infection === 'early';
-      case 'antibiotics':
-        return wound.infection === 'advanced';
-      default:
-        return false;
-    }
+    const { tiers } = this.tuning.bleeding;
+    const below = index > 0 ? tiers[index - 1]!.bloodLossPerSimSecond : 0;
+    return this.modified(
+      'bleeding.lossPerSimSecond',
+      below + (tiers[index]!.bloodLossPerSimSecond - below) * (severity - index),
+    );
   }
 
-  treat(region: BodyRegion, treatment: BodyTreatment): boolean {
+  /**
+   * Bleeds one wound for a step. While `closing`, its severity also falls by itself, band by band at each
+   * tier's closure rate, and the loss follows the falling rate.
+   */
+  private bleed(severity: number, seconds: number, closing: boolean): { severity: number; loss: number } {
+    let left = seconds;
+    let loss = 0;
+    let current = severity;
+    while (left > 0 && current > 0) {
+      const index = bleedingTierIndex(current)!;
+      const closure = closing
+        ? this.modified('bleeding.closurePerSimSecond', 1 / this.tuning.bleeding.tiers[index]!.closeSimSeconds)
+        : 0;
+      const toFloor = closure > 0 ? (current - index) / closure : Number.POSITIVE_INFINITY;
+      // Within rounding of the floor counts as reaching it, so a closed band leaves no sliver behind.
+      const reachesFloor = toFloor <= left + BAND_EPSILON;
+      const step = Math.min(left, toFloor);
+      const end = reachesFloor ? index : current - closure * step;
+      loss += ((this.lossRate(current) + this.lossRate(end)) / 2) * step;
+      current = end;
+      left -= step;
+    }
+    return { severity: current, loss };
+  }
+
+  /**
+   * The index of the tier a hit opens, or undefined when it doesn't bleed. One roll in [0, 1): each tier the
+   * hit qualifies for (damage at least its `minDamage`) takes its chance for the hit's kind, scaled by the
+   * content region factor, as its share of the roll, so no kind is ruled out.
+   */
+  bleedingTierForHit(damage: number, region: BodyRegion, kind: DamageKind, roll: number): number | undefined {
+    const { tiers } = this.tuning.bleeding;
+    let share = 0;
+    for (let index = tiers.length - 1; index >= 0; index--) {
+      const tier = tiers[index]!;
+      if (damage < tier.minDamage) {
+        continue;
+      }
+      share += this.modified('bleeding.chance', tier.chance[kind]) * (tier.regionFactor?.[region] ?? 1);
+      if (roll < share) {
+        return index;
+      }
+    }
+    return undefined;
+  }
+
+  canTreat(region: BodyRegion, treatment: TreatmentDef): boolean {
+    const wound = this.state.wounds[region];
+    return (
+      wound !== null &&
+      ((treatment.bleeding !== undefined && wound.bleeding > 0) ||
+        (treatment.infection?.stages.some((stage) => stage === wound.infection) ?? false))
+    );
+  }
+
+  /**
+   * Applies one treatment, rolling its effect (`roll` gives numbers in [0, 1)). Under base content, the body's
+   * `treatmentSpread` is centred on its neutral multiplier, so the item's bleeding strength is its average bandage
+   * application; other content can change that relationship. Through modifiers and `treatmentSpread`, it closes
+   * severity band by band, each band costing its tier's `treatmentEffort`; applications stack (DESIGN.md, "Bleeding").
+   */
+  treat(region: BodyRegion, treatment: TreatmentDef, roll: () => number): boolean {
     if (!this.canTreat(region, treatment)) {
       return false;
     }
-    const wound = this.state.wounds[region]!;
-    switch (treatment) {
-      case 'bandage':
-      case 'rag':
-        this.state.wounds[region] = { ...wound, bleeding: false };
-        return true;
-      case 'antiseptic':
-      case 'antibiotics':
-        this.state.wounds[region] = { ...wound, infection: 'resolved' };
-        return true;
-      default:
-        return false;
+    let wound = this.state.wounds[region]!;
+    const { bleeding: strength, infection } = treatment;
+    if (strength !== undefined && wound.bleeding > 0) {
+      const { min, max } = this.tuning.treatmentSpread;
+      const effort = this.modified('treatment.quality', strength) * (min + (max - min) * roll());
+      wound = { ...wound, bleeding: dress(wound.bleeding, effort, this.tuning.bleeding.tiers) };
     }
+    if (
+      infection?.stages.some((stage) => stage === wound.infection) &&
+      roll() < this.modified('treatment.infectionChance', infection.chance)
+    ) {
+      wound = { ...wound, infection: 'resolved' };
+    }
+    this.state.wounds[region] = wound;
+    return true;
   }
 }
 
@@ -325,25 +525,28 @@ const advanceInfection = (wound: BodyWound, gameSeconds: number, tuning: BodyTun
   return { ...wound, infection, infectionGameSeconds };
 };
 
-const advanceBlood = (blood: number, bleedingRegions: number, seconds: number, tuning: BodyTuningDef): number => {
-  const change =
-    bleedingRegions > 0
-      ? -tuning.bloodLossPerSimSecond * bleedingRegions * seconds
-      : tuning.bloodRecoveryPerSimSecond * seconds;
-  return clamp(blood + change);
-};
+/** Opens a wound at the top of a tier's band, or makes an existing one bleed at least that badly. */
+const bleedingWound = (wound: BodyWound | null, tier: number, infectionAtRisk: boolean): BodyWound =>
+  wound
+    ? { ...wound, bleeding: Math.max(wound.bleeding, tier + 1) }
+    : { bleeding: tier + 1, infection: 'none', infectionGameSeconds: 0, infectionAtRisk };
 
-export function bodyRegionForHitArea(area: 'head' | 'torso' | 'leftLeg' | 'rightLeg'): BodyRegion;
-export function bodyRegionForHitArea(area: 'legs', legSide: 'leftLeg' | 'rightLeg'): BodyRegion;
-export function bodyRegionForHitArea(
-  area: 'head' | 'torso' | 'legs' | 'leftLeg' | 'rightLeg',
-  legSide?: 'leftLeg' | 'rightLeg',
-): BodyRegion {
-  if (area === 'legs') {
-    if (!legSide) {
-      throw new Error('A leg hit requires a selected side');
+/**
+ * Spends treatment effort on a severity, worst band first, each band costing its tier's `treatmentEffort`;
+ * effort left after closing a band carries into the next one down.
+ */
+const dress = (severity: number, effort: number, tiers: readonly BleedingTierDef[]): number => {
+  let left = effort;
+  let current = severity;
+  while (left > 0 && current > 0) {
+    const index = bleedingTierIndex(current)!;
+    const cost = tiers[index]!.treatmentEffort;
+    const bandCost = (current - index) * cost;
+    if (left < bandCost - BAND_EPSILON) {
+      return current - left / cost;
     }
-    return legSide;
+    left -= bandCost;
+    current = index;
   }
-  return area;
-}
+  return current;
+};

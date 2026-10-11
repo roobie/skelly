@@ -3,70 +3,64 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Body } from '../src/core/body.ts';
-import { defaultClock, simSecondsPerHour } from '../src/core/clock.ts';
+import { defaultClock, hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { NEED_RATES, REST, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
+import { NEED_RATES, type Needs, type RecoveryState, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { SimOptions } from '../src/core/sim.ts';
+import type { BodyTuningDef } from '../src/core/schema.ts';
 import { realSeconds, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
-import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock);
 const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown })),
-);
-const SHAMBLER = registry.zombies.get('shambler')!;
+const BASE_SOURCES = readdirSync(BASE)
+  .filter((f) => f.endsWith('.json'))
+  .sort()
+  .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
+const { registry } = buildRegistry(BASE_SOURCES);
 const SCALE = makeScale(0.5);
-const BLOCK_SIZE = SCALE.blockSize;
-const PHYSICS = physicsFor(SCALE);
-const FLOOR: SolidAt = (_x, y) => y === 0;
 
-/** A Simulation wired to a RestController, the way play.ts wires them: the sim's fatigue rate
- * comes from whatever the controller's action asks for. */
+/** A Simulation wired to a RestController, the way the session wires them. */
 const REST_ANCHOR = 1;
 const tickReal = (sim: Simulation, elapsed: number): void => {
   advanceLiveFrame(sim, realSeconds(elapsed));
 };
 
 const makeRest = (
-  simOptions: Partial<SimOptions> = {},
   hooks: Partial<RestHooks> = {},
+  sim = new Simulation({ seed: 1 }),
 ): { sim: Simulation; rest: RestController } => {
-  let rest: RestController | undefined;
-  const sim = new Simulation({ seed: 1, ...simOptions, restRate: () => rest?.action?.rate });
-  rest = new RestController(sim, {
+  const rest = new RestController(sim, {
     furniture: hooks.furniture ?? ((uid) => (uid === REST_ANCHOR ? { quality: 1, sleepable: true } : undefined)),
     withinReach: hooks.withinReach ?? (() => true),
     notice: hooks.notice ?? (() => undefined),
+    hasAlarm: hooks.hasAlarm ?? (() => false),
   });
   return { sim, rest };
 };
 
-/** A ZombieSystem with a fixed player sense and a flat floor, for the scenarios below. */
-const zombieHooks = (player: PlayerSense, hour = 23) => ({
-  isSolid: FLOOR,
-  isOpaque: FLOOR,
-  blockSize: BLOCK_SIZE,
-  physics: PHYSICS,
-  jumpSpeed: PLAYER.jump,
-  tuning: TEST_SENSE_TUNING,
-  player: () => player,
-  dayPhase: () => dayStateAtHour(hour),
-  hurtPlayer: () => undefined,
-});
+/** Game hours a sleep in a quality-1 bed takes, from `fatigue`, running frames until it ends. */
+const sleepGameHours = (sim: Simulation, rest: RestController, fatigue: number): number => {
+  sim.needs.calories = 100;
+  sim.needs.hydration = 100;
+  sim.needs.fatigue = fatigue;
+  const start = sim.time;
+  const refusal = rest.start('sleep', REST_ANCHOR);
+  if (refusal) {
+    throw new Error(`Sleep fixture refused: ${refusal}`);
+  }
+  for (let i = 0; i < 20_000 && rest.action !== undefined; i++) {
+    tickReal(sim, 1 / 60);
+  }
+  if (rest.action) {
+    throw new Error('Sleep fixture never ended');
+  }
+  return simToGameHours(sim.clock, sim.time - start);
+};
 
 describe('restKindForFurniture', () => {
   it('maps restable furniture to rest or sleep and leaves ordinary furniture unchanged', () => {
@@ -90,28 +84,203 @@ describe('stepNeeds with a custom fatigue rate', () => {
   });
 });
 
-describe('Simulation restRate', () => {
-  it('overrides the fatigue rate the needs system uses', () => {
-    const sim = new Simulation({ seed: 1, restRate: () => -20 });
-    sim.frame(HOUR);
-    expect(sim.needs.fatigue).toBeCloseTo(SPAWN_NEEDS.fatigue - 20, 6);
-    expect(sim.needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + NEED_RATES.calories, 6);
+describe('the healing gate', () => {
+  /** Health a body at 50 regains in half a game hour with these needs held still, under this body content. */
+  const healed = (tuning: Partial<BodyTuningDef>, held: Partial<Needs>, state: RecoveryState = 'awake'): number => {
+    const body = new Body({ ...BODY_TUNING_FIXTURE, ...tuning });
+    body.damageHealth(50);
+    const needs = { ...SPAWN_NEEDS, calories: 100, hydration: 100, ...held };
+    stepNeeds(needs, body, 0.5, { rates: { calories: 0, hydration: 0, fatigue: 0 }, state });
+    return body.health - 50;
+  };
+  const awakeOnly = { healthRecoveryFatigueCeiling: { awake: 80 } };
+
+  it('stops healing awake above the awake ceiling', () => {
+    expect(healed(awakeOnly, { fatigue: 150 })).toBe(0);
+    expect(healed(awakeOnly, { fatigue: 50 })).toBeGreaterThan(0);
+  });
+
+  it('gates sleep too when content sets an asleep ceiling', () => {
+    expect(healed({ healthRecoveryFatigueCeiling: { awake: 80, asleep: 100 } }, { fatigue: 150 }, 'asleep')).toBe(0);
+    expect(healed(awakeOnly, { fatigue: 150 }, 'asleep')).toBeGreaterThan(0);
+  });
+
+  it('stops healing below each need its content floor', () => {
+    const floor = { healthRecoveryNeedsFloor: { calories: 50, hydration: 30 } };
+    expect(healed(floor, { calories: 40 })).toBe(0);
+    expect(healed(floor, { hydration: 20 })).toBe(0);
+    expect(healed(floor, { calories: 50, hydration: 30 })).toBeGreaterThan(0);
+  });
+
+  it('starts healing the moment sleep brings fatigue under an asleep ceiling, mid-step', () => {
+    const body = new Body({ ...BODY_TUNING_FIXTURE, healthRecoveryFatigueCeiling: { awake: 80, asleep: 100 } });
+    body.damageHealth(50);
+    const needs = { ...SPAWN_NEEDS, calories: 100, hydration: 100, fatigue: 150 };
+    stepNeeds(needs, body, 10, { rates: { calories: 0, hydration: 0, fatigue: -10 }, state: 'asleep' });
+    expect(body.health - 50).toBeCloseTo(5 * body.healthRecoveryPerGameHour, 6);
+  });
+
+  it('heals while fatigue is above the awake ceiling', () => {
+    const { sim, rest } = makeRest();
+    sim.needs.calories = 100;
+    sim.needs.hydration = 100;
+    sim.needs.fatigue = 150;
+    sim.body.damageHealth(50);
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    for (let i = 0; i < 120; i++) {
+      tickReal(sim, 1 / 60);
+    }
+    expect(sim.needs.fatigue).toBeGreaterThan(80);
+    expect(sim.body.health).toBeGreaterThan(50);
   });
 });
 
-describe('RestController.rateFor', () => {
-  it('scales rest and the sleep bonus by the furniture quality', () => {
-    const { rest } = makeRest();
-    expect(rest.rateFor('rest', 0.5)).toBeCloseTo(REST.rest * 0.5);
-    expect(rest.rateFor('sleep', 0.5)).toBeCloseTo(REST.sleep + REST.bedBonus * 0.5);
-    expect(rest.rateFor('sleep', 1)).toBeLessThan(rest.rateFor('sleep', 0.5));
+describe('Body.fatigueRecoveryRate', () => {
+  it('scales rest by quality, and sleep from the rough share at quality 0 up to a normal sleep at 1', () => {
+    const body = new Body(BODY_TUNING_FIXTURE);
+    const { restFatigueRecoveryPerGameHour, sleepFatigueRecoveryPerGameHour, roughSleepShare } = BODY_TUNING_FIXTURE;
+    const perHour = (perSecond: number): number => perSecond * SECONDS_PER_HOUR;
+    expect(body.fatigueRecoveryRate('rest', 0.5)).toBeCloseTo(-perHour(restFatigueRecoveryPerGameHour) * 0.5);
+    expect(body.fatigueRecoveryRate('sleep', 1)).toBeCloseTo(-perHour(sleepFatigueRecoveryPerGameHour));
+    expect(body.fatigueRecoveryRate('sleep', 0)).toBeCloseTo(
+      -perHour(sleepFatigueRecoveryPerGameHour) * roughSleepShare,
+    );
+  });
+});
+
+describe('sleep length and sleep debt', () => {
+  it('clears 100 fatigue in a normal bed at the content sleep rate', () => {
+    const { sim, rest } = makeRest({}, new Simulation({ seed: 1, bodyTuning: registry.body.get('player')! }));
+    const night = 100 / -sim.body.fatigueRecoveryRate('sleep', 1);
+    const hours = sleepGameHours(sim, rest, 100);
+    // Ends within a couple of 30 Sim s steps at the cap (4 game minutes each) of the content's own night.
+    expect(Math.abs(hours - night)).toBeLessThan(0.15);
+  });
+
+  it('lets fatigue run past 100 while awake, unclamped', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.needs.fatigue = 99;
+    sim.frame(HOUR);
+    expect(sim.needs.fatigue).toBeCloseTo(99 + sim.body.fatigueRisePerGameHour, 6);
+  });
+
+  it('recovers health and blood asleep at the sleep factor times the awake rate', () => {
+    // Waiting and sleeping share the fixture's cap, so both runs step through the same Sim times.
+    const recovered = (sleeping: boolean) => {
+      const { sim, rest } = makeRest();
+      sim.needs.calories = 100;
+      sim.needs.hydration = 100;
+      sim.needs.fatigue = 50;
+      sim.body.damageHealth(50);
+      // Blood lost to a wound that has stopped bleeding, as a save after treatment holds it.
+      sim.body.restoreState({ ...sim.body.snapshotState(), blood: 20 });
+      expect(sleeping ? rest.start('sleep', REST_ANCHOR) : sim.actions.startWait()).toBeUndefined();
+      const { health, blood } = sim.body;
+      const start = sim.time;
+      for (let i = 0; i < 120; i++) {
+        tickReal(sim, 1 / 60);
+      }
+      expect(sim.body.blood).toBeLessThan(100);
+      return {
+        health: sim.body.health - health,
+        blood: sim.body.blood - blood,
+        hours: simToGameHours(sim.clock, sim.time - start),
+        rate: sim.body.healthRecoveryPerGameHour,
+        factor: sim.body.sleepRecoveryFactor,
+      };
+    };
+    const awake = recovered(false);
+    const asleep = recovered(true);
+    expect(asleep.hours).toBe(awake.hours);
+    expect(awake.health / awake.hours).toBeCloseTo(awake.rate, 0);
+    expect(asleep.health / awake.health).toBeCloseTo(asleep.factor, 6);
+    expect(awake.blood).toBeGreaterThan(0);
+    expect(asleep.blood / awake.blood).toBeCloseTo(asleep.factor, 6);
+  });
+});
+
+describe('waking with an alarm', () => {
+  it('sleeps until rested without an alarm, whatever wake hour is set', () => {
+    const { sim, rest } = makeRest();
+    rest.wakeGameHour = (Math.floor(hourOfDay(sim.calendar)) + 12) % 24;
+    expect(rest.canSetWakeTime).toBe(false);
+    const rested = 20 / -sim.body.fatigueRecoveryRate('sleep', 1);
+    const hours = sleepGameHours(sim, rest, 20);
+    expect(hours).toBeLessThan(rested + 0.15);
+    expect(sim.needs.fatigue).toBeLessThan(0.1);
+  });
+
+  it('sleeps on to the alarm hour with fatigue held at 0 once rested', () => {
+    const { sim, rest } = makeRest({ hasAlarm: () => true });
+    const wakeGameHour = (Math.floor(hourOfDay(sim.calendar)) + 6) % 24;
+    rest.wakeGameHour = wakeGameHour;
+    expect(rest.canSetWakeTime).toBe(true);
+    const restedAfter = 10 / -sim.body.fatigueRecoveryRate('sleep', 1);
+    const hours = sleepGameHours(sim, rest, 10);
+    expect(hours).toBeGreaterThan(restedAfter + 4);
+    expect(sim.needs.fatigue).toBeLessThan(0.1);
+    // Wakes within one long-action step (30 Sim s, 4 game minutes) past the hour.
+    const late = hourOfDay(sim.calendar) - wakeGameHour;
+    expect(late).toBeGreaterThanOrEqual(0);
+    expect(late).toBeLessThan(5 / 60);
+  });
+
+  it('offers a wake time with a carried alarm item, and not with the broken alarm clock', () => {
+    // A working copy of the broken clock: the same item, with the alarm capability.
+    const items = BASE_SOURCES.flatMap(({ data }) => (data as { items?: { id: string }[] }).items ?? []);
+    const brokenClock = items.find((item) => item.id === 'broken_clock')!;
+    const { registry: fixtureRegistry, issues } = buildRegistry([
+      ...BASE_SOURCES,
+      {
+        source: 'alarm-fixture.json',
+        data: { items: [{ ...brokenClock, id: 'alarm_fixture', name: 'Fixture alarm', alarm: true }] },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(fixtureRegistry);
+    const session = createSession({
+      registry: fixtureRegistry,
+      world: new World(),
+      isSolid: (_x, y) => y === 0,
+      isOpaque: (_x, y) => y === 0,
+      entities,
+      scale: SCALE,
+      seed: 1,
+      start: defaultClock.start,
+      spawn: [0, 1, 0],
+      ready: () => true,
+      controls: {
+        active: () => false,
+        intent: () => IDLE,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
+      },
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in alarm fixture');
+      },
+    });
+    const { inventory } = session;
+    for (const side of ['right', 'left'] as const) {
+      const held = inventory.hands[side];
+      if (held) {
+        expect(inventory.move(held, { kind: 'pile', pos: [0, 1, 0] }).ok).toBe(true);
+      }
+    }
+    expect(inventory.add(inventory.create('broken_clock'), { kind: 'hand', side: 'right' })).toBe(true);
+    expect(session.rest.canSetWakeTime).toBe(false);
+    expect(inventory.add(inventory.create('alarm_fixture'), { kind: 'hand', side: 'left' })).toBe(true);
+    expect(session.rest.canSetWakeTime).toBe(true);
   });
 });
 
 describe('RestController start/resume/stop', () => {
   it('starts only while the selected furniture is in reach', () => {
     let reachable = false;
-    const { rest } = makeRest({}, { withinReach: () => reachable });
+    const { rest } = makeRest({ withinReach: () => reachable });
     expect(rest.start('rest', REST_ANCHOR)).toBeTruthy();
     expect(rest.action).toBeUndefined();
     reachable = true;
@@ -126,58 +295,9 @@ describe('RestController start/resume/stop', () => {
     expect(sim.compression.active).toBe(false);
   });
 
-  it('keeps fast-forwarding as an aware shambler closes in, then wakes on a hit', () => {
-    const player: PlayerSense = {
-      pos: [0, 1, 0],
-      facing: [0, 0, -1],
-      movement: 'still',
-      lit: true,
-      lightSeenFrom: 50,
-    };
-    const zombieSystem = new ZombieSystem(zombieHooks(player, 23));
-    const id = zombieSystem.add(SHAMBLER, [70, 1, 0], [-1, 0, 0]);
-    zombieSystem.tick(1 / 60, 1 / 60);
-    expect(zombieSystem.store.get(id)?.mode).toBe('chase');
-    expect(zombieSystem.unsafeReason()).toBeTruthy();
-    const messages: string[] = [];
-    const { sim, rest } = makeRest(
-      { unsafe: () => zombieSystem.unsafeReason() },
-      { notice: (message) => messages.push(message) },
-    );
-
-    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
-    const start = sim.time;
-    const {
-      body: {
-        pos: [startX],
-      },
-    } = zombieSystem.store.get(id)!;
-    for (let i = 1; i <= 30; i++) {
-      zombieSystem.tick(0.1, i * 0.1);
-      tickReal(sim, 1 / 60);
-      expect(sim.compression.active).toBe(true);
-      expect(sim.compression.interruption).toBeUndefined();
-    }
-    expect(sim.time).toBeGreaterThan(start);
-    expect(zombieSystem.store.get(id)!.body.pos[0]).toBeLessThan(startX!);
-
-    const emittedInterruption = sim.events.reader();
-    sim.hurt(1, 'a shambler');
-    const wakeReason = emittedInterruption.read().find((event) => event.kind === 'interrupt')?.reason;
-    if (wakeReason === undefined) {
-      throw new Error('Damage did not emit a wake interruption');
-    }
-    tickReal(sim, 1 / 60);
-    expect(rest.action).toBeUndefined();
-    expect(sim.compression.locksInput).toBe(false);
-    expect(sim.compression.interruption).toBeUndefined();
-    expect(messages).toHaveLength(1);
-    expect(messages[0]).toContain(wakeReason);
-  });
-
   it('ends on its own once fully rested, back at 1x', () => {
     const messages: string[] = [];
-    const { sim, rest } = makeRest({}, { notice: (m) => messages.push(m) });
+    const { sim, rest } = makeRest({ notice: (m) => messages.push(m) });
     sim.needs.fatigue = 5;
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 10_000 && rest.action !== undefined; i++) {
@@ -228,13 +348,10 @@ describe('RestController start/resume/stop', () => {
       [REST_ANCHOR, { quality: 1, sleepable: true }],
       [2, { quality: 1, sleepable: true }],
     ]);
-    const { sim, rest } = makeRest(
-      {},
-      {
-        furniture: (uid) => furniture.get(uid),
-        withinReach: (uid) => reachable.has(uid),
-      },
-    );
+    const { sim, rest } = makeRest({
+      furniture: (uid) => furniture.get(uid),
+      withinReach: (uid) => reachable.has(uid),
+    });
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     sim.hurt(5, 'a debug key');
     tickReal(sim, 1 / 60);
@@ -450,6 +567,73 @@ describe('Session long-action input lock', () => {
 });
 
 describe('long-action interruptions', () => {
+  it('sleeps on at the cap while a shambler closes in, and wakes at its first hit having taken only that hit', () => {
+    const entities = new BlockEntities(registry);
+    const bed = [...registry.furniture.values()].find((def) => def.rest?.sleep);
+    if (!bed) {
+      throw new Error('Sleep fixture has no bed');
+    }
+    const anchor = entities.add({ type: bed.id, pos: [2, 1, 0], size: bed.size, facing: 'n' });
+    if (!anchor) {
+      throw new Error('Could not place the sleep fixture bed');
+    }
+    const session = createSession({
+      registry,
+      world: new World(),
+      isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      entities,
+      scale: SCALE,
+      seed: 1,
+      // Daylight, so the shambler sees the sleeper.
+      start: defaultClock.start,
+      spawn: [0, 1, 0],
+      ready: () => true,
+      controls: {
+        active: () => false,
+        intent: () => IDLE,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
+      },
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in sleep fixture');
+      },
+    });
+    const { sim } = session;
+    const frame = (): void => {
+      advanceLiveFrame(sim, realSeconds(1 / 60), undefined, (dt, until) => session.frame(dt, until));
+    };
+    sim.needs.fatigue = 80;
+    expect(session.rest.start('sleep', anchor.uid)).toBeUndefined();
+    for (let i = 0; i < 600 && sim.compression.c < sim.compression.limits.cap; i++) {
+      frame();
+    }
+    expect(sim.compression.c).toBe(registry.compression.get('player')!.caps.sleep);
+
+    const { health } = sim.body;
+    const events = sim.events.reader();
+    const id = session.zombies.add(registry.zombies.get('shambler')!, [60, 1, 0], [-1, 0, 0]);
+    let chasedAtCap = false;
+    for (let i = 0; i < 600 && session.rest.action; i++) {
+      frame();
+      chasedAtCap ||=
+        session.zombieStore.get(id)!.mode === 'chase' &&
+        sim.compression.active &&
+        sim.compression.c === sim.compression.limits.cap;
+    }
+    const hits = events.read().filter((event) => event.kind === 'damage');
+
+    expect(chasedAtCap).toBe(true);
+    expect(session.rest.action).toBeUndefined();
+    expect(sim.compression.c).toBe(1);
+    expect(hits).toHaveLength(1);
+    expect(health - sim.body.health).toBeCloseTo(hits[0]!.amount, 9);
+  });
+
   it('stops resting at most one step after you take damage', () => {
     const { sim, rest } = makeRest();
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
@@ -465,7 +649,7 @@ describe('long-action interruptions', () => {
 
   it('wakes when a need turns critical', () => {
     const messages: string[] = [];
-    const { sim, rest } = makeRest({}, { notice: (message) => messages.push(message) });
+    const { sim, rest } = makeRest({ notice: (message) => messages.push(message) });
     sim.needs.hydration = 10.05;
     expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
     const emittedInterruptions = sim.events.reader();
