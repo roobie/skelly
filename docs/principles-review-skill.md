@@ -64,7 +64,10 @@ violation counts. Report unrelated existing problems separately; this is not a
 repository-wide audit.
 
 Follow each changed decision one call or import hop past its owner, and to every
-consumer of a changed content field. Ask whether adding another content value
+consumer of a changed content field. A changed shared schema, registry or
+exported type is followed to every consumer. A generated file is reviewed through
+its source, such as compiled JSON through its Jsonnet (`docs/jsonnet.md`). Ask
+whether adding another content value
 would need an edit to code that should only interpret content.
 
 Delegate unambiguous patterns to scripts. A passing checker is evidence only for
@@ -78,6 +81,29 @@ tiered checks", lists none. Add one only if reviews show misses a coder could ha
 caught, and list it there.
 
 ## Findings and verdict
+
+The code review gives one verdict, in a report with these fields in this order:
+
+```text
+VERDICT: SHIP or FIX
+Cause:          (FIX only)
+Consolidation:
+Reviewed:       <base>..<head>
+Lenses:         one status for each of the six
+FINDINGS
+Nits
+FOR THE LEAD:   CI on the head; merge-tree against main
+```
+
+`Cause:` takes its format from `docs/PROCESS.md`, "Slice decision rules", "FIX
+causes", and `Consolidation:` from "Continuous consolidation". A lens's status is
+one of:
+
+- **assessed;**
+- **not applicable**, with the reason;
+- **not assessed**, only when the lens's rule isn't settled yet; the report names
+  the item that settles it (r74). This never blocks the merge, and the lens is
+  listed as open.
 
 Each finding states:
 
@@ -99,18 +125,6 @@ also set what blocks: `AGENTS.md`, "Tests" and "Zero drift"; `README.md`, "Zero
 drift"; and `docs/PROCESS.md`, "The life of a change", step 4. Anything else is
 listed and doesn't block.
 
-The code review gives one verdict, SHIP or FIX, with its `Cause:` line as
-`docs/PROCESS.md`, "Slice decision rules", "FIX causes", requires. The report names
-the reviewed base and head, carries the consolidation line that `docs/PROCESS.md`,
-"Continuous consolidation", asks of every review, and gives a status for every
-lens:
-
-- **assessed;**
-- **not applicable**, with the reason;
-- **not assessed**, only when the lens's rule isn't settled yet; the report names
-  the item that settles it (r74). This never blocks the merge, and the lens is
-  listed as open.
-
 For a settled rule, missing evidence is not a status. The reviewer gets it before
 the verdict, by fetching it, probing or asking the lead.
 
@@ -128,6 +142,9 @@ these changes:
 - **"Slice decision rules", "FIX causes":** two more causes, "docs" for a
   zero-drift FIX and "ownership" for content-versus-code ownership, so the
   retrospective tally shows them.
+
+After applying these edits to `docs/PROCESS.md`, the landing PR deletes this
+section and the "(draft)" mark, so the landed doc stays a current record.
 
 ## Canonical home
 
