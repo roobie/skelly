@@ -548,14 +548,17 @@ HTML over the game view, and keyboard-first:
   layout as the grid when checking for indistinguishable labels, so the layout
   comes from a table of glyph widths rather than from the browser's font: every
   player sees the same labels, and `validate` checks those. Each glyph's width is
-  its widest advance among DejaVu Sans, Liberation Sans and Nimbus Sans, the Linux
-  default and the metric stand-ins for Arial and Helvetica; an unlisted glyph
-  counts as the widest. The other platform UI fonts (Segoe UI, San Francisco,
-  Cantarell, Noto Sans, Ubuntu) average at least 7% narrower than DejaVu Sans, and
-  a name fills at most 95% of a line, a margin for the glyphs where one of them is
-  wider. An ellipsis is a full em wide in these fonts, so a one-cell line keeps
-  only about four letters of an elided word. The layout is measured at the 16 px
-  root the UI is authored at. `hudScale` scales the cell,
+  its widest advance among DejaVu Sans (the Linux default), Adwaita Sans (GNOME's
+  UI font), and Liberation Sans and Nimbus Sans (the metric stand-ins for Arial and
+  Helvetica); an unlisted glyph counts as the widest. The other platform UI fonts
+  (Segoe UI, San Francisco, Cantarell, Noto Sans, Ubuntu) average at least 7%
+  narrower than DejaVu Sans, and a name fills only part of a line
+  (`GRID_NAME_LINE_FILL`), a margin below that difference for the glyphs where one
+  of them is wider. When the covered fonts or the grid name's text size change,
+  re-run `npm run probe:glyph-widths` (`tools/grid-name-glyph-widths.mjs`) and
+  replace the table it prints. An ellipsis is a full em wide in these fonts, so a
+  one-cell line keeps only about four letters of an elided word. The layout is
+  measured at the 16 px root the UI is authored at. `hudScale` scales the cell,
   the text and the padding together, but an item's border and the gutter around
   it stay px, so a fitted name keeps fitting at a scale of 1 or more and can clip
   below 1; a `spacing` above 1 widens the padding past what the layout assumes,
