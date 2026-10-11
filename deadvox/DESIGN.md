@@ -651,13 +651,19 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Fatigue is sleep debt.** Zero is rested and 100 is what a normal 8-hour
   sleep in a good bed clears, at a steady rate. It has no upper cap, because a
   person can stay awake far past the point of tiredness, so the HUD shows a
-  number, not a percentage. A furniture piece's rest quality scales sleep: at
+  number, not a percentage. Awake, it rises at a baseline rate, as if standing
+  at rest. A furniture piece's rest quality scales sleep: at
   quality 1 it is a normal sleep, and lower quality clears a smaller share, down
   to `roughSleepShare` of it at 0. Resting clears debt more slowly than any
   sleep. The rates are content, in `src/content/base/body.jsonnet`.
 - **Sleep's main value is recovery.** While asleep, health, regional and blood
   recovery run at `sleepRecoveryFactor` times their awake rate, so a night's
-  sleep is how a hurt player heals, not only how they clear debt. Each rate is
+  sleep is how a hurt player heals, not only how they clear debt. Health and
+  regions recover only under a fatigue ceiling that content sets per state.
+  Base content sets one awake and none asleep, so someone too tired heals
+  nothing until they sleep, and sleep heals at any fatigue. One gate decides it
+  (`src/core/needs.ts`, `healthRecovers`); it becomes a content predicate when
+  the expression language lands (#393). Each rate is
   read once, in `src/core/body.ts` (the `Body` getters
   `fatigueRisePerGameHour`, `healthRecoveryPerGameHour` and
   `sleepRecoveryFactor`, `Body.fatigueRecoveryRate`, and `Body.advanceBlood` for

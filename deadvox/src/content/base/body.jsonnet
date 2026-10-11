@@ -25,6 +25,8 @@ local normalSleep = 100 / normalSleepGameHours;
     // Sleeping rough (rest quality 0) clears this share of a normal sleep.
     roughSleepShare: 0.6,
     healthRecoveryPerGameHour: 2,
+    // Too tired, you don't heal while awake; sleep heals at any fatigue, so asleep has no ceiling.
+    healthRecoveryFatigueCeiling: { awake: 80 },
     sleepRecoveryFactor: 2,
     aimSwayPerDamage: 0.01,
     swingSlowdownPerDamage: 0.01,

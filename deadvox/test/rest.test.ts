@@ -5,7 +5,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Body } from '../src/core/body.ts';
 import { defaultClock, hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { NEED_RATES, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
+import { NEED_RATES, type RecoveryState, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { realSeconds, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
@@ -80,6 +80,41 @@ describe('stepNeeds with a custom fatigue rate', () => {
     stepNeeds(needs, new Body(BODY_TUNING_FIXTURE), 1, { rates });
     expect(needs.fatigue).toBeCloseTo(30, 9);
     expect(needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + NEED_RATES.calories, 9);
+  });
+});
+
+describe('the healing fatigue gate', () => {
+  /** Health a fed, watered body at 50 regains in half a game hour at this fatigue, with these content ceilings. */
+  const healed = (ceiling: { awake?: number; asleep?: number }, state: RecoveryState, fatigue: number): number => {
+    const body = new Body({ ...BODY_TUNING_FIXTURE, healthRecoveryFatigueCeiling: ceiling });
+    body.damageHealth(50);
+    const needs = { ...SPAWN_NEEDS, calories: 100, hydration: 100, fatigue };
+    stepNeeds(needs, body, 0.5, { rates: { calories: 0, hydration: 0, fatigue: 0 }, state });
+    return body.health - 50;
+  };
+
+  it('stops healing awake above the awake ceiling', () => {
+    expect(healed({ awake: 80 }, 'awake', 150)).toBe(0);
+    expect(healed({ awake: 80 }, 'awake', 50)).toBeGreaterThan(0);
+  });
+
+  it('gates sleep too when content sets an asleep ceiling', () => {
+    expect(healed({ awake: 80, asleep: 100 }, 'asleep', 150)).toBe(0);
+    expect(healed({ awake: 80 }, 'asleep', 150)).toBeGreaterThan(0);
+  });
+
+  it('heals a sleeper at fatigue 150 from the first step, with no asleep ceiling in content', () => {
+    const { sim, rest } = makeRest();
+    sim.needs.calories = 100;
+    sim.needs.hydration = 100;
+    sim.needs.fatigue = 150;
+    sim.body.damageHealth(50);
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    for (let i = 0; i < 120; i++) {
+      tickReal(sim, 1 / 60);
+    }
+    expect(sim.needs.fatigue).toBeGreaterThan(80);
+    expect(sim.body.health).toBeGreaterThan(50);
   });
 });
 

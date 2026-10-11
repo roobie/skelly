@@ -8,6 +8,9 @@
       "bloodRecoveryPerSimSecond": 0.002,
       "bluntShockPerDamage": 2,
       "fatigueRisePerGameHour": 4,
+      "healthRecoveryFatigueCeiling": {
+        "awake": 80
+      },
       "healthRecoveryPerGameHour": 2,
       "id": "player",
       "infectionChance": 0.5,

@@ -88,6 +88,7 @@ export class Simulation {
           damageImmune: this.godMode,
           rates: restRate === undefined ? awake : { ...awake, fatigue: restRate },
           recoveryFactor: this.recoveryFactor,
+          state: this.actions.asleep ? 'asleep' : 'awake',
         })) {
           this.emit({ kind: 'interrupt', reason });
         }

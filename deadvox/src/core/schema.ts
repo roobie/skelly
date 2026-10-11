@@ -1467,8 +1467,10 @@ const BodyTuningSchema = strictObject({
   sleepFatigueRecoveryPerGameHour: GamePerHour,
   /** The share of a normal sleep's recovery at rest quality 0; it rises linearly to all of it at 1. */
   roughSleepShare: Fraction,
-  /** Health, and each region's damage, recovered per Game hour while fed, watered and rested enough. */
+  /** Health, and each region's damage, recovered per Game hour while fed, watered and under the fatigue ceiling. */
   healthRecoveryPerGameHour: GamePerHour,
+  /** The highest fatigue at which health and regions still recover, awake and asleep; a state left out has none. */
+  healthRecoveryFatigueCeiling: strictObject({ awake: optional(NonNegative), asleep: optional(NonNegative) }),
   /** Multiplies health, regional and blood recovery while asleep. */
   sleepRecoveryFactor: Positive,
   /** Aim sway added per point of torso damage. */

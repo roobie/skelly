@@ -1,4 +1,5 @@
 import { SECONDS_PER_HOUR } from './clock.ts';
+import type { RecoveryState } from './needs.ts';
 import type { BodyTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -133,6 +134,11 @@ export class Body {
   /** What sleep multiplies health, regional and blood recovery by. */
   get sleepRecoveryFactor(): number {
     return this.tuning.sleepRecoveryFactor;
+  }
+
+  /** The highest fatigue at which health and regions still recover in this state; none where content sets none. */
+  healthRecoveryFatigueCeiling(state: RecoveryState): number {
+    return this.tuning.healthRecoveryFatigueCeiling[state] ?? Number.POSITIVE_INFINITY;
   }
 
   /** Fatigue's change per Game hour resting or sleeping on furniture of this rest quality. */
