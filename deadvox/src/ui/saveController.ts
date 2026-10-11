@@ -353,6 +353,7 @@ export class SaveController {
       if (this.requestedContinue) {
         sessionStorage.removeItem(CONTINUE_KEY);
         this.entered = true;
+        this.lastSaveCompletedAtRealTimestamp = realTimestamp(performance.now() / 1000);
         this.worldId = decoded.snapshot.world.id;
         this.characterId = decoded.snapshot.character.id;
         this.statusText = 'Saved world continued. It starts paused; debug tools are off.';
