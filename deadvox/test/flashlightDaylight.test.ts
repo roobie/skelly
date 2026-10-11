@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { SECONDS_PER_DAY } from '../src/core/clock.ts';
+import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import { skyAt } from '../src/core/sky.ts';
 import { FLASHLIGHT_DECAY, FLASHLIGHT_INTENSITY, flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { NEAR_FIELD_M } from '../src/render/lightFalloff.ts';
@@ -30,12 +32,19 @@ describe('flashlight daylight scale', () => {
     }
   });
 
-  it('follows the sky smoothly: changes by at most 2% per game minute, all day', () => {
-    let previous = scaleAt(0);
-    for (let minute = 1; minute <= 24 * 60; minute++) {
-      const scale = scaleAt((minute / 60) % 24);
-      expect(Math.abs(scale - previous)).toBeLessThan(0.02);
-      previous = scale;
+  it('fades over the twilight, not within a few minutes', () => {
+    const phases = dayPhaseAt(DEFAULT_DAY_CYCLE, 0);
+    const wrap = (time: number): number => ((time % SECONDS_PER_DAY) + SECONDS_PER_DAY) % SECONDS_PER_DAY;
+    for (const [start, end] of [
+      [phases.sunset, phases.nightfall],
+      [phases.dawn, phases.sunrise],
+    ] as const) {
+      const minutes = Math.round(wrap(end - start) / 60);
+      const scales = Array.from({ length: 3 * minutes + 1 }, (_, index) =>
+        scaleAt(wrap(start + (index - minutes) * 60) / 3600),
+      );
+      const steepest = Math.max(...scales.slice(1).map((value, index) => Math.abs(value - scales[index]!)));
+      expect(steepest).toBeLessThan((3 * (Math.max(...scales) - Math.min(...scales))) / minutes);
     }
   });
 

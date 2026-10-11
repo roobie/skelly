@@ -1,5 +1,6 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
+import { getBuildRevision } from '../core/buildInfo.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock, SPAWN_TIME } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -47,7 +48,7 @@ import {
   writeClosedGroups,
 } from './groups.ts';
 import { LookControls } from './look.ts';
-import { buildRevision, lookDump, lookDumpFilename } from './lookDump.ts';
+import { lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
 import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
 import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
@@ -1642,7 +1643,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       positionM: hooks.body.pos.map((v) => v * metres) as Vec3,
       yawRad: hooks.input.yaw,
       pitchRad: hooks.input.pitch,
-      buildRevision: buildRevision(),
+      buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
       url: camUrl(lookUrl(location.href, lookState()), {
         position: hooks.body.pos.map((v) => v * metres) as Vec3,

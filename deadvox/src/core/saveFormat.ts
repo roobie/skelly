@@ -1,6 +1,7 @@
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import { BODY_REGIONS, BODY_TREATMENTS } from './body.ts';
+import { getBuildRevision } from './buildInfo.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
   canonicalJsonAt as canonicalStringify,
@@ -146,7 +147,6 @@ const REGION_KEY = /^(0|-?[1-9]\d*),(0|-?[1-9]\d*)$/;
 
 // `vite.config.ts` supplies source, Git diagnostic, and canonical base-content identities.
 declare const __DEADVOX_SIMULATION_HASH__: string;
-declare const __DEADVOX_BUILD_REVISION__: string;
 declare const __DEADVOX_BASE_CONTENT_HASH__: string;
 
 function defaultVersion(): SaveVersionComponents {
@@ -159,14 +159,6 @@ function defaultVersion(): SaveVersionComponents {
     };
   } catch (error) {
     throw new Error('Explicit save version components are required outside a Vite build', { cause: error });
-  }
-}
-
-function defaultBuildRevision(): string {
-  try {
-    return __DEADVOX_BUILD_REVISION__;
-  } catch {
-    return 'unavailable';
   }
 }
 
@@ -855,7 +847,7 @@ export async function currentSaveVersionIdentity(): Promise<SaveVersionIdentity>
   return {
     digest: await versionDigest(components),
     components,
-    buildRevision: defaultBuildRevision(),
+    buildRevision: getBuildRevision(),
   };
 }
 
@@ -1469,7 +1461,7 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
   const identity: SaveVersionIdentity = {
     digest: await versionDigest(version),
     components: structuredClone(version),
-    buildRevision: requestedBuildRevision ?? defaultBuildRevision(),
+    buildRevision: requestedBuildRevision ?? getBuildRevision(),
   };
   const envelope: Envelope = {
     magic: MAGIC,
@@ -1544,7 +1536,7 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   ) {
     const differences = versionDifferences(parsed.versionIdentity.components, running);
     throw new Error(
-      `Save version mismatch (${differences.join('; ')}): saved simulation ${parsed.versionIdentity.components.simulationHash} (build ${parsed.versionIdentity.buildRevision}), running simulation ${running.simulationHash} (build ${runningBuildRevision ?? defaultBuildRevision()})`,
+      `Save version mismatch (${differences.join('; ')}): saved simulation ${parsed.versionIdentity.components.simulationHash} (build ${parsed.versionIdentity.buildRevision}), running simulation ${running.simulationHash} (build ${runningBuildRevision ?? getBuildRevision()})`,
     );
   }
   const payloadBytes = canonicalBytes(parsed.payload, { acceptTaggedNegativeZero: true });

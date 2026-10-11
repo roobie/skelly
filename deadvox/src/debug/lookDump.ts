@@ -6,17 +6,6 @@ import type { MoodState, ShadowState } from '../core/mood.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import { camValue } from './camUrl.ts';
 
-// `vite.config.ts` supplies it; outside a Vite build (tests) it isn't defined.
-declare const __DEADVOX_BUILD_REVISION__: string;
-
-export const buildRevision = (): string => {
-  try {
-    return __DEADVOX_BUILD_REVISION__;
-  } catch {
-    return 'unavailable';
-  }
-};
-
 export interface LookDumpInput {
   toneMapping: string;
   exposure: number;

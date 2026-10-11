@@ -3,6 +3,7 @@ read_if:
   - you're preparing or joining the self-serve Slice 3 playtest
   - you're starting, ending, or operating the playtest's Pages deployment freeze
   - you're changing the playtest feedback process or tester metrics export
+  - you're documenting how testers handle runtime errors
   - you're using playtest feedback to update the game plan
 ---
 
@@ -67,9 +68,9 @@ playtest window closes, manually dispatch from
 
 ## Session format
 
-There is no fixed play time or number of sittings. Testers may stop whenever
-they like and use Continue to resume later. Each person plays in their own
-browser from the Round 1 landing page, using its play link.
+There is no fixed play time or number of sittings. Continue resumes a living
+survivor; death ends the run. Each person plays in their own browser from the
+Round 1 landing page, using its play link.
 
 There is no wristwatch in playtest 1, although #181's beat 2 lists one; it comes
 with version 1.
@@ -89,6 +90,10 @@ The localized Round 1 brief is the testers' consent; there is no separate
 consent step because it gives the task and terms before play. Its wording is
 authored in both languages in `site/playtest.jsonnet`, and
 `site/deadvox/playtest/round1/round1.js`, `text`, renders it before the play link.
+
+## If an error report appears
+
+Stop playing when the blocking error panel appears. The game stays halted, releases pointer lock, will not resume or start another save, and does not try to recover; reload starts from the latest save that completed successfully. Use Copy error to include the full displayed text exactly, and download the local error report; the game does not send it anywhere automatically. The report may include the build revision, seed and site, game clock, browser user agent, and the same recent replay and playtest metrics offered by the F9 menu. Use Report on GitHub to open the playtest feedback form. If the error is too long to prefill, attach the downloaded report. Review the file before posting it publicly. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
 
 ## Saving and sending metrics
 

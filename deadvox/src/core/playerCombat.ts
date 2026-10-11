@@ -82,16 +82,19 @@ export class PlayerCombat {
   private nextFistHand: MeleeHand;
   private readonly targets: MeleeTargetResolver;
   private readonly onWeaponHit: (uid: number) => void;
+  private readonly onLandedHit: () => void;
 
   constructor(
     targets: MeleeTargetResolver,
     onWeaponHit: (uid: number) => void = () => undefined,
     character: HandedCharacter = DEFAULT_HANDED_CHARACTER,
+    onLandedHit: () => void = () => undefined,
   ) {
     this.character = character;
     this.nextFistHand = dominantSide(character);
     this.targets = targets;
     this.onWeaponHit = onWeaponHit;
+    this.onLandedHit = onLandedHit;
   }
 
   get activeMeleeAction(): Readonly<MeleeActionState> | undefined {
@@ -131,8 +134,11 @@ export class PlayerCombat {
       action.profile === 'fists',
     );
     const weaponUid = action.profile === 'fists' ? null : action.hands[action.hand];
-    if (hit && weaponUid !== null) {
-      this.onWeaponHit(weaponUid);
+    if (hit) {
+      this.onLandedHit();
+      if (weaponUid !== null) {
+        this.onWeaponHit(weaponUid);
+      }
     }
   }
 
