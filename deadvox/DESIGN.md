@@ -735,9 +735,9 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
 
   See `Body.canTreat` and `Body.treat`, and `src/content/base/items-other.json`.
 - **Modifiers.** `src/core/modifiers.ts`, `modified`, is the one point where
-  modifiers (skills, traits, conditions) change a content number. Every body and
-  treatment number from content passes through it, so a modifier reaches each
-  mechanism that uses that value. `MODIFIED_EFFECTS` in the same module defines
+  modifiers (skills, traits, conditions) change a content number. A mechanism
+  that reads a content number through it names that number in `MODIFIED_EFFECTS`,
+  so a modifier reaches every mechanism that uses the value. The same module defines
   the contract; content defines no actor modifiers. A wound care skill could
   raise treatment quality, letting a skilled player stop an artery with a rag.
 - **Presentation.** Each tier's content sets whether the HUD warns, the notice
