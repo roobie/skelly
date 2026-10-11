@@ -41,13 +41,13 @@
     },
     {
       "id": "antibiotics",
-      "name": "Antibiotics",
+      "name": "Tetracycline",
       "category": "medical",
       "weight": 50,
       "size": [1, 1],
       "stack": 4,
       "treatment": { "infection": { "stages": ["advanced"], "chance": 0.9 } },
-      "description": "Treats a progressed wound infection."
+      "description": "An antibiotic. Treats a progressed wound infection."
     },
     {
       "id": "painkillers",

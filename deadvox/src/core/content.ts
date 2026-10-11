@@ -6,7 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
-import { inventoryGridName } from './inventoryGridName.ts';
+import { visibleGridName } from './inventoryGridName.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import {
   type BlockDef,
@@ -497,7 +497,7 @@ const checkContainerWidth = ({
 
 const itemGridNames = (item: ItemDef): Set<string> => {
   const [width, height] = item.size;
-  return new Set([inventoryGridName(item.name, width, height), inventoryGridName(item.name, height, width)]);
+  return new Set([visibleGridName(item.name, width, height), visibleGridName(item.name, height, width)]);
 };
 
 const checkInventoryNameCollisions = (items: readonly ItemDef[], report: Report): void => {

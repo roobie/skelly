@@ -543,18 +543,30 @@ HTML over the game view, and keyboard-first:
   `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
   shows its handling time. Weight, exact condition and times are in the item's
-  details. Names must tell similar items apart while scanning: at the base text
-  size the grid wraps a name at spaces onto the lines that fit and elides an
-  overlong word rather than splitting it. Tall footprints use their long edge;
-  full names remain in inspection and hand or worn slots. `validate` uses the same
-  layout as the grid when checking for indistinguishable labels. The layout is
-  measured at the 16 px root the UI is authored at. `hudScale` scales the cell,
-  the text and the padding together, but an item's border and the gutter around
-  it stay px, so a fitted name keeps fitting at a scale of 1 or more and can clip
-  below 1; a `spacing` above 1 widens the padding past what the layout assumes,
-  so a fitted name can clip there too. See `src/ui/inventoryScreen.ts`,
-  `gridItemName`, and `src/core/inventoryGridName.ts`, `inventoryGridName` and
-  `GRID_CELL_REM`.
+  details. Names must tell similar items apart while scanning, so a grid name
+  shows every letter that fits: each line runs to the cell's border and breaks
+  where the next glyph would cross it, mid-word and without a hyphen, and a name
+  too long for its cell stops at the last whole line without an ellipsis. An
+  ellipsis or an early break at a space would spend room that could show more
+  letters. Tall footprints use their long edge; full names remain in inspection
+  and hand or worn slots. The browser lays the name out (`src/ui/style.css`,
+  `.inv-item-name`). `validate` checks for indistinguishable labels against the
+  start of each name that every player sees, predicted from a table of glyph
+  widths rather than from one browser's font. Each glyph's width is its widest
+  advance among DejaVu Sans (the Linux default), Adwaita Sans (GNOME's UI font),
+  and Liberation Sans and Nimbus Sans (the metric stand-ins for Arial and
+  Helvetica); an unlisted glyph counts as the widest. The other platform UI fonts
+  (Segoe UI, San Francisco, Cantarell, Noto Sans, Ubuntu) average at least 7%
+  narrower than DejaVu Sans, and the prediction fills only part of a line
+  (`GRID_NAME_LINE_FILL`), a margin below that difference for the glyphs where one
+  of them is wider. When the covered fonts or the grid name's text size change,
+  re-run `npm run probe:glyph-widths` (`tools/grid-name-glyph-widths.mjs`) and
+  replace the table it prints. The prediction is made at the 16 px root the UI is
+  authored at. `hudScale` scales the cell, the text and the padding together, but
+  an item's border and the gutter around it stay px, so below a scale of 1 a cell
+  shows a little less than predicted; a `spacing` above 1 widens the padding, so
+  a cell shows less there too. See `src/core/inventoryGridName.ts`,
+  `visibleGridName` and `GRID_CELL_REM`.
 - Filters and search, and item details on hover or focus.
 - A **quickbar** of shortcuts to items you carry. BR (2026-10-05, 00:02):
   "one thing that feels not quite right to me is that pressing the quickbar

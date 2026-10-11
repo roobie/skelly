@@ -9,7 +9,6 @@ import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { inventoryGridName } from '../src/core/inventoryGridName.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
@@ -25,23 +24,6 @@ import { applyReplayActionPayload, type ReplayActionPayload } from '../src/game/
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
-
-const WHITESPACE = /\s+/u;
-
-const gridNameUsesWholeWords = (name: string, rendered: string): boolean => {
-  const sourceWords = name.split(WHITESPACE);
-  return rendered
-    .split('\n')
-    .filter(Boolean)
-    .every((line) =>
-      line.split(WHITESPACE).every((token) => {
-        const elidedWord = token.endsWith('…') ? token.slice(0, -1) : undefined;
-        return elidedWord === undefined
-          ? sourceWords.includes(token)
-          : sourceWords.some((word) => word.startsWith(elidedWord));
-      }),
-    );
-};
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
 const { registry } = buildRegistry(
@@ -310,11 +292,11 @@ describe('inventory screen Lit rendering', () => {
     screen.close();
   });
 
-  it('keeps grid-name lines on word boundaries and uses the long edge for tall items', () => {
+  // The browser breaks and clips a grid name (style.css, `.inv-item-name`), so the screen hands it the whole name.
+  it('renders whole grid names and runs tall items along the long edge', () => {
     const items = new Map(registry.items);
     const fixtures = [
       { id: 'fixture_tall_name', name: 'Fixture baseball bat', size: [1, 4] as [number, number] },
-      { id: 'fixture_knife_name', name: 'Fixture utility knife', size: [1, 3] as [number, number] },
       {
         id: 'fixture_long_word_name',
         name: 'Fixture extraordinarilylongword',
@@ -343,15 +325,9 @@ describe('inventory screen Lit rendering', () => {
 
     for (const { fixture, item } of placed) {
       const node = root.querySelector<HTMLElement>(`.inv-item[data-uid="${item.uid}"]`)!;
-      const renderedName = node.querySelector('.inv-item-name')?.textContent ?? '';
-      expect(gridNameUsesWholeWords(fixture.name, renderedName)).toBe(true);
-      if (fixture.size[1] > fixture.size[0]) {
-        expect(node.classList.contains('inv-item-tall')).toBe(true);
-      }
+      expect(node.querySelector('.inv-item-name')?.textContent).toBe(fixture.name);
+      expect(node.classList.contains('inv-item-tall')).toBe(fixture.size[1] > fixture.size[0]);
     }
-    const longWordNode = root.querySelector<HTMLElement>(`.inv-item[data-uid="${placed[2]!.item.uid}"]`)!;
-    expect(longWordNode.querySelector('.inv-item-name')?.textContent).toContain('…');
-    expect(inventoryGridName(fixtures[0]!.name, 1, 4)).toBe(inventoryGridName(fixtures[0]!.name, 4, 1));
     screen.close();
   });
 
