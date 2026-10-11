@@ -18,7 +18,8 @@ read_if:
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
   - you're changing bleeding cues
-  - you're changing bleeding tiers, blood loss, or which treatment stops which tier
+  - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
+  - you're changing zombie attack moves or the damage kinds they deal
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you add or change a first-person handling animation (what it may read its timing from)
   - you tune body infection or unconsciousness through content packs
@@ -609,8 +610,9 @@ and `src/core/content.ts`, `checkItemFirearm`.
   reversing every alternative or every recipe that could make the item. See
   `docs/crafting.md`, `planDisassembly`.
 - **Crafting runs compressed**, like other long actions, and can be interrupted
-  and resumed. An interrupted craft leaves an "in progress" item that holds its
-  components.
+  and resumed. While bleeding refuses compression, crafting runs at 1× instead
+  (see [Bleeding](#bleeding)). An interrupted craft leaves an "in progress" item
+  that holds its components.
 - **Skills** go up by doing (crafting, first aid, mechanics, electronics,
   firearms…), and faster when you read the right book. Reading is a long action.
 - **Recipe discovery:** you know simple recipes from the start. Books and
@@ -652,52 +654,100 @@ and `src/core/content.ts`, `checkItemFirearm`.
 
 ### Bleeding
 
-A wound bleeds at one of four tiers, mildest first: scratch, moderate, heavy and
-arterial. The tiers make a little scratch hardly worth mention and an open artery
-lights out in about one real minute. See `src/core/body.ts`, `BLEEDING_TIERS`.
+Bleeding is content, and nothing in it is absolute. `src/content/base/body.json`,
+`bleeding`, lists the tiers mildest first. Each tier has its own:
+- label;
+- loss rate and closure time;
+- treatment effort;
+- least damage and regions;
+- chance per damage kind;
+- presentation.
 
-- **Tier from the hit.** A bleeding hit's damage and region pick its tier. Each
-  tier above a scratch has a least damage and a chance, checked worst first, and
-  only some regions can open an artery; otherwise the hit leaves a scratch. A new
-  hit on a bleeding region keeps the worse tier and restarts its bleeding clock.
-  The torso is left out of the arterial regions: it is where a shambler's lunge
-  lands, and an artery from an ordinary fight would make the playtest a death
-  trap. An artery opens from a hit to the head (the neck) or a limb. See
-  `src/core/body.ts`, `bleedingTierForHit`; `src/core/sim.ts`, `Simulation.hit`;
-  and `src/content/base/body.json`, `bleeding`.
-- **Loss.** Each bleeding wound loses blood at its tier's rate, and the losses of
-  all bleeding regions add up. Blood recovers only while no wound bleeds. With no
-  blood left the character dies of blood loss. A scratch stops by itself after its
-  tuned time; the other tiers bleed until treated. See `Body.advance`.
-- **Lights out in a real minute.** At normal speed the frame driver advances
-  simulation time by real time, since an uncompressed step is the real step times
-  1 (`src/game/frameDriver.ts`, `advanceLiveFrame`). So the arterial rate is full
-  blood over 60 simulation seconds. The minute is real only while frames come fast
-  enough: `src/game/play.ts`, `frame`, caps each frame's real step so a stall
-  doesn't jump the world, and below that rate the whole game, bleeding included,
-  runs slower than real time. Lights out is death by blood loss, with no
-  faint before it: the body model already ends at no blood, and a faint would only
-  cut the minute the player has to dress the wound, since nobody else can.
-- **No compression while an artery bleeds,** so the minute stays a real minute.
-  Rest, sleep, waiting, reading, crafting and the debug skip are refused with a
-  reason in the character's voice, and compression already running drops to 1×.
-  Treatment still starts, because the wound must stay treatable: like prying, it
-  runs at 1× and leaves movement free. See `Body.compressionRefusal`;
-  `src/core/sim.ts`, `Simulation.compress` and `Simulation.compressLongAction`; and
-  `src/core/longAction.ts`, `LongActions.runsUncompressed`.
-- **Treatment by tier.** A bandage stops any tier. A rag stops a scratch or a
-  moderate wound, eases a heavy one to moderate, and can't help an artery. Each
-  treatment's tiers are content, so items differ through their `treatment` kind,
-  not their ids. See `src/content/base/body.json`, `bleedingTreatments`, and
-  `Body.canTreat` and `Body.treat`.
-- **Presentation.** A scratch gets no notice and only a quiet HUD mark. Moderate
-  and worse get a notice naming the severity, a HUD warning naming each region's
-  tier, and drips that come faster and larger with the tier; INTERFACE.md, "HUD",
-  has the wording rules. The inventory body panel names the tier. See
-  `src/render/gore.ts`, `Gore.dripPlayer`, and `src/ui/inventoryScreen.ts`,
-  `BLEEDING_LABEL`.
-- **Saves** keep each wound's tier and its bleeding clock. See
-  `src/core/saveFormat.ts`, `bodyWound`.
+Code keeps only the mechanism and validates the content, so adding or retuning a
+tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.ts`,
+`BleedingTierSchema`.
+
+- **Severity in bands.** A wound's bleeding is a severity measured in tier bands.
+  Loss within a band rises from the tier below's rate to the tier's own. That way
+  closure and dressing lower a wound gradually instead of in tier-sized jumps. See
+  `Body.lossRate`.
+- **Tier from the hit.** One roll per bleeding hit picks its tier.
+  - The roll runs worst tier first, over the tiers whose least damage and regions
+    the hit meets. Each one adds its chance for the hit's damage kind.
+  - Every tier has a chance for every kind, so blunt can open any tier, just far
+    less often than a cut or a stab.
+  - A hit on a bleeding wound keeps the worse severity.
+  - Base content leaves the torso out of the arterial tier's regions. The torso is
+    where a shambler's lunge lands, and an artery from an ordinary fight would make
+    the playtest a death trap, so an artery opens only from a hit to the head (the
+    neck) or a limb.
+
+  See `Body.bleedingTierForHit` and `src/core/sim.ts`, `Simulation.hit`.
+- **Attacks.** A zombie type's attack is a weighted list of moves. Each move has its
+  own damage, damage kind and hit region, so a shambler can clobber or bite with
+  different odds and damage. A landed hit picks its move by weight. See
+  `src/content/base/zombies.json`, `attack.moves`, and `src/core/zombies.ts`,
+  `pickZombieMove`. Worn armour and clothing only take wear from a hit; they don't
+  change its damage, its kind or its bleed chance. See `src/core/wear.ts`,
+  `wearOnPlayerHit`.
+- **Loss.** Each bleeding wound loses blood at its severity's rate, and the losses
+  of all wounds add up. Blood recovers only while no wound bleeds. With no blood
+  left, the character dies of blood loss. See `Body.advance`.
+- **Natural closure.** Every wound closes by itself at its tier's closure rate, but
+  only while the body is otherwise healthy:
+  - the needs allow recovery, which is the same gate as health regeneration;
+  - the wound isn't infected.
+
+  Base closure is slow, so in practice only the mildest wounds close on their own
+  and the rest need treatment. See `Body.advance` and `src/core/needs.ts`,
+  `needsAllowRecovery`.
+- **Lights out in a real minute.** At normal speed, the frame driver advances
+  simulation time by real time, since an uncompressed step is the real step times 1
+  (`src/game/frameDriver.ts`, `advanceLiveFrame`). So base content's worst tier
+  loses full blood in about 60 simulation seconds.
+  - The minute is real only while frames come fast enough. `src/game/play.ts`,
+    `frame`, caps each frame's real step so a stall doesn't jump the world. Below
+    that rate the whole game runs slower than real time, bleeding included.
+  - Lights out is death by blood loss, with no faint before it. The body model
+    already ends at no blood, and a faint would only cut into the minute the player
+    has to dress the wound, since nobody else can.
+- **Compression.** Body content's `bleeding.blockCompressionAtLossPerSimSecond`
+  sets when bleeding refuses time compression: once all wounds together lose blood
+  at or above that rate. The default, 0, means any bleeding, so a wound runs its
+  course in real time.
+  - Rest, sleep, waiting and the debug skip are refused with content's line, and
+    compression that is already running drops to 1×.
+  - Treatment, crafting and reading are never refused. Like prying, they run at 1×
+    and leave movement free, and they go back to compression once the bleeding no
+    longer refuses it.
+  - Crafting stays open because a bleeding player may need to craft something to
+    stop the bleeding, at any rate, as a last effort.
+
+  See `Body.compressionRefusal`; `src/core/sim.ts`, `Simulation.compress` and
+  `Simulation.compressLongAction`; and `src/core/longAction.ts`,
+  `LongActions.runsUncompressed` and `LongActions.syncInterruption`.
+- **Treatment.** An item's content `treatment` gives a fixed bleeding strength, the
+  infection stages it treats with a chance, or both.
+  - Each application rolls its effect within body content's `treatmentSpread`. The
+    variability comes from applying the treatment, not from the item.
+  - The effect is spent band by band. Each band costs its tier's treatment effort,
+    and what's left carries into the band below.
+  - Every bleeding treatment can help every tier, as a matter of quality, and
+    applications stack, so several rags can bring an artery down step by step.
+
+  See `Body.canTreat` and `Body.treat`, and `src/content/base/items-other.json`.
+- **Modifiers.** `src/core/modifiers.ts`, `modified`, is the one point where
+  modifiers (skills, traits, conditions) change a content number. Treatment
+  quality, loss, closure, the tier chance and the compression threshold all read
+  through it, so a new modifier reaches every mechanism at once. No content
+  declares a modifier yet. A wound care skill would raise treatment quality there,
+  until a skilled player can stop an artery with a rag.
+- **Presentation.** Each tier's content sets whether the HUD warns, the notice
+  spoken when the worst wound reaches that tier, and how its drips look.
+  INTERFACE.md, "HUD", has the wording rules. The inventory body panel names the
+  tier. See `src/game/playerBleedingNotice.ts`, `PlayerBleedingNotice`;
+  `src/render/gore.ts`, `Gore.dripPlayer`; and `src/ui/inventoryScreen.ts`.
+- **Saves** keep each wound's severity. See `src/core/saveFormat.ts`, `bodyWound`.
 
 ## Combat and noise
 
@@ -982,7 +1032,8 @@ without modeling armour now.
   the stains it fell with. A player's bleeding drips from the affected region as
   the avatar is drawn in each view; in first person, droplets enter view only when
   looking down or near the screen edge. The HUD shows blood level and
-  active regions, and starting to bleed produces one notice. These cues derive from
+  active regions, and the worst wound reaching a worse tier speaks that tier's
+  notice, if content gives it one (see [Bleeding](#bleeding)). These cues derive from
   existing body wounds; none adds simulation or save state. Gore stays out of
   the simulation so that blood never changes a fight, a save or a replay.
   Splats are decoration, so they fade rather than being saved, which would add
