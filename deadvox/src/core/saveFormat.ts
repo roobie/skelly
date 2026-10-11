@@ -1,6 +1,6 @@
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
-import { BODY_REGIONS, BODY_TREATMENTS } from './body.ts';
+import { BODY_REGIONS, DAMAGE_KINDS } from './body.ts';
 import { getBuildRevision } from './buildInfo.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
@@ -241,7 +241,7 @@ const bodyRegionDamage = obj({
 });
 const bodyWound = nullable(
   obj({
-    bleeding: bool,
+    bleeding: nonNegative,
     infection: enumeration(['none', 'early', 'advanced', 'resolved']),
     infectionGameSeconds: nonNegative,
     infectionAtRisk: bool,
@@ -273,7 +273,12 @@ const simulationFields = {
   scheduler,
   needs,
   body: bodyState,
-  compression: obj({ c: num({ min: 1, max: 30 }), active: bool, interruption: opt(str()) }),
+  compression: obj({
+    c: num({ min: 1, max: 30 }),
+    active: bool,
+    owner: enumeration(['debug', 'long-action']),
+    interruption: opt(str()),
+  }),
   pendingInterrupt: opt(str()),
   dead: opt(obj({ cause: str({ nonEmpty: true }), time: nonNegative })),
 };
@@ -410,7 +415,7 @@ const longAction = obj({
       toolUid: opt(positiveInt),
       region: opt(enumeration(bodyRegionValues)),
       itemUid: opt(positiveInt),
-      treatment: opt(enumeration(BODY_TREATMENTS)),
+      itemType: opt(str({ id: true })),
       duration: opt(positive),
       strikeInterval: opt(positive),
       nextStrike: opt(positive),
@@ -537,7 +542,7 @@ const playerState = obj({
 });
 const meleeAction = nullable(
   obj({
-    profile: enumeration(['blunt', 'cut', 'pierce', 'fists']),
+    profile: enumeration([...DAMAGE_KINDS, 'fists']),
     hand: enumeration(['right', 'left']),
     twoHanded: bool,
     cooldown: positive,
@@ -559,7 +564,7 @@ const meleeAction = nullable(
       headDamageMultiplier: opt(positive),
       limbDamageMultiplier: opt(positive),
       speedMultiplier: opt(positive),
-      type: opt(enumeration(['blunt', 'cut', 'pierce'])),
+      type: opt(enumeration(DAMAGE_KINDS)),
     }),
   }),
 );
@@ -1246,7 +1251,7 @@ function ownsLongActionItem(
     return tree.some(({ item }) => item.uid === job.toolUid && item.type !== WORK_IN_PROGRESS);
   }
   if (job?.jobType === 'treatment') {
-    return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.treatment);
+    return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.itemType);
   }
   return true;
 }

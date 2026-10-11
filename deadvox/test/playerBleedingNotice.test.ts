@@ -1,28 +1,34 @@
 import { expect, it } from 'vitest';
 import { PlayerBleedingNotice } from '../src/game/playerBleedingNotice.ts';
+import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
-it('notifies once when bleeding starts, including a later re-bleed after treatment', () => {
-  const notice = new PlayerBleedingNotice(false);
-  let notifications = 0;
-  const notify = () => {
-    notifications += 1;
-  };
+const { tiers } = BODY_TUNING_FIXTURE.bleeding;
+const MINOR = fixtureTier('minor');
+const SERIOUS = fixtureTier('serious');
+const CRITICAL = fixtureTier('critical');
 
-  notice.update(true, notify);
-  notice.update(true, notify);
-  expect(notifications).toBe(1);
+const notices = (initial: number | undefined, steps: readonly (number | undefined)[]): string[] => {
+  const notice = new PlayerBleedingNotice(initial);
+  const spoken: string[] = [];
+  for (const worst of steps) {
+    notice.update(worst, tiers, (text) => spoken.push(text));
+  }
+  return spoken;
+};
 
-  notice.update(false, notify);
-  notice.update(true, notify);
-  expect(notifications).toBe(2);
+it('names each worsening once, including a later re-bleed after treatment', () => {
+  expect(notices(undefined, [SERIOUS, SERIOUS, CRITICAL, CRITICAL, undefined, SERIOUS])).toEqual([
+    tiers[SERIOUS]!.notice,
+    tiers[CRITICAL]!.notice,
+    tiers[SERIOUS]!.notice,
+  ]);
+});
+
+it('passes a tier without a notice unmentioned, and still names a wound that worsens from one', () => {
+  expect(tiers[MINOR]!.notice).toBeUndefined();
+  expect(notices(undefined, [MINOR, MINOR, CRITICAL])).toEqual([tiers[CRITICAL]!.notice]);
 });
 
 it('does not report an already-bleeding loaded body as a new wound', () => {
-  const notice = new PlayerBleedingNotice(true);
-  let notifications = 0;
-
-  notice.update(true, () => {
-    notifications += 1;
-  });
-  expect(notifications).toBe(0);
+  expect(notices(CRITICAL, [CRITICAL, SERIOUS])).toEqual([]);
 });

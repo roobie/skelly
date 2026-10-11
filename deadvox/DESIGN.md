@@ -18,6 +18,8 @@ read_if:
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
   - you're changing bleeding cues
+  - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
+  - you're changing zombie attack moves or the damage kinds they deal
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you add or change a first-person handling animation (what it may read its timing from)
   - you tune body infection or unconsciousness through content packs
@@ -187,13 +189,15 @@ compression on and shows a progress bar and the game time passing.
   full at 60 frames a second in a quiet world. Where many shamblers are active, the frame's cost
   stays bounded and the fast-forward runs slower instead
   ([CHALLENGES.md](CHALLENGES.md), 3).
-- **Only an event stops it:** nothing refuses or stops compression because a
-  shambler is near or aware of the player, the debug skip included. A player may
-  wait in a walled-off area with enemies about that can't find or harm them, and
-  whether an area is safe enough is a judgement only the player can make, so the
-  game never makes them clear it first. Emitted events stop the action: a hit or
-  other damage, a need crossing its threshold, a carried light dying, and the
-  debug noise key. `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
+- **Only an event, or bleeding for player long actions, stops it:** nothing
+  refuses or stops compression because a shambler is near or aware of the player,
+  the debug skip included. A player may wait in a walled-off area with enemies
+  about that can't find or harm them, and whether an area is safe enough is a
+  judgement only the player can make, so the game never makes them clear it
+  first. Emitted events stop the action: a hit or other damage, a need crossing
+  its threshold, a carried light dying, and the debug noise key. Bleeding refuses
+  and stops a player long action's compression, but not debug compression (see
+  [Bleeding](#bleeding)). `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
   them and halts the scheduler after the tick that emitted one, so a frame of
   many Sim seconds still stops at the first hit.
   `src/core/longAction.ts`, `LongActions.syncInterruption`, wakes a sleeper,
@@ -635,8 +639,9 @@ and `src/core/content.ts`, `checkItemFirearm`.
   reversing every alternative or every recipe that could make the item. See
   `docs/crafting.md`, `planDisassembly`.
 - **Crafting runs compressed**, like other long actions, and can be interrupted
-  and resumed. An interrupted craft leaves an "in progress" item that holds its
-  components.
+  and resumed. While bleeding refuses compression, crafting runs at 1× instead
+  (see [Bleeding](#bleeding)). An interrupted craft leaves an "in progress" item
+  that holds its components.
 - **Skills** go up by doing (crafting, first aid, mechanics, electronics,
   firearms…), and faster when you read the right book. Reading is a long action.
 - **Recipe discovery:** you know simple recipes from the start. Books and
@@ -676,10 +681,11 @@ and `src/core/content.ts`, `checkItemFirearm`.
 
   Treatment uses a wielded item: left-click to apply it, or hold its quickbar
   slot. Mouse scroll selects an action for the wielded item; its selection cue
-  appears only while hints are enabled. See `src/game/survival.ts`,
-  `Survival.use` and `Survival.useFromQuickbar`; `src/game/itemActions.ts`,
-  `ItemActionSelection`; and `src/ui/playHud.ts`, `playHudText`. The default
-  action is recorded in [SLICE-3.md](SLICE-3.md), 3.4.
+  appears only while hints are enabled. The default action treats the worst
+  bleeding first, then the most damaged region, because blood loss is what
+  kills soonest. See `src/game/survival.ts`, `Survival.use` and
+  `Survival.useFromQuickbar`; `src/game/itemActions.ts`, `ItemActionSelection`
+  and `defaultItemAction`; and `src/ui/playHud.ts`, `playHudText`.
 
   Infection onset is time-based, with deterministic infection risk and an
   antiseptic window. Knockout is timed; infection and knockout settings are
@@ -693,6 +699,106 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
+
+### Bleeding
+
+Bleeding is content, and nothing in it is absolute. `src/content/base/body.jsonnet`,
+`bleeding`, lists the tiers mildest first. Each tier has its own:
+- label;
+- loss rate and closure time;
+- treatment effort;
+- least damage and per-region chance factors;
+- chance per damage kind;
+- presentation.
+
+Code keeps only the mechanism and validates the content, so adding or retuning a
+tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.ts`,
+`BleedingTierSchema`.
+
+- **Severity in bands.** A wound's bleeding is a severity measured in tier bands.
+  Loss within a band rises from the tier below's rate to the tier's own. That way
+  closure and dressing lower a wound gradually instead of in tier-sized jumps. See
+  `Body.lossRate`.
+- **Tier from the hit.** One roll per bleeding hit picks its tier.
+  - The roll runs worst tier first, over the tiers whose least damage the hit
+    meets. Each adds its chance for the hit's damage kind, scaled by a content
+    factor for the hit region. A zero factor excludes that region, so content
+    needs no separate region list.
+  - Every tier has a chance for every kind, so blunt can open any tier, just far
+    less often than a cut or a stab.
+  - A hit on a bleeding wound keeps the worse severity.
+  - Arteries can be hit in the torso, but that is harder than in other regions.
+    Base content lowers the torso chance without excluding it; the factor makes
+    that tuning content-owned rather than a tier-specific code branch.
+
+  See `Body.bleedingTierForHit` and `src/core/sim.ts`, `Simulation.hit`.
+- **Attacks.** Content weights choose both a move and that move's possible body
+  regions. Naming left and right directly avoids a second side-selection rule, while
+  keyed region rolls keep changes to those choices from shifting other simulation
+  draws. See `src/content/base/zombies.json`, `attack.moves`, `src/core/zombies.ts`,
+  `pickZombieHitRegion`, and `src/game/session.ts`, `createSession`. Worn armour and
+  clothing only take wear from a hit; they don't change its damage, kind or bleed
+  chance. See `src/core/wear.ts`, `wearOnPlayerHit`.
+- **Loss.** Each bleeding wound loses blood at its severity's rate, and the losses
+  of all wounds add up. Blood recovers only while no wound bleeds. With no blood
+  left, the character dies of blood loss. See `Body.advance`.
+- **Natural closure.** Every wound closes by itself at its tier's closure rate, but
+  only while the body is otherwise healthy:
+  - the needs allow recovery, which is the same gate as health regeneration;
+  - the wound isn't infected.
+
+  Base closure is slow, so in practice only the mildest wounds close on their own
+  and the rest need treatment. See `Body.advance` and `src/core/needs.ts`,
+  `needsAllowRecovery`.
+- **Lights out in a real minute.** At normal speed, the frame driver advances
+  simulation time at real time (`src/game/frameDriver.ts`, `advanceLiveFrame`).
+  - The minute is real only while frames come fast enough. `src/game/play.ts`,
+    `frame`, caps each frame's real step so a stall doesn't jump the world. Below
+    that rate the whole game runs slower than real time, bleeding included.
+  - Lights out is death by blood loss, with no faint before it. The body model
+    already ends at no blood, and a faint would only cut into the minute the player
+    has to dress the wound, since nobody else can.
+- **Compression.** Body content's `bleeding.blockCompressionAtLossPerSimSecond`
+  sets when bleeding refuses time compression: once all wounds together lose blood
+  at or above that rate. The default, 0, means any bleeding, so a wound runs its
+  course in real time.
+  - Rest, sleep and waiting are refused with content's line, and player
+    long-action compression that is already running drops to 1×. Debug time
+    controls exist to move time while testing, bleeding included, so those
+    refusals don't apply; a real emitted interrupt still stops debug compression.
+  - Treatment, crafting and reading are never refused. Like prying, they run at 1×
+    and leave movement free, and they go back to compression once the bleeding no
+    longer refuses it.
+  - Crafting stays open because a bleeding player may need to craft something to
+    stop the bleeding, at any rate, as a last effort.
+
+  See `Body.compressionRefusal`; `src/core/sim.ts`, `Simulation.compress`,
+  `Simulation.compressLongAction` and `Simulation.checkInterruptions`; and
+  `src/core/longAction.ts`, `LongActions.runsUncompressed` and
+  `LongActions.syncInterruption`.
+- **Treatment.** An item's content `treatment` gives a fixed bleeding strength, the
+  infection stages it treats with a chance, or both.
+  - Under base content, `treatmentSpread` is centred on its neutral multiplier, so
+    an item's configured strength is its average bandage application. Other content
+    can change that relationship.
+  - The effect is spent band by band. Each band costs its tier's treatment effort,
+    and what's left carries into the band below.
+  - Every bleeding treatment can help every tier, as a matter of quality, and
+    applications stack, so several rags can bring an artery down step by step.
+
+  See `Body.canTreat` and `Body.treat`, and `src/content/base/items-other.json`.
+- **Modifiers.** `src/core/modifiers.ts`, `modified`, is the one point where
+  modifiers (skills, traits, conditions) change a content number. A mechanism
+  that reads a content number through it names that number in `MODIFIED_EFFECTS`,
+  so a modifier reaches every mechanism that uses the value. The same module defines
+  the contract; content defines no actor modifiers. A wound care skill could
+  raise treatment quality, letting a skilled player stop an artery with a rag.
+- **Presentation.** Each tier's content sets whether the HUD warns, the notice
+  spoken when the worst wound reaches that tier, and how its drips look.
+  INTERFACE.md, "HUD", has the wording rules. The inventory body panel names the
+  tier. See `src/game/playerBleedingNotice.ts`, `PlayerBleedingNotice`;
+  `src/render/gore.ts`, `Gore.dripPlayer`; and `src/ui/inventoryScreen.ts`.
+- **Saves** keep each wound's severity. See `src/core/saveFormat.ts`, `bodyWound`.
 
 ## Combat and noise
 
@@ -978,7 +1084,8 @@ without modeling armour now.
   the stains it fell with. A player's bleeding drips from the affected region as
   the avatar is drawn in each view; in first person, droplets enter view only when
   looking down or near the screen edge. The HUD shows blood level and
-  active regions, and starting to bleed produces one notice. These cues derive from
+  active regions, and the worst wound reaching a worse tier speaks that tier's
+  notice, if content gives it one (see [Bleeding](#bleeding)). These cues derive from
   existing body wounds; none adds simulation or save state. Gore stays out of
   the simulation so that blood never changes a fight, a save or a replay.
   Splats are decoration, so they fade rather than being saved, which would add
@@ -1142,13 +1249,12 @@ It keeps a shambler's decisions, the same senses, targets and modes, but steers 
 
 The renderer rebuilds a holed amalgam's mesh without its removed voxels, and the faces the hole exposes take the type's interior colour. They are marked as wound faces (`CARVED_NEIGHBOUR`). The removed voxels fly off along the shot as a render-only rigid chunk that lands, lies, sinks and is removed, with a cap on live chunks. Gore covers the amalgam as it does shamblers ("Gore is presentation only" above): carving throws an extra burst of blood, and a chunk leaves a large splat where it lands. Neither the chunk nor the rebuilt mesh enters the simulation, and the corpse keeps the holes. See `src/render/amalgamFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
 
-Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
-sight-driven pursuit an immediate sprint threat, while the crawler uses the body's
-leg region as its attack target. Keep their selection, attack target and sound
-mapping authored with the type; see `src/content/base/zombies.json` and the spawn
-markers in `src/content/base/templates.json`. Type weights scale authored marker
-chances and choose hamlet wanderers, keeping rarity a content property rather than
-an inference from generated counts.
+The runner's threat comes from speed rather than stronger attacks; the crawler's
+low posture confines its bite to the legs. Keep their moves, hit regions, sounds and
+spawn chance authored with the type. See `src/content/base/zombies.json` and the
+spawn markers in `src/content/base/templates.json`. Type weights scale authored
+marker chances and choose hamlet wanderers, keeping rarity a content property
+rather than an inference from generated counts.
 
 BR's crawler ruling (2026-10-06–07): the question was whether the crawler should be
 (a) a prone ground-crawler dragging itself on its arms with trailing legs, (b) a
