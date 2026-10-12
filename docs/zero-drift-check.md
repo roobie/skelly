@@ -40,9 +40,11 @@ stamps and subtitles because these are not the topic's identity. Renaming the to
 still breaks its cues. Bold lead-ins serve as named anchors because design decisions
 use those labels without making each decision a heading. Heading-link fragments
 use the full title's GitHub slug, including duplicate suffixes, rather than that
-relaxed name comparison; see `tools/zero-drift-check.mjs`, `anchorsFor` and
-`githubSlug`. Code-span text stays literal so emphasis and HTML stripping cannot
-erase identifiers from a slug. Metadata and fenced examples do not create heading anchors.
+relaxed name comparison. The scanner preserves escaped underscores as literal
+heading text before applying emphasis, and excludes fenced examples and HTML-commented
+markup because GitHub does not render them as headings. Angle-wrapped link destinations
+resolve against the same normalized path and fragment. See `tools/zero-drift-check.mjs`,
+`anchorsFor`, `githubSlug` and `checkSectionLink`.
 
 Names in non-Markdown targets are literal text rather than normalized headings:
 normalization could silently turn a removed test name into a different test. Cached

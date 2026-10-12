@@ -51,7 +51,9 @@ const OTHER_SECTION =
   /(?:`[^`\s]+\.md`|(?<![\w/@`"'.-])[\w./-]+\.md)\s*(?:§\s*\d[\d.]*|(?:section|chapter)\b[^.;\n]*|#\d[\d.]*|[,;:]\s*\d+(?:\.\d+)*\b)/gi;
 const SECTION_NUMBER = /§\s*\d+(?:\.\d+)*/g;
 const NAME_MARKUP = /`|\*[^*]+\*|(?<!\w)_+[^_]+_+(?!\w)|<[^>]+>|\[[^\]]*\]\([^)]*\)/;
-const EXTRA_NAME = /^\s*(?:,\s*(?:and\s+)?|and\s+)(?:"((?:\\.|[^"\\])+)"|“([^”]+)”)/;
+const EXTRA_NAME = /^\s*(?:,\s*(?:and\s+)?|and\s+)(?:"((?:\\.|[^"\\])+)"|“([^”]+)”|`([^`]+)`)/;
+const EXTRA_CANONICAL_NAME = /^\s*,\s*(?:"[^"\n]+"|“[^”\n]+”)/;
+const BACKTICKED_IDENTIFIER = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*:?$/;
 const PATH_CHARACTERS = /^[\p{L}\p{M}\p{N}_./-]+$/u;
 const LEADING_SECTION_NUMBER = /^(?:§\s*)?\d+(?:\.\d+)*(?:[.)]|\s)\s*/;
 const TRAILING_PUNCTUATION = /[.,:;!?]+$/;
@@ -153,6 +155,11 @@ function visibleMarkdown(text) {
     .join('\n');
 }
 
+function linkDestination(raw) {
+  const destination = raw.trim().match(LINK_TARGET)?.[1];
+  return destination?.startsWith('<') && destination.endsWith('>') ? destination.slice(1, -1) : destination;
+}
+
 function pathValue(raw, bare = false) {
   let value = raw.trim();
   if (value.startsWith('<') && value.endsWith('>')) {
@@ -197,7 +204,7 @@ function pathCandidates(visible) {
     }
   }
   for (const match of visible.matchAll(LINK)) {
-    const raw = match[1].trim().match(LINK_TARGET)?.[1];
+    const raw = linkDestination(match[1]);
     if (!raw || raw.startsWith('/')) {
       continue;
     }
@@ -300,11 +307,21 @@ function plainHeading(text) {
     literals.push(span.slice(width, -width));
     return `${marker}${literals.length - 1}${marker}`;
   });
+  const escapes = [];
+  let escapeMarker = 'headingEscape';
+  while (protectedText.includes(escapeMarker)) {
+    escapeMarker += 'X';
+  }
   return protectedText
+    .replace(/\\_/g, () => {
+      escapes.push('_');
+      return `${escapeMarker}${escapes.length - 1}${escapeMarker}`;
+    })
     .replace(/<[^>]*>/g, '')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/\*+([^*]+)\*+/g, '$1')
     .replace(/(?<!\w)_+([^_]+)_+(?!\w)/g, '$1')
+    .replace(new RegExp(`${escapeMarker}(\\d+)${escapeMarker}`, 'g'), (_, index) => escapes[Number(index)])
     .replace(new RegExp(`${marker}(\\d+)${marker}`, 'g'), (_, index) => literals[Number(index)]);
 }
 
@@ -343,7 +360,10 @@ function headingTitles(source) {
 
 function anchorsFor(target, tree) {
   if (!tree.anchors.has(target)) {
-    const source = visibleMarkdown(sourceFor(target, tree).replace(FRONT_MATTER_BLOCK, ''));
+    const source = visibleMarkdown(sourceFor(target, tree).replace(FRONT_MATTER_BLOCK, '')).replace(
+      /<!--[\s\S]*?-->/g,
+      '',
+    );
     const headings = headingTitles(source);
     const labels = [...source.matchAll(/^\s*(?:[-*+]\s+|\d+[.)]\s+)?\*\*([^*\n]+)\*\*/gm)].map((match) => match[1]);
     const slugs = new Set();
@@ -391,15 +411,59 @@ function* overlappingMatches(text, pattern) {
   }
 }
 
+function insideCodeString(text, offset) {
+  if (!text) {
+    return false;
+  }
+  let quote;
+  let escaped = false;
+  const start = text.lastIndexOf('\n', offset - 1) + 1;
+  for (const char of text.slice(start, offset)) {
+    if (escaped) {
+      escaped = false;
+    } else if (char === '\\') {
+      escaped = true;
+    } else if (quote) {
+      if (char === quote) {
+        quote = undefined;
+      }
+    } else if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+    }
+  }
+  return quote !== undefined;
+}
+
+function skippedExtraLength(extra, tail, name) {
+  if (extra[3] === undefined) {
+    return 0;
+  }
+  if (pathValue(name, true) || name.startsWith('/')) {
+    const followingName = tail.slice(extra[0].length).match(EXTRA_CANONICAL_NAME);
+    return extra[0].length + (followingName?.[0].length ?? 0);
+  }
+  return BACKTICKED_IDENTIFIER.test(name) ? extra[0].length : 0;
+}
+
 function checkExtraNames(remaining, context) {
+  const { path, visible, offset: startOffset } = context;
   let tail = remaining;
+  let offset = startOffset;
   for (let extra = tail.match(EXTRA_NAME); extra; extra = tail.match(EXTRA_NAME)) {
-    const name = (extra[1] ?? extra[2]).replace(QUOTE_ESCAPE, '$1');
+    const name = (extra[1] ?? extra[2] ?? extra[3]).replace(QUOTE_ESCAPE, '$1');
+    const skip = skippedExtraLength(extra, tail, name);
+    if ((!path.endsWith('.md') && insideCodeString(visible, offset)) || skip) {
+      const consumed = skip || extra[0].length;
+      tail = tail.slice(consumed);
+      offset += consumed;
+      continue;
+    }
     if (!NAME_MARKUP.test(name)) {
-      add(context.failures, context.path, 'section_form', `${context.rawPath}, "${name}" (implicit path)`);
+      add(context.failures, path, 'section_form', `${context.rawPath}, "${name}" (implicit path)`);
       checkNamedCue({ ...context, name });
     }
     tail = tail.slice(extra[0].length);
+    offset += extra[0].length;
   }
 }
 
@@ -426,14 +490,19 @@ function checkSectionPair(match, bare, context) {
     return;
   }
   checkNamedCue({ ...context, rawPath, name });
-  checkExtraNames(context.visible.slice(match.index + original.length), { ...context, rawPath });
+  checkExtraNames(context.visible.slice(match.index + original.length), {
+    ...context,
+    rawPath,
+    offset: match.index + original.length,
+  });
 }
 
 function checkSectionLink(raw, { path, tree, failures }) {
-  if (!raw || URI_SCHEME.test(raw) || raw.startsWith('/') || !raw.includes('#')) {
+  const destination = linkDestination(raw);
+  if (!destination || URI_SCHEME.test(destination) || destination.startsWith('/') || !destination.includes('#')) {
     return;
   }
-  const [rawPath, fragment] = raw.split('#');
+  const [rawPath, fragment] = destination.split('#');
   const value = rawPath ? pathValue(rawPath) : path;
   if (!(fragment && value)) {
     return;
@@ -446,9 +515,11 @@ function checkSectionLink(raw, { path, tree, failures }) {
     // An unreadable target or malformed escaped fragment cannot certify an anchor.
   }
   if (!exists) {
-    add(failures, path, 'section', raw);
+    add(failures, path, 'section', destination);
   }
 }
+
+const QUOTED_PATH_SECTION = /(?<![\w/])"([\w./-]+\.md)"\s*,\s*"([^"\n]+)"/g;
 
 function checkSections(context) {
   const { path, visible, failures } = context;
@@ -462,13 +533,18 @@ function checkSections(context) {
     }
   }
   const withoutLinks = visible.replace(LINK, '');
+  if (path.endsWith('.md')) {
+    for (const match of visibleMarkdown(withoutLinks).replace(INLINE_CODE_SPAN, '').matchAll(QUOTED_PATH_SECTION)) {
+      add(failures, path, 'section_form', match[0]);
+    }
+  }
   for (const pattern of [OTHER_SECTION, SECTION_NUMBER]) {
     for (const match of withoutLinks.matchAll(pattern)) {
       add(failures, path, 'section_form', match[0]);
     }
   }
   for (const match of visible.matchAll(LINK)) {
-    checkSectionLink(match[1].trim().match(LINK_TARGET)?.[1], context);
+    checkSectionLink(match[1].trim(), context);
   }
 }
 

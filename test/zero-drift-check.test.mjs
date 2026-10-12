@@ -48,6 +48,10 @@ before(() => {
       '- **Decision (fixture stamp):** explanation',
       '## Combined (fixture stamp): subtitle',
       '## API_label',
+      '## Escaped \\_name\\_',
+      '<!--',
+      '## Phantom',
+      '-->',
       '```md',
       '# Not an anchor',
       '```',
@@ -55,7 +59,7 @@ before(() => {
   );
   writeFileSync(
     join(root, 'src/fixture.yaml'),
-    'entries:\n  - name: exact fixture name\n  - name: exact "quoted" name\n',
+    'entries:\n  - name: exact fixture name\n  - name: exact "quoted" name\n  - name: exact second fixture name\n',
   );
   mkdirSync(join(root, 'engine/src'), { recursive: true });
   writeFileSync(join(root, 'engine/src/known.ts'), 'export function assemble() {}\n');
@@ -248,6 +252,39 @@ describe('zero-drift section cues', () => {
     for (const body of variants) {
       assert.ok(checks(sections(body)).includes('section_form'), body);
     }
+  });
+
+  it('rejects implicit backticked names and quoted-path prose pairs without reading code strings as prose', () => {
+    assert.deepEqual(sections(cue('src/fixture.yaml', 'exact fixture name')), []);
+    assert.ok(
+      checks(
+        sections(`${cue('src/fixture.yaml', 'exact fixture name')} and ${code('exact second fixture name')}`),
+      ).includes('section_form'),
+    );
+    assert.ok(checks(sections('See "docs/anchors.md", "API".')).includes('section_form'));
+    assert.deepEqual(sections('See `"docs/anchors.md", "API"`.'), []);
+    assert.deepEqual(sections('const source = "docs/anchors.md, API";', 'src/fixture.ts'), []);
+    const sourceString = `${code('src/fixture.yaml')}, ${JSON.stringify('exact fixture name')} and ${code('exact second fixture name')}`;
+    assert.deepEqual(sections(`const note = ${JSON.stringify(sourceString)};`, 'src/fixture.ts'), []);
+  });
+
+  it('validates angle-wrapped link destinations for both paths and fragments', () => {
+    assert.deepEqual(sections(link('target', '<docs/anchors.md#anchors>')), []);
+    assert.ok(checks(sections(link('target', '<docs/anchors.md#missing>'))).includes('section'));
+    assert.deepEqual(sections(link('external', '<https://example.com/doc.md#absent>')), []);
+  });
+
+  it('uses rendered escaped-underscore headings for GitHub slugs', () => {
+    assert.equal(githubSlug('Escaped \\_name\\_'), 'escaped-_name_');
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#escaped-_name_')), []);
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#escaped-name'))).includes('section'));
+  });
+
+  it('excludes headings inside HTML comments from named and slug anchors', () => {
+    assert.deepEqual(sections(cue('docs/anchors.md', 'Anchors')), []);
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#anchors')), []);
+    assert.ok(checks(sections(cue('docs/anchors.md', 'Phantom'))).includes('section'));
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#phantom'))).includes('section'));
   });
 
   it('validates link slugs with punctuation removal, Unicode and duplicate suffixes', () => {
