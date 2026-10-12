@@ -1,4 +1,4 @@
-// Archetype templates (PROJECT.md §3, milestone 1: shambler, runner, brute).
+// Archetype templates.
 // Registering a template (a side effect of importing this module) is what
 // lets core/template.ts's templateByName and core/generate.ts's build/realize
 // dispatch by name alone.

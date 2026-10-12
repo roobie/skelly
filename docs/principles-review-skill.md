@@ -39,7 +39,7 @@ the skill keeps no second copy.
    such as `deadvox/DESIGN.md`, "Pillars", whose "Depth through data" covers
    deadvox code that owns a decision belonging to content; for performance,
    `deadvox/DESIGN.md`, "Reference hardware"; for authored data, `docs/jsonnet.md`,
-   its opening rule and "Team rules"; and `docs/PROCESS.md`, "Continuous
+   "Jsonnet authoring"; and `docs/PROCESS.md`, "Continuous
    consolidation", for ownership and duplicated decisions.
 3. **Zero drift and docs:** `README.md`, "Zero drift"; `AGENTS.md`, "Zero drift";
    `docs/PROCESS.md`, "The life of a change", step 4.
