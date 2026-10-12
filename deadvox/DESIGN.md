@@ -126,8 +126,9 @@ viewpoints, leaving the southern breach as the only near-ground exception.
 except through the southern breach`, checks from the amalgam's feet to its top.
 Zombies use the passage only if their ordinary collision body fits; they do not
 crouch or gain a type-specific exception. Standing up is refused when the body
-would intersect a solid overhead block, and saves preserve stance while body
-height is derived from content, so retuned content applies to saved games. See
+would intersect a solid overhead block. On a restore admitted by
+`decodeSave` with matching content identity, the saved stance is preserved and
+body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
 `src/content/base/senses.jsonnet`, `crouch.bodyHeightMetres`;
 `src/game/session.ts`, `settleStance`; `src/core/schema.ts`, `SenseSchema`;
 `src/content/base/camp.jsonnet`, `camp_wall_run_crouch_hole`; and
