@@ -5,6 +5,7 @@ read_if:
   - you're choosing world scale, view distance or performance targets
   - you change the player's collision body, or what crouching lets the player fit through
   - you're changing world block shapes or slab geometry
+  - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
@@ -31,6 +32,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
   - you're changing when a running game warns before page exit relative to its last save
+  - you're changing what the death card identifies about the played world
   - you're changing what the death-screen loot tally counts
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
@@ -313,6 +315,73 @@ an item container (see below), so furniture and backpacks share one system.
 A block entity can span several cells: a door is 2 × 4 and a fridge is
 2 × 4 × 2. It's anchored at its lowest corner cell, and the other cells point
 at the anchor.
+
+### Ladders and hatches
+
+Two roofs are deliberate perches: the workshop hall's, by a ladder up its outside
+wall, and the FOB armoury's, by a ladder inside that climbs through a roof hatch.
+More shamblers and a grenade that doesn't always land where it's thrown make the
+finale hard to fight on the ground, so a player who finds a perch may cheese the
+fight a little and throw grenades into a horde from above without stress. The
+perch is a thank-you for getting there, not a removed threat: the amalgam and the
+hordes stay as they are, and winning should still feel like an achievement.
+
+- **Climbing.** A ladder is furniture marked `climbable` and stacked one piece
+  per layer; its facing is the side the climber stands on. Getting on is a
+  choice, like opening a door: the interact key grabs a ladder, and the climb
+  starts once the body reaches it, while walking into one does nothing. On it,
+  moving toward the ladder climbs and moving away climbs down. Holding jump lets
+  go anywhere, which is the way off mid-ladder; stepping off its top, bottom or
+  side and being knocked out also let go, as does walking away from a ladder
+  grabbed but not reached. A save keeps the hold, a grab not yet reached
+  included, so a loaded game climbs as the saved one would have; a save whose
+  grab names no ladder is refused like any other broken reference
+  (`src/core/saveFormat.ts`, `grabbedLadder`). The climber is
+  held on the ladder's centre line, so the body fits through a hatch above.
+  Climbing has a fixed speed, so sprinting, load and injury neither help nor
+  slow it, and it spends no stamina. See `src/core/ladders.ts`, `LadderHold`,
+  `ladderAt` and `climb`, and `src/game/session.ts`, `advancePlayerBody`.
+- **One hand.** A climber holds on with the off hand, so the dominant hand stays
+  free and the climb waits while it works. A one-handed action works on a
+  ladder (an attack, a throw, eating, the interact key at a hatch), and always
+  with the free hand, even where it would otherwise use the off hand, as a throw
+  does. The climber stays still while a swing, a firearm's handling, a held
+  throw or a timed action such as eating runs. Anything that needs the off hand
+  or both hands is refused through the usual refusal notice: using the off
+  hand, using or readying a two-handed item, reloading a firearm, and moving an
+  item into or out of the off hand, or a two-handed item into a hand. So an item
+  already in the off hand stays held, and a throw held in the off hand ends,
+  refused, when the ladder takes that hand, rather than moving to the free hand.
+  A released throw is admitted again on the tick that carries it out, since a
+  ladder can take the hand in between. `LadderHold` admits every one of these
+  (`src/core/ladders.ts`, `refusal`, `freeHand` and `moveRefusal`, which
+  `Inventory.plan` asks through `handRefusal`), and the session owns the throw
+  from charge to landing, so a replay holds still alike and lands through the
+  same admission (`src/game/throwCharge.ts`, `refuseForLadder` and `land`).
+- **The top.** A climb ends with the feet level with the top piece, where moving
+  toward the ladder carries the climber off onto what it serves. So a ladder up a
+  roof edge reaches through the roof's layer, and the climber walks off at roof
+  level. A ladder under a hatch is the exception: it can't reach into the roof
+  layer, because the hatch fills it, so it ends just below, and a climber going
+  up steps up through the open hatch the way a walker steps up a ledge
+  (`src/content/base/ladders.jsonnet`, and `src/core/physics.ts`, `braced`).
+- **No fall.** Climbing down is not a fall: a hard landing is measured from where
+  the climber let go of the ladder.
+- **Shamblers don't climb.** A shambler passes through a ladder's cells like any
+  non-solid furniture and stays on the ground, so a perch is out of its reach.
+- **Hatches.** A hatch is a door that lies flat in a roof or floor, hinged on its
+  facing side (`door.hatch`; `src/core/blockEntities.ts`, `hatchPanel`). Like a
+  door, it blocks while shut, opens with the interact key from either side and
+  saves its open state; it takes no lock. A ladder is an open frame, so a
+  climber reaches through it to the hatch above, while a player off the ladder
+  picks the ladder itself to grab it (`src/core/furniturePick.ts`,
+  `throughLadders`).
+- **Placement.** A roof ladder stands against a wall without a door to block the
+  climb, or free beneath a hatch; either placement lets the climber come out
+  onto the roof rather than the strip above a wall. Leave room for a body in
+  front of the ladder. See
+  `src/content/base/ladders.jsonnet`, `workshop_roof_ladder`, and
+  `src/content/base/camp.jsonnet`, `camp_armoury`.
 
 ### Generating the world in layers
 
@@ -732,6 +801,11 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
+
+  The death card shows the seed of the world the survivor played, including a
+  continued save. This identifies the world that produced the death, rather than
+  the seed for a later new world. See `src/game/play.ts`, `die`, and
+  `src/ui/death.ts`, `showDeath`.
 
   The death-screen loot tally represents distinct item units taken from
   containers, not inventory actions. Returning an item and taking it again is not
@@ -1215,7 +1289,7 @@ baked into chunks; voxel sunlight can then join AO in vertex colour. See
 
 ## Held-item throws
 
-A throw preserves the held item's identity and state through flight and landing, so fitted parts, loaded ammunition and a lit glowstick remain the same item rather than a throw-specific copy. Item mass limits its range through arm speed and energy. The flight presentation uses the ground item's look, keeping firearm attachments and light markers visible; the handling HUD makes force and the release minimum legible. See `src/core/itemThrow.ts`, `throwDistanceForItem` and `traceItemLanding`, `src/render/itemThrows.ts`, `ItemThrows.spawn`, `src/ui/hud.ts`, `handlingViewModel`, and `src/game/play.ts`, `throwHeldItem`.
+A throw preserves the held item's identity and state through flight and landing, so fitted parts, loaded ammunition and a lit glowstick remain the same item rather than a throw-specific copy. Item mass limits its range through arm speed and energy. The flight presentation uses the ground item's look, keeping firearm attachments and light markers visible; the handling HUD makes force and the release minimum legible. See `src/core/itemThrow.ts`, `throwDistanceForItem` and `traceItemLanding`, `src/render/itemThrows.ts`, `ItemThrows.spawn`, `src/ui/hud.ts`, `handlingViewModel`, `src/game/throwCharge.ts`, `ThrowCharge.land`, and `src/game/play.ts`, `throwHeldItem`.
 
 Mass limits range so a light item does not fly as far as a heavy one; when #368 adds atmospheric drag, it can further limit light items without replacing that mass-based limit. A throw itself adds no hit damage or landing lure; a grenade's blast is its own rule ("Hand grenade").
 

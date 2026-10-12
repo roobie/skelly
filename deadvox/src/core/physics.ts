@@ -21,6 +21,8 @@ export interface PhysicsParams {
   gravity: number;
   /** Tallest ledge a grounded body walks up without jumping, in blocks. 0 disables. */
   stepHeight: number;
+  /** The body stands on a hold that isn't ground, such as a ladder's rungs, so it steps up a ledge as if grounded. */
+  braced?: boolean;
   /** Other bodies block horizontal motion only; vertical motion always resolves against terrain. */
   obstacles?: readonly Body[];
   /** The exact shape of a body that has one, for the moving body and its obstacles alike. */
@@ -334,7 +336,7 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
       body,
       isSolid,
       stepHeight: params.stepHeight,
-      grounded: wasGrounded || body.onGround,
+      grounded: params.braced === true || wasGrounded || body.onGround,
       bodies: obstacles,
       shapeOf,
     };

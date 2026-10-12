@@ -212,7 +212,5 @@ Horizontal arrival and landing are separate native-input observations. Release
 forward input before waiting for support, otherwise a walker can pass the target
 while still falling; see `deadvox/test/browser/stairs.mjs`, `walkTo`.
 
-Hatches would require horizontal hinge/panel geometry, collision/picking and a
-saveable interaction state instead of the vertical-door facing contract.
-Ladders require a climbable surface, grab/release and vertical movement/physics
-rules. Neither is implemented here.
+Ladders and roof hatches are a separate way up, outside storey access: see
+`deadvox/DESIGN.md`, “Ladders and hatches.”
