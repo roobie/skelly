@@ -58,7 +58,7 @@ export const doseLasts = (def: AnalgesicDef): number =>
   def.onsetGameMinutes + def.peakGameMinutes + def.fadeGameMinutes;
 
 /** One dose's relief at an age: it rises through the onset, holds at its peak, then falls through the fade. */
-export const doseRelief = (def: AnalgesicDef, elapsedGameSeconds: number): number => {
+const doseRelief = (def: AnalgesicDef, elapsedGameSeconds: number): number => {
   const { reliefPerDose: peak, onsetGameMinutes: onset, peakGameMinutes: hold, fadeGameMinutes: fade } = def;
   if (elapsedGameSeconds < onset) {
     return peak * (elapsedGameSeconds / onset);

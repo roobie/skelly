@@ -53,7 +53,7 @@ export const doorOptions = (
 };
 
 export const EAT_TIME = 3;
-export const DRINK_TIME = 2;
+const DRINK_TIME = 2;
 export const TAKE_TIME = 2;
 
 /** How one of `def` is consumed: eaten, drunk or, for a painkiller, taken. Undefined for anything else. */
