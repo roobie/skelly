@@ -4,13 +4,17 @@ import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { withFixtureBody } from './simulationFixture.ts';
 import { registry } from './snapshotTestSupport.ts';
+
+// The test's own body tuning, so its pain slows handling whatever base content tunes.
+const content = withFixtureBody(registry);
 
 // DESIGN.md, "Pain": pain slows the hands' weapon work, while treatment keeps its pace so a hurt player can still
 // stop a bleed. Both runs carry the same bleeding wound; only one also carries a fresh hit's pain.
 const handlingTimes = (painful: boolean) => {
   const session = createSession({
-    registry,
+    registry: content,
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,

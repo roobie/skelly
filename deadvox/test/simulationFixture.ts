@@ -1,3 +1,5 @@
+import type { Registry } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
 import { gameHours, gamePerHour, realSeconds, simRate, simSeconds } from '../src/core/time.ts';
@@ -92,6 +94,12 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   movementSlowdownPerDamage: 0.005,
   minimumMovementSpeed: 0.5,
 };
+
+/** Content whose player body is this fixture, so a whole-session test owns the body tuning it asserts on. */
+export const withFixtureBody = (content: Registry): Registry => ({
+  ...content,
+  body: new Map(content.body).set(CORE_CONTENT_IDS.player, BODY_TUNING_FIXTURE),
+});
 
 /** The index of a fixture bleeding tier, by its id. */
 export const fixtureTier = (id: 'minor' | 'serious' | 'critical'): number =>
