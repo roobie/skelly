@@ -35,6 +35,7 @@ import type { World } from '../core/world.ts';
 const RESIDENT_FIELDS = 4;
 const PREPARE_MS = 0.5;
 const PREFETCH_M = 16;
+const UNKNOWN_SKY_CAP = 0.5;
 interface Field {
   index: number;
   bounds: SkyBounds;
@@ -400,8 +401,12 @@ export class Skylight {
         return sampleSky(field.result.volume, point);
       }
     }
+    const known = eligible.filter((field) => field.result !== undefined);
+    if (known.length === 0) {
+      return UNKNOWN_SKY_CAP;
+    }
     return Number(
-      eligible.some(
+      known.some(
         (field) =>
           field.result &&
           Math.floor(point[1]) >
@@ -499,6 +504,7 @@ float skyVisibility() {
   if (any(lessThan(gridCell, vec2(0.0))) || any(greaterThanEqual(gridCell, uSkyGridSize))) return 1.0;
   vec2 candidates = texture2D(uSkyGrid, (gridCell + 0.5) / uSkyGridSize).xy;
   bool eligible = false;
+  bool known = false;
   float fallback = 0.0;
   for (int local = 0; local < ${this.index.maximum}; local++) {
     if (float(local) >= candidates.y) break;
@@ -509,6 +515,7 @@ float skyVisibility() {
     if (any(lessThan(point, lower.xyz)) || any(greaterThanEqual(point, upper.xyz))) continue;
     eligible = true;
     if (lower.w < 0.5) continue;
+    known = true;
     vec4 heightTile = texture2D(uSkyRegions, vec2(2.5 / 3.0, row));
     vec2 column = floor(point.xz / float(${this.blockSize})) - heightTile.yz;
     float roof = texture2D(uSkyHeights, (column + vec2(0.5, heightTile.x + 0.5)) / uSkyHeightSize).r;
@@ -524,7 +531,7 @@ float skyVisibility() {
       return texture(uSkyVolume, atlas).r;
     }
   }
-  return eligible ? fallback : 1.0;
+  return eligible ? (known ? fallback : float(${UNKNOWN_SKY_CAP})) : 1.0;
 }`,
         )
         .replace('#include <lights_fragment_end>', 'irradiance *= skyVisibility();\n#include <lights_fragment_end>');

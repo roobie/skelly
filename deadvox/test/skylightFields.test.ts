@@ -7,7 +7,7 @@ import { sampleSky } from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 
-it('keeps a pending eligible room dark but preserves the old estimate under a noncandidate canopy', () => {
+it('dims an uncertified eligible column without blackout but preserves the old noncandidate estimate', () => {
   const fixture = skyFixture();
   for (let z = 6; z <= 8; z++) {
     for (let x = 24; x <= 26; x++) {
@@ -20,7 +20,8 @@ it('keeps a pending eligible room dark but preserves the old estimate under a no
   expect(sampleSky(oracle, canopy)).toBeLessThan(1);
   fixture.update();
   expect(fixture.pending.length).toBeGreaterThan(0);
-  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBe(0);
+  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBeGreaterThan(0);
+  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBeLessThan(1);
   expect(fixture.sky.at(canopy)).toBe(1);
   const { uniforms } = fixture.shader();
   const { data } = uniforms.uSkyRegions!.value.image;
@@ -88,7 +89,8 @@ it('discards a worker completion after a roof edit instead of publishing stale f
   fixture.update();
   expect(fixture.sky.stats.accepted).toBe(0);
   expect(fixture.sky.stats.discarded).toBeGreaterThan(0);
-  expect(fixture.sky.at([8.5, 8.5, 8.5])).toBe(0);
+  expect(fixture.sky.at([8.5, 8.5, 8.5])).toBeGreaterThan(0);
+  expect(fixture.sky.at([8.5, 8.5, 8.5])).toBeLessThan(1);
   fixture.complete();
   fixture.update();
   expect(fixture.sky.stats.accepted).toBeGreaterThan(0);

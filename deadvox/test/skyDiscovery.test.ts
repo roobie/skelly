@@ -52,5 +52,7 @@ it('discovers an above-ground authored placement without an indoor authoring fla
   );
   expect(fixture.knownOpaque(8, fixtureBox.max[1] - 1, 8)).toBe(true);
   expect(fixture.knownOpaque(8, 4, 8)).toBe(false);
-  expect(engine.skylight?.at([8.5, 4.5, 8.5].map((value) => value * scale.blockSize) as Vec3) ?? 1).toBe(0);
+  const pending = engine.skylight?.at([8.5, 4.5, 8.5].map((value) => value * scale.blockSize) as Vec3) ?? 1;
+  expect(pending).toBeGreaterThan(0);
+  expect(pending).toBeLessThan(1);
 });

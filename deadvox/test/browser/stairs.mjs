@@ -48,6 +48,28 @@ const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, act
 const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
 // Keep the witness near the stairs lighting route; the remote wall incurred chunk streaming before its captures.
 const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [75, 21, 60], rotation: 0 };
+const hasSkyControl = isLightingMode || mode === 'camo';
+const arrivalObservation =
+  mode === 'camo'
+    ? `
+const arrival = globalThis.stairsWitness.camoArrival = {firstMeshRealMs:null,readyRealMs:null,renderedFrames:0,pendingFrames:0};
+const beforeRender = engine.scene.onBeforeRender;
+engine.scene.onBeforeRender = function(...args) {
+  beforeRender.apply(this,args);
+  if(args[2] !== engine.camera) return;
+  const s = engine.config.scale.blockSize;
+  if(Math.hypot(engine.camera.position.x/s-155,engine.camera.position.z/s-122)>1) return;
+  if(!engine.meshes.group.children.some(mesh=>mesh.position.x===128&&mesh.position.y===32&&mesh.position.z===96)) return;
+  const point=[151.5,43.5,121.5];
+  const fields=engine.skylight.inspect().filter(({bounds})=>point.every((v,a)=>v>=bounds.min[a]&&v<bounds.max[a]));
+  if(!fields.length) throw new Error('Camo arrival witness has no eligible field');
+  arrival.renderedFrames++;
+  arrival.firstMeshRealMs ??= performance.now();
+  if(fields.every(field=>field.complete)) arrival.readyRealMs ??= performance.now();
+  else arrival.pendingFrames++;
+};
+`
+    : '';
 await mkdir(artifacts, { recursive: true });
 const vite = await createServer({
   root,
@@ -99,7 +121,7 @@ const vite = await createServer({
           }
           return transformed;
         }
-        if (isLightingMode && id.endsWith('/src/render/skylight.ts')) {
+        if (hasSkyControl && id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.
           assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
           assert.ok(code.includes('float skyVisibility() {'));
@@ -120,7 +142,7 @@ const vite = await createServer({
         assert.ok(code.includes(marker));
         return `import { doorPanel as stairsDoorPanel } from '../core/blockEntities.ts';\n${code.replace(
           marker,
-          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performHandUse,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${marker}`,
+          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performHandUse,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${arrivalObservation}\n${marker}`,
         )}`;
       },
     },
@@ -482,6 +504,14 @@ try {
     }, png.toString('base64'));
   const lightingCellarProofs = async () => {
     await stage([134, 35.0001, 115]);
+    await page.waitForFunction(() => {
+      const { engine } = globalThis.stairsWitness;
+      const point = [81.5, 28, 59].map((value) => value / engine.config.scale.blockSize);
+      const fields = engine.skylight
+        .inspect()
+        .filter(({ bounds }) => point.every((value, axis) => value >= bounds.min[axis] && value < bounds.max[axis]));
+      return fields.length > 0 && fields.every((field) => field.complete);
+    });
     const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
     assert.equal(raisedOutdoor, 1);
     const lightProof = await timePhase('cellar-dark-beam-pixels', async () => {
@@ -538,14 +568,22 @@ try {
     const selection = await skySelectionProof(page);
     assert.ok(selection.requested > 0 && selection.completed === selection.requested, 'owned worker jobs completed');
     assert.ok(selection.oracleCanopy > 0 && selection.oracleCanopy < 1, 'lateral diffuse paths exist under the canopy');
-    for (const phase of [selection.pending, selection.ready, selection.evicted]) {
+    assert.ok(selection.pending.room.cpu > 0 && selection.pending.room.cpu < 1, 'unknown height is dim, not black');
+    assert.ok(selection.pending.room.shader > 0 && selection.pending.room.shader < 1, 'shader uses the same cap');
+    assert.ok(Math.abs(selection.pending.room.cpu - selection.pending.room.shader) <= 1 / 255, 'CPU/shader cap agrees');
+    for (const phase of [selection.ready, selection.evicted]) {
       assert.deepEqual(
         phase.room,
         { cpu: 0, shader: 0 },
-        'eligible pending / sealed / nonresident room is not full sky',
+        'sealed resident / known roofed nonresident room is not full sky',
       );
       assert.deepEqual(phase.canopy, { cpu: 1, shader: 1 }, 'noncandidate canopy keeps the old estimate');
     }
+    assert.deepEqual(
+      selection.pending.canopy,
+      { cpu: 1, shader: 1 },
+      'unknown eligible height does not dim noncandidates',
+    );
     assert.deepEqual(selection.ready.above, { cpu: 1, shader: 1 }, 'known air above a current roof is open');
     assert.deepEqual(selection.ready.overlap, selection.ready.room, 'overlapping fence and room select the same field');
     assert.ok(
@@ -649,19 +687,51 @@ try {
     try {
       await setShaderLook(true, true);
       const patterned = await camoWallPixels(await shot('camo-ao-patterned'));
+      const referenceFrame = await page.evaluate(() => {
+        globalThis.skyProofControl.value = 1;
+        return globalThis.stairsWitness.engine.renderer.info.render.frame;
+      });
+      await page.waitForFunction(
+        (frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame,
+        referenceFrame,
+      );
+      const mainEstimate = await camoWallPixels(await shot('camo-ao-main-estimate'));
+      await page.evaluate(() => {
+        globalThis.skyProofControl.value = 0;
+      });
       await setShaderLook(true, false);
       const plain = await camoWallPixels(await shot('camo-ao-plain'));
       const ratio = ({ corner, middle }) => corner.luminance / middle.luminance;
       camoAo = {
         patterned,
+        mainEstimate,
         plain,
         patternedRatio: ratio(patterned),
         plainRatio: ratio(plain),
+        arrival: await page.evaluate(() => {
+          const arrival = globalThis.stairsWitness.camoArrival;
+          if (arrival.firstMeshRealMs === null || arrival.readyRealMs === null || arrival.renderedFrames === 0) {
+            throw new Error('Missing camo arrival observation');
+          }
+          return { ...arrival, meshToReadyRealMs: arrival.readyRealMs - arrival.firstMeshRealMs };
+        }),
       };
+      process.stdout.write(`CAMO_SKY_EVIDENCE ${JSON.stringify(camoAo)}\n`);
     } finally {
+      await page.evaluate(() => {
+        globalThis.skyProofControl.value = 0;
+      });
       await setShaderLook(originalModes.linear, originalModes.patterns);
     }
     await writeFile(resolve(artifacts, 'camo-inner-corner-ao.json'), JSON.stringify(camoAo, null, 2));
+    await test('settled open-pit brightness matches the main full-sky estimate', () => {
+      for (const point of ['corner', 'middle']) {
+        assert.ok(
+          Math.abs(camoAo.patterned[point].luminance - camoAo.mainEstimate[point].luminance) < 1.5,
+          JSON.stringify(camoAo),
+        );
+      }
+    });
     await test('camo preserves corner AO relative to the same plain block face', () => {
       assert.ok(camoAo.plainRatio < 0.9, JSON.stringify(camoAo));
       assert.ok(Math.abs(camoAo.patternedRatio - camoAo.plainRatio) < 0.08, JSON.stringify(camoAo));

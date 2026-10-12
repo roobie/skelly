@@ -59,7 +59,8 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   );
   const update = () => sky.update(scene, [4, 29, 4]);
   update();
-  expect(sky.at([2, 14.5, 2])).toBe(0);
+  expect(sky.at([2, 14.5, 2])).toBeGreaterThan(0);
+  expect(sky.at([2, 14.5, 2])).toBeLessThan(1);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
   const streamer = new Streamer({
     world,
@@ -103,7 +104,8 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   expect(world.getChunk(0, 1, 0)).toBeUndefined();
   expect(events).toContainEqual([0, 32, 0]);
   update();
-  expect(sky.at([2, 14.5, 2])).toBe(0);
+  expect(sky.at([2, 14.5, 2])).toBeGreaterThan(0);
+  expect(sky.at([2, 14.5, 2])).toBeLessThan(1);
 });
 
 it('reports generated-column transitions that match the generated-column snapshot', () => {

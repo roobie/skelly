@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you decide how sunlight and shadows should read in play
+  - you decide how sunlight, shadows or uncertified interior sky should read in play
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
@@ -798,10 +798,14 @@ diffuse sky transport; placement geometry only bounds discovery. Roofs, openings
 and doors therefore change the estimate through geometry, not template categories.
 See `src/core/skyTransport.ts`, `buildSkyResult`, and `src/render/skylight.ts`, `Skylight`.
 
-Inside those application regions, unknown or invalidated geometry stays conservatively
-dark until discovery completes. Completed fields outside GPU residency use the same
-column fallback as pending work, on the CPU and in the world shader. Cached CPU
-results survive GPU eviction so re-entry does not repeat transport. Outside these
+Inside those application regions, an uncertified column uses a capped version of
+the existing estimate rather than blackout: cold discovery must not make an open
+surface appear sealed. The cap is provisional visual tuning for BR's first look,
+not proof that the geometry is open. Current column heights certify open air above
+opaque tops; below them, nonresident transport uses the conservative height estimate.
+An unknown overlapping field cannot brighten a column another field has certified.
+CPU and shader share this policy. Cached CPU results survive GPU eviction so
+re-entry does not repeat transport. Outside these
 regions, preserve the existing sky estimate: otherwise a canopy with no discovery job
 could remain permanently dark. Solve halos and spatial lookup cells do not expand
 eligibility. Arbitrary construction and caves remain outside this discovery scope.
