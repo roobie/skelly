@@ -4,7 +4,7 @@
 
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
+import type { BodyRegion } from '../core/body.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
@@ -128,6 +128,7 @@ import {
 import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
+import { bleedingStatusRows } from './playStatus.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -2818,10 +2819,7 @@ export const startPlay = (
       painTier: pain.tier === undefined ? undefined : sim.body.tuning.pain.tiers[pain.tier]?.id,
       health: sim.body.health,
       blood: sim.body.blood,
-      bleeding: BODY_REGIONS.flatMap((region) => {
-        const tier = sim.body.bleedingTier(region);
-        return tier ? [{ region, label: bodyRegionLabel(region), warn: tier.warn }] : [];
-      }),
+      bleeding: bleedingStatusRows((region) => sim.body.bleedingTier(region)),
       sprinting: session.sprinting,
       lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
     };

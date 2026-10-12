@@ -545,8 +545,10 @@ wound severity. See `Body.treat` in `src/core/body.ts` and `bodyWound` in
 
 Pain is its own body state, apart from health and wounds, so a painkiller can ease
 what hurts without healing anything. Felt pain is acute plus background pain,
-less analgesia; it has no top, with one knockout threshold and tiers and effects
-measured against it. Acute pain comes from each hit by damage kind and region,
+less analgesia; it has no top. The threshold is a balance point for tiers and
+effects, not an implemented knockout: pain-triggered knockout through shock's
+mechanism is planned for #654 (round 2), not round 1. Acute pain comes from each
+hit by damage kind and region,
 then fades. Background pain is derived from region damage, bleeding and infection,
 so treatment and healing change it without saved derived state. Pain tiers drive
 the bodily cue, while aim sway and a shared handling slowdown grow with pain above
