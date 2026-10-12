@@ -16,8 +16,9 @@ Options provide the available action, its time and any refusal reason. Survival 
 The ordinary best-pocket command chooses the quickest eligible pocket; ordinary
 to-hands and drop ordering remain unchanged. Quick move queues the ordinary
 whole-stack handling move and does not transfer instantly or invoke use. Compatible
-stacks take precedence over pocket priority when the whole stack fits; if none
-accepts it whole, the stack moves intact to a new spot. `inventoryPocket` in
+stacks take precedence over pocket priority to avoid fragmenting stock into
+duplicate stacks, but only when the whole stack fits; otherwise, it moves intact
+to a new spot. `inventoryPocket` in
 `src/core/options.ts` checks compatible stacks before free spots. See also
 `src/game/inputBindings.ts`, `INPUT_BINDINGS`, for the quick-move gate and
 `src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`, for its queue route.
