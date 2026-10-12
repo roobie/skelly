@@ -63,6 +63,8 @@ not simulate a flying hull.
   column on the same entry. Shells enter singly through that port.
 - Existing cartridge identity remains exactly `12-gauge-00-buck`.
   There are no new angle fields; any angles remain degrees, never radians.
+- The barrel's muzzle exports as a smoothbore muzzle slot: only devices built
+  for smoothbores certify there (`attachments.md`, "Muzzle devices").
 
 Three.js strips colons from names. Resolve each exact `action.parts.*.node` in
 `parser.json.nodes`, then use `parser.associations`' node index to find the object.
@@ -82,11 +84,12 @@ handling.
 From `gungen/`:
 
 ```sh
-npm run export:glb -- designs/archetype-pump-shotgun.json --calibre 12-gauge-00-buck --out ../deadvox/src/content/base/assets/models --entry-out "$XDG_RUNTIME_DIR/gungen-pump-entry" --id shotgun_pump
+npm run export:glb -- designs/archetype-pump-shotgun.json --out ../deadvox/src/content/base/assets/models --entry-out "$XDG_RUNTIME_DIR/gungen-pump-entry" --id shotgun_pump
 ```
 
-The generated entry is recorded in `deadvox/src/content/base/models-firearms.json`,
-and the asset credits point to the curated project design.
+The design carries its own calibre. The generated entry replaces the pump's
+entry in `deadvox/src/content/base/models-firearms.json`, and the asset credits
+point to the curated project design.
 
 Viewer: `?design=archetype-pump-shotgun&cycle=hand&cycleSpeed=0.1`.
 Click **Play** or Space; scrub/step to inspect both hand-driven legs. Fire mode

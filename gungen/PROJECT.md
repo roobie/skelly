@@ -12,6 +12,7 @@ read_if:
   - you change default sweep coverage or timeout policy
   - you change Gungen's cross-project typechecking or CI triggers
   - you change the firearm action/ejection export contract with Deadvox
+  - you change a gun Deadvox ships, or anything its export reads
   - you author or change gungen assembly or cartridge content
 ---
 
@@ -1095,6 +1096,13 @@ Generated AK magazines remain tied to cartridge identity because receiver
 compatibility with both patterns does not imply ammunition interchangeability.
 The Gungen design adapter enforces that distinction; see
 `src/gun/designLoader.ts#loadGunDesignValue` and `src/gun/templates.ts`, `ak`.
+
+A gungen PR that changes a gun Deadvox ships refreshes Deadvox's copy, its GLB
+and model entry, in the same PR: a stale copy still validates and loads, so the
+two drift apart silently. Each exported design records the inputs its export
+needs, such as its `calibre`, so `../test/gungen-deadvox-contract.test.mjs` can
+re-export every gun the Deadvox asset manifest credits to a gungen design and
+fail on any difference in Gungen's export.
 
 - `calibre?: string` is the exact cartridge-data id (not a display designation;
   e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,

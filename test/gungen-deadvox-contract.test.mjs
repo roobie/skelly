@@ -13,11 +13,17 @@ const deadvoxRequire = createRequire(new URL('../deadvox/package.json', import.m
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const ROOT = new URL('../', import.meta.url).pathname;
 const DESIGNS = join(ROOT, 'gungen/designs');
-const FIREARM_CONTENT = JSON.parse(readFileSync(join(ROOT, 'deadvox/src/content/base/models-firearms.json'), 'utf8'));
-const SYNCED_FIREARM_DESIGNS = [
-  ['archetype-ar.json', 'rifle_assault'],
-  ['archetype-ak-akm.json', 'rifle_ak'],
-];
+const DEADVOX_BASE = join(ROOT, 'deadvox/src/content/base');
+const FIREARM_CONTENT = JSON.parse(readFileSync(join(DEADVOX_BASE, 'models-firearms.json'), 'utf8'));
+// The asset manifest credits each exported gun to its gungen design, so a new export joins the sync check with its credit.
+const DESIGN_SOURCE = /\/gungen\/designs\/([^/]+\.json)$/;
+const MODEL_FILE = /^assets\/models\/([^/]+)\.glb$/;
+const EXPORTED_GUNS = JSON.parse(readFileSync(join(DEADVOX_BASE, 'assets/manifest.json'), 'utf8')).sources.flatMap(
+  ({ url, files }) => {
+    const design = typeof url === 'string' ? DESIGN_SOURCE.exec(url)?.[1] : undefined;
+    return design ? files.map((file) => ({ design, file, modelId: MODEL_FILE.exec(file)?.[1] })) : [];
+  },
+);
 const omitDeadvoxOwnedFields = ({ chargingHandleDegrees: _chargingHandleDegrees, ...model }) => model;
 const glbJson = (bytes) =>
   JSON.parse(
@@ -26,6 +32,7 @@ const glbJson = (bytes) =>
       .toString()
       .trim(),
   );
+const glbBinary = (bytes) => bytes.subarray(28 + bytes.readUInt32LE(12));
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const arrayDifference = (actual, expected, path) => {
   if (!(Array.isArray(actual) && Array.isArray(expected))) {
@@ -106,12 +113,11 @@ describe('gungen exports satisfy deadvox model validation', () => {
     }
   });
 
-  it('keeps Deadvox firearm entries in sync with gungen-owned export fields', () => {
-    for (const [design, modelId] of SYNCED_FIREARM_DESIGNS) {
-      const result = exportFileText(readFileSync(join(DESIGNS, design), 'utf8'), {
-        id: modelId,
-        file: `assets/models/${modelId}.glb`,
-      });
+  it("keeps Deadvox's copy of every exported gun identical to gungen's export", () => {
+    assert.ok(EXPORTED_GUNS.length > 0, 'the asset manifest credits no gungen design');
+    for (const { design, file, modelId } of EXPORTED_GUNS) {
+      assert.ok(modelId, `${design}: ${file} is not a Deadvox model file`);
+      const result = exportFileText(readFileSync(join(DESIGNS, design), 'utf8'), { id: modelId, file });
       assert.ok(result.ok, `${design}: ${result.ok ? '' : result.message}`);
       const firearm = FIREARM_CONTENT.models.find(({ id }) => id === modelId);
       assert.ok(firearm, `missing Deadvox firearm model ${modelId}`);
@@ -120,6 +126,20 @@ describe('gungen exports satisfy deadvox model validation', () => {
         difference,
         null,
         `${modelId} differs from gungen's export outside Deadvox-owned fields${difference ? `: ${difference}` : ''}`,
+      );
+      // Node versions round the exported linear colours differently in the last bit, so the GLB's JSON is compared
+      // with the entry's tolerance and only its binary geometry byte for byte.
+      const committedGlb = readFileSync(join(DEADVOX_BASE, file));
+      const exportedGlb = Buffer.from(result.glb);
+      const glbDifference = exportDifference(glbJson(committedGlb), glbJson(exportedGlb));
+      assert.equal(
+        glbDifference,
+        null,
+        `${file} differs from gungen's export of ${design}${glbDifference ? `: ${glbDifference}` : ''}`,
+      );
+      assert.ok(
+        glbBinary(committedGlb).equals(glbBinary(exportedGlb)),
+        `${file} geometry differs from gungen's export of ${design}`,
       );
     }
   });

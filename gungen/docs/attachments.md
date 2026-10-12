@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change firearm attachment export or fitting compatibility
+  - you add a muzzle device or change what a muzzle accepts
   - you change the material or mass assumptions for an attachment
   - you preview fitted attachments in the viewer
 ---
@@ -57,6 +58,18 @@ fitted to. An item is its own instance, so its colour must not change with its
 host; two instances of the same attachment may carry unrelated finishes. See
 `src/gun/attachments.ts`, `attachmentInstanceForId`, and `engine/src/core/glb.ts`,
 `exportGlb`.
+
+## Muzzle devices
+
+A muzzle device fits only a muzzle cut for the bore it was built for, because
+fit is a property of both the gun and the device: shotguns take muzzle devices,
+but not rifle suppressors. Both muzzle ports declare that bore as their port
+`standard` (`src/gun/mounts.ts`, `MuzzleBore`). The engine's `portCompat`
+(`../engine/src/core/rules.ts`) requires both sides of a connection to declare
+the same standard or neither, so the rule holds for designs and certificates
+alike, and an undeclared side fits nothing that declares one. The pump's
+smoothbore muzzle keeps its slot, and a device built for smoothbores certifies
+there without a rule change.
 
 ## Viewer previews
 
