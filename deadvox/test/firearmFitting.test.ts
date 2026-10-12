@@ -1,14 +1,16 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Character, type HandedCharacter } from '../src/core/character.ts';
-import type { ItemDef, ModelDef, Registry } from '../src/core/content.ts';
+import type { FurnitureDef, ItemDef, ModelDef, Registry } from '../src/core/content.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf, type Item } from '../src/core/items.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
+import { bindReach } from '../src/core/reach.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 
 type Pair = NonNullable<ModelDef['compatibilityPairs']>[number];
@@ -24,12 +26,14 @@ if (issues.length > 0) {
   throw new Error(`Fixture content is invalid: ${JSON.stringify(issues)}`);
 }
 
-const makeFixture = (character?: HandedCharacter) => {
+const makeFixture = (character?: HandedCharacter, prepareRegistry?: (registry: Registry) => void) => {
   const registry: Registry = {
     ...baseRegistry,
+    furniture: new Map(baseRegistry.furniture),
     items: new Map(baseRegistry.items),
     models: new Map(baseRegistry.models),
   };
+  prepareRegistry?.(registry);
   const firearmType = 'rifle_assault';
   const modelId = defOf(registry, firearmType).model!;
   const model = registry.models.get(modelId)!;
@@ -53,6 +57,90 @@ const bottomRailSlots = (model: ModelDef): string[] =>
     .slice(0, 2);
 
 const pair = (a: Choice, b: Choice): Pair => [b, a];
+
+const CANDIDATE_CABINET = 'test_attachment_candidate_cabinet';
+
+const makeCandidateFixture = (attachmentCount: number, includeOutOfReach = false) => {
+  const fixture = makeFixture(undefined, (registry) => {
+    const cabinet: FurnitureDef = {
+      id: CANDIDATE_CABINET,
+      name: 'Test attachment cabinet',
+      size: [1, 1, 1],
+      color: '#444444',
+      container: {
+        pockets: [{ grid: [attachmentCount * 4 + 8, 4], handlingSimSeconds: simSeconds(0) }],
+        wideReason: 'Test-owned grid for candidate discovery',
+      },
+    };
+    registry.furniture.set(cabinet.id, cabinet);
+  });
+  const slot = bottomRailSlots(fixture.model)[0]!;
+  const defaultSlot = fixture.model.attachments![0]!.mountedAt;
+  fixture.withModel((model) => ({
+    ...model,
+    compatibility: { ...model.compatibility, [slot]: ['foregrip'] },
+    compatibilityPairs: [pair([slot, 'foregrip'], [defaultSlot, fixture.model.attachments![0]!.id])],
+  }));
+  const queue = new HandlingQueue(fixture.inventory);
+  const handling = new FirearmAttachmentHandling(fixture.inventory, queue, () => [0, 0, 0]);
+  if (!fixture.inventory.add(fixture.firearm, { kind: 'hand', side: 'right' })) {
+    throw new Error('Fixture firearm could not be held');
+  }
+  const nearby = fixture.inventory.furnish({
+    type: CANDIDATE_CABINET,
+    pos: [0, 0, 0],
+    size: [1, 1, 1],
+    facing: 'n',
+  });
+  const remote = includeOutOfReach
+    ? fixture.inventory.furnish({ type: CANDIDATE_CABINET, pos: [20, 0, 0], size: [1, 1, 1], facing: 'n' })
+    : undefined;
+  if (!nearby || (includeOutOfReach && !remote)) {
+    throw new Error('Fixture cabinets could not be placed');
+  }
+  fixture.inventory.entities.markSearched(nearby);
+  if (remote) {
+    fixture.inventory.entities.markSearched(remote);
+  }
+  let playerPosition: [number, number, number] = [0, 0, 0];
+  bindReach({
+    inventory: fixture.inventory,
+    get position() {
+      return playerPosition;
+    },
+    blockSize: 1,
+  });
+  const attachments = [
+    fixture.foregrip,
+    ...Array.from({ length: attachmentCount - 1 }, () => fixture.inventory.create(fixture.foregrip.type)),
+  ];
+  for (const attachment of attachments) {
+    if (!fixture.inventory.add(attachment, { kind: 'furniture', entity: nearby, pocket: 0 })) {
+      throw new Error('A fixture attachment could not be placed in the nearby cabinet');
+    }
+  }
+  const sling = fixture.inventory.create('weapon_sling');
+  if (!fixture.inventory.add(sling, { kind: 'furniture', entity: nearby, pocket: 0 })) {
+    throw new Error('Fixture sling could not be placed in the nearby cabinet');
+  }
+  let remoteAttachment: Item | undefined;
+  let remoteSling: Item | undefined;
+  if (remote) {
+    playerPosition = [20, 0, 0];
+    remoteAttachment = fixture.inventory.create(fixture.foregrip.type);
+    remoteSling = fixture.inventory.create('weapon_sling');
+    if (
+      !(
+        fixture.inventory.add(remoteAttachment, { kind: 'furniture', entity: remote, pocket: 0 }) &&
+        fixture.inventory.add(remoteSling, { kind: 'furniture', entity: remote, pocket: 0 })
+      )
+    ) {
+      throw new Error('Out-of-reach fixture items could not be placed');
+    }
+    playerPosition = [0, 0, 0];
+  }
+  return { ...fixture, slot, handling, attachments, sling, remoteAttachment, remoteSling };
+};
 
 /** A firearm in hand or on the ground with a certified free bottom-rail slot, and a foregrip on the ground. */
 const handlingFixture = (location: 'hand' | 'pile', character?: HandedCharacter) => {
@@ -208,6 +296,48 @@ describe('certified firearm fitting', () => {
     expect(handling.remove(shotgun.uid, SLING_SLOT)).toBeUndefined();
     queue.tick(10);
     expect(shotgun.slots?.[SLING_SLOT]).toBeUndefined();
+  });
+
+  it('visits inventory entries linearly when listing many attachment candidates', () => {
+    const visits = (attachmentCount: number): number => {
+      const fixture = makeCandidateFixture(attachmentCount);
+      const originalItems = fixture.inventory.items.bind(fixture.inventory);
+      let entryVisits = 0;
+      const iterator = vi.spyOn(fixture.inventory, 'items').mockImplementation(function* () {
+        for (const entry of originalItems()) {
+          entryVisits += 1;
+          yield entry;
+        }
+      });
+      try {
+        expect(fixture.handling.candidates(fixture.firearm.uid, fixture.slot)).toHaveLength(attachmentCount);
+      } finally {
+        iterator.mockRestore();
+      }
+      return entryVisits;
+    };
+
+    const small = visits(16);
+    const medium = visits(32);
+    const large = visits(64);
+    expect(medium).toBeLessThanOrEqual(small * 2.2);
+    expect(large).toBeLessThanOrEqual(medium * 2.2);
+  });
+
+  it('returns native reachable attachments and slings but excludes out-of-reach candidates', () => {
+    const fixture = makeCandidateFixture(2, true);
+    expect(fixture.remoteAttachment).toBeDefined();
+    expect(fixture.remoteSling).toBeDefined();
+
+    expect(
+      fixture.handling
+        .candidates(fixture.firearm.uid, fixture.slot)
+        .map(({ uid }) => uid)
+        .sort(),
+    ).toEqual(fixture.attachments.map(({ uid }) => uid).sort());
+    expect(fixture.handling.candidates(fixture.firearm.uid, SLING_SLOT).map(({ uid }) => uid)).toEqual([
+      fixture.sling.uid,
+    ]);
   });
 
   it('times attachment fitting and removal by Firearms Combat, not Inventory Management', () => {
