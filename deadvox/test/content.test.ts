@@ -172,23 +172,41 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
-  it('rejects a shapeless door that opens onto solid cells', () => {
-    const fixture: TemplateDef = {
-      id: 'door_clearance_fixture',
-      size: [6, 5, 4],
-      palette: { '.': 'air', '#': 'planks', D: { furniture: 'wood_door', facing: 'n' } },
-      layers: [
-        ['######', '######', '######', '######'],
-        ['......', '..DD..', '..##..', '......'],
-        ['......', '..DD..', '..##..', '......'],
-        ['......', '..DD..', '..##..', '......'],
-        ['......', '..DD..', '..##..', '......'],
-      ],
-    };
-    const result = buildRegistry([...base, { source: 'door-fixture.json', data: { templates: [fixture] } }]);
+  it('reports shapeless-door clearance issues during registry validation', () => {
+    const { issues } = buildRegistry([
+      {
+        source: 'door-clearance-fixture.json',
+        data: {
+          blocks: [{ id: 'planks', name: 'Planks', color: '#ffffff', solid: true }],
+          furniture: [
+            {
+              id: 'wood_door',
+              name: 'Wood door',
+              size: [2, 4, 1],
+              color: '#7a5534',
+              door: { handlingSimSeconds: 0.5 },
+            },
+          ],
+          templates: [
+            {
+              id: 'door_clearance_fixture',
+              size: [6, 5, 4],
+              palette: { '.': 'air', '#': 'planks', D: { furniture: 'wood_door', facing: 'n' } },
+              layers: [
+                ['######', '######', '######', '######'],
+                ['......', '..DD..', '..##..', '......'],
+                ['......', '..DD..', '..##..', '......'],
+                ['......', '..DD..', '..##..', '......'],
+                ['......', '..DD..', '..##..', '......'],
+              ],
+            },
+          ],
+        },
+      },
+    ]);
 
-    expect(result.issues.filter(({ source }) => source === 'door-fixture.json').map(({ path }) => path)).toContain(
-      'templates[0].pieces[0]',
+    expect(issues).toContainEqual(
+      expect.objectContaining({ source: 'door-clearance-fixture.json', path: 'templates[0].pieces[0]' }),
     );
   });
 

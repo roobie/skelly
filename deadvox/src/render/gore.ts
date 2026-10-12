@@ -10,7 +10,7 @@ import {
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
-  MeshBasicMaterial,
+  MeshLambertMaterial,
   Object3D,
   Quaternion,
   Vector3,
@@ -133,8 +133,8 @@ export const woundSeverity = (zombie: Pick<Zombie, 'type' | 'regions' | 'severed
   );
 };
 
-/** Fades each splat by its own opacity, which MeshBasicMaterial has no per-instance slot for. */
-const patchSplatOpacity = (material: MeshBasicMaterial): void => {
+/** Fades each splat by its own opacity, which three's built-in materials have no per-instance slot for. */
+const patchSplatOpacity = (material: MeshLambertMaterial): void => {
   material.customProgramCacheKey = () => 'deadvox-gore-splat';
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
@@ -154,8 +154,8 @@ export class Gore {
   private readonly splats: Splat[];
   private readonly drippers: Dripper[];
   private readonly severities = new WeakMap<Zombie, SeverityMemo>();
-  private readonly dropletMesh: InstancedMesh<BoxGeometry, MeshBasicMaterial>;
-  private readonly splatMesh: InstancedMesh<CircleGeometry, MeshBasicMaterial>;
+  private readonly dropletMesh: InstancedMesh<BoxGeometry, MeshLambertMaterial>;
+  private readonly splatMesh: InstancedMesh<CircleGeometry, MeshLambertMaterial>;
   private readonly splatOpacity: InstancedBufferAttribute;
   private readonly dummy = new Object3D();
   private readonly turn = new Quaternion();
@@ -193,10 +193,10 @@ export class Gore {
     }));
     this.dropletMesh = new InstancedMesh(
       new BoxGeometry(1, 1, 1),
-      new MeshBasicMaterial({ color: DROPLET_COLOR }),
+      new MeshLambertMaterial({ color: DROPLET_COLOR }),
       DROPLET_CAP,
     );
-    const splatMaterial = new MeshBasicMaterial({
+    const splatMaterial = new MeshLambertMaterial({
       color: SPLAT_COLOR,
       transparent: true,
       depthWrite: false,
@@ -210,6 +210,7 @@ export class Gore {
     this.splatOpacity.setUsage(DynamicDrawUsage);
     this.splatMesh.geometry.setAttribute('splatOpacity', this.splatOpacity);
     for (const mesh of [this.dropletMesh, this.splatMesh]) {
+      mesh.receiveShadow = true;
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
       mesh.frustumCulled = false;
       this.group.add(mesh);

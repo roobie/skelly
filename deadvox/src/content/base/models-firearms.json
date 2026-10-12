@@ -2004,7 +2004,21 @@
       },
       "tube": {
         "capacity": 4
-      }
+      },
+      "attachments": [],
+      "attachmentSlots": [
+        {
+          "id": "barrel.muzzle.0",
+          "mount": "muzzle",
+          "position": [0.45425, 0, 0],
+          "direction": [1, 0, 1.2246467991473532e-16],
+          "up": [0, 1, 0]
+        }
+      ],
+      "compatibility": {
+        "barrel.muzzle.0": []
+      },
+      "compatibilityPairs": []
     },
     {
       "id": "smg_compact",
