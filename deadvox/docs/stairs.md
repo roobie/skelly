@@ -15,6 +15,6 @@ Validation checks standing clearance and reachable floor space through openings,
 
 Cellars need a local sky field because wide ambient occlusion retains a nonzero ambient floor; without a separate visibility field, buried rooms can bleed sky light. The field is a bounded diffuse-light approximation, not photometry. Resident-field limits can make a distant interior change when residency changes; the test must prove both local darkness and correct field selection. See `src/core/skylight.ts`, `buildSkylight`, and `test/browser/stairs.mjs`, `lightingCellarProofs`.
 
-Shamblers do not navigate stairs as routes. A resident can drift onto a flight while beelining, but a target on another floor does not grant stair knowledge. Door bashing remains deferred until mob and obstacle strength exist. See `src/core/zombies.ts`, `ZombieSystem.tick`.
+Shamblers do not navigate stairs as routes. A resident can drift onto a flight while beelining, but a target on another floor does not grant stair knowledge. Door bashing remains deferred under #273 until mob and obstacle strength exist. See `src/core/zombies.ts`, `ZombieSystem.tick`.
 
 The stairs site is a demonstration fixture, not the final Beat 1 house or Dad's Beat 3 cabin. Browser traversal proves player physics with noclip off; lighting checks are separate pixel witnesses. A screenshot alone does not prove floor support. Ladders and roof hatches remain a separate design in [DESIGN.md](../DESIGN.md).

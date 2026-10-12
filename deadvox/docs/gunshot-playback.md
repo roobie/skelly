@@ -16,6 +16,6 @@ Playback modules are presentation and stay outside save identity. `src/core/soun
 
 ## Automatic fire
 
-A ready automatic firearm samples its held trigger on the fixed player tick. Shot deadlines derive from burst start and shot index, not accumulated frame rounding or wall-clock timers. Every deadline owns a deterministic case seed and sound pick. A short click between ticks still fires once; menus, build mode and inactive input reset the burst. Held trigger state is transient and is not resumed from a save.
+A ready automatic firearm repeats only on its held dominant-use route; other item actions remain edge-triggered, and off-hand firearm use is a single shot. Shot deadlines derive from burst start and shot index, not accumulated frame rounding or wall-clock timers. Every deadline owns a deterministic case seed and sound pick. A short click between ticks still fires once; menus, build mode and inactive input reset the burst. Held trigger state is transient and is not resumed from a save. See `src/game/player.ts`, `MoveIntent`, and `src/game/firearmTrigger.ts`, `FirearmTrigger`.
 
 The exported rpm and a chambered cartridge govern firing. Presentation starts at the player-tick boundary and, on a cold sample, after decoding; this is not sample-accurate wall-clock playback. See `src/game/firearmTrigger.ts`, `FirearmTrigger`, and `src/game/firearmHandling.ts`, `firearmHandlingFor`.

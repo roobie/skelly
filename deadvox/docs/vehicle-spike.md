@@ -13,7 +13,7 @@ The spike is a debug page for judging vehicle appearance and disassembly before 
 ## Decided
 
 - Keep the 4×4, pickup and motorbike in the part model.
-- Vehicle noise comes mainly from the engine; chassis and hull may contribute. Removing a damper never makes a vehicle quieter.
+- Vehicle noise comes mainly from the engine; chassis and hull may contribute.
 - Use vehicle-owned fittings, one catalogue id per part type and positions stored on mirrored fittings.
 - Keep sand paint with seeded wear and scratches where rendering cost allows.
 
