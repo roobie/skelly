@@ -512,9 +512,10 @@ cannot heal. Arteries remain possible in the torso, but less likely. See
 `Body.bleedingTierForHit` in `src/core/body.ts`.
 
 Attacks author their move and possible body regions. Worn armour and clothing
-take wear but do not change damage, damage kind, or bleeding chance. See
-`attack.moves` in `src/content/base/zombies.jsonnet`, `pickZombieHitRegion` in
-`src/core/zombies.ts`, and `wearOnPlayerHit` in `src/core/wear.ts`.
+take wear but do not change damage, damage kind, or bleeding chance. Move choices
+are authored in `src/content/base/zombies.jsonnet`, `attack.moves`.
+`pickZombieHitRegion` in `src/core/zombies.ts` and `wearOnPlayerHit` in
+`src/core/wear.ts` apply those choices and armour wear.
 
 Each bleeding wound loses blood and wound losses add together. Blood recovers
 only when no wound is bleeding; no blood means death, with no faint beforehand.
