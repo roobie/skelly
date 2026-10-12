@@ -139,12 +139,14 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
   it('keeps stump-gore bits for high-index severable members in a generated amalgam', () => {
     const amalgam = Array.from({ length: 8 }, (_, offset) => generateValid(amalgamTemplate, offset + 1)).find(
       (candidate) => {
-        if (!candidate) return false;
-        const { body, voxels } = candidate.realized;
-        const bones = body.bones;
-        return amalgamManifest(body, voxels).parts.some(
+        if (!candidate) {
+          return false;
+        }
+        const { body: candidateBody, voxels } = candidate.realized;
+        const { bones: candidateBones } = candidateBody;
+        return amalgamManifest(candidateBody, voxels).parts.some(
           ({ rootBone, severable }) =>
-            severable && bones.findIndex(({ id }) => id === rootBone) >= CROWD_MASK_BITS_PER_TEXEL,
+            severable && candidateBones.findIndex(({ id }) => id === rootBone) >= CROWD_MASK_BITS_PER_TEXEL,
         );
       },
     );
