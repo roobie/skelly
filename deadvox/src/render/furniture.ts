@@ -3,7 +3,7 @@
 
 import { BoxGeometry, type BufferGeometry, Color, Group, Mesh, MeshLambertMaterial } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { type BlockEntities, type BlockEntity, doorPanel } from '../core/blockEntities.ts';
+import { type BlockEntities, type BlockEntity, panelFor } from '../core/blockEntities.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -129,10 +129,10 @@ export class FurnitureMeshes {
     return mesh;
   }
 
-  /** A panel across the doorway, hinged at its low end along the wall. */
-  private door(entity: BlockEntity, material: MeshLambertMaterial, body?: FurnitureDef): Group {
-    const box = doorPanel(entity, this.blockSize, body?.shape !== undefined);
-    const isBodyDoor = body?.shape !== undefined && body.door !== undefined;
+  /** A panel across the doorway, hinged at its low end along the wall, or a hatch's panel. */
+  private door(entity: BlockEntity, material: MeshLambertMaterial, body: FurnitureDef): Group {
+    const box = panelFor(entity, body, this.blockSize);
+    const isBodyDoor = body.shape !== undefined && body.door !== undefined;
     const panelMaterial = isBodyDoor
       ? this.material(`#${new Color(body.color).multiplyScalar(BODY_DOOR_SHADE).getHexString()}`)
       : material;
@@ -163,7 +163,7 @@ export class FurnitureMeshes {
       handle.position.set(...position);
       pivot.add(handle);
     }
-    if (!body?.shape) {
+    if (!body.shape) {
       return pivot;
     }
     const assembly = new Group();

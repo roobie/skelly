@@ -1,5 +1,5 @@
 import type { BlockEntities, BlockEntity } from './blockEntities.ts';
-import { doorPanel } from './blockEntities.ts';
+import { type DoorPanelBox, panelFor } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
 import { type RayHit, raycast, type SolidAt } from './raycast.ts';
 
@@ -10,7 +10,7 @@ const rotateToPanel = ([x, y, z]: Vec3, angle: number): Vec3 => {
 };
 
 const rayPanelDistance = (
-  panel: ReturnType<typeof doorPanel>,
+  panel: DoorPanelBox,
   origin: Vec3,
   direction: Vec3,
   maxDistance: number,
@@ -56,6 +56,8 @@ export interface FurniturePickOptions {
   maxDistance: number;
   blockSize: number;
   isSolid: SolidAt;
+  /** A climber's ray passes through ladders, an open frame, to reach the hatch above. */
+  throughLadders?: boolean;
 }
 
 interface PanelHit {
@@ -83,7 +85,7 @@ const nearestPanelHit = ({
       continue;
     }
     const distance = rayPanelDistance(
-      doorPanel(entity, blockSize, definition.shape !== undefined),
+      panelFor(entity, definition, blockSize),
       originMetres,
       direction,
       maxDistanceMetres,
@@ -101,20 +103,22 @@ const firstPickCell = ({
   direction,
   maxDistance,
   isSolid,
+  throughLadders,
 }: {
   entities: BlockEntities;
   origin: Vec3;
   direction: Vec3;
   maxDistance: number;
   isSolid: SolidAt;
+  throughLadders: boolean;
 }): RayHit | undefined =>
   raycast(origin, direction, maxDistance, (x, y, z) => {
     const entity = entities.at(x, y, z);
-    if (entity) {
-      const definition = entities.defOf(entity);
-      return !definition.door || definition.shape !== undefined || !entity.open;
+    const definition = entity && entities.defOf(entity);
+    if (!definition || (throughLadders && definition.climbable)) {
+      return isSolid(x, y, z);
     }
-    return isSolid(x, y, z);
+    return !definition.door || definition.shape !== undefined || !entity!.open;
   });
 
 export interface FurniturePickHit {
@@ -162,6 +166,7 @@ export const pickFurnitureAndObstruction = ({
   maxDistance,
   blockSize,
   isSolid,
+  throughLadders = false,
 }: FurniturePickOptions): FurnitureAndObstructionHit => {
   const magnitude = Math.hypot(...direction);
   if (magnitude === 0 || maxDistance < 0 || blockSize <= 0) {
@@ -177,7 +182,7 @@ export const pickFurnitureAndObstruction = ({
     maxDistanceMetres: maxMetres,
     blockSize,
   });
-  const cellHit = firstPickCell({ entities, origin, direction: dir, maxDistance, isSolid });
+  const cellHit = firstPickCell({ entities, origin, direction: dir, maxDistance, isSolid, throughLadders });
   return {
     furniture: resolvePick({ entities, panelHit, cellHit, blockSize }),
     obstructionDistanceBlocks: cellHit?.distance,

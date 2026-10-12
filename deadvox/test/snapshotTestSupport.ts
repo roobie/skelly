@@ -523,6 +523,9 @@ export const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'furniture') {
     return registry.furniture.has(id);
   }
+  if (kind === 'climbable') {
+    return Boolean(registry.furniture.get(id)?.climbable);
+  }
   if (kind === 'zombie') {
     return registry.zombies.has(id);
   }

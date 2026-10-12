@@ -10,7 +10,7 @@
   "tileheight": 1,
   "infinite": false,
   "nextlayerid": 8,
-  "nextobjectid": 132,
+  "nextobjectid": 133,
   "properties": [
     {
       "name": "id",
@@ -1239,6 +1239,35 @@
               "name": "fixed_loot",
               "type": "string",
               "value": "[{\"at\":[7,1,7],\"items\":[{\"item\":\"steel_pipe\",\"count\":1,\"key\":true}]}]"
+            }
+          ]
+        },
+        {
+          "id": 132,
+          "name": "Mike's place — ladder up the workshop's west wall to its roof",
+          "type": "building",
+          "x": 409.5,
+          "y": 203,
+          "width": 0.5,
+          "height": 1,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "workshop_roof_ladder"
+            },
+            {
+              "name": "storeys",
+              "type": "int",
+              "value": 1
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
             }
           ]
         },
