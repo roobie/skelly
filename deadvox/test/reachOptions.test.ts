@@ -58,13 +58,17 @@ const setupStackReuse = () => {
       },
     },
   ]);
-  expect(issues).toEqual([]);
+  if (issues.length > 0) {
+    throw new Error(`Invalid quick-move fixture: ${issues.map((issue) => issue.message).join('; ')}`);
+  }
   const inventory = new Inventory(fixtureRegistry);
   const view = bindReach({ inventory, position: [0.5, 0, 0.5], blockSize: 1 });
   const queue = new HandlingQueue(inventory);
   const add = (type: string, target: Parameters<Inventory['add']>[1], count = 1) => {
     const item = inventory.create(type, count);
-    expect(inventory.add(item, target)).toBe(true);
+    if (!inventory.add(item, target)) {
+      throw new Error(`Fixture item ${type} did not fit`);
+    }
     return item;
   };
   const bag = add('fixture_back', { kind: 'worn' });
