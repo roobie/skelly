@@ -67,7 +67,7 @@ Debug fixtures, runtime escrow, spent cases, and body-part policy stay out of ac
 
 ## Furniture visual shapes
 
-A furniture shape refines its drawn form without changing occupied cells. Collision, rest, search, and line of sight keep using those cells, so visual detail cannot change gameplay. See `FurnitureSchema` in `src/core/schema.ts` and `FurnitureMeshes` in `src/render/furniture.ts`.
+A furniture shape refines its drawn form without changing occupied cells. Collision, rest, search, and line of sight keep using those cells, so visual detail cannot change gameplay. Author furniture definitions in `src/content/base/furniture.jsonnet`; see `FurnitureSchema` in `src/core/schema.ts` and `FurnitureMeshes` in `src/render/furniture.ts`.
 
 ## Furniture action noise
 
