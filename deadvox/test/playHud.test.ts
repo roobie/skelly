@@ -70,22 +70,22 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
 
 const root = (): HTMLElement => document.createElement('div');
 
-it('shows the pain reading breakdown and content tier in the stats text', () => {
+it('shows every pain component on two adjacent lines after needs', () => {
   const status = {
     calendar: 0,
     speed: 1,
     paused: false,
-    needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    needs: { calories: 611, hydration: 782, fatigue: 93, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
     pain: {
-      felt: 123.4,
-      acute: 456.2,
-      injuries: 789.1,
-      relief: 30,
+      felt: 137.2,
+      acute: 241.3,
+      injuries: 359.7,
+      relief: 43.8,
       ratio: 0.416,
       tier: 1,
       effects: { aimSway: 1, handlingSlowdown: 1 },
     },
-    painTier: 'fixture-tier',
+    painTier: 'fixture-tier-947',
     health: 91,
     blood: 67,
     bleeding: [],
@@ -94,10 +94,35 @@ it('shows the pain reading breakdown and content tier in the stats text', () => 
   } as const;
 
   const lines = playNeedsText(status).split('\n');
-  expect(lines).toContain('pain 123 · fixture-tier');
-  expect(lines).toContain('acute 456 + injuries 789 − relief 30');
-  expect(lines.indexOf('pain 123 · fixture-tier')).toBe(lines.indexOf('food 100%   water 100%   fatigue 0') + 1);
-  expect(lines.indexOf('acute 456 + injuries 789 − relief 30')).toBe(lines.indexOf('pain 123 · fixture-tier') + 1);
+  const values = {
+    felt: status.pain.felt.toFixed(0),
+    acute: status.pain.acute.toFixed(0),
+    injuries: status.pain.injuries.toFixed(0),
+    relief: status.pain.relief.toFixed(0),
+  };
+  const needsLineIndex = lines.findIndex(
+    (line) =>
+      line.includes(status.needs.calories.toFixed(0)) &&
+      line.includes(status.needs.hydration.toFixed(0)) &&
+      line.includes(status.needs.fatigue.toFixed(0)),
+  );
+  const feltLineIndex = lines.findIndex(
+    (line) => line.includes(values.felt) && line.includes(status.painTier),
+  );
+  const breakdownLineIndex = lines.findIndex(
+    (line) => line.includes(values.acute) && line.includes(values.injuries) && line.includes(values.relief),
+  );
+
+  expect(needsLineIndex).toBeGreaterThanOrEqual(0);
+  expect(feltLineIndex).toBeGreaterThanOrEqual(0);
+  expect(breakdownLineIndex).toBeGreaterThanOrEqual(0);
+  expect(lines[feltLineIndex]).toContain(values.felt);
+  expect(lines[feltLineIndex]).toContain(status.painTier);
+  expect(lines[breakdownLineIndex]).toContain(values.acute);
+  expect(lines[breakdownLineIndex]).toContain(values.injuries);
+  expect(lines[breakdownLineIndex]).toContain(values.relief);
+  expect(feltLineIndex).toBe(needsLineIndex + 1);
+  expect(breakdownLineIndex).toBe(feltLineIndex + 1);
 });
 
 it("projects blood level and affected regions, with their tier's label, only while a wound bleeds", () => {
