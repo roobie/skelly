@@ -136,8 +136,9 @@ export const playNeedsText = ({
   return [
     `health ${health.toFixed(0)}%   blood ${blood.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
     // Fatigue is sleep debt, not a share: 100 is a normal night's sleep and it can go past it.
-    `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}   pain ${pain.felt.toFixed(0)} ` +
-      `(acute ${pain.acute.toFixed(0)} + injuries ${pain.injuries.toFixed(0)} − relief ${pain.relief.toFixed(0)})${painTier ? ` · ${painTier}` : ''}`,
+    `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}`,
+    `pain ${pain.felt.toFixed(0)}${painTier ? ` · ${painTier}` : ''}`,
+    `acute ${pain.acute.toFixed(0)} + injuries ${pain.injuries.toFixed(0)} − relief ${pain.relief.toFixed(0)}`,
     // Only a tier content marks `warn` gets the warning sign (DESIGN.md, "Bleeding").
     ...bleeding.map(({ region, label, warn }) => `${warn ? '⚠ ' : ''}${label} — ${region}`),
   ].join('\n');

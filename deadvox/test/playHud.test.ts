@@ -77,10 +77,10 @@ it('shows the pain reading breakdown and content tier in the stats text', () => 
     paused: false,
     needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
     pain: {
-      felt: 41.6,
-      acute: 27.2,
-      injuries: 22.4,
-      relief: 8,
+      felt: 123.4,
+      acute: 456.2,
+      injuries: 789.1,
+      relief: 30,
       ratio: 0.416,
       tier: 1,
       effects: { aimSway: 1, handlingSlowdown: 1 },
@@ -93,7 +93,11 @@ it('shows the pain reading breakdown and content tier in the stats text', () => 
     lightCharge: undefined,
   } as const;
 
-  expect(playNeedsText(status)).toContain('pain 42 (acute 27 + injuries 22 − relief 8) · fixture-tier');
+  const lines = playNeedsText(status).split('\n');
+  expect(lines).toContain('pain 123 · fixture-tier');
+  expect(lines).toContain('acute 456 + injuries 789 − relief 30');
+  expect(lines.indexOf('pain 123 · fixture-tier')).toBe(lines.indexOf('food 100%   water 100%   fatigue 0') + 1);
+  expect(lines.indexOf('acute 456 + injuries 789 − relief 30')).toBe(lines.indexOf('pain 123 · fixture-tier') + 1);
 });
 
 it("projects blood level and affected regions, with their tier's label, only while a wound bleeds", () => {
