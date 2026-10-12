@@ -5,6 +5,7 @@ read_if:
   - you're changing mobgen pose generation or validation scope
   - you're deciding what belongs in mobgen milestone 1 or later
   - you're integrating a mobgen figure into deadvox
+  - you change the crowd gore-mask contract tracked by #159
   - you're changing the crawler's static silhouette, generated-body grounding, gait or hit response
   - you're adding render-only gaze tracking or rig-specific eye limits
   - you author or change structured mobgen content
@@ -125,6 +126,13 @@ and manifest, `src/core/generate.ts` for contact-derived support bones,
 ownership from the effects and tuning that a later Deadvox round owns. The
 seeded composition and member-count range are first-look proposals for BR's
 visual judgment, not encounter-count or gameplay-tuning decisions.
+
+A cut's surviving boundary needs the severed state of its neighbouring bone to
+show stump gore; every bone index in a body plan must therefore survive the
+crowd mask handoff. mobgen owns the shared encoding and shader in
+`src/mob/crowd.ts`, `packSeveredMask` and `crowdBoneSevered`; deadvox supplies
+severed indices in `deadvox/src/render/mobActors.ts`. The real-amalgam high-bone
+contract is covered in `test/crowd.test.ts`.
 
 To keep this viewer-only first look out of Deadvox's simulation fingerprint,
 the viewer imports `src/mob/amalgamTemplate.ts` (`VIEWER_TEMPLATES`) rather than

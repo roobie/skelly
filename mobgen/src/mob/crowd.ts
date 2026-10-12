@@ -5,10 +5,9 @@
 // *mobgen's* node_modules, not deadvox's — see mobgen/src/viewer/stressActors.ts, the original home of
 // this code, for the three.js-side builder that still lives there: buildCrowdGeometry, buildCrowdRender).
 //
-// Texture layout: one row per actor ("slot"), `bonesPerSlot * 3` texels wide for the bone matrices plus
-// one more for the severed-bone mask (see crowdMaskTexelIndex/packSeveredMask below — dismemberment), so
-// one actor's whole bone set plus its mask fits on one row — no wraparound to reason about in the packing
-// code below or in the shader's texel math. Each bone occupies 3 consecutive RGBA texels within its
+// Texture layout: one row per actor ("slot"), `bonesPerSlot * 3` texels for the bone matrices plus enough
+// severed-bone mask words for every bone index (see crowdMaskTexelIndex/packSeveredMask below), so one
+// actor's whole bone set and mask fit on one row. Each bone occupies 3 consecutive RGBA texels within its
 // actor's row: a row-major 3x4 affine matrix, r0 r1 r2 tx | r3 r4 r5 ty | r6 r7 r8 tz (no perspective row —
 // every transform here is rigid).
 
@@ -16,49 +15,56 @@ import type { MutableTransform } from '../core/pose.ts';
 
 export interface CrowdTextureLayout {
   readonly bonesPerSlot: number;
+  readonly maskTexelsPerSlot: number;
   readonly width: number;
   readonly height: number;
 }
 
-export const crowdTextureLayout = (bonesPerSlot: number, slotCount: number): CrowdTextureLayout => ({
-  bonesPerSlot,
-  width: bonesPerSlot * 3 + 1,
-  height: Math.max(1, slotCount),
-});
+/** One Float32 red channel carries 24 exact integer bits; layouts allocate as many mask words as their bones need. */
+export const CROWD_MASK_BITS_PER_TEXEL = 24;
+
+export const crowdTextureLayout = (bonesPerSlot: number, slotCount: number): CrowdTextureLayout => {
+  const maskTexelsPerSlot = Math.max(1, Math.ceil(bonesPerSlot / CROWD_MASK_BITS_PER_TEXEL));
+  return {
+    bonesPerSlot,
+    maskTexelsPerSlot,
+    width: bonesPerSlot * 3 + maskTexelsPerSlot,
+    height: Math.max(1, slotCount),
+  };
+};
 
 /** Flat Float32Array index (RGBA-interleaved) of bone `bone`'s first texel (row 0 of its 3x4 matrix) in
- * actor `slot`'s row. Add 4/8 for rows 1/2, as packCrowdBoneMatrix does. Goes through `layout.width` (not
- * `bonesPerSlot * 3`) so it stays correct now that a row is one texel wider than the bones alone. */
+ * actor `slot`'s row. Add 4/8 for rows 1/2, as packCrowdBoneMatrix does. Goes through `layout.width` so
+ * it stays correct with the per-slot mask words after the bone matrices. */
 export const crowdTexelIndex = (layout: CrowdTextureLayout, slot: number, bone: number): number =>
   (slot * layout.width + bone * 3) * 4;
 
-/** Flat Float32Array index of the one extra texel per row holding the actor's flags, right after this
- * slot's last bone matrix: red is the severed-bone bitmask (packSeveredMask), green how bloodied the body
- * is (packBloodiness); blue and alpha are unused. */
-export const crowdMaskTexelIndex = (layout: CrowdTextureLayout, slot: number): number =>
-  (slot * layout.width + layout.bonesPerSlot * 3) * 4;
+/** Flat Float32Array index of the actor's `maskWord` texel after its last bone matrix. Word zero also
+ * stores bloodiness in green; additional words carry higher severed-bone indices. */
+export const crowdMaskTexelIndex = (layout: CrowdTextureLayout, slot: number, maskWord = 0): number =>
+  (slot * layout.width + layout.bonesPerSlot * 3 + maskWord) * 4;
 
-/** A float exactly represents every non-negative integer up to 2^24 — comfortably above any humanoid's
- * bone count today (18) — so a severed-bone bitmask (bit i set = bone i severed) round-trips through one
- * float texel with no precision loss, as long as no caller ever sets a bit at or above this. */
-export const CROWD_MASK_MAX_BONES = 24;
-
-/** Packs `severedBoneIndices` (this actor's own bone array indices — callers translate ids via their own
- * id→index map, e.g. `bones.findIndex`) into `slot`'s mask texel. Bones at or beyond CROWD_MASK_MAX_BONES
- * are silently dropped (would lose precision as a float) rather than corrupting the whole mask. */
+/** Packs every severed bone index into its per-slot mask word. An index outside this layout is a caller
+ * error: failing loudly is safer than silently losing stump-gore state. */
 export const packSeveredMask = (
   data: Float32Array,
   layout: CrowdTextureLayout,
   slot: number,
   severedBoneIndices: Iterable<number>,
 ): void => {
-  let mask = 0;
-  for (const i of severedBoneIndices) {
-    if (i >= 0 && i < CROWD_MASK_MAX_BONES) {
-      mask |= 1 << i;
-    }
+  const firstMaskIndex = crowdMaskTexelIndex(layout, slot);
+  for (let word = 0; word < layout.maskTexelsPerSlot; word++) {
+    data[firstMaskIndex + word * 4] = 0;
   }
-  data[crowdMaskTexelIndex(layout, slot)] = mask >>> 0;
+  for (const i of severedBoneIndices) {
+    if (!Number.isInteger(i) || i < 0 || i >= layout.bonesPerSlot) {
+      throw new RangeError(`Severed bone index ${i} is outside a ${layout.bonesPerSlot}-bone crowd slot`);
+    }
+    const word = Math.floor(i / CROWD_MASK_BITS_PER_TEXEL);
+    const bit = i % CROWD_MASK_BITS_PER_TEXEL;
+    const index = firstMaskIndex + word * 4;
+    data[index] = data[index]! | (1 << bit);
+  }
 };
 
 /** Packs how bloodied `slot`'s body is, 0 (clean) to 1, into its mask texel's green channel.
@@ -74,9 +80,22 @@ export const packBloodiness = (
   data[crowdMaskTexelIndex(layout, slot) + 1] = Math.min(1, Math.max(0, bloodiness));
 };
 
-/** Whether `boneIndex`'s bit is set in a mask value read back from the texture (e.g. in a test — the
- * shader does the equivalent bit test itself, see CROWD_BEGIN_VERTEX). */
-export const isSeveredInMask = (mask: number, boneIndex: number): boolean => ((mask >>> boneIndex) & 1) === 1;
+/** Whether the texture mask says `boneIndex` was severed. The shader applies the same word/bit split in
+ * crowdBoneSevered; this helper lets the maintained CPU contract tests inspect the packed representation. */
+export const isSeveredInMask = (
+  data: Float32Array,
+  layout: CrowdTextureLayout,
+  slot: number,
+  boneIndex: number,
+): boolean => {
+  if (boneIndex < 0 || boneIndex >= layout.bonesPerSlot) {
+    return false;
+  }
+  const word = Math.floor(boneIndex / CROWD_MASK_BITS_PER_TEXEL);
+  const bit = boneIndex % CROWD_MASK_BITS_PER_TEXEL;
+  const mask = data[crowdMaskTexelIndex(layout, slot, word)]!;
+  return (((mask >>> 0) >>> bit) & 1) === 1;
+};
 
 /** A crowd placement: yaw about Y (radians, three.js/conventions.ts convention: yaw 0 faces -Z) plus a
  * translation — the same thing mobgen's 'bones' stress mode hands its wrapping Group and its 'skinned'
@@ -182,21 +201,22 @@ mat4 crowdBoneMatrix( float slot, float bone ) {
 
 }
 
-// Dismemberment: one extra texel per row (right after the bones, at column bonesPerSlot*3 — see
-// crowdMaskTexelIndex) holds this actor's severed-bone bitmask, bit i set = bone i severed (see
-// packSeveredMask). A severed bone's own matrix is written as all zeros on the CPU side (mobActors.ts),
-// which alone collapses every one of its vertices to the origin — degenerate, so hiding it needs no shader
-// logic at all. This mask is only for the *gore* tint below: a survivor bone whose neighbourBone has just
-// been severed needs to know that, and the neighbour's own (now-zeroed) matrix doesn't carry that
-// information any more once it's collapsed.
+// Dismemberment: the mask words after the bones (see crowdMaskTexelIndex) hold this actor's severed-bone
+// bits, with CROWD_MASK_BITS_PER_TEXEL indices per word (see packSeveredMask). A severed bone's own
+// matrix is written as all zeros on the CPU side (mobActors.ts), which alone collapses every one of its
+// vertices to the origin — degenerate, so hiding it needs no shader logic at all. This mask is only for the
+// *gore* tint below: a survivor bone whose neighbourBone has just been severed needs to know that, and the
+// neighbour's own (now-zeroed) matrix doesn't carry that information any more once it's collapsed.
 bool crowdBoneSevered( float slot, float bone ) {
 
 	if ( bone < 0.0 ) return false; // -1: this face's neighbour is empty space, never "severed"
-	int x = int( crowdBonesPerSlot ) * 3;
+	int boneIndex = int( bone );
+	int word = boneIndex / ${CROWD_MASK_BITS_PER_TEXEL};
+	int bit = boneIndex % ${CROWD_MASK_BITS_PER_TEXEL};
+	int x = int( crowdBonesPerSlot ) * 3 + word;
 	int y = int( slot );
 	int mask = int( texelFetch( crowdBoneTexture, ivec2( x, y ), 0 ).x );
-	int bit = 1 << int( bone );
-	return ( mask & bit ) != 0;
+	return ( mask & ( 1 << bit ) ) != 0;
 
 }
 
