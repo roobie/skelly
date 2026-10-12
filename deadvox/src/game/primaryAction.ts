@@ -5,6 +5,7 @@ import { dominantSide, offSide } from '../core/character.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
+import { consumption } from '../core/options.ts';
 import type { ItemDef } from '../core/schema.ts';
 
 type PrimaryItemAction =
@@ -48,7 +49,7 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   {
     kind: 'use',
     supports: (definition) =>
-      definition.food !== undefined || definition.category === 'medical' || definition.treatment !== undefined,
+      consumption(definition) !== undefined || definition.category === 'medical' || definition.treatment !== undefined,
   },
 ];
 

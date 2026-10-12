@@ -542,6 +542,30 @@ and drip presentation; the inventory body panel names the tier. Saves preserve
 wound severity. See `Body.treat` in `src/core/body.ts` and `bodyWound` in
 `src/core/saveFormat.ts`.
 
+### Pain
+
+Pain is its own body state, apart from health and wounds, so a painkiller can ease
+what hurts without healing anything. Felt pain is acute plus background pain,
+less analgesia; it has no top. The threshold is a balance point for tiers and
+effects, not an implemented knockout: pain-triggered knockout through shock's
+mechanism is planned for #654 (round 2), not round 1. Acute pain comes from each
+hit by damage kind and region,
+then fades. Background pain is derived from region damage, bleeding and infection,
+so treatment and healing change it without saved derived state. Pain tiers drive
+the bodily cue, while aim sway and a shared handling slowdown grow with pain above
+the first tier; treatment and crafting are not slowed.
+
+Painkillers use an analgesic component regardless of item category. Each dose's
+relief rises, holds and fades in game time; doses in a group share a cap, while
+other groups add relief. They mask pain only: health, wounds and consequences
+remain unchanged. Saves preserve acute pain and active doses.
+
+The optional stats readout shows felt pain and its acute, injury and relief
+components so BR can tune the scale in play. This debug-style number belongs
+only in stats, not in player-facing cues, because pain has no upper bound and
+its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` and `PainReading` in `src/core/pain.ts`. The interface rules are in
+`INTERFACE.md`, "Bodily cues" and `INTERFACE.md`, "HUD".
+
 ## Combat and noise
 
 - **Melee.** Weapons differ by damage type, reach, speed, and stamina cost.
@@ -1257,7 +1281,7 @@ decoration.
 - Every number the simulation uses (weight, time, condition, noise) can be seen
   somewhere in the UI, **on request**: on surfaces the player opens (inspecting an
   item, the inventory), never pushed at them during play. Depth is only fun when
-  you can read it; play stays as diegetic as possible (see INTERFACE.md).
+  you can read it; play stays as diegetic as possible (see `INTERFACE.md`).
 - **The UI only shows what your character knows.** No enemy markers, no
   minimap of zombies, no threat meter. A rest interruption says what you
   heard, not what it was. The in-game map is a paper map (#470); top-down

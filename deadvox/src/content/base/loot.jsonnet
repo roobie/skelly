@@ -1,0 +1,270 @@
+// Loot tables: what furniture, bodies and stores hold. Entry weights are relative within their table.
+
+local pillPack = (import 'items-other.jsonnet').pillPack;
+
+local item(id, weight, count=null, condition=null) =
+  { item: id, weight: weight }
+  + (if count == null then {} else { count: count })
+  + (if condition == null then {} else { condition: condition });
+local table(id, weight) = { table: id, weight: weight };
+local nothing(weight) = { nothing: true, weight: weight };
+
+// Loose pills are what is left of a pack: at least `least`, at most `parts`/`of` of a full one.
+// Multiplying before dividing keeps the share exact; 2 / 3 as a float could floor a pill short.
+local pills(weight, least, parts, of) =
+  local most = std.floor(pillPack * parts / of);
+  assert 1 <= least && least <= most : 'a pill count is a part of one pack';
+  item('painkillers', weight, count=[least, most]);
+
+{
+  loot: [
+    {
+      id: 'kitchen_cupboard',
+      rolls: [1, 4],
+      entries: [
+        item('canned_beans', 5, count=[1, 2]),
+        item('canned_soup', 4, count=[1, 2]),
+        item('crackers', 3),
+        table('kitchen_tools', 2),
+        nothing(3),
+      ],
+    },
+    {
+      id: 'kitchen_tools',
+      rolls: [1, 1],
+      entries: [
+        item('kitchen_knife', 3, condition=[0.4, 1]),
+        item('can_opener', 3),
+        item('lighter', 1),
+        item('matches', 2),
+      ],
+    },
+    {
+      id: 'fridge',
+      rolls: [0, 3],
+      entries: [
+        item('soda_can', 4, count=[1, 3]),
+        item('juice_carton', 2),
+        item('water_bottle', 3),
+        item('apple', 3, count=[1, 3]),
+        nothing(4),
+      ],
+    },
+    {
+      id: 'wardrobe',
+      rolls: [1, 3],
+      entries: [
+        item('jeans', 3, condition=[0.5, 1]),
+        item('cargo_pants', 2, condition=[0.5, 1]),
+        item('hoodie', 3, condition=[0.5, 1]),
+        item('jacket', 2, condition=[0.5, 1]),
+        item('school_backpack', 1, condition=[0.6, 1]),
+        item('fanny_pack', 1, condition=[0.5, 1]),
+        item('hiking_backpack', 1, condition=[0.5, 1]),
+        item('utility_vest', 1, condition=[0.5, 1]),
+        nothing(2),
+      ],
+    },
+    {
+      id: 'desk',
+      rolls: [1, 3],
+      entries: [
+        item('paperback', 3),
+        item('field_manual', 1),
+        item('home_repair_book', 1),
+        item('aa_battery', 3, count=[1, 4]),
+        item('flashlight', 1, condition=[0.5, 1]),
+        item('headlamp', 1, condition=[0.5, 1]),
+        pills(1, 2, 1, 3),
+        item('duct_tape', 1),
+        nothing(3),
+      ],
+    },
+    {
+      id: 'shelf',
+      rolls: [1, 3],
+      entries: [
+        item('paperback', 3),
+        item('camp_craft_book', 1),
+        item('workshop_notes', 1),
+        table('snacks', 2),
+        table('junk', 2),
+        nothing(2),
+      ],
+    },
+    {
+      id: 'snacks',
+      rolls: [1, 1],
+      entries: [
+        item('chocolate_bar', 3, count=[1, 2]),
+        item('crackers', 2),
+        item('soda_can', 2),
+      ],
+    },
+    {
+      id: 'junk',
+      rolls: [1, 3],
+      entries: [
+        item('stick', 1),
+        item('wax', 1),
+        item('rag', 4, count=[1, 3]),
+        item('duct_tape', 2),
+        item('nails', 2, count=[5, 20]),
+        item('scrap_metal', 3, count=[1, 2]),
+        item('aa_battery', 1, count=[1, 2]),
+        item('portable_radio', 1),
+        item('broken_toaster', 1),
+        item('dead_desk_lamp', 1),
+        item('broken_table_fan', 1),
+        item('cracked_phone', 2),
+        item('broken_clock', 1),
+        item('electrical_tape', 2),
+        item('fastener_pack', 2),
+        item('rubber_strip', 1),
+        item('sewing_thread', 1),
+        item('nylon_cord', 1),
+        item('lamp_oil', 1),
+        nothing(3),
+      ],
+    },
+    {
+      id: 'shed_tools',
+      rolls: [1, 3],
+      entries: [
+        item('hammer', 3, condition=[0.4, 1]),
+        item('crowbar', 1, condition=[0.4, 1]),
+        item('baseball_bat', 1, condition=[0.4, 1]),
+        item('machete', 1, condition=[0.4, 1]),
+        item('kabar', 1, condition=[0.4, 1]),
+        item('steel_pipe', 2),
+        item('glowstick', 1),
+        item('weapon_sling', 1),
+        item('nails', 3, count=[10, 40]),
+        table('junk', 3),
+      ],
+    },
+    {
+      id: 'shambler_pockets',
+      rolls: [0, 2],
+      entries: [
+        item('lighter', 1),
+        item('aa_battery', 1, count=[1, 2]),
+        item('bandage', 1),
+        item('antiseptic', 1),
+        item('antibiotics', 1),
+        item('chocolate_bar', 1),
+        nothing(6),
+      ],
+    },
+    {
+      id: 'soldier_pockets',
+      rolls: [1, 1],
+      entries: [nothing(4), table('soldier_kit', 1)],
+    },
+    {
+      id: 'soldier_kit',
+      rolls: [1, 2],
+      entries: [
+        item('bandage', 3),
+        item('antiseptic', 1),
+        pills(1, 4, 1, 2),
+        item('flashlight', 1),
+        item('screwdriver', 1),
+        item('duct_tape', 1),
+        item('matches', 1),
+      ],
+    },
+    {
+      id: 'hardware_store_stock',
+      rolls: [1, 3],
+      entries: [
+        table('building_tools', 3),
+        table('building_materials', 4),
+        table('building_parts', 3),
+        nothing(2),
+      ],
+    },
+    {
+      id: 'garage_stock',
+      rolls: [1, 3],
+      entries: [
+        table('building_tools', 2),
+        table('building_materials', 3),
+        table('building_parts', 4),
+        table('junk', 2),
+        nothing(2),
+      ],
+    },
+    {
+      id: 'building_tools',
+      rolls: [1, 1],
+      entries: [
+        item('hammer', 3, condition=[0.4, 1]),
+        item('crowbar', 3, condition=[0.4, 1]),
+        item('baseball_bat', 1, condition=[0.4, 1]),
+        item('hand_saw', 2, condition=[0.4, 1]),
+        item('screwdriver', 2, condition=[0.4, 1]),
+        item('wrench', 2, condition=[0.4, 1]),
+        item('adjustable_pliers', 1, condition=[0.4, 1]),
+        item('wire_strippers', 1, condition=[0.4, 1]),
+        item('kitchen_knife', 1, condition=[0.4, 1]),
+        item('machete', 1, condition=[0.4, 1]),
+        item('kabar', 1, condition=[0.4, 1]),
+        nothing(2),
+      ],
+    },
+    {
+      id: 'building_materials',
+      rolls: [1, 1],
+      entries: [
+        item('wooden_plank', 2),
+        item('nails', 4, count=[5, 20]),
+        item('scrap_metal', 3, count=[1, 2]),
+        item('rag', 2, count=[1, 3]),
+        item('stick', 2, count=[1, 3]),
+        item('wax', 1, count=[1, 3]),
+        item('lamp_oil', 1),
+        item('electrical_tape', 2),
+        item('fastener_pack', 2),
+        item('rubber_strip', 1),
+        item('nylon_cord', 1),
+        item('hinge_set', 1),
+        nothing(1),
+      ],
+    },
+    {
+      id: 'building_parts',
+      rolls: [1, 1],
+      entries: [
+        item('copper_wire', 2),
+        item('duct_tape', 3),
+        item('aa_battery', 2, count=[1, 2]),
+        item('steel_pipe', 1),
+        item('improvised_suppressor', 1),
+        item('taped_flashlight_mount', 1),
+        item('scrap_foregrip', 1),
+        item('sewing_kit', 1),
+        item('sewing_repair_kit', 1),
+        item('electrical_repair_kit', 1),
+        item('circuit_board', 1),
+        item('fuse', 1),
+        item('glass_shards', 1),
+        item('small_spring', 1),
+        item('glass_bulb', 1),
+        item('glass_lens', 1),
+        item('scrap_metal', 2, count=[1, 2]),
+        nothing(2),
+      ],
+    },
+    {
+      id: 'medical_filler',
+      rolls: [1, 2],
+      entries: [
+        item('bandage', 4, count=[1, 2]),
+        pills(2, 6, 2, 3),
+        item('rag', 1),
+        nothing(3),
+      ],
+    },
+  ],
+}

@@ -88,6 +88,7 @@ const SimAcceleration = pipe(Positive, transform(simAcceleration));
 const SimDurationRange = strictObject({ min: PositiveSimSeconds, max: PositiveSimSeconds });
 const PositiveGameHours = pipe(Positive, transform(gameHours));
 const PositiveGameMinutes = pipe(Positive, transform(gameMinutes));
+const GameMinutes = pipe(NonNegative, transform(gameMinutes));
 const GamePerHour = pipe(Positive, transform(gamePerHour));
 const SimPerMinute = pipe(Positive, transform(simPerMinute));
 const GameTimeOfDay = pipe(
@@ -453,6 +454,22 @@ const DisassemblySchema = strictObject({
   skill: Id,
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
 });
+/** What one dose of a painkiller does to felt pain (`DESIGN.md`, "Pain"); it heals nothing. */
+const AnalgesicSchema = strictObject({
+  /** Painkillers that share one cap; an item without a group is its own. */
+  group: optional(Id),
+  /** Pain one dose takes off at its peak. */
+  reliefPerDose: Positive,
+  /** The most relief the group's doses give together, so a repeat dose adds less. */
+  maxRelief: Positive,
+  /** Game minutes for a dose's relief to rise from nothing to its peak; 0 reaches the peak on taking. */
+  onsetGameMinutes: GameMinutes,
+  /** Game minutes it holds at its peak. */
+  peakGameMinutes: GameMinutes,
+  /** Game minutes it then takes to fall back to nothing; 0 stops at once. */
+  fadeGameMinutes: GameMinutes,
+});
+
 /** What one application does to a body wound (`DESIGN.md`, "Bleeding"). */
 const TreatmentSchema = pipe(
   strictObject({
@@ -488,6 +505,7 @@ const ItemSchema = strictObject({
   wearable: optional(WearableSchema),
   food: optional(FoodSchema),
   treatment: optional(TreatmentSchema),
+  analgesic: optional(AnalgesicSchema),
   tool: optional(ToolSchema),
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),
@@ -1537,6 +1555,58 @@ const BleedingTierSchema = strictObject({
   chance: perDamageKind(Fraction),
   /** Drips per second relative to the base rate, and droplet size relative to the base size. */
   drip: strictObject({ rate: Positive, size: Positive }),
+  /** Background pain while a wound bleeds at this tier. */
+  pain: NonNegative,
+});
+
+/** One pain tier, its start a share of the knockout threshold; the list runs mildest first (`DESIGN.md`, "Pain"). */
+const PainTierSchema = strictObject({
+  id: Id,
+  /** Where the tier starts, as a share of the knockout threshold. The first tier's start is where pain's effects begin. */
+  from: Positive,
+  /** The character's line when felt pain worsens into this tier; omitted tiers pass unspoken. */
+  notice: optional(Name),
+  /** How much colour one pulse of the seen cue drains, at its peak. */
+  desaturation: Fraction,
+  /** Real seconds between the seen cue's pulses. */
+  pulseIntervalRealSeconds: PositiveRealSeconds,
+});
+
+/** A pain effect: the multiplier grows by `perShare` for each share of the threshold above the first tier, up to `1 + max`. */
+const PainEffectSchema = strictObject({ perShare: NonNegative, max: NonNegative });
+
+const PainTuningSchema = strictObject({
+  /** Felt pain that knocks the player out; tiers and effects are shares of it. Pain itself has no upper bound. */
+  knockoutAt: Positive,
+  /** Acute pain per point of hit damage, by the hit's damage kind. */
+  perDamage: perDamageKind(NonNegative),
+  /** Multiplies a hit's acute pain and a region's background pain from its damage. */
+  regionWeight: strictObject(
+    Object.fromEntries(BODY_REGIONS.map((region) => [region, NonNegative])) as Record<
+      (typeof BODY_REGIONS)[number],
+      typeof NonNegative
+    >,
+  ),
+  /** Background pain per point of a region's damage. */
+  perRegionDamage: NonNegative,
+  /** Background pain from a wound at each infection stage. */
+  infection: strictObject({ early: NonNegative, advanced: NonNegative }),
+  /** Acute pain fades by this much per Sim second… */
+  acuteFadePerSimSecond: NonNegativeSimRate,
+  /** …plus this share of itself per Sim second, so it fades faster when high. */
+  acuteFadeSharePerSimSecond: NonNegativeSimRate,
+  aimSway: PainEffectSchema,
+  /** Slows reloading, racking, magazine work and swings; never treatment or crafting. */
+  handlingSlowdown: PainEffectSchema,
+  tiers: pipe(
+    array(PainTierSchema),
+    nonEmpty('needs at least one tier'),
+    check((tiers) => new Set(tiers.map(({ id }) => id)).size === tiers.length, 'pain tier ids must be unique'),
+    check(
+      (tiers) => tiers.every((tier, index) => index === 0 || tier.from > tiers[index - 1]!.from),
+      'each pain tier must start above the one before it',
+    ),
+  ),
 });
 
 const BodyTuningSchema = strictObject({
@@ -1588,6 +1658,7 @@ const BodyTuningSchema = strictObject({
       ),
     ),
   }),
+  pain: PainTuningSchema,
   /** Blood recovered per Sim second when no wound bleeds. */
   bloodRecoveryPerSimSecond: SimRate,
   /** Shock recovered per Sim second outside a knockout. */

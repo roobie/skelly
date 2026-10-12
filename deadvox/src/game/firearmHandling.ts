@@ -246,6 +246,7 @@ export class FirearmMechanics {
   ) => void;
   private readonly firearmsSkillLevel: () => number;
   private readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
+  private readonly handlingSlowdown: () => number;
   private readonly firearmsCombatTuning: FirearmsCombatTuning | undefined;
   private readonly firearmsSkillZeroOverrides = new Map<string, FirearmsSkillZeroHandling>();
   private readonly previousShotAt = new Map<number, number>();
@@ -264,6 +265,7 @@ export class FirearmMechanics {
       onCommittedShot = () => undefined,
       firearmsSkillLevel = () => 0,
       firearmsSkillZeroHandling,
+      handlingSlowdown = () => 1,
     }: {
       blockSize: number;
       isSolid?: SolidAt;
@@ -280,6 +282,8 @@ export class FirearmMechanics {
       ) => void;
       firearmsSkillLevel?: () => number;
       firearmsSkillZeroHandling?: () => FirearmsSkillZeroHandling;
+      /** What the body multiplies hand loading and racking times by (`DESIGN.md`, "Pain"). */
+      handlingSlowdown?: () => number;
     },
   ) {
     this.inventory = inventory;
@@ -293,6 +297,7 @@ export class FirearmMechanics {
     this.onSound = onSound;
     this.onCommittedShot = onCommittedShot;
     this.firearmsSkillLevel = firearmsSkillLevel;
+    this.handlingSlowdown = handlingSlowdown;
     this.firearmsCombatTuning = inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
     this.firearmsSkillZeroHandling =
       firearmsSkillZeroHandling ??
@@ -765,8 +770,7 @@ export class FirearmMechanics {
     this.queue.enqueueAction(
       LOAD_ACTION,
       `Load shell ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.tube!.capacity}`,
-      SHELL_LOAD_SECONDS *
-        firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
+      SHELL_LOAD_SECONDS * this.handlingFactor('reloadDuration'),
       { uid: gun.uid, ammoUid: ammo.uid },
     );
     this.onSound('shotgun_insert', undefined, time);
@@ -805,6 +809,14 @@ export class FirearmMechanics {
     return undefined;
   }
 
+  /** Skill's factor on a hand-handling time, lengthened by what the body does to the hands. */
+  private handlingFactor(kind: 'reloadDuration' | 'rackDuration'): number {
+    return (
+      firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning())[kind] *
+      this.handlingSlowdown()
+    );
+  }
+
   /** A change names its replacement; a removal names none. Each half it does takes its own time. */
   private enqueueMagazineAction(gun: Item, label: string, time: number, replacement?: Item): void {
     const seconds =
@@ -812,7 +824,7 @@ export class FirearmMechanics {
     this.queue.enqueueAction(
       MAGAZINE_ACTION,
       label,
-      seconds * firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
+      seconds * this.handlingFactor('reloadDuration'),
       replacement ? { uid: gun.uid, magazineUid: replacement.uid } : { uid: gun.uid },
     );
     this.onSound('magazine_change', undefined, time);
@@ -918,9 +930,7 @@ export class FirearmMechanics {
     const data = firearmHandlingFor(item, this.inventory.registry);
     const pump = this.isPump(item);
     const state: FirearmState = item.firearm ?? { chamber: 'empty' };
-    const duration =
-      actionCycleSeconds(data.action, 'hand') *
-      firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).rackDuration;
+    const duration = actionCycleSeconds(data.action, 'hand') * this.handlingFactor('rackDuration');
     state.cycle = { mode: 'hand', startedAt: time, elapsed: 0, duration, ejected: false };
     item.firearm = state;
     this.active.add(uid);

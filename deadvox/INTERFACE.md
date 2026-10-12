@@ -22,6 +22,8 @@ A new element names its kind at the view-model boundary and explains why a less 
 
 Cues scale with severity, fade quickly, avoid spam and use the character's own sounds. Pain and strain sounds are world noise events with tunable radii in content; BR judges their attention cost in play and decides whether to tune or disable them. A player-only refusal cue does not become simulation noise. The red damage vignette and tilt are the reference; BR judges replacement bodily cues in play before a HUD line retires. Needs and bodily states should become legible without requiring a number on screen. BR also chooses which sounds accompany each bodily state; the content examples are proposals, not approved recordings or a fixed cue list.
 
+Pain tiers drive diegetic bodily cues. Pain itself has no upper bound, so its number does not appear in a player-facing cue. Painkillers mask felt pain without healing the injury.
+
 ## Text
 
 The interface affords actions rather than writing procedures. Shipped text may be world-authored information, names/facts the character knows, or short first-person refusal/observation. Text naming keys, clicks, menus or procedures is development instruction and must stay out of the shipped profile.
@@ -30,11 +32,13 @@ Key labels come from bindings so rebinding cannot leave stale instructions. A fu
 
 ## Class 3: the character's voice
 
-Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `src/game/playerBleedingNotice.ts`, `PlayerBleedingNotice`.
+Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `src/game/tierNotice.ts`, `TierNotice`.
 
 ## HUD
 
 The HUD is meta information over the world; its options and master toggle govern only HUD-owned elements. World, bodily and held-item cues remain outside it. See `src/ui/hudOptions.ts`, `hudVisibility`.
+
+The optional stats readout is a tuning surface for viewing felt pain and its components during play. It is a development-style meta readout, not a bodily cue; this exception keeps the scale available for tuning without putting an unbounded number in player-facing cues.
 
 ## Combat and feedback
 

@@ -12,11 +12,13 @@ import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
+import type { BodyTuningDef } from '../core/schema.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
+import { PainCue } from '../game/painCue.ts';
 import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { BlastFlashes } from './blastFlashes.ts';
@@ -50,6 +52,8 @@ export interface PlayCameraFrame {
   readonly thirdPerson?: boolean;
   readonly thirdPersonOrbit?: { readonly yaw: number; readonly pitch: number };
   readonly sightImpaired: boolean;
+  /** Felt pain's tier, for the pain cue; undefined below the first. */
+  readonly painTier?: BodyTuningDef['pain']['tiers'][number] | undefined;
 }
 
 export interface PlayWorldFrame {
@@ -188,6 +192,7 @@ export const createPlayView = (
   scene.add(zombieMeshes.group);
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
   const damageFeedback = new DamageFeedback();
+  const painCue = new PainCue();
   let cameraRoll = 0;
   let thirdPerson = false;
   let meleeRecoilStrength = 0;
@@ -231,6 +236,13 @@ export const createPlayView = (
   }): void => {
     camera.position.set(target[0] * s, target[1] * s + (spectator ? 0 : stepOffset), target[2] * s);
     camera.rotation.copy(cameraRotation(spectator?.pitch ?? pitch, spectator?.yaw ?? yaw, cameraRoll));
+  };
+
+  /** Steps the hit and pain cues; a paused game starts no new pain pulse, and the one under way fades out. */
+  const stepBodyCues = (dt: number, paused: boolean, spectator: boolean, painTier: PlayCameraFrame['painTier']) => {
+    const pain = painCue.step(dt, paused ? undefined : painTier);
+    engine.mood?.setPainDesaturation(spectator ? 0 : pain.desaturation);
+    return damageFeedback.step(dt, pain.settle);
   };
 
   return {
@@ -310,7 +322,7 @@ export const createPlayView = (
       const gaitPhase = stridePhase * Math.PI * 2;
       playerMeshes.sync({ body, yaw, stepOffset: offset, gaitPhase, moving, inventory, thirdPerson });
       const [ex, ey, ez] = spectator?.position ?? eye;
-      const feedback = damageFeedback.step(dt);
+      const feedback = stepBodyCues(dt, paused, spectator !== undefined, frame.painTier);
       cameraRoll = spectator || thirdPerson ? 0 : feedback.roll;
       const target: Vec3 = [ex, ey, ez];
       if (thirdPerson) {

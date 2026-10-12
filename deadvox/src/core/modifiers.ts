@@ -12,6 +12,10 @@ const MODIFIED_EFFECTS = [
   'treatment.quality',
   /** Shock damage per point of localized hit damage. */
   'body.shockPerDamage',
+  /** Acute pain per point of localized hit damage; a tolerance trait or an opioid would lower it. */
+  'body.painPerDamage',
+  /** Felt pain at the knockout threshold, which every pain tier and effect is a share of. */
+  'body.painKnockoutAt',
   /** Blood recovered per simulation second when no wound bleeds. */
   'body.bloodRecoveryPerSimSecond',
   /** The chance that an infection treatment succeeds. */

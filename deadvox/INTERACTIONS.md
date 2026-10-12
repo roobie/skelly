@@ -19,7 +19,9 @@ Handling jobs use real time; long actions use game time and can run compressed. 
 
 Inventory Management improves ordinary transfers and derived gathering, unpacking and search costs, and awards practice after successful completion. Firearms Combat owns firearm readiness, reload, rack, magazine work and attachment fitting/removal. Until Gunsmithing owns attachment work, Firearms Combat improves that work and receives its practice. Inventory Management does not speed or train firearm work.
 
-Food and drink use their food capability; treatment uses its treatment capability on a wound it can help. The held item owns its primary action, while quickbar use remains a separate route. See `src/game/survival.ts`, `Survival.use` and `Survival.useFromQuickbar`.
+## Held consumables
+
+Food and drink use their food capability; painkillers use their analgesic capability, one pill per use; treatment uses its treatment capability on a wound it can help. The held item owns its primary action, while quickbar use remains a separate route. See `src/game/survival.ts`, `Survival.use` and `Survival.useFromQuickbar`.
 
 ## Crafting
 
