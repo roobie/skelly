@@ -7,8 +7,11 @@ import { describe, expect, it } from 'vitest';
 import { generateValid, realize } from '../src/core/generate.ts';
 import { applyPoint, compose, rotation, rotY, type Transform, translation, type Vec3 } from '../src/core/math.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent, type Pose } from '../src/core/pose.ts';
+import { amalgamManifest } from '../src/mob/amalgam.ts';
+import { amalgamTemplate } from '../src/mob/amalgamTemplate.ts';
 import {
-  CROWD_MASK_MAX_BONES,
+  CROWD_MASK_BITS_PER_TEXEL,
+  CROWD_VERTEX_DECLARATIONS,
   crowdMaskTexelIndex,
   crowdTexelIndex,
   crowdTextureLayout,
@@ -88,7 +91,7 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
 
   it("crowdTextureLayout keeps one actor's whole bone set (plus its severed-mask texel) on one texture row", () => {
     const layout = crowdTextureLayout(18, 5);
-    expect(layout.width).toBe(55); // 18 bones * 3 texels + 1 mask texel — see crowdMaskTexelIndex
+    expect(layout.width).toBe(55); // 18 bones * 3 texels + 1 mask word — see crowdMaskTexelIndex
     expect(layout.height).toBe(5);
     // Every texel for slot s, any bone, falls within row s: index (in texels, not floats) is s*width + x
     // for some 0 <= x < width — i.e. flooring texelIndex/width recovers the slot exactly.
@@ -109,40 +112,70 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
     }
   });
 
-  it('packSeveredMask/isSeveredInMask round-trip an arbitrary bone set through one float texel', () => {
-    const layout = crowdTextureLayout(18, 2);
+  it('keeps actor slots independent in the severed mask', () => {
+    const layout = crowdTextureLayout(CROWD_MASK_BITS_PER_TEXEL * 3, 2);
     const data = new Float32Array(layout.width * layout.height * 4);
-    packSeveredMask(data, layout, 0, [0, 5, 17]);
-    packSeveredMask(data, layout, 1, []); // a different slot's mask is independent
-    const mask0 = data[crowdMaskTexelIndex(layout, 0)]!;
-    const mask1 = data[crowdMaskTexelIndex(layout, 1)]!;
-    for (let bone = 0; bone < 18; bone++) {
-      expect(isSeveredInMask(mask0, bone)).toBe(bone === 0 || bone === 5 || bone === 17);
-      expect(isSeveredInMask(mask1, bone)).toBe(false);
+    const severed = [0, 5, 17, 24, 37, 59];
+    packSeveredMask(data, layout, 0, severed);
+    packSeveredMask(data, layout, 1, []);
+    for (let bone = 0; bone < layout.bonesPerSlot; bone++) {
+      expect(isSeveredInMask(data, layout, 0, bone)).toBe(severed.includes(bone));
+      expect(isSeveredInMask(data, layout, 1, bone)).toBe(false);
     }
   });
 
-  it('round-trips every bone up to CROWD_MASK_MAX_BONES - 1 individually (no cross-bit corruption)', () => {
-    const layout = crowdTextureLayout(CROWD_MASK_MAX_BONES, 1);
-    for (let bone = 0; bone < CROWD_MASK_MAX_BONES; bone++) {
+  it('round-trips each bit across multiple mask words without cross-bit corruption', () => {
+    const bonesPerSlot = CROWD_MASK_BITS_PER_TEXEL * 3;
+    const layout = crowdTextureLayout(bonesPerSlot, 1);
+    for (let bone = 0; bone < bonesPerSlot; bone++) {
       const data = new Float32Array(layout.width * layout.height * 4);
       packSeveredMask(data, layout, 0, [bone]);
-      const mask = data[crowdMaskTexelIndex(layout, 0)]!;
-      for (let check = 0; check < CROWD_MASK_MAX_BONES; check++) {
-        expect(isSeveredInMask(mask, check)).toBe(check === bone);
+      for (let check = 0; check < bonesPerSlot; check++) {
+        expect(isSeveredInMask(data, layout, 0, check)).toBe(check === bone);
       }
     }
   });
 
-  it('drops a bone index at or beyond CROWD_MASK_MAX_BONES rather than corrupting the mask', () => {
-    const layout = crowdTextureLayout(CROWD_MASK_MAX_BONES + 4, 1);
-    const data = new Float32Array(layout.width * layout.height * 4);
-    packSeveredMask(data, layout, 0, [2, CROWD_MASK_MAX_BONES, CROWD_MASK_MAX_BONES + 1]);
-    const mask = data[crowdMaskTexelIndex(layout, 0)]!;
-    expect(isSeveredInMask(mask, 2)).toBe(true);
-    // The out-of-range indices must not have wrapped or corrupted the low bits.
-    for (let bone = 0; bone < CROWD_MASK_MAX_BONES; bone++) {
-      expect(isSeveredInMask(mask, bone)).toBe(bone === 2);
+  it('keeps stump-gore bits for high-index severable members in a generated amalgam', () => {
+    let amalgam: ReturnType<typeof generateValid> | undefined;
+    for (let seed = 1; seed <= 8 && !amalgam; seed++) {
+      const candidate = generateValid(amalgamTemplate, seed);
+      if (!candidate) {
+        continue;
+      }
+      const { body: candidateBody, voxels } = candidate.realized;
+      const { bones: candidateBones } = candidateBody;
+      if (
+        amalgamManifest(candidateBody, voxels).parts.some(
+          ({ rootBone, severable }) =>
+            severable && candidateBones.findIndex(({ id }) => id === rootBone) >= CROWD_MASK_BITS_PER_TEXEL,
+        )
+      ) {
+        amalgam = candidate;
+      }
     }
+    expect(amalgam).toBeDefined();
+    const { body: amalgamBody, voxels } = amalgam!.realized;
+    const { bones: amalgamBones } = amalgamBody;
+    const parts = amalgamManifest(amalgamBody, voxels).parts.filter(({ severable }) => severable);
+    const rootIndices = parts.map(({ rootBone }) => amalgamBones.findIndex(({ id }) => id === rootBone));
+    const highRootIndices = rootIndices.filter((index) => index >= CROWD_MASK_BITS_PER_TEXEL);
+    expect(highRootIndices.length).toBeGreaterThan(0);
+
+    const layout = crowdTextureLayout(amalgamBones.length, 1);
+    const data = new Float32Array(layout.width * layout.height * 4);
+    for (const index of rootIndices) {
+      packSeveredMask(data, layout, 0, [index]);
+      expect(isSeveredInMask(data, layout, 0, index)).toBe(true);
+    }
+    expect(CROWD_VERTEX_DECLARATIONS).toContain(`int word = boneIndex / ${CROWD_MASK_BITS_PER_TEXEL};`);
+    expect(CROWD_VERTEX_DECLARATIONS).toContain(`int bit = boneIndex % ${CROWD_MASK_BITS_PER_TEXEL};`);
+  });
+
+  it('rejects severed bone indices outside the allocated crowd slot', () => {
+    const layout = crowdTextureLayout(4, 1);
+    const data = new Float32Array(layout.width * layout.height * 4);
+    expect(() => packSeveredMask(data, layout, 0, [-1])).toThrow(RangeError);
+    expect(() => packSeveredMask(data, layout, 0, [layout.bonesPerSlot])).toThrow(RangeError);
   });
 });

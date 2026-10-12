@@ -29,9 +29,9 @@ interface Candidate {
   readonly definition: PartDef;
 }
 
-const standaloneCandidate = (id: string): Candidate => {
+const standaloneCandidate = (id: string, domain: Domain): Candidate => {
   const { family, params } = attachmentInstanceForId(id);
-  const familyDef = FAMILIES[family] ?? ATTACHMENT_FAMILIES[family];
+  const familyDef = domain.families[family] ?? FAMILIES[family] ?? ATTACHMENT_FAMILIES[family];
   if (!familyDef) {
     throw new Error(`No part family for attachment ${id}`);
   }
@@ -172,7 +172,7 @@ export const attachmentCompatibility = (
   const base = resolve(bareFirearm, domain);
   const candidatesByMount = new Map<string, Candidate[]>();
   for (const id of ATTACHMENT_IDS) {
-    const candidate = standaloneCandidate(id);
+    const candidate = standaloneCandidate(id, domain);
     const mount = candidate.definition.ports.find(({ id: portId }) => portId === 'base')?.mount;
     if (mount) {
       const candidates = candidatesByMount.get(mount) ?? [];
@@ -398,7 +398,7 @@ export const attachmentCompatibilityPairs = (
   const singles = Object.entries(compatibility)
     .flatMap(([slotId, ids]) => ids.map((id) => [slotId, id] as AttachmentCompatibilityChoice))
     .sort(compareChoices);
-  const candidates = new Map(ATTACHMENT_IDS.map((id) => [id, standaloneCandidate(id)]));
+  const candidates = new Map(ATTACHMENT_IDS.map((id) => [id, standaloneCandidate(id, domain)]));
   const placementCache = new Map<string, Transform>();
   const placementFor = (
     choice: AttachmentCompatibilityChoice,

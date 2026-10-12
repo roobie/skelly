@@ -1,6 +1,7 @@
 {
   "format": 1,
   "template": "pump-shotgun",
+  "calibre": "12-gauge-00-buck",
   "assembly": {
     "name": "archetype-pump-shotgun",
     "description": "Hunting-cabin 12-gauge pump of no particular make: mid-length barrel, walnut sporting stock and forend, integral four-shell tube, hand-racked action. Clearances derive from 12-gauge-00-buck source data; not manufacturer dimensions.",
