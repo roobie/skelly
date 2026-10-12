@@ -2453,29 +2453,16 @@ export const startPlay = (
     if (inventory.hands[hand] !== item) {
       return;
     }
-    // A ladder can take the hand between a release and the tick its throw lands on, live and in a replay alike.
-    const ladderRefusal = session.ladderHold.refusal(hand);
-    if (ladderRefusal) {
-      showRefusal(ladderRefusal, sim.time);
-      return;
-    }
     const target = itemLandingTarget(distanceMetres);
     if (!target) {
       showRefusal("Can't find a place for it to land", sim.time);
       return;
     }
-    const placement = inventory.planAdd(item, target);
-    if (!placement.ok) {
-      showRefusal(`Can't throw it there: ${placement.reason}`, sim.time);
-      return;
-    }
-    const location = inventory.locate(item);
-    if (location?.kind !== 'hand' || location.side !== hand || !inventory.consume(item)) {
-      return;
-    }
-    if (!inventory.add(item, target)) {
-      inventory.add(item, { kind: 'hand', side: location.side });
-      showRefusal("Couldn't land the item there", sim.time);
+    const landed = session.throwCharge.land(item, hand, target);
+    if (!landed.landed) {
+      if (landed.reason) {
+        showRefusal(landed.reason, sim.time);
+      }
       return;
     }
     const throwOffset: Vec3 = throwingStance

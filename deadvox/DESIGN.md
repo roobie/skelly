@@ -356,8 +356,8 @@ hordes stay as they are, and winning should still feel like an achievement.
   ladder can take the hand in between. `LadderHold` admits every one of these
   (`src/core/ladders.ts`, `refusal`, `freeHand` and `moveRefusal`, which
   `Inventory.plan` asks through `handRefusal`), and the session owns the throw
-  charge so a replay holds still alike (`src/game/throwCharge.ts`,
-  `refuseForLadder`; `src/game/play.ts`, `throwHeldItem`).
+  from charge to landing, so a replay holds still alike and lands through the
+  same admission (`src/game/throwCharge.ts`, `refuseForLadder` and `land`).
 - **The top.** A climb ends with the feet level with the top piece, where moving
   toward the ladder carries the climber off onto what it serves. So a ladder up a
   roof edge reaches through the roof's layer, and the climber walks off at roof
@@ -1289,7 +1289,7 @@ baked into chunks; voxel sunlight can then join AO in vertex colour. See
 
 ## Held-item throws
 
-A throw preserves the held item's identity and state through flight and landing, so fitted parts, loaded ammunition and a lit glowstick remain the same item rather than a throw-specific copy. Item mass limits its range through arm speed and energy. The flight presentation uses the ground item's look, keeping firearm attachments and light markers visible; the handling HUD makes force and the release minimum legible. See `src/core/itemThrow.ts`, `throwDistanceForItem` and `traceItemLanding`, `src/render/itemThrows.ts`, `ItemThrows.spawn`, `src/ui/hud.ts`, `handlingViewModel`, and `src/game/play.ts`, `throwHeldItem`.
+A throw preserves the held item's identity and state through flight and landing, so fitted parts, loaded ammunition and a lit glowstick remain the same item rather than a throw-specific copy. Item mass limits its range through arm speed and energy. The flight presentation uses the ground item's look, keeping firearm attachments and light markers visible; the handling HUD makes force and the release minimum legible. See `src/core/itemThrow.ts`, `throwDistanceForItem` and `traceItemLanding`, `src/render/itemThrows.ts`, `ItemThrows.spawn`, `src/ui/hud.ts`, `handlingViewModel`, `src/game/throwCharge.ts`, `ThrowCharge.land`, and `src/game/play.ts`, `throwHeldItem`.
 
 Mass limits range so a light item does not fly as far as a heavy one; when #368 adds atmospheric drag, it can further limit light items without replacing that mass-based limit. A throw itself adds no hit damage or landing lure; a grenade's blast is its own rule ("Hand grenade").
 

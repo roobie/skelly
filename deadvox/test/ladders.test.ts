@@ -15,6 +15,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { pieceSize } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { type MoveIntent, PLAYER } from '../src/game/player.ts';
+import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -369,6 +370,33 @@ describe('one hand on a ladder', () => {
       runtime.advance(30);
       expect(body.pos[1]).toBeGreaterThan(height);
     }
+  });
+
+  it('keeps a released throw in its hand when a ladder takes that hand before the next player tick lands it', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    const { session } = runtime;
+    const { inventory, throwCharge, body } = session;
+    const kept = holdInHand(runtime, oneHandedFoodType, offSide(inventory.character));
+    runtime.set({ ...IDLE, forward: 1, walk: true });
+    runtime.advance(climbFrames(1));
+    expect(throwCharge.begin(session.sim.time, false).kind).toBe('charging');
+    const released = throwCharge.release(session.sim.time);
+    if (!released) {
+      throw new Error('The throw fixture released nothing');
+    }
+    // Play lands a released throw on the next player tick, as its live action and a replay's recorded one both do.
+    const nextTick = new PlayerTickActions();
+    const landings: unknown[] = [];
+    nextTick.enqueue(() =>
+      applyToHeldItem(inventory.hands, released.hand, released.itemUid, (item) => {
+        landings.push(throwCharge.land(item, released.hand, { kind: 'pile', pos: body.pos.map(Math.floor) as Vec3 }));
+      }),
+    );
+    expect(session.grabLadder(session.entities.at(...LADDER_FOOT)!)).toBeUndefined();
+    expect(session.ladderHold.hand()).toBe(released.hand);
+    nextTick.applyAtNextTick();
+    expect(landings).toEqual([{ landed: false, reason: session.ladderHold.refusal(released.hand) }]);
+    expect(inventory.hands[released.hand]).toBe(kept);
   });
 
   it('refuses moves into or out of the hand on the ladder, which keeps its item', () => {
