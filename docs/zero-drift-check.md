@@ -41,7 +41,8 @@ still breaks its cues. Bold lead-ins serve as named anchors because design decis
 use those labels without making each decision a heading. Heading-link fragments
 use the full title's GitHub slug, including duplicate suffixes, rather than that
 relaxed name comparison; see `tools/zero-drift-check.mjs`, `anchorsFor` and
-`githubSlug`. Metadata and fenced examples do not create heading anchors.
+`githubSlug`. Code-span text stays literal so emphasis and HTML stripping cannot
+erase identifiers from a slug. Metadata and fenced examples do not create heading anchors.
 
 Names in non-Markdown targets are literal text rather than normalized headings:
 normalization could silently turn a removed test name into a different test. Cached

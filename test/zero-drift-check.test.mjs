@@ -253,6 +253,7 @@ describe('zero-drift section cues', () => {
   it('validates link slugs with punctuation removal, Unicode and duplicate suffixes', () => {
     assert.equal(githubSlug('API: `état` & ownership!'), 'api-état--ownership');
     assert.equal(githubSlug('A **bold** _label_ with snake_case'), 'a-bold-label-with-snake_case');
+    assert.equal(githubSlug('API: `_value_` and `<Thing>`'), 'api-_value_-and-thing');
     for (const anchor of ['35-api-ownership--details', 'setext-topic', 'duplicate', 'duplicate-1']) {
       assert.deepEqual(sections(link('target', `docs/anchors.md#${anchor}`)), []);
     }

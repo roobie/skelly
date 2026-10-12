@@ -287,13 +287,25 @@ function sourceFor(target, tree) {
   return tree.sources.get(target);
 }
 
+const CODE_TICKS = /^`+/;
+
 function plainHeading(text) {
-  return text
+  const literals = [];
+  let marker = 'headingLiteral';
+  while (text.includes(marker)) {
+    marker += 'X';
+  }
+  const protectedText = text.replace(INLINE_CODE_SPAN, (span) => {
+    const width = span.match(CODE_TICKS)[0].length;
+    literals.push(span.slice(width, -width));
+    return `${marker}${literals.length - 1}${marker}`;
+  });
+  return protectedText
     .replace(/<[^>]*>/g, '')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/\*+([^*]+)\*+/g, '$1')
     .replace(/(?<!\w)_+([^_]+)_+(?!\w)/g, '$1')
-    .replace(/`/g, '');
+    .replace(new RegExp(`${marker}(\\d+)${marker}`, 'g'), (_, index) => literals[Number(index)]);
 }
 
 function namedAnchor(text) {
