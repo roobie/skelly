@@ -101,9 +101,11 @@ performance changes. See
 [CHALLENGES.md](CHALLENGES.md) for active performance constraints.
 
 Half-metre blocks keep doorways, furniture and interiors at human scale, and
-make stairs walkable rather than jump-sized. Frame cost is part of that choice,
-so tune view distance against measured play rather than duplicating current
-settings here. See `BLOCK_SIZE` in `src/core/scale.ts`.
+make stairs walkable rather than jump-sized. The finer quarter-metre scale did
+not improve the look enough to justify its higher chunk cost and re-authoring
+building templates. Frame cost is part of the chosen scale, so tune view
+distance against measured play rather than duplicating current settings here.
+See `BLOCK_SIZE` in `src/core/scale.ts`.
 
 Crouching lowers the collision body as well as the eye, so a crouched player
 fits openings that reject a standing body. Standing up is refused when the body
@@ -321,9 +323,10 @@ Inventory is diegetic except during long actions. To use an item, wield it and
 then activate its ordinary capability; unpacking ammunition follows the same
 rule. The inventory screen must not provide a shortcut that bypasses handling.
 Every handling action gets visible hand feedback, without creating a second
-action owner. Handling animation follows the simulated job's elapsed time and
-duration, so compression, cancellation, and interruption cannot show work the
-simulation did not perform. See `rummageFrame` in
+action owner. The longer-term direction is more specific handling animations.
+Handling animation follows the simulated job's elapsed time and duration, so
+compression, cancellation, and interruption cannot show work the simulation
+did not perform. See `rummageFrame` in
 `src/render/rummagePose.ts` and the handling-pose readers in `src/render`.
 
 The character's immutable dominant-hand identity determines which hand quick
@@ -380,10 +383,11 @@ storage.
 
 Show a name, stack count, condition, and pocket handling time at a glance;
 inspection exposes exact weight, condition, qualities, and times. Grid labels
-should use the available cell space while remaining distinguishable; full names
-remain available in inspection and held/worn slots. The glyph-width prediction
-is conservative, not browser layout: when covered fonts or grid text size
-changes, refresh it with `tools/grid-name-glyph-widths.mjs`. See
+avoid ellipses and early word breaks because they spend cell space that could
+show more distinguishing letters while scanning. Full names remain available
+in inspection and held/worn slots. The glyph-width prediction is conservative,
+not browser layout: when covered fonts or grid text size changes, refresh it
+with `tools/grid-name-glyph-widths.mjs`. See
 `visibleGridName` in `src/core/inventoryGridName.ts`. Filters, search, and item
 details work by hover or focus.
 
@@ -533,7 +537,10 @@ wound severity. See `Body.treat` in `src/core/body.ts` and `bodyWound` in
   based block without changing movement pace; successful blocks and landed hits
   train melee combat. Weapon classes have different tradeoffs: blunt weapons are
   slower and more consistent, edged weapons sever more readily, and piercing
-  weapons are faster with greater damage variance. Damage spread consumes its
+  weapons are faster with greater damage variance. Class defaults and per-weapon
+  overrides in `src/content/base/items-tools.jsonnet` remain provisional tuning
+  pending BR's feel comparisons.
+  Damage spread consumes its
   random draw even when tuned to zero, so later dismemberment rolls stay stable.
   Zero stamina refuses a swing, and saved recovery time survives Continue. See
   `PlayerCombat.resolveContact` in `src/core/playerCombat.ts` and
@@ -584,9 +591,9 @@ wound severity. See `Body.treat` in `src/core/body.ts` and `bodyWound` in
   in `src/core/schema.ts` requires a complete in-range shape when present.
   A per-gun shape replaces the shared skill-zero endpoints as a whole; absent
   factors use the global firearms-combat endpoints. Keeping the override
-  complete avoids mixing fields from different guns. See
-  `FirearmMechanics.skillZeroHandlingFor` in `src/game/firearmHandling.ts`
-  selects the effective factors, and `firearmsSkillEffects` in
+  complete avoids mixing fields from different guns. `FirearmMechanics.skillZeroHandlingFor`
+  in `src/game/firearmHandling.ts` selects the effective factors, and
+  `firearmsSkillEffects` in
   `src/core/firearmsSkill.ts` interpolates them toward
   the same expert endpoint. `src/debug/index.ts` renders runtime tuning controls
   for the shared and per-firearm skill-zero settings.
@@ -1212,8 +1219,8 @@ decoration.
 - **Heartbeat:** The heartbeat becomes audible as stamina falls and grows faster
   and louder toward exhaustion. It is a presentation cue, not a noise event, so
   shamblers do not hear it and it does not alter simulation or save identity.
-  Fear/danger and low-health responses remain open questions for BR; #193 is
-  closed and is not a trigger for that decision. See `heartbeatForStamina` in
+  Fear/danger and low-health responses remain open questions for BR. See
+  `heartbeatForStamina` in
   `src/game/audioPresentation.ts` and `GameAudio.updateHeartbeat` in
   `src/game/audio.ts`.
 - **Ambience by time and place:** wind, rain, a building settling. The
