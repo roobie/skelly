@@ -68,7 +68,7 @@ const pickStyle = (rand: () => number, weights: Record<StepStyle, number>): Step
   return 'normal';
 };
 
-// Perf (mobgen/CHALLENGES.md §1): this was the single hottest function on the posing path — every
+// Perf: this was the single hottest function on the posing path — every
 // walkPose/advanceClock call queries a handful of step indices (this step, its neighbours, and each
 // footfall's own peak search), each of which used to re-run the mulberry32 draws, styleWeights object
 // and style pick from scratch, every frame, for every actor. A step's plan only depends on (seed,

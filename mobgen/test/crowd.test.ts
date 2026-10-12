@@ -1,4 +1,4 @@
-// Pure-math tests for src/mob/crowd.ts (mobgen/CHALLENGES.md §1) — the shared crowd bone-matrix packing
+// Pure-math tests for src/mob/crowd.ts — the shared crowd bone-matrix packing
 // deadvox's own zombie renderer imports directly (via the `@mobgen/` alias), independent of mobgen's
 // three.js-touching viewer layer. See test/stressActors.test.ts for the three.js-side integration
 // (buildCrowdRender) that still lives in mobgen/src/viewer.
@@ -33,7 +33,7 @@ const somePose = (): Pose => ({
   ),
 });
 
-describe('packCrowdBoneMatrix (mobgen/CHALLENGES.md §1: the pure part of crowd mode)', () => {
+describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
   it('unpacked matrix per bone, applied to a point, equals placement ∘ boneTransformsInto applied to the same point', () => {
     const parentIndex = indexBonesByParent(bones);
     const scratch = allocateBoneTransforms(bones.length);

@@ -8,6 +8,7 @@ import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts'
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
@@ -567,7 +568,7 @@ const configureRestoreFailure = (streamer: Engine['streamer'], saveController: S
 };
 
 const autosaveTuning = (registry: Engine['registry']) => {
-  const autosave = registry.saves.get('autosave');
+  const autosave = registry.saves.get(CORE_CONTENT_IDS.autosave);
   if (!autosave) {
     throw new Error('Missing autosave tuning');
   }
@@ -602,7 +603,7 @@ export const startPlay = (
   );
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
-  const playerSenseTuning = registry.senses.get('player');
+  const playerSenseTuning = registry.senses.get(CORE_CONTENT_IDS.player);
   if (!playerSenseTuning) {
     throw new Error('Missing player sense tuning');
   }
@@ -3009,7 +3010,7 @@ export const startPlay = (
     if (selected.kind !== 'firearm') {
       return;
     }
-    const tuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+    const tuning = registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
     if (!tuning) {
       throw new Error('Missing firearms-combat pose tuning');
     }

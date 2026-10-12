@@ -1,4 +1,5 @@
 import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../core/character.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { attachmentIdFor, firearmSlotIds, SLING_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
@@ -27,7 +28,7 @@ const available = (inventory: Inventory, item: Item): boolean => {
 const rootTarget = (inventory: Inventory, location: Location): Target => inventory.targetForLocation(location);
 
 // Firearms Combat governs attachment work until Gunsmithing exists; this is the one place that names the skill.
-export const ATTACHMENT_WORK_SKILL = 'firearms_combat';
+export const ATTACHMENT_WORK_SKILL = CORE_CONTENT_IDS.firearmsCombat;
 
 export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'action' && job.jobType === ATTACHMENT_ACTION;
 

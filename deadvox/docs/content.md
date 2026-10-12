@@ -16,6 +16,7 @@ read_if:
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
   - you author or change Deadvox content sources or their build pipeline
+  - "you add code that reads a content row by a fixed id"
 ---
 
 # Content sections and recipes
@@ -33,6 +34,16 @@ entry. Blocks keep explicit numeric IDs and reserved AIR handling. Model/sound
 origin tables remain explicit. File order, overrides and diagnostic order remain
 unchanged. See `npm run validate` for the exhaustive current section/count list,
 not a second hand-maintained section table here.
+
+## Core-pack integrity
+
+When validating a core or modded pack, reject removal of rows that fixed-ID game
+readers depend on; otherwise missing tuning can surface later as startup or
+gameplay failures. Keep the check at the pack-validation boundary:
+`requiredContentIssues` in `src/core/content.ts` is applied by
+`src/cli/validate.ts`, `validate`, rather than making `buildRegistry` itself
+reject partial registries, because focused tests and tools also need to
+construct them.
 
 ## Weathering profiles
 

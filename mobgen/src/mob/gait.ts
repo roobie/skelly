@@ -1,5 +1,5 @@
 // The humanoid walk cycle: a pure function of a distance-driven clock and speed. The clock advances with
-// distance travelled (CHALLENGES.md §4): callers do `clock = advanceClock(clock, distanceMoved, basis)`
+// distance travelled: callers do `clock = advanceClock(clock, distanceMoved, basis)`
 // (basis = { params, geomL, speed, seed }), so a speed change never makes the feet jump or slide.
 //
 // Sign convention (documented once, used throughout): a hanging limb
@@ -614,7 +614,7 @@ interface LegResult {
   >;
 }
 
-// Perf (mobgen/CHALLENGES.md §1): footfallPeak(j) (below, inside legAndFootRotations) doesn't depend on
+// Perf: footfallPeak(j) (below, inside legAndFootRotations) doesn't depend on
 // `progress` at all — only on (this actor, speed, j) — but walkPose calls it (twice: j = k-1 and j = k)
 // on every single frame, each call scanning stanceFootTarget/requiredDrop FOOTFALL_PEAK_SAMPLES+1 times
 // per side. That means the exact same ~52-sample search reran, unchanged, on every frame of a step that

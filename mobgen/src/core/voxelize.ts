@@ -29,7 +29,7 @@ const NEIGHBOR_OFFSETS: readonly (readonly [number, number, number])[] = [
 
 export interface Voxels {
   readonly size: number;
-  /** Grid-index of local (0, 0, 0); voxel centres follow mobgen/PROJECT.md, "Conventions". */
+  /** Grid-index of local (0, 0, 0); the origin aligns voxel centres with local space. */
   readonly origin: readonly [number, number, number];
   readonly dims: readonly [number, number, number];
   /** Bone index + 1 (index into Body.bones); 0 = empty. */

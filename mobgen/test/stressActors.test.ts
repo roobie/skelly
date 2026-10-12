@@ -1,4 +1,4 @@
-// Targeted checks for src/viewer/stressActors.ts's allocation-light posing (mobgen/CHALLENGES.md §1).
+// Targeted checks for src/viewer/stressActors.ts's allocation-light posing.
 // The per-bone maths itself (boneTransformsInto, and the closed-form local transform buildSkinnedActor
 // inlines) is already pinned against core/pose.ts's boneTransforms in test/pose.test.ts and
 // test/poseEquivalence.test.ts; what's specific to this file is (1) that buildBonesActor's Mesh matrices

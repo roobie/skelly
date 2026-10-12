@@ -24,7 +24,7 @@ How work moves from spec to merge, what done means, and the working rules are in
 
 ### Static analysis
 
-Strict TypeScript, Biome and Knip checks catch errors early. TypeScript settings live in each subproject's `tsconfig.json`; repository-wide lint and dead-code checks are configured in [`biome.jsonc`](biome.jsonc) and [`knip.jsonc`](knip.jsonc).
+Static analysis catches type, style and unused-code defects early; see each subproject's `tsconfig.json`, [`biome.jsonc`](biome.jsonc) and [`knip.jsonc`](knip.jsonc).
 
 ### Maintainability
 
@@ -38,11 +38,7 @@ Reviews that find an amendment trail return FIX. Obsolete or superseded ADRs are
 
 ## Run and check
 
-Install the dependencies for repository-wide checks with `npm run setup`; setup fetches and verifies the pinned go-jsonnet binary used by the shared content compiler. Its release version and date and the supported archive hashes are pinned in `tools/jsonnet/runtime.json`, `version`, `released` and `sha256`.
-
-```sh
-npm run setup
-```
+Install repository-wide check dependencies and the pinned Jsonnet compiler with `npm run setup`; the compiler pin lives in `tools/jsonnet/runtime.json`.
 
 Run a subproject's dev server from the repository root:
 
@@ -52,4 +48,4 @@ npm run dev --prefix deadvox
 npm run dev --prefix mobgen
 ```
 
-The root checks are `npm run ci` and `npm run test:site`. Subproject checks are listed in [`docs/PROCESS.md`](docs/PROCESS.md).
+The root checks are `npm run ci` and `npm run test:site`. Use each subproject's `package.json` scripts for its checks; CI runs the workflows under `.github/workflows/`.
