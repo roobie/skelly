@@ -91,8 +91,13 @@ place the authorities gave up on.
 
 ## Performance and scale
 
-Target mid-range laptops. Measure rendering, simulation and workers together:
-work in one must not make the playable frame unaffordable in another. See
+Use a portable reference-laptop class for performance acceptance: integrated
+graphics share memory bandwidth with the CPU, so triangle count, overdraw and
+draw calls compete with simulation; workers also compete with the main thread,
+so keep their number small. Compare the same workloads on that reference class,
+measuring rendering, simulation and workers together rather than relying on the
+execution host. Compare the forest workload there when evaluating foliage
+performance changes. See
 [CHALLENGES.md](CHALLENGES.md) for active performance constraints.
 
 Half-metre blocks keep doorways, furniture and interiors at human scale, and
@@ -163,11 +168,11 @@ real time and offer Continue or Stop without losing completed progress. Debug
 compression is not stopped by bleeding. See `Simulation.checkInterruptions` in
 `src/core/sim.ts` and `LongActions.syncInterruption` in `src/core/longAction.ts`.
 
-Sleep ends when fatigue is recovered or when an alarm-bearing item reaches its
-chosen wake hour. At the alarm, fatigue stays recovered and sleep continues;
-without a clock, the player cannot choose when to wake. The wake choice is
-saved, and ordinary interruptions still wake the player. See
-`LongActions.wakeGameHour` and `RestAction.wakeAt`.
+Without an alarm-bearing item, sleep ends when fatigue reaches zero. With an
+alarm, sleep continues after fatigue reaches zero and ends when the chosen wake
+hour arrives. The alarm overrides fatigue-based completion, and ordinary
+interruptions still wake the sleeper. The wake choice is saved. See
+`LongActions.advanceJob`, `LongActions.wakeGameHour` and `RestAction.wakeAt`.
 
 Moving items, reloading, and wielding are short handling actions: they take
 Real time while the world continues at normal pace. See [Items](#items-and-inventory).
@@ -376,9 +381,11 @@ storage.
 Show a name, stack count, condition, and pocket handling time at a glance;
 inspection exposes exact weight, condition, qualities, and times. Grid labels
 should use the available cell space while remaining distinguishable; full names
-remain available in inspection and held/worn slots. Validation checks the
-labels players actually see. Filters, search, and item details work by hover or
-focus.
+remain available in inspection and held/worn slots. The glyph-width prediction
+is conservative, not browser layout: when covered fonts or grid text size
+changes, refresh it with `tools/grid-name-glyph-widths.mjs`. See
+`visibleGridName` in `src/core/inventoryGridName.ts`. Filters, search, and item
+details work by hover or focus.
 
 Dropping a whole item onto an occupied slot swaps only when each item fits in
 the other's exact place. Partial-stack moves retain the ordinary refusal so
@@ -409,12 +416,11 @@ item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
 - **Licences.** Asset files (models, sounds, textures) are made for the game,
   or are CC0 1.0, CC BY 3.0 or CC BY 4.0. Other licences, such as share-alike
   or non-commercial ones, aren't accepted.
-- **The asset manifest.** Each pack has one (`assets/manifest.json`), listing
-  every source the pack's files came from: its title, page, author, licence,
-  the file downloaded, the pack's files made from it, and what we changed. The
-  validator refuses a licence we don't accept, a CC BY source with no author or
-  link, a file listed twice, a file under `assets/` the manifest doesn't list,
-  and a listed file that's missing.
+- **The asset manifest.** Each pack records the source, author, licence and
+  changes for its assets. Validation rejects disallowed licences, missing CC BY
+  attribution, duplicate or unlisted files, and missing files. The manifest and
+  its checks are owned by `src/core/assets.ts`, `MANIFEST_PATH`,
+  `assetFileIssues` and `validateManifest`.
 - **The credits screen** lists every source, CC0 included: the title linked to
   its page, the author, the licence linked to its text, and what we changed. It
   opens from the start and pause card, and it's how we give the credit CC BY
@@ -439,8 +445,11 @@ books and schematics teach recipes beyond the simple recipes known at the start.
 
 ## Character
 
-The avatar reflects equipped gear. Third person remains a debug inspection aid,
-not a player-facing camera. See `PlayerMeshes` in `src/render/playerFigure.ts`.
+The avatar reflects equipped gear. Long-term character customization may go
+deeper, including augmentations, armour and clothing; reflecting equipped gear
+is only its presentation direction. Third person remains a debug inspection
+aid, not a player-facing camera. See `PlayerMeshes` in
+`src/render/playerFigure.ts`.
 
 Needs are calories, hydration, fatigue, stamina, and body temperature; rates use
 game time. Body temperature is not simulated; #366 is the trigger for deciding
@@ -448,12 +457,15 @@ how the heat property serves it.
 
 Fatigue is unbounded sleep debt, not a percentage: a person can remain awake
 long after becoming tired. Sleep quality scales recovery, while resting clears
-debt more slowly than sleep. Sleep's main value is recovery: health, regional
-damage, and blood recover faster during sleep, but only when nutrition and
-hydration permit recovery. An injured region does not heal while bleeding or
-infected, so penalties fade without healing through an active wound. Keep the
-recovery gate shared across these systems; see `healthRecovers` in
-`src/core/needs.ts` and `Body.recoverRegionDamage` in `src/core/body.ts`.
+debt more slowly than sleep. Sleep's main value is recovery: health and
+regional damage recover faster while sleeping. Health recovery requires
+adequate nutrition and hydration, and is limited by a state-specific fatigue
+ceiling; regional damage also requires that the region is not bleeding or
+infected. These gates are owned by `healthRecovers` in `src/core/needs.ts` and
+`Body.recoverRegionDamage` in `src/core/body.ts`. Blood recovery is separate:
+`Body.advanceBlood` in `src/core/body.ts` permits it only when no wound is
+bleeding. For #393, moving recovery tuning to a content predicate remains an
+unresolved direction; its expression format is not chosen.
 
 Treatment uses a wielded item. The default action treats the worst bleeding
 first, then the most damaged region, because blood loss is what kills soonest.
@@ -475,9 +487,10 @@ in `src/core/inventory.ts`.
 Bleeding tiers are content-owned: tuning a tier changes content, not mechanism.
 Wound severity moves continuously within tier bands so closure and dressing
 reduce it gradually rather than in jumps. Each hit makes one deterministic tier
-roll using damage kind and region; a new hit cannot worsen an existing wound by
-replacing it with a milder one. Arteries remain possible in the torso, but less
-likely. See `BleedingTierSchema` in `src/core/schema.ts` and
+roll using damage kind and region; a stronger result replaces a milder tier,
+never the reverse. A weaker hit cannot reduce existing bleeding, so hit order
+cannot heal. Arteries remain possible in the torso, but less likely. See
+`BleedingTierSchema` in `src/core/schema.ts` and `bleedingWound` plus
 `Body.bleedingTierForHit` in `src/core/body.ts`.
 
 Attacks author their move and possible body regions. Worn armour and clothing
@@ -487,8 +500,9 @@ take wear but do not change damage, damage kind, or bleeding chance. See
 
 Each bleeding wound loses blood and wound losses add together. Blood recovers
 only when no wound is bleeding; no blood means death, with no faint beforehand.
-A bleeding wound closes only when needs allow recovery and the wound is not
-infected. Natural closure is deliberately slow, so most significant wounds need
+Fainting would consume the player's remaining chance to dress a wound when
+nobody else can help. A bleeding wound closes only when needs allow recovery
+and the wound is not infected. Natural closure is deliberately slow, so most significant wounds need
 treatment. These rules make dressing the wound urgent while preserving a chance
 for minor wounds to close. See `Body.advance` in `src/core/body.ts`.
 
@@ -547,14 +561,15 @@ wound severity. See `Body.treat` in `src/core/body.ts` and `bodyWound` in
   over-limit pitch shift moves the view. See `heldFirearmTransform` in
   `src/core/heldPose.ts` and `applyAimViewPitchShift` in `src/game/session.ts`.
   `src/debug/index.ts` owns the development target-range readout, which should
-distinguish sub-metre differences. While an automatic trigger is held, recoil does not recover; once the weapon
-reaches its pitch limit, the saved view pitch continues to climb without a
-plateau. The shifted view stays after release while the on-screen weapon offset
-recovers, so mouse look can counter the climb. Firearm-owned `dispersionRadians`
-  is sampled per round, while `firearmsSkillEffects` controls sway, kick per
-  shot, and recoil recovery; legendary grants no control beyond ordinary expert.
-  Skill-zero handling must make automatic fire meaningfully harder to control.
-  Tuning lives in content and can be adjusted with runtime debug controls.
+  distinguish sub-metre differences. While an automatic trigger is held, recoil
+  does not recover; once the weapon reaches its pitch limit, the saved view pitch
+  continues to climb without a plateau. The shifted view stays after release
+  while the on-screen weapon offset recovers, so mouse look can counter the
+  climb. Firearm-owned `dispersionRadians` is sampled per round, while
+  `firearmsSkillEffects` controls sway, kick per shot and recoil recovery;
+  legendary grants no control beyond ordinary expert. Skill-zero handling must
+  make automatic fire meaningfully harder to control. Tuning lives in content
+  and can be adjusted with runtime debug controls.
   Accordingly, skill-zero endpoints for single/first shots and
   automatic follow-ups are separate values in `src/content/base/recipes.json`, under the
   firearms-combat skill's `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates
@@ -562,15 +577,19 @@ recovers, so mouse look can counter the climb. Firearm-owned `dispersionRadians`
   `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert
   endpoint stays on the existing curve, so skill-10 shot handling is unchanged;
   legendary still matches expert.
-  Guns may need different skill-zero factors; optional per-firearm settings sit
-  beside base recoil in `src/content/base/models-firearms.json`. The
-  `FirearmSchema` in `src/core/schema.ts` requires a complete in-range shape when present.
-  A per-gun shape replaces the shared skill-zero endpoints as a whole; absent factors use the
-  global firearms-combat endpoints. Keeping the override complete avoids mixing fields from
-  different guns. `src/game/firearmHandling.ts`, `FirearmMechanics.skillZeroHandlingFor`,
-  selects the effective factors, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
-  interpolates them toward the same expert endpoint. `src/debug/index.ts` renders
-  runtime tuning controls for the shared and per-firearm skill-zero settings.
+  Different guns need different skill-zero factors. The per-gun values are
+  provisional and await BR's slider review; endpoint approval did not approve
+  these individual starting factors. Optional per-firearm settings sit beside
+  base recoil in `src/content/base/models-firearms.json`. The `FirearmSchema`
+  in `src/core/schema.ts` requires a complete in-range shape when present.
+  A per-gun shape replaces the shared skill-zero endpoints as a whole; absent
+  factors use the global firearms-combat endpoints. Keeping the override
+  complete avoids mixing fields from different guns. See
+  `FirearmMechanics.skillZeroHandlingFor` in `src/game/firearmHandling.ts`
+  selects the effective factors, and `firearmsSkillEffects` in
+  `src/core/firearmsSkill.ts` interpolates them toward
+  the same expert endpoint. `src/debug/index.ts` renders runtime tuning controls
+  for the shared and per-firearm skill-zero settings.
   The controls are runtime-only, reset on reload, and do not alter saves. The shared skill
   effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
   per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
@@ -811,7 +830,7 @@ a computer opening a door are separate work in #313. See `ZombieSpawner` in
 
 ### Amalgam body and damage (#308)
 
-The amalgam is a debug-only type until the authored camp spawn in #308 is designed. Its `amalgam_*` sound events have separate identities but reuse shambler recordings; an authored type pitch multiplier overrides the ordinary body-height rule so the fused creature can keep a distinct low voice. See `src/content/base/zombies.json`, `soundPitchMultiplier`, `src/core/schema.ts`, `ZombieSchema`, and `src/game/session.ts`, `admitSound`. Deadvox realizes its mobgen body from the saved figure seed and uses the part manifest as the authority for collision bounds, member-owned hit regions and severable roots; it does not maintain a second hand-written anatomy list. The axis-aligned collision envelope follows the realized voxel bounds, with independent X/Z extents. It answers what only needs the creature's size: spawn clearance, zombie-to-zombie separation and its stance on the terrain floor, where a conservative box costs nothing visible and the flesh nearly fills the footprint. Terrain, the player and shots meet the flesh itself ("Exact collision" below). The amalgam's no-jump rule is authored in its type data, so fence and container blocking does not depend on the jump probe's position relative to its envelope. See `src/content/base/zombies.json`, the amalgam type; `src/core/schema.ts`, `ZombieSchema`; `src/core/zombies.ts`, `ZombieSystem.stepZombieBody` and `terrainStance`; `src/core/amalgamFigure.ts`, `amalgamFigure` and `amalgamCollisionEnvelope`; `src/core/spawnClearance.ts`; and `src/core/physics.ts`, `Body` and `separateBodies`.
+The amalgam's distinct sound-event identities reuse shambler recordings; an authored type pitch multiplier overrides the ordinary body-height rule so the fused creature can keep a distinct low voice. See `src/content/base/zombies.json`, `soundPitchMultiplier`, `src/core/schema.ts`, `ZombieSchema`, and `src/game/session.ts`, `admitSound`. Deadvox realizes its mobgen body from the saved figure seed and uses the part manifest as the authority for collision bounds, member-owned hit regions and severable roots; it does not maintain a second hand-written anatomy list. The axis-aligned collision envelope follows the realized voxel bounds, with independent X/Z extents. It answers what only needs the creature's size: spawn clearance, zombie-to-zombie separation and its stance on the terrain floor, where a conservative box costs nothing visible and the flesh nearly fills the footprint. Terrain, the player and shots meet the flesh itself ("Exact collision" below). The amalgam's no-jump rule is authored in its type data, so fence and container blocking does not depend on the jump probe's position relative to its envelope. See `src/content/base/zombies.json`, the amalgam type; `src/core/schema.ts`, `ZombieSchema`; `src/core/zombies.ts`, `ZombieSystem.stepZombieBody` and `terrainStance`; `src/core/amalgamFigure.ts`, `amalgamFigure` and `amalgamCollisionEnvelope`; `src/core/spawnClearance.ts`; and `src/core/physics.ts`, `Body` and `separateBodies`.
 
 The amalgam's authored body scale is shared by its rendered body, collision envelope, posed hit regions and melee reach, so visible and gameplay size cannot drift apart. See `src/content/base/zombies.json`, `bodyScale`; `src/core/amalgamFigure.ts`, `amalgamFigureForType`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/zombies.ts`, `zombieAttackReachMetres`.
 
@@ -831,7 +850,7 @@ A damaging hit on the amalgam knocks a chunk of flesh out of it and leaves a hol
 
 Holes change where shots land and where the body fits, never how much it can take: a hole shows damage the regions already took, so damage, region health and severing are as they would be without holes. `test/amalgam.test.ts` compares the hit that carves with the same hit without holes. A hole is simulation state, the amalgam's removed voxels as `Zombie.carved`, so it is deterministic, survives a save and replays. A restore refuses holes no play could make: a cell outside the grid or without flesh, the protected core voxel, or any hole on a type that doesn't carve. See `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, and `src/core/zombies.ts`, `ZombieSystem.restoreState`.
 
-**Exact collision.** Terrain, the player and shots meet the amalgam's flesh, not its boxes (#563). Rounded lobes make box-only collision stop it short of gaps its body fits and take shots that pass beside visible flesh. Plausibility comes first, but the cost must remain modest with several amalgams active; in open terrain, collision should cost no more than a box. Holes count for shots and movement as long as maintaining them stays cheap beside the tests themselves.
+**Exact collision.** Terrain, the player and shots meet the amalgam's flesh, not its boxes (#563). Rounded lobes make box-only collision stop it short of gaps its body fits and take shots that pass beside visible flesh. Keep near-wall contact search below 0.1 ms per amalgam per tick with about ten simultaneous amalgams; #574 remains open on its p95 and snug-corridor cases, distinct from the one-amalgam playtest. Do not restore a per-facing height-extents table: rebuilding one facing costs more than a whole worst-case tick. In open terrain, collision should cost no more than a box. Holes count for shots and movement as long as maintaining them stays cheap beside the tests themselves.
 
 A ray that enters a posed region box walks that bone's voxels and strikes the first flesh still there, so a ray beside the flesh misses, a shot into a hole strikes the flesh behind it, and a shot through a hole that goes all the way passes. See `src/core/amalgamCarving.ts`, `fleshHit`.
 
@@ -908,7 +927,7 @@ worse the world gets.
 - **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - Background zombies beeline in big, cheap steps.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
-- **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration, counted in simulation seconds, so compression affects elapsed wall time. The stimulus timestamp is saved so loading does not restart the wait. A horde resumes the sun-derived roam or home behavior after forgetting. See `ZombieSchema` in `src/core/schema.ts` and `ZombieSystem.updateHordes` in `src/core/zombies.ts`.
+- **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration. The stimulus timestamp is saved so loading does not restart the wait. Whether this duration should use real time or game time remains open for BR's decision; the current simulation-seconds behavior is not a settled design choice. A horde resumes the sun-derived roam or home behavior after forgetting. See `ZombieSchema` in `src/core/schema.ts` and `ZombieSystem.updateHordes` in `src/core/zombies.ts`.
 - **Background cadence persistence:** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `zombie-background` in `src/game/session.ts`.
 
 - **Level of detail:**
@@ -919,9 +938,9 @@ worse the world gets.
   | Background | Distant actors in loaded chunks | Reduced-rate, collision-resolved beeline toward attention (implemented) |
   | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (Slice 4) |
 
-  For Slice 3 milestone 3.9, keep loaded distant actors in the same store and
-  switch their update schedule by derived proximity and terrain availability.
-  The hamlet's first group shares noise-driven targets and drifts at night, but
+  Loaded distant actors remain in the same store and switch their update
+  schedule by derived proximity and terrain availability. The hamlet's first
+  group shares noise-driven targets and drifts at night, but
   remains individual actors rather than a region-map abstraction. Save the
   group's target and random stream with member offsets so noise response and
   roaming continue after load; derive the tier again instead of saving it. This
@@ -1034,6 +1053,9 @@ their state.
 - **Versioned saves.** A save records which packs, and which pack versions, it
   was made with. Ids that no longer exist are kept as "unknown" rather than
   dropped (see [CHALLENGES.md](CHALLENGES.md#7-saves-and-migration)).
+- **Larger authored buildings.** Importing voxel-editor work from tools such as
+  MagicaVoxel or vengi remains a direction when building scale outgrows the
+  current authoring path; no importer contract is settled.
 
 ## A world that feels real
 
@@ -1069,7 +1091,9 @@ play, not only decorate it.
   another simulated weather system beyond version 1's rain and temperature.
 - **Sound of the place:** wind in the trees by biome, birds by day, insects at
   night, a building settling, and the distant sounds from the simulation (see
-  [Audio](#audio)).
+  [Audio](#audio)). A proposal for birds to go quiet or take off is not accepted;
+  BR must decide whether to adopt it. If adopted, it should respond to a real
+  nearby cause, not a timer or a guaranteed enemy alarm.
 - **Dilapidation:** built things show abandonment through collapsed sections,
   breaches, slumped or missing segments and rubble. A passable breach is a real
   route, so each authored site names the gaps a player can cross. New structures
@@ -1143,8 +1167,9 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   `MobActorMeshes.syncZombie`, `test/runnerRenderContinuity.test.ts`,
   `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
 - **Sun shadows:** Favor a stable edge near the player over sharp shadows far
-  beyond them. See `sunShadowTexelSize` and `Shadows.update` in
-  `src/render/shadows.ts`.
+  beyond them. The remaining jaggedness is accepted; do not pursue further
+  refinement without a new decision. See `sunShadowTexelSize` and
+  `Shadows.update` in `src/render/shadows.ts`.
 - **Sealed rooms stay dark at every hour (#562):** two solid blocks that share a
   face pass no sunlight, and the main light shades at full strength whenever it
   shines, low sun and the night light included. Furniture casts no sun shadow,
@@ -1185,9 +1210,10 @@ decoration.
 - **Heartbeat:** The heartbeat becomes audible as stamina falls and grows faster
   and louder toward exhaustion. It is a presentation cue, not a noise event, so
   shamblers do not hear it and it does not alter simulation or save identity.
-  When #193 is addressed, decide fear/danger and low-health responses. See
-  `heartbeatForStamina` in `src/game/audioPresentation.ts` and
-  `GameAudio.updateHeartbeat` in `src/game/audio.ts`.
+  Fear/danger and low-health responses remain open questions for BR; #193 is
+  closed and is not a trigger for that decision. See `heartbeatForStamina` in
+  `src/game/audioPresentation.ts` and `GameAudio.updateHeartbeat` in
+  `src/game/audio.ts`.
 - **Ambience by time and place:** wind, rain, a building settling. The
   distant sounds (a gunshot, a scream, a helicopter over the cordon, a
   generator) come from things happening in the simulation, not from a random
