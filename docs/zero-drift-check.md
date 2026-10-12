@@ -13,9 +13,10 @@ trade-offs, not another set of cue spellings. See `tools/zero-drift-check.mjs`,
 ## Whole-text scanning
 
 One cue scanner examines every tracked text file, including source, tests, config
-and content. Strings can contain explanations too; parsing each language's comments
-would add maintenance and miss those explanations. Third-party reference files stay
-as received, so they are excluded rather than rewritten. Binary files are not text.
+and content. Explicitly formatted cues count in strings as well as comments, because
+either can carry an explanation; parsing each language's comments would add maintenance
+and miss those explanations. Third-party reference files stay as received, so they are
+excluded rather than rewritten. Binary files are not text.
 
 The scanner recognizes formatted paths, Markdown links and file/name pairs, not
 arbitrary mentions of a filename in code. Module specifiers starting with an at-sign
@@ -40,11 +41,12 @@ stamps and subtitles because these are not the topic's identity. Renaming the to
 still breaks its cues. Bold lead-ins serve as named anchors because design decisions
 use those labels without making each decision a heading. Heading-link fragments
 use the full title's GitHub slug, including duplicate suffixes, rather than that
-relaxed name comparison. The scanner preserves escaped underscores as literal
-heading text before applying emphasis, and excludes fenced examples and HTML-commented
-markup because GitHub does not render them as headings. Angle-wrapped link destinations
-resolve against the same normalized path and fragment. See `tools/zero-drift-check.mjs`,
-`anchorsFor`, `githubSlug` and `checkSectionLink`.
+relaxed name comparison. Heading identity follows rendered Markdown: front matter,
+fenced examples and actual HTML comments are excluded because they do not appear as
+headings, while code-span contents remain because they are visible even when they look
+like comments. This keeps cue resolution aligned with what readers see. Angle-wrapped
+link destinations resolve against the same normalized path and fragment. See
+`tools/zero-drift-check.mjs`, `anchorsFor`, `githubSlug` and `checkSectionLink`.
 
 Names in non-Markdown targets are literal text rather than normalized headings:
 normalization could silently turn a removed test name into a different test. Cached

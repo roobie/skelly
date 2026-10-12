@@ -88,7 +88,7 @@ Nits
 FOR THE LEAD:   CI on the head; merge-tree against main
 ```
 
-`Cause:` takes its format from `docs/PROCESS.md`, "Slice decision rules"; `docs/PROCESS.md`, "FIX causes", and `Consolidation:` from "Continuous consolidation". A lens's status is
+`Cause:` takes its format from `docs/PROCESS.md`, "Slice decision rules"; `docs/PROCESS.md`, "FIX causes". The `Consolidation:` field follows `docs/PROCESS.md`, "Continuous consolidation". A lens's status is
 one of:
 
 - **assessed;**
