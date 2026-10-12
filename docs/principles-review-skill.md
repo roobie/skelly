@@ -32,25 +32,19 @@ depth to the change; a small PR doesn't skip coverage.
 Each lens cites its owning doc and section. Read the rule there at review time;
 the skill keeps no second copy.
 
-1. **Engineering pillars and repository rules:** `README.md`, "Pillars", "Static
-   analysis" and "Maintainability"; `AGENTS.md`, "Project stage", "No
-   host-specific information in tracked files" and "Dependency age".
+1. **Engineering pillars and repository rules:** `README.md`, "Pillars"; `README.md`, "Static analysis"; `README.md`, "Maintainability"; `AGENTS.md`, "Project stage"; `AGENTS.md`, "No host-specific information in tracked files"; `AGENTS.md`, "Dependency age".
 2. **Subproject pillars and content ownership:** each subproject's own pillars,
    such as `deadvox/DESIGN.md`, "Pillars", whose "Depth through data" covers
    deadvox code that owns a decision belonging to content; for performance,
-   `deadvox/DESIGN.md`, "Performance and scale"; for authored data, `docs/jsonnet.md`,
-   "Jsonnet authoring"; and `docs/PROCESS.md`, "Continuous
-   consolidation", for ownership and duplicated decisions.
+   `deadvox/DESIGN.md`, "Performance and scale"; for authored data, `docs/jsonnet.md`, "Jsonnet authoring"; and `docs/PROCESS.md`, "Continuous consolidation", for ownership and duplicated decisions.
 3. **Zero drift and docs:** `README.md`, "Zero drift"; `AGENTS.md`, "Zero drift";
    `docs/PROCESS.md`, "The life of a change", step 4.
 4. **Tests:** `AGENTS.md`, "Tests". From "Before pushing: tiered checks", a review
    checks what it can see: a red CI job is fixed in the next push, and no
    `--no-verify` push went over a real failure.
-5. **BR's rulings:** the topic's owner documents; `docs/PROCESS.md`, "Recording
-   decisions". Check the change against the settled ruling and its provenance (the
+5. **BR's rulings:** the topic's owner documents; `docs/PROCESS.md`, "Recording decisions". Check the change against the settled ruling and its provenance (the
    verbatim quote and stamp in the commit), not against an inferred preference.
-6. **Player impact and approval gates:** `docs/PROCESS.md`, "Reviews by eye and by
-   play", "Slice decision rules" and "The life of a change". A change with no code
+6. **Player impact and approval gates:** `docs/PROCESS.md`, "Reviews by eye and by play"; `docs/PROCESS.md`, "Slice decision rules"; `docs/PROCESS.md`, "The life of a change". A change with no code
    isn't exempt when it changes what the player sees or reads, such as item
    descriptions or controls help.
 
@@ -76,8 +70,7 @@ unions are not violations by themselves: fixtures and structural discriminants
 may use them. When r74's owner doc lands, its allowlist decides which closed lists
 may stay.
 
-Coders don't run the skill as a pre-push check; `AGENTS.md`, "Before pushing:
-tiered checks", lists none. Add one only if reviews show misses a coder could have
+Coders don't run the skill as a pre-push check; `AGENTS.md`, "Before pushing: tiered checks", lists none. Add one only if reviews show misses a coder could have
 caught, and list it there.
 
 ## Findings and verdict
@@ -95,8 +88,7 @@ Nits
 FOR THE LEAD:   CI on the head; merge-tree against main
 ```
 
-`Cause:` takes its format from `docs/PROCESS.md`, "Slice decision rules", "FIX
-causes", and `Consolidation:` from "Continuous consolidation". A lens's status is
+`Cause:` takes its format from `docs/PROCESS.md`, "Slice decision rules"; `docs/PROCESS.md`, "FIX causes", and `Consolidation:` from "Continuous consolidation". A lens's status is
 one of:
 
 - **assessed;**
@@ -118,11 +110,10 @@ reasoning.
 A change that breaks a settled rule a lens cites, or lacks what that rule
 requires (a verbatim quote and stamp, a `read_if`, a test that fails before the
 fix), is a FIX. For example, deadvox code that decides one item's behaviour, a
-decision `deadvox/DESIGN.md`, "Pillars", "Depth through data", gives to content,
+decision `deadvox/DESIGN.md`, "Pillars"; `deadvox/DESIGN.md`, "Depth through data", gives to content,
 is a FIX. A violation of a settled rule is a real defect in the sense of
 `AGENTS.md`, "Tests", whose FIX threshold the review applies. The rules' owners
-also set what blocks: `AGENTS.md`, "Tests" and "Zero drift"; `README.md`, "Zero
-drift"; and `docs/PROCESS.md`, "The life of a change", step 4. Anything else is
+also set what blocks: `AGENTS.md`, "Tests"; `AGENTS.md`, "Zero drift"; `README.md`, "Zero drift"; and `docs/PROCESS.md`, "The life of a change", step 4. Anything else is
 listed and doesn't block.
 
 For a settled rule, missing evidence is not a status. The reviewer gets it before
@@ -145,8 +136,7 @@ contract without creating competing rule owners.
   ratchet checks for content-id literals and closed lists. Until its owner doc
   lands, those parts of lens 2 are not assessed. Forward compatibility, accepting
   new authored values, stays apart from backwards compatibility; it must not bring
-  in an obligation to keep old schemas or saves working (`AGENTS.md`, "Project
-  stage").
+  in an obligation to keep old schemas or saves working (`AGENTS.md`, "Project stage").
 - **Additional lenses:** a lens such as accessibility needs an owning project rule
   first. The skill applies settled rules; it doesn't make policy through review
   findings.

@@ -1,4 +1,4 @@
-// Carried lights and their batteries (DESIGN.md, "Light"). A powered light owns its battery
+// Carried lights and their batteries (`DESIGN.md`, "Light"). A powered light owns its battery
 // as a child item in `slots.battery`, so charge and identity have one owner. A light drains only
 // while it's on, at its rate per game hour, in closed form: a long step drains exactly
 // what ticking every second would, and the light goes out when the charge runs out.

@@ -228,7 +228,7 @@ export class LongActions {
   }
   /**
    * Prying runs at 1×, and so do treatment, crafting and reading while the body refuses compression: a
-   * bleeding player must still be able to treat the wound or make something to treat it (DESIGN.md, "Bleeding").
+   * bleeding player must still be able to treat the wound or make something to treat it (`DESIGN.md`, "Bleeding").
    */
   runsUncompressed(jobType: LongJob['jobType']): boolean {
     return jobType === 'pry' || (RUN_WHILE_REFUSED.has(jobType) && this.sim.body.compressionRefusal !== undefined);

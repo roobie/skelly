@@ -3,7 +3,7 @@
 //   npm run validate -- mods/foo/*.json   specific files, applied in order after the base pack;
 //                                         a file named manifest.json is checked as an asset manifest
 // A content file's pack is its folder, so a model's file is found next to it. A
-// manifest's pack is the folder above its `assets/`, and every file in there must
+// manifest's pack is the folder above its assets directory, and every file in there must
 // come from a listed source.
 
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
@@ -31,7 +31,7 @@ export const validate = (
   const files = [...base, ...args.filter((f) => !isManifest(f))];
   const manifests = [join(BASE, MANIFEST_PATH), ...args.filter(isManifest)];
 
-  /** Every file under a pack's `assets/`, as paths within the pack. */
+  /** Every file under a pack's assets directory, as paths within the pack. */
   const assetFiles = (pack: string): string[] =>
     readdirSync(resolve(root, pack, 'assets'), { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile())

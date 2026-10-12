@@ -2,7 +2,7 @@
  * A Honda CG125-type motorbike, built from parts: 1.91 m long, 0.75 m across the bars, 1.03 m to the
  * bars, 1.22 m wheelbase on 18-inch spoked wheels. The frame is the structure everything rests on;
  * there is no body shell, and the seat carries the rider. Proportions follow a scaled side view (see
- * docs/vehicle-spike.md, "Proportions").
+ * `docs/vehicle-spike.md`, "Proportions").
  */
 import {
   type Authored,

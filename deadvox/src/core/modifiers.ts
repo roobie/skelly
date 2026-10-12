@@ -33,7 +33,7 @@ export interface ModifierActor {
 
 /**
  * The one point where modifiers change a number a mechanism reads from content, so a modifier added later
- * reaches every mechanism that reads through it (DESIGN.md, "Bleeding"): the product of the multipliers,
+ * reaches every mechanism that reads through it (`DESIGN.md`, "Bleeding"): the product of the multipliers,
  * then the sum of the adds. It returns `base` unchanged when nothing applies. Content declares no modifiers.
  */
 export const modified = (effect: ModifiedEffect, base: number, actor: ModifierActor): number => {

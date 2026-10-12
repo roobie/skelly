@@ -29,10 +29,10 @@ The playtest apex enemy must read as one grotesque fusion, not several unrelated
 
 A cut's surviving boundary needs the severed state of its neighbouring bone to show stump gore; every bone index in a body plan must therefore survive the crowd mask handoff. See `src/mob/crowd.ts`, `packSeveredMask` and `crowdBoneSevered`.
 
-Mobgen supplies the generated body used by Deadvox collision, hit regions and rendering; sharing that figure keeps gameplay contact tied to the visible anatomy. The amalgam template stays outside the ordinary `TEMPLATES` list so regular actor consumers opt into the boss explicitly. See `src/mob/amalgamTemplate.ts`, `VIEWER_TEMPLATES`, `../deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and `../deadvox/test/simulationFingerprint.test.ts`.
+Mobgen supplies the generated body used by Deadvox collision, hit regions and rendering; sharing that figure keeps gameplay contact tied to the visible anatomy. The amalgam template stays outside the ordinary `TEMPLATES` list so regular actor consumers opt into the boss explicitly. See `src/mob/amalgamTemplate.ts`, `VIEWER_TEMPLATES`, `deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and `deadvox/test/simulationFingerprint.test.ts`.
 
 The Mobgen viewer keeps the amalgam static because arbitrarily oriented member heads have no single humanoid gaze target. Do not enable its gaze solver until it can resolve each member's head transform. See `src/viewer/main.ts`, `applyLiveFrame`, `src/mob/amalgam.ts`, and `src/mob/lookAt.ts`, `lookAtPose`.
 
-Issue #378 tracks the open visual-quality pass; the approved body remains a proposal for that judgment, not a fixed gameplay or encounter rule. Issue #574 tracks the remaining movement-cost question for the generated shape in snug corridors. See `../deadvox/src/core/amalgamShape.ts`, `AmalgamShape`.
+Issue #378 tracks the open visual-quality pass; the approved body remains a proposal for that judgment, not a fixed gameplay or encounter rule. Issue #574 tracks the remaining movement-cost question for the generated shape in snug corridors. See `deadvox/src/core/amalgamShape.ts`, `AmalgamShape`.
 
 Population-quality assertions belong in explicit sweeps because they measure distributions, not an individual actor's contract. See `test/sweeps.ts`, `sweepGroup`, `test/generate.test.ts` and `src/cli/stats.ts`.

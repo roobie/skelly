@@ -4,7 +4,7 @@ type BleedingTierDef = BodyTuningDef['bleeding']['tiers'][number];
 
 /**
  * Speaks a tier's notice (INTERFACE.md, class 3) once each time the player's worst bleeding worsens to a tier
- * that has one; content leaves the notice off a tier that passes without mention (DESIGN.md, "Bleeding").
+ * that has one; content leaves the notice off a tier that passes without mention (`DESIGN.md`, "Bleeding").
  */
 export class PlayerBleedingNotice {
   private worst: number | undefined;

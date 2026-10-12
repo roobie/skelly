@@ -821,7 +821,7 @@ export const createSession = (options: SessionOptions) => {
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
-  /** DESIGN.md, "Ladders and hatches". */
+  /** `DESIGN.md`, "Ladders and hatches". */
   const ladderHold = new LadderHold({
     entities,
     body,
@@ -1105,7 +1105,7 @@ export const createSession = (options: SessionOptions) => {
     }
     return location ? bodyCentre(body) : undefined;
   };
-  /** The explosive is used up; the blast and its fragments hurt zombies and the player alike (DESIGN.md, "Hand grenade"). */
+  /** The explosive is used up; the blast and its fragments hurt zombies and the player alike (`DESIGN.md`, "Hand grenade"). */
   const detonate = (item: Item): void => {
     const spec = registry.items.get(item.type)?.explosive;
     const at = detonationPoint(item);

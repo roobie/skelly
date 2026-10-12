@@ -1,7 +1,7 @@
 name: pages
 
 # Publishes on runtime/build-input changes to main; manual dispatches are exempt
-# from the freeze gate. See deadvox/docs/playtest-run.md, "Deployment freeze":
+# from the freeze gate. See `deadvox/docs/playtest-run.md`, "Deployment freeze":
 #   /          site/index.html (landing page)
 #   /gungen/   the gungen viewer
 #   /deadvox/  the deadvox game

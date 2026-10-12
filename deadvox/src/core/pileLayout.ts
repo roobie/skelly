@@ -1,4 +1,4 @@
-// Where the items in a pile lie (DESIGN.md, "Piles and item models"). An item with a model lies
+// Where the items in a pile lie (`DESIGN.md`, "Piles and item models"). An item with a model lies
 // at its place in the pile's grid, turned the way it is there; the rest make up the
 // generic bundle. Pure, so the render only has to put models where this says.
 

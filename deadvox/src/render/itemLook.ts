@@ -1,4 +1,4 @@
-// How one item instance looks (DESIGN.md, "Piles and item models"): its own model, plus the models of the items it
+// How one item instance looks (`DESIGN.md`, "Piles and item models"): its own model, plus the models of the items it
 // owns at their slots. Every view draws an item from this, never from its type alone, so a rifle looks the same in
 // the hands and on the ground.
 

@@ -658,7 +658,7 @@ describe('rifle firearm handling', () => {
   });
 
   it('drops each case in the pile of the block it lands on, never a case pile on a nearer block', () => {
-    // BR, 2026-10-07 11:27 (DESIGN.md, "Spent cases per block"): cases are saved per block.
+    // Per-block counts keep saved case state independent of total shot count (`DESIGN.md`, "Spent cases per block").
     const [landing] = [...shot(1).inventory.piles.values()].map((pile) => pile.pos);
     const feet: Vec3 = [
       Math.floor(pose.feet[0] / pose.blockSize),

@@ -20,8 +20,7 @@ const BAND_EPSILON = 1e-9;
 
 interface BodyWound {
   /**
-   * Bleeding severity: 0 has stopped, and the content tier at index i covers (i, i + 1] (DESIGN.md,
-   * "Bleeding").
+   * Bleeding severity: 0 has stopped, and the content tier at index i covers (i, i + 1] (`DESIGN.md`, "Bleeding").
    */
   bleeding: number;
   infection: InfectionStage;
@@ -127,7 +126,7 @@ export class Body implements ModifierActor {
     return this.unconscious ? 'You are unconscious' : undefined;
   }
 
-  /** Bleeding at or above content's loss rate refuses time compression (DESIGN.md, "Bleeding"). */
+  /** Bleeding at or above content's loss rate refuses time compression (`DESIGN.md`, "Bleeding"). */
   get compressionRefusal(): string | undefined {
     const loss = this.bloodLossPerSimSecond;
     const { blockCompressionAtLossPerSimSecond: threshold, refusal } = this.tuning.bleeding;
@@ -331,7 +330,7 @@ export class Body implements ModifierActor {
   /**
    * Advances body consequences by simulation seconds and returns a terminal cause, if any. `recovering` says
    * the needs let the body recover (needs.ts, `needsAllowRecovery`); then every uninfected wound also closes
-   * by itself (DESIGN.md, "Bleeding"). `recoveryFactor` multiplies blood recovery (sleep's `sleepRecoveryFactor`).
+   * by itself (`DESIGN.md`, "Bleeding"). `recoveryFactor` multiplies blood recovery (sleep's `sleepRecoveryFactor`).
    */
   advance(
     seconds: number,
@@ -488,7 +487,7 @@ export class Body implements ModifierActor {
    * Applies one treatment, rolling its effect (`roll` gives numbers in [0, 1)). Under base content, the body's
    * `treatmentSpread` is centred on its neutral multiplier, so the item's bleeding strength is its average bandage
    * application; other content can change that relationship. Through modifiers and `treatmentSpread`, it closes
-   * severity band by band, each band costing its tier's `treatmentEffort`; applications stack (DESIGN.md, "Bleeding").
+   * severity band by band, each band costing its tier's `treatmentEffort`; applications stack (`DESIGN.md`, "Bleeding").
    */
   treat(region: BodyRegion, treatment: TreatmentDef, roll: () => number): boolean {
     if (!this.canTreat(region, treatment)) {

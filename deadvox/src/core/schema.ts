@@ -173,7 +173,7 @@ const ITEM_CATEGORIES = [
 ] as const;
 
 const CLOTHING_SLOTS = ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
-/** The shoulder holds a slung long gun, never clothing (DESIGN.md, "Shoulder and sling"). */
+/** The shoulder holds a slung long gun, never clothing (`DESIGN.md`, "Shoulder and sling"). */
 const WEAR_SLOTS = [...CLOTHING_SLOTS, 'shoulder'] as const;
 
 export type WearSlot = (typeof WEAR_SLOTS)[number];
@@ -185,7 +185,7 @@ const Area = tuple([Cells, Cells]);
 
 const PocketSchema = strictObject({
   name: optional(Name),
-  /** Its grid: the only limit on what fits (DESIGN.md, "The item model"). */
+  /** Its grid: the only limit on what fits (`DESIGN.md`, "The item model"). */
   grid: Area,
   /** Sim seconds to take an item out or put one in, before the per-cell part. */
   handlingSimSeconds: SimSeconds,
@@ -319,7 +319,7 @@ const AmmoSchema = strictObject({
 const LightSchema = strictObject({
   /** Metres it lights up. */
   radius: Positive,
-  /** Metres from which others can see it (DESIGN.md, "Light"). */
+  /** Metres from which others can see it (`DESIGN.md`, "Light"). */
   seenFrom: Positive,
   /** Point-light colour and candela; both are presentation-owned content. */
   color: Color,
@@ -355,7 +355,7 @@ const LightSchema = strictObject({
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
 
-/** A thrown charge whose fuse starts when it leaves the hand (DESIGN.md, "Hand grenade"). */
+/** A thrown charge whose fuse starts when it leaves the hand (`DESIGN.md`, "Hand grenade"). */
 const ExplosiveSchema = strictObject({
   fuseSimSeconds: PositiveSimSeconds,
   /**
@@ -453,7 +453,7 @@ const DisassemblySchema = strictObject({
   skill: Id,
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
 });
-/** What one application does to a body wound (DESIGN.md, "Bleeding"). */
+/** What one application does to a body wound (`DESIGN.md`, "Bleeding"). */
 const TreatmentSchema = pipe(
   strictObject({
     /** Strength: the bleeding one application closes before its roll and modifiers, in `treatmentEffort` units. */
@@ -529,7 +529,7 @@ const Point = tuple([number(), number(), number()]);
 
 /**
  * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
- * along x (DESIGN.md, "Piles and item models"). The entry adds what the file can't say.
+ * along x (`DESIGN.md`, "Piles and item models"). The entry adds what the file can't say.
  */
 const SoundMultipliers = pipe(
   tuple([Positive, Positive]),
@@ -781,8 +781,7 @@ const ModelSchema = pipe(
     action: optional(ActionSchema),
     /**
      * Where the charging handle sits around the bore: degrees from the top of the receiver toward the gun's right
-     * (+z). A rack rolls the gun toward the off hand, further when the handle is on the far side (DESIGN.md, "Rifles
-     * (3.2, d114)"). Hand-authored: the export does not carry it.
+     * (+z). A rack rolls the gun toward the off hand, further when the handle is on the far side (`DESIGN.md`, "Rifles"). Hand-authored: the export does not carry it.
      */
     chargingHandleDegrees: optional(pipe(number(), minValue(-180), maxValue(180))),
   }),
@@ -870,7 +869,7 @@ const FurnitureSchema = pipe(
         hatch: optional(literal(true)),
       }),
     ),
-    /** The player climbs it; its facing is the side the climber stands on (DESIGN.md, "Ladders and hatches"). */
+    /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */
     climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
     /** Render-only boxes in cell coordinates; gameplay continues to use the furniture cells. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
@@ -1263,7 +1262,7 @@ const ZombieSchema = strictObject({
       reach: Positive,
       cooldownSimSeconds: PositiveSimSeconds,
       windupSimSeconds: PositiveSimSeconds,
-      /** What a landed hit can be, picked by weight as it lands (DESIGN.md, "Bleeding"). */
+      /** What a landed hit can be, picked by weight as it lands (`DESIGN.md`, "Bleeding"). */
       moves: pipe(
         array(
           strictObject({
@@ -1515,7 +1514,7 @@ const WeatheringSchema = strictObject({
 const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) =>
   strictObject(Object.fromEntries(DAMAGE_KINDS.map((kind) => [kind, value])) as Record<DamageKind, S>);
 
-/** One bleeding tier; the list runs mildest first (DESIGN.md, "Bleeding"). */
+/** One bleeding tier; the list runs mildest first (`DESIGN.md`, "Bleeding"). */
 const BleedingTierSchema = strictObject({
   id: Id,
   /** How the HUD, inventory and item actions name a wound bleeding at this tier. */

@@ -1,4 +1,4 @@
-// Block entities (DESIGN.md, "Block entities"): furniture with state, such as a
+// Block entities (`DESIGN.md`, "Block entities"): furniture with state, such as a
 // cupboard's contents or whether a door is open. Each is anchored at its lowest
 // corner and spans a box of cells; every cell points back at it, so collision and
 // ray casts find it from any of them.
@@ -57,7 +57,7 @@ export interface EntitySpec {
   facing: Facing;
 }
 
-/** Search time in seconds: 1 s for a small container up to 3 s for a wardrobe (DESIGN.md, "Handling time"). */
+/** Search time in seconds: 1 s for a small container up to 3 s for a wardrobe (`DESIGN.md`, "Handling time"). */
 const SEARCH = { min: 1, max: 3, cellsForMax: 48 } as const;
 const DOOR_PANEL_THICKNESS = 0.06;
 const DOOR_FACE_CLEARANCE = 0.001;

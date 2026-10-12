@@ -16,7 +16,7 @@ const POLICY_EXEMPT = new Set([
   'test/zero-drift-check.test.mjs',
 ]);
 const PACKAGE_LOCK = /(?:^|\/)package-lock\.json$/;
-const STRICT_CHECKS = new Set(['host', 'historical_doc']);
+const STRICT_CHECKS = new Set(['host', 'historical_doc', 'section_form']);
 const PRIVATE_IPV4 =
   /(?<![\d.])(?:10(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}|172\.(?:1[6-9]|2\d|3[01])(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){2}|192\.168(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){2})(?![\d.])/g;
 const HOST_PATH = /\/(?:home|Users|tmp)\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*/g;
@@ -25,8 +25,8 @@ const HOME_SHORTCUT = /(^|[\s"'`(=])(~\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*)/gm;
 const HOST_PATH_VALUE_EXEMPTIONS = new Set(['~/.cache/ms-playwright']);
 const INLINE_CODE_SPAN = /(`+)[\s\S]*?\1/g;
 const QUOTED_TEXT = /“[^”\n]*”|"[^"\n]*"/g;
-const SUBPROJECTS = new Set(['deadvox', 'gungen', 'mobgen']);
-const LINE_CITATION = /(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9_-]*:\d+(?:-\d+)?/g;
+const SUBPROJECTS = new Set(['deadvox', 'engine', 'gungen', 'mobgen']);
+const LINE_CITATION = /(?<![\w/@.-])(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9_-]*:\d+(?:-\d+)?/g;
 const INLINE_CODE = /(?<!`)`([^`\n]+)`(?!`)/g;
 const LINK = /\[[^\]]*\]\(([^)]+)\)/g;
 const SYMBOL_PAIR = /`([^`\n]+)`, `([^`\n]+)`/g;
@@ -42,6 +42,26 @@ const PATH_SHAPE = /\/$|\/[^/]+\.[A-Za-z][A-Za-z0-9_-]*$/;
 const WHITESPACE = /\s+/;
 const LINK_TARGET = /^(<[^>]+>|[^\s]+)/;
 const TRAILING_SLASH = /\/$/;
+const FILE_EXTENSION = /\.(?:[cm]?[jt]sx?|jsonc?|jsonnet|libsonnet|ya?ml|md|css|html|py|sh|lua|mjs)$/;
+const CUE_PAIR = /(?<!`)`([^`\s]+)`\s*([,;:—-]?)\s*(?:"((?:\\.|[^"\\])+)"|“([^”]+)”|`([^`]+)`|'([^']+)')/g;
+const BARE_SECTION =
+  /(?<![\w/@`"'.=?&-])([\w./-]+\.md)(?!`)\s*([,;:—-]?)\s*(?:"((?:\\.|[^"\\])+)"|“([^”]+)”|`([^`]+)`|'([^']+)')/g;
+const LINK_SECTION = /\[[^\]]*\]\(([^)]+)\)\s*([,;:]?)\s*(?:"((?:\\.|[^"\\])+)"|“([^”]+)”|`([^`]+)`)/g;
+const OTHER_SECTION =
+  /(?:`[^`\s]+\.md`|(?<![\w/@`"'.-])[\w./-]+\.md)\s*(?:§\s*\d[\d.]*|(?:section|chapter)\b[^.;\n]*|#\d[\d.]*|[,;:]\s*\d+(?:\.\d+)*\b)/gi;
+const SECTION_NUMBER = /§\s*\d+(?:\.\d+)*/g;
+const NAME_MARKUP = /`|\*[^*]+\*|(?<!\w)_+[^_]+_+(?!\w)|<[^>]+>|\[[^\]]*\]\([^)]*\)/;
+const EXTRA_NAME = /^\s*(?:,\s*(?:and\s+)?|and\s+)(?:"((?:\\.|[^"\\])+)"|“([^”]+)”)/;
+const PATH_CHARACTERS = /^[\p{L}\p{M}\p{N}_./-]+$/u;
+const LEADING_SECTION_NUMBER = /^(?:§\s*)?\d+(?:\.\d+)*(?:[.)]|\s)\s*/;
+const TRAILING_PUNCTUATION = /[.,:;!?]+$/;
+const TRAILING_PARENTHETICAL = /\s*\([^()]*\)\s*$/;
+const SUBTITLE = /: | — /;
+const NUMERIC_NAME = /^\d+(?:\.\d+)*$/;
+const QUOTE_ESCAPE = /\\(["\\])/g;
+const FRONT_MATTER_BLOCK = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
+const ATX_HEADING = /^ {0,3}#{1,6}\s+(.+?)(?:\s+#+\s*)?$/;
+const SETEXT_UNDERLINE = /^ {0,3}(?:=+|-+)\s*$/;
 
 const exec = (command, args, options = {}) => execFileSync(command, args, { cwd: ROOT, encoding: 'utf8', ...options });
 
@@ -133,18 +153,30 @@ function visibleMarkdown(text) {
     .join('\n');
 }
 
-function pathValue(raw) {
+function pathValue(raw, bare = false) {
   let value = raw.trim();
   if (value.startsWith('<') && value.endsWith('>')) {
     value = value.slice(1, -1);
   }
-  if (!value || PATH_PLACEHOLDER.test(value) || URI_SCHEME.test(value) || value.startsWith('/')) {
+  if (
+    !value ||
+    PATH_PLACEHOLDER.test(value) ||
+    URI_SCHEME.test(value) ||
+    value.startsWith('/') ||
+    value.startsWith('@')
+  ) {
     return;
   }
   const [withoutAnchor] = value.split('#', 1);
   const [withoutQuery] = withoutAnchor.split('?', 1);
   value = withoutQuery.replace(LINE_SUFFIX, '');
-  if (value?.includes('/') && PATH_SHAPE.test(value)) {
+  if (!PATH_CHARACTERS.test(value)) {
+    return;
+  }
+  if (
+    (value?.includes('/') && PATH_SHAPE.test(value)) ||
+    (value && (value.endsWith('.md') || (bare && FILE_EXTENSION.test(value))))
+  ) {
     return value;
   }
 }
@@ -160,7 +192,7 @@ function pathCandidates(visible) {
     for (const token of match[1].trim().split(WHITESPACE)) {
       const value = pathValue(token);
       if (value) {
-        found.push({ raw: token, value });
+        found.push({ raw: token, value, kind: 'code' });
       }
     }
   }
@@ -171,7 +203,7 @@ function pathCandidates(visible) {
     }
     const value = pathValue(raw);
     if (value) {
-      found.push({ raw, value });
+      found.push({ raw, value, kind: 'link' });
     }
   }
   return found;
@@ -210,7 +242,7 @@ function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
   if (!SYMBOL_IDENTIFIER.test(symbol)) {
     return;
   }
-  const value = pathValue(rawPath);
+  const value = pathValue(rawPath, true);
   if (!value) {
     return;
   }
@@ -223,7 +255,7 @@ function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
   const targetPath = relative(tree.root, target);
   let targetSource;
   try {
-    targetSource = readFileSync(target, 'utf8');
+    targetSource = sourceFor(target, tree);
   } catch {
     add(failures, path, 'symbol', `${targetPath}, ${symbol}`);
     return;
@@ -235,11 +267,201 @@ function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
 
 function checkSymbols({ path, visible, tree, failures }) {
   for (const match of visible.matchAll(SYMBOL_PAIR)) {
+    if (pathValue(match[1])?.endsWith('.md')) {
+      continue;
+    }
     checkSymbolCue({ path, symbol: match[2], rawPath: match[1], tree, failures });
   }
   for (const match of visible.matchAll(SYMBOL_LINK)) {
+    if (match[2].includes('#') || match[1] === match[2].split('/').at(-1)) {
+      continue;
+    }
     checkSymbolCue({ path, symbol: match[1], rawPath: match[2], tree, failures });
   }
+}
+
+function sourceFor(target, tree) {
+  if (!tree.sources.has(target)) {
+    tree.sources.set(target, readFileSync(target, 'utf8'));
+  }
+  return tree.sources.get(target);
+}
+
+function plainHeading(text) {
+  return text
+    .replace(/<[^>]*>/g, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\*+([^*]+)\*+/g, '$1')
+    .replace(/(?<!\w)_+([^_]+)_+(?!\w)/g, '$1')
+    .replace(/`/g, '');
+}
+
+function namedAnchor(text) {
+  return plainHeading(text)
+    .trim()
+    .replace(LEADING_SECTION_NUMBER, '')
+    .replace(TRAILING_PUNCTUATION, '')
+    .split(SUBTITLE, 1)[0]
+    .trim()
+    .replace(TRAILING_PARENTHETICAL, '')
+    .trim()
+    .replace(TRAILING_PUNCTUATION, '');
+}
+
+export function githubSlug(text) {
+  return plainHeading(text)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}_\- ]/gu, '')
+    .replace(/ /g, '-');
+}
+
+function headingTitles(source) {
+  const lines = source.split(NEWLINE);
+  const headings = [];
+  for (const [index, line] of lines.entries()) {
+    const atx = line.match(ATX_HEADING);
+    if (atx) {
+      headings.push(atx[1]);
+    } else if (line.trim() && SETEXT_UNDERLINE.test(lines[index + 1] ?? '')) {
+      headings.push(line.trim());
+    }
+  }
+  return headings;
+}
+
+function anchorsFor(target, tree) {
+  if (!tree.anchors.has(target)) {
+    const source = visibleMarkdown(sourceFor(target, tree).replace(FRONT_MATTER_BLOCK, ''));
+    const headings = headingTitles(source);
+    const labels = [...source.matchAll(/^\s*(?:[-*+]\s+|\d+[.)]\s+)?\*\*([^*\n]+)\*\*/gm)].map((match) => match[1]);
+    const slugs = new Set();
+    for (const heading of headings) {
+      const base = githubSlug(heading);
+      let slug = base;
+      let suffix = 0;
+      while (slugs.has(slug)) {
+        suffix += 1;
+        slug = `${base}-${suffix}`;
+      }
+      slugs.add(slug);
+    }
+    tree.anchors.set(target, { names: new Set([...headings, ...labels].map(namedAnchor)), slugs });
+  }
+  return tree.anchors.get(target);
+}
+
+function checkNamedCue({ path, rawPath, name, tree, failures }) {
+  const value = pathValue(rawPath, true);
+  if (!value) {
+    return;
+  }
+  const target = resolvedCandidates(path, value, tree.root).find((candidate) => pathExists(candidate, value, tree));
+  let exists = false;
+  if (target) {
+    try {
+      exists = value.endsWith('.md')
+        ? anchorsFor(target, tree).names.has(namedAnchor(name))
+        : sourceFor(target, tree).includes(name);
+    } catch {
+      // Ignored/generated paths can resolve spatially but cannot certify a section without readable content.
+    }
+  }
+  if (!exists) {
+    add(failures, path, 'section', `${rawPath}, "${name}"`);
+  }
+}
+
+function* overlappingMatches(text, pattern) {
+  const scanner = new RegExp(pattern.source, pattern.flags);
+  for (let match = scanner.exec(text); match; match = scanner.exec(text)) {
+    yield match;
+    scanner.lastIndex = match.index + 1;
+  }
+}
+
+function checkExtraNames(remaining, context) {
+  let tail = remaining;
+  for (let extra = tail.match(EXTRA_NAME); extra; extra = tail.match(EXTRA_NAME)) {
+    const name = (extra[1] ?? extra[2]).replace(QUOTE_ESCAPE, '$1');
+    if (!NAME_MARKUP.test(name)) {
+      add(context.failures, context.path, 'section_form', `${context.rawPath}, "${name}" (implicit path)`);
+      checkNamedCue({ ...context, name });
+    }
+    tail = tail.slice(extra[0].length);
+  }
+}
+
+function nonSectionName(value, name, backticked) {
+  return (
+    backticked &&
+    (pathValue(name, true) || name.startsWith('/') || (!value.endsWith('.md') && SYMBOL_IDENTIFIER.test(name)))
+  );
+}
+
+function checkSectionPair(match, bare, context) {
+  const [original, rawPath, separator, quoted, curly, backticked, single] = match;
+  const value = pathValue(rawPath, true);
+  const name = (quoted ?? curly ?? backticked ?? single).replace(QUOTE_ESCAPE, '$1');
+  const prefix = bare ? rawPath : `\`${rawPath}\``;
+  const possessive = single && !separator && original.startsWith(`${prefix}'`);
+  if (!value || possessive || nonSectionName(value, name, backticked)) {
+    return;
+  }
+  if (bare || separator !== ',' || !quoted || NUMERIC_NAME.test(name)) {
+    add(context.failures, context.path, 'section_form', original);
+  }
+  if (NAME_MARKUP.test(name)) {
+    return;
+  }
+  checkNamedCue({ ...context, rawPath, name });
+  checkExtraNames(context.visible.slice(match.index + original.length), { ...context, rawPath });
+}
+
+function checkSectionLink(raw, { path, tree, failures }) {
+  if (!raw || URI_SCHEME.test(raw) || raw.startsWith('/') || !raw.includes('#')) {
+    return;
+  }
+  const [rawPath, fragment] = raw.split('#');
+  const value = rawPath ? pathValue(rawPath) : path;
+  if (!(fragment && value)) {
+    return;
+  }
+  const target = resolvedCandidates(path, value, tree.root).find((candidate) => pathExists(candidate, value, tree));
+  let exists = false;
+  try {
+    exists = target && value.endsWith('.md') && anchorsFor(target, tree).slugs.has(decodeURIComponent(fragment));
+  } catch {
+    // An unreadable target or malformed escaped fragment cannot certify an anchor.
+  }
+  if (!exists) {
+    add(failures, path, 'section', raw);
+  }
+}
+
+function checkSections(context) {
+  const { path, visible, failures } = context;
+  for (const [pattern, bare] of [
+    [CUE_PAIR, false],
+    [BARE_SECTION, true],
+    [LINK_SECTION, true],
+  ]) {
+    for (const match of overlappingMatches(visible, pattern)) {
+      checkSectionPair(match, bare, context);
+    }
+  }
+  const withoutLinks = visible.replace(LINK, '');
+  for (const pattern of [OTHER_SECTION, SECTION_NUMBER]) {
+    for (const match of withoutLinks.matchAll(pattern)) {
+      add(failures, path, 'section_form', match[0]);
+    }
+  }
+  for (const match of visible.matchAll(LINK)) {
+    checkSectionLink(match[1].trim().match(LINK_TARGET)?.[1], context);
+  }
+}
+
+function joinedCues(text) {
+  return text.replace(/\r?\n\s*(?:\/\/|\*|#)?\s*/g, ' ');
 }
 
 function checkLineNumbers(path, visible, failures) {
@@ -248,6 +470,9 @@ function checkLineNumbers(path, visible, failures) {
       continue;
     }
     for (const match of line.matchAll(LINE_CITATION)) {
+      if (!(path.endsWith('.md') || FILE_EXTENSION.test(match[0].replace(LINE_SUFFIX, '')))) {
+        continue;
+      }
       add(failures, path, 'line_number', match[0]);
     }
   }
@@ -344,33 +569,56 @@ export function checkPolicyRules({ path, text }) {
 function checkPaths({ path, visible, tree, failures }) {
   for (const candidate of pathCandidates(visible)) {
     const targets = resolvedCandidates(path, candidate.value, tree.root);
-    if (!targets.some((target) => pathExists(target, candidate.value, tree))) {
+    const target = targets.find((item) => pathExists(item, candidate.value, tree));
+    if (!target) {
       add(failures, path, 'path', candidate.raw);
+    } else if (candidate.kind === 'code') {
+      const [sourceProject] = path.split('/');
+      const [targetProject] = relative(tree.root, target).split(sep);
+      const crossProject =
+        SUBPROJECTS.has(sourceProject) && SUBPROJECTS.has(targetProject) && sourceProject !== targetProject;
+      if (crossProject && !candidate.value.startsWith(`${targetProject}/`)) {
+        add(failures, path, 'path_scope', candidate.raw);
+      }
     }
   }
   checkSymbols({ path, visible, tree, failures });
 }
 
-export function checkDocument({ path, text, root = ROOT, tracked, ignored = new Set(), pythonReadIf = new Map() }) {
+export function checkDocument({
+  path,
+  text,
+  root = ROOT,
+  tracked,
+  ignored = new Set(),
+  pythonReadIf = new Map(),
+  sources = new Map(),
+  anchors = new Map(),
+}) {
   const failures = new Map();
-  const reasons = readIfReasons(path, text, failures);
-  if (reasons) {
-    checkReadIfParity(path, reasons, pythonReadIf, failures);
+  if (path.startsWith('mobgen/reference/')) {
+    return [];
   }
-  const visible = visibleMarkdown(text);
+  if (path.endsWith('.md') && !ISSUE_TEMPLATE.test(path)) {
+    const reasons = readIfReasons(path, text, failures);
+    if (reasons) {
+      checkReadIfParity(path, reasons, pythonReadIf, failures);
+    }
+  }
   if (!tracked) {
     throw new Error('tracked file set is required for path checks');
   }
-  const tree = { root, tracked, ignored };
-  checkLineNumbers(path, visible, failures);
+  const owner = resolve(root, path);
+  if (sources.get(owner) !== text) {
+    sources.set(owner, text);
+    anchors.delete(owner);
+  }
+  const tree = { root, tracked, ignored, sources, anchors };
+  checkLineNumbers(path, path.endsWith('.md') ? visibleMarkdown(text) : text, failures);
+  const visible = joinedCues(text);
   checkPaths({ path, visible, tree, failures });
+  checkSections({ path, visible, tree, failures });
   return [...failures.values()];
-}
-
-function trackedMarkdown() {
-  return exec('git', ['ls-files', '-z', '--', '*.md'])
-    .split('\0')
-    .filter((path) => path && !ISSUE_TEMPLATE.test(path));
 }
 
 function trackedTextFiles() {
@@ -401,8 +649,10 @@ function ignoredPaths(candidates) {
 function observedFailures(paths) {
   const tracked = new Set(exec('git', ['ls-files', '-z']).split('\0').filter(Boolean));
   const docTexts = new Map(paths.map((path) => [path, readFileSync(resolve(ROOT, path), 'utf8')]));
+  const sources = new Map([...docTexts].map(([path, text]) => [resolve(ROOT, path), text]));
+  const anchors = new Map();
   const candidates = [...docTexts].map(([path, text]) =>
-    pathCandidates(visibleMarkdown(text)).flatMap(({ value }) =>
+    pathCandidates(joinedCues(text)).flatMap(({ value }) =>
       resolvedCandidates(path, value, ROOT).map(
         (candidate) => `${relative(ROOT, candidate)}${value.endsWith('/') ? '/' : ''}`,
       ),
@@ -417,12 +667,9 @@ function observedFailures(paths) {
     failures.set(key, { ...failure, count: (previous?.count ?? 0) + failure.count });
   };
   for (const [path, text] of docTexts) {
-    for (const failure of checkDocument({ path, text, tracked, ignored, pythonReadIf })) {
+    for (const failure of checkDocument({ path, text, tracked, ignored, pythonReadIf, sources, anchors })) {
       mergeFailure(failure);
     }
-  }
-  for (const path of trackedTextFiles()) {
-    const text = readFileSync(resolve(ROOT, path), 'utf8');
     for (const failure of checkPolicyRules({ path, text })) {
       mergeFailure(failure);
     }
@@ -517,7 +764,10 @@ const FAILURE_HINTS = new Map([
   ['read_if_parity', 'make YAML read_if agree with python3 tools/read_if.py'],
   ['line_number', 'cite the code by path and symbol, not line number'],
   ['path', 'use a valid repo-relative code cue'],
+  ['path_scope', 'use a repo-root path when citing another subproject'],
   ['symbol', 'use a symbol present in the cited source'],
+  ['section', 'use a current heading, bold lead-in label, link anchor or verbatim name in the cited file'],
+  ['section_form', 'use a backticked path, comma and double-quoted name; repeat the path for each section'],
 ]);
 
 function failureHint(item) {
@@ -538,7 +788,7 @@ function printFailures(items) {
 
 function main() {
   const args = new Set(process.argv.slice(2));
-  const observed = observedFailures(trackedMarkdown());
+  const observed = observedFailures(trackedTextFiles());
   const strictFailures = observed.filter(({ check }) => STRICT_CHECKS.has(check));
   const ratchetedFailures = ratcheted(observed);
   if (args.has('--report')) {
@@ -576,7 +826,7 @@ function main() {
   } = comparePolicy(observed, baseline.violations);
   if (strictBaselineRows.length > 0) {
     throw new Error(
-      `${BASELINE_PATH} contains strict check rows: ${strictBaselineRows.map(({ check }) => check).join(', ')}; remove them and fix any observed host violation`,
+      `${BASELINE_PATH} contains strict check rows: ${strictBaselineRows.map(({ check }) => check).join(', ')}; regenerate after fixing the strict violations`,
     );
   }
   const failures = [...policyStrictFailures.map((item) => ({ ...item, kind: 'strict' })), ...differences];

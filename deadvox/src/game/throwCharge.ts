@@ -1,6 +1,5 @@
 // A held item's throw, from the press that picks its hand and item, through the release or cancel that ends its
-// charge, to the player tick that lands it. The session owns it so a climber holds still while it charges (DESIGN.md,
-// "Ladders and hatches"), and a replay, driven by the same recorded presses and releases, charges at the same ticks as
+// charge, to the player tick that lands it. The session owns it so a climber holds still while it charges (`DESIGN.md`, "Ladders and hatches"), and a replay, driven by the same recorded presses and releases, charges at the same ticks as
 // the live game and lands its recorded throws through the same `land`.
 
 import { dominantSide, offSide } from '../core/character.ts';

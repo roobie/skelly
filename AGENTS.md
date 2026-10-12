@@ -42,7 +42,14 @@ a comment or a PR:
 - Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
   no lists, tables or values copied from code. A cited path is relative to the repo
   root, the doc's subproject root (`deadvox/`, `engine/`, `gungen/`, `mobgen/`) when relevant,
-  or the doc itself.
+  or the doc itself. Cross-subproject cues use a repo-root path.
+- Prose section cues use only a backticked path, comma and double-quoted name:
+  `README.md`, "Zero drift". Bare paths, backticked names and numbered references
+  fail: agents copy nearby examples, so alternate spellings undermine the rule.
+  Markdown links with resolving heading anchors remain allowed. Names resolve to
+  headings or bold lead-in labels; names in other file types must occur verbatim.
+  Cue checks cover every tracked text file, not only docs. Scanner boundaries and
+  their reasons belong in `docs/zero-drift-check.md`.
 - A "when" names its trigger: an item ID or an issue. No "today", "currently" or
   "newly". When your PR completes an item, resolve every doc line that names it.
 - The final reason goes in a tracked doc or ADR before the merge, not only in the PR,

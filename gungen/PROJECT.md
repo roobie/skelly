@@ -16,7 +16,7 @@ Gungen designs stylized firearm assemblies whose parts fit and whose moving path
 
 Curated designs choose from a constrained vocabulary of part families, parameters and prefabs. New archetypal shapes belong in that vocabulary rather than unconstrained vertex editing; this keeps fit rules applicable as designs change. See `src/gun/designLoader.ts#loadGunDesign` and `src/gun/templates.ts#TEMPLATES`.
 
-The shared engine owns domain-neutral assembly, geometry and fit mechanisms. Gungen owns firearm data and policy so other consumers do not inherit gun-specific concepts; see `../engine/README.md`, `Shared engine`.
+The shared engine owns domain-neutral assembly, geometry and fit mechanisms. Gungen owns firearm data and policy so other consumers do not inherit gun-specific concepts; see `engine/README.md`, "Shared engine".
 
 ## Scale and ammunition
 
@@ -44,6 +44,6 @@ Attachments are separate geometry and identity so a fitted choice can be replace
 
 A Gungen change to a gun Deadvox ships refreshes Deadvox's copy, its GLB and model entry, in the same PR: a stale copy still validates and loads, so the two drift apart silently. Each exported design records the inputs its export needs, such as its `calibre`, so `../test/gungen-deadvox-contract.test.mjs` can re-export every gun the Deadvox asset manifest credits to a Gungen design and fail on any difference in Gungen's export. Follow the shared authoring boundary in `../docs/jsonnet.md`, "Source boundaries".
 
-The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `../deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is a geometry/material estimate, not inventory weight or a product specification; see `src/gun/attachmentMass.ts#attachmentMassKg` and `docs/deferred-assertions.md`.
+The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is a geometry/material estimate, not inventory weight or a product specification; see `src/gun/attachmentMass.ts#attachmentMassKg` and `docs/deferred-assertions.md`.
 
 Cross-project checks protect this boundary. Attachment typechecking and tests traverse Deadvox and Mobgen imports, so their aliases remain part of Gungen's check graph; see `tsconfig.json#paths` and `vite.config.ts#resolve.alias`.

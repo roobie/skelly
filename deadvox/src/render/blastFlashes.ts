@@ -16,7 +16,7 @@ interface Puff {
   radiusMetres: number;
 }
 
-/** A detonation's fireball and the dust it throws up, swelling and fading where the blast was (DESIGN.md, "Hand grenade"). */
+/** A detonation's fireball and the dust it throws up, swelling and fading where the blast was (`DESIGN.md`, "Hand grenade"). */
 export class BlastFlashes {
   readonly group = new Group();
   private readonly geometry = new SphereGeometry(1, 16, 12);

@@ -1,4 +1,4 @@
-// The player's body (DESIGN.md, "Needs"). Fatigue is sleep debt: 100 is what a normal sleep clears.
+// The player's body (`DESIGN.md`, "Character"). Fatigue is sleep debt: 100 is what a normal sleep clears.
 local normalSleepGameHours = 8;
 local normalSleep = 100 / normalSleepGameHours;
 

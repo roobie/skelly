@@ -1,5 +1,5 @@
 // Dynamic attachment admission uses only gungen's certificates and exported rail-notch footprints. The sling mount
-// is the one exception: deadvox owns it, because gungen exports no sling (DESIGN.md, "Shoulder and sling").
+// is the one exception: deadvox owns it, because gungen exports no sling (`DESIGN.md`, "Shoulder and sling").
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import type { Item } from './items.ts';
 

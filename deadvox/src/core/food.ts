@@ -1,4 +1,4 @@
-// Food rotting (DESIGN.md, "Catch-up simulation"). An item's age comes from the clock
+// Food rotting (`DESIGN.md`, "Catch-up simulation"). An item's age comes from the clock
 // and when it was made, so rotting keeps no state and needs no ticking: food in a
 // chunk that was unloaded for a week is exactly as rotten as food you carried.
 
