@@ -27,7 +27,7 @@ Paint is vehicle-owned; non-paint material colors belong to the part type. Wear 
 
 ## Noise comes from the build
 
-Vehicle noise is expressed as hearing radius so it can join Deadvox sound admission without a second unit system. The engine is the source; hull and silencer damp it. Because intensity falls with the square of distance, source radii add in quadrature; each fitted damper scales the total, so removing one never makes the vehicle quieter. See `src/vehicles/model.ts`, `PartNoise` and `noiseRadius`.
+Vehicle noise is expressed as hearing radius so it can join Deadvox sound admission without a second unit system. The engine is the source; hull and silencer damp it. Because intensity falls with the square of distance, source radii add in quadrature; each fitted damper scales the total, so removing one never makes the vehicle quieter. See `src/content/base/senses.jsonnet`, `hearingRangeScale`, and `src/vehicles/model.ts`, `PartNoise` and `noiseRadius`.
 
 ## Proportions
 
