@@ -1,7 +1,7 @@
 ---
 read_if:
   - you dispatch, build, review or merge a change and need its steps
-  - you maintain the slice checklist when milestone PRs merge
+  - you create or maintain a slice checklist, including surveys and milestone records
   - you record a decision by BR and need to know where it goes
   - you plan refactoring, a maintainability survey or a slice retrospective
   - you hit a working rule's situation (shared host, test pool, run bounds, units, CI cost)
@@ -134,28 +134,35 @@ The repository keeps no review or retrospective snapshots.
   deliberate distinctions. Review callers and secondary consumers, not only the
   new owner. Prove a risky boundary with a discriminating test or mutation; do not
   add near-duplicate tests for a larger count.
-- **At slice start and exit:** commission a history-and-planned-change
-  maintainability survey for each subproject. Use the `maintainability-review`
-  method: checks first; ranked, refutation-tested findings; stable IDs; and
-  explicit disposition of earlier findings. An exit survey may serve as the next
-  start survey only when its base and next-change assumptions still hold; record
-  reuse and inspect the intervening delta. A recurring smell or repeated boundary
-  failure triggers a targeted survey, not automatically another full survey.
-  Reports live in #159 or an issue linked from it, not in files.
-- **At slice closure:** commission one deep docs pass, as tracked by the exit item
-  on #293 and planned in r50.
+- **At slice start and exit:** the slice checklist issue has a checkbox for a
+  history-and-planned-change maintainability survey for each subproject. Use the
+  `maintainability-review` method: checks first; ranked, refutation-tested
+  findings; stable IDs; and explicit disposition of earlier findings. An exit
+  survey may serve as the next start survey only when its base and next-change
+  assumptions still hold; record reuse and inspect the intervening delta. A
+  recurring smell or repeated boundary failure triggers a targeted survey, not
+  automatically another full survey. Link each report from #159 or an issue linked
+  from it; keep reports out of repository files.
+- **At slice closure:** commission one deep docs pass, tracked by the exit checkbox
+  on the slice checklist issue. Record its findings in #159 or an issue linked from
+  it, not in a repository file.
 - **Decide and date:** the lead records each finding's owner, rationale, scope,
   affected milestone and decision: do separately, fold into named work, defer,
-  or drop. Every open owned finding has an actual calendar revisit date, including
-  folded and deferred work; a milestone name is not a date. On that date, record
-  progress or a new decision and date. Done/drop records a dated disposition and
-  evidence or reason; partial completion leaves the remaining scope open and
-  dated. BR decides new scope and trade-offs.
-- **One durable record:** #159 (or its linked issue) holds the finding and decision.
-  The host-local work.db tracker enforces assignment dates and sends reminders
-  after its approved cutover; until then the lead maintains and checks the dated
-  issue entries. Mail is transport, not another backlog. A reminder prompts a
-  decision; it does not complete, drop or reassign work automatically.
+  or drop. Every open finding has a next revisit date in the agent-work tracker,
+  including folded and deferred work; a milestone name is not a date. On that date,
+  record progress or a new decision and date the next revisit. Done or dropped
+  findings get a dated disposition and evidence or reason. Partial completion
+  leaves the remaining scope open; a remedy PR merging or a revisit being recorded
+  does not retire it. BR decides new scope and trade-offs.
+- **One durable record:** #159 (or its linked issue) holds each finding, its owner,
+  scope, decision and dated disposition history. The agent-work tracker alone holds
+  its next revisit date. Each open finding has exactly one lead-issued reminder:
+  a dated draft named for the finding ID and linked to #159, so it cannot be
+  claimed as engineering work. Keep that reminder open through partial deliveries;
+  retire it only when #159 records the finding done or dropped. Engineering rounds
+  are separate tracker items that link back to the finding. Mail is transport, not
+  another backlog; a reminder prompts a decision and does not complete, drop or
+  reassign work automatically.
 - **Capacity:** review each group of four newly dispatched advanced-coder feature
   IDs for named backlog work, aiming for at least one. Count each feature once,
   not its correction/review rounds; classify it as standalone, folded, or neither.
@@ -207,10 +214,9 @@ comparison; keep unknown effort or time saved unknown.
   assigned to me, but what if I don't address them?" An owned failure or finding is fixed,
   scheduled into a real slot, quarantined with a revisit date, or closed with a reason, and its
   age forces a re-decision.
-- **Mechanize every follow-up** (BR, 2026-10-03): "we should consider in every assignment
-  relation how we can mechanize the follow-up. Basic example: set a date, and add a timer unit
-  that adds a message when a decision expired". The work tracker's revisit dates and sweep do
-  this for team items. An issue carries its revisit date in its body.
+- **Mechanize every follow-up:** the agent-work tracker owns the next revisit date
+  for each follow-up. Keep one date authority; issue text records decisions and
+  dated history, not a second next-revisit date.
 
 ## When main is red
 
