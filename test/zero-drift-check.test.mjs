@@ -84,15 +84,16 @@ describe('zero-drift line-number check', () => {
     assert.ok(!checks(scan(document('> stack at foo.mjs:12\n\n```text\nfoo.ts:3\n```'))).includes('line_number'));
   });
 
-  it('exempts dated review citations and paths but still requires read_if', () => {
+  it('checks review paths and line citations instead of exempting them', () => {
+    const path = 'docs/reviews/fixture.md';
     const failures = checkDocument({
-      path: 'docs/reviews/fixture.md',
-      text: 'No front matter. See `src/missing.ts` and foo.ts:12-14.',
+      path,
+      text: document('See `src/missing.ts` and foo.ts:12-14.'),
       root,
       tracked: new Set(),
-      pythonReadIf: new Map(),
+      pythonReadIf: new Map([[path, ['read this']]]),
     });
-    assert.deepEqual(checks(failures), ['read_if']);
+    assert.deepEqual(checks(failures).sort(), ['line_number', 'path']);
   });
 });
 
@@ -143,6 +144,14 @@ describe('zero-drift symbol check', () => {
 });
 
 describe('zero-drift policy rules', () => {
+  it('rejects tracked review and retrospective files', () => {
+    const paths = ['docs/reviews/fixture.md', 'retro-slice-3.md'];
+    assert.deepEqual(
+      paths.flatMap((path) => checkPolicyRules({ path, text: '' })).map(({ path, check }) => ({ path, check })),
+      paths.map((path) => ({ path, check: 'historical_doc' })),
+    );
+  });
+
   it('flags stamped source citations, not BR as an actor', () => {
     const markdown = checkPolicyRules({
       path: 'docs/fixture.md',
@@ -202,12 +211,22 @@ describe('zero-drift policy rules', () => {
     );
   });
 
-  it('fails host violations even when the baseline lists them', () => {
-    const host = { path: 'src/fixture.ts', check: 'host', text: '/home/ann', count: 1 };
-    const comparison = comparePolicy([host], [host]);
-    assert.deepEqual(comparison.strictFailures, [host]);
-    assert.deepEqual(comparison.strictBaselineRows, [host]);
-    assert.deepEqual(comparison.differences, []);
+  it('fails strict policy violations even when the baseline lists them', () => {
+    const violations = [
+      { path: 'src/fixture.ts', check: 'host', text: '/home/ann', count: 1 },
+      {
+        path: 'docs/reviews/fixture.md',
+        check: 'historical_doc',
+        text: 'reviews and retros belong in git history, not tracked files',
+        count: 1,
+      },
+    ];
+    for (const violation of violations) {
+      const comparison = comparePolicy([violation], [violation]);
+      assert.deepEqual(comparison.strictFailures, [violation]);
+      assert.deepEqual(comparison.strictBaselineRows, [violation]);
+      assert.deepEqual(comparison.differences, []);
+    }
   });
 
   it('flags today and currently in prose, not in code spans, fences, blockquotes or quotes', () => {
