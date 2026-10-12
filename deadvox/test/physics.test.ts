@@ -181,17 +181,17 @@ describe('steer', () => {
   });
 
   it('scales sideways and backward speeds by their content factors and blends diagonals', () => {
-    const movement = BUNDLED_CONTENT.registry.senses.get('player')!.movement;
-    const speeds = (forward: number, right: number, crouch = false) => {
+    const { movement, crouch } = BUNDLED_CONTENT.registry.senses.get('player')!;
+    const measureSpeed = (forward: number, right: number, isCrouching = false) => {
       const body = createPlayerBody(half, 0, 0, 0);
       const paced = movementPace(
-        { forward, right, jump: false, sprint: false, walk: false, crouch },
+        { forward, right, jump: false, sprint: false, walk: false, crouch: isCrouching },
         {
           grams: 0,
           handling: false,
           readyMovementFactor: 1,
           movementSpeed: 1,
-          crouchSpeed: BUNDLED_CONTENT.registry.senses.get('player')!.crouch.speedMetresPerSimSecond,
+          crouchSpeed: crouch.speedMetresPerSimSecond,
           directionalSpeed: {
             sideways: movement.sidewaysSpeedScale,
             backward: movement.backwardSpeedScale,
@@ -201,16 +201,16 @@ describe('steer', () => {
       steer(body, half, 0, paced);
       return Math.hypot(body.vel[0], body.vel[2]) * half.blockSize;
     };
-    const forward = speeds(1, 0);
-    const sideways = speeds(0, 1);
-    const backward = speeds(-1, 0);
-    const diagonal = speeds(1, 1);
-    expect(sideways / forward).toBeCloseTo(movement.sidewaysSpeedScale);
-    expect(backward / forward).toBeCloseTo(movement.backwardSpeedScale);
-    expect(backward).toBeLessThan(sideways);
-    expect(sideways).toBeLessThan(forward);
-    expect(diagonal).toBeGreaterThan(sideways);
-    expect(diagonal).toBeLessThan(forward);
+    const forwardSpeed = measureSpeed(1, 0);
+    const sidewaysSpeed = measureSpeed(0, 1);
+    const backwardSpeed = measureSpeed(-1, 0);
+    const diagonalSpeed = measureSpeed(1, 1);
+    expect(sidewaysSpeed / forwardSpeed).toBeCloseTo(movement.sidewaysSpeedScale);
+    expect(backwardSpeed / forwardSpeed).toBeCloseTo(movement.backwardSpeedScale);
+    expect(backwardSpeed).toBeLessThan(sidewaysSpeed);
+    expect(sidewaysSpeed).toBeLessThan(forwardSpeed);
+    expect(diagonalSpeed).toBeGreaterThan(sidewaysSpeed);
+    expect(diagonalSpeed).toBeLessThan(forwardSpeed);
   });
 
   it('composes directional speed with crouch pace multiplicatively', () => {

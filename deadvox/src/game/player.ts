@@ -145,9 +145,7 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
   const sidewaysFactor = direction?.sideways ?? 1;
   const axisWeight = Math.abs(forward) + Math.abs(right);
   const directionFactor =
-    axisWeight === 0
-      ? 1
-      : (Math.abs(forward) * forwardFactor + Math.abs(right) * sidewaysFactor) / axisWeight;
+    axisWeight === 0 ? 1 : (Math.abs(forward) * forwardFactor + Math.abs(right) * sidewaysFactor) / axisWeight;
   if (len > 1) {
     forward /= len;
     right /= len;
@@ -160,8 +158,7 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
     pace = intent.crouchSpeed ?? PLAYER.walk;
   }
   const speed =
-    ((intent.sprint && !intent.crouch ? PLAYER.sprint : pace) * (intent.pace ?? 1) * directionFactor) /
-    scale.blockSize;
+    ((intent.sprint && !intent.crouch ? PLAYER.sprint : pace) * (intent.pace ?? 1) * directionFactor) / scale.blockSize;
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   // yaw 0 looks down -z; +x is to the right.
