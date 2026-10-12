@@ -1191,7 +1191,9 @@ without modeling armour now.
   saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps
-  the stains it fell with. A player's bleeding drips from the affected region as
+  the stains it fell with. Blood shares scene lighting rather than glowing over
+  it, so darkness hides stains and carried light can reveal them. A player's
+  bleeding drips from the affected region as
   the avatar is drawn in each view; in first person, droplets enter view only when
   looking down or near the screen edge. The HUD shows blood level and
   active regions, and the worst wound reaching a worse tier speaks that tier's
