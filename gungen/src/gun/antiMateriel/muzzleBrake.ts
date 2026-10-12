@@ -77,9 +77,18 @@ export const muzzleBrake: PartFamily = {
         chamber(wing, 'front-chamber-left', -1, front),
       ],
       ports: [
-        { id: 'base', mount: 'muzzle', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
+        {
+          id: 'base',
+          mount: 'muzzle',
+          standard: 'rifled',
+          gender: 'male',
+          pos: [0, 0, 0],
+          normal: NEG_X,
+          up: Y,
+          required: true,
+        },
         // The gun's muzzle moves to the brake's nose.
-        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [nose, 0, 0], normal: X, up: Y },
+        { id: 'muzzle', mount: 'muzzle', standard: 'rifled', gender: 'female', pos: [nose, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],

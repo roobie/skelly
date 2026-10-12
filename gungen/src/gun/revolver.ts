@@ -998,7 +998,15 @@ const revolverBarrel: PartFamily = {
           normal: [-1, 0, 0],
           up: [0, 1, 0],
         },
-        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: [1, 0, 0], up: [0, 1, 0] },
+        {
+          id: 'muzzle',
+          mount: 'muzzle',
+          standard: 'rifled',
+          gender: 'female',
+          pos: [len, 0, 0],
+          normal: [1, 0, 0],
+          up: [0, 1, 0],
+        },
       ],
       keepOuts: [
         keepOut('muzzle', [len, -1, -1], [len + 30, 1, 1]),
