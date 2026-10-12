@@ -27,6 +27,21 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
+const registryWithSleepCap = (sleepCap: number) => {
+  const files = readdirSync('src/content/base')
+    .filter((name) => name.endsWith('.json'))
+    .map((source) => ({
+      source,
+      data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
+    }));
+  const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === 'player');
+  if (!compression) {
+    throw new Error('Missing scenario compression definition');
+  }
+  compression.caps.sleep = sleepCap;
+  return buildRegistry(files);
+};
+
 describe('snapshot state components', () => {
   it('round-trips an active Wait through the save codec', async () => {
     const runtime = createRuntime();
@@ -39,19 +54,8 @@ describe('snapshot state components', () => {
     expect(restored.sim.compression.active).toBe(true);
   });
   it('round-trips bed sleep above the former save compression ceiling', async () => {
-    const files = readdirSync('src/content/base')
-      .filter((name) => name.endsWith('.json'))
-      .map((source) => ({
-        source,
-        data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
-      }));
-    const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === 'player');
-    if (!compression) {
-      throw new Error('Missing scenario compression definition');
-    }
     const formerSaveCeiling = 30;
-    compression.caps.sleep = formerSaveCeiling + 34;
-    const { registry: sleepRegistry, issues } = buildRegistry(files);
+    const { registry: sleepRegistry, issues } = registryWithSleepCap(formerSaveCeiling + 34);
     expect(issues).toEqual([]);
 
     const runtime = createRuntime(undefined, true, undefined, { content: sleepRegistry });
@@ -76,7 +80,9 @@ describe('snapshot state components', () => {
   });
 
   it('keeps a mid-sleep bed snapshot saveable when a frame elapsed is invalid', async () => {
-    const runtime = createRuntime(undefined, true);
+    const { registry: sleepRegistry, issues } = registryWithSleepCap(64);
+    expect(issues).toEqual([]);
+    const runtime = createRuntime(undefined, true, undefined, { content: sleepRegistry });
     expect(startRest(runtime, 'sleep')).toBeUndefined();
     const frame = (elapsed: RealSeconds): void => {
       advanceLiveFrame(runtime.sim, elapsed, undefined, (simDt, until) => runtime.session.frame(simDt, until));
