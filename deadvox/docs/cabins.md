@@ -1,31 +1,13 @@
 ---
 read_if:
-  - you're placing or changing the beat 3 cabins or their anchors
-  - you're wiring loot, the key or the shambler into them
+  - you're changing the Beat 3 cabins, their anchors or their fixed loot
+  - you're wiring the key, lock or shambler into a cabin
 ---
 
 # Beat 3 cabins
 
-Dad's cabin is one storey over a cellar (see
-`deadvox/src/content/base/templates-cabins.json`, `dads_cabin`). Its tall solid top
-read as a second storey with no stairs up, so the roof was lowered. BR approved it
-(2026-10-04: "i'm approving dad's cabin like that, but at some point we'll wanna
-make prettier buildings possible"); future prettier-building work is #221. The north wall's
-`dad_front_door` is an ordinary openable door, not locked in this content. Its
-outside key placement anchor is `dad_front_step_key_spot` at local block position
-`[11, 6, 1]` (metres `[5.75, 3, 0.75]` from the template origin). This recess is
-beside the front step; keep it clear until lock/key integration.
+Dad's cabin is a one-storey building over a cellar. Keep the roof low enough that it does not read as an inaccessible second storey; the template has no stairs to the roof. This is a prototype compromise, not the final building direction; prettier buildings remain tracked by #221. The front-step recess is reserved for the future key placement, so keep it clear until the lock/key integration is authored. See `src/content/base/templates-cabins.json`, `dads_cabin`.
 
-The cellar has two shelves near its north wall and a crate near its south wall, each
-with the deterministic empty `d41_empty` loot table. They are placement anchors for
-later fixed shell, food and water loot. The
-gun cabinet is ordinary container furniture with a 4×12 pocket, sized for the
-pump shotgun's admitted inventory footprint. It has no lock or default loot. The
-hunter's rear room is closed by an ordinary door; the demo layout, not the template,
-places the shambler at the named design spot (template-local `[8.5, 1, 10.5]`).
+The cellar shelves and crate are deterministic placement anchors for later fixed loot. The gun cabinet is an ordinary container sized for the admitted pump-shotgun footprint; it has no lock or default loot. The hunter's rear room uses an ordinary door, and its shambler belongs to the demo layout rather than the reusable template.
 
-The separate `cabins_demo` layout is a flat preview site, not the ridge's
-`hunting_cabins` layout. Final loot, the key/lock, ridge placement and the shotgun
-and ammunition items are authored in later integration work. Ammo packaging follows
-BR's ruling: a plain box is wielded and activated to unpack; it is not a container
-that is searched or loaded directly.
+`cabins_demo` is a flat preview site, not the ridge's `hunting_cabins` layout. Keep the reusable cabin template separate from ridge placement and final loot. A sealed ammunition box is wielded and activated to unpack; it is not a searchable container.

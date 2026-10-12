@@ -1,121 +1,26 @@
 ---
 read_if:
-  - you're reviewing or changing procedural surface weathering and the building dilapidation look
-  - you're changing or reviewing solar-phase sky tone-mapping keyframes
+  - you're changing procedural surface weathering or building appearance
+  - you're changing the solar-phase look or evaluating renderer performance
+  - you're changing wide ambient occlusion or its interaction with skylight
 ---
 
-# deadvox — graphics
+# Deadvox graphics
 
-Status of the look workstream: what's in, what the default look is, what's open, and
-what's next. Started on branch `deadvox/look-experiments` (PR #104) to make the game
-look less bland and make things easier to tell apart. Debugging the renderer:
-[TROUBLESHOOTING.md](TROUBLESHOOTING.md); lessons: [LESSONS.md](LESSONS.md).
+The graphics direction is driven by atmosphere and readability, not realism. The detailed rationale for the look is in [DESIGN.md](DESIGN.md#a-world-that-feels-real); visual debugging guidance is in [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
-## The plan
+## Look decisions
 
-From the 2026-10-01 discussion, ranked by mood gained per cost:
+Tone mapping follows the solar cycle: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night. The by-eye choice gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `src/core/mood.ts`, `DEFAULT_LOOK`, and `src/render/autoTone.ts`.
 
-| # | Item | Status |
-| --- | --- | --- |
-| 1 | Procedural surface patterns per block material, in the chunk shader | done |
-| 2 | Sun shadows (dawn to dusk) and flashlight shadows | done |
-| 3 | Colour grading, film (vignette, grain), bloom, height fog driven by fogginess | done |
-| 4 | Wider-radius ambient occlusion from the voxel grid, computed while meshing | done |
-| 5 | Procedural weathering layered over block surface patterns | Named profiles, live tuning and per-material pixel checks |
-| 6 | Skylight: light flooding in from the sky, so interiors are dark (planned for Slice 4 in [CHALLENGES.md](CHALLENGES.md#9-lighting)) | later |
+Post-processing and shadows support the intended mood, but their cost on a reference GPU remains unmeasured. SwiftShader is not evidence of reference-GPU performance. Keep same-workload comparisons before making performance claims. See `src/bench/post.ts`, `benchDraw`.
 
-Also done along the way: block colours decoded from sRGB (they were rendered as if linear,
-so paler than authored); the flashlight fades with daylight; the pause card docks right
-with no dimming; the test house gained stonework, colour blocks and furniture.
+Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `src/core/occlusion.ts` and `src/render/chunks.ts`, `chunkMaterial`.
 
-## The default look
+## Unresolved constraints
 
-Set in `src/core/mood.ts` (`DEFAULT_LOOK`, `DEFAULT_MOOD`, `DEFAULT_SHADOWS`) and
-`DEFAULT_FOGGINESS` in `src/core/weather.ts`:
-
-- `auto` tone mapping, exposure 3.0, sRGB block-colour decode, surface patterns on. Auto blends three's Neutral
-  and ACES Filmic by time of day: by eye, Neutral looks best in bright daylight, ACES (or AgX) at dawn and dusk,
-  and ACES at night, where it gives the dark and the flashlight their depth. The weathering layer adds render-only signs of age while preserving surface patterns; the default profile keeps material hue, while `overgrown` may shift it. The blend is bounded below full replacement; see [DESIGN.md](DESIGN.md#a-world-that-feels-real) for why, and `src/render/chunks.ts`, `chunkMaterial`, applies it. Layouts select a named profile or use the default. The debug Weathering group edits and shares profile values without reloading or remeshing; the debug comparison pad and Firefox pixel stage compare concrete, brick and wood on clean and weathered halves. The weight (0 is Neutral, 1 is ACES)
-  is the sky keyframes' `tone` field (`src/core/sky.ts`, `KEYS`), interpolated like `bloom`: 0 through most of the day,
-  0.85 at sunrise and sunset, and 1 through deep night. Keyframe positions follow the solar phases, so the ramp moves
-  with the cycle and sunrise has no step; weather does not move it. `aces`, `agx`, `neutral` and `none` stay selectable
-  (debug key J cycles through all, `?tone=`).
-  - How it is wired: `src/render/autoTone.ts` replaces the empty `CustomToneMapping` stub in three's
-    `tonemapping_pars_fragment` with `mix(NeutralToneMapping(c), ACESFilmicToneMapping(c), autoToneWeight)`, so each
-    curve (and its own exposure scaling) is three's code and the ends equal the plain options. `auto` is
-    `renderer.toneMapping = CustomToneMapping`; OutputPass picks it up and the weight is a uniform shared with its
-    material (`Mood.setSky` writes it every frame). Plain materials have no such uniform, so with `post=0` the frame is
-    drawn with Neutral below weight 0.5 and ACES above (`screenToneMapping` in `src/render/mood.ts`).
-  - The panel and look dump show `Auto (0.85)`, the current weight.
-- Post-processing on: grade at full strength, film, bloom. Bloom starts where a grey reaches about 0.95 on screen
-  for the active tone mapper, not at post-exposure 1: a post-exposure clip of 2.0 for ACES, 5.0 for AgX, 1.1 for
-  Neutral and 1.0 with no tone mapping (`BLOOM_CLIP_BY_TONE`, derived in `src/core/mood.ts`), divided by the
-  exposure for the pass's threshold. Under `auto` the clip is the Neutral and ACES values mixed by the same weight
-  (`bloomClipFor(tone, weight)`), 1.1 by day and 2.0 at night. The clip is never below 1, which keeps the sky from
-  blooming. Debug: Delete / Insert step it (`?bloomclip=`), by default it follows the tone mapper; under `auto` an
-  override is always written to the URL, as the value it would follow moves with the time of day.
-- The flashlight beam is 5 cd with a near-field-capped falloff, 1 / (d + 4 m) (`src/render/flashlight.ts` and
-  `lightFalloff.ts`, arithmetic in the comment): after exposure about 0.4 on a mid-albedo block at 2 m, 0.15 at
-  10 m, and 0.86 on a white block at 1 m. Debug: numpad - / + scale it by 1.25 per press
-  (`?torch=`, 1 by default).
-- Fogginess 0.2. It is render-only for now; the Slice 4 weather system will drive it, and
-  then it becomes saved simulation state (see [ADR 0002](docs/decisions/0002-saves.md)).
-- Sun and flashlight shadows on; sun shadow distance 40 m. No shadows from the night
-  light, because there is no moon yet.
-- Wide ambient occlusion on (`?vao=0` or key `9` turns it off): see below.
-
-## Wide ambient occlusion
-
-The mesher (`src/core/mesher.ts`, `src/core/occlusion.ts`) darkens ambient light only, never
-the sun or flashlight, by how enclosed a spot is. Per quad corner it measures the solid
-fraction of the half-space box in front of the face: R = 8 blocks (4 m) along the normal
-and 8 either side of the vertex across, from a summed-volume table over a solidity array
-that reaches 8 blocks beyond the chunk (`extractWide`). Open ground scores 1; a wall foot
-about 0.5; an inside corner of two walls about 0.25. The score maps to a factor through
-`mix(0.35, 1, openness)` quantized to 6 levels, kept in a separate normalized Uint8 vertex
-attribute and multiplied into the indirect irradiance in the chunk shader. The levels are
-part of the greedy-merge key, so a merged quad shades as its separate faces would. The
-3-neighbour corner AO baked into vertex colours is unchanged. The tuning constants
-(radius, floor, gamma, levels) are together at the top of `occlusion.ts`.
-
-- Cells that aren't loaded read as air and everything below the world's bottom layer as
-  solid, as for the 1-block padding.
-- A block edit now remeshes every chunk within 8 blocks of the cell, diagonals included
-  (`affectedChunks`), up to 8 chunks instead of 1 to 3.
-- The strength is a uniform, so the debug toggle (`9`, `?vao=0`) needs no remesh.
-- Cost, measured in Node on 50 hamlet and city chunks (ms per chunk, median): extraction
-  fell from about 0.7 (1-block array) to about 0.4 (both arrays), because it now copies
-  rows rather than looking up a chunk per cell; meshing rose from about 1.0 to about 1.6,
-  and quads per chunk by 15% (hamlet) to 47% (city). Not yet measured on a real GPU,
-  where the extra vertex attribute and quads also cost.
-
-The weathering rationale and geometry scope are in [DESIGN.md](DESIGN.md#a-world-that-feels-real). Procedural weathering changes rendering only; #396 covers building-geometry changes.
-
-## Open
-
-- **Not benchmarked.** The reference-GPU cost of surface patterns, weathering, post-processing
-  and shadows remains unknown; SwiftShader timings are not representative. `src/bench/post.ts`,
-  `benchDraw`, selects the mood pass but does not disable the content-driven chunk weathering in
-  `src/render/chunks.ts`, `chunkMaterial`. A same-workload comparison against `origin/main` is
-  required for a weathering cost claim.
-- **Sun shadows rely on a three.js internal.** `src/render/shadows.ts` wraps
-  `renderer.shadowMap.render` to choose casters, which a three.js upgrade could break.
-  Needs a proper solution before merging.
-- **The flashlight falloff patches a three.js internal.** `src/render/lightFalloff.ts` rewrites one line of
-  `ShaderChunk.lights_pars_begin` (the distance falloff) once at start-up, for every material. It throws if the
-  line is not found and `test/lightFalloff.test.ts` checks that, so an upgrade fails loudly, but it still needs
-  a proper solution (like the shadow hook above) before merging. The flashlight is the only punctual light.
-- **The auto tone mapping patches a three.js internal.** `src/render/autoTone.ts` rewrites the `CustomToneMapping` stub
-  of `ShaderChunk.tonemapping_pars_fragment` once at start-up (from the `Mood` constructor). It throws if the stub is
-  not found and `test/autoTone.test.ts` checks that, so an upgrade fails loudly, but it needs a proper solution (like
-  the hooks above) before merging. The ends of the keyframe weights (0 by day, 1 at night) follow the by-eye findings on
-  a real GPU; 0.85 at dawn and dusk and the linear ramps are first guesses, not yet looked at on one (dusk starts easing
-  towards ACES while the sun is still high).
-- **Wide occlusion is tuned by eye on the test house only.** Floor 0.35 and gamma 1 are first
-  guesses; revisit them with indoor scenes once skylight (item 5) lands, which will
-  overlap with it. The extra quads (up to 47% in the city) are the main cost to watch.
-- **Debug keys on planned bindings.** `Q` (all post-processing) is reserved for lean and
-  `L` (fogginess down) is planned for sleep in [CONTROLS.md](CONTROLS.md); move both
-  before those verbs are bound.
-- **Shader warm-up gaps.** glTF model materials and the `post=0` path compile on first use.
-- **Not merged.** Everything is on `deadvox/look-experiments` (draft PR #104).
+- Sun-shadow rendering and flashlight falloff rely on three.js internals; upgrades must fail loudly until these hooks have a supported replacement.
+- Wide occlusion is tuned by eye on limited indoor scenes. Revisit its strength when Slice 4 skylight overlaps with it.
+- Dawn/dusk tone transitions and weathering profiles need review on a real GPU.
+- Debug-only look controls must move before their reserved gameplay inputs are bound.
+- Shader warm-up gaps remain for model materials and the no-post-processing path.

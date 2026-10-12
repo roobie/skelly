@@ -1,68 +1,15 @@
 ---
 read_if:
   - you change door-lock content, interaction or save ownership
-  - you inspect the lock_test first-look fixture
+  - you use the `lock_test` first-look fixture
 ---
 
 # Minimal door locks
 
-A template palette entry can give one door an initial lock state:
+A door's lock state belongs to its block entity and is saved with the door. A locked door cannot be open. Keys are ordinary items whose content declares the lock they fit; ids are global, and validation rejects invalid or ambiguous lock/key relationships. This is authored metadata, not a procedural placement-id scheme. See `src/core/blockEntities.ts`, `BlockEntities`, and `src/core/schema.ts`.
 
-```json
-"D": {
-  "furniture": "wood_door",
-  "facing": "n",
-  "lock": { "id": "test_shed", "locked": true }
-}
-```
+`world.interact` opens or closes a door. A carried matching key is activated on a closed door to lock or unlock it from either side. The action rechecks reach, key and state when queued and when completed. A locked door with prying support can be forced with the qualifying carried tool; prying destroys the padlock and leaves the door unlocked, making forced entry a one-way breach. See `src/game/play.ts`, `startPlay`, and `src/core/prying.ts`, `pryPlan`.
 
-An ordinary item definition names the id it fits with
-`"key": { "lock": "test_shed" }`. Keys have no separate instance payload or
-inventory. BlockEntities owns the door's lock state, clones authored metadata,
-and saves it alongside `open`; a locked door cannot be open.
+The `lock_test` site keeps its key beside the shed and the crowbar in the debug loadout; its key is outside the hamlet's found-material closure. The medical-hall pharmacy uses the same key-or-crowbar contract, with its key in the front counter. See `src/content/base/templates-medical.json` and `src/content/base/layouts-playtest.json`.
 
-Ids are global/authored, not scoped per placement. Content validation rejects
-invalid ids, locks on non-door furniture, doors whose lock has no key, and keys naming no actual door.
-Authored-site validation rejects repeated lock ids across doors, building
-placements, and storeys. Unused palette declarations do not create usable locks.
-This is intentionally not a procedural placement-id scheme. Explicit bedroom
-and cellar storeys use the same palette metadata, with no floor-specific lock
-field: compiled pieces retain the lock while placement lowers cellar geometry.
-Use distinct palette characters and ids for independently keyed doors.
-
-## Interaction
-
-- `world.interact` opens/closes doors. A locked door with prying tuning starts
-  a pry when a qualifying tool is carried; other locked doors remain locked.
-  See `src/game/play.ts`, `startPlay`, and `src/core/prying.ts`, `pryPlan`.
-- Wield the matching key and activate it on a closed door to lock/unlock it,
-  from either side, in the door's handling time. The door must be in reach.
-- A missing held key says **Hold the key in your hands**; a wrong key says
-  **The key doesn't fit**. An open door says **Close the door first**.
-- Door prompts show the key's activation verb and any refusal when a held key
-  targets its door. Open/close is admitted by F's target pick; lock/unlock also
-  checks reach, key and state at enqueue and completion. Locking/unlocking is silent.
-
-The authored `lock_test` site has a locked shed with its key in the small box
-beside the front step. Use `?site=lock_test&debug=1` for a preview. The debug
-loadout includes the crowbar; the key remains outside the hamlet's found-material
-closure.
-
-The crowbar is a costly fallback so a key left on a corpse does not strand the
-player; its strikes use the existing sound and zombie-hearing path. BR answered
-#309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door
-unlocked, making forced entry a one-way breach. See `src/core/prying.ts`,
-`pryPlan`, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
-
-## Medical hall pharmacy
-
-BR ruled for d122-6, “to keep it simple, we'll go for 1:(b) , 2:front counter”
-(2026-10-07 11:13). The pharmacy door uses the existing #309 key-or-crowbar lock
-contract, and the matching key is fixed in the medical hall's front counter;
-`src/content/base/templates-medical.json` and
-`src/content/base/layouts-playtest.json` own those placements. The pharmacy stays
-reachable with its key or by forcing the existing padlock.
-
-Picking, shambler bashing, and the hunting-cabin map placement remain outside
-this minimal pull-forward. Save identity changes normally; there is no old-save
-migration or compatibility path.
+Picking, shambler bashing and hunting-cabin placement remain outside this minimal lock system. Save identity changes normally; no old-save migration path is provided.

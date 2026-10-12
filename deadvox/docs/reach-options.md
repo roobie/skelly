@@ -2,69 +2,29 @@
 read_if:
   - you change inventory reach, wield preferences or quick-move admission
   - you change delayed item use or battery selection
-  - you change the quick-action gate or inventory binding labels
-  - you change quickbar hand displacement or automatic item-stow behavior
+  - you change quickbar hand displacement or automatic stow behavior
 ---
 
-# Inventory reach and options (Slice 2.1)
+# Inventory reach and options
 
-`src/core/reach.ts` owns inventory admission: 2 metres, inclusive. Piles retain
-unrounded player-feet to floor/horizontal-middle geometry; furniture retains the
-1-metre chest point to the nearest cell of the whole furniture box. `blockSize`
-converts block coordinates to metres. Gaze/LOS, bed proximity, and firearm-case
-aggregation are not inventory admission; case aggregation uses `pilesInRadius`.
+Inventory reach is a geometry-and-ownership query, not gaze or line of sight. It includes carried items, reachable piles and their containers, and searched furniture; unsearched furniture is visible for Search but does not expose contents. Workstation reach uses the same furniture geometry. See `src/core/reach.ts`, `reach` and `furnitureInReach`.
 
-A cached `reach(player)` contains carried items and recursively accessible nearby
-pile/container contents, locations, ordinary handling times, and nearby furniture.
-Unsearched furniture is visible for Search but exposes no contents. Workstation
-reach uses the same furniture geometry; see `src/core/reach.ts`, `reach` and
-`furnitureInReach`. Inventory/entity revisions, precise position and
-scale invalidate the cache. Runtime light switching/draining also advances the
-inventory revision; the screen keys redraws on precise origin as well as revisions.
-The view is derived, never saved or authority for a delayed command. Moves and
-battery swaps recheck current ownership, reach and search at completion.
+A reach snapshot is derived and may be cached, but it is not saved or authority for delayed commands. Commands recheck current ownership, reach and search state when they complete. The same boundary protects moves and battery swaps from acting on stale plans.
 
-Reach and option admission affect simulation identity, unlike the menu-pointer
-adapter's presentation. See `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`
-and `SIMULATION_EXCLUSIONS`, for that boundary rather than a copied hash.
-Exact-version save refusal prevents changed rules from silently reinterpreting
-an actor's work; no migration is owed before the compatibility milestone.
+Options provide the available action, its time and any refusal reason. Survival owns registered effects, not a second eligibility policy. Ordinary best-pocket, to-hands and drop behavior remain deliberate; quickbar takes use best-effort stow and never drop items automatically. Quick move queues the ordinary whole-stack handling move; it does not transfer instantly or invoke use. See `src/core/options.ts`, `options`, and `src/game/inputBindings.ts`, `INPUT_BINDINGS`.
 
-`src/core/options.ts` supplies move/use plans, labels, refusal reasons and times.
-Survival retains registered queue actions and effects, not separate eligibility.
-The ordinary best-pocket command chooses the quickest pocket; ordinary to-hands
-and drop ordering are retained. Quick move uses hold T and click in the default
-profile, as described in `CONTROLS.md`. Its rebindable gate is declared
-in `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and read by
-`src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`; no browser modifier
-selects the quick move.
-The binding only queues the ordinary whole-stack handling move, never transfers
-immediately or invokes use/eat/drink/switch. Compatible stacks take precedence
-over pocket priority, avoiding fragmentation; `inventoryPocket` in
-`src/core/options.ts` checks them before choosing an earlier free spot.
+The ordinary best-pocket command chooses the quickest eligible pocket; ordinary
+to-hands and drop ordering remain unchanged. Quick move queues the ordinary
+whole-stack handling move and does not transfer instantly or invoke use. Compatible
+stacks take precedence over pocket priority when the whole stack fits; if none
+accepts it whole, the stack moves intact to a new spot. `inventoryPocket` in
+`src/core/options.ts` checks compatible stacks before free spots. See also
+`src/game/inputBindings.ts`, `INPUT_BINDINGS`, for the quick-move gate and
+`src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`, for its queue route.
 
-## Explicit alignments
-
-- Wielded follows the dominant role, matching primary action dispatch; the
-  off-hand item remains carried for quick-move policy. Physical slots do not
-  change when the actor's preference changes. See `src/core/character.ts`,
-  `dominantSide` and `offSide`, and `src/core/options.ts`, `quickMove`, for
-  role resolution and placement admission. Refusal must preserve ownership.
-- Ordinary `toHands` in `src/core/options.ts`, `toHands`, drops other carried
-  items, including worn containers, exactly at the feet. Quickbar takes have a
-  separate best-effort stow rule and never drop items automatically. Ground-grid
-  placement permits filled containers, with contents intact; pocket/furniture
-  nesting still requires an empty bag. This also enables the corresponding
-  ordinary drop, previously refused by the blanket empty-bag check.
-- External items stow with that same priority, never into hands. A directly
-  floor-lying wearable container wears if its slot is free and other wear rules
-  permit it; otherwise it follows stow priority.
-- Dead lights consider compatible charged spares from carried inventory, nearby
-  ground containers and searched furniture, fullest first. The selected light is
-  the light being used, even if the other hand holds another compatible light.
-  The swap revalidates reach/search and consumes no battery on refusal. Swap first,
-  then a separate next use switches the light on, as before.
-
-Tests protect each quick-move rule, locked-menu pointer queue binding, searched/nested
-reach, delayed revalidation and scalar invalidation. Absolute boundary tests fail
-when the 2-metre constant is mutated to 2.1 and pass after restoring 2.
+Dominant/off-hand preferences resolve through the actual character without
+changing physical slots. A failed action preserves ownership. Dead lights choose
+the fullest compatible charged spare from carried items, nearby ground containers
+and searched furniture, then switch on only through a separate use. A refusal
+consumes no battery. See `src/core/character.ts`, `dominantSide` and `offSide`,
+and `src/game/survival.ts`, `Survival.useFromQuickbar`.

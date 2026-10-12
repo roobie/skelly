@@ -1,9 +1,8 @@
 ---
 read_if:
   - you're changing the Gungen-to-Deadvox firearm model contract
-  - you're changing firearm cycle state, ammunition, magazines or spent cases
+  - you're changing mechanical firearm state or its presentation boundary
   - you're evaluating firearm attachment effects
-  - you're changing how exported attachment appearance is carried into Deadvox
 tags: [deadvox, gungen, adr, firearms, export, feel]
 ---
 
@@ -17,51 +16,18 @@ tags: [deadvox, gungen, adr, firearms, export, feel]
 
 ## Decision
 
-Gungen owns firearm model and action data; Deadvox validates and consumes that
-export. The two projects may evolve the format together because preserving old
-exports is not a goal. The contract exists so the geometry, firearm state and
-handling in play stay connected, and so Gungen exports a model Deadvox can load.
+Gungen owns firearm model and action data; Deadvox validates and consumes that export. The projects may evolve the format together because preserving old exports is not a goal. The contract keeps geometry, simulation state and handling connected, and requires Gungen to export models Deadvox validates and loads.
 
-The firearm's mechanical state belongs to the simulation. Its cycle, ammunition,
-magazine contents and saved case counts must not depend on renderer timing.
-Animation, sound, muzzle flash, recoil display and flying cases are presentation.
-Cycle differences such as hold-open behavior remain firearm data because they
-change how the weapon behaves and feels. Cycle timelines are estimates checked
-by eye in slow motion, not measured timing constants.
+Mechanical state—cycle, ammunition and magazine contents—belongs to the simulation and must not depend on renderer timing. Animation, sound, muzzle flash, recoil display and flying cases are presentation. Cycle differences that change weapon behavior remain firearm data. Timelines and ballistic figures are gameplay estimates, not measured firearm specifications.
 
-Spent cases are saved as a calibre-specific count on the block where each case
-lands. A deterministic scatter represents that count visually. This gives cases
-as recoverable world items without saving a separate physics body for every
-shot, and keeps a case with the place it actually landed. See
-`src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`, and
-`src/core/scatterPile.ts`, `spentCaseScatter`.
+Spent cases are saved as a calibre-specific count on the block where they land. Deterministic scatter makes them recoverable without saving a physics body per shot. See `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`, `spentCaseScatter`.
 
-Fitted attachments affect the firearm through their authored geometry and
-properties. Their material comes from the attachment model Gungen exports;
-Deadvox's `src/render/itemLook.ts`, `itemLook`, selects that model and
-`src/render/models.ts`, `ModelLibrary.part`, composes it without inheriting the
-host firearm's finish. An attachment is its own item instance, so mounting it
-must not change its colour. Gungen's part-instance contract allows separate
-instances to carry unrelated finishes; Deadvox's inventory still selects one
-model per item type, so per-item finish choices need instance appearance data in
-that inventory contract (#502). Gungen derives suppressor mass from geometry and
-material. The only
-hand-set suppressor effect is each type's recoil reduction, which follows trapped
-gas; the improvised type is less effective. One shared muzzle rule uses weight
-multiplied by distance from the hands to slow raising and swinging, add sway and
-slow recovery between shots. Each type has noise reduction and wear. Condition
-falls per shot, so suppression falls with condition; the improvised type wears
-quickly and eventually breaks. The unresolved AK muzzle-device host is tracked
-by #364. Heat, smoke, improvised-suppressor
-accuracy loss and fouling remain deferred in #367 because they depend on broader
-physical, ballistic or maintenance systems.
+Fitted attachments remain separate item instances. Their exported appearance and authored geometry must not inherit the host firearm's finish; see `src/render/itemLook.ts`, `itemLook`, and `src/render/models.ts`, `ModelLibrary.part`. Gungen derives suppressor mass from geometry and material. Effects are authored by type; the shared muzzle rule accounts for weight and distance from the hands. Heat, smoke, accuracy loss and fouling remain deferred until their supporting systems exist.
 
-The current model contract is defined by Gungen's
-`gungen/src/gun/exportGlb.ts`, `exportGunGlb`, and Deadvox's
-`src/core/schema.ts`, `ModelSchema`. The acceptance check is an exported model
-that Deadvox validates and loads.
+The model contract is defined by Gungen's `gungen/src/gun/exportGlb.ts`, `exportGunGlb`, and Deadvox's `deadvox/src/core/schema.ts`, `ModelSchema`. The acceptance check is that Deadvox validates and loads a Gungen export.
 
 ## Open questions
 
-- Whether physical recoil should affect more than presentation remains open.
+- Future independently coloured instances need instance-owned appearance data that survives saves under #502. Which items get variants and whether loot rolls colours or placement authors them remain open; the current per-item-type model lookup does not implement this direction.
+- Whether physical recoil affects more than presentation remains open.
 - Whether piles keep steel-cased and brass cases separate remains open.
