@@ -865,8 +865,12 @@ const FurnitureSchema = pipe(
         handlingSimSeconds: SimSeconds,
         prying: optional(DoorPryingSchema),
         openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
+        /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
+        hatch: optional(literal(true)),
       }),
     ),
+    /** The player climbs it; its facing is the side the climber stands on (DESIGN.md, "Ladders and hatches"). */
+    climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
     /** Render-only boxes in cell coordinates; gameplay continues to use the furniture cells. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
@@ -888,6 +892,8 @@ const FurnitureSchema = pipe(
       ),
     'shape boxes must stay within furniture size',
   ),
+  check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
+  check(({ climbable, solid }) => !climbable || solid === false, 'a climbable piece must not be solid'),
 );
 
 // ---- loot tables ----
