@@ -399,6 +399,31 @@ describe('one hand on a ladder', () => {
     expect(inventory.hands[released.hand]).toBe(kept);
   });
 
+  it('refuses a free-hand swap that would ready a two-handed item while on a ladder', () => {
+    const runtime = houseWithLadder([-3, 1, 1]);
+    const { session } = runtime;
+    const { inventory } = session;
+    const side = dominantSide(inventory.character);
+    const held = holdInHand(runtime, oneHandedFoodType, side);
+    const backpack = inventory.create('school_backpack');
+    expect(inventory.add(backpack, { kind: 'worn' })).toBe(true);
+    const twoHanded = inventory.create(twoHandedType);
+    const pocket = {
+      kind: 'pocket',
+      owner: backpack,
+      pocket: 0,
+      at: { x: 0, y: 0, rotated: false },
+    } as const;
+    expect(inventory.add(twoHanded, pocket)).toBe(true);
+    grabAndClimbTo(runtime, LADDER_FOOT, 1.5);
+    const before = inventory.snapshotState();
+
+    expect(inventory.move(held, pocket).ok).toBe(false);
+    expect(inventory.snapshotState()).toEqual(before);
+    expect(inventory.hands[side]).toBe(held);
+    expect(inventory.locate(twoHanded)).toMatchObject({ kind: 'pocket', owner: backpack });
+  });
+
   it('refuses moves into or out of the hand on the ladder, which keeps its item', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
     const { session } = runtime;

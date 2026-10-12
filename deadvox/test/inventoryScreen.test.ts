@@ -247,6 +247,45 @@ describe('inventory screen Lit rendering', () => {
     expect(plan.merge).toBe(visibleStack);
   });
 
+  it('drops onto the visible packed floor item at its stored spot to swap', () => {
+    const items = new Map(registry.items);
+    items.set('fixture_floor_dragged', {
+      id: 'fixture_floor_dragged',
+      name: 'Fixture dragged item',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+    });
+    items.set('fixture_floor_target', {
+      id: 'fixture_floor_target',
+      name: 'Fixture target item',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+    });
+    const inventory = new Inventory({ ...registry, items });
+    const pos: [number, number, number] = [0, 0, 0];
+    const hiddenFirst = inventory.create('fixture_floor_dragged');
+    const visibleTarget = inventory.create('fixture_floor_target');
+    if (
+      !(
+        inventory.add(hiddenFirst, { kind: 'pile', pos, at: { x: 0, y: 0, rotated: false } }) &&
+        inventory.add(visibleTarget, { kind: 'pile', pos, at: { x: 1, y: 0, rotated: false } })
+      )
+    ) {
+      throw new Error('Could not create packed floor swap fixture');
+    }
+    inventory.consume(hiddenFirst);
+    const dragged = inventory.create('fixture_floor_dragged');
+    if (!inventory.add(dragged, { kind: 'hand', side: 'left' })) {
+      throw new Error('Could not hold packed floor swap fixture');
+    }
+
+    const target = targetForPackedFloorDrop(inventory, dragged, pos, visibleTarget);
+    expect(target).toEqual({ kind: 'pile', pos, at: { x: 1, y: 0, rotated: false } });
+    expect(inventory.plan(dragged, target)).toMatchObject({ ok: true, swap: visibleTarget, at: { x: 1, y: 0 } });
+  });
+
   it('shows distinct item names in grid cells and uses the same name in the drag ghost', () => {
     const items = new Map(registry.items);
     const alphaName = 'Can of beans';
