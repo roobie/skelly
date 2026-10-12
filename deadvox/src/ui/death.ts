@@ -4,6 +4,8 @@ import { defOf } from '../core/items.ts';
 
 export interface DeathSummary {
   cause: string;
+  /** Seed of the world this survivor played. */
+  worldSeed: number;
   /** Game seconds from the start to death. */
   survived: number;
   /** Items taken out of furniture, by type. */
@@ -37,6 +39,7 @@ export const lootedText = (registry: Registry, looted: ReadonlyMap<string, numbe
 
 export interface DeathViewModel {
   readonly cause: string;
+  readonly worldSeed: number;
   readonly span: string;
   /** "You searched 3 containers and took can of beans." / "You searched nothing." */
   readonly summary: string;
@@ -46,6 +49,7 @@ export const deathViewModel = (registry: Registry, summary: DeathSummary): Death
   const looted = lootedText(registry, summary.looted);
   return {
     cause: summary.cause,
+    worldSeed: summary.worldSeed,
     span: formatSpan(summary.survived),
     summary:
       summary.searched === 0
@@ -58,6 +62,7 @@ const deathTemplate = (vm: DeathViewModel, feedbackHref: string, newWorld: () =>
   <div class="card">
     <h1>You died</h1>
     <p>Of ${vm.cause}, after ${vm.span}.</p>
+    <p>World seed: ${vm.worldSeed}</p>
     <p>${vm.summary}</p>
     <p><a href=${feedbackHref} target="_blank" rel="noopener">Send feedback</a></p>
     <button type="button" @click=${newWorld}>New world</button>
