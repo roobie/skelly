@@ -65,7 +65,7 @@ described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES
 **Quality:**
 
 - 60 fps at the chosen near view distance with v1 zombie counts on the
-  [reference laptop](DESIGN.md#reference-hardware) (Core i7-1185G7, 32 GB,
+  [mid-range laptop](DESIGN.md#performance-and-scale) (Core i7-1185G7, 32 GB,
   Iris Xe, Firefox).
 - A new world loads in under 10 s. A 10-hour save is under 50 MB.
 - Plays in current Chrome, Firefox and Safari.

@@ -5,7 +5,7 @@ import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 
-/** Player constants in metres and metres per second (DESIGN.md, "Scale and units"). */
+/** Player constants in metres and metres per second (DESIGN.md, "Performance and scale"). */
 export const PLAYER = {
   halfWidth: 0.3,
   height: 1.8,
