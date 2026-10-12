@@ -2,6 +2,7 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { dayCycleFor } from '../core/dayPhase.ts';
 import type { EntityStore } from '../core/entities.ts';
@@ -141,7 +142,7 @@ export const createPlayView = (
   }
   const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
   const models = new ModelLibrary(registry, report);
-  const playerPalette = registry.figures.get('player')!.palette;
+  const playerPalette = registry.figures.get(CORE_CONTENT_IDS.player)!.palette;
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
   const gore = new Gore(s, config.seed);

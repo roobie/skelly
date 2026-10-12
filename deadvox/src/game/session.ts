@@ -11,6 +11,7 @@ import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
@@ -430,7 +431,7 @@ const createSessionCharacter = (
   restored ? Character.restoreState(registry, restored.character.progression) : new Character(registry, { handedness });
 
 const playerBodyTuning = (registry: Registry) => {
-  const tuning = registry.body.get('player');
+  const tuning = registry.body.get(CORE_CONTENT_IDS.player);
   if (!tuning) {
     throw new Error('Missing player body tuning');
   }
@@ -438,7 +439,7 @@ const playerBodyTuning = (registry: Registry) => {
 };
 
 const playerCompressionCaps = (registry: Registry) => {
-  const tuning = registry.compression.get('player');
+  const tuning = registry.compression.get(CORE_CONTENT_IDS.player);
   if (!tuning) {
     throw new Error('Missing player compression tuning');
   }
@@ -446,7 +447,7 @@ const playerCompressionCaps = (registry: Registry) => {
 };
 
 const playerSenseTuning = (registry: Registry) => {
-  const tuning = registry.senses.get('player');
+  const tuning = registry.senses.get(CORE_CONTENT_IDS.player);
   if (!tuning) {
     throw new Error('Missing player sense tuning');
   }
@@ -552,12 +553,12 @@ export const createSession = (options: SessionOptions) => {
   };
 
   const character = createSessionCharacter(registry, options.handedness, restored);
-  const firearmsCombatTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+  const firearmsCombatTuning = registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
   if (!firearmsCombatTuning) {
     throw new Error('Missing firearms-combat skill tuning');
   }
   const currentFirearmsCombatTuning = (): FirearmsCombatTuning => firearmsCombatTuning;
-  const meleeCombatTuning = registry.skills.get('melee_combat')?.combat?.melee;
+  const meleeCombatTuning = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)?.combat?.melee;
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
@@ -702,8 +703,8 @@ export const createSession = (options: SessionOptions) => {
   const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
   const awardInventoryPractice = (): void => {
-    const training = skillActivityPractice(registry, 'inventory_management', 'handling');
-    character.awardPractice('inventory_management', training.practice, training.tier);
+    const training = skillActivityPractice(registry, CORE_CONTENT_IDS.inventoryManagement, 'handling');
+    character.awardPractice(CORE_CONTENT_IDS.inventoryManagement, training.practice, training.tier);
   };
   const queue = new HandlingQueue(
     inventory,
@@ -738,8 +739,8 @@ export const createSession = (options: SessionOptions) => {
     firearmsSkillLevel: () => firearmsSkillLevel(character),
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
     onCommittedShot: (shotSeed, recoilKickRadians, shotKind, firearmUid) => {
-      const training = skillActivityPractice(registry, 'firearms_combat', 'shot');
-      character.awardPractice('firearms_combat', training.practice, training.tier);
+      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'shot');
+      character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
       const tuning = sessionFirearmsTuning(firearms, currentFirearmsCombatTuning(), firearmUid);
       aim.recordShot(
         shotSeed,
@@ -751,8 +752,8 @@ export const createSession = (options: SessionOptions) => {
     onShot: (shot, time, firearm) => {
       const hits = zombieSystem.firePellets(shot);
       if (hits > 0 && firearmReadyWalking) {
-        const training = skillActivityPractice(registry, 'firearms_combat', 'hit');
-        character.awardPractice('firearms_combat', training.practice, training.tier);
+        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'hit');
+        character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
       }
       // Other firearms' shot sounds are the player's presentation cue (play.ts, `firearmShotSound`).
       if (registry.items.get(firearm.type)?.firearm?.pump) {
@@ -962,8 +963,8 @@ export const createSession = (options: SessionOptions) => {
           meleeCombatTuning,
         )
       ) {
-        const training = skillActivityPractice(registry, 'melee_combat', 'block');
-        character.awardPractice('melee_combat', training.practice, training.tier);
+        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'block');
+        character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
         return;
       }
       const region = pickZombieHitRegion(hitRegions, sim.rng(`player-hit-region:${attacker}:${sim.time}`).next());
@@ -1041,8 +1042,8 @@ export const createSession = (options: SessionOptions) => {
     (uid) => wearMeleeWeaponOnHit(inventory, uid),
     character,
     () => {
-      const training = skillActivityPractice(registry, 'melee_combat', 'hit');
-      character.awardPractice('melee_combat', training.practice, training.tier);
+      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
+      character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
     },
   );
   let lastZombieStep = 0;
@@ -1238,8 +1239,8 @@ export const createSession = (options: SessionOptions) => {
     const going = intent.forward !== 0 || intent.right !== 0;
     firearmReadyWalking = readyGait && going;
     if (readyGait && readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
-      const training = skillActivityPracticeRate(registry, 'firearms_combat', 'readying');
-      character.awardPractice('firearms_combat', dt * training.practicePerSecond, training.tier);
+      const training = skillActivityPracticeRate(registry, CORE_CONTENT_IDS.firearmsCombat, 'readying');
+      character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, dt * training.practicePerSecond, training.tier);
     }
     return readyGait;
   };
@@ -1338,8 +1339,8 @@ export const createSession = (options: SessionOptions) => {
       awardInventoryPractice();
     }
     if (isFirearmTrainingAction(job)) {
-      const training = skillActivityPractice(registry, 'firearms_combat', 'handling');
-      character.awardPractice('firearms_combat', training.practice, training.tier);
+      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'handling');
+      character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
     }
     if (isAttachmentWorkAction(job)) {
       const training = skillActivityPractice(registry, ATTACHMENT_WORK_SKILL, 'attachment');

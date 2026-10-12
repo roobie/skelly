@@ -13,6 +13,7 @@ import {
 } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { fixedItems, type Rolled } from './loot.ts';
@@ -96,7 +97,7 @@ export class AuthoredSite implements Site {
       throw new Error('Authored ASCII sites require 0.5 m blocks');
     }
     const s = scale.blockSize;
-    const tuning = registry.siteGeneration.get('authored');
+    const tuning = registry.siteGeneration.get(CORE_CONTENT_IDS.authoredSite);
     if (!tuning) {
       throw new Error('Missing authored site generation tuning');
     }

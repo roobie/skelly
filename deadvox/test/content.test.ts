@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { blockColors, buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
@@ -12,6 +13,7 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
+import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
@@ -33,7 +35,6 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
-const missingSoundsRegistry = { ...baseRegistry, sounds: new Map() };
 const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
   const zombieFile = base.find((file) => file.source === 'zombies.json')!;
   const data = structuredClone(zombieFile.data) as {
@@ -834,27 +835,31 @@ describe('content', () => {
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
   });
 
-  it('reports required sound events missing from the registry', () => {
-    const missingLight = requiredSoundIssues(missingSoundsRegistry).some(
-      (issue) => issue.message === 'missing required sound event "player_hurt_light"',
-    );
-    expect(missingLight).toBe(true);
+  it('reports a missing inventory-management skill as required core content', () => {
+    const withoutSkill = {
+      ...baseRegistry,
+      skills: new Map([...baseRegistry.skills].filter(([id]) => id !== CORE_CONTENT_IDS.inventoryManagement)),
+    };
+    expect(requiredContentIssues(withoutSkill)).toContainEqual({
+      source: 'core content',
+      path: 'skills',
+      message: `missing required content "${CORE_CONTENT_IDS.inventoryManagement}"`,
+    });
   });
 
-  it('requires the blocked door-close sound event', () => {
-    expect(requiredSoundIssues(missingSoundsRegistry).map((issue) => issue.message)).toContain(
-      'missing required sound event "door_blocked_close"',
-    );
-  });
-
-  it('fails when a required sound event has no definition', () => {
-    const registry = { ...baseRegistry, sounds: new Map(baseRegistry.sounds) };
-    registry.sounds.clear();
-    registry.sounds.set('player_hurt_light', baseRegistry.sounds.get('player_hurt_light')!);
-    const missingHeavy = requiredSoundIssues(registry).some(
-      (issue) => issue.message === 'missing required sound event "player_hurt_heavy"',
-    );
-    expect(missingHeavy).toBe(true);
+  it('reports a missing sound event even when another is defined', () => {
+    const retainedId = SOUND_EVENT_IDS.at(-1)!;
+    const missingId = SOUND_EVENT_IDS.find((id) => id !== retainedId);
+    expect(missingId).toBeDefined();
+    const registry = {
+      ...baseRegistry,
+      sounds: new Map([[retainedId, baseRegistry.sounds.get(retainedId)!]]),
+    };
+    expect(requiredContentIssues(registry)).toContainEqual({
+      source: 'core content',
+      path: 'sounds',
+      message: `missing required sound event "${missingId}"`,
+    });
   });
 
   // Keep this registry minimal; building the full base pack here made the suite hit its timeout.

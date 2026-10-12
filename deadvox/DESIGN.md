@@ -1791,7 +1791,7 @@ decoration.
   `spacing`. `src/content/base/ui.jsonnet`, the `ui`
   section, owns the values; `src/ui/uiTokens.ts`, `applyUiTokens`, installs them
   on the document root at startup, and validation requires the core entry
-  (`src/core/content.ts`, `requiredUiIssues`).
+  (`src/core/content.ts`, `requiredContentIssues`).
 - **UI lengths are in rem.** The root font size is the browser's font size times
   `hudScale`, so one factor scales every rem length and the player's font
   setting still counts. Scaling through the root size, not CSS `zoom`, keeps
