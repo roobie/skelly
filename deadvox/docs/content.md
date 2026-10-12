@@ -16,6 +16,7 @@ read_if:
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
   - you author or change Deadvox content sources or their build pipeline
+  - "you add code that reads a content row by a fixed id"
 ---
 
 # Content sections and recipes

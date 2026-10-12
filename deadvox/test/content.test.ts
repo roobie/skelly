@@ -3,13 +3,8 @@ import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import {
-  blockColors,
-  buildRegistry,
-  REQUIRED_CORE_CONTENT,
-  requiredContentIssues,
-  validateContent,
-} from '../src/core/content.ts';
+import { blockColors, buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
@@ -40,7 +35,6 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
-const missingSoundsRegistry = { ...baseRegistry, sounds: new Map() };
 const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
   const zombieFile = base.find((file) => file.source === 'zombies.json')!;
   const data = structuredClone(zombieFile.data) as {
@@ -841,27 +835,16 @@ describe('content', () => {
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
   });
 
-  it('rejects content validation when a required core row is absent', () => {
-    const requirement = REQUIRED_CORE_CONTENT.find(({ section }) => section !== 'sounds' && section !== 'ui')!;
-    const withoutRequiredRow = base.map(({ source, data }) => {
-      const copy = structuredClone(data) as Record<string, unknown>;
-      const rows = copy[requirement.section];
-      if (Array.isArray(rows)) {
-        copy[requirement.section] = rows.filter((row) => (row as { id?: string }).id !== requirement.id);
-      }
-      return { source, data: copy };
-    });
-    const { registry, issues } = buildRegistry(withoutRequiredRow);
-    expect([...issues, ...requiredContentIssues(registry)]).toContainEqual({
+  it('reports a missing inventory-management skill as required core content', () => {
+    const withoutSkill = {
+      ...baseRegistry,
+      skills: new Map([...baseRegistry.skills].filter(([id]) => id !== CORE_CONTENT_IDS.inventoryManagement)),
+    };
+    expect(requiredContentIssues(withoutSkill)).toContainEqual({
       source: 'core content',
-      path: requirement.section,
-      message: `missing required content "${requirement.id}"`,
+      path: 'skills',
+      message: `missing required content "${CORE_CONTENT_IDS.inventoryManagement}"`,
     });
-  });
-
-  it('reports missing entries from the required sound-event list', () => {
-    const missingSoundIssues = requiredContentIssues(missingSoundsRegistry).filter(({ path }) => path === 'sounds');
-    expect(missingSoundIssues.some(({ message }) => message.includes(SOUND_EVENT_IDS[0]!))).toBe(true);
   });
 
   it('reports a missing sound event even when another is defined', () => {

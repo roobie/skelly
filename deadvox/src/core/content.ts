@@ -1049,6 +1049,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   return issues;
 };
 
+// Recipe skill references already make `crafting` missing content invalid; it need not be a pack-level requirement.
 export const REQUIRED_CORE_CONTENT = [
   { section: 'body', id: CORE_CONTENT_IDS.player },
   { section: 'compression', id: CORE_CONTENT_IDS.player },
@@ -1059,6 +1060,7 @@ export const REQUIRED_CORE_CONTENT = [
   { section: 'siteGeneration', id: CORE_CONTENT_IDS.authoredSite },
   { section: 'skills', id: CORE_CONTENT_IDS.firearmsCombat },
   { section: 'skills', id: CORE_CONTENT_IDS.meleeCombat },
+  { section: 'skills', id: CORE_CONTENT_IDS.inventoryManagement },
   { section: 'ui', id: CORE_CONTENT_IDS.coreUi },
   ...SOUND_EVENT_IDS.map((id) => ({ section: 'sounds' as const, id })),
 ] as const satisfies readonly { section: Exclude<ContentSection, 'blocks'>; id: string }[];
