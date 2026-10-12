@@ -739,6 +739,7 @@ export const createSession = (options: SessionOptions) => {
     onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
+    handlingSlowdown: () => sim.body.pain.effects.handlingSlowdown,
     onCommittedShot: (shotSeed, recoilKickRadians, shotKind, firearmUid) => {
       const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'shot');
       character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
@@ -773,7 +774,8 @@ export const createSession = (options: SessionOptions) => {
   const magazines = new MagazineHandling(inventory, queue, {
     feet,
     reloadFactor: () =>
-      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadDuration,
+      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadDuration *
+      sim.body.pain.effects.handlingSlowdown,
     onSound: (event, time) => playPlayerSound(event, time),
   });
 
@@ -860,7 +862,7 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
       yaw: sampledInput().yaw,
       pitch: sampledInput().pitch,
-      aimSway: sim.body.consequences.aimSway,
+      aimSway: sim.body.consequences.aimSway * sim.body.pain.effects.aimSway,
       firing,
       stridePhase: footstepClock.stridePhase,
     });

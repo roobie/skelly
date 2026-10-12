@@ -2575,7 +2575,7 @@ export const startPlay = (
     const swingWeapon = resolvePlayerMeleeWeapon(
       selected.weapon,
       classTuning,
-      session.sim.body.consequences.swingSlowdown,
+      session.sim.body.consequences.swingSlowdown * session.sim.body.pain.effects.handlingSlowdown,
     );
     const result = startPlayerMelee(
       playerCombat,
