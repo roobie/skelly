@@ -32,6 +32,7 @@ const glbJson = (bytes) =>
       .toString()
       .trim(),
   );
+const glbBinary = (bytes) => bytes.subarray(28 + bytes.readUInt32LE(12));
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const arrayDifference = (actual, expected, path) => {
   if (!(Array.isArray(actual) && Array.isArray(expected))) {
@@ -126,9 +127,19 @@ describe('gungen exports satisfy deadvox model validation', () => {
         null,
         `${modelId} differs from gungen's export outside Deadvox-owned fields${difference ? `: ${difference}` : ''}`,
       );
+      // Node versions round the exported linear colours differently in the last bit, so the GLB's JSON is compared
+      // with the entry's tolerance and only its binary geometry byte for byte.
+      const committedGlb = readFileSync(join(DEADVOX_BASE, file));
+      const exportedGlb = Buffer.from(result.glb);
+      const glbDifference = exportDifference(glbJson(committedGlb), glbJson(exportedGlb));
+      assert.equal(
+        glbDifference,
+        null,
+        `${file} differs from gungen's export of ${design}${glbDifference ? `: ${glbDifference}` : ''}`,
+      );
       assert.ok(
-        readFileSync(join(DEADVOX_BASE, file)).equals(Buffer.from(result.glb)),
-        `${file} differs from gungen's export of ${design}`,
+        glbBinary(committedGlb).equals(glbBinary(exportedGlb)),
+        `${file} geometry differs from gungen's export of ${design}`,
       );
     }
   });
