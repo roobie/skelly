@@ -98,6 +98,8 @@ export const TEMPORAL_FIELDS = [
   { path: 'body.fatigueRisePerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'body.restFatigueRecoveryPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'body.sleepFatigueRecoveryPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
+  { path: 'body.sleepOnset.minGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
+  { path: 'body.sleepOnset.maxGameMinutes', clock: 'Game', unit: 'Minutes', dimension: 'duration' },
   { path: 'body.healthRecoveryPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
   { path: 'layouts.startTimeGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'layouts.shamblers.window.fromGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },

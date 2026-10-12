@@ -42,17 +42,25 @@ describe('restViewModel', () => {
     expect(percent).toBeLessThan(100);
   });
 
-  it('offers cancellation for rest but not sleep', () => {
+  it('offers Stop during sleep onset but not after sleep begins', () => {
     const sim = new Simulation({ seed: 1 });
-    const rest: RestAction = { kind: 'rest', furnitureUid: 1, label: 'Resting', rate: -15, startFatigue: 40 };
     const stopKey = labelForAction('handling.stop');
-    const restVm = restViewModel(rest, true, sim, false);
-    expect(restVm.stopHint).toContain(stopKey);
-    expect(restVm.canStop).toBe(true);
-    const sleep: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 40 };
-    const sleepVm = restViewModel(sleep, false, sim, false);
-    expect(sleepVm.stopHint).toBe('');
-    expect(sleepVm.canStop).toBe(false);
+    const onset: RestAction = {
+      kind: 'sleep',
+      furnitureUid: 1,
+      label: 'Sleeping',
+      rate: -30,
+      startFatigue: 40,
+      sleepOnset: { durationGameSeconds: 100, elapsedGameSeconds: 50 },
+    };
+    const onsetVm = restViewModel(onset, true, sim, false);
+    expect(onsetVm.percent).toBe(50);
+    expect(onsetVm.stopHint).toContain(stopKey);
+    expect(onsetVm.canStop).toBe(true);
+    const asleep: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 40 };
+    const asleepVm = restViewModel(asleep, false, sim, false);
+    expect(asleepVm.stopHint).toBe('');
+    expect(asleepVm.canStop).toBe(false);
   });
 
   it('shows a live interruption reason only when messages are visible', () => {

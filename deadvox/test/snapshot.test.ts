@@ -6,6 +6,7 @@ import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
+import { simSeconds } from '../src/core/time.ts';
 import type { Site } from '../src/core/site.ts';
 import { World } from '../src/core/world.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
@@ -226,6 +227,20 @@ describe('snapshot state components', () => {
     expect(loaded.sim.needs.fatigue).toBe(150);
     expect(loaded.sim.actions.wakeGameHour).toBe(7);
     expect(loaded.sim.actions.rest).toMatchObject({ kind: 'sleep', wakeAt });
+  });
+
+  it('round-trips progress during the cancellable sleep-onset phase', async () => {
+    const runtime = createRuntime(undefined, true);
+    runtime.sim.needs.fatigue = 50;
+    expect(startRest(runtime, 'sleep')).toBeUndefined();
+    runtime.sim.frame(simSeconds(1));
+    const onset = runtime.sim.actions.rest?.sleepOnset;
+    expect(onset?.elapsedGameSeconds).toBeGreaterThan(0);
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot, true);
+    expect(restored.sim.actions.rest?.sleepOnset).toEqual(onset);
+    expect(restored.sim.actions.asleep).toBe(false);
+    expect(restored.rest.canStop).toBe(true);
   });
 
   it('round-trips a stopped reading action with its held book uid and progress', async () => {

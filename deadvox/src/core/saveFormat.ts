@@ -439,6 +439,7 @@ const longAction = obj({
           rate: finite,
           startFatigue: nonNegative,
           wakeAt: opt(finite),
+          sleepOnset: opt(obj({ durationGameSeconds: positive, elapsedGameSeconds: nonNegative })),
         }),
       ),
     }),

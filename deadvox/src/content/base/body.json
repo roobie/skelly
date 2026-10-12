@@ -114,6 +114,11 @@
       },
       "shockRecoveryPerSimSecond": 0.10000000000000001,
       "sleepFatigueRecoveryPerGameHour": 12.5,
+      "sleepOnset": {
+        "fatigueAtMinimum": 100,
+        "maxGameMinutes": 20,
+        "minGameMinutes": 2
+      },
       "sleepRecoveryFactor": 2,
       "staminaRegenDelaySimSeconds": 5,
       "swingSlowdownPerDamage": 0.01,

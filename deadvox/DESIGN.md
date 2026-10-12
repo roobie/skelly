@@ -7,6 +7,7 @@ read_if:
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
+  - you're changing sleep onset, sleep cancellation or when sleep recovery begins
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
   - you're changing how the amalgam's flesh meets terrain, the player or shots, or what that costs per tick (#563)
@@ -215,6 +216,15 @@ compression on and shows a progress bar and the game time passing.
   (`src/game/frameDriver.ts`, `RAMP_DOWN_SIM_SECONDS`). A ramp of fixed Real
   length from a high cap would run the world on for tens of Sim seconds after
   the player stopped waiting.
+- **Falling asleep:** starting sleep begins a content-tuned onset interval that
+  shortens as fatigue rises. The player remains awake and can cancel during this
+  interval; the ordinary Stop input cannot wake a sleeper. Sleep recovery begins
+  only when onset completes. `src/game/rest.ts`, `RestController.start`, derives
+  the interval from body tuning; `src/core/longAction.ts`,
+  `LongActions.advanceJob` and `LongActions.asleep`, advance and gate the saved
+  Game-second phase. `src/ui/rest.ts`, `restViewModel`, presents its progress.
+  The bounds are authored in `src/content/base/body.jsonnet`, `sleepOnset`, and
+  parsed by `src/core/schema.ts`, `BodyTuningSchema`.
 - **How sleep ends:** sleep ends once fatigue reaches zero, which takes a
   normal night from 100 (see [Character](#character)). Carrying an item with
   `alarm` lets the player pick a wake hour on the Actions tab instead; sleep
