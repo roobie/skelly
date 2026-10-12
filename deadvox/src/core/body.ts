@@ -201,9 +201,19 @@ export class Body implements ModifierActor {
   get pain(): PainReading {
     const { pain } = this.tuning;
     const { acute, doses } = this.state.pain;
-    const felt = Math.max(0, acute + this.backgroundPain - analgesia(doses, this.analgesics));
+    const injuries = this.backgroundPain;
+    const relief = analgesia(doses, this.analgesics);
+    const felt = Math.max(0, acute + injuries - relief);
     const ratio = felt / Math.max(Number.MIN_VALUE, this.modified('body.painKnockoutAt', pain.knockoutAt));
-    return { felt, ratio, tier: painTier(ratio, pain.tiers), effects: painEffects(ratio, pain) };
+    return {
+      felt,
+      acute,
+      injuries,
+      relief,
+      ratio,
+      tier: painTier(ratio, pain.tiers),
+      effects: painEffects(ratio, pain),
+    };
   }
 
   /** Pain the injuries themselves keep up: region damage, bleeding and infection. It is derived, never stored. */

@@ -547,7 +547,7 @@ const Point = tuple([number(), number(), number()]);
 
 /**
  * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
- * along x (DESIGN.md, "Item models"). The entry adds what the file can't say.
+ * along x (DESIGN.md, "Piles and item models"). The entry adds what the file can't say.
  */
 const SoundMultipliers = pipe(
   tuple([Positive, Positive]),

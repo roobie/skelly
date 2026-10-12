@@ -31,6 +31,12 @@ export interface PainEffects {
 export interface PainReading {
   /** Felt pain: open-ended, with the knockout threshold as its balance point. */
   felt: number;
+  /** Acute pain stored by the body. */
+  acute: number;
+  /** Background pain derived from injuries. */
+  injuries: number;
+  /** Relief currently supplied by painkiller doses. */
+  relief: number;
   /** Felt pain as a share of the knockout threshold. */
   ratio: number;
   /** The index of the tier felt pain is in, or undefined below the first. */

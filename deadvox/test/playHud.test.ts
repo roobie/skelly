@@ -70,6 +70,32 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
 
 const root = (): HTMLElement => document.createElement('div');
 
+it('shows the pain reading breakdown and content tier in the stats text', () => {
+  const status = {
+    calendar: 0,
+    speed: 1,
+    paused: false,
+    needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    pain: {
+      felt: 41.6,
+      acute: 27.2,
+      injuries: 22.4,
+      relief: 8,
+      ratio: 0.416,
+      tier: 1,
+      effects: { aimSway: 1, handlingSlowdown: 1 },
+    },
+    painTier: 'fixture-tier',
+    health: 91,
+    blood: 67,
+    bleeding: [],
+    sprinting: false,
+    lightCharge: undefined,
+  } as const;
+
+  expect(playNeedsText(status)).toContain('pain 42 (acute 27 + injuries 22 − relief 8) · fixture-tier');
+});
+
 it("projects blood level and affected regions, with their tier's label, only while a wound bleeds", () => {
   const regionLabel = bodyRegionLabel('leftArm');
   const tierLabel = 'Fixture tier';
@@ -78,6 +104,16 @@ it("projects blood level and affected regions, with their tier's label, only whi
     speed: 1,
     paused: false,
     needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    pain: {
+      felt: 0,
+      acute: 0,
+      injuries: 0,
+      relief: 0,
+      ratio: 0,
+      tier: undefined,
+      effects: { aimSway: 1, handlingSlowdown: 1 },
+    },
+    painTier: undefined,
     health: 91,
     blood: 67,
     bleeding: [{ region: regionLabel, label: tierLabel, warn: true }],
@@ -104,6 +140,16 @@ it('gives only a tier content marks to warn the warning sign, while naming every
     speed: 1,
     paused: false,
     needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    pain: {
+      felt: 0,
+      acute: 0,
+      injuries: 0,
+      relief: 0,
+      ratio: 0,
+      tier: undefined,
+      effects: { aimSway: 1, handlingSlowdown: 1 },
+    },
+    painTier: undefined,
     health: 91,
     blood: 67,
     sprinting: false,

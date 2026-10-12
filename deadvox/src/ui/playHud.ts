@@ -5,6 +5,7 @@ import { type Camera, Vector3 } from 'three';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Needs } from '../core/needs.ts';
+import type { PainReading } from '../core/pain.ts';
 import { labelForAction } from '../game/inputBindings.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
@@ -97,6 +98,8 @@ export interface PlayStatus {
   readonly speed: number;
   readonly paused: boolean;
   readonly needs: Readonly<Needs>;
+  readonly pain: Readonly<PainReading>;
+  readonly painTier: string | undefined;
   readonly health: number;
   readonly blood: number;
   /** Each bleeding region's label, with its content tier's label and warning style. */
@@ -118,13 +121,23 @@ export interface PlayHudState extends PlayStatus {
   readonly looking: string;
 }
 
-export const playNeedsText = ({ needs, health, blood, bleeding, sprinting, lightCharge }: PlayStatus): string => {
+export const playNeedsText = ({
+  needs,
+  pain,
+  painTier,
+  health,
+  blood,
+  bleeding,
+  sprinting,
+  lightCharge,
+}: PlayStatus): string => {
   const { calories, hydration, fatigue, stamina } = needs;
   const light = lightCharge === undefined ? '' : `   light ${Math.round(lightCharge * 100)}%`;
   return [
     `health ${health.toFixed(0)}%   blood ${blood.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
     // Fatigue is sleep debt, not a share: 100 is a normal night's sleep and it can go past it.
-    `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}`,
+    `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}   pain ${pain.felt.toFixed(0)} ` +
+      `(acute ${pain.acute.toFixed(0)} + injuries ${pain.injuries.toFixed(0)} − relief ${pain.relief.toFixed(0)})${painTier ? ` · ${painTier}` : ''}`,
     // Only a tier content marks `warn` gets the warning sign (DESIGN.md, "Bleeding").
     ...bleeding.map(({ region, label, warn }) => `${warn ? '⚠ ' : ''}${label} — ${region}`),
   ].join('\n');

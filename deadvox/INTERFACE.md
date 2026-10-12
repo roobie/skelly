@@ -224,7 +224,7 @@ melee combat governs block success. The tiered practice contract is in
 
 ## HUD
 
-Blood loss can progress without immediate health loss, so make it legible during play; `playNeedsText` in `src/ui/playHud.ts` pairs it with health and gives each bleeding region one line with its tier's content label. A tier that content marks `warn` gets a warning sign; one that doesn't stays quiet, because a wound that hardly needs mention shouldn't alarm. The bleeding notice is class 3: when the worst bleeding worsens to a tier with a content `notice`, it speaks that line in the character's voice. Pain's notice is class 3 the same way, when felt pain worsens to a tier with one, and bleeding's line wins a shared moment because it asks for treatment; see `src/game/tierNotice.ts`, `TierNotice`, and `src/game/play.ts`, `updateBodyNotices`. Pain has no HUD line. Bleeding's refusal of time compression is a class-3 refusal, with content's `bleeding.refusal` line; see `src/core/body.ts`, `Body.compressionRefusal`.
+Blood loss can progress without immediate health loss, so make it legible during play; `playNeedsText` in `src/ui/playHud.ts` pairs it with health and gives each bleeding region one line with its tier's content label. A tier that content marks `warn` gets a warning sign; one that doesn't stays quiet, because a wound that hardly needs mention shouldn't alarm. The bleeding notice is class 3: when the worst bleeding worsens to a tier with a content `notice`, it speaks that line in the character's voice. Pain's notice is class 3 the same way, when felt pain worsens to a tier with one, and bleeding's line wins a shared moment because it asks for treatment; see `src/game/tierNotice.ts`, `TierNotice`, and `src/game/play.ts`, `updateBodyNotices`. Pain has no player-facing cue line. The optional stats readout exposes its number and parts for tuning; this debug-style readout is not a bodily cue. Bleeding's refusal of time compression is a class-3 refusal, with content's `bleeding.refusal` line; see `src/ui/playHud.ts`, `playNeedsText`, and `src/core/body.ts`, `Body.compressionRefusal`.
 
 The optional Handling progress HUD reuses its existing progress card for a held
 item throw. Its fill follows throw charge in simulation time; a labelled marker
@@ -304,7 +304,7 @@ In-game choices use the game's own combo box (`src/ui/comboBox.ts`, `comboBox`),
 
 | Element | Kind now | Target | Gap |
 |---|---|---|---|
-| HUD stats (health, food, fatigue…) | meta, on by default; individually toggleable | bodily | the cues in "Bodily cues" may eventually let players hide stats they no longer need |
+| HUD stats (health, food, fatigue, pain…) | meta, on by default; individually toggleable | bodily | the cues in "Bodily cues" may eventually let players hide stats they no longer need |
 | Clock readout | meta, on by default; individually toggleable | diegetic | a watch, when you look at your wrist or hold one |
 | Crosshair | meta, on by default; individually toggleable | none | the aiming aid can be hidden when the player's sights and the world suffice |
 | Interaction hints ("looking at…", "F: open") | meta, on by default; individually toggleable | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
@@ -325,9 +325,12 @@ The worn column puts the Shoulder box first, directly below the hands, even when
 
 ## Numbers and diegesis
 
-Numbers are available on request, on meta surfaces the player opens (such as an
-item inspection or inventory), and are not pushed during play. This keeps
-simulation facts accessible without undermining diegesis.
+Numbers are available on request on meta surfaces such as item inspection and
+inventory, and are not part of player-facing bodily cues. The optional stats
+readout is a development tuning surface: it exposes simulation values during
+play where those values are still being judged, including pain's scale. This
+keeps tuning evidence available without turning the number into a player-facing
+pain cue.
 
 ## Interface decisions
 
@@ -336,8 +339,9 @@ simulation facts accessible without undermining diegesis.
    do not require a reticle.
 2. **Interaction affordance:** a subtle outline on the one usable thing in reach;
    no text or key name.
-3. **Numbers:** available on request through meta surfaces, not pushed at the
-   player during play.
+3. **Numbers:** inspection values are available on request through meta surfaces.
+   The optional stats readout may expose tuning values during play; pain's number
+   and its components appear there, never in a player-facing cue.
 4. **Onboarding:** the shipped first run gets a diegetic introduction, shaped by
    where playtesters get stuck. HUD hints start on and can be turned off
    individually in the F9 menu.

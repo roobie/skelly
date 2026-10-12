@@ -60,7 +60,7 @@ export const writeHudOptions = (state: HudSettings): void => {
 };
 
 const LABELS: Record<HudOptionKey, string> = {
-  stats: 'Health, blood, bleeding, food, water, fatigue, stamina and carrying weight',
+  stats: 'Health, blood, bleeding, food, water, fatigue, pain, stamina and carrying weight',
   clock: 'Clock and time compression',
   details: 'World details (FPS, seed, position, chunks and movement)',
   crosshair: 'Crosshair',

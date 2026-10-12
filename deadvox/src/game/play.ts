@@ -2807,20 +2807,25 @@ export const startPlay = (
   const throwStanceCueVisible = (interactionVisible: boolean): boolean =>
     throwingStance && interactionVisible && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
 
-  const statusView = (): PlayStatus => ({
-    calendar: displayCalendar(),
-    speed: compression.c,
-    paused: sim.paused,
-    needs: sim.needs,
-    health: sim.body.health,
-    blood: sim.body.blood,
-    bleeding: BODY_REGIONS.flatMap((region) => {
-      const tier = sim.body.bleedingTier(region);
-      return tier ? [{ region: bodyRegionLabel(region), label: tier.label, warn: tier.warn }] : [];
-    }),
-    sprinting: session.sprinting,
-    lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
-  });
+  const statusView = (): PlayStatus => {
+    const { pain } = sim.body;
+    return {
+      calendar: displayCalendar(),
+      speed: compression.c,
+      paused: sim.paused,
+      needs: sim.needs,
+      pain,
+      painTier: pain.tier === undefined ? undefined : sim.body.tuning.pain.tiers[pain.tier]?.id,
+      health: sim.body.health,
+      blood: sim.body.blood,
+      bleeding: BODY_REGIONS.flatMap((region) => {
+        const tier = sim.body.bleedingTier(region);
+        return tier ? [{ region, label: bodyRegionLabel(region), warn: tier.warn }] : [];
+      }),
+      sprinting: session.sprinting,
+      lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
+    };
+  };
   const needsText = (): string => playNeedsText(statusView());
   const hudText = (looking: string, visible: Readonly<HudOptionsState>): string =>
     playHudText(
