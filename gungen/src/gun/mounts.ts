@@ -12,6 +12,12 @@ export interface MountStandard {
   readonly slotPitchU?: number;
 }
 
+/**
+ * The bore a muzzle interface is cut for, declared as the `standard` of both muzzle ports: a device fits only a
+ * muzzle cut for the bore it was built for, so a rifle suppressor never certifies on a shotgun.
+ */
+export type MuzzleBore = 'rifled' | 'smoothbore';
+
 /** Mount specifications are data so future parts can declare compatible interfaces. */
 export const MOUNT_STANDARDS: Readonly<Record<MountKind, MountStandard>> = {
   'rail-top': { family: 'slotted-rail', contactWidthU: 1.75, slotPitchU: 2 },

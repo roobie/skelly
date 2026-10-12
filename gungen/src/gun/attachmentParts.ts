@@ -1,6 +1,7 @@
 import { boxFromMinMax } from '@skelly/engine/core/geometry.ts';
 import type { Vec3 } from '@skelly/engine/core/math.ts';
 import type { PartDef, PartFamily, Solid } from '@skelly/engine/core/schema.ts';
+import type { MuzzleBore } from './mounts.ts';
 
 const X: Vec3 = [1, 0, 0];
 const NEG_X: Vec3 = [-1, 0, 0];
@@ -28,6 +29,9 @@ const suppressorTube = (length: number, radius: number): Solid => ({
   slot: 'metal',
 });
 
+/** Both suppressors are rifle suppressors; a shotgun suppressor would be a type built for smoothbores. */
+const SUPPRESSOR_BORE: MuzzleBore = 'rifled';
+
 const suppressor: PartFamily = {
   name: 'suppressor',
   params: { type: { values: ['real-suppressor', 'improvised-suppressor'], default: 'real-suppressor' } },
@@ -39,8 +43,25 @@ const suppressor: PartFamily = {
       family: 'suppressor',
       solids: [suppressorTube(length, radius)],
       ports: [
-        { id: 'base', mount: 'muzzle', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
-        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [length, 0, 0], normal: X, up: Y },
+        {
+          id: 'base',
+          mount: 'muzzle',
+          standard: SUPPRESSOR_BORE,
+          gender: 'male',
+          pos: [0, 0, 0],
+          normal: NEG_X,
+          up: Y,
+          required: true,
+        },
+        {
+          id: 'muzzle',
+          mount: 'muzzle',
+          standard: SUPPRESSOR_BORE,
+          gender: 'female',
+          pos: [length, 0, 0],
+          normal: X,
+          up: Y,
+        },
       ],
       keepOuts: [],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
