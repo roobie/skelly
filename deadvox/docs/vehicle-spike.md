@@ -94,7 +94,7 @@ The noise decision in [Decided](#decided) sets the source. See `model.ts`,
 
 - **The unit is Deadvox's hearing radius in metres:** a source is like a sound's
   `noise.radiusMetres` (`src/content/base/sounds.json`), and a damper scales it like a
-  zombie sense's `hearingRangeScale` (`src/content/base/senses.json`). A vehicle's figure
+  zombie sense's `hearingRangeScale` (`src/content/base/senses.jsonnet`). A vehicle's figure
   can then feed the noise system unchanged once vehicles are in the game. The spike only
   shows it.
 - **The engine is the source, and the hull and silencer damp it.** Sources add in

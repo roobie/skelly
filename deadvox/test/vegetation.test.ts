@@ -46,6 +46,7 @@ const scale = makeScale(0.5);
 const soundTuning = { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 };
 const senseTuning = {
   id: 'fixture_player',
+  movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
   crouch: {
     speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,
