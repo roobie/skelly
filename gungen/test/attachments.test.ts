@@ -915,7 +915,7 @@ describe('attachment parts and export metadata', () => {
       connections: [],
     };
     const slots = attachmentSlots(resolve(assembly, gunDomain)).filter(({ mount }) => mount === 'muzzle');
-    const muzzle = slots[0];
+    const [muzzle] = slots;
     if (!muzzle) {
       throw new Error('The rifled barrel exports no muzzle slot');
     }
