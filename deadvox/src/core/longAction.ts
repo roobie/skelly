@@ -18,7 +18,7 @@ export interface RestAction {
   /** The Sim time a sleep set with an alarm ends at; without one, sleep ends once rested. */
   wakeAt?: number;
   /** Saved Game-second progress before sleep begins; absent once the player is asleep. */
-  sleepOnset?: { durationGameSeconds: number; elapsedGameSeconds: number };
+  sleepOnset?: { durationGameSeconds: number; elapsedGameSeconds: number } | undefined;
 }
 const WAIT_CANCELLING_MOVEMENTS = new Set([
   'movement.forward',
@@ -54,6 +54,41 @@ export type LongJob =
       elapsed: number;
       duration: number;
     };
+export interface RestStartOptions {
+  wakeAt?: number;
+  sleepOnsetGameSeconds?: number;
+}
+const restActionRefusal = (job: LongJob | undefined): string | undefined => {
+  if (!job || job.stopped) {
+    return undefined;
+  }
+  switch (job.jobType) {
+    case 'craft':
+      return 'Stop crafting first';
+    case 'reading':
+      return 'Stop reading first';
+    case 'pry':
+      return 'Stop prying first';
+    default:
+      return undefined;
+  }
+};
+const restStartTimingRefusal = (
+  kind: RestKind,
+  simTime: number,
+  { wakeAt, sleepOnsetGameSeconds }: RestStartOptions,
+): string | undefined => {
+  if (wakeAt !== undefined && (kind !== 'sleep' || !(wakeAt > simTime))) {
+    return 'Invalid wake time';
+  }
+  if (
+    sleepOnsetGameSeconds !== undefined &&
+    (kind !== 'sleep' || !Number.isFinite(sleepOnsetGameSeconds) || sleepOnsetGameSeconds <= 0)
+  ) {
+    return 'Invalid sleep onset time';
+  }
+  return undefined;
+};
 export interface ReadingActionHooks {
   owns: (bookUid: number) => boolean;
   validate: (bookUid: number) => string | undefined;
@@ -264,7 +299,7 @@ export class LongActions {
       : undefined;
   }
   get restRate(): number | undefined {
-    const rest = this.rest;
+    const { rest } = this;
     return this.current && !this.current.stopped && this.sim.compression.active && !rest?.sleepOnset
       ? rest?.rate
       : undefined;
@@ -332,37 +367,18 @@ export class LongActions {
     return undefined;
   }
   /** `wakeAt` is Sim time; `sleepOnsetGameSeconds` is a saved Game-time delay before sleep. */
-  startRest(
-    kind: RestKind,
-    rate: number,
-    furnitureUid: number,
-    wakeAt?: number,
-    sleepOnsetGameSeconds?: number,
-  ): string | undefined {
-    const actionRefusal = this.bodyActionRefusal();
+  startRest(kind: RestKind, rate: number, furnitureUid: number, options: RestStartOptions = {}): string | undefined {
+    const { wakeAt, sleepOnsetGameSeconds } = options;
+    const actionRefusal = this.bodyActionRefusal() ?? restStartTimingRefusal(kind, this.sim.time, options);
     if (actionRefusal) {
       return actionRefusal;
-    }
-    if (wakeAt !== undefined && (kind !== 'sleep' || !(wakeAt > this.sim.time))) {
-      return 'Invalid wake time';
-    }
-    if (
-      sleepOnsetGameSeconds !== undefined &&
-      (kind !== 'sleep' || !Number.isFinite(sleepOnsetGameSeconds) || sleepOnsetGameSeconds <= 0)
-    ) {
-      return 'Invalid sleep onset time';
     }
     if (wakeAt === undefined && this.sim.needs.fatigue <= 0) {
       return "You're not tired";
     }
-    if (this.current?.jobType === 'craft' && !this.current.stopped) {
-      return 'Stop crafting first';
-    }
-    if (this.current?.jobType === 'reading' && !this.current.stopped) {
-      return 'Stop reading first';
-    }
-    if (this.current?.jobType === 'pry' && !this.current.stopped) {
-      return 'Stop prying first';
+    const currentActionRefusal = restActionRefusal(this.current);
+    if (currentActionRefusal) {
+      return currentActionRefusal;
     }
     const result = this.sim.compressLongAction(kind);
     if (!result.ok) {
@@ -747,7 +763,7 @@ export class LongActions {
         job.rest.sleepOnset.elapsedGameSeconds + seconds,
       );
       if (job.rest.sleepOnset.elapsedGameSeconds >= job.rest.sleepOnset.durationGameSeconds) {
-        delete job.rest.sleepOnset;
+        job.rest.sleepOnset = undefined;
       }
       return false;
     }

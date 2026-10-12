@@ -48,7 +48,7 @@ export class RestController {
     this.sim.actions.wakeGameHour = gameHour;
   }
   get canStop(): boolean {
-    const action = this.action;
+    const { action } = this;
     return action !== undefined && (action.kind !== 'sleep' || action.sleepOnset !== undefined);
   }
   /** Whether the player can pick a wake time: only with an alarm clock. */
@@ -74,7 +74,10 @@ export class RestController {
         (onsetTuning.maxGameMinutes - onsetTuning.minGameMinutes) *
           Math.min(1, this.sim.needs.fatigue / onsetTuning.fatigueAtMinimum)
       : undefined;
-    return this.sim.actions.startRest(kind, rate, furnitureUid, wakeAt, onset);
+    return this.sim.actions.startRest(kind, rate, furnitureUid, {
+      ...(wakeAt === undefined ? {} : { wakeAt }),
+      ...(onset === undefined ? {} : { sleepOnsetGameSeconds: onset }),
+    });
   }
   resume(): string | undefined {
     const { action } = this;
@@ -94,7 +97,7 @@ export class RestController {
   }
   /** System callers may stop rest or sleep; player toggles enforce `canStop`. */
   stop(): void {
-    const action = this.action;
+    const { action } = this;
     if (action?.sleepOnset !== undefined) {
       this.sim.actions.cancel();
     } else if (action) {

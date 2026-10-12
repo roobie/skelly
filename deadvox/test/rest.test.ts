@@ -53,11 +53,7 @@ const finishSleepOnset = (sim: Simulation, rest: RestController): void => {
 };
 
 /** Total Game hours from starting sleep in a quality-1 bed until it ends. */
-const sleepGameHours = (
-  sim: Simulation,
-  rest: RestController,
-  fatigue: number,
-): { total: number; onset: number } => {
+const sleepGameHours = (sim: Simulation, rest: RestController, fatigue: number): { total: number; onset: number } => {
   sim.needs.calories = 100;
   sim.needs.hydration = 100;
   sim.needs.fatigue = fatigue;

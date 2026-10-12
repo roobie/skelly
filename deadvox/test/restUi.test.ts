@@ -30,7 +30,7 @@ describe('restViewModel', () => {
     const sim = new Simulation({ seed: 1 });
     sim.needs.fatigue = 0;
     const wakeAt = sim.time + simSecondsPerHour(sim.clock) * 8;
-    expect(sim.actions.startRest('sleep', -10, 1, wakeAt)).toBeUndefined();
+    expect(sim.actions.startRest('sleep', -10, 1, { wakeAt })).toBeUndefined();
     expect(restViewModel(sim.actions.rest, false, sim, false)).toMatchObject({ visible: true, percent: 0 });
     const slept = () => (sim.actions.job?.jobType === 'sleep' ? sim.actions.job.elapsed : 0);
     for (let i = 0; i < 5000 && slept() === 0; i++) {

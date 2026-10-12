@@ -6,8 +6,8 @@ import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
-import { simSeconds } from '../src/core/time.ts';
 import type { Site } from '../src/core/site.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -220,7 +220,7 @@ describe('snapshot state components', () => {
     runtime.sim.needs.fatigue = 150;
     runtime.sim.actions.wakeGameHour = 7;
     const wakeAt = runtime.sim.time + 3600;
-    expect(runtime.sim.actions.startRest('sleep', -10, 1, wakeAt)).toBeUndefined();
+    expect(runtime.sim.actions.startRest('sleep', -10, 1, { wakeAt })).toBeUndefined();
 
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
     const loaded = createRuntime(decoded.snapshot);

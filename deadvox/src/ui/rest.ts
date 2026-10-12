@@ -30,10 +30,7 @@ export const restViewModel = (
   let percent = 0;
   let label: string = action.label;
   if ('startFatigue' in action && action.sleepOnset !== undefined) {
-    percent = Math.min(
-      100,
-      (action.sleepOnset.elapsedGameSeconds / action.sleepOnset.durationGameSeconds) * 100,
-    );
+    percent = Math.min(100, (action.sleepOnset.elapsedGameSeconds / action.sleepOnset.durationGameSeconds) * 100);
     label = 'Falling asleep';
   } else if ('startFatigue' in action && action.wakeAt !== undefined) {
     // An alarm sleep runs to its wake time, not to rested, so its bar tracks the time slept.
