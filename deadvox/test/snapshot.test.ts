@@ -6,8 +6,8 @@ import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
-import { realSeconds, type RealSeconds } from '../src/core/time.ts';
 import type { Site } from '../src/core/site.ts';
+import { type RealSeconds, realSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
