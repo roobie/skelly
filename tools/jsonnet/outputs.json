@@ -17,6 +17,10 @@
       "output": "deadvox/src/content/base/items-explosives.json"
     },
     {
+      "source": "deadvox/src/content/base/items-other.jsonnet",
+      "output": "deadvox/src/content/base/items-other.json"
+    },
+    {
       "source": "deadvox/src/content/base/items-tools.jsonnet",
       "output": "deadvox/src/content/base/items-tools.json"
     },
@@ -27,6 +31,10 @@
     {
       "source": "deadvox/src/content/base/locks.jsonnet",
       "output": "deadvox/src/content/base/locks.json"
+    },
+    {
+      "source": "deadvox/src/content/base/loot.jsonnet",
+      "output": "deadvox/src/content/base/loot.json"
     },
     {
       "source": "deadvox/src/content/base/saves.jsonnet",

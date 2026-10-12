@@ -1,111 +1,120 @@
 {
   "items": [
     {
+      "category": "material",
       "id": "work_in_progress",
       "name": "Work in progress",
-      "category": "material",
-      "weight": 0,
       "size": [2, 2],
-      "twoHanded": true
+      "twoHanded": true,
+      "weight": 0
     },
     {
-      "id": "aa_battery",
-      "name": "AA battery",
-      "category": "battery",
-      "weight": 23,
-      "size": [1, 1],
-      "stack": 10,
       "battery": {
         "capacity": 1
-      }
+      },
+      "category": "battery",
+      "id": "aa_battery",
+      "name": "AA battery",
+      "size": [1, 1],
+      "stack": 10,
+      "weight": 23
     },
     {
+      "category": "medical",
+      "description": "Slows or stops bleeding on one body part.",
       "id": "bandage",
       "name": "Bandage",
-      "category": "medical",
-      "weight": 20,
       "size": [1, 1],
       "stack": 4,
-      "treatment": { "bleeding": 8 },
-      "description": "Slows or stops bleeding on one body part."
+      "treatment": {
+        "bleeding": 8
+      },
+      "weight": 20
     },
     {
+      "category": "medical",
+      "description": "Treats an early wound infection.",
       "id": "antiseptic",
       "name": "Antiseptic",
-      "category": "medical",
-      "weight": 100,
       "size": [1, 1],
       "stack": 4,
-      "treatment": { "infection": { "stages": ["early"], "chance": 0.9 } },
-      "description": "Treats an early wound infection."
+      "treatment": {
+        "infection": {
+          "chance": 0.90000000000000002,
+          "stages": ["early"]
+        }
+      },
+      "weight": 100
     },
     {
+      "category": "medical",
+      "description": "An antibiotic. Treats a progressed wound infection.",
       "id": "antibiotics",
       "name": "Tetracycline",
-      "category": "medical",
-      "weight": 50,
       "size": [1, 1],
       "stack": 4,
-      "treatment": { "infection": { "stages": ["advanced"], "chance": 0.9 } },
-      "description": "An antibiotic. Treats a progressed wound infection."
+      "treatment": {
+        "infection": {
+          "chance": 0.90000000000000002,
+          "stages": ["advanced"]
+        }
+      },
+      "weight": 50
     },
     {
-      "id": "painkillers",
-      "name": "Painkiller",
-      "category": "medical",
-      "weight": 1,
-      "size": [1, 1],
-      "stack": 24,
       "analgesic": {
+        "fadeGameMinutes": 60,
         "group": "otc",
-        "reliefPerDose": 20,
         "maxRelief": 30,
         "onsetGameMinutes": 45,
         "peakGameMinutes": 210,
-        "fadeGameMinutes": 60
+        "reliefPerDose": 20
       },
-      "description": "An over-the-counter pill. Eases pain for a few hours; it heals nothing."
+      "category": "medical",
+      "description": "An over-the-counter pill. Eases pain for a few hours; it heals nothing.",
+      "id": "painkillers",
+      "name": "Painkiller",
+      "size": [1, 1],
+      "stack": 24,
+      "weight": 1
     },
     {
+      "category": "material",
       "id": "rag",
       "name": "Rag",
-      "category": "material",
-      "weight": 50,
       "size": [1, 1],
       "stack": 6,
-      "treatment": { "bleeding": 2 }
+      "treatment": {
+        "bleeding": 2
+      },
+      "weight": 50
     },
     {
+      "category": "material",
       "id": "duct_tape",
       "name": "Duct tape",
-      "category": "material",
-      "weight": 150,
-      "size": [1, 1]
+      "size": [1, 1],
+      "weight": 150
     },
     {
+      "category": "material",
       "id": "nails",
       "name": "Nails",
-      "category": "material",
-      "weight": 5,
       "size": [1, 1],
-      "stack": 100
+      "stack": 100,
+      "weight": 5
     },
     {
+      "category": "material",
       "id": "scrap_metal",
       "name": "Scrap metal",
-      "category": "material",
-      "weight": 500,
       "size": [1, 2],
-      "stack": 5
+      "stack": 5,
+      "weight": 500
     },
     {
-      "id": "field_manual",
-      "name": "Field Manual: Making Do",
-      "category": "book",
-      "weight": 400,
-      "size": [2, 2],
       "book": {
-        "title": "Field Manual: Making Do",
+        "readingGameMinutes": 20,
         "recipes": [
           "strip_wire",
           "field_patch",
@@ -113,21 +122,21 @@
           "make_taped_flashlight_mount",
           "make_improvised_suppressor"
         ],
-        "readingGameMinutes": 20
+        "title": "Field Manual: Making Do"
       },
+      "category": "book",
+      "id": "field_manual",
+      "name": "Field Manual: Making Do",
       "readable": {
-        "title": "Field Manual: Making Do",
-        "text": "A pocket guide to salvaging useful material from damaged equipment."
-      }
+        "text": "A pocket guide to salvaging useful material from damaged equipment.",
+        "title": "Field Manual: Making Do"
+      },
+      "size": [2, 2],
+      "weight": 400
     },
     {
-      "id": "camp_craft_book",
-      "name": "Camp Craft",
-      "category": "book",
-      "weight": 350,
-      "size": [2, 2],
       "book": {
-        "title": "Camp Craft",
+        "readingGameMinutes": 15,
         "recipes": [
           "torch",
           "candle",
@@ -136,21 +145,21 @@
           "assemble_fastener_pack",
           "make_scrap_foregrip"
         ],
-        "readingGameMinutes": 15
+        "title": "Camp Craft"
       },
+      "category": "book",
+      "id": "camp_craft_book",
+      "name": "Camp Craft",
       "readable": {
-        "title": "Camp Craft",
-        "text": "Notes on making simple light and shelter from things found nearby."
-      }
+        "text": "Notes on making simple light and shelter from things found nearby.",
+        "title": "Camp Craft"
+      },
+      "size": [2, 2],
+      "weight": 350
     },
     {
-      "id": "home_repair_book",
-      "name": "Home Repair Handbook",
-      "category": "book",
-      "weight": 500,
-      "size": [2, 2],
       "book": {
-        "title": "Home Repair Handbook",
+        "readingGameMinutes": 25,
         "recipes": [
           "repair_kit",
           "make_sewing_kit",
@@ -170,21 +179,21 @@
           "repair_fanny_pack",
           "repair_flashlight"
         ],
-        "readingGameMinutes": 25
+        "title": "Home Repair Handbook"
       },
+      "category": "book",
+      "id": "home_repair_book",
+      "name": "Home Repair Handbook",
       "readable": {
-        "title": "Home Repair Handbook",
-        "text": "A practical handbook for keeping tools and household goods working."
-      }
+        "text": "A practical handbook for keeping tools and household goods working.",
+        "title": "Home Repair Handbook"
+      },
+      "size": [2, 2],
+      "weight": 500
     },
     {
-      "id": "workshop_notes",
-      "name": "Workshop Notes",
-      "category": "book",
-      "weight": 300,
-      "size": [2, 2],
       "book": {
-        "title": "Workshop Notes",
+        "readingGameMinutes": 30,
         "recipes": [
           "field_patch",
           "make_wire_strippers",
@@ -194,136 +203,156 @@
           "make_improvised_suppressor",
           "make_scrap_foregrip"
         ],
-        "readingGameMinutes": 30
+        "title": "Workshop Notes"
       },
-      "readable": { "title": "Workshop Notes", "text": "Handwritten notes on careful repairs and using salvaged wire." }
+      "category": "book",
+      "id": "workshop_notes",
+      "name": "Workshop Notes",
+      "readable": {
+        "text": "Handwritten notes on careful repairs and using salvaged wire.",
+        "title": "Workshop Notes"
+      },
+      "size": [2, 2],
+      "weight": 300
     },
     {
+      "category": "book",
+      "description": "Water-stained. Someone underlined things.",
       "id": "paperback",
       "name": "Paperback novel",
-      "category": "book",
-      "weight": 300,
       "size": [2, 2],
-      "description": "Water-stained. Someone underlined things."
+      "weight": 300
     },
     {
+      "category": "misc",
+      "description": "A battered handheld radio. Its battery and metal casing can be salvaged.",
       "id": "portable_radio",
       "name": "Portable radio",
-      "category": "misc",
-      "weight": 600,
+      "salvage": [
+        {
+          "count": 1,
+          "item": "scrap_metal"
+        },
+        {
+          "count": 1,
+          "item": "aa_battery"
+        }
+      ],
       "size": [2, 2],
-      "description": "A battered handheld radio. Its battery and metal casing can be salvaged.",
-      "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "aa_battery", "count": 1 }]
+      "weight": 600
     },
     {
+      "category": "misc",
+      "description": "A fuel-filled can.",
       "id": "jerry_can",
       "name": "Jerry can",
-      "category": "misc",
-      "weight": 2500,
       "size": [3, 3],
-      "description": "A fuel-filled can."
+      "weight": 2500
     },
     {
-      "id": "spent_case_5_d_56x45",
-      "name": "Spent 5.56×45 case",
       "category": "material",
-      "weight": 6,
-      "size": [1, 1],
-      "stack": 10000,
       "description": "A spent case from debug firearm handling.",
+      "id": "spent_case_5_d_56x45",
+      "model": "case_5_d_56x45",
+      "name": "Spent 5.56×45 case",
       "pileDisplay": "scatter",
-      "model": "case_5_d_56x45"
-    },
-    {
-      "id": "spent_case_7_d_62x39",
-      "name": "Spent 7.62×39 case",
-      "category": "material",
-      "weight": 6,
       "size": [1, 1],
       "stack": 10000,
-      "description": "A spent case from debug firearm handling. Gameplay mass estimate: 6 g, not a sourced case mass.",
-      "pileDisplay": "scatter",
-      "model": "case_7_d_62x39"
+      "weight": 6
     },
     {
-      "id": "shell_12_gauge_00_buck",
-      "name": "12 gauge 00 buckshot shell",
-      "category": "ammo",
-      "weight": 40,
+      "category": "material",
+      "description": "A spent case from debug firearm handling. Gameplay mass estimate: 6 g, not a sourced case mass.",
+      "id": "spent_case_7_d_62x39",
+      "model": "case_7_d_62x39",
+      "name": "Spent 7.62×39 case",
+      "pileDisplay": "scatter",
       "size": [1, 1],
-      "stack": 25,
-      "description": "Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy. Payload from gungen cartridges/12-gauge-00-buck.json: Federal PFC154 00 (9 pellets), SAAMI shotshell standard p.39 (8.38 mm nominal 00). Per-pellet damage, push and reach are gameplay estimates.",
+      "stack": 10000,
+      "weight": 6
+    },
+    {
       "ammo": {
         "calibre": "12-gauge-00-buck",
-        "pellets": 9,
-        "diameterMm": 8.38,
         "damage": 20,
-        "impulse": 0.35,
+        "diameterMm": 8.3800000000000008,
+        "impulse": 0.34999999999999998,
+        "pellets": 9,
         "rangeMetres": 50
       },
-      "model": "round_12_h_gauge_h_00_h_buck"
+      "category": "ammo",
+      "description": "Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy. Payload from gungen cartridges/12-gauge-00-buck.json: Federal PFC154 00 (9 pellets), SAAMI shotshell standard p.39 (8.38 mm nominal 00). Per-pellet damage, push and reach are gameplay estimates.",
+      "id": "shell_12_gauge_00_buck",
+      "model": "round_12_h_gauge_h_00_h_buck",
+      "name": "12 gauge 00 buckshot shell",
+      "size": [1, 1],
+      "stack": 25,
+      "weight": 40
     },
     {
+      "category": "ammo",
+      "description": "Sealed cardboard box of twenty 00-buck shells. Size, 40 g cardboard and 40 g per shell are gameplay mass estimates.",
       "id": "shotshell_box",
       "name": "Sealed shotshell box (20)",
-      "category": "ammo",
-      "weight": 840,
       "size": [2, 2],
-      "description": "Sealed cardboard box of twenty 00-buck shells. Size, 40 g cardboard and 40 g per shell are gameplay mass estimates.",
-      "unpack": { "item": "shell_12_gauge_00_buck", "count": 20 }
+      "unpack": {
+        "count": 20,
+        "item": "shell_12_gauge_00_buck"
+      },
+      "weight": 840
     },
     {
-      "id": "spent_case_12_h_gauge_h_00_h_buck",
-      "name": "Spent 12 gauge hull",
       "category": "material",
-      "weight": 5,
+      "description": "An opened shotshell hull. Fired-hull gameplay mass estimate: 5 g, not a manufacturer specification.",
+      "id": "spent_case_12_h_gauge_h_00_h_buck",
+      "model": "case_12_h_gauge_h_00_h_buck",
+      "name": "Spent 12 gauge hull",
+      "pileDisplay": "scatter",
       "size": [1, 1],
       "stack": 10000,
-      "description": "An opened shotshell hull. Fired-hull gameplay mass estimate: 5 g, not a manufacturer specification.",
-      "pileDisplay": "scatter",
-      "model": "case_12_h_gauge_h_00_h_buck"
+      "weight": 5
     },
     {
+      "category": "misc",
       "id": "shambler_torso",
       "name": "Severed shambler torso",
-      "category": "misc",
-      "weight": 12000,
-      "size": [3, 3]
+      "size": [3, 3],
+      "weight": 12000
     },
     {
+      "category": "misc",
       "id": "shambler_head",
       "name": "Severed shambler head",
-      "category": "misc",
-      "weight": 5000,
-      "size": [2, 2]
+      "size": [2, 2],
+      "weight": 5000
     },
     {
+      "category": "misc",
       "id": "shambler_left_arm",
       "name": "Severed shambler left arm",
-      "category": "misc",
-      "weight": 2500,
-      "size": [2, 2]
+      "size": [2, 2],
+      "weight": 2500
     },
     {
+      "category": "misc",
       "id": "shambler_right_arm",
       "name": "Severed shambler right arm",
-      "category": "misc",
-      "weight": 2500,
-      "size": [2, 2]
+      "size": [2, 2],
+      "weight": 2500
     },
     {
+      "category": "misc",
       "id": "shambler_left_leg",
       "name": "Severed shambler left leg",
-      "category": "misc",
-      "weight": 4000,
-      "size": [2, 3]
+      "size": [2, 3],
+      "weight": 4000
     },
     {
+      "category": "misc",
       "id": "shambler_right_leg",
       "name": "Severed shambler right leg",
-      "category": "misc",
-      "weight": 4000,
-      "size": [2, 3]
+      "size": [2, 3],
+      "weight": 4000
     }
   ]
 }
