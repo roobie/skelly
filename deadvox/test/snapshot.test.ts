@@ -65,8 +65,9 @@ describe('snapshot state components', () => {
     const runtime = createRuntime(undefined, true, undefined, { registry: sleepRegistry });
     expect(runtime.sim.needs.fatigue).toBeGreaterThan(0);
     expect(startRest(runtime, 'sleep')).toBeUndefined();
+    // Coarse live frames preserve the production ramp and Sim-step bound without redundant frame work.
     const frame = (): void => {
-      advanceLiveFrame(runtime.sim, realSeconds(1 / 60), undefined, (simDt, until) =>
+      advanceLiveFrame(runtime.sim, realSeconds(0.25), undefined, (simDt, until) =>
         runtime.session.frame(simDt, until),
       );
     };
