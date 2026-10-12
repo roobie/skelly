@@ -1,4 +1,4 @@
-import { InstancedMesh, Matrix4, Vector3 } from 'three';
+import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
@@ -14,6 +14,14 @@ const lowHit: HitImpulse = { point: [0.5, 0.05, 0.5], direction: [0, -1, 0], imp
 const BASE_DRIP = { rate: 1, size: 1 };
 
 describe('Gore', () => {
+  it('uses scene-lit materials for droplets and splats', () => {
+    const gore = new Gore(1);
+    const meshes = gore.group.children.filter((child): child is InstancedMesh => child instanceof InstancedMesh);
+    expect(meshes).toHaveLength(2);
+    expect(meshes.every((mesh) => mesh.material instanceof MeshLambertMaterial)).toBe(true);
+    gore.dispose();
+  });
+
   it('starts at most the per-frame budget of droplets between two updates, however much is sprayed', () => {
     const gore = new Gore(1);
     for (let spray = 0; spray < DROPLET_CAP; spray++) {
