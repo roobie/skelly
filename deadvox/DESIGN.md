@@ -20,6 +20,7 @@ read_if:
   - you're restructuring the per-tick zombie simulation
   - you're changing bleeding cues
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
+  - you're changing pain, its tiers or effects, or what painkillers do
   - you're changing zombie attack moves or the damage kinds they deal
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you change quickbar assignment feedback
@@ -906,9 +907,47 @@ tier is a content change. See `src/core/body.ts`, `Body`, and `src/core/schema.t
 - **Presentation.** Each tier's content sets whether the HUD warns, the notice
   spoken when the worst wound reaches that tier, and how its drips look.
   INTERFACE.md, "HUD", has the wording rules. The inventory body panel names the
-  tier. See `src/game/playerBleedingNotice.ts`, `PlayerBleedingNotice`;
+  tier. See `src/game/tierNotice.ts`, `TierNotice`;
   `src/render/gore.ts`, `Gore.dripPlayer`; and `src/ui/inventoryScreen.ts`.
 - **Saves** keep each wound's severity. See `src/core/saveFormat.ts`, `bodyWound`.
+
+### Pain
+
+Pain is its own body state, apart from health and wounds, so a painkiller can ease
+what hurts without healing anything. Felt pain is acute plus background pain, less
+analgesia. Like fatigue it has no top: content sets one threshold,
+`pain.knockoutAt`, and the tiers and effects are shares of it, so retuning pain
+moves one number. The threshold is read through the modifier point
+(`body.painKnockoutAt`), so a trait can toughen someone without new mechanism. See
+`Body.pain` in `src/core/body.ts` and `src/core/pain.ts`.
+
+Acute pain comes from each hit, by damage kind (`body.painPerDamage`) and region
+weight; a kindless hit adds none, as with shock. It fades on its own, faster while
+high, in closed form so the step size never changes it. Background pain is read
+from the injuries every time (region damage, each bleeding tier's and infection
+stage's `pain`) and never saved, so it falls exactly as the body heals or is
+treated.
+
+Below the first tier pain changes nothing. Above it, aim sway and one shared
+handling slowdown (loading, racking and the swing) grow smoothly with the share
+up to content caps, so no effect jumps at a tier. Treatment and crafting are never
+slowed, for the reason "Bleeding" keeps them open: a hurt player may need them to
+stop a wound. See `createSession` in `src/game/session.ts` and `FirearmMechanics`
+in `src/game/firearmHandling.ts`.
+
+A painkiller is any item with an `analgesic` component, taken one pill at a time
+from a stack (`Survival.use` in `src/game/survival.ts`). A dose's relief rises
+through its onset, holds, then fades, in game time so content can author real
+pharmacology. Doses in one `group` share its highest cap, so a second pill tops
+relief up and a third adds nothing, while another group adds on top. Painkillers
+mask pain only: health, regions, wounds and `Body.consequences` stay as they were,
+so a damaged leg is as slow on pills and the injury outlasts the relief.
+
+Felt pain's tier drives the "Low health, pain" cue and speaks its content `notice`
+as pain worsens into it (INTERFACE.md, "Bodily cues" and "HUD"). Saves keep acute
+pain and the doses under way; see `bodyState` in `src/core/saveFormat.ts`. The
+threshold is the balance point the tiers lead up to; the knockout there, through
+shock's, comes with #654.
 
 ## Combat and noise
 

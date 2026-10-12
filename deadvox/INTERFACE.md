@@ -3,7 +3,7 @@ id: skelly::deadvox-interface
 description: Design for what the game's interface may show and say to the player, how far it is diegetic, and how development builds are allowed to break that
 read_if:
   - you're deciding what the interface may tell the player and in what voice
-  - you're changing player-facing prompts, feedback, HUD language, or bleeding cues
+  - you're changing player-facing prompts, feedback, HUD language, or bleeding or pain cues
   - you're changing what the HUD options or the HUD toggle hide
   - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
   - you're changing how playtesters hand back metrics or replays
@@ -107,6 +107,13 @@ See `src/game/play.ts`, `showRefusal`, and
 The limp is also movement, not only a look: the pace really drops, so it belongs
 with the body model, which tracks wounds per body part (`src/core/body.ts`,
 `BodyWounds`). The limp comes with fractures (#277).
+
+Felt pain, not health, drives the "Low health, pain" seen cue (DESIGN.md, "Pain"):
+its tier sets how deep each pulse drains the colour and how often it comes, and a
+hit's tilt settles more slowly the worse the pain. The cue never shows a number,
+because pain has no top. Painkillers fade it while the injury stays, which is the
+point of masking. See `src/game/painCue.ts`, `PainCue`, and `src/render/mood.ts`,
+`Mood.setPainDesaturation`.
 
 Web Audio starts on the first click, as DESIGN.md says. Sounds are content ids
 in the pack, validated and credited in the asset manifest. The refusal cue is a
@@ -217,7 +224,7 @@ melee combat governs block success. The tiered practice contract is in
 
 ## HUD
 
-Blood loss can progress without immediate health loss, so make it legible during play; `playNeedsText` in `src/ui/playHud.ts` pairs it with health and gives each bleeding region one line with its tier's content label. A tier that content marks `warn` gets a warning sign; one that doesn't stays quiet, because a wound that hardly needs mention shouldn't alarm. The bleeding notice is class 3: when the worst bleeding worsens to a tier with a content `notice`, it speaks that line in the character's voice; see `src/game/playerBleedingNotice.ts`, `PlayerBleedingNotice`. Bleeding's refusal of time compression is a class-3 refusal, with content's `bleeding.refusal` line; see `src/core/body.ts`, `Body.compressionRefusal`.
+Blood loss can progress without immediate health loss, so make it legible during play; `playNeedsText` in `src/ui/playHud.ts` pairs it with health and gives each bleeding region one line with its tier's content label. A tier that content marks `warn` gets a warning sign; one that doesn't stays quiet, because a wound that hardly needs mention shouldn't alarm. The bleeding notice is class 3: when the worst bleeding worsens to a tier with a content `notice`, it speaks that line in the character's voice. Pain's notice is class 3 the same way, when felt pain worsens to a tier with one, and bleeding's line wins a shared moment because it asks for treatment; see `src/game/tierNotice.ts`, `TierNotice`, and `src/game/play.ts`, `updateBodyNotices`. Pain has no HUD line. Bleeding's refusal of time compression is a class-3 refusal, with content's `bleeding.refusal` line; see `src/core/body.ts`, `Body.compressionRefusal`.
 
 The optional Handling progress HUD reuses its existing progress card for a held
 item throw. Its fill follows throw charge in simulation time; a labelled marker

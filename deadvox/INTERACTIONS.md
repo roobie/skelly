@@ -422,7 +422,8 @@ These contracts define the interaction boundary:
    charge is spent. Whether matches alone strike a brief light remains open for
    BR. See `src/game/primaryAction.ts`, `ignitionTargetForHand`, and
    `src/game/survival.ts`, `Survival.use`.
-9. **Held consumables.** Food and drink use their `food` component; a treatment
+9. **Held consumables.** Food and drink use their `food` component, and a
+   painkiller its `analgesic`, one pill off the stack; a treatment
    item uses its content `treatment`, on a wound it can help. The primary action
    calls `Survival.use`, while quickbar actions remain owned by
    `Survival.useFromQuickbar`. See `src/game/survival.ts`, `Survival.use`.
