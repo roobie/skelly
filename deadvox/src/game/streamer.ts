@@ -365,7 +365,7 @@ export class Streamer {
     if (msg.type === 'sky') {
       const callback = this.skyReply;
       this.skyReply = undefined;
-      callback?.(msg.result, msg.ms);
+      callback?.(msg.result, msg.workerRealMs);
       return;
     }
     this.inFlight.delete(msg.key);

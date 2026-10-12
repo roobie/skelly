@@ -7,7 +7,7 @@ export type ToMesher =
   | { type: 'mesh'; key: string; version: number; padded: Uint16Array; wide: Uint8Array }
   | { type: 'sky'; input: SkySnapshot };
 
-export type FromMesher = Meshed | { type: 'sky'; result: SkyResult; ms: number };
+export type FromMesher = Meshed | { type: 'sky'; result: SkyResult; workerRealMs: number };
 
 interface Meshed {
   type: 'mesh';

@@ -122,7 +122,7 @@ export class Skylight {
   private readonly regions: { value: DataTexture };
   private readonly heights: { value: DataTexture };
   private readonly heightSize: { value: Vector2 };
-  private readonly runtime: SkyRuntime;
+  private readonly context: SkyRuntime;
   private readonly index: ReturnType<typeof regionIndex>;
   private readonly clock: () => number;
   private preparation: Preparation | undefined;
@@ -141,13 +141,13 @@ export class Skylight {
   constructor(
     boxes: readonly SkyBounds[],
     { blockSize, top, viewRadiusM }: { blockSize: number; top: number; viewRadiusM: number },
-    runtime: SkyRuntime,
+    context: SkyRuntime,
   ) {
     this.blockSize = blockSize;
     this.top = top;
     this.viewRadiusM = viewRadiusM;
-    this.runtime = runtime;
-    this.clock = runtime.clock ?? (() => performance.now());
+    this.context = context;
+    this.clock = context.clock ?? (() => performance.now());
     let heightOffset = 0;
     this.fields = boxes.map((box, index) => {
       const bounds = growSky(box, SKY_SHELL);
@@ -190,7 +190,7 @@ export class Skylight {
     }
   }
   private refreshEntities(): void {
-    const { entities } = this.runtime;
+    const { entities } = this.context;
     if (this.entityVersion === entities.version) {
       return;
     }
@@ -273,7 +273,7 @@ export class Skylight {
       this.preparation = {
         field,
         revision: field.revision,
-        iterator: captureSky(this.runtime, field.bounds, { bottom: this.runtime.bottom, top: this.top }),
+        iterator: captureSky(this.context, field.bounds, { bottom: this.context.bottom, top: this.top }),
       };
     }
     const { preparation } = this;
@@ -293,7 +293,7 @@ export class Skylight {
     }
     const start = this.clock();
     if (
-      this.runtime.submit(preparation.captured.input, (result, ms) => {
+      this.context.submit(preparation.captured.input, (result, ms) => {
         this.inFlight = false;
         this.stats.completed += 1;
         this.completed = { preparation, result };
