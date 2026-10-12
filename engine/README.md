@@ -7,6 +7,8 @@ read_if:
 
 # Shared engine
 
-Issue #509 establishes a shared boundary so consumers do not maintain parallel geometry and fit systems. The reason for keeping domain vocabulary outside the package is to let each consumer evolve its data and rules without coupling other consumers to its concepts.
+Consumers should share geometry and fit mechanisms without sharing domain policy. Keeping domain vocabulary outside the engine lets each consumer evolve its own data and rules independently.
 
-The variant selector in `src/core/template.ts`, `Template.variant` and `Template.variantParams`, maps consumer choices onto generic part parameters without naming the domain's data. Domain policy stays in `src/core/designLoader.ts`, `DesignLoadInputs.validateDesign`, so each consumer can check its resolved designs without importing domain rules into the engine. Export identity is supplied through `src/core/design.ts`, `GlbExportInput.generator` and `GlbExportInput.metadataNamespace`, keeping consumer branding and metadata namespaces outside the shared package.
+`src/core/template.ts`, `Template.variantParams` maps consumer choices to generic part parameters. Domain validation stays in `src/core/designLoader.ts`, `DesignLoadInputs.validateDesign`. Export identity remains caller-owned through `src/core/design.ts`, `GlbExportInput.generator` and `GlbExportInput.metadataNamespace`.
+
+Assemblies are graphs rather than trees because one part may need to fit against multiple neighbours, as a handguard can meet both receiver and barrel. Preserving that loop lets validation expose a closure mismatch instead of silently dropping a connection; see `src/core/resolve.ts`, `resolve`.
