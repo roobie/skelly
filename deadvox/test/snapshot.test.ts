@@ -1,13 +1,18 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { Chunk } from '../src/core/chunk.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { Site } from '../src/core/site.ts';
+import { type RealSeconds, realSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
+import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Simulation } from './simulationFixture.ts';
 import {
@@ -22,6 +27,21 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
+const registryWithSleepCap = (sleepCap: number) => {
+  const files = readdirSync('src/content/base')
+    .filter((name) => name.endsWith('.json'))
+    .map((source) => ({
+      source,
+      data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
+    }));
+  const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === 'player');
+  if (!compression) {
+    throw new Error('Missing scenario compression definition');
+  }
+  compression.caps.sleep = sleepCap;
+  return buildRegistry(files);
+};
+
 describe('snapshot state components', () => {
   it('round-trips an active Wait through the save codec', async () => {
     const runtime = createRuntime();
@@ -33,6 +53,62 @@ describe('snapshot state components', () => {
     expect(restored.sim.actions.job).toMatchObject({ jobType: 'wait', stopped: false });
     expect(restored.sim.compression.active).toBe(true);
   });
+  it('round-trips bed sleep above the former save compression ceiling', async () => {
+    const formerSaveCeiling = 30;
+    const { registry: sleepRegistry, issues } = registryWithSleepCap(formerSaveCeiling + 34);
+    expect(issues).toEqual([]);
+
+    const runtime = createRuntime(undefined, true, undefined, { content: sleepRegistry });
+    expect(runtime.sim.needs.fatigue).toBeGreaterThan(0);
+    expect(startRest(runtime, 'sleep')).toBeUndefined();
+    const frame = (): void => {
+      advanceLiveFrame(runtime.sim, realSeconds(1 / 60), undefined, (simDt, until) =>
+        runtime.session.frame(simDt, until),
+      );
+    };
+    for (let frames = 0; runtime.sim.compression.c <= formerSaveCeiling && frames < 200; frames++) {
+      frame();
+    }
+    expect(runtime.sim.compression.active).toBe(true);
+    expect(runtime.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
+    expect(runtime.sim.compression.c).toBeGreaterThan(formerSaveCeiling);
+    expect(Number.isFinite(runtime.sim.compression.c)).toBe(true);
+
+    const snapshot = capture(runtime);
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    expect(decoded.snapshot.character.simulation.compression).toEqual(snapshot.character.simulation.compression);
+  });
+
+  it('keeps a mid-sleep bed snapshot saveable when a frame elapsed is invalid', async () => {
+    const { registry: sleepRegistry, issues } = registryWithSleepCap(64);
+    expect(issues).toEqual([]);
+    const runtime = createRuntime(undefined, true, undefined, { content: sleepRegistry });
+    expect(startRest(runtime, 'sleep')).toBeUndefined();
+    const frame = (elapsed: RealSeconds): void => {
+      advanceLiveFrame(runtime.sim, elapsed, undefined, (simDt, until) => runtime.session.frame(simDt, until));
+    };
+    for (let index = 0; index < 4; index++) {
+      frame(realSeconds(1 / 60));
+    }
+    expect(runtime.sim.compression.active).toBe(true);
+    expect(runtime.sim.compression.c).toBeGreaterThan(1);
+    const compressionBeforeInvalidFrame = runtime.sim.compression.c;
+    frame(realSeconds(0));
+    const elapsedErrors: unknown[] = [];
+    for (const elapsed of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+      try {
+        frame(elapsed as RealSeconds);
+      } catch (error) {
+        elapsedErrors.push(error);
+      }
+    }
+    const snapshot = capture(runtime);
+    expect(snapshot.character.longAction.job).toMatchObject({ jobType: 'sleep', stopped: false });
+    await expect(encodeFixture(snapshot)).resolves.toBeInstanceOf(Uint8Array);
+    expect(elapsedErrors).toEqual([]);
+    expect(runtime.sim.compression.c).toBe(compressionBeforeInvalidFrame);
+  });
+
   it('round-trips loot identity so returning and retaking an item does not recount it', async () => {
     const source = createRuntime();
     const pos = source.player.body.pos.map(Math.floor) as [number, number, number];
