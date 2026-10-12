@@ -108,8 +108,8 @@ export interface CrowdTexel {
  * [c,0,s; 0,1,0; -s,0,c] layout) instead of calling core/math.ts's compose()/rotation()/translation():
  * those each allocate a fresh Mat3/Vec3/Transform, and this runs for every bone of every actor of every
  * frame (the same allocation-avoidance reason as boneTransformsInto itself). Verified equal
- * to compose(translation([x,0,z]), rotation(rotY(deg))) composed onto boneWorld by hand once in this
- * module's own derivation (see mobgen's report) and cross-checked in test/crowd.test.ts against
+ * to compose(translation([x,0,z]), rotation(rotY(deg))) composed onto boneWorld by hand in this
+ * module's own derivation and cross-checked in test/crowd.test.ts against
  * boneTransformsInto + core/math.ts's compose, applied to real points.
  */
 export const packCrowdBoneMatrix = (

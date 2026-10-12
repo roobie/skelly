@@ -22,7 +22,7 @@ import { idleBasePose } from '../src/mob/idle.ts';
 import { type StepStyle, stepPlanFor } from '../src/mob/steps.ts';
 import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
 
-const SPEEDS = [0.8, 2.8];
+const SPEEDS = [0.8, 2.8]; // deadvox shamblers: wander / chase
 
 const setup = (name: string, seed = 1) => {
   const t = TEMPLATES.find((x) => x.name === name)!;

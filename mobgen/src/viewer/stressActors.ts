@@ -424,8 +424,8 @@ export const createActor = (entry: PoolEntry, render: PoolRender): StressActor =
 
 // ---- 'crowd' mode: one shared bone-matrix texture, one InstancedMesh per variant ----
 //
-// Skinned mode loses to bones mode at 240
-// actors (40 vs 53 fps) despite less CPU, and stalls 400-600 ms at >=120 actors. Two suspects: three.js's
+// Measured on the reference laptop (deadvox/DESIGN.md, "Reference hardware"): skinned mode loses to bones
+// mode at 240 actors (40 vs 53 fps) despite less CPU, and stalls 400-600 ms at >=120 actors. Two suspects: three.js's
 // generic skinning shader fetches 4 bone matrices per vertex and blends them (we only ever use 1, weight
 // 1 — pure waste), and every actor's own Skeleton uploads its own bone texture to the GPU every frame
 // (240 uploads/frame at n=240). Crowd mode fixes both: ONE bone-matrix texture for the entire crowd (one
