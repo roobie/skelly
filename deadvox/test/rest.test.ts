@@ -266,6 +266,36 @@ describe('sleep length and sleep debt', () => {
 });
 
 describe('waking with an alarm', () => {
+  it('ends awake when the selected alarm hour arrives during sleep onset', () => {
+    const sim = new Simulation({
+      seed: 1,
+      clock: { ...defaultClock, start: 11 * SECONDS_PER_HOUR - 60 },
+    });
+    const { rest } = makeRest({ hasAlarm: () => true }, sim);
+    sim.needs.fatigue = 0;
+    rest.wakeGameHour = 11;
+
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    const onset = rest.action?.sleepOnset;
+    if (!onset) {
+      throw new Error('Sleep did not enter its onset phase');
+    }
+    const wakeAt = rest.action?.wakeAt;
+    if (wakeAt === undefined) {
+      throw new Error('Sleep fixture has no selected wake time');
+    }
+    expect(onset.durationGameSeconds / sim.clock.ratio).toBeGreaterThan(wakeAt - sim.time);
+
+    const deadlineTick = wakeAt + simSeconds(1);
+    for (let frame = 0; frame < 10 && sim.time < deadlineTick; frame++) {
+      expect(sim.frame(simSeconds(30), deadlineTick)).toBeGreaterThan(0);
+    }
+
+    expect(sim.time).toBe(deadlineTick);
+    expect(rest.action).toBeUndefined();
+    expect(sim.actions.asleep).toBe(false);
+  });
+
   it('sleeps until rested without an alarm, whatever wake hour is set', () => {
     const { sim, rest } = makeRest();
     rest.wakeGameHour = (Math.floor(hourOfDay(sim.calendar)) + 12) % 24;

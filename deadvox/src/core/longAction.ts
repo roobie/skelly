@@ -757,6 +757,9 @@ export class LongActions {
     if (job.jobType === 'wait') {
       return false;
     }
+    if (job.jobType === 'sleep' && job.rest.wakeAt !== undefined && job.last >= job.rest.wakeAt) {
+      return true;
+    }
     if (job.rest.sleepOnset !== undefined) {
       job.rest.sleepOnset.elapsedGameSeconds = Math.min(
         job.rest.sleepOnset.durationGameSeconds,

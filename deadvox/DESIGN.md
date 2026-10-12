@@ -193,8 +193,8 @@ interruptions still wake the sleeper. The wake choice is saved. See
 Starting sleep has a content-tuned onset that shortens as fatigue rises. The
 player remains awake and may cancel it; sleep recovery begins only when onset
 completes, and ordinary Stop cannot wake a sleeper. If the selected alarm hour
-arrives during onset, the action ends at that deadline without entering sleep,
-preserving the alarm as the authority over the sleep interval. See
+arrives during onset, the alarm ends the action before sleep begins, preserving
+the chosen wake time as the authority over the sleep interval. See
 `RestController.start` in `src/game/rest.ts` and `LongActions.advanceJob` in
 `src/core/longAction.ts`; onset tuning is authored in
 `src/content/base/body.jsonnet`, `sleepOnset`.

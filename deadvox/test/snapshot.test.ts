@@ -10,7 +10,7 @@ import type { Site } from '../src/core/site.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
-import { Simulation } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
   blockId,
   blockName,
@@ -20,6 +20,7 @@ import {
   encodeFixture,
   formatVersion,
   registry,
+  registryWithPlayerBodyTuning,
   startRest,
 } from './snapshotTestSupport.ts';
 
@@ -230,14 +231,16 @@ describe('snapshot state components', () => {
   });
 
   it('round-trips progress during the cancellable sleep-onset phase', async () => {
-    const runtime = createRuntime(undefined, true);
+    const onsetRegistry = registryWithPlayerBodyTuning({ ...BODY_TUNING_FIXTURE, id: 'player' });
+    const runtime = createRuntime(undefined, true, undefined, { registry: onsetRegistry });
     runtime.sim.needs.fatigue = 50;
     expect(startRest(runtime, 'sleep')).toBeUndefined();
     runtime.sim.frame(simSeconds(1));
     const onset = runtime.sim.actions.rest?.sleepOnset;
     expect(onset?.elapsedGameSeconds).toBeGreaterThan(0);
+    expect(onset?.elapsedGameSeconds).toBeLessThan(onset?.durationGameSeconds ?? 0);
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
-    const restored = createRuntime(decoded.snapshot, true);
+    const restored = createRuntime(decoded.snapshot, true, undefined, { registry: onsetRegistry });
     expect(restored.sim.actions.rest?.sleepOnset).toEqual(onset);
     expect(restored.sim.actions.asleep).toBe(false);
     expect(restored.rest.canStop).toBe(true);

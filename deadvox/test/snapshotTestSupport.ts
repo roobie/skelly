@@ -4,7 +4,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { worldSolid } from '../src/core/collision.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
@@ -16,6 +16,7 @@ import {
   type SaveVersionComponents,
 } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
+import type { BodyTuningDef } from '../src/core/schema.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
@@ -31,6 +32,10 @@ const { registry } = buildRegistry(
 );
 
 export { registry };
+export const registryWithPlayerBodyTuning = (body: BodyTuningDef): Registry => ({
+  ...registry,
+  body: new Map(registry.body).set('player', body),
+});
 export const seed = 13;
 export const scale = makeScale(0.5);
 export const blockId = (id: string): number => {
@@ -144,16 +149,18 @@ export function createRuntime(
       compression: number,
     ) => PlayerInputSample;
     onOpaque?: () => void;
+    registry?: Registry;
   } = {},
 ) {
   const { sampleAtPlayerTick } = options;
+  const contentRegistry = options.registry ?? registry;
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
   const hamlet = fixtureHamlet;
   const columns = columnsOverride ?? (restFixture ? fixtureColumns : [fixtureZombieColumn]);
   const { x1 } = hamlet.bounds;
   const world = new World();
-  const sharedEntities = new BlockEntities(registry);
+  const sharedEntities = new BlockEntities(contentRegistry);
   for (const chunk of fixtureChunksFor(columns)) {
     world.addChunk(cloneFixtureChunk(chunk));
   }
@@ -175,7 +182,7 @@ export function createRuntime(
   const spawn: Vec3 = options.spawn ?? [sx! + awayFromShamblers, sy! + 400, sz!];
   const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
   if (restFixture) {
-    const sleepable = [...registry.furniture.values()].find((def) => def.rest?.sleep);
+    const sleepable = [...contentRegistry.furniture.values()].find((def) => def.rest?.sleep);
     if (!sleepable) {
       throw new Error('Snapshot fixture has no sleepable furniture definition');
     }
@@ -192,9 +199,9 @@ export function createRuntime(
     }
   }
   const session = createSession({
-    registry,
+    registry: contentRegistry,
     world,
-    isSolid: worldSolid(world, registry, sharedEntities),
+    isSolid: worldSolid(world, contentRegistry, sharedEntities),
     isOpaque: (x, y, z) => {
       options.onOpaque?.();
       return world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z);
