@@ -10,9 +10,9 @@ These challenges keep v1 playable as systems and content grow. The reasons and a
 
 ## 1. Half-metre blocks
 
-A finer grid increases storage and surface work sharply, but a larger grid loses the terrain detail the game needs. The measured scale decision is complete; keep performance headroom for later systems. The target is stable play at the chosen view distance without holes at sprint speed. See `src/bench/run.ts`, `startBench`, and `src/render/chunks.ts`, `ChunkMeshes.cull`.
+A finer grid increases storage and surface work sharply, but a larger grid loses the terrain detail the game needs. The measured scale decision is complete; keep performance headroom for later systems. Acceptance requires the 96 m default view at 60 fps, no more than 1% of frames over 18 ms in each benchmark phase, and no holes at sprint speed. The independent near-radius target remains 128 m at 60 fps, with meshing keeping up with walking. See `src/bench/run.ts`, `startBench`, and `src/render/chunks.ts`, `ChunkMeshes.cull`.
 
-Palette storage and greedy meshing keep the grid affordable. Per-block colour variation belongs in the shader so it does not prevent adjacent faces from merging. Add draw batching only when measurement identifies draw overhead as the bottleneck; fewer draw calls alone did not establish a speedup.
+Uniform chunks use a single block id; non-uniform chunks use a `Uint16Array`. `storageStats` reports actual bytes and a palette estimate, but palette packing is not implemented. The estimate matters because the finer grid increases storage sharply; greedy meshing reduces surface work, while shader-based per-block colour variation lets adjacent faces merge. Add draw batching only when measurement identifies draw overhead as the bottleneck; fewer draw calls alone did not establish a speedup. Occlusion culling was rejected because GPU cost did not track chunk count; inspect per-pixel cost first if GPU headroom is needed. See `src/core/chunk.ts`, `Chunk`, `src/core/storage.ts`, `storageStats`, and `src/bench/run.ts`, `startBench`.
 
 ## 2. View distance
 
@@ -24,11 +24,11 @@ Long actions must advance the world quickly without letting entities tunnel thro
 
 ## 4. Many zombies in a browser
 
-Hundreds of fully active agents would compete with rendering and player simulation. Use activity tiers: only nearby threats need detailed behavior; background threats can move in cheaper steps, while distant hordes remain abstract. Keep active attention selection unchanged when simplifying background movement. Grow data-oriented storage or move systems to a worker only when counts require it. Slice 3 develops background movement; abstract hordes remain Slice 4 work. Benchmark simulation cost separately from the complete rendered scene.
+Hundreds of fully active agents would compete with rendering and player simulation. The v1 acceptance target is 60 active zombies and 300 in the background tier, with simulation under 4 ms per frame. Use activity tiers: only nearby threats need detailed behavior; background threats can move in cheaper steps, while distant hordes remain abstract. Keep active attention selection unchanged when simplifying background movement. Grow data-oriented storage or move systems to a worker only when counts require it. Slice 3 develops background movement; abstract hordes remain Slice 4 work. Benchmark simulation cost separately from the complete rendered scene. See `src/bench/shamblers.ts`, `startShamblerBench`, and `mobgen/src/cli/bench.ts`.
 
 ## 5. Inventory speed in real time
 
-Inventory depth becomes tedious if every choice costs attention as well as handling time. Smart defaults, direct common actions, batch moves and visible destination/handling feedback should make looting a decision rather than a UI fight. Slice 1 is the playtest trigger; judge the whole container looting flow, not only core handling time.
+Inventory depth becomes tedious if every choice costs attention as well as handling time. Smart defaults, direct common actions, batch moves and visible destination/handling feedback should make looting a decision rather than a UI fight. Slice 1 is the playtest trigger; kitchen looting must take under 60 real seconds, including decisions. Judge the whole container looting flow, not only core handling time.
 
 ## 6. Content volume
 

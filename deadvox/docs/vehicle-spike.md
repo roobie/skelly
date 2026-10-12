@@ -13,7 +13,7 @@ The spike is a debug page for judging vehicle appearance and disassembly before 
 ## Decided
 
 - Keep the 4×4, pickup and motorbike in the part model.
-- Vehicle noise comes mainly from the engine; chassis and hull may contribute.
+- Vehicle noise comes mainly from the engine; chassis and hull may contribute. Removing a damper never makes a vehicle quieter.
 - Use vehicle-owned fittings, one catalogue id per part type and positions stored on mirrored fittings.
 - Keep sand paint with seeded wear and scratches where rendering cost allows.
 
@@ -27,11 +27,11 @@ Paint is vehicle-owned; non-paint material colors belong to the part type. Wear 
 
 ## Noise comes from the build
 
-Vehicle noise is expressed as hearing radius so it can join Deadvox sound admission without a second unit system. The engine is the source; hull and silencer damp it. Sources add by intensity, and a fitted damper cannot make the vehicle louder when removed. See `src/vehicles/model.ts`, `PartNoise` and `noiseRadius`.
+Vehicle noise is expressed as hearing radius so it can join Deadvox sound admission without a second unit system. The engine is the source; hull and silencer damp it. Because intensity falls with the square of distance, source radii add in quadrature; each fitted damper scales the total, so removing one never makes the vehicle quieter. See `src/vehicles/model.ts`, `PartNoise` and `noiseRadius`.
 
 ## Proportions
 
-The 4×4 follows a Range Rover Classic four-door; the pickup follows a Toyota Hilux N80 regular-cab long-bed 4WD; the motorbike follows an early Honda CG125. The hatchback remains a comparison port from the earlier round. The chosen references keep prototypes recognizable without claiming manufacturer-exact geometry. Measurements live in `src/vehicles/rangeRover.ts`, `src/vehicles/pickup.ts` and `src/vehicles/motorbike.ts`.
+The 4×4 follows a Range Rover Classic four-door; the pickup follows a Toyota Hilux N80 regular-cab long-bed 4WD; the motorbike follows an early Honda CG125. The hatchback remains a comparison port so other vehicle profiles can be judged against a common reference. The chosen references keep prototypes recognizable without claiming manufacturer-exact geometry. Measurements live in `src/vehicles/rangeRover.ts`, `src/vehicles/pickup.ts` and `src/vehicles/motorbike.ts`.
 
 The pickup's regular-cab split is not published: its front clip follows the double-cab elevation and its door follows a period two-door, leaving bed length an estimate. The bike has no cabin, so its seat carries the rider viewpoint. References: [Range Rover Classic](https://en.wikipedia.org/wiki/Range_Rover_Classic), [1981 four-door elevation](https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints), [Hilux model range](https://www.pakwheels.com/new-cars/toyota/hilux/1988-1997), [1989 Hilux](https://www.carsales.com.au/research/toyota/hilux/1989/no-badge), [Hilux 4×4 specifications](https://itstillruns.com/1989-toyota-4x4-truck-specs-7657039.html), [N80 elevations](https://getoutlines.com/requests/3395/1992-toyota-hilux-v-4wd-drawings), [Honda CG125](https://en.wikipedia.org/wiki/Honda_CG125), [CG125 specifications](https://motodealers.co.uk/bikes/atlas-honda/cg125/2012/specs), and [scaled side view](https://the-blueprints.com/vectordrawings/show/25351/honda_cg_125_ml_today).
 

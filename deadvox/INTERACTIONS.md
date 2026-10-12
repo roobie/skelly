@@ -13,7 +13,7 @@ This document keeps the reasons and ownership rules behind item use, crafting an
 
 The core decides admission and effects; the UI projects queries and sends commands. Queries change nothing. Delayed commands revalidate when they complete because reach, tools and world state may have changed. Item ownership stays in item trees; quickbar and light selections are non-owning UID references. UI selection, drag state and open panels are not saved game state.
 
-Moves, crafting, appliances and quickbar actions share the reach query so they cannot disagree about accessible items. Keep one inventory counter per store; add per-place counters only if Slice 5 profiling shows view-model rebuilding cost needs it. See `src/core/reach.ts`, `reach`, and `src/core/options.ts`, `options`.
+Moves, crafting, appliances and quickbar actions share the reach query so they cannot disagree about accessible items. Keep one inventory counter per store; only add per-place counters if Slice 5 profiling shows view-model rebuilding cost needs them, and BR decides whether that evidence warrants the change. See `src/core/reach.ts`, `reach`, and `src/core/options.ts`, `options`.
 
 Handling jobs use real time; long actions use game time and can run compressed. Saved work is plain data, not a closure. Snapshotting projects state without mutating the live session. See [ADR 0002](docs/decisions/0002-saves.md).
 

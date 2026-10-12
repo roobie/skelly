@@ -32,12 +32,12 @@ Bindings are origin-local browser-profile preferences, not saved-character or ac
 - **Slinging** uses the inventory wear/remove action; a quickbar tap draws or puts away a slung gun. Wielding another item may stow a sling-fitted long gun in a free shoulder slot. A separate sling key would duplicate existing routes. See `src/game/inputBindings.ts`, `inventory.wear`, and `src/core/options.ts`, `quickbarPutAway`.
 - **Downed bodies** use the same world-interaction tap/hold: tap finishes a body, hold dismembers it. The nearest-target rule applies to bodies and ground items. See `src/core/interactionPick.ts`, `pickInteractionTarget`.
 - **The main menu** opens through its menu binding; Escape releases pointer lock during play and toggles the menu after death. Escape is not rebindable. F10 belongs to the browser.
-- **Reload gestures** share one rebindable action. Hold selects the fullest carried magazine that fits, even if it has fewer rounds than the fitted magazine. A double press racks; a tap followed by a held press removes a detachable magazine. A single tap does nothing. Classification waits for release or the hold threshold, so a quick double tap and a plain hold do not remove a magazine. A non-detachable firearm racks repeatedly while the reload action remains held. See `src/game/reloadInput.ts`, `ReloadInput`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
+- **Reload, rack, remove** share one rebindable action. Hold selects the fullest carried magazine that fits, even if it has fewer rounds than the fitted magazine. A double press racks; a tap followed by a held press removes a detachable magazine. A single tap does nothing. Classification waits for release or the hold threshold, so a quick double tap and a plain hold do not remove a magazine. A non-detachable firearm racks repeatedly while the reload action remains held. See `src/game/reloadInput.ts`, `ReloadInput`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
 - **Rest and sleep** have no dedicated keys. Use eligible furniture through world interaction; Wait is a character-screen button. The alarm's wake hour is a setting, not a sleep key. See `src/game/play.ts`, `startPlay`, and `src/game/rest.ts`, `RestController`.
 - **Use items** from the hand or quickbar. There is no dedicated inventory-use action. An ammunition box is wielded and activated to unpack. See `src/game/primaryAction.ts`, `selectPrimaryAction`.
 - **Handedness** is actor identity, not a chord swap or physical-slot migration. See [character-handedness](docs/character-handedness.md).
 - **Quickbar tap** takes an item into its capability-directed hand or puts it away; hold uses an available action. It does not provide an alternate route for firearm racking. See `src/game/quickbarInput.ts`, `QuickbarInput`, and `src/game/quickbarActions.ts`, `QuickbarActions`.
-- **Primary actions** from either hand are refused while handling is busy. One-handed work leaving the free hand usable remains an open decision.
+- **Primary actions** from either hand are refused while handling is busy. Whether one-handed work leaves the free hand usable remains open for BR's decision.
 - **Treatment** uses a wielded treatment item or its held quickbar slot. The wheel selects the wielded action, which begins with the worst bleeding. Treatment is a normal-speed action that leaves movement free; bleeding refuses time compression. See `src/game/itemActions.ts`, `defaultItemAction`, and `src/core/body.ts`, `Body.compressionRefusal`.
 - **Lighting** requires the matches or other firestarter in hand. A held igniter can light an eligible object in the other hand; an igniter merely within reach does not qualify.
 - **HUD toggle** is a rebindable hold. It hides the HUD without changing individual option values. A tap remains available for third-person camera gestures and the debug panel. See `src/game/inputBindings.ts`, `hud.toggle`, and `src/game/backquoteOrbitGesture.ts`, `BackquoteOrbitGesture`.
@@ -48,7 +48,7 @@ Bindings are origin-local browser-profile preferences, not saved-character or ac
 ## Remaining questions
 
 - Press-and-hold for every long use remains a direction, not a universal cancellation rule. Do not redesign mouse use as part of rebinding.
-- Best-pocket's default remains owned by the binding registry, not duplicated here.
+- BR decides the default best-pocket destination; the binding registry is authoritative for the configured choice and its displayed behavior.
 - Add lean and magazine-check inputs only when their mechanics exist and the full conflict model has been checked.
 - Whether matches strike alone remains open for BR.
 

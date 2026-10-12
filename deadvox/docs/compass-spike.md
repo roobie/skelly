@@ -10,6 +10,6 @@ The compass is a held object with a self-lit heading display, not HUD text. That
 
 The display uses the world's canonical north convention and converts camera yaw to clockwise bearings. The numeric bearing and cardinal label describe facing; the triangle points north. See `src/core/coords.ts`, `WORLD_NORTH` and `headingLabel`.
 
-The compass remains a prototype: battery use, light spill, ground model, casing/grip art and BR's final size/readability verdict are unresolved. Do not treat the eternal display as a power policy. The debug loadout is for a fresh game only and must not replace restored hands. See `src/debug/index.ts`, `attachDebugTools`.
+The compass remains a prototype: BR's choice between electronic and magnetic operation, battery use, light spill, ground model, casing/grip art and final size/readability verdict are unresolved. Do not treat the eternal display as a power policy. The debug loadout is for a fresh game only and must not replace restored hands. See `src/debug/index.ts`, `attachDebugTools`.
 
 A wristwatch may reuse held-display ownership, but it must show read-only calendar time and must not advance the simulation clock.

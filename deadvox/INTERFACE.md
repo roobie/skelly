@@ -20,13 +20,21 @@ A new element names its kind at the view-model boundary and explains why a less 
 
 ## Bodily cues
 
-Cues scale with severity, fade quickly, avoid spam and use the character's own sounds. Pain and strain sounds are world noise events with tunable radii in content; review their attention cost in play before tuning or disabling them. A player-only refusal cue does not become simulation noise. The red damage vignette and tilt are the reference; needs and bodily states should become legible without requiring a number on screen.
+Cues scale with severity, fade quickly, avoid spam and use the character's own sounds. Pain and strain sounds are world noise events with tunable radii in content; BR judges their attention cost in play and decides whether to tune or disable them. A player-only refusal cue does not become simulation noise. The red damage vignette and tilt are the reference; BR judges replacement bodily cues in play before a HUD line retires. Needs and bodily states should become legible without requiring a number on screen. BR also chooses which sounds accompany each bodily state; the content examples are proposals, not approved recordings or a fixed cue list.
 
 ## Text
 
 The interface affords actions rather than writing procedures. Shipped text may be world-authored information, names/facts the character knows, or short first-person refusal/observation. Text naming keys, clicks, menus or procedures is development instruction and must stay out of the shipped profile.
 
 Key labels come from bindings so rebinding cannot leave stale instructions. A future hint channel should own the remaining instructional text and expose it only in development/playtest profiles. A first-run tutorial should be diegetic before relying on hints. Review asks whether the player could learn the information from the world or their hands. Numbers stay available on surfaces the player opens, but are not pushed during play; this keeps simulation facts accessible without undermining diegesis.
+
+## Class 3: the character's voice
+
+Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `src/game/playerBleedingNotice.ts`, `PlayerBleedingNotice`.
+
+## HUD
+
+The HUD is meta information over the world; its options and master toggle govern only HUD-owned elements. World, bodily and held-item cues remain outside it. See `src/ui/hudOptions.ts`, `hudVisibility`.
 
 ## Combat and feedback
 

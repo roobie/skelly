@@ -17,7 +17,7 @@ Set and clear the repository variable with `gh variable set PAGES_FREEZE --body 
 
 Tag the deployed commit `playtest-1-deployed`. A hotfix BR approves during the freeze branches from that tag and contains only the fix. Dispatch Pages from the hotfix branch and move the tag only after deployment succeeds; send the same fix to main through a normal PR. A dispatch from main publishes every merge since the freeze began, so approving it means approving all of those changes. Clearing the variable does not replay skipped pushes; dispatch main after the window closes.
 
-## Testers and consent
+## Session format
 
 There is no fixed play duration or number of sittings. Continue resumes a living survivor; death ends that run. The localized Round 1 brief is the consent statement and appears before the play link. Give each tester a number for feedback subjects rather than asking for a real name. Public issues are not anonymous; testers without GitHub may email the organizer using an address shared separately, not in project files.
 
