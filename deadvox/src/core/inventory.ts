@@ -13,6 +13,7 @@ import {
   skillSaturation,
 } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
@@ -61,7 +62,7 @@ export const HANDLING = {
 } as const;
 
 const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
-  const tuning = registry.skills.get('inventory_management')?.inventory;
+  const tuning = registry.skills.get(CORE_CONTENT_IDS.inventoryManagement)?.inventory;
   if (!tuning) {
     return 1;
   }

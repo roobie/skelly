@@ -1,5 +1,5 @@
 // Templates: a body plan plus sampling ranges, turned into a genome by
-// generate.ts and into a body by a body-plan builder (PROJECT.md §3).
+// generate.ts and into a body by a body-plan builder.
 // Domain-agnostic: the core never hard-codes the humanoid's bones or params.
 
 import type { Budgets } from './rules.ts';

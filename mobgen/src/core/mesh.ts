@@ -1,7 +1,6 @@
 // Greedy meshing, per bone. A face is exposed if its neighbour is empty OR
 // owned by a different bone — never smoothed across the joint — so a bent
-// joint shows a closed cut face rather than a hole into the body (see
-// PROJECT.md §2 "attached", CHALLENGES.md §3). Only faces of equal colour
+// joint shows a closed cut face rather than a hole into the body. Only faces of equal colour
 // merge.
 
 import { cellIndex, type Voxels } from './voxelize.ts';
@@ -22,7 +21,7 @@ export interface BoneMesh {
 
 type Point = readonly [number, number, number];
 
-/** X and Z voxel centres are at index*v; Y centres are at (index + 0.5)*v (see mobgen/PROJECT.md, "Conventions"),
+/** X and Z voxel centres are at index*v; Y centres are at (index + 0.5)*v,
  * so a face plane at boundary `e` sits at (e - 0.5)*v for X/Z and e*v for Y. */
 const edgeX = (voxels: Voxels, e: number): number => (voxels.origin[0] + e - 0.5) * voxels.size;
 const edgeY = (voxels: Voxels, e: number): number => (voxels.origin[1] + e) * voxels.size;

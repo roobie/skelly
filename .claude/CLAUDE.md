@@ -7,7 +7,4 @@ read_if:
 
 # Notes for Claude Code
 
-**REMEMBER to always RECORD the 'why'**
-
-Project rules live in `AGENTS.md`, imported above, so Claude Code and other agents read
-one copy. The git workflow is in `docs/git-workflow.md`.
+Git workflow is in `docs/git-workflow.md`.

@@ -9,14 +9,14 @@ import { parse } from 'yaml';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BASELINE_PATH = 'tools/zero-drift-baseline.json';
 const ISSUE_TEMPLATE = /^\.github\/ISSUE_TEMPLATE\//;
-const DATED_SNAPSHOT = /(?:^|\/)docs\/reviews\/[^/]+\.md$|(?:^|\/)retro-[^/]+\.md$/;
+const HISTORICAL_DOC = /(?:^|\/)docs\/reviews\/|(?:^|\/)retro-[^/]+\.md$/;
 const POLICY_EXEMPT = new Set([
   'tools/zero-drift-check.mjs',
   'tools/zero-drift-baseline.json',
   'test/zero-drift-check.test.mjs',
 ]);
 const PACKAGE_LOCK = /(?:^|\/)package-lock\.json$/;
-const STRICT_CHECKS = new Set(['host']);
+const STRICT_CHECKS = new Set(['host', 'historical_doc']);
 const PRIVATE_IPV4 =
   /(?<![\d.])(?:10(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}|172\.(?:1[6-9]|2\d|3[01])(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){2}|192\.168(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){2})(?![\d.])/g;
 const HOST_PATH = /\/(?:home|Users|tmp)\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*/g;
@@ -263,12 +263,7 @@ const CITATION_PATTERNS = [
 ];
 
 function policyExempt(path) {
-  return (
-    POLICY_EXEMPT.has(path) ||
-    PACKAGE_LOCK.test(path) ||
-    DATED_SNAPSHOT.test(path) ||
-    path.startsWith('mobgen/reference/')
-  );
+  return POLICY_EXEMPT.has(path) || PACKAGE_LOCK.test(path) || path.startsWith('mobgen/reference/');
 }
 
 function checkCitations(path, text, markdown, failures) {
@@ -333,6 +328,10 @@ export function checkPolicyRules({ path, text }) {
   if (policyExempt(path)) {
     return [];
   }
+  if (HISTORICAL_DOC.test(path)) {
+    add(failures, path, 'historical_doc', 'reviews and retros belong in git history, not tracked files');
+    return [...failures.values()];
+  }
   const markdown = path.endsWith('.md');
   checkCitations(path, text, markdown, failures);
   checkHost(path, text, failures);
@@ -359,14 +358,12 @@ export function checkDocument({ path, text, root = ROOT, tracked, ignored = new 
     checkReadIfParity(path, reasons, pythonReadIf, failures);
   }
   const visible = visibleMarkdown(text);
-  if (!DATED_SNAPSHOT.test(path)) {
-    if (!tracked) {
-      throw new Error('tracked file set is required for path checks');
-    }
-    const tree = { root, tracked, ignored };
-    checkLineNumbers(path, visible, failures);
-    checkPaths({ path, visible, tree, failures });
+  if (!tracked) {
+    throw new Error('tracked file set is required for path checks');
   }
+  const tree = { root, tracked, ignored };
+  checkLineNumbers(path, visible, failures);
+  checkPaths({ path, visible, tree, failures });
   return [...failures.values()];
 }
 
@@ -515,6 +512,7 @@ const FAILURE_HINTS = new Map([
   ['citation', 'state the rule in plain words and put the quote and stamp in the commit message'],
   ['when', 'name the trigger (item ID or issue) or drop the word'],
   ['host', 'use a repo-relative path, $XDG_RUNTIME_DIR or the host notes'],
+  ['historical_doc', 'delete the review or retrospective file and keep only live reasons in current docs'],
   ['read_if', 'add a non-empty read_if list'],
   ['read_if_parity', 'make YAML read_if agree with python3 tools/read_if.py'],
   ['line_number', 'cite the code by path and symbol, not line number'],

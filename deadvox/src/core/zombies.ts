@@ -85,6 +85,9 @@ const projectileWeapon = (damage: number, reach: number, impulse: number): Melee
 const zombieRegionClass = (region: ZombieHitRegion): string =>
   region === 'core.trunk' ? 'torso' : (region.split('.').at(-1) ?? region);
 
+export const lethalRegion = (type: ZombieDef, region: ZombieHitRegion): boolean =>
+  region === 'core.trunk' || (type.model !== 'amalgam' && zombieRegionClass(region) === 'head');
+
 const maxZombieRegionHealth = (type: ZombieDef, region: ZombieHitRegion): number | undefined => {
   if (type.model === 'amalgam') {
     return type.regions[region === 'core.trunk' ? region : `member.${zombieRegionClass(region)}`];
@@ -613,9 +616,10 @@ const isActiveHitRegion = (zombie: Zombie, region: ZombieHitRegion): boolean => 
 /** A body's regions with the one whose loss kills last, so a blast severs limbs before it kills. */
 const blastOrder = (zombie: Zombie): ZombieHitRegion[] => {
   const regions = Object.keys(zombie.regions) as ZombieHitRegion[];
-  const lethal = (region: ZombieHitRegion): boolean =>
-    region === 'core.trunk' || (zombie.type.model !== 'amalgam' && zombieRegionClass(region) === 'head');
-  return [...regions.filter((region) => !lethal(region)), ...regions.filter(lethal)];
+  return [
+    ...regions.filter((region) => !lethalRegion(zombie.type, region)),
+    ...regions.filter((region) => lethalRegion(zombie.type, region)),
+  ];
 };
 const sameInvestigationFloor = (
   a: Vec3,
@@ -3193,9 +3197,7 @@ export class ZombieSystem {
     if (damage > 0) {
       this.options.onWound?.(id, zombie, hit, damage);
     }
-    const killed =
-      healthAfter === 0 &&
-      (region === 'core.trunk' || (zombie.type.model !== 'amalgam' && zombieRegionClass(region) === 'head'));
+    const killed = healthAfter === 0 && lethalRegion(zombie.type, region);
     const incapacitated = this.applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit });
     const newParts = zombie.severed.filter((candidate) => !severedBefore.has(candidate));
     const part = newParts.includes('head') ? 'head' : newParts[0];

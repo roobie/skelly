@@ -4,6 +4,7 @@ import soundFile from './content/base/sounds.json' with { type: 'json' };
 import uiFile from './content/base/ui.json' with { type: 'json' };
 import type { Manifest } from './core/assets.ts';
 import { buildRegistry } from './core/content.ts';
+import { CORE_CONTENT_IDS } from './core/contentIds.ts';
 import type { SoundEventId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
@@ -26,7 +27,7 @@ const audio = new GameAudio({
   registry,
   blockSize: 1,
   isSolid: () => false,
-  tuning: registry.senses.get('player')!,
+  tuning: registry.senses.get(CORE_CONTENT_IDS.player)!,
   report: (message) => {
     errorRoot.textContent = message;
   },
