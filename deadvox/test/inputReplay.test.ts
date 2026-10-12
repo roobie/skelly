@@ -1486,6 +1486,59 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
+  it('replays an occupied-slot inventory swap to the same state', async () => {
+    const runtime = createRuntime();
+    const backpack = runtime.inventory.hands.right!;
+    if (!runtime.inventory.move(backpack, { kind: 'worn' }).ok) {
+      throw new Error('Replay swap fixture could not wear its backpack');
+    }
+    const first = runtime.inventory.create('rag', 1, 1);
+    const second = runtime.inventory.create('rag', 1, 0.4);
+    const firstSpot = { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 4, y: 0, rotated: false } } as const;
+    const secondSpot = { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 4, y: 1, rotated: false } } as const;
+    if (!(runtime.inventory.add(first, firstSpot) && runtime.inventory.add(second, secondSpot))) {
+      throw new Error('Replay swap fixture could not place both items');
+    }
+    const start = capture(runtime);
+    const swapPlan = runtime.inventory.plan(first, secondSpot);
+    if (!swapPlan.ok) {
+      throw new Error(`Replay swap fixture could not plan its swap: ${swapPlan.reason}`);
+    }
+    const command = {
+      tick: 12,
+      context: 'inventory' as const,
+      payload: {
+        kind: 'inventory.move' as const,
+        itemUid: first.uid,
+        target: runtime.inventory.targetState(secondSpot),
+        count: 1,
+      },
+    };
+    const recorder = new InputReplayRecorder(start);
+    const source = recordActiveSession(start, recorder, {
+      commands: [command],
+      recordedTicks: 12 + Math.ceil(swapPlan.time * PHYSICS_RATE) + PHYSICS_RATE,
+    });
+    const sourceEnd = capture(source);
+    const sourceFirst = source.inventory.itemByUid(first.uid)!;
+    const sourceSecond = source.inventory.itemByUid(second.uid)!;
+    expect(source.inventory.locate(sourceFirst)).toMatchObject({
+      kind: 'pocket',
+      owner: { uid: backpack.uid },
+      placed: { x: 4, y: 1 },
+    });
+    expect(source.inventory.locate(sourceSecond)).toMatchObject({
+      kind: 'pocket',
+      owner: { uid: backpack.uid },
+      placed: { x: 4, y: 0 },
+    });
+
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const replay = playSession(start, decoded.inputs, { endSimTimestamp: decoded.endSimTimestamp });
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
   it('replays a skill-scaled inventory move and its completed practice award', async () => {
     const runtime = createRuntime();
     runtime.session.character.skills.inventory_management = 9;

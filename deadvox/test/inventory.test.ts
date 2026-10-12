@@ -44,25 +44,20 @@ const onFloor = (inv: Inventory, type: string, count = 1, condition = 1) => {
 };
 
 describe('grid placement', () => {
-  it('puts an item in the first free spot, and refuses one that overlaps or crosses an edge', () => {
+  it('places in free spots, swaps equal footprints, and refuses placements beyond grid bounds', () => {
     const { inv, hoodie } = dressed();
     const beans = onFloor(inv, 'canned_beans');
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
     expect(inv.move(beans, pocket)).toMatchObject({ ok: true, at: { x: 0, y: 0, rotated: false } });
 
     const soup = onFloor(inv, 'canned_soup');
-    expect(inv.plan(soup, { ...pocket, at: { x: 0, y: 0, rotated: false } })).toEqual({
-      ok: false,
-      reason: 'No room there',
+    expect(inv.plan(soup, { ...pocket, at: { x: 0, y: 0, rotated: false } })).toMatchObject({
+      ok: true,
+      swap: beans,
+      at: { x: 0, y: 0, rotated: false },
     });
-    expect(inv.plan(soup, { ...pocket, at: { x: 3, y: 0, rotated: false } })).toEqual({
-      ok: false,
-      reason: 'No room there',
-    });
-    expect(inv.plan(soup, { ...pocket, at: { x: 2, y: 1, rotated: false } })).toEqual({
-      ok: false,
-      reason: 'No room there',
-    });
+    expect(inv.plan(soup, { ...pocket, at: { x: 3, y: 0, rotated: false } }).ok).toBe(false);
+    expect(inv.plan(soup, { ...pocket, at: { x: 2, y: 1, rotated: false } }).ok).toBe(false);
     expect(inv.plan(soup, { ...pocket, at: { x: 2, y: 0, rotated: false } }).ok).toBe(true);
   });
 
@@ -97,6 +92,80 @@ describe('grid placement', () => {
     inv.move(water, { ...main, at: { x: 0, y: 0, rotated: false } });
     expect(inv.move(water, { ...main, at: { x: 0, y: 1, rotated: false } }).ok).toBe(true);
     expect(backpack.pockets![0]).toEqual([{ item: water, x: 0, y: 1, rotated: false }]);
+  });
+
+  it('swaps items across containers when each fits the other stored place', () => {
+    const { inv, backpack, hoodie } = dressed();
+    const carried = onFloor(inv, 'rag', 1, 1);
+    const nearby = onFloor(inv, 'rag', 1, 0.4);
+    const backpackSpot = { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 0, y: 0, rotated: false } } as const;
+    const hoodieSpot = { kind: 'pocket', owner: hoodie, pocket: 0, at: { x: 0, y: 0, rotated: false } } as const;
+    expect(inv.move(carried, backpackSpot).ok).toBe(true);
+    expect(inv.move(nearby, hoodieSpot).ok).toBe(true);
+
+    expect(inv.move(carried, hoodieSpot).ok).toBe(true);
+    expect(inv.locate(carried)).toMatchObject({
+      kind: 'pocket',
+      owner: hoodie,
+      pocket: 0,
+      placed: hoodie.pockets![0]![0],
+    });
+    expect(inv.locate(nearby)).toMatchObject({
+      kind: 'pocket',
+      owner: backpack,
+      pocket: 0,
+      placed: backpack.pockets![0]![0],
+    });
+  });
+
+  it('swaps a hand item with a container item in either drag direction', () => {
+    const { inv, backpack } = dressed();
+    const inHand = onFloor(inv, 'rag', 1, 1);
+    const inPocket = onFloor(inv, 'rag', 1, 0.4);
+    const pocketSpot = { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 3, y: 0, rotated: false } } as const;
+    expect(inv.move(inHand, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(inv.move(inPocket, pocketSpot).ok).toBe(true);
+
+    expect(inv.move(inHand, pocketSpot).ok).toBe(true);
+    expect(inv.hands.right).toBe(inPocket);
+    expect(inv.locate(inHand)).toMatchObject({ kind: 'pocket', owner: backpack, pocket: 0 });
+
+    expect(inv.move(inHand, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(inv.hands.right).toBe(inHand);
+    expect(inv.locate(inPocket)).toMatchObject({ kind: 'pocket', owner: backpack, pocket: 0 });
+  });
+
+  it('refuses a two-handed swap while the other hand remains occupied', () => {
+    const inv = new Inventory(registry);
+    const right = onFloor(inv, 'rag');
+    const left = onFloor(inv, 'flashlight');
+    const bat = onFloor(inv, 'baseball_bat');
+    expect(inv.move(right, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(inv.move(left, { kind: 'hand', side: 'left' }).ok).toBe(true);
+    const beforeBat = inv.locate(bat);
+
+    expect(inv.move(bat, { kind: 'hand', side: 'right' }).ok).toBe(false);
+    expect(inv.hands).toEqual({ right, left });
+    expect(inv.locate(bat)).toEqual(beforeBat);
+  });
+
+  it('refuses a swap when the displaced item cannot fit the source place', () => {
+    const { inv, jeans } = dressed();
+    const small = onFloor(inv, 'rag');
+    const jeansSpot = { kind: 'pocket', owner: jeans, pocket: 0, at: { x: 0, y: 0, rotated: false } } as const;
+    expect(inv.move(small, jeansSpot).ok).toBe(true);
+    const bat = onFloor(inv, 'baseball_bat');
+    const pileSpot = {
+      kind: 'pile',
+      pos: [0, 0, 0] as [number, number, number],
+      at: { x: 0, y: 0, rotated: false },
+    } as const;
+    const beforeSmall = inv.locate(small);
+    const beforeBat = inv.locate(bat);
+
+    expect(inv.move(small, pileSpot).ok).toBe(false);
+    expect(inv.locate(small)).toEqual(beforeSmall);
+    expect(inv.locate(bat)).toEqual(beforeBat);
   });
 });
 
@@ -197,16 +266,14 @@ describe('hands and wearing', () => {
     });
   });
 
-  it('wears clothing in its slot, one per slot', () => {
+  it('swaps clothing within its occupied wear slot', () => {
     const { inv } = dressed();
     const jacket = onFloor(inv, 'jacket');
-    expect(inv.plan(jacket, { kind: 'worn' })).toEqual({
-      ok: false,
-      reason: "You're already wearing the hoodie there",
-    });
-    inv.move(inv.worn.torso!, { kind: 'pile', pos: [4, 0, 0] });
+    const hoodie = inv.worn.torso!;
+    expect(inv.plan(jacket, { kind: 'worn' })).toMatchObject({ ok: true, swap: hoodie });
     expect(inv.move(jacket, { kind: 'worn' }).ok).toBe(true);
     expect(inv.worn.torso).toBe(jacket);
+    expect(inv.locate(hoodie)?.kind).toBe('pile');
     expect(inv.plan(inv.create('crowbar'), { kind: 'worn' })).toEqual({ ok: false, reason: "It isn't there any more" });
   });
 
@@ -274,7 +341,7 @@ describe('handling time', () => {
     expect(backpack.pockets![0]!.map((p) => p.item)).toEqual([beans, water]);
   });
 
-  it('checks a move again when it finishes', () => {
+  it('rechecks an occupied move at completion and swaps its new occupant', () => {
     const { inv, hoodie } = dressed();
     const queue = new HandlingQueue(inv);
     const soup = onFloor(inv, 'canned_soup');
@@ -283,8 +350,10 @@ describe('handling time', () => {
     queue.enqueue(soup, spot);
     inv.move(beans, spot); // something else took the spot meanwhile
     const result = queue.tick(10);
-    expect(result.failed).toEqual([{ job: expect.objectContaining({ itemUid: soup.uid }), reason: 'No room there' }]);
-    expect(inv.locate(soup)?.kind).toBe('pile');
+    expect(result.done).toEqual([expect.objectContaining({ kind: 'move', itemUid: soup.uid })]);
+    expect(result.failed).toEqual([]);
+    expect(inv.locate(soup)).toMatchObject({ kind: 'pocket', owner: hoodie, pocket: 0 });
+    expect(inv.locate(beans)?.kind).toBe('pile');
   });
 });
 

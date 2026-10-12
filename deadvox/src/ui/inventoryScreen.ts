@@ -43,7 +43,7 @@ export const targetForPackedFloorDrop = (
       if (at) {
         const target: Target = { kind: 'pile', pos, at };
         const plan = inventory.plan(dragged, target);
-        if (plan.ok && plan.merge === underPointer) {
+        if (plan.ok && (plan.merge === underPointer || plan.swap === underPointer)) {
           return target;
         }
       }
@@ -1485,12 +1485,16 @@ export class InventoryScreen {
   }
 
   /** Whether the dragged item can go to a target, and why not. */
-  private dropCheck(item: Item, spec: string, target: Target): { ok: boolean; reason: string } {
+  private dropCheck(
+    item: Item,
+    spec: string,
+    target: Target,
+  ): { ok: boolean; reason: string; at?: { x: number; y: number; rotated: boolean } } {
     if (spec.startsWith('worn:') && wornSlotOf(this.inv.registry, item) !== spec.slice(5)) {
       return { ok: false, reason: "It isn't worn there" };
     }
     const plan = this.inv.plan(item, target);
-    return plan.ok ? { ok: true, reason: '' } : { ok: false, reason: plan.reason };
+    return plan.ok ? { ok: true, reason: '', ...(plan.at ? { at: plan.at } : {}) } : { ok: false, reason: plan.reason };
   }
 
   /** Works out the drop target under the pointer and previews it. */
@@ -1528,7 +1532,8 @@ export class InventoryScreen {
     if (!target) {
       return;
     }
-    const { ok, reason } = this.dropCheck(drag.item, spec, target);
+    const { ok, reason, at: landingSpot } = this.dropCheck(drag.item, spec, target);
+    const previewSpot = landingSpot ?? spot;
     drag.hover = { target, ok, reason };
     zone.classList.add(ok ? 'drop-ok' : 'drop-no');
     zone.dataset.dropShape = ok ? 'will-land' : 'blocked';
@@ -1540,8 +1545,8 @@ export class InventoryScreen {
       zone.style.setProperty('--preview-height', `${zone.clientHeight}px`);
     } else if (spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:')) {
       const [w, h] = footprint(defOf(this.inv.registry, drag.item.type), drag.rotated);
-      zone.style.setProperty('--preview-left', `${spot.x * CELL_REM}rem`);
-      zone.style.setProperty('--preview-top', `${spot.y * CELL_REM}rem`);
+      zone.style.setProperty('--preview-left', `${previewSpot.x * CELL_REM}rem`);
+      zone.style.setProperty('--preview-top', `${previewSpot.y * CELL_REM}rem`);
       zone.style.setProperty('--preview-width', `${w * CELL_REM}rem`);
       zone.style.setProperty('--preview-height', `${h * CELL_REM}rem`);
     }

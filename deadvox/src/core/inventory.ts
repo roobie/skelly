@@ -133,7 +133,7 @@ export type Target =
 /** Where in the world an item lies, if it isn't on the player: a pile, or furniture. */
 type Place = { kind: 'pile'; pile: Pile } | { kind: 'furniture'; entity: BlockEntity };
 
-export type Plan = { ok: true; time: number; merge?: Item; at?: Spot } | { ok: false; reason: string };
+export type Plan = { ok: true; time: number; merge?: Item; at?: Spot; swap?: Item } | { ok: false; reason: string };
 
 export const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
@@ -557,10 +557,11 @@ export class Inventory {
       return refuse('Search it first');
     }
     const placement = this.placement(item, target, count, from);
-    if (!placement.ok) {
+    const successfulPlacement = placement.ok ? placement : this.planSwap(item, target, count, from);
+    if (!successfulPlacement) {
       return placement;
     }
-    return { ...placement, time: this.handlingTime(item, from, target) };
+    return { ...successfulPlacement, ok: true, time: this.handlingTime(item, from, target) };
   }
 
   /** Makes a move now if it's possible. Returns the plan it followed, or why not. */
@@ -570,6 +571,9 @@ export class Inventory {
       return plan;
     }
     const from = this.locate(item)!;
+    if (plan.swap) {
+      return this.moveSwap({ item, otherItem: plan.swap, from, target, plan });
+    }
     const origin =
       from.kind === 'hand' ? this.quickbarOrigins.get(item.uid) : this.targetState(this.targetForLocation(from));
     let moving = item;
@@ -997,6 +1001,204 @@ export class Inventory {
       }
       default:
         return this.gridPlacement(item, count, this.gridOf(target), target);
+    }
+  }
+
+  private planSwap(item: Item, target: Target, count: number, from: Location): { swap: Item; at?: Spot } | undefined {
+    if (count !== item.count) {
+      return undefined;
+    }
+    const otherItem = this.itemAtTarget(target, item);
+    const otherFrom = otherItem && this.locate(otherItem);
+    if (!otherItem || otherItem === item || !otherFrom || !this.canMoveDisplaced(otherItem, otherFrom, from)) {
+      return undefined;
+    }
+    const sourceTarget = this.targetForLocation(from);
+    const sourceSpot = spotOf(from);
+    const targetSpot = this.swapTargetSpot(target, otherFrom);
+    if (!this.fitsSwapPlace(item, target, targetSpot, otherFrom)) {
+      return undefined;
+    }
+    if (!this.fitsSwapPlace(otherItem, sourceTarget, sourceSpot, from)) {
+      return undefined;
+    }
+    if (!this.swapHandsFit({ item, otherItem, from, target, otherFrom })) {
+      return undefined;
+    }
+    return { swap: otherItem, ...(targetSpot ? { at: targetSpot } : {}) };
+  }
+
+  private canMoveDisplaced(item: Item, from: Location, source: Location): boolean {
+    if (from.kind === 'work' || from.kind === 'slot') {
+      return false;
+    }
+    const sourcePlace = this.placeOf(from);
+    const destinationPlace = this.targetPlace(this.targetForLocation(source));
+    if (!(this.reachable(sourcePlace) && this.reachable(destinationPlace))) {
+      return false;
+    }
+    if (!(this.searched(sourcePlace) && this.searched(destinationPlace))) {
+      return false;
+    }
+    const { light } = defOf(this.registry, item.type);
+    if (!item.on || light?.burning?.stow !== 'refuse') {
+      return true;
+    }
+    return !(source.kind !== 'hand' && source.kind !== 'pile');
+  }
+
+  private swapTargetSpot(target: Target, otherFrom: Location): Spot | undefined {
+    if (!(this.isGridTarget(target) && target.at && 'placed' in otherFrom)) {
+      return undefined;
+    }
+    return { x: otherFrom.placed.x, y: otherFrom.placed.y, rotated: target.at.rotated };
+  }
+
+  private fitsSwapPlace(item: Item, target: Target, spot: Spot | undefined, from: Location): boolean {
+    if (this.isGridTarget(target)) {
+      return spot ? this.fitsSwapGrid(item, target, spot) : false;
+    }
+    if (target.kind === 'worn') {
+      return (
+        from.kind === 'worn' && wornSlotOf(this.registry, item) === from.slot && !this.shoulderRefusal(from.slot, item)
+      );
+    }
+    return target.kind === 'hand';
+  }
+
+  private itemAtTarget(target: Target, item: Item): Item | undefined {
+    switch (target.kind) {
+      case 'hand':
+        return this.hands[target.side];
+      case 'worn': {
+        const slot = wornSlotOf(this.registry, item);
+        return slot ? this.worn[slot] : undefined;
+      }
+      default:
+        return target.at
+          ? itemAt(this.registry, this.gridOf(target).placed, target.at.x, target.at.y)?.item
+          : undefined;
+    }
+  }
+
+  private isGridTarget(target: Target): target is Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }> {
+    return target.kind === 'pocket' || target.kind === 'pile' || target.kind === 'furniture';
+  }
+
+  private fitsSwapGrid(
+    item: Item,
+    target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
+    spot: Spot,
+  ): boolean {
+    if (
+      (target.kind === 'pocket' && target.owner === item) ||
+      (target.kind !== 'pile' && (item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0)))
+    ) {
+      return false;
+    }
+    const displaced = this.itemAtTarget(target, item);
+    if (!displaced || displaced === item) {
+      return false;
+    }
+    const grid = this.gridOf(target);
+    return (
+      couldFit(this.registry, grid.size, item) &&
+      fitsAt(
+        this.registry,
+        { ...grid, placed: grid.placed.filter(({ item: placed }) => placed !== item && placed !== displaced) },
+        item,
+        spot,
+      )
+    );
+  }
+
+  private swapHandsFit(swap: {
+    item: Item;
+    otherItem: Item;
+    from: Location;
+    target: Target;
+    otherFrom: Location;
+  }): boolean {
+    const { item, otherItem, from, target, otherFrom } = swap;
+    const hands = { ...this.hands };
+    if (from.kind === 'hand') {
+      delete hands[from.side];
+    }
+    if (otherFrom.kind === 'hand') {
+      delete hands[otherFrom.side];
+    }
+    if (target.kind === 'hand') {
+      hands[target.side] = item;
+    }
+    if (from.kind === 'hand') {
+      hands[from.side] = otherItem;
+    }
+    for (const side of SIDES) {
+      const held = hands[side];
+      const otherHeld = hands[other(side)];
+      if (held?.work && side !== dominantSide(this.character)) {
+        return false;
+      }
+      if (
+        (held && defOf(this.registry, held.type).twoHanded && otherHeld) ||
+        (otherHeld && defOf(this.registry, otherHeld.type).twoHanded)
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private moveSwap(swap: {
+    item: Item;
+    otherItem: Item;
+    from: Location;
+    target: Target;
+    plan: Extract<Plan, { ok: true }>;
+  }): Plan {
+    const { item, otherItem, from, target, plan } = swap;
+    const otherFrom = this.locate(otherItem);
+    if (!otherFrom) {
+      return refuse("It isn't there any more");
+    }
+    const sourceTarget = this.targetForLocation(from);
+    const itemOrigin = this.quickbarOriginOf(item, from);
+    const otherOrigin = this.quickbarOriginOf(otherItem, otherFrom);
+    const itemTarget = this.isGridTarget(target) && plan.at ? { ...target, at: plan.at } : target;
+    this.remove(from);
+    this.remove(otherFrom);
+    this.countSwapLoot(item, from, target);
+    this.countSwapLoot(otherItem, otherFrom, sourceTarget);
+    this.put(item, itemTarget, plan.at);
+    this.put(
+      otherItem,
+      sourceTarget,
+      'placed' in from ? { x: from.placed.x, y: from.placed.y, rotated: from.placed.rotated } : undefined,
+    );
+    this.restoreQuickbarOrigin(item, itemTarget, itemOrigin);
+    this.restoreQuickbarOrigin(otherItem, sourceTarget, otherOrigin);
+    this.version += 1;
+    return plan;
+  }
+
+  private quickbarOriginOf(item: Item, from: Location): TargetState | undefined {
+    if (from.kind === 'hand') {
+      return this.quickbarOrigins.get(item.uid);
+    }
+    return this.targetState(this.targetForLocation(from));
+  }
+
+  private countSwapLoot(item: Item, from: Location, target: Target): void {
+    if (from.kind === 'furniture' && target.kind !== 'furniture') {
+      this.countLooted(item);
+    }
+  }
+
+  private restoreQuickbarOrigin(item: Item, target: Target, origin: TargetState | undefined): void {
+    if (target.kind === 'hand' && origin) {
+      this.quickbarOrigins.set(item.uid, structuredClone(origin));
+    } else {
+      this.quickbarOrigins.delete(item.uid);
     }
   }
 
