@@ -14,11 +14,12 @@ const lowHit: HitImpulse = { point: [0.5, 0.05, 0.5], direction: [0, -1, 0], imp
 const BASE_DRIP = { rate: 1, size: 1 };
 
 describe('Gore', () => {
-  it('uses scene-lit materials for droplets and splats', () => {
+  it('lights droplets and splats as the world is lit, shadows included', () => {
     const gore = new Gore(1);
     const meshes = gore.group.children.filter((child): child is InstancedMesh => child instanceof InstancedMesh);
     expect(meshes).toHaveLength(2);
     expect(meshes.every((mesh) => mesh.material instanceof MeshLambertMaterial)).toBe(true);
+    expect(meshes.every((mesh) => mesh.receiveShadow)).toBe(true);
     gore.dispose();
   });
 

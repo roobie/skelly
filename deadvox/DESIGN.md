@@ -1193,11 +1193,11 @@ without modeling armour now.
   flesh), so they survive a reload with no state of their own; a corpse keeps
   the stains it fell with. Blood shares scene lighting rather than glowing over
   it, so darkness hides stains and carried light can reveal them. A player's
-  bleeding drips from the affected region as
-  the avatar is drawn in each view; in first person, droplets enter view only when
-  looking down or near the screen edge. The HUD shows blood level and
-  active regions, and the worst wound reaching a worse tier speaks that tier's
-  notice, if content gives it one (see [Bleeding](#bleeding)). These cues derive from
+  bleeding drips from the affected region as the avatar is drawn in each view; in
+  first person, droplets enter view only when looking down or near the screen edge.
+  The HUD shows blood level and active regions, and the worst wound reaching a
+  worse tier speaks that tier's notice, if content gives it one (see
+  [Bleeding](#bleeding)). These cues derive from
   existing body wounds; none adds simulation or save state. Gore stays out of
   the simulation so that blood never changes a fight, a save or a replay.
   Splats are decoration, so they fade rather than being saved, which would add

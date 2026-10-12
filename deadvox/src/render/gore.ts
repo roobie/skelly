@@ -133,7 +133,7 @@ export const woundSeverity = (zombie: Pick<Zombie, 'type' | 'regions' | 'severed
   );
 };
 
-/** Fades each splat by its own opacity, which MeshBasicMaterial has no per-instance slot for. */
+/** Fades each splat by its own opacity, which three's built-in materials have no per-instance slot for. */
 const patchSplatOpacity = (material: MeshLambertMaterial): void => {
   material.customProgramCacheKey = () => 'deadvox-gore-splat';
   material.onBeforeCompile = (shader) => {
@@ -210,6 +210,7 @@ export class Gore {
     this.splatOpacity.setUsage(DynamicDrawUsage);
     this.splatMesh.geometry.setAttribute('splatOpacity', this.splatOpacity);
     for (const mesh of [this.dropletMesh, this.splatMesh]) {
+      mesh.receiveShadow = true;
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
       mesh.frustumCulled = false;
       this.group.add(mesh);
