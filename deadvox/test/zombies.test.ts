@@ -16,7 +16,7 @@ import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
 import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { DoorLockDef } from '../src/core/schema.ts';
+import type { DoorLockDef, ZombieDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
@@ -3399,11 +3399,12 @@ describe('dismemberment', () => {
   const survives = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
 
   it('uses the same lethal region for an individual hit and a blast', () => {
-    const type = {
+    const type: ZombieDef = {
       ...stationary,
       regions: { ...survives, head: FISTS_MELEE.damage },
       dismember: { chance: 0, headOnKillChance: 0 },
     };
+    type.meleeDamageResistance = undefined;
     const hitSystem = new ZombieSystem(senses(() => player([100, 2, 0])));
     const hitId = hitSystem.add(type, [1, 1, 0], [0, 0, 1]);
     const hitZombie = hitSystem.store.get(hitId)!;
