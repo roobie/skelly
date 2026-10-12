@@ -16,8 +16,8 @@ import {
   type SaveVersionComponents,
 } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
-import type { BodyTuningDef } from '../src/core/schema.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { BodyTuningDef } from '../src/core/schema.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import type { MoveIntent } from '../src/game/player.ts';
