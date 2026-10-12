@@ -5,7 +5,7 @@ read_if:
   - you're changing mobgen pose generation or validation scope
   - you're deciding what belongs in mobgen milestone 1 or later
   - you're integrating a mobgen figure into deadvox
-  - you change the crowd gore-mask contract tracked by #159
+  - "you change the crowd gore-mask contract tracked by #159"
   - you're changing the crawler's static silhouette, generated-body grounding, gait or hit response
   - you're adding render-only gaze tracking or rig-specific eye limits
   - you author or change structured mobgen content
