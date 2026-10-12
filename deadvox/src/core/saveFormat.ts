@@ -287,7 +287,8 @@ const simulationFields = {
   needs,
   body: bodyState,
   compression: obj({
-    c: num({ min: 1, max: 30 }),
+    // Content owns the cap; saves only require a valid finite multiplier.
+    c: num({ min: 1 }),
     active: bool,
     owner: enumeration(['debug', 'long-action']),
     interruption: opt(str()),

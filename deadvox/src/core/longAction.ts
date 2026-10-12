@@ -766,7 +766,7 @@ export class LongActions {
         job.rest.sleepOnset.elapsedGameSeconds + seconds,
       );
       if (job.rest.sleepOnset.elapsedGameSeconds >= job.rest.sleepOnset.durationGameSeconds) {
-        job.rest.sleepOnset = undefined;
+        delete job.rest.sleepOnset;
       }
       return false;
     }
