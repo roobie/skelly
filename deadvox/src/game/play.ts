@@ -4,11 +4,11 @@
 
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';

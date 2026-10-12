@@ -29,10 +29,10 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { hasSegment } from './authoredTerrain.mjs';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';

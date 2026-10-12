@@ -5,8 +5,8 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import {
@@ -26,8 +26,6 @@ import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { templateDoorIssues, templateSpatialIssues, templateSpawnClearanceIssues } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 
-export { CORE_CONTENT_IDS };
-
 export type {
   FigureDef,
   FurnitureDef,
@@ -40,7 +38,6 @@ export type {
   TemplateDef,
   ZombieDef,
 } from './schema.ts';
-
 /** A parsed JSON file and where it came from (for error messages). */
 export interface ContentSource {
   source: string;
@@ -1067,16 +1064,15 @@ export const REQUIRED_CORE_CONTENT = [
 ] as const satisfies readonly { section: Exclude<ContentSection, 'blocks'>; id: string }[];
 
 export const requiredContentIssues = (registry: Registry): ContentIssue[] =>
-  REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(({ section, id }) => ({
-    source: 'core content',
-    path: section,
-    message:
-      section === 'sounds'
-        ? `missing required sound event "${id}"`
-        : section === 'ui'
-          ? `missing required UI tuning "${id}"`
-          : `missing required content "${id}"`,
-  }));
+  REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(({ section, id }) => {
+    let message = `missing required content "${id}"`;
+    if (section === 'sounds') {
+      message = `missing required sound event "${id}"`;
+    } else if (section === 'ui') {
+      message = `missing required UI tuning "${id}"`;
+    }
+    return { source: 'core content', path: section, message };
+  });
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is

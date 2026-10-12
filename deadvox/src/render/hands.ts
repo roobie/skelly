@@ -428,8 +428,8 @@ export class HeldItems {
         heldModel.visible = !opticSight;
       }
       const ocularDiameter = modelDefinition?.sight?.ocularDiameterMetres;
-      const apertureFill =
-        this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
+      const apertureFill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
+        ?.adsApertureFill;
       this.updateOpticWindow({
         active: opticSight,
         settings: opticSettings,
@@ -484,8 +484,8 @@ export class HeldItems {
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
             loweredPitchRadians,
-            adsApertureFill:
-              this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill,
+            adsApertureFill: this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
+              ?.adsApertureFill,
             verticalFovDegrees: main.fov,
           }
         : undefined;

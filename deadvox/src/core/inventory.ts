@@ -3,7 +3,6 @@
 // handling time is up (handling.ts). DESIGN.md, "Items and inventory" and "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import {
   DEFAULT_HANDED_CHARACTER,
   dominantSide,
@@ -14,6 +13,7 @@ import {
   skillSaturation,
 } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import type { WorkPlan } from './crafting.ts';
 import {

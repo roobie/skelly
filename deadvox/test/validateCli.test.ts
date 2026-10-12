@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
-import { REQUIRED_CORE_CONTENT } from '../src/core/content.ts';
 import { validate as runValidation } from '../src/cli/validate.ts';
+import { REQUIRED_CORE_CONTENT } from '../src/core/content.ts';
 
 const validateAt = (root: string, ...files: string[]) => {
   const output: string[] = [];

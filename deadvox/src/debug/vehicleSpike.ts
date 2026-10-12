@@ -22,8 +22,8 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import type { Vec3 } from '../core/coords.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import type { Vec3 } from '../core/coords.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
 import { DAY_SKY } from '../core/sky.ts';
 import { FIGURE_BOXES } from '../core/zombieRegions.ts';

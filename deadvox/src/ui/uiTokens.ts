@@ -1,4 +1,5 @@
-import { CORE_CONTENT_IDS, type Registry } from '../core/content.ts';
+import type { Registry } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 
 /** Installs the base mod's UI tuning once, before game startup. */
 export const applyUiTokens = (registry: Pick<Registry, 'ui'>, root: HTMLElement): void => {

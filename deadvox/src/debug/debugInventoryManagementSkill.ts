@@ -1,5 +1,5 @@
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { type Character, SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../core/character.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 
 /** Fresh debug games may compare inventory-handling effects without editing a save or adding a UI control. */
 export const setDebugInventoryManagementSkill = (
