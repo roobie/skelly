@@ -1,6 +1,4 @@
-// Design loader: text or a parsed value in, DesignLoadResult out (PROJECT.md,
-// "3.0a contracts"). Domain-agnostic: the domain, the resolved template and the
-// prefab catalogue are all explicit inputs, so the loader imports no domain data.
+// The domain, resolved template and prefab catalogue are explicit inputs, keeping this loader independent of domain data.
 //
 // Fatal (a load error): invalid JSON or shape, an unknown format, an unknown
 // prefab id or version. Non-fatal (a draft with issues): an infeasible design,

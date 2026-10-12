@@ -121,10 +121,7 @@ describe('hold selection', () => {
     }
   });
 
-  // Replaces the former CI-only seed sweep and its "never errors on a valid generated design"
-  // sweep (PROJECT.md, "Generator tests", removal plan (a)): exactly one hold, and no selection
-  // error, on every non-broken fixture and every published design.
-  // Resolves every fixture and published design to check hold selection.
+  // Check hold selection across every fixture and published design, not just generated samples.
   it('every fixture and design resolves exactly one hold without a selection error', { timeout: 10_000 }, () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThanOrEqual(22);
@@ -276,9 +273,7 @@ describe('anchor data', () => {
     expect(facts.declared).toBeGreaterThan(facts.holds);
   });
 
-  // Replaces the former CI-only sweep over generated assemblies (removal plan (a)): the same
-  // checks on every non-broken fixture and every published design.
-  // Checks every fixture and published design for valid selected frames.
+  // Check selected-frame validity across the authored corpus, not only generated samples.
   it('fixture and design frames are unit-length and right-handed; hold frames sit within their part', {
     timeout: 10_000,
   }, () => {

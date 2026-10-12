@@ -36,8 +36,7 @@ const oldColor = (family: string, solidId: string): number => {
 };
 
 const fixtureAssemblies = (): Assembly[] => loadFixtures().filter((f) => f.name.startsWith('archetype-'));
-// Replaces the former CI-only template sweeps (PROJECT.md, "Generator tests", removal plan (a)):
-// every fixture, broken-* ones included (none exists to break a colour), plus every published design.
+// Colour selection is independent of geometry faults, so include broken fixtures and published designs.
 const corpusAssemblies = (): Assembly[] => loadCorpus(() => true).map(({ assembly }) => assembly);
 
 /** Every role, solid id, and optional explicit solid material rendered by the given assemblies. */

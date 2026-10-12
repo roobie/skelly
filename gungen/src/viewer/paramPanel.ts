@@ -2,8 +2,7 @@
 // which params exist on the current model, what changing one produces, and
 // how overrides round-trip through the URL. No DOM or three.js — main.ts
 // wires this to the page. A change here only ever edits the Assembly; the
-// caller re-runs resolve()/validate() the same way loading a fixture does
-// (PROJECT.md: "no second code path").
+// caller re-runs resolve()/validate() the same way loading a fixture does, so edits cannot bypass validation.
 
 import { type ResolvedParam, resolve } from '@skelly/engine/core/resolve.ts';
 import type { Assembly, Connection, Domain, PartInstance } from '@skelly/engine/core/schema.ts';

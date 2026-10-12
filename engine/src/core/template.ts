@@ -1,6 +1,4 @@
-// Templates: an archetype described as choices, turned into assemblies by
-// generate.ts (PROJECT.md §6). Domain-agnostic: slots name part families and
-// ports, and nothing here knows what they mean.
+// Templates stay domain-agnostic: they name families and ports without assigning domain meaning.
 
 /** A value, or a list to pick one from uniformly. */
 export type Choice<T> = T | readonly T[];

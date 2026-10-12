@@ -8,7 +8,6 @@ import {
   solidOverlapForPart,
 } from '@skelly/engine/core/rules.ts';
 import type { Assembly, Domain, PartDef } from '@skelly/engine/core/schema.ts';
-import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import {
   ATTACHMENT_IDS,
   type AttachmentSlotMetadata,
@@ -19,7 +18,6 @@ import {
 import { gunDomain } from './domain.ts';
 import { mountCanAccept } from './mounts.ts';
 import { getOptic } from './optics.ts';
-import { FAMILIES } from './parts.ts';
 import { opticLoadingClearanceForPart, opticMountFitForPart } from './rules.ts';
 
 interface Candidate {
@@ -31,7 +29,7 @@ interface Candidate {
 
 const standaloneCandidate = (id: string, domain: Domain): Candidate => {
   const { family, params } = attachmentInstanceForId(id);
-  const familyDef = domain.families[family] ?? FAMILIES[family] ?? ATTACHMENT_FAMILIES[family];
+  const familyDef = domain.families[family];
   if (!familyDef) {
     throw new Error(`No part family for attachment ${id}`);
   }
@@ -155,7 +153,7 @@ export const attachmentCompatibility = (
       return attachmentMetadata(
         source.assembly.parts[id]?.family ?? definition.family,
         params,
-        gunDomain.units.metresPerUnit,
+        domain.units.metresPerUnit,
         definition,
       )
         ? [id]

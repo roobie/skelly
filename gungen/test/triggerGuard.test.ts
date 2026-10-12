@@ -28,10 +28,7 @@ describe('trigger guards', () => {
     }
   });
 
-  // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)): the
-  // property is checked on every non-broken fixture and every published design. broken-trigger-guard
-  // and the other broken-* fixtures are skipped: they exist to break a rule.
-  // Checks trigger-guard clearance across every fixture and published design.
+  // Check trigger-guard clearance across valid fixtures and published designs; broken-* fixtures intentionally violate geometry rules.
   it('guards the trigger volume in every fixture and design', { timeout: 20_000 }, () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThan(0);

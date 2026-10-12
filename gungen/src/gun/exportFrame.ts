@@ -1,11 +1,10 @@
-// Units and axes of the gun GLB export (PROJECT.md 3.4). Kept beside the gun exporter so no domain semantics leak into core.
+// Keep firearm units and file axes in the Gungen adapter so the shared engine stays domain-neutral.
 
 import { IDENTITY_M, type Mat3, mulMV, transpose, type Vec3 } from '@skelly/engine/core/math.ts';
 
 /**
- * Metres per gungen unit in the gun domain (`GUN_UNITS.metresPerUnit`); the export scales by the resolved
- * domain's `units.metresPerUnit`. The STANAG top depth of 5.5u is about 63 mm, so 1u = 11.5 mm
- * (PROJECT.md section 4).
+ * The scale is anchored to a sourced STANAG magazine dimension; the export applies the resolved
+ * domain's `units.metresPerUnit`.
  */
 export const METRES_PER_UNIT = 0.0115;
 

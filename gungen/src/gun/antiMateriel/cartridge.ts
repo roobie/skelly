@@ -1,4 +1,4 @@
-// The .50 BMG round the anti-materiel rifle is sized from (docs/anti-materiel.md, "Proportions"). Its
+// The .50 BMG round the anti-materiel rifle is sized from. Its
 // dimensions are the only numbers the magazine, the magazine well and the action are derived from, so
 // they live here once. Pure arithmetic: no imports beyond core constants.
 

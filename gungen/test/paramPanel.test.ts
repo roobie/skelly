@@ -138,7 +138,7 @@ describe('param panel: editing', () => {
     const editedResolved = resolve(edited, gunDomain);
 
     expect(editedResolved.params.get('barrel')!.length!.value).toBe(other);
-    // The AK handguard inherits its length from the barrel (PROJECT.md 1.2).
+    // The AK handguard follows barrel length, so editing the barrel must update its inherited value.
     expect(editedResolved.params.get('handguard')!.length!.value).toBe(other);
     expect(editedResolved.params.get('handguard')!.length!.source).toBe('inherited');
 
