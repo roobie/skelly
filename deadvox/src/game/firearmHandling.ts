@@ -4,6 +4,7 @@
 import type { AimBasis, AimFrame } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../core/firearmAttachments.ts';
@@ -292,7 +293,7 @@ export class FirearmMechanics {
     this.onSound = onSound;
     this.onCommittedShot = onCommittedShot;
     this.firearmsSkillLevel = firearmsSkillLevel;
-    this.firearmsCombatTuning = inventory.registry.skills.get('firearms_combat')?.combat?.firearms;
+    this.firearmsCombatTuning = inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
     this.firearmsSkillZeroHandling =
       firearmsSkillZeroHandling ??
       (() => {

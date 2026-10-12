@@ -2,6 +2,7 @@
 // real fixed-step ZombieSystem and player physics, and records frame/tick/render costs.
 
 import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
 import { type Body, stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
@@ -117,8 +118,8 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     playerBody = findShamblerBenchPlayer(engine);
     const simulation = new Simulation({
       seed: run.seed,
-      bodyTuning: engine.registry.body.get('player')!,
-      compressionCaps: engine.registry.compression.get('player')!.caps,
+      bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
+      compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
       clock: { ratio: CLOCK_RATIO, start: startTime },
     });
     simulation.godMode = true;
@@ -127,7 +128,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       isSolid: engine.isSolid,
       isOpaque: engine.isOpaque,
       blockSize: s,
-      tuning: engine.registry.senses.get('player')!,
+      tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
       terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
       physics: physicsFor(scale),
       jumpSpeed: PLAYER.jump,

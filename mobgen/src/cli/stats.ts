@@ -1,4 +1,4 @@
-// Generator metrics (PROJECT.md milestone 1 targets), per template over a range of seeds:
+// Generator metrics per template over a range of seeds.
 //   npm run stats                 300 seeds per template
 //   npm run stats -- --seeds 1000
 
@@ -11,7 +11,7 @@ const { values } = parseArgs({ options: { seeds: { type: 'string', default: '300
 const n = Number(values.seeds);
 
 /** FNV-1a over the owner + colour bytes: a cheap fingerprint of the actual voxel grid, not the genome
- * (two genomes can look the same; PROJECT.md CHALLENGES.md §6). */
+ * because distinct genomes can realize as the same voxel grid. */
 const hashVoxels = (owner: Uint8Array, color: Uint8Array): string => {
   let h = 0x81_1c_9d_c5;
   for (const b of owner) {

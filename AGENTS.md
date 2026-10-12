@@ -5,8 +5,6 @@ read_if:
 
 # Notes for coding agents
 
-**REMEMBER to always RECORD the 'why'**
-
 Keep this file short: only what every agent needs on every task. Topic detail goes in
 the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), whose
 `read_if` front matter says when to read it ("Further docs" below).
@@ -27,34 +25,14 @@ The repository-wide authoring and conversion rule is `docs/jsonnet.md`.
 
 ## No host-specific information in tracked files
 
-Tracked files describe the project, not the machine the team happens to work on. Every
-tracked file must work for anyone who clones the repo and for CI. This covers code,
-tests, docs, content and credits. Never commit:
+Tracked files must work for any clone and for CI. Do not commit local paths, private
+addresses or host-service ports, or measurements and limits from this machine. Use
+repository-relative paths, public URLs, environment variables for host locations and
+page paths for review links.
 
-- **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`. A location a tool
-  defines the same way for every clone, such as Playwright's browser cache, is fine; the
-  checker allows each one by value (see `tools/zero-drift-check.mjs`,
-  `HOST_PATH_VALUE_EXEMPTIONS`), so add new locations there.
-- **addresses:** host names, LAN IPs and LAN URLs (`http://<ip>:<port>/…`), and the ports
-  of this host's own services (preview servers, proxies). A port the project or its tools
-  configure, such as Vite's `localhost:5173`, is the same for every clone and is fine;
-- **the host's size and limits:** its CPU, RAM and disk, free-disk floors, memory caps,
-  cgroup slices and scopes, lock files, and time budgets measured on it.
-
-Instead, use a path relative to the repository root or to the file, a public URL for an
-external source, an environment variable for a host location (`$XDG_RUNTIME_DIR`), or a
-page path for a review link (`/?seed=73&debug=1` on the dev server). A benchmark may
-describe its hardware generically (a 7-CPU Linux VM) so its numbers can be read; it
-doesn't name the host.
-
-**Host facts live outside the repository,** in the lead's host notes:
-`.agent-mail/HOST.md` in the main checkout, untracked. Every agent on the host follows
-them: the heavy-run lock, the free-disk floor, memory admission and the LAN address for
-review links. A host rule changes there, not through a PR.
-
-Untracked scratch and mail may use absolute paths. **Don't modify third-party files** to
-meet this rule: they stay as received, so paths embedded in their metadata (for example
-inside the `mobgen/reference/*.blend` files) are out of scope.
+Host operating facts belong in the lead's untracked `.agent-mail/HOST.md`, not in a PR.
+Third-party files stay as received, including their metadata. See
+`tools/zero-drift-check.mjs`, `checkHost`.
 
 ## Zero drift: code shows what and how, docs say why and when
 
@@ -81,8 +59,7 @@ a comment or a PR:
   only the lines you change. Keep the current rule instead of accumulated amendments.
   An amendment trail left in a touched section is a FIX because each section is a
   current record, not change history.
-- Run one deep docs pass per slice while closing it; Slice 3's trigger is the exit item
-  on #293, as planned in r50.
+- Run one deep docs pass per slice at closure; Slice 3's trigger is the exit item on #293.
 - A false doc is a defect: a review returns FIX for it.
 
 ## Work item IDs
@@ -127,15 +104,9 @@ rebase or force-push a published branch. The steps and their reasons are in
 
 ## Installing check dependencies
 
-Root lint resolves imports across every subproject, so install them all, as CI does, before
-you trust a lint failure (a missing `node_modules` looks like an unresolved import). The setup
-command includes `deadvox/tools/lit-check`, which deadvox's Lit lint and root Knip need:
-
-```sh
-npm run setup
-```
-
-`npm run setup` fetches the pinned go-jsonnet binary for the shared compiler; `.github/workflows/lint.yml`, `Cache go-jsonnet`, caches it by the hash of `tools/jsonnet/runtime.json`.
+Run `npm run setup` in each fresh worktree before its first push. The shared setup keeps
+root lint from misreading missing dependencies as unresolved imports and installs the
+pinned compiler required by `tools/jsonnet/compile.mjs`, `compileJsonnetSources`.
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 
@@ -183,14 +154,13 @@ So:
 - Keep the default run fast and deterministic. A slow test gets split, or a timeout
   proportional to its work, never a flat generous one.
 
-Detail and worked numbers: `gungen/PROJECT.md`, "Testing", and issue #113.
+Detailed guidance: `gungen/PROJECT.md`, "Testing".
 
 ## Further docs
 
-Every doc's `read_if` front matter says why you'd read it. `python3 tools/read_if.py`
-lists them all, read from the docs when you run it; add terms to filter
-(`python3 tools/read_if.py saves stairs`). Until the docs sweep (#222) gives every doc a
-`read_if`, `--missing` lists the docs that have none, and those are still worth a look.
+Every tracked doc's `read_if` front matter says why to read it. Use
+`python3 tools/read_if.py` to list them or add terms to filter; the script also reports
+missing front matter.
 
 ## Before pushing: tiered checks
 

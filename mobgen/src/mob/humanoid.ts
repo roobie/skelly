@@ -1,4 +1,4 @@
-// The humanoid body plan: 18 bones (PROJECT.md), built deterministically from
+// The humanoid body plan, built deterministically from
 // a genome's sampled params. Joint proportions come from mobgen/reference/
 // README.md's fgc_skeleton table (converted: Blender Z-up/-Y-forward ->
 // ours, Y-up/-Z-forward, i.e. (x, y, z)_blender -> (x, z, y)_ours), as

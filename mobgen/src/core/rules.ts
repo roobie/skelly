@@ -1,4 +1,4 @@
-// Feasibility rules (PROJECT.md §2). Each checks a voxelized, rest-pose body
+// Feasibility rules. Each checks a voxelized, rest-pose body
 // and returns readable issues; none of them simulates anything. The
 // generator never checks these itself — see generate.ts.
 
