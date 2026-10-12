@@ -2,6 +2,7 @@
 name: Slice checklist
 about: Track surveys, milestones, and closure for a project slice
 title: "Slice checklist: "
+labels: slice-checklist
 read_if:
   - you create, maintain, or close a project slice checklist
 ---
@@ -14,7 +15,7 @@ read_if:
 
 ## Milestones
 
-- [ ] `<milestone ID>` — PR: `<link>` — outcome: `<result>`
+- [ ] <milestone ID> — PR: <link> — outcome: <result>
 
 ## Slice exit
 
