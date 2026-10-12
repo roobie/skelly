@@ -1,0 +1,35 @@
+{
+  senses: [
+    {
+      id: 'player',
+      movement: {
+        sidewaysSpeedScale: 0.7,
+        backwardSpeedScale: 0.5,
+      },
+      crouch: {
+        speedMetresPerSimSecond: 1,
+        hearingRangeScale: 0.5,
+        sightRangeScale: 0.5,
+        eyeDropMetres: 0.7,
+        bodyHeightMetres: 1.2,
+      },
+      wall: {
+        hearingRangeScale: 0.5,
+        gain: 0.55,
+        cutoffHz: 1800,
+        clearGain: 1,
+        clearCutoffHz: 18000,
+      },
+      light: {
+        playerDaySightScale: 0,
+        lureRangeScale: 0.5,
+        throwMaxDistanceMetres: 16,
+        throwChargeSimSeconds: 1.25,
+        throwMinimumHoldSimSeconds: 0.3,
+        throwStanceDropHoldRealSeconds: 0.5,
+        throwArmSpeedMetresPerRealSecond: 9,
+        throwArmEnergyJoules: 60,
+      },
+    },
+  ],
+}

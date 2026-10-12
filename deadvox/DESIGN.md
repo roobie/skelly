@@ -127,9 +127,11 @@ building templates. The frame budget and why the default is 96 m are in
 `src/core/scale.ts`, `BLOCK_SIZE`.
 
 Player movement is slower sideways and backward than forward; diagonal pace
-blends between the axes and composes multiplicatively with other movement factors,
-so turning does not create a sudden speed change. `src/content/base/senses.json`,
-the player's movement tuning, and `src/game/player.ts`, `steer`, own this rule.
+blends between the axes and composes multiplicatively with other movement factors.
+The blend scales speed only, so movement stays aligned with the keys, and diagonal
+pace stays between its two axis speeds: never faster than forward or slower than its
+slower axis. See `src/content/base/senses.jsonnet`, `movement`;
+`src/core/schema.ts`, `SenseSchema`; and `src/game/player.ts`, `steer`.
 
 Crouching lowers the player's collision body as well as the eye, so a crouched
 player fits through openings a standing one can't. The FOB's east wall has a
