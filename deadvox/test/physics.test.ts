@@ -214,7 +214,8 @@ describe('steer', () => {
   });
 
   it('composes directional speed with crouch pace multiplicatively', () => {
-    const senses = BUNDLED_CONTENT.registry.senses.get('player')!;
+    const directionalSpeed = { sideways: 0.73, backward: 0.41 };
+    const crouchSpeed = PLAYER.jog * 0.8;
     const speeds = (crouch: boolean) => {
       const body = createPlayerBody(half, 0, 0, 0);
       const intent = movementPace(
@@ -224,17 +225,18 @@ describe('steer', () => {
           handling: false,
           readyMovementFactor: 1,
           movementSpeed: 1,
-          crouchSpeed: senses.crouch.speedMetresPerSimSecond,
-          directionalSpeed: {
-            sideways: senses.movement.sidewaysSpeedScale,
-            backward: senses.movement.backwardSpeedScale,
-          },
+          crouchSpeed,
+          directionalSpeed,
         },
       );
       steer(body, half, 0, intent);
       return Math.hypot(body.vel[0], body.vel[2]) * half.blockSize;
     };
-    expect(speeds(true) / speeds(false)).toBeCloseTo(senses.crouch.speedMetresPerSimSecond / PLAYER.jog);
+    const standingSpeed = speeds(false);
+    const crouchedSpeed = speeds(true);
+    expect(standingSpeed).toBeCloseTo(PLAYER.jog * directionalSpeed.sideways);
+    expect(crouchedSpeed).toBeCloseTo(crouchSpeed * directionalSpeed.sideways);
+    expect(crouchedSpeed / standingSpeed).toBeCloseTo(crouchSpeed / PLAYER.jog);
   });
 
   it('stacks crouch, injury and ready movement factors', () => {
