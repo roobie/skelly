@@ -106,9 +106,7 @@ it('shows every pain component on two adjacent lines after needs', () => {
       line.includes(status.needs.hydration.toFixed(0)) &&
       line.includes(status.needs.fatigue.toFixed(0)),
   );
-  const feltLineIndex = lines.findIndex(
-    (line) => line.includes(values.felt) && line.includes(status.painTier),
-  );
+  const feltLineIndex = lines.findIndex((line) => line.includes(values.felt) && line.includes(status.painTier));
   const breakdownLineIndex = lines.findIndex(
     (line) => line.includes(values.acute) && line.includes(values.injuries) && line.includes(values.relief),
   );
