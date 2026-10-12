@@ -4,54 +4,40 @@ read_if:
   - you create or maintain a slice checklist, including surveys and milestone records
   - you record a decision by BR and need to know where it goes
   - you plan refactoring, a maintainability survey or a slice retrospective
-  - you hit a working rule's situation (shared host, test pool, run bounds, units, CI cost)
-  - you change Deadvox browser CI's browser installation or launch source
   - you apply BR's standing rules for visual work, playtest discoveries, review causes, test budgets or hosted-CI outages
 ---
 
 # How work gets done in skelly
 
-The working process, kept tight: what's done, how a change moves, and the rules that came out
-of things going wrong. It grows by one line when a mistake repeats, and it shrinks when a rule
-stops earning its place. The code-quality pillars are in `README.md`, and worktree and
-install conventions are in `AGENTS.md`. This file doesn't repeat them.
+This document owns roles, decision gates and slice coordination. Project principles are in
+`README.md`; shared worktree, install and check rules are in `AGENTS.md`.
 
 ## Who decides
 
 - **BR** owns the project: rules on design, judges by eye, ear and feel, and merges.
-- **The lead** (a Claude Code session) writes specs, dispatches work, checks reports against the
-  spec, relays BR's verdicts, opens PRs, watches CI and merges under BR's grant (step 6). It
-  never decides for BR.
+- **The lead** writes specs, dispatches work, checks reports against the spec, relays BR's
+  verdicts, opens PRs, watches CI and merges under BR's grant (step 6). The lead does not decide
+  design questions for BR.
 - **Coders** build one item at a time. The **code reviewer** reviews their commits and advises
   the lead.
 
-The agents work over agent mail. Their roles and protocol are in agent-kit's
-`skills/agent-mail/TEAM.md` and `PROTOCOL.md`.
-
 ## The life of a change
 
-1. **Spec:** one item, self-contained. Its proof uses absolute bounds (mm, degrees, ms), never
-   bounds derived from the tuning under test.
+1. **Spec:** one self-contained item. Its proof uses independent bounds, not values derived
+   from the tuning under test.
 2. **Branch:** `<subproject>/<topic>` from `origin/main`, in a worktree under
    `.claude/worktrees/` (`AGENTS.md`). Never commit to `main`.
 3. **Build and prove:** every new test is shown failing before the fix. A report names the pushed
    commit and says whether the worktree is clean.
 4. **Spec check, then code review:** the lead checks the report against the spec, then has the
    code reviewer review the commit. The review includes the principles section of
-   `docs/principles-review-skill.md`. The lead forwards the must-fix and should-fix findings it
-   accepts. The review checks zero drift (`README.md`, "Zero drift") too:
-   - a doc that restates code;
-   - a "when" without a trigger, or one whose item is done;
-   - a final reason left only in the PR;
-   - a doc without `read_if`.
-
-   A false doc is a defect, so it's a FIX.
+   `docs/principles-review-skill.md` and applies `README.md`, "Zero drift". The lead forwards
+   accepted must-fix and should-fix findings. A false doc is a defect and a FIX.
 5. **BR's verdict:** anything judged by eye, ear or feel waits for BR (below). This runs in
    parallel with the code review.
 6. **PR:** the lead opens it with a description that stands on its own and watches CI. Before
    it merges, the PR resolves every doc line that names its item (`until <item>`, `with #<pr>`),
    and any reason that outlives it is in a tracked doc. The lead merges it under BR's grant.
-   BR, 2026-10-03: "yes, until i revoke merge-rights you are granted merge-rights for PRs".
    That needs all of these:
    - a SHIP review;
    - green CI on the head commit;
@@ -65,29 +51,10 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
 
 ## Slice checklist
 
-The active slice checklist issue records milestone evidence and carried-forward
-work; keeping it live prevents a parallel plan from drifting. Milestone PRs carry
-`Slice-Milestone: <id>`, which `tools/slice-checklist.mjs`,
-`milestonesFromPrBody`, reads. The merge workflow updates milestone status on
-default-branch merges (`.github/workflows/slice-checklist.yml`, `tickMilestone`).
-The lead reconciles cases the workflow cannot update, including fork merges and
-cancelled runs. Slice 3's checklist is #293.
-
-## Done, per subproject
-
-A change is done when its subproject's CI checks pass locally, the root checks pass, and BR has
-approved anything visual. Install each worktree's check dependencies as CI does; see
-`AGENTS.md`.
-
-| Where | Checks (run as CI does) |
-|---|---|
-| Root, every change | `npm run ci` and `npm run test:site` (the installed pre-push hook runs both for pushes that update refs) |
-| gungen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `validate`, `check:designs`, `build`. Regenerate deadvox's exported models when the export changes |
-| deadvox | `lint:lit`, `typecheck`, `test`, `test:ui-browser` (with Playwright-managed Chromium), `test:browser:firefox` (under xvfb), `validate`, `build` (Vite also verifies the simulation fingerprint; `build` includes the favicon check) |
-| mobgen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `build` |
-
-A plain `test` skips the sweeps that CI runs, which has turned main red before (#85). Use
-`test:sweeps` wherever it exists.
+The active checklist owns milestone evidence so parallel plans cannot drift.
+`tools/slice-checklist.mjs`, `milestonesFromPrBody`, reads PR milestones; the merge
+workflow updates statuses through `.github/workflows/slice-checklist.yml`, `tickMilestone`.
+The lead reconciles cases the workflow cannot update. Slice 3's checklist is #293.
 
 ## Reviews by eye and by play
 
@@ -100,11 +67,11 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
 
 ## Slice decision rules
 
-- **Visual work.** BR, 2026-10-06 06:56: “as for #2 -> yes tiny visual spike first”. A tiny visual spike gets BR's first look before the full engineering round. Once BR approves a look, record its preview page path, seed and camera with the work item. Use a page path, never a LAN address.
-- **Playtest discoveries.** BR, 2026-10-06 07:01: “i agree on the refinements, but the labels themselves - are they well-designed? I mean, we could use just 'blocker' and 'not-blocker' and tag also with a slice or version tag”; BR, 2026-10-06 07:02: “yes, do so”. File every discovery as its own issue with exactly one of the `blocker` or `not-blocker` labels. A blocker also needs a `gate:*` label. When it is a prerequisite, name the milestone it blocks (for example, “blocks 3.x”). A slice cannot close while an open issue carries both `blocker` and that slice's gate.
+- **Visual work.** Get BR's first look on a small visual spike before a full engineering round. Once the look is approved, record its preview page path, seed and camera with the work item. Use a page path, never a LAN address.
+- **Playtest discoveries.** File each discovery separately with exactly one of the `blocker` or `not-blocker` labels. A blocker also needs a `gate:*` label; name the blocked milestone when it is a prerequisite. A slice cannot close while an open issue carries both `blocker` and that slice's gate.
 - **FIX causes.** Every FIX verdict carries its `Cause:` line immediately after the `VERDICT:` line, using one or more of behavior, persistence, test hygiene, visual feedback, integration, docs (a zero-drift defect) and ownership (content-versus-code ownership); SHIP verdicts carry no `Cause:` line. Tally causes at the retrospective.
-- **Test-budget overruns.** BR, 2026-10-06 07:06: “p5 accept”. Profile the suite, make named cuts that each say what coverage they protected and which test still catches it, and record the result before closure. Measure with alternating back-to-back baseline and candidate runs. Raising a budget is BR's call.
-- **Hosted-CI outages.** BR, 2026-10-06 07:09: “p6: accept”. Keep affected PRs open and report them as “blocked on hosted CI”. Checklist and milestone status stay open; nothing merges on local checks alone.
+- **Test-budget overruns.** Profile the suite, make named cuts that say what coverage they protected and which test still catches it, and record the result before closure. Alternate back-to-back baseline and candidate runs. BR decides whether to raise the budget.
+- **Hosted-CI outages.** Keep affected PRs open and report them as “blocked on hosted CI”. Checklist and milestone status stay open; local checks alone do not permit a merge.
 
 ## Recording decisions
 
@@ -115,34 +82,26 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
   does not accumulate amendments. When a decision changes, add an ADR with the next
   free number, delete the superseded ADR and repoint every reference. Name the
   superseded ADR in the changing commit message.
-- Keep source quotations and timestamps out of tracked docs; preserve the source in
-  the commit message that adds or changes the rule. Mail and chat carry rulings but
-  do not record them. The reason that governs the current rule must be in a tracked
-  doc before merge.
+- Mail and chat transport rulings; a tracked doc or ADR owns the current rule and its
+  reason before merge.
 
 ## Continuous consolidation
 
-Refactor actively while pre-pre-alpha against real change costs and planned work,
-not as a deletion target. [#159](https://github.com/roobie/skelly/issues/159) is
-the ranked backlog. Review records stay in their working layer: code reviews in
-PRs, maintainability and consolidation surveys in #159 or an issue linked from it,
-and slice retrospectives as comments on the slice checklist issue (#293 for Slice 3).
-The repository keeps no review or retrospective snapshots.
+Refactor against real change costs and planned work, not as a deletion target.
+[#159](https://github.com/roobie/skelly/issues/159) is the ranked backlog. Keep code
+reviews in PRs, surveys in #159 or a linked issue, and slice retrospectives on the
+slice checklist issue.
 
-- **Every brief and review:** name the ownership or duplicated decision worth
-  consolidating, or say none. Name the old authorities, intended consumers and
-  deliberate distinctions. Review callers and secondary consumers, not only the
-  new owner. Prove a risky boundary with a discriminating test or mutation; do not
-  add near-duplicate tests for a larger count.
-- **At slice start and exit:** the slice checklist issue has a checkbox for a
-  history-and-planned-change maintainability survey for each subproject. Use the
-  `maintainability-review` method: checks first; ranked, refutation-tested
-  findings; stable IDs; and explicit disposition of earlier findings. An exit
-  survey may serve as the next start survey only when its base and next-change
-  assumptions still hold; record reuse and inspect the intervening delta. A
-  recurring smell or repeated boundary failure triggers a targeted survey, not
-  automatically another full survey. Link each report from #159 or an issue linked
-  from it; keep reports out of repository files.
+- **Every brief and review:** name the ownership boundary or duplicated decision
+  worth consolidating, or say none. Name the old authorities, intended consumers
+  and deliberate distinctions; review callers and secondary consumers, not only
+  the new owner.
+- **At slice start and exit:** the slice checklist tracks a history-and-planned-change
+  maintainability survey for each subproject. Follow the `maintainability-review` skill
+  and link its report from #159 or a linked issue. Reuse an exit survey only when its
+  base and next-change assumptions still hold; inspect the intervening delta. A recurring
+  smell or repeated boundary failure triggers a targeted survey, not automatically a full
+  survey. Keep reports out of repository files.
 - **At slice closure:** commission one deep docs pass, tracked by the exit checkbox
   on the slice checklist issue. Record its findings in #159 or an issue linked from
   it, not in a repository file.
@@ -193,33 +152,16 @@ dates, plus known waits. Decide whether the cadence and capacity check are worth
 their cost, then date the next review. Claim a speedup only with a defensible
 comparison; keep unknown effort or time saved unknown.
 
-## Working rules
+## Owned work
 
-- **Shared hosts:** follow the host notes: its heavy-run lock (one full suite, browser stage
-  or build at a time), its free-disk floor and its memory admission. They live outside the
-  repository (AGENTS.md, "No host-specific information in tracked files").
-- **Vitest pools:** all three projects share `testPool.ts` (40% available CPUs, file isolation). Don't raise a test timeout to mask pool contention; measured trade-offs and the two-core CI proof are in `docs/test-pool.md`.
-- **Bound every run:** wrap long shell runs in `timeout 300` (300 seconds). Vitest timeouts are
-  in milliseconds; a harness's own tool timeout may be in seconds or milliseconds, so check its
-  schema. A browser script bounds each stage as well as the whole run. Mixing the units once
-  turned a 4-minute limit into 67 hours, and the run hung for three hours before anyone noticed.
-- **Units:** gungen uses 11.5 mm per u; deadvox and mobgen use metres and seconds.
-- **Determinism:** seeded RNG only; no `Math.random` in simulation or generators.
-- **Don't loosen a test to make room for a change.** Pin the new measured value as a documented
-  expectation, so the next change to it is noticed.
-- **CI costs time, not money** (BR, 2026-10-02: "it's not _billed_ money"). The repository is
-  public, so runners are free. Rank CI changes by wasted runs and time to green, and never cut
-  checks to save money that isn't being spent.
-- **Owned work needs a decision and a date.** BR, 2026-10-03: "I can have thousands of bugs
-  assigned to me, but what if I don't address them?" An owned failure or finding is fixed,
-  scheduled into a real slot, quarantined with a revisit date, or closed with a reason, and its
-  age forces a re-decision.
-- **Mechanize every follow-up:** the agent-work tracker owns the next revisit date
-  for each follow-up. Keep one date authority; issue text records decisions and
-  dated history, not a second next-revisit date.
+An owned failure or finding needs an explicit decision: fix it, schedule it into a real
+slot, quarantine it with a revisit date, or close it with a reason. Its age forces
+reconsideration rather than silent accumulation.
+
+The agent-work tracker owns each follow-up's next revisit date. Issue text records
+decisions and dated history, not a second next-revisit date.
 
 ## When main is red
 
-Fixing it comes first: the smallest possible PR, with nothing else in it (e.g. #98). Work
-already in flight can carry the same fix to get past its own checks, and it merges cleanly
-once the fix lands.
+Fixing it comes first in the smallest separate PR. Work already in flight can carry the same
+fix to get past its checks, and merges cleanly once the fix lands.
