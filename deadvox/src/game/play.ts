@@ -51,7 +51,7 @@ import {
   renderHudOptions,
   writeHudOptions,
 } from '../ui/hudOptions.ts';
-import { InventoryScreen } from '../ui/inventoryScreen.ts';
+import { InventoryScreen, type ScreenHooks } from '../ui/inventoryScreen.ts';
 import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
@@ -1105,7 +1105,7 @@ export const startPlay = (
     });
   };
 
-  const screen = new InventoryScreen(inventoryPanel, inventory, queue, {
+  const hooks: ScreenHooks = {
     feet,
     reach: session.reach,
     nearby: () => session.reach().piles,
@@ -1130,7 +1130,8 @@ export const startPlay = (
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
     attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
-  });
+  };
+  const screen = new InventoryScreen(inventoryPanel, inventory, queue, hooks);
 
   const craftPanel = mountCraftPanel($('crafting'), $('craft-status'), session, {
     notice: (text) => showRefusal(text, sim.time),
@@ -1655,6 +1656,7 @@ export const startPlay = (
     cancelItemThrow,
     throwItem: throwRecordedItem,
   };
+  const inv = inventory;
   const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {
     const reason = applyReplayActionPayload(payload, replayCommandOwners);
     if (reason) {
@@ -1671,13 +1673,21 @@ export const startPlay = (
       return undefined;
     }
     if (!inputRecorder) {
-      return applyScreenCommand(payload);
+      const item = payload.kind === 'inventory.assign' ? inv.itemByUid(payload.itemUid) : undefined;
+      const reason = applyScreenCommand(payload);
+      if (!reason && item && payload.kind === 'inventory.assign') {
+        hooks.notice(`${inv.name(item)} on quickbar ${payload.slot + 1}`);
+      }
+      return reason;
     }
     inputRecorder.queueAction(payload.kind, 'down', inputContext(), { payload });
     pendingPlayerTickActions.enqueue(() => {
+      const item = payload.kind === 'inventory.assign' ? inv.itemByUid(payload.itemUid) : undefined;
       const reason = applyScreenCommand(payload);
       if (reason) {
         showRefusal(reason, sim.time);
+      } else if (item && payload.kind === 'inventory.assign') {
+        hooks.notice(`${inv.name(item)} on quickbar ${payload.slot + 1}`);
       }
     });
     return undefined;

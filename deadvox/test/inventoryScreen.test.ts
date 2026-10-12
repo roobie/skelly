@@ -636,15 +636,15 @@ describe('inventory screen Lit rendering', () => {
     expect(screen.onAction('inventory.drop')).toBe(true);
     expect(queue.jobs.length).toBeGreaterThan(0);
   });
-  it('confirms the assigned quickbar slot through the shared notice', () => {
-    const { screen, inv, quickbar, beans, notices } = setup();
+  it('dispatches a quickbar assignment without confirming before its owner applies it', () => {
+    const { screen, inv, quickbar, beans, notices, lastPayload } = setup();
     screen.selected = beans;
 
     expect(screen.onAction('quickbar.assign.3')).toBe(true);
 
+    expect(lastPayload()).toEqual({ kind: 'inventory.assign', slot: 2, itemUid: beans.uid });
     expect(quickbar.resolve(2, inv)).toBe(beans);
-    expect(notices).toHaveLength(1);
-    expect(notices[0]).toContain('3');
+    expect(notices).toEqual([]);
   });
   it('keeps unselected-item commands owned by inventory rather than debug', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, undefined);
