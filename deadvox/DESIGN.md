@@ -127,8 +127,9 @@ ground except through the southern breach`. Zombies use the passage only if
 their ordinary collision body fits; they do not crouch or
 gain a type-specific exception. Standing up is refused when the body would
 intersect a solid overhead block, and saves preserve stance while body height is
-derived from content. See `settleStance` in `src/game/session.ts`, `SenseSchema`
-in `src/core/schema.ts`, `camp_wall_run_crouch_hole` in
+derived from content. See `crouch.bodyHeightMetres` in
+`src/content/base/senses.jsonnet`, `settleStance` in `src/game/session.ts`,
+`SenseSchema` in `src/core/schema.ts`, `camp_wall_run_crouch_hole` in
 `src/content/base/camp.jsonnet`, and `zombieBodyDimensions` in
 `src/core/spawnClearance.ts`.
 
