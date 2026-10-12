@@ -37,6 +37,7 @@ import {
   type HitImpulse,
   hearPlayer,
   hearVocalNoise,
+  lethalRegion,
   type PlayerSense,
   perceivePlayer,
   pickZombieHitRegion,
@@ -3396,6 +3397,37 @@ describe('dismemberment', () => {
 
   /** Regions too healthy for a few fist hits to destroy, so only the dismember roll can sever anything. */
   const survives = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
+
+  it('uses the same lethal region for an individual hit and a blast', () => {
+    const type = {
+      ...stationary,
+      regions: { ...survives, head: FISTS_MELEE.damage },
+      dismember: { chance: 0, headOnKillChance: 0 },
+    };
+    const hitSystem = new ZombieSystem(senses(() => player([100, 2, 0])));
+    const hitId = hitSystem.add(type, [1, 1, 0], [0, 0, 1]);
+    const hitZombie = hitSystem.store.get(hitId)!;
+    const head = regionRay(hitZombie, 'head');
+    expect(lethalRegion(type, 'head')).toBe(true);
+    expect(hitSystem.swing(head.origin, head.direction, FISTS_MELEE)).toBe(hitId);
+    expect(hitSystem.store.get(hitId)).toBeUndefined();
+
+    let blastDeathRegions: number[] | undefined;
+    const blastSystem = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onDeath: (_id, zombie) => {
+        blastDeathRegions = Object.values(zombie.regions);
+      },
+    });
+    const blastId = blastSystem.add(type, [1, 1, 0], [0, 0, 1]);
+    blastSystem.detonate({
+      blast: { radiusMetres: 6, damage: 1_000_000, impulse: 1 },
+      fragments: { origin: [0, 1, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
+    });
+    expect(blastSystem.store.get(blastId)).toBeUndefined();
+    expect(blastDeathRegions).toBeDefined();
+    expect(blastDeathRegions!.every((health) => health === 0)).toBe(true);
+  });
 
   const swingAt = (system: ZombieSystem, id: number) => {
     const target = system.store.get(id)!;
