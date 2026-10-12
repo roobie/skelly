@@ -643,14 +643,14 @@ HTML over the game view, and keyboard-first:
   a cell shows less there too. See `src/core/inventoryGridName.ts`,
   `visibleGridName` and `GRID_CELL_REM`.
 - Filters and search, and item details on hover or focus.
-- For d254, an occupied drop of a whole item swaps it with the destination only
+- An occupied drop of a whole item swaps it with the destination only
   when each item fits in the other's exact place. Partial-stack moves keep the
   ordinary refusal, preventing either item from being displaced into invalid
   space while letting players rearrange without first freeing a slot. The swap
   is replayed as a queued inventory move. See `src/core/inventory.ts`,
   `Inventory.plan` and `Inventory.move`, `src/core/handling.ts`, `HandlingQueue`,
   and `src/game/replayCommands.ts`, `applyReplayActionPayload`.
-- For d253, the **quickbar** maps shortcuts to items you carry. Assigning an
+- The **quickbar** maps shortcuts to items you carry. Assigning an
   item confirms its destination through the play notice above the inventory
   overlay, where the quickbar itself is hidden; assigning to an occupied slot
   replaces its binding.
