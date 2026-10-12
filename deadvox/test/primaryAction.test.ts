@@ -234,7 +234,7 @@ describe('held-item hand action', () => {
       } else {
         expect(refusal).toBeUndefined();
         expect(queue.jobs).toMatchObject([
-          { kind: 'action', jobType: 'survival.eat', params: { itemUid: action.item.uid } },
+          { kind: 'action', jobType: 'survival.consume', params: { itemUid: action.item.uid } },
         ]);
       }
     },

@@ -188,6 +188,21 @@ it('a lit light saves its active ignition time and remaining burn', async () => 
   });
 });
 
+it("a hit's acute pain and a painkiller dose under way survive the save codec", async () => {
+  const source = createRuntime();
+  const pill = [...registry.items.values()].find((def) => def.analgesic);
+  expect(pill).toBeDefined();
+  source.sim.body.impact(10, 'leftArm', { kind: 'cut' });
+  source.sim.body.takeAnalgesic(pill!.id);
+  source.sim.body.advance(0, true, 60);
+  const saved = source.sim.body.snapshotState().pain;
+  expect(saved.acute).toBeGreaterThan(0);
+  expect(saved.doses).toHaveLength(1);
+
+  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  expect(createRuntime(decoded.snapshot).sim.body.snapshotState().pain).toEqual(saved);
+});
+
 it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, the shoulder included', async () => {
   const source = createRuntime(undefined, 'left');
   const shotgun = source.inventory.create('pump_shotgun');

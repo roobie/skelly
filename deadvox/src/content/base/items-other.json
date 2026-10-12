@@ -51,10 +51,20 @@
     },
     {
       "id": "painkillers",
-      "name": "Painkillers",
+      "name": "Painkiller",
       "category": "medical",
-      "weight": 50,
-      "size": [1, 1]
+      "weight": 1,
+      "size": [1, 1],
+      "stack": 24,
+      "analgesic": {
+        "group": "otc",
+        "reliefPerDose": 20,
+        "maxRelief": 30,
+        "onsetGameMinutes": 45,
+        "peakGameMinutes": 210,
+        "fadeGameMinutes": 60
+      },
+      "description": "An over-the-counter pill. Eases pain for a few hours; it heals nothing."
     },
     {
       "id": "rag",

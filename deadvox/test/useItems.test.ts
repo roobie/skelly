@@ -8,7 +8,7 @@ import type { Item } from '../src/core/items.ts';
 import { chargeOf, toggleLight } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
-import { EAT_TIME } from '../src/core/options.ts';
+import { EAT_TIME, TAKE_TIME } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
@@ -36,7 +36,7 @@ const setup = (
     throw new Error('Unexpected reading in use-items fixture');
   },
 ) => {
-  const sim = new Simulation({ seed: 1 });
+  const sim = new Simulation({ seed: 1, analgesics: (item) => content.items.get(item)?.analgesic });
   const inventory = new Inventory(content);
   const queue = new HandlingQueue(inventory);
   const notices: string[] = [];
@@ -130,6 +130,26 @@ describe('using what you hold', () => {
     expect(sim.needs.calories).toBe(SPAWN_NEEDS.calories);
     expect(sim.body.health).toBe(100 - FOOD_POISONING);
     expect(notices).toContain('The apple was rotten');
+  });
+
+  it('takes one pill off a painkiller stack, from your hands or a pocket, and starts one dose for it', () => {
+    const pill = [...registry.items.values()].find((def) => def.analgesic);
+    expect(pill).toBeDefined();
+    const { sim, inventory, queue, survival, hold } = setup();
+    const doses = (): number => sim.body.snapshotState().pain.doses.length;
+    const held = hold(pill!.id);
+    held.count = 3;
+    expect(survival.use(held)).toBeUndefined();
+    queue.tick(TAKE_TIME + 0.1);
+    expect([held.count, doses()]).toEqual([2, 1]);
+
+    const jeans = inventory.create('jeans');
+    inventory.add(jeans, { kind: 'worn' });
+    const pocketed = inventory.create(pill!.id, 3);
+    inventory.add(pocketed, { kind: 'pocket', owner: jeans, pocket: 0 });
+    expect(survival.useFromQuickbar(pocketed)).toBeUndefined();
+    queue.tick(60);
+    expect([pocketed.count, doses(), inventory.locate(pocketed)?.kind]).toEqual([2, 2, 'pocket']);
   });
 
   it('switches the light on and off, and it goes off when put away', () => {
