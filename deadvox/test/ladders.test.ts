@@ -328,7 +328,28 @@ describe('one hand on a ladder', () => {
     expect(body.pos[1]).toBeGreaterThan(height);
   });
 
-  it('throws from the free hand on a ladder, holding the climb still until the throw is released or cancelled', () => {
+  it('throws from the free hand on a ladder, ending one held in the hand that takes the ladder, and holds the climb still until a throw ends', () => {
+    // Off a ladder a throw takes an occupied off hand. The hold takes that hand when the grab reaches the ladder, at
+    // once at its foot or once walked to, and that ends the throw refused rather than moving it to the other hand.
+    for (const atFoot of [true, false]) {
+      const approach = houseWithLadder([-3, 1, 1]);
+      const { inventory, throwCharge } = approach.session;
+      holdInHand(approach, oneHandedFoodType);
+      const kept = holdInHand(approach, oneHandedFoodType, offSide(inventory.character));
+      approach.set({ ...IDLE, forward: 1, walk: true });
+      approach.advance(atFoot ? climbFrames(1) : 0);
+      expect(throwCharge.begin(approach.session.sim.time, false).kind).toBe('charging');
+      expect(throwCharge.itemUid).toBe(kept.uid);
+      expect(approach.session.grabLadder(approach.session.entities.at(...LADDER_FOOT)!)).toBeUndefined();
+      for (let frame = 0; frame < climbFrames(1) && !approach.session.ladderHold.on; frame++) {
+        approach.advance(1);
+      }
+      expect(approach.session.ladderHold.on).toBe(true);
+      expect(throwCharge.release(approach.session.sim.time)).toBeUndefined();
+      expect(approach.refusals).toHaveLength(1);
+      expect(inventory.hands[offSide(inventory.character)]).toBe(kept);
+    }
+
     const runtime = houseWithLadder([-3, 1, 1]);
     const { session } = runtime;
     const { throwCharge } = session;

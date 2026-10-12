@@ -48,13 +48,13 @@ const snapshotForWorld = (id: string): SaveSnapshot => ({
   ...fixtureSnapshot,
   world: { ...fixtureSnapshot.world, id },
 });
-const recordFor = async (
-  worldId: string,
+const recordOf = async (
+  snapshot: SaveSnapshot,
   identity: Awaited<ReturnType<typeof currentSaveVersionIdentity>>,
 ): Promise<SaveLoadResult> => ({
   generation: 1,
   slot: 'a',
-  payload: await encodeSave(snapshotForWorld(worldId), {
+  payload: await encodeSave(snapshot, {
     generation: 1,
     version: identity.components,
     buildRevision: identity.buildRevision,
@@ -62,6 +62,8 @@ const recordFor = async (
   }),
   corruptSlots: [],
 });
+const recordFor = (worldId: string, identity: Awaited<ReturnType<typeof currentSaveVersionIdentity>>) =>
+  recordOf(snapshotForWorld(worldId), identity);
 const stubLiveRecord = (controller: SaveController, record: SaveLoadResult) => {
   vi.spyOn(controller.storage, 'status').mockResolvedValue({
     backend: 'indexeddb',
@@ -173,6 +175,35 @@ it('keeps the marker for a same-world save and clears it after another world sav
   controller.afterFrame();
   await vi.waitFor(() => expect(internal.savedGeneration).toBeGreaterThan(generationBeforeReplacement));
   expect(localStorage.getItem(markerKey(identity.digest))).toBeNull();
+});
+
+it('protects a save whose pending ladder grab names no climbable instead of entering Continue', async () => {
+  enableSaveEnvironment();
+  const identity = await currentSaveVersionIdentity();
+  const runtime = createRuntime(undefined, true);
+  const [furniture] = runtime.entities.all;
+  if (!furniture || saveFixtureRegistry.furniture.get(furniture.type)?.climbable) {
+    throw new Error('The rest fixture needs a furniture piece that is not a ladder');
+  }
+  const continueWith = async (ladder: SaveSnapshot['character']['player']['ladder']) => {
+    localStorage.clear();
+    sessionStorage.clear();
+    const controller = title();
+    const snapshot = structuredClone(capture(runtime));
+    snapshot.character.player.ladder = ladder;
+    stubLiveRecord(controller, await recordOf(snapshot, identity));
+    sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+    await controller.prepare();
+    const restored = await controller.validateContent(saveFixtureRegistry);
+    return { restored: restored !== undefined, entered: controller.isEntered, canSave: controller.canSaveCurrentGame };
+  };
+
+  expect(await continueWith(null)).toEqual({ restored: true, entered: true, canSave: true });
+  expect(await continueWith({ on: false, grabbedUid: furniture.uid })).toEqual({
+    restored: false,
+    entered: false,
+    canSave: false,
+  });
 });
 
 it('creates and binds only on resource-ready acceptance and enters after controller commitment', async () => {

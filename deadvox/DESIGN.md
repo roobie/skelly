@@ -333,7 +333,9 @@ hordes stay as they are, and winning should still feel like an achievement.
   go anywhere, which is the way off mid-ladder; stepping off its top, bottom or
   side and being knocked out also let go, as does walking away from a ladder
   grabbed but not reached. A save keeps the hold, a grab not yet reached
-  included, so a loaded game climbs as the saved one would have. The climber is
+  included, so a loaded game climbs as the saved one would have; a save whose
+  grab names no ladder is refused like any other broken reference
+  (`src/core/saveFormat.ts`, `grabbedLadder`). The climber is
   held on the ladder's centre line, so the body fits through a hatch above.
   Climbing has a fixed speed, so sprinting, load and injury neither help nor
   slow it, and it spends no stamina. See `src/core/ladders.ts`, `LadderHold`,
@@ -347,10 +349,14 @@ hordes stay as they are, and winning should still feel like an achievement.
   or both hands is refused through the usual refusal notice: using the off
   hand, using or readying a two-handed item, reloading a firearm, and moving an
   item into or out of the off hand, or a two-handed item into a hand. So an item
-  already in the off hand stays held. `LadderHold` admits every one of these
+  already in the off hand stays held, and a throw held in the off hand ends,
+  refused, when the ladder takes that hand, rather than moving to the free hand.
+  A released throw is admitted again on the tick that carries it out, since a
+  ladder can take the hand in between. `LadderHold` admits every one of these
   (`src/core/ladders.ts`, `refusal`, `freeHand` and `moveRefusal`, which
   `Inventory.plan` asks through `handRefusal`), and the session owns the throw
-  charge so a replay holds still alike (`src/game/throwCharge.ts`).
+  charge so a replay holds still alike (`src/game/throwCharge.ts`,
+  `refuseForLadder`; `src/game/play.ts`, `throwHeldItem`).
 - **The top.** A climb ends with the feet level with the top piece, where moving
   toward the ladder carries the climber off onto what it serves. So a ladder up a
   roof edge reaches through the roof's layer, and the climber walks off at roof

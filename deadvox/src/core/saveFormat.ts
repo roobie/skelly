@@ -46,7 +46,16 @@ export interface SaveWorldIdentity extends SaveWorldOptions {
   clock: { ratio: number; start: number };
 }
 
-export type SaveContentKind = 'block' | 'item' | 'furniture' | 'zombie' | 'sound' | 'scheduler' | 'skill' | 'recipe';
+export type SaveContentKind =
+  | 'block'
+  | 'item'
+  | 'furniture'
+  | 'climbable'
+  | 'zombie'
+  | 'sound'
+  | 'scheduler'
+  | 'skill'
+  | 'recipe';
 type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
 
 export interface EncodeSaveOptions {
@@ -1291,6 +1300,19 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   ) {
     throw new Error('Missing prying target');
   }
+  if (snapshot.character.player.ladder?.on === false && !grabbedLadder(snapshot)) {
+    throw new Error('Missing grabbed ladder');
+  }
+}
+
+/** The entity a pending ladder grab names, when the save holds it; its content check makes it a ladder. */
+function grabbedLadder(
+  snapshot: SaveSnapshot,
+): SaveSnapshot['character']['inventory']['entities']['entities'][number] | undefined {
+  const { ladder } = snapshot.character.player;
+  return ladder?.on === false
+    ? snapshot.character.inventory.entities.entities.find(({ uid }) => uid === ladder.grabbedUid)
+    : undefined;
 }
 
 function validateItemContentReferences(
@@ -1348,6 +1370,10 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   validateItemContentReferences(snapshot.character.inventory, check);
   for (const [ei, entity] of snapshot.character.inventory.entities.entities.entries()) {
     check('furniture', entity.type, `character.inventory.entities[${ei}].type`);
+  }
+  const grabbed = grabbedLadder(snapshot);
+  if (grabbed) {
+    check('climbable', grabbed.type, 'character.player.ladder.grabbedUid');
   }
   for (const [index, savedZombie] of snapshot.world.zombies.zombies.entries()) {
     check('zombie', savedZombie.zombie.type, `world.zombies[${index}].type`);

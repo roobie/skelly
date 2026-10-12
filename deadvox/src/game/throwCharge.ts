@@ -96,6 +96,15 @@ export class ThrowCharge {
       : { itemUid, hand, heldSimSeconds: Math.max(0, time - startedAt) };
   }
 
+  /** Ends a held throw whose hand a ladder hold has taken since it began, returning why; its item stays in the hand. */
+  refuseForLadder(): string | undefined {
+    const reason = this.chargeHand === undefined ? undefined : this.ladderHold.refusal(this.chargeHand);
+    if (reason) {
+      this.cancel();
+    }
+    return reason;
+  }
+
   cancel(): void {
     this.chargeStartedAtSimSeconds = undefined;
     this.chargeItemUid = undefined;

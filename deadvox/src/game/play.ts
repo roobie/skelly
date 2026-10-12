@@ -2453,6 +2453,12 @@ export const startPlay = (
     if (inventory.hands[hand] !== item) {
       return;
     }
+    // A ladder can take the hand between a release and the tick its throw lands on, live and in a replay alike.
+    const ladderRefusal = session.ladderHold.refusal(hand);
+    if (ladderRefusal) {
+      showRefusal(ladderRefusal, sim.time);
+      return;
+    }
     const target = itemLandingTarget(distanceMetres);
     if (!target) {
       showRefusal("Can't find a place for it to land", sim.time);

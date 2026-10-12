@@ -831,6 +831,13 @@ export const createSession = (options: SessionOptions) => {
   });
   inventory.handRefusal = (item, from, to) => ladderHold.moveRefusal(item, from, to);
   const throwCharge = new ThrowCharge(inventory, ladderHold);
+  // A throw held when the ladder takes its hand ends there, so it is never released from the hand on the ladder.
+  const refuseThrowForLadder = (): void => {
+    const reason = throwCharge.refuseForLadder();
+    if (reason) {
+      (options.refusal ?? options.notice)(reason);
+    }
+  };
   const currentIntent = (): MoveIntent => {
     const input = sampledInput();
     return input.active && !input.inputLocked ? input.intent : IDLE;
@@ -1162,6 +1169,7 @@ export const createSession = (options: SessionOptions) => {
       playPlayerSound('player_strain', time);
     }
     const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
+    refuseThrowForLadder();
     const climbing =
       ladder !== undefined &&
       climb(body, ladder, {
@@ -1537,6 +1545,7 @@ export const createSession = (options: SessionOptions) => {
         return sim.body.actionRefusal;
       }
       ladderHold.grab(entity);
+      refuseThrowForLadder();
       return undefined;
     },
     get playerEyeHeightMetres() {
