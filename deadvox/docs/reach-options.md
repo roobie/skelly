@@ -39,9 +39,9 @@ in `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and read by
 `src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`; no browser modifier
 selects the quick move.
 The binding only queues the ordinary whole-stack handling move, never transfers
-immediately or invokes use/eat/drink/switch. For #589, `quickMove` checks every
-worn pocket for a compatible stack before using an earlier free spot, so pocket
-priority does not create duplicate stacks.
+immediately or invokes use/eat/drink/switch. Compatible stacks take precedence
+over pocket priority, avoiding fragmentation; `inventoryPocket` in
+`src/core/options.ts` checks them before choosing an earlier free spot.
 
 ## Explicit alignments
 
