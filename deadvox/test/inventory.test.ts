@@ -21,25 +21,25 @@ const dressed = () => {
   const jeans = inv.create('jeans');
   const hoodie = inv.create('hoodie');
   const backpack = inv.create('school_backpack');
-  inv.worn.legs = jeans;
-  inv.worn.torso = hoodie;
-  inv.worn.back = backpack;
+  for (const [item, label] of [
+    [jeans, 'jeans'],
+    [hoodie, 'hoodie'],
+    [backpack, 'backpack'],
+  ] as const) {
+    if (!inv.add(item, { kind: 'worn' })) {
+      throw new Error(`Could not place fixture ${label}`);
+    }
+  }
   return { inv, jeans, hoodie, backpack };
 };
 
-/** Puts an item on the floor at the origin block and returns it. */
+/** Puts an item on its own floor pile and returns it. */
 const onFloor = (inv: Inventory, type: string, count = 1, condition = 1) => {
   const item = inv.create(type, count, condition);
-  const pile = inv.pileAt([0, 0, 0]) ?? { pos: [0, 0, 0] as [number, number, number], items: [] };
-  const spot = { x: 0, y: 0, rotated: false };
-  // Keep test piles simple: a new pile per call when the first spot is taken.
-  if (pile.items.length > 0) {
-    const pos: [number, number, number] = [inv.piles.size, 0, 0];
-    inv.piles.set(pos.join(','), { pos, items: [{ item, ...spot }] });
-    return item;
+  const pos: [number, number, number] = [inv.piles.size, 0, 0];
+  if (!inv.add(item, { kind: 'pile', pos })) {
+    throw new Error(`Could not place fixture ${type}`);
   }
-  pile.items.push({ item, ...spot });
-  inv.piles.set('0,0,0', pile);
   return item;
 };
 
@@ -94,6 +94,24 @@ describe('grid placement', () => {
     expect(backpack.pockets![0]).toEqual([{ item: water, x: 0, y: 1, rotated: false }]);
   });
 
+  it('refuses a same-grid swap when the final footprints overlap', () => {
+    const { inv, hoodie } = dressed();
+    const small = onFloor(inv, 'rag');
+    const large = onFloor(inv, 'chocolate_bar');
+    const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
+    const smallSpot = { ...pocket, at: { x: 0, y: 0, rotated: false } };
+    const largeSpot = { ...pocket, at: { x: 1, y: 0, rotated: false } };
+    expect(inv.move(small, smallSpot).ok).toBe(true);
+    expect(inv.move(large, largeSpot).ok).toBe(true);
+    const before = inv.snapshotState();
+
+    const moved = inv.move(small, largeSpot);
+    const after = inv.snapshotState();
+    expect(moved.ok).toBe(false);
+    expect(after).toEqual(before);
+    expect(() => Inventory.restoreState(registry, after)).not.toThrow();
+  });
+
   it('swaps items across containers when each fits the other stored place', () => {
     const { inv, backpack, hoodie } = dressed();
     const carried = onFloor(inv, 'rag', 1, 1);
@@ -133,6 +151,17 @@ describe('grid placement', () => {
     expect(inv.move(inHand, { kind: 'hand', side: 'right' }).ok).toBe(true);
     expect(inv.hands.right).toBe(inHand);
     expect(inv.locate(inPocket)).toMatchObject({ kind: 'pocket', owner: backpack, pocket: 0 });
+  });
+
+  it('allows a two-handed item to replace a held item when the opposite hand is empty', () => {
+    const inv = new Inventory(registry);
+    const held = onFloor(inv, 'rag');
+    const bat = onFloor(inv, 'baseball_bat');
+    expect(inv.move(held, { kind: 'hand', side: 'right' }).ok).toBe(true);
+
+    expect(inv.move(bat, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(inv.hands).toEqual({ right: bat });
+    expect(inv.locate(held)?.kind).toBe('pile');
   });
 
   it('refuses a two-handed swap while the other hand remains occupied', () => {

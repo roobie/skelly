@@ -1016,10 +1016,32 @@ export class Inventory {
     const sourceTarget = this.targetForLocation(from);
     const sourceSpot = spotOf(from);
     const targetSpot = this.swapTargetSpot(target, otherFrom);
-    if (!this.fitsSwapPlace(item, target, targetSpot, otherFrom)) {
+    const sameGrid =
+      this.isGridTarget(target) &&
+      this.isGridTarget(sourceTarget) &&
+      this.gridOf(target).placed === this.gridOf(sourceTarget).placed;
+    const sourceProjection = sameGrid && sourceSpot ? { item: otherItem, spot: sourceSpot } : undefined;
+    const targetProjection = sameGrid && targetSpot ? { item, spot: targetSpot } : undefined;
+    if (
+      !this.fitsSwapPlace({
+        item,
+        target,
+        spot: targetSpot,
+        from: otherFrom,
+        projected: sourceProjection,
+      })
+    ) {
       return undefined;
     }
-    if (!this.fitsSwapPlace(otherItem, sourceTarget, sourceSpot, from)) {
+    if (
+      !this.fitsSwapPlace({
+        item: otherItem,
+        target: sourceTarget,
+        spot: sourceSpot,
+        from,
+        projected: targetProjection,
+      })
+    ) {
       return undefined;
     }
     if (!this.swapHandsFit({ item, otherItem, from, target, otherFrom })) {
@@ -1054,9 +1076,21 @@ export class Inventory {
     return { x: otherFrom.placed.x, y: otherFrom.placed.y, rotated: target.at.rotated };
   }
 
-  private fitsSwapPlace(item: Item, target: Target, spot: Spot | undefined, from: Location): boolean {
+  private fitsSwapPlace({
+    item,
+    target,
+    spot,
+    from,
+    projected,
+  }: {
+    item: Item;
+    target: Target;
+    spot: Spot | undefined;
+    from: Location;
+    projected?: { item: Item; spot: Spot } | undefined;
+  }): boolean {
     if (this.isGridTarget(target)) {
-      return spot ? this.fitsSwapGrid(item, target, spot) : false;
+      return spot ? this.fitsSwapGrid(item, target, spot, projected) : false;
     }
     if (target.kind === 'worn') {
       return (
@@ -1089,6 +1123,7 @@ export class Inventory {
     item: Item,
     target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
     spot: Spot,
+    projected?: { item: Item; spot: Spot },
   ): boolean {
     if (
       (target.kind === 'pocket' && target.owner === item) ||
@@ -1101,15 +1136,11 @@ export class Inventory {
       return false;
     }
     const grid = this.gridOf(target);
-    return (
-      couldFit(this.registry, grid.size, item) &&
-      fitsAt(
-        this.registry,
-        { ...grid, placed: grid.placed.filter(({ item: placed }) => placed !== item && placed !== displaced) },
-        item,
-        spot,
-      )
-    );
+    const placed = grid.placed.filter(({ item: existing }) => existing !== item && existing !== displaced);
+    if (projected) {
+      placed.push({ item: projected.item, ...projected.spot });
+    }
+    return couldFit(this.registry, grid.size, item) && fitsAt(this.registry, { ...grid, placed }, item, spot);
   }
 
   private swapHandsFit(swap: {
@@ -1139,10 +1170,7 @@ export class Inventory {
       if (held?.work && side !== dominantSide(this.character)) {
         return false;
       }
-      if (
-        (held && defOf(this.registry, held.type).twoHanded && otherHeld) ||
-        (otherHeld && defOf(this.registry, otherHeld.type).twoHanded)
-      ) {
+      if (held && this.handPairRefusal(held, otherHeld)) {
         return false;
       }
     }
@@ -1213,15 +1241,19 @@ export class Inventory {
     if (held && held !== item) {
       return refuse(`Your ${side} hand is holding the ${this.name(held).toLowerCase()}`);
     }
-    const otherHeld = this.hands[other(side)];
+    const conflict = this.handPairRefusal(item, this.hands[other(side)]);
+    return conflict ? refuse(conflict) : { ok: true, time: 0 };
+  }
+
+  private handPairRefusal(item: Item, otherHeld: Item | undefined): string | undefined {
     const busy = otherHeld && otherHeld !== item;
     if (busy && defOf(this.registry, otherHeld.type).twoHanded) {
-      return refuse(`The ${this.name(otherHeld).toLowerCase()} needs both hands`);
+      return `The ${this.name(otherHeld).toLowerCase()} needs both hands`;
     }
     if (busy && defOf(this.registry, item.type).twoHanded) {
-      return refuse('It needs both hands');
+      return 'It needs both hands';
     }
-    return { ok: true, time: 0 };
+    return undefined;
   }
 
   /** The grid a pocket, pile or furniture target points at. */
