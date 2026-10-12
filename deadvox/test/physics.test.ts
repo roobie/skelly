@@ -180,8 +180,9 @@ describe('steer', () => {
     expect(speed({ sprint: true, walk: true })).toBeCloseTo(PLAYER.sprint);
   });
 
-  it('scales sideways and backward speeds by their content factors and blends diagonals', () => {
-    const { movement, crouch } = BUNDLED_CONTENT.registry.senses.get('player')!;
+  it('scales sideways and backward speeds by their factors and blends diagonals', () => {
+    const { crouch } = BUNDLED_CONTENT.registry.senses.get('player')!;
+    const factors = { sideways: 0.8, backward: 0.4 };
     const measureSpeed = (forward: number, right: number) => {
       const body = createPlayerBody(half, 0, 0, 0);
       const paced = movementPace(
@@ -192,10 +193,7 @@ describe('steer', () => {
           readyMovementFactor: 1,
           movementSpeed: 1,
           crouchSpeed: crouch.speedMetresPerSimSecond,
-          directionalSpeed: {
-            sideways: movement.sidewaysSpeedScale,
-            backward: movement.backwardSpeedScale,
-          },
+          directionalSpeed: factors,
         },
       );
       steer(body, half, 0, paced);
@@ -206,8 +204,8 @@ describe('steer', () => {
     const backwardSpeed = measureSpeed(-1, 0);
     const diagonalSpeed = measureSpeed(1, 1);
     const backDiagonalSpeed = measureSpeed(-1, 1);
-    expect(sidewaysSpeed / forwardSpeed).toBeCloseTo(movement.sidewaysSpeedScale);
-    expect(backwardSpeed / forwardSpeed).toBeCloseTo(movement.backwardSpeedScale);
+    expect(sidewaysSpeed / forwardSpeed).toBeCloseTo(factors.sideways);
+    expect(backwardSpeed / forwardSpeed).toBeCloseTo(factors.backward);
     expect(sidewaysSpeed).toBeLessThan(forwardSpeed);
     expect(diagonalSpeed).toBeGreaterThan(sidewaysSpeed);
     expect(diagonalSpeed).toBeLessThan(forwardSpeed);
@@ -243,7 +241,13 @@ describe('steer', () => {
     const readyFactor = 0.6;
     const crouchSpeed = 0.8;
     const intent = { forward: 1, right: 0, jump: false, sprint: false, walk: false, crouch: true };
-    const paceOptions = { grams: 0, handling: false, movementSpeed: 1, crouchSpeed };
+    const paceOptions = {
+      grams: 0,
+      handling: false,
+      movementSpeed: 1,
+      crouchSpeed,
+      directionalSpeed: { sideways: 0.73, backward: 0.41 },
+    };
     const speeds = [
       movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: 1 }),
       movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: readyFactor }),

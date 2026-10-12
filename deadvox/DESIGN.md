@@ -135,7 +135,7 @@ slower axis. See `src/content/base/senses.jsonnet`, `movement`;
 
 Crouching lowers the player's collision body as well as the eye, so a crouched
 player fits through openings a standing one can't. The FOB's east wall has a
-low passage sized from the crouched body in `src/content/base/senses.json`,
+low passage sized from the crouched body in `src/content/base/senses.jsonnet`,
 `crouch.bodyHeightMetres`: a crouched player fits but a standing player does
 not. Its retained base course keeps the floor level with the approach. The gap
 sits away from the guarded north entrance and the southern breach, so it reads

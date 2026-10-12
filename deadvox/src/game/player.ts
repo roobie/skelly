@@ -126,7 +126,7 @@ export const movementPace = (
     readyMovementFactor: number;
     movementSpeed: number;
     crouchSpeed: number;
-    directionalSpeed?: { sideways: number; backward: number };
+    directionalSpeed: { sideways: number; backward: number };
   },
 ): MoveIntent => ({
   ...intent,
