@@ -616,6 +616,19 @@ try {
   };
   if (mode === 'camo') {
     await stage([155, 43.0001, 122], Math.PI / 2, -0.2);
+    await page.waitForFunction(() => {
+      const { engine } = globalThis.stairsWitness;
+      const points = [
+        [151.5, 43.1, 121.1],
+        [151.5, 43.5, 121.5],
+      ];
+      const fields = engine.skylight
+        .inspect()
+        .filter(({ bounds }) =>
+          points.some((point) => point.every((value, axis) => value >= bounds.min[axis] && value < bounds.max[axis])),
+        );
+      return fields.length > 0 && fields.every((field) => field.complete);
+    });
     const originalModes = await page.evaluate(() => {
       const { engine } = globalThis.stairsWitness;
       return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn };
