@@ -6,7 +6,10 @@ import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { currentSaveVersionIdentity, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
+import { realTimestamp } from '../src/core/time.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import type { SaveLoadResult } from '../src/game/saveStorage.ts';
+import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 import { SaveController } from '../src/ui/saveController.ts';
 import { capture, createRuntime, registry as saveFixtureRegistry } from './snapshotTestSupport.ts';
 
@@ -123,6 +126,37 @@ it('clears a marker for another world and offers the live record', async () => {
 
   expect(localStorage.getItem(markerKey(identity.digest))).toBeNull();
   expect(document.getElementById('continue')!.hidden).toBe(false);
+});
+
+it('starts the page-leave window when a saved world finishes loading', async () => {
+  enableSaveEnvironment();
+  localStorage.clear();
+  sessionStorage.clear();
+  const controller = title();
+  const identity = await currentSaveVersionIdentity();
+  stubLiveRecord(controller, await recordFor('fixture-live-world', identity));
+  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  await controller.prepare();
+
+  const loadedAtRealSeconds = 42;
+  const now = vi.spyOn(performance, 'now').mockReturnValue(loadedAtRealSeconds * 1000);
+  try {
+    await controller.validateContent(saveFixtureRegistry);
+    const { lastCompletedSaveRealTimestamp } = controller;
+    expect(lastCompletedSaveRealTimestamp).toEqual(realTimestamp(loadedAtRealSeconds));
+    expect(
+      shouldConfirmPageLeave({
+        gameRunning: true,
+        gameDead: false,
+        saveAvailable: controller.canSaveCurrentGame,
+        lastSaveCompletedAtRealTimestamp: lastCompletedSaveRealTimestamp,
+        nowRealTimestamp: realTimestamp(loadedAtRealSeconds),
+        confirmationWindowRealSeconds: BUNDLED_CONTENT.registry.saves.get('autosave')!.leaveConfirmationRealSeconds,
+      }),
+    ).toBe(false);
+  } finally {
+    now.mockRestore();
+  }
 });
 
 it('keeps the marker for a same-world save and clears it after another world saves', async () => {
