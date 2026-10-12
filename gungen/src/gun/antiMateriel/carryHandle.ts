@@ -13,7 +13,7 @@ import { choice, NEG_X, NEG_Y, octagonPrism, X, Y, Z } from './common.ts';
  * A carry handle in three parts, to the left of the rifle (-Z; the side is fixed, not a param): a trunnion block
  * bolted to the shroud's left wall at its rear, a single strut that runs diagonally up and to the left from the
  * block, and a grip bar on the strut's top end that is level and parallel to the bore and reaches back from the strut
- * toward the stock. The diagonal and the level bar both come from port orientation (see docs/anti-materiel.md):
+ * toward the stock. The diagonal and the level bar both come from port orientation:
  * the strut is an octagonal prism along its own X, and the strut's top port is
  * tilted back by the strut's angle so the bar's frame ends up axis-aligned. No solid is skewed.
  *

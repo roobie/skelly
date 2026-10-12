@@ -35,7 +35,7 @@ Keep the AR frame and magwell unchanged when correcting magazine seating: adjust
 
 ## Testing
 
-Seed sweeps exercise generated assemblies across templates and choices that focused property tests do not cover; they remain opt-in locally with `GUNGEN_SWEEPS=1` and run in CI. This keeps routine feedback representative and deterministic without dropping broad generator checks; see `test/sweeps.ts#sweepGroup`.
+Seed sweeps exercise generated assemblies across templates and choices that focused property tests do not cover; they remain opt-in locally and run in CI. This keeps routine feedback representative and deterministic without dropping broad generator checks; see `test/sweeps.ts#runSweeps`.
 
 ## Attachments and export
 
