@@ -2723,7 +2723,7 @@ const barrel: PartFamily = {
           ]
         : [];
     const gasPortX = params.section === 'ak' ? akGasStationX(lengthClass) : gasStationX(lengthClass);
-    // The pump section is the shotgun's; every other barrel gungen builds is rifled.
+    // Only the pump section is smoothbore; #649's automatic-shotgun section must not inherit the rifled default.
     const muzzleBore: MuzzleBore = params.section === 'pump' ? 'smoothbore' : 'rifled';
     return {
       family: 'barrel',

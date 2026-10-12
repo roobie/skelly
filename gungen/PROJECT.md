@@ -1102,7 +1102,7 @@ and model entry, in the same PR: a stale copy still validates and loads, so the
 two drift apart silently. Each exported design records the inputs its export
 needs, such as its `calibre`, so `../test/gungen-deadvox-contract.test.mjs` can
 re-export every gun the Deadvox asset manifest credits to a gungen design and
-fail on any difference.
+fail on any difference in Gungen's export.
 
 - `calibre?: string` is the exact cartridge-data id (not a display designation;
   e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,

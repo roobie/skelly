@@ -879,4 +879,47 @@ describe('attachment parts and export metadata', () => {
       expect(shotgun, id).not.toContain(id);
     }
   });
+
+  it('a port with no standard fits nothing that declares one', () => {
+    const suppressor = gunDomain.families.suppressor!;
+    const domain: Domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        suppressor: {
+          ...suppressor,
+          build: (params) => {
+            const definition = suppressor.build(params);
+            return {
+              ...definition,
+              ports: definition.ports.map((port) => {
+                if (port.id !== 'base') {
+                  return port;
+                }
+                const { standard: _standard, ...withoutStandard } = port;
+                return withoutStandard;
+              }),
+            };
+          },
+        },
+      },
+    };
+    const suppressorId = ATTACHMENT_IDS.find((id) => attachmentBuild(id).familyName === 'suppressor');
+    if (!suppressorId) {
+      throw new Error('No suppressor attachment is available');
+    }
+    const assembly: Assembly = {
+      name: 'bare-rifled-barrel',
+      root: 'barrel',
+      parts: { barrel: { family: 'barrel', params: { section: 'standard' } } },
+      connections: [],
+    };
+    const slots = attachmentSlots(resolve(assembly, gunDomain)).filter(({ mount }) => mount === 'muzzle');
+    const muzzle = slots[0];
+    if (!muzzle) {
+      throw new Error('The rifled barrel exports no muzzle slot');
+    }
+    expect(attachmentCompatibility(assembly, slots, gunDomain)[muzzle.id]).toContain(suppressorId);
+    expect(attachmentCompatibility(assembly, slots, domain)[muzzle.id]).not.toContain(suppressorId);
+  });
 });
