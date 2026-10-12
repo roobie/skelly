@@ -3,6 +3,7 @@ read_if:
   - "you're reviewing the amalgam's open visual-quality pass in #378"
   - "you're assessing the exact-shape movement cost tracked by #574"
   - "you're changing how generated voxel identity is used across JavaScript engines"
+  - "you're assessing animated joint-range and self-overlap risk"
 ---
 
 # mobgen — open design risks

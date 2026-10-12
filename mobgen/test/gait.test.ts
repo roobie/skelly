@@ -22,7 +22,7 @@ import { idleBasePose } from '../src/mob/idle.ts';
 import { type StepStyle, stepPlanFor } from '../src/mob/steps.ts';
 import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
 
-const SPEEDS = [0.8, 2.8]; // deadvox shamblers: wander / chase (PROJECT.md)
+const SPEEDS = [0.8, 2.8];
 
 const setup = (name: string, seed = 1) => {
   const t = TEMPLATES.find((x) => x.name === name)!;
@@ -469,7 +469,7 @@ describe('strideLength', () => {
   });
 });
 
-describe('strideCap/step-plan caching (mobgen/CHALLENGES.md §1: per-actor GaitCache, must not go stale on a different body)', () => {
+describe('strideCap/step-plan caching (per-actor GaitCache must not go stale on a different body)', () => {
   // One cache throughout — the exact scenario a stale cache would miss: a voxel-size override, a
   // re-realize, or (here) simply two unrelated bodies handed the same cache.
   const geomA = { legLen: 0.75, l1: 0.375, l2: 0.375, hipY: 0.89, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 };

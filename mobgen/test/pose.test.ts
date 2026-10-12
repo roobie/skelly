@@ -59,7 +59,7 @@ describe('boneTransforms', () => {
 const asArray = (rig: readonly Bone[], transforms: ReadonlyMap<string, { r: unknown; t: unknown }>): unknown[] =>
   rig.map((bone) => transforms.get(bone.id));
 
-describe('boneTransformsInto (mobgen/CHALLENGES.md §1: the allocation-free posing path)', () => {
+describe('boneTransformsInto (the allocation-free posing path)', () => {
   it('matches boneTransforms exactly on a small hand-built rig', () => {
     const rig: readonly Bone[] = [
       { id: 'a', parent: null, head: [0, 0, 0], tail: [0, 1, 0] },
