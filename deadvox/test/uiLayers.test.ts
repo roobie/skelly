@@ -15,6 +15,16 @@ const layers = [...root.matchAll(/(--ui-layer-[\w-]+)\s*:\s*(\d+)\s*;/g)].map(([
   value: Number(value),
 }));
 const layerPositions = new Map(layers.map(({ name }, index) => [name, index]));
+const layerValues = new Map(layers.map(({ name, value }) => [name, value]));
+const uiLayerValueOf = (name: string): number => {
+  const value = layerValues.get(`--ui-layer-${name}`);
+  if (value === undefined) {
+    throw new Error(`Missing UI layer --ui-layer-${name}`);
+  }
+  return value;
+};
+const inventoryPromptFeedbackLayer =
+  /body\.inventory-open\s+#prompt\s*\{[^}]*z-index:\s*var\(--ui-layer-inventory-feedback\);[^}]*\}/;
 const positionOf = (name: string): number => {
   const position = layerPositions.get(`--ui-layer-${name}`);
   if (position === undefined) {
@@ -59,7 +69,9 @@ describe('UI layer order', () => {
     }
   });
 
-  it('keeps the drag ghost above draggable panels and the game cursor above ordinary game layers', () => {
+  it('keeps inventory feedback above its panel, the drag ghost above draggable panels, and the game cursor above ordinary game layers', () => {
+    expect(uiLayerValueOf('inventory-feedback')).toBeGreaterThan(uiLayerValueOf('inventory'));
+    expect(style).toMatch(inventoryPromptFeedbackLayer);
     expect(positionOf('drag-ghost')).toBeGreaterThan(positionOf('inventory'));
     expect(positionOf('drag-ghost')).toBeGreaterThan(positionOf('crafting'));
 

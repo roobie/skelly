@@ -51,7 +51,7 @@ import {
   renderHudOptions,
   writeHudOptions,
 } from '../ui/hudOptions.ts';
-import { InventoryScreen } from '../ui/inventoryScreen.ts';
+import { InventoryScreen, type ScreenHooks } from '../ui/inventoryScreen.ts';
 import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
@@ -147,6 +147,7 @@ import { stopReadingOnClose as stopReadingPageOnClose } from './readingClose.ts'
 import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
+import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
 import { updateStartupHintLatch } from './startupHint.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
@@ -1094,7 +1095,7 @@ export const startPlay = (
     });
   };
 
-  const screen = new InventoryScreen(inventoryPanel, inventory, queue, {
+  const hooks: ScreenHooks = {
     feet,
     reach: session.reach,
     nearby: () => session.reach().piles,
@@ -1119,7 +1120,8 @@ export const startPlay = (
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
     attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
-  });
+  };
+  const screen = new InventoryScreen(inventoryPanel, inventory, queue, hooks);
 
   const craftPanel = mountCraftPanel($('crafting'), $('craft-status'), session, {
     notice: (text) => showRefusal(text, sim.time),
@@ -1649,32 +1651,24 @@ export const startPlay = (
     if (reason) {
       return reason;
     }
-    if (payload.kind === 'inventory.assign') {
-      const item = inventory.itemByUid(payload.itemUid);
-      if (item) {
-        showNotice(`${inventory.name(item)} on quickbar ${payload.slot + 1}`);
-      }
-    } else if (payload.kind === 'craft.start' || payload.kind === 'action.wait') {
+    if (payload.kind === 'craft.start' || payload.kind === 'action.wait') {
       closeInventoryScreen();
       syncMenuState();
     }
     return undefined;
   };
+  const dispatchScreenCommandWithCompletion = createScreenCommandDispatcher({
+    isReplaying: () => replayPlayer !== undefined,
+    inputRecorder: () => inputRecorder,
+    inputContext: () => inputContext(),
+    pendingPlayerTickActions,
+    apply: applyScreenCommand,
+    inventory,
+    notice: hooks.notice,
+    refusal: (reason) => showRefusal(reason, sim.time),
+  });
   function dispatchScreenCommand(payload: ReplayActionPayload): string | undefined {
-    if (replayPlayer) {
-      return undefined;
-    }
-    if (!inputRecorder) {
-      return applyScreenCommand(payload);
-    }
-    inputRecorder.queueAction(payload.kind, 'down', inputContext(), { payload });
-    pendingPlayerTickActions.enqueue(() => {
-      const reason = applyScreenCommand(payload);
-      if (reason) {
-        showRefusal(reason, sim.time);
-      }
-    });
-    return undefined;
+    return dispatchScreenCommandWithCompletion(payload);
   }
 
   const timeKeys = (code: string): boolean => {

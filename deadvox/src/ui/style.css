@@ -5,6 +5,7 @@
   --ui-layer-damage: 8;
   --ui-layer-debug-aim-readout: 9;
   --ui-layer-inventory: 20;
+  --ui-layer-inventory-feedback: 21;
   --ui-layer-crafting: 21;
   --ui-layer-drag-ghost: 22;
   --ui-layer-reading: 40;
@@ -1236,6 +1237,9 @@ body.inventory-open #hud,
 body.inventory-open #quickbar,
 body.inventory-open #crosshair {
   display: none;
+}
+body.inventory-open #prompt {
+  z-index: var(--ui-layer-inventory-feedback);
 }
 /* The rest screen (1.8) covers the play HUD too, and carries its own prompt. */
 body.resting #hud,

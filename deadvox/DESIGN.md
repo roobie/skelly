@@ -22,6 +22,7 @@ read_if:
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
   - you're changing zombie attack moves or the damage kinds they deal
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
+  - you change quickbar assignment feedback
   - you add or change a first-person handling animation (what it may read its timing from)
   - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
@@ -642,35 +643,24 @@ HTML over the game view, and keyboard-first:
   a cell shows less there too. See `src/core/inventoryGridName.ts`,
   `visibleGridName` and `GRID_CELL_REM`.
 - Filters and search, and item details on hover or focus.
-
-An occupied drop of a whole item swaps it with the destination only when both
-items fit in each other's exact place; partial-stack moves keep the ordinary
-refusal. This lets players rearrange without first freeing a slot, while the
-refusal prevents either item from being displaced into invalid space. The swap
-uses the replayable queued inventory move; see `src/core/inventory.ts`,
-`Inventory.plan` and `Inventory.move`, `src/core/handling.ts`, `HandlingQueue`,
-and `src/game/replayCommands.ts`, `applyReplayActionPayload`.
-- A **quickbar** of shortcuts to items you carry. BR (2026-10-05, 00:02):
-  "one thing that feels not quite right to me is that pressing the quickbar
-  number activates the item […] what if the number itself only wields or
-  unwields it, but T+number activates it?" BR settled at 00:08: "1. hold-number,
-  no doubt. This is the best UX / 2. agreed". The old number-use duplicated
-  left-click, `=` and R; a double press could rack a drawn gun, eject a live
-  shell, or eat food, and there was no way to put an item away. A tap now takes
-  an item into its capability-directed hand or puts it away; a hold uses an
-  available action from its current location. Weapons, keys and tool-only items
-  have no pocket use and give a short notice; firearm cycling stays on R. Weapons
-  and tools use the primary hand, lights the off hand, and two-handed items both
-  hands. When a held item
-  is put away, it returns to its captured source or the best pocket; this source
-  is saved because the tap's put-away behavior must survive a save/load. See
-  `src/game/quickbarInput.ts`, `QuickbarInput`, and `QUICKBAR_HOLD_ESTIMATE_MS`
-  for the presentation-only gesture estimate; `src/game/quickbarActions.ts`,
-  `QuickbarActions`, for tap/hold routing; `src/core/options.ts`, `quickbarTake`
-  and `quickbarPutAway`, for item-directed hand choice and return; and
-  `src/core/inventory.ts`, `Inventory.quickbarOrigin` and `Inventory.snapshotState`,
-  for the captured source saved in `InventoryState.quickbarOrigins`. Firearm cycling
-  remains on R only.
+- An occupied drop of a whole item swaps it with the destination only
+  when each item fits in the other's exact place. Partial-stack moves keep the
+  ordinary refusal, preventing either item from being displaced into invalid
+  space while letting players rearrange without first freeing a slot. The swap
+  is replayed as a queued inventory move. See `src/core/inventory.ts`,
+  `Inventory.plan` and `Inventory.move`, `src/core/handling.ts`, `HandlingQueue`,
+  and `src/game/replayCommands.ts`, `applyReplayActionPayload`.
+- The **quickbar** maps shortcuts to items you carry. Assigning an
+  item confirms its destination through the play notice above the inventory
+  overlay, where the quickbar itself is hidden; assigning to an occupied slot
+  replaces its binding.
+  A tap takes the item into its capability-directed hand or puts it away; a hold
+  uses an available action from its current location. Stowing returns a held item
+  to its captured source or the best pocket, preserving that choice across
+  save/load. Separating deliberate use from tapping prevents accidental item use.
+  See `src/game/quickbarInput.ts`, `QuickbarInput`, `src/game/quickbarActions.ts`,
+  `QuickbarActions`, `src/core/options.ts`, `quickbarTake` and `quickbarPutAway`,
+  and `src/game/screenCommandDispatcher.ts`, `createScreenCommandDispatcher`.
 
 ### Piles
 
