@@ -14,7 +14,7 @@ import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
-import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
+import { templateDoorIssues, templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
@@ -185,11 +185,9 @@ describe('content', () => {
         ['......', '..DD..', '..##..', '......'],
       ],
     };
-    const result = buildRegistry([...base, { source: 'door-fixture.json', data: { templates: [fixture] } }]);
+    const compiled = compileTemplate(baseRegistry, fixture);
 
-    expect(result.issues.filter(({ source }) => source === 'door-fixture.json').map(({ path }) => path)).toContain(
-      'templates[0].pieces[0]',
-    );
+    expect(templateDoorIssues(baseRegistry, compiled).map(([path]) => path)).toContain('.pieces[0]');
   });
 
   it('rejects a template marker whose zombie envelope intersects a solid', () => {
