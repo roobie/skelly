@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
-  - "you change skill content tuning or training rules"
+  - you change skill content tuning or training rules
   - you're authoring or changing base template geometry or palettes
   - you change content references, static reachability, or disassembly-output contracts
   - you change how content-loading tests build their registry fixtures
@@ -15,197 +15,60 @@ read_if:
   - you're authoring or changing visual furniture shapes
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
-  - you author or change Deadvox content sources or their build pipeline
-  - "you add code that reads a content row by a fixed id"
+  - you're authoring or changing Deadvox content sources or their build pipeline
+  - you add code that reads a content row by a fixed id
 ---
 
 # Content sections and recipes
 
 ## Authoring source
 
-Use the repository-wide authoring and conversion rule in `../docs/jsonnet.md`. The root `tools/jsonnet` pipeline compiles sources to the JSON consumed by `buildRegistry` in `src/core/content.ts`, so runtime validation and reference checks keep one boundary.
-
-The single section descriptor in `src/core/schema.ts` owns native Valibot schemas,
-labels and registration order. `CONTENT_SECTIONS`/`CONTENT_SECTION_KEYS` supply
-file validation, ordinary registry maps and merging, and CLI section counts.
-The content schema is derived from the descriptor; the checked metadata mapping
-also fails typecheck if someone independently adds a schema section without an
-entry. Blocks keep explicit numeric IDs and reserved AIR handling. Model/sound
-origin tables remain explicit. File order, overrides and diagnostic order remain
-unchanged. See `npm run validate` for the exhaustive current section/count list,
-not a second hand-maintained section table here.
+Use the repository-wide authoring and conversion rule in `../../docs/jsonnet.md`. The shared compiler produces the JSON consumed by `buildRegistry` in `src/core/content.ts`; validation and runtime references therefore meet at one boundary.
 
 ## Core-pack integrity
 
-When validating a core or modded pack, reject removal of rows that fixed-ID game
-readers depend on; otherwise missing tuning can surface later as startup or
-gameplay failures. Keep the check at the pack-validation boundary:
-`requiredContentIssues` in `src/core/content.ts` is applied by
-`src/cli/validate.ts`, `validate`, rather than making `buildRegistry` itself
-reject partial registries, because focused tests and tools also need to
-construct them.
+Reject removal of required rows when validating core or modded packs. Keeping this check at the pack-validation boundary lets focused tests and tools construct partial registries without accepting an incomplete playable pack. See `requiredContentIssues` in `src/core/content.ts` and `validate` in `src/cli/validate.ts`.
 
 ## Weathering profiles
 
-Weathering is a render-only content choice rather than saved world state. `WeatheringSchema` in `src/core/schema.ts` validates named profiles, and `referenceIssues` in `src/core/content.ts` checks a layout's optional profile reference; layouts without one use the shared default in `src/game/config.ts`, `configFromUrl`. This lets sites share the shader while mod content changes the age and material response that BR can compare in the debug scene.
+Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `WeatheringSchema` in `src/core/schema.ts` and `referenceIssues` in `src/core/content.ts`. `configFromUrl` in `src/game/config.ts` selects the site profile.
 
 ## Content test registries
 
-Fixture builders include only the content an assertion exercises. When a contract needs
-cross-file references or reachability, share one validated full-pack registry read-only;
-a test that changes content copies each registry section it changes. This keeps unrelated
-validation work from dominating tests while preventing one assertion's changes from
-leaking into another. See `test/content.test.ts`, `templateBase`;
-`test/audioGunshot.test.ts`, `baseRegistry`; `test/disassembly.test.ts`, `fixtureBuild`;
-and `test/firearmSave.test.ts`, `fixtureRegistry`.
+Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`.
 
-## Exterior shell continuity
+## Authored structures and sites
 
-An authored floor course cut into an exterior wall reads as an unfinished recess. Keep the shell visually continuous while doors and solid window frames remain authored openings. See `src/core/content.ts`, `floorCourseWallGap`.
+Keep exterior shells visually continuous around authored openings; doors and solid window frames remain deliberate gaps. Doors need clear space on both sides so a player can pass through. See `floorCourseWallGap` and `checkTemplateSpace` in `src/core/content.ts`, and `templateDoorIssues` in `src/core/templateSpatial.ts`.
 
-A door opens onto clear space on both sides, so players can walk through it. `src/core/content.ts`, `checkTemplateSpace`, uses `src/core/templateSpatial.ts`, `templateDoorIssues`, to reject shapeless doors that face only solid in-template cells.
+Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `siteGeneration` in `src/core/schema.ts`, `site-generation.json`, and `AuthoredSite` in `src/core/authoredSite.ts`.
 
-## Site-generation tuning
+Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
-`siteGeneration` definitions in `src/core/schema.ts` keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into `layouts-playtest.json`. `src/content/base/site-generation.json` supplies the authored-site profile consumed by `src/core/authoredSite.ts`, `AuthoredSite`; tune that profile to balance natural variation against playable structures and routes.
+Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, “Spawning”; see `PaletteThingSchema` in `src/core/schema.ts` and `SPAWN_TIMES` in `src/core/clock.ts`.
 
-## Recipe format (Slice 2.2)
+## Recipes
 
-`recipes` is a list of definitions: `id`, `result: { item, count }`, positive
-`time` in **game minutes**, `skills` and `qualities` maps, `components` as groups
-of `{ item, count }` alternatives, and optional `workstation` (an id or null).
-Counts are positive whole items; each component group has at least one alternative.
-Skill requirements are whole levels bounded by `SKILL_LEVEL_MIN` and
-`SKILL_LEVEL_MAX` from `src/core/character.ts`; `src/core/schema.ts`, `SkillLevel`,
-validates recipe requirements. Quality requirements are levels 1–5, matching
-unchanged item `ToolSchema` levels. A recipe may have at most
-**1,024 combinations**, inclusive: the product of its group lengths. Validation
-uses exact integer multiplication and reports the count when refusing a file.
+Recipe data names the result, inputs, skill and quality requirements, and optional workstation; `RecipeSchema` in `src/core/schema.ts` owns its shape and bounds. Keep alternative inputs bounded so validation cannot expand without limit.
 
-- Skill definitions own effect tuning and training activities. An activity grants either fixed practice or practice per simulation second; a tiered activity stops at its declared tier and discards excess, while an untiered activity trains to ordinary level 10. Inventory Management uses untiered fixed practice after completed ordinary transfers, box unpacking and furniture searches; refused, cancelled or failed actions award none. The same handling effect scales those actions; at level 0 its factor is 1, so each takes its base time. `src/core/inventory.ts`, `Inventory.scaleHandlingTime`, supplies the shared factor. The starting practice amount is first-look tuning, not an approved value. Character progression is saved as defined in 2.5.
-- Quality IDs are keys declared by loaded items' `tool.qualities` (including
-  mod keys) or furniture `workstation.qualities`, not a new top-level section.
-  A missing declaration is an error. Whether a reachable item or placed
-  workstation supplies the quality is the separate 2.3 acceptance check.
-- Furniture workstation metadata owns its station ID, qualities, and work-time
-  bonus. Plain furniture IDs are not workstation IDs. `reach()` in
-  `src/core/reach.ts` exposes nearby stations, and `planCraft()` in
-  `src/core/crafting.ts` uses their qualities and bonus for a named station.
-- Result, every alternative item, skill, quality and workstation references are
-  checked after ordered merging. Broken files are removed whole, including their
-  skills/recipes/items, and references are checked again as before.
+Skill definitions own their effects and training activities. Quality requirements refer to qualities declared by loaded items or workstations, rather than a separate top-level content section. A reachable provider is a separate reachability requirement. See `SkillSchema`, `src/core/character.ts`, and `src/core/reach.ts`.
 
-Procedural surface pattern IDs are validated with `BLOCK_PATTERNS` in
-`src/core/schema.ts`; the shader implementation lives in
-`src/render/surfacePatterns.ts`. Woodland camouflage's palette and washout
-are block fields in `src/content/base/blocks.json`, alongside the pattern assignment
-to `camo_woodland`. Keeping blotches anchored in world coordinates avoids texture
-assets and repeated seams; the tunable palette and washout live on the block.
-All camo blocks share one palette and washout; distinct looks need per-block shader lookup.
+Validate recipe and component references against the effective ordered pack. Disassembly yields and salvage are authored for the item rather than inferred by reversing every recipe; see `planDisassembly` in `src/core/disassembly.ts` and `docs/crafting.md`.
 
-Template spawn palette entries can specify `window: {from, to?}`.
-`src/core/schema.ts`, `PaletteThingSchema`, validates the field; named game-clock
-boundaries live in `src/core/clock.ts`, `SPAWN_TIMES`. See `DESIGN.md`,
-"Spawning", for the rule and its reason.
+The initial torch, candle, and repair-kit recipes consume whole solid items and do not consume their containers. A recipe using part of a liquid requires approval of the storage-to-volume mapping, saved partial use, and container-retention rules first. Old saves are refused rather than migrated in pre-alpha; see `SAVE_SCHEMA_VERSION` in `src/core/saveFormat.ts`.
 
-The initial torch, candle and repair-kit recipes consume whole solid items only.
-There are **no millilitre components, partial liquid use, pouring/mixing, new item
-storage or save format**. No container is consumed by these recipes. Before any
-later recipe uses part of a liquid, its stored quantity-to-ml mapping, saved
-partial use and container retention must be approved. Torch/candle result
-metadata has no light or burning component yet; those mechanics belong to 2.9.
-Slice 2.2 introduced recipes as data only. Slice 2.5 adds crafting, progression,
-and book knowledge; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, and the simulation
-fingerprint require old saves to be refused rather than migrated during pre-alpha.
+## Static reachability
 
-## Static reachability (Slice 2.3)
+Content acceptance checks that authored world sources can provide declared item types through loot, crafting, disassembly, packages, teaching books, and fixed loot. It also checks required qualities and training sources. This catches content that validates structurally but cannot be reached in play; `npm run validate` reports the result without maintaining a second content list here. Type-source reachability does not prove that a particular authored container can be reached and looted. Fixed-loot tests use the same standing traversal as template validation; see `templateReachableStandingPositions` in `src/core/templateSpatial.ts` and `test/authoredFixedLoot.test.ts`.
 
-`npm run validate` checks the effective merged pack using `HAMLET_TEMPLATES`
-and building templates in unmarked authored layouts. It compiles their placed
-furniture rather than treating every palette declaration or template as placed.
-Placement loot overrides replace furniture loot. Nested tables contribute only
-with positive possible rolls/item counts (weights are already strictly positive
-by schema). Zombie loot comes from positive-chance markers in the hamlet template
-set that can fit the population cap, accounting for shuffled north templates,
-and roadside wanderers only when a slot can remain.
+Reachability is a type-source contract, not a quantity, seed, or whole-game solver. A recipe cycle without a found source cannot make itself reachable. Disassembly reachability assumes the required skill is attainable, while recipe requirements must have a reachable practice source; workstation qualities must be placed and reachable. Showcase and demo layouts are fixtures, not sources for playable-world reachability. Preserve these distinctions when changing the checker. See `checkReachability` and its source-closure helpers in `src/core/reachability.ts`, and `SiteLayoutSchema.demo` in `src/core/schema.ts`.
 
-For #311, a globally reachable item type does not prove that its authored
-container can be looted. `test/authoredFixedLoot.test.ts` uses
-`templateReachableStandingPositions` with `templateSpatialIssues` to check the
-playtest's containers against the same standing traversal as template validation,
-not a second test-owned walker.
-
-For 2.10, store and garage stock stays in template palette loot overrides rather
-than position-specific runtime code. `worldSources()` in
-`src/core/reachability.ts` follows compiled pieces from `HAMLET_TEMPLATES` in
-`src/core/hamlet.ts`, so moving furniture keeps its loot source with the placed
-lot.
-
-For #346, `SiteLayoutSchema.demo` marks fixture and showcase layouts that are
-not sources in the starting-world reachability report. `worldSources()` roots
-loot from hamlet templates and unmarked authored layouts; for authored sites it
-includes both placed building containers and fixed loot. This leaves #181's
-military camp eligible to ground d114's reachability requirement without letting
-first-look fixtures add their stock to the content world.
-
-For d65's `hardware_store` and `garage`, `window_frame` remains solid; the
-authored opening around each frame supplies the sightline without adding a
-translucent-block rule. See `src/content/base/templates.json`, `hardware_store`
-and `garage`.
-
-The least component fixed point starts at found types. A result enters only when
-at least one alternative per component group is reachable; unseeded recipe cycles
-add nothing. Content acceptance reports **every declared alternative** that is
-neither found nor craftable. It is a type closure, not a quantity/consumption,
-particular-seed or whole-game solver. For #346, `addUnpackedContents` in
-`src/core/reachability.ts` also makes reachable package contents available,
-including packages nested inside other packages. The closure extends through
-actual disassembly and salvage outputs via `addDisassemblyOutputs` in
-`src/core/reachability.ts`; yield counts come from `disassemblyOutputs` in
-`src/core/disassembly.ts`, so zero-count yields add no reachable type.
-Self-yields are refused to prevent no-op take-apart; see
-`src/core/content.ts`, `checkDisassembly`.
-
-Disassembly closure assumes top skill is reachable: nothing checks whether a
-disassembly skill has a practice source. The skill-source check covers recipe
-requirements only; see `src/core/reachability.ts`, `addDisassemblyOutputs` and
-`skillIssues`.
-
-Tools are a separate hard check: a second loot-seeded fixed point requires both
-components and sufficient tool-quality levels before adding a result. A recipe
-cannot bootstrap its own quality, directly or through another tool-dependent
-recipe. Independently found or grounded crafted providers are valid.
-
-Knowledge is a hard source check: the explicit starting recipes and recipes
-listed by reachable teaching books are the only knowledge sources. An unknown
-recipe fails at `.knowledge`, and its result cannot ground another recipe's
-components or tool quality. `src/core/reachability.ts`, `checkReachability`,
-closes reachable practice sources before accepting positive skill requirements
-and hard-checks workstation placement and quality. A recipe that cannot be
-learned and completed from reachable sources cannot bootstrap its own skill.
-`src/core/schema.ts`, `BookSchema`, owns book teaching data; the `paperback` has
-no book component and remains inert.
-
-`CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts` keeps runtime escrow and
-the project's debug/case/body-part policy out of acquired-content totals.
-`npm run validate` reports the effective component and tool closures, content
-count, and any unreachable content; do not copy its counts or content lists into
-this document. Content growth beyond the crafting/books milestone remains with
-Slice 2.11. Reachability issues use the winning recipe's merge origin, preserving
-source file and index through ordered overrides and removal.
-
-`src/core/character.ts`, `Character`, owns live practice and knowledge;
-`src/core/reachability.ts`, `checkReachability`, independently proves that their
-sources are available from placed loot. The component/tool closures include
-calculated disassembly yields at top skill; the separate recipe skill-source
-check must prove that reachable practice sources can raise a recipe's required skill. Reachability
-stores no closure or runtime state; progression, crafting and disassembly remain
-separate owners.
+Debug fixtures, runtime escrow, spent cases, and body-part policy stay out of acquired-content totals. Keep their exclusions with `CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts`. Reachability stores no runtime state; progression, crafting, and disassembly remain separate owners. Winning-override diagnostics retain source-file provenance so a broken effective definition can be traced to its authoring source.
 
 ## Furniture visual shapes
 
-A furniture shape refines what is drawn without changing the entity's occupied cells. Collision, rest, search and line of sight continue to use those cells, keeping visual detail from changing gameplay. Author furniture definitions in `src/content/base/furniture.json`; `src/core/schema.ts`, `FurnitureSchema`, validates the shape bounds, and `src/render/furniture.ts`, `FurnitureMeshes`, renders the shape with one draw object per entity.
+A furniture shape refines its drawn form without changing occupied cells. Collision, rest, search, and line of sight keep using those cells, so visual detail cannot change gameplay. Author furniture definitions in `src/content/base/furniture.jsonnet`; see `FurnitureSchema` in `src/core/schema.ts` and `FurnitureMeshes` in `src/render/furniture.ts`.
 
 ## Furniture action noise
 
-Give a furniture action an explicit noise only when it should expose the player; ordinary doors and containers stay quiet. The sound owns its hearing radius, and validation rejects a selected event that cannot alert. See `src/core/schema.ts`, `FurnitureSchema`; `src/core/content.ts`, `checkDoorOpenNoise` and `checkSearchNoise`; `src/game/doorAction.ts`, `registerDoorAction`; and `src/game/session.ts`, `search`.
+Give a furniture action explicit noise only when it should expose the player; ordinary doors and containers stay quiet. Keep the sound's hearing radius with the event, and reject a selected event that cannot alert. See `FurnitureSchema` and the noise checks in `src/core/content.ts`. Door-action registration lives in `src/game/doorAction.ts`; rummage handling lives in `src/game/session.ts`.

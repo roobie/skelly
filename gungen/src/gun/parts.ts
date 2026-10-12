@@ -40,6 +40,7 @@ import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
+import type { MuzzleBore } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { gunPort } from './portData.ts';
 import {
@@ -2645,8 +2646,17 @@ const akMuzzleDevice: PartFamily = {
       family: 'ak-muzzle-device',
       solids: ak74 ? ak74Brake() : akSlantBrake(),
       ports: [
-        { id: 'base', mount: 'muzzle', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
-        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [frontX, 0, 0], normal: X, up: Y },
+        {
+          id: 'base',
+          mount: 'muzzle',
+          standard: 'rifled',
+          gender: 'male',
+          pos: [0, 0, 0],
+          normal: NEG_X,
+          up: Y,
+          required: true,
+        },
+        { id: 'muzzle', mount: 'muzzle', standard: 'rifled', gender: 'female', pos: [frontX, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
@@ -2711,6 +2721,8 @@ const barrel: PartFamily = {
           ]
         : [];
     const gasPortX = params.section === 'ak' ? akGasStationX(lengthClass) : gasStationX(lengthClass);
+    // Only the pump section is smoothbore; #649's automatic-shotgun section must not inherit the rifled default.
+    const muzzleBore: MuzzleBore = params.section === 'pump' ? 'smoothbore' : 'rifled';
     return {
       family: 'barrel',
       solids: [...extension, tube],
@@ -2773,7 +2785,7 @@ const barrel: PartFamily = {
           normal: Y,
           up: X,
         },
-        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
+        { id: 'muzzle', mount: 'muzzle', standard: muzzleBore, gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5], 'muzzle')],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],

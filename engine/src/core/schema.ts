@@ -25,6 +25,11 @@ export interface PortDef {
   readonly gender: Gender;
   /** Size class. When both sides of a connection have one, they must match. */
   readonly size?: string;
+  /**
+   * What the interface is built for within its mount type, such as a thread cut. Both sides of a connection declare
+   * the same standard or neither does, so fit is a property of both parts rather than of whichever side declares it.
+   */
+  readonly standard?: string;
   readonly pos: Vec3;
   readonly normal: Vec3;
   readonly up: Vec3;

@@ -1,9 +1,10 @@
 ---
 read_if:
-  - you change Gungen's modeling boundary, firearm scale or feasibility goal
+  - you change Gungen's modeling boundary, firearm geometry or feasibility goal
   - you change cartridge-driven frame selection or design authoring
   - you use or update the golden AKM reference photo or its overlays
-  - you change attachment compatibility or the Gungen-to-Deadvox export contract
+  - you change attachment compatibility, sights or the Gungen-to-Deadvox export contract
+  - you change a gun Deadvox ships, or anything its export reads
   - you change Gungen's test or cross-project integration policy
 ---
 
@@ -40,6 +41,8 @@ Seed sweeps exercise generated assemblies across templates and choices that focu
 ## Attachments and export
 
 Attachments are separate geometry and identity so a fitted choice can be replaced without changing the host firearm's appearance or geometry. Compatibility is certified by the firearm domain and fails closed when a pair is absent; see `docs/attachments.md` and `src/gun/attachmentCompatibility.ts#attachmentCompatibilityPairs`.
+
+A Gungen change to a gun Deadvox ships refreshes Deadvox's copy, its GLB and model entry, in the same PR: a stale copy still validates and loads, so the two drift apart silently. Each exported design records the inputs its export needs, such as its `calibre`, so `../test/gungen-deadvox-contract.test.mjs` can re-export every gun the Deadvox asset manifest credits to a Gungen design and fail on any difference in Gungen's export. Follow the shared authoring boundary in `../docs/jsonnet.md`, "Source boundaries".
 
 The Gungen adapter exports resolved geometry and firearm metadata while the shared engine remains domain-neutral. Deadvox owns the playable handling contract; see `src/gun/exportGlb.ts#exportGunGlb` and `../deadvox/docs/decisions/0006-firearm-handling.md`. Attachment mass is a geometry/material estimate, not inventory weight or a product specification; see `src/gun/attachmentMass.ts#attachmentMassKg` and `docs/deferred-assertions.md`.
 

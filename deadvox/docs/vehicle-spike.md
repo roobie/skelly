@@ -1,226 +1,64 @@
 ---
 read_if:
-  - you change the vehicle spike page, its part model or its builds
-  - you start a vehicle content schema, a vehicle editor or in-game vehicles
-  - you add part condition, functional networks or removed parts as items to vehicles
-  - you derive a vehicle stat from its parts, such as noise or mass
-  - you change how paint wear is placed or drawn
-  - you model a vehicle that isn't a car, such as a motorbike
-  - you change what a vehicle owns, or how part types are named, coloured and shared
-  - you pick up a deferred vehicle item or one of BR's open vehicle decisions
+  - you change the vehicle part model, build page or vehicle exports
+  - you start vehicle content, in-game vehicles or saved vehicle state
+  - you derive vehicle behavior from its parts
+  - you pick up an open vehicle design question
 ---
 
-# Vehicle spike: vehicles built from parts (r43)
+# Vehicle spike: vehicles built from parts
 
-A debug page for judging how vehicles look and come apart before they enter game content.
-It is not in Deadvox's default entry point; the workshop uses its Range Rover blueprint as
-static display scenery and runs no vehicle simulation. d124-5 builds the workshop voxel grid
-on first use of `src/render/workshopVehicle.ts`, `workshopCar`, so runs that never draw the
-workshop do not pay for its display mesh. Open `/vehicle-spike.html` on the dev server. URL
-parameters pick the build and the camera preset; see `src/debug/vehicleSpike.ts`, `BUILDS` and
-`VIEWS`. That file holds the scene
-and the page state, `src/debug/vehicleSpikePanel.ts` the lit-html control panel (ADR 0001),
-and `src/vehicles/` the model. The goal these builds test is in
-[DESIGN.md](../DESIGN.md#vehicles), "Vehicles".
+The spike is a debug page for judging vehicle appearance and disassembly before vehicles enter game content. The workshop's Range Rover is static scenery; it does not imply vehicle simulation. The goal is in [DESIGN.md](../DESIGN.md#vehicles).
 
 ## Decided
 
-- **4×4:** BR approved r43-5's 4×4.
-- **Noise:** BR ruled that vehicle noise is mainly an engine property; the chassis
-  and hull can contribute too.
-- **Pickup and motorbike:** BR chose to rebuild both on the part model rather
-  than drop them from the spike.
-- **Sand paint:** BR approved the sand finish and asked for wear and scratches if
-  they are not too difficult to add.
-- **Model changes:** BR chose the three recommended changes in r43:
-  vehicle-owned fittings, one id per part type across one catalogue, and mirrored
-  fittings stored at their own positions.
+- Keep the 4×4, pickup and motorbike in the part model.
+- Vehicle noise comes mainly from the engine; chassis and hull may contribute.
+- Use vehicle-owned fittings, one catalogue id per part type and positions stored on mirrored fittings.
+- Keep sand paint with seeded wear and scratches where rendering cost allows.
 
 ## Catalogue, blueprints and vehicles
 
-See `src/vehicles/model.ts`, `PartType`, `Blueprint`, `VehicleInstance` and
-`Fitting`.
+A blueprint is content; a vehicle instance owns its fitting state. This lets builds omit or change fittings without creating a second model, and lets two vehicles of one blueprint evolve independently. Part types have one catalogue identity so a removed part can remain the same type across vehicles. See `src/vehicles/model.ts`, `PartType`, `Blueprint`, `VehicleInstance` and `Fitting`.
 
-- **A vehicle owns its fittings,** made from a blueprint and changed one fitting at a time:
-  `newInstance`, `removeFitting`, `addFitting`. A state that is only a subset of a
-  designer's fitting list can do no more than customize that list. It can't hold a part
-  the designer didn't list, a part moved, or a part from another vehicle, and the goal is
-  a builder ([DESIGN.md](../DESIGN.md#vehicles), point 1). Two vehicles of one blueprint
-  then change independently, and saves, items and damage have one place to build on.
-- **A blueprint is content, a vehicle is state:** `Blueprint`. A build is a vehicle made
-  without some of its blueprint's fittings, not a second model, so what holds for one build
-  holds for the others: `rangeRover.ts`, `STRIPPED_REMOVED`. A part outside the factory
-  build is fitted, not switched on: `hatchback.ts`, `HATCHBACK_ADD_ONS`.
-- **One catalogue, one id per part type,** so a part taken off as an item names the same
-  type whatever vehicle it came from: `catalogue.ts`, `CATALOGUE`; `model.ts`,
-  `catalogueOf`. A type drawn to fit one model's body takes that model's name
-  (`authoring.ts`, `metaFor`). The ids stay plain, because "Content and modding" in
-  DESIGN.md namespaces ids by pack only where they would clash, and these are all one
-  pack's.
-- **Colours that aren't paint are one table, and paint belongs to the vehicle,** so a part
-  looks the same on any vehicle and a loose part draws from its type and a paint, with no
-  vehicle (the part keeping its own paint is deferred below, under the `vehiclePart` item):
-  `materials.ts`, `MATERIALS`; `model.ts`, `Paint`; `vehicleSpike.ts`, `looseObject`.
-- **A mirrored fitting stores its own position, and `mirror` only reflects its shape,** so
-  a far-side part is authored once, its position needs no vehicle width, and a rotation can
-  join `mirror` later without changing what `at` means: `authoring.ts`, `pairAcross`.
-- **Part types stay content-shaped,** so a later content schema can adopt them without a
-  rewrite: `voxels.ts`, `ShapeOp`.
-- **Vehicles share a part type where one serves both at this grain,** so a fix lands
-  everywhere it should: the 205R16 wheel both 4WDs ran on, and one crossmember, battery,
-  steering wheel and lever for both builds. The pickup's frame rails are spaced to take the
-  4×4's crossmember. See the pickup's imports from `rangeRover.ts`.
+A part cannot be removed while another fitting depends on it, or installed before its supports exist. Support is the structural boundary that prevents floating assemblies. Keep part definitions content-shaped so a future schema can adopt them without rewriting the model. Shared part types are appropriate where the part serves the same role across builds.
 
-## Support: nothing floats
-
-`Fitting.supportedBy` names every fitting a part rests on. A part can't come off while
-something rests on it, and can't go on before all its supports are on
-(`removeFitting`, `addFitting`). The page refuses such a toggle and says why. r43-3
-placed parts freely, with no relation between a roof panel and the posts under it, and
-its roof panels read as floating slabs.
-
-Only frame parts rest on nothing, so every other part hangs from the structure through
-its supports. On the motorbike the frame is that root, and the fork and swingarm are the
-only ways to the wheels, so the rule still refuses what a mechanic couldn't do.
-
-`test/vehicleParts.test.ts` checks every blueprint's builds against these rules and
-against physical sense (contact, overlap, ground). Those are properties, so the test needs
-no update when a part is reshaped or a blueprint is added to its list.
+Paint is vehicle-owned; non-paint material colors belong to the part type. Wear is per fitting and seeded by vehicle/fitting identity so it remains stable across loads without altering shape. Keep detail bounded by mesh cost. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`.
 
 ## Noise comes from the build
 
-The noise decision in [Decided](#decided) sets the source. See `model.ts`,
-`PartNoise` and `noiseRadius`; the values sit on the part types.
-
-- **The unit is Deadvox's hearing radius in metres:** a source is like a sound's
-  `noise.radiusMetres` (`src/content/base/sounds.json`), and a damper scales it like a
-  zombie sense's `hearingRangeScale` (`src/content/base/senses.json`). A vehicle's figure
-  can then feed the noise system unchanged once vehicles are in the game. The spike only
-  shows it.
-- **The engine is the source, and the hull and silencer damp it.** Sources add in
-  quadrature, because sound intensity falls with the square of distance, and each fitted
-  damper scales the total. Taking a damper off therefore never makes a vehicle quieter, and
-  a motorbike, with no bonnet or floor around its engine, keeps more of its engine's
-  noise than a car.
-
-## Paint wear
-
-The sand-paint decision in [Decided](#decided) sets the finish and its wear
-request. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`, and
-`vehicleSpike.ts`, `fittingMeshes`.
-
-- **One amount per fitting,** spread around the vehicle's level by a hash of the vehicle
-  and the fitting (`wearKey`). Wear is then per-fitting state, the seam the goal's
-  condition can widen, and two vehicles of one blueprint don't wear alike.
-- **It goes where vehicles wear, seeded by the vehicle and the fitting,** so a vehicle
-  wears the same way on every load: `wornMaterial`.
-- **Wear recolours paint and seam voxels into a few shades derived from the paint, plus
-  rust** (`wearPalette`), and never changes a shape. Few shades keep most of the greedy mesher's
-  merges, and only a worn fitting gets its own geometry; an unworn one still shares its
-  type's. A texture would need UVs and a material per fitting, which the vertex-coloured
-  mesh avoids. Measured on the 4×4 in r43-6: draw calls stayed
-  the same, triangles grew by about half at the page's default wear and nearly doubled at
-  full wear, and assembly took about a fifth longer.
-- **At 20 m it reads as grime around the arches;** scratches and rust show up close.
-  The spike limits detail to what its rendering cost allows.
-
-## Grain
-
-Two grids, see `model.ts`, `PART_CELL` and `VOXELS_PER_CELL`:
-
-- **Part cells** keep the darker_yet fitting spike's 4×4 addressing per world block; the
-  schematic draws on this grid.
-- **Voxels** subdivide each cell, so pillars, the gap around a wheel inside its arch,
-  and round lamps can be thinner than a cell. r43-3 chose this grain over Mobgen's
-  coarser voxel so that seats, the steering wheel and the dashboard read inside the
-  shell. r43-5 kept it and built the 4×4's thinnest parts a few voxels thick.
-
-Cost is per part type, not per voxel: each type is meshed once per side and paint, and
-every unworn fitting of it reuses that geometry (`voxels.ts`, `meshGrid`;
-`vehicleSpike.ts`, `partMeshes`). In r43-2, drawing one voxel at a time made the software-rendered preview
-unresponsive at a finer grain.
+Vehicle noise is expressed as hearing radius so it can join Deadvox sound admission without a second unit system. The engine is the source; hull and silencer damp it. Because intensity falls with the square of distance, source radii add in quadrature; each fitted damper scales the total, so removing one never makes the vehicle quieter. See `src/content/base/senses.jsonnet`, `hearingRangeScale`, and `src/vehicles/model.ts`, `PartNoise` and `noiseRadius`.
 
 ## Proportions
 
-Each vehicle follows published dimensions, rounded to whole voxels in the shapes and
-fittings of its file in `src/vehicles/`:
+The 4×4 follows a Range Rover Classic four-door; the pickup follows a Toyota Hilux N80 regular-cab long-bed 4WD; the motorbike follows an early Honda CG125. The hatchback remains a comparison port so other vehicle profiles can be judged against a common reference. The chosen references keep prototypes recognizable without claiming manufacturer-exact geometry. Measurements live in `src/vehicles/rangeRover.ts`, `src/vehicles/pickup.ts` and `src/vehicles/motorbike.ts`.
 
-- **4×4:** the Range Rover Classic four-door: length, width, height, wheelbase, track,
-  wheel diameter, overhangs, and the waist and glass lines (sources:
-  <https://en.wikipedia.org/wiki/Range_Rover_Classic> and the 1981 four-door blueprint at
-  <https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints>).
-- **Pickup:** the Toyota Hilux N80 regular cab, long bed, 4WD (sources:
-  <https://www.pakwheels.com/new-cars/toyota/hilux/1988-1997>,
-  <https://www.carsales.com.au/research/toyota/hilux/1989/no-badge>,
-  <https://itstillruns.com/1989-toyota-4x4-truck-specs-7657039.html> and the N80
-  elevations at <https://getoutlines.com/requests/3395/1992-toyota-hilux-v-4wd-drawings>).
-  No source gives the regular cab's split between cab and bed. It is derived from the
-  double cab drawing's front clip and a period two-door's door, so the bed length is an
-  estimate.
-- **Motorbike:** the early Honda CG125 (sources:
-  <https://en.wikipedia.org/wiki/Honda_CG125>,
-  <https://motodealers.co.uk/bikes/atlas-honda/cg125/2012/specs> and the scaled side view at
-  <https://the-blueprints.com/vectordrawings/show/25351/honda_cg_125_ml_today>).
-- **Hatchback:** round 3's model ported to the part model as it was, kept as a comparison.
+The pickup's regular-cab split is not published: its front clip follows the double-cab elevation and its door follows a period two-door, leaving bed length an estimate. The bike has no cabin, so its seat carries the rider viewpoint. References: [Range Rover Classic](https://en.wikipedia.org/wiki/Range_Rover_Classic), [1981 four-door elevation](https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints), [Hilux model range](https://www.pakwheels.com/new-cars/toyota/hilux/1988-1997), [1989 Hilux](https://www.carsales.com.au/research/toyota/hilux/1989/no-badge), [Hilux 4×4 specifications](https://itstillruns.com/1989-toyota-4x4-truck-specs-7657039.html), [N80 elevations](https://getoutlines.com/requests/3395/1992-toyota-hilux-v-4wd-drawings), [Honda CG125](https://en.wikipedia.org/wiki/Honda_CG125), [CG125 specifications](https://motodealers.co.uk/bikes/atlas-honda/cg125/2012/specs), and [scaled side view](https://the-blueprints.com/vectordrawings/show/25351/honda_cg_125_ml_today).
 
-## The motorbike: where the model stretched
+## Grain and shape
 
-The decision in [Decided](#decided) keeps the motorbike in the spike. Two wheels,
-no body shell and a frame that is the structure needed no model change: the wheels
-are fittings on the centre plane with no mirror, a layer holds whatever parts a
-vehicle has, and support works as described above.
-
-- **One change: a rider position.** `PartType.rider` marks where a rider's hips sit on a
-  part. The bike's seat carries it, and the page puts the bike's rider's-eye view there
-  (`vehicleSpike.ts`, `riderView`) in place of a look into a cabin.
-- **What the model can't express yet** (steering and drive are deferred below):
-  - a lean: fittings only move and mirror, so the bike stands on its centre stand rather
-    than leaning on a side stand;
-  - steering: `Fitting.motion` turns a part about a fixed axis of the vehicle, not the
-    fork's raked steering axis;
-  - drive: nothing says which wheel is driven.
+The part grid preserves fitting placement; subdivided voxels let the model express thin structure, wheel arches, seats and controls. Mesh cost is per part type, so fitting instances can share geometry. Keep the voxel engine project's control; a finer grain must not render one object per voxel. See `src/vehicles/model.ts`, `PART_CELL` and `VOXELS_PER_CELL`.
 
 ## Deferred, each with its trigger
 
-None of these is built, and each waits for the event that needs it:
+- Placement rules and quarter-turn orientations: when a player or editor can place a part. Supports remain stored choices; contact only proposes candidates.
+- `needs`/`provides` on part types: when a part can fit more than one host.
+- Motion axes, steering and driven-wheel identity: when steering or drive is implemented.
+- Part condition, attachment, joints and consequences for supported parts: when collision can damage parts or fitting takes tools and time.
+- Per-fitting paint and a removable-part item: when parts become inventory items.
+- Parked vehicle save representation: when vehicles enter saves.
+- Baked meshes and distance LOD: when several vehicles share an in-game view.
+- Content schema and pack validation: after the source of truth for shape authoring is chosen.
+- Cargo as stored items rather than fittings: when vehicle storage exists.
 
-- **Fitting rules in the model** (the overlap, contact and ground checks that
-  `test/vehicleParts.test.ts` makes), and **quarter-turn orientations** beside `mirror`:
-  when a player or an editor can place a part. Supports stay stored data: contact proposes
-  candidates, the fitter chooses, and `supportedBy` keeps the choice.
-- **`needs` and `provides` on part types:** when the first part can go on more than one
-  host, such as a bull bar, a roof rack or a plate.
-- **Motion and its axis on the part type, with `steerable` and `driven`:** in the round
-  that adds steering or drive.
-- **Condition, attachment and joints on the vehicle's fitting:** when collisions damage
-  parts, or when fitting a part takes tools and time.
-- **What happens to the parts resting on a support that damage removes:** when collisions
-  damage parts.
-- **Per-fitting paint, and the `vehiclePart` item** that a removed part becomes, carrying
-  its type and condition: when parts become items.
-- **Parked vehicles that stay blueprint references** until something changes them: when
-  vehicles enter the save.
-- **A baked mesh per parked vehicle, and a distance level of detail:** when several
-  vehicles share a view in the game.
-- **The content schema, pack loading and validation of the baked voxel grids:** after
-  BR chooses the source of truth below. The workshop's TypeScript blueprint reference is an
-  interim placement based on the spike. It does not establish the vehicle-content source of truth.
-- **Cargo as items in storage rather than fittings** (the 4×4's spare wheel is a fitting):
-  when storage is built.
-
-Derived stats take one route: mass, centre of mass and noise come from the fitted parts
-(`measure`, `noiseRadius`), and handling, power and fuel would too.
+Derived mass, center of mass, noise and later handling/power/fuel should follow fitted parts rather than duplicate vehicle totals.
 
 ## Open decisions for BR
 
-Questions the design review raised for BR to decide, by topic:
-
-1. **Reach of building:** how far "build things the designers didn't foresee" goes.
-2. **Welded structure:** whether a factory car's welded structure is one thing to the
-   player or separate parts.
-3. **Weathering vs condition:** whether paint wear and condition are two values.
-4. **One condition ladder:** whether items and fitted parts share one set of condition
-   words.
-5. **Handedness:** whether a near-side part fits the far side.
-6. **Source of truth for shapes:** where a part's voxel shape is authored for content.
-7. **Moving heavy parts:** how a part such as an engine moves once it is an item.
+1. How far designers should support building unforeseen vehicles.
+2. Whether welded structure is one player-facing part or many.
+3. Whether paint wear and condition are separate.
+4. Whether items and fitted parts share condition terms.
+5. Whether near-side parts can fit the far side.
+6. Where part voxel shapes are authored as content.
+7. How heavy parts move once removed.

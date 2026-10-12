@@ -1,339 +1,57 @@
 ---
-id: skelly::deadvox-controls
-description: Player input policy, BR's rulings, native browser boundaries and unresolved combat controls.
-tags: [deadvox, design, controls, input, ui]
-created: 2026-09-28
-status: active
 read_if:
-  - you plan or change player or debug input bindings
-  - you review BR's control rulings or unresolved input questions
-  - you change input ownership, binding preferences or their labels
-  - you add a pointer, click or wheel action
-  - you change how the drawn cursor drives menus under pointer lock
-  - you implement or inspect input recording and replay
-  - you change how a locked door advertises its crowbar fallback
-  - you change stance hints or first-person held poses
-  - you change how a long gun is slung or drawn from the shoulder
-  - you're changing bleeding treatment feedback
-  - you're changing the Backquote HUD toggle or its third-person gestures
+  - you change player or debug input bindings or their labels
+  - you change input ownership, browser-native behavior or pointer actions
+  - you change stances, firearm handling, throwing, treatment or long-action controls
+  - you change how the HUD toggle or quickbar gestures work
 ---
 
 # Controls and input ownership
 
-Read with [INTERFACE.md](INTERFACE.md), especially “Afford, don't instruct” and
-“Readying before acting”. Settled controls are recorded here as rationale; future
-controls remain proposals until their issue is implemented. Character-screen tabs
-and the Items tab's balanced, mouse-resizable split are described in [the inventory
-layout](docs/inventory-layout.md); dragging the divider preserves a usable width for
-both independently scrolling panes.
+Read with [INTERFACE.md](INTERFACE.md), especially “Text” and
+“Combat and feedback”. The binding registry is authoritative for gameplay chords and their displayed labels. Character-screen tabs and the Items layout are in [inventory-layout](docs/inventory-layout.md).
 
-## BR's rulings
+## Ownership
 
-- **Keyboard controls:** The binding catalogue drives the controls card and
-  settings, so rebinding updates the displayed key labels. The main-menu controls
-  list uses case-insensitive substring search over action descriptions and key
-  labels. Plain substring matching keeps results predictable: a partial action or
-  key name returns every matching row without ranking. Native text ownership keeps
-  search keystrokes from activating game actions. Ordinary runs hide debug-marked
-  bindings and bindings scoped only to debug contexts; shared rows show only their
-  ordinary contexts, and Settings conflict messages omit context names. Ordinary
-  Settings lets an ordinary binding take a debug-only key because ordinary players
-  cannot see or use debug controls, so those controls must not block ordinary keys;
-  collisions with other ordinary bindings are refused. A debug run that loads a
-  saved layout with such a collision reports it and sets one of the colliding saved bindings
-  aside for that run, so no two controls share a key; the saved layout is kept for
-  ordinary runs. Ordinary runs name no debug-only contexts because those contexts
-  are unavailable there; debug runs list them all. Debug actions use the held gate,
-  with noclip flight controls as the readily available exception. See `src/game/inputBindings.ts`,
-  `INPUT_BINDINGS`, `DEBUG_ONLY_CONTEXTS`, `KeyboardInput.install`,
-  `noclip.ascend` and `noclip.descend`, and `src/game/controls.ts`,
-  `controlsCardRows` and `filterControlsCardRows`; settings use
-  `src/ui/inputOptions.ts`, `mountInputOptions`.
-- **No Ctrl, Cmd/Meta or Alt as game modifiers:** The browser owns them (Ctrl/Cmd
-  shortcuts; Alt+Left/Right go back and forward; on Windows and Linux, Alt or
-  Alt+letter opens the menu bar). The registry refuses these modifiers; see
-  `src/game/inputBindings.ts`, `REFUSED_MODIFIERS` and `KeyboardInput.press`.
-  Outside that registry, Ctrl+click is a plain click, Ctrl+scroll is plain scroll,
-  and quick move stays T+click (below). Native text editing and browser shortcuts
-  stay native. A deliverable key does not prove immunity from desktop OS
-  interception. Chromium and Firefox checks do not cover Safari or macOS.
-  - **Where the wheel goes:** with the pointer locked in play it steps the
-    wielded item's action. In a menu it scrolls the pane under the cursor, even
-    at the pane's edge and with Ctrl held (`src/ui/menuPointer.ts`,
-    `mountMenuPointer`). Elsewhere the game leaves the wheel alone, so where the
-    pointer is free and no pane is under it, Ctrl+wheel is the browser's page
-    zoom.
-- **Quick actions (2026-10-04):** “like with F1 being the debug mod key ... we'd
-  use a non modifier key, like say 'T' as a general quick action mod key” and
-  “hold T+click on item does the quick action (auto move)”. The held
-  quick-action gate is rebindable. It saves clicks, not handling time, and
-  never invokes an item's use action. See
-  `src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`, and
-  `src/core/options.ts`, `quickMove`.
-- **Debug gate and review map (2026-10-05 19:52):** “debug modifier F2 to not
-  collide with a builtin hotkey”. Debug authoring actions use a held F2 gate. In a
-  debug game, F2+M opens the review map and Escape or F2+M closes it; F2+Numpad5
-  freezes the game. The gate is itself a binding, not a native OS modifier. A
-  consumed debug chord cannot also execute its ordinary gameplay command; enabling
-  the gate preserves a held pointer stance and its ADS toggle. Spawn confirmation
-  is a modal navigation exception: the menu itself remains debug-only, while Enter
-  acts normally once it is open. BR's ruling is quoted in
-  [TROUBLESHOOTING.md](TROUBLESHOOTING.md), “Debug parameters”. See
-  `src/game/inputBindings.ts`, `KeyboardInput.cancel`, and `src/game/play.ts`,
-  `toggleReviewMap`.
-- **Interaction and reserved lean inputs (2026-09-27):** F interacts; Q and E
-  remain reserved. Reserve their physical positions across contexts, including
-  debug, rather than inventing no-op lean commands.
-- **Loose-item pickup:** Players grab ground items from the normal game view by
-  tapping F to wear a back-wearable when the back slot is free, sling a
-  sling-fitted long gun when the shoulder is free, and otherwise pocket it;
-  holding F wields it. The pickup uses the inventory's ordinary handling
-  path, so wearing and pocketing retain their normal handling time. The reach
-  animation is the same for either destination. Doors and containers
-  keep their tap interaction. F uses one shared reach and target choice: exact
-  ties favor furniture, while tied ground items resolve by item UID. Scatter
-  items are targetable where they are drawn; `src/core/scatterPile.ts`,
-  `pileScatterPlacements`, is shared by picking and rendering. `src/game/play.ts`,
-  `interactionTargetAt` and `completeWorldInteraction`, route the gesture through
-  the existing inventory handling owner; `src/render/grabPose.ts`, `grabPose`,
-  supplies the visual-only reach.
-- **Slinging a long gun has no key of its own.** The inventory's wear-or-remove
-  key slings the selected long gun or takes it from the shoulder into the hands.
-  A quickbar tap draws a slung gun and puts it back on the shoulder. Wielding
-  something else moves a sling-fitted long gun to a free shoulder. A dedicated
-  key would only duplicate these routes. See `src/game/inputBindings.ts`,
-  `inventory.wear`, and `src/core/options.ts`, `quickbarPutAway` and `toHands`.
-- **Downed bodies:** F on a downed shambler follows the same tap and hold: a tap
-  finishes it off, and a hold dismembers it. Two ways to clear a body need no
-  second binding. A ray against the body's box picks it, in the same nearest-target
-  choice as ground items. See `src/core/interactionPick.ts`, `pickInteractionTarget`,
-  and `src/game/play.ts`, `interactionPayload`.
-- **Main menu and browser menu:** F9 opens or closes the main menu. On the death
-  screen, Escape toggles it so playtesters can reach the metrics and replay
-  exports. In play, Escape releases pointer lock; F10 belongs to the browser.
-  Escape is not rebindable.
-- **Reload, rack, remove (2026-10-07 11:20):** BR, on how R treats a rifle:
-  “No, it should reload with the mag that is fullest in inventory, no matter what
-  is loaded in gun”; on double-pressing R working the charging handle, “yes,
-  correct”; and on removing the magazine, “Tap-then-press-and-hold R means remove
-  mag”. Holding R swaps in the fullest carried magazine that fits, even one with
-  fewer rounds than the fitted one. A double press racks. A tap followed by a
-  press held past the hold threshold removes the fitted magazine to a pocket or
-  the ground. Only the second press's length tells rack from remove, so neither
-  acts until it is released or held: a quick tap-tap never removes, and a plain
-  hold never removes. The gestures share one atomic slot so rebinding cannot
-  split a coupled action. `ReloadInput` in `src/game/reloadInput.ts` owns
-  classification and `RELOAD_GESTURE_MS` its timing; ammunition work belongs to
-  its existing handling owner (`src/game/firearmHandling.ts`,
-  `FirearmMechanics.loadNext` and `FirearmMechanics.removeMagazine`). Inventory
-  rotation is a different visible context, not another reload gesture.
-  - **Hold racks a gun without a magazine (2026-10-07 13:21, d114-11):** BR, on
-    what tap-then-hold does on the pump: “d114-11: i think it makes sense for it
-    to rack, but keep racking as long as the R button is held - it then reflects
-    what removing the mag means for a firearm with it -> remove the magazine
-    capacity”. On a gun without a detachable magazine, a tap followed by a held
-    press racks, then racks again each time a rack finishes, until R comes up or
-    nothing is left in the chamber or the tube. Each rack ejects what is
-    chambered and feeds the next shell, so holding through unloads the gun; live
-    shells land in the pile of the block they fall on, as spent cases do.
-    Releasing R starts no further rack, and the one under way finishes. A gun
-    with a detachable magazine keeps tap-then-hold as removal. See
-    `ReloadBinding.stillLoaded` and `FirearmMechanics.stillLoaded`.
-  - **A single tap does nothing (2026-10-04):** “Single tap r does nothing”.
-- **No rest or sleep keys (2026-10-04):** “`rest` shouldn't have a dedicatec
-  keybind - instead, you interact with 'restable' items - e.g. beds, sofas,
-  chairs, etc” and “`L` remvoed - sleep is on sleepable objects, like bed”.
-  Neither has a registry entry. Eligible furniture starts these actions through
-  the world-interaction binding; see `src/game/play.ts`, `startPlay`.
-- Passing time can't be diegetic, so the character screen offers a Wait button.
-  It is a button, not a rest key, so the no-rest-key ruling stands. A movement
-  key ends the wait, and so does a hit or another emitted interruption, but a
-  shambler nearby never does (DESIGN.md, "Long actions"). Character-screen
-  actions reuse movement keys because movement is unused there. See
-  `src/game/inputBindings.ts`, `INVENTORY_TAB_BINDINGS` and `inventory.hands`.
-- While an alarm is carried, the Actions tab also sets the wake hour, stepped
-  with − and + through "when rested" and each hour. It is a setting, not a
-  sleep key, so the no-sleep-key ruling stands; a sleep begun on a bed runs to
-  it (DESIGN.md, "Long actions"). See `src/ui/inventoryScreen.ts`,
-  `stepWakeGameHour`.
-- **Wield, then activate (2026-10-04):** “that's not a thing you do in inventory
-  - you wield the box and activante it in oder to unpack”. A key acts on the
-  door from a hand; an ammunition box is wielded and activated to unpack. See
-  `src/game/primaryAction.ts`, `selectPrimaryAction`.
-- **Magazine stripping:** A left-click strips one round; holding continues after
-  each round's handling job completes. Releasing lets the in-progress round
-  finish but starts no next one; repeating stops when the magazine is empty or
-  the round cannot be stowed. Each round stays a separate job so its timing,
-  animation and sound follow simulation. See `src/game/magazineHandling.ts`,
-  `MagazineHandling.advanceHeldStrip`, and `src/render/magazineLoadPose.ts`,
-  `readMagazineLoadFrame`.
-- **One world-interaction route for prying:** `world.interact` remains the only
-  door action; on a locked door that supports prying it advertises the carried
-  tool behind the interaction-hints toggle. This avoids adding a modifier or a
-  second binding; the matching key stays on its existing activate action. See
-  `src/game/inputBindings.ts`, `world.interact`, and `src/game/play.ts`, `startPlay`.
-- **No inventory U action (2026-10-05 13:16):** “U shouldn't be a thing - where
-  does this false knowledge still stand?” Use items through their wielded or
-  quickbar action instead; `INPUT_BINDINGS` in `src/game/inputBindings.ts` has no
-  inventory-use row.
-- **Dominant and off roles (2026-10-04):** handedness is actor identity, not a
-  chord swap or physical slot migration. See `src/core/character.ts`,
-  `dominantSide` and `offSide`; `src/game/primaryAction.ts`,
-  `selectPrimaryAction`; and [character-handedness.md](docs/character-handedness.md).
-  Mouse-button codes share the binding registry: the held `stance.ready` and
-  pressed `aim.ads-toggle` actions can each use a pointer button or a key. The
-  wheel stays outside `BindingRegistry`, because a directional wheel event is not
-  a keyboard chord: `src/game/play.ts`, `cycleWieldedAction`, owns wielded-item
-  action selection, and `src/ui/menuPointer.ts`, `mountMenuPointer`, keeps menu
-  scrolling in its separate route.
-- **Quickbar (2026-10-05 14:43):** “okay, yes, quickbar-hold is the secondary allowed
-  pathway to activating / but e.g. racking a shell into a shotgun is _not_
-  covered by the quickbar-hold”. A tap takes an item into its capability-directed
-  hand or puts it away; a hold uses an available action. See
-  `src/game/quickbarInput.ts`, `QuickbarInput`, and
-  `src/game/quickbarActions.ts`, `QuickbarActions`.
-- **Wound treatment:** Wield a treatment item such as a rag and left-click to apply it, or hold its quickbar slot; the wheel steps the wielded action, which starts on the worst bleeding. Each application helps by a rolled amount, and applications stack. The HUD names each bleeding region's tier, and the wound drips by tier in first person and debug third person. While bleeding refuses time compression, treatment runs at normal speed and leaves movement free, as prying does (DESIGN.md, "Bleeding"). See `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `defaultItemAction`, `src/game/survival.ts`, `wieldedItemActionHint`, `src/ui/playHud.ts`, `playNeedsText`, and `src/render/gore.ts`, `Gore.dripPlayer`.
-- **Lighting (2026-10-05 14:43):** “lighting need the matches in your hand.”
-  See `src/game/primaryAction.ts`, `selectPrimaryAction`.
-- **HUD toggle:** A hold on the rebindable tilde-position key hides or shows the
-  whole HUD, in first and third person. It is a hold, not a tap, because a tap
-  starts the third-person camera gestures and, with F2 held, toggles the debug
-  panel. Hiding never changes an individual HUD option, so the next hold brings
-  back exactly what was shown; INTERFACE.md, "Development and playtest", says
-  what the HUD covers. See `src/game/inputBindings.ts`, `hud.toggle` and
-  `HUD_TOGGLE_HOLD_MS`, and `src/game/backquoteOrbitGesture.ts`,
-  `BackquoteOrbitGesture`.
-- **Noclip flight (2026-10-06 11:22):** “we should use Space for UP and C for
-  DOWN” and “and no, F2 is not required for these (in debug mode when noclip is
-  active)”. These are the special-circumstance exception to the debug gate;
-  they work only while noclip is active, and WASD remains usable during flight.
-  See `src/game/inputBindings.ts`, `noclip.ascend` and `noclip.descend`.
-- **Spectator camera (d106-15):** Debug viewing moves a separate camera with the noclip flight step; it never moves the player's body. While detached, the same movement context routes flight input to the camera, and toggling back restores the body view. This is a debug view, not player noclip. See `src/game/play.ts`, `stepSimulation`, and `src/render/playView.ts`, `updateCamera`.
-- **Third-person avatar (d227):** A debug view behind F2; Numpad0 toggles it. In this view, holding Backquote toggles the HUD as in first person; tap then hold Backquote to orbit without turning the avatar, and tap twice to return behind it. The orbit lets you see the avatar from the front and sides, which the follow camera cannot. Orbit persists after release and during the held orbit gesture; pressing a walk direction after release resets it, while sprint, walk-toggle or jump alone does not. A single tap toggles the debug panel when F2 is held, after a short gesture-disambiguation delay. First person has no orbit, and there F2 with Backquote toggles the panel at once. See `src/game/inputBindings.ts`, `hud.toggle` and `debug.panel-toggle`, `src/game/backquoteOrbitGesture.ts`, `BackquoteOrbitGesture`, `src/game/thirdPersonOrbit.ts`, `ThirdPersonOrbit`, and `src/render/playView.ts`, `updateCamera`.
-- **Continue (d98; BR, 2026-10-06 11:28):** BR's choice was “1. enter”. Enter
-  continues both after an interruption and a stopped craft. See
-  `src/game/inputBindings.ts`, `compression.continue` and `craft.continue`.
-- **Crouch (d98):** BR ruled “let's make crouch a toggle”. On 2026-10-06
-  12:25, BR said “i lean 'no' because if you're in a menu, you're not 'moving'”;
-  the 2026-10-05 20:09 ruling is “long actions disable all actions”. Crouch is therefore
-  available only in moving contexts, not menus or noclip, and a long action
-  leaves the stance unchanged. Context ownership keeps the same physical input
-  distinct from noclip descent; see `src/game/inputBindings.ts`, `INPUT_BINDINGS`.
+A visible context owns attention: menus, reading, inventory and debug modals shield gameplay even if no widget consumes a key. Availability, reach, ammunition and refusal remain with gameplay owners. See `src/game/inputBindings.ts`, `KeyboardInput`, and `src/game/play.ts`, `startPlay`.
 
-## Why there is one keyboard owner
+The browser keeps native text entry, IME, selection, clipboard and focus traversal. Deadvox does not duplicate a text editor or browser focus engine. The binding registry refuses Ctrl, Cmd/Meta and Alt as game modifiers because the browser and operating system own those shortcuts. Synthetic events do not prove immunity from desktop interception. In pointer-locked menus, the drawn cursor handles controls that native pointer lock cannot operate, such as range dragging.
 
-A context describes visible attention, not hidden mechanic eligibility. Menus,
-reading, inventory and debug modals shield gameplay even if no widget consumes a
-particular key. Availability, reach, ammunition and action refusal remain with
-existing gameplay owners. See `src/game/inputBindings.ts`, `KeyboardInput`, and
-`src/game/play.ts`, `startPlay`.
+Physical key positions define bindings; labels follow the browser's keyboard layout. Rebinding must consider alternate bindings and held gates so a hidden conflict cannot steal movement or run two actions. See `BindingRegistry` and `bindingConflict` in `src/game/inputBindings.ts`.
 
-Physical positions match regardless of layout; only labels use the browser's
-layout map. See `BindingRegistry.loadLayout` and `labelForAction` in
-`src/game/inputBindings.ts`.
+The wheel is not a keyboard chord. In play it steps the wielded item's action; in a menu it scrolls the pane under the drawn cursor, including at the pane's edge. Elsewhere the game leaves it to the browser. See `src/ui/menuPointer.ts`, `mountMenuPointer`.
 
-Rebinding checks every alternative, gate and held modifier because a hidden
-conflict could steal sprint or run two actions. `bindingConflict` in
-`src/game/inputBindings.ts` owns that check; `test/inputLiterals.test.ts` keeps
-keyboard interpretation at the registry boundary.
+Bindings are origin-local browser-profile preferences, not saved-character or account state. Stored rows are untrusted and invalid entries are dropped rather than becoming controls. See `src/game/inputBindings.ts`, `BindingRegistry`.
 
-## Native browser boundary and exceptions
+## Settled controls
 
-Native text entry, IME, selection, clipboard, focus traversal and ordinary menu
-form activation stay with the DOM. Reimplementing a text editor or focus engine
-would add a second platform without a game-specific inadequacy. Interpreted game
-commands, custom modal navigation and held quick/debug gates remain rebindable.
-See `src/game/inputBindings.ts`, `NATIVE_INPUTS` and `NATIVE_EDITING`. In a
-pointer-locked menu, `mountMenuPointer` in `src/ui/menuPointer.ts` maps locked
-cursor movement to range values because forwarded synthetic pointer events do not
-trigger the browser's native range-drag action. It also cancels the real press's
-own mousedown focus handling: that press lands on the locked canvas, so Firefox
-would blur the focused field, closing an open combo box before the forwarded click
-reaches its option. Focus moves only when a forwarded click lands on an input.
-
-Noclip flight is the substantive debug exception: holding the debug gate for an
-entire flight would occupy a hand and interfere with viewing. Space/C flight
-controls are ungated only in the visible noclip context; entering/exiting it
-remains gated. Spawn selection and dismissal are ordinary modal navigation, not
-authoring. Keyboard confirmation is available only while that debug-only menu owns
-input; native activation of debug buttons still requires the gate. Mouse authoring
-remains available without it. The debug menu's type-spawn actions add no player
-bindings; see `src/debug/index.ts`, `createDebugActions`.
-
-## Preferences, not save identity
-
-`BindingRegistry` in `src/game/inputBindings.ts` uses the same origin-local
-JSON/localStorage substrate as HUD/audio preferences. “Per player” means this
-browser profile, not a saved character or an account. HTTP/HTTPS origins do not
-share preferences. There is no migration, preference workflow or cross-tab
-coordination layer.
-
-Stored preferences are untrusted, so invalid rows are dropped instead of
-becoming controls; see `BindingRegistry` in `src/game/inputBindings.ts`.
-
-## Input recording and replay (d101)
-
-Replay samples controls at fixed player ticks so action order does not depend on browser
-event timing. Hand-changing gestures apply at the sample that records them, in recorded
-order. A throw and a following hand gesture therefore use the same pose and remaining items
-in live play and replay. The replay rationale remains in
-[SLICE-3.md](SLICE-3.md), 3.10. Replay fingerprints in `src/game/inputReplay.ts`,
-`replayStateFingerprint`, compare simulation times exactly. Playback in
-`src/game/inputReplayDriver.ts`, `InputReplayDriver`, advances to the next restored player
-scheduler cursor and then to the recorded end time, so live and replay share the same tick
-boundaries.
-
-Replay covers inventory and crafting because those player flows should be reproducible,
-not just movement. Its starting save and compatibility identity keep the recording separate
-from world-save state; end-state fingerprints reveal uncovered input. Export is disabled
-after firearm handling is overridden because the session no longer represents content
-handling. Replay payloads are applied by `src/game/replayCommands.ts`,
-`applyReplayActionPayload`, and routed by `src/game/play.ts`, `startPlay`. Hand-changing
-order follows `src/game/playerTickActions.ts`, `PlayerTickActions`. Export and replay state
-are handled by `src/game/inputReplay.ts`, `withReplayExportGuard`, `InputReplayRecorder`,
-and `replayStateFingerprint`.
-
-Each replay segment starts with the play state that changes recorded-action
-routing or shot resolution but is not part of the save snapshot: throwing stance, held
-readiness, ADS and whether the inventory modal is open. `src/game/play.ts`,
-`captureReplayStartState`, captures that state at each window boundary, and
-`createReplayPlayStateBinding` restores it before replay. ADS changes a shot's origin and
-direction, so a replay must restore it; inventory tab selection changes presentation only
-and stays outside replay state. Reading-screen state also stays out: `play.ts`,
-`samplePlayerInput`, replays whether world input is active each tick, while `modalCommand`
-routes reading navigation and close commands to the presentation-only reader. A replay need
-not reopen a particular readable or restore its scroll position. Viewer blur, visibility loss,
-pointer-lock changes and mouse clicks do not cancel or alter replayed readiness, ADS or
-dominant-hand use, because those events are not part of the recorded session. Live play still
-cancels held input on focus loss.
-
-## Readiness and melee (2026-10-05, #267)
-
-Firearms fire only while ready and never while sprinting. Ready movement is a
-skill-scaled duck-walk that stacks with crouch pace. Holding the rebindable
-`stance.ready` action raises a firearm or enters en-garde; the rebindable
-`aim.ads-toggle` action toggles the sight line while a firearm is raised; their
-defaults are rows in `INPUT_BINDINGS`. Blocking also requires the
-back movement action and succeeds according to melee skill. An
-unready firearm click does nothing, including no refusal sound. BR settled the
-skill split: “The FC affects stuff like duck walking, whereas MC affects
-blocking”. See [SLICE-3.md](SLICE-3.md), 3.1,
-`src/game/firearmHandling.ts`, `fireReason`, `src/game/input.ts`, `Input`, and
-`src/game/melee.ts`, `shouldEnterMeleeReady`; `POINTER_ACTIONS` in
-`src/game/inputBindings.ts` describes the mouse actions, while the registry owns
-keyboard bindings.
-
-## Throwing stance
-
-Tap T to toggle throwing stance; holding it through the authored real-time threshold drops one held item without toggling. The hold gesture separates a deliberate drop from the stance toggle, and T keeps its separate inventory quick-move role. In stance, hold mouse-1 to charge and release to throw; mouse-1 never fires a firearm, and right mouse cancels a charge. The drop and the throw pick their hand by one rule: the off hand when it holds an item, otherwise the dominant hand, except on a ladder, where only the free dominant hand drops or throws (DESIGN.md, "Ladders and hatches"). The stance remains after a throw while either hand is occupied and ends when both are empty. T tap exits and cancels an active charge. The raised, drawn-back held-item pose makes the stance legible without a HUD cue; the optional THROW hint follows the interaction HUD setting. R is ignored rather than queued during charge, so a held throw cannot unexpectedly start a reload, rack or magazine removal after it ends. See `src/content/base/senses.json`, `throwStanceDropHoldRealSeconds`, `src/core/heldPose.ts`, `throwStanceHandOffset`, `src/render/hands.ts`, `HeldItems`, `src/game/pressHoldInput.ts`, `PressHoldInput`, `src/game/throwCharge.ts`, `ThrowCharge`, `throwHand`, `src/game/play.ts`, `toggleThrowingStance`, `beginItemThrow`, `finishItemThrow`, `reloadBinding`, and `throwStanceCueVisible`.
+- **Debug authoring** uses the held debug gate. The review map and freeze action use debug bindings; the gate is itself a binding, not a browser modifier. Noclip flight is ungated only while noclip is active so flight can be controlled without occupying another hand. Spawn-menu navigation is modal navigation, not authoring. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `toggleReviewMap`.
+- **Q and E** remain reserved physical positions across contexts; do not add placeholder lean actions.
+- **Inventory quick action** is a rebindable hold-and-click shortcut for moving an item; it saves clicks, not handling time, and never activates the item. See `src/game/inputBindings.ts`, `inventory.quick-action-gate`, and `src/ui/inventoryScreen.ts`, `quickMove`.
+- **Loose-item pickup** uses the world-interaction action: tap wears a back-wearable or slings a suitable long gun when its slot is free, otherwise pockets it; holding wields it. Doors and containers retain tap interaction. A shared reach/target choice routes the action through ordinary inventory handling, so pickup retains its handling time. See `src/game/play.ts`, `interactionTargetAt` and `completeWorldInteraction`.
+- **Slinging** uses the inventory wear/remove action; a quickbar tap draws or puts away a slung gun. Wielding another item may stow a sling-fitted long gun in a free shoulder slot. A separate sling key would duplicate existing routes. See `src/game/inputBindings.ts`, `inventory.wear`, and `src/core/options.ts`, `quickbarPutAway`.
+- **Downed bodies** use the same world-interaction tap/hold: tap finishes a body, hold dismembers it. The nearest-target rule applies to bodies and ground items. See `src/core/interactionPick.ts`, `pickInteractionTarget`.
+- **The main menu** opens through its menu binding; Escape releases pointer lock during play and toggles the menu after death. Escape is not rebindable. F10 belongs to the browser.
+- **Reload, rack, remove** share one rebindable action. Hold selects the fullest carried magazine that fits, even if it has fewer rounds than the fitted magazine. A double press racks; a tap followed by a held press removes a detachable magazine. A single tap does nothing. Classification waits for release or the hold threshold, so a quick double tap and a plain hold do not remove a magazine. A non-detachable firearm racks repeatedly while the reload action remains held. See `src/game/reloadInput.ts`, `ReloadInput`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
+- **Rest and sleep** have no dedicated keys. Use eligible furniture through world interaction; Wait is a character-screen button. The alarm's wake hour is a setting, not a sleep key. See `src/game/play.ts`, `startPlay`, and `src/game/rest.ts`, `RestController`.
+- **Use items** from the hand or quickbar. There is no dedicated inventory-use action. An ammunition box is wielded and activated to unpack. See `src/game/primaryAction.ts`, `selectPrimaryAction`.
+- **Handedness** is actor identity, not a chord swap or physical-slot migration. See [character-handedness](docs/character-handedness.md).
+- **Quickbar tap** takes an item into its capability-directed hand or puts it away; hold uses an available action. It does not provide an alternate route for firearm racking. See `src/game/quickbarInput.ts`, `QuickbarInput`, and `src/game/quickbarActions.ts`, `QuickbarActions`.
+- **Primary actions** from either hand are refused while handling is busy. Whether one-handed work leaves the free hand usable remains open for BR's decision.
+- **Treatment** uses a wielded treatment item or its held quickbar slot. The wheel selects the wielded action, which begins with the worst bleeding. Treatment is a normal-speed action that leaves movement free; bleeding refuses time compression. See `src/game/itemActions.ts`, `defaultItemAction`, and `src/core/body.ts`, `Body.compressionRefusal`.
+- **Lighting** requires the matches or other firestarter in hand. A held igniter can light an eligible object in the other hand; an igniter merely within reach does not qualify.
+- **HUD toggle** is a rebindable hold. It hides the HUD without changing individual option values. A tap remains available for third-person camera gestures and the debug panel. See `src/game/inputBindings.ts`, `hud.toggle`, and `src/game/backquoteOrbitGesture.ts`, `BackquoteOrbitGesture`.
+- **Throw stance** is a toggle; holding through its authored threshold drops one held item without toggling. In stance, hold the primary pointer action to charge and release to throw; the secondary pointer action cancels. The stance remains while either hand is occupied. The reload action does not queue during a charge, so a held throw cannot unexpectedly start firearm handling afterward. See `src/game/throwCharge.ts`, `ThrowCharge`, and `src/game/play.ts`, `beginItemThrow`.
+- **Continue** is shared after interruption or a stopped craft.
+- **Crouch** is a toggle available only in moving contexts, not menus or noclip; a long action leaves the stance unchanged. Context ownership keeps its input distinct from noclip descent.
 
 ## Remaining questions
 
-1. Press-and-hold for every long use remains a direction, not a universal
-   cancellation rule. Do not redesign mouse use as part of rebinding.
-2. Best-pocket's default remains BR's decision; its entry is authoritative in
-   the registry, not duplicated here.
-3. Lean and magazine-check inputs are added only when their mechanics land,
-   against the whole conflict model.
-4. Whether matches strike alone is open for BR; the question came out of the
-   #252 re-look (2026-10-05 13:44).
+- Press-and-hold for every long use remains a direction, not a universal cancellation rule. Do not redesign mouse use as part of rebinding.
+- BR decides the default best-pocket destination; the binding registry is authoritative for the configured choice and its displayed behavior.
+- Add lean and magazine-check inputs only when their mechanics exist and the full conflict model has been checked.
+- Whether matches strike alone remains open for BR.
+
+## Replay boundary
+
+Input recording samples control state at player ticks so action order does not depend on browser event timing. Replay must restore any held state that changes simulation or shot resolution; presentation-only selection and scroll position do not belong in replay state. Live play still cancels held input on focus loss. See `src/game/inputReplay.ts`, `replayStateFingerprint`, and `src/game/play.ts`, `captureReplayStartState`.
