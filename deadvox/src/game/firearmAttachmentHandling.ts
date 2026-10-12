@@ -11,8 +11,7 @@ import { stowTarget } from '../core/options.ts';
 
 const ATTACHMENT_ACTION = 'firearm.attachment';
 
-const available = (inventory: Inventory, item: Item): boolean => {
-  const location = inventory.locate(item);
+const availableAt = (inventory: Inventory, location: Location | undefined): boolean => {
   if (!location || location.kind === 'slot' || location.kind === 'work') {
     return false;
   }
@@ -24,6 +23,8 @@ const available = (inventory: Inventory, item: Item): boolean => {
   }
   return true;
 };
+
+const available = (inventory: Inventory, item: Item): boolean => availableAt(inventory, inventory.locate(item));
 
 const rootTarget = (inventory: Inventory, location: Location): Target => inventory.targetForLocation(location);
 
@@ -55,13 +56,35 @@ export class FirearmAttachmentHandling {
   }
 
   candidates(firearmUid: number, slotId: string): Item[] {
-    const firearm = this.inventory.itemByUid(firearmUid);
-    if (!firearm) {
+    const entries = Array.from(this.inventory.items());
+    const firearmEntry = entries.find(({ item }) => item.uid === firearmUid);
+    if (!firearmEntry) {
       return [];
     }
-    return Array.from(this.inventory.items(), ({ item }) => item).filter(
-      (item) => item.uid !== firearmUid && this.fitReason(firearm, slotId, item) === undefined,
-    );
+    if (!availableAt(this.inventory, firearmEntry.location)) {
+      return [];
+    }
+    const firearm = firearmEntry.item;
+    if (!defOf(this.inventory.registry, firearm.type).firearm || this.firearmSlotReason(firearm, slotId)) {
+      return [];
+    }
+    return entries
+      .filter(({ item, location }) => {
+        if (item.uid === firearmUid) {
+          return false;
+        }
+        const definition = defOf(this.inventory.registry, item.type);
+        const couldFit =
+          slotId === SLING_SLOT
+            ? definition.sling === true
+            : attachmentIdFor(this.inventory.registry, item) !== undefined;
+        return (
+          couldFit &&
+          availableAt(this.inventory, location) &&
+          this.attachmentFitReason(firearm, slotId, item) === undefined
+        );
+      })
+      .map(({ item }) => item);
   }
 
   fitReason(firearm: Item, slotId: string, attachment: Item): string | undefined {
@@ -71,12 +94,20 @@ export class FirearmAttachmentHandling {
     if (!available(this.inventory, attachment)) {
       return 'Attachment is no longer accessible';
     }
+    return this.firearmSlotReason(firearm, slotId) ?? this.attachmentFitReason(firearm, slotId, attachment);
+  }
+
+  private firearmSlotReason(firearm: Item, slotId: string): string | undefined {
     if (!firearmSlotIds(this.inventory.registry, defOf(this.inventory.registry, firearm.type)).includes(slotId)) {
       return 'Firearm has no such attachment slot';
     }
     if (firearm.slots?.[slotId]) {
       return 'That slot is occupied';
     }
+    return undefined;
+  }
+
+  private attachmentFitReason(firearm: Item, slotId: string, attachment: Item): string | undefined {
     const reason = slotId === SLING_SLOT ? this.slingReason(attachment) : this.exportedAttachmentReason(attachment);
     return reason ?? slotsReason(this.inventory.registry, firearm.type, { ...firearm.slots, [slotId]: attachment });
   }
