@@ -1,4 +1,4 @@
-// Pure pieces of "crowd" rendering (mobgen/CHALLENGES.md §1): packing a whole crowd's bone matrices into
+// Pure pieces of "crowd" rendering: packing a whole crowd's bone matrices into
 // one shared texture instead of one Skeleton/bone-texture per actor, and the GLSL that reads it back.
 // Deliberately three-free and DOM-free — deadvox imports this module directly (via the `@mobgen/` alias)
 // to build its own zombie renderer, and must never pull in mobgen/src/viewer (which imports three from
@@ -107,9 +107,9 @@ export interface CrowdTexel {
  * placement by hand (r' = Ry·r, t' = Ry·t + [x,0,z], with Ry = core/math.ts's rotY(yawDeg) — see its own
  * [c,0,s; 0,1,0; -s,0,c] layout) instead of calling core/math.ts's compose()/rotation()/translation():
  * those each allocate a fresh Mat3/Vec3/Transform, and this runs for every bone of every actor of every
- * frame (see mobgen/CHALLENGES.md §1 — the same reasoning as boneTransformsInto itself). Verified equal
- * to compose(translation([x,0,z]), rotation(rotY(deg))) composed onto boneWorld by hand once in this
- * module's own derivation (see mobgen's report) and cross-checked in test/crowd.test.ts against
+ * frame (the same allocation-avoidance reason as boneTransformsInto itself). Verified equal
+ * to compose(translation([x,0,z]), rotation(rotY(deg))) composed onto boneWorld by hand in this
+ * module's own derivation and cross-checked in test/crowd.test.ts against
  * boneTransformsInto + core/math.ts's compose, applied to real points.
  */
 export const packCrowdBoneMatrix = (

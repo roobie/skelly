@@ -11,8 +11,8 @@
 //   'crowd'   — one InstancedMesh per pool entry (variant), one instance per actor using that variant,
 //               with every actor's whole bone-matrix set living in one shared DataTexture (a row per
 //               actor) instead of a per-actor Skeleton/bone-texture pair. See buildCrowdRender's own
-//               comment for why (mobgen/CHALLENGES.md §1: skinned mode's per-Skeleton bone texture
-//               upload and 4-bone-per-vertex sampling lose to bones mode at high actor counts despite
+//               comment for why: skinned mode's per-Skeleton bone texture upload and 4-bone-per-vertex
+//               sampling lose to bones mode at high actor counts despite
 //               less CPU — this trades three.js's generic skinning for exactly the one-bone-per-vertex,
 //               one-texture-for-everyone case mobgen actually needs).
 //
@@ -295,7 +295,7 @@ export interface StressActor {
 }
 
 /** Writes a Transform's r/t into an existing Matrix4 in place (Matrix4.set, not `new Matrix4()` —
- * mobgen/CHALLENGES.md §1: this runs for every bone of every actor of every frame, so the difference
+ * this runs for every bone of every actor of every frame, so the difference
  * between mutating one pre-allocated Matrix4 and allocating a fresh one really is the whole point). */
 const writeMatrix = (
   target: Matrix4,
@@ -424,8 +424,8 @@ export const createActor = (entry: PoolEntry, render: PoolRender): StressActor =
 
 // ---- 'crowd' mode: one shared bone-matrix texture, one InstancedMesh per variant ----
 //
-// mobgen/CHALLENGES.md §1 (measured on the reference laptop): skinned mode loses to bones mode at 240
-// actors (40 vs 53 fps) despite less CPU, and stalls 400-600 ms at >=120 actors. Two suspects: three.js's
+// Measured on the reference laptop (deadvox/DESIGN.md, "Reference hardware"): skinned mode loses to bones
+// mode at 240 actors (40 vs 53 fps) despite less CPU, and stalls 400-600 ms at >=120 actors. Two suspects: three.js's
 // generic skinning shader fetches 4 bone matrices per vertex and blends them (we only ever use 1, weight
 // 1 — pure waste), and every actor's own Skeleton uploads its own bone texture to the GPU every frame
 // (240 uploads/frame at n=240). Crowd mode fixes both: ONE bone-matrix texture for the entire crowd (one

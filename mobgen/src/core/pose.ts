@@ -1,8 +1,8 @@
 // Forward kinematics: each bone has a rotation about its own head, applied
 // down the chain from the root. No skinning — a bone's voxels move as one
-// rigid block with it (PROJECT.md "Bones are rigid").
+// rigid block with it.
 //
-// Perf note (mobgen/CHALLENGES.md §1): this is on the hottest path in the codebase — once per bone per
+// Perf note: this is on the hottest path in the codebase — once per bone per
 // actor per frame, everywhere an actor is posed. boneLocalTransform and boneTransforms below compute the
 // same maths as a naive translate(head) ∘ rotate ∘ translate(-head) [∘ translate(root) for the root]
 // composition, but as one direct 3x3/3x1 computation instead of three generic compose() calls (each of

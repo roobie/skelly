@@ -50,7 +50,7 @@ const LONG_FRAME_LOG_MAX = 500; // capped so a long session's log can't grow wit
 const LONG_FRAME_HUD_COUNT = 5; // how many recent ones the HUD lists
 const PAGE_START_MS = performance.now();
 
-// Distance-based LOD (mobgen/CHALLENGES.md §1's "pose far actors less often"): an actor further than
+// Distance-based LOD: an actor further than
 // LOD_NEAR_M from the camera is re-posed every 2nd frame, further than LOD_FAR_M every 3rd — its
 // GaitClock/path/attack state still advances every frame (cheap: no trig-heavy IK, no FK), only the
 // walkPose/attackPose + boneTransformsInto + matrix-write step (the expensive part) is skipped on the

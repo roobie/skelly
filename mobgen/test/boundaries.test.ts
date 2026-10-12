@@ -1,5 +1,5 @@
 // Import boundaries: mobgen is self-contained (no sibling project), and src/core is a browser-pure,
-// domain-agnostic library (mobgen/PROJECT.md "Core"): no three.js, no node:, no mob/viewer/cli.
+// domain-agnostic library: no three.js, no node:, no mob/viewer/cli.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
