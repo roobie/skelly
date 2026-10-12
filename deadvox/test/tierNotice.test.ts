@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { PlayerBleedingNotice } from '../src/game/playerBleedingNotice.ts';
+import { TierNotice } from '../src/game/tierNotice.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
 const { tiers } = BODY_TUNING_FIXTURE.bleeding;
@@ -8,7 +8,7 @@ const SERIOUS = fixtureTier('serious');
 const CRITICAL = fixtureTier('critical');
 
 const notices = (initial: number | undefined, steps: readonly (number | undefined)[]): string[] => {
-  const notice = new PlayerBleedingNotice(initial);
+  const notice = new TierNotice(initial);
   const spoken: string[] = [];
   for (const worst of steps) {
     notice.update(worst, tiers, (text) => spoken.push(text));

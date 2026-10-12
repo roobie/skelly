@@ -135,6 +135,7 @@ export class Mood {
   private frame = 0;
   private skyBloom = 0;
   private skyMist = 0;
+  private painDesaturation = 0;
   private crackOn = false;
   private readonly crackColor = new Color();
   private composer: EffectComposer | undefined;
@@ -220,6 +221,18 @@ export class Mood {
     if (sky.bloom !== this.skyBloom || sky.heightFog !== this.skyMist) {
       this.skyBloom = sky.bloom;
       this.skyMist = sky.heightFog;
+      this.sync();
+    }
+  }
+
+  /**
+   * Drains colour for the pain cue (`src/game/painCue.ts`), 0 to 1 on top of the grade; cheap enough to call
+   * every frame. It shows only with post on, as the grade does.
+   */
+  setPainDesaturation(amount: number): void {
+    const clamped = Math.min(1, Math.max(0, amount));
+    if (clamped !== this.painDesaturation) {
+      this.painDesaturation = clamped;
       this.sync();
     }
   }
@@ -401,11 +414,11 @@ export class Mood {
     bloomPass.enabled = bloom && this.skyBloom > 0;
     bloomPass.strength = this.skyBloom;
     const gradePass = this.gradePass!;
-    // Nothing to grade or film: leave the pass out, so OutputPass is the last and draws to the screen.
-    gradePass.enabled = grade > 0 || film;
+    // Nothing to grade, film or drain: leave the pass out, so OutputPass is the last and draws to the screen.
+    gradePass.enabled = grade > 0 || film || this.painDesaturation > 0;
     const params = gradeParams(grade);
     const u = gradePass.uniforms;
-    u.uSaturation!.value = params.saturation;
+    u.uSaturation!.value = params.saturation * (1 - this.painDesaturation);
     u.uContrast!.value = params.contrast;
     u.uShadowTint!.value = [...params.shadowTint];
     u.uHighlightTint!.value = [...params.highlightTint];

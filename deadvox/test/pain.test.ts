@@ -21,6 +21,7 @@ const lookup = (item: string): AnalgesicDef | undefined => ANALGESICS[item];
 const bodyWith = (modifiers: readonly Modifier[] = []): Body =>
   new Body(BODY_TUNING_FIXTURE, undefined, modifiers, lookup);
 const AT_PEAK = PILL.onsetGameMinutes + PILL.peakGameMinutes / 2;
+const NOT_A_PAINKILLER = /painkiller/;
 
 /** Advances only Game time, so acute pain and wounds stand still while doses age. */
 const ageBy = (body: Body, gameSeconds: number): void => {
@@ -178,7 +179,7 @@ describe('pain', () => {
     expect(restored.pain).toEqual(body.pain);
 
     const forged = { ...snapshot, pain: { acute: 0, doses: [{ item: 'bandage', elapsedGameSeconds: 0 }] } };
-    expect(() => bodyWith().restoreState(forged)).toThrow(/painkiller/);
-    expect(() => bodyWith().takeAnalgesic('bandage')).toThrow(/painkiller/);
+    expect(() => bodyWith().restoreState(forged)).toThrow(NOT_A_PAINKILLER);
+    expect(() => bodyWith().takeAnalgesic('bandage')).toThrow(NOT_A_PAINKILLER);
   });
 });

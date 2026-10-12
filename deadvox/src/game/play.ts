@@ -25,6 +25,7 @@ import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/option
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
@@ -126,7 +127,6 @@ import {
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
-import { PlayerBleedingNotice } from './playerBleedingNotice.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
@@ -158,6 +158,7 @@ import {
   ThirdPersonOrbit,
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
+import { TierNotice } from './tierNotice.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
@@ -1018,13 +1019,20 @@ export const startPlay = (
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
   let noticeUntil = 0;
-  const playerBleedingNotice = new PlayerBleedingNotice(sim.body.worstBleedingTier);
+  const bleedingNotice = new TierNotice(sim.body.worstBleedingTier);
+  const painNotice = new TierNotice(sim.body.pain.tier);
   const showNotice = (text: string) => {
     notice = text;
     noticeUntil = realNow() + 3000;
   };
-  const updateBleedingNotice = (): void => {
-    playerBleedingNotice.update(sim.body.worstBleedingTier, sim.body.tuning.bleeding.tiers, showNotice);
+  const updateBodyNotices = (): void => {
+    painNotice.update(sim.body.pain.tier, sim.body.tuning.pain.tiers, showNotice);
+    // Bleeding speaks last, so on a shared frame its line, which asks for treatment, is the one shown.
+    bleedingNotice.update(sim.body.worstBleedingTier, sim.body.tuning.bleeding.tiers, showNotice);
+  };
+  const painTierDef = (): BodyTuningDef['pain']['tiers'][number] | undefined => {
+    const { tier } = sim.body.pain;
+    return tier === undefined ? undefined : sim.body.tuning.pain.tiers[tier];
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
@@ -2895,6 +2903,7 @@ export const startPlay = (
         thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
         ...thirdPersonOrbitFrame(orbitAngle),
         sightImpaired: sim.body.consequences.sightImpaired,
+        painTier: painTierDef(),
       },
       $('damage'),
     );
@@ -3302,7 +3311,7 @@ export const startPlay = (
     playtestObserver?.beforeFrame(queue, inventory);
     mark = realNow();
     const gameFrozen = stepSimulation(dt, menuState.paused);
-    updateBleedingNotice();
+    updateBodyNotices();
     advancePendingItemThrow();
     syncThrowingStance();
     caseEffects.update(dt, engine.isSolid);

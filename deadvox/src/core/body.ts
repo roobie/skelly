@@ -305,7 +305,9 @@ export class Body implements ModifierActor {
     }
     for (const { item, elapsedGameSeconds } of doses) {
       const def = this.analgesics(item);
-      if (!(def && Number.isFinite(elapsedGameSeconds) && elapsedGameSeconds >= 0 && elapsedGameSeconds < doseLasts(def))) {
+      if (
+        !(def && Number.isFinite(elapsedGameSeconds) && elapsedGameSeconds >= 0 && elapsedGameSeconds < doseLasts(def))
+      ) {
         throw new Error(`Invalid painkiller dose ${item}`);
       }
     }

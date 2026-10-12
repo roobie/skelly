@@ -36,14 +36,15 @@ const handlingTimes = (painful: boolean) => {
   if (painful) {
     sim.body.impact(40, 'torso', { kind: 'cut' });
   }
-  expect(equipDebugLoadout(inventory, true, true, '?loadout=pump')).toBe(true);
+  const equipped = equipDebugLoadout(inventory, true, true, '?loadout=pump');
   const gun = inventory.hands[dominantSide(inventory.character)]!;
-  expect(firearms.loadNext(gun.uid, sim.time)).toBeUndefined();
+  const loading = firearms.loadNext(gun.uid, sim.time);
   const rag = inventory.create('rag');
-  expect(inventory.add(rag, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
-  expect(survival.use(rag)).toBeUndefined();
+  const held = inventory.add(rag, { kind: 'hand', side: offSide(inventory.character) });
+  const treating = survival.use(rag);
   const treatment = sim.actions.snapshotState().job;
   return {
+    started: [equipped, loading, held, treating],
     slowdown: sim.body.pain.effects.handlingSlowdown,
     reload: queue.jobs[0]!.duration,
     treatment: treatment?.jobType === 'treatment' ? treatment.duration : undefined,
@@ -53,6 +54,9 @@ const handlingTimes = (painful: boolean) => {
 it('pain lengthens a reload and leaves a treatment as long as ever', () => {
   const calm = handlingTimes(false);
   const hurt = handlingTimes(true);
+  for (const run of [calm, hurt]) {
+    expect(run.started).toEqual([true, undefined, true, undefined]);
+  }
   expect(hurt.slowdown).toBeGreaterThan(calm.slowdown);
   expect(hurt.reload).toBeGreaterThan(calm.reload);
   expect(calm.treatment).toBeDefined();

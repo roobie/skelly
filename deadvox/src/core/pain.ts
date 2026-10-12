@@ -54,7 +54,8 @@ export const fadeAcute = (acute: number, seconds: number, flat: number, share: n
 };
 
 /** Game seconds from taking a dose until its relief is gone. */
-export const doseLasts = (def: AnalgesicDef): number => def.onsetGameMinutes + def.peakGameMinutes + def.fadeGameMinutes;
+export const doseLasts = (def: AnalgesicDef): number =>
+  def.onsetGameMinutes + def.peakGameMinutes + def.fadeGameMinutes;
 
 /** One dose's relief at an age: it rises through the onset, holds at its peak, then falls through the fade. */
 export const doseRelief = (def: AnalgesicDef, elapsedGameSeconds: number): number => {

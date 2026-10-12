@@ -7,7 +7,6 @@ import { Compression, type CompressionLimits, type CompressionOwner, longActionL
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
-import type { AnalgesicLookup } from './pain.ts';
 import {
   awakeRates,
   causeOf,
@@ -17,6 +16,7 @@ import {
   SPAWN_NEEDS,
   stepNeeds,
 } from './needs.ts';
+import type { AnalgesicLookup } from './pain.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
 import type { BodyTuningDef, CompressionCaps } from './schema.ts';

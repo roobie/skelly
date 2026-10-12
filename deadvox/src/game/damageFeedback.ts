@@ -29,16 +29,18 @@ export class DamageFeedback {
     this.direction = direction ?? -this.direction;
   }
 
-  step(dt: number): DamageFeedbackState {
+  /** `settle` stretches the tilt's return, as pain does (`painCue.ts`). */
+  step(dt: number, settle = 1): DamageFeedbackState {
     this.vignetteAge += dt;
     this.rollAge += dt;
     const vignetteOpacity = this.vignetteAge >= 1 ? 0 : this.vignetteStrength * (1 - this.vignetteAge);
     let roll = 0;
     const rise = 4 / 60;
+    const settled = rise + (0.35 - rise) * settle;
     if (this.rollAge < rise) {
       roll = this.rollPeak * (this.rollAge / rise);
-    } else if (this.rollAge < 0.35) {
-      roll = this.rollPeak * (1 - (this.rollAge - rise) / (0.35 - rise));
+    } else if (this.rollAge < settled) {
+      roll = this.rollPeak * (1 - (this.rollAge - rise) / (settled - rise));
     }
     return { vignetteOpacity, roll: roll * this.direction };
   }
