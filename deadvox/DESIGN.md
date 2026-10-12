@@ -102,10 +102,10 @@ performance changes. See
 
 Half-metre blocks keep doorways, furniture and interiors at human scale, and
 make stairs walkable rather than jump-sized. The finer quarter-metre scale did
-not improve the look enough to justify its higher chunk cost and re-authoring
-building templates. Frame cost is part of the chosen scale, so tune view
-distance against measured play rather than duplicating current settings here.
-See `BLOCK_SIZE` in `src/core/scale.ts`.
+not improve the look enough to justify about eight times as many chunks at the
+same view radius and re-authoring building templates. Frame cost is part of the
+chosen scale, so tune view distance against measured play rather than duplicating
+current settings here. See `BLOCK_SIZE` in `src/core/scale.ts`.
 
 Player pace is slower sideways and backward than forward. The tunable
 `sidewaysSpeedScale` and `backwardSpeedScale` fields are authored in
@@ -122,16 +122,17 @@ so a crouched player fits but a standing player does not. It is a separate low
 route from the guarded north entrance and southern breach, with its floor level
 to the approach; it must not expose any part of the finale from near-ground
 viewpoints, leaving the southern breach as the only near-ground exception.
-See `test/campGate.test.ts`, `hides the finale from approach tracks and near
-ground except through the southern breach`. Zombies use the passage only if
-their ordinary collision body fits; they do not crouch or
-gain a type-specific exception. Standing up is refused when the body would
-intersect a solid overhead block, and saves preserve stance while body height is
-derived from content. See `src/content/base/senses.jsonnet`,
-`crouch.bodyHeightMetres`; `src/game/session.ts`, `settleStance`;
-`src/core/schema.ts`, `SenseSchema`; `src/content/base/camp.jsonnet`,
-`camp_wall_run_crouch_hole`; and `src/core/spawnClearance.ts`,
-`zombieBodyDimensions`.
+`test/campGate.test.ts`, `hides the finale from approach tracks and near ground
+except through the southern breach`, checks from the amalgam's feet to its top.
+Zombies use the passage only if their ordinary collision body fits; they do not
+crouch or gain a type-specific exception. Standing up is refused when the body
+would intersect a solid overhead block. On a restore admitted by
+`decodeSave` with matching content identity, the saved stance is preserved and
+body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
+`src/content/base/senses.jsonnet`, `crouch.bodyHeightMetres`;
+`src/game/session.ts`, `settleStance`; `src/core/schema.ts`, `SenseSchema`;
+`src/content/base/camp.jsonnet`, `camp_wall_run_crouch_hole`; and
+`src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
 ### Block shapes
 

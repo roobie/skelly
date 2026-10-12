@@ -1,132 +1,22 @@
 ---
 read_if:
-  - you're authoring or changing readable item or furniture content
-  - you're changing how authored readings enter play
-  - you're changing movement or action input while a readable is open
+  - you're authoring readable item or furniture content
+  - you're changing how authored text enters play or how reading owns time
+  - you're changing gameplay input while a readable is open
 ---
 
 # Authored notes and signs
 
-Items and furniture share the optional, strict `readable` block:
+Items and furniture may carry immutable authored text. Each distinct note or sign is its own content type; copies share the text, and saves keep the existing type reference rather than duplicating prose or per-copy reading state. Keep authored text plain and render it as text nodes, never HTML. `npm run validate` owns the field checks; see `src/core/schema.ts`, `ReadableSchema`.
 
-```json
-"readable": {
-  "title": "Evacuation note — PLACEHOLDER",
-  "text": "PLACEHOLDER ONLY\n\nWrite the actual message here later."
-}
-```
+A readable-only note does not consume or change the item. Do not combine readable with food or light: Read wins over Eat or Switch, so this is an authoring constraint, not a validation rejection. An item with a book component may use both: the book owns timed recipe learning, while the readable owns the paper text. Readable-only notes use the held quickbar route; books also support held primary use. There is no inventory Read command. Opening a readable-only note is instantaneous; the live world continues while it is read. See `src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`.
 
-**Read wins over Eat/Switch:** do not combine `readable` with `food` or `light`.
-This authoring constraint is documented, not a new validation rejection.
+The world-interaction action opens a sign through ordinary furniture reach and identity checks. Door interaction has priority over readable text, which has priority over container access. A readable/container hybrid opens for reading through F; inventory access remains ordinary.
 
-Each distinct authored note/logbook is its own item type (normally `category: "book"`);
-each distinct sign is its own furniture type. Copies of a type share its immutable
-text. Item/furniture saves retain the existing type reference, not duplicated text
-or per-copy reading state. A timed book's progress belongs to its long action,
-not the authored readable; see `src/core/longAction.ts`, `LongActions`. There is
-no runtime editing or per-instance message state to justify another save format.
-The view itself is transient, not saved.
+The paper surface is one scrollable body, with no pages: page metadata, navigation, saved page state and repeated controls do not pay for the authored reading beats. It owns focus and scrolling while open. Gameplay, inventory and quickbar commands must not leak through. Closing it restores focus; closing a recipe book pauses its job and preserves progress, while movement closes the page and proceeds. The page shows its own progress endpoint because the player needs to know when reading is complete even with every HUD option disabled. See `src/ui/reading.ts`, `mountReading`, and `src/game/play.ts`, `stopReadingOnClose`.
 
-## Authoring rules
+Prototype samples remain explicitly marked as placeholders and separate from authored playtest lore. The medical sampling log and notice are drafts; approved evacuation and hunter text belongs to the playtest scenes. See `src/content/base/readables.json` and `src/content/base/layouts-playtest.json`.
 
-- Both fields must be strings with non-whitespace content.
-- Plain text only: reject `<`, `>` and ASCII controls other than tab, LF and CR
-  (DEL is also rejected). Newlines and blank lines preserve paragraphs. Ampersands
-  and entity spellings such as `&copy;` remain literal text, not HTML.
-- Title: at most **120 UTF-16 code units**; body: at most **12,000**. Both limits
-  include whitespace. Unknown readable fields are rejected.
-- `npm run validate` reports the owning item/furniture and field path. The Lit view
-  renders text nodes, never authored HTML.
+## Darkness remains open
 
-**No pages:** one scrollable body handles the playtest paragraphs and a short
-logbook without page metadata, navigation/state or repeated controls. The body
-cap is enough for roughly a couple of thousand ordinary words. Pages do not pay
-for themselves for the current beats.
-
-Place a sign through the existing template furniture pieces; give a note through
-an ordinary loot entry, starting item or item placement. A readable sign needs no
-container or loot. Runtime F priority remains **door → readable → container**.
-A hybrid readable/container presents reading through F; inventory access remains
-ordinary inventory access. The shared block does not change door ownership.
-
-## Player flow and time
-
-Take a readable-only note into a hand and hold its assigned quickbar slot. An
-item with a book component also supports its held primary action; see
-`src/game/primaryAction.ts`, `primaryActionForDefinition`. The inventory has no
-Read command (`CONTROLS.md`). A quickbar tap only takes or puts away;
-holding its slot uses the note while it is in hand (`src/game/quickbarActions.ts`,
-`QuickbarActions.hold`).
-`src/core/options.ts`, `useOption`, describes the capability;
-`src/game/survival.ts`, `Survival.use`, revalidates hand ownership and owns the
-read effect. Reading a readable-only note neither consumes nor changes the item
-and admits no handling job. Opening paper has **zero command time**; time spent
-actually reading a readable-only note passes in the live world.
-
-Look at a sign and press F. Normal furniture picking includes gaze/occlusion and
-Search's reach; the session command rechecks the live entity identity and reach.
-Moving away or passing a stale entity does not open the view.
-
-The parchment-styled reading surface takes focus, wraps text and scrolls with
-wheel, arrows, Page Up/Down, Home/End or Space. Wheel routing uses the existing
-scroll-pane/menu-pointer implementation. **Esc, Tab or Put away** close it and
-restore previous focus. F9 opens the main menu and puts it away; pointer-lock loss
-and death also close it. Other gameplay, inventory, quickbar and primary-action
-keys do not leak through. A recipe book's page includes its own progress bar,
-independent of HUD options. The bar makes the character visibly read toward an
-endpoint, and lets the player tell how long is left and when reading is done even
-with the HUD off. `src/ui/reading.ts`, `mountReading`, presents progress from
-`LongActions` while the page is open and shows its completed endpoint when the
-book has been read.
-
-For a recipe book, reading runs only while its page is open. Closing the page
-stops the long action and keeps its progress; opening the same book resumes it.
-Movement while a book page is open closes the page, stops reading and passes the
-movement input through so the player can walk away. This avoids locking the player
-in place and keeps reading tied to the page being in front of them. Readable-only
-notes and signs have no timed book job. See `src/game/play.ts`,
-`stopReadingOnClose`, and
-`src/core/longAction.ts`, `LongActions`, for the ownership boundary.
-
-A book may define both `book` and `readable`. `book` supplies the timed
-recipe-learning action; `readable` supplies authored prose for the paper surface.
-`Survival.use` starts or resumes the book action and opens that text. Learned
-recipes make a reopened book show its completed progress; closing the paper
-pauses the job rather than hiding progress in a separate HUD.
-
-The maintained browser contract exercises the real sample pickup/search/handling/
-quickbar-held Read path, the timed-book quickbar path, sign F interaction, input
-ownership, focus, scrolling and dismissal.
-It also checks maximum title/body sizes at 360×640 and 800×600 (20 px body text,
-no horizontal overflow, footer/button visible).
-
-## Prototype samples, not lore
-
-`readables.json` defines `sample_note`, `sample_sign` and guaranteed
-`sample_note_loot`. `?site=testHouse&seed=1&radius=16&time=12:00` places the sign near
-spawn and the note in the table-designated test-house crate.
-`sample_note` is intentionally outside the authored closure and listed unreachable;
-this procedural test-house table is not a final playtest loot placement. The note's 5 g weight and one-cell inventory
-footprint are prototype estimates; its held/piled model remains the ordinary
-fallback, not a bespoke paper mesh.
-
-The samples loudly say **PLACEHOLDER / NOT PLAYTEST LORE** and remain separate
-from the authored progression. `items-playtest.json` and `furniture-playtest.json`
-provide d99-1's evacuation note, two signs and hunter's logbook. The note,
-logbook and signs have approved text for #181. The medical sampling log and
-notice remain beat-5 lore drafts; they explain the site's purpose and military
-resupply, not a player mission. The medical research notice hangs on a wall
-board rather than a cabinet-shaped block. `layouts-playtest.json` places these
-readings in their authored scenes.
-
-## Reading in darkness: report-only
-
-**Yes for a cheap, coarse gate; no for accurate local illumination.**
-A domain-owned predicate could combine core sky visibility at the player's eye,
-core sky intensity and charged/on held-light state. It must build/cache the core
-volume on the simulation side and fingerprint those inputs, not call the renderer's
-camera-residency-dependent `Skylight.at()`. Outside authored fields, fail open. That is an approximation, not photometric lux
-or a flashlight-beam/occlusion test; direct sun and arbitrary scene lights need more
-work. Current daylight-only adaptation cannot reliably recognize buried darkness.
-No darkness gate is implemented here. BR still chooses the threshold and how
-crafted light should pay off in beat 3.
+No reading-darkness gate is implemented. A future gate must build and cache its core visibility volume on the simulation side, fingerprint its inputs and fail open outside authored fields; it may combine core sky visibility, sky intensity and charged held-light state, but cannot claim local photometric illumination or flashlight-beam occlusion. It must not depend on renderer camera residency. BR still decides the threshold and how crafted light should pay off in Beat 3.
