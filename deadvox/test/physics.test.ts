@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { createPlayerBody, movementPace, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { StepOffset } from '../src/render/stepOffset.ts';
 
@@ -179,11 +180,78 @@ describe('steer', () => {
     expect(speed({ sprint: true, walk: true })).toBeCloseTo(PLAYER.sprint);
   });
 
+  it('scales sideways and backward speeds by their content factors and blends diagonals', () => {
+    const movement = BUNDLED_CONTENT.registry.senses.get('player')!.movement;
+    const speeds = (forward: number, right: number, crouch = false) => {
+      const body = createPlayerBody(half, 0, 0, 0);
+      const paced = movementPace(
+        { forward, right, jump: false, sprint: false, walk: false, crouch },
+        {
+          grams: 0,
+          handling: false,
+          readyMovementFactor: 1,
+          movementSpeed: 1,
+          crouchSpeed: BUNDLED_CONTENT.registry.senses.get('player')!.crouch.speedMetresPerSimSecond,
+          directionalSpeed: {
+            sideways: movement.sidewaysSpeedScale,
+            backward: movement.backwardSpeedScale,
+          },
+        },
+      );
+      steer(body, half, 0, paced);
+      return Math.hypot(body.vel[0], body.vel[2]) * half.blockSize;
+    };
+    const forward = speeds(1, 0);
+    const sideways = speeds(0, 1);
+    const backward = speeds(-1, 0);
+    const diagonal = speeds(1, 1);
+    expect(sideways / forward).toBeCloseTo(movement.sidewaysSpeedScale);
+    expect(backward / forward).toBeCloseTo(movement.backwardSpeedScale);
+    expect(backward).toBeLessThan(sideways);
+    expect(sideways).toBeLessThan(forward);
+    expect(diagonal).toBeGreaterThan(sideways);
+    expect(diagonal).toBeLessThan(forward);
+  });
+
+  it('composes directional speed with crouch pace multiplicatively', () => {
+    const senses = BUNDLED_CONTENT.registry.senses.get('player')!;
+    const speeds = (crouch: boolean) => {
+      const body = createPlayerBody(half, 0, 0, 0);
+      const intent = movementPace(
+        { forward: 0, right: 1, jump: false, sprint: false, walk: false, crouch },
+        {
+          grams: 0,
+          handling: false,
+          readyMovementFactor: 1,
+          movementSpeed: 1,
+          crouchSpeed: senses.crouch.speedMetresPerSimSecond,
+          directionalSpeed: {
+            sideways: senses.movement.sidewaysSpeedScale,
+            backward: senses.movement.backwardSpeedScale,
+          },
+        },
+      );
+      steer(body, half, 0, intent);
+      return Math.hypot(body.vel[0], body.vel[2]) * half.blockSize;
+    };
+    expect(speeds(true) / speeds(false)).toBeCloseTo(senses.crouch.speedMetresPerSimSecond / PLAYER.jog);
+  });
+
   it('stacks crouch, injury and ready movement factors', () => {
     const readyFactor = 0.6;
-    const crouchSpeed = 0.8;
+    const senses = BUNDLED_CONTENT.registry.senses.get('player')!;
+    const crouchSpeed = senses.crouch.speedMetresPerSimSecond;
     const intent = { forward: 1, right: 0, jump: false, sprint: false, walk: false, crouch: true };
-    const paceOptions = { grams: 0, handling: false, movementSpeed: 1, crouchSpeed };
+    const paceOptions = {
+      grams: 0,
+      handling: false,
+      movementSpeed: 1,
+      crouchSpeed,
+      directionalSpeed: {
+        sideways: senses.movement.sidewaysSpeedScale,
+        backward: senses.movement.backwardSpeedScale,
+      },
+    };
     const speeds = [
       movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: 1 }),
       movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: readyFactor }),

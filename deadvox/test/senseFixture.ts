@@ -3,6 +3,7 @@ import { simRate, simSeconds } from '../src/core/time.ts';
 
 export const TEST_SENSE_TUNING: SenseDef = {
   id: 'player',
+  movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
   crouch: {
     speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,

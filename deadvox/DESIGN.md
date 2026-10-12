@@ -3,7 +3,7 @@ read_if:
   - you decide how sunlight and shadows should read in play
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
-  - you change the player's collision body, or what crouching lets the player fit through
+  - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
@@ -125,6 +125,11 @@ about eight times as many chunks at the same view radius, plus a redraw of
 building templates. The frame budget and why the default is 96 m are in
 [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks). The choice is implemented by
 `src/core/scale.ts`, `BLOCK_SIZE`.
+
+Player movement is slower sideways and backward than forward; diagonal pace
+blends between the axes and composes multiplicatively with other movement factors,
+so turning does not create a sudden speed change. `src/content/base/senses.json`,
+the player's movement tuning, and `src/game/player.ts`, `steer`, own this rule.
 
 Crouching lowers the player's collision body as well as the eye, so a crouched
 player fits through openings a standing one can't. The FOB's east wall has a
