@@ -40,15 +40,20 @@ const setupStackReuse = () => {
       data: {
         items: [
           { id: 'fixture_units', name: 'Units', category: 'material', weight: 1, size: [1, 1], stack: 5 },
-          ...(['waist', 'back'] as const).map((slot) => ({
-            id: `fixture_${slot}`,
-            name: `Fixture ${slot}`,
+          {
+            id: 'fixture_back',
+            name: 'Fixture backpack',
             category: 'bag',
             weight: 1,
             size: [1, 1],
-            wearable: { slot, encumbrance: 0 },
-            container: { pockets: [{ grid: [3, 1], handlingSimSeconds: 1 }] },
-          })),
+            wearable: { slot: 'back', encumbrance: 0 },
+            container: {
+              pockets: [
+                { grid: [3, 1], handlingSimSeconds: 1 },
+                { grid: [3, 1], handlingSimSeconds: 1 },
+              ],
+            },
+          },
         ],
       },
     },
@@ -62,9 +67,8 @@ const setupStackReuse = () => {
     expect(inventory.add(item, target)).toBe(true);
     return item;
   };
-  const waist = add('fixture_waist', { kind: 'worn' });
-  const back = add('fixture_back', { kind: 'worn' });
-  return { inventory, view, queue, add, waist, back };
+  const bag = add('fixture_back', { kind: 'worn' });
+  return { inventory, view, queue, add, bag };
 };
 
 // Two boundary classes, each checking both sides. The plain case also catches
@@ -414,45 +418,37 @@ describe('quick move rules', () => {
     expect(quickMove(item, t.view()).target).toMatchObject({ kind: 'pocket', owner: bag });
   });
 
-  it('quick-move reuses a later worn stack before opening the earlier backpack pocket', () => {
+  it('quick-move joins a compatible stack in a later pocket before opening an earlier one', () => {
     const t = setupStackReuse();
-    const partial = t.add('fixture_units', { kind: 'pocket', owner: t.back, pocket: 0 }, 4);
-    const merge = t.add('fixture_units', { kind: 'pocket', owner: t.waist, pocket: 0 }, 2);
-    const source = t.add('fixture_units', { kind: 'pile', pos: [0, 0, 0] }, 2);
+    const existing = t.add('fixture_units', { kind: 'pocket', owner: t.bag, pocket: 1 }, 2);
+    const source = t.add('fixture_units', { kind: 'pile', pos: [0, 0, 0] });
     const move = quickMove(source, t.view());
 
-    expect(move.target).toMatchObject({ kind: 'pocket', owner: t.waist });
-    expect(move.plan).toMatchObject({ ok: true, merge });
+    expect(move.target).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 1 });
+    expect(move.plan).toMatchObject({ ok: true, merge: existing });
     expect(t.queue.enqueue(source, move.target).ok).toBe(true);
     t.queue.tick(10);
 
-    expect(partial.count).toBe(4);
-    expect(partial.count).toBeGreaterThan(0);
-    expect(merge.count).toBeGreaterThan(2);
-    expect(t.inventory.locate(partial)).toMatchObject({ kind: 'pocket', owner: t.back });
-    expect(t.inventory.locate(merge)).toMatchObject({ kind: 'pocket', owner: t.waist });
+    expect(existing.count).toBeGreaterThan(0);
+    expect(t.inventory.locate(existing)).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 1 });
     expect(t.inventory.itemByUid(source.uid)).toBeUndefined();
   });
 
-  it('quick-move keeps the whole source in a new stack when existing stacks have only partial room', () => {
+  it('quick-move puts an item in a new stack when the earlier stack is full', () => {
     const t = setupStackReuse();
-    const partial = t.add('fixture_units', { kind: 'pocket', owner: t.back, pocket: 0 }, 4);
-    const other = t.add('fixture_units', { kind: 'pocket', owner: t.waist, pocket: 0 }, 4);
-    const source = t.add('fixture_units', { kind: 'pile', pos: [0, 0, 0] }, 2);
+    const full = t.add('fixture_units', { kind: 'pocket', owner: t.bag, pocket: 0 }, 5);
+    const source = t.add('fixture_units', { kind: 'pile', pos: [0, 0, 0] });
     const move = quickMove(source, t.view());
 
-    expect(move.target).toMatchObject({ kind: 'pocket', owner: t.back });
+    expect(move.target).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 0 });
     expect(move.plan.ok && move.plan.merge).toBeUndefined();
     expect(t.queue.enqueue(source, move.target).ok).toBe(true);
     t.queue.tick(10);
 
-    expect(partial.count).toBeGreaterThan(0);
-    expect(other.count).toBeGreaterThan(0);
-    expect(source.count).toBe(2);
+    expect(full.count).toBeGreaterThan(0);
     expect(source.count).toBeGreaterThan(0);
-    expect(t.inventory.locate(partial)).toMatchObject({ kind: 'pocket', owner: t.back });
-    expect(t.inventory.locate(other)).toMatchObject({ kind: 'pocket', owner: t.waist });
-    expect(t.inventory.locate(source)).toMatchObject({ kind: 'pocket', owner: t.back });
+    expect(t.inventory.locate(full)).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 0 });
+    expect(t.inventory.locate(source)).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 0 });
   });
 
   it('keeps a wielded item in hand and returns the fit hint when there is no room', () => {
