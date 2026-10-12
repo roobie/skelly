@@ -380,6 +380,39 @@ describe('quick move rules', () => {
     expect(quickMove(item, t.view()).target).toMatchObject({ kind: 'pocket', owner: bag });
   });
 
+  it('quick-move joins a compatible stack in a later pocket before opening an earlier one', () => {
+    const t = setup();
+    const bag = t.add('school_backpack', { kind: 'worn' });
+    const existing = t.add('bandage', { kind: 'pocket', owner: bag, pocket: 1 }, 2);
+    const item = t.add('bandage', { kind: 'pile', pos: [0, 0, 0] });
+    const { target } = quickMove(item, t.view());
+
+    expect(target).toMatchObject({ kind: 'pocket', owner: bag, pocket: 1 });
+    expect(t.queue.enqueue(item, target).ok).toBe(true);
+    t.queue.tick(10);
+
+    expect(existing.count).toBe(3);
+    expect(t.inventory.locate(existing)).toMatchObject({ kind: 'pocket', owner: bag, pocket: 1 });
+    expect(t.inventory.itemByUid(item.uid)).toBeUndefined();
+  });
+
+  it('quick-move puts an item in a new stack when the earlier stack is full', () => {
+    const t = setup();
+    const bag = t.add('school_backpack', { kind: 'worn' });
+    const full = t.add('bandage', { kind: 'pocket', owner: bag, pocket: 0 }, 4);
+    const item = t.add('bandage', { kind: 'pile', pos: [0, 0, 0] });
+    const { target } = quickMove(item, t.view());
+
+    expect(target).toMatchObject({ kind: 'pocket', owner: bag, pocket: 0 });
+    expect(t.queue.enqueue(item, target).ok).toBe(true);
+    t.queue.tick(10);
+
+    expect(full.count).toBe(4);
+    expect(item.count).toBe(1);
+    expect(t.inventory.locate(full)).toMatchObject({ kind: 'pocket', owner: bag, pocket: 0 });
+    expect(t.inventory.locate(item)).toMatchObject({ kind: 'pocket', owner: bag, pocket: 0 });
+  });
+
   it('keeps a wielded item in hand and returns the fit hint when there is no room', () => {
     const t = setup();
     const item = t.add('canned_beans', { kind: 'hand', side: 'right' });

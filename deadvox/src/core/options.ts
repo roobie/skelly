@@ -161,17 +161,16 @@ const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
     }
     return def.category === 'bag' ? 1 : 2;
   };
-  for (const owner of Object.values(inv.worn)
+  const targets = Object.values(inv.worn)
     .filter((i): i is Item => i !== undefined)
-    .sort((a, b) => priority(a) - priority(b))) {
-    for (const [pocket] of (defOf(inv.registry, owner.type).container?.pockets ?? []).entries()) {
-      const target: Target = { kind: 'pocket', owner, pocket };
-      if (inv.plan(item, target).ok) {
-        return target;
-      }
-    }
-  }
-  return undefined;
+    .sort((a, b) => priority(a) - priority(b))
+    .flatMap((owner) =>
+      (defOf(inv.registry, owner.type).container?.pockets ?? []).map((_, pocket) => ({
+        target: { kind: 'pocket', owner, pocket } satisfies Target,
+        plan: inv.plan(item, { kind: 'pocket', owner, pocket }),
+      })),
+    );
+  return targets.find(({ plan }) => plan.ok && plan.merge)?.target ?? targets.find(({ plan }) => plan.ok)?.target;
 };
 
 /** Dominant-hand items stow; other carried items drop exactly at the feet. */
