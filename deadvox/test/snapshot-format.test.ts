@@ -778,6 +778,17 @@ describe('canonical save format', () => {
       bytes: sealEnvelope(unknownSystem),
       message: 'Unknown scheduler content id',
     });
+    const missingLadder = parseEnvelope(valid);
+    const missingLadderPayload = getObject(missingLadder.payload);
+    getObject(getObject(missingLadderPayload.character).player).ladder = {
+      on: false,
+      grabbedUid: getObject(missingLadderPayload.world).blockEntitiesNextUid,
+    };
+    malformed.push({
+      name: 'missing grabbed ladder',
+      bytes: sealEnvelope(missingLadder),
+      message: 'Missing grabbed ladder',
+    });
 
     await Promise.all(
       malformed.map(async (test) => {

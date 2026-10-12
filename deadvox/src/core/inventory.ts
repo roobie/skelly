@@ -199,6 +199,12 @@ export class Inventory {
   canReach: (pos: Vec3) => boolean = () => true;
   /** Whether a piece of furniture is within reach. */
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
+  /**
+   * Why a move can't take `item` out of hand `from` or into hand `to` because a hand holds something outside the
+   * inventory, such as a ladder; the game sets it.
+   */
+  handRefusal: (item: Item, from: HandSide | undefined, to: HandSide | undefined) => string | undefined = () =>
+    undefined;
 
   /** A deep plain-data copy of carried, worn, piled and furnished items and allocators. */
   snapshotState(): Readonly<InventoryState> {
@@ -543,6 +549,14 @@ export class Inventory {
     }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);
+    }
+    const handHeld = this.handRefusal(
+      item,
+      from.kind === 'hand' ? from.side : undefined,
+      target.kind === 'hand' ? target.side : undefined,
+    );
+    if (handHeld) {
+      return refuse(handHeld);
     }
     const { light } = defOf(this.registry, item.type);
     if (item.on && light?.burning?.stow === 'refuse' && target.kind !== 'hand' && target.kind !== 'pile') {

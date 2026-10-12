@@ -131,6 +131,7 @@ it('uses a rebound registry label for restable furniture interactions', () => {
       lock: undefined,
       container: false,
       readable: false,
+      climbable: false,
       restAction: 'rest',
       searched: false,
       name: 'fixture',

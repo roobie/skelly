@@ -1,5 +1,6 @@
 // The player's body and movement, specified in metres and converted to blocks.
 
+import type { LadderHoldState } from '../core/ladders.ts';
 import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
@@ -44,6 +45,7 @@ export interface PlayerState {
   sprinting: boolean;
   firearmReadyWalking: boolean;
   handlingPausedForKnockout: boolean;
+  ladder: LadderHoldState | null;
 }
 
 export const snapshotPlayer = (body: Body, state: Omit<PlayerState, 'body'>): Readonly<PlayerState> =>
@@ -73,6 +75,7 @@ export const restorePlayer = (state: PlayerState): PlayerState => ({
   sprinting: state.sprinting,
   firearmReadyWalking: state.firearmReadyWalking,
   handlingPausedForKnockout: state.handlingPausedForKnockout,
+  ladder: state.ladder && { ...state.ladder },
 });
 
 export interface MoveIntent {
