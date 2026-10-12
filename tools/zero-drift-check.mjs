@@ -411,59 +411,36 @@ function* overlappingMatches(text, pattern) {
   }
 }
 
-function insideCodeString(text, offset) {
-  if (!text) {
-    return false;
-  }
-  let quote;
-  let escaped = false;
-  const start = text.lastIndexOf('\n', offset - 1) + 1;
-  for (const char of text.slice(start, offset)) {
-    if (escaped) {
-      escaped = false;
-    } else if (char === '\\') {
-      escaped = true;
-    } else if (quote) {
-      if (char === quote) {
-        quote = undefined;
-      }
-    } else if (char === '"' || char === "'" || char === '`') {
-      quote = char;
-    }
-  }
-  return quote !== undefined;
-}
-
-function skippedExtraLength(extra, tail, name) {
+function skippedExtraLength(extra, tail, name, rawPath) {
   if (extra[3] === undefined) {
     return 0;
   }
-  if (pathValue(name, true) || name.startsWith('/')) {
-    const followingName = tail.slice(extra[0].length).match(EXTRA_CANONICAL_NAME);
-    return extra[0].length + (followingName?.[0].length ?? 0);
+  const targetPath = pathValue(name, true);
+  if (targetPath || name.startsWith('/')) {
+    const following = tail.slice(extra[0].length);
+    const followingName = following.match(EXTRA_CANONICAL_NAME);
+    const codeName = targetPath && !targetPath.endsWith('.md') ? following.match(EXTRA_NAME) : undefined;
+    const codeSymbol = codeName?.[3] && BACKTICKED_IDENTIFIER.test(codeName[3]) ? codeName[0].length : 0;
+    return extra[0].length + (followingName?.[0].length ?? codeSymbol);
   }
-  return BACKTICKED_IDENTIFIER.test(name) ? extra[0].length : 0;
+  const originalTarget = pathValue(rawPath, true);
+  return originalTarget && !originalTarget.endsWith('.md') && BACKTICKED_IDENTIFIER.test(name) ? extra[0].length : 0;
 }
 
 function checkExtraNames(remaining, context) {
-  const { path, visible, offset: startOffset } = context;
   let tail = remaining;
-  let offset = startOffset;
   for (let extra = tail.match(EXTRA_NAME); extra; extra = tail.match(EXTRA_NAME)) {
     const name = (extra[1] ?? extra[2] ?? extra[3]).replace(QUOTE_ESCAPE, '$1');
-    const skip = skippedExtraLength(extra, tail, name);
-    if ((!path.endsWith('.md') && insideCodeString(visible, offset)) || skip) {
-      const consumed = skip || extra[0].length;
-      tail = tail.slice(consumed);
-      offset += consumed;
+    const skip = skippedExtraLength(extra, tail, name, context.rawPath);
+    if (skip) {
+      tail = tail.slice(skip);
       continue;
     }
     if (!NAME_MARKUP.test(name)) {
-      add(context.failures, path, 'section_form', `${context.rawPath}, "${name}" (implicit path)`);
+      add(context.failures, context.path, 'section_form', `${context.rawPath}, "${name}" (implicit path)`);
       checkNamedCue({ ...context, name });
     }
     tail = tail.slice(extra[0].length);
-    offset += extra[0].length;
   }
 }
 
@@ -493,7 +470,6 @@ function checkSectionPair(match, bare, context) {
   checkExtraNames(context.visible.slice(match.index + original.length), {
     ...context,
     rawPath,
-    offset: match.index + original.length,
   });
 }
 

@@ -48,6 +48,8 @@ before(() => {
       '- **Decision (fixture stamp):** explanation',
       '## Combined (fixture stamp): subtitle',
       '## API_label',
+      '## First',
+      '## Second',
       '## Escaped \\_name\\_',
       '<!--',
       '## Phantom',
@@ -232,6 +234,17 @@ describe('zero-drift section cues', () => {
     assert.ok(checks(sections(cue('docs/anchors.md', 'Metadata is not a heading'))).includes('section'));
   });
 
+  it('requires explicit paths for identifier-shaped Markdown section names', () => {
+    assert.deepEqual(sections(`${cue('docs/anchors.md', 'First')}; ${cue('docs/anchors.md', 'Second')}`), []);
+    assert.deepEqual(
+      sections(`${cue('docs/anchors.md', 'First')} and ${code('engine/src/known.ts')}, ${code('assemble')}`),
+      [],
+    );
+    assert.ok(
+      checks(sections(`${cue('docs/anchors.md', 'First')} and ${code('Second')}`)).includes('section_form'),
+    );
+  });
+
   it('rejects every alternate prose spelling even when its named anchor exists', () => {
     const variants = [
       'docs/anchors.md "API"',
@@ -254,7 +267,7 @@ describe('zero-drift section cues', () => {
     }
   });
 
-  it('rejects implicit backticked names and quoted-path prose pairs without reading code strings as prose', () => {
+  it('checks explicit section cues in strings and comments but ignores unformatted strings and inline examples', () => {
     assert.deepEqual(sections(cue('src/fixture.yaml', 'exact fixture name')), []);
     assert.ok(
       checks(
@@ -265,7 +278,11 @@ describe('zero-drift section cues', () => {
     assert.deepEqual(sections('See `"docs/anchors.md", "API"`.'), []);
     assert.deepEqual(sections('const source = "docs/anchors.md, API";', 'src/fixture.ts'), []);
     const sourceString = `${code('src/fixture.yaml')}, ${JSON.stringify('exact fixture name')} and ${code('exact second fixture name')}`;
-    assert.deepEqual(sections(`const note = ${JSON.stringify(sourceString)};`, 'src/fixture.ts'), []);
+    assert.ok(checks(sections(`const note = '${sourceString}';`, 'src/fixture.ts')).includes('section_form'));
+    const plainComment = `// Both: ${cue('src/fixture.yaml', 'exact fixture name')} and ${code('exact second fixture name')}`;
+    const apostropheComment = `// Author's both: ${cue('src/fixture.yaml', 'exact fixture name')} and ${code('exact second fixture name')}`;
+    assert.ok(checks(sections(plainComment, 'src/source.ts')).includes('section_form'));
+    assert.ok(checks(sections(apostropheComment, 'src/source.ts')).includes('section_form'));
   });
 
   it('validates angle-wrapped link destinations for both paths and fragments', () => {
