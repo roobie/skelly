@@ -1068,8 +1068,17 @@ export class Inventory {
     if (from.kind === 'work' || from.kind === 'slot') {
       return false;
     }
+    const sourceTarget = this.targetForLocation(source);
+    const handRefusal = this.handRefusal(
+      item,
+      from.kind === 'hand' ? from.side : undefined,
+      sourceTarget.kind === 'hand' ? sourceTarget.side : undefined,
+    );
+    if (handRefusal) {
+      return false;
+    }
     const sourcePlace = this.placeOf(from);
-    const destinationPlace = this.targetPlace(this.targetForLocation(source));
+    const destinationPlace = this.targetPlace(sourceTarget);
     if (!(this.reachable(sourcePlace) && this.reachable(destinationPlace))) {
       return false;
     }
