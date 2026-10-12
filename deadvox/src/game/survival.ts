@@ -1,5 +1,5 @@
-// Using what's in your hands (DESIGN.md, "Hands"): eating and drinking are short
-// actions in the handling queue, a light switches on and off, and a battery goes into
+// Using what's in your hands (DESIGN.md, "Hands"): eating, drinking and taking a painkiller
+// are short actions in the handling queue, a light switches on and off, and a battery goes into
 // the light you're holding. Head-worn beam lights also remain usable while worn.
 // The needs themselves are in the simulation (core/needs.ts).
 
@@ -12,7 +12,7 @@ import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import { chargeOf, chargeShare, drainBurnLight, drainLight, swapBattery, toggleLight } from '../core/lights.ts';
 import { consume, FOOD_POISONING } from '../core/needs.ts';
-import { DRINK_TIME, EAT_TIME, useOption } from '../core/options.ts';
+import { consumption, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
@@ -83,19 +83,20 @@ export class Survival {
     this.inventory = inventory;
     this.queue = queue;
     this.hooks = hooks;
-    this.queue.registerAction('survival.eat', (params) => {
+    this.queue.registerAction('survival.consume', (params) => {
       const item = this.inventory.itemByUid(numberParam(params, 'itemUid'));
       if (!item || this.handOf(item) === undefined) {
         return "It isn't in your hands";
       }
-      return this.finishEating(item);
+      return this.finishConsuming(item);
     });
-    this.queue.registerAction('survival.quickbarEat', (params) => {
+    this.queue.registerAction('survival.quickbarConsume', (params) => {
       const { source } = params;
       const item = this.inventory.itemByUid(numberParam(params, 'itemUid'));
       if (!(item && source) || typeof source !== 'object' || Array.isArray(source)) {
-        return "The food isn't there any more";
+        return "It isn't there any more";
       }
+      const name = defOf(this.inventory.registry, item.type).name.toLowerCase();
       const at = this.inventory.locate(item);
       const targetState = source as unknown as TargetState;
       const target = this.inventory.resolveTarget(targetState);
@@ -104,16 +105,16 @@ export class Survival {
         !target ||
         canonicalJson(this.inventory.targetState(this.inventory.targetForLocation(at))) !== canonicalJson(targetState)
       ) {
-        return 'The food moved before you could use it';
+        return `The ${name} moved before you could use it`;
       }
       const plan = this.inventory.plan(item, target);
       if (!plan.ok) {
         return plan.reason;
       }
       if (!this.hooks.reach().entries.some((entry) => entry.item === item)) {
-        return 'The food is no longer in reach';
+        return `The ${name} is no longer in reach`;
       }
-      return this.finishEating(item);
+      return this.finishConsuming(item);
     });
     this.queue.registerAction('survival.battery', (params) => {
       const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
@@ -222,8 +223,8 @@ export class Survival {
       return option.plan.reason;
     }
     switch (option.operation) {
-      case 'eat':
-        this.queue.enqueueAction('survival.eat', option.label, option.plan.time, { itemUid: item.uid });
+      case 'consume':
+        this.queue.enqueueAction('survival.consume', option.label, option.plan.time, { itemUid: item.uid });
         return undefined;
       case 'battery':
         this.queue.enqueueAction('survival.battery', option.label, option.plan.time, {
@@ -254,29 +255,26 @@ export class Survival {
     return `Take the ${name.toLowerCase()} in your hands first`;
   }
 
-  private useQuickbarFood(item: Item, def: ReturnType<typeof defOf>, at: LightLocation): string | undefined {
+  private useQuickbarConsumable(
+    item: Item,
+    use: NonNullable<ReturnType<typeof consumption>>,
+    at: LightLocation,
+  ): string | undefined {
     if (!this.hooks.reach().entries.some((entry) => entry.item === item)) {
       return 'Too far away';
     }
     const target = this.inventory.targetForLocation(at);
     const hand = { kind: 'hand', side: 'right' } as const;
-    const isDrink = def.category === 'drink';
-    const useTime = isDrink ? DRINK_TIME : EAT_TIME;
     const duration =
-      this.inventory.handlingTime(item, at, hand) + useTime + this.inventory.handlingTime(item, hand, target);
-    this.queue.enqueueAction(
-      'survival.quickbarEat',
-      `${isDrink ? 'Drink' : 'Eat'} the ${def.name.toLowerCase()}`,
-      duration,
-      {
-        itemUid: item.uid,
-        source: JSON.parse(canonicalJson(this.inventory.targetState(target))) as JobValue,
-      },
-    );
+      this.inventory.handlingTime(item, at, hand) + use.simSeconds + this.inventory.handlingTime(item, hand, target);
+    this.queue.enqueueAction('survival.quickbarConsume', use.label, duration, {
+      itemUid: item.uid,
+      source: JSON.parse(canonicalJson(this.inventory.targetState(target))) as JobValue,
+    });
     return undefined;
   }
 
-  /** Quickbar hold uses pocket food as one action, without displacing either hand. */
+  /** Quickbar hold uses pocket food or a painkiller as one action, without displacing either hand. */
   useFromQuickbar(item: Item): string | undefined {
     if (this.sim.body.actionRefusal) {
       return this.sim.body.actionRefusal;
@@ -292,14 +290,16 @@ export class Survival {
     if (def.firearm) {
       return 'Use R to work the firearm';
     }
-    if (def.weapon || def.key || (def.category === 'tool' && !def.light)) {
+    // A weapon or key keeps its own action; a tool's category refuses only when nothing in it can be consumed.
+    const use = consumption(def);
+    if (def.weapon || def.key || (!use && def.category === 'tool' && !def.light)) {
       return `Nothing to do with the ${def.name.toLowerCase()} from here`;
     }
     if (at.kind === 'hand' || def.battery) {
       return this.use(item);
     }
-    if (def.food && at.kind === 'pocket') {
-      return this.useQuickbarFood(item, def, at);
+    if (use && at.kind === 'pocket') {
+      return this.useQuickbarConsumable(item, use, at);
     }
     return `Take the ${def.name.toLowerCase()} in your hands first`;
   }
@@ -339,12 +339,14 @@ export class Survival {
     return lines;
   }
 
-  /** Eats or drinks what's in your hand; rotten food makes you sick instead. */
-  private finishEating(item: Item): undefined {
+  /** Eats, drinks or takes one of `item`; rotten food makes you sick instead. */
+  private finishConsuming(item: Item): undefined {
     const def = defOf(this.inventory.registry, item.type);
     const rotten = isRotten(def, item, this.sim.calendar);
     this.inventory.consume(item);
-    if (rotten) {
+    if (def.analgesic) {
+      this.sim.body.takeAnalgesic(item.type);
+    } else if (rotten) {
       this.hooks.notice(`The ${def.name.toLowerCase()} was rotten`);
       this.sim.hurt(FOOD_POISONING, 'food poisoning');
     } else {

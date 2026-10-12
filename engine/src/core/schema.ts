@@ -115,7 +115,7 @@ export interface RevolvedSolid extends SolidFinish {
 
 export type Solid = BoxSolid | ExtrudedPolygonSolid | RevolvedSolid;
 
-/** Space that must stay empty (PROJECT.md §3). A convex extrusion may refine its broad-phase box. */
+/** Exact convex profiles tighten conservative broad-phase bounds for keep-outs. */
 export interface KeepOut {
   readonly id: string;
   readonly kind: string;
@@ -189,7 +189,6 @@ export interface ParamSpec {
   readonly from?: readonly ParamSource[];
 }
 
-/** A parametric family of parts (PROJECT.md §7). */
 export interface PartFamily {
   readonly name: string;
   readonly params: Readonly<Record<string, ParamSpec>>;
@@ -204,7 +203,6 @@ interface AxisRule {
   readonly mode: 'collinear' | 'parallel';
 }
 
-/** A feasibility check over a resolved assembly (PROJECT.md §1). */
 export interface Rule {
   readonly id: string;
   readonly title: string;

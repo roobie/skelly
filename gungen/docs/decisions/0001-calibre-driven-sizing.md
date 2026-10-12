@@ -8,54 +8,14 @@ tags: [gungen, adr, calibre, cartridges, frames, templates, sizing]
 
 # 1. Calibre-driven sizing
 
-[[THIS is_grounded_by: ../../PROJECT.md]]
-[[THIS is_grounded_by: ../../cartridges/README.md]]
-[[THIS relates_to: ../../../deadvox/docs/decisions/0006-firearm-handling.md]]
+## Context
 
-**Status:** accepted.
+Sizing a firearm directly from a cartridge would distort parts whose dimensions come from the human hand or shoulder. Cartridge fit and platform identity are related, but they are not the same question.
 
 ## Decision
 
-A design starts with a sourced cartridge. Each family orders its discrete
-frames by explicit rank, so the smallest eligible frame is unambiguous. Select
-the lowest-ranked frame that fits the cartridge; pin a larger frame only when a
-real case requires it. A cartridge that fits no frame is a validation error,
-not an invitation to scale continuously or choose a larger envelope by default.
-This separates cartridge fit from platform identity and human ergonomics.
+A design selects the lowest-ranked frame that fits its sourced cartridge. A larger frame is an explicit platform choice, not a default escape from a failed fit; no continuous scaling is implied. This keeps cartridge clearance separate from firearm identity and human ergonomics.
 
-The selected frame supplies the action and receiver envelope; cartridge-specific
-geometry supplies the chamber, bore and ammunition. Magazine capacity, size and
-profile are separate choices within the frame, so one frame can take several
-magazines. Hand- and body-contact dimensions remain human-sized, while their
-attachment, reach and placement follow the frame—for example, a charging-handle
-shaft must reach a larger carrier.
+Frame eligibility is dimensional, not an interchangeability claim. Cartridge-specific chamber and ammunition geometry remain distinct from the firearm frame, while hand- and body-contact dimensions remain human-scaled and are positioned relative to that frame.
 
-Frame eligibility is dimensional, not a claim that cartridges or components are
-interchangeable. A .300 BLK and a 5.56 AR can share the small frame without
-sharing their chamber or bore. The family template keeps its recognizable
-layout across frames by placing features relative to each frame's dimensions,
-so every frame reads as that family. Other parts may default from the frame
-while remaining adjustable: barrel, handguard, muzzle device and ring height,
-because ergonomics do not scale with cartridge size.
-
-`MagazineBands` remains in `src/gun/parts.ts` for families without frame data.
-A family leaves it when its designs use frame-based magwells and magazines.
-Cartridge measurements are sourced under `cartridges/`; `src/gun/arFrames.ts`,
-`AR_FRAME_BY_CALIBRE` applies `selectFrame` to curated AR designs.
-
-The AR family is the frame-selection pilot. Frame dimensions may be derived
-from a cartridge's sourced case length, head diameter and overall length with
-explicit clearances; receiver length and height may be estimated from published
-specifications and photographs. Record the derivation or estimate with each
-measure. BR's visual review is the acceptance check because public drawings do
-not supply every frame dimension. Under br-75, review one frame at a time and
-wait for BR's look to accept each frame before deriving another.
-
-The small AR frame combines cartridge-derived action and magwell clearances
-with receiver estimates, and supplies those dimensions to curated AR designs.
-`src/gun/templates.ts`, `ar`, keeps one bore choice until #447's free-float and
-optic-clearance criteria support both bores. `src/gun/parts.ts`,
-`ejectionPortWindow`, applies frame-sized ejection-port apertures only to the
-AR receiver section; other action patterns retain their section-specific fit
-rules. The anti-materiel rifle retains its separate cartridge-sizing path; the
-SVD remains tracked in #333.
+Derive one frame at a time and wait for BR to accept each before deriving the next. Where public specifications do not define a frame envelope, those dimensions remain estimates and require visual review. The `ar` template keeps one bore choice until free-float and optic clearances support more; revisit that restriction through #447 (`src/gun/templates.ts`, `ar`). Cartridge-derived measures and frame selection are specified by `src/gun/actionFrame.ts`, `selectFrame`, and `src/gun/arFrames.ts`, `AR_FRAME_BY_CALIBRE`; sourced cartridge values are documented in `cartridges/README.md`.

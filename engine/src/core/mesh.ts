@@ -1,4 +1,4 @@
-// Turns placed solids into flat-shaded triangle meshes (PROJECT.md §7). No
+// Turns placed solids into flat-shaded triangle meshes. No
 // rendering dependency: positions, normals and indices only, in the solid's
 // own local frame (the caller applies the part's placement transform, same
 // as it already does for box/extruded-polygon geometry). Deadvox can import

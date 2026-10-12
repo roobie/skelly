@@ -33,6 +33,48 @@ const setup = (handedness?: 'right' | 'left') => {
   return { inventory, player, view, queue, add };
 };
 
+const setupStackReuse = () => {
+  const { registry: fixtureRegistry, issues } = buildRegistry([
+    {
+      source: 'quick-move-fixture.json',
+      data: {
+        items: [
+          { id: 'fixture_units', name: 'Units', category: 'material', weight: 1, size: [1, 1], stack: 5 },
+          {
+            id: 'fixture_back',
+            name: 'Fixture backpack',
+            category: 'bag',
+            weight: 1,
+            size: [1, 1],
+            wearable: { slot: 'back', encumbrance: 0 },
+            container: {
+              pockets: [
+                { grid: [3, 1], handlingSimSeconds: 1 },
+                { grid: [3, 1], handlingSimSeconds: 1 },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ]);
+  if (issues.length > 0) {
+    throw new Error(`Invalid quick-move fixture: ${issues.map((issue) => issue.message).join('; ')}`);
+  }
+  const inventory = new Inventory(fixtureRegistry);
+  const view = bindReach({ inventory, position: [0.5, 0, 0.5], blockSize: 1 });
+  const queue = new HandlingQueue(inventory);
+  const add = (type: string, target: Parameters<Inventory['add']>[1], count = 1) => {
+    const item = inventory.create(type, count);
+    if (!inventory.add(item, target)) {
+      throw new Error(`Fixture item ${type} did not fit`);
+    }
+    return item;
+  };
+  const bag = add('fixture_back', { kind: 'worn' });
+  return { inventory, view, queue, add, bag };
+};
+
 // Two boundary classes, each checking both sides. The plain case also catches
 // treating block distances as metres; the nested case catches omitted ground pockets.
 it.each(['plain', 'nested'] as const)('%s ground items cross the absolute 2m boundary', (kind) => {
@@ -378,6 +420,39 @@ describe('quick move rules', () => {
     const bag = t.add('school_backpack', { kind: 'worn' });
     const item = t.add('canned_beans', { kind: 'hand', side: dominantSide(t.inventory.character) });
     expect(quickMove(item, t.view()).target).toMatchObject({ kind: 'pocket', owner: bag });
+  });
+
+  it('quick-move joins a compatible stack in a later pocket before opening an earlier one', () => {
+    const t = setupStackReuse();
+    const existing = t.add('fixture_units', { kind: 'pocket', owner: t.bag, pocket: 1 }, 2);
+    const source = t.add('fixture_units', { kind: 'pile', pos: [0, 0, 0] });
+    const move = quickMove(source, t.view());
+
+    expect(move.target).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 1 });
+    expect(move.plan).toMatchObject({ ok: true, merge: existing });
+    expect(t.queue.enqueue(source, move.target).ok).toBe(true);
+    t.queue.tick(10);
+
+    expect(existing.count).toBeGreaterThan(0);
+    expect(t.inventory.locate(existing)).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 1 });
+    expect(t.inventory.itemByUid(source.uid)).toBeUndefined();
+  });
+
+  it('quick-move puts an item in a new stack when the earlier stack is full', () => {
+    const t = setupStackReuse();
+    const full = t.add('fixture_units', { kind: 'pocket', owner: t.bag, pocket: 0 }, 5);
+    const source = t.add('fixture_units', { kind: 'pile', pos: [0, 0, 0] });
+    const move = quickMove(source, t.view());
+
+    expect(move.target).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 0 });
+    expect(move.plan.ok && move.plan.merge).toBeUndefined();
+    expect(t.queue.enqueue(source, move.target).ok).toBe(true);
+    t.queue.tick(10);
+
+    expect(full.count).toBeGreaterThan(0);
+    expect(source.count).toBeGreaterThan(0);
+    expect(t.inventory.locate(full)).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 0 });
+    expect(t.inventory.locate(source)).toMatchObject({ kind: 'pocket', owner: t.bag, pocket: 0 });
   });
 
   it('keeps a wielded item in hand and returns the fit hint when there is no room', () => {

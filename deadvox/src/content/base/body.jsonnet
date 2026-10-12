@@ -29,6 +29,7 @@ local normalSleep = 100 / normalSleepGameHours;
           minDamage: 0,
           chance: { blunt: 0.1, cut: 0.4, pierce: 0.3 },
           drip: { rate: 0.2, size: 0.75 },
+          pain: 1,
         },
         {
           id: 'moderate',
@@ -41,6 +42,7 @@ local normalSleep = 100 / normalSleepGameHours;
           minDamage: 5,
           chance: { blunt: 0.03, cut: 0.35, pierce: 0.4 },
           drip: { rate: 1, size: 1 },
+          pain: 5,
         },
         {
           id: 'heavy',
@@ -53,6 +55,7 @@ local normalSleep = 100 / normalSleepGameHours;
           minDamage: 8,
           chance: { blunt: 0.01, cut: 0.15, pierce: 0.15 },
           drip: { rate: 2.5, size: 1.3 },
+          pain: 10,
         },
         {
           id: 'arterial',
@@ -66,7 +69,29 @@ local normalSleep = 100 / normalSleepGameHours;
           regionFactor: { torso: 0.5 },
           chance: { blunt: 0.002, cut: 0.05, pierce: 0.03 },
           drip: { rate: 6, size: 1.6 },
+          pain: 20,
         },
+      ],
+    },
+    // Pain (DESIGN.md, "Pain") is open-ended. knockoutAt is its balance point, where felt pain is meant to knock out
+    // once the knockout lands (#654); until then nothing happens there. Tiers are shares of it.
+    pain: {
+      knockoutAt: 100,
+      // A bite or stab hurts a little more than a blow of the same damage.
+      perDamage: { blunt: 1.6, cut: 2, pierce: 2 },
+      regionWeight: { head: 1.5, torso: 1, leftArm: 1, rightArm: 1, leftLeg: 1, rightLeg: 1 },
+      perRegionDamage: 0.5,
+      infection: { early: 8, advanced: 20 },
+      // A fresh hit's sting is mostly gone within a few real minutes.
+      acuteFadePerSimSecond: 0.05,
+      acuteFadeSharePerSimSecond: 0.01,
+      aimSway: { perShare: 1.2, max: 1 },
+      handlingSlowdown: { perShare: 0.6, max: 0.5 },
+      tiers: [
+        { id: 'mild', from: 0.1, desaturation: 0.1, pulseIntervalRealSeconds: 30 },
+        { id: 'moderate', from: 0.3, notice: 'That really hurts.', desaturation: 0.2, pulseIntervalRealSeconds: 15 },
+        { id: 'severe', from: 0.6, notice: "You're in a lot of pain.", desaturation: 0.35, pulseIntervalRealSeconds: 8 },
+        { id: 'excruciating', from: 0.85, notice: 'The pain is unbearable.', desaturation: 0.5, pulseIntervalRealSeconds: 4 },
       ],
     },
     bloodRecoveryPerSimSecond: 0.002,

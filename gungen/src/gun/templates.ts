@@ -1,4 +1,4 @@
-// Archetype templates (PROJECT.md §6). Each lists the parts an archetype is
+// Archetype templates. Each lists the parts an archetype is
 // built from and the choices the generator may make. Templates don't promise
 // valid results: some choices clash on purpose (a sight over a top-loading
 // port, a wide handguard under a low sight), and the validator sorts them out.

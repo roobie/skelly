@@ -1,6 +1,6 @@
 // Seeded generation from templates. The generator only makes choices; it
 // never checks feasibility. That's the validator's job, so the two stay
-// independent and the generator can be measured against it (PROJECT.md §9).
+// independent so generation can be measured against validity.
 
 import { chance, pick, type Rng, seededRng } from './random.ts';
 import { resolve } from './resolve.ts';

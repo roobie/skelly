@@ -1,4 +1,4 @@
-// Writes a design's (or fixture's) .glb and the matching deadvox model entry (PROJECT.md 3.4).
+// Writes a design's (or fixture's) .glb and the matching deadvox model entry.
 //
 //   npm run export:glb -- designs/archetype-ar.json --out "$XDG_RUNTIME_DIR/export" [--entry-out "$XDG_RUNTIME_DIR/entries"] [--id rifle_test]
 //

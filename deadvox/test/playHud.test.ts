@@ -70,6 +70,59 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
 
 const root = (): HTMLElement => document.createElement('div');
 
+it('shows every pain component on two adjacent lines after needs', () => {
+  const status = {
+    calendar: 0,
+    speed: 1,
+    paused: false,
+    needs: { calories: 611, hydration: 782, fatigue: 93, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    pain: {
+      felt: 137.2,
+      acute: 241.3,
+      injuries: 359.7,
+      relief: 43.8,
+      ratio: 0.416,
+      tier: 1,
+      effects: { aimSway: 1, handlingSlowdown: 1 },
+    },
+    painTier: 'fixture-tier-947',
+    health: 91,
+    blood: 67,
+    bleeding: [],
+    sprinting: false,
+    lightCharge: undefined,
+  } as const;
+
+  const lines = playNeedsText(status).split('\n');
+  const values = {
+    felt: status.pain.felt.toFixed(0),
+    acute: status.pain.acute.toFixed(0),
+    injuries: status.pain.injuries.toFixed(0),
+    relief: status.pain.relief.toFixed(0),
+  };
+  const needsLineIndex = lines.findIndex(
+    (line) =>
+      line.includes(status.needs.calories.toFixed(0)) &&
+      line.includes(status.needs.hydration.toFixed(0)) &&
+      line.includes(status.needs.fatigue.toFixed(0)),
+  );
+  const feltLineIndex = lines.findIndex((line) => line.includes(values.felt) && line.includes(status.painTier));
+  const breakdownLineIndex = lines.findIndex(
+    (line) => line.includes(values.acute) && line.includes(values.injuries) && line.includes(values.relief),
+  );
+
+  expect(needsLineIndex).toBeGreaterThanOrEqual(0);
+  expect(feltLineIndex).toBeGreaterThanOrEqual(0);
+  expect(breakdownLineIndex).toBeGreaterThanOrEqual(0);
+  expect(lines[feltLineIndex]).toContain(values.felt);
+  expect(lines[feltLineIndex]).toContain(status.painTier);
+  expect(lines[breakdownLineIndex]).toContain(values.acute);
+  expect(lines[breakdownLineIndex]).toContain(values.injuries);
+  expect(lines[breakdownLineIndex]).toContain(values.relief);
+  expect(feltLineIndex).toBe(needsLineIndex + 1);
+  expect(breakdownLineIndex).toBe(feltLineIndex + 1);
+});
+
 it("projects blood level and affected regions, with their tier's label, only while a wound bleeds", () => {
   const regionLabel = bodyRegionLabel('leftArm');
   const tierLabel = 'Fixture tier';
@@ -78,6 +131,16 @@ it("projects blood level and affected regions, with their tier's label, only whi
     speed: 1,
     paused: false,
     needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    pain: {
+      felt: 0,
+      acute: 0,
+      injuries: 0,
+      relief: 0,
+      ratio: 0,
+      tier: undefined,
+      effects: { aimSway: 1, handlingSlowdown: 1 },
+    },
+    painTier: undefined,
     health: 91,
     blood: 67,
     bleeding: [{ region: regionLabel, label: tierLabel, warn: true }],
@@ -104,6 +167,16 @@ it('gives only a tier content marks to warn the warning sign, while naming every
     speed: 1,
     paused: false,
     needs: { calories: 100, hydration: 100, fatigue: 0, stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 },
+    pain: {
+      felt: 0,
+      acute: 0,
+      injuries: 0,
+      relief: 0,
+      ratio: 0,
+      tier: undefined,
+      effects: { aimSway: 1, handlingSlowdown: 1 },
+    },
+    painTier: undefined,
     health: 91,
     blood: 67,
     sprinting: false,

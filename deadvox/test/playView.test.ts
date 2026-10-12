@@ -27,7 +27,12 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
   const inventory = new Inventory({ ...registry, models: new Map() });
   const page = new EventTarget();
   const renderer = { toneMapping: 0, toneMappingExposure: 1 };
-  const mood = { post: false, restore: vi.fn(), render: vi.fn((draw: () => void) => draw()) };
+  const mood = {
+    post: false,
+    restore: vi.fn(),
+    render: vi.fn((draw: () => void) => draw()),
+    setPainDesaturation: vi.fn(),
+  };
   const shadows = { restore: vi.fn(), attachTorch: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
   const engine = {
     config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },

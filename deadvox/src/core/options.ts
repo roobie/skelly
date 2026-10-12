@@ -53,7 +53,21 @@ export const doorOptions = (
 };
 
 export const EAT_TIME = 3;
-export const DRINK_TIME = 2;
+const DRINK_TIME = 2;
+export const TAKE_TIME = 2;
+
+/** How one of `def` is consumed: eaten, drunk or, for a painkiller, taken. Undefined for anything else. */
+export const consumption = (def: ReturnType<typeof defOf>): { label: string; simSeconds: number } | undefined => {
+  const name = def.name.toLowerCase();
+  if (def.analgesic) {
+    return { label: `Take one ${name}`, simSeconds: TAKE_TIME };
+  }
+  if (!def.food) {
+    return undefined;
+  }
+  const drink = def.category === 'drink';
+  return { label: `${drink ? 'Drink' : 'Eat'} the ${name}`, simSeconds: drink ? DRINK_TIME : EAT_TIME };
+};
 
 export interface MoveOption {
   kind: 'move';
@@ -66,7 +80,7 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'eat' | 'switch' | 'battery' | 'read';
+  operation?: 'consume' | 'switch' | 'battery' | 'read';
   light?: Item;
   battery?: Item;
   readable?: Readable;
@@ -161,17 +175,16 @@ const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
     }
     return def.category === 'bag' ? 1 : 2;
   };
-  for (const owner of Object.values(inv.worn)
+  const targets = Object.values(inv.worn)
     .filter((i): i is Item => i !== undefined)
-    .sort((a, b) => priority(a) - priority(b))) {
-    for (const [pocket] of (defOf(inv.registry, owner.type).container?.pockets ?? []).entries()) {
-      const target: Target = { kind: 'pocket', owner, pocket };
-      if (inv.plan(item, target).ok) {
-        return target;
-      }
-    }
-  }
-  return undefined;
+    .sort((a, b) => priority(a) - priority(b))
+    .flatMap((owner) =>
+      (defOf(inv.registry, owner.type).container?.pockets ?? []).map((_, pocket) => ({
+        target: { kind: 'pocket', owner, pocket } satisfies Target,
+        plan: inv.plan(item, { kind: 'pocket', owner, pocket }),
+      })),
+    );
+  return targets.find(({ plan }) => plan.ok && plan.merge)?.target ?? targets.find(({ plan }) => plan.ok)?.target;
 };
 
 /** Dominant-hand items stow; other carried items drop exactly at the feet. */
@@ -260,13 +273,6 @@ const useLocationRefusal = (
   return `Take the ${defOf(inventory.registry, item.type).name.toLowerCase()} in your hands first`;
 };
 
-const foodOption = (name: string, drink: boolean): UseOption => ({
-  kind: 'use',
-  label: `${drink ? 'Drink' : 'Eat'} the ${name}`,
-  operation: 'eat',
-  plan: { ok: true, time: drink ? DRINK_TIME : EAT_TIME },
-});
-
 /** Eligibility only: effects remain in the domain command owner. */
 export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
@@ -296,8 +302,9 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
       plan: { ok: true, time: 0 },
     };
   }
-  if (def.food) {
-    return foodOption(name, def.category === 'drink');
+  const consumed = consumption(def);
+  if (consumed) {
+    return { kind: 'use', label: consumed.label, operation: 'consume', plan: { ok: true, time: consumed.simSeconds } };
   }
   return def.light ? lightOption(item, view) : refuseUse(`Nothing to do with the ${name} yet`);
 };

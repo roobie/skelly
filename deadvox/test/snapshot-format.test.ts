@@ -3,6 +3,7 @@ import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { PILE_GRID } from '../src/core/inventory.ts';
@@ -15,6 +16,7 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
 import { PLAYER } from '../src/game/player.ts';
+import { withFixtureBody } from './simulationFixture.ts';
 import {
   advance,
   blockId,
@@ -186,6 +188,49 @@ it('a lit light saves its active ignition time and remaining burn', async () => 
     burnRemainingGameSeconds: candle.burnRemainingGameSeconds,
     litAtGameTimestamp: source.sim.calendar,
   });
+});
+
+it("a hit's acute pain and a painkiller dose under way survive the save codec", async () => {
+  // The test's own painkiller and body tuning on the base world, so the round trip never leans on base content's.
+  const fixture = buildRegistry([
+    {
+      source: 'painkiller-fixture',
+      data: {
+        items: [
+          {
+            id: 'fixture_pill',
+            name: 'Fixture pill',
+            category: 'medical',
+            weight: 1,
+            size: [1, 1],
+            analgesic: {
+              reliefPerDose: 1,
+              maxRelief: 1,
+              onsetGameMinutes: 30,
+              peakGameMinutes: 120,
+              fadeGameMinutes: 60,
+            },
+          },
+        ],
+      },
+    },
+  ]);
+  expect(fixture.issues).toEqual([]);
+  const pill = fixture.registry.items.get('fixture_pill')!;
+  const content = withFixtureBody({ ...registry, items: new Map(registry.items).set(pill.id, pill) });
+  const source = createRuntime(undefined, false, undefined, { registry: content });
+  source.sim.body.impact(10, 'leftArm', { kind: 'cut' });
+  source.sim.body.takeAnalgesic(pill.id);
+  source.sim.body.advance(0, true, 60);
+  const saved = source.sim.body.snapshotState().pain;
+  expect(saved.acute).toBeGreaterThan(0);
+  expect(saved.doses).toHaveLength(1);
+  expect(saved.doses[0]!.elapsedGameSeconds).toBeGreaterThan(0);
+
+  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  expect(
+    createRuntime(decoded.snapshot, false, undefined, { registry: content }).sim.body.snapshotState().pain,
+  ).toEqual(saved);
 });
 
 it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, the shoulder included', async () => {

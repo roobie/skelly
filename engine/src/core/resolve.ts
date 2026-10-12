@@ -1,8 +1,4 @@
-// Turns an assembly file into placed parts (PROJECT.md §2, milestone 1).
-//
-// There is no solver yet. Parts are placed by walking connections outward
-// from the root; a connection whose parts are both already placed closes a
-// loop, and is only checked (by the loop-closure rule), never solved.
+// Loop-closing connections are checked rather than solved because the engine does not solve constraints.
 
 import { validateExtrudedPolygon } from './geometry.ts';
 import type { Issue } from './issue.ts';

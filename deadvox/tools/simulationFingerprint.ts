@@ -87,6 +87,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/game/audioPresentation.ts',
   'src/game/shamblerAudio.ts',
   'src/game/damageFeedback.ts',
+  // The pain cue's pulse runs on frame time; felt pain itself stays fingerprinted in core/pain.ts.
+  'src/game/painCue.ts',
   'src/game/engine.ts',
   // Chooses the ray for debug readouts only; it cannot affect gameplay or saves.
   'src/game/debugTargetRay.ts',

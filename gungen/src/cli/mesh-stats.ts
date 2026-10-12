@@ -1,4 +1,4 @@
-// Mesh-triangle metrics per template (PROJECT.md §7), median over a seed sweep:
+// Mesh-triangle metrics per template, median over a seed sweep:
 //   npm run mesh-stats                 1000 seeds per template
 //   npm run mesh-stats -- --seeds 200
 //

@@ -22,6 +22,7 @@ import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
+import { withPlayerBodyTuning } from './simulationFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -32,10 +33,7 @@ const { registry } = buildRegistry(
 );
 
 export { registry };
-export const registryWithPlayerBodyTuning = (body: BodyTuningDef): Registry => ({
-  ...registry,
-  body: new Map(registry.body).set('player', body),
-});
+export const registryWithPlayerBodyTuning = (body: BodyTuningDef): Registry => withPlayerBodyTuning(registry, body);
 export const seed = 13;
 export const scale = makeScale(0.5);
 export const blockId = (id: string): number => {

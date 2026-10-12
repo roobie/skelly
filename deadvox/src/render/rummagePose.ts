@@ -15,7 +15,7 @@ const HELD_ACTION_PRESENTATION: Readonly<
   Partial<Record<string, { readonly itemParam: string; readonly dedicated: boolean }>>
 > = {
   'item.unpack': { itemParam: 'uid', dedicated: false },
-  'survival.eat': { itemParam: 'itemUid', dedicated: false },
+  'survival.consume': { itemParam: 'itemUid', dedicated: false },
   'survival.battery': { itemParam: 'lightUid', dedicated: false },
   // Dedicated handling must win even before a firearm's model finishes loading.
   'firearm.cock': { itemParam: 'uid', dedicated: true },
