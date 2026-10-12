@@ -37,7 +37,7 @@ const registryWithSleepScenario = (sleepCap: number) => {
     }));
   const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === 'player');
   const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === 'player');
-  if (!compression || !body) {
+  if (!(compression && body)) {
     throw new Error('Missing scenario compression or body definition');
   }
   compression.caps.sleep = sleepCap;
