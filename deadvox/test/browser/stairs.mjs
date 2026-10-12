@@ -13,6 +13,7 @@ import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
+import { skySelectionProof } from './sky-selection.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
@@ -534,6 +535,24 @@ try {
     return { residentProof: { first, second, secondDark } };
   };
   const lightingOutdoorProofs = async () => {
+    const selection = await skySelectionProof(page);
+    assert.ok(selection.requested > 0 && selection.completed === selection.requested, 'owned worker jobs completed');
+    assert.ok(selection.oracleCanopy > 0 && selection.oracleCanopy < 1, 'lateral diffuse paths exist under the canopy');
+    for (const phase of [selection.pending, selection.ready, selection.evicted]) {
+      assert.deepEqual(
+        phase.room,
+        { cpu: 0, shader: 0 },
+        'eligible pending / sealed / nonresident room is not full sky',
+      );
+      assert.deepEqual(phase.canopy, { cpu: 1, shader: 1 }, 'noncandidate canopy keeps the old estimate');
+    }
+    assert.deepEqual(selection.ready.above, { cpu: 1, shader: 1 }, 'known air above a current roof is open');
+    assert.deepEqual(selection.ready.overlap, selection.ready.room, 'overlapping fence and room select the same field');
+    assert.ok(
+      selection.canopyColumnHeight >= 0,
+      'the known noncandidate canopy column is covered by the height texture',
+    );
+    assert.deepEqual(selection.roofFree, { cpu: 1, shader: 1 }, 'completed roof-free discovery is not stuck pending');
     const outdoorProof = await timePhase('outdoor-sky-equivalence', async () => {
       await stage([125, 43.0001, 118]);
       await page.evaluate(() => {
@@ -553,7 +572,7 @@ try {
       assert.ok(Math.abs(proof.normal - proof.reference) < 1.5, JSON.stringify(proof));
       return proof;
     });
-    return { outdoorProof };
+    return { outdoorProof, selection };
   };
   const lightingAtlasProofs = async () => {
     const secondSlotProof = await timePhase('atlas-slot-wall-equivalence', async () => {

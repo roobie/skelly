@@ -2,8 +2,10 @@ import { Scene } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, toChunk } from '../src/core/coords.ts';
+import { CHUNK } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { SkySnapshot } from '../src/core/skySnapshot.ts';
+import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { Streamer } from '../src/game/streamer.ts';
@@ -25,13 +27,37 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
-  const { registry } = buildRegistry([]);
+  const { registry } = buildRegistry([
+    {
+      source: 'fixture.json',
+      data: {
+        blocks: ['grass', 'dirt', 'stone', 'sand'].map((id) => ({ id, name: id, color: '#888888', solid: true })),
+      },
+    },
+  ]);
   const entities = new BlockEntities(registry);
   const scene = new Scene();
-  const sky = new Skylight([{ min: [0, 20, 0], max: [8, 30, 8] }], 0.5, 96, 32);
-  const opaque = (x: number, y: number, z: number) =>
-    !world.getChunk(toChunk(x), toChunk(y), toChunk(z)) || world.getBlock(x, y, z) !== 0;
-  const update = () => sky.update(scene, [4, 29, 4], { entities }, opaque);
+  let admit = false;
+  const jobs: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
+  const sky = new Skylight(
+    [{ min: [0, 20, 0], max: [8, 30, 8] }],
+    { blockSize: 0.5, top: 96, viewRadiusM: 32 },
+    {
+      world,
+      entities,
+      registry,
+      bottom: scale.minCy * CHUNK,
+      clock: () => 0,
+      submit: (input, receive) => {
+        if (!admit) {
+          return false;
+        }
+        jobs.push({ input, receive });
+        return true;
+      },
+    },
+  );
+  const update = () => sky.update(scene, [4, 29, 4]);
   update();
   expect(sky.at([2, 14.5, 2])).toBe(0);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
@@ -57,9 +83,17 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
     events.push(origin);
     sky.chunkChanged(origin);
   };
-  streamer.update(0, 0);
+  for (let attempt = 0; attempt < 32 && !streamer.isReady(0, 0); attempt += 1) {
+    streamer.update(0, 0);
+  }
+  expect(streamer.isReady(0, 0)).toBe(true);
   expect(loaded).toContain('0,0');
   expect(world.getChunk(0, 1, 0)?.isEmpty()).toBe(true);
+  admit = true;
+  update();
+  expect(jobs.length).toBeGreaterThan(0);
+  const job = jobs.shift()!;
+  job.receive(buildSkyResult(job.input), 0);
   update();
   expect(sky.at([2, 14.5, 2])).toBe(1);
   expect(events).toContainEqual([0, 32, 0]);

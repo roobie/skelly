@@ -1,10 +1,15 @@
 import type { MeshData } from '../core/mesher.ts';
+import type { SkySnapshot } from '../core/skySnapshot.ts';
+import type { SkyResult } from '../core/skyTransport.ts';
 
 export type ToMesher =
   | { type: 'init'; colors: Uint8Array; patterns: Uint8Array; weatherable: Uint8Array }
-  | { type: 'mesh'; key: string; version: number; padded: Uint16Array; wide: Uint8Array };
+  | { type: 'mesh'; key: string; version: number; padded: Uint16Array; wide: Uint8Array }
+  | { type: 'sky'; input: SkySnapshot };
 
-export interface FromMesher {
+export type FromMesher = Meshed | { type: 'sky'; result: SkyResult; ms: number };
+
+interface Meshed {
   type: 'mesh';
   key: string;
   version: number;

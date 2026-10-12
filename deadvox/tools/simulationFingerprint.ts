@@ -80,6 +80,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/occlusion.ts',
   // Diffuse sky visibility only; does not change movement, sight, hearing or saved world state.
   'src/core/skylight.ts',
+  'src/core/skySnapshot.ts',
+  'src/core/skyTransport.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
   // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.

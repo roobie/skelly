@@ -792,11 +792,25 @@ rule ("Hand grenade").
 
 ## Light
 
-Nights should be dark, and interiors should become darker than outdoors, so
-light is both a way to see and a way to be seen. Diffuse sky light passes
-through the voxel grid; light from sources inside buildings does not yet.
-Do not fake indoor darkness with a separate rule before voxel lighting supports
-it.
+Dark interiors make carried light useful without an authored indoor flag.
+For authored sites and hamlets, live opaque blocks and blocking furniture determine
+diffuse sky transport; placement geometry only bounds discovery. Roofs, openings
+and doors therefore change the estimate through geometry, not template categories.
+See `src/core/skyTransport.ts`, `buildSkyResult`, and `src/render/skylight.ts`, `Skylight`.
+
+Inside those application regions, unknown or invalidated geometry stays conservatively
+dark until discovery completes. Completed fields outside GPU residency use the same
+column fallback as pending work, on the CPU and in the world shader. Cached CPU
+results survive GPU eviction so re-entry does not repeat transport. Outside these
+regions, preserve the existing sky estimate: otherwise a canopy with no discovery job
+could remain permanently dark. Solve halos and spatial lookup cells do not expand
+eligibility. Arbitrary construction and caves remain outside this discovery scope.
+
+Worker execution protects rendering from dense transport work, but copying, submission,
+publication and texture uploads still consume the main frame. The #569 spike needs
+both a first look and measured admission/completion evidence; background execution
+alone is not a frame-gate pass. Lighting readiness is derived presentation, never
+simulation or save state. Interior-source propagation remains separate work.
 
 Keep a carried item's glow attached to the item in hand, on the ground, and in
 flight. Rendering and zombie sensing are separate: visual beam shape affects

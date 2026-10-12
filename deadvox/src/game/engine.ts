@@ -5,9 +5,12 @@
 // the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { CHUNK, toChunk } from '../core/coords.ts';
+import { AuthoredSite } from '../core/authoredSite.ts';
+import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { Hamlet } from '../core/hamlet.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { DAY_SKY } from '../core/sky.ts';
+import { footprint, type Placement } from '../core/templates.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -82,21 +85,48 @@ export function createEngine(
   const worldSetup = createWorldSetup(config, meshes, stats);
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
-  const boxes = worldSetup.site?.skyBounds;
-  const skylight = boxes?.length
-    ? new Skylight(boxes, scale.blockSize, (scale.maxCy + 1) * CHUNK - 1, radiusM)
-    : undefined;
+  const { site } = worldSetup;
+  const placements: Placement[] = [];
+  if (site instanceof AuthoredSite) {
+    placements.push(...site.placements);
+  }
+  if (site instanceof Hamlet) {
+    placements.push(...site.lots.map((lot) => lot.placement));
+  }
+  const boxes = placements.map((placement) => {
+    const [width, depth] = footprint(placement);
+    return {
+      min: [...placement.origin] as Vec3,
+      max: [
+        placement.origin[0] + width,
+        placement.origin[1] + placement.template.size[1],
+        placement.origin[2] + depth,
+      ] as Vec3,
+    };
+  });
+  const skylight =
+    boxes.length > 0
+      ? new Skylight(
+          boxes,
+          { blockSize: scale.blockSize, top: (scale.maxCy + 1) * CHUNK - 1, viewRadiusM: radiusM },
+          {
+            world: worldSetup.world,
+            entities: worldSetup.entities,
+            registry: worldSetup.registry,
+            bottom: scale.minCy * CHUNK,
+            submit: (input, receive) => worldSetup.streamer.requestSky(input, receive),
+          },
+        )
+      : undefined;
   if (skylight) {
-    meshes.onChange = (origin) => skylight.chunkChanged(origin);
     worldSetup.streamer.onDataChange = (origin) => skylight.chunkChanged(origin);
   }
   scene.onBeforeRender = (_renderer, _scene, cam) => {
-    skylight?.update(
-      scene,
-      [camera.position.x / scale.blockSize, camera.position.y / scale.blockSize, camera.position.z / scale.blockSize],
-      { entities: worldSetup.entities },
-      (x, y, z) => !worldSetup.world.getChunk(toChunk(x), toChunk(y), toChunk(z)) || worldSetup.isOpaque(x, y, z),
-    );
+    skylight?.update(scene, [
+      camera.position.x / scale.blockSize,
+      camera.position.y / scale.blockSize,
+      camera.position.z / scale.blockSize,
+    ]);
     meshes.cull(cam);
   };
 

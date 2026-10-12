@@ -1,139 +1,135 @@
-import { BoxGeometry, Mesh, MeshLambertMaterial, Scene } from 'three';
+import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
 import { expect, it, vi } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import type { SkyBounds } from '../src/core/skylight.ts';
-import { Skylight } from '../src/render/skylight.ts';
+import { buildSkylight } from '../src/core/skylight.ts';
+import { growSky, SKY_HALO } from '../src/core/skySnapshot.ts';
+import { sampleSky } from '../src/core/skyTransport.ts';
+import { skyFixture } from './fixtures/sky.ts';
+import { fixtureBox } from './fixtures/skyWorld.ts';
 
-const { registry } = buildRegistry([
-  {
-    source: 'fixture.json',
-    data: {
-      furniture: [{ id: 'door', name: 'Door', size: [1, 4, 2], color: '#99794c', door: { handlingSimSeconds: 0.6 } }],
-    },
-  },
-]);
-const box: SkyBounds = { min: [0, 0, 0], max: [8, 10, 8] };
-const makeSky = (boxes: SkyBounds[] = [box]) => new Skylight(boxes, 0.5, 32, 32);
-const volumeCells = 12 * 14 * 12;
-const aboveCells = 12 * 12 * 21;
-
-it('allocates only a nearby placement and never samples the gap between cellars 100 m apart', () => {
-  const sky = makeSky([box, { min: [200, 0, 0], max: [208, 10, 8] }]);
-  const scene = new Scene();
-  const entities = new BlockEntities(registry);
-  const opaque = vi.fn((_x: number, _y: number, _z: number) => false);
-  const update = (position: Vec3) => sky.update(scene, position, { entities }, opaque);
-  update([4, 2, 4]);
-  expect(opaque).toHaveBeenCalledTimes(volumeCells + aboveCells);
-  opaque.mockClear();
-  update([204, 2, 4]);
-  expect(opaque).toHaveBeenCalledTimes(volumeCells + aboveCells);
-  expect(opaque.mock.calls.every(([x]) => x! >= 198)).toBe(true);
-  opaque.mockClear();
-  update([100, 2, 100]);
-  expect(opaque).not.toHaveBeenCalled();
-  expect(sky.at([2, 1, 2])).toBe(1);
+it('keeps a pending eligible room dark but preserves the old estimate under a noncandidate canopy', () => {
+  const fixture = skyFixture();
+  for (let z = 6; z <= 8; z++) {
+    for (let x = 24; x <= 26; x++) {
+      fixture.world.setBlock(x, 9, z, fixture.wall);
+    }
+  }
+  const canopy: Vec3 = [25.5, 7.5, 7.5];
+  const oracle = buildSkylight(growSky(fixtureBox, SKY_HALO * 2), 31, fixture.knownOpaque);
+  expect(sampleSky(oracle, canopy)).toBeGreaterThan(0);
+  expect(sampleSky(oracle, canopy)).toBeLessThan(1);
+  fixture.update();
+  expect(fixture.pending.length).toBeGreaterThan(0);
+  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBe(0);
+  expect(fixture.sky.at(canopy)).toBe(1);
+  const { uniforms } = fixture.shader();
+  const { data } = uniforms.uSkyRegions!.value.image;
+  expect(data[3]).toBe(0);
+  expect(uniforms.uSkyGrid!.value.image.data.some((value: number) => value > 0)).toBe(true);
+  fixture.complete();
+  fixture.update();
+  expect(fixture.sky.stats.accepted).toBeGreaterThan(0);
+  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBe(0);
+  expect(fixture.sky.at([8.5, 10.5, 8.5])).toBe(1);
+  expect(fixture.sky.at(canopy)).toBe(1);
+  expect(data[3]).toBe(1);
 });
 
-it('ignores distant chunk churn and frame updates, but invalidates a local column including sky above', () => {
-  const sky = makeSky();
-  const scene = new Scene();
-  const entities = new BlockEntities(registry);
-  const opaque = vi.fn((_x: number, _y: number, _z: number) => false);
-  const update = () => sky.update(scene, [4, 2, 4], { entities }, opaque);
-  update();
-  opaque.mockClear();
-  update();
-  expect(opaque).not.toHaveBeenCalled();
-  sky.chunkChanged([192, 0, 192]);
-  update();
-  expect(opaque).not.toHaveBeenCalled();
-  sky.chunkChanged([0, 0, 0]);
-  update();
-  expect(opaque).toHaveBeenCalledTimes(volumeCells + aboveCells);
-});
-
-it('patches a late lit mesh without chunk or entity revision changes', () => {
-  const sky = makeSky();
-  const scene = new Scene();
-  const entities = new BlockEntities(registry);
-  sky.update(scene, [4, 2, 4], { entities }, () => false);
+it('patches a late lit mesh without a geometry or entity revision', () => {
+  const fixture = skyFixture();
+  fixture.update();
+  fixture.complete();
+  fixture.update();
   const material = new MeshLambertMaterial();
-  scene.add(new Mesh(new BoxGeometry(), material));
-  sky.update(scene, [4, 2, 4], { entities }, () => false);
-  expect(material.customProgramCacheKey()).toContain('bounded-voxel-skylight');
-});
-
-it('keeps both cellars resident across a nearest-cellar switch and packs their different strides', () => {
-  const sky = makeSky([box, { min: [20, 0, 0], max: [30, 14, 12] }]);
-  const scene = new Scene();
-  const entities = new BlockEntities(registry);
-  const opaque = vi.fn((x: number, y: number) => y === (x < 12 ? 6 : 8));
-  const material = new MeshLambertMaterial();
-  scene.add(new Mesh(new BoxGeometry(), material));
-  const update = (position: Vec3) => sky.update(scene, position, { entities }, opaque);
-  update([4, 2, 4]);
-  expect(sky.at([2, 1, 2])).toBe(0);
-  expect(sky.at([12, 1, 2])).toBe(0);
-  opaque.mockClear();
-  update([24, 2, 4]);
-  expect(sky.at([2, 1, 2])).toBe(0);
-  expect(sky.at([12, 1, 2])).toBe(0);
-  expect(opaque).not.toHaveBeenCalled();
+  fixture.scene.add(new Mesh(new BoxGeometry(), material));
+  fixture.update();
   const shader = {
     uniforms: {} as Parameters<typeof material.onBeforeCompile>[0]['uniforms'],
     vertexShader: '#include <common>\n#include <worldpos_vertex>',
     fragmentShader: '#include <common>\n#include <lights_fragment_end>',
   };
   material.onBeforeCompile(shader as never, null as never);
-  const { data, width, height, depth } = shader.uniforms.uSkyVolume!.value.image;
-  expect([width, height, depth]).toEqual([14, 16, 32]);
-  expect(data[6 + width * (6 + height * 9)]).toBe(255);
-  expect(data[6 + width * (6 + height * (14 + 9))]).toBe(0);
-  expect(shader.uniforms.uSkyAtlasOffset!.value[1]).toBe(14 / depth);
+  expect(shader.uniforms.uSkyRegions!.value).toBe(fixture.shader().uniforms.uSkyRegions!.value);
 });
 
-it('caps residency at four and follows the actual view radius rather than a fixed 32 m', () => {
-  const boxes: SkyBounds[] = Array.from({ length: 5 }, (_, index) => ({
-    min: [index * 20, 0, 0],
-    max: [index * 20 + 8, 10, 8],
+it('checks preparation admission after each chunk copy using an injected work clock', () => {
+  let spent = 0;
+  const fixture = skyFixture(undefined, () => spent);
+  const copies = [...fixture.world.chunks.values()].map((chunk) => {
+    const raw = chunk.raw.bind(chunk);
+    return vi.spyOn(chunk, 'raw').mockImplementation(() => {
+      spent += 1000;
+      return raw();
+    });
+  });
+  fixture.update();
+  expect(copies.reduce((sum, spy) => sum + spy.mock.calls.length, 0)).toBe(1);
+  expect(fixture.pending).toHaveLength(0);
+  for (let step = 0; step < fixture.world.chunks.size + 2 && fixture.pending.length === 0; step++) {
+    fixture.update();
+  }
+  expect(fixture.pending.length).toBeGreaterThan(0);
+  for (const spy of copies) {
+    spy.mockRestore();
+  }
+});
+
+it('discards a worker completion after a roof edit instead of publishing stale full sky', () => {
+  const fixture = skyFixture();
+  for (let z = 4; z < 13; z++) {
+    for (let x = 4; x < 13; x++) {
+      fixture.world.setBlock(x, 9, z, 0);
+    }
+  }
+  fixture.update();
+  expect(fixture.pending.length).toBeGreaterThan(0);
+  fixture.world.setBlock(8, 9, 8, fixture.wall);
+  fixture.complete();
+  fixture.update();
+  expect(fixture.sky.stats.accepted).toBe(0);
+  expect(fixture.sky.stats.discarded).toBeGreaterThan(0);
+  expect(fixture.sky.at([8.5, 8.5, 8.5])).toBe(0);
+  fixture.complete();
+  fixture.update();
+  expect(fixture.sky.stats.accepted).toBeGreaterThan(0);
+  expect(fixture.sky.at([8.5, 8.5, 8.5])).toBeLessThan(1);
+});
+
+it('retains CPU results across GPU eviction and reentry without a bright fallback or rebuild', () => {
+  const boxes = Array.from({ length: 5 }, (_, index) => ({
+    min: fixtureBox.min.map((value, axis) => value + (axis === 0 ? index * 32 : 0)) as Vec3,
+    max: fixtureBox.max.map((value, axis) => value + (axis === 0 ? index * 32 : 0)) as Vec3,
   }));
-  const scene = new Scene();
-  const entities = new BlockEntities(registry);
-  const sky = new Skylight(boxes, 0.5, 32, 64);
-  const opaque = (_x: number, y: number) => y === 6;
-  sky.update(scene, [44, 2, 4], { entities }, opaque);
-  expect(sky.at([2, 1, 2])).toBe(0);
-  expect(sky.at([42, 1, 2])).toBe(1);
-  sky.update(scene, [84, 2, 4], { entities }, opaque);
-  expect(sky.at([2, 1, 2])).toBe(1);
-  expect(sky.at([42, 1, 2])).toBe(0);
-  const narrow = new Skylight(boxes, 0.5, 32, 16);
-  narrow.update(scene, [4, 2, 4], { entities }, opaque);
-  expect(narrow.at([22, 1, 2])).toBe(1);
+  const fixture = skyFixture(boxes);
+  for (const box of boxes) {
+    const position: Vec3 = [box.min[0] + 4, 4, 8];
+    fixture.update(position);
+    fixture.complete();
+    fixture.update(position);
+  }
+  expect(fixture.sky.stats.accepted).toBe(boxes.length);
+  const { requested } = fixture.sky.stats;
+  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBe(0);
+  fixture.update([8, 4, 8]);
+  expect(fixture.sky.stats.requested).toBe(requested);
+  expect(fixture.sky.at([8.5, 4.5, 8.5])).toBe(0);
 });
 
-it('rebuilds on local door opacity changes with cached sky columns, not distant or searched entity changes', () => {
-  const sky = makeSky();
-  const scene = new Scene();
-  const entities = new BlockEntities(registry);
-  const opaque = vi.fn((_x: number, _y: number, _z: number) => false);
-  const update = () => sky.update(scene, [4, 2, 4], { entities }, opaque);
-  update();
-  opaque.mockClear();
-  entities.add({ type: 'door', pos: [128, 1, 128], size: [1, 4, 2], facing: 'n' });
-  update();
-  expect(opaque).not.toHaveBeenCalled();
-  const local = entities.add({ type: 'door', pos: [2, 1, 2], size: [1, 4, 2], facing: 'n' })!;
-  update();
-  expect(opaque).toHaveBeenCalledTimes(volumeCells);
-  opaque.mockClear();
-  entities.markSearched(local);
-  update();
-  expect(opaque).not.toHaveBeenCalled();
-  entities.setOpen(local, true);
-  update();
-  expect(opaque).toHaveBeenCalledTimes(volumeCells);
+it('invalidates geometry above the field on a blocking door change, but not on search state', () => {
+  const fixture = skyFixture();
+  fixture.update();
+  fixture.complete();
+  fixture.update();
+  const door = fixture.entities.add({ type: 'fixture_door', pos: [8, 20, 8], size: [1, 1, 1], facing: 'n' })!;
+  fixture.update();
+  expect(fixture.pending.length).toBeGreaterThan(0);
+  fixture.complete();
+  fixture.update();
+  const { requested } = fixture.sky.stats;
+  fixture.entities.markSearched(door);
+  fixture.update();
+  expect(fixture.sky.stats.requested).toBe(requested);
+  fixture.entities.setOpen(door, true);
+  fixture.update();
+  expect(fixture.sky.stats.requested).toBeGreaterThan(requested);
 });
