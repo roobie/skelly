@@ -6,8 +6,10 @@ import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
+import { realSeconds, type RealSeconds } from '../src/core/time.ts';
 import type { Site } from '../src/core/site.ts';
 import { World } from '../src/core/world.ts';
+import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Simulation } from './simulationFixture.ts';
 import {
@@ -33,6 +35,35 @@ describe('snapshot state components', () => {
     expect(restored.sim.actions.job).toMatchObject({ jobType: 'wait', stopped: false });
     expect(restored.sim.compression.active).toBe(true);
   });
+  it('keeps a mid-sleep bed snapshot saveable when a frame elapsed is invalid', async () => {
+    const runtime = createRuntime(undefined, true);
+    runtime.sim.needs.fatigue = 80;
+    expect(startRest(runtime, 'sleep')).toBeUndefined();
+    const frame = (elapsed: RealSeconds): void => {
+      advanceLiveFrame(runtime.sim, elapsed, undefined, (simDt, until) => runtime.session.frame(simDt, until));
+    };
+    for (let index = 0; index < 4; index++) {
+      frame(realSeconds(1 / 60));
+    }
+    expect(runtime.sim.compression.active).toBe(true);
+    expect(runtime.sim.compression.c).toBeGreaterThan(1);
+    const compressionBeforeInvalidFrame = runtime.sim.compression.c;
+    frame(realSeconds(0));
+    const elapsedErrors: unknown[] = [];
+    for (const elapsed of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+      try {
+        frame(elapsed as RealSeconds);
+      } catch (error) {
+        elapsedErrors.push(error);
+      }
+    }
+    const snapshot = capture(runtime);
+    expect(snapshot.character.longAction.job).toMatchObject({ jobType: 'sleep', stopped: false });
+    await expect(encodeFixture(snapshot)).resolves.toBeInstanceOf(Uint8Array);
+    expect(elapsedErrors).toEqual([]);
+    expect(runtime.sim.compression.c).toBe(compressionBeforeInvalidFrame);
+  });
+
   it('round-trips loot identity so returning and retaking an item does not recount it', async () => {
     const source = createRuntime();
     const pos = source.player.body.pos.map(Math.floor) as [number, number, number];
