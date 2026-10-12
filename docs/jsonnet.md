@@ -19,6 +19,7 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 ## Reasons
 
 - Use templates and constructors when they expose a real relationship; shared structure keeps variants from drifting. Keep irregular authored choices explicit when abstraction would obscure them.
+- No source-coverage gate is used: the JSON exception depends on whether a particular edit exposes repetition. A file-wide gate would force unrelated migrations, while a history-based gate would have to classify content diffs against that exception. Review the exception when editing a file.
 - Treat IDs as content interfaces: explicit references remain stable when display names change.
 - Keep module exports deliberate and inheritance shallow so ownership and composition stay inspectable.
 - Force critical assertions because Jsonnet evaluation is lazy; invalid authored data must fail before it reaches consumers.

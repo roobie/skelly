@@ -13,6 +13,10 @@
       "output": "deadvox/src/content/base/compression.json"
     },
     {
+      "source": "deadvox/src/content/base/furniture.jsonnet",
+      "output": "deadvox/src/content/base/furniture.json"
+    },
+    {
       "source": "deadvox/src/content/base/items-explosives.jsonnet",
       "output": "deadvox/src/content/base/items-explosives.json"
     },
@@ -29,12 +33,20 @@
       "output": "deadvox/src/content/base/locks.json"
     },
     {
+      "source": "deadvox/src/content/base/models-firearms.jsonnet",
+      "output": "deadvox/src/content/base/models-firearms.json"
+    },
+    {
       "source": "deadvox/src/content/base/saves.jsonnet",
       "output": "deadvox/src/content/base/saves.json"
     },
     {
       "source": "deadvox/src/content/base/ui.jsonnet",
       "output": "deadvox/src/content/base/ui.json"
+    },
+    {
+      "source": "deadvox/src/content/base/zombies.jsonnet",
+      "output": "deadvox/src/content/base/zombies.json"
     },
     {
       "source": "site/playtest.jsonnet",
