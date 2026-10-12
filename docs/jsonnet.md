@@ -7,7 +7,7 @@ read_if:
 
 # Jsonnet authoring
 
-Author new structured content in Jsonnet, except maps edited in Tiled. Convert existing JSON when a touch exposes repetition; only a focused one-value edit in a non-repetitive existing file may stay JSON. Compiled output preserves the consumer's format; `tools/jsonnet/compile.mjs`, `compileJsonnetSources`, owns the shared boundary.
+Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSON when a touch exposes repetition; only a focused one-value edit in a non-repetitive existing file may stay JSON. Compiled output preserves the consumer's format; `tools/jsonnet/compile.mjs`, `compileJsonnetSources`, owns the shared boundary.
 
 ## Source boundaries
 

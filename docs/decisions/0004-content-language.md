@@ -32,7 +32,9 @@ replayed deterministically. Mind Over Matter is the golden standard the content 
 support, not merely a capability benchmark; its scope is open. Keep module ordering and conflict
 policy simple and useful, with `dependencies: Mod[]` as the proposed dependency boundary; whether
 more is needed remains open. Migrate incrementally in a low number of large steps, with the steps
-and boundaries still open.
+and boundaries still open. Weather simulation stays in code while mods configure weather, including
+continual rain; rules may read weather through an event such as `weather_changed`, with the event
+contract open.
 
 The runtime-function format and its event, effect, composition and persistence contracts remain
 open in #313. The content extraction tracked by #393 does not settle that format. A design
