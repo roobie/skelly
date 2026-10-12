@@ -37,11 +37,14 @@ vicinity uses its available width without squeezing a capped grid. Justified
 wider grids scroll within their content-owned cap. Floor piles are displayed
 packed to the column width in `src/ui/inventoryScreen.ts`,
 `InventoryScreen.gridViewModel`; stored positions remain save state and display
-packing never writes them. Drops onto floor piles merge with the item under the
-pointer when compatible; otherwise they use an available stack or the first
-free stored spot. See `src/ui/inventoryScreen.ts`,
-`InventoryScreen.scrollSelectedItemIntoView`, for selection visibility across
-scrollable ancestors.
+packing never writes them. `targetForPackedFloorDrop` maps a visible item to
+its stored cell for a compatible merge or valid swap; otherwise the pile handles
+an ordinary free-space drop. This keeps display packing from silently changing
+the addressed stored item. The replayable inventory command decides whether to
+merge, swap or use free space; see `src/core/inventory.ts`, `Inventory.plan` and
+`Inventory.move`. See
+`src/ui/inventoryScreen.ts`, `InventoryScreen.scrollSelectedItemIntoView`, for
+selection visibility across scrollable ancestors.
 Tab selection and the split are runtime UI state, not save or replay state.
 G, V and B open the character screen on Items, Skills or Crafting, or switch to that tab
 while it is open; Tab reopens the last tab. The keys sit beside WASD so movement can

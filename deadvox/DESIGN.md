@@ -642,6 +642,14 @@ HTML over the game view, and keyboard-first:
   a cell shows less there too. See `src/core/inventoryGridName.ts`,
   `visibleGridName` and `GRID_CELL_REM`.
 - Filters and search, and item details on hover or focus.
+
+An occupied drop of a whole item swaps it with the destination only when both
+items fit in each other's exact place; partial-stack moves keep the ordinary
+refusal. This lets players rearrange without first freeing a slot, while the
+refusal prevents either item from being displaced into invalid space. The swap
+uses the replayable queued inventory move; see `src/core/inventory.ts`,
+`Inventory.plan` and `Inventory.move`, `src/core/handling.ts`, `HandlingQueue`,
+and `src/game/replayCommands.ts`, `applyReplayActionPayload`.
 - A **quickbar** of shortcuts to items you carry. BR (2026-10-05, 00:02):
   "one thing that feels not quite right to me is that pressing the quickbar
   number activates the item […] what if the number itself only wields or
