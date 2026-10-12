@@ -110,7 +110,13 @@ slice checklist issue.
   survey. Keep reports out of repository files.
 - **At slice closure:** commission one deep docs pass, tracked by the exit checkbox
   on the slice checklist issue. Record its findings in #159 or an issue linked from
-  it, not in a repository file.
+  it, not in a repository file. Each docs-pass PR body carries a cut ledger: one
+  row for each rule, gate, choice or reason the pass removes from or moves out of
+  a doc, naming where it lives now (a doc path and section, a code symbol, or
+  "dropped" with the reason). The reviewer checks that each destination still says
+  it, and a cut with no row is a FIX. Reviewers rebuilding cuts from the diff is
+  how passes lost rules and approval owners; a row per cut makes each one
+  checkable.
 - **Decide and date:** the lead records each finding's owner, rationale, scope,
   affected milestone and decision: do separately, fold into named work, defer,
   or drop. Every open finding has a next revisit date in the agent-work tracker,
