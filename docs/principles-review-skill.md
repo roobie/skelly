@@ -38,7 +38,7 @@ the skill keeps no second copy.
 2. **Subproject pillars and content ownership:** each subproject's own pillars,
    such as `deadvox/DESIGN.md`, "Pillars", whose "Depth through data" covers
    deadvox code that owns a decision belonging to content; for performance,
-   `deadvox/DESIGN.md`, "Reference hardware"; for authored data, `docs/jsonnet.md`,
+   `deadvox/DESIGN.md`, "Performance and scale"; for authored data, `docs/jsonnet.md`,
    "Jsonnet authoring"; and `docs/PROCESS.md`, "Continuous
    consolidation", for ownership and duplicated decisions.
 3. **Zero drift and docs:** `README.md`, "Zero drift"; `AGENTS.md`, "Zero drift";

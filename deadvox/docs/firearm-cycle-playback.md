@@ -62,7 +62,7 @@ rack turns it toward the player and its handle toward the off hand, a magazine
 job turns it muzzle-in. `src/render/handlingTurn.ts`, `handlingRotation`, sets the
 shared turn for both the drawn model and the crosshair. The
 magazine in the well is the fitted one's own model, drawn in the
-model's magazine slot (DESIGN.md, "One item, one look").
+model's magazine slot (DESIGN.md, "Piles and item models").
 
 ## Ejection and saves
 

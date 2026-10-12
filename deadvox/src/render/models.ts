@@ -1,4 +1,4 @@
-// Item models (DESIGN.md, "Item models"): glTF binaries in the base pack, loaded once
+// Item models (DESIGN.md, "Piles and item models"): glTF binaries in the base pack, loaded once
 // with three.js's GLTFLoader. Each is prepared twice: lying on the ground, centred
 // over the origin, for piles; and held at its grip in the data-selected pose.
 // Until a model has loaded, or if it can't, its items show as if they had none.
