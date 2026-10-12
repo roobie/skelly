@@ -325,12 +325,12 @@ function checkWhen(path, text, failures) {
 
 export function checkPolicyRules({ path, text }) {
   const failures = new Map();
+  if (policyExempt(path)) {
+    return [];
+  }
   if (HISTORICAL_DOC.test(path)) {
     add(failures, path, 'historical_doc', 'reviews and retros belong in git history, not tracked files');
     return [...failures.values()];
-  }
-  if (policyExempt(path)) {
-    return [];
   }
   const markdown = path.endsWith('.md');
   checkCitations(path, text, markdown, failures);

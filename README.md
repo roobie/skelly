@@ -48,4 +48,4 @@ npm run dev --prefix deadvox
 npm run dev --prefix mobgen
 ```
 
-The root checks are `npm run ci` and `npm run test:site`. Subproject checks are listed in [`docs/PROCESS.md`](docs/PROCESS.md).
+The root checks are `npm run ci` and `npm run test:site`. Use each subproject's `package.json` scripts for its checks; CI runs the workflows under `.github/workflows/`.

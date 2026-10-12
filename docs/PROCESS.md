@@ -49,6 +49,12 @@ This document owns roles, decision gates and slice coordination. Project princip
 7. **Clean up after the merge:** remove the worktree, stop its dev server, and delete the remote
    branch.
 
+## Bound every run
+
+Bound long shell and tool runs so a hung command cannot occupy a worker indefinitely. Check a
+harness schema's timeout units (seconds or milliseconds), and keep each stage's bound distinct
+from the whole-run bound.
+
 ## Slice checklist
 
 The active checklist owns milestone evidence so parallel plans cannot drift.

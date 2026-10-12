@@ -27,6 +27,13 @@ describe a consequence, but cannot mutate state outside the engine's validated b
 
 ## Runtime design
 
+Purity should be enforced by the language or a sandbox, so composed content can be hashed and
+replayed deterministically. Mind Over Matter is the golden standard the content system should
+support, not merely a capability benchmark; its scope is open. Keep module ordering and conflict
+policy simple and useful, with `dependencies: Mod[]` as the proposed dependency boundary; whether
+more is needed remains open. Migrate incrementally in a low number of large steps, with the steps
+and boundaries still open.
+
 The runtime-function format and its event, effect, composition and persistence contracts remain
 open in #313. The content extraction tracked by #393 does not settle that format. A design
 spike compares a small expression evaluator with CEL and tests one content area and one runtime

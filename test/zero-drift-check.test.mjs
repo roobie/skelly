@@ -144,12 +144,13 @@ describe('zero-drift symbol check', () => {
 });
 
 describe('zero-drift policy rules', () => {
-  it('rejects tracked review and retrospective files', () => {
+  it('rejects first-party review and retrospective files but exempts third-party references', () => {
     const paths = ['docs/reviews/fixture.md', 'retro-slice-3.md'];
     assert.deepEqual(
       paths.flatMap((path) => checkPolicyRules({ path, text: '' })).map(({ path, check }) => ({ path, check })),
       paths.map((path) => ({ path, check: 'historical_doc' })),
     );
+    assert.deepEqual(checkPolicyRules({ path: 'mobgen/reference/retro-fixture.md', text: '' }), []);
   });
 
   it('flags stamped source citations, not BR as an actor', () => {
