@@ -20,6 +20,7 @@ import {
   keyboardInput,
 } from '../src/game/inputBindings.ts';
 import { routeModalCommand } from '../src/game/modalCommand.ts';
+import { Quickbar } from '../src/game/quickbar.ts';
 import { applyReplayActionPayload, type ReplayActionPayload } from '../src/game/replayCommands.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
@@ -67,6 +68,7 @@ function setup(contentRegistry = registry) {
   document.body.innerHTML = '<div id="inventory" hidden></div><div id="inventory-drag-root"></div>';
   const inv = new Inventory(contentRegistry);
   const queue = new HandlingQueue(inv);
+  const quickbar = new Quickbar();
   const jeans = inv.create('jeans');
   const hoodie = inv.create('hoodie');
   const beans = inv.create('canned_beans');
@@ -112,7 +114,7 @@ function setup(contentRegistry = registry) {
       return applyReplayActionPayload(payload, {
         inventory: inv,
         queue,
-        quickbar: { assign: () => undefined },
+        quickbar,
         search: (uid) => {
           if (uid !== entity.uid || entity.searched || searching.has(entity)) {
             return;
@@ -156,6 +158,7 @@ function setup(contentRegistry = registry) {
     screen,
     inv,
     queue,
+    quickbar,
     entity,
     searching,
     beans,
@@ -632,6 +635,16 @@ describe('inventory screen Lit rendering', () => {
     body.advance(body.tuning.knockoutSimSeconds);
     expect(screen.onAction('inventory.drop')).toBe(true);
     expect(queue.jobs.length).toBeGreaterThan(0);
+  });
+  it('confirms the assigned quickbar slot through the shared notice', () => {
+    const { screen, inv, quickbar, beans, notices } = setup();
+    screen.selected = beans;
+
+    expect(screen.onAction('quickbar.assign.3')).toBe(true);
+
+    expect(quickbar.resolve(2, inv)).toBe(beans);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toContain('3');
   });
   it('keeps unselected-item commands owned by inventory rather than debug', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, undefined);

@@ -1660,12 +1660,7 @@ export const startPlay = (
     if (reason) {
       return reason;
     }
-    if (payload.kind === 'inventory.assign') {
-      const item = inventory.itemByUid(payload.itemUid);
-      if (item) {
-        showNotice(`${inventory.name(item)} on quickbar ${payload.slot + 1}`);
-      }
-    } else if (payload.kind === 'craft.start' || payload.kind === 'action.wait') {
+    if (payload.kind === 'craft.start' || payload.kind === 'action.wait') {
       closeInventoryScreen();
       syncMenuState();
     }

@@ -860,7 +860,11 @@ export class InventoryScreen {
       return action.startsWith('inventory.') || digit !== undefined;
     }
     if (digit !== undefined) {
-      this.report(this.hooks.dispatch({ kind: 'inventory.assign', slot: digit, itemUid: item.uid }));
+      const reason = this.hooks.dispatch({ kind: 'inventory.assign', slot: digit, itemUid: item.uid });
+      this.report(reason);
+      if (!reason) {
+        this.hooks.notice(`${this.inv.name(item)} on quickbar ${digit + 1}`);
+      }
       return true;
     }
     return this.selectedAction(action, item);

@@ -59,7 +59,8 @@ describe('UI layer order', () => {
     }
   });
 
-  it('keeps the drag ghost above draggable panels and the game cursor above ordinary game layers', () => {
+  it('keeps inventory feedback above its panel, the drag ghost above draggable panels, and the game cursor above ordinary game layers', () => {
+    expect(positionOf('inventory-feedback')).toBeGreaterThan(positionOf('inventory'));
     expect(positionOf('drag-ghost')).toBeGreaterThan(positionOf('inventory'));
     expect(positionOf('drag-ghost')).toBeGreaterThan(positionOf('crafting'));
 
