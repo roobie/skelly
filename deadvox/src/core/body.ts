@@ -223,10 +223,14 @@ export class Body implements ModifierActor {
 
   /** Starts one dose of a painkiller; its relief follows the item's curve (`pain.ts`, `doseRelief`). */
   takeAnalgesic(item: string): void {
-    if (!this.analgesics(item)) {
+    const def = this.analgesics(item);
+    if (!def) {
       throw new Error(`${item} is not a painkiller`);
     }
-    this.state.pain.doses.push({ item, elapsedGameSeconds: 0 });
+    // Content may make every phase zero; such a dose relieves nothing and is never kept, since a kept dose must have time left.
+    if (doseLasts(def) > 0) {
+      this.state.pain.doses.push({ item, elapsedGameSeconds: 0 });
+    }
   }
 
   // Needs and sleep read their content rates here, once each, so the body's modifier point can wrap them.

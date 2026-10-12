@@ -88,6 +88,7 @@ const SimAcceleration = pipe(Positive, transform(simAcceleration));
 const SimDurationRange = strictObject({ min: PositiveSimSeconds, max: PositiveSimSeconds });
 const PositiveGameHours = pipe(Positive, transform(gameHours));
 const PositiveGameMinutes = pipe(Positive, transform(gameMinutes));
+const GameMinutes = pipe(NonNegative, transform(gameMinutes));
 const GamePerHour = pipe(Positive, transform(gamePerHour));
 const SimPerMinute = pipe(Positive, transform(simPerMinute));
 const GameTimeOfDay = pipe(
@@ -461,12 +462,12 @@ const AnalgesicSchema = strictObject({
   reliefPerDose: Positive,
   /** The most relief the group's doses give together, so a repeat dose adds less. */
   maxRelief: Positive,
-  /** Game minutes for a dose's relief to rise from nothing to its peak. */
-  onsetGameMinutes: PositiveGameMinutes,
+  /** Game minutes for a dose's relief to rise from nothing to its peak; 0 reaches the peak on taking. */
+  onsetGameMinutes: GameMinutes,
   /** Game minutes it holds at its peak. */
-  peakGameMinutes: PositiveGameMinutes,
-  /** Game minutes it then takes to fall back to nothing. */
-  fadeGameMinutes: PositiveGameMinutes,
+  peakGameMinutes: GameMinutes,
+  /** Game minutes it then takes to fall back to nothing; 0 stops at once. */
+  fadeGameMinutes: GameMinutes,
 });
 
 /** What one application does to a body wound (DESIGN.md, "Bleeding"). */

@@ -57,7 +57,10 @@ export const fadeAcute = (acute: number, seconds: number, flat: number, share: n
 export const doseLasts = (def: AnalgesicDef): number =>
   def.onsetGameMinutes + def.peakGameMinutes + def.fadeGameMinutes;
 
-/** One dose's relief at an age: it rises through the onset, holds at its peak, then falls through the fade. */
+/**
+ * One dose's relief at an age: it rises through the onset, holds at its peak, then falls through the fade. A phase of
+ * zero length is skipped, so no onset starts at the peak and no fade drops straight to nothing.
+ */
 const doseRelief = (def: AnalgesicDef, elapsedGameSeconds: number): number => {
   const { reliefPerDose: peak, onsetGameMinutes: onset, peakGameMinutes: hold, fadeGameMinutes: fade } = def;
   if (elapsedGameSeconds < onset) {
@@ -71,8 +74,8 @@ const doseRelief = (def: AnalgesicDef, elapsedGameSeconds: number): number => {
 };
 
 /**
- * All doses' relief together. Doses in one group add up to the group's cap, the highest `maxRelief` among them, so a
- * second pill tops the relief up and a third adds nothing.
+ * All doses' relief together. Doses in one group add up to no more than the group's cap, the highest `maxRelief` among
+ * them, so repeat doses cannot stack relief without limit; another group's doses add on top.
  */
 export const analgesia = (doses: readonly PainDose[], lookup: AnalgesicLookup): number => {
   const groups = new Map<string, { relief: number; cap: number }>();

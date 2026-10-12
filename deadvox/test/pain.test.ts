@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import type { Modifier } from '../src/core/modifiers.ts';
 import type { AnalgesicDef } from '../src/core/pain.ts';
 import { gameMinutes } from '../src/core/time.ts';
@@ -166,6 +167,38 @@ describe('pain', () => {
     expect(plain.pain.tier).toBeDefined();
     expect(tough.pain.tier ?? -1).toBeLessThan(plain.pain.tier!);
     expect(tough.pain.effects.aimSway).toBeLessThan(plain.pain.effects.aimSway);
+  });
+
+  it('accepts zero-length phases: no onset is at the peak on taking, no fade ends at once, and a dose lasting no time is not kept', () => {
+    const zeroPhased = (id: string, peakGameMinutes: number) => ({
+      id,
+      name: id,
+      category: 'medical',
+      weight: 1,
+      size: [1, 1],
+      analgesic: { reliefPerDose: 3, maxRelief: 3, onsetGameMinutes: 0, peakGameMinutes, fadeGameMinutes: 0 },
+    });
+    const { registry, issues } = buildRegistry([
+      { source: 'zero-phase-fixture', data: { items: [zeroPhased('instant', 30), zeroPhased('nothing', 0)] } },
+    ]);
+    expect(issues).toEqual([]);
+    const instant = registry.items.get('instant')!.analgesic!;
+    const body = new Body(BODY_TUNING_FIXTURE, undefined, [], (item) => registry.items.get(item)?.analgesic);
+    body.impact(60, 'torso');
+    const before = body.pain.felt;
+    expect(before).toBeGreaterThan(instant.reliefPerDose);
+
+    body.takeAnalgesic('instant');
+    expect(before - body.pain.felt).toBeCloseTo(instant.reliefPerDose, 9);
+    ageBy(body, instant.peakGameMinutes / 2);
+    expect(before - body.pain.felt).toBeCloseTo(instant.reliefPerDose, 9);
+    ageBy(body, instant.peakGameMinutes / 2);
+    expect(body.pain.felt).toBe(before);
+    expect(body.snapshotState().pain.doses).toEqual([]);
+
+    body.takeAnalgesic('nothing');
+    expect(body.pain.felt).toBe(before);
+    expect(body.snapshotState().pain.doses).toEqual([]);
   });
 
   it('restores acute pain and doses from a snapshot, and refuses a dose of an item that is no painkiller', () => {
