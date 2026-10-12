@@ -23,7 +23,7 @@ const label = (r: Resolved, part: string): string => {
   return family === part ? part : `${part} (${family})`;
 };
 
-/** Mount type, gender and size agree; each port (or slot) is used at most once. */
+/** Mount type, gender, size and standard agree; each port (or slot) is used at most once. */
 export const portCompat: Rule = {
   id: 'port-compat',
   title: 'Ports are compatible',
@@ -56,6 +56,14 @@ export const portCompat: Rule = {
         issues.push({
           rule: 'port-compat',
           message: `Size mismatch: ${rc.conn.from} is size ${a.size} but ${rc.conn.to} is size ${b.size}.`,
+          parts,
+          ports,
+        });
+      }
+      if (a.standard !== b.standard) {
+        issues.push({
+          rule: 'port-compat',
+          message: `Standard mismatch: ${rc.conn.from} is ${a.standard ?? 'unstated'} but ${rc.conn.to} is ${b.standard ?? 'unstated'}.`,
           parts,
           ports,
         });

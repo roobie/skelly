@@ -1458,6 +1458,10 @@ const SiteGenerationSchema = strictObject({
 });
 const SenseSchema = strictObject({
   id: Id,
+  movement: strictObject({
+    sidewaysSpeedScale: Fraction,
+    backwardSpeedScale: Fraction,
+  }),
   crouch: strictObject({
     speedMetresPerSimSecond: SimRate,
     hearingRangeScale: Fraction,

@@ -3,7 +3,7 @@ read_if:
   - you decide how sunlight and shadows should read in play
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
-  - you change the player's collision body, or what crouching lets the player fit through
+  - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
@@ -127,9 +127,16 @@ building templates. The frame budget and why the default is 96 m are in
 [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks). The choice is implemented by
 `src/core/scale.ts`, `BLOCK_SIZE`.
 
+Player movement is slower sideways and backward than forward; diagonal pace
+blends between the axes and composes multiplicatively with other movement factors.
+The blend scales speed only, so movement stays aligned with the keys, and diagonal
+pace stays between its two axis speeds: never faster than forward or slower than its
+slower axis. See `src/content/base/senses.jsonnet`, `movement`;
+`src/core/schema.ts`, `SenseSchema`; and `src/game/player.ts`, `steer`.
+
 Crouching lowers the player's collision body as well as the eye, so a crouched
 player fits through openings a standing one can't. The FOB's east wall has a
-low passage sized from the crouched body in `src/content/base/senses.json`,
+low passage sized from the crouched body in `src/content/base/senses.jsonnet`,
 `crouch.bodyHeightMetres`: a crouched player fits but a standing player does
 not. Its retained base course keeps the floor level with the approach. The gap
 sits away from the guarded north entrance and the southern breach, so it reads
@@ -1230,11 +1237,13 @@ without modeling armour now.
   saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps
-  the stains it fell with. A player's bleeding drips from the affected region as
-  the avatar is drawn in each view; in first person, droplets enter view only when
-  looking down or near the screen edge. The HUD shows blood level and
-  active regions, and the worst wound reaching a worse tier speaks that tier's
-  notice, if content gives it one (see [Bleeding](#bleeding)). These cues derive from
+  the stains it fell with. Blood shares scene lighting rather than glowing over
+  it, so darkness hides stains and carried light can reveal them. A player's
+  bleeding drips from the affected region as the avatar is drawn in each view; in
+  first person, droplets enter view only when looking down or near the screen edge.
+  The HUD shows blood level and active regions, and the worst wound reaching a
+  worse tier speaks that tier's notice, if content gives it one (see
+  [Bleeding](#bleeding)). These cues derive from
   existing body wounds; none adds simulation or save state. Gore stays out of
   the simulation so that blood never changes a fight, a save or a replay.
   Splats are decoration, so they fade rather than being saved, which would add
