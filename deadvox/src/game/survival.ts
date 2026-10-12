@@ -266,7 +266,7 @@ export class Survival {
     const target = this.inventory.targetForLocation(at);
     const hand = { kind: 'hand', side: 'right' } as const;
     const duration =
-      this.inventory.handlingTime(item, at, hand) + use.time + this.inventory.handlingTime(item, hand, target);
+      this.inventory.handlingTime(item, at, hand) + use.simSeconds + this.inventory.handlingTime(item, hand, target);
     this.queue.enqueueAction('survival.quickbarConsume', use.label, duration, {
       itemUid: item.uid,
       source: JSON.parse(canonicalJson(this.inventory.targetState(target))) as JobValue,

@@ -57,16 +57,16 @@ const DRINK_TIME = 2;
 export const TAKE_TIME = 2;
 
 /** How one of `def` is consumed: eaten, drunk or, for a painkiller, taken. Undefined for anything else. */
-export const consumption = (def: ReturnType<typeof defOf>): { label: string; time: number } | undefined => {
+export const consumption = (def: ReturnType<typeof defOf>): { label: string; simSeconds: number } | undefined => {
   const name = def.name.toLowerCase();
   if (def.analgesic) {
-    return { label: `Take one ${name}`, time: TAKE_TIME };
+    return { label: `Take one ${name}`, simSeconds: TAKE_TIME };
   }
   if (!def.food) {
     return undefined;
   }
   const drink = def.category === 'drink';
-  return { label: `${drink ? 'Drink' : 'Eat'} the ${name}`, time: drink ? DRINK_TIME : EAT_TIME };
+  return { label: `${drink ? 'Drink' : 'Eat'} the ${name}`, simSeconds: drink ? DRINK_TIME : EAT_TIME };
 };
 
 export interface MoveOption {
@@ -305,7 +305,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   }
   const consumed = consumption(def);
   if (consumed) {
-    return { kind: 'use', label: consumed.label, operation: 'consume', plan: { ok: true, time: consumed.time } };
+    return { kind: 'use', label: consumed.label, operation: 'consume', plan: { ok: true, time: consumed.simSeconds } };
   }
   return def.light ? lightOption(item, view) : refuseUse(`Nothing to do with the ${name} yet`);
 };
