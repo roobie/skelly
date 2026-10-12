@@ -1,7 +1,10 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { CHUNK } from '../src/core/coords.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -35,9 +38,42 @@ describe('snapshot state components', () => {
     expect(restored.sim.actions.job).toMatchObject({ jobType: 'wait', stopped: false });
     expect(restored.sim.compression.active).toBe(true);
   });
+  it('round-trips bed sleep above the former save compression ceiling', async () => {
+    const files = readdirSync('src/content/base')
+      .filter((name) => name.endsWith('.json'))
+      .map((source) => ({
+        source,
+        data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
+      }));
+    const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === 'player');
+    if (!compression) throw new Error('Missing scenario compression definition');
+    const formerSaveCeiling = 30;
+    compression.caps.sleep = formerSaveCeiling + 34;
+    const { registry: sleepRegistry, issues } = buildRegistry(files);
+    expect(issues).toEqual([]);
+
+    const runtime = createRuntime(undefined, true, undefined, { content: sleepRegistry });
+    expect(runtime.sim.needs.fatigue).toBeGreaterThan(0);
+    expect(startRest(runtime, 'sleep')).toBeUndefined();
+    const frame = (): void => {
+      advanceLiveFrame(runtime.sim, realSeconds(1 / 60), undefined,
+        (simDt, until) => runtime.session.frame(simDt, until));
+    };
+    for (let frames = 0; runtime.sim.compression.c <= formerSaveCeiling && frames < 200; frames++) {
+      frame();
+    }
+    expect(runtime.sim.compression.active).toBe(true);
+    expect(runtime.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
+    expect(runtime.sim.compression.c).toBeGreaterThan(formerSaveCeiling);
+    expect(Number.isFinite(runtime.sim.compression.c)).toBe(true);
+
+    const snapshot = capture(runtime);
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    expect(decoded.snapshot.character.simulation.compression).toEqual(snapshot.character.simulation.compression);
+  });
+
   it('keeps a mid-sleep bed snapshot saveable when a frame elapsed is invalid', async () => {
     const runtime = createRuntime(undefined, true);
-    runtime.sim.needs.fatigue = 80;
     expect(startRest(runtime, 'sleep')).toBeUndefined();
     const frame = (elapsed: RealSeconds): void => {
       advanceLiveFrame(runtime.sim, elapsed, undefined, (simDt, until) => runtime.session.frame(simDt, until));

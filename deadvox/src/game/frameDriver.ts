@@ -22,6 +22,7 @@ export const RAMP_DOWN_SIM_SECONDS = simSeconds(3);
 
 /** Turns an elapsed Real frame duration into the ready-to-consume Sim step. */
 export const planRealFrame = (compression: Compression, elapsed: RealSeconds): SimSeconds => {
+  // Defend saved state from invalid elapsed values at the frame boundary.
   if (!Number.isFinite(elapsed) || elapsed < 0) {
     return simSeconds(0);
   }
