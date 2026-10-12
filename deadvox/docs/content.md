@@ -204,7 +204,7 @@ separate owners.
 
 ## Furniture visual shapes
 
-A furniture shape refines what is drawn without changing the entity's occupied cells. Collision, rest, search and line of sight continue to use those cells, keeping visual detail from changing gameplay. Author furniture definitions in `src/content/base/furniture.json`; `src/core/schema.ts`, `FurnitureSchema`, validates the shape bounds, and `src/render/furniture.ts`, `FurnitureMeshes`, renders the shape with one draw object per entity.
+A furniture shape refines what is drawn without changing the entity's occupied cells. Collision, rest, search and line of sight continue to use those cells, keeping visual detail from changing gameplay. Author furniture definitions in `src/content/base/furniture.jsonnet`; `src/core/schema.ts`, `FurnitureSchema`, validates the shape bounds, and `src/render/furniture.ts`, `FurnitureMeshes`, renders the shape with one draw object per entity.
 
 ## Furniture action noise
 

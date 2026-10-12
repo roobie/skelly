@@ -33,10 +33,6 @@
       "output": "deadvox/src/content/base/locks.json"
     },
     {
-      "source": "deadvox/src/content/base/models-firearms.jsonnet",
-      "output": "deadvox/src/content/base/models-firearms.json"
-    },
-    {
       "source": "deadvox/src/content/base/saves.jsonnet",
       "output": "deadvox/src/content/base/saves.json"
     },
