@@ -1,7 +1,7 @@
 ---
 read_if:
-  - you're changing persistent simulation state or restore guarantees
-  - you're evaluating save identity or compatibility policy
+  - you're changing persistent simulation state, save identity or restore guarantees
+  - you're changing the save envelope or deciding whether its schema number changes
   - you're changing when the game autosaves
 tags: [deadvox, adr, saves, persistence, determinism]
 ---
@@ -14,71 +14,20 @@ tags: [deadvox, adr, saves, persistence, determinism]
 
 ## Decision
 
-A save is an exact, versioned snapshot of one world and its bound character.
-The world is the root; a character cannot be transferred to another world. A
-new character entering the same world after death is an open decision for BR.
+A save is an exact snapshot of one world and its bound character. Compare simulation fingerprint, save envelope schema, deterministic generator versions and ordered content identities before resolving saved references through content. A Git revision is diagnostic, not identity. Exactness lets a restored scheduler, random stream and action continue as if save and load had not changed the simulation. Generator identity also protects saved chunk edits from being applied over different terrain.
 
-Restore only when the running build has the same simulation source fingerprint,
-save schema, deterministic generator versions and ordered content identities.
-Check that identity before resolving content, and refuse a mismatch without
-changing the saved record. A Git revision is diagnostic, not part of identity.
-Exactness matters because a restored scheduler, random stream or action must
-continue as if saving and loading had not changed the simulation. The worldgen
-generator identity also changes when the generated terrain baseline changes, so
-saved chunk diffs are never applied over a different ground surface; see
-`src/core/saveFormat.ts`, `defaultVersion`.
+Bump `SAVE_SCHEMA_VERSION` only when the save envelope changes: the fields or layout that `decodeSave` must read before comparing identity. The simulation fingerprint already identifies changes to the payload; the envelope number remains necessary to parse and diagnose incompatible records. Bumping it for every simulation or payload change adds manual version churn without identifying another incompatibility. Apply the same rule to `INPUT_REPLAY_SCHEMA_VERSION`: bump it when the replay envelope changes, not merely when simulation state changes. Replay embeds a starting save, whose ordinary identity checks reject incompatible simulation and content. See `src/game/inputReplay.ts`, `INPUT_REPLAY_SCHEMA_VERSION`.
 
-Persist every future-affecting owner state in the same change that introduces
-it. At entity boundaries such as `src/core/zombies.ts`, `ZombieSystem.snapshotState`,
-export through an explicit projection whose exhaustive key check forces every
-added state field to receive a save decision. This prevents optional runtime
-fields from leaking into canonical saves when they are unset. Keep input,
-rendering and external playback out of the snapshot. God mode,
-noclip and build toggles are debug state: they are not saved and are off after
-load, while world changes made with them remain saved. Presentation changes leave
-save identity stable only when their modules stay outside the simulation
-dependency graph; gameplay rules remain fingerprinted even when they share a
-file with presentation code. See `tools/simulationFingerprint.ts`,
-`SIMULATION_ENTRIES`, and `src/core/saveState.ts`, `snapshotSession`.
+Persist every future-affecting owner state with the change that introduces it. Entity projections are explicit and exhaustive so each new field gets a save decision and unset optional runtime fields cannot leak into canonical saves; see `src/core/zombies.ts`, `projectSnapshot`. Keep input, rendering and external playback out of the snapshot. Debug toggles are not saved, while world changes made with them are. Presentation changes preserve save identity only when their modules remain outside the simulation dependency graph; gameplay rules remain fingerprinted.
 
-Write snapshots through crash-safe A/B records. Disk work is asynchronous and
-must not block a simulation frame; a failed write leaves the previous valid
-record available. IndexedDB save writes request strict durability, so a save is
-flushed to disk before it is acknowledged, as the OPFS path flushes before it
-acknowledges; see `src/game/indexedDbCommit.ts`,
-`createDurableWriteTransaction`, and `src/worker/save.worker.ts`, `writeOpfs`.
-A back/forward-cache transition does not require a new save:
-a frozen page can hold the origin lock and block the next page, so the last
-committed generation remains the recovery point. See
-`src/ui/saveController.ts`, `SaveController`, and `test/browser/save-storage.mjs`.
-These safeguards reduce corruption risk but are not backups.
+Write snapshots through crash-safe A/B records. Disk work is asynchronous; a failed write leaves the previous valid record available. A back/forward-cache transition does not require another save: a frozen page can hold the origin lock, so the last committed generation remains the recovery point. These safeguards reduce corruption risk but are not backups.
 
-When a survivor dies, neither a death-bearing record nor a record whose world
-is marked dead is offered for Continue; New world replaces it without asking.
-The marker is written before the asynchronous A/B write so an unfinished final
-save cannot revive the survivor, and it clears only after a different world's
-snapshot is saved. See `src/ui/saveController.ts`, `SaveController.finishDeath`,
-and `SaveController.inspectCurrentNamespace`.
+After death, do not offer a death-bearing world for Continue. Mark death before the asynchronous final write so an unfinished write cannot revive the survivor; clear that marker only after another world's snapshot completes. Whether a new character may enter the same world after death remains an open decision for BR.
 
-Autosave checkpoints often enough that a crash or a killed tab loses only a
-little play. Periodic checkpoints count simulated play time, not wall-clock time
-or game hours, so a paused game takes no periodic checkpoint and the cadence
-does not change with the clock ratio. The interval is content tuning in
-`src/content/base/saves.jsonnet`, which `src/game/play.ts`,
-`autosaveCheckpointSimSeconds`, reads; `src/ui/checkpointSchedule.ts`,
-`CheckpointSchedule`, decides when a checkpoint is due. Saves before sleep, on
-`visibilitychange` and on `pagehide` cover the moments between checkpoints.
+Autosave checkpoints count simulated play time, not wall-clock time or game hours. Pausing therefore does not advance the interval, and changing the clock ratio does not change its cadence. Saves before sleep, on `visibilitychange` and on `pagehide` cover the time between periodic checkpoints.
 
 ## Compatibility
 
-Cross-version restore and migration are not supported. A changed simulation,
-schema, generator or content identity is a different save world, not an input
-to an implicit upgrade. This strict policy defers EPIC.md's v1 exit criterion
-“Old saves migrate”; it does not waive it. Before v1.0 beta, BR owns the hard-fork
-choice between selecting a matching build and migrating old saves. Until then,
-preserve and refuse mismatched records.
+Cross-version restore and migration are not supported before v1.0 beta. A changed simulation, schema, generator or content identity is a different world, not an implicit upgrade. Preserve and refuse mismatched records; before the compatibility milestone, BR chooses between selecting a matching build and migrating old saves.
 
-The save boundary exists so mutable simulation state can resume exactly while
-browser storage, rendering and input are rebuilt by the running version. The
-current save and restore owners are `src/core/saveState.ts`, `snapshotSession`,
-and `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
+The save boundary lets mutable simulation state resume exactly while the running version rebuilds browser storage, rendering and input. See `src/core/saveState.ts`, `snapshotSession`, and `src/core/saveFormat.ts`, `decodeSave` and `SAVE_SCHEMA_VERSION`.

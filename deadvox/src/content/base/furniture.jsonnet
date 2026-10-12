@@ -1,0 +1,207 @@
+{
+  "furniture": [
+    {
+      "id": "kitchen_cupboard",
+      "name": "Kitchen cupboard",
+      "size": [2, 2, 1],
+      "color": "#8a6a48",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 4],
+            "handlingSimSeconds": 1.0
+          }
+        ]
+      },
+      "loot": "kitchen_cupboard"
+    },
+    {
+      "id": "counter",
+      "name": "Kitchen counter",
+      "size": [2, 2, 1],
+      "color": "#b8b2a6",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 3],
+            "handlingSimSeconds": 1.0
+          }
+        ]
+      },
+      "loot": "kitchen_cupboard"
+    },
+    {
+      "id": "fridge",
+      "name": "Fridge",
+      "size": [2, 4, 2],
+      "color": "#d8dcd8",
+      "container": {
+        "pockets": [
+          {
+            "grid": [5, 6],
+            "handlingSimSeconds": 1.0
+          }
+        ]
+      },
+      "loot": "fridge"
+    },
+    {
+      "id": "wardrobe",
+      "name": "Wardrobe",
+      "size": [2, 4, 1],
+      "color": "#6e5037",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 8],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "loot": "wardrobe"
+    },
+    {
+      "id": "desk",
+      "name": "Desk",
+      "size": [3, 2, 2],
+      "color": "#7a5c3e",
+      "container": {
+        "pockets": [
+          {
+            "grid": [5, 3],
+            "handlingSimSeconds": 1.0
+          }
+        ]
+      },
+      "loot": "desk"
+    },
+    {
+      "id": "range_table",
+      "name": "Shooting table",
+      "size": [4, 2, 2],
+      "color": "#786b55",
+      "shape": [
+        { "position": [0.14, 0, 0.14], "size": [0.16, 1.65, 0.16] },
+        { "position": [3.7, 0, 0.14], "size": [0.16, 1.65, 0.16] },
+        { "position": [0.14, 0, 1.7], "size": [0.16, 1.65, 0.16] },
+        { "position": [3.7, 0, 1.7], "size": [0.16, 1.65, 0.16] },
+        { "position": [0.05, 1.65, 0.05], "size": [3.9, 0.2, 1.9] }
+      ]
+    },
+    {
+      "id": "range_target",
+      "name": "Paper target",
+      "size": [1, 4, 5],
+      "color": "#e9e3cf",
+      "shotTarget": true
+    },
+    {
+      "id": "range_rack",
+      "name": "Gun rack",
+      "size": [2, 4, 1],
+      "color": "#494b4e",
+      "container": {
+        "pockets": [
+          {
+            "grid": [10, 12],
+            "handlingSimSeconds": 1.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "shelf",
+      "name": "Shelf",
+      "size": [2, 4, 1],
+      "color": "#8d7355",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 4],
+            "handlingSimSeconds": 0.8
+          }
+        ]
+      },
+      "loot": "shelf"
+    },
+    {
+      "id": "workbench",
+      "name": "Workbench",
+      "size": [3, 2, 2],
+      "color": "#98734f",
+      "workstation": {
+        "id": "workbench",
+        "qualities": { "hammering": 1, "sawing": 1 },
+        "workFactorBonus": 0.2
+      }
+    },
+    {
+      "id": "crate",
+      "name": "Crate",
+      "size": [2, 2, 2],
+      "color": "#9a7b4f",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 5],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "loot": "junk"
+    },
+    {
+      "id": "bed",
+      "name": "Bed",
+      "size": [2, 1, 4],
+      "color": "#6f7f95",
+      "rest": {
+        "quality": 1,
+        "sleep": true
+      }
+    },
+    {
+      "id": "chair",
+      "name": "Chair",
+      "size": [1, 2, 1],
+      "color": "#8b7355",
+      "shape": [
+        { "position": [0.12, 0, 0.12], "size": [0.16, 0.92, 0.16] },
+        { "position": [0.72, 0, 0.12], "size": [0.16, 0.92, 0.16] },
+        { "position": [0.12, 0, 0.72], "size": [0.16, 0.92, 0.16] },
+        { "position": [0.72, 0, 0.72], "size": [0.16, 0.92, 0.16] },
+        { "position": [0.06, 0.9, 0.06], "size": [0.88, 0.18, 0.88] },
+        { "position": [0.06, 1.06, 0.83], "size": [0.88, 0.88, 0.11] }
+      ],
+      "rest": {
+        "quality": 1
+      }
+    },
+    {
+      "id": "sofa",
+      "name": "Sofa",
+      "size": [4, 2, 2],
+      "color": "#66776d",
+      "rest": {
+        "quality": 0.5,
+        "sleep": true
+      }
+    },
+    {
+      "id": "wood_door",
+      "name": "Wooden door",
+      "size": [2, 4, 1],
+      "color": "#7a5534",
+      "door": {
+        "handlingSimSeconds": 0.6,
+        "prying": {
+          "quality": 3,
+          "skill": "mechanics",
+          "timeSimSeconds": 15,
+          "fastestTimeSimSeconds": 7.5,
+          "strikeIntervalSimSeconds": 0.5
+        }
+      }
+    }
+  ]
+}
