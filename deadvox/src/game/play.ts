@@ -3439,6 +3439,7 @@ export const startPlay = (
     prompt.hidden = true;
     const summary = {
       cause,
+      worldSeed: sim.seed,
       survived: time * sim.clock.ratio,
       looted: inventory.looted,
       searched: [...entities.all].filter((e) => e.searched).length,

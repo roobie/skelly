@@ -1,7 +1,9 @@
+// @vitest-environment happy-dom
+
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { defOf } from '../src/core/items.ts';
-import { type DeathSummary, deathViewModel, lootedText, newWorldQuery } from '../src/ui/death.ts';
+import { type DeathSummary, deathViewModel, lootedText, newWorldQuery, showDeath } from '../src/ui/death.ts';
 
 const { registry } = buildRegistry([
   {
@@ -17,6 +19,7 @@ const { registry } = buildRegistry([
 
 const summary = (partial: Partial<DeathSummary>): DeathSummary => ({
   cause: 'a zombie',
+  worldSeed: 0,
   survived: 0,
   looted: new Map(),
   searched: 0,
@@ -33,6 +36,25 @@ const displayedMinutes = (span: string): number | undefined => {
   }
   return undefined;
 };
+
+describe('death card', () => {
+  it('shows the seed of the world the survivor played', () => {
+    const worldSeed = 47;
+    const feedback = document.createElement('a');
+    feedback.id = 'playtest-feedback';
+    feedback.href = 'https://example.test/feedback';
+    const root = document.createElement('div');
+    document.body.append(feedback, root);
+
+    try {
+      showDeath(root, registry, summary({ worldSeed }), () => undefined);
+      expect(root.textContent).toContain(String(worldSeed));
+    } finally {
+      feedback.remove();
+      root.remove();
+    }
+  });
+});
 
 describe('deathViewModel', () => {
   it('preserves the elapsed duration and cause in the death view model', () => {
