@@ -32,6 +32,7 @@ import {
 import { type AimFrame, NEUTRAL_AIM } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
 import {
@@ -256,7 +257,7 @@ export class HeldItems {
     this.sync();
     this.poseFirearms(firearmPoses);
     const loweredPitchRadians =
-      this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.loweredPitchRadians ?? 0;
+      this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.loweredPitchRadians ?? 0;
     const leadingSide = dominantSide(this.inventory.character);
     const readyPose = readiness ? readyFirearmPose(leadingSide) : undefined;
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;
@@ -427,7 +428,8 @@ export class HeldItems {
         heldModel.visible = !opticSight;
       }
       const ocularDiameter = modelDefinition?.sight?.ocularDiameterMetres;
-      const apertureFill = this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.adsApertureFill;
+      const apertureFill =
+        this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
       this.updateOpticWindow({
         active: opticSight,
         settings: opticSettings,
@@ -482,7 +484,8 @@ export class HeldItems {
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
             loweredPitchRadians,
-            adsApertureFill: this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.adsApertureFill,
+            adsApertureFill:
+              this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill,
             verticalFovDegrees: main.fov,
           }
         : undefined;

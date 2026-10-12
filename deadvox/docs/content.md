@@ -34,6 +34,16 @@ origin tables remain explicit. File order, overrides and diagnostic order remain
 unchanged. See `npm run validate` for the exhaustive current section/count list,
 not a second hand-maintained section table here.
 
+## Core-pack integrity
+
+When validating a core or modded pack, reject removal of rows that fixed-ID game
+readers depend on; otherwise missing tuning can surface later as startup or
+gameplay failures. Keep the check at the pack-validation boundary:
+`requiredContentIssues` in `src/core/content.ts` is applied by
+`src/cli/validate.ts`, `validate`, rather than making `buildRegistry` itself
+reject partial registries, because focused tests and tools also need to
+construct them.
+
 ## Weathering profiles
 
 Weathering is a render-only content choice rather than saved world state. `WeatheringSchema` in `src/core/schema.ts` validates named profiles, and `referenceIssues` in `src/core/content.ts` checks a layout's optional profile reference; layouts without one use the shared default in `src/game/config.ts`, `configFromUrl`. This lets sites share the shader while mod content changes the age and material response that BR can compare in the debug scene.

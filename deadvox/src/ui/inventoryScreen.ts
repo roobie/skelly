@@ -5,6 +5,7 @@
 // running. Furniture shows its contents once it has been searched.
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { practiceForNextLevel } from '../core/character.ts';
@@ -1170,7 +1171,7 @@ export class InventoryScreen {
       skills,
       needs: this.hooks.needs(),
       wakeAt: alarm && wakeLabel(alarm.gameHour),
-      containerMaxWidthCells: this.inv.registry.inventory.get('player')?.containerMaxWidthCells,
+      containerMaxWidthCells: this.inv.registry.inventory.get(CORE_CONTENT_IDS.player)?.containerMaxWidthCells,
       weight: kg(this.inv.carriedWeight()),
       hands,
       worn,

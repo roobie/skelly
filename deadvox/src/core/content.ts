@@ -5,6 +5,7 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
@@ -24,6 +25,8 @@ import {
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { templateDoorIssues, templateSpatialIssues, templateSpawnClearanceIssues } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
+
+export { CORE_CONTENT_IDS };
 
 export type {
   FigureDef,
@@ -479,7 +482,7 @@ const checkContainerWidth = ({
   registry: Registry;
   report: Report;
 }): void => {
-  const limit = registry.inventory.get('player')?.containerMaxWidthCells;
+  const limit = registry.inventory.get(CORE_CONTENT_IDS.player)?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;
   }
@@ -905,7 +908,7 @@ const checkRecipe = ({
   }
   if (
     Object.keys(recipe.skills).length > 0 &&
-    registry.skills.get('crafting')?.training?.craftingTierOffset === undefined
+    registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset === undefined
   ) {
     report('recipes', recipe.id, '.skills', 'crafting skill has no crafting tier offset');
   }
@@ -1049,18 +1052,31 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   return issues;
 };
 
-export const requiredSoundIssues = (registry: Registry, source = 'sounds.json'): ContentIssue[] =>
-  SOUND_EVENT_IDS.filter((id) => !registry.sounds.has(id)).map((id) => ({
-    source,
-    path: 'sounds',
-    message: `missing required sound event "${id}"`,
+export const REQUIRED_CORE_CONTENT = [
+  { section: 'body', id: CORE_CONTENT_IDS.player },
+  { section: 'compression', id: CORE_CONTENT_IDS.player },
+  { section: 'figures', id: CORE_CONTENT_IDS.player },
+  { section: 'inventory', id: CORE_CONTENT_IDS.player },
+  { section: 'saves', id: CORE_CONTENT_IDS.autosave },
+  { section: 'senses', id: CORE_CONTENT_IDS.player },
+  { section: 'siteGeneration', id: CORE_CONTENT_IDS.authoredSite },
+  { section: 'skills', id: CORE_CONTENT_IDS.firearmsCombat },
+  { section: 'skills', id: CORE_CONTENT_IDS.meleeCombat },
+  { section: 'ui', id: CORE_CONTENT_IDS.coreUi },
+  ...SOUND_EVENT_IDS.map((id) => ({ section: 'sounds' as const, id })),
+] as const satisfies readonly { section: Exclude<ContentSection, 'blocks'>; id: string }[];
+
+export const requiredContentIssues = (registry: Registry): ContentIssue[] =>
+  REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(({ section, id }) => ({
+    source: 'core content',
+    path: section,
+    message:
+      section === 'sounds'
+        ? `missing required sound event "${id}"`
+        : section === 'ui'
+          ? `missing required UI tuning "${id}"`
+          : `missing required content "${id}"`,
   }));
-
-/** The `ui` entry the game installs at startup; see `applyUiTokens`. */
-export const CORE_UI_ID = 'core';
-
-export const requiredUiIssues = (registry: Registry, source = 'ui.json'): ContentIssue[] =>
-  registry.ui.has(CORE_UI_ID) ? [] : [{ source, path: 'ui', message: `missing required UI tuning "${CORE_UI_ID}"` }];
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
+import { REQUIRED_CORE_CONTENT } from '../src/core/content.ts';
 import { validate as runValidation } from '../src/cli/validate.ts';
 
 const validateAt = (root: string, ...files: string[]) => {
@@ -32,6 +33,20 @@ const makeMinimalPack = (...fixtureDirs: string[]): string => {
 };
 
 describe('validate CLI', () => {
+  it('rejects a pack missing a declared required core row', () => {
+    const root = makeMinimalPack();
+    const requirement = REQUIRED_CORE_CONTENT.find(({ section }) => section !== 'sounds' && section !== 'ui')!;
+    try {
+      const run = validateAt(root);
+      expect(run.status).toBe(1);
+      expect(run.stdout).toContain(
+        `FAIL  core content ${requirement.section}: missing required content "${requirement.id}"`,
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('maps a parsed content argument to the real process exit code', () => {
     const root = makeMinimalPack('content');
     try {

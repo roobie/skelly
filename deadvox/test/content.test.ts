@@ -3,7 +3,13 @@ import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import {
+  blockColors,
+  buildRegistry,
+  REQUIRED_CORE_CONTENT,
+  requiredContentIssues,
+  validateContent,
+} from '../src/core/content.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
@@ -11,6 +17,7 @@ import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
+import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
@@ -834,27 +841,42 @@ describe('content', () => {
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
   });
 
-  it('reports required sound events missing from the registry', () => {
-    const missingLight = requiredSoundIssues(missingSoundsRegistry).some(
-      (issue) => issue.message === 'missing required sound event "player_hurt_light"',
-    );
-    expect(missingLight).toBe(true);
+  it('rejects content validation when a required core row is absent', () => {
+    const requirement = REQUIRED_CORE_CONTENT.find(({ section }) => section !== 'sounds' && section !== 'ui')!;
+    const withoutRequiredRow = base.map(({ source, data }) => {
+      const copy = structuredClone(data) as Record<string, unknown>;
+      const rows = copy[requirement.section];
+      if (Array.isArray(rows)) {
+        copy[requirement.section] = rows.filter((row) => (row as { id?: string }).id !== requirement.id);
+      }
+      return { source, data: copy };
+    });
+    const { registry, issues } = buildRegistry(withoutRequiredRow);
+    expect([...issues, ...requiredContentIssues(registry)]).toContainEqual({
+      source: 'core content',
+      path: requirement.section,
+      message: `missing required content "${requirement.id}"`,
+    });
   });
 
-  it('requires the blocked door-close sound event', () => {
-    expect(requiredSoundIssues(missingSoundsRegistry).map((issue) => issue.message)).toContain(
-      'missing required sound event "door_blocked_close"',
-    );
+  it('reports missing entries from the required sound-event list', () => {
+    const missingSoundIssues = requiredContentIssues(missingSoundsRegistry).filter(({ path }) => path === 'sounds');
+    expect(missingSoundIssues.some(({ message }) => message.includes(SOUND_EVENT_IDS[0]!))).toBe(true);
   });
 
-  it('fails when a required sound event has no definition', () => {
-    const registry = { ...baseRegistry, sounds: new Map(baseRegistry.sounds) };
-    registry.sounds.clear();
-    registry.sounds.set('player_hurt_light', baseRegistry.sounds.get('player_hurt_light')!);
-    const missingHeavy = requiredSoundIssues(registry).some(
-      (issue) => issue.message === 'missing required sound event "player_hurt_heavy"',
-    );
-    expect(missingHeavy).toBe(true);
+  it('reports a missing sound event even when another is defined', () => {
+    const retainedId = SOUND_EVENT_IDS.at(-1)!;
+    const missingId = SOUND_EVENT_IDS.find((id) => id !== retainedId);
+    expect(missingId).toBeDefined();
+    const registry = {
+      ...baseRegistry,
+      sounds: new Map([[retainedId, baseRegistry.sounds.get(retainedId)!]]),
+    };
+    expect(requiredContentIssues(registry)).toContainEqual({
+      source: 'core content',
+      path: 'sounds',
+      message: `missing required sound event "${missingId}"`,
+    });
   });
 
   // Keep this registry minimal; building the full base pack here made the suite hit its timeout.

@@ -3,6 +3,7 @@
 // handling time is up (handling.ts). DESIGN.md, "Items and inventory" and "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import {
   DEFAULT_HANDED_CHARACTER,
   dominantSide,
@@ -61,7 +62,7 @@ export const HANDLING = {
 } as const;
 
 const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
-  const tuning = registry.skills.get('inventory_management')?.inventory;
+  const tuning = registry.skills.get(CORE_CONTENT_IDS.inventoryManagement)?.inventory;
   if (!tuning) {
     return 1;
   }

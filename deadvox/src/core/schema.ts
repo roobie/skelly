@@ -29,6 +29,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { hasSegment } from './authoredTerrain.mjs';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { BODY_REGIONS, DAMAGE_KINDS, type DamageKind } from './body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
@@ -1397,17 +1398,17 @@ const SkillSchema = pipe(
     const activity = (activityId: string, field: 'practice' | 'practicePerSimSecond') =>
       training?.activities?.[activityId]?.[field] !== undefined;
     const complete =
-      (id !== 'crafting' || training?.craftingTierOffset !== undefined) &&
-      (id !== 'firearms_combat' ||
+      (id !== CORE_CONTENT_IDS.crafting || training?.craftingTierOffset !== undefined) &&
+      (id !== CORE_CONTENT_IDS.firearmsCombat ||
         (combat?.firearms !== undefined &&
           activity('readying', 'practicePerSimSecond') &&
           activity('handling', 'practice') &&
           activity('shot', 'practice') &&
           activity('hit', 'practice') &&
           activity('attachment', 'practice'))) &&
-      (id !== 'melee_combat' ||
+      (id !== CORE_CONTENT_IDS.meleeCombat ||
         (combat?.melee !== undefined && activity('block', 'practice') && activity('hit', 'practice'))) &&
-      (id !== 'inventory_management' || (inventory !== undefined && activity('handling', 'practice')));
+      (id !== CORE_CONTENT_IDS.inventoryManagement || (inventory !== undefined && activity('handling', 'practice')));
     const firearm = combat?.firearms;
     const melee = combat?.melee;
     return (
@@ -1417,7 +1418,8 @@ const SkillSchema = pipe(
     );
   }, 'missing required skill tuning or effect range exceeds one'),
   check(
-    ({ id, training }) => id !== 'inventory_management' || training?.activities?.handling?.tier === undefined,
+    ({ id, training }) =>
+      id !== CORE_CONTENT_IDS.inventoryManagement || training?.activities?.handling?.tier === undefined,
     'inventory-management handling activity must be untiered',
   ),
 );

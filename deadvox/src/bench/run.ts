@@ -4,6 +4,7 @@
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
 import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
 import type { Body } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
@@ -271,8 +272,8 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       z = playerBody.pos[2] * s;
       const simulation = new Simulation({
         seed: config.seed,
-        bodyTuning: engine.registry.body.get('player')!,
-        compressionCaps: engine.registry.compression.get('player')!.caps,
+        bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
+        compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
         clock: { ratio: CLOCK_RATIO, start: startTime },
       });
       simulation.godMode = true;
@@ -282,7 +283,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         isSolid: engine.isSolid,
         isOpaque: engine.isOpaque,
         blockSize: s,
-        tuning: engine.registry.senses.get('player')!,
+        tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
         physics: physicsFor(config.scale),
         jumpSpeed: PLAYER.jump,
         player: () => ({
