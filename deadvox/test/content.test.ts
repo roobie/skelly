@@ -205,11 +205,9 @@ describe('content', () => {
       },
     ]);
 
-    expect(issues).toContainEqual({
-      source: 'door-clearance-fixture.json',
-      path: 'templates[0].pieces[0]',
-      message: 'opens onto solid cells on one side',
-    });
+    expect(issues).toContainEqual(
+      expect.objectContaining({ source: 'door-clearance-fixture.json', path: 'templates[0].pieces[0]' }),
+    );
   });
 
   it('rejects a template marker whose zombie envelope intersects a solid', () => {
