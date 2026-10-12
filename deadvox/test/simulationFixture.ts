@@ -1,6 +1,6 @@
 import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
-import { gameHours, gamePerHour, simRate, simSeconds } from '../src/core/time.ts';
+import { gameHours, gamePerHour, realSeconds, simRate, simSeconds } from '../src/core/time.ts';
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   id: 'player-fixture',
@@ -29,6 +29,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         minDamage: 0,
         chance: { blunt: 0.1, cut: 0.3, pierce: 0.3 },
         drip: { rate: 0.5, size: 1 },
+        pain: 2,
       },
       {
         id: 'serious',
@@ -41,6 +42,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         minDamage: 5,
         chance: { blunt: 0.05, cut: 0.3, pierce: 0.3 },
         drip: { rate: 1, size: 1 },
+        pain: 6,
       },
       {
         id: 'critical',
@@ -54,7 +56,24 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         regionFactor: { head: 0, torso: 0.5, leftArm: 0, rightArm: 0 },
         chance: { blunt: 0.01, cut: 0.1, pierce: 0.1 },
         drip: { rate: 4, size: 1.5 },
+        pain: 12,
       },
+    ],
+  },
+  // The fixture's own pain scale and tiers, so pain tests never lean on base content's tuning.
+  pain: {
+    knockoutAt: 50,
+    perDamage: { blunt: 1, cut: 2, pierce: 2 },
+    regionWeight: { head: 2, torso: 1, leftArm: 1, rightArm: 1, leftLeg: 1, rightLeg: 1 },
+    perRegionDamage: 0.4,
+    infection: { early: 5, advanced: 10 },
+    acuteFadePerSimSecond: simRate(0.1),
+    acuteFadeSharePerSimSecond: simRate(0.02),
+    aimSway: { perShare: 2, max: 1 },
+    handlingSlowdown: { perShare: 1, max: 0.5 },
+    tiers: [
+      { id: 'twinge', from: 0.2, desaturation: 0.1, pulseIntervalRealSeconds: realSeconds(10) },
+      { id: 'agony', from: 0.7, notice: 'Fixture agony', desaturation: 0.5, pulseIntervalRealSeconds: realSeconds(2) },
     ],
   },
   bloodRecoveryPerSimSecond: simRate(0.002),

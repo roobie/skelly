@@ -7,6 +7,7 @@ import { Compression, type CompressionLimits, type CompressionOwner, longActionL
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { LongActions } from './longAction.ts';
+import type { AnalgesicLookup } from './pain.ts';
 import {
   awakeRates,
   causeOf,
@@ -52,6 +53,8 @@ export interface SimulationState {
 export interface SimOptions {
   seed: number;
   bodyTuning: BodyTuningDef;
+  /** The painkillers content defines, by item type; without it nothing can be taken. */
+  analgesics?: AnalgesicLookup;
   /** The content cap of each compressing long action. */
   compressionCaps: CompressionCaps;
   clock?: ClockSettings;
@@ -83,7 +86,7 @@ export class Simulation {
   constructor(options: SimOptions) {
     this.seed = options.seed;
     this.clock = options.clock ?? defaultClock;
-    this.body = new Body(options.bodyTuning);
+    this.body = new Body(options.bodyTuning, undefined, undefined, options.analgesics);
     this.compressionCaps = options.compressionCaps;
     // A start without its own limits (debug compression, a restored skip) passes time like a wait.
     this.compression = new Compression(longActionLimits(options.compressionCaps.wait));

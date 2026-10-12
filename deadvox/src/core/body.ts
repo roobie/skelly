@@ -1,6 +1,17 @@
 import { SECONDS_PER_HOUR } from './clock.ts';
 import { type ModifiedEffect, type Modifier, type ModifierActor, modified } from './modifiers.ts';
 import type { RecoveryState } from './needs.ts';
+import {
+  type AnalgesicLookup,
+  ageDoses,
+  analgesia,
+  doseLasts,
+  fadeAcute,
+  type PainReading,
+  type PainState,
+  painEffects,
+  painTier,
+} from './pain.ts';
 import type { BodyTuningDef, TreatmentDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -39,6 +50,7 @@ export interface BodyState {
   knockoutElapsed: number;
   regionDamage: BodyRegionDamage;
   wounds: BodyWounds;
+  pain: PainState;
 }
 
 export interface BodyConsequences {
@@ -70,6 +82,7 @@ const BODY_START: Readonly<BodyState> = Object.freeze({
   knockoutElapsed: 0,
   regionDamage: Object.freeze({ head: 0, torso: 0, leftArm: 0, rightArm: 0, leftLeg: 0, rightLeg: 0 }),
   wounds: Object.freeze({ head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null }),
+  pain: Object.freeze({ acute: 0, doses: [] }),
 });
 
 const clamp = (value: number): number => Math.max(0, Math.min(100, value));
@@ -95,10 +108,18 @@ export class Body implements ModifierActor {
   readonly tuning: BodyTuningDef;
   /** The modifiers on the body's bleeding and treatment numbers (`modifiers.ts`). */
   readonly modifiers: readonly Modifier[];
+  /** Where a dose's curve comes from: the item's `analgesic`, read when the dose is weighed. */
+  private readonly analgesics: AnalgesicLookup;
 
-  constructor(tuning: BodyTuningDef, state: BodyState = BODY_START as BodyState, modifiers: readonly Modifier[] = []) {
+  constructor(
+    tuning: BodyTuningDef,
+    state: BodyState = BODY_START as BodyState,
+    modifiers: readonly Modifier[] = [],
+    analgesics: AnalgesicLookup = () => undefined,
+  ) {
     this.tuning = tuning;
     this.modifiers = modifiers;
+    this.analgesics = analgesics;
     this.state = structuredClone(state);
     this.validate();
   }
@@ -173,6 +194,41 @@ export class Body implements ModifierActor {
     };
   }
 
+  /**
+   * Felt pain and what it does (DESIGN.md, "Pain"): acute plus background, less analgesia. It touches nothing in
+   * `consequences`, so painkillers ease pain's own effects and leave the injury's.
+   */
+  get pain(): PainReading {
+    const { pain } = this.tuning;
+    const { acute, doses } = this.state.pain;
+    const felt = Math.max(0, acute + this.backgroundPain - analgesia(doses, this.analgesics));
+    const ratio = felt / Math.max(Number.MIN_VALUE, this.modified('body.painKnockoutAt', pain.knockoutAt));
+    return { felt, ratio, tier: painTier(ratio, pain.tiers), effects: painEffects(ratio, pain) };
+  }
+
+  /** Pain the injuries themselves keep up: region damage, bleeding and infection. It is derived, never stored. */
+  private get backgroundPain(): number {
+    const { pain } = this.tuning;
+    let total = 0;
+    for (const region of BODY_REGIONS) {
+      const wound = this.state.wounds[region];
+      total += this.state.regionDamage[region] * pain.perRegionDamage * pain.regionWeight[region];
+      total += this.bleedingTier(region)?.pain ?? 0;
+      if (wound?.infection === 'early' || wound?.infection === 'advanced') {
+        total += pain.infection[wound.infection];
+      }
+    }
+    return total;
+  }
+
+  /** Starts one dose of a painkiller; its relief follows the item's curve (`pain.ts`, `doseRelief`). */
+  takeAnalgesic(item: string): void {
+    if (!this.analgesics(item)) {
+      throw new Error(`${item} is not a painkiller`);
+    }
+    this.state.pain.doses.push({ item, elapsedGameSeconds: 0 });
+  }
+
   // Needs and sleep read their content rates here, once each, so the body's modifier point can wrap them.
   // Content rates load per Game second; the needs step works in Game hours.
 
@@ -241,6 +297,16 @@ export class Body implements ModifierActor {
         )
       ) {
         throw new Error(`Invalid body region ${region}`);
+      }
+    }
+    const { acute, doses } = state.pain;
+    if (!(Number.isFinite(acute) && acute >= 0)) {
+      throw new Error('Invalid body pain');
+    }
+    for (const { item, elapsedGameSeconds } of doses) {
+      const def = this.analgesics(item);
+      if (!(def && Number.isFinite(elapsedGameSeconds) && elapsedGameSeconds >= 0 && elapsedGameSeconds < doseLasts(def))) {
+        throw new Error(`Invalid painkiller dose ${item}`);
       }
     }
   }
@@ -312,6 +378,10 @@ export class Body implements ModifierActor {
       throw new Error('Invalid bleeding tier');
     }
     const applied = this.damageHealth(amount);
+    // A kindless impact hurts no more than it shocks.
+    const painPerDamage =
+      effects.kind === undefined ? 0 : this.modified('body.painPerDamage', this.tuning.pain.perDamage[effects.kind]);
+    this.state.pain.acute += amount * painPerDamage * this.tuning.pain.regionWeight[region];
     this.state.regionDamage[region] = clamp(this.state.regionDamage[region] + amount);
     const previousShock = this.state.shock;
     this.state.shock = Math.max(0, this.state.shock - shockDamage);
@@ -361,6 +431,11 @@ export class Body implements ModifierActor {
       }
     }
     this.state.shock = clamp(this.state.shock + this.tuning.shockRecoveryPerSimSecond * shockRecoverySeconds);
+    const { pain } = this.tuning;
+    this.state.pain = {
+      acute: fadeAcute(this.state.pain.acute, seconds, pain.acuteFadePerSimSecond, pain.acuteFadeSharePerSimSecond),
+      doses: ageDoses(this.state.pain.doses, gameSeconds, this.analgesics),
+    };
     let bleeding = false;
     let bloodLoss = 0;
     for (const region of BODY_REGIONS) {

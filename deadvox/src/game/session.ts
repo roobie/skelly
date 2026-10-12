@@ -612,6 +612,7 @@ export const createSession = (options: SessionOptions) => {
   const sim = new Simulation({
     seed,
     bodyTuning,
+    analgesics: (item) => registry.items.get(item)?.analgesic,
     compressionCaps: playerCompressionCaps(registry),
     clock: { ratio: CLOCK_RATIO, start: options.start },
   });
