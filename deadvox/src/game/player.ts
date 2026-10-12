@@ -5,7 +5,7 @@ import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 
-/** Player constants in metres and metres per second (DESIGN.md, "Scale and units"). */
+/** Player constants in metres and metres per second (DESIGN.md, "Performance and scale"). */
 export const PLAYER = {
   halfWidth: 0.3,
   height: 1.8,
@@ -89,6 +89,8 @@ export interface MoveIntent {
   crouch?: boolean | undefined;
   /** Crouch pace from the loaded base/mod content. */
   crouchSpeed?: number | undefined;
+  /** Directional pace factors from the loaded base/mod content. */
+  directionalSpeed?: { sideways: number; backward: number } | undefined;
   /** Edge-triggered dominant-hand use; the player tick consumes this once. */
   useDominant?: boolean;
   /** Held dominant trigger; only debug firearms repeat, not other item actions. */
@@ -117,17 +119,20 @@ export const movementPace = (
     readyMovementFactor,
     movementSpeed,
     crouchSpeed,
+    directionalSpeed,
   }: {
     grams: number;
     handling: boolean;
     readyMovementFactor: number;
     movementSpeed: number;
     crouchSpeed: number;
+    directionalSpeed: { sideways: number; backward: number };
   },
 ): MoveIntent => ({
   ...intent,
   crouch: intent.crouch,
   crouchSpeed,
+  directionalSpeed,
   pace: paceFactor(grams, handling) * movementSpeed * readyMovementFactor,
 });
 
@@ -135,6 +140,12 @@ export const movementPace = (
 export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent): void => {
   let { forward, right } = intent;
   const len = Math.hypot(forward, right);
+  const direction = intent.directionalSpeed;
+  const forwardFactor = forward < 0 ? (direction?.backward ?? 1) : 1;
+  const sidewaysFactor = direction?.sideways ?? 1;
+  const axisWeight = Math.abs(forward) + Math.abs(right);
+  const directionFactor =
+    axisWeight === 0 ? 1 : (Math.abs(forward) * forwardFactor + Math.abs(right) * sidewaysFactor) / axisWeight;
   if (len > 1) {
     forward /= len;
     right /= len;
@@ -146,7 +157,8 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
   if (intent.crouch) {
     pace = intent.crouchSpeed ?? PLAYER.walk;
   }
-  const speed = ((intent.sprint && !intent.crouch ? PLAYER.sprint : pace) * (intent.pace ?? 1)) / scale.blockSize;
+  const speed =
+    ((intent.sprint && !intent.crouch ? PLAYER.sprint : pace) * (intent.pace ?? 1) * directionFactor) / scale.blockSize;
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   // yaw 0 looks down -z; +x is to the right.

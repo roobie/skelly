@@ -43,10 +43,10 @@ the surface faces, and 8× the memory for the same area. Rough numbers for
   draw calls; grouping chunks is not an established speedup.
 
 **When.** The measured block-size decision is complete; its feel rationale is
-in [DESIGN.md](DESIGN.md#scale-and-units). This challenge remains relevant as
+in [DESIGN.md](DESIGN.md#performance-and-scale). This challenge remains relevant as
 later features spend the same performance budget.
 
-**How we'll know.** On the [reference laptop](DESIGN.md#reference-hardware) in
+**How we'll know.** On the [mid-range laptop](DESIGN.md#performance-and-scale) in
 Firefox, 0.5 m blocks at 96 m meet the frame budget: 60 fps, at most 1% of
 frames over 18 ms in every
 benchmark phase, and no holes at sprint speed. The 96 m default leaves room for
