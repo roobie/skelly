@@ -14,7 +14,7 @@ import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
-import { templateDoorIssues, templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
+import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
@@ -172,22 +172,44 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
-  it('rejects a shapeless door that opens onto solid cells', () => {
-    const fixture: TemplateDef = {
-      id: 'door_clearance_fixture',
-      size: [6, 5, 4],
-      palette: { '.': 'air', '#': 'planks', D: { furniture: 'wood_door', facing: 'n' } },
-      layers: [
-        ['######', '######', '######', '######'],
-        ['......', '..DD..', '..##..', '......'],
-        ['......', '..DD..', '..##..', '......'],
-        ['......', '..DD..', '..##..', '......'],
-        ['......', '..DD..', '..##..', '......'],
-      ],
-    };
-    const compiled = compileTemplate(baseRegistry, fixture);
+  it('reports shapeless-door clearance issues during registry validation', () => {
+    const { issues } = buildRegistry([
+      {
+        source: 'door-clearance-fixture.json',
+        data: {
+          blocks: [{ id: 'planks', name: 'Planks', color: '#ffffff', solid: true }],
+          furniture: [
+            {
+              id: 'wood_door',
+              name: 'Wood door',
+              size: [2, 4, 1],
+              color: '#7a5534',
+              door: { handlingSimSeconds: 0.5 },
+            },
+          ],
+          templates: [
+            {
+              id: 'door_clearance_fixture',
+              size: [6, 5, 4],
+              palette: { '.': 'air', '#': 'planks', D: { furniture: 'wood_door', facing: 'n' } },
+              layers: [
+                ['######', '######', '######', '######'],
+                ['......', '..DD..', '..##..', '......'],
+                ['......', '..DD..', '..##..', '......'],
+                ['......', '..DD..', '..##..', '......'],
+                ['......', '..DD..', '..##..', '......'],
+              ],
+            },
+          ],
+        },
+      },
+    ]);
 
-    expect(templateDoorIssues(baseRegistry, compiled).map(([path]) => path)).toContain('.pieces[0]');
+    expect(issues).toContainEqual({
+      source: 'door-clearance-fixture.json',
+      path: 'templates[0].pieces[0]',
+      message: 'opens onto solid cells on one side',
+    });
   });
 
   it('rejects a template marker whose zombie envelope intersects a solid', () => {
