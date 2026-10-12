@@ -20,6 +20,15 @@ Build a TypeScript browser game with its own chunked voxel engine and simulation
 
 Keeping the simulation as plain data separate from rendering supports pause, time compression, catch-up and exact saves. HTML/CSS supports the text-dense, moddable interface; its screen boundary is in [ADR 0001](0001-ui-rendering-with-lit-html.md). Content packs keep authored items and systems extensible; their language is in [ADR 0004](../../../docs/decisions/0004-content-language.md).
 
+## Rejected alternatives
+
+- Luanti's server-driven formspec UI limits client-side UI modding; Wasm does not change that boundary.
+- noa supplies voxel systems on Babylon.js, handing systems the game can keep project-owned to a library.
+- Voxelize's authoritative server and network chunk streaming solve multiplayer needs this game does not have.
+- Divine Voxel Engine uses worker-based world generation and meshing, but hands meshing to a library rather than keeping the small engine project-owned.
+- Godot 4's networking no longer decides the choice, and its web export and UI fit the browser-native interface less well.
+- Bevy adds a Rust-to-Wasm toolchain while bringing fewer built-in game systems than the other engine options.
+
 ## Consequences
 
 Vehicle physics, animation and audio remain project work; Rapier is a candidate, not a selected dependency. GitHub Pages cannot set response headers, as noted in [CHALLENGES.md](../../CHALLENGES.md).

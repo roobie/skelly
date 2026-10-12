@@ -13,4 +13,4 @@ Display packing must not change saved pile positions. A drop onto a displayed it
 
 Nested grids, panes and the Items body scroll independently. Selection must be revealed through every scrollable ancestor, and the wheel belongs to the nearest region with content to scroll; a grid that fits must not swallow the pane's wheel. See `src/ui/inventoryScreen.ts`, `InventoryScreen.scrollSelectedItemIntoView`, and `src/ui/wheel.ts`, `wheelPane`.
 
-Tab selection and split position are runtime UI state, not save or replay state. When changing the layout, test actual pointer hit testing with an item and nearby container visible at a narrow viewport; DOM presence alone is not sufficient.
+Tab selection and split position are runtime UI state, not save or replay state. Keep inventory tabs one key away from movement so movement can continue; the keys are deliberately not mnemonics. See `src/game/inputBindings.ts`, `inventoryTabForAction`. When changing the layout, test actual pointer hit testing with an item and nearby container visible at a narrow viewport; DOM presence alone is not sufficient.
