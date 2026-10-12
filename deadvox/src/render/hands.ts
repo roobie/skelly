@@ -167,7 +167,7 @@ export class HeldItems {
   private readonly compasses = new Map<number, ReturnType<typeof createCompass>>();
   private readonly firearmParts = new Map<number, { action: FirearmAction; parts: readonly HeldActionPart[] }>();
   private readonly pumpModels = new Map<number, ModelDef>();
-  /** Each held gun's magazine slot, with what is really fitted there (DESIGN.md, "One item, one look"). */
+  /** Each held gun's magazine slot, with what is really fitted there (DESIGN.md, "Piles and item models"). */
   private readonly magazineSlots = new Map<number, ComposedSlot>();
   private readonly incomingMagazines = new Map<number, { object: Object3D; model: string }>();
   private readonly loadingShells = new Map<number, Object3D>();
