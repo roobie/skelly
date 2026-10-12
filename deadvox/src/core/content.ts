@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import {
@@ -37,7 +38,6 @@ export type {
   TemplateDef,
   ZombieDef,
 } from './schema.ts';
-
 /** A parsed JSON file and where it came from (for error messages). */
 export interface ContentSource {
   source: string;
@@ -479,7 +479,7 @@ const checkContainerWidth = ({
   registry: Registry;
   report: Report;
 }): void => {
-  const limit = registry.inventory.get('player')?.containerMaxWidthCells;
+  const limit = registry.inventory.get(CORE_CONTENT_IDS.player)?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;
   }
@@ -905,7 +905,7 @@ const checkRecipe = ({
   }
   if (
     Object.keys(recipe.skills).length > 0 &&
-    registry.skills.get('crafting')?.training?.craftingTierOffset === undefined
+    registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset === undefined
   ) {
     report('recipes', recipe.id, '.skills', 'crafting skill has no crafting tier offset');
   }
@@ -1049,18 +1049,32 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   return issues;
 };
 
-export const requiredSoundIssues = (registry: Registry, source = 'sounds.json'): ContentIssue[] =>
-  SOUND_EVENT_IDS.filter((id) => !registry.sounds.has(id)).map((id) => ({
-    source,
-    path: 'sounds',
-    message: `missing required sound event "${id}"`,
-  }));
+// Recipe skill references already make `crafting` missing content invalid; it need not be a pack-level requirement.
+export const REQUIRED_CORE_CONTENT = [
+  { section: 'body', id: CORE_CONTENT_IDS.player },
+  { section: 'compression', id: CORE_CONTENT_IDS.player },
+  { section: 'figures', id: CORE_CONTENT_IDS.player },
+  { section: 'inventory', id: CORE_CONTENT_IDS.player },
+  { section: 'saves', id: CORE_CONTENT_IDS.autosave },
+  { section: 'senses', id: CORE_CONTENT_IDS.player },
+  { section: 'siteGeneration', id: CORE_CONTENT_IDS.authoredSite },
+  { section: 'skills', id: CORE_CONTENT_IDS.firearmsCombat },
+  { section: 'skills', id: CORE_CONTENT_IDS.meleeCombat },
+  { section: 'skills', id: CORE_CONTENT_IDS.inventoryManagement },
+  { section: 'ui', id: CORE_CONTENT_IDS.coreUi },
+  ...SOUND_EVENT_IDS.map((id) => ({ section: 'sounds' as const, id })),
+] as const satisfies readonly { section: Exclude<ContentSection, 'blocks'>; id: string }[];
 
-/** The `ui` entry the game installs at startup; see `applyUiTokens`. */
-export const CORE_UI_ID = 'core';
-
-export const requiredUiIssues = (registry: Registry, source = 'ui.json'): ContentIssue[] =>
-  registry.ui.has(CORE_UI_ID) ? [] : [{ source, path: 'ui', message: `missing required UI tuning "${CORE_UI_ID}"` }];
+export const requiredContentIssues = (registry: Registry): ContentIssue[] =>
+  REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(({ section, id }) => {
+    let message = `missing required content "${id}"`;
+    if (section === 'sounds') {
+      message = `missing required sound event "${id}"`;
+    } else if (section === 'ui') {
+      message = `missing required UI tuning "${id}"`;
+    }
+    return { source: 'core content', path: section, message };
+  });
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is

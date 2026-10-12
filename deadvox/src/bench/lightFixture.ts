@@ -1,5 +1,6 @@
 import type { PerspectiveCamera } from 'three';
 import { CLOCK_RATIO } from '../core/clock.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory } from '../core/inventory.ts';
 import { toggleLight } from '../core/lights.ts';
@@ -60,8 +61,8 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
 
   const simulation = new Simulation({
     seed: config.seed,
-    bodyTuning: registry.body.get('player')!,
-    compressionCaps: registry.compression.get('player')!.caps,
+    bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
+    compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
     clock: { ratio: CLOCK_RATIO, start: calendar },
   });
   const queue = new HandlingQueue(inventory);
