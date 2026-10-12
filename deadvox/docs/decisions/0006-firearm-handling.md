@@ -28,6 +28,6 @@ The model contract is defined by Gungen's `gungen/src/gun/exportGlb.ts`, `export
 
 ## Open questions
 
-- Future independently coloured instances need instance-owned appearance data. Loot and placement scope, and save ownership for that appearance, remain open under #502; the current per-item-type model lookup does not implement this direction.
+- Future independently coloured instances need instance-owned appearance data that survives saves under #502. Which items get variants and whether loot rolls colours or placement authors them remain open; the current per-item-type model lookup does not implement this direction.
 - Whether physical recoil affects more than presentation remains open.
 - Whether piles keep steel-cased and brass cases separate remains open.
