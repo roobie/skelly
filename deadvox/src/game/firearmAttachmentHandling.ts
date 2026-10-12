@@ -59,9 +59,17 @@ export class FirearmAttachmentHandling {
     if (!firearm) {
       return [];
     }
-    return Array.from(this.inventory.items(), ({ item }) => item).filter(
-      (item) => item.uid !== firearmUid && this.fitReason(firearm, slotId, item) === undefined,
-    );
+    return Array.from(this.inventory.items(), ({ item }) => item).filter((item) => {
+      if (item.uid === firearmUid) {
+        return false;
+      }
+      const definition = defOf(this.inventory.registry, item.type);
+      const couldFit =
+        slotId === SLING_SLOT
+          ? definition.sling === true
+          : attachmentIdFor(this.inventory.registry, item) !== undefined;
+      return couldFit && this.fitReason(firearm, slotId, item) === undefined;
+    });
   }
 
   fitReason(firearm: Item, slotId: string, attachment: Item): string | undefined {
