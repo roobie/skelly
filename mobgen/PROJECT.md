@@ -4,6 +4,7 @@ read_if:
   - "you're changing the crawler's body-plan or gait constraints"
   - "you're reviewing the amalgam's visual quality pass in #378"
   - "you're changing the Mobgen/Deadvox boundary or the amalgam movement-cost trade-off in #574"
+  - "you change the crowd gore-mask encoding"
 ---
 
 # mobgen — procedural voxel actors
@@ -25,6 +26,8 @@ Mobgen keeps body construction independent of feasibility rules and rendering so
 The crawler is a distinct prone creature, not a humanoid gait variant: its arm-drag silhouette and trailing leg stumps define its identity. Other proposed forms need their own body plans. See `src/mob/crawler.ts`, `crawlerPose`, `crawlerGaitPose`, `crawlerHitPose`, and `test/crawler.test.ts`.
 
 The playtest apex enemy must read as one grotesque fusion, not several unrelated actors. Complete shambler members remain severable subtrees beneath a non-severable shared core; members may hang or turn in any orientation, while support comes from actual ground contacts. The core's spreading lower mass should read as flesh rather than a platform or extra limbs. Its member count is a visual choice, not a budget ceiling. See `src/mob/amalgam.ts`, `amalgamManifest`, `src/core/generate.ts`, `resolveSupportBones`, and `test/amalgam.test.ts`.
+
+A cut's surviving boundary needs the severed state of its neighbouring bone to show stump gore; every bone index in a body plan must therefore survive the crowd mask handoff. See `src/mob/crowd.ts`, `packSeveredMask` and `crowdBoneSevered`.
 
 Mobgen supplies the generated body used by Deadvox collision, hit regions and rendering; sharing that figure keeps gameplay contact tied to the visible anatomy. The amalgam template stays outside the ordinary `TEMPLATES` list so regular actor consumers opt into the boss explicitly. See `src/mob/amalgamTemplate.ts`, `VIEWER_TEMPLATES`, `../deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and `../deadvox/test/simulationFingerprint.test.ts`.
 
