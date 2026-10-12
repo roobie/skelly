@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { Chunk } from '../src/core/chunk.ts';
-import { CHUNK } from '../src/core/coords.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { CHUNK } from '../src/core/coords.ts';
 import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -46,7 +46,9 @@ describe('snapshot state components', () => {
         data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
       }));
     const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === 'player');
-    if (!compression) throw new Error('Missing scenario compression definition');
+    if (!compression) {
+      throw new Error('Missing scenario compression definition');
+    }
     const formerSaveCeiling = 30;
     compression.caps.sleep = formerSaveCeiling + 34;
     const { registry: sleepRegistry, issues } = buildRegistry(files);
@@ -56,8 +58,9 @@ describe('snapshot state components', () => {
     expect(runtime.sim.needs.fatigue).toBeGreaterThan(0);
     expect(startRest(runtime, 'sleep')).toBeUndefined();
     const frame = (): void => {
-      advanceLiveFrame(runtime.sim, realSeconds(1 / 60), undefined,
-        (simDt, until) => runtime.session.frame(simDt, until));
+      advanceLiveFrame(runtime.sim, realSeconds(1 / 60), undefined, (simDt, until) =>
+        runtime.session.frame(simDt, until),
+      );
     };
     for (let frames = 0; runtime.sim.compression.c <= formerSaveCeiling && frames < 200; frames++) {
       frame();
