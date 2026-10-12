@@ -112,7 +112,7 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
     }
   });
 
-  it('packSeveredMask/isSeveredInMask round-trip bits across words and keep actor slots independent', () => {
+  it('keeps actor slots independent in the severed mask', () => {
     const layout = crowdTextureLayout(CROWD_MASK_BITS_PER_TEXEL * 3, 2);
     const data = new Float32Array(layout.width * layout.height * 4);
     const severed = [0, 5, 17, 24, 37, 59];
@@ -137,19 +137,23 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
   });
 
   it('keeps stump-gore bits for high-index severable members in a generated amalgam', () => {
-    const amalgam = Array.from({ length: 8 }, (_, offset) => generateValid(amalgamTemplate, offset + 1)).find(
-      (candidate) => {
-        if (!candidate) {
-          return false;
-        }
-        const { body: candidateBody, voxels } = candidate.realized;
-        const { bones: candidateBones } = candidateBody;
-        return amalgamManifest(candidateBody, voxels).parts.some(
+    let amalgam: ReturnType<typeof generateValid> | undefined;
+    for (let seed = 1; seed <= 8 && !amalgam; seed++) {
+      const candidate = generateValid(amalgamTemplate, seed);
+      if (!candidate) {
+        continue;
+      }
+      const { body: candidateBody, voxels } = candidate.realized;
+      const { bones: candidateBones } = candidateBody;
+      if (
+        amalgamManifest(candidateBody, voxels).parts.some(
           ({ rootBone, severable }) =>
             severable && candidateBones.findIndex(({ id }) => id === rootBone) >= CROWD_MASK_BITS_PER_TEXEL,
-        );
-      },
-    );
+        )
+      ) {
+        amalgam = candidate;
+      }
+    }
     expect(amalgam).toBeDefined();
     const { body: amalgamBody, voxels } = amalgam!.realized;
     const { bones: amalgamBones } = amalgamBody;
