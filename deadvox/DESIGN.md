@@ -543,6 +543,30 @@ and drip presentation; the inventory body panel names the tier. Saves preserve
 wound severity. See `Body.treat` in `src/core/body.ts` and `bodyWound` in
 `src/core/saveFormat.ts`.
 
+### Pain
+
+Pain is its own body state, apart from health and wounds, so a painkiller can ease
+what hurts without healing anything. Felt pain is acute plus background pain,
+less analgesia; it has no top. The threshold is a balance point for tiers and
+effects, not an implemented knockout: pain-triggered knockout through shock's
+mechanism is planned for #654 (round 2), not round 1. Acute pain comes from each
+hit by damage kind and region,
+then fades. Background pain is derived from region damage, bleeding and infection,
+so treatment and healing change it without saved derived state. Pain tiers drive
+the bodily cue, while aim sway and a shared handling slowdown grow with pain above
+the first tier; treatment and crafting are not slowed.
+
+Painkillers use an analgesic component regardless of item category. Each dose's
+relief rises, holds and fades in game time; doses in a group share a cap, while
+other groups add relief. They mask pain only: health, wounds and consequences
+remain unchanged. Saves preserve acute pain and active doses.
+
+The optional stats readout shows felt pain and its acute, injury and relief
+components so BR can tune the scale in play. This debug-style number belongs
+only in stats, not in player-facing cues, because pain has no upper bound and
+its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts`,
+`PainReading` in `src/core/pain.ts`, and INTERFACE.md, "Bodily cues" and "HUD".
+
 ## Combat and noise
 
 - **Melee.** Weapons differ by damage type, reach, speed, and stamina cost.

@@ -4,7 +4,7 @@
 
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { BODY_REGIONS, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
+import type { BodyRegion } from '../core/body.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
@@ -25,6 +25,7 @@ import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/option
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
@@ -126,8 +127,8 @@ import {
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import type { MoveIntent } from './player.ts';
-import { PlayerBleedingNotice } from './playerBleedingNotice.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
+import { bleedingStatusRows } from './playStatus.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -158,6 +159,7 @@ import {
   ThirdPersonOrbit,
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
+import { TierNotice } from './tierNotice.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
@@ -1018,13 +1020,20 @@ export const startPlay = (
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
   let noticeUntil = 0;
-  const playerBleedingNotice = new PlayerBleedingNotice(sim.body.worstBleedingTier);
+  const bleedingNotice = new TierNotice(sim.body.worstBleedingTier);
+  const painNotice = new TierNotice(sim.body.pain.tier);
   const showNotice = (text: string) => {
     notice = text;
     noticeUntil = realNow() + 3000;
   };
-  const updateBleedingNotice = (): void => {
-    playerBleedingNotice.update(sim.body.worstBleedingTier, sim.body.tuning.bleeding.tiers, showNotice);
+  const updateBodyNotices = (): void => {
+    painNotice.update(sim.body.pain.tier, sim.body.tuning.pain.tiers, showNotice);
+    // Bleeding speaks last, so on a shared frame its line, which asks for treatment, is the one shown.
+    bleedingNotice.update(sim.body.worstBleedingTier, sim.body.tuning.bleeding.tiers, showNotice);
+  };
+  const painTierDef = (): BodyTuningDef['pain']['tiers'][number] | undefined => {
+    const { tier } = sim.body.pain;
+    return tier === undefined ? undefined : sim.body.tuning.pain.tiers[tier];
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
@@ -2575,7 +2584,7 @@ export const startPlay = (
     const swingWeapon = resolvePlayerMeleeWeapon(
       selected.weapon,
       classTuning,
-      session.sim.body.consequences.swingSlowdown,
+      session.sim.body.consequences.swingSlowdown * session.sim.body.pain.effects.handlingSlowdown,
     );
     const result = startPlayerMelee(
       playerCombat,
@@ -2799,20 +2808,22 @@ export const startPlay = (
   const throwStanceCueVisible = (interactionVisible: boolean): boolean =>
     throwingStance && interactionVisible && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
 
-  const statusView = (): PlayStatus => ({
-    calendar: displayCalendar(),
-    speed: compression.c,
-    paused: sim.paused,
-    needs: sim.needs,
-    health: sim.body.health,
-    blood: sim.body.blood,
-    bleeding: BODY_REGIONS.flatMap((region) => {
-      const tier = sim.body.bleedingTier(region);
-      return tier ? [{ region: bodyRegionLabel(region), label: tier.label, warn: tier.warn }] : [];
-    }),
-    sprinting: session.sprinting,
-    lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
-  });
+  const statusView = (): PlayStatus => {
+    const { pain } = sim.body;
+    return {
+      calendar: displayCalendar(),
+      speed: compression.c,
+      paused: sim.paused,
+      needs: sim.needs,
+      pain,
+      painTier: pain.tier === undefined ? undefined : sim.body.tuning.pain.tiers[pain.tier]?.id,
+      health: sim.body.health,
+      blood: sim.body.blood,
+      bleeding: bleedingStatusRows((region) => sim.body.bleedingTier(region)),
+      sprinting: session.sprinting,
+      lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
+    };
+  };
   const needsText = (): string => playNeedsText(statusView());
   const hudText = (looking: string, visible: Readonly<HudOptionsState>): string =>
     playHudText(
@@ -2895,6 +2906,7 @@ export const startPlay = (
         thirdPerson: isPlayerThirdPersonView(thirdPersonViewEnabled, spectatorCameraEnabled),
         ...thirdPersonOrbitFrame(orbitAngle),
         sightImpaired: sim.body.consequences.sightImpaired,
+        painTier: painTierDef(),
       },
       $('damage'),
     );
@@ -3302,7 +3314,7 @@ export const startPlay = (
     playtestObserver?.beforeFrame(queue, inventory);
     mark = realNow();
     const gameFrozen = stepSimulation(dt, menuState.paused);
-    updateBleedingNotice();
+    updateBodyNotices();
     advancePendingItemThrow();
     syncThrowingStance();
     caseEffects.update(dt, engine.isSolid);

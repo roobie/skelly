@@ -1,18 +1,16 @@
 {
   "loot": [
     {
-      "id": "kitchen_cupboard",
-      "rolls": [1, 4],
       "entries": [
         {
+          "count": [1, 2],
           "item": "canned_beans",
-          "weight": 5,
-          "count": [1, 2]
+          "weight": 5
         },
         {
+          "count": [1, 2],
           "item": "canned_soup",
-          "weight": 4,
-          "count": [1, 2]
+          "weight": 4
         },
         {
           "item": "crackers",
@@ -26,16 +24,16 @@
           "nothing": true,
           "weight": 3
         }
-      ]
+      ],
+      "id": "kitchen_cupboard",
+      "rolls": [1, 4]
     },
     {
-      "id": "kitchen_tools",
-      "rolls": [1, 1],
       "entries": [
         {
+          "condition": [0.40000000000000002, 1],
           "item": "kitchen_knife",
-          "weight": 3,
-          "condition": [0.4, 1]
+          "weight": 3
         },
         {
           "item": "can_opener",
@@ -49,16 +47,16 @@
           "item": "matches",
           "weight": 2
         }
-      ]
+      ],
+      "id": "kitchen_tools",
+      "rolls": [1, 1]
     },
     {
-      "id": "fridge",
-      "rolls": [0, 3],
       "entries": [
         {
+          "count": [1, 3],
           "item": "soda_can",
-          "weight": 4,
-          "count": [1, 3]
+          "weight": 4
         },
         {
           "item": "juice_carton",
@@ -69,80 +67,99 @@
           "weight": 3
         },
         {
+          "count": [1, 3],
           "item": "apple",
-          "weight": 3,
-          "count": [1, 3]
+          "weight": 3
         },
         {
           "nothing": true,
           "weight": 4
         }
-      ]
+      ],
+      "id": "fridge",
+      "rolls": [0, 3]
     },
     {
-      "id": "wardrobe",
-      "rolls": [1, 3],
       "entries": [
         {
+          "condition": [0.5, 1],
           "item": "jeans",
-          "weight": 3,
-          "condition": [0.5, 1]
+          "weight": 3
         },
         {
+          "condition": [0.5, 1],
           "item": "cargo_pants",
-          "weight": 2,
-          "condition": [0.5, 1]
+          "weight": 2
         },
         {
+          "condition": [0.5, 1],
           "item": "hoodie",
-          "weight": 3,
-          "condition": [0.5, 1]
+          "weight": 3
         },
         {
+          "condition": [0.5, 1],
           "item": "jacket",
-          "weight": 2,
-          "condition": [0.5, 1]
+          "weight": 2
         },
         {
+          "condition": [0.59999999999999998, 1],
           "item": "school_backpack",
-          "weight": 1,
-          "condition": [0.6, 1]
+          "weight": 1
         },
-        { "item": "fanny_pack", "weight": 1, "condition": [0.5, 1] },
-        { "item": "hiking_backpack", "weight": 1, "condition": [0.5, 1] },
-        { "item": "utility_vest", "weight": 1, "condition": [0.5, 1] },
+        {
+          "condition": [0.5, 1],
+          "item": "fanny_pack",
+          "weight": 1
+        },
+        {
+          "condition": [0.5, 1],
+          "item": "hiking_backpack",
+          "weight": 1
+        },
+        {
+          "condition": [0.5, 1],
+          "item": "utility_vest",
+          "weight": 1
+        },
         {
           "nothing": true,
           "weight": 2
         }
-      ]
+      ],
+      "id": "wardrobe",
+      "rolls": [1, 3]
     },
     {
-      "id": "desk",
-      "rolls": [1, 3],
       "entries": [
         {
           "item": "paperback",
           "weight": 3
         },
-        { "item": "field_manual", "weight": 1 },
-        { "item": "home_repair_book", "weight": 1 },
         {
+          "item": "field_manual",
+          "weight": 1
+        },
+        {
+          "item": "home_repair_book",
+          "weight": 1
+        },
+        {
+          "count": [1, 4],
           "item": "aa_battery",
-          "weight": 3,
-          "count": [1, 4]
+          "weight": 3
         },
         {
+          "condition": [0.5, 1],
           "item": "flashlight",
-          "weight": 1,
-          "condition": [0.5, 1]
+          "weight": 1
         },
         {
+          "condition": [0.5, 1],
           "item": "headlamp",
-          "weight": 1,
-          "condition": [0.5, 1]
+          "weight": 1
         },
         {
+          "count": [2, 8],
           "item": "painkillers",
           "weight": 1
         },
@@ -154,18 +171,24 @@
           "nothing": true,
           "weight": 3
         }
-      ]
+      ],
+      "id": "desk",
+      "rolls": [1, 3]
     },
     {
-      "id": "shelf",
-      "rolls": [1, 3],
       "entries": [
         {
           "item": "paperback",
           "weight": 3
         },
-        { "item": "camp_craft_book", "weight": 1 },
-        { "item": "workshop_notes", "weight": 1 },
+        {
+          "item": "camp_craft_book",
+          "weight": 1
+        },
+        {
+          "item": "workshop_notes",
+          "weight": 1
+        },
         {
           "table": "snacks",
           "weight": 2
@@ -178,16 +201,16 @@
           "nothing": true,
           "weight": 2
         }
-      ]
+      ],
+      "id": "shelf",
+      "rolls": [1, 3]
     },
     {
-      "id": "snacks",
-      "rolls": [1, 1],
       "entries": [
         {
+          "count": [1, 2],
           "item": "chocolate_bar",
-          "weight": 3,
-          "count": [1, 2]
+          "weight": 3
         },
         {
           "item": "crackers",
@@ -197,80 +220,126 @@
           "item": "soda_can",
           "weight": 2
         }
-      ]
+      ],
+      "id": "snacks",
+      "rolls": [1, 1]
     },
     {
-      "id": "junk",
-      "rolls": [1, 3],
       "entries": [
-        { "item": "stick", "weight": 1 },
-        { "item": "wax", "weight": 1 },
         {
+          "item": "stick",
+          "weight": 1
+        },
+        {
+          "item": "wax",
+          "weight": 1
+        },
+        {
+          "count": [1, 3],
           "item": "rag",
-          "weight": 4,
-          "count": [1, 3]
+          "weight": 4
         },
         {
           "item": "duct_tape",
           "weight": 2
         },
         {
+          "count": [5, 20],
           "item": "nails",
-          "weight": 2,
-          "count": [5, 20]
+          "weight": 2
         },
         {
+          "count": [1, 2],
           "item": "scrap_metal",
-          "weight": 3,
-          "count": [1, 2]
+          "weight": 3
         },
         {
+          "count": [1, 2],
           "item": "aa_battery",
-          "weight": 1,
-          "count": [1, 2]
+          "weight": 1
         },
-        { "item": "portable_radio", "weight": 1 },
-        { "item": "broken_toaster", "weight": 1 },
-        { "item": "dead_desk_lamp", "weight": 1 },
-        { "item": "broken_table_fan", "weight": 1 },
-        { "item": "cracked_phone", "weight": 2 },
-        { "item": "broken_clock", "weight": 1 },
-        { "item": "electrical_tape", "weight": 2 },
-        { "item": "fastener_pack", "weight": 2 },
-        { "item": "rubber_strip", "weight": 1 },
-        { "item": "sewing_thread", "weight": 1 },
-        { "item": "nylon_cord", "weight": 1 },
-        { "item": "lamp_oil", "weight": 1 },
+        {
+          "item": "portable_radio",
+          "weight": 1
+        },
+        {
+          "item": "broken_toaster",
+          "weight": 1
+        },
+        {
+          "item": "dead_desk_lamp",
+          "weight": 1
+        },
+        {
+          "item": "broken_table_fan",
+          "weight": 1
+        },
+        {
+          "item": "cracked_phone",
+          "weight": 2
+        },
+        {
+          "item": "broken_clock",
+          "weight": 1
+        },
+        {
+          "item": "electrical_tape",
+          "weight": 2
+        },
+        {
+          "item": "fastener_pack",
+          "weight": 2
+        },
+        {
+          "item": "rubber_strip",
+          "weight": 1
+        },
+        {
+          "item": "sewing_thread",
+          "weight": 1
+        },
+        {
+          "item": "nylon_cord",
+          "weight": 1
+        },
+        {
+          "item": "lamp_oil",
+          "weight": 1
+        },
         {
           "nothing": true,
           "weight": 3
         }
-      ]
+      ],
+      "id": "junk",
+      "rolls": [1, 3]
     },
     {
-      "id": "shed_tools",
-      "rolls": [1, 3],
       "entries": [
         {
+          "condition": [0.40000000000000002, 1],
           "item": "hammer",
-          "weight": 3,
-          "condition": [0.4, 1]
+          "weight": 3
         },
         {
+          "condition": [0.40000000000000002, 1],
           "item": "crowbar",
-          "weight": 1,
-          "condition": [0.4, 1]
+          "weight": 1
         },
-        { "item": "baseball_bat", "weight": 1, "condition": [0.4, 1] },
         {
+          "condition": [0.40000000000000002, 1],
+          "item": "baseball_bat",
+          "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 1],
           "item": "machete",
-          "weight": 1,
-          "condition": [0.4, 1]
+          "weight": 1
         },
         {
+          "condition": [0.40000000000000002, 1],
           "item": "kabar",
-          "weight": 1,
-          "condition": [0.4, 1]
+          "weight": 1
         },
         {
           "item": "steel_pipe",
@@ -280,30 +349,33 @@
           "item": "glowstick",
           "weight": 1
         },
-        { "item": "weapon_sling", "weight": 1 },
         {
+          "item": "weapon_sling",
+          "weight": 1
+        },
+        {
+          "count": [10, 40],
           "item": "nails",
-          "weight": 3,
-          "count": [10, 40]
+          "weight": 3
         },
         {
           "table": "junk",
           "weight": 3
         }
-      ]
+      ],
+      "id": "shed_tools",
+      "rolls": [1, 3]
     },
     {
-      "id": "shambler_pockets",
-      "rolls": [0, 2],
       "entries": [
         {
           "item": "lighter",
           "weight": 1
         },
         {
+          "count": [1, 2],
           "item": "aa_battery",
-          "weight": 1,
-          "count": [1, 2]
+          "weight": 1
         },
         {
           "item": "bandage",
@@ -325,117 +397,338 @@
           "nothing": true,
           "weight": 6
         }
-      ]
+      ],
+      "id": "shambler_pockets",
+      "rolls": [0, 2]
     },
     {
+      "entries": [
+        {
+          "nothing": true,
+          "weight": 4
+        },
+        {
+          "table": "soldier_kit",
+          "weight": 1
+        }
+      ],
       "id": "soldier_pockets",
-      "rolls": [1, 1],
-      "entries": [{ "nothing": true, "weight": 4 }, { "table": "soldier_kit", "weight": 1 }]
+      "rolls": [1, 1]
     },
     {
+      "entries": [
+        {
+          "item": "bandage",
+          "weight": 3
+        },
+        {
+          "item": "antiseptic",
+          "weight": 1
+        },
+        {
+          "count": [4, 12],
+          "item": "painkillers",
+          "weight": 1
+        },
+        {
+          "item": "flashlight",
+          "weight": 1
+        },
+        {
+          "item": "screwdriver",
+          "weight": 1
+        },
+        {
+          "item": "duct_tape",
+          "weight": 1
+        },
+        {
+          "item": "matches",
+          "weight": 1
+        }
+      ],
       "id": "soldier_kit",
-      "rolls": [1, 2],
-      "entries": [
-        { "item": "bandage", "weight": 3 },
-        { "item": "antiseptic", "weight": 1 },
-        { "item": "painkillers", "weight": 1 },
-        { "item": "flashlight", "weight": 1 },
-        { "item": "screwdriver", "weight": 1 },
-        { "item": "duct_tape", "weight": 1 },
-        { "item": "matches", "weight": 1 }
-      ]
+      "rolls": [1, 2]
     },
     {
+      "entries": [
+        {
+          "table": "building_tools",
+          "weight": 3
+        },
+        {
+          "table": "building_materials",
+          "weight": 4
+        },
+        {
+          "table": "building_parts",
+          "weight": 3
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ],
       "id": "hardware_store_stock",
-      "rolls": [1, 3],
-      "entries": [
-        { "table": "building_tools", "weight": 3 },
-        { "table": "building_materials", "weight": 4 },
-        { "table": "building_parts", "weight": 3 },
-        { "nothing": true, "weight": 2 }
-      ]
+      "rolls": [1, 3]
     },
     {
+      "entries": [
+        {
+          "table": "building_tools",
+          "weight": 2
+        },
+        {
+          "table": "building_materials",
+          "weight": 3
+        },
+        {
+          "table": "building_parts",
+          "weight": 4
+        },
+        {
+          "table": "junk",
+          "weight": 2
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ],
       "id": "garage_stock",
-      "rolls": [1, 3],
-      "entries": [
-        { "table": "building_tools", "weight": 2 },
-        { "table": "building_materials", "weight": 3 },
-        { "table": "building_parts", "weight": 4 },
-        { "table": "junk", "weight": 2 },
-        { "nothing": true, "weight": 2 }
-      ]
+      "rolls": [1, 3]
     },
     {
+      "entries": [
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "hammer",
+          "weight": 3
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "crowbar",
+          "weight": 3
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "baseball_bat",
+          "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "hand_saw",
+          "weight": 2
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "screwdriver",
+          "weight": 2
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "wrench",
+          "weight": 2
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "adjustable_pliers",
+          "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "wire_strippers",
+          "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "kitchen_knife",
+          "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "machete",
+          "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 1],
+          "item": "kabar",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ],
       "id": "building_tools",
-      "rolls": [1, 1],
-      "entries": [
-        { "item": "hammer", "weight": 3, "condition": [0.4, 1] },
-        { "item": "crowbar", "weight": 3, "condition": [0.4, 1] },
-        { "item": "baseball_bat", "weight": 1, "condition": [0.4, 1] },
-        { "item": "hand_saw", "weight": 2, "condition": [0.4, 1] },
-        { "item": "screwdriver", "weight": 2, "condition": [0.4, 1] },
-        { "item": "wrench", "weight": 2, "condition": [0.4, 1] },
-        { "item": "adjustable_pliers", "weight": 1, "condition": [0.4, 1] },
-        { "item": "wire_strippers", "weight": 1, "condition": [0.4, 1] },
-        { "item": "kitchen_knife", "weight": 1, "condition": [0.4, 1] },
-        { "item": "machete", "weight": 1, "condition": [0.4, 1] },
-        { "item": "kabar", "weight": 1, "condition": [0.4, 1] },
-        { "nothing": true, "weight": 2 }
-      ]
+      "rolls": [1, 1]
     },
     {
+      "entries": [
+        {
+          "item": "wooden_plank",
+          "weight": 2
+        },
+        {
+          "count": [5, 20],
+          "item": "nails",
+          "weight": 4
+        },
+        {
+          "count": [1, 2],
+          "item": "scrap_metal",
+          "weight": 3
+        },
+        {
+          "count": [1, 3],
+          "item": "rag",
+          "weight": 2
+        },
+        {
+          "count": [1, 3],
+          "item": "stick",
+          "weight": 2
+        },
+        {
+          "count": [1, 3],
+          "item": "wax",
+          "weight": 1
+        },
+        {
+          "item": "lamp_oil",
+          "weight": 1
+        },
+        {
+          "item": "electrical_tape",
+          "weight": 2
+        },
+        {
+          "item": "fastener_pack",
+          "weight": 2
+        },
+        {
+          "item": "rubber_strip",
+          "weight": 1
+        },
+        {
+          "item": "nylon_cord",
+          "weight": 1
+        },
+        {
+          "item": "hinge_set",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 1
+        }
+      ],
       "id": "building_materials",
-      "rolls": [1, 1],
-      "entries": [
-        { "item": "wooden_plank", "weight": 2 },
-        { "item": "nails", "weight": 4, "count": [5, 20] },
-        { "item": "scrap_metal", "weight": 3, "count": [1, 2] },
-        { "item": "rag", "weight": 2, "count": [1, 3] },
-        { "item": "stick", "weight": 2, "count": [1, 3] },
-        { "item": "wax", "weight": 1, "count": [1, 3] },
-        { "item": "lamp_oil", "weight": 1 },
-        { "item": "electrical_tape", "weight": 2 },
-        { "item": "fastener_pack", "weight": 2 },
-        { "item": "rubber_strip", "weight": 1 },
-        { "item": "nylon_cord", "weight": 1 },
-        { "item": "hinge_set", "weight": 1 },
-        { "nothing": true, "weight": 1 }
-      ]
+      "rolls": [1, 1]
     },
     {
+      "entries": [
+        {
+          "item": "copper_wire",
+          "weight": 2
+        },
+        {
+          "item": "duct_tape",
+          "weight": 3
+        },
+        {
+          "count": [1, 2],
+          "item": "aa_battery",
+          "weight": 2
+        },
+        {
+          "item": "steel_pipe",
+          "weight": 1
+        },
+        {
+          "item": "improvised_suppressor",
+          "weight": 1
+        },
+        {
+          "item": "taped_flashlight_mount",
+          "weight": 1
+        },
+        {
+          "item": "scrap_foregrip",
+          "weight": 1
+        },
+        {
+          "item": "sewing_kit",
+          "weight": 1
+        },
+        {
+          "item": "sewing_repair_kit",
+          "weight": 1
+        },
+        {
+          "item": "electrical_repair_kit",
+          "weight": 1
+        },
+        {
+          "item": "circuit_board",
+          "weight": 1
+        },
+        {
+          "item": "fuse",
+          "weight": 1
+        },
+        {
+          "item": "glass_shards",
+          "weight": 1
+        },
+        {
+          "item": "small_spring",
+          "weight": 1
+        },
+        {
+          "item": "glass_bulb",
+          "weight": 1
+        },
+        {
+          "item": "glass_lens",
+          "weight": 1
+        },
+        {
+          "count": [1, 2],
+          "item": "scrap_metal",
+          "weight": 2
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ],
       "id": "building_parts",
-      "rolls": [1, 1],
-      "entries": [
-        { "item": "copper_wire", "weight": 2 },
-        { "item": "duct_tape", "weight": 3 },
-        { "item": "aa_battery", "weight": 2, "count": [1, 2] },
-        { "item": "steel_pipe", "weight": 1 },
-        { "item": "improvised_suppressor", "weight": 1 },
-        { "item": "taped_flashlight_mount", "weight": 1 },
-        { "item": "scrap_foregrip", "weight": 1 },
-        { "item": "sewing_kit", "weight": 1 },
-        { "item": "sewing_repair_kit", "weight": 1 },
-        { "item": "electrical_repair_kit", "weight": 1 },
-        { "item": "circuit_board", "weight": 1 },
-        { "item": "fuse", "weight": 1 },
-        { "item": "glass_shards", "weight": 1 },
-        { "item": "small_spring", "weight": 1 },
-        { "item": "glass_bulb", "weight": 1 },
-        { "item": "glass_lens", "weight": 1 },
-        { "item": "scrap_metal", "weight": 2, "count": [1, 2] },
-        { "nothing": true, "weight": 2 }
-      ]
+      "rolls": [1, 1]
     },
     {
-      "id": "medical_filler",
-      "rolls": [1, 2],
       "entries": [
-        { "item": "bandage", "weight": 4, "count": [1, 2] },
-        { "item": "painkillers", "weight": 2 },
-        { "item": "rag", "weight": 1 },
-        { "nothing": true, "weight": 3 }
-      ]
+        {
+          "count": [1, 2],
+          "item": "bandage",
+          "weight": 4
+        },
+        {
+          "count": [6, 16],
+          "item": "painkillers",
+          "weight": 2
+        },
+        {
+          "item": "rag",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 3
+        }
+      ],
+      "id": "medical_filler",
+      "rolls": [1, 2]
     }
   ]
 }

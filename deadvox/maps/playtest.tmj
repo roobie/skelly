@@ -181,7 +181,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[1,1,13],\"items\":[{\"item\":\"duct_tape\",\"count\":1}]},{\"at\":[8,1,12],\"items\":[{\"item\":\"painkillers\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[14,1,13],\"items\":[{\"item\":\"canned_soup\",\"count\":1},{\"item\":\"crackers\",\"count\":1},{\"item\":\"soda_can\",\"count\":1}]}]"
+              "value": "[{\"at\":[1,1,13],\"items\":[{\"item\":\"duct_tape\",\"count\":1}]},{\"at\":[8,1,12],\"items\":[{\"item\":\"painkillers\",\"count\":24},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[14,1,13],\"items\":[{\"item\":\"canned_soup\",\"count\":1},{\"item\":\"crackers\",\"count\":1},{\"item\":\"soda_can\",\"count\":1}]}]"
             }
           ]
         },

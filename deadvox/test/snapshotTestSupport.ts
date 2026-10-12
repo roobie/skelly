@@ -4,7 +4,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { worldSolid } from '../src/core/collision.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
@@ -144,6 +144,8 @@ export function createRuntime(
       compression: number,
     ) => PlayerInputSample;
     onOpaque?: () => void;
+    /** The session's content, for a test that brings its own definitions on top of the base world. */
+    content?: Registry;
   } = {},
 ) {
   const { sampleAtPlayerTick } = options;
@@ -192,7 +194,7 @@ export function createRuntime(
     }
   }
   const session = createSession({
-    registry,
+    registry: options.content ?? registry,
     world,
     isSolid: worldSolid(world, registry, sharedEntities),
     isOpaque: (x, y, z) => {

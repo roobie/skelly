@@ -271,6 +271,10 @@ const bodyState = obj({
   knockoutElapsed: nonNegative,
   regionDamage: bodyRegionDamage,
   wounds: bodyWounds,
+  pain: obj({
+    acute: nonNegative,
+    doses: arr(obj({ item: str({ nonEmpty: true }), elapsedGameSeconds: nonNegative })),
+  }),
 });
 const scheduler = obj({
   time: nonNegative,
