@@ -32,7 +32,7 @@ Prefer a maintainable design over minimizing short-term churn, unless the churn 
 
 ### Zero drift
 
-A doc sentence that a code change can make false, without anyone touching the doc, will eventually be false, and readers (people and agents) act on it. So code owns what and how, where tests and types keep it true, and docs hold only what code can't show: why, and when.
+A doc sentence that a code change can make false, without anyone touching the doc, will eventually be false, and readers (people and agents) act on it. So code owns what and how, where tests and types keep it true, and docs hold only what code can't show: why, and when. Issues and PRs show what and how too, but they end, so code is the lasting record.
 
 This keeps tracked explanations from duplicating implementation or accumulating obsolete history. Cue code by path and symbol, replace superseded text instead of appending amendments, and keep the settled reason in a tracked doc. Design docs may state intent before implementation; implementation trims them to the reason and code cues.
 
