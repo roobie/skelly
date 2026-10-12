@@ -108,13 +108,13 @@ distance against measured play rather than duplicating current settings here.
 See `BLOCK_SIZE` in `src/core/scale.ts`.
 
 Player pace is slower sideways and backward than forward. The tunable
-`sidewaysSpeedScale` and `backwardSpeedScale` fields are authored in the
-`movement` record of `src/content/base/senses.jsonnet` and validated by
-`SenseSchema` in `src/core/schema.ts`. `movementPace` in
-`src/game/player.ts` carries the authored factors into player intent; `steer`
-blends them by axis for diagonals, keeping diagonal pace between its two axis
-speeds. The factors scale speed without changing movement direction and compose
-with other pace factors.
+`sidewaysSpeedScale` and `backwardSpeedScale` fields are authored in
+`src/content/base/senses.jsonnet`, `movement`, and validated by
+`src/core/schema.ts`, `SenseSchema`. `movementPace` and `steer` in
+`src/game/player.ts` carry the authored factors into player intent and blend
+them by axis for diagonals, keeping diagonal pace between its two axis speeds.
+The factors scale speed without changing movement direction and compose with
+other pace factors.
 
 Crouching lowers the collision body as well as the eye, so a crouched player
 fits openings that reject a standing body. The FOB's east-wall passage is sized
@@ -127,11 +127,11 @@ ground except through the southern breach`. Zombies use the passage only if
 their ordinary collision body fits; they do not crouch or
 gain a type-specific exception. Standing up is refused when the body would
 intersect a solid overhead block, and saves preserve stance while body height is
-derived from content. See `crouch.bodyHeightMetres` in
-`src/content/base/senses.jsonnet`, `settleStance` in `src/game/session.ts`,
-`SenseSchema` in `src/core/schema.ts`, `camp_wall_run_crouch_hole` in
-`src/content/base/camp.jsonnet`, and `zombieBodyDimensions` in
-`src/core/spawnClearance.ts`.
+derived from content. See `src/content/base/senses.jsonnet`,
+`crouch.bodyHeightMetres`; `src/game/session.ts`, `settleStance`;
+`src/core/schema.ts`, `SenseSchema`; `src/content/base/camp.jsonnet`,
+`camp_wall_run_crouch_hole`; and `src/core/spawnClearance.ts`,
+`zombieBodyDimensions`.
 
 ### Block shapes
 
