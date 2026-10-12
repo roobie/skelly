@@ -147,6 +147,7 @@ import { stopReadingOnClose as stopReadingPageOnClose } from './readingClose.ts'
 import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
+import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
 import { updateStartupHintLatch } from './startupHint.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
@@ -1645,7 +1646,6 @@ export const startPlay = (
     cancelItemThrow,
     throwItem: throwRecordedItem,
   };
-  const inv = inventory;
   const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {
     const reason = applyReplayActionPayload(payload, replayCommandOwners);
     if (reason) {
@@ -1657,29 +1657,18 @@ export const startPlay = (
     }
     return undefined;
   };
+  const dispatchScreenCommandWithCompletion = createScreenCommandDispatcher({
+    isReplaying: () => replayPlayer !== undefined,
+    inputRecorder: () => inputRecorder,
+    inputContext: () => inputContext(),
+    pendingPlayerTickActions,
+    apply: applyScreenCommand,
+    inventory,
+    notice: hooks.notice,
+    refusal: (reason) => showRefusal(reason, sim.time),
+  });
   function dispatchScreenCommand(payload: ReplayActionPayload): string | undefined {
-    if (replayPlayer) {
-      return undefined;
-    }
-    if (!inputRecorder) {
-      const item = payload.kind === 'inventory.assign' ? inv.itemByUid(payload.itemUid) : undefined;
-      const reason = applyScreenCommand(payload);
-      if (!reason && item && payload.kind === 'inventory.assign') {
-        hooks.notice(`${inv.name(item)} on quickbar ${payload.slot + 1}`);
-      }
-      return reason;
-    }
-    inputRecorder.queueAction(payload.kind, 'down', inputContext(), { payload });
-    pendingPlayerTickActions.enqueue(() => {
-      const item = payload.kind === 'inventory.assign' ? inv.itemByUid(payload.itemUid) : undefined;
-      const reason = applyScreenCommand(payload);
-      if (reason) {
-        showRefusal(reason, sim.time);
-      } else if (item && payload.kind === 'inventory.assign') {
-        hooks.notice(`${inv.name(item)} on quickbar ${payload.slot + 1}`);
-      }
-    });
-    return undefined;
+    return dispatchScreenCommandWithCompletion(payload);
   }
 
   const timeKeys = (code: string): boolean => {

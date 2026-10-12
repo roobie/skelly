@@ -20,8 +20,14 @@ import {
   keyboardInput,
 } from '../src/game/inputBindings.ts';
 import { routeModalCommand } from '../src/game/modalCommand.ts';
+import { PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
-import { applyReplayActionPayload, type ReplayActionPayload } from '../src/game/replayCommands.ts';
+import {
+  applyReplayActionPayload,
+  type ReplayActionPayload,
+  type ReplayCommandOwners,
+} from '../src/game/replayCommands.ts';
+import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
@@ -102,6 +108,32 @@ function setup(contentRegistry = registry) {
   let lastPayload: ReplayActionPayload | undefined;
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
   let alarm: { gameHour: number | undefined } | undefined;
+  const commandOwners: ReplayCommandOwners = {
+    inventory: inv,
+    queue,
+    quickbar,
+    search: (uid) => {
+      if (uid !== entity.uid || entity.searched || searching.has(entity)) {
+        return;
+      }
+      searching.add(entity);
+      queue.enqueueAction('furniture.search', 'Search furniture', 5);
+    },
+    work: (uid, operation) => workHandler(uid, operation),
+    toHands: () => undefined,
+    pickup: () => undefined,
+    interact: () => undefined,
+    clearDownedBody: () => undefined,
+    craftStart: () => undefined,
+    craftContinue: () => undefined,
+    craftStop: () => undefined,
+    wait: () => undefined,
+    setWakeGameHour: (gameHour) => {
+      alarm = alarm && { gameHour };
+    },
+    cancelItemThrow: () => undefined,
+    throwItem: () => undefined,
+  };
   const hooks = {
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
     feet: () => [0, 0, 0] as [number, number, number],
@@ -111,32 +143,7 @@ function setup(contentRegistry = registry) {
     entityDistance: () => 1,
     dispatch: (payload: ReplayActionPayload) => {
       lastPayload = payload;
-      return applyReplayActionPayload(payload, {
-        inventory: inv,
-        queue,
-        quickbar,
-        search: (uid) => {
-          if (uid !== entity.uid || entity.searched || searching.has(entity)) {
-            return;
-          }
-          searching.add(entity);
-          queue.enqueueAction('furniture.search', 'Search furniture', 5);
-        },
-        work: (uid, operation) => workHandler(uid, operation),
-        toHands: () => undefined,
-        pickup: () => undefined,
-        interact: () => undefined,
-        clearDownedBody: () => undefined,
-        craftStart: () => undefined,
-        craftContinue: () => undefined,
-        craftStop: () => undefined,
-        wait: () => undefined,
-        setWakeGameHour: (gameHour) => {
-          alarm = alarm && { gameHour };
-        },
-        cancelItemThrow: () => undefined,
-        throwItem: () => undefined,
-      });
+      return applyReplayActionPayload(payload, commandOwners);
     },
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),
@@ -165,6 +172,7 @@ function setup(contentRegistry = registry) {
     notices,
     refusals,
     hooks,
+    commandOwners,
     body,
     character,
     lastPayload: () => lastPayload,
@@ -636,15 +644,60 @@ describe('inventory screen Lit rendering', () => {
     expect(screen.onAction('inventory.drop')).toBe(true);
     expect(queue.jobs.length).toBeGreaterThan(0);
   });
-  it('dispatches a quickbar assignment without confirming before its owner applies it', () => {
-    const { screen, inv, quickbar, beans, notices, lastPayload } = setup();
-    screen.selected = beans;
+  it('does not confirm a queued assignment if its item is consumed before the player tick', () => {
+    const test = setup();
+    const pendingPlayerTickActions = new PlayerTickActions();
+    const recorder = { queueAction: vi.fn() };
+    test.hooks.dispatch = createScreenCommandDispatcher({
+      isReplaying: () => false,
+      inputRecorder: () => recorder,
+      inputContext: () => 'inventory',
+      pendingPlayerTickActions,
+      apply: (payload) => applyReplayActionPayload(payload, test.commandOwners),
+      inventory: test.inv,
+      notice: test.hooks.notice,
+      refusal: test.hooks.refusal,
+    });
+    test.screen.selected = test.beans;
+    pendingPlayerTickActions.enqueue(() => {
+      expect(test.inv.consume(test.beans)).toBe(true);
+    });
 
-    expect(screen.onAction('quickbar.assign.3')).toBe(true);
+    expect(test.screen.onAction('quickbar.assign.3')).toBe(true);
+    expect(test.quickbar.resolve(2, test.inv)).toBeUndefined();
+    expect(test.notices).toEqual([]);
 
-    expect(lastPayload()).toEqual({ kind: 'inventory.assign', slot: 2, itemUid: beans.uid });
-    expect(quickbar.resolve(2, inv)).toBe(beans);
-    expect(notices).toEqual([]);
+    pendingPlayerTickActions.applyAtNextTick();
+
+    expect(test.quickbar.resolve(2, test.inv)).toBeUndefined();
+    expect(test.refusals).toHaveLength(1);
+    expect(test.notices).toEqual([]);
+  });
+  it('confirms a queued quickbar assignment after the player tick applies it', () => {
+    const test = setup();
+    const pendingPlayerTickActions = new PlayerTickActions();
+    const recorder = { queueAction: vi.fn() };
+    test.hooks.dispatch = createScreenCommandDispatcher({
+      isReplaying: () => false,
+      inputRecorder: () => recorder,
+      inputContext: () => 'inventory',
+      pendingPlayerTickActions,
+      apply: (payload) => applyReplayActionPayload(payload, test.commandOwners),
+      inventory: test.inv,
+      notice: test.hooks.notice,
+      refusal: test.hooks.refusal,
+    });
+    test.screen.selected = test.beans;
+
+    expect(test.screen.onAction('quickbar.assign.3')).toBe(true);
+    expect(test.quickbar.resolve(2, test.inv)).toBeUndefined();
+    expect(test.notices).toEqual([]);
+
+    pendingPlayerTickActions.applyAtNextTick();
+
+    expect(test.quickbar.resolve(2, test.inv)).toBe(test.beans);
+    expect(test.notices).toHaveLength(1);
+    expect(test.refusals).toEqual([]);
   });
   it('keeps unselected-item commands owned by inventory rather than debug', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, undefined);
