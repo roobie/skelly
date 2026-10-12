@@ -550,11 +550,7 @@ export class Inventory {
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);
     }
-    const handHeld = this.handRefusal(
-      item,
-      from.kind === 'hand' ? from.side : undefined,
-      target.kind === 'hand' ? target.side : undefined,
-    );
+    const handHeld = this.handMoveRefusal(item, from, target);
     if (handHeld) {
       return refuse(handHeld);
     }
@@ -1064,17 +1060,20 @@ export class Inventory {
     return { swap: otherItem, ...(targetSpot ? { at: targetSpot } : {}) };
   }
 
+  private handMoveRefusal(item: Item, from: Location, target: Target): string | undefined {
+    return this.handRefusal(
+      item,
+      from.kind === 'hand' ? from.side : undefined,
+      target.kind === 'hand' ? target.side : undefined,
+    );
+  }
+
   private canMoveDisplaced(item: Item, from: Location, source: Location): boolean {
     if (from.kind === 'work' || from.kind === 'slot') {
       return false;
     }
     const sourceTarget = this.targetForLocation(source);
-    const handRefusal = this.handRefusal(
-      item,
-      from.kind === 'hand' ? from.side : undefined,
-      sourceTarget.kind === 'hand' ? sourceTarget.side : undefined,
-    );
-    if (handRefusal) {
+    if (this.handMoveRefusal(item, from, sourceTarget)) {
       return false;
     }
     const sourcePlace = this.placeOf(from);
