@@ -1296,6 +1296,10 @@ export const createSession = (options: SessionOptions) => {
         readyMovementFactor,
         movementSpeed: sim.body.consequences.movementSpeed,
         crouchSpeed: senseTuning.crouch.speedMetresPerSimSecond,
+        directionalSpeed: {
+          sideways: senseTuning.movement.sidewaysSpeedScale,
+          backward: senseTuning.movement.backwardSpeedScale,
+        },
       },
     );
     const tools = debug?.();

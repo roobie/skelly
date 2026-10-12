@@ -3,7 +3,7 @@ read_if:
   - you decide how sunlight and shadows should read in play
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
-  - you change the player's collision body, or what crouching lets the player fit through
+  - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
@@ -107,17 +107,29 @@ building templates. Frame cost is part of the chosen scale, so tune view
 distance against measured play rather than duplicating current settings here.
 See `BLOCK_SIZE` in `src/core/scale.ts`.
 
+Player pace is slower sideways and backward than forward. The tunable
+`sidewaysSpeedScale` and `backwardSpeedScale` fields are authored in the
+`movement` record of `src/content/base/senses.jsonnet` and validated by
+`SenseSchema` in `src/core/schema.ts`. `movementPace` in
+`src/game/player.ts` carries the authored factors into player intent; `steer`
+blends them by axis for diagonals. This scales speed without changing movement
+direction and composes with other pace factors.
+
 Crouching lowers the collision body as well as the eye, so a crouched player
-fits openings that reject a standing body. Standing up is refused when the body
-would intersect a solid overhead block; the player remains crouched. Saves
-preserve stance, while body height is derived from content. Zombies use their
-ordinary collision body and do not crouch or gain a passage-specific exception.
-The low FOB route stays separate from the guarded entrance and southern
-breach, and must not expose the finale from near-ground approaches. See
-`settleStance` in `src/game/session.ts` and `SenseSchema` in
-`src/core/schema.ts`. Zombie body dimensions are owned by
-`zombieBodyDimensions` in `src/core/zombies.ts`; see the low-route contract in
-`test/campGate.test.ts`.
+fits openings that reject a standing body. The FOB's east-wall passage is sized
+so a crouched player fits but a standing player does not. It is a separate low
+route from the guarded north entrance and southern breach, with its floor level
+to the approach; it must not expose any part of the finale from near-ground
+viewpoints, leaving the southern breach as the only near-ground exception.
+See `test/campGate.test.ts`, `hides the finale from approach tracks and near
+ground except through the southern breach`. Zombies use the passage only if
+their ordinary collision body fits; they do not crouch or
+gain a type-specific exception. Standing up is refused when the body would
+intersect a solid overhead block, and saves preserve stance while body height is
+derived from content. See `settleStance` in `src/game/session.ts`, `SenseSchema`
+in `src/core/schema.ts`, `camp_wall_run_crouch_hole` in
+`src/content/base/camp.jsonnet`, and `zombieBodyDimensions` in
+`src/core/spawnClearance.ts`.
 
 ### Block shapes
 
