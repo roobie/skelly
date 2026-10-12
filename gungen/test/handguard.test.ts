@@ -57,10 +57,7 @@ describe('barrel-fitted handguards', () => {
     }
   });
 
-  // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)):
-  // the property is checked on every non-broken fixture and every published design.
-  // broken-handguard-fit and the other broken-* fixtures are skipped: they exist to break a rule.
-  // Checks receiver containment across every fixture and published design.
+  // Check containment across valid fixtures and published designs; broken-* fixtures intentionally violate geometry rules.
   it('keeps the handguard within its receiver in every fixture and design', { timeout: 20_000 }, () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThanOrEqual(22);

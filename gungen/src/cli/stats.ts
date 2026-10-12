@@ -1,4 +1,4 @@
-// Generator metrics (PROJECT.md §9), per template over a range of seeds:
+// Generator metrics, per template over a range of seeds:
 //   npm run stats                 1000 seeds per template
 //   npm run stats -- --seeds 200
 

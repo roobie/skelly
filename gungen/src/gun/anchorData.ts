@@ -1,9 +1,5 @@
-// Gun anchor data (PROJECT.md, "Hold anchors"): where the hands and the muzzle are on each part.
-//
-// Keyed by registry key (see GunAnchorDeclarations). Every frame is family-local and a function of the
-// part's built geometry, so it follows params without duplicating the builders' constants: `forward` is
-// the direction the gun points (+X) and `up` is the hand's up. A grip's frame follows the grip's own
-// (leaned) axes, so it tilts with the grip once placed.
+// Frames derive from built geometry, following parameter changes without duplicating builder constants.
+// Declarations are keyed by registry key; a grip's frame follows its own leaned axes after placement.
 
 import type { AnchorFrame } from '@skelly/engine/core/design.ts';
 import { add, extrusionPoint, type Vec3 } from '@skelly/engine/core/math.ts';

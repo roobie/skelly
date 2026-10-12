@@ -2,6 +2,7 @@
 read_if:
   - you change Gungen's modeling boundary, firearm scale or feasibility goal
   - you change cartridge-driven frame selection or design authoring
+  - you use or update the golden AKM reference photo or its overlays
   - you change attachment compatibility or the Gungen-to-Deadvox export contract
   - you change Gungen's test or cross-project integration policy
 ---
@@ -28,11 +29,13 @@ The AR's magazine source choices are deliberate: the straight 20-round body foll
 
 The generator proposes variations; the curated design remains the product because a valid assembly is not necessarily a good-looking one. Automated geometry checks establish fit, not appearance, so source-incomplete proportions still need visual judgment.
 
-The AK silhouette is registered to its public side-view reference by the bore and scaled from published overall length, rather than moving the receiver to force sight alignment. This preserves the receiver-to-bore relationship and places the rear sight on the receiver without an artificial post; see `src/gun/akProportions.ts#AK_PROPORTIONS`. The gas cylinder keeps the reference height and the piston stays on its axis; the lower handguard does not extend below the receiver, and the wooden stock keeps its straight bottom. Both AKM and AK-74 curved magazines fit the layout. The two muzzle devices remain separate threaded choices because a muzzle style should not change the barrel geometry. See `src/gun/parts.ts#akMuzzleDevice` and `test/ak.test.ts`. The AK design retains its 7.62×39 identity; 5.45×39 support is separate follow-up #362 rather than an inference from similar geometry.
+The golden reference photograph and overlays stay outside the repository; cite [the public photo](https://www.americanrifleman.org/media/caqhmu12/izhmash_akm_right.jpg?width=1920&height=620) instead. The AK silhouette is registered to its public side-view reference by the bore and scaled from published overall length, rather than moving the receiver to force sight alignment. This preserves the receiver-to-bore relationship and places the rear sight on the receiver without an artificial post; see `src/gun/akProportions.ts#AK_PROPORTIONS`. The gas cylinder keeps the reference height and the piston stays on its axis; the lower handguard does not extend below the receiver, and the wooden stock keeps its straight bottom. Both AKM and AK-74 curved magazines fit the layout. The two muzzle devices remain separate threaded choices because a muzzle style should not change the barrel geometry. See `src/gun/parts.ts#akMuzzleDevice` and `test/ak.test.ts`. The AK design retains its 7.62×39 identity; 5.45×39 support is separate follow-up #362 rather than an inference from similar geometry.
 
 Keep the AR frame and magwell unchanged when correcting magazine seating: adjust the shared well insertion so the established receiver silhouette and opening remain fixed. See `src/gun/arLayout.ts#AR_ACTION_LAYOUT` and `src/gun/parts.ts#MAGAZINE_INSERTION`.
 
-Default tests stay representative and deterministic; exhaustive seed sweeps are opt-in locally and remain part of CI. This keeps routine feedback useful without giving up broad generator checks; see `test/sweeps.ts#sweepGroup`.
+## Testing
+
+Seed sweeps exercise generated assemblies across templates and choices that focused property tests do not cover; they remain opt-in locally with `GUNGEN_SWEEPS=1` and run in CI. This keeps routine feedback representative and deterministic without dropping broad generator checks; see `test/sweeps.ts#sweepGroup`.
 
 ## Attachments and export
 

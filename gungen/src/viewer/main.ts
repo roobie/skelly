@@ -751,7 +751,7 @@ const load = (assembly: Assembly) => {
 //
 // Lists the current model's parts and params (paramPanel.ts, pure), then
 // turns a click into a new Assembly and runs it through the same load() as
-// picking a fixture: no second code path (PROJECT.md item gungen5).
+// picking a fixture: no second code path.
 
 const paramStateText = (state: PanelParam['state']): string => {
   if (state.kind === 'inherited') {

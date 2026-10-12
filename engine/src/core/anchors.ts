@@ -1,5 +1,4 @@
-// Generic anchor resolution: family-local frames -> assembly space (PROJECT.md, "Hold anchors").
-// Core knows nothing about which anchor names exist; the domain supplies the declarations.
+// Domain-owned declarations keep the shared core independent of consumer-specific anchor vocabularies.
 
 import type { AnchorFrame, NamedAnchors, PartAnchorDeclarations, ResolveAnchors } from './design.ts';
 import type { Transform } from './math.ts';

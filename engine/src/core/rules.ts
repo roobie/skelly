@@ -1,5 +1,4 @@
-// Feasibility rules (PROJECT.md §1). Each rule checks a resolved assembly and
-// returns readable issues; none of them simulates anything.
+// Feasibility checks stay separate from simulation so invalid geometry can be reported before use.
 
 import { MAIN_AXIS, TOLERANCE } from './conventions.ts';
 import {

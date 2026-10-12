@@ -10,7 +10,7 @@ const names = readdirSync(DESIGNS)
   .filter((f) => f.endsWith('.json') && !f.startsWith('look-'))
   .sort();
 
-// Khronos glTF-Validator over the exported binary of every published archetype design (PROJECT.md 3.4).
+// Khronos glTF-Validator checks every published archetype export against the glTF contract.
 describe('gltf-validator', () => {
   it('finds published designs to validate', () => {
     expect(names.length).toBeGreaterThan(0);

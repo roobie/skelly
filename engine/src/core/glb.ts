@@ -1,5 +1,4 @@
-// A pure .glb (binary glTF 2.0) writer for placed assemblies (PROJECT.md 3.4). No three.js or domain data:
-// the palette comes in as an argument, meshes come from `meshForSolid`.
+// No three.js or domain data: the palette comes in as an argument, meshes come from `meshForSolid`.
 //
 // Layout of the file:
 //   scene -> root node (named by the asset id)
