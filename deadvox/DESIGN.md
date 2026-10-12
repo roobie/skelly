@@ -31,6 +31,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
   - you're changing when a running game warns before page exit relative to its last save
+  - you're changing what the death card identifies about the played world
   - you're changing what the death-screen loot tally counts
   - you're changing the shoulder slot, weapon slings or how a slung gun is carried
   - you're changing melee weapon contact behavior, stamina recovery timing, seeded damage variation or melee-combat skill training
@@ -732,6 +733,11 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `src/game/audio.ts`, `GameAudio.setOutputMuted`; and `src/game/play.ts`, `frame`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
+
+  The death card shows the seed of the world the survivor played, including a
+  continued save. This identifies the world that produced the death, rather than
+  the seed for a later new world. See `src/game/play.ts`, `die`, and
+  `src/ui/death.ts`, `showDeath`.
 
   The death-screen loot tally represents distinct item units taken from
   containers, not inventory actions. Returning an item and taking it again is not
