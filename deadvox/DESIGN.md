@@ -112,8 +112,9 @@ Player pace is slower sideways and backward than forward. The tunable
 `movement` record of `src/content/base/senses.jsonnet` and validated by
 `SenseSchema` in `src/core/schema.ts`. `movementPace` in
 `src/game/player.ts` carries the authored factors into player intent; `steer`
-blends them by axis for diagonals. This scales speed without changing movement
-direction and composes with other pace factors.
+blends them by axis for diagonals, keeping diagonal pace between its two axis
+speeds. The factors scale speed without changing movement direction and compose
+with other pace factors.
 
 Crouching lowers the collision body as well as the eye, so a crouched player
 fits openings that reject a standing body. The FOB's east-wall passage is sized
