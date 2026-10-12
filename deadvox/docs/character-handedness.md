@@ -1,84 +1,18 @@
 ---
 read_if:
-  - changing character creation, restoration or dominant-hand policies
+  - changing character creation, restoration or dominant-hand policy
   - changing inventory work admission or physical hand slots
   - changing held-item placement or gameplay ejection
 ---
 
 # Character handedness
 
-Handedness is character identity, not an origin-local preference. Keeping it in
-`src/core/character.ts`, `CharacterState`, prevents Continue from changing an
-actor because a creation form or browser setting changed. `Character` fixes the
-choice at creation; `src/core/saveFormat.ts`, `progression`, requires it in saves
-rather than inventing identity for malformed data. There is no migration obligation
-before the compatibility milestone in the repository's `AGENTS.md`.
+Handedness is character identity, not an origin-local preference. Continue must restore the saved actor rather than consulting creation settings. Before the compatibility milestone, malformed or older saves are rejected rather than assigned an invented identity. See `src/core/character.ts`, `CharacterState`, and `src/core/saveFormat.ts`, `progression`.
 
-Inventory and its consumers read the actual actor, not a copied preference. See
-`src/game/session.ts`, `createSession`, and `src/core/inventory.ts`, `Inventory`.
-Restoring the actor before Inventory keeps private work admission aligned with the
-same character used by gameplay. `DEFAULT_HANDED_CHARACTER` in
-`src/core/character.ts` exists for standalone fixtures, not production wiring.
+Hand slots remain physical so inventory moves, saved action snapshots and fist alternation keep their meaning. `dominantSide` and `offSide` resolve actor roles without changing tree order. Two-handed work reserves the other physical slot; it does not create a second owner for the work item. See `src/core/craftWork.ts`, `craftActionHooks`, and `src/core/inventory.ts`, `Inventory.beginWork`.
 
-Physical hand slots remain physical so explicit inventory moves and saved action
-snapshots keep their meaning. Core preferences resolve through `dominantSide` and
-`offSide` in `src/core/character.ts`; tree traversal does not change order. Craft
-escrow and continuation use the dominant slot and require the other hand free
-(see `src/core/craftWork.ts`, `craftActionHooks`). This enforces the two-handed work
-constraint at its owner, rather than relying on a menu to choose a valid target.
+Input intents describe dominant/off-hand use, but an explicit physical selection is never redirected to another item. An empty slot reserved by a two-handed item is not a free fist. A restored fist sequence keeps its saved next arm, so Continue cannot repeat the last attack. See `src/game/primaryAction.ts`, `selectPrimaryAction`, and `src/core/playerCombat.ts`, `PlayerCombat.restoreState`.
 
-Quickbar capability preferences also resolve through the actual actor; see
-`src/core/options.ts`, `quickbarHand`. A remembered source remains a physical
-Inventory target, so put-away does not reinterpret a saved placement.
+Spatial placement follows the occupied physical slot, not actor preference. Only the placement is mirrored; model transforms, anchors and authored ejection directions stay mechanical. The support hand preserves the firearm's authored frame. See `src/core/heldPose.ts`, `heldGripOffset`, and `src/render/hands.ts`, `HeldItems`.
 
-Input intents describe dominant and off use, not anatomy; see
-`src/game/player.ts`, `MoveIntent`, and `src/game/session.ts`, `SessionControls`.
-`src/game/primaryAction.ts`, `selectPrimaryAction`, resolves the actor's default
-slot but never redirects an explicit physical selection to another item. An
-empty slot reserved by a two-handed item is not a free fist. This follows the
-Items rule in `DESIGN.md`, not a special exception for a particular firearm.
-
-A fresh player's fist sequence starts with the dominant arm, then alternates
-physical arms. `src/core/playerCombat.ts`, `PlayerCombat.restoreState`, retains the
-saved next arm rather than reseeding it from character identity: otherwise a
-Continue could repeat the arm that just attacked. NPC anatomy is independent.
-
-Spatial placement follows the occupied physical slot, not actor preference. See
-`src/core/heldPose.ts`, `heldGripOffset`, and `src/game/firearmHandling.ts`,
-`FirearmMechanics`. A two-handed grip still needs its leading slot: erasing that
-slot would place every such item on the same side. Rendering shares the grip
-contract through `src/render/hands.ts`, `HeldItems`; support placement preserves
-the authored firearm frame. Only placement is mirrored. Keeping model transforms,
-anchors and authored ejection directions unchanged preserves the firearm's actual
-mechanical side rather than manufacturing a mirrored weapon.
-
-Neutral stance exchanges leading/support roles while retaining physical arm labels;
-see `src/core/meleePose.ts`, `readyMeleePose`. Production supplies the actual actor
-through `src/game/play.ts`, `startPlay`; active attacks retain their physical hand.
-Rummaging has no preference to resolve: `src/render/rummagePose.ts`, `rummageFrame`,
-finds the unique held UID in physical slots. Passing dominance there would imply
-an identity-dependent choice where Inventory permits only one answer.
-
-Fresh gameplay is constructed only at accepted launch, not storage discovery.
-`src/main.ts` installs `src/ui/saveController.ts`, `SaveController.setNewWorldLauncher`,
-after engine and content readiness. Acceptance consumes its click, constructs and
-binds synchronously, commits entry, then invokes the explicit entry handle from
-`src/game/play.ts`, `startPlay`. Audio unlock and pointer lock stay in that gesture;
-shader warm-up does not delay it. Initialization refusal leaves saved generations
-untouched and cannot replay partially installed listeners. Continue remains a
-separate restored, paused session and does not take creation preferences.
-
-Title help does not need an actor: `src/main.ts` mounts
-`src/game/controls.ts`, `mountControlsCard`, before discovery. Keeping that
-presentation outside `startPlay` preserves help at the actorless title. Browser
-fixtures wait for accepted-launch readiness before looking for gameplay witnesses;
-see `test/browser/primary-action.mjs`, `observationPlugin`. Their pointer-lock
-harness remains separate from native gesture evidence. The UI tooling installs its
-harness before construction and observes key cancellation after propagation, since
-Input's listeners do not exist until acceptance.
-
-`index.html`, `dominant-hand`, is a native creation control, not a browser setting.
-`SaveController` validates and freezes its value at accepted launch, including
-replacement confirmation; discovery and cancelled confirmation cannot choose an
-actor. The choice is not retained across page loads or written to URL/storage.
-Saved identity, rather than a creation form, remains authoritative on Continue.
+A new actor is constructed only at accepted launch, after content and engine readiness. Continue restores saved identity and does not apply creation preferences. Title help remains available before an actor exists. See `src/ui/saveController.ts`, `SaveController.setNewWorldLauncher`, and `src/game/play.ts`, `startPlay`.

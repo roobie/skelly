@@ -1,70 +1,15 @@
 ---
 read_if:
-  - you review the held compass's readability, lighting or placement
-  - you change dominant and off-hand debug loadout preferences
-  - you're checking the HUD options in the debug compass profile
+  - you change the held compass's readability, lighting or placement
+  - you change the debug compass loadout or its hand preferences
 ---
 
-# Held compass readability spike (d34)
+# Held compass
 
-The `compass` is a 120 g, 1×2-cell electronic compass, available to authored item
-placements and the debug spawn menu; it is intentionally not in hamlet loot tables yet.
-The display is actual held-scene geometry, never DOM/HUD text. Putting it in a pocket
-removes it. Either hand works.
+The compass is a held object with a self-lit heading display, not HUD text. That choice keeps its information attached to the item and readable at night because held objects do not receive the world's flashlight beam. It must not add a second gameplay input or hand-motion authority. See `src/render/compass.ts`, `createCompass`, and `src/core/coords.ts`, `compassBearing`.
 
-## North and heading
+The display uses the world's canonical north convention and converts camera yaw to clockwise bearings. The numeric bearing and cardinal label describe facing; the triangle points north. See `src/core/coords.ts`, `WORLD_NORTH` and `headingLabel`.
 
-`WORLD_NORTH` in `deadvox/src/core/coords.ts` is the single canonical declaration. It agrees
-with the existing authored-template facing convention (`deadvox/src/core/templates.ts`).
-`deadvox/src/core/aim.ts` and `deadvox/src/game/input.ts` use counterclockwise camera yaw; the compass
-converts it to clockwise bearings. The heading unit test covers the cardinal points
-and both sides of the wrap at north. The triangle points toward north; the numeric
-bearing and cardinal abbreviation describe the direction the player faces.
+The compass remains a prototype: battery use, light spill, ground model, casing/grip art and BR's final size/readability verdict are unresolved. Do not treat the eternal display as a power policy. The debug loadout is for a fresh game only and must not replace restored hands. See `src/debug/index.ts`, `attachDebugTools`.
 
-## What the spike chose
-
-A small procedural casing, a canvas-textured illuminated screen, a continuously
-rotating north indicator, and a permanently raised reading pose. Text updates only
-when its rounded degree changes; the pointer follows every rendered camera yaw.
-This avoids a new raise-to-read key or a second gameplay/input authority.
-
-An ordinary magnetic dial with printed rotating cardinals was not chosen: small
-rotated letters are harder to read, and held objects receive sky lights,
-not the world's flashlight beam. The electronic display is honestly self-lit,
-including at night without another light; it does not pretend to receive torch light.
-The prototype models neither battery consumption nor light spill onto the hand/world.
-
-The first centered-at-wrist prototype was occluded by the palm. Moving the physical
-casing above its bottom grip solved it; depth testing is still on. No render-order or
-HUD overlay trick draws through the arm. At the default 75° FOV and 1280×720 the
-heading is readable in daylight and at midnight with a real flashlight enabled.
-These are development observations, not BR's final readability verdict.
-
-## Try it
-
-Run the normal dev server, then open:
-
-`/?debug=1&loadout=compass&site=testHouse&time=12%3A00&seed=7&radius=64&god=1`
-
-A fresh debug game with this loadout wears the debug backpack, puts the compass in
-the dominant hand and leaves the off hand empty. See `src/core/character.ts`,
-`dominantSide`, and `src/debug/index.ts`, `attachDebugTools`, for loadout role resolution.
-The special loadout never alters restored physical hands. For night use
-`time=00%3A00`. HUD elements start enabled and can be turned off individually;
-new players need them to understand the game, while experienced players can hide
-what they no longer need. See `src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`. Outside
-that debug loadout, spawn/find
-the item and put it in a hand normally.
-
-## What a finished item needs
-
-- BR's readability/size/pose verdict, improved casing/grip art and a real ground model.
-- A decision between electronic and magnetic compass; electronics need a proper
-  battery/backlight policy and appropriate light spill, not an eternal display.
-- Loot placement and authored-map use. Adding the item changes exact-version save
-  identity normally; there is no migration or compatibility path.
-
-A wristwatch can reuse the held projection and owned canvas-texture lifetime: feed
-read-only calendar time instead of yaw, update text once per displayed minute (or
-rotate analog hands), provide suitable wrist/grip art, and make its illumination and
-power policy explicit. Reading it must not advance the simulation clock.
+A wristwatch may reuse held-display ownership, but it must show read-only calendar time and must not advance the simulation clock.

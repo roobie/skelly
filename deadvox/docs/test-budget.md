@@ -1,45 +1,29 @@
 ---
 read_if:
   - you're reviewing why the default Deadvox unit suite was reduced
-  - you're revisiting a suite reduction after a budget overrun or related defect
-  - you're running a milestone's default-suite time check
+  - you're revisiting a cut after a budget overrun or related defect
+  - you're measuring suite growth between milestones
 ---
 
 # Default Deadvox unit-suite reductions
 
-The default Deadvox unit suite exceeded its budget. The d92 cuts reduce repeated
-and incidental work without changing the budget. The absolute budget value and
-the host's timing procedure remain in the lead's host notes; the milestone
-growth check is below.
+The suite keeps its worker policy and timeout rules; reductions target repeated or incidental work while preserving an assertion for each protected property. Absolute wall time depends on host capacity, so this document tracks milestone growth rather than a host-specific budget.
 
-Each cut keeps the assertion defining its protected property and removes only repeated or incidental work. Worker policy is unchanged; timeouts remain proportional to their work. Follow `AGENTS.md`, “Tests,” when recording the coverage given up and its remaining guard.
+## Retained coverage
 
-## Decision record
+- Mesher and occlusion samples are narrower; property guards still compare merged output with the simpler construction.
+- Hamlet order, zombie idle horizons and dismemberment cases use targeted samples; remaining tests protect order invariance, seeded intervals, bounded launches and energy dissipation.
+- Save/scheduler fixtures no longer repeat full-world incidental data; continuation tests protect full-state restoration and interruption across snapshots, while format tests protect edited-world round trips.
+- No content behavior was removed; base validation remains the guard.
 
-- Narrowed sampled mesher layouts; remaining guard: see `test/mesher.test.ts`, “draws the same faces as plain face culling (random chunks)”.
-- Narrowed sampled occlusion terrains; remaining guard: see `test/occlusion.test.ts`, “gives every merged-quad corner the per-vertex value (random terrain)”.
-- Gave up repeated Hamlet order and seed cases; remaining guard: see `test/hamlet.test.ts`, “generates the same in any chunk order”.
-- Shortened the idle/stroll horizon; remaining guard: see `test/zombies.test.ts`, “uses seeded idle and straight stroll intervals during a sustained sample”.
-- Gave up low-impulse and post-touchdown synthetic dismemberment coverage; remaining guards: see `test/zombies.test.ts`, “scales launch distance monotonically through 40 N·s and keeps weapon distances bounded”, and `test/severedEnergy.test.ts`, “caps real bat launches and dissipates each bounce across five zombie seeds”.
-- No content behavior was given up; remaining guard: see `test/content.test.ts`, “base content has no issues”.
-- Ordinary save and scheduler cases gave up incidental full-world fixture coverage; remaining guard: see `test/snapshot-continuation.test.ts`, “detects omission of simulation, world, scheduler, inventory, and audio state”.
-- Gave up the duplicate deep non-rest continuation comparison; remaining guards: see `test/snapshot-continuation.test.ts`, “deeply matches N steps with K/save/load/N−K (active rest)”, “preserves an active-sleep interruption emitted between frames across save/load”, and “preserves a pending sleep interruption across a paused snapshot and load”.
-- No save-format behavior was given up; remaining guard: see `test/snapshot-format.test.ts`, “round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes”.
+See the named tests in `test/mesher.test.ts`, `test/occlusion.test.ts`, `test/hamlet.test.ts`, `test/zombies.test.ts`, `test/severedEnergy.test.ts`, `test/snapshot-continuation.test.ts` and `test/snapshot-format.test.ts`.
 
-Revisit these cuts when an issue reports another default-suite budget overrun or a defect that a given-up case would have caught. Restore the affected case when responding to such a defect, and link the issue.
+Revisit a cut only when an issue reports a related defect or suite overrun; restore the case that protects that property and link the trigger. Do not broaden fixtures or assert drifting content to compensate.
 
-For #318, neither whole-tree scan guard carries the whole tree under one test timeout. Parsing is spread across per-file cases, and the mutation checks reuse the collected graph instead of re-collecting it. See `test/inputLiterals.test.ts` and `test/simulationFingerprint.test.ts`, `mutateSimulationSource`.
+## Milestone growth
 
-## Milestone growth check
+Compare the previous milestone with the new head using interleaved runs, each isolated. Treat median growth beyond the run-to-run spread as an overrun and record the per-file deltas. Absolute duration may move with host load; it is not evidence of milestone regression by itself.
 
-For each milestone, compare the previous milestone's merge commit with the new head using three interleaved default-suite runs per head, each in its own isolated run. Treat median growth beyond the run-to-run spread as an overrun, and record per-file deltas. The absolute budget remains the quiet-host target.
+When a registry check approaches the test timeout, use the smallest registry source that exercises its assertion. Preserve full base/overlay builds where the assertion needs integration behavior. See `test/content.test.ts`, `baseBuild`, `baseRegistry` and `withBase`.
 
-When #380 reports registry checks approaching Vitest's default timeout, give each check the smallest registry sources that exercise its assertion. In `test/content.test.ts`, keep `baseBuild` and `baseRegistry` for read-only checks of authored content, use fixtures such as `recipeDependencies` for independent reference rules, and retain full `withBase` builds where the assertion needs actual authored content or an overlay. This keeps base-integration coverage without charging unrelated registry checks for the full content pack.
-
-On a busy shared host, absolute duration moves with load and can read over budget without a milestone regression. The interleaved d103 comparison between d92's merge and #304's merge found no suite-level median growth despite over-budget absolute readings. Module import accounted for a large share, but its evaluation cost was spread across the graph under per-file isolation, with no single module dominating; Vitest's `experimental.importDurations` reports the module profile. d103 found the candidate import savings small relative to that whole graph, so it changed no tests or runtime imports.
-
-Measure each milestone's growth against the previous milestone's merge and cut
-loading time without losing test coverage. Defer the renderer-edge import split
-and `inputLiterals` prefilter: their expected savings are small against the whole
-import graph, the split changes runtime imports and the bundle, and the prefilter
-risks weakening the input-registry guard. Revisit either only if BR asks for it.
+Import-time work is spread across the graph. Avoid runtime-import splits or prefilters unless measured savings justify the bundle and coverage risk; revisit if BR asks for it.
