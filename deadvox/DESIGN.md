@@ -942,11 +942,13 @@ slowed, for the reason "Bleeding" keeps them open: a hurt player may need them t
 stop a wound. See `createSession` in `src/game/session.ts` and `FirearmMechanics`
 in `src/game/firearmHandling.ts`.
 
-A painkiller is any item with an `analgesic` component, taken one pill at a time
-from a stack (`Survival.use` in `src/game/survival.ts`). A dose's relief rises
-through its onset, holds, then fades, in game time so content can author real
-pharmacology. Doses in one `group` share its highest cap, so a second pill tops
-relief up and a third adds nothing, while another group adds on top. Painkillers
+A painkiller is any item with an `analgesic` component, whatever its category,
+taken one pill at a time from a stack by every route that consumes: hands, the
+primary action and the quickbar (`consumption` in `src/core/options.ts`). A dose's
+relief rises through its onset, holds, then fades, in game time so content can
+author real pharmacology; a phase may last no time. Doses in one `group` add up to
+no more than its highest cap, so repeat doses cannot stack relief without limit,
+while another group adds on top; see `analgesia` in `src/core/pain.ts`. Painkillers
 mask pain only: health, regions, wounds and `Body.consequences` stay as they were,
 so a damaged leg is as slow on pills and the injury outlasts the relief.
 

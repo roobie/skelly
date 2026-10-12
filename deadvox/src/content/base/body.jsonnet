@@ -73,7 +73,8 @@ local normalSleep = 100 / normalSleepGameHours;
         },
       ],
     },
-    // Pain (DESIGN.md, "Pain") is open-ended, balanced so felt pain at knockoutAt knocks out; tiers are shares of it.
+    // Pain (DESIGN.md, "Pain") is open-ended. knockoutAt is its balance point, where felt pain is meant to knock out
+    // once the knockout lands (#654); until then nothing happens there. Tiers are shares of it.
     pain: {
       knockoutAt: 100,
       // A bite or stab hurts a little more than a blow of the same damage.

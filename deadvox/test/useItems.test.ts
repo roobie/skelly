@@ -22,6 +22,41 @@ const { registry } = buildRegistry(
     .map((file) => read(`src/content/base/${file}`)),
 );
 
+// The test's own painkillers: the component, not the category, makes an item one, so each route is held to that.
+const pillOf = (id: string, category: string) => ({
+  id,
+  name: id,
+  category,
+  weight: 1,
+  size: [1, 1],
+  stack: 6,
+  analgesic: { reliefPerDose: 1, maxRelief: 1, onsetGameMinutes: 30, peakGameMinutes: 120, fadeGameMinutes: 60 },
+});
+const painkillerFixture = buildRegistry([
+  {
+    source: 'painkiller-fixture',
+    data: {
+      items: [
+        pillOf('material_pill', 'material'),
+        pillOf('tool_pill', 'tool'),
+        {
+          id: 'pocketed_trousers',
+          name: 'Pocketed trousers',
+          category: 'clothing',
+          weight: 1,
+          size: [3, 3],
+          wearable: { slot: 'legs', encumbrance: 0 },
+          container: { pockets: [{ name: 'pocket', grid: [1, 1], handlingSimSeconds: 0.5 }] },
+        },
+      ],
+    },
+  },
+]);
+if (painkillerFixture.issues.length > 0) {
+  throw new Error(`Invalid painkiller fixture: ${JSON.stringify(painkillerFixture.issues)}`);
+}
+const painkillers = painkillerFixture.registry;
+
 const batteryOf = (light: Item): Item => {
   const battery = light.slots?.battery;
   if (!battery) {
@@ -132,25 +167,26 @@ describe('using what you hold', () => {
     expect(notices).toContain('The apple was rotten');
   });
 
-  it('takes one pill off a painkiller stack, from your hands or a pocket, and starts one dose for it', () => {
-    const pill = [...registry.items.values()].find((def) => def.analgesic);
-    expect(pill).toBeDefined();
-    const { sim, inventory, queue, survival, hold } = setup();
-    const doses = (): number => sim.body.snapshotState().pain.doses.length;
-    const held = hold(pill!.id);
-    held.count = 3;
-    expect(survival.use(held)).toBeUndefined();
-    queue.tick(TAKE_TIME + 0.1);
-    expect([held.count, doses()]).toEqual([2, 1]);
+  it.each(['material_pill', 'tool_pill'])(
+    'takes one pill off a %s stack, from your hands or a pocket, and starts one dose for it',
+    (pill) => {
+      const { sim, inventory, queue, survival } = setup(painkillers);
+      const doses = (): number => sim.body.snapshotState().pain.doses.length;
+      const held = inventory.create(pill, 3);
+      inventory.add(held, { kind: 'hand', side: 'right' });
+      expect(survival.use(held)).toBeUndefined();
+      queue.tick(TAKE_TIME + 0.1);
+      expect([held.count, doses()]).toEqual([2, 1]);
 
-    const jeans = inventory.create('jeans');
-    inventory.add(jeans, { kind: 'worn' });
-    const pocketed = inventory.create(pill!.id, 3);
-    inventory.add(pocketed, { kind: 'pocket', owner: jeans, pocket: 0 });
-    expect(survival.useFromQuickbar(pocketed)).toBeUndefined();
-    queue.tick(60);
-    expect([pocketed.count, doses(), inventory.locate(pocketed)?.kind]).toEqual([2, 2, 'pocket']);
-  });
+      const trousers = inventory.create('pocketed_trousers');
+      inventory.add(trousers, { kind: 'worn' });
+      const pocketed = inventory.create(pill, 3);
+      expect(inventory.add(pocketed, { kind: 'pocket', owner: trousers, pocket: 0 })).toBe(true);
+      expect(survival.useFromQuickbar(pocketed)).toBeUndefined();
+      queue.tick(60);
+      expect([pocketed.count, doses(), inventory.locate(pocketed)?.kind]).toEqual([2, 2, 'pocket']);
+    },
+  );
 
   it('switches the light on and off, and it goes off when put away', () => {
     const { inventory, survival, sim, hold } = setup();

@@ -290,13 +290,14 @@ export class Survival {
     if (def.firearm) {
       return 'Use R to work the firearm';
     }
-    if (def.weapon || def.key || (def.category === 'tool' && !def.light)) {
+    // A weapon or key keeps its own action; a tool's category refuses only when nothing in it can be consumed.
+    const use = consumption(def);
+    if (def.weapon || def.key || (!use && def.category === 'tool' && !def.light)) {
       return `Nothing to do with the ${def.name.toLowerCase()} from here`;
     }
     if (at.kind === 'hand' || def.battery) {
       return this.use(item);
     }
-    const use = consumption(def);
     if (use && at.kind === 'pocket') {
       return this.useQuickbarConsumable(item, use, at);
     }

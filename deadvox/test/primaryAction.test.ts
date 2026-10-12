@@ -9,6 +9,14 @@ import { Survival } from '../src/game/survival.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
 import { Simulation } from './simulationFixture.ts';
 
+// A painkiller is one by its component, whatever its category.
+const FIXTURE_ANALGESIC = {
+  reliefPerDose: 1,
+  maxRelief: 1,
+  onsetGameMinutes: 1,
+  peakGameMinutes: 1,
+  fadeGameMinutes: 1,
+} as const;
 const capabilities = [
   {
     id: 'held_blunt',
@@ -20,6 +28,8 @@ const capabilities = [
   { id: 'held_drink', kind: 'use', category: 'drink', food: { calories: 0, water: 1 } },
   { id: 'held_bandage', kind: 'use', category: 'medical' },
   { id: 'held_rag', kind: 'use', category: 'material', treatment: { bleeding: 1 } },
+  { id: 'held_material_pill', kind: 'use', category: 'material', analgesic: FIXTURE_ANALGESIC },
+  { id: 'held_tool_pill', kind: 'use', category: 'tool', analgesic: FIXTURE_ANALGESIC },
   { id: 'held_gun', kind: 'firearm', firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01 }, twoHanded: true },
   {
     id: 'held_igniter',
@@ -205,7 +215,7 @@ describe('held-item hand action', () => {
     });
   });
 
-  it.each(['held_food', 'held_drink', 'held_bandage', 'held_rag'])(
+  it.each(['held_food', 'held_drink', 'held_bandage', 'held_rag', 'held_material_pill', 'held_tool_pill'])(
     'runs the held %s primary use through Survival.use',
     (type) => {
       const inventory = hold(type);
