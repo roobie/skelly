@@ -448,9 +448,24 @@ try {
       'pixel',
     ),
   );
-  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
-    timeout: 30_000,
-  });
+  try {
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
+      timeout: 30_000,
+    });
+  } catch (error) {
+    const startupState = await page.evaluate(() => ({
+      readyState: document.readyState,
+      goDisabled: document.querySelector('#go')?.getAttribute('aria-disabled'),
+      goButtonDisabled: document.querySelector('#go')?.disabled,
+      startupScreenHidden: document.querySelector('#startup-screen')?.hidden,
+      startupStatus: document.querySelector('#save-status')?.textContent,
+      errors: document.querySelector('#errors')?.textContent,
+    }));
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
+      { cause: error },
+    );
+  }
   await page.locator('#go').click();
   await page.waitForFunction(
     () => globalThis.firefoxUiTest?.engine.renderer && globalThis.firefoxUiTest.engine.meshes.count > 0,
