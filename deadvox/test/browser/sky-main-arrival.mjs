@@ -1,14 +1,18 @@
 import { execFileSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { createServer } from 'vite';
 
 const sources = [
   'game/engine.ts',
+  'game/play.ts',
+  'game/startupHint.ts',
   'core/authoredSite.ts',
   'core/site.ts',
   'render/skylight.ts',
+  'render/playView.ts',
+  'render/flashlight.ts',
   'game/streamer.ts',
   'worker/mesh.worker.ts',
   'worker/protocol.ts',
@@ -30,6 +34,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   }
   const base = git(['rev-parse', ref]);
   const overlays = new Map(sources.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
+  const mainHtml = git(['show', `${base}:deadvox/index.html`]);
   const appliedSources = new Set();
   const server = await createServer({
     root,
@@ -40,6 +45,23 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
       {
         name: 'main-first-mesh-source-overlay',
         enforce: 'pre',
+        resolveId(id, importer) {
+          if (!importer || !id.startsWith('.')) {
+            return null;
+          }
+          const path = resolve(dirname(importer.split('?')[0]), id);
+          return overlays.has(mainOverlayPath(root, path)) ? path : null;
+        },
+        load(id) {
+          return overlays.get(mainOverlayPath(root, id)) ?? null;
+        },
+        transformIndexHtml: {
+          order: 'pre',
+          handler() {
+            appliedSources.add('index.html');
+            return mainHtml;
+          },
+        },
         transform(code, id) {
           const relative = mainOverlayPath(root, id);
           let source = overlays.get(relative) ?? code;
@@ -92,7 +114,15 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
       { timeout: 60_000 },
     );
     await page.locator('#go').click();
-    for (const source of ['game/engine.ts', 'game/streamer.ts']) {
+    for (const source of [
+      'index.html',
+      'game/engine.ts',
+      'game/play.ts',
+      'game/streamer.ts',
+      'render/skylight.ts',
+      'render/playView.ts',
+      'render/flashlight.ts',
+    ]) {
       if (!appliedSources.has(source)) {
         throw new Error(`Main overlay was not applied: ${source}`);
       }

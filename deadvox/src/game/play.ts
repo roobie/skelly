@@ -1503,6 +1503,8 @@ export const startPlay = (
     } else if (worldLoading.ready && !wasReady) {
       input.cancel();
       keyboardInput.cancel();
+      sim.paused = syncMenuState().paused || (debugTools?.frozen ?? false);
+      replayPlayState.restore(options.replay?.startState);
       inputRecorder = createInputReplayRecorder(
         Boolean(options.replay),
         captureSnapshot,
@@ -2191,7 +2193,6 @@ export const startPlay = (
   };
   keyboardInput.install();
   keyboardInput.sync();
-  replayPlayState.restore(options.replay?.startState);
   const cycleWieldedAction = (deltaY: number): boolean => {
     const item = inventory.hands[dominantSide(inventory.character)];
     return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
