@@ -29,7 +29,7 @@ Software-rendered browser contracts should exercise logic without paying rendere
 
 ## Browser stages
 
-Wait for application readiness rather than optional third-party resources. For native selection, compare an observed UID change with its pre-key sample; an empty representation can otherwise appear successful before a row is selected. A stage walk must release its key in the page when its condition is satisfied, before the next simulation frame. See `test/browser/inventory-selection.ts`, `inventorySelectionChanged`, and `test/browser/simulation-wait.mjs`, `waitForSimulation`.
+Wait for application readiness rather than optional third-party resources. For native selection, compare an observed UID change with its pre-key sample; an empty representation can otherwise appear successful before a row is selected. A stage walk must release its key in the page when its condition is satisfied, before the next simulation frame. A simulated wait's clock must be sampled with its trigger in one browser task; compressed time can otherwise consume the budget before the command is delivered. See `test/browser/inventory-selection.ts`, `inventorySelectionChanged`, and `test/browser/simulation-wait.mjs`, `waitForSimulation`.
 
 Keep Playwright's managed Chromium launch and isolated browser profiles. Treat system Chrome plus Playwright as unsupported until a root cause is established. Firefox pointer-lock refusal (#168) and built IndexedDB Continue (#170) remain quarantined: do not restore either case without a fixed trial plan and before/after/restored-before evidence. Issue #287 remains open for the system-Chrome launch root cause. See `test/browser/chromium.mjs`, `launchChromium`, and [browser-ci.md](../docs/browser-ci.md).
 

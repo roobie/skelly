@@ -432,8 +432,11 @@ try {
     assert.deepEqual(stillSleeping.position, sleeping.position);
     assert.equal(stillSleeping.active, true);
     assert.equal(stillSleeping.action, 'sleep');
-    const wakeStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-    await page.evaluate(() => globalThis.readingWitness.session.sim.hurt(1, 'sleep interruption fixture'));
+    const wakeStart = await page.evaluate(() => {
+      const { session } = globalThis.readingWitness;
+      session.sim.hurt(1, 'sleep interruption fixture');
+      return session.sim.time;
+    });
     await waitForSimulation(
       page,
       () => {
@@ -441,6 +444,10 @@ try {
         return {
           time: session.sim.time,
           paused: session.sim.paused,
+          action: session.rest.action?.kind,
+          active: session.sim.compression.active,
+          interruption: session.sim.compression.interruption,
+          locksInput: session.sim.compression.locksInput,
           reached:
             session.rest.action === undefined &&
             !session.sim.compression.active &&
