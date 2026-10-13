@@ -24,7 +24,7 @@ import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CaseEffects } from './caseEffects.ts';
-import { FLASHLIGHT_DAYLIGHT_SAMPLE_DISTANCE, Flashlight, flashlightDaylightScale } from './flashlight.ts';
+import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
@@ -176,6 +176,7 @@ export const createPlayView = (
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const flashlight = new Flashlight(scene);
   const beamDirection = new Vector3();
+  let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
@@ -305,14 +306,31 @@ export const createPlayView = (
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       held.setSkyVisibility(skyVisibility);
-      camera.getWorldDirection(beamDirection);
-      const beamLanding: Vec3 = [
-        camera.position.x + beamDirection.x * FLASHLIGHT_DAYLIGHT_SAMPLE_DISTANCE,
-        camera.position.y + beamDirection.y * FLASHLIGHT_DAYLIGHT_SAMPLE_DISTANCE,
-        camera.position.z + beamDirection.z * FLASHLIGHT_DAYLIGHT_SAMPLE_DISTANCE,
-      ];
-      const landingSkyVisibility = engine.skylight?.at(beamLanding) ?? 1;
-      flashlight.daylightScale = flashlightDaylightScale(sky, landingSkyVisibility);
+      cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
+      let beamVisibility = skyVisibility;
+      if (flashlight.light.intensity > 0) {
+        camera.getWorldDirection(beamDirection);
+        const blockSize = s;
+        const origin: Vec3 = [
+          flashlight.light.position.x / blockSize,
+          flashlight.light.position.y / blockSize,
+          flashlight.light.position.z / blockSize,
+        ];
+        const direction: Vec3 = [beamDirection.x, beamDirection.y, beamDirection.z];
+        const hit = raycast(origin, direction, flashlight.light.distance / blockSize, engine.isSolid);
+        if (hit && hit.normal.some((component) => component !== 0)) {
+          const freeAirSide: Vec3 = [
+            (origin[0] + direction[0] * hit.distance + hit.normal[0] * 0.01) * blockSize,
+            (origin[1] + direction[1] * hit.distance + hit.normal[1] * 0.01) * blockSize,
+            (origin[2] + direction[2] * hit.distance + hit.normal[2] * 0.01) * blockSize,
+          ];
+          beamVisibility = engine.skylight?.at(freeAirSide) ?? 1;
+        } else {
+          // A miss has no illuminated surface; treat the unoccluded beam as outdoors.
+          beamVisibility = 1;
+        }
+      }
+      flashlight.daylightScale = flashlightDaylightScale(sky, beamVisibility);
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (sky: ReturnType<typeof skyInWeather>) => {
@@ -358,7 +376,7 @@ export const createPlayView = (
       const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
       held.update(camera, pose, recoil, handling);
       flashlight.update({ registry, lit: light, held, camera, inventory });
-      lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: flashlight.daylightScale });
+      lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: cameraDaylightScale });
     },
     render: (): number | null => {
       if (!renderer) {

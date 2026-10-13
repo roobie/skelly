@@ -7,6 +7,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Body } from '../src/core/physics.ts';
 import { skyAt } from '../src/core/sky.ts';
+import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
@@ -49,6 +50,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
   const view = createPlayView(engine, inventory, vi.fn(), page);
   return {
     engine,
+    inventory,
     view,
     page,
     mood,
@@ -73,27 +75,69 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('samples flashlight daylight where the beam lands, while held ambient uses camera visibility', () => {
-    const { engine, view } = fixture();
-    const samples: Vec3[] = [];
-    const at = vi.fn((position: Vec3) => {
-      samples.push(position);
-      return 0;
-    });
-    engine.skylight = { at } as unknown as NonNullable<Engine['skylight']>;
-    engine.camera.position.set(2, 1, -3);
+  it('keeps a beam bright when a lit camera aims at a dark target', () => {
+    const { engine, view } = fixture((_x, _y, z) => z === -18);
+    engine.camera.position.set(1, 1, 0);
+    engine.camera.lookAt(1, 1, -1);
+    engine.skylight = {
+      at: ([, , z]: Vec3) => (z < -6 ? 0 : 1),
+    } as unknown as NonNullable<Engine['skylight']>;
+    engine.camera.updateMatrixWorld();
+    view.flashlight.light.position.copy(engine.camera.position);
+    view.flashlight.light.distance = 20;
+    view.flashlight.light.intensity = 1;
+    const at = engine.skylight.at.bind(engine.skylight);
     const setSkyVisibility = vi.spyOn(view.held, 'setSkyVisibility');
 
     view.prepareLighting(skyAt(12));
 
-    expect(at).toHaveBeenCalledTimes(2);
-    const cameraSample = samples[0]!;
-    const beamSample = samples[1]!;
-    expect(cameraSample).toEqual([2, 1, -3]);
-    expect(beamSample[0]).toBe(cameraSample[0]);
-    expect(beamSample[1]).toBe(cameraSample[1]);
-    expect(beamSample[2]).toBeLessThan(cameraSample[2]);
-    expect(setSkyVisibility).toHaveBeenCalledExactlyOnceWith(0);
+    expect(at([1, 1, 0])).toBe(1);
+    expect(at([1, 1, -8.5])).toBe(0);
+    expect(setSkyVisibility).toHaveBeenCalledExactlyOnceWith(1);
+    expect(view.flashlight.daylightScale).toBeGreaterThan(flashlightDaylightScale(skyAt(12), 1));
+    view.dispose();
+  });
+
+  it('keeps carried point-light brightness independent of aim', () => {
+    const { engine, inventory, view } = fixture();
+    const glowstick = inventory.create('glowstick');
+    glowstick.on = true;
+    expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
+    engine.camera.position.set(1, 1, 0);
+    engine.skylight = { at: ([, , z]: Vec3) => (z < -2 ? 1 : 0) } as unknown as NonNullable<Engine['skylight']>;
+    const pose = {
+      right: { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 },
+      left: { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 },
+    };
+
+    engine.camera.lookAt(1, 1, -1);
+    view.prepareLighting(skyAt(12));
+    view.updateHeld(0, pose, undefined);
+    const darkAimIntensity = view.lightPool.lights[0]!.intensity;
+    engine.camera.lookAt(1, 1, 1);
+    view.prepareLighting(skyAt(12));
+    view.updateHeld(0, pose, undefined);
+
+    expect(darkAimIntensity).toBeGreaterThan(0);
+    expect(view.lightPool.lights[0]!.intensity).toBe(darkAimIntensity);
+    view.dispose();
+  });
+
+  it('keeps the daylight fade when the beam hits a nearby sunlit wall from shade', () => {
+    const { engine, view } = fixture((_x, _y, z) => z === -2);
+    engine.camera.position.set(1, 1, 0);
+    engine.camera.lookAt(1, 1, -1);
+    engine.camera.updateMatrixWorld();
+    engine.skylight = { at: ([, , z]: Vec3) => (z < -0.2 && z > -1 ? 1 : 0) } as unknown as NonNullable<Engine['skylight']>;
+    view.flashlight.light.position.copy(engine.camera.position);
+    view.flashlight.light.distance = 20;
+    view.flashlight.light.intensity = 1;
+
+    view.prepareLighting(skyAt(12));
+
+    expect(engine.skylight.at([1, 1, 0])).toBe(0);
+    expect(engine.skylight.at([1, 1, -0.49])).toBe(1);
+    expect(view.flashlight.daylightScale).toBe(flashlightDaylightScale(skyAt(12), 1));
     view.dispose();
   });
 
