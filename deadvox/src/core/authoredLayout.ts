@@ -4,20 +4,13 @@ import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation
 import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_TYPE } from './hamlet.ts';
-import { ItemFactory } from './items.ts';
-import { militaryLootItems, slotsReason } from './magazine.ts';
+import { militaryLootItems } from './magazine.ts';
+import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
-import type { FixedLootItemDef, SiteLayoutDef } from './schema.ts';
+import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
-import {
-  type CompiledTemplate,
-  type Placement,
-  placedBlockAt,
-  placedPieces,
-  templateLockIds,
-  templateResolves,
-} from './templates.ts';
+import { type Placement, placedBlockAt, placedPieces, templateLockIds, templateResolves } from './templates.ts';
 import { rectsOverlap } from './vegetation.ts';
 
 export type LayoutPoint = readonly [number, number];
@@ -26,93 +19,6 @@ const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
 
 /** Maximum intentional levelling of the raw profile at any half-metre footprint cell. */
 const FOUNDATION_TOLERANCE = 1;
-type LayoutBuilding = SiteLayoutDef['buildings'][number];
-
-/** Fitted items must exist and pass the same slot rules a fitted item meets at runtime. */
-const fittedItemsIssue = (
-  registry: Registry,
-  type: string,
-  fitted: Readonly<Record<string, string>>,
-): string | undefined => {
-  const missing = Object.values(fitted).find((child) => !registry.items.has(child));
-  if (missing !== undefined) {
-    return `no fitted item "${missing}"`;
-  }
-  const host = new ItemFactory().create(registry, type);
-  const slots = {
-    ...host.slots,
-    ...Object.fromEntries(Object.entries(fitted).map(([slot, child]) => [slot, { type: child }])),
-  };
-  return slotsReason(registry, type, slots);
-};
-
-/** Why this item can't be fixed loot, or undefined when its source is allowed. */
-const fixedItemIssue = (
-  registry: Registry,
-  military: ReadonlySet<string>,
-  fixed: FixedLootItemDef,
-  source: { loot: string | undefined; militaryTemplate: boolean },
-): string | undefined => {
-  if (!registry.items.has(fixed.item)) {
-    return `no item "${fixed.item}"`;
-  }
-  const fittedIssue = fixed.fitted && fittedItemsIssue(registry, fixed.item, fixed.fitted);
-  if (fittedIssue) {
-    return fittedIssue;
-  }
-  const militarySource =
-    fixed.placement === 'surface' ? source.militaryTemplate : registry.loot.get(source.loot ?? '')?.military;
-  if (!military.has(fixed.item) || militarySource) {
-    return undefined;
-  }
-  return fixed.placement === 'surface'
-    ? `"${fixed.item}" is military loot only; surface placement requires a military template`
-    : `"${fixed.item}" is military loot only; place it where a "military" table rolls`;
-};
-
-interface LootContext {
-  readonly registry: Registry;
-  /** `militaryLootItems`, computed once per layout. */
-  readonly military: ReadonlySet<string>;
-}
-
-const fixedLootIssues = (
-  { registry, military }: LootContext,
-  building: LayoutBuilding,
-  index: number,
-  compiled: CompiledTemplate,
-): [string, string][] => {
-  if (!building.fixedLoot?.length) {
-    return [];
-  }
-  const issues: [string, string][] = [];
-  const fixedAnchors = new Set<string>();
-  const militaryTemplate = registry.templates.get(building.template)?.military === true;
-  for (const [j, override] of (building.fixedLoot ?? []).entries()) {
-    const key = override.at.join(',');
-    const path = `.buildings[${index}].fixedLoot[${j}]`;
-    if (fixedAnchors.has(key)) {
-      issues.push([path, `fixed loot anchor ${key} is used more than once`]);
-    }
-    fixedAnchors.add(key);
-    const piece = compiled.pieces.find((candidate) => candidate.pos.join(',') === key);
-    if (!piece) {
-      issues.push([`${path}.at`, `no furniture anchor at ${key}`]);
-      continue;
-    }
-    const needsContainer = override.items.some((item) => item.placement !== 'surface');
-    if (needsContainer && !registry.furniture.get(piece.furniture)?.container) {
-      issues.push([`${path}.at`, `furniture at ${key} has no container`]);
-    }
-    for (const [itemIndex, fixed] of override.items.entries()) {
-      const issue = fixedItemIssue(registry, military, fixed, { loot: piece.loot, militaryTemplate });
-      if (issue !== undefined) {
-        issues.push([`${path}.items[${itemIndex}].item`, issue]);
-      }
-    }
-  }
-  return issues;
-};
 const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['buildings'][number], rect: Rect): boolean => {
   for (let z = rect.z0 + 0.25; z < rect.z1; z += 0.5) {
     for (let x = rect.x0 + 0.25; x < rect.x1; x += 0.5) {
@@ -126,7 +32,7 @@ const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['building
 
 export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry): [string, string][] => {
   const issues: [string, string][] = [];
-  const loot: LootContext = { registry, military: militaryLootItems(registry) };
+  const military = militaryLootItems(registry);
   if (['hamlet', 'city', 'forest'].includes(layout.id)) {
     issues.push(['.id', 'reserved built-in site id']);
   }
@@ -187,7 +93,14 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       return; // checkTemplates reports the palette; the placement can't compile without it.
     }
     const placement = placementOf(registry, building);
-    issues.push(...fixedLootIssues(loot, building, i, placement.template));
+    issues.push(
+      ...placementLootIssues(
+        { registry, military },
+        placement.template,
+        building.fixedLoot ?? [],
+        `.buildings[${i}].fixedLoot`,
+      ),
+    );
     if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
       issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
     }

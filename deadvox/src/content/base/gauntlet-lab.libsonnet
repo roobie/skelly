@@ -97,6 +97,15 @@ local cabinetShape = [
 ];
 {
   width: 72, depth: 64, ground: ground, surfaceOffset: surfaceOffset, entry: entry,
+  anchors: {
+    storeys: [{ id: s.id, standing: [35, floor(i), 29] } for i in std.range(0, std.length(storeys) - 1) for s in [storeys[i]]],
+    descents: [{ ladder: [d.x, d.bottom, d.z], upper: [d.x - 1, d.top + 1, d.z + 1], lower: [d.x - 1, d.bottom, d.z + 1] } for d in descents],
+    objective: [
+      [box.x + p.at[0], floor(i) + p.at[1], box.z + p.at[2]]
+      for i in std.range(0, std.length(storeys) - 1) for s in [storeys[i]] for box in roomBoxes
+      for p in kindById[s.rooms[box.index]].props if p.marker == 'B'
+    ][0],
+  },
   cell(x, y, z):
     local key = coordinate(x, y, z);
     local col = std.floor((x - 4) / 23);

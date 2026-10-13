@@ -5,12 +5,10 @@
 // the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { AuthoredSite } from '../core/authoredSite.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
-import { Hamlet } from '../core/hamlet.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { DAY_SKY } from '../core/sky.ts';
-import { footprint, type Placement } from '../core/templates.ts';
+import { footprint } from '../core/templates.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -86,13 +84,7 @@ export function createEngine(
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { site } = worldSetup;
-  const placements: Placement[] = [];
-  if (site instanceof AuthoredSite) {
-    placements.push(...site.placements);
-  }
-  if (site instanceof Hamlet) {
-    placements.push(...site.lots.map((lot) => lot.placement));
-  }
+  const placements = site?.authoredPlacements ?? [];
   const boxes = placements.map((placement) => {
     const [width, depth] = footprint(placement);
     return {

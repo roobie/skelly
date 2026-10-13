@@ -1139,6 +1139,26 @@ const ScenarioSchema = strictObject({
   body: Id,
   compression: Id,
   serviceTemplate: Id,
+  composition: optional(
+    strictObject({
+      fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
+      leads: tuple([Id, Id]),
+      landmarks: tuple([Id, Id]),
+      incidentalTemplates: pipe(array(Id), minLength(1), maxLength(32)),
+      objective: CellPosition,
+      objectiveFace: CellPosition,
+      retreat: CellPosition,
+      resources: pipe(
+        array(strictObject({ at: CellPosition, standing: CellPosition })),
+        nonEmpty('needs a resource standing pose'),
+      ),
+      storeys: pipe(array(strictObject({ id: Id, standing: CellPosition })), minLength(1), maxLength(16)),
+      descents: pipe(
+        array(strictObject({ ladder: CellPosition, upper: CellPosition, lower: CellPosition })),
+        maxLength(32),
+      ),
+    }),
+  ),
   portal: strictObject({
     hatch: Char,
     ladder: Char,
@@ -1810,6 +1830,7 @@ export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
 export type ScenarioDef = InferOutput<typeof ScenarioSchema>;
+export type FixedLootOverrideDef = InferOutput<typeof FixedLootOverride>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;

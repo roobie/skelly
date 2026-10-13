@@ -59,6 +59,8 @@ export interface PlaytestMarks {
 }
 
 export interface Site {
+  /** Finished authored footprints eligible for world-derived sky transport. */
+  readonly authoredPlacements?: readonly Placement[];
   /** An authored site's playtest beats and key fixed loot. */
   readonly playtestMarks?: PlaytestMarks;
   /** The ground under the site, blended into the natural ground around it. */

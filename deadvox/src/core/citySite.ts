@@ -4,6 +4,7 @@ import type { CityPlan } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import { applyPlacementLoot, collectPlacementLoot } from './placementLoot.ts';
 import type { Scale } from './scale.ts';
 import { type FurnitureSpawn, furnitureOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
 import { footprint, type Placement, stampPlacement } from './templates.ts';
@@ -18,6 +19,7 @@ export class CitySite implements Site {
   readonly spawn: Site['spawn'];
   private readonly byColumn = new Map<string, Placement[]>();
   private readonly asphalt: number;
+  private readonly loot: ReturnType<typeof collectPlacementLoot>;
 
   constructor(seed: number, registry: Registry, scale: Scale, plan: CityPlan) {
     if (scale.blockSize !== HAMLET_BLOCK_SIZE) {
@@ -31,6 +33,7 @@ export class CitySite implements Site {
     this.registry = registry;
     this.plan = plan;
     this.asphalt = asphalt;
+    this.loot = collectPlacementLoot(registry, plan.composition?.lootSources ?? []);
     this.spawn = { pos: plan.spawn.map((value) => value * scale.blockSize) as Vec3, yaw: -Math.PI / 2 };
     for (const placement of plan.placements) {
       const [width, depth] = footprint(placement);
@@ -43,6 +46,10 @@ export class CitySite implements Site {
         }
       }
     }
+  }
+
+  get authoredPlacements(): readonly Placement[] {
+    return this.plan.composition ? this.placements : [];
   }
 
   get placements() {
@@ -87,7 +94,9 @@ export class CitySite implements Site {
   }
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
-    return (this.byColumn.get(`${cx},${cz}`) ?? []).flatMap((placement) => furnitureOf(this, placement, [cx, cz]));
+    return (this.byColumn.get(`${cx},${cz}`) ?? [])
+      .flatMap((placement) => furnitureOf(this, placement, [cx, cz]))
+      .map((spawn) => applyPlacementLoot(spawn, this.loot));
   }
 
   zombiesIn(_cx: number, _cz: number): ZombieSpawn[] {

@@ -13,7 +13,7 @@ The playtest route treats the shelter, Mike's place, medical site and military c
 
 ## Fixed loot
 
-A layout can place fixed items on a furniture anchor or inside its container. Surface placement makes authored gear visible; military-only items still require military sourcing. Fixed loot supplies placement, quantity and fitted-item choices, while item definitions own other state; validation applies the runtime slot rules to fitted items. Fixed items precede seeded filler so authored progression and craft ingredients are not crowded out. Fixed loot regenerates from the authored site and seed; inventory saves own looted state. See `src/core/authoredLayout.ts`, `fixedLootIssues`, and `src/core/inventory.ts`, `Inventory.furnish`.
+Surface placement makes authored gear visible without bypassing military sourcing or the ordinary slot rules for fitted items. Keep authored progression and craft ingredients ahead of seeded filler so incidental loot cannot crowd them out. Regeneration must not replace inventory's authority over already looted state. Authored layouts and seeded scenario placements share fixed-loot admission and assembly rather than defining different item rules. See `src/core/placementLoot.ts`, `placementLootIssues` and `collectPlacementLoot`, and `src/core/inventory.ts`, `Inventory.furnish`.
 
 The layout owns the playtest start time, with an explicit URL time taking precedence. Beat rectangles and key-item markers feed observation metrics only; they do not affect simulation. See `src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and `src/game/config.ts`, `configFromUrl`.
 

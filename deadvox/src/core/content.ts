@@ -10,6 +10,7 @@ import { scenarioPlanIssues } from './cityPlan.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
+import { scenarioSources } from './scenarioComposition.ts';
 import {
   type BlockDef,
   CONTENT_SECTION_KEYS,
@@ -413,13 +414,13 @@ const addDerivedItems = (registry: Registry, item: ItemDef, items: Set<string>):
 };
 
 const addFixedLootItems = (registry: Registry, items: Set<string>): void => {
-  for (const layout of registry.layouts.values()) {
-    for (const building of layout.buildings) {
-      for (const override of building.fixedLoot ?? []) {
-        for (const fixed of override.items) {
-          items.add(fixed.item);
-        }
-      }
+  const sources = [...registry.layouts.values()].flatMap((layout) =>
+    layout.buildings.flatMap((building) => building.fixedLoot ?? []),
+  );
+  sources.push(...scenarioSources(registry).fixedLoot);
+  for (const source of sources) {
+    for (const fixed of source.items) {
+      items.add(fixed.item);
     }
   }
 };

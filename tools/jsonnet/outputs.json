@@ -21,6 +21,10 @@
       "output": "deadvox/src/content/base/gauntlet-look.json"
     },
     {
+      "source": "deadvox/src/content/base/gauntlet.jsonnet",
+      "output": "deadvox/src/content/base/gauntlet.json"
+    },
+    {
       "source": "deadvox/src/content/base/items-explosives.jsonnet",
       "output": "deadvox/src/content/base/items-explosives.json"
     },

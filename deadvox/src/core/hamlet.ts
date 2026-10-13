@@ -173,6 +173,9 @@ export interface Lot {
 export class Hamlet implements Site {
   readonly road: Rect;
   readonly lots: readonly Lot[];
+  get authoredPlacements(): readonly Placement[] {
+    return this.lots.map((lot) => lot.placement);
+  }
   /** Everything the hamlet touches, flattening included, in blocks. */
   readonly bounds: Rect;
   readonly range: HandlingRange;

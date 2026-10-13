@@ -2,6 +2,7 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_TEMPLATES } from './hamlet.ts';
 import { hash3, Rng } from './random.ts';
+import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
 import type { ScenarioDef } from './schema.ts';
 import type { Rect } from './site.ts';
@@ -35,6 +36,7 @@ export interface CityPlan {
   readonly candidates: readonly Cell[];
   readonly spawn: Readonly<Vec3>;
   readonly portal: Portal | undefined;
+  readonly composition: ScenarioComposition | undefined;
 }
 
 export const benchmarkCityGrid = (): CityGrid => ({
@@ -71,7 +73,9 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
       issues.push(['.serviceTemplate', 'service template must fit every quarter turn inside its reserved block']);
     }
     if (templateResolves(registry, service)) {
-      issues.push(...scenarioPortalIssues(registry, scenario, compileTemplate(registry, service)));
+      const compiled = compileTemplate(registry, service);
+      issues.push(...scenarioPortalIssues(registry, scenario, compiled));
+      issues.push(...scenarioCompositionIssues(registry, scenario, compiled));
     } else {
       issues.push(['.serviceTemplate', 'service template has unresolved palette references']);
     }
@@ -139,6 +143,7 @@ interface FillContext {
   floor: number;
   grid: CityGrid;
   maxStoreys: number;
+  incidentalTemplates: readonly string[];
   compiled: ReturnType<typeof templateCompiler>;
 }
 const fillRow = (context: FillContext, [i, j]: Cell, row: 0 | 1): Placement[] => {
@@ -151,7 +156,9 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: 0 | 1): Placement[] =>
   const placements: Placement[] = [];
   for (let k = 0; ; k++) {
     const fits = (name: string) => footprint({ template: compiled(name, 1), origin: [0, 0, 0], turn })[0] <= end - x;
-    const first = grid.templates[Math.floor(hash3(seed, i * 64 + k, j * 2 + row, 0) * grid.templates.length)]!;
+    const pool =
+      k === 0 && row === 0 && context.incidentalTemplates.length > 0 ? context.incidentalTemplates : grid.templates;
+    const first = pool[Math.floor(hash3(seed, i * 64 + k, j * 2 + row, 0) * pool.length)]!;
     const id = fits(first) ? first : grid.templates.find(fits);
     if (!id) {
       break;
@@ -214,6 +221,7 @@ export const buildCityPlan = ({
     floor,
     grid,
     maxStoreys: scenario ? 1 : maxStoreys,
+    incidentalTemplates: scenario?.composition?.incidentalTemplates ?? [],
     compiled: templateCompiler(registry),
   };
   const service =
@@ -226,11 +234,15 @@ export const buildCityPlan = ({
           turn: Rng.stream(seed, `scenario:${scenario.id}:service-turn`).int(0, 3) as Turn,
         })
       : undefined;
+  const composition = service && scenario ? composeScenario(registry, scenario, service, floor) : undefined;
   const placements = cells.flatMap(([i, j]) =>
     service && serviceBlock?.[0] === i && serviceBlock[1] === j
       ? [service]
       : [...fillRow(context, [i, j], 0), ...fillRow(context, [i, j], 1)],
   );
+  if (composition) {
+    placements.push(...composition.leads, ...composition.landmarks);
+  }
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
   const spawn: Vec3 = [grid.street / 2, floor + 1, grid.street / 2];
@@ -249,5 +261,6 @@ export const buildCityPlan = ({
     candidates: Object.freeze(candidates),
     spawn: Object.freeze(spawn),
     portal: service && scenario ? portalOf(registry, service, scenario) : undefined,
+    composition,
   });
 };

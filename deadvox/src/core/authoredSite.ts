@@ -16,7 +16,7 @@ import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from './hamlet.ts';
-import { fixedItems, type Rolled } from './loot.ts';
+import { applyPlacementLoot, collectPlacementLoot } from './placementLoot.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
@@ -29,7 +29,7 @@ import {
   type Site,
   type ZombieSpawn,
 } from './site.ts';
-import { type Placement, placedPieces, placedSpawns, stampPlacement } from './templates.ts';
+import { type Placement, placedSpawns, stampPlacement } from './templates.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -41,50 +41,18 @@ import {
 } from './vegetation.ts';
 import type { Surface } from './worldgen.ts';
 
-const collectFixedLoot = (
-  registry: Registry,
-  placements: readonly Placement[],
-  buildings: SiteLayoutDef['buildings'],
-) => {
-  const fixedLoot = new Map<string, Rolled[]>();
-  const fixedSurfaceLoot = new Map<string, Rolled[]>();
-  const keyLoot = new Map<string, Set<string>>();
-  placements.forEach((placement, buildingIndex) => {
-    const building = buildings[buildingIndex]!;
-    const placed = placedPieces(placement);
-    for (const override of building.fixedLoot ?? []) {
-      const localIndex = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === override.at.join(','));
-      if (localIndex < 0) {
-        continue;
-      }
-      const anchor = placed[localIndex]!.pos.join(',');
-      const inContainer = override.items.filter((item) => item.placement !== 'surface');
-      const onSurface = override.items.filter((item) => item.placement === 'surface');
-      if (inContainer.length > 0) {
-        fixedLoot.set(anchor, fixedItems(registry, inContainer));
-      }
-      if (onSurface.length > 0) {
-        fixedSurfaceLoot.set(anchor, fixedItems(registry, onSurface));
-      }
-      const keys = override.items.filter((entry) => entry.key).map((entry) => entry.item);
-      if (keys.length > 0) {
-        keyLoot.set(anchor, new Set(keys));
-      }
-    }
-  });
-  return { fixedLoot, fixedSurfaceLoot, keyLoot };
-};
-
 export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
   readonly placements: readonly Placement[];
+  get authoredPlacements(): readonly Placement[] {
+    return this.placements;
+  }
   readonly trees: readonly TreePlacement[];
   private readonly spawns: readonly ZombieSpawn[];
   private readonly hordes: readonly HordeSpawn[];
   private readonly treeIndex: TreeIndex;
-  private readonly fixedLoot: Map<string, Rolled[]>;
-  private readonly fixedSurfaceLoot: Map<string, Rolled[]>;
+  private readonly loot: ReturnType<typeof collectPlacementLoot>;
   readonly playtestMarks: PlaytestMarks;
   readonly seed: number;
   readonly registry: Registry;
@@ -107,16 +75,16 @@ export class AuthoredSite implements Site {
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     this.placements = layout.buildings.map((building) => placementOf(registry, building));
-    const {
-      fixedLoot: containerLoot,
-      fixedSurfaceLoot,
-      keyLoot,
-    } = collectFixedLoot(registry, this.placements, layout.buildings);
-    this.fixedLoot = containerLoot;
-    this.fixedSurfaceLoot = fixedSurfaceLoot;
+    this.loot = collectPlacementLoot(
+      registry,
+      this.placements.map((placement, index) => ({
+        placement,
+        fixedLoot: layout.buildings[index]!.fixedLoot,
+      })),
+    );
     this.playtestMarks = {
       beats: (layout.beats ?? []).map((beat) => ({ id: beat.id, area: rectBlocks(beat.area) })),
-      keyLoot,
+      keyLoot: this.loot.keyLoot,
     };
     this.spawn = { pos: [...layout.player.position], yaw: yawFromBearing(layout.player.bearing) };
     const spawnPoints: [number, number][] = [
@@ -383,16 +351,7 @@ export class AuthoredSite implements Site {
   furnitureIn(cx: number, cz: number) {
     return this.placements
       .flatMap((placement) => furnitureOf(this, placement, [cx, cz]))
-      .map((spawn) => {
-        const anchor = spawn.spec.pos.join(',');
-        const fixed = this.fixedLoot.get(anchor);
-        const surfaceLoot = this.fixedSurfaceLoot.get(anchor);
-        return {
-          ...spawn,
-          ...(fixed ? { loot: [...fixed, ...spawn.loot] } : {}),
-          ...(surfaceLoot ? { surfaceLoot } : {}),
-        };
-      });
+      .map((spawn) => applyPlacementLoot(spawn, this.loot));
   }
   zombiesIn(cx: number, cz: number): ZombieSpawn[] {
     return this.spawns.filter((spawn) => toChunk(spawn.pos[0]) === cx && toChunk(spawn.pos[2]) === cz);

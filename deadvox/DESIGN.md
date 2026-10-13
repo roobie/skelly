@@ -341,12 +341,31 @@ same complete plan. See `scenarioPlanIssues` in `src/core/cityPlan.ts`,
 in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `src/core/ladders.ts`, `ladderOutward`.
 
-R1's owned fixtures and plan certificate deliberately stop short of the composed
-world. Reusing the bounded look's service template in `src/content/base/scenarios.jsonnet`
-allows profile plumbing to be exercised without approving it as final content.
-The composed terrain, furniture, resource and clue route belongs to #671's R2
-exit; later descents, goal persistence, discovery, survival pressure and hardware
-performance cannot be inferred from the local entry-portal proof.
+Scenario composition promotes the approved campus geometry without making the
+look layout the playable world's authority. Fixed resources must survive the transition
+from a rendered demo to a seeded world rather than depending on incidental loot.
+Public documentary leads must be independently useful and spatially separate;
+reading one cannot authorize another. Reserving their destination landmarks with
+the service block keeps their descriptions seed-correct. Related utility
+silhouettes keep matching metal alone from becoming a unique destination cue. See `src/content/base/gauntlet.jsonnet`, `templates` and
+`furniture`; `src/content/base/scenarios.jsonnet`, `composition`; and
+`src/core/scenarioComposition.ts`, `composeScenario`.
+
+Furniture anchors rotate as occupied boxes, while standing poses rotate as
+continuous points. Keeping these distinct prevents turned resource and objective
+metadata from pointing beside its furniture. Fixed-loot reference, container and
+military-source rules share an owner across authored layouts and city composition;
+the same placement transform supplies their runtime items. This makes a resource
+independent of incidental loot without bypassing ordinary inventory rules. See
+`src/core/placementLoot.ts`, `placementLootIssues` and `collectPlacementLoot`;
+`src/core/authoredLayout.ts`, `authoredLayoutIssues`; and
+`src/core/citySite.ts`, `furnitureIn`.
+
+#671's R2 exit requires a composed-route certificate and ordinary traversal,
+not merely authoring integration. Anchor admission and sampled standing envelopes
+cannot certify connected start-to-button travel, every candidate/turn class,
+deep ladder traversal, resource dependency freedom or one-missed-clue accessibility. Goal persistence, discovery, survival pressure and hardware performance
+also cannot be inferred from the local entry-portal proof.
 
 The lab is a multi-storey subterranean complex whose danger rises with depth,
 with the nuclear objective at the bottom. A storey contains several distinct
@@ -355,8 +374,10 @@ offset descents make exploration and descent route choices rather than a single
 corridor followed by a continuous climb. Adjacent storeys share alternate links
 so returning need not retrace the approach.
 
-The look's scale, room assignments and links are authored in
+The campus scale, room assignments and links are authored in
 `src/content/base/gauntlet-lab.libsonnet`, `storeys`, `kinds` and `links`.
+Its `anchors` derives storey and descent poses and the objective location from
+those tables so composition metadata cannot silently retain an older campus.
 Room-kind props and legible room labels distinguish laboratory work from storage,
 utilities and containment; reuse of those kinds across storeys gives the complex
 an identity without making every floor the same room. Support gives way to
@@ -371,17 +392,16 @@ than in a new simulation or site generator. The underground campus extends
 beyond the small service facade because a surface disguise must not dictate the
 lab's capacity. One compiled placement owns their common excavation; incidental
 surface utilities stay inside that placement to avoid overlapping authored-site
-footprints. The look remains bounded so its geometry can be judged before
-investing in the full complex. See `src/content/base/gauntlet-look.jsonnet`,
+footprints. The separate demo preserves the shape baseline independently of
+seeded-city composition and its later route proof. See `src/content/base/gauntlet-look.jsonnet`,
 `cell` and `layouts`.
 
 Static admission indexes furniture occupancy for both door states before body
 queries, because a multi-room campus must not scan every room's furnishings for
 every clearance cell. Template character lookup avoids expanding ordinary rows
 for every cell while preserving code-point indexing for wider Unicode markers.
-These changes reduce large-look authoring cost without a second collision or
-compiler owner. The
-prototype profile takes its entry anchors from the same source metadata as the
+These changes reduce campus authoring cost without a second collision or
+compiler owner. The scenario profile takes its entry anchors from the same source metadata as the
 hatch and entry ladder instead of rediscovering markers by scanning the entire
 campus. See `src/core/templateSpatial.ts`, `TemplateSpace`;
 `src/core/templates.ts`, `charAt`; and
@@ -402,16 +422,22 @@ independent notes; visual redundancy is not a false-destination quest chain.
 
 Bounded rendered looks precede full lab and clue construction because geometry,
 lighting and clue interpretation need player judgment before large investments.
-Full visual construction for #671 waits for approval of the multi-storey lab
-look. The authored fixture is a prototype service building and underground lab
-sketch, not a seeded city, finished lab, all-seed route certificate or
-balance/performance verdict. Its console is explicitly inactive: no goal command
-or saved win is supplied by that furniture. Darkness uses the existing
-world-derived sky transport and an ordinary carried light, not invented powered
-lab fixtures. It uses the ordinary reader, hatch, ladder and authored-site
-owners; its demo status keeps prototype stock out of playable-world reachability.
-See `src/content/base/gauntlet-look.jsonnet` and `AuthoredSite` in
+The approved campus is the shape baseline for #671 composition; changed landmark
+and lead presentation still needs a player look. The separate authored demo is
+not a seeded city or an all-seed route certificate. Its console remains inactive
+until the authoritative goal round; no saved win is supplied by readable
+furniture. See `src/content/base/gauntlet-look.jsonnet` and `AuthoredSite` in
 `src/core/authoredSite.ts`.
+
+Darkness uses world-derived sky transport and an ordinary carried light, not
+invented powered lab fixtures. Finished site placements expose the same sky
+eligibility contract across authored layouts, hamlets and scenario composition;
+there is no lab lighting category. Benchmark city plans do not opt into scenario
+sky work, preserving their stress policy. Demo stock stays outside ordinary
+reachability, while admitted scenario templates and fixed items are world sources.
+See `src/core/site.ts`, `Site`; `src/game/engine.ts`, `createEngine`;
+`src/core/citySite.ts`, `authoredPlacements`; and `src/core/reachability.ts`,
+`worldSources`.
 
 ### Points of interest
 
