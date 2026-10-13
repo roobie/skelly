@@ -2186,6 +2186,12 @@ try {
     loadedFirearm.modelId,
     'flight uses the firearm’s own ModelLibrary model',
   );
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'pile',
+    loadedFirearm.uid,
+  );
   const landedFirearm = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     const item = r.inventory.itemByUid(uid);
@@ -2304,11 +2310,16 @@ try {
       stop: releaseRifleThrow,
     },
   );
-  await page.waitForFunction(({ uid, lookKey }) => {
-    const r = globalThis.primaryActionTest;
-    const item = r.inventory.itemByUid(uid);
-    return item && r.inventory.locate(item)?.kind === 'pile' && r.itemThrows.group.getObjectByName(lookKey);
+  await page.waitForFunction(({ lookKey }) => {
+    const { itemThrows } = globalThis.primaryActionTest;
+    return itemThrows.activeCount > 0 && itemThrows.group.getObjectByName(lookKey);
   }, loadedRifle);
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'pile',
+    loadedRifle.uid,
+  );
   const landedRifle = await page.evaluate(({ uid, magazineUid }) => {
     const r = globalThis.primaryActionTest;
     const item = r.inventory.itemByUid(uid);
