@@ -619,7 +619,7 @@ try {
         .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
         .reduce((sum, { item }) => sum + item.count, 0) - globalThis.fullAutoProbe.casesBefore,
   );
-  assert.equal(persistentCases, 27, 'every automatic shot records a persistent case');
+  assert.equal(persistentCases, 54, 'both automatic bursts record every case at impact');
   assert.ok(native.peak <= 64, '32 full voices plus at most 32 fading tails');
   assert.ok(
     native.records.some(({ stops }) => stops.length),
