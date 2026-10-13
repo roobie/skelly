@@ -8,6 +8,8 @@ import type { Chunk } from '../core/chunk.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import { extractPadded, extractWide } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
+import type { SkySnapshot } from '../core/skySnapshot.ts';
+import type { SkyResult } from '../core/skyTransport.ts';
 import type { BlockBox } from '../core/structure.ts';
 import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
@@ -70,6 +72,42 @@ export class Streamer {
   private replayControlled = false;
   private readonly offsets: [number, number][] = [];
   private nextWorker = 0;
+  private skyReply: ((result: SkyResult, ms: number) => void) | undefined;
+  private pendingSky: SkySnapshot | undefined;
+  private firstMeshDelivered = false;
+  private readonly workerLoads = new Map<Worker, number>();
+  onSkyService: ((realMs: number) => void) | undefined;
+
+  /** One copied request can await admission without occupying a startup mesh slot. */
+  requestSky(input: SkySnapshot, receive: (result: SkyResult, ms: number) => void): boolean {
+    if (this.skyReply) {
+      return false;
+    }
+    this.skyReply = receive;
+    this.pendingSky = input;
+    this.dispatchSky();
+    return true;
+  }
+
+  private dispatchSky(): void {
+    if (!(this.pendingSky && this.firstMeshDelivered) || this.inFlight.size >= this.maxInFlight) {
+      return;
+    }
+    const worker = this.workers.reduce((least, candidate) =>
+      (this.workerLoads.get(candidate) ?? 0) < (this.workerLoads.get(least) ?? 0) ? candidate : least,
+    );
+    const input = this.pendingSky;
+    this.pendingSky = undefined;
+    const startedRealMs = this.onSkyService ? performance.now() : undefined;
+    this.send(worker, { type: 'sky', input });
+    if (startedRealMs !== undefined) {
+      this.onSkyService?.(performance.now() - startedRealMs);
+    }
+  }
+
+  private get occupied(): number {
+    return this.inFlight.size + Number(Boolean(this.skyReply) && !this.pendingSky);
+  }
   private center: [number, number] = [Number.NaN, Number.NaN];
   /** Called after a column is generated, to add what stands in it (furniture). */
   onColumn: (cx: number, cz: number) => void = () => undefined;
@@ -86,7 +124,7 @@ export class Streamer {
     const count = Math.max(1, Math.min(3, Math.floor((navigator.hardwareConcurrency || 2) / 2) - 1));
     for (let i = 0; i < count; i++) {
       const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
-      worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(e.data);
+      worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(worker, e.data);
       this.send(worker, { type: 'init', colors: opts.colors, patterns: opts.patterns, weatherable: opts.weatherable });
       this.workers.push(worker);
     }
@@ -184,6 +222,7 @@ export class Streamer {
       const key = chunkKey(cx, cy, cz);
       this.versions.set(key, (this.versions.get(key) ?? 0) + 1);
       this.dirty.add(key);
+      this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
     }
   }
 
@@ -210,7 +249,7 @@ export class Streamer {
       return;
     }
     for (const [dx, dz] of this.offsets) {
-      if (this.inFlight.size >= this.maxInFlight) {
+      if (this.occupied >= this.maxInFlight) {
         break;
       }
       if (Math.max(Math.abs(dx), Math.abs(dz)) > radius) {
@@ -221,7 +260,7 @@ export class Streamer {
       if (!this.neighboursGenerated(cx, cz)) {
         continue;
       }
-      for (let cy = this.opts.scale.minCy; cy <= this.opts.scale.maxCy && this.inFlight.size < this.maxInFlight; cy++) {
+      for (let cy = this.opts.scale.minCy; cy <= this.opts.scale.maxCy && this.occupied < this.maxInFlight; cy++) {
         const key = chunkKey(cx, cy, cz);
         if (this.dirty.has(key) && !this.inFlight.has(key)) {
           this.requestMesh(key, cx, cy, cz);
@@ -341,7 +380,19 @@ export class Streamer {
     });
   }
 
-  private receive(msg: FromMesher): void {
+  private receive(worker: Worker, msg: FromMesher): void {
+    this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 1) - 1);
+    if (msg.type === 'sky') {
+      const callback = this.skyReply;
+      this.skyReply = undefined;
+      callback?.(msg.result, msg.workerRealMs);
+      return;
+    }
+    this.receiveMesh(msg);
+    this.dispatchSky();
+  }
+
+  private receiveMesh(msg: Extract<FromMesher, { type: 'mesh' }>): void {
     this.inFlight.delete(msg.key);
     const { stats } = this.opts;
     if (stats) {
@@ -361,9 +412,20 @@ export class Streamer {
       return;
     }
     this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);
+    this.firstMeshDelivered ||= msg.mesh.indices.length > 0;
   }
 
   private send(worker: Worker, msg: ToMesher): void {
-    worker.postMessage(msg, msg.type === 'mesh' ? [msg.padded.buffer, msg.wide.buffer] : []);
+    if (msg.type !== 'init') {
+      this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 0) + 1);
+    }
+    const transfer: ArrayBuffer[] = [];
+    if (msg.type === 'mesh') {
+      transfer.push(msg.padded.buffer as ArrayBuffer, msg.wide.buffer as ArrayBuffer);
+    }
+    if (msg.type === 'sky') {
+      transfer.push(...msg.input.chunks.flatMap((chunk) => (chunk.raw ? [chunk.raw.buffer as ArrayBuffer] : [])));
+    }
+    worker.postMessage(msg, transfer);
   }
 }

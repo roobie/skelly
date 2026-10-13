@@ -82,14 +82,20 @@ import {
 } from './audioPresentation.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
 import { continueActionResumesJob } from './continueAction.ts';
-import type { DebugHooks, DebugModule, DebugRuntime, InputReplayStatusState } from './debugInterface.ts';
+import type {
+  DebugHooks,
+  DebugModule,
+  DebugRuntime,
+  InputReplayStatusState,
+  SkyRouteAttachment,
+} from './debugInterface.ts';
 import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
-import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
+import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import {
   type InputCancellationReason,
@@ -542,6 +548,7 @@ const createPlayRefusalPresenter = (
 };
 
 export interface StartPlayOptions {
+  readonly skyRoute?: SkyRouteAttachment;
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
@@ -3412,8 +3419,25 @@ export const startPlay = (
     }
     return true;
   };
+  const skyRoute = options.skyRoute?.({
+    engine,
+    session,
+    debug: debugTools!,
+    active: () =>
+      started &&
+      !mainMenuOpen &&
+      input.locked &&
+      !screen.isOpen &&
+      !reading.isOpen &&
+      !debugTools!.menuOpen &&
+      !debugTools!.frozen &&
+      !sim.dead,
+  });
   const frame = guardDebugErrorFrame(
-    (now) => !playHalted.value && updateFrame(now),
+    observeRealFrame(
+      (now) => !playHalted.value && updateFrame(now),
+      () => skyRoute,
+    ),
     debugErrorEnabled(config.debug, location.search),
     () => input.locked,
   );

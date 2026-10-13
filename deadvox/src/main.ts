@@ -130,6 +130,7 @@ if (bench === 'report') {
     () => config.debug,
   );
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
+  const skyRoute = params.get('skyRoute') === '1' ? await debugModule?.loadSkyRoute() : undefined;
   if (pendingReplay) {
     try {
       const preliminary = await decodeInputReplay(pendingReplay, { contentLookup: () => true });
@@ -203,11 +204,15 @@ if (bench === 'report') {
     const engine = createEngine(config, view, undefined, { render: !renderFree });
     const restored = await saveController.validateContent(engine.registry);
     if (saveController.isRestored && restored) {
-      startPlay(engine, debugModule, { saveController, restore: restored });
+      startPlay(engine, debugModule, { saveController, restore: restored, ...(skyRoute ? { skyRoute } : {}) });
       hideStartupScreen();
     } else {
       saveController.setNewWorldLauncher((creation) => {
-        const entry = startPlay(engine, debugModule, { saveController, ...creation });
+        const entry = startPlay(engine, debugModule, {
+          saveController,
+          ...creation,
+          ...(skyRoute ? { skyRoute } : {}),
+        });
         return {
           enter: () => {
             overlay.classList.remove('startup-ready');

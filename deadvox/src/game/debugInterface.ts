@@ -10,6 +10,16 @@ import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
+import type { RealFrameObserver } from './frameDriver.ts';
+import type { Session } from './session.ts';
+
+export type SkyRouteAttachment = (hooks: {
+  engine: Engine;
+  session: Session;
+  debug: DebugRuntime;
+  active: () => boolean;
+}) => RealFrameObserver | undefined;
+
 import type { MoveIntent } from './player.ts';
 import type { SnapshotMeasurement } from './playtestTools.ts';
 
