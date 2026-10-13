@@ -437,8 +437,8 @@ not stacked material. See `PILE_DISPLAY_KIND` in `src/core/schema.ts`.
 Pile meshes and presentation endpoints use the same current display projection.
 It accounts for active arc hides and gives scatter items their displayed pose, so
 an endpoint remains joined to the visible pile when another throw overlaps or
-scatter is involved. See `effectivePileDisplay` and `effectivePileItemPosition`
-in `src/core/pileDisplay.ts`.
+scatter is involved. See `src/core/pileDisplay.ts`, `effectivePileDisplay` and
+`effectivePileItemPosition`.
 
 Use one item look derived from that instance's own state in every view. A
 firearm with its magazine removed must not appear loaded in a hand or pile; a
@@ -843,8 +843,9 @@ scatter poses as well as model readiness. This presentation-only hide avoids a
 second item owner; #678 tracks impact-time ownership. Mass limits range; #368 is
 the trigger for deciding whether atmospheric drag adds another limit. A throw
 adds no hit damage or landing lure; explosive effects belong to the grenade.
-See `ThrowCharge.place` in `src/game/throwCharge.ts`, `ItemThrows.update` in
-`src/render/itemThrows.ts`, and `PileMeshes.sync` in `src/render/piles.ts`.
+See `src/game/throwCharge.ts`, `ThrowCharge.place`;
+`src/render/itemThrows.ts`, `ItemThrows.update`; and `src/render/piles.ts`,
+`PileMeshes.sync`.
 
 ## Hand grenade
 
