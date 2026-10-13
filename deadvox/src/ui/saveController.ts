@@ -144,7 +144,7 @@ export class SaveController {
       'click',
       (event) => {
         const target = event.target instanceof Element ? event.target : undefined;
-        if (target?.closest('#go') || target === $('overlay')) {
+        if (target?.closest('#go') || (target === $('overlay') && !this.restored)) {
           this.newWorld(event);
         }
       },
@@ -411,7 +411,10 @@ export class SaveController {
   }
 
   private renderGoLabel(): void {
-    const label = this.titleNewWorldLabel === 'New world' ? this.newWorldGoLabel : this.titleNewWorldLabel;
+    let label = this.titleNewWorldLabel === 'New world' ? this.newWorldGoLabel : this.titleNewWorldLabel;
+    if (this.restored) {
+      label = 'New character — replace saved world';
+    }
     render(html`${label}`, $('go'));
   }
 
@@ -728,6 +731,10 @@ export class SaveController {
     return this.requestedContinue ? 'continue' : 'title';
   }
 
+  private get showSavedChoice(): boolean {
+    return !(this.entered || this.requestedContinue) && this.restored !== undefined;
+  }
+
   private render(): void {
     const status = $('save-status');
     const button = $('continue') as HTMLButtonElement;
@@ -754,6 +761,9 @@ export class SaveController {
       html`Saves are kept in this browser. When two tabs play the same world, the last one to save wins.`,
       $('save-note'),
     );
+    const savedChoice = this.showSavedChoice;
+    $('overlay').classList.toggle('saved-choice', savedChoice);
+    $('title-choice-heading').hidden = !savedChoice;
     $('new-character-options').hidden = this.entered || this.requestedContinue;
     $('go').setAttribute('aria-disabled', String(!(this.entered || (this.ready && this.newWorldLauncher))));
     button.disabled = !(this.ready && controls.continueEnabled);
