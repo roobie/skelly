@@ -8,7 +8,7 @@ import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
-import { weightOf } from '../src/core/items.ts';
+import { type Item, weightOf } from '../src/core/items.ts';
 import { BUCK_HALF_ANGLE, type PelletShot } from '../src/core/pellets.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -748,11 +748,13 @@ describe('real pump ammunition', () => {
     f.finish(ejectAt, 4 + ejectAt);
     const restored = Inventory.restoreState(f.inventory.registry, f.inventory.snapshotState());
     const cues: { event: SoundEventId; time: number }[] = [];
+    const landedCases: Item[] = [];
     const mechanics = new FirearmMechanics(restored, new HandlingQueue(restored), {
       blockSize: pose.blockSize,
       pose: () => pose,
       isSolid: (_x, y, _z) => y < 0,
       onEjection: () => undefined,
+      onCaseLanded: (_seed, item) => landedCases.push(item),
       onSound: (event, _position, time) => cues.push({ event, time }),
     });
     expect(f.gun.firearm?.landings).toHaveLength(1);
@@ -761,6 +763,7 @@ describe('real pump ammunition', () => {
     expect(cues).toEqual([]);
     mechanics.advanceTo(landingAt);
     mechanics.advanceTo(landingAt + 1);
+    expect(landedCases).toHaveLength(1);
     expect(cues).toEqual([{ event: 'shotgun_hull_drop', time: landingAt }]);
     const forwardAt = action.hand.rearwardSimSeconds + action.hand.dwellSimSeconds;
     f.finish(forwardAt - ejectAt, 4 + forwardAt);

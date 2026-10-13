@@ -1012,7 +1012,7 @@ export class FirearmMechanics {
       const spentPumpCase =
         this.isPump(item) &&
         landing.type === spentCaseItemId(firearmHandlingFor(item, this.inventory.registry).calibre);
-      if ((!placement || typeof placement === 'string') && spentPumpCase) {
+      if (spentPumpCase) {
         this.onSound('shotgun_hull_drop', landing.position, landing.at);
       }
     }
