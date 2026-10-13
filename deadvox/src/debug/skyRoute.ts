@@ -73,11 +73,13 @@ export function attachSkyRoute({ engine, session, debug, active }: Parameters<Sk
   const finish = (reason: string) => {
     ended = true;
     restore();
-    let geometry: ReturnType<typeof collectSkyGeometry> | { error: string };
-    try {
-      geometry = collectSkyGeometry(engine, SKY_ROUTE, observer.sample);
-    } catch (error) {
-      geometry = { error: String(error) };
+    let geometry: ReturnType<typeof collectSkyGeometry> | { error: string } | null = null;
+    if (startedRealMs !== undefined) {
+      try {
+        geometry = collectSkyGeometry(engine, SKY_ROUTE, observer.sample);
+      } catch (error) {
+        geometry = { error: String(error) };
+      }
     }
     // Worker replies may arrive later; preserve the censored evidence at the route boundary.
     const sampledJobs = jobs.map((job) => ({

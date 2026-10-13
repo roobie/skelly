@@ -217,7 +217,7 @@ try {
     await page.goto(
       browserStageUrl(
         stageId,
-        `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00${mode === 'lighting-outdoor' ? '&skyRoute=1' : ''}`,
+        `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00${mode === 'camo' ? '&skyRoute=1' : ''}`,
       ),
     );
     await page.waitForFunction(
@@ -228,9 +228,10 @@ try {
     await page.locator('#go').click();
     await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
   });
-  if (mode === 'lighting-outdoor') {
+  if (mode === 'camo') {
     await page.waitForFunction(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value));
     const diagnostic = await page.locator('[data-sky-route] textarea').inputValue();
+    assert.equal(JSON.parse(diagnostic).geometry, null, 'a rejected route must not probe an unrelated scene');
     assert.equal(
       JSON.parse(diagnostic).status,
       'wrong-start',
