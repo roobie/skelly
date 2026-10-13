@@ -573,7 +573,7 @@ try {
       hitGo: Boolean(document.elementFromPoint(rect.left + 1, rect.top + 1)?.closest('#go')),
     };
   })()`);
-  console.log('Resume before scrolling:', unscrolledResume);
+  process.stdout.write(`Resume before scrolling: ${JSON.stringify(unscrolledResume)}\n`);
   await evaluate("document.querySelector('#save-note').scrollIntoView({ block: 'center', behavior: 'instant' })");
   await clickAt('#save-note');
   const arrowTip = await evaluate(`(() => {
