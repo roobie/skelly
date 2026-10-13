@@ -10,17 +10,26 @@ import type { ModelLibrary } from './models.ts';
 export const FLYING_CASE_CAP = 32;
 const GRAVITY = 9.81;
 
-export const caseFlightPoint = (from: Vec3, to: Vec3, progress: number, duration: number): Vec3 => {
+export const caseFlightPoint = (
+  from: Vec3,
+  to: Vec3,
+  progress: number,
+  { duration, initialVelocity }: { duration: number; initialVelocity: Vec3 },
+): Vec3 => {
   const t = Math.max(0, Math.min(1, progress));
   if (t === 1 || !(duration > 0)) {
     return [...to];
   }
   const elapsed = duration * t;
-  const initialVerticalSpeed = (to[1] - from[1] + (GRAVITY * duration ** 2) / 2) / duration;
+  const correction: Vec3 = [
+    to[0] - from[0] - initialVelocity[0] * duration,
+    to[1] - from[1] - initialVelocity[1] * duration + (GRAVITY * duration ** 2) / 2,
+    to[2] - from[2] - initialVelocity[2] * duration,
+  ];
   return [
-    from[0] + (to[0] - from[0]) * t,
-    from[1] + initialVerticalSpeed * elapsed - (GRAVITY * elapsed ** 2) / 2,
-    from[2] + (to[2] - from[2]) * t,
+    from[0] + initialVelocity[0] * elapsed + correction[0] * t ** 2,
+    from[1] + initialVelocity[1] * elapsed - (GRAVITY * elapsed ** 2) / 2 + correction[1] * t ** 2,
+    from[2] + initialVelocity[2] * elapsed + correction[2] * t ** 2,
   ];
 };
 
@@ -32,6 +41,7 @@ interface Particle {
   readonly origin: Vector3;
   readonly landing: Vector3;
   readonly position: Vector3;
+  readonly velocity: Vector3;
   readonly rotation: Vector3;
   readonly spin: Vector3;
   caseModelId: string | undefined;
@@ -52,6 +62,7 @@ export class CaseEffects {
     origin: new Vector3(),
     landing: new Vector3(),
     position: new Vector3(),
+    velocity: new Vector3(),
     rotation: new Vector3(),
     spin: new Vector3(),
     caseModelId: undefined,
@@ -84,6 +95,11 @@ export class CaseEffects {
     particle.origin.set(...effect.origin);
     particle.landing.set(...effect.landingPosition);
     particle.position.set(...effect.origin);
+    particle.velocity.set(
+      effect.direction[0] * effect.speed,
+      effect.direction[1] * effect.speed,
+      effect.direction[2] * effect.speed,
+    );
     particle.rotation.set(rng.range(0, Math.PI), rng.range(0, Math.PI), rng.range(0, Math.PI));
     particle.spin.set(rng.range(-24, 24), rng.range(-24, 24), rng.range(-24, 24));
     particle.caseModelId = effect.caseModelId;
@@ -116,12 +132,10 @@ export class CaseEffects {
       const duration = particle.landingAt - particle.startedAtSimSeconds;
       const elapsed = Math.max(0, simTime - particle.startedAtSimSeconds);
       const progress = duration > 0 ? elapsed / duration : 1;
-      const point = caseFlightPoint(
-        particle.origin.toArray() as Vec3,
-        particle.landing.toArray() as Vec3,
-        progress,
+      const point = caseFlightPoint(particle.origin.toArray() as Vec3, particle.landing.toArray() as Vec3, progress, {
         duration,
-      );
+        initialVelocity: particle.velocity.toArray() as Vec3,
+      });
       particle.position.set(...point);
       particle.rotation.addScaledVector(particle.spin, Math.max(0, simTime - particle.updatedAtSimSeconds));
       particle.updatedAtSimSeconds = simTime;

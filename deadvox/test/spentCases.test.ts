@@ -21,7 +21,17 @@ describe('spent-case presentation', () => {
   it('ends the ballistic presentation at the simulation landing position', () => {
     const origin: [number, number, number] = [0.2, 1.1, -0.4];
     const landing: [number, number, number] = [2, 0.5, 1];
-    expect(caseFlightPoint(origin, landing, 1, 0.48)).toEqual(landing);
+    const duration = 0.48;
+    const initialVelocity: [number, number, number] = [3.15, 0.7, 0];
+    const flight = { duration, initialVelocity };
+    expect(caseFlightPoint(origin, landing, 1, flight)).toEqual(landing);
+    const progress = 0.001;
+    const elapsed = duration * progress;
+    const point = caseFlightPoint(origin, landing, progress, flight);
+    const horizontalVelocity = [(point[0] - origin[0]) / elapsed, (point[2] - origin[2]) / elapsed];
+    expect(
+      Math.hypot(horizontalVelocity[0]! - initialVelocity[0], horizontalVelocity[1]! - initialVelocity[2]),
+    ).toBeLessThan(0.1);
   });
   it('scatters deterministically, spreads with count, and stops changing at its cap', () => {
     const pile: [number, number, number] = [7, 3, -2];

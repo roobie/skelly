@@ -1245,10 +1245,7 @@ export class FirearmMechanics {
       emission.origin[2] + emission.direction[2] * distance,
     ];
     const minY = makeScale(this.blockSize).minCy * CHUNK;
-    return (
-      settleOnWorld(endpoint, this.blockSize, minY, this.isSolid) ??
-      settleOnWorld(emission.origin, this.blockSize, minY, this.isSolid)
-    );
+    return settleOnWorld(endpoint, this.blockSize, minY, this.isSolid);
   }
 
   private ejectionAt(state: FirearmState, data: FirearmHandlingData): number {

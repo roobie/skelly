@@ -122,7 +122,9 @@ export class ItemThrows {
       const location = item && inventory.locate(item);
       const otherHiddenItemUids = new Set(
         this.flights
-          .filter((candidate) => candidate.active && candidate.itemUid !== flight.itemUid)
+          .filter(
+            (candidate) => candidate.active && simTime < candidate.landingAt && candidate.itemUid !== flight.itemUid,
+          )
           .map((candidate) => candidate.itemUid),
       );
       const projection =
