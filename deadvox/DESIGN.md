@@ -322,14 +322,24 @@ are later #671 checkpoints, not behavior supplied by the visual fixture. A
 frozen playtest follows successful play approval and #660's separate publishing
 prerequisites so a round retains its build and origin.
 
-The small first look exists to judge plausibility, discoverability, cue strength
-and text tone before investing in full lab and clue construction. Full visual
-construction for #671 waits for that look's approval. The authored fixture is a
-prototype service building and shaft landing, not a seeded city, finished lab,
-all-seed route certificate or balance/performance verdict. It uses the ordinary
-reader, hatch, ladder and authored-site owners; its demo status keeps prototype
-stock out of playable-world reachability. See `src/content/base/gauntlet-look.jsonnet`
-and `AuthoredSite` in `src/core/authoredSite.ts`.
+Discovery cues must not be unique merely by material. The city plan must scatter
+incidental structures in the same visual family with different silhouettes,
+so the exhausts reward recognizing their arrangement and context instead of
+spotting the only matching colour. Keep that ambiguity compatible with the
+independent notes; visual redundancy is not a false-destination quest chain.
+
+Bounded rendered looks precede full lab and clue construction because geometry,
+lighting and clue interpretation need player judgment before large investments.
+Full visual construction for #671 waits for approval of the lab and contextual
+cue look. The authored fixture is a prototype service building and basement
+sketch, not a seeded city, finished lab, all-seed route certificate or
+balance/performance verdict. Its console is explicitly inactive: no goal command
+or saved win is supplied by that furniture. Darkness uses the existing
+world-derived sky transport and an ordinary carried light, not invented powered
+lab fixtures. It uses the ordinary reader, hatch, ladder and authored-site
+owners; its demo status keeps prototype stock out of playable-world reachability.
+See `src/content/base/gauntlet-look.jsonnet` and `AuthoredSite` in
+`src/core/authoredSite.ts`.
 
 ### Points of interest
 
