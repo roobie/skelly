@@ -1268,19 +1268,7 @@ export class FirearmMechanics {
     if (!position) {
       return undefined;
     }
-    const { direction: launchDirection } = emission;
-    let direction = launchDirection;
-    let speed = CASE_SPEED;
-    if (hit) {
-      const intoWall = launchDirection.reduce((dot, value, axis) => dot + value * hit.normal[axis]!, 0);
-      if (intoWall < 0) {
-        const tangent = launchDirection.map((value, axis) => value - intoWall * hit.normal[axis]!) as Vec3;
-        const tangentLength = Math.hypot(...tangent);
-        direction = tangentLength > 0 ? (tangent.map((value) => value / tangentLength) as Vec3) : [0, 0, 0];
-        speed *= tangentLength;
-      }
-    }
-    return { position, direction, speed };
+    return { position, direction: hit ? [0, -1, 0] : emission.direction, speed: CASE_SPEED };
   }
 
   private ejectionAt(state: FirearmState, data: FirearmHandlingData): number {

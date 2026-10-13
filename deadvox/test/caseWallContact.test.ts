@@ -69,6 +69,50 @@ const makeWallShot = (yaw: number, wallX: number | undefined, startX: number, si
   return { body, data, effects, inventory, isSolid, mechanics, pose, rifle, side };
 };
 
+const makeCornerShot = () => {
+  const yaw = (-80 * Math.PI) / 180;
+  const world = new World();
+  const rock = blockId(registry, 'rock');
+  for (let x = -5; x <= 5; x++) {
+    for (let z = -5; z <= 5; z++) {
+      world.setBlock(x, 0, z, rock);
+    }
+  }
+  for (let y = 1; y <= 7; y++) {
+    for (let z = -5; z <= 5; z++) {
+      world.setBlock(2, y, z, rock);
+    }
+    for (let x = -5; x <= 2; x++) {
+      world.setBlock(x, y, 3, rock);
+    }
+  }
+  const isSolid = worldSolid(world, registry, new BlockEntities(registry));
+  const body = createPlayerBody(scale, -3, 1.01, 1);
+  for (let frame = 0; frame < 120; frame++) {
+    steer(body, scale, yaw, { forward: 1, right: 1, jump: false, sprint: false, walk: true });
+    stepBody(body, 1 / 60, isSolid, physicsFor(scale));
+  }
+  const pose = {
+    feet: [...body.pos] as Vec3,
+    eye: [body.pos[0], body.pos[1] + PLAYER.eye / scale.blockSize, body.pos[2]] as Vec3,
+    yaw,
+    pitch,
+    blockSize: scale.blockSize,
+  };
+  const inventory = new Inventory(registry);
+  const queue = new HandlingQueue(inventory);
+  const effects: FirearmShotEffect[] = [];
+  const mechanics = new FirearmMechanics(inventory, queue, {
+    blockSize: scale.blockSize,
+    isSolid,
+    pose: () => pose,
+    onEjection: (ejection) => effects.push(ejection),
+  });
+  const { rifle } = chargedRifle(inventory, queue, mechanics);
+  const data = firearmHandlingFor(rifle, registry);
+  return { body, data, effects, inventory, isSolid, mechanics, pose, rifle };
+};
+
 const fireAndCycle = (shot: ReturnType<typeof makeWallShot>, simTime = 1): void => {
   if (
     !shot.mechanics.fire({
@@ -213,6 +257,7 @@ describe('firearm case wall contact', () => {
     shot.mechanics.advanceTo(3);
     expect(shot.effects).toHaveLength(1);
     const effect = shot.effects[0]!;
+    expect(effect.direction).toEqual([0, -1, 0]);
     expect(shot.isSolid(...(effect.origin.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
     const casePile = [...shot.inventory.piles.values()].find((pile) =>
       pile.items.some(({ item }) => item.type === spentCaseItemId(shot.data.calibre)),
@@ -232,6 +277,58 @@ describe('firearm case wall contact', () => {
     const initialVelocity: Vec3 = effect.direction.map((value) => value * effect.speed) as Vec3;
     for (let sample = 0; sample <= 64; sample++) {
       const point = caseFlightPoint(effect.origin, landing, sample / 64, {
+        durationSimSeconds: duration,
+        initialVelocity,
+      });
+      expect(shot.isSolid(...(point.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
+    }
+  });
+
+  it('keeps a clipped case drop outside both walls at a room corner', () => {
+    const shot = makeCornerShot();
+    expect(bodyOverlapsTerrain(shot.body, shot.isSolid)).toBe(false);
+    expect(shot.body.onGround).toBe(true);
+    const raw = heldEjectionPose({
+      model: shot.data.model,
+      side: 'right',
+      twoHanded: defOf(registry, shot.rifle.type).twoHanded === true,
+      eye: shot.pose.eye.map((value) => value * scale.blockSize) as Vec3,
+      yaw: shot.pose.yaw,
+      pitch: shot.pose.pitch,
+    });
+    expect(shot.isSolid(...(raw.origin.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(true);
+    if (
+      !shot.mechanics.fire({
+        ...shot.pose,
+        aimFrame: NEUTRAL_AIM,
+        ready: true,
+        sprinting: false,
+        item: shot.rifle,
+        seed: 71,
+        simTime: 1,
+      })
+    ) {
+      throw new Error('Corner-contact rifle did not fire');
+    }
+    shot.mechanics.advanceTo(1.25);
+    shot.mechanics.advanceTo(3);
+    expect(shot.effects).toHaveLength(1);
+    const blockedEffect = shot.effects[0]!;
+    const casePile = [...shot.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === spentCaseItemId(shot.data.calibre)),
+    );
+    expect(casePile).toBeDefined();
+    expect(shot.isSolid(...casePile!.pos)).toBe(false);
+    expect(shot.isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
+    const landing: Vec3 = [
+      (blockedEffect.landingPosition[0] + 0.5) * scale.blockSize,
+      blockedEffect.landingPosition[1] * scale.blockSize + 0.006,
+      (blockedEffect.landingPosition[2] + 0.5) * scale.blockSize,
+    ];
+    const duration = blockedEffect.landingAt - blockedEffect.startedAtSimSeconds;
+    const initialVelocity: Vec3 = blockedEffect.direction.map((value) => value * blockedEffect.speed) as Vec3;
+    for (let sample = 0; sample <= 64; sample++) {
+      const point = caseFlightPoint(blockedEffect.origin, landing, sample / 64, {
         durationSimSeconds: duration,
         initialVelocity,
       });
