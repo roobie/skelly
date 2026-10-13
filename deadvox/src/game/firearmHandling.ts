@@ -1267,7 +1267,8 @@ export class FirearmMechanics {
       (axis, index) => (axis + emission.direction[index]! * safeDistance) * this.blockSize,
     ) as Vec3;
     const minY = makeScale(this.blockSize).minCy * CHUNK;
-    const position = settleOnWorld(endpoint, this.blockSize, minY, this.isSolid);
+    const landingPoint = hit ? emission.origin : endpoint;
+    const position = settleOnWorld(landingPoint, this.blockSize, minY, this.isSolid);
     if (!position) {
       return undefined;
     }

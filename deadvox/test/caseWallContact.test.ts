@@ -156,6 +156,25 @@ const cornerWorld = (): World => {
   return world;
 };
 
+const raisedFloorWorld = (): World => {
+  const world = new World();
+  const rock = blockId(registry, 'rock');
+  for (let x = -5; x <= 5; x++) {
+    for (let z = -5; z <= 5; z++) {
+      world.setBlock(x, 0, z, rock);
+    }
+    for (let z = -5; z <= 2; z++) {
+      world.setBlock(x, 1, z, rock);
+    }
+  }
+  for (let y = 1; y <= 7; y++) {
+    for (let x = -5; x <= 5; x++) {
+      world.setBlock(x, y, 4, rock);
+    }
+  }
+  return world;
+};
+
 const advanceFrames = (session: Session, count: number): void => {
   for (let frame = 0; frame < count; frame++) {
     session.frame(1 / 60);
@@ -193,16 +212,22 @@ const observeCaseFrames = (
   return observations;
 };
 
-const makeCrouchedCornerRuntime = () => {
-  const world = cornerWorld();
+interface SessionScene {
+  readonly world: World;
+  readonly spawn: Vec3;
+  readonly intent: MoveIntent;
+  readonly crouched?: boolean;
+}
+
+const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = false }: SessionScene) => {
   const entities = new BlockEntities(registry);
   const isSolid = worldSolid(world, registry, entities);
   const renderer = new CaseEffects(scale.blockSize);
   const effects: FirearmShotEffect[] = [];
   const spawnResults: boolean[] = [];
   const yaw = (-80 * Math.PI) / 180;
-  let intent: MoveIntent = { ...IDLE, forward: 1, right: 1, walk: true };
-  let crouchToggle = true;
+  let intent = startingIntent;
+  let crouchToggle = crouched;
   const session = createSession({
     registry,
     world,
@@ -212,7 +237,7 @@ const makeCrouchedCornerRuntime = () => {
     scale,
     seed: 73,
     start: 43_200,
-    spawn: [0.9, 1.01, 1.9],
+    spawn,
     ready: () => true,
     controls: {
       active: () => true,
@@ -257,6 +282,30 @@ const makeCrouchedCornerRuntime = () => {
       intent = next;
     },
   };
+};
+
+const makeCrouchedCornerRuntime = () =>
+  makeCaseSession({
+    world: cornerWorld(),
+    spawn: [0.9, 1.01, 1.9],
+    intent: { ...IDLE, forward: 1, right: 1, walk: true },
+    crouched: true,
+  });
+
+const makeRaisedFloorRuntime = () =>
+  makeCaseSession({
+    world: raisedFloorWorld(),
+    spawn: [1.3999, 2.01, 2.15],
+    intent: { ...IDLE, right: 1, walk: true },
+  });
+
+const walkToRaisedEdge = (runtime: ReturnType<typeof makeRaisedFloorRuntime>): void => {
+  for (let frame = 0; frame < 120; frame++) {
+    runtime.session.frame(1 / 60);
+    if (runtime.session.body.pos[2] >= 2.4) {
+      runtime.setIntent({ ...IDLE });
+    }
+  }
 };
 
 describe('firearm case wall contact', () => {
@@ -504,6 +553,47 @@ describe('firearm case wall contact', () => {
     for (let frame = 1; frame < observations.length; frame++) {
       expect(observations[frame]!.point[1]).toBeLessThanOrEqual(observations[frame - 1]!.point[1] + 1e-6);
     }
+    runtime.renderer.dispose();
+  });
+
+  it('settles a blocked raised-floor ejection under the launch column', () => {
+    const runtime = makeRaisedFloorRuntime();
+    walkToRaisedEdge(runtime);
+    expect(runtime.session.body.onGround).toBe(true);
+    expect(bodyOverlapsTerrain(runtime.session.body, runtime.isSolid)).toBe(false);
+    runtime.setIntent({ ...IDLE });
+    const pose = sessionPose(runtime.session, runtime.yaw);
+    expect(
+      runtime.session.firearms.fire({
+        ...pose,
+        aimFrame: NEUTRAL_AIM,
+        item: runtime.rifle,
+        ready: true,
+        sprinting: false,
+        seed: 71,
+        simTime: runtime.session.sim.time,
+      }),
+    ).toBe(true);
+
+    const observations = observeCaseFrames(runtime.session, runtime.renderer, runtime.isSolid, 60);
+    expect(runtime.effects).toHaveLength(1);
+    expect(runtime.spawnResults).toEqual([true]);
+    expect(observations.length).toBeGreaterThan(0);
+    expect(observations.filter(({ solid }) => solid)).toEqual([]);
+    const effect = runtime.effects[0]!;
+    expect(effect.verticalDrop).toBe(true);
+    const { calibre } = firearmHandlingFor(runtime.rifle, registry);
+    const cases = [...runtime.session.inventory.piles.values()].filter((pile) =>
+      pile.items.some(({ item }) => item.type === spentCaseItemId(calibre)),
+    );
+    expect(cases).toHaveLength(1);
+    const landing = cases[0]!.pos;
+    const launchColumn = effect.origin.map((value) => Math.floor(value / scale.blockSize)) as Vec3;
+    expect(landing).toEqual(effect.landingPosition);
+    expect(landing[0]).toBe(launchColumn[0]);
+    expect(landing[2]).toBe(launchColumn[2]);
+    expect(runtime.isSolid(...landing)).toBe(false);
+    expect(runtime.isSolid(landing[0], landing[1] - 1, landing[2])).toBe(true);
     runtime.renderer.dispose();
   });
 });
