@@ -70,6 +70,12 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
     await server.listen();
     const address = server.httpServer.address();
     await page.goto(`http://127.0.0.1:${address.port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`);
+    await page.waitForFunction(
+      () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
+      undefined,
+      { timeout: 60_000 },
+    );
+    await page.locator('#go').click();
     await page.waitForFunction(() => globalThis.mainArrival.firstMeshRealMs !== null, {}, { timeout: 60_000 });
     const evidence = await page.evaluate(() => ({
       ...globalThis.mainArrival,

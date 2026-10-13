@@ -14,7 +14,6 @@ import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { measureMainFirstMesh } from './sky-main-arrival.mjs';
-import { measureSkyRoute } from './sky-measurement.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -171,9 +170,6 @@ try {
     }),
   );
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
-  if (mode === 'lighting-outdoor') {
-    await timePhase('dense-camp-cold-warm-evidence', () => measureSkyRoute(browser, root, artifacts));
-  }
   const viewport = isLightingMode ? { width: 1280, height: 800 } : { width: 640, height: 400 };
   if (mode === 'camo') {
     await timePhase('main-first-mesh-reference', () =>
@@ -219,7 +215,10 @@ try {
   const stageId = stageName;
   await timeIfLighting('game-boot', async () => {
     await page.goto(
-      browserStageUrl(stageId, `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`),
+      browserStageUrl(
+        stageId,
+        `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00${mode === 'lighting-outdoor' ? '&skyRoute=1' : ''}`,
+      ),
     );
     await page.waitForFunction(
       () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
@@ -229,6 +228,21 @@ try {
     await page.locator('#go').click();
     await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
   });
+  if (mode === 'lighting-outdoor') {
+    await page.waitForFunction(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value));
+    const diagnostic = await page.locator('[data-sky-route] textarea').inputValue();
+    assert.equal(
+      JSON.parse(diagnostic).status,
+      'wrong-start',
+      'the hardware route rejects fixture geometry rather than reporting a valid camp run',
+    );
+    assert.equal(
+      JSON.parse(diagnostic).cold.lightingP99RealMs,
+      null,
+      'a rejected empty route cannot report zero-cost timing success',
+    );
+    await page.evaluate(() => document.querySelector('[data-sky-route]').remove());
+  }
   if (mode === 'traversal') {
     await page.waitForFunction(() => Boolean(document.pointerLockElement));
     const verifyGate = async (locked) => {

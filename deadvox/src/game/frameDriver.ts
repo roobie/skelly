@@ -55,6 +55,22 @@ export const advanceLiveFrame = (
 /** Monotonic Real timestamp in milliseconds; only the outer frame/presentation adapter reads it. */
 export const realNow = (): RealTimestamp => realTimestamp(performance.now());
 
+export interface RealFrameObserver {
+  before: () => number | undefined;
+  after: (startedRealMs: number) => void;
+}
+export const observeRealFrame =
+  (frame: (now: RealTimestamp) => boolean, observer: () => RealFrameObserver | undefined) =>
+  (now: RealTimestamp): boolean => {
+    const watching = observer();
+    const startedRealMs = watching?.before();
+    const continuing = frame(now);
+    if (startedRealMs !== undefined) {
+      watching?.after(startedRealMs);
+    }
+    return continuing;
+  };
+
 /** Browser RAF wiring lives outside the simulation and forwards branded Real timestamps. */
 export const startRealFrames = (
   frame: (now: RealTimestamp) => boolean,

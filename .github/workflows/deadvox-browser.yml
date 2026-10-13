@@ -203,8 +203,8 @@ jobs:
         run: node test/browser/stairs.mjs lighting-residents
       - name: Stairs lighting outdoor browser contract
         if: ${{ !cancelled() && (inputs.shard == 'control-stages' || inputs.shard == 'stages') }}
-        # Includes production boot and both bounded route legs, not just the fixture proof.
-        timeout-minutes: 10
+        # Preserve correctness evidence even when an earlier fixture proof fails.
+        timeout-minutes: 3
         run: node test/browser/stairs.mjs lighting-outdoor
       - name: Stairs lighting atlas browser contract
         if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}

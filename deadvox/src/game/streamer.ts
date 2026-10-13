@@ -76,6 +76,7 @@ export class Streamer {
   private pendingSky: SkySnapshot | undefined;
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<Worker, number>();
+  onSkyService: ((realMs: number) => void) | undefined;
 
   /** One copied request can await admission without occupying a startup mesh slot. */
   requestSky(input: SkySnapshot, receive: (result: SkyResult, ms: number) => void): boolean {
@@ -97,7 +98,11 @@ export class Streamer {
     );
     const input = this.pendingSky;
     this.pendingSky = undefined;
+    const startedRealMs = this.onSkyService ? performance.now() : undefined;
     this.send(worker, { type: 'sky', input });
+    if (startedRealMs !== undefined) {
+      this.onSkyService?.(performance.now() - startedRealMs);
+    }
   }
 
   private get occupied(): number {

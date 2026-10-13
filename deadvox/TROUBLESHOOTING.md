@@ -2,6 +2,7 @@
 read_if:
   - you're debugging Deadvox startup, saves, input, rendering or browser stages
   - a browser contract or stage fails on software GL
+  - you're collecting a real-hardware lighting gate from a published preview
   - you're authoring a browser stage or exporting a site in Tiled
   - you investigate a save-lock timeout or browser CI launch failure
 ---
@@ -20,7 +21,7 @@ A frozen page can hold the lock, so the last committed generation is the recover
 
 ## Debug and rendering
 
-`?debug=1` is development-only. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
+`?debug=1` is for authoring and diagnostics, including immutable preview measurements. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
 
 Look and camera parameters are copied from the URL, making a reported pose reproducible. Use `tools/render-probe.mjs` with a `cam=` pose for headless shader reproduction; inspect the screenshot and pixel scan. SwiftShader is not a GPU, so a clean run cannot rule out driver-specific defects. Flip one debug toggle at a time before theorizing; see `src/debug/lookUrl.ts`, `src/debug/camUrl.ts`, and `src/core/weatheringUrl.ts`.
 

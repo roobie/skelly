@@ -134,6 +134,7 @@ export class Skylight {
   private metadataDirty = true;
   private atlasDirty = false;
   readonly stats = { requested: 0, completed: 0, accepted: 0, discarded: 0, volumes: 0, roofFree: 0 };
+  onShader: ((uniforms: Parameters<Material['onBeforeCompile']>[0]['uniforms'], realMs: number) => void) | undefined;
   onService: ((ms: number) => void) | undefined;
   onJob: ((workerMs: number, latencyMs: number) => void) | undefined;
 
@@ -456,6 +457,7 @@ export class Skylight {
       if (!shader.fragmentShader.includes('#include <lights_fragment_end>')) {
         return;
       }
+      const shaderStartedRealMs = this.onShader ? this.clock() : undefined;
       shader.uniforms.uSkyVolume = this.texture;
       shader.uniforms.uSkyMinimum = this.minimum;
       shader.uniforms.uSkyExtent = this.extent;
@@ -539,6 +541,9 @@ float skyVisibility() {
 }`,
         )
         .replace('#include <lights_fragment_end>', 'irradiance *= skyVisibility();\n#include <lights_fragment_end>');
+      if (shaderStartedRealMs !== undefined) {
+        this.onShader?.(shader.uniforms, this.clock() - shaderStartedRealMs);
+      }
     };
     material.customProgramCacheKey = () =>
       `${key.call(material)}:bounded-voxel-skylight:${this.blockSize}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
