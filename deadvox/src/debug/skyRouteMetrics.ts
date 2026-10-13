@@ -44,7 +44,7 @@ function summarizeSkyFrames(frames: SkyRouteFrame[]) {
   const over18 = intervals.filter((value) => value > 18).length;
   return {
     frameDenominator: frames.length,
-    intervalDenominator: intervals.length,
+    frameGapDenominator: intervals.length,
     serviceP99RealMs: percentile(
       frames.map((frame) => frame.serviceRealMs),
       0.99,

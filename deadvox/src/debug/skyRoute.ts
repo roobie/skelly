@@ -22,13 +22,13 @@ export function skyRouteUrl() {
     seed: '1',
     radius: '48',
     debug: '1',
-    time: '13:00',
     at: `${SKY_ROUTE.start},${SKY_ROUTE.z},-90`,
     skyRoute: '1',
   };
   for (const [name, value] of Object.entries(params)) {
     url.searchParams.set(name, value);
   }
+  url.searchParams.set('time', '13:00');
   return url.href;
 }
 function eligibleSkyFields(engine: Engine, metres: Vec3) {
@@ -120,7 +120,7 @@ export function attachSkyRoute({ engine, session, debug, active }: Parameters<Sk
     ]
       .map(([name, data]) => {
         const row = data as typeof cold;
-        return `${name}: ${row.frameDenominator} frames / ${row.intervalDenominator} intervals\nCPU service p99 ${row.serviceP99RealMs?.toFixed(3) ?? 'n/a'} ms; with GL submission ${row.lightingP99RealMs?.toFixed(3) ?? 'n/a'} ms\nlighting >2ms ${row.lightingOver2Count}; scene ${row.sceneFps?.toFixed(1) ?? 'n/a'} fps; >18ms ${row.framesOver18Count} (${row.framesOver18Percent?.toFixed(2) ?? 'n/a'}%)`;
+        return `${name}: ${row.frameDenominator} frames / ${row.frameGapDenominator} intervals\nCPU service p99 ${row.serviceP99RealMs?.toFixed(3) ?? 'n/a'} ms; with GL submission ${row.lightingP99RealMs?.toFixed(3) ?? 'n/a'} ms\nlighting >2ms ${row.lightingOver2Count}; scene ${row.sceneFps?.toFixed(1) ?? 'n/a'} fps; >18ms ${row.framesOver18Count} (${row.framesOver18Percent?.toFixed(2) ?? 'n/a'}%)`;
       })
       .join(
         '\n\n',
