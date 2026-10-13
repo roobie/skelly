@@ -434,8 +434,11 @@ Ground items form piles. A modeled item keeps its own look in the pile; an item
 without a model is shown as a generic bundle. Spent cases read as loose debris,
 not stacked material. See `PILE_DISPLAY_KIND` in `src/core/schema.ts`.
 
-Pile models and presentation endpoints use the same `pileLayout` projection.
-See `pileLayout` and `pileItemPosition` in `src/core/pileLayout.ts`.
+Pile meshes and presentation endpoints use the same current display projection.
+It accounts for active arc hides and gives scatter items their displayed pose, so
+an endpoint remains joined to the visible pile when another throw overlaps or
+scatter is involved. See `effectivePileDisplay` and `effectivePileItemPosition`
+in `src/core/pileDisplay.ts`.
 
 Use one item look derived from that instance's own state in every view. A
 firearm with its magazine removed must not appear loaded in a hand or pile; a
@@ -833,15 +836,15 @@ beam. Fuel, batteries, and powered fixed lights keep illumination consequential.
 ## Held-item throws
 
 A released item joins its target pile immediately, keeping inventory as its
-sole owner and preserving ordinary fuse and save behavior. While the arc plays,
-the pile renderer hides that item; its endpoint follows the current pile layout
-so model readiness cannot leave the arc at a stale position. This presentation-
-only hide avoids a second item owner; #678 tracks impact-time ownership. Mass
-limits range; #368 is the trigger for deciding whether atmospheric drag adds
-another limit. A throw adds no hit damage or landing lure; explosive effects
-belong to the grenade. See `ThrowCharge.place` in `src/game/throwCharge.ts`,
-`ItemThrows.update` in `src/render/itemThrows.ts`, and `PileMeshes.sync` in
-`src/render/piles.ts`.
+sole owner and preserving ordinary fuse and save behavior. While the transient
+arc plays, the pile renderer hides that item; the arc uses the same current
+projection as the visible pile, excluding other active arc hides and following
+scatter poses as well as model readiness. This presentation-only hide avoids a
+second item owner; #678 tracks impact-time ownership. Mass limits range; #368 is
+the trigger for deciding whether atmospheric drag adds another limit. A throw
+adds no hit damage or landing lure; explosive effects belong to the grenade.
+See `ThrowCharge.place` in `src/game/throwCharge.ts`, `ItemThrows.update` in
+`src/render/itemThrows.ts`, and `PileMeshes.sync` in `src/render/piles.ts`.
 
 ## Hand grenade
 

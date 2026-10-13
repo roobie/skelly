@@ -5,7 +5,7 @@ import type { Inventory } from '../core/inventory.ts';
 import { PILE_GRID } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import { ITEM_ARC_HEIGHT_METRES, ITEM_FLIGHT_SECONDS, itemFlightPoint } from '../core/itemThrow.ts';
-import { pileItemPosition } from '../core/pileLayout.ts';
+import { effectivePileDisplay, effectivePileItemPosition } from '../core/pileDisplay.ts';
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -31,7 +31,7 @@ interface Flight {
   modelVisual: boolean;
 }
 
-/** Render-only arc following the inventory item's saved simulation landing. */
+/** Transient presentation arc; inventory ownership is immediate and arcs do not resume after load. */
 export class ItemThrows {
   readonly group = new Group();
   private readonly flights: Flight[] = [];
@@ -40,11 +40,13 @@ export class ItemThrows {
   private readonly models: Pick<ModelLibrary, 'groundLook' | 'has'> | undefined;
   private readonly registry: Registry;
   private readonly blockSize: number;
+  private readonly seed: number;
 
-  constructor(registry: Registry, models?: Pick<ModelLibrary, 'groundLook' | 'has'>, blockSize = 1) {
+  constructor(registry: Registry, models?: Pick<ModelLibrary, 'groundLook' | 'has'>, blockSize = 1, seed = 1) {
     this.registry = registry;
     this.models = models;
     this.blockSize = blockSize;
+    this.seed = seed;
   }
 
   spawn(
@@ -118,13 +120,23 @@ export class ItemThrows {
       }
       const item = inventory.itemByUid(flight.itemUid);
       const location = item && inventory.locate(item);
-      const destination =
+      const otherHiddenItemUids = new Set(
+        this.flights
+          .filter((candidate) => candidate.active && candidate.itemUid !== flight.itemUid)
+          .map((candidate) => candidate.itemUid),
+      );
+      const projection =
         location?.kind === 'pile'
-          ? pileItemPosition(this.registry, location.pile, flight.itemUid, {
+          ? effectivePileDisplay({
+              registry: this.registry,
+              pile: location.pile,
               blockSize: this.blockSize,
+              worldSeed: this.seed,
               hasModel: (id) => this.models?.has(id) ?? false,
+              hiddenItemUids: otherHiddenItemUids,
             })
           : undefined;
+      const destination = projection && item ? effectivePileItemPosition(projection, item) : undefined;
       if (!destination) {
         flight.active = false;
         flight.group.visible = false;
