@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PerspectiveCamera, Scene, Vector3 } from 'three';
+import { DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -40,6 +40,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     restore: vi.fn(),
     render: vi.fn((draw: () => void) => draw()),
     setPainDesaturation: vi.fn(),
+    setSky: vi.fn(),
   };
   const shadows = { restore: vi.fn(), attachTorch: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
   const engine = {
@@ -51,7 +52,13 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
     mood,
     shadows,
-    sky: {},
+    sky: {
+      scene: new Scene(),
+      light: new DirectionalLight(),
+      ambient: new HemisphereLight(),
+      camera: new PerspectiveCamera(),
+      radiusM: 64,
+    },
     isSolid,
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), page);
@@ -158,12 +165,17 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
     registry: inventory.registry,
     scene,
     camera,
-    sky: {},
+    sky: { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), camera, radiusM: 64 },
     skylight: sky,
     isSolid: owner.knownOpaque,
     renderer: { toneMapping: 0, toneMappingExposure: 1 },
     meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
-    mood: { post: false, restore: vi.fn(), render: vi.fn((draw: () => void) => draw()) },
+    mood: {
+      post: false,
+      restore: vi.fn(),
+      render: vi.fn((draw: () => void) => draw()),
+      setSky: vi.fn(),
+    },
     shadows: { torchOn: true, restore: vi.fn(), attachTorch: vi.fn() },
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
