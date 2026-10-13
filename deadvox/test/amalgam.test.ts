@@ -291,15 +291,19 @@ const runObstacleCase = (
   let previousZ = startZ;
   let maxZ = Number.NEGATIVE_INFINITY;
   let reachedBarrier = false;
-  for (let tick = 0; tick < 1200; tick++) {
+  const barrierInNextStep = (): boolean => {
     const approaching = simulation.store.get(id)!;
     const shape = simulation.shapeOf(approaching.body);
     const [x, y, beforeZ] = approaching.body.pos;
     const forwardStep = configuredType.speed.chaseMetresPerSimSecond / BLOCK_SIZE / 60;
-    reachedBarrier ||=
+    return (
       shape !== undefined &&
       !shape.overlapsTerrain(approaching.body.pos) &&
-      shape.overlapsTerrain([x, y, beforeZ + forwardStep]);
+      shape.overlapsTerrain([x, y, beforeZ + forwardStep])
+    );
+  };
+  for (let tick = 0; tick < 1200; tick++) {
+    reachedBarrier ||= barrierInNextStep();
     simulation.tick(1 / 60);
     const { body } = simulation.store.get(id)!;
     const [, , z] = body.pos;
