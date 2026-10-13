@@ -116,7 +116,12 @@ export const scenarioCompositionIssues = (
   if (!composition) {
     return [];
   }
-  const issues = placementLootIssues({ registry }, service, composition.fixedLoot, '.composition.fixedLoot');
+  const issues = placementLootIssues(
+    { registry, militaryTemplate: registry.templates.get(scenario.serviceTemplate)?.military === true },
+    service,
+    composition.fixedLoot,
+    '.composition.fixedLoot',
+  );
   for (const kind of ['leads', 'landmarks', 'incidentalTemplates'] as const) {
     composition[kind].forEach((id, index) => {
       issues.push(...extraTemplateIssues(registry, scenario, service, { id, index, kind }));

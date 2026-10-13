@@ -40,14 +40,17 @@ const fixedItemIssue = (
 };
 
 export const placementLootIssues = (
-  { registry, military = militaryLootItems(registry) }: { registry: Registry; military?: ReadonlySet<string> },
+  {
+    registry,
+    military = militaryLootItems(registry),
+    militaryTemplate,
+  }: { registry: Registry; military?: ReadonlySet<string>; militaryTemplate: boolean },
   compiled: CompiledTemplate,
   overrides: readonly FixedLootOverrideDef[],
   path: string,
 ): [string, string][] => {
   const issues: [string, string][] = [];
   const anchors = new Set<string>();
-  const militaryTemplate = registry.templates.get(compiled.id)?.military === true;
   for (const [index, override] of overrides.entries()) {
     const key = override.at.join(',');
     const at = `${path}[${index}]`;

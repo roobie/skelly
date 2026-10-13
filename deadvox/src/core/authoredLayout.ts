@@ -95,7 +95,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     const placement = placementOf(registry, building);
     issues.push(
       ...placementLootIssues(
-        { registry, military },
+        { registry, military, militaryTemplate: template.military === true },
         placement.template,
         building.fixedLoot ?? [],
         `.buildings[${i}].fixedLoot`,

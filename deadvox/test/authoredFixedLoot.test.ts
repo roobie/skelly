@@ -1294,6 +1294,62 @@ describe('authored fixed loot', () => {
     expectCampHqProperties(compiledArmoury);
   });
 
+  it('admits military surface loot through stacked authored placement', () => {
+    const template: TemplateDef = {
+      id: 'fixture_military',
+      military: true,
+      size: [2, 3, 2],
+      palette: { '.': 'air', S: { furniture: 'fixture_shelf' } },
+      layers: [
+        ['..', '..'],
+        ['S.', '..'],
+        ['..', '..'],
+      ],
+    };
+    const rifle = result.registry.items.get('rifle_assault');
+    expect(rifle).toBeDefined();
+    const registry = {
+      ...result.registry,
+      templates: new Map([[template.id, template]]),
+      furniture: new Map([
+        [
+          'fixture_shelf',
+          {
+            id: 'fixture_shelf',
+            name: 'Shelf',
+            color: '#888888',
+            size: [1, 1, 1] as [number, number, number],
+            solid: false,
+          },
+        ],
+      ]),
+      items: new Map([['fixture_gear', { ...rifle!, id: 'fixture_gear' }]]),
+    };
+    const fixture: SiteLayoutDef = {
+      ...layout,
+      bounds: { x0: 0, z0: 0, x1: 10, z1: 10 },
+      ground: 0,
+      player: { ...layout.player, position: [8, 0.5, 8] },
+      buildings: [
+        {
+          template: template.id,
+          position: [1, 0, 1],
+          rotation: 0,
+          storeys: 2,
+          fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'fixture_gear', placement: 'surface' }] }],
+        },
+      ],
+      terrain: [],
+      woodlands: [],
+      tracks: [],
+      shamblers: [],
+      hordes: [],
+      beats: [],
+    };
+
+    expect(authoredLayoutIssues(fixture, registry)).toEqual([]);
+  });
+
   it('rejects a surface military item in a non-military template', () => {
     const buildingIndex = layout.buildings.findIndex(
       (candidate) =>
