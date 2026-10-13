@@ -88,14 +88,14 @@ const engineObservation = `
     }
   }
 `;
-const frameObservation = `
+export const frameObservation = `
   Object.assign(globalThis.skyRouteEvidence,{play:{engine,session,debugTools,blockSize:scale.blockSize}});
   startRealFrames((...args) => {
     const evidence = globalThis.skyRouteEvidence;
     const start = performance.now();
     const beforeFrame = engine.renderer.info.render.frame;
-    frame(...args);
-    if(engine.renderer.info.render.frame===beforeFrame) return;
+    const keepRunning=frame(...args);
+    if(engine.renderer.info.render.frame===beforeFrame) return keepRunning;
     const frameRealMs = performance.now()-start;
     const position = engine.camera.position.toArray();
     const eligible = engine.skylight.inspect().flatMap((field,index) => {
@@ -112,6 +112,7 @@ const frameObservation = `
       position,estimate:evidence.sample(position),eligible,stats:{...engine.skylight.stats}});
     evidence.previousRealMs = start;
     evidence.serviceRealMs = evidence.textureRealMs = evidence.uniformRealMs = evidence.programRealMs = 0;
+    return keepRunning;
   });
 `;
 

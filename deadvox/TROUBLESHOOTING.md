@@ -16,7 +16,7 @@ The title screen remains unavailable until save discovery and content validation
 
 Continue may wait for another page's origin-wide save lock. A timeout does not mean a frozen holder can be recovered from the current page; use the reported holder/pending state and the controlled busy-lock browser contract. A successful competing read does not prove that contention caused a failure. See `src/game/saveStorage.ts`, `SaveStorage.withLock`, and `test/browser/save-storage.mjs`.
 
-A frozen page can hold the lock, so the last committed generation is the recovery point. Firefox may cancel module requests when navigation replaces a document; only the destination page's successful load and save checks establish the navigation outcome. See [ADR 0002](docs/decisions/0002-saves.md).
+A frozen page can hold the lock, so the last committed generation is the recovery point. Firefox may cancel module requests when the fixture closes or replaces a document. Mark every owned close and rescan through `test/browser/save-storage.mjs`, `navigatePage`, so cancellation is attributed to that outgoing document; destination-page failures remain errors. Only the destination page's successful load and save checks establish the navigation outcome. See [ADR 0002](docs/decisions/0002-saves.md).
 
 ## Debug and rendering
 

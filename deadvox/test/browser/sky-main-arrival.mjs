@@ -19,6 +19,9 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   const ref = event?.pull_request?.base?.sha ?? 'origin/main';
   const repository = resolve(root, '..');
   const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8' }).trim();
+  if (eventPath) {
+    git(['fetch', '--no-tags', '--depth=1', 'origin', ref]);
+  }
   const base = git(['rev-parse', ref]);
   const overlays = new Map(sources.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
   const server = await createServer({
