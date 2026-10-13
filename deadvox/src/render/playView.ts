@@ -1,5 +1,6 @@
 // Owned play presentation resources and read-only frame projections. Gameplay chooses
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
+import { Vector3 } from 'three';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
@@ -23,7 +24,7 @@ import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CaseEffects } from './caseEffects.ts';
-import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
+import { FLASHLIGHT_DAYLIGHT_SAMPLE_DISTANCE, Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
@@ -174,6 +175,7 @@ export const createPlayView = (
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const flashlight = new Flashlight(scene);
+  const beamDirection = new Vector3();
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
@@ -300,9 +302,17 @@ export const createPlayView = (
       return { sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
-      const skyVisibility = engine.skylight?.at([camera.position.x, camera.position.y, camera.position.z]) ?? 1;
+      const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
+      const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       held.setSkyVisibility(skyVisibility);
-      flashlight.daylightScale = flashlightDaylightScale(sky, skyVisibility);
+      camera.getWorldDirection(beamDirection);
+      const beamLanding: Vec3 = [
+        camera.position.x + beamDirection.x * FLASHLIGHT_DAYLIGHT_SAMPLE_DISTANCE,
+        camera.position.y + beamDirection.y * FLASHLIGHT_DAYLIGHT_SAMPLE_DISTANCE,
+        camera.position.z + beamDirection.z * FLASHLIGHT_DAYLIGHT_SAMPLE_DISTANCE,
+      ];
+      const landingSkyVisibility = engine.skylight?.at(beamLanding) ?? 1;
+      flashlight.daylightScale = flashlightDaylightScale(sky, landingSkyVisibility);
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (sky: ReturnType<typeof skyInWeather>) => {

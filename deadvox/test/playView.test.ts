@@ -73,16 +73,26 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('shares one camera sky-visibility sample with held ambient and flashlight adaptation', () => {
+  it('samples flashlight daylight where the beam lands, while held ambient uses camera visibility', () => {
     const { engine, view } = fixture();
-    const at = vi.fn(() => 0);
+    const samples: Vec3[] = [];
+    const at = vi.fn((position: Vec3) => {
+      samples.push(position);
+      return 0;
+    });
     engine.skylight = { at } as unknown as NonNullable<Engine['skylight']>;
     engine.camera.position.set(2, 1, -3);
     const setSkyVisibility = vi.spyOn(view.held, 'setSkyVisibility');
 
     view.prepareLighting(skyAt(12));
 
-    expect(at).toHaveBeenCalledExactlyOnceWith([2, 1, -3]);
+    expect(at).toHaveBeenCalledTimes(2);
+    const cameraSample = samples[0]!;
+    const beamSample = samples[1]!;
+    expect(cameraSample).toEqual([2, 1, -3]);
+    expect(beamSample[0]).toBe(cameraSample[0]);
+    expect(beamSample[1]).toBe(cameraSample[1]);
+    expect(beamSample[2]).toBeLessThan(cameraSample[2]);
     expect(setSkyVisibility).toHaveBeenCalledExactlyOnceWith(0);
     view.dispose();
   });

@@ -45,6 +45,8 @@ export const FLASHLIGHT_DECAY = 1;
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
 const HALF_BRIGHTNESS = 0.9;
+/** Sample daylight near the beam, where it illuminates the scene rather than the player. */
+export const FLASHLIGHT_DAYLIGHT_SAMPLE_DISTANCE = 3;
 /** How sharply the beam fades around `HALF_BRIGHTNESS`; high enough that night stays ~1 and noon is negligible. */
 const FADE_SHARPNESS = 5;
 
