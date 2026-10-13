@@ -58,6 +58,7 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
   const queue = new HandlingQueue(inventory);
   const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: pose.blockSize,
+    isSolid: () => true,
     pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
     onEjection: (effect) => effects.push(effect),
   });

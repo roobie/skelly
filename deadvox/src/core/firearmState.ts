@@ -31,8 +31,18 @@ export interface FirearmState {
   roundType?: string | undefined;
   /** A pump's tube: cartridge item types in feed order. Magazine-fed firearms feed from their magazine slot. */
   tube?: string[];
-  /** Simulation-clock hull landing cue, committed separately from the already ejected case. */
-  landing?: { at: number; position: Vec3 } | undefined;
+  /** Ejected item awaiting its simulation-clock landing; presentation follows this same endpoint and time. */
+  landing?:
+    | {
+        at: number;
+        startedAtSimSeconds: number;
+        position: Vec3;
+        origin: Vec3;
+        type: string;
+        seed: number;
+        modelId?: string | undefined;
+      }
+    | undefined;
   pendingCase?: PendingCase | undefined;
   cycle?: FirearmCycleState | undefined;
   readying?: FirearmRaiseState | undefined;
@@ -52,7 +62,7 @@ export const snapshotFirearm = (state: FirearmState): FirearmState => {
   };
 };
 
-const assertPumpExtras = ({ tube, landing }: FirearmState): void => {
+const assertFirearmExtras = ({ tube, landing }: FirearmState): void => {
   if (tube && (!Array.isArray(tube) || tube.length > 64 || tube.some((type) => typeof type !== 'string'))) {
     throw new Error('Invalid firearm tube');
   }
@@ -60,8 +70,16 @@ const assertPumpExtras = ({ tube, landing }: FirearmState): void => {
     landing &&
     (!Number.isFinite(landing.at) ||
       landing.at < 0 ||
-      landing.position.length !== 3 ||
-      landing.position.some((value) => !Number.isFinite(value)))
+      !Number.isFinite(landing.startedAtSimSeconds) ||
+      landing.startedAtSimSeconds < 0 ||
+      landing.startedAtSimSeconds > landing.at ||
+      !Number.isSafeInteger(landing.seed) ||
+      landing.seed < 0 ||
+      landing.seed > 0xff_ff_ff_ff ||
+      !landing.type ||
+      [landing.position, landing.origin].some(
+        (vector) => vector.length !== 3 || vector.some((value) => !Number.isFinite(value)),
+      ))
   ) {
     throw new Error('Invalid firearm landing');
   }
@@ -93,7 +111,7 @@ export const assertFirearmState = (state: FirearmState): void => {
   if ((state.roundType !== undefined) !== (state.chamber === 'round')) {
     throw new Error('A loaded chamber needs exactly one cartridge type');
   }
-  assertPumpExtras(state);
+  assertFirearmExtras(state);
   const { cycle } = state;
   assertCycleState(cycle);
   if (cycle?.ejected && state.chamber === 'case') {

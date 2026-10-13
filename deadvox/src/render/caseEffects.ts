@@ -1,6 +1,7 @@
-// Capped, render-only flying spent cases. Their impacts never alter simulation piles.
+// Capped, render-only flying firearm cases. Their impacts never alter simulation piles.
 
 import { Group, type Object3D, Vector3 } from 'three';
+import type { Vec3 } from '../core/coords.ts';
 import { Rng } from '../core/random.ts';
 import type { FirearmShotEffect } from '../game/firearmHandling.ts';
 import { placeholderCaseMesh, resolveCaseModel } from './caseVisual.ts';
@@ -8,34 +9,48 @@ import type { ModelLibrary } from './models.ts';
 
 export const FLYING_CASE_CAP = 32;
 const GRAVITY = 9.81;
-const MAX_AGE = 6;
+
+export const caseFlightPoint = (from: Vec3, to: Vec3, progress: number, duration: number): Vec3 => {
+  const t = Math.max(0, Math.min(1, progress));
+  if (t === 1 || !(duration > 0)) {
+    return [...to];
+  }
+  const elapsed = duration * t;
+  const initialVerticalSpeed = (to[1] - from[1] + (GRAVITY * duration ** 2) / 2) / duration;
+  return [
+    from[0] + (to[0] - from[0]) * t,
+    from[1] + initialVerticalSpeed * elapsed - (GRAVITY * elapsed ** 2) / 2,
+    from[2] + (to[2] - from[2]) * t,
+  ];
+};
 
 interface Particle {
   active: boolean;
-  age: number;
-  bounces: number;
-  position: Vector3;
-  velocity: Vector3;
-  rotation: Vector3;
-  spin: Vector3;
+  startedAtSimSeconds: number;
+  updatedAtSimSeconds: number;
+  landingAt: number;
+  readonly origin: Vector3;
+  readonly landing: Vector3;
+  readonly position: Vector3;
+  readonly rotation: Vector3;
+  readonly spin: Vector3;
   caseModelId: string | undefined;
   visual: Object3D | undefined;
   readonly visuals: Map<string, Object3D>;
   readonly fallbackModels: Set<string>;
 }
 
-const normalize = (v: Vector3): Vector3 => (v.lengthSq() > 0 ? v.normalize() : new Vector3(0, 0, -1));
-
 export class CaseEffects {
   readonly mesh = new Group();
-  private readonly blockSize: number;
   private readonly models: ModelLibrary | undefined;
   private readonly particles: Particle[] = Array.from({ length: FLYING_CASE_CAP }, () => ({
     active: false,
-    age: 0,
-    bounces: 0,
+    startedAtSimSeconds: 0,
+    updatedAtSimSeconds: 0,
+    landingAt: 0,
+    origin: new Vector3(),
+    landing: new Vector3(),
     position: new Vector3(),
-    velocity: new Vector3(),
     rotation: new Vector3(),
     spin: new Vector3(),
     caseModelId: undefined,
@@ -44,8 +59,7 @@ export class CaseEffects {
     fallbackModels: new Set(),
   }));
 
-  constructor(blockSize: number, models?: ModelLibrary) {
-    this.blockSize = blockSize;
+  constructor(_blockSize: number, models?: ModelLibrary) {
     this.models = models;
   }
 
@@ -59,19 +73,14 @@ export class CaseEffects {
     if (!particle) {
       return false;
     }
-    const rng = Rng.stream(effect.seed, 'case-spread-and-spin');
-    const direction = normalize(
-      new Vector3(
-        effect.direction[0] + rng.range(-0.09, 0.09),
-        effect.direction[1] + rng.range(-0.09, 0.16),
-        effect.direction[2] + rng.range(-0.09, 0.09),
-      ),
-    );
+    const rng = Rng.stream(effect.seed, 'case-spin');
     particle.active = true;
-    particle.age = 0;
-    particle.bounces = 0;
+    particle.startedAtSimSeconds = effect.startedAtSimSeconds;
+    particle.updatedAtSimSeconds = effect.startedAtSimSeconds;
+    particle.landingAt = effect.landingAt;
+    particle.origin.set(...effect.origin);
+    particle.landing.set(...effect.landingPosition);
     particle.position.set(...effect.origin);
-    particle.velocity.copy(direction).multiplyScalar(effect.speed * rng.range(0.8, 1.2));
     particle.rotation.set(rng.range(0, Math.PI), rng.range(0, Math.PI), rng.range(0, Math.PI));
     particle.spin.set(rng.range(-24, 24), rng.range(-24, 24), rng.range(-24, 24));
     particle.caseModelId = effect.caseModelId;
@@ -80,22 +89,29 @@ export class CaseEffects {
     return true;
   }
 
-  /** Simple block-axis bounce, then remove the case once it has settled. */
-  update(dt: number, isSolid: (x: number, y: number, z: number) => boolean): void {
-    const steps = Math.max(1, Math.ceil(Math.max(0, dt) / 0.02));
-    const step = Math.max(0, dt) / steps;
+  /** Follows the simulation clock and hides at the exact frame its pile item is committed. */
+  update(simTime: number): void {
     for (const particle of this.particles) {
       if (!particle.active) {
         continue;
       }
       this.upgradeVisual(particle);
-      particle.age += dt;
-      for (let substep = 0; substep < steps; substep++) {
-        this.advance(particle, step, isSolid);
-      }
-      if (particle.age >= MAX_AGE || (particle.bounces > 0 && particle.velocity.length() < 0.22)) {
+      if (simTime >= particle.landingAt) {
         particle.active = false;
+        continue;
       }
+      const duration = particle.landingAt - particle.startedAtSimSeconds;
+      const elapsed = Math.max(0, simTime - particle.startedAtSimSeconds);
+      const progress = duration > 0 ? elapsed / duration : 1;
+      const point = caseFlightPoint(
+        particle.origin.toArray() as Vec3,
+        particle.landing.toArray() as Vec3,
+        progress,
+        duration,
+      );
+      particle.position.set(...point);
+      particle.rotation.addScaledVector(particle.spin, Math.max(0, simTime - particle.updatedAtSimSeconds));
+      particle.updatedAtSimSeconds = simTime;
     }
     this.draw();
   }
@@ -139,44 +155,6 @@ export class CaseEffects {
         particle.visual = model;
       }
     }
-  }
-
-  private advance(particle: Particle, dt: number, isSolid: (x: number, y: number, z: number) => boolean): void {
-    particle.velocity.y -= GRAVITY * dt;
-    let hitHorizontal = false;
-    let hitGround = false;
-    for (const axis of [0, 1, 2] as const) {
-      const next = particle.position.clone();
-      next.setComponent(axis, next.getComponent(axis) + particle.velocity.getComponent(axis) * dt);
-      const block = [
-        Math.floor(next.x / this.blockSize),
-        Math.floor(next.y / this.blockSize),
-        Math.floor(next.z / this.blockSize),
-      ];
-      if (!isSolid(block[0]!, block[1]!, block[2]!)) {
-        particle.position.setComponent(axis, next.getComponent(axis));
-        continue;
-      }
-      particle.velocity.setComponent(axis, -particle.velocity.getComponent(axis) * (axis === 1 ? 0.22 : 0.35));
-      particle.bounces += 1;
-      if (axis === 1) {
-        hitGround = true;
-      } else {
-        hitHorizontal = true;
-      }
-    }
-    if (hitHorizontal) {
-      particle.velocity.x *= 0.72;
-      particle.velocity.z *= 0.72;
-    }
-    if (hitGround) {
-      particle.velocity.x *= 0.58;
-      particle.velocity.z *= 0.58;
-      if (particle.velocity.y < 0.35) {
-        particle.velocity.y = 0;
-      }
-    }
-    particle.rotation.addScaledVector(particle.spin, dt);
   }
 
   dispose(): void {

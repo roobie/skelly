@@ -174,7 +174,7 @@ describe('real pump ammunition', () => {
     );
   });
 
-  it('does not spill an ejected shell onto an unsupported neighboring pile', () => {
+  it('discards an ejected shell rather than spilling onto an unsupported neighboring pile', () => {
     const probe = fixture();
     probe.load(0);
     probe.rack(1);
@@ -204,11 +204,12 @@ describe('real pump ammunition', () => {
       expect(f.inventory.add(f.inventory.create(fillerType), { kind: 'pile', pos: landing! })).toBe(true);
     }
 
-    const refusal = f.mechanics.cock(f.gun.uid, 3);
-
-    expect(refusal).toBeDefined();
-    expect(f.gun.firearm?.chamber).toBe('round');
+    expect(f.mechanics.cock(f.gun.uid, 3)).toBeUndefined();
+    const duration = firearmHandlingFor(f.gun, content).action.hand.durationSimSeconds;
+    f.finish(duration, 3 + duration);
+    expect(f.gun.firearm?.chamber).toBe('empty');
     expect([...f.inventory.piles.values()].flatMap(({ items }) => items)).toHaveLength(PILE_GRID.w * PILE_GRID.h);
+    expect(f.effects).toHaveLength(1);
   });
 
   it('settles a spent case in the player column when its projected endpoint column is unknown', () => {
@@ -245,9 +246,7 @@ describe('real pump ammunition', () => {
     expect(f.effects).toHaveLength(1);
   });
 
-  it('ejection spills from a full landing pile and refuses a rack when all drop spots are full', () => {
-    // Discover the landing through a successful public rack, not a golden coordinate
-    // or a duplicated flight estimate. The actual scenarios use independent inventories.
+  it('never refuses a rack for pile capacity and discards a case when every supported spot is full', () => {
     const probe = fixture();
     probe.load(0);
     probe.rack(1);
@@ -256,6 +255,7 @@ describe('real pump ammunition', () => {
     probe.finish(duration, 3 + duration);
     const landing = [...probe.inventory.piles.values()][0]?.pos;
     expect(landing).toBeDefined();
+
     const fillerType = 'owned_pile_filler';
     const content = {
       ...registry,
@@ -276,85 +276,43 @@ describe('real pump ammunition', () => {
         }
       }
     };
-    const scenarios = [
-      { spent: false, blocked: false },
-      { spent: false, blocked: true },
-      { spent: true, blocked: false },
-      { spent: true, blocked: true },
-    ];
-    const isSpillSpot = (pos: [number, number, number]) =>
-      pos.some((value, axis) => value !== landing![axis]) &&
-      dropSpots(landing!).some((spot) => spot.every((value, axis) => value === pos[axis]));
-    const capture = (f: ReturnType<typeof fixture>) =>
-      structuredClone({
-        inventory: f.inventory.snapshotState(),
-        firearm: f.gun.firearm,
-        jobs: f.queue.jobs,
-      });
-    const attemptRack = (f: ReturnType<typeof fixture>) => {
-      try {
-        const reason = f.mechanics.cock(f.gun.uid, 4);
-        if (reason === undefined) {
-          f.finish(duration, 4 + duration);
-        }
-        return { reason, error: undefined };
-      } catch (error) {
-        return { reason: undefined, error };
-      }
-    };
-    const outcomes = scenarios.map(({ spent, blocked }) => {
+
+    const spill = fixture(content);
+    spill.load(0);
+    spill.rack(1);
+    fill(spill.inventory, [landing!]);
+    expect(spill.mechanics.cock(spill.gun.uid, 3)).toBeUndefined();
+    spill.finish(duration, 3 + duration);
+    const spilled = [...spill.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === shellType),
+    );
+    expect(spilled).toBeDefined();
+    expect(spilled!.pos).not.toEqual(landing);
+    expect(dropSpots(landing!).some((spot) => spot.every((value, axis) => value === spilled!.pos[axis]))).toBe(true);
+
+    for (const spent of [false, true]) {
       const f = fixture(content);
       f.load(0);
       f.rack(1);
       if (spent) {
         expect(f.fire(3)).toBe(true);
       }
-      const positions = blocked ? dropSpots(landing!) : [landing!];
-      fill(f.inventory, positions);
-      const before = capture(f);
-      const { reason, error } = attemptRack(f);
+      fill(f.inventory, dropSpots(landing!));
+      expect(f.mechanics.cock(f.gun.uid, 4)).toBeUndefined();
+      f.finish(duration, 4 + duration);
       const outputType = spent ? hullType : shellType;
-      const output = [...f.inventory.piles.values()].filter((pile) =>
-        pile.items.some(({ item }) => item.type === outputType),
+      expect(f.effects).toHaveLength(1);
+      expect(f.gun.firearm?.chamber).toBe('empty');
+      expect(f.gun.firearm?.landing).toBeUndefined();
+      expect([...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item.type))).not.toContain(
+        outputType,
       );
-      return {
-        spent,
-        blocked,
-        error,
-        reason,
-        before,
-        after: capture(f),
-        ejected: f.effects.length === 1,
-        spilled: output.length === 1 && isSpillSpot(output[0]!.pos),
-      };
-    });
-    // Collect both live and fired outcomes before asserting, so pristine evidence
-    // exercises both former throwing branches rather than stopping at the first.
-    expect(outcomes.map((outcome) => outcome.error)).toEqual(outcomes.map(() => undefined));
-    for (const outcome of outcomes) {
-      if (outcome.blocked) {
-        expect(outcome.reason).toBeDefined();
-        expect(outcome.after).toEqual(outcome.before); // no chamber/UID/job admission side effects
-        expect(outcome.ejected).toBe(false);
-      } else {
-        expect(outcome.reason).toBeUndefined();
-        expect(outcome.ejected).toBe(true);
-        expect(outcome.spilled).toBe(true);
+      for (const pile of f.inventory.piles.values()) {
+        expect(pile.items.every(({ item }) => item.type === fillerType)).toBe(true);
+        expect(dropSpots(landing!).some((spot) => spot.every((value, axis) => value === pile.pos[axis]))).toBe(true);
+        expect(f.inventory.registry.items.has(fillerType)).toBe(true);
       }
     }
-    // Another actor/debug spawn can change a pile while an admitted rack runs.
-    // Completion must revalidate without clearing the chamber or throwing.
-    const concurrent = fixture(content);
-    concurrent.load(0);
-    concurrent.rack(1);
-    expect(concurrent.mechanics.cock(concurrent.gun.uid, 4)).toBeUndefined();
-    fill(concurrent.inventory, dropSpots(landing!));
-    const beforeCompletion = concurrent.inventory.snapshotState();
-    const result = concurrent.queue.tick(duration);
-    concurrent.mechanics.advanceTo(4 + duration);
-    expect(concurrent.inventory.snapshotState()).toEqual(beforeCompletion);
-    expect(concurrent.effects).toEqual([]);
-    expect(result.failed.length).toBeGreaterThan(0);
   });
   it('cannot load authored shells from a sealed unopened box', () => {
     const f = fixture();
@@ -597,10 +555,16 @@ describe('real pump ammunition', () => {
     expect(f.effects).toHaveLength(1);
     expect(f.effects[0]).toMatchObject({ ...expected, caseModelId: registry.items.get(shellType)!.model });
     expect(f.gun.firearm?.chamber).toBe('empty');
+    expect([...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item.type))).not.toContain(
+      shellType,
+    );
+    const landingAt = f.gun.firearm?.landing?.at;
+    expect(landingAt).toBeDefined();
+    const duration = model.action!.hand.durationSimSeconds;
+    f.finish(landingAt! - (3 + at), landingAt!);
     const ground = [...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item));
     expect(ground.map((item) => [item.type, item.count])).toEqual([[shellType, 1]]);
-    const duration = model.action!.hand.durationSimSeconds;
-    f.finish(duration - at, 3 + duration);
+    f.finish(Math.max(0, 3 + duration - landingAt!), 3 + duration);
     expect(f.gun.firearm?.chamber).toBe('empty');
     expect(f.fire(5)).toBe(false);
     expect(f.effects).toHaveLength(1);
@@ -787,6 +751,7 @@ describe('real pump ammunition', () => {
     const mechanics = new FirearmMechanics(restored, new HandlingQueue(restored), {
       blockSize: pose.blockSize,
       pose: () => pose,
+      isSolid: (_x, y, _z) => y < 0,
       onEjection: () => undefined,
       onSound: (event, _position, time) => cues.push({ event, time }),
     });

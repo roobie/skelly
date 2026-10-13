@@ -95,7 +95,16 @@ if (mode === 'delayed') {
 }
 const effects = new CaseEffects(0.5, models);
 scene.add(effects.mesh);
-const shot = { origin: [0.25, 1, 0.25], direction: [1, 0.2, 0], speed: 3.5, seed: 13, caseModelId: modelDef.id };
+const shot = {
+  origin: [0.25, 1, 0.25],
+  direction: [1, 0.2, 0],
+  speed: 3.5,
+  seed: 13,
+  landingPosition: [1.5, 0.5, 0.25],
+  startedAtSimSeconds: 0,
+  landingAt: 0.48,
+  caseModelId: modelDef.id,
+};
 const beforeFlightClones = groundClones;
 for (let wave = 0; wave < 100; wave++) {
   for (let slot = 0; slot < FLYING_CASE_CAP; slot++) {
@@ -103,7 +112,7 @@ for (let wave = 0; wave < 100; wave++) {
   }
   if (effects.spawn(shot)) throw new Error('Flying case pool exceeded cap');
   render();
-  effects.update(6.1, () => false);
+  effects.update(0.48);
 }
 const flight = { clones: groundClones - beforeFlightClones, active: effects.activeCount, visuals: effects.mesh.children.length };
 const meshesOnRemoval = instances().length;

@@ -87,7 +87,7 @@ import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
-import { firearmHandlingFor } from './firearmHandling.ts';
+import { type FirearmShotEffect, firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
@@ -165,6 +165,31 @@ import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const STARTUP_MESH_RADIUS = 1;
+
+const resumeCaseEffects = (inventory: Inventory, spawn: (effect: FirearmShotEffect) => boolean): void => {
+  for (const { item } of inventory.items()) {
+    const landing = item.firearm?.landing;
+    if (!landing) {
+      continue;
+    }
+    const delta: Vec3 = [
+      landing.position[0] - landing.origin[0],
+      landing.position[1] - landing.origin[1],
+      landing.position[2] - landing.origin[2],
+    ];
+    const distance = Math.hypot(...delta);
+    spawn({
+      origin: landing.origin,
+      direction: distance > 0 ? (delta.map((axis) => axis / distance) as Vec3) : [0, 1, 0],
+      speed: distance / Math.max(landing.at - landing.startedAtSimSeconds, 1e-9),
+      seed: landing.seed,
+      landingPosition: landing.position,
+      startedAtSimSeconds: landing.startedAtSimSeconds,
+      landingAt: landing.at,
+      ...(landing.modelId ? { caseModelId: landing.modelId } : {}),
+    });
+  }
+};
 
 interface PlayErrorReportPorts {
   readonly config: Engine['config'];
@@ -983,6 +1008,7 @@ export const startPlay = (
     ),
   );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
+  resumeCaseEffects(inventory, (effect) => caseEffects.spawn(effect));
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -3317,7 +3343,7 @@ export const startPlay = (
     updateBodyNotices();
     advancePendingItemThrow();
     syncThrowingStance();
-    caseEffects.update(dt, engine.isSolid);
+    caseEffects.update(sim.time);
     updateGore(dt);
     impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = realNow() - mark;

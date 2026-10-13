@@ -185,6 +185,9 @@ export interface FirearmShotEffect {
   readonly direction: Vec3;
   readonly speed: number;
   readonly seed: number;
+  readonly landingPosition: Vec3;
+  readonly startedAtSimSeconds: number;
+  readonly landingAt: number;
   readonly caseModelId?: string;
 }
 
@@ -666,9 +669,8 @@ export class FirearmMechanics {
     if (!emission) {
       return 'No held ejection pose';
     }
-    const landing = this.landing(emission);
-    const drop = landing ? this.ejectionDrop(type, landing) : undefined;
-    return !drop || drop.plan.ok ? undefined : drop.plan.reason;
+    // Case capacity must never jam a charge; the landing-time placement can spill or discard it.
+    return undefined;
   }
 
   private isPump(item: Item): boolean {
@@ -890,7 +892,7 @@ export class FirearmMechanics {
       : undefined;
   }
 
-  /** Puts an item leaving the held gun into a pocket, or onto the ground at the player's feet. */
+  /** Puts an ejected item in its supported landing pile, with the bounded spill search as fallback. */
   private stow(gun: Item, item: Item): boolean {
     const feet = this.pose(gun.uid)?.feet;
     const target = feet && stowTarget(this.inventory, item, feet);
@@ -966,9 +968,16 @@ export class FirearmMechanics {
   private advanceItem(uid: number, time: number): void {
     const item = this.inventory.itemByUid(uid);
     const landing = item?.firearm?.landing;
-    if (landing && time + 1e-9 >= landing.at) {
-      item!.firearm!.landing = undefined;
-      this.onSound('shotgun_hull_drop', landing.position, landing.at);
+    if (item && landing && time + 1e-9 >= landing.at) {
+      const placement = this.placeEjected(landing.type, landing.position);
+      item.firearm!.landing = undefined;
+      if (
+        !placement &&
+        this.isPump(item) &&
+        landing.type === spentCaseItemId(firearmHandlingFor(item, this.inventory.registry).calibre)
+      ) {
+        this.onSound('shotgun_hull_drop', landing.position, landing.at);
+      }
     }
     const cycle = item?.firearm?.cycle;
     if (!(item && cycle)) {
@@ -1115,8 +1124,8 @@ export class FirearmMechanics {
   }
 
   /**
-   * Metadata-only placement probe: never allocate a UID during read-only rack admission. An ejected item lands in
-   * the pile of the block it falls on, so cases are saved per block (DESIGN.md, "Spent cases per block").
+   * At impact, place the case in its landing pile or the first supported spill spot with room. A metadata-only probe
+   * avoids allocating an item UID until a destination is known (DESIGN.md, "Spent cases per block").
    */
   private ejectionDrop(type: string, landing: Vec3): ReturnType<typeof dropTarget> {
     const item = { uid: 0, type, count: 1, condition: 1 };
@@ -1163,20 +1172,32 @@ export class FirearmMechanics {
     const emission = this.emission(item, data, pose);
     const type = state.roundType!;
     const landing = this.landing(emission);
-    const placement = this.placeEjected(type, landing);
-    if (placement) {
-      return placement;
-    }
     state.chamber = 'empty';
     state.roundType = undefined;
     state.cycle!.ejected = true;
+    if (!landing) {
+      return undefined;
+    }
     const seed = Math.floor(Rng.stream(item.uid, `live-shell:${state.cycle!.startedAt}`).next() * 4_294_967_296) >>> 0;
     const modelId = defOf(this.inventory.registry, type).model;
+    const startedAt = this.ejectionAt(state, data);
+    state.landing = {
+      at: startedAt + CASE_FLIGHT_SECONDS,
+      startedAtSimSeconds: startedAt,
+      position: [...landing],
+      origin: [...emission.origin],
+      type,
+      seed,
+      ...(modelId ? { modelId } : {}),
+    };
     this.onEjection({
       origin: emission.origin,
       direction: emission.direction,
       speed: CASE_SPEED,
       seed,
+      landingPosition: landing,
+      startedAtSimSeconds: startedAt,
+      landingAt: startedAt + CASE_FLIGHT_SECONDS,
       ...(modelId ? { caseModelId: modelId } : {}),
     });
     return undefined;
@@ -1196,6 +1217,13 @@ export class FirearmMechanics {
     );
   }
 
+  private ejectionAt(state: FirearmState, data: FirearmHandlingData): number {
+    const cycle = state.cycle!;
+    const duration = cycle.duration ?? actionCycleSeconds(data.action, cycle.mode);
+    const timeScale = duration / actionCycleSeconds(data.action, cycle.mode);
+    return cycle.startedAt + ejectSeconds(data.action, cycle.mode) * timeScale;
+  }
+
   private ejectCase(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
     const pending = state.pendingCase;
     if (!pending) {
@@ -1205,27 +1233,32 @@ export class FirearmMechanics {
     const emission = pose ? this.emission(item, data, pose) : pending;
     const landing = this.landing(emission);
     const type = spentCaseItemId(data.calibre);
-    const placement = this.placeEjected(type, landing);
-    if (placement) {
-      return placement;
-    }
     state.chamber = 'empty';
     state.pendingCase = undefined;
     // Commit the transition before output: a drawing failure must never double its case.
     state.cycle!.ejected = true;
-    if (this.isPump(item) && landing) {
+    if (landing) {
+      const startedAt = this.ejectionAt(state, data);
       state.landing = {
-        at: state.cycle!.startedAt + ejectSeconds(data.action, 'hand') + CASE_FLIGHT_SECONDS,
+        at: startedAt + CASE_FLIGHT_SECONDS,
+        startedAtSimSeconds: startedAt,
         position: [...landing],
+        origin: [...emission.origin],
+        type,
+        seed: pending.seed,
+        ...(data.caseModelId ? { modelId: data.caseModelId } : {}),
       };
+      this.onEjection({
+        origin: emission.origin,
+        direction: emission.direction,
+        speed: CASE_SPEED,
+        seed: pending.seed,
+        landingPosition: landing,
+        startedAtSimSeconds: startedAt,
+        landingAt: startedAt + CASE_FLIGHT_SECONDS,
+        ...(data.caseModelId ? { caseModelId: data.caseModelId } : {}),
+      });
     }
-    this.onEjection({
-      origin: emission.origin,
-      direction: emission.direction,
-      speed: CASE_SPEED,
-      seed: pending.seed,
-      ...(data.caseModelId ? { caseModelId: data.caseModelId } : {}),
-    });
     return undefined;
   }
 }

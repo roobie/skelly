@@ -569,8 +569,11 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
     runtime.frame(frameSeconds);
   }
 
-  expect(spentCases()).toHaveLength(1);
   expect(runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle).toBeUndefined();
+  const landingAt = rifle.firearm?.landing?.at;
+  expect(landingAt).toBeDefined();
+  runtime.firearms.advanceTo(landingAt!);
+  expect(spentCases()).toHaveLength(1);
 });
 
 it('a knockout codec save preserves an automatic cycle’s remaining frames', async () => {
@@ -629,7 +632,42 @@ it('a knockout codec save preserves an automatic cycle’s remaining frames', as
   expect(framesUntilCycleEnds(resumed)).toBe(framesUntilCycleEnds(continuous.runtime));
 });
 
-it('a codec save before ejectAt restores one pending case and ejects it exactly once', async () => {
+it('a mid-flight codec save resumes the case landing at the same simulation time', async () => {
+  const original = session([]);
+  const rifle = sessionRifle(original);
+  const { action, calibre } = firearmHandlingFor(rifle, registry);
+  if (!action.fire) {
+    throw new Error('AR save fixture needs exported automatic action data');
+  }
+  const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
+  expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
+  original.firearms.advanceTo(ejectTime);
+  const pending = rifle.firearm?.landing;
+  expect(pending).toBeDefined();
+  const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
+  const bytes = await encodeSave(saved, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  const resumed = session([], (await decodeSave(bytes, { version, contentLookup })).snapshot);
+  const cases = (runtime: ReturnType<typeof session>) =>
+    [...runtime.inventory.items()]
+      .filter(({ item }) => item.type === spentCaseItemId(calibre))
+      .map(({ item: { uid, count } }) => ({ uid, count }));
+  const resumedLanding = resumed.inventory.itemByUid(rifle.uid)?.firearm?.landing;
+  expect(resumedLanding).toEqual(pending);
+  expect(cases(original)).toEqual([]);
+  expect(cases(resumed)).toEqual([]);
+  resumed.firearms.advanceTo(pending!.at - 1e-6);
+  expect(cases(resumed)).toEqual([]);
+  resumed.firearms.advanceTo(pending!.at);
+  original.firearms.advanceTo(pending!.at);
+  expect(cases(resumed)).toEqual(cases(original));
+  expect(cases(resumed)).toEqual([{ uid: expect.any(Number), count: 1 }]);
+});
+
+it('a codec save before ejectAt restores one pending case and lands it exactly once', async () => {
   const originalEffects: FirearmShotEffect[] = [];
   const original = session(originalEffects);
   const rifle = sessionRifle(original);
@@ -660,13 +698,20 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
   restored.firearms.advanceTo(ejectTime - 1e-6);
   expect(cases(restored)).toEqual([]);
   restored.firearms.advanceTo(ejectTime);
+  const landingAt = restored.inventory.itemByUid(rifle.uid)?.firearm?.landing?.at;
+  expect(landingAt).toBeDefined();
+  expect(cases(restored)).toEqual([]);
+  restored.firearms.advanceTo(landingAt! - 1e-6);
+  expect(cases(restored)).toEqual([]);
+  restored.firearms.advanceTo(landingAt!);
   const ejected = cases(restored);
   expect(ejected).toEqual([{ uid: expect.any(Number), count: 1 }]);
   restored.firearms.advanceTo(cycleTime);
   restored.firearms.advanceTo(cycleTime * 2);
   expect(cases(restored)).toEqual(ejected);
   expect(restoredEffects).toHaveLength(1);
-  original.firearms.advanceTo(cycleTime * 2);
+  original.firearms.advanceTo(ejectTime);
+  original.firearms.advanceTo(landingAt!);
   expect(cases(original)).toEqual(ejected);
   expect(restoredEffects).toEqual(originalEffects);
   expect(restored.audioState()).toEqual(pickerBefore);
