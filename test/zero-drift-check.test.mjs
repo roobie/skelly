@@ -53,6 +53,9 @@ before(() => {
       '## Escaped \\_name\\_',
       '## Doubled \\\\_name_',
       '## `<!-- literal -->`',
+      '[^unused]:',
+      '    ## Phantom',
+      '    ## Duplicate',
       '<!--',
       '## Phantom',
       '-->',
@@ -209,12 +212,12 @@ describe('zero-drift symbol check', () => {
 
 describe('zero-drift section cues', () => {
   const tracked = new Set(['docs/anchors.md', 'src/fixture.yaml', 'engine/src/known.ts']);
-  const sections = (body, path = docPath) =>
+  const sections = (body, path = docPath, trackedFiles = tracked) =>
     checkDocument({
       path,
       text: path.endsWith('.md') ? document(body) : body,
       root,
-      tracked,
+      tracked: trackedFiles,
       pythonReadIf: new Map([[path, ['read this']]]),
     });
 
@@ -267,8 +270,32 @@ describe('zero-drift section cues', () => {
     }
   });
 
-  it('keeps GFM table cells separate while scanning cue syntax', () => {
-    assert.deepEqual(sections(`| ${code('docs/anchors.md')} | ${code('API')} |`), []);
+  it('resolves reference links through definitions and checks their destinations and code labels', () => {
+    assert.deepEqual(sections('[target][ref]\n\n[ref]: docs/anchors.md#anchors'), []);
+    assert.ok(checks(sections('[target][ref]\n\n[ref]: docs/anchors.md#missing')).includes('section'));
+    assert.ok(checks(sections('[target][ref]\n\n[ref]: docs/missing.md')).includes('path'));
+    assert.ok(
+      checks(
+        sections('[`missing`][ref]\n\n[ref]: src/known.ts', docPath, new Set([...tracked, 'src/known.ts'])),
+      ).includes('symbol'),
+    );
+    assert.deepEqual(sections('[target][undefined]'), []);
+  });
+
+  it('does not index headings in unreferenced footnotes or let them take slug suffixes', () => {
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#anchors')), []);
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#phantom'))).includes('section'));
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#duplicate-2'))).includes('section'));
+  });
+
+  it('keeps cues in distinct cells of a real GFM table', () => {
+    const failures = sections(
+      `| Target | Cue |\n| --- | --- |\n| ${cue('docs/anchors.md', 'API')} | ${cue('docs/anchors.md', 'Missing')} |\n| ${['docs/missing', 'md'].join('.')} | "API" |`,
+    );
+    assert.deepEqual(
+      failures.filter(({ check }) => check === 'section').map(({ text }) => text),
+      ['docs/anchors.md, "Missing"'],
+    );
   });
 
   it('checks explicit section cues in strings and comments but ignores unformatted strings and inline examples', () => {

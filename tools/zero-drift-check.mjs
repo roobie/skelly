@@ -153,7 +153,7 @@ function hiddenCueNode(node, { skipLinks, skipInlineCode }) {
     node.type === 'yaml' ||
     node.type === 'code' ||
     isHtmlComment(node) ||
-    (skipLinks && node.type === 'link') ||
+    (skipLinks && ['link', 'linkReference'].includes(node.type)) ||
     (skipInlineCode && node.type === 'inlineCode')
   );
 }
@@ -206,10 +206,22 @@ function markdownCueDocument(tree) {
 }
 
 function markdownLinks(tree) {
+  const definitions = new Map();
+  walkMarkdown(tree, (node) => {
+    if (node.type === 'definition') {
+      definitions.set(node.identifier, node);
+    }
+  });
+
   const links = [];
   walkMarkdown(tree, (node) => {
     if (node.type === 'link') {
-      links.push(node.url);
+      links.push({ url: node.url, children: node.children ?? [] });
+    } else if (node.type === 'linkReference') {
+      const definition = definitions.get(node.identifier);
+      if (definition) {
+        links.push({ url: definition.url, children: node.children ?? [] });
+      }
     }
   });
   return links;
@@ -356,7 +368,7 @@ function pathCandidates(visible, markdown) {
     }
   }
   const destinations = markdown
-    ? markdownLinks(markdown)
+    ? markdownLinks(markdown).map((link) => link.url)
     : [...visible.matchAll(LINK)].map((match) => linkDestination(match[1]));
   for (const raw of destinations) {
     if (!raw || raw.startsWith('/')) {
@@ -426,18 +438,36 @@ function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
   }
 }
 
-function checkSymbols({ path, visible, tree, failures }) {
+function checkSymbols({ path, visible, markdown, tree, failures }) {
   for (const match of visible.matchAll(SYMBOL_PAIR)) {
     if (pathValue(match[1])?.endsWith('.md')) {
       continue;
     }
     checkSymbolCue({ path, symbol: match[2], rawPath: match[1], tree, failures });
   }
-  for (const match of visible.matchAll(SYMBOL_LINK)) {
-    if (match[2].includes('#') || match[1] === match[2].split('/').at(-1)) {
+  const links = markdown
+    ? markdownLinks(markdown)
+    : [...visible.matchAll(SYMBOL_LINK)].map((match) => ({
+        url: linkDestination(match[2]),
+        children: [{ type: 'inlineCode', value: match[1] }],
+      }));
+  for (const link of links) {
+    if (link.url.includes('#') || link.url.endsWith('.md')) {
       continue;
     }
-    checkSymbolCue({ path, symbol: match[1], rawPath: match[2], tree, failures });
+    const codeLabels = [];
+    for (const child of link.children) {
+      walkMarkdown(child, (node) => {
+        if (node.type === 'inlineCode') {
+          codeLabels.push(node.value);
+        }
+      });
+    }
+    for (const symbol of codeLabels) {
+      if (symbol !== link.url.split('/').at(-1)) {
+        checkSymbolCue({ path, symbol, rawPath: link.url, tree, failures });
+      }
+    }
   }
 }
 
@@ -475,34 +505,90 @@ function parsedMarkdownFor(target, tree) {
   return tree.markdown.get(target);
 }
 
-function boldLeadIns(markdown) {
+function isUnrenderedFootnote(node, renderedFootnotes) {
+  return node.type === 'footnoteDefinition' && !renderedFootnotes.has(node.identifier);
+}
+
+function firstBoldLeadIn(node) {
+  if (node.type !== 'paragraph') {
+    return;
+  }
+  const children = node.children ?? [];
+  const first = children[0]?.type === 'text' && !children[0].value.trim() ? children[1] : children[0];
+  return first?.type === 'strong' ? renderedText(first) : undefined;
+}
+
+function boldLeadIns(markdown, renderedFootnotes = new Set()) {
   const labels = [];
-  walkMarkdown(markdown, (node) => {
-    if (node.type !== 'paragraph') {
+  const visit = (node) => {
+    if (isUnrenderedFootnote(node, renderedFootnotes)) {
       return;
     }
-    const children = node.children ?? [];
-    const first = children[0]?.type === 'text' && !children[0].value.trim() ? children[1] : children[0];
-    if (first?.type === 'strong') {
-      labels.push(renderedText(first));
+    const label = firstBoldLeadIn(node);
+    if (label) {
+      labels.push(label);
+    }
+    for (const child of node.children ?? []) {
+      visit(child);
+    }
+  };
+  visit(markdown);
+  return labels;
+}
+
+function collectRenderedContent(node, headings, footnoteReferences) {
+  if (node.type === 'footnoteDefinition') {
+    return;
+  }
+  if (node.type === 'heading') {
+    headings.push(renderedText(node));
+  }
+  if (node.type === 'footnoteReference') {
+    footnoteReferences.push(node.identifier);
+  }
+  for (const child of node.children ?? []) {
+    collectRenderedContent(child, headings, footnoteReferences);
+  }
+}
+
+function renderedMarkdownHeadings(markdown) {
+  const definitions = new Map();
+  walkMarkdown(markdown, (node) => {
+    if (node.type === 'footnoteDefinition') {
+      definitions.set(node.identifier, node);
     }
   });
-  return labels;
+  const headings = [];
+  const footnoteReferences = [];
+  collectRenderedContent(markdown, headings, footnoteReferences);
+  const renderedFootnotes = new Set();
+  for (const identifier of footnoteReferences) {
+    if (renderedFootnotes.has(identifier)) {
+      continue;
+    }
+    renderedFootnotes.add(identifier);
+    const definition = definitions.get(identifier);
+    for (const child of definition?.children ?? []) {
+      collectRenderedContent(child, headings, footnoteReferences);
+    }
+  }
+  return { headings, renderedFootnotes };
+}
+
+function markdownAnchors(markdown) {
+  const { headings, renderedFootnotes } = renderedMarkdownHeadings(markdown);
+  const labels = boldLeadIns(markdown, renderedFootnotes);
+  const slugger = new GithubSlugger();
+  const slugs = new Set();
+  for (const heading of headings) {
+    slugs.add(slugger.slug(heading));
+  }
+  return { names: new Set([...headings, ...labels].map(normalizeAnchor)), slugs };
 }
 
 function anchorsFor(target, tree) {
   if (!tree.anchors.has(target)) {
-    const markdown = parsedMarkdownFor(target, tree);
-    const headings = [];
-    walkMarkdown(markdown, (node) => {
-      if (node.type === 'heading') {
-        headings.push(renderedText(node));
-      }
-    });
-    const labels = boldLeadIns(markdown);
-    const slugger = new GithubSlugger();
-    const slugs = new Set(headings.map((heading) => slugger.slug(heading)));
-    tree.anchors.set(target, { names: new Set([...headings, ...labels].map(normalizeAnchor)), slugs });
+    tree.anchors.set(target, markdownAnchors(parsedMarkdownFor(target, tree)));
   }
   return tree.anchors.get(target);
 }
@@ -646,7 +732,9 @@ function checkSections(context) {
       add(failures, path, 'section_form', match[0]);
     }
   }
-  const links = markdown ? markdownLinks(markdown) : [...visible.matchAll(LINK)].map((match) => match[1].trim());
+  const links = markdown
+    ? markdownLinks(markdown).map((link) => link.url)
+    : [...visible.matchAll(LINK)].map((match) => match[1].trim());
   for (const raw of links) {
     checkSectionLink(raw, context);
   }
@@ -769,7 +857,7 @@ function checkPaths({ path, visible, markdown, tree, failures }) {
       }
     }
   }
-  checkSymbols({ path, visible, tree, failures });
+  checkSymbols({ path, visible, markdown, tree, failures });
 }
 
 export function checkDocument({
