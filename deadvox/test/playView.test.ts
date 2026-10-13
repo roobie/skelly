@@ -1,17 +1,24 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PerspectiveCamera, Scene } from 'three';
+import { PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import type { Body } from '../src/core/physics.ts';
+import { raycast } from '../src/core/raycast.ts';
 import { skyAt } from '../src/core/sky.ts';
+import type { SkyBounds } from '../src/core/skylight.ts';
+import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
+import type { SkySnapshot } from '../src/core/skySnapshot.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { createPlayView } from '../src/render/playView.ts';
+import { Skylight } from '../src/render/skylight.ts';
+import { skyWorldFixture } from './fixtures/skyWorld.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -58,6 +65,65 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
   };
 };
 
+const restingHands = {
+  right: { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 },
+  left: { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 },
+};
+
+function litWorld(geometry: 'doorway' | 'near-wall') {
+  const box: SkyBounds = geometry === 'doorway' ? { min: [8, 1, 8], max: [23, 7, 25] } : { min: [-10, 1, -10], max: [11, 7, 13] };
+  const owner = skyWorldFixture([box]);
+  if (geometry === 'doorway') {
+    for (let y = 2; y < 6; y++) for (let z = 15; z <= 17; z++) owner.world.setBlock(8, y, z, 0);
+    for (let x = -2; x <= 2; x++) for (let z = 14; z <= 18; z++) owner.world.setBlock(x, 0, z, owner.wall);
+  } else {
+    for (let x = -10; x <= 10; x++) for (let y = 1; y < 7; y++) for (let z = -10; z < 13; z++) owner.world.setBlock(x, y, z, 0);
+    for (let x = -10; x <= 10; x++) for (let z = -10; z < 13; z++) owner.world.setBlock(x, 0, z, owner.wall);
+    for (let x = -10; x <= 10; x++) for (let z = 0; z < 13; z++) owner.world.setBlock(x, 6, z, owner.wall);
+    for (let x = -10; x <= 10; x++) for (let y = 1; y < 6; y++) for (let z = -6; z <= -4; z++) owner.world.setBlock(x, y, z, owner.wall);
+  }
+  const pending: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
+  const scene = new Scene();
+  const camera = new PerspectiveCamera();
+  const cameraPosition: Vec3 = geometry === 'doorway' ? [0.25, 2.12, 8.25] : [0.25, 2.12, 0.25];
+  const aim: Vec3 = geometry === 'doorway' ? [1, 0, 0] : [0, 0, -1];
+  camera.position.set(...cameraPosition);
+  camera.lookAt(camera.position.clone().add(new Vector3(...aim)));
+  const sky = new Skylight([box], { blockSize: 0.5, top: 31, viewRadiusM: 64 }, {
+    ...owner, bottom: 0, clock: () => 0,
+    submit: (input, receive) => { pending.push({ input, receive }); return true; },
+  });
+  const position = camera.position.toArray().map((axis) => axis / 0.5) as Vec3;
+  sky.update(scene, position);
+  const job = pending.shift()!;
+  job.receive(buildSkyResult(job.input), 0);
+  sky.update(scene, position);
+  expect(sky.inspect()[0]).toMatchObject({ complete: true, current: true, resident: true });
+  const inventory = new Inventory({ ...registry, models: new Map() });
+  const flashlight = inventory.create('flashlight');
+  expect(inventory.add(flashlight, { kind: 'hand', side: 'left' })).toBe(true);
+  expect(toggleLight(inventory.registry, flashlight, 0)).toBeUndefined();
+  const engine = {
+    config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' }, registry: inventory.registry, scene, camera,
+    sky: {}, skylight: sky, isSolid: owner.knownOpaque,
+    renderer: { toneMapping: 0, toneMappingExposure: 1 },
+    meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
+    mood: { post: false, restore: vi.fn(), render: vi.fn((draw: () => void) => draw()) },
+    shadows: { torchOn: true, restore: vi.fn(), attachTorch: vi.fn() },
+  } as unknown as Engine;
+  const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+  const daylight = skyAt(12);
+  const updateFrame = () => {
+    view.updateHeld(0, restingHands, flashlight);
+    view.prepareLighting(daylight);
+    view.updateHeld(0, restingHands, flashlight);
+  };
+  updateFrame();
+  expect(view.held.lensOf(flashlight, new Vector3())).toBe(true);
+  expect(view.flashlight.light.intensity).toBeGreaterThan(0);
+  return { owner, engine, inventory, flashlight, view, sky, daylight, updateFrame, cleanup: () => { view.dispose(); sky.dispose(); } };
+}
+
 describe('play presentation ownership', () => {
   it('routes one held draw through Mood with renderer, camera, and sky', async () => {
     const { engine, view, mood, shadows } = fixture();
@@ -76,71 +142,62 @@ describe('play presentation ownership', () => {
   });
 
   it('keeps a beam bright when a lit camera aims at a dark target', () => {
-    const { engine, view } = fixture((_x, _y, z) => z === -18);
-    engine.camera.position.set(1, 1, 0);
-    engine.camera.lookAt(1, 1, -1);
-    engine.skylight = {
-      at: ([, , z]: Vec3) => (z < -6 ? 0 : 1),
-    } as unknown as NonNullable<Engine['skylight']>;
-    engine.camera.updateMatrixWorld();
-    view.flashlight.light.position.copy(engine.camera.position);
-    view.flashlight.light.distance = 20;
-    view.flashlight.light.intensity = 1;
-    const at = engine.skylight.at.bind(engine.skylight);
-    const setSkyVisibility = vi.spyOn(view.held, 'setSkyVisibility');
-
-    view.prepareLighting(skyAt(12));
-
-    expect(at([1, 1, 0])).toBe(1);
-    expect(at([1, 1, -8.5])).toBe(0);
-    expect(setSkyVisibility).toHaveBeenCalledExactlyOnceWith(1);
-    expect(view.flashlight.daylightScale).toBeGreaterThan(flashlightDaylightScale(skyAt(12), 1));
-    view.dispose();
+    const f = litWorld('doorway');
+    try {
+      const cameraPosition = f.engine.camera.position.toArray() as Vec3;
+      const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+      const hit = raycast(cameraPosition.map((axis) => axis / 0.5) as Vec3, direction, f.view.flashlight.light.distance / 0.5, f.owner.knownOpaque);
+      expect(hit).toBeDefined();
+      expect(hit!.distance * 0.5).toBeLessThan(f.view.flashlight.light.distance);
+      const face = new Vector3(...cameraPosition).addScaledVector(new Vector3(...direction), hit!.distance * 0.5);
+      const target = face.addScaledVector(new Vector3(...hit!.normal), 0.25).toArray() as Vec3;
+      expect(f.sky.at(cameraPosition)).toBe(1);
+      expect(f.owner.knownOpaque(...target.map((axis) => Math.floor(axis / 0.5)) as Vec3)).toBe(false);
+      expect(f.sky.at(target)).toBeLessThan(f.sky.at(cameraPosition));
+      expect(f.view.flashlight.daylightScale).toBeGreaterThan(flashlightDaylightScale(f.daylight, 1));
+      expect(f.view.flashlight.light.intensity).toBeGreaterThan(0);
+    } finally { f.cleanup(); }
   });
 
   it('keeps carried point-light brightness independent of aim', () => {
-    const { engine, inventory, view } = fixture();
-    const glowstick = inventory.create('glowstick');
-    glowstick.on = true;
-    expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
-    engine.camera.position.set(1, 1, 0);
-    engine.skylight = { at: ([, , z]: Vec3) => (z < -2 ? 1 : 0) } as unknown as NonNullable<Engine['skylight']>;
-    const pose = {
-      right: { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 },
-      left: { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 },
-    };
-
-    engine.camera.lookAt(1, 1, -1);
-    view.prepareLighting(skyAt(12));
-    view.updateHeld(0, pose, undefined);
-    const darkAimIntensity = view.lightPool.lights[0]!.intensity;
-    engine.camera.lookAt(1, 1, 1);
-    view.prepareLighting(skyAt(12));
-    view.updateHeld(0, pose, undefined);
-
-    expect(darkAimIntensity).toBeGreaterThan(0);
-    expect(view.lightPool.lights[0]!.intensity).toBe(darkAimIntensity);
-    view.dispose();
+    const f = litWorld('doorway');
+    try {
+      const glowstick = f.inventory.create('glowstick');
+      expect(f.inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
+      expect(toggleLight(f.inventory.registry, glowstick, 0)).toBeUndefined();
+      f.engine.camera.position.set(4.75, 2.62, 8.25);
+      expect(f.owner.knownOpaque(...f.engine.camera.position.toArray().map((axis) => Math.floor(axis / 0.5)) as Vec3)).toBe(false);
+      f.engine.camera.lookAt(f.engine.camera.position.clone().add(new Vector3(-1, 0, 0)));
+      f.updateFrame();
+      const outdoorScale = f.view.flashlight.daylightScale;
+      const first = f.view.lightPool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity);
+      f.engine.camera.lookAt(f.engine.camera.position.clone().add(new Vector3(1, 0, 0)));
+      f.updateFrame();
+      const darkTargetScale = f.view.flashlight.daylightScale;
+      const second = f.view.lightPool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity);
+      expect(outdoorScale).not.toBe(darkTargetScale);
+      expect(first).toHaveLength(1);
+      expect(second).toHaveLength(1);
+      expect(second).toEqual(first);
+    } finally { f.cleanup(); }
   });
 
   it('keeps the daylight fade when the beam hits a nearby sunlit wall from shade', () => {
-    const { engine, view } = fixture((_x, _y, z) => z === -2);
-    engine.camera.position.set(1, 1, 0);
-    engine.camera.lookAt(1, 1, -1);
-    engine.camera.updateMatrixWorld();
-    engine.skylight = {
-      at: ([, , z]: Vec3) => (z < -0.2 && z > -1 ? 1 : 0),
-    } as unknown as NonNullable<Engine['skylight']>;
-    view.flashlight.light.position.copy(engine.camera.position);
-    view.flashlight.light.distance = 20;
-    view.flashlight.light.intensity = 1;
-
-    view.prepareLighting(skyAt(12));
-
-    expect(engine.skylight.at([1, 1, 0])).toBe(0);
-    expect(engine.skylight.at([1, 1, -0.49])).toBe(1);
-    expect(view.flashlight.daylightScale).toBe(flashlightDaylightScale(skyAt(12), 1));
-    view.dispose();
+    const f = litWorld('near-wall');
+    try {
+      const cameraPosition = f.engine.camera.position.toArray() as Vec3;
+      const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+      const hit = raycast(cameraPosition.map((axis) => axis / 0.5) as Vec3, direction, f.view.flashlight.light.distance / 0.5, f.owner.knownOpaque);
+      expect(hit).toBeDefined();
+      expect(hit!.distance * 0.5).toBeLessThan(f.view.flashlight.light.distance);
+      const face = new Vector3(...cameraPosition).addScaledVector(new Vector3(...direction), hit!.distance * 0.5);
+      const target = face.addScaledVector(new Vector3(...hit!.normal), 0.25).toArray() as Vec3;
+      expect(f.sky.at(cameraPosition)).toBeLessThan(1);
+      expect(f.owner.knownOpaque(...target.map((axis) => Math.floor(axis / 0.5)) as Vec3)).toBe(false);
+      expect(f.sky.at(target)).toBe(1);
+      expect(f.view.flashlight.daylightScale).toBeLessThan(flashlightDaylightScale(f.daylight, 0));
+      expect(f.view.flashlight.light.intensity).toBeGreaterThan(0);
+    } finally { f.cleanup(); }
   });
 
   it('skips drawing and shadow warmup without renderer resources', async () => {
