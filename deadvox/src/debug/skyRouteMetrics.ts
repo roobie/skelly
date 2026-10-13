@@ -33,11 +33,11 @@ export interface SkyRouteJob {
   latencyRealMs: number | null;
   resultComplete: boolean | null;
 }
-export function percentile(values: number[], fraction: number): number | null {
+function percentile(values: number[], fraction: number): number | null {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted.length > 0 ? sorted[Math.ceil(sorted.length * fraction) - 1]! : null;
 }
-export function summarizeSkyFrames(frames: SkyRouteFrame[]) {
+function summarizeSkyFrames(frames: SkyRouteFrame[]) {
   const intervals = frames.flatMap((frame) => (frame.intervalRealMs === null ? [] : [frame.intervalRealMs]));
   const lighting = frames.map((frame) => frame.lightingRealMs);
   const elapsed = intervals.reduce((sum, value) => sum + value, 0);
