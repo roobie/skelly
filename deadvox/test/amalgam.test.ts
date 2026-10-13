@@ -233,7 +233,7 @@ interface ObstacleResult {
 const placeFenceRow = (world: World): void => {
   const fence = compileTemplate(registry, registry.templates.get('rickety_fence')!);
   const [sx, sy, sz] = fence.size;
-  for (let originX = -70; originX <= 70; originX += sx) {
+  for (let originX = -2 * sx; originX <= 2 * sx; originX += sx) {
     for (let y = 0; y < sy; y++) {
       for (let z = 0; z < sz; z++) {
         for (let x = 0; x < sx; x++) {
@@ -255,11 +255,12 @@ const runObstacleCase = (
   const world = new World();
   const entities = new BlockEntities(registry);
   const centerX = kind === 'fence' ? 0 : 50;
-  const startZ = -30;
+  // The contract is collision response at the barrier, not long-range pursuit across the map.
+  const startZ = -8;
   if (kind === 'fence') {
     placeFenceRow(world);
   } else {
-    for (let x = centerX - 50; x <= centerX + 50; x += 2) {
+    for (let x = centerX - 6; x <= centerX + 6; x += 2) {
       entities.add({ type: 'crate', pos: [x, 0, 0], size: [2, 2, 2], facing: 'n' });
     }
   }

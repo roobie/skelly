@@ -63,7 +63,7 @@ describe('snapshot state components', () => {
     const { registry: sleepRegistry, issues } = registryWithSleepScenario(formerSaveCeiling + 34);
     expect(issues).toEqual([]);
 
-    const runtime = createRuntime(undefined, true, undefined, { registry: sleepRegistry });
+    const runtime = createRuntime(undefined, true, [fixtureColumns[0]!], { registry: sleepRegistry });
     expect(runtime.sim.needs.fatigue).toBeGreaterThan(0);
     expect(startRest(runtime, 'sleep')).toBeUndefined();
     // Coarse live frames preserve the production ramp and Sim-step bound without redundant frame work.
@@ -319,7 +319,7 @@ describe('snapshot state components', () => {
 
   it('round-trips progress during the cancellable sleep-onset phase', async () => {
     const onsetRegistry = registryWithPlayerBodyTuning({ ...BODY_TUNING_FIXTURE, id: 'player' });
-    const runtime = createRuntime(undefined, true, undefined, { registry: onsetRegistry });
+    const runtime = createRuntime(undefined, true, [fixtureColumns[0]!], { registry: onsetRegistry });
     runtime.sim.needs.fatigue = 50;
     expect(startRest(runtime, 'sleep')).toBeUndefined();
     runtime.sim.frame(simSeconds(1));
@@ -327,7 +327,7 @@ describe('snapshot state components', () => {
     expect(onset?.elapsedGameSeconds).toBeGreaterThan(0);
     expect(onset?.elapsedGameSeconds).toBeLessThan(onset?.durationGameSeconds ?? 0);
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
-    const restored = createRuntime(decoded.snapshot, true, undefined, { registry: onsetRegistry });
+    const restored = createRuntime(decoded.snapshot, true, [fixtureColumns[0]!], { registry: onsetRegistry });
     expect(restored.sim.actions.rest?.sleepOnset).toEqual(onset);
     expect(restored.sim.actions.asleep).toBe(false);
     expect(restored.rest.canStop).toBe(true);
