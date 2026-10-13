@@ -2,6 +2,7 @@
 read_if:
   - you're changing an area with a lesson below
   - you're troubleshooting an input, browser, save, rendering or resource-lifetime problem
+  - you're changing save-worker timeout policy or interpreting its request diagnostics
   - you've solved a hard problem and need to preserve its reason
 ---
 
@@ -33,9 +34,13 @@ Admit and commit seeded sound choice, cooldown and hearing stimulus in the simul
 
 Hands, worn slots and container/pile/furniture trees own items. Quickbar bindings and selected lights hold UIDs and resolve them through inventory; they are not aliases that require lifetime cleanup. At snapshot boundaries validate saved references rather than repairing malformed data. See `src/core/itemTree.ts`, `walkItemTree`, and `src/core/inventory.ts`, `Inventory.itemByUid`.
 
-## Save-lock deadlines
+## Save-storage deadlines
 
-Bound lock acquisition separately from worker I/O. Cancel only a queued request; never steal a held writer lock. A frozen page can hold the origin lock, so the current page cannot recover it. Use a controlled lock holder to prove timeout and recovery rather than depending on a timing race. See `src/game/saveStorage.ts`, `SaveStorage.withLock`, and `docs/decisions/0002-saves.md`.
+Bound lock acquisition separately from worker I/O. Cancel only a queued lock request; never steal a held writer lock. A frozen page can hold the origin lock, so the current page cannot recover it. Use a controlled lock holder to prove timeout and recovery rather than depending on a timing race. See `src/game/saveStorage.ts`, `SaveStorage.withLock`, and `docs/decisions/0002-saves.md`.
+
+An unanswered worker request keeps its deadline. Only a clearly late deadline callback grants one short dispatch grace: a stalled main thread can run a due timer before an already queued healthy reply. A matching reply cancels the active timer, including that grace; an on-time timeout fails immediately. The grace cannot repeat even if its callback is also delayed, so a silent worker is still terminated. See `src/game/saveStorage.ts`, `SaveStorage.request` and `SAVE_REPLY_GRACE_REAL_MS`.
+
+The timeout error and console warning identify the unanswered request's phase, selected backend and elapsed time, along with the initial timer's lateness and available binary-payload size. An unselected backend or unmeasured payload size remains unknown, not a zero-cost observation. These details distinguish main-thread dispatch delay from ordinary deadline expiry and locate the operation to investigate; they do not prove a backend hang or that an unacknowledged commit never reached disk. Payload size is not the entire cloned-message size, and timeout diagnostics are not worker-execution timings.
 
 ## GPU resource ownership
 
