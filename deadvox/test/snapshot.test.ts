@@ -10,11 +10,11 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { Site } from '../src/core/site.ts';
-import { type RealSeconds, realSeconds } from '../src/core/time.ts';
+import { type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
-import { Simulation } from './simulationFixture.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
   blockId,
   blockName,
@@ -24,10 +24,11 @@ import {
   encodeFixture,
   formatVersion,
   registry,
+  registryWithPlayerBodyTuning,
   startRest,
 } from './snapshotTestSupport.ts';
 
-const registryWithSleepCap = (sleepCap: number) => {
+const registryWithSleepScenario = (sleepCap: number) => {
   const files = readdirSync('src/content/base')
     .filter((name) => name.endsWith('.json'))
     .map((source) => ({
@@ -35,10 +36,13 @@ const registryWithSleepCap = (sleepCap: number) => {
       data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
     }));
   const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === 'player');
-  if (!compression) {
-    throw new Error('Missing scenario compression definition');
+  const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === 'player');
+  if (!(compression && body)) {
+    throw new Error('Missing scenario compression or body definition');
   }
   compression.caps.sleep = sleepCap;
+  body.sleepOnset.minGameMinutes = 0.001;
+  body.sleepOnset.maxGameMinutes = 0.001;
   return buildRegistry(files);
 };
 
@@ -55,17 +59,22 @@ describe('snapshot state components', () => {
   });
   it('round-trips bed sleep above the former save compression ceiling', async () => {
     const formerSaveCeiling = 30;
-    const { registry: sleepRegistry, issues } = registryWithSleepCap(formerSaveCeiling + 34);
+    const { registry: sleepRegistry, issues } = registryWithSleepScenario(formerSaveCeiling + 34);
     expect(issues).toEqual([]);
 
-    const runtime = createRuntime(undefined, true, undefined, { content: sleepRegistry });
+    const runtime = createRuntime(undefined, true, undefined, { registry: sleepRegistry });
     expect(runtime.sim.needs.fatigue).toBeGreaterThan(0);
     expect(startRest(runtime, 'sleep')).toBeUndefined();
+    // Coarse live frames preserve the production ramp and Sim-step bound without redundant frame work.
     const frame = (): void => {
-      advanceLiveFrame(runtime.sim, realSeconds(1 / 60), undefined, (simDt, until) =>
+      advanceLiveFrame(runtime.sim, realSeconds(0.25), undefined, (simDt, until) =>
         runtime.session.frame(simDt, until),
       );
     };
+    for (let frames = 0; runtime.sim.actions.rest?.sleepOnset !== undefined && frames < 200; frames++) {
+      frame();
+    }
+    expect(runtime.sim.actions.asleep).toBe(true);
     for (let frames = 0; runtime.sim.compression.c <= formerSaveCeiling && frames < 200; frames++) {
       frame();
     }
@@ -80,16 +89,21 @@ describe('snapshot state components', () => {
   });
 
   it('keeps a mid-sleep bed snapshot saveable when a frame elapsed is invalid', async () => {
-    const { registry: sleepRegistry, issues } = registryWithSleepCap(64);
+    const { registry: sleepRegistry, issues } = registryWithSleepScenario(64);
     expect(issues).toEqual([]);
-    const runtime = createRuntime(undefined, true, undefined, { content: sleepRegistry });
+    const runtime = createRuntime(undefined, true, undefined, { registry: sleepRegistry });
     expect(startRest(runtime, 'sleep')).toBeUndefined();
     const frame = (elapsed: RealSeconds): void => {
       advanceLiveFrame(runtime.sim, elapsed, undefined, (simDt, until) => runtime.session.frame(simDt, until));
     };
+    for (let index = 0; runtime.sim.actions.rest?.sleepOnset !== undefined && index < 200; index++) {
+      frame(realSeconds(1 / 60));
+    }
+    expect(runtime.sim.actions.asleep).toBe(true);
     for (let index = 0; index < 4; index++) {
       frame(realSeconds(1 / 60));
     }
+    expect(runtime.sim.actions.asleep).toBe(true);
     expect(runtime.sim.compression.active).toBe(true);
     expect(runtime.sim.compression.c).toBeGreaterThan(1);
     const compressionBeforeInvalidFrame = runtime.sim.compression.c;
@@ -295,13 +309,29 @@ describe('snapshot state components', () => {
     runtime.sim.needs.fatigue = 150;
     runtime.sim.actions.wakeGameHour = 7;
     const wakeAt = runtime.sim.time + 3600;
-    expect(runtime.sim.actions.startRest('sleep', -10, 1, wakeAt)).toBeUndefined();
+    expect(runtime.sim.actions.startRest('sleep', -10, 1, { wakeAt })).toBeUndefined();
 
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
     const loaded = createRuntime(decoded.snapshot);
     expect(loaded.sim.needs.fatigue).toBe(150);
     expect(loaded.sim.actions.wakeGameHour).toBe(7);
     expect(loaded.sim.actions.rest).toMatchObject({ kind: 'sleep', wakeAt });
+  });
+
+  it('round-trips progress during the cancellable sleep-onset phase', async () => {
+    const onsetRegistry = registryWithPlayerBodyTuning({ ...BODY_TUNING_FIXTURE, id: 'player' });
+    const runtime = createRuntime(undefined, true, undefined, { registry: onsetRegistry });
+    runtime.sim.needs.fatigue = 50;
+    expect(startRest(runtime, 'sleep')).toBeUndefined();
+    runtime.sim.frame(simSeconds(1));
+    const onset = runtime.sim.actions.rest?.sleepOnset;
+    expect(onset?.elapsedGameSeconds).toBeGreaterThan(0);
+    expect(onset?.elapsedGameSeconds).toBeLessThan(onset?.durationGameSeconds ?? 0);
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot, true, undefined, { registry: onsetRegistry });
+    expect(restored.sim.actions.rest?.sleepOnset).toEqual(onset);
+    expect(restored.sim.actions.asleep).toBe(false);
+    expect(restored.rest.canStop).toBe(true);
   });
 
   it('round-trips a stopped reading action with its held book uid and progress', async () => {

@@ -1672,6 +1672,15 @@ const BodyTuningSchema = strictObject({
   restFatigueRecoveryPerGameHour: GamePerHour,
   /** Fatigue cleared per Game hour asleep at rest quality 1: a normal sleep. */
   sleepFatigueRecoveryPerGameHour: GamePerHour,
+  /** Sleep onset gets shorter as fatigue rises, reaching its minimum at the authored threshold. */
+  sleepOnset: pipe(
+    strictObject({
+      minGameMinutes: PositiveGameMinutes,
+      maxGameMinutes: PositiveGameMinutes,
+      fatigueAtMinimum: Positive,
+    }),
+    check(({ minGameMinutes, maxGameMinutes }) => minGameMinutes <= maxGameMinutes, 'minimum must not exceed maximum'),
+  ),
   /** The share of a normal sleep's recovery at rest quality 0; it rises linearly to all of it at 1. */
   roughSleepShare: Fraction,
   /** Health, and each region's damage, recovered per Game hour while needs are at their floor or above and fatigue under its ceiling. */

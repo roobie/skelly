@@ -2,7 +2,7 @@ import type { Registry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
-import { gameHours, gamePerHour, realSeconds, simRate, simSeconds } from '../src/core/time.ts';
+import { gameHours, gameMinutes, gamePerHour, realSeconds, simRate, simSeconds } from '../src/core/time.ts';
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   id: 'player-fixture',
@@ -84,6 +84,11 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   fatigueRisePerGameHour: gamePerHour(4),
   restFatigueRecoveryPerGameHour: gamePerHour(5),
   sleepFatigueRecoveryPerGameHour: gamePerHour(10),
+  sleepOnset: {
+    minGameMinutes: gameMinutes(2),
+    maxGameMinutes: gameMinutes(20),
+    fatigueAtMinimum: 100,
+  },
   roughSleepShare: 0.5,
   healthRecoveryPerGameHour: gamePerHour(2),
   healthRecoveryNeedsFloor: { calories: 25, hydration: 25 },
@@ -95,11 +100,14 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   minimumMovementSpeed: 0.5,
 };
 
-/** Content whose player body is this fixture, so a whole-session test owns the body tuning it asserts on. */
-export const withFixtureBody = (content: Registry): Registry => ({
+/** Content whose player body uses the supplied tuning, so a whole-session test owns its body definition. */
+export const withPlayerBodyTuning = (content: Registry, body: BodyTuningDef): Registry => ({
   ...content,
-  body: new Map(content.body).set(CORE_CONTENT_IDS.player, BODY_TUNING_FIXTURE),
+  body: new Map(content.body).set(CORE_CONTENT_IDS.player, body),
 });
+
+/** Content whose player body is this fixture, so a whole-session test owns the body tuning it asserts on. */
+export const withFixtureBody = (content: Registry): Registry => withPlayerBodyTuning(content, BODY_TUNING_FIXTURE);
 
 /** The index of a fixture bleeding tier, by its id. */
 export const fixtureTier = (id: 'minor' | 'serious' | 'critical'): number =>

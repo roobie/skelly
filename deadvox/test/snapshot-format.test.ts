@@ -218,7 +218,7 @@ it("a hit's acute pain and a painkiller dose under way survive the save codec", 
   expect(fixture.issues).toEqual([]);
   const pill = fixture.registry.items.get('fixture_pill')!;
   const content = withFixtureBody({ ...registry, items: new Map(registry.items).set(pill.id, pill) });
-  const source = createRuntime(undefined, false, undefined, { content });
+  const source = createRuntime(undefined, false, undefined, { registry: content });
   source.sim.body.impact(10, 'leftArm', { kind: 'cut' });
   source.sim.body.takeAnalgesic(pill.id);
   source.sim.body.advance(0, true, 60);
@@ -228,7 +228,9 @@ it("a hit's acute pain and a painkiller dose under way survive the save codec", 
   expect(saved.doses[0]!.elapsedGameSeconds).toBeGreaterThan(0);
 
   const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
-  expect(createRuntime(decoded.snapshot, false, undefined, { content }).sim.body.snapshotState().pain).toEqual(saved);
+  expect(
+    createRuntime(decoded.snapshot, false, undefined, { registry: content }).sim.body.snapshotState().pain,
+  ).toEqual(saved);
 });
 
 it('restoring a left character ignores a fresh right choice and retains the physical inventory slots, the shoulder included', async () => {

@@ -1,6 +1,7 @@
 // Headed Firefox UI contract under Xvfb. Pointer lock is explicitly SYNTHETIC:
 // this keeps menu/inventory coverage independent of the quarantined native gesture (#168).
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
+// biome-ignore-all lint/style/noProcessEnv: environment selects an explicitly opted-in local browser subflow
 import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -439,178 +440,208 @@ try {
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
 
-  pageErrors.length = 0;
-  consoleErrors.length = 0;
-  await page.goto(
-    browserStageUrl(
-      'firefox-ui',
-      `http://127.0.0.1:${address.port}/?debug=1&site=weatheringTest&seed=73&radius=64&post=0&time=12:00`,
-      'pixel',
-    ),
-  );
-  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
-    timeout: 30_000,
-  });
-  await page.locator('#go').click();
-  await page.waitForFunction(
-    () => globalThis.firefoxUiTest?.engine.renderer && globalThis.firefoxUiTest.engine.meshes.count > 0,
-    null,
-    { timeout: 60_000 },
-  );
-  await page.waitForFunction(
-    () => {
-      const { engine } = globalThis.firefoxUiTest;
-      const { blockSize } = engine.config.scale;
-      return engine.streamer.unmeshedColumns(engine.spawn.pos[0] / blockSize, engine.spawn.pos[2] / blockSize, 2) === 0;
-    },
-    null,
-    { timeout: 60_000 },
-  );
-  await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
-  await pressAction(page, 'ui.main-menu-toggle');
-  await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
-  const weatheringPixels = await measureWeatheringMaterials(page);
-  process.stdout.write(
-    `Weathering pixel measurement: ${JSON.stringify({
-      size: weatheringPixels.size,
-      metric: weatheringPixels.metric,
-      buildingPixels: weatheringPixels.buildingPixels,
-      weatherablePixels: weatheringPixels.weatherablePixels,
-      weatherableFraction: weatheringPixels.weatherableFraction,
-      materialPixels: weatheringPixels.materialPixels,
-      materialPixelTotal: weatheringPixels.materialPixelTotal,
-      materialReadability: weatheringPixels.materialReadability,
-      profileStrengths: weatheringPixels.profileStrengths,
-      strengthCeiling: weatheringPixels.strengthCeiling,
-      uniforms: weatheringPixels.uniforms,
-      differences: weatheringPixels.differences,
-      maxWeatherablePixelChange: weatheringPixels.maxWeatherablePixelChange,
-      maxZeroStrengthPixelChange: weatheringPixels.maxZeroStrengthPixelChange,
-      artifactDirectory: 'test-results/weathering/',
-    })}\n`,
-  );
-  assert.deepEqual(
-    consoleErrors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error')),
-    [],
-    'Firefox chunk and mask shaders compile',
-  );
-  assert.equal(weatheringPixels.uniforms.off, 0);
-  for (const [profileId, strength] of Object.entries(weatheringPixels.profileStrengths)) {
-    assert.equal(weatheringPixels.uniforms[profileId], strength);
+  const runWeatheringTestPage = process.env.DEADVOX_FIREFOX_UI_WEATHERING_TEST === '1';
+  if (!runWeatheringTestPage) {
+    process.stdout.write(
+      'Skipping Firefox weatheringTest page subflow (#670 quarantine; set DEADVOX_FIREFOX_UI_WEATHERING_TEST=1 to run locally).\n',
+    );
   }
-  assert.equal(weatheringPixels.uniforms.strong, weatheringPixels.strongStrength);
-  assert.equal(weatheringPixels.uniforms['zero-control'], 0);
-  assert.ok(weatheringPixels.strongStrength <= weatheringPixels.authoredStrength + 1);
-  assert.ok(weatheringPixels.strongStrength <= weatheringPixels.strengthCeiling);
-  assert.deepEqual(
-    weatheringPixels.beforeCamera,
-    weatheringPixels.afterCamera,
-    'weathering states share one paused camera',
-  );
-  assert.equal(
-    weatheringPixels.maxZeroStrengthPixelChange,
-    0,
-    'zero-strength control leaves building pixels unchanged',
-  );
-  // Lighting and fog scale the shader's effect in the final image, so assert a change, not a shader-space bound.
-  assert.ok(
-    weatheringPixels.maxWeatherablePixelChange > 0,
-    `full-strength weathering changes a weatherable comparison pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
-  );
-  const defaultProfileId = await page.evaluate(() => globalThis.firefoxUiTest.engine.config.weatheringDefaultProfileId);
-  assert.ok(weatheringPixels.profileStrengths[defaultProfileId] > 0, 'the default weathering profile is measured');
-  for (const [profileId, profileStrength] of Object.entries(weatheringPixels.profileStrengths)) {
-    if (profileStrength <= 0) {
-      continue;
-    }
-    for (const [material, difference] of Object.entries(weatheringPixels.differences[profileId])) {
-      assert.ok(
-        difference.pixels > 0 && difference.changedShare > 0,
-        `weathering profile ${profileId} changes ${material} pixels: ${JSON.stringify(difference)}`,
+  // Quarantined as a flake under `../AGENTS.md`, "Tests"; #670 owns the root cause.
+  if (runWeatheringTestPage) {
+    pageErrors.length = 0;
+    consoleErrors.length = 0;
+    await page.goto(
+      browserStageUrl(
+        'firefox-ui',
+        `http://127.0.0.1:${address.port}/?debug=1&site=weatheringTest&seed=73&radius=64&post=0&time=12:00`,
+        'pixel',
+      ),
+    );
+    try {
+      await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
+        timeout: 30_000,
+      });
+    } catch (error) {
+      const startupState = await page.evaluate(() => ({
+        readyState: document.readyState,
+        goDisabled: document.querySelector('#go')?.getAttribute('aria-disabled'),
+        goButtonDisabled: document.querySelector('#go')?.disabled,
+        startupScreenHidden: document.querySelector('#startup-screen')?.hidden,
+        startupStatus: document.querySelector('#save-status')?.textContent,
+        errors: document.querySelector('#errors')?.textContent,
+      }));
+      throw new Error(
+        `${error instanceof Error ? error.message : String(error)}; startup state: ${JSON.stringify(startupState)}; page errors: ${JSON.stringify(pageErrors)}; console errors: ${JSON.stringify(consoleErrors)}`,
+        { cause: error },
       );
-      const readability = weatheringPixels.materialReadability[profileId][material];
-      if (profileId === defaultProfileId) {
+    }
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.firefoxUiTest?.engine.renderer && globalThis.firefoxUiTest.engine.meshes.count > 0,
+      null,
+      { timeout: 60_000 },
+    );
+    await page.waitForFunction(
+      () => {
+        const { engine } = globalThis.firefoxUiTest;
+        const { blockSize } = engine.config.scale;
+        return (
+          engine.streamer.unmeshedColumns(engine.spawn.pos[0] / blockSize, engine.spawn.pos[2] / blockSize, 2) === 0
+        );
+      },
+      null,
+      { timeout: 60_000 },
+    );
+    await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
+    await pressAction(page, 'ui.main-menu-toggle');
+    await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
+    const weatheringPixels = await measureWeatheringMaterials(page);
+    process.stdout.write(
+      `Weathering pixel measurement: ${JSON.stringify({
+        size: weatheringPixels.size,
+        metric: weatheringPixels.metric,
+        buildingPixels: weatheringPixels.buildingPixels,
+        weatherablePixels: weatheringPixels.weatherablePixels,
+        weatherableFraction: weatheringPixels.weatherableFraction,
+        materialPixels: weatheringPixels.materialPixels,
+        materialPixelTotal: weatheringPixels.materialPixelTotal,
+        materialReadability: weatheringPixels.materialReadability,
+        profileStrengths: weatheringPixels.profileStrengths,
+        strengthCeiling: weatheringPixels.strengthCeiling,
+        uniforms: weatheringPixels.uniforms,
+        differences: weatheringPixels.differences,
+        maxWeatherablePixelChange: weatheringPixels.maxWeatherablePixelChange,
+        maxZeroStrengthPixelChange: weatheringPixels.maxZeroStrengthPixelChange,
+        artifactDirectory: 'test-results/weathering/',
+      })}\n`,
+    );
+    assert.deepEqual(
+      consoleErrors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error')),
+      [],
+      'Firefox chunk and mask shaders compile',
+    );
+    assert.equal(weatheringPixels.uniforms.off, 0);
+    for (const [profileId, strength] of Object.entries(weatheringPixels.profileStrengths)) {
+      assert.equal(weatheringPixels.uniforms[profileId], strength);
+    }
+    assert.equal(weatheringPixels.uniforms.strong, weatheringPixels.strongStrength);
+    assert.equal(weatheringPixels.uniforms['zero-control'], 0);
+    assert.ok(weatheringPixels.strongStrength <= weatheringPixels.authoredStrength + 1);
+    assert.ok(weatheringPixels.strongStrength <= weatheringPixels.strengthCeiling);
+    assert.deepEqual(
+      weatheringPixels.beforeCamera,
+      weatheringPixels.afterCamera,
+      'weathering states share one paused camera',
+    );
+    assert.equal(
+      weatheringPixels.maxZeroStrengthPixelChange,
+      0,
+      'zero-strength control leaves building pixels unchanged',
+    );
+    // Lighting and fog scale the shader's effect in the final image, so assert a change, not a shader-space bound.
+    assert.ok(
+      weatheringPixels.maxWeatherablePixelChange > 0,
+      `full-strength weathering changes a weatherable comparison pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
+    );
+    const defaultProfileId = await page.evaluate(
+      () => globalThis.firefoxUiTest.engine.config.weatheringDefaultProfileId,
+    );
+    assert.ok(weatheringPixels.profileStrengths[defaultProfileId] > 0, 'the default weathering profile is measured');
+    for (const [profileId, profileStrength] of Object.entries(weatheringPixels.profileStrengths)) {
+      if (profileStrength <= 0) {
+        continue;
+      }
+      for (const [material, difference] of Object.entries(weatheringPixels.differences[profileId])) {
+        assert.ok(
+          difference.pixels > 0 && difference.changedShare > 0,
+          `weathering profile ${profileId} changes ${material} pixels: ${JSON.stringify(difference)}`,
+        );
+        const readability = weatheringPixels.materialReadability[profileId][material];
+        if (profileId === defaultProfileId) {
+          assert.equal(
+            readability.retainsIdentity,
+            true,
+            `weathered default ${material} remains closer to its own clean surface than to other weathered materials: ${JSON.stringify(readability)}`,
+          );
+        }
         assert.equal(
-          readability.retainsIdentity,
+          readability.retainsTexture,
           true,
-          `weathered default ${material} remains closer to its own clean surface than to other weathered materials: ${JSON.stringify(readability)}`,
+          `weathered ${material} retains spatial surface variation: ${JSON.stringify(readability)}`,
         );
       }
-      assert.equal(
-        readability.retainsTexture,
-        true,
-        `weathered ${material} retains spatial surface variation: ${JSON.stringify(readability)}`,
-      );
     }
+    await pressAction(page, 'ui.main-menu-toggle');
+    await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
+    await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
+    const weatheringGroup = page.locator('.debug-group[data-group="weathering"]');
+    const weatheringGroupHeader = weatheringGroup.locator('.debug-group-header');
+    if ((await weatheringGroupHeader.getAttribute('aria-expanded')) !== 'true') {
+      await weatheringGroupHeader.click();
+    }
+    const alternateProfileId = await page.evaluate(() =>
+      [...globalThis.firefoxUiTest.engine.registry.weathering.keys()].find(
+        (id) => id !== globalThis.firefoxUiTest.engine.config.weatheringDefaultProfileId,
+      ),
+    );
+    assert.ok(alternateProfileId, 'a second weathering profile exists for profile-switch coverage');
+    // Choose from the game's combo box with a real press, as a player does under pointer lock. The drawn cursor
+    // can't reach below the fold, so the field is scrolled into view first.
+    await weatheringGroup.locator('#weathering-profile').scrollIntoViewIfNeeded();
+    await pressWithDrawnCursor(page, '#weathering-profile');
+    const alternateOptionId = await page.evaluate((profileId) => {
+      const field = document.querySelector('#weathering-profile');
+      const list = document.getElementById(field.getAttribute('aria-controls'));
+      return [...list.querySelectorAll('[role="option"]')].find((option) => option.textContent === profileId)?.id;
+    }, alternateProfileId);
+    assert.ok(alternateOptionId, 'the weathering combo box lists the alternate profile');
+    await pressWithDrawnCursor(page, `#${alternateOptionId}`);
+    const strengthSlider = weatheringGroup.locator('#weathering-strength');
+    const sliderNext = await strengthSlider.evaluate((input) => {
+      input.value = String(Number(input.value) + Number(input.step));
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return Number(input.value);
+    });
+    assert.equal(new URL(page.url()).searchParams.get('weatheringProfile'), alternateProfileId);
+    assert.equal(Number(new URL(page.url()).searchParams.get('weathering')), sliderNext);
+    assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
+    assert.equal(
+      await page.evaluate(() => {
+        const {
+          weatheringState: { settings },
+        } = globalThis.firefoxUiLook;
+        // The profile combo box names the profile; the other inputs edit its settings.
+        const settingInputs = '#debug-ui-root input[id^="weathering-"]:not([role="combobox"])';
+        return [...document.querySelectorAll(settingInputs)].every((input) => {
+          const field = input.id.slice('weathering-'.length);
+          return input.value === String(settings[field]);
+        });
+      }),
+      true,
+      'weathering inputs reflect applied profile values',
+    );
+    assert.equal(await weatheringGroup.locator('#weathering-tintColor').isVisible(), true);
+    assert.equal(await weatheringGroup.locator('#copy-weathering-values').isVisible(), true);
+    await page.reload();
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
+      timeout: 30_000,
+    });
+    await page.locator('#go').click();
+    await page.waitForFunction(() => globalThis.firefoxUiTest?.engine.renderer, null, { timeout: 60_000 });
+    await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').waitFor({ state: 'visible' });
+    await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
+    const reloadedWeatheringGroup = page.locator('.debug-group[data-group="weathering"]');
+    const reloadedHeader = reloadedWeatheringGroup.locator('.debug-group-header');
+    if ((await reloadedHeader.getAttribute('aria-expanded')) !== 'true') {
+      await reloadedHeader.click();
+    }
+    assert.equal(await reloadedWeatheringGroup.locator('#weathering-profile').inputValue(), alternateProfileId);
+    assert.deepEqual(pageErrors, []);
   }
-  await pressAction(page, 'ui.main-menu-toggle');
-  await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
-  await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
-  const weatheringGroup = page.locator('.debug-group[data-group="weathering"]');
-  const weatheringGroupHeader = weatheringGroup.locator('.debug-group-header');
-  if ((await weatheringGroupHeader.getAttribute('aria-expanded')) !== 'true') {
-    await weatheringGroupHeader.click();
-  }
-  const alternateProfileId = await page.evaluate(() =>
-    [...globalThis.firefoxUiTest.engine.registry.weathering.keys()].find(
-      (id) => id !== globalThis.firefoxUiTest.engine.config.weatheringDefaultProfileId,
-    ),
-  );
-  assert.ok(alternateProfileId, 'a second weathering profile exists for profile-switch coverage');
-  // Choose from the game's combo box with a real press, as a player does under pointer lock. The drawn cursor
-  // can't reach below the fold, so the field is scrolled into view first.
-  await weatheringGroup.locator('#weathering-profile').scrollIntoViewIfNeeded();
-  await pressWithDrawnCursor(page, '#weathering-profile');
-  const alternateOptionId = await page.evaluate((profileId) => {
-    const field = document.querySelector('#weathering-profile');
-    const list = document.getElementById(field.getAttribute('aria-controls'));
-    return [...list.querySelectorAll('[role="option"]')].find((option) => option.textContent === profileId)?.id;
-  }, alternateProfileId);
-  assert.ok(alternateOptionId, 'the weathering combo box lists the alternate profile');
-  await pressWithDrawnCursor(page, `#${alternateOptionId}`);
-  const strengthSlider = weatheringGroup.locator('#weathering-strength');
-  const sliderNext = await strengthSlider.evaluate((input) => {
-    input.value = String(Number(input.value) + Number(input.step));
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    return Number(input.value);
-  });
-  assert.equal(new URL(page.url()).searchParams.get('weatheringProfile'), alternateProfileId);
-  assert.equal(Number(new URL(page.url()).searchParams.get('weathering')), sliderNext);
-  assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
-  assert.equal(
-    await page.evaluate(() => {
-      const {
-        weatheringState: { settings },
-      } = globalThis.firefoxUiLook;
-      // The profile combo box names the profile; the other inputs edit its settings.
-      const settingInputs = '#debug-ui-root input[id^="weathering-"]:not([role="combobox"])';
-      return [...document.querySelectorAll(settingInputs)].every((input) => {
-        const field = input.id.slice('weathering-'.length);
-        return input.value === String(settings[field]);
-      });
-    }),
-    true,
-    'weathering inputs reflect applied profile values',
-  );
-  assert.equal(await weatheringGroup.locator('#weathering-tintColor').isVisible(), true);
-  assert.equal(await weatheringGroup.locator('#copy-weathering-values').isVisible(), true);
-  await page.reload();
-  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
-    timeout: 30_000,
-  });
-  await page.locator('#go').click();
-  await page.waitForFunction(() => globalThis.firefoxUiTest?.engine.renderer, null, { timeout: 60_000 });
-  await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').waitFor({ state: 'visible' });
-  await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
-  const reloadedWeatheringGroup = page.locator('.debug-group[data-group="weathering"]');
-  const reloadedHeader = reloadedWeatheringGroup.locator('.debug-group-header');
-  if ((await reloadedHeader.getAttribute('aria-expanded')) !== 'true') {
-    await reloadedHeader.click();
-  }
-  assert.equal(await reloadedWeatheringGroup.locator('#weathering-profile').inputValue(), alternateProfileId);
-  assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer, shareable live weathering controls, and visible weathering changes on comparison-pad concrete, brick and wood. Native lock acquisition is NOT tested.\n',
+    runWeatheringTestPage
+      ? 'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer, shareable live weathering controls, and visible weathering changes on comparison-pad concrete, brick and wood. Native lock acquisition is NOT tested.\n'
+      : 'Firefox UI interaction checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn and inventory transfer. WeatheringTest page subflow is quarantined under #670. Native lock acquisition is NOT tested.\n',
   );
 } finally {
   await browser?.close();

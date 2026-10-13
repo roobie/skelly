@@ -7,6 +7,7 @@ read_if:
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
+  - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
   - you're changing how the amalgam's flesh meets terrain, the player or shots, or what that costs per tick (#563)
@@ -191,6 +192,15 @@ alarm, sleep continues after fatigue reaches zero and ends when the chosen wake
 hour arrives. The alarm overrides fatigue-based completion, and ordinary
 interruptions still wake the sleeper. The wake choice is saved. See
 `LongActions.advanceJob`, `LongActions.wakeGameHour` and `RestAction.wakeAt`.
+
+Starting sleep has a content-tuned onset that shortens as fatigue rises. The
+player remains awake and may cancel it; sleep recovery begins only when onset
+completes, and ordinary Stop cannot wake a sleeper. If the selected alarm hour
+arrives during onset, the alarm ends the action before sleep begins, preserving
+the chosen wake time as the authority over the sleep interval. See
+`RestController.start` in `src/game/rest.ts` and `LongActions.advanceJob` in
+`src/core/longAction.ts`; onset tuning is authored in
+`src/content/base/body.jsonnet`, `sleepOnset`.
 
 Moving items, reloading, and wielding are short handling actions: they take
 Real time while the world continues at normal pace. See [Items](#items-and-inventory).
