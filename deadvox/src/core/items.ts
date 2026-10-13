@@ -1,4 +1,4 @@
-// Item instances and grid space (DESIGN.md, "The item model"). An item takes w × h
+// Item instances and grid space (`DESIGN.md`, "The item model"). An item takes w × h
 // cells and can be rotated; a container's pockets are grids. Identical, stateless
 // items stack up to their type's limit.
 
@@ -423,7 +423,7 @@ export const isEmpty = (item: Item): boolean =>
   Object.values(item.slots ?? {}).every((child) => child === undefined) &&
   (item.pockets ?? []).every((grid) => grid.length === 0);
 
-/** Condition as a word (DESIGN.md, "The item model"). */
+/** Condition as a word (`DESIGN.md`, "The item model"). */
 export const conditionWord = (condition: number): string => {
   if (condition >= 0.9) {
     return 'pristine';

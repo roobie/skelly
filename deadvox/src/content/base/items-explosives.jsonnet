@@ -1,4 +1,4 @@
-// Thrown explosives (DESIGN.md, "Hand grenade").
+// Thrown explosives (`DESIGN.md`, "Hand grenade").
 
 // Tuned so one grenade in the middle of a horde shreds it: against shamblers the blast kills within about two
 // thirds of its radius and severs limbs nearly to its edge, and one fragment severs a limb. A full-strength level throw

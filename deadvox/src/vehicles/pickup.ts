@@ -1,7 +1,7 @@
 /**
  * A Toyota Hilux N80-type regular-cab, long-bed 4WD pickup, built from parts: 4.72 m long, 1.69 m
  * wide, 1.76 m tall, 2.85 m wheelbase, 1.41 m track, on the 4×4's 205R16 wheels. Proportions follow
- * a period side elevation; the cab and bed split is derived (see docs/vehicle-spike.md, "Proportions").
+ * a period side elevation; the cab and bed split is derived (see `docs/vehicle-spike.md`, "Proportions").
  */
 import {
   type Authored,

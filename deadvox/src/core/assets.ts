@@ -1,5 +1,4 @@
-// The asset manifest: where each file under a pack's `assets/` came from (DESIGN.md,
-// "Assets and credits"). A source is one download; the credits screen is drawn from
+// The asset manifest: where each file under a pack's assets directory came from (`DESIGN.md`, "Assets and credits"). A source is one download; the credits screen is drawn from
 // it. Only licences we accept are allowed, and the ones that need credit need an
 // author and a link. The checks against the files themselves take a list of them, so
 // they stay pure; the validator reads the disk.
@@ -86,13 +85,13 @@ export const validateManifest = (source: string, data: unknown): { manifest: Man
   return { manifest: result.output, issues };
 };
 
-/** The manifest's own path within its pack; it's the one file under `assets/` it doesn't list. */
+/** The manifest's own path within its pack; it's the one file in the assets directory it doesn't list. */
 export const MANIFEST_PATH = 'assets/manifest.json';
 
 /**
- * Checks a pack's files against its manifest: every file under `assets/` comes from a
+ * Checks a pack's files against its manifest: every file in the assets directory comes from a
  * listed source, and every file a source lists exists. `files` are the pack's files
- * under `assets/`, as paths within the pack.
+ * in that directory, as paths within the pack.
  */
 export const assetFileIssues = (source: string, manifest: Manifest, files: readonly string[]): ContentIssue[] => {
   const present = new Set(files);

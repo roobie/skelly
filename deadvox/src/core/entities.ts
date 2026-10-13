@@ -1,7 +1,7 @@
 // Where entities (zombies, later animals and vehicles) live. Slice 1 keeps plain
 // objects in a Map. Systems only use this interface, so the storage can move to
 // typed arrays in a worker when there are hundreds of zombies without changing them
-// (DESIGN.md, "Entities"; CHALLENGES.md, "Many zombies in a browser").
+// (`DESIGN.md`, "Simulation architecture"; `CHALLENGES.md`, "Many zombies in a browser").
 
 export type EntityId = number;
 

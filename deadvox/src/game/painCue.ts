@@ -1,4 +1,4 @@
-// The seen pain cue (INTERFACE.md, "Bodily cues: the body tells, the HUD doesn't"): while felt pain is at a
+// The seen pain cue (`INTERFACE.md`, "Bodily cues: the body tells, the HUD doesn't"): while felt pain is at a
 // tier, the colour drains in a short pulse as deep as the tier says and as often as its interval says, and a
 // hit's tilt settles more slowly. Time is the frame loop's, like `DamageFeedback`, so scripted frames repeat.
 

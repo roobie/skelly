@@ -30,7 +30,7 @@
   box-sizing: border-box;
 }
 /* The UI is measured in rem and scales through the root size, so the browser's font setting still counts and
-   client coordinates stay true for hit testing; the world canvas sizes from the viewport (DESIGN.md, "UI principles"). */
+   client coordinates stay true for hit testing; the world canvas sizes from the viewport (`DESIGN.md`, "UI principles"). */
 html {
   font-size: calc(100% * var(--ui-scale));
 }
@@ -868,7 +868,7 @@ body.unconscious::after {
   display: inline;
 }
 /* A grid name breaks where the next glyph would cross the border, mid-word, and shows only the whole lines that fit
-   (DESIGN.md, "Inventory screen"). The block size is logical, so a tall name clips across its width. */
+   (`DESIGN.md`, "Inventory screen"). The block size is logical, so a tall name clips across its width. */
 .inv-ghost .inv-item-name,
 .inv-item:not(.inv-item-slot) .inv-item-name {
   white-space: normal;

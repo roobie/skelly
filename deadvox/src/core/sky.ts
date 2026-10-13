@@ -1,5 +1,5 @@
 // Sun position, sky colour, light and fog by time of day. Pure numbers; the renderer
-// applies them (render/sky.ts). The palette is muted (DESIGN.md, "Rendering"), and
+// applies them (render/sky.ts). The palette is muted (`DESIGN.md`, "Rendering"), and
 // nights are dark: the flashlight arrives in milestone 1.6, and the values are tuned
 // with it.
 

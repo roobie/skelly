@@ -1,5 +1,5 @@
 // The game clock. Simulation seconds run `c`× faster during compression; calendar
-// seconds run `ratio`× faster than simulation seconds (DESIGN.md, "Time").
+// seconds run `ratio`× faster than simulation seconds (`DESIGN.md`, "Time").
 
 export const SECONDS_PER_HOUR = 3600;
 export const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;

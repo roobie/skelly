@@ -687,7 +687,7 @@ describe('rifle firearm handling', () => {
   });
 
   it('drops each case in the pile of the block it lands on, never a case pile on a nearer block', () => {
-    // BR, 2026-10-07 11:27 (DESIGN.md, "Spent cases per block"): cases are saved per block.
+    // Per-block counts keep saved case state independent of total shot count (`DESIGN.md`, "Spent cases per block").
     const probe = shot(1);
     const landingAt = probe.rifle.firearm?.landings?.[0]?.at;
     const landing = probe.rifle.firearm?.landings?.[0]?.position;

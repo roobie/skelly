@@ -12,7 +12,7 @@ export interface ItemAction {
   /** `bleeding` is the wound's bleeding severity, 0 when it doesn't bleed. */
   readonly priority?: Readonly<{ bleeding: number; damage: number }>;
   readonly treatment?: Readonly<{ region: BodyRegion; itemType: string }>;
-  /** Unloading a held magazine: R only loads one (CONTROLS.md, "Reload, rack, remove"), so stripping is an item action. */
+  /** Unloading a held magazine: R only loads one (`CONTROLS.md`, "Reload, rack, remove"), so stripping is an item action. */
   readonly magazine?: 'strip';
 }
 

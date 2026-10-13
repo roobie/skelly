@@ -1,4 +1,4 @@
-// Rolling loot tables (DESIGN.md, "Loot"). A table rolls a number of times; each roll
+// Rolling loot tables (`DESIGN.md`, "Loot"). A table rolls a number of times; each roll
 // picks an entry by weight: an item (with a count and condition range), a nested
 // table (rolled in full), or nothing. What comes out is a list of items to make, not
 // instances, so worldgen stays free of item uids.

@@ -1,4 +1,4 @@
-// Piles on the ground (DESIGN.md, "Piles"). An item with a model lies at its place in
+// Piles on the ground (`DESIGN.md`, "Piles and item models"). An item with a model lies at its place in
 // the pile's grid (core/pileLayout.ts); everything else is one low bundle per pile,
 // taller the more it holds.
 

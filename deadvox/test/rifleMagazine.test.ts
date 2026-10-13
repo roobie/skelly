@@ -145,7 +145,7 @@ describe('magazine-fed rifles', () => {
     settle(queue);
     expect(rifle.slots?.magazine).toBe(fullest);
 
-    // BR (CONTROLS.md, "Reload, rack, remove"): the fullest in inventory, no matter what is loaded in the gun.
+    // The fullest carried magazine wins independently of the fitted one (`CONTROLS.md`, "Reload, rack, remove").
     expect(mechanics.loadNext(rifle.uid, 0)).toBeUndefined();
     settle(queue);
     expect(rifle.slots?.magazine).toBe(middle);

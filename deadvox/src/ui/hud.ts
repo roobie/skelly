@@ -1,4 +1,4 @@
-// The quickbar and handling progress shown while playing (DESIGN.md, "Inventory screen").
+// The quickbar and handling progress shown while playing (`DESIGN.md`, "Inventory screen").
 
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Inventory, Location } from '../core/inventory.ts';

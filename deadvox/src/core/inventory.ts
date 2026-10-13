@@ -1,6 +1,6 @@
 // What the player holds and wears, the piles on the ground, and what's in furniture.
 // Moves are planned first (does it fit, how long does it take) and applied when the
-// handling time is up (handling.ts). DESIGN.md, "Items and inventory" and "Hands".
+// handling time is up (handling.ts). `DESIGN.md`, "Items and inventory"; `DESIGN.md`, "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
 import {
@@ -51,7 +51,7 @@ import { magazineWellCalibre, slotsReason } from './magazine.ts';
 import type { WearSlot } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-/** Handling tunables in seconds (DESIGN.md, "Handling time"). */
+/** Handling tunables in seconds (`DESIGN.md`, "Handling time"). */
 export const HANDLING = {
   /** Added per cell of the item's size, taking it out and putting it in. */
   perCell: 0.05,
@@ -70,7 +70,7 @@ const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter)
   return skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
 };
 
-/** The worn slot an item goes in: clothing's own slot, or the shoulder for a long gun (DESIGN.md, "Shoulder and sling"). */
+/** The worn slot an item goes in: clothing's own slot, or the shoulder for a long gun (`DESIGN.md`, "Shoulder and sling"). */
 export const wornSlotOf = (registry: Registry, item: Item): WearSlot | undefined => {
   const def = defOf(registry, item.type);
   return def.wearable?.slot ?? (isLongGun(def) ? 'shoulder' : undefined);

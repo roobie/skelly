@@ -124,8 +124,7 @@ so a crouched player fits but a standing player does not. It is a separate low
 route from the guarded north entrance and southern breach, with its floor level
 to the approach; it must not expose any part of the finale from near-ground
 viewpoints, leaving the southern breach as the only near-ground exception.
-`test/campGate.test.ts`, `hides the finale from approach tracks and near ground
-except through the southern breach`, checks from the amalgam's feet to its top.
+`test/campGate.test.ts`, "hides the finale from approach tracks and near ground except through the southern breach", checks from the amalgam's feet to its top.
 Zombies use the passage only if their ordinary collision body fits; they do not
 crouch or gain a type-specific exception. Standing up is refused when the body
 would intersect a solid overhead block. On a restore admitted by
@@ -575,8 +574,8 @@ remain unchanged. Saves preserve acute pain and active doses.
 The optional stats readout shows felt pain and its acute, injury and relief
 components so BR can tune the scale in play. This debug-style number belongs
 only in stats, not in player-facing cues, because pain has no upper bound and
-its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts`,
-`PainReading` in `src/core/pain.ts`, and INTERFACE.md, "Bodily cues" and "HUD".
+its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` and `PainReading` in `src/core/pain.ts`. The interface rules are in
+`INTERFACE.md`, "Bodily cues" and `INTERFACE.md`, "HUD".
 
 ## Combat and noise
 
@@ -685,8 +684,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts`,
   wall receive its visible impact mark. See `traceShot` in
   `src/render/shotTrace.ts` and `ImpactEffects.fire` in
   `src/render/impactEffects.ts`.
-- **Magazines:** A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (CONTROLS.md, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
-- **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, “Reload, rack, remove,” and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`; `src/core/pellets.ts`, `projectileShot`; `src/core/zombies.ts`, `ZombieSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
+- **Magazines:** A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (`CONTROLS.md`, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
+- **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, "Reload, rack, remove" and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`; `src/core/pellets.ts`, `projectileShot`; `src/core/zombies.ts`, `ZombieSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
 - **Modular weapons:** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount, which gungen does not export, is the one mount deadvox owns (see [Shoulder and sling](#shoulder-and-sling)). These boundaries keep rendering, saves and compatibility consistent. Firearm details must remain responsive as the inventory fills while the world continues; see `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.candidates`; `src/ui/inventoryScreen.ts`, `viewModel`; `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
 
   Optics keep their authored reticle and use one content-authored magnification setting, preserving a recognizable sight picture without adding a cycling input. Magnification stays within gungen's supported range. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/core/opticView.ts`, `opticViewSettings` and `projectLensAperture`; `src/render/opticLens.ts`, `OpticLensRenderer`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
@@ -816,9 +815,9 @@ what the player sees, while zombies sense a carried source by its visibility
 and distance. Source colour, intensity, range, beam, and burn rules belong to
 content. The flashlight needs a broad, soft-edged beam; a narrow cone showed too
 little of a room and path to play by. Time-of-day lighting belongs in sky and
-fog, not baked into chunks. See `lightSenseSourceFor` in `src/core/lights.ts`,
-`LightPool.update` in `src/render/lightPool.ts`, and `dayPhaseAt` in
-`src/core/dayPhase.ts`.
+fog, not baked into chunks. See `src/core/lights.ts`, `lightSenseSourceFor`;
+`src/render/lightPool.ts`, `LightPool.update`; and `src/core/dayPhase.ts`,
+`dayPhaseAt`.
 
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
@@ -1065,7 +1064,7 @@ their state.
 3. **Two layers.** A part type is immutable content that mods can extend. A fitting is
    that part on this vehicle, with its own state: condition (intact, damaged, badly
    damaged, broken) and attachment (attached or ripped off). Collisions damage the parts
-   that hit something. The spike's layers: `model.ts`, `PartType`, and `VehicleInstance`,
+   that hit something. The spike's layers: `src/vehicles/model.ts`, `PartType`, and `VehicleInstance`,
    whose own fittings are where that state goes.
 4. **Networks at the fidelity play needs.** Steering is a per-part property. Drive is a
    per-axle driven flag, so front, rear or all-wheel drive is a build choice. Power and
@@ -1164,8 +1163,7 @@ play, not only decorate it.
   `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an
-  animal ecology, hunting or farming in version 1 (EPIC.md, "Not in version
-  1").
+  animal ecology, hunting or farming in version 1 (`EPIC.md`, "Not in version 1").
 - **Time passing:** authored overgrowth, and dust and leaves indoors, show the
   weeks since people left. Food rotting changes what's still worth scavenging.
   There is no plant-growth or dust-accumulation simulation.
@@ -1295,7 +1293,7 @@ decoration.
 - Every number the simulation uses (weight, time, condition, noise) can be seen
   somewhere in the UI, **on request**: on surfaces the player opens (inspecting an
   item, the inventory), never pushed at them during play. Depth is only fun when
-  you can read it; play stays as diegetic as possible (see INTERFACE.md).
+  you can read it; play stays as diegetic as possible (see `INTERFACE.md`).
 - **The UI only shows what your character knows.** No enemy markers, no
   minimap of zombies, no threat meter. A rest interruption says what you
   heard, not what it was. The in-game map is a paper map (#470); top-down

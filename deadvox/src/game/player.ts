@@ -5,7 +5,7 @@ import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 
-/** Player constants in metres and metres per second (DESIGN.md, "Performance and scale"). */
+/** Player constants in metres and metres per second (`DESIGN.md`, "Performance and scale"). */
 export const PLAYER = {
   halfWidth: 0.3,
   height: 1.8,
@@ -104,7 +104,7 @@ export interface MoveIntent {
 /** Grams: carrying more than `light` slows you, down to `slowest` at `heavy`. */
 const LOAD = { light: 20_000, heavy: 40_000, slowest: 0.6 } as const;
 
-/** Handling an item halves your pace (DESIGN.md, "Handling time"). */
+/** Handling an item halves your pace (`DESIGN.md`, "Handling time"). */
 const paceFactor = (grams: number, handling: boolean): number => {
   const over = Math.max(0, grams - LOAD.light) / (LOAD.heavy - LOAD.light);
   const load = Math.max(LOAD.slowest, 1 - (1 - LOAD.slowest) * over);

@@ -1,5 +1,5 @@
 // The event queue. Systems don't call each other: they emit events (noise, damage,
-// block changes, interruptions), and other systems read them (DESIGN.md, "Events").
+// block changes, interruptions), and other systems read them (`DESIGN.md`, "Simulation architecture").
 
 export interface EventReader<E> {
   /** The events emitted since this reader last read, oldest first. */
