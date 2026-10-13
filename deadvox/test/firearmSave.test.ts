@@ -5,6 +5,7 @@ import { type AimStep, assertAimState } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import type { Item } from '../src/core/items.ts';
+import { ITEM_FLIGHT_SECONDS } from '../src/core/itemThrow.ts';
 import { pelletShot } from '../src/core/pellets.ts';
 import {
   decodeSave,
@@ -641,9 +642,14 @@ it('a mid-flight codec save resumes the case landing at the same simulation time
   }
   const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
   expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
-  original.firearms.advanceTo(ejectTime);
+  const frameSeconds = 1 / 60;
+  for (let frame = 0; frame < 120 && original.sim.time < ejectTime + frameSeconds; frame += 1) {
+    original.frame(frameSeconds);
+  }
   const pending = rifle.firearm?.landings?.[0];
   expect(pending).toBeDefined();
+  expect(original.sim.time).toBeGreaterThan(ejectTime);
+  expect(original.sim.time).toBeLessThan(pending!.at);
   const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
   const bytes = await encodeSave(saved, {
     generation: 1,
@@ -651,6 +657,7 @@ it('a mid-flight codec save resumes the case landing at the same simulation time
     worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
   });
   const resumed = session([], (await decodeSave(bytes, { version, contentLookup })).snapshot);
+  resumed.sim.paused = false;
   const cases = (runtime: ReturnType<typeof session>) =>
     [...runtime.inventory.items()]
       .filter(({ item }) => item.type === spentCaseItemId(calibre))
@@ -659,12 +666,86 @@ it('a mid-flight codec save resumes the case landing at the same simulation time
   expect(resumedLanding).toEqual(pending);
   expect(cases(original)).toEqual([]);
   expect(cases(resumed)).toEqual([]);
-  resumed.firearms.advanceTo(pending!.at - 1e-6);
-  expect(cases(resumed)).toEqual([]);
-  resumed.firearms.advanceTo(pending!.at);
-  original.firearms.advanceTo(pending!.at);
+  const advanceSessionToLanding = (runtime: ReturnType<typeof session>) => {
+    for (let frame = 0; frame < 120 && runtime.sim.time < pending!.at; frame += 1) {
+      runtime.frame(frameSeconds);
+    }
+    expect(runtime.sim.time).toBeGreaterThanOrEqual(pending!.at);
+  };
+  advanceSessionToLanding(resumed);
+  expect(cases(resumed)).toEqual([{ uid: expect.any(Number), count: 1 }]);
+  advanceSessionToLanding(original);
   expect(cases(resumed)).toEqual(cases(original));
   expect(cases(resumed)).toEqual([{ uid: expect.any(Number), count: 1 }]);
+});
+
+it('rejects an unknown item type in a pending firearm landing', async () => {
+  const original = session([]);
+  const rifle = sessionRifle(original);
+  const { action } = firearmHandlingFor(rifle, registry);
+  if (!action.fire) {
+    throw new Error('AR save fixture needs exported automatic action data');
+  }
+  expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
+  const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
+  for (let frame = 0; frame < 120 && original.sim.time < ejectTime + 1 / 60; frame += 1) {
+    original.frame(1 / 60);
+  }
+  const snapshot = structuredClone(original.snapshot({ worldId: 'world', characterId: 'character' })) as SaveSnapshot;
+  const savedRifle = snapshot.character.inventory.hands.right;
+  if (!savedRifle?.firearm?.landings?.length) {
+    throw new Error('Pending case fixture did not eject');
+  }
+  savedRifle.firearm.landings[0]!.type = 'not_a_real_item';
+  const bytes = await encodeSave(snapshot, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  await expect(decodeSave(bytes, { version, contentLookup })).rejects.toThrow('Unknown item content id');
+});
+
+it('a mid-flight throw remains unavailable until its restored simulation landing', async () => {
+  const original = session([]);
+  const rifle = sessionRifle(original);
+  const landingAt = original.sim.time + ITEM_FLIGHT_SECONDS;
+  const target = { kind: 'pile' as const, pos: [2, 1, 0] as [number, number, number] };
+  expect(
+    original.throwCharge.land(rifle, 'right', target, {
+      origin: [0, 1, 0],
+      landing: [1, 1, 0],
+      startedAtSimSeconds: original.sim.time,
+      landingAt,
+    }),
+  ).toEqual({ landed: true });
+  expect(original.inventory.locate(rifle)?.kind).toBe('flight');
+  expect(original.inventory.plan(rifle, { kind: 'hand', side: 'right' }).ok).toBe(false);
+  expect(original.inventory.piles.has(target.pos.join(','))).toBe(false);
+
+  const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  const resumed = session([], (await decodeSave(bytes, { version, contentLookup })).snapshot);
+  resumed.sim.paused = false;
+  const resumedRifle = resumed.inventory.itemByUid(rifle.uid)!;
+  expect(resumed.inventory.locate(resumedRifle)?.kind).toBe('flight');
+  expect(resumed.inventory.plan(resumedRifle, { kind: 'hand', side: 'right' }).ok).toBe(false);
+  expect(resumed.inventory.piles.has(target.pos.join(','))).toBe(false);
+  const frameSeconds = 1 / 60;
+  for (let frame = 0; frame < 120 && resumed.sim.time < landingAt; frame += 1) {
+    resumed.frame(frameSeconds);
+  }
+  for (let frame = 0; frame < 120 && original.sim.time < landingAt; frame += 1) {
+    original.frame(frameSeconds);
+  }
+  expect(resumed.sim.time).toBeGreaterThanOrEqual(landingAt);
+  expect(original.sim.time).toBeGreaterThanOrEqual(landingAt);
+  expect(resumed.inventory.locate(resumedRifle)?.kind).toBe('pile');
+  expect(original.inventory.locate(rifle)?.kind).toBe('pile');
+  expect(resumed.inventory.plan(resumedRifle, { kind: 'hand', side: 'right' }).ok).toBe(true);
+  expect(resumed.inventory.snapshotState().piles).toEqual(original.inventory.snapshotState().piles);
 });
 
 it('a codec save before ejectAt restores one pending case and lands it exactly once', async () => {

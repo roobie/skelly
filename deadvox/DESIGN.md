@@ -829,12 +829,16 @@ beam. Fuel, batteries, and powered fixed lights keep illumination consequential.
 
 ## Held-item throws
 
-Flight and landing preserve the held item's identity and state, including fitted
-parts, ammunition, and light. Mass limits range; #368 is the trigger for deciding
-whether atmospheric drag adds another limit. A throw adds no hit damage or
-landing lure; explosive effects belong to the grenade. See
-`throwDistanceForItem` in `src/core/itemThrow.ts` and `ThrowCharge.land` in
-`src/game/throwCharge.ts`.
+A released item remains inventory-owned as a pending landing until simulation
+reaches its landing time. It cannot be looted early, and a save restores both the
+item and the remainder of its flight; the render arc follows the same clock and
+endpoint. This keeps the transfer and its presentation on one impact. Flight and
+landing preserve item identity and state, including fitted parts, ammunition,
+and light. Mass limits range; #368 is the trigger for deciding whether
+atmospheric drag adds another limit. A throw adds no hit damage or landing lure;
+explosive effects belong to the grenade. See `src/core/inventory.ts`,
+`Inventory.beginItemFlight` and `Inventory.advanceItemLandings`, and
+`src/render/itemThrows.ts`, `ItemThrows.update`.
 
 ## Hand grenade
 

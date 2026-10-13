@@ -16,15 +16,21 @@ import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
-import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
+import type { HandSide, Inventory, ItemLanding, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
-import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
+import {
+  hasMetThrowMinimumHold,
+  ITEM_FLIGHT_SECONDS,
+  throwDistanceForItem,
+  traceItemLanding,
+} from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import { pileScatterPlacements } from '../core/scatterPile.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -166,7 +172,26 @@ import { playerStartFromWorld } from './worldSetup.ts';
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const STARTUP_MESH_RADIUS = 1;
 
-const resumeCaseEffects = (inventory: Inventory, spawn: (effect: FirearmShotEffect) => boolean): void => {
+const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
+  (x + 0.5) * blockSize,
+  y * blockSize + 0.006,
+  (z + 0.5) * blockSize,
+];
+
+const resumeItemThrows = (
+  inventory: Inventory,
+  spawn: (flight: Omit<ItemLanding<Item>, 'targetPos'>) => void,
+): void => {
+  for (const flight of inventory.pendingLandings.values()) {
+    spawn(flight);
+  }
+};
+
+const resumeCaseEffects = (
+  inventory: Inventory,
+  blockSize: number,
+  spawn: (effect: FirearmShotEffect) => boolean,
+): void => {
   for (const { item } of inventory.items()) {
     for (const landing of item.firearm?.landings ?? []) {
       const delta: Vec3 = [
@@ -180,7 +205,7 @@ const resumeCaseEffects = (inventory: Inventory, spawn: (effect: FirearmShotEffe
         direction: distance > 0 ? (delta.map((axis) => axis / distance) as Vec3) : [0, 1, 0],
         speed: distance / Math.max(landing.at - landing.startedAtSimSeconds, 1e-9),
         seed: landing.seed,
-        landingPosition: landing.position,
+        landingPosition: caseLandingWorldPosition(landing.position, blockSize),
         startedAtSimSeconds: landing.startedAtSimSeconds,
         landingAt: landing.at,
         ...(landing.modelId ? { caseModelId: landing.modelId } : {}),
@@ -865,7 +890,23 @@ export const startPlay = (
       }
     },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
-    onFirearmEjection: (effect) => caseEffects.spawn(effect),
+    onFirearmEjection: (effect) =>
+      caseEffects.spawn({ ...effect, landingPosition: caseLandingWorldPosition(effect.landingPosition, s) }),
+    onFirearmCaseLanded: (seed, item, instanceIndex) => {
+      const location = inventory.locate(item);
+      if (location?.kind !== 'pile') {
+        return;
+      }
+      const placement = pileScatterPlacements({
+        registry,
+        pile: location.pile,
+        worldSeed: config.seed,
+        blockSize: s,
+      }).filter(({ item: placed }) => placed.uid === item.uid)[instanceIndex];
+      if (placement) {
+        caseEffects.retarget(seed, placement.position);
+      }
+    },
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
     onDetonation: (at, radiusMetres) => view.blastFlashes.spawn(at, radiusMetres),
     debug: () => debugTools,
@@ -1006,7 +1047,8 @@ export const startPlay = (
     ),
   );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
-  resumeCaseEffects(inventory, (effect) => caseEffects.spawn(effect));
+  resumeCaseEffects(inventory, s, (effect) => caseEffects.spawn(effect));
+  resumeItemThrows(inventory, (flight) => itemThrows.spawn(flight));
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -2486,13 +2528,6 @@ export const startPlay = (
       showRefusal("Can't find a place for it to land", sim.time);
       return;
     }
-    const landed = session.throwCharge.land(item, hand, target);
-    if (!landed.landed) {
-      if (landed.reason) {
-        showRefusal(landed.reason, sim.time);
-      }
-      return;
-    }
     const throwOffset: Vec3 = throwingStance
       ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
       : [0, 0, 0];
@@ -2502,7 +2537,21 @@ export const startPlay = (
       body.pos[2] * s + throwOffset[2],
     ];
     const landing: Vec3 = [(target.pos[0] + 0.5) * s, (target.pos[1] + 0.15) * s, (target.pos[2] + 0.5) * s];
-    itemThrows.spawn(origin, landing, item);
+    const startedAtSimSeconds = sim.time;
+    const landingAt = startedAtSimSeconds + ITEM_FLIGHT_SECONDS;
+    const landed = session.throwCharge.land(item, hand, target, {
+      origin,
+      landing,
+      startedAtSimSeconds,
+      landingAt,
+    });
+    if (!landed.landed) {
+      if (landed.reason) {
+        showRefusal(landed.reason, sim.time);
+      }
+      return;
+    }
+    itemThrows.spawn({ origin, landing, item, startedAtSimSeconds, landingAt });
   }
 
   function itemLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {

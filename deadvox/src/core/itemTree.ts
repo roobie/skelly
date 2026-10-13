@@ -23,7 +23,8 @@ export type TreeLocation<Node, Pile, Entity> =
   | { kind: 'slot'; owner: Node; slot: string }
   | { kind: 'pocket'; owner: Node; pocket: number; placed: PlacedItem<Node> }
   | { kind: 'pile'; pile: Pile; placed: PlacedItem<Node> }
-  | { kind: 'furniture'; entity: Entity; pocket: number; placed: PlacedItem<Node> };
+  | { kind: 'furniture'; entity: Entity; pocket: number; placed: PlacedItem<Node> }
+  | { kind: 'flight'; uid: number };
 
 export interface TreeEntry<Node, Pile, Entity> {
   readonly item: Node;
@@ -120,8 +121,8 @@ export function* walkItemTree<Node extends NodeShape<Node>, Pile, Entity>(
 }
 
 export const savedItemTree = (state: InventoryState, prefix = 'character.inventory') =>
-  walkItemTree(
-    itemRoots<ItemState, InventoryState['piles'][number], InventoryState['entities']['entities'][number]>(
+  walkItemTree([
+    ...itemRoots<ItemState, InventoryState['piles'][number], InventoryState['entities']['entities'][number]>(
       {
         hands: state.hands,
         worn: state.worn,
@@ -130,7 +131,12 @@ export const savedItemTree = (state: InventoryState, prefix = 'character.invento
       },
       prefix,
     ),
-  );
+    ...state.pendingLandings.map((flight, index) => ({
+      item: flight.item,
+      location: { kind: 'flight' as const, uid: flight.item.uid },
+      path: `${prefix}.pendingLandings[${index}].item`,
+    })),
+  ]);
 
 /** Transient validation set, not a live UID registry. */
 export const itemIds = (entries: Iterable<{ item: { uid: number }; path: string }>, nextUid: number): Set<number> => {

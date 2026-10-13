@@ -2,7 +2,12 @@ import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMateria
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
 import type { Item } from '../src/core/items.ts';
-import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../src/core/itemThrow.ts';
+import {
+  hasMetThrowMinimumHold,
+  itemFlightPoint,
+  throwDistanceForItem,
+  traceItemLanding,
+} from '../src/core/itemThrow.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 
@@ -72,7 +77,7 @@ describe('held-item throws', () => {
     const magazine = testItem('magazine');
     const rifle = { ...testItem('rifle'), slots: { magazine } } as Item;
     const throws = new ItemThrows(registry, models, 1);
-    throws.spawn([0, 1, 0], [2, 1, 0], rifle);
+    throws.spawn({ origin: [0, 1, 0], landing: [2, 1, 0], item: rifle });
 
     expect(requestedLook).toMatchObject({
       model: 'rifle_model',
@@ -86,7 +91,7 @@ describe('held-item throws', () => {
     const registry = testRegistry({ rag: 20 });
     registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 2] } as never);
     const throws = new ItemThrows(registry, undefined, 1);
-    throws.spawn([0, 1, 0], [2, 1, 0], testItem('rag'));
+    throws.spawn({ origin: [0, 1, 0], landing: [2, 1, 0], item: testItem('rag') });
     const flight = throws.group.children[0] as Group;
     const bundle = flight.children[0] as Mesh;
 
@@ -100,7 +105,7 @@ describe('held-item throws', () => {
     const light = { color: '#62ff81', emissive: 0.3, burning: { drop: 'stay' } };
     registry.items.set('glow', { id: 'glow', weight: 30, size: [1, 2], light } as never);
     const throws = new ItemThrows(registry, undefined, 1);
-    throws.spawn([0, 1, 0], [2, 1, 0], { ...testItem('glow'), on: true });
+    throws.spawn({ origin: [0, 1, 0], landing: [2, 1, 0], item: { ...testItem('glow'), on: true } });
     const flight = throws.group.children[0] as Group;
     const marker = flight.children.find(
       (child) => child instanceof Mesh && child.material instanceof MeshBasicMaterial,
@@ -126,7 +131,7 @@ describe('held-item throws', () => {
     model.add(new Mesh(geometry, sourceMaterial));
     const models = { groundLook: () => model.clone() } as unknown as import('../src/render/models.ts').ModelLibrary;
     const throws = new ItemThrows(registry, models, 1);
-    throws.spawn([0, 1, 0], [2, 1, 0], { ...testItem('glow'), on: true });
+    throws.spawn({ origin: [0, 1, 0], landing: [2, 1, 0], item: { ...testItem('glow'), on: true } });
     const flight = throws.group.children[0] as Group;
     const shownModel = flight.children[0] as Group;
     let tube: Mesh | undefined;
@@ -147,11 +152,34 @@ describe('held-item throws', () => {
     sourceMaterial.dispose();
   });
 
+  it('ends the throw arc at its simulation landing time', () => {
+    const registry = testRegistry({ rag: 20 });
+    registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 1] } as never);
+    const throws = new ItemThrows(registry, undefined, 1);
+    const start: [number, number, number] = [0, 1, 0];
+    const landing: [number, number, number] = [2, 0.5, 1];
+    throws.spawn({
+      origin: start,
+      landing,
+      item: testItem('rag'),
+      startedAtSimSeconds: 4,
+      landingAt: 5,
+    });
+    const visual = throws.group.children[0] as Group;
+    throws.update(4.99);
+    expect(throws.activeCount).toBe(1);
+    throws.update(5);
+    expect(throws.activeCount).toBe(0);
+    expect(visual.visible).toBe(false);
+    expect(visual.position.toArray()).toEqual(itemFlightPoint(start, landing, 1));
+    throws.dispose();
+  });
+
   it('presents an item flight without adding a point light to the shader pool', () => {
     const registry = testRegistry({ rag: 20 });
     registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 2] } as never);
     const throws = new ItemThrows(registry);
-    throws.spawn([0, 1, 0], [2, 1, 0], testItem('rag'));
+    throws.spawn({ origin: [0, 1, 0], landing: [2, 1, 0], item: testItem('rag') });
 
     expect(throws.group.children.some((child) => child instanceof PointLight)).toBe(false);
     throws.dispose();

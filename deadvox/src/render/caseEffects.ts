@@ -1,4 +1,4 @@
-// Capped, render-only flying firearm cases. Their impacts never alter simulation piles.
+// Capped render-only effects follow firearm cases; simulation commits the corresponding pile items at impact.
 
 import { Group, type Object3D, Vector3 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
@@ -35,6 +35,7 @@ interface Particle {
   readonly rotation: Vector3;
   readonly spin: Vector3;
   caseModelId: string | undefined;
+  seed: number;
   visual: Object3D | undefined;
   readonly visuals: Map<string, Object3D>;
   readonly fallbackModels: Set<string>;
@@ -54,6 +55,7 @@ export class CaseEffects {
     rotation: new Vector3(),
     spin: new Vector3(),
     caseModelId: undefined,
+    seed: 0,
     visual: undefined,
     visuals: new Map(),
     fallbackModels: new Set(),
@@ -78,6 +80,7 @@ export class CaseEffects {
     particle.startedAtSimSeconds = effect.startedAtSimSeconds;
     particle.updatedAtSimSeconds = effect.startedAtSimSeconds;
     particle.landingAt = effect.landingAt;
+    particle.seed = effect.seed;
     particle.origin.set(...effect.origin);
     particle.landing.set(...effect.landingPosition);
     particle.position.set(...effect.origin);
@@ -89,6 +92,14 @@ export class CaseEffects {
     return true;
   }
 
+  /** Aligns the presentation endpoint with the pile instance created by simulation. */
+  retarget(seed: number, position: Vec3): void {
+    const particle = this.particles.find((candidate) => candidate.active && candidate.seed === seed);
+    if (particle) {
+      particle.landing.set(...position);
+    }
+  }
+
   /** Follows the simulation clock and hides at the exact frame its pile item is committed. */
   update(simTime: number): void {
     for (const particle of this.particles) {
@@ -97,6 +108,8 @@ export class CaseEffects {
       }
       this.upgradeVisual(particle);
       if (simTime >= particle.landingAt) {
+        particle.position.copy(particle.landing);
+        particle.visual?.position.copy(particle.position);
         particle.active = false;
         continue;
       }

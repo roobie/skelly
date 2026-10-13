@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
@@ -17,6 +18,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
+import { pileScatterPlacements } from '../src/core/scatterPile.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
@@ -28,8 +30,10 @@ import {
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
 import { FirearmTrigger } from '../src/game/firearmTrigger.ts';
+import { CaseEffects } from '../src/render/caseEffects.ts';
 import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
+import { PileMeshes } from '../src/render/piles.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
@@ -141,6 +145,74 @@ const shot = (simTime = 1, prepare: (inventory: Inventory) => void = () => undef
 };
 
 describe('rifle firearm handling', () => {
+  it('ends the native case effect at the pile renderer instance position', () => {
+    const blockSize = 0.5;
+    const worldSeed = 17;
+    const effects = new CaseEffects(blockSize);
+    let inventory: Inventory | undefined;
+    let effect: FirearmShotEffect | undefined;
+    const {
+      inventory: sessionInventory,
+      mechanics,
+      rifle,
+    } = armed({
+      onEjection: (shotEffect) => {
+        effect = shotEffect;
+        effects.spawn({
+          ...shotEffect,
+          landingPosition: [
+            (shotEffect.landingPosition[0] + 0.5) * blockSize,
+            shotEffect.landingPosition[1] * blockSize + 0.006,
+            (shotEffect.landingPosition[2] + 0.5) * blockSize,
+          ],
+        });
+      },
+      onCaseLanded: (seed, item) => {
+        const location = inventory?.locate(item);
+        if (location?.kind !== 'pile') {
+          return;
+        }
+        const placement = pileScatterPlacements({
+          registry,
+          pile: location.pile,
+          worldSeed,
+          blockSize,
+        }).find(({ item: placed }) => placed.uid === item.uid);
+        if (placement) {
+          effects.retarget(seed, placement.position);
+        }
+      },
+    });
+    inventory = sessionInventory;
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
+    mechanics.advanceTo(2);
+    const landing = rifle.firearm?.landings?.[0];
+    expect(landing).toBeDefined();
+    mechanics.advanceTo(landing!.at);
+    mechanics.advanceTo(landing!.at);
+    expect(effect).toBeDefined();
+
+    const piledCase = [...inventory.items()].find(({ item }) => item.type === caseType);
+    expect(piledCase).toBeDefined();
+    const location = inventory.locate(piledCase!.item);
+    expect(location?.kind).toBe('pile');
+    if (location?.kind !== 'pile') {
+      throw new Error('Ejected case did not land in a pile');
+    }
+    const pile = new PileMeshes(blockSize, undefined, worldSeed);
+    pile.sync(inventory);
+    const instances = pile.group.children.find((child): child is InstancedMesh => child instanceof InstancedMesh);
+    expect(instances).toBeDefined();
+    const matrix = new Matrix4();
+    const renderedPosition = new Vector3();
+    instances!.getMatrixAt(0, matrix);
+    matrix.decompose(renderedPosition, new Quaternion(), new Vector3());
+    effects.update(landing!.at);
+    expect(effects.mesh.children[0]!.position.distanceTo(renderedPosition)).toBeLessThan(1e-5);
+    pile.dispose();
+    effects.dispose();
+  });
+
   it('wears a fitted suppressor on each committed shot', () => {
     const fitted = withDefaultAttachment(registry, 'rifle_assault', 'improvised_suppressor');
     const { mechanics, rifle } = armed({}, { content: fitted.registry });

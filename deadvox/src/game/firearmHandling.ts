@@ -229,6 +229,11 @@ export interface FirearmCycleFrame {
   readonly magazine?: { readonly removeShare: number; readonly incoming?: string };
 }
 
+interface EjectedCasePlacement {
+  readonly item: Item;
+  readonly instanceIndex: number;
+}
+
 export class FirearmMechanics {
   /** Numeric ownership references only. Chamber/cycle data lives on the inventory item. */
   private readonly active = new Set<number>();
@@ -239,6 +244,7 @@ export class FirearmMechanics {
   private readonly isSolid: SolidAt;
   private readonly pose: (uid: number) => FirearmPoseInput | undefined;
   private readonly onEjection: (effect: FirearmShotEffect) => void;
+  private readonly onCaseLanded: (seed: number, item: Item, instanceIndex: number) => void;
   /** Simulation: resolves the shot's hits. It runs before `onTrajectory`, which is presentation only. */
   private readonly onShot: (shot: PelletShot, time: number, firearm: Item) => void;
   private readonly onTrajectory: (trajectory: FirearmTrajectory, time: number) => void;
@@ -264,6 +270,7 @@ export class FirearmMechanics {
       isSolid,
       pose,
       onEjection,
+      onCaseLanded = () => undefined,
       onShot = () => undefined,
       onTrajectory = () => undefined,
       onSound = () => undefined,
@@ -276,6 +283,7 @@ export class FirearmMechanics {
       isSolid?: SolidAt;
       pose: (uid: number) => FirearmPoseInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
+      onCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
       onShot?: (shot: PelletShot, time: number, firearm: Item) => void;
       onTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
       onSound?: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
@@ -297,6 +305,7 @@ export class FirearmMechanics {
     this.isSolid = isSolid ?? (() => false);
     this.pose = pose;
     this.onEjection = onEjection;
+    this.onCaseLanded = onCaseLanded;
     this.onShot = onShot;
     this.onTrajectory = onTrajectory;
     this.onSound = onSound;
@@ -997,10 +1006,13 @@ export class FirearmMechanics {
         continue;
       }
       const placement = this.placeEjected(landing.type, landing.position);
+      if (placement && typeof placement !== 'string') {
+        this.onCaseLanded(landing.seed, placement.item, placement.instanceIndex);
+      }
       const spentPumpCase =
         this.isPump(item) &&
         landing.type === spentCaseItemId(firearmHandlingFor(item, this.inventory.registry).calibre);
-      if (!placement && spentPumpCase) {
+      if ((!placement || typeof placement === 'string') && spentPumpCase) {
         this.onSound('shotgun_hull_drop', landing.position, landing.at);
       }
     }
@@ -1163,7 +1175,7 @@ export class FirearmMechanics {
     );
   }
 
-  private placeEjected(type: string, landing: Vec3 | undefined): string | undefined {
+  private placeEjected(type: string, landing: Vec3 | undefined): EjectedCasePlacement | string | undefined {
     if (!landing) {
       // The player's column should be streamed; if it is not, discard the case rather than create a floating pile.
       return undefined;
@@ -1172,10 +1184,17 @@ export class FirearmMechanics {
     if (!drop.plan.ok) {
       return drop.plan.reason;
     }
-    if (!this.inventory.add(this.inventory.create(type), drop.target)) {
+    const item = this.inventory.create(type);
+    const placement = this.inventory.planAdd(item, drop.target);
+    if (!placement.ok) {
+      return placement.reason;
+    }
+    const landedItem = placement.merge ?? item;
+    const instanceIndex = placement.merge?.count ?? 0;
+    if (!this.inventory.add(item, drop.target)) {
       return 'Ejection placement changed';
     }
-    return undefined;
+    return { item: landedItem, instanceIndex };
   }
 
   private ejectLive(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {

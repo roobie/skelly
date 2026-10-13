@@ -399,6 +399,16 @@ const targetStateSchema = obj({
 });
 const inventoryCore = obj({
   nextItemUid: positiveInt,
+  pendingLandings: arr(
+    obj({
+      item: lazy(() => itemSchema),
+      origin: vec3,
+      landing: vec3,
+      targetPos: vec3,
+      startedAtSimSeconds: finite,
+      landingAt: finite,
+    }),
+  ),
   hands: obj({ right: opt(lazy(() => itemSchema)), left: opt(lazy(() => itemSchema)) }),
   worn: obj({
     head: opt(lazy(() => itemSchema)),
@@ -994,6 +1004,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       aim: snapshot.character.aim,
       inventory: {
         nextItemUid: savedInventory.nextItemUid,
+        pendingLandings: savedInventory.pendingLandings,
         hands: savedInventory.hands,
         worn: savedInventory.worn,
         looted: savedInventory.looted,
@@ -1344,6 +1355,9 @@ function validateItemContentReferences(
     }
     item.firearm?.tube?.forEach((type, index) => {
       check('item', type, `${path}.firearm.tube[${index}]`);
+    });
+    item.firearm?.landings?.forEach(({ type }, index) => {
+      check('item', type, `${path}.firearm.landings[${index}].type`);
     });
     item.cartridges?.forEach((type, index) => {
       check('item', type, `${path}.cartridges[${index}]`);

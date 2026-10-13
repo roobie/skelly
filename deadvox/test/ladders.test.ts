@@ -389,7 +389,19 @@ describe('one hand on a ladder', () => {
     const landings: unknown[] = [];
     nextTick.enqueue(() =>
       applyToHeldItem(inventory.hands, released.hand, released.itemUid, (item) => {
-        landings.push(throwCharge.land(item, released.hand, { kind: 'pile', pos: body.pos.map(Math.floor) as Vec3 }));
+        landings.push(
+          throwCharge.land(
+            item,
+            released.hand,
+            { kind: 'pile', pos: body.pos.map(Math.floor) as Vec3 },
+            {
+              origin: [0, 0, 0],
+              landing: [0, 0, 0],
+              startedAtSimSeconds: session.sim.time,
+              landingAt: session.sim.time + 1,
+            },
+          ),
+        );
       }),
     );
     expect(session.grabLadder(session.entities.at(...LADDER_FOOT)!)).toBeUndefined();

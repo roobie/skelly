@@ -11,13 +11,13 @@ import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.
 import { itemLook } from './itemLook.ts';
 import type { ModelLibrary } from './models.ts';
 
-const MAX_ACTIVE = 4;
 const UP = new Vector3(0, 1, 0);
 const RIGHT = new Vector3(1, 0, 0);
 
 interface Flight {
   active: boolean;
-  age: number;
+  startedAtSimSeconds: number;
+  landingAt: number;
   readonly start: Vector3;
   readonly end: Vector3;
   readonly direction: Vector3;
@@ -28,7 +28,7 @@ interface Flight {
   modelVisual: boolean;
 }
 
-/** Render-only arc for an item already placed at its landing pile by the inventory owner. */
+/** Render-only arc following the inventory item's saved simulation landing. */
 export class ItemThrows {
   readonly group = new Group();
   private readonly flights: Flight[] = [];
@@ -44,10 +44,23 @@ export class ItemThrows {
     this.blockSize = blockSize;
   }
 
-  spawn(from: Vec3, to: Vec3, item: Item): void {
+  spawn({
+    origin: from,
+    landing: to,
+    item,
+    startedAtSimSeconds = 0,
+    landingAt = ITEM_FLIGHT_SECONDS,
+  }: {
+    origin: Vec3;
+    landing: Vec3;
+    item: Item;
+    startedAtSimSeconds?: number;
+    landingAt?: number;
+  }): void {
     const flight = this.flights.find((candidate) => !candidate.active) ?? this.createFlight();
     flight.active = true;
-    flight.age = 0;
+    flight.startedAtSimSeconds = startedAtSimSeconds;
+    flight.landingAt = landingAt;
     flight.start.set(...from);
     flight.end.set(...to);
     disposeItemEmissiveMaterials(flight.group);
@@ -91,18 +104,20 @@ export class ItemThrows {
     this.drawFlight(flight, 0);
   }
 
-  update(dt: number): void {
+  update(simTime: number): void {
     for (const flight of this.flights) {
       if (!flight.active) {
         continue;
       }
-      flight.age += dt;
-      if (flight.age >= ITEM_FLIGHT_SECONDS) {
+      const duration = flight.landingAt - flight.startedAtSimSeconds;
+      const progress = duration > 0 ? Math.max(0, (simTime - flight.startedAtSimSeconds) / duration) : 1;
+      if (simTime >= flight.landingAt) {
+        this.drawFlight(flight, 1);
         flight.active = false;
         flight.group.visible = false;
         continue;
       }
-      this.drawFlight(flight, flight.age / ITEM_FLIGHT_SECONDS);
+      this.drawFlight(flight, progress);
     }
   }
 
@@ -122,24 +137,14 @@ export class ItemThrows {
   }
 
   private createFlight(): Flight {
-    if (this.flights.length >= MAX_ACTIVE) {
-      const current = this.flights.find((candidate) => candidate.active);
-      if (!current) {
-        throw new Error('Item throw pool has no reusable flight');
-      }
-      current.active = false;
-      current.group.visible = false;
-      disposeItemEmissiveMaterials(current.group);
-      current.group.clear();
-      return current;
-    }
     const group = new Group();
     const bundle = new Mesh(this.geometry, this.bundleMaterial);
     const emissiveMaterial = new MeshBasicMaterial({ color: '#ffffff', toneMapped: false });
     const emissive = new Mesh(this.geometry, emissiveMaterial);
     const flight: Flight = {
       active: false,
-      age: 0,
+      startedAtSimSeconds: 0,
+      landingAt: 0,
       start: new Vector3(),
       end: new Vector3(),
       direction: new Vector3(),

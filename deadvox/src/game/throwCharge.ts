@@ -3,6 +3,7 @@
 // the live game and lands its recorded throws through the same `land`.
 
 import { dominantSide, offSide } from '../core/character.ts';
+import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import type { LadderHold } from '../core/ladders.ts';
@@ -107,13 +108,14 @@ export class ThrowCharge {
   }
 
   /**
-   * Carries out a released throw: moves `item` from `hand` onto the pile it lands on, or says why not when the player
-   * should see it. The ladder admits the hand again here, as a hold can take it between the release and this tick.
+   * Admits a released throw and transfers its item into simulation-owned flight state. The ladder admits the hand
+   * again here, as a hold can take it between the release and this tick.
    */
   land(
     item: Item,
     hand: HandSide,
     target: Extract<Target, { kind: 'pile' }>,
+    flight: { origin: Vec3; landing: Vec3; startedAtSimSeconds: number; landingAt: number },
   ): { readonly landed: true } | { readonly landed: false; readonly reason?: string } {
     const { inventory } = this;
     const ladderRefusal = this.ladderHold.refusal(hand);
@@ -125,12 +127,12 @@ export class ThrowCharge {
       return { landed: false, reason: `Can't throw it there: ${placement.reason}` };
     }
     const location = inventory.locate(item);
-    if (location?.kind !== 'hand' || location.side !== hand || !inventory.consume(item)) {
+    if (
+      location?.kind !== 'hand' ||
+      location.side !== hand ||
+      !inventory.beginItemFlight(item, hand, { ...flight, targetPos: [...target.pos] })
+    ) {
       return { landed: false };
-    }
-    if (!inventory.add(item, target)) {
-      inventory.add(item, { kind: 'hand', side: location.side });
-      return { landed: false, reason: "Couldn't land the item there" };
     }
     return { landed: true };
   }

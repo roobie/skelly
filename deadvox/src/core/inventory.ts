@@ -114,8 +114,18 @@ export type TargetState =
   | { kind: 'pile'; pos: Vec3; at?: Spot }
   | { kind: 'furniture'; entityUid: number; pocket: number; at?: Spot };
 
+export interface ItemLanding<Node> {
+  item: Node;
+  origin: Vec3;
+  landing: Vec3;
+  targetPos: Vec3;
+  startedAtSimSeconds: number;
+  landingAt: number;
+}
+
 export interface InventoryState {
   nextItemUid: number;
+  pendingLandings: ItemLanding<ItemState>[];
   hands: Partial<Record<HandSide, ItemState>>;
   worn: Partial<Record<WearSlot, ItemState>>;
   piles: { pos: Vec3; items: ReturnType<typeof snapshotPlaced>[] }[];
@@ -190,6 +200,7 @@ export class Inventory {
   readonly hands: Partial<Record<HandSide, Item>> = {};
   readonly worn: Partial<Record<WearSlot, Item>> = {};
   readonly piles = new Map<string, Pile>();
+  readonly pendingLandings = new Map<number, ItemLanding<Item>>();
   /** What's been taken out of furniture, by item type: the death screen's looting summary. */
   readonly looted = new Map<string, number>();
   private readonly quickbarOrigins = new Map<number, TargetState>();
@@ -211,6 +222,13 @@ export class Inventory {
   snapshotState(): Readonly<InventoryState> {
     return freezeSnapshot({
       nextItemUid: this.factory.next,
+      pendingLandings: [...this.pendingLandings.values()].map((flight) => ({
+        ...flight,
+        item: snapshotItem(flight.item),
+        origin: [...flight.origin],
+        landing: [...flight.landing],
+        targetPos: [...flight.targetPos],
+      })),
       hands: Object.fromEntries(Object.entries(this.hands).map(([side, item]) => [side, snapshotItem(item!)])),
       worn: Object.fromEntries(Object.entries(this.worn).map(([slot, item]) => [slot, snapshotItem(item!)])),
       piles: [...this.piles.values()].map((pile) => ({ pos: [...pile.pos], items: pile.items.map(snapshotPlaced) })),
@@ -261,6 +279,15 @@ export class Inventory {
       inventory.piles.set(pile.pos.join(','), {
         pos: [...pile.pos],
         items: pile.items.map((placed) => restorePlaced(registry, placed)),
+      });
+    }
+    for (const flight of state.pendingLandings) {
+      inventory.pendingLandings.set(flight.item.uid, {
+        ...flight,
+        item: restoreItem(registry, flight.item),
+        origin: [...flight.origin],
+        landing: [...flight.landing],
+        targetPos: [...flight.targetPos],
       });
     }
     for (const [type, count] of state.looted) {
@@ -326,8 +353,8 @@ export class Inventory {
   /** The sole live item-tree projection; callers hold UIDs, not ownership caches. */
   items() {
     const inventory = this;
-    return walkItemTree(
-      itemRoots<Item, Pile, BlockEntity>({
+    return walkItemTree([
+      ...itemRoots<Item, Pile, BlockEntity>({
         hands: this.hands,
         worn: this.worn,
         get piles() {
@@ -337,7 +364,12 @@ export class Inventory {
           return inventory.entities.all;
         },
       }),
-    );
+      ...[...this.pendingLandings.values()].map((flight, index) => ({
+        item: flight.item,
+        location: { kind: 'flight' as const, uid: flight.item.uid },
+        path: `inventory.pendingLandings[${index}].item`,
+      })),
+    ]);
   }
 
   itemByUid(uid: number): Item | undefined {
@@ -411,6 +443,8 @@ export class Inventory {
         throw new Error('Work inputs have no independent target');
       case 'slot':
         throw new Error('A fitted item has no independent target');
+      case 'flight':
+        throw new Error('A flying item has no independent target');
       default:
         throw new Error(`Unknown location kind ${String((location as { kind: string }).kind)}`);
     }
@@ -536,6 +570,35 @@ export class Inventory {
     return this.carried().reduce((sum, item) => sum + weightOf(this.registry, item), 0);
   }
 
+  /** Starts a timed throw with its item retained by inventory until the landing frame. */
+  beginItemFlight(item: Item, side: HandSide, flight: Omit<ItemLanding<Item>, 'item'>): boolean {
+    if (this.hands[side] !== item || this.pendingLandings.has(item.uid)) {
+      return false;
+    }
+    delete this.hands[side];
+    this.pendingLandings.set(item.uid, {
+      ...flight,
+      item,
+      origin: [...flight.origin],
+      landing: [...flight.landing],
+      targetPos: [...flight.targetPos],
+    });
+    this.quickbarOrigins.delete(item.uid);
+    this.version += 1;
+    return true;
+  }
+
+  /** Commits pending throws whose simulation landing time has arrived. */
+  advanceItemLandings(time: number): void {
+    const due = [...this.pendingLandings].filter(([, flight]) => time + 1e-9 >= flight.landingAt);
+    for (const [uid, flight] of due) {
+      this.pendingLandings.delete(uid);
+      if (!this.add(flight.item, { kind: 'pile', pos: flight.targetPos })) {
+        this.pendingLandings.set(uid, flight);
+      }
+    }
+  }
+
   /** Checks a move and works out its handling time, without changing anything. */
   plan(item: Item, target: Target, count = item.count): Plan {
     const from = this.locate(item);
@@ -547,6 +610,9 @@ export class Inventory {
     }
     if (from.kind === 'slot') {
       return refuse('It is fitted to the firearm');
+    }
+    if (from.kind === 'flight') {
+      return refuse('It is still in flight');
     }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);
@@ -1334,7 +1400,7 @@ export class Inventory {
   /** Uses up `count` of an item wherever it is: eaten, burnt, loaded into something. */
   consume(item: Item, count = 1): boolean {
     const at = this.locate(item);
-    if (!at || item.work || at.kind === 'work' || at.kind === 'slot' || count > item.count) {
+    if (!at || item.work || at.kind === 'work' || at.kind === 'slot' || at.kind === 'flight' || count > item.count) {
       return false;
     }
     if (count < item.count) {
@@ -1372,6 +1438,9 @@ export class Inventory {
         throw new Error('Craft inputs are owned by the work item');
       case 'slot':
         throw new Error('A fitted item is owned by its firearm');
+      case 'flight':
+        this.pendingLandings.delete(from.uid);
+        return;
       default:
         from.pile.items.splice(from.pile.items.indexOf(from.placed), 1);
         if (from.pile.items.length === 0) {
@@ -1432,6 +1501,21 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
 };
 
 const validateInventoryTree = (registry: Registry, state: InventoryState): void => {
+  if (
+    state.pendingLandings.some(
+      ({ origin, landing, targetPos, startedAtSimSeconds, landingAt }) =>
+        !(
+          [...origin, ...landing].every(Number.isFinite) &&
+          targetPos.every(Number.isSafeInteger) &&
+          Number.isFinite(startedAtSimSeconds) &&
+          Number.isFinite(landingAt)
+        ) ||
+        startedAtSimSeconds < 0 ||
+        landingAt <= startedAtSimSeconds,
+    )
+  ) {
+    throw new Error('Invalid pending item landing');
+  }
   const tree = [...savedItemTree(state)];
   itemIds(tree, state.nextItemUid);
   validateRepairTargets(registry, tree);
@@ -1590,7 +1674,7 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
 
 /** Where an item lies in a grid, if it's in one. */
 export const spotOf = (at: Location): Spot | undefined =>
-  at.kind === 'hand' || at.kind === 'worn' || at.kind === 'work' || at.kind === 'slot'
+  at.kind === 'hand' || at.kind === 'worn' || at.kind === 'work' || at.kind === 'slot' || at.kind === 'flight'
     ? undefined
     : { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated };
 
@@ -1606,6 +1690,8 @@ export const sameGrid = (at: Location, spot: Spot | undefined): Target | undefin
       return { kind: 'pile', pos: at.pile.pos, at: spot };
     case 'furniture':
       return { kind: 'furniture', entity: at.entity, pocket: at.pocket, at: spot };
+    case 'flight':
+      return undefined;
     default:
       return undefined;
   }

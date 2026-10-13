@@ -282,7 +282,7 @@ export const createPlayView = (
       frozen,
       perceptionLabels,
     }: PlayWorldFrame) => {
-      itemThrows.update(dt);
+      itemThrows.update(time);
       blastFlashes.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
