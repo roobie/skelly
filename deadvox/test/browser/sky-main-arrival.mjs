@@ -46,7 +46,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
         name: 'main-first-mesh-source-overlay',
         enforce: 'pre',
         resolveId(id, importer) {
-          if (!importer || !id.startsWith('.')) {
+          if (!(importer && id.startsWith('.'))) {
             return null;
           }
           const path = resolve(dirname(importer.split('?')[0]), id);
