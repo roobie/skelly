@@ -250,7 +250,12 @@ try {
     await page.evaluate(() => document.querySelector('[data-sky-route]').remove());
   }
   if (mode === 'traversal') {
-    await page.waitForFunction(() => Boolean(document.pointerLockElement));
+    await page.waitForFunction(
+      () =>
+        Boolean(document.pointerLockElement) &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
+    );
     const verifyGate = async (locked) => {
       const before = await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode);
       const gate = await page.evaluate(

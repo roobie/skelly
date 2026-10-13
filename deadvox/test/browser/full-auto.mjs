@@ -191,7 +191,13 @@ try {
   await page.evaluate(() => {
     globalThis.fullAutoRuntime.input.pitch = (-20 * Math.PI) / 180;
   });
-  await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  await page.waitForFunction(
+    () =>
+      document.pointerLockElement &&
+      document.querySelector('#overlay').hidden &&
+      document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+      document.querySelector('#world-loading').hidden,
+  );
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
   const reviewMap = page.locator('iframe[title="Current-world review map"]');
   await pressAction(page, 'debug.review-map-toggle');

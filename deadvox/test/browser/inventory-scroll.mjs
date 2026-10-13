@@ -1059,9 +1059,15 @@ try {
       timeout: 30_000,
     });
     await page.locator('#go').click();
-    await page.waitForFunction(() => globalThis.foregripFitTest && document.querySelector('#overlay')?.hidden, null, {
-      timeout: 20_000,
-    });
+    await page.waitForFunction(
+      () =>
+        globalThis.foregripFitTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
+      null,
+      { timeout: 20_000 },
+    );
     const clickThroughMenuCursor = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
       const bounds = await targetLocator.boundingBox();

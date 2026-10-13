@@ -75,7 +75,12 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.locator('#go').click();
     await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+      () =>
+        globalThis.primaryActionTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.pointerLockElement &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
     );
     const start = await page.evaluate(() => {
       const { input, session } = globalThis.primaryActionTest;
@@ -248,7 +253,12 @@ const verifyContainerSearchTab = async (browserInstance, port, renderOverride) =
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.locator('#go').click();
     await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+      () =>
+        globalThis.primaryActionTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.pointerLockElement &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
     );
     for (const screenWasOpen of [true, false]) {
       await pressAction(page, 'ui.inventory-tab-skills');
@@ -359,7 +369,12 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     await page.locator('#dominant-hand').selectOption('left');
     await page.locator('#go').click();
     await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+      () =>
+        globalThis.primaryActionTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.pointerLockElement &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
     );
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
@@ -608,7 +623,12 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.locator('#dominant-hand').selectOption('left');
     await page.locator('#go').click();
     await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+      () =>
+        globalThis.primaryActionTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.pointerLockElement &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
     );
     const firearm = await page.evaluate(
       async ({ firearmModule, magazineModuleUrl, optionsModuleUrl }) => {
@@ -918,7 +938,12 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     await page.locator('#dominant-hand').selectOption('left');
     await page.locator('#go').click();
     await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+      () =>
+        globalThis.primaryActionTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.pointerLockElement &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
     );
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
@@ -1169,7 +1194,12 @@ try {
   await timePhase('initial-testHouse-start', async () => {
     await page.locator('#go').click();
     await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+      () =>
+        globalThis.primaryActionTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.pointerLockElement &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
     );
   });
   const identity = await page.evaluate(() => {
@@ -2716,7 +2746,12 @@ try {
     await lockedPage.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await lockedPage.locator('#go').click();
     await lockedPage.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+      () =>
+        globalThis.primaryActionTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.pointerLockElement &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
     );
     await lockedPage.evaluate(() => {
       const r = globalThis.primaryActionTest;
@@ -2994,7 +3029,12 @@ try {
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
   await page.waitForFunction(
-    () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    () =>
+      globalThis.primaryActionTest &&
+      document.querySelector('#overlay')?.hidden &&
+      document.pointerLockElement &&
+      document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+      document.querySelector('#world-loading').hidden,
   );
   const shortReplay = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;

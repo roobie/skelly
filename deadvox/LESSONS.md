@@ -16,7 +16,9 @@ Apply mode-specific suppression when input is captured, using the mode at that e
 
 ## Browser readiness
 
-Browser stages should wait for app readiness, not optional external resources. Keep Playwright's managed launch path and isolated profiles: desktop keyring initialization and DevTools discovery have delayed custom launches, while unrelated resource load is not a game readiness contract. Do not warm up a request, retry a failed stage or raise its timeout. See `test/browser/chromium.mjs`, `launchChromium`, and `test/browser/save-storage.mjs`, `trackPageNavigation`.
+Before gameplay or debug commands, browser stages must wait for world readiness after each start or reload. A mounted debug UI, pointer lock or dismissed title menu does not certify readiness; commands under the loading mask are deliberately discarded. Observe the loading owner or the mounted mask's completed state, not optional external resources. See `src/game/worldLoading.ts`, `WorldLoading`, and `src/ui/worldLoading.ts`, `mountWorldLoading`.
+
+Keep Playwright's managed launch path and isolated profiles: desktop keyring initialization and DevTools discovery have delayed custom launches, while unrelated resource load is not a game readiness contract. Do not warm up a request, retry a failed stage or raise its timeout. See `test/browser/chromium.mjs`, `launchChromium`, and `test/browser/save-storage.mjs`, `trackPageNavigation`.
 
 ## Persistence requests
 

@@ -115,7 +115,12 @@ try {
     await page.locator('#dominant-hand').selectOption('left');
     await page.locator('#go').click();
     await page.waitForFunction(
-      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+      () =>
+        globalThis.primaryActionTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.pointerLockElement &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
     );
   });
   await timePhase('glowstick-pixel-assertions', async () => {

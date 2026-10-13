@@ -492,7 +492,14 @@ try {
       null,
       { timeout: 60_000 },
     );
-    await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#overlay').hidden &&
+        globalThis.firefoxUiTest.worldLoading.ready &&
+        document.querySelector('#world-loading')?.hidden,
+      null,
+      { timeout: 10_000 },
+    );
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
     const weatheringPixels = await measureWeatheringMaterials(page);
@@ -627,7 +634,14 @@ try {
       timeout: 30_000,
     });
     await page.locator('#go').click();
-    await page.waitForFunction(() => globalThis.firefoxUiTest?.engine.renderer, null, { timeout: 60_000 });
+    await page.waitForFunction(
+      () =>
+        globalThis.firefoxUiTest?.engine.renderer &&
+        globalThis.firefoxUiTest.worldLoading.ready &&
+        document.querySelector('#world-loading')?.hidden,
+      null,
+      { timeout: 60_000 },
+    );
     await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').waitFor({ state: 'visible' });
     await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
     const reloadedWeatheringGroup = page.locator('.debug-group[data-group="weathering"]');
