@@ -5,7 +5,7 @@ import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import type { StairDef } from './schema.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
-import type { CompiledTemplate } from './templates.ts';
+import { type CompiledTemplate, cellsOf } from './templates.ts';
 
 const BODY_HEIGHT = STAIR_BODY_HEIGHT;
 const BODY_HALF_WIDTH = STAIR_BODY_HALF_WIDTH;
@@ -31,10 +31,29 @@ class TemplateSpace {
   readonly registry: Registry;
   readonly template: CompiledTemplate;
   readonly solids: Set<number>;
+  readonly furniture: Uint8Array;
   constructor(registry: Registry, template: CompiledTemplate) {
     this.registry = registry;
     this.template = template;
     this.solids = new Set(registry.blocks.flatMap((block, index) => (block.solid ? [index] : [])));
+    const [sx, sy, sz] = template.size;
+    this.furniture = new Uint8Array(sx * sy * sz);
+    for (const piece of template.pieces) {
+      const flags =
+        Number(this.furnitureStops(piece.furniture, false)) | (Number(this.furnitureStops(piece.furniture, true)) << 1);
+      if (flags === 0) {
+        continue;
+      }
+      const [px, py, pz] = piece.pos;
+      for (const [dx, dy, dz] of cellsOf(piece.size)) {
+        const x = px + dx;
+        const y = py + dy;
+        const z = pz + dz;
+        if (x >= 0 && x < sx && y >= 0 && y < sy && z >= 0 && z < sz) {
+          this.furniture[x + sx * (z + sz * y)]! |= flags;
+        }
+      }
+    }
   }
   terrain(x: number, y: number, z: number): boolean {
     const [sx, sy, sz] = this.template.size;
@@ -53,19 +72,8 @@ class TemplateSpace {
     return def.door ? !doorsOpen : def.solid !== false;
   }
   occupied(x: number, y: number, z: number, doorsOpen: boolean): boolean {
-    return (
-      this.terrain(x, y, z) ||
-      this.template.pieces.some(
-        (piece) =>
-          this.furnitureStops(piece.furniture, doorsOpen) &&
-          x >= piece.pos[0] &&
-          x < piece.pos[0] + piece.size[0] &&
-          y >= piece.pos[1] &&
-          y < piece.pos[1] + piece.size[1] &&
-          z >= piece.pos[2] &&
-          z < piece.pos[2] + piece.size[2],
-      )
-    );
+    const [sx, , sz] = this.template.size;
+    return this.terrain(x, y, z) || (this.furniture[x + sx * (z + sz * y)]! & (doorsOpen ? 2 : 1)) !== 0;
   }
   clear([x, feet, z]: Vec3): boolean {
     for (const [bx, y, bz] of bodyCells([x, feet, z])) {
