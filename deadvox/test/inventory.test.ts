@@ -112,21 +112,32 @@ describe('grid placement', () => {
     expect(() => Inventory.restoreState(registry, after)).not.toThrow();
   });
 
-  it('refuses a same-pile swap when the final footprints overlap', () => {
-    const { inv } = dressed();
-    const small = onFloor(inv, 'rag');
-    const large = onFloor(inv, 'chocolate_bar');
+  it('refuses overlapping same-pile swaps with owned non-stackable footprints', () => {
+    const fixtureRegistry = { ...registry, items: new Map(registry.items) };
+    fixtureRegistry.items.set('fixture_tall', {
+      ...registry.items.get('rag')!,
+      id: 'fixture_tall',
+      size: [1, 3],
+      stack: undefined,
+    });
+    fixtureRegistry.items.set('fixture_wide', {
+      ...registry.items.get('rag')!,
+      id: 'fixture_wide',
+      size: [3, 1],
+      stack: undefined,
+    });
+    const inv = new Inventory(fixtureRegistry);
+    const tall = inv.create('fixture_tall');
+    const wide = inv.create('fixture_wide');
     const pile = { kind: 'pile', pos: [10, 0, 0] as [number, number, number] } as const;
-    const smallSpot = { ...pile, at: { x: 0, y: 0, rotated: false } };
-    const largeSpot = { ...pile, at: { x: 1, y: 0, rotated: false } };
-    expect(inv.move(small, smallSpot).ok).toBe(true);
-    expect(inv.move(large, largeSpot).ok).toBe(true);
+    expect(inv.add(tall, { ...pile, at: { x: 0, y: 0, rotated: false } })).toBe(true);
+    expect(inv.add(wide, { ...pile, at: { x: 1, y: 0, rotated: false } })).toBe(true);
     const before = inv.snapshotState();
 
-    expect(inv.move(small, largeSpot).ok).toBe(false);
+    expect(inv.move(tall, { ...pile, at: { x: 1, y: 0, rotated: false } }).ok).toBe(false);
     const after = inv.snapshotState();
     expect(after).toEqual(before);
-    expect(() => Inventory.restoreState(registry, after)).not.toThrow();
+    expect(() => Inventory.restoreState(fixtureRegistry, after)).not.toThrow();
   });
 
   it('swaps items across containers when each fits the other stored place', () => {
