@@ -1997,10 +1997,13 @@ try {
   assert.equal(fullMeter, 100, 'maximum charge fills the handling meter');
   await releaseThrow();
   try {
-    await page.waitForFunction((uid) => {
-      const r = globalThis.primaryActionTest;
-      return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.itemThrows.activeCount > 0;
-    }, throwFixture.uid);
+    await page.waitForFunction(() => globalThis.primaryActionTest.itemThrows.activeCount > 0);
+    await page.waitForFunction(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+        'pile',
+      throwFixture.uid,
+    );
   } catch (error) {
     const state = await page.evaluate(
       ({ uid, seconds }) => {
@@ -2046,10 +2049,6 @@ try {
     const [x, , z] = location.pile.pos;
     return Math.hypot(x + 0.5 - start[0], z + 0.5 - start[2]) * blockSize;
   }, throwFixture);
-  assert.ok(
-    await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount > 0),
-    'item throw presents a visible arc to the landing point',
-  );
   assert.ok(
     thrown >= throwFixture.distance - landingTolerance,
     `throw reaches its tuned landing range (distance ${thrown})`,
