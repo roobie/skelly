@@ -14,6 +14,12 @@ const sources = [
   'worker/protocol.ts',
 ];
 
+export function mainOverlayPath(root, id) {
+  const [path] = id.split('?');
+  const prefix = `${resolve(root)}/src/`;
+  return path.startsWith(prefix) ? path.slice(prefix.length) : null;
+}
+
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
   const ref = event?.pull_request?.base?.sha ?? 'origin/main';
@@ -24,6 +30,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   }
   const base = git(['rev-parse', ref]);
   const overlays = new Map(sources.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
+  const appliedSources = new Set();
   const server = await createServer({
     root,
     configFile: resolve(root, 'vite.config.ts'),
@@ -34,9 +41,11 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
         name: 'main-first-mesh-source-overlay',
         enforce: 'pre',
         transform(code, id) {
-          const [path] = id.split('?');
-          const relative = path.startsWith(`${root}/src/`) ? path.slice(`${root}/src/`.length) : null;
+          const relative = mainOverlayPath(root, id);
           let source = overlays.get(relative) ?? code;
+          if (overlays.has(relative)) {
+            appliedSources.add(relative);
+          }
           if (relative === 'core/authoredSite.ts' || relative === 'content/base/templates-stairs.json') {
             source = fixtureTransform(source, id) ?? source;
           }
@@ -63,6 +72,13 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
     ],
   });
   const page = await browser.newPage({ viewport });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.stack ?? String(error)));
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      errors.push(message.text());
+    }
+  });
   try {
     await page.addInitScript(() => {
       globalThis.mainArrival = { firstMeshRealMs: null };
@@ -76,7 +92,15 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
       { timeout: 60_000 },
     );
     await page.locator('#go').click();
+    for (const source of ['game/engine.ts', 'game/streamer.ts']) {
+      if (!appliedSources.has(source)) {
+        throw new Error(`Main overlay was not applied: ${source}`);
+      }
+    }
     await page.waitForFunction(() => globalThis.mainArrival.firstMeshRealMs !== null, {}, { timeout: 60_000 });
+    if (errors.length > 0) {
+      throw new Error(`Main source overlay browser errors: ${errors.join('\n')}`);
+    }
     const evidence = await page.evaluate(() => ({
       ...globalThis.mainArrival,
       timeOriginRealMs: performance.timeOrigin,
@@ -85,6 +109,8 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
     Object.assign(evidence, {
       base,
       sourceOverlays: sources,
+      appliedSources: [...appliedSources],
+      errors,
       browser: browser.version(),
       viewport: page.viewportSize(),
       attribution:
@@ -93,6 +119,18 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
     await writeFile(resolve(artifacts, 'main-first-mesh.json'), JSON.stringify(evidence, null, 2));
     process.stdout.write(`MAIN_FIRST_MESH_EVIDENCE ${JSON.stringify(evidence)}\n`);
     return evidence;
+  } catch (error) {
+    const state = await page
+      .evaluate(() => ({
+        arrival: globalThis.mainArrival,
+        goDisabled: document.querySelector('#go')?.getAttribute('aria-disabled'),
+        errorReport: document.querySelector('[data-error-text]')?.textContent,
+      }))
+      .catch(() => null);
+    const failure = { error: String(error), base, appliedSources: [...appliedSources], errors, state };
+    await writeFile(resolve(artifacts, 'main-first-mesh-failure.json'), JSON.stringify(failure, null, 2));
+    process.stdout.write(`MAIN_FIRST_MESH_FAILURE ${JSON.stringify(failure)}\n`);
+    throw error;
   } finally {
     await page.close();
     await server.close();
