@@ -5,7 +5,7 @@ import type { AimBasis, AimFrame } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import type { Vec3 } from '../core/coords.ts';
+import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../core/firearmAttachments.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
@@ -20,14 +20,16 @@ import {
 } from '../core/firearmsSkill.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
 import { heldEjectionPose } from '../core/heldPose.ts';
-import type { Inventory } from '../core/inventory.ts';
+import { dropSpots, type Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { settleOnWorld } from '../core/itemThrow.ts';
 import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
-import { dropTarget, stowTarget } from '../core/options.ts';
+import { type dropTarget, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import type { SolidAt } from '../core/raycast.ts';
+import { makeScale } from '../core/scale.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
@@ -664,7 +666,11 @@ export class FirearmMechanics {
     if (!emission) {
       return 'No held ejection pose';
     }
-    const drop = this.ejectionDrop(type, emission);
+    const landing = this.landing(emission);
+    if (!landing) {
+      return 'No solid surface below the ejected item';
+    }
+    const drop = this.ejectionDrop(type, landing);
     return drop.plan.ok ? undefined : drop.plan.reason;
   }
 
@@ -1115,8 +1121,26 @@ export class FirearmMechanics {
    * Metadata-only placement probe: never allocate a UID during read-only rack admission. An ejected item lands in
    * the pile of the block it falls on, so cases are saved per block (DESIGN.md, "Spent cases per block").
    */
-  private ejectionDrop(type: string, emission: Omit<PendingCase, 'seed'>): ReturnType<typeof dropTarget> {
-    return dropTarget(this.inventory, { uid: 0, type, count: 1, condition: 1 }, this.landing(emission));
+  private ejectionDrop(type: string, landing: Vec3): ReturnType<typeof dropTarget> {
+    const item = { uid: 0, type, count: 1, condition: 1 };
+    let first: ReturnType<typeof dropTarget> | undefined;
+    for (const pos of dropSpots(landing)) {
+      if (!this.isSolid(pos[0], pos[1] - 1, pos[2])) {
+        continue;
+      }
+      const target = { kind: 'pile', pos } as const;
+      const candidate = { target, plan: this.inventory.planAdd(item, target) };
+      first ??= candidate;
+      if (candidate.plan.ok) {
+        return candidate;
+      }
+    }
+    return (
+      first ?? {
+        target: { kind: 'pile', pos: landing },
+        plan: { ok: false, reason: 'No supported drop spot' },
+      }
+    );
   }
 
   private ejectLive(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
@@ -1126,7 +1150,11 @@ export class FirearmMechanics {
     }
     const emission = this.emission(item, data, pose);
     const type = state.roundType!;
-    const drop = this.ejectionDrop(type, emission);
+    const landing = this.landing(emission);
+    if (!landing) {
+      return 'No solid surface below the ejected item';
+    }
+    const drop = this.ejectionDrop(type, landing);
     if (!drop.plan.ok) {
       return drop.plan.reason;
     }
@@ -1148,13 +1176,15 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  private landing(emission: Omit<PendingCase, 'seed'>): Vec3 {
+  private landing(emission: Omit<PendingCase, 'seed'>): Vec3 | undefined {
     const distance = CASE_SPEED * CASE_FLIGHT_SECONDS;
-    return [
-      Math.floor((emission.origin[0] + emission.direction[0] * distance) / this.blockSize),
-      emission.feet[1],
-      Math.floor((emission.origin[2] + emission.direction[2] * distance) / this.blockSize),
+    const endpoint: Vec3 = [
+      emission.origin[0] + emission.direction[0] * distance,
+      emission.origin[1],
+      emission.origin[2] + emission.direction[2] * distance,
     ];
+    const minY = makeScale(this.blockSize).minCy * CHUNK;
+    return settleOnWorld(endpoint, this.blockSize, minY, this.isSolid);
   }
 
   private ejectCase(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
@@ -1165,8 +1195,11 @@ export class FirearmMechanics {
     const pose = this.pose(item.uid);
     const emission = pose ? this.emission(item, data, pose) : pending;
     const landing = this.landing(emission);
+    if (!landing) {
+      return 'No solid surface below the ejected item';
+    }
     const type = spentCaseItemId(data.calibre);
-    const drop = this.ejectionDrop(type, emission);
+    const drop = this.ejectionDrop(type, landing);
     if (!drop.plan.ok) {
       return drop.plan.reason;
     }

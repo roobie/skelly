@@ -48,7 +48,12 @@ const pose = {
   ready: true,
   sprinting: false,
 };
-const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0) => {
+const fixture = (
+  content = registry,
+  firearmsSkillLevel: () => number = () => 0,
+  ejectionPose = pose,
+  isSolid?: (x: number, y: number, z: number) => boolean,
+) => {
   // Own the capacity fixture rather than pinning the evolving exported tube count.
   const modelId = content.items.get('pump_shotgun')!.model!;
   const model = content.models.get(modelId)!;
@@ -75,8 +80,9 @@ const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0)
   const trajectories: FirearmTrajectory[] = [];
   const sounds: { event: SoundEventId; time: number }[] = [];
   const mechanics = new FirearmMechanics(inventory, queue, {
-    blockSize: pose.blockSize,
-    pose: () => pose,
+    blockSize: ejectionPose.blockSize,
+    isSolid: isSolid ?? ((_x, y, _z) => y < ejectionPose.feet[1]),
+    pose: () => ejectionPose,
     onEjection: (effect) => effects.push(effect),
     onShot: (shot) => shots.push(shot),
     onTrajectory: (trajectory) => trajectories.push(trajectory),
@@ -148,6 +154,82 @@ const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = ()
   });
 
 describe('real pump ammunition', () => {
+  it('places an ejected shell on the first solid surface below its flight instead of at the thrower height', () => {
+    const highPose = { ...pose, feet: [0, 12, 0] as Vec3, eye: [0, 15, 0] as Vec3 };
+    const isSolid = (_x: number, blockY: number, _z: number) => blockY === 0 || blockY === 5;
+    const f = fixture(registry, () => 0, highPose, isSolid);
+    f.load(0);
+    f.rack(1);
+    f.rack(3);
+
+    const landedPile = [...f.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === shellType),
+    );
+    expect(landedPile).toBeDefined();
+    const [x, landingY, z] = landedPile!.pos;
+    expect(isSolid(x, landingY - 1, z)).toBe(true);
+    expect(isSolid(x, landingY, z)).toBe(false);
+    expect([...new Array(highPose.feet[1] - landingY).keys()].some((offset) => isSolid(x, landingY + offset, z))).toBe(
+      false,
+    );
+  });
+
+  it('does not spill an ejected shell onto an unsupported neighboring pile', () => {
+    const probe = fixture();
+    probe.load(0);
+    probe.rack(1);
+    probe.rack(3);
+    const landing = [...probe.inventory.piles.values()][0]?.pos;
+    expect(landing).toBeDefined();
+
+    const fillerType = 'supported_spill_filler';
+    const content = {
+      ...registry,
+      items: new Map(registry.items).set(fillerType, {
+        ...registry.items.get(shellType)!,
+        id: fillerType,
+        name: 'Test filler',
+        size: [1, 1] as [number, number],
+        stack: 1,
+        ammo: undefined,
+        model: undefined,
+      }),
+    };
+    const supported = (x: number, y: number, z: number) =>
+      x === landing![0] && y === landing![1] - 1 && z === landing![2];
+    const f = fixture(content, () => 0, pose, supported);
+    f.load(0);
+    f.rack(1);
+    for (let cell = 0; cell < PILE_GRID.w * PILE_GRID.h; cell++) {
+      expect(f.inventory.add(f.inventory.create(fillerType), { kind: 'pile', pos: landing! })).toBe(true);
+    }
+
+    const refusal = f.mechanics.cock(f.gun.uid, 3);
+
+    expect(refusal).toBeDefined();
+    expect(f.gun.firearm?.chamber).toBe('round');
+    expect([...f.inventory.piles.values()].flatMap(({ items }) => items)).toHaveLength(PILE_GRID.w * PILE_GRID.h);
+  });
+
+  it('keeps a pending case in the chamber while the ejection column has no known solid surface', () => {
+    const f = fixture(
+      registry,
+      () => 0,
+      pose,
+      () => false,
+    );
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+
+    const refusal = f.mechanics.cock(f.gun.uid, 4);
+
+    expect(refusal).toBeDefined();
+    expect(f.gun.firearm?.chamber).toBe('case');
+    expect(f.gun.firearm?.pendingCase).toBeDefined();
+    expect([...f.inventory.piles.values()].flatMap(({ items }) => items)).toHaveLength(0);
+  });
+
   it('ejection spills from a full landing pile and refuses a rack when all drop spots are full', () => {
     // Discover the landing through a successful public rack, not a golden coordinate
     // or a duplicated flight estimate. The actual scenarios use independent inventories.

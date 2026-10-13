@@ -42,7 +42,7 @@ export const itemFlightPoint = (from: Vec3, to: Vec3, progress: number): Vec3 =>
   ];
 };
 
-const settleOnWorld = (position: Vec3, blockSize: number, minY: number, isSolid: SolidAt): Vec3 | undefined => {
+export const settleOnWorld = (position: Vec3, blockSize: number, minY: number, isSolid: SolidAt): Vec3 | undefined => {
   const origin: Vec3 = [position[0] / blockSize, position[1] / blockSize, position[2] / blockSize];
   const hit = raycast(origin, [0, -1, 0], origin[1] - minY + 1, isSolid);
   if (!hit) {

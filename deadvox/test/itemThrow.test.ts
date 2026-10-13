@@ -157,6 +157,37 @@ describe('held-item throws', () => {
     throws.dispose();
   });
 
+  it('settles an elevated throw onto the first solid surface below instead of retaining release height', () => {
+    const from: [number, number, number] = [1.5, 8.5, 1.5];
+    const isSolid: SolidAt = (_x, y) => y === 5 || y === 0;
+    const landing = traceItemLanding({
+      from,
+      direction: [1, 0, 0],
+      distanceMetres: 4,
+      blockSize: 1,
+      minY: -8,
+      isSolid,
+    });
+
+    expect(landing).toBeDefined();
+    expect(landing![1]).toBeLessThan(Math.floor(from[1]));
+    expect(isSolid(landing![0], landing![1] - 1, landing![2])).toBe(true);
+    expect(isSolid(landing![0], landing![1], landing![2])).toBe(false);
+  });
+
+  it('does not invent a landing surface when the column below the throw is unknown', () => {
+    const landing = traceItemLanding({
+      from: [1.5, 8.5, 1.5],
+      direction: [1, 0, 0],
+      distanceMetres: 4,
+      blockSize: 1,
+      minY: -8,
+      isSolid: () => false,
+    });
+
+    expect(landing).toBeUndefined();
+  });
+
   it('settles a charged arc on the thrower side of a near wall', () => {
     const isSolid: SolidAt = (x, y) => y === 0 || (x === 4 && y > 0 && y < 4);
     const landing = traceItemLanding({
