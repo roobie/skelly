@@ -213,6 +213,7 @@ try {
     }
   });
   const stageId = stageName;
+  let selectionEvidence;
   await timeIfLighting('game-boot', async () => {
     await page.goto(
       browserStageUrl(
@@ -225,6 +226,10 @@ try {
       undefined,
       { timeout: 60_000 },
     );
+    if (mode === 'lighting-outdoor') {
+      // The owned GL proof must not contend with an unrelated full-size game render loop.
+      selectionEvidence = await timePhase('owned-sky-selection', () => skySelectionProof(page));
+    }
     await page.locator('#go').click();
     await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
   });
@@ -622,7 +627,8 @@ try {
     return { residentProof: { first, second, secondDark } };
   };
   const lightingOutdoorProofs = async () => {
-    const selection = await skySelectionProof(page);
+    const selection = selectionEvidence;
+    assert.ok(selection, 'the owned shader proof completed before entering Play');
     assert.ok(selection.requested > 0 && selection.completed === selection.requested, 'owned worker jobs completed');
     assert.ok(selection.oracleCanopy > 0 && selection.oracleCanopy < 1, 'lateral diffuse paths exist under the canopy');
     assert.ok(selection.pending.room.cpu > 0 && selection.pending.room.cpu < 1, 'unknown height is dim, not black');
