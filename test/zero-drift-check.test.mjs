@@ -283,6 +283,21 @@ describe('zero-drift section cues', () => {
     assert.deepEqual(sections('[target][undefined]'), []);
   });
 
+  it('first definition wins for duplicate reference labels', () => {
+    const referenceDefinition = (fragment) => ['[ref]: docs/anchors.md', fragment].join('#');
+    const referenceLink = (first, second) =>
+      ['[target][ref]', '', referenceDefinition(first), ...(second ? [referenceDefinition(second)] : [])].join('\n');
+    const singleValid = referenceLink('anchors');
+    const singleMissing = referenceLink('missing');
+    const firstValid = referenceLink('anchors', 'missing');
+    const firstMissing = referenceLink('missing', 'anchors');
+
+    assert.deepEqual(sections(singleValid), []);
+    assert.ok(checks(sections(singleMissing)).includes('section'));
+    assert.deepEqual(sections(firstValid), []);
+    assert.ok(checks(sections(firstMissing)).includes('section'));
+  });
+
   it('does not index headings in unreferenced footnotes or let them take slug suffixes', () => {
     assert.deepEqual(sections(link('target', 'docs/anchors.md#anchors')), []);
     assert.ok(checks(sections(link('target', 'docs/anchors.md#phantom'))).includes('section'));

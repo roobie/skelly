@@ -208,7 +208,7 @@ function markdownCueDocument(tree) {
 function markdownLinks(tree) {
   const definitions = new Map();
   walkMarkdown(tree, (node) => {
-    if (node.type === 'definition') {
+    if (node.type === 'definition' && !definitions.has(node.identifier)) {
       definitions.set(node.identifier, node);
     }
   });
