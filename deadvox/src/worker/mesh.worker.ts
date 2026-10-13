@@ -1,6 +1,7 @@
 // Builds chunk meshes off the main thread. Buffers are transferred, not copied.
 
 import { buildMesh } from '../core/mesher.ts';
+import { buildSkyResult } from '../core/skyTransport.ts';
 import type { FromMesher, ToMesher } from './protocol.ts';
 
 let colors: Uint8Array = new Uint8Array(0);
@@ -10,6 +11,13 @@ let weatherable: Uint8Array = new Uint8Array(0);
 globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
   if (msg.type === 'init') {
     ({ colors, patterns, weatherable } = msg);
+    return;
+  }
+  if (msg.type === 'sky') {
+    const start = performance.now();
+    const result = buildSkyResult(msg.input);
+    const reply: FromMesher = { type: 'sky', result, workerRealMs: performance.now() - start };
+    postMessage(reply, { transfer: [result.heights.buffer, ...(result.volume ? [result.volume.light.buffer] : [])] });
     return;
   }
   const { key, version, padded, wide } = msg;

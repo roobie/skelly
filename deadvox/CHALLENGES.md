@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're assessing the risks or proof needed for the v1 scope
+  - you're judging lighting arrival and edit transitions, residency limits or the frame-service gate
   - you're choosing when to tackle a simulation, performance or world-generation constraint
 ---
 
@@ -44,7 +45,7 @@ Half-metre terrain steps exceed ordinary wheel clearance, and fast vehicles can 
 
 ## 9. Lighting
 
-Dark interiors and nights are important, but propagating voxel light is costly and must update with changing geometry. Slice 4 adds voxel light; until then, interior light remains a known limitation. Carried lights should stay distinct from world voxel lighting. See [DESIGN.md](DESIGN.md#light).
+World-derived diffuse sky visibility makes site interiors darker without a template flag, but transport must remain consistent with edits, streaming and furniture. The existing mesh pool bounds worker capacity; moving transport there does not make main-thread snapshot, submission or atlas work free. Capped uncertainty avoids full-sky claims without blacking out every eligible open surface during cold discovery; current height certificates take precedence over uncertainty. Published lighting stays visible during edit revalidation so opening a dark room cannot expose the uncertainty cap. Delayed darkening and replacement brightness steps remain visual and latency risks to measure, while unsolved noncandidate geometry preserves its prior look. Limited GPU residency can over-darken a completed but nonresident room, so #569 requires a dense-camp first look and frame-service measurements rather than accepting a no-job or permanently dark-room result as fast. Carried-light rendering and simulation exposure remain separate authorities. See `DESIGN.md`, "Light", and `src/render/skylight.ts`, `Skylight`.
 
 ## 10. World generation across chunks
 

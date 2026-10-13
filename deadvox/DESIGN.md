@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you decide how sunlight and shadows should read in play
+  - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
@@ -809,11 +809,44 @@ rule ("Hand grenade").
 
 ## Light
 
-Nights should be dark, and interiors should become darker than outdoors, so
-light is both a way to see and a way to be seen. Diffuse sky light passes
-through the voxel grid; light from sources inside buildings does not yet.
-Do not fake indoor darkness with a separate rule before voxel lighting supports
-it.
+Dark interiors make carried light useful without an authored indoor flag.
+For authored sites and hamlets, live opaque blocks and blocking furniture determine
+diffuse sky transport; placement geometry only bounds discovery. Roofs, openings
+and doors therefore change the estimate through geometry, not template categories.
+See `src/core/skyTransport.ts`, `buildSkyResult`, and `src/render/skylight.ts`, `Skylight`.
+
+Mesh-first admission protects the first visible geometry without making it wait for
+lighting readiness. A copied sky request may wait outside the pool capacity;
+a mesh completion admits it before the next mesh refill, preventing persistent
+mesh backlog from starving lighting. Native worker FIFO remains the executor;
+its FIFO alone cannot guarantee fairness between these callers. Independent
+snapshot preparation overlaps the single lighting request within the presentation
+budget. Keeping one received result and one prepared successor bounds memory and
+validated publication work; another submission waits for the render update rather
+than overwriting a result awaiting publication. See `src/game/streamer.ts`,
+`dispatchSky`, and `src/render/skylight.ts`, `prepare`.
+
+Inside those application regions, an uncertified column uses a capped version of
+the existing estimate rather than blackout: cold discovery must not make an open
+surface appear sealed. The cap is provisional visual tuning for BR's first look,
+not proof that the geometry is open. Once lighting has been published, keep that
+committed estimate while geometry edits are revalidated: replacing a dark room with
+the uncertainty cap would flash it bright when a door opens. The accepted replacement
+swaps atomically; a late result for superseded geometry still cannot publish.
+Retained column heights supply the nonresident estimate, and an unknown overlapping
+field cannot override a published certificate. CPU and shader share this policy.
+This stale display can delay a darkening edit or step visibly at replacement; it is
+presentation latency, not permission to treat stale geometry as a current result. Cached CPU results survive GPU eviction so
+re-entry does not repeat transport. Outside these
+regions, preserve the existing sky estimate: otherwise a canopy with no discovery job
+could remain permanently dark. Solve halos and spatial lookup cells do not expand
+eligibility. Arbitrary construction and caves remain outside this discovery scope.
+
+Worker execution protects rendering from dense transport work, but copying, submission,
+publication and texture uploads still consume the main frame. The #569 spike needs
+both a first look and measured admission/completion evidence; background execution
+alone is not a frame-gate pass. Lighting readiness is derived presentation, never
+simulation or save state. Interior-source propagation remains separate work.
 
 Keep a carried item's glow attached to the item in hand, on the ground, and in
 flight. Rendering and zombie sensing are separate: visual beam shape affects

@@ -998,6 +998,53 @@ export class KeyboardInput {
     return this.removeListeners;
   }
 }
+export function forwardedActionHolds(input: KeyboardInput) {
+  const held = new Map<string, number>();
+  const event = (code: string): Parameters<KeyboardInput['pressForwarded']>[0] => ({
+    code,
+    isComposing: false,
+    repeat: false,
+    shiftKey: [...held.keys()].some((key) => modifierCodes[key] === 'shift'),
+    ctrlKey: [...held.keys()].some((key) => modifierCodes[key] === 'ctrl'),
+    altKey: [...held.keys()].some((key) => modifierCodes[key] === 'alt'),
+    metaKey: [...held.keys()].some((key) => modifierCodes[key] === 'meta'),
+  });
+  const up = (code: string) => {
+    const count = held.get(code)!;
+    if (count > 1) {
+      held.set(code, count - 1);
+      return;
+    }
+    held.delete(code);
+    input.releaseForwarded(event(code));
+  };
+  return (action: string) => {
+    const [chord] = input.registry.chords(action);
+    if (!chord) {
+      throw new Error(`Forwarded action has no binding: ${action}`);
+    }
+    const modifierCode = Object.entries(modifierCodes).find(([, modifier]) => modifier === chord.modifier)?.[0];
+    const codes = modifierCode ? [modifierCode, chord.code] : [chord.code];
+    const acquired: string[] = [];
+    const release = () => {
+      for (const code of acquired.toReversed()) {
+        up(code);
+      }
+    };
+    for (const code of codes) {
+      const count = held.get(code) ?? 0;
+      held.set(code, count + 1);
+      acquired.push(code);
+      const accepted = count > 0 || input.pressForwarded(event(code));
+      if (code === chord.code && !accepted) {
+        release();
+        throw new Error(`Forwarded action was refused: ${action}`);
+      }
+    }
+    return release;
+  };
+}
+
 export const inputBindings = new BindingRegistry();
 export const keyboardInput = new KeyboardInput(inputBindings);
 export const labelForAction = (id: string): string => inputBindings.label(id);

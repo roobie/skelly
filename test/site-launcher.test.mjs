@@ -49,6 +49,8 @@ const authoredLayoutIds = () =>
     .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
 
 const intentionallyUnofferedDeadvoxParams = {
+  skyRoute:
+    'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
