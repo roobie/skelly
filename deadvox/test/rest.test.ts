@@ -43,8 +43,17 @@ const makeRest = (
   return { sim, rest };
 };
 
-/** Game hours a sleep in a quality-1 bed takes, from `fatigue`, running frames until it ends. */
-const sleepGameHours = (sim: Simulation, rest: RestController, fatigue: number): number => {
+const finishSleepOnset = (sim: Simulation, rest: RestController): void => {
+  for (let i = 0; i < 2000 && rest.action?.sleepOnset !== undefined; i++) {
+    sim.frame(simSeconds(1));
+  }
+  if (rest.action?.sleepOnset !== undefined) {
+    throw new Error('Sleep onset never ended');
+  }
+};
+
+/** Total Game hours from starting sleep in a quality-1 bed until it ends. */
+const sleepGameHours = (sim: Simulation, rest: RestController, fatigue: number): { total: number; onset: number } => {
   sim.needs.calories = 100;
   sim.needs.hydration = 100;
   sim.needs.fatigue = fatigue;
@@ -53,13 +62,14 @@ const sleepGameHours = (sim: Simulation, rest: RestController, fatigue: number):
   if (refusal) {
     throw new Error(`Sleep fixture refused: ${refusal}`);
   }
+  const onset = (rest.action?.sleepOnset?.durationGameSeconds ?? 0) / 3600;
   for (let i = 0; i < 20_000 && rest.action !== undefined; i++) {
     tickReal(sim, 1 / 60);
   }
   if (rest.action) {
     throw new Error('Sleep fixture never ended');
   }
-  return simToGameHours(sim.clock, sim.time - start);
+  return { total: simToGameHours(sim.clock, sim.time - start), onset };
 };
 
 describe('restKindForFurniture', () => {
@@ -127,11 +137,62 @@ describe('the healing gate', () => {
     sim.needs.fatigue = 150;
     sim.body.damageHealth(50);
     expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    finishSleepOnset(sim, rest);
+    expect(sim.actions.asleep).toBe(true);
     for (let i = 0; i < 120; i++) {
       tickReal(sim, 1 / 60);
     }
     expect(sim.needs.fatigue).toBeGreaterThan(80);
     expect(sim.body.health).toBeGreaterThan(50);
+  });
+});
+
+describe('sleep onset', () => {
+  it('shortens with fatigue and stores the content interval in Game seconds', () => {
+    const durationAt = (fatigue: number): { duration: number; min: number; max: number } => {
+      const { sim, rest } = makeRest();
+      sim.needs.fatigue = fatigue;
+      expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+      const onset = rest.action?.sleepOnset;
+      if (!onset) {
+        throw new Error('Sleep did not enter its onset phase');
+      }
+      const tuning = sim.body.tuning.sleepOnset;
+      return {
+        duration: onset.durationGameSeconds,
+        min: tuning.minGameMinutes,
+        max: tuning.maxGameMinutes,
+      };
+    };
+    const rested = durationAt(1);
+    const exhausted = durationAt(200);
+    expect(rested.duration).toBeGreaterThanOrEqual(rested.min);
+    expect(rested.duration).toBeLessThanOrEqual(rested.max);
+    expect(exhausted.duration).toBe(exhausted.min);
+    expect(exhausted.duration).toBeLessThan(rested.duration);
+  });
+
+  it('allows stopping before sleep, but the same input does not wake a sleeper', () => {
+    const { sim, rest } = makeRest();
+    sim.needs.fatigue = 50;
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    expect(rest.canStop).toBe(true);
+    expect(sim.actions.asleep).toBe(false);
+    sim.frame(simSeconds(1));
+    expect(rest.action?.sleepOnset?.elapsedGameSeconds).toBeGreaterThan(0);
+
+    expect(rest.toggle('sleep', REST_ANCHOR)).toBeUndefined();
+    expect(rest.action).toBeUndefined();
+    expect(sim.actions.asleep).toBe(false);
+
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    finishSleepOnset(sim, rest);
+    expect(sim.actions.asleep).toBe(true);
+    expect(rest.canStop).toBe(false);
+    const sleeper = rest.action;
+    expect(rest.toggle('sleep', REST_ANCHOR)).toBeUndefined();
+    expect(rest.action).toBe(sleeper);
+    expect(sim.actions.asleep).toBe(true);
   });
 });
 
@@ -151,10 +212,11 @@ describe('Body.fatigueRecoveryRate', () => {
 describe('sleep length and sleep debt', () => {
   it('clears 100 fatigue in a normal bed at the content sleep rate', () => {
     const { sim, rest } = makeRest({}, new Simulation({ seed: 1, bodyTuning: registry.body.get('player')! }));
-    const night = 100 / -sim.body.fatigueRecoveryRate('sleep', 1);
-    const hours = sleepGameHours(sim, rest, 100);
-    // Ends within a couple of 30 Sim s steps at the cap (4 game minutes each) of the content's own night.
-    expect(Math.abs(hours - night)).toBeLessThan(0.15);
+    const { total, onset } = sleepGameHours(sim, rest, 100);
+    const fatigueAtSleep = 100 + onset * sim.body.fatigueRisePerGameHour;
+    const night = fatigueAtSleep / -sim.body.fatigueRecoveryRate('sleep', 1);
+    // Sleep ends within a couple of 30 Sim s steps at the cap (4 game minutes each) of the content's own night.
+    expect(Math.abs(total - onset - night)).toBeLessThan(0.15);
   });
 
   it('lets fatigue run past 100 while awake, unclamped', () => {
@@ -175,6 +237,10 @@ describe('sleep length and sleep debt', () => {
       // Blood lost to a wound that has stopped bleeding, as a save after treatment holds it.
       sim.body.restoreState({ ...sim.body.snapshotState(), blood: 20 });
       expect(sleeping ? rest.start('sleep', REST_ANCHOR) : sim.actions.startWait()).toBeUndefined();
+      if (sleeping) {
+        finishSleepOnset(sim, rest);
+        expect(sim.actions.asleep).toBe(true);
+      }
       const { health, blood } = sim.body;
       const start = sim.time;
       for (let i = 0; i < 120; i++) {
@@ -191,7 +257,7 @@ describe('sleep length and sleep debt', () => {
     };
     const awake = recovered(false);
     const asleep = recovered(true);
-    expect(asleep.hours).toBe(awake.hours);
+    expect(asleep.hours).toBeCloseTo(awake.hours, 12);
     expect(awake.health / awake.hours).toBeCloseTo(awake.rate, 0);
     expect(asleep.health / awake.health).toBeCloseTo(asleep.factor, 6);
     expect(awake.blood).toBeGreaterThan(0);
@@ -200,13 +266,44 @@ describe('sleep length and sleep debt', () => {
 });
 
 describe('waking with an alarm', () => {
+  it('ends awake when the selected alarm hour arrives during sleep onset', () => {
+    const sim = new Simulation({
+      seed: 1,
+      clock: { ...defaultClock, start: 11 * SECONDS_PER_HOUR - 60 },
+    });
+    const { rest } = makeRest({ hasAlarm: () => true }, sim);
+    sim.needs.fatigue = 0;
+    rest.wakeGameHour = 11;
+
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    const onset = rest.action?.sleepOnset;
+    if (!onset) {
+      throw new Error('Sleep did not enter its onset phase');
+    }
+    const wakeAt = rest.action?.wakeAt;
+    if (wakeAt === undefined) {
+      throw new Error('Sleep fixture has no selected wake time');
+    }
+    expect(onset.durationGameSeconds / sim.clock.ratio).toBeGreaterThan(wakeAt - sim.time);
+
+    const deadlineTick = wakeAt + simSeconds(1);
+    for (let frame = 0; frame < 10 && sim.time < deadlineTick; frame++) {
+      expect(sim.frame(simSeconds(30), deadlineTick)).toBeGreaterThan(0);
+    }
+
+    expect(sim.time).toBe(deadlineTick);
+    expect(rest.action).toBeUndefined();
+    expect(sim.actions.asleep).toBe(false);
+  });
+
   it('sleeps until rested without an alarm, whatever wake hour is set', () => {
     const { sim, rest } = makeRest();
     rest.wakeGameHour = (Math.floor(hourOfDay(sim.calendar)) + 12) % 24;
     expect(rest.canSetWakeTime).toBe(false);
-    const rested = 20 / -sim.body.fatigueRecoveryRate('sleep', 1);
-    const hours = sleepGameHours(sim, rest, 20);
-    expect(hours).toBeLessThan(rested + 0.15);
+    const { total, onset } = sleepGameHours(sim, rest, 20);
+    const fatigueAtSleep = 20 + onset * sim.body.fatigueRisePerGameHour;
+    const sleepHours = fatigueAtSleep / -sim.body.fatigueRecoveryRate('sleep', 1);
+    expect(Math.abs(total - onset - sleepHours)).toBeLessThan(0.15);
     expect(sim.needs.fatigue).toBeLessThan(0.1);
   });
 
@@ -216,8 +313,8 @@ describe('waking with an alarm', () => {
     rest.wakeGameHour = wakeGameHour;
     expect(rest.canSetWakeTime).toBe(true);
     const restedAfter = 10 / -sim.body.fatigueRecoveryRate('sleep', 1);
-    const hours = sleepGameHours(sim, rest, 10);
-    expect(hours).toBeGreaterThan(restedAfter + 4);
+    const { total } = sleepGameHours(sim, rest, 10);
+    expect(total).toBeGreaterThan(restedAfter + 4);
     expect(sim.needs.fatigue).toBeLessThan(0.1);
     // Wakes within one long-action step (30 Sim s, 4 game minutes) past the hour.
     const late = hourOfDay(sim.calendar) - wakeGameHour;
@@ -397,6 +494,8 @@ describe('RestController.toggle (manual stop)', () => {
   it('keeps sleep running on a second press but permits a system stop', () => {
     const { sim, rest } = makeRest();
     expect(rest.toggle('sleep', REST_ANCHOR)).toBeUndefined();
+    finishSleepOnset(sim, rest);
+    expect(sim.actions.asleep).toBe(true);
     for (let i = 0; i < 120; i++) {
       tickReal(sim, 1 / 60);
     }

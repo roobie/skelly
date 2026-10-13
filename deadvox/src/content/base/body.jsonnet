@@ -101,6 +101,11 @@ local normalSleep = 100 / normalSleepGameHours;
     // Resting clears a fixed share of a normal sleep, so sitting never beats sleeping.
     restFatigueRecoveryPerGameHour: normalSleep * 0.3,
     sleepFatigueRecoveryPerGameHour: normalSleep,
+    sleepOnset: {
+      minGameMinutes: 2,
+      maxGameMinutes: 20,
+      fatigueAtMinimum: 100,
+    },
     // Sleeping rough (rest quality 0) clears this share of a normal sleep.
     roughSleepShare: 0.6,
     healthRecoveryPerGameHour: 2,
