@@ -219,7 +219,7 @@ class TemplateSpace {
     // The physics step-up sweep raises the body one block before moving sideways.
     return next[1] <= from[1] || (this.clear([from[0], next[1], from[2]]) && this.clear(next));
   }
-  reached(entrance: Vec3): Set<string> {
+  reached(entrance: Vec3, within: (position: Vec3) => boolean = () => true): Set<string> {
     const reached = new Set([key(entrance)]);
     const queue: Vec3[] = [entrance];
     for (const from of queue) {
@@ -230,7 +230,7 @@ class TemplateSpace {
         [0, -0.5],
       ].flatMap(([dx, dz]) => [0, 1, -1].map((dy): Vec3 => [from[0] + dx!, from[1] + dy, from[2] + dz!]));
       for (const next of neighbours) {
-        if (!reached.has(key(next)) && this.canMove(from, next)) {
+        if (!reached.has(key(next)) && within(next) && this.canMove(from, next)) {
           reached.add(key(next));
           queue.push(next);
         }
@@ -338,13 +338,17 @@ export const templateSpawnClearanceIssues = (registry: Registry, template: Compi
   });
 };
 
-export const templateReachableStandingPositions = (registry: Registry, template: CompiledTemplate): Vec3[] => {
+export const templateReachableStandingPositions = (
+  registry: Registry,
+  template: CompiledTemplate,
+  options?: { entrance?: Vec3; within?: (position: Vec3) => boolean },
+): Vec3[] => {
   if (!template.access) {
     return [];
   }
-  return [...new TemplateSpace(registry, template).reached(template.access.entrance)].map(
-    (position) => position.split(',').map(Number) as Vec3,
-  );
+  return [
+    ...new TemplateSpace(registry, template).reached(options?.entrance ?? template.access.entrance, options?.within),
+  ].map((position) => position.split(',').map(Number) as Vec3);
 };
 
 export const templateSpatialIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {

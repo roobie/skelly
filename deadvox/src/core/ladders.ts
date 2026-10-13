@@ -11,6 +11,7 @@ import type { Facing } from './templates.ts';
 
 /** The horizontal direction a facing points, as [x, z]; north is -z (coords.ts, `WORLD_NORTH`). */
 const OUTWARD: Readonly<Record<Facing, readonly [number, number]>> = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
+export const ladderOutward = (facing: Facing): readonly [number, number] => OUTWARD[facing];
 
 /** Blocks: how close to the top the feet count as there, so float error can't strand a climber just below it. */
 const AT_TOP = 1e-6;
@@ -48,7 +49,7 @@ export const climb = (
   ladder: BlockEntity,
   { speed, dt, strafing }: { speed: number; dt: number; strafing: boolean },
 ): boolean => {
-  const [ox, oz] = OUTWARD[ladder.facing];
+  const [ox, oz] = ladderOutward(ladder.facing);
   const away = body.vel[0] * ox + body.vel[2] * oz;
   if (body.onGround && away >= 0) {
     return false;

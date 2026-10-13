@@ -46,6 +46,77 @@ describe('scenario admission', () => {
     expect(rejected.registry.scenarios.size).toBe(0);
   });
 
+  it('rejects a nearby lower landing sealed off from its ladder', () => {
+    const profile = fixtureScenario();
+    profile.portal.upper = [8.5, 7, 4];
+    profile.portal.lower = [2.5, 1, 4];
+    for (const partition of [false, true]) {
+      const service = fixtureService();
+      service.size[0] = 12;
+      const lowerRows = [
+        '============',
+        '=..........=',
+        '=..........=',
+        '=.....H....=',
+        '=.....H....=',
+        '=..........=',
+        '=..........=',
+        '============',
+      ].map((row) => (partition ? `${row.slice(0, 4)}=${row.slice(5)}` : row));
+      const hatchRows = [
+        '============',
+        '============',
+        '============',
+        '=====TTT====',
+        '=====TTT====',
+        '============',
+        '============',
+        '============',
+      ];
+      service.layers = Array.from({ length: service.size[1] }, (_layer, y) => {
+        if (y === 0) {
+          return Array.from({ length: service.size[2] }, () => '============');
+        }
+        if (y === 6) {
+          return [...hatchRows];
+        }
+        if (y >= 7) {
+          return Array.from({ length: service.size[2] }, () => '............');
+        }
+        return [...lowerRows];
+      });
+      const result = buildRegistry(fixtureScenarioSources(profile, service));
+      if (partition) {
+        expect(result.issues.some((issue) => issue.path.endsWith('.portal.lower'))).toBe(true);
+        expect(result.registry.scenarios.has(profile.id)).toBe(false);
+      } else {
+        expect(result.issues).toEqual([]);
+        expect(result.registry.scenarios.has(profile.id)).toBe(true);
+      }
+    }
+  });
+
+  it('rejects an upper landing disconnected from every braced hatch exit', () => {
+    const profile = fixtureScenario();
+    profile.portal.upper = [8.5, 7, 4];
+    for (const partition of [false, true]) {
+      const service = fixtureService();
+      if (partition) {
+        for (let y = 7; y < service.size[1]; y++) {
+          service.layers[y] = service.layers[y]!.map((row) => `${row.slice(0, 6)}=${row.slice(7)}`);
+        }
+      }
+      const result = buildRegistry(fixtureScenarioSources(profile, service));
+      if (partition) {
+        expect(result.issues.some((issue) => issue.path.endsWith('.portal.upper'))).toBe(true);
+        expect(result.registry.scenarios.has(profile.id)).toBe(false);
+      } else {
+        expect(result.issues).toEqual([]);
+        expect(result.registry.scenarios.has(profile.id)).toBe(true);
+      }
+    }
+  });
+
   it('rejects a locked entry even when its ordinary key reference resolves', () => {
     const sources = fixtureScenarioSources();
     const data = sources[0]!.data as {

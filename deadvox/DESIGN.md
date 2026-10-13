@@ -326,15 +326,20 @@ promise of playable upper floors or scenario population. See `src/core/cityPlan.
 
 Admission fails closed because a profile with dangling references, an ambiguous
 selector or a service footprint that fits only some turns is not a valid seeded
-scenario. Local portal predicates include landing support and open-hatch body
-clearance; palette markers distinguish the entry column from later descents that
-reuse the same furniture. Voxel queries must address whole cells even when a
-sweep samples fractional feet heights. The plan freezes placement decisions;
+scenario. Portal admission requires a supported, body-clear local connection
+between each landing and the ladder, not proximity across a partition. The
+bottom joins the ordinary standing flood; the hatch exit may step off while
+braced, inward or sideways according to the normal ladder owner. A local reach
+bound keeps this proof about entry instead of silently promoting it into the
+deferred composed-world route certificate. Palette markers distinguish the
+entry column from later descents that reuse the same furniture. Voxel queries
+must address whole cells even when a sweep samples fractional feet heights. The plan freezes placement decisions;
 compiled template buffers remain compiler-owned inputs. Stamping never consumes
 the column index, because a later vertical chunk or furniture request needs the
 same complete plan. See `scenarioPlanIssues` in `src/core/cityPlan.ts`,
 `scenarioPortalIssues` in `src/core/scenarioPortal.ts`, and `templateBodySpace`
-in `src/core/templateSpatial.ts`.
+in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
+there and `src/core/ladders.ts`, `ladderOutward`.
 
 R1's owned fixtures and plan certificate deliberately stop short of the composed
 world. Reusing the bounded look's service template in `src/content/base/scenarios.jsonnet`

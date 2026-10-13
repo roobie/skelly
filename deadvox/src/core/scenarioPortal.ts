@@ -1,9 +1,11 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import { ladderOutward } from './ladders.ts';
 import { INVENTORY_REACH } from './reach.ts';
 import type { ScenarioDef } from './schema.ts';
-import { templateBodySpace } from './templateSpatial.ts';
+import { STAIR_BODY_HALF_WIDTH } from './stairFlight.ts';
+import { templateBodySpace, templateReachableStandingPositions } from './templateSpatial.ts';
 import { type CompiledTemplate, findPieces, pieceSize } from './templates.ts';
 
 type Piece = CompiledTemplate['pieces'][number];
@@ -78,6 +80,55 @@ const columnIssues = (
   return [];
 };
 
+const sweep = (from: Vec3, to: Vec3, accepts: (position: Vec3) => boolean): boolean => {
+  const steps = Math.max(1, Math.ceil(Math.hypot(to[0] - from[0], to[2] - from[2]) * 2));
+  for (let step = 0; step <= steps; step++) {
+    if (
+      !accepts([from[0] + ((to[0] - from[0]) * step) / steps, from[1], from[2] + ((to[2] - from[2]) * step) / steps])
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const landingConnected = (
+  registry: Registry,
+  template: CompiledTemplate,
+  { landing, centre, ladder, upper }: { landing: Vec3; centre: Vec3; ladder: Piece; upper: boolean },
+): boolean => {
+  const space = templateBodySpace(registry, template);
+  const reached = templateReachableStandingPositions(registry, template, {
+    entrance: landing,
+    within: (position) =>
+      Math.abs(position[1] - landing[1]) <= 1 &&
+      Math.hypot(position[0] - centre[0], position[2] - centre[2]) * HAMLET_BLOCK_SIZE <= INVENTORY_REACH,
+  });
+  const target: Vec3 = [centre[0], landing[1], centre[2]];
+  const [ox, oz] = ladderOutward(ladder.facing);
+  return reached.some((position) => {
+    if (position[1] !== landing[1]) {
+      return false;
+    }
+    if (!upper) {
+      return (
+        Math.hypot(position[0] - target[0], position[2] - target[2]) <= 0.5 && sweep(position, target, space.standing)
+      );
+    }
+    const h = STAIR_BODY_HALF_WIDTH;
+    const overlaps =
+      position[0] + h > ladder.pos[0] &&
+      position[0] - h < ladder.pos[0] + ladder.size[0] &&
+      position[2] + h > ladder.pos[2] &&
+      position[2] - h < ladder.pos[2] + ladder.size[2];
+    return (
+      overlaps &&
+      (position[0] - centre[0]) * ox + (position[2] - centre[2]) * oz <= 0 &&
+      sweep(target, position, space.clear)
+    );
+  });
+};
+
 export const scenarioPortalIssues = (
   registry: Registry,
   scenario: ScenarioDef,
@@ -114,6 +165,16 @@ export const scenarioPortalIssues = (
   for (let feet = bottomFeet; feet <= scenario.portal.upper[1]; feet += 0.5) {
     if (!space.clear([centre[0], feet, centre[2]])) {
       return [['.portal.ladder', 'ladder shaft needs the standing body envelope through the open hatch']];
+    }
+  }
+  for (const [name, position] of [
+    ['upper', scenario.portal.upper],
+    ['lower', scenario.portal.lower],
+  ] as const) {
+    if (
+      !landingConnected(registry, template, { landing: position, centre, ladder: ladders[0]!, upper: name === 'upper' })
+    ) {
+      return [[`.portal.${name}`, 'landing needs a body-clear local connection to the ladder entry or braced exit']];
     }
   }
   return [];
