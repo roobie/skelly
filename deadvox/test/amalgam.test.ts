@@ -226,6 +226,8 @@ interface ObstacleResult {
   crossed: boolean;
   leftGround: boolean;
   maxZ: number;
+  startZ: number;
+  reachedBarrier: boolean;
   stalled: boolean;
   mode: string;
 }
@@ -288,7 +290,16 @@ const runObstacleCase = (
   let stalledTicks = 0;
   let previousZ = startZ;
   let maxZ = Number.NEGATIVE_INFINITY;
+  let reachedBarrier = false;
   for (let tick = 0; tick < 1200; tick++) {
+    const approaching = simulation.store.get(id)!;
+    const shape = simulation.shapeOf(approaching.body);
+    const [x, y, beforeZ] = approaching.body.pos;
+    const forwardStep = configuredType.speed.chaseMetresPerSimSecond / BLOCK_SIZE / 60;
+    reachedBarrier ||=
+      shape !== undefined &&
+      !shape.overlapsTerrain(approaching.body.pos) &&
+      shape.overlapsTerrain([x, y, beforeZ + forwardStep]);
     simulation.tick(1 / 60);
     const { body } = simulation.store.get(id)!;
     const [, , z] = body.pos;
@@ -305,7 +316,16 @@ const runObstacleCase = (
       break;
     }
   }
-  return { barrierSolid, crossed, leftGround, maxZ, stalled, mode: simulation.store.get(id)!.mode };
+  return {
+    barrierSolid,
+    crossed,
+    leftGround,
+    maxZ,
+    startZ,
+    reachedBarrier,
+    stalled,
+    mode: simulation.store.get(id)!.mode,
+  };
 };
 
 describe('amalgam body and combat seam', () => {
@@ -530,7 +550,8 @@ describe('amalgam body and combat seam', () => {
     expect(amalgam.barrierSolid).toBe(true);
     expect(amalgam.mode).toBe('chase');
     expect(amalgam.stalled).toBe(true);
-    expect(amalgam.maxZ).toBeGreaterThan(-30);
+    expect(amalgam.maxZ).toBeGreaterThan(amalgam.startZ);
+    expect(amalgam.reachedBarrier).toBe(true);
     expect(amalgam.crossed).toBe(false);
     expect(amalgam.leftGround).toBe(false);
     expect(runObstacleCase(kind, 'shambler').crossed).toBe(true);
