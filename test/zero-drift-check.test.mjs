@@ -207,6 +207,7 @@ describe('zero-drift symbol check', () => {
     assert.ok(!checks(scan(document(`See ${code('src/known.ts')}, ${code('ChunkMeshes.cull')}.`))).includes('symbol'));
     assert.ok(checks(scan(document(`See ${code('src/known.ts')}, ${code('missingSymbol')}.`))).includes('symbol'));
     assert.ok(checks(scan(document(`${link(code('missingSymbol'), 'src/known.ts')}.`))).includes('symbol'));
+    assert.deepEqual(scan(document(link(code('known.ts'), 'src/known.ts'))), []);
   });
 });
 
