@@ -1726,13 +1726,13 @@ try {
       stop: offHandOnlyThrow,
     },
   );
+  await page.waitForFunction(() => globalThis.primaryActionTest.itemThrows.activeCount > 0);
   await page.waitForFunction(
     (uid) =>
       globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
       'pile',
     throwFixture.offHandUid,
   );
-  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount > 0), true);
   assert.equal(
     await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
