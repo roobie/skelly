@@ -228,14 +228,16 @@ describe('play presentation ownership', () => {
       expect(f.sky.at(cameraPosition)).toBe(1);
       expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
       expect(f.sky.at(target)).toBeLessThan(f.sky.at(cameraPosition));
-      expect(f.view.flashlight.daylightScale).toBeGreaterThan(flashlightDaylightScale(f.daylight, 1));
+      expect(f.view.flashlight.daylightScale).toBeCloseTo(
+        flashlightDaylightScale(f.daylight, f.sky.at(cameraPosition)),
+      );
       expect(f.view.flashlight.light.intensity).toBeGreaterThan(0);
     } finally {
       f.cleanup();
     }
   });
 
-  it('keeps carried point-light brightness independent of aim', () => {
+  it('keeps flashlight daylight scaling independent of which face the beam hits', () => {
     const f = litWorld('doorway');
     try {
       const glowstick = f.inventory.create('glowstick');
@@ -247,16 +249,35 @@ describe('play presentation ownership', () => {
       ).toBe(false);
       f.engine.camera.lookAt(f.engine.camera.position.clone().add(new Vector3(-1, 0, 0)));
       f.updateFrame();
-      const outdoorScale = f.view.flashlight.daylightScale;
-      const first = f.view.lightPool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity);
-      f.engine.camera.lookAt(f.engine.camera.position.clone().add(new Vector3(1, 0, 0)));
-      f.updateFrame();
-      const darkTargetScale = f.view.flashlight.daylightScale;
-      const second = f.view.lightPool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity);
-      expect(outdoorScale).not.toBe(darkTargetScale);
-      expect(first).toHaveLength(1);
-      expect(second).toHaveLength(1);
-      expect(second).toEqual(first);
+      const position = f.engine.camera.position.toArray() as Vec3;
+      const aimAt = (targetPoint: Vec3) => {
+        f.engine.camera.lookAt(new Vector3(...targetPoint));
+        f.updateFrame();
+        const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+        const hit = raycast(
+          position.map((axis) => axis / 0.5) as Vec3,
+          direction,
+          f.view.flashlight.light.distance / 0.5,
+          f.owner.knownOpaque,
+        );
+        expect(hit).toBeDefined();
+        const target = new Vector3(...position)
+          .addScaledVector(new Vector3(...direction), hit!.distance * 0.5)
+          .addScaledVector(new Vector3(...hit!.normal), 0.25)
+          .toArray() as Vec3;
+        return {
+          scale: f.view.flashlight.daylightScale,
+          targetVisibility: f.sky.at(target),
+          pointLights: f.view.lightPool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity),
+        };
+      };
+      const first = aimAt([8.25, 3, 15.25]);
+      const second = aimAt([8.25, 3, 18.25]);
+      expect(first.targetVisibility).not.toBe(second.targetVisibility);
+      expect(second.scale).toBeCloseTo(first.scale);
+      expect(second.scale).toBeCloseTo(flashlightDaylightScale(f.daylight, f.sky.at(position)));
+      expect(first.pointLights).toHaveLength(1);
+      expect(second.pointLights).toEqual(first.pointLights);
     } finally {
       f.cleanup();
     }
@@ -280,7 +301,9 @@ describe('play presentation ownership', () => {
       expect(f.sky.at(cameraPosition)).toBeLessThan(1);
       expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
       expect(f.sky.at(target)).toBe(1);
-      expect(f.view.flashlight.daylightScale).toBeLessThan(flashlightDaylightScale(f.daylight, 0));
+      expect(f.view.flashlight.daylightScale).toBeCloseTo(
+        flashlightDaylightScale(f.daylight, f.sky.at(cameraPosition)),
+      );
       expect(f.view.flashlight.light.intensity).toBeGreaterThan(0);
     } finally {
       f.cleanup();
