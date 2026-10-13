@@ -438,8 +438,8 @@ A throw commits its pile space when released. Otherwise another pile admission
 could take the last cells before impact, leaving an inventory-owned item with no
 place to land. The shared `pileLayout` owner supplies the model endpoint; the
 renderer reads it without changing simulation state. See `Inventory.planAdd`
-and `Inventory.beginItemFlight` in `src/core/inventory.ts`, `pileItemPosition`
-in `src/core/pileLayout.ts`, and `ItemThrows.spawn` in
+and `Inventory.beginItemFlight` in `src/core/inventory.ts`. See
+`pileItemPosition` in `src/core/pileLayout.ts` and `ItemThrows.spawn` in
 `src/render/itemThrows.ts`.
 
 Use one item look derived from that instance's own state in every view. A
