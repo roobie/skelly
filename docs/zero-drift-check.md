@@ -41,10 +41,13 @@ stamps and subtitles because these are not the topic's identity. Renaming the to
 still breaks its cues. Bold lead-ins serve as named anchors because design decisions
 use those labels without making each decision a heading. Heading-link fragments
 use the full title's GitHub slug, including duplicate suffixes, rather than that
-relaxed name comparison. Heading identity follows rendered Markdown: front matter,
-fenced examples and actual HTML comments are excluded because they do not appear as
-headings, while code-span contents remain because they are visible even when they look
-like comments. This keeps cue resolution aligned with what readers see. Angle-wrapped
+relaxed name comparison. A CommonMark/GFM parser supplies Markdown structure because
+regex approximations kept disagreeing with GitHub's rendering. The parser owns headings,
+inline code and emphasis, escapes, links and destinations, HTML comments, and front
+matter; `github-slugger` computes slugs from rendered heading text. Front matter, fenced
+examples and actual HTML comments are excluded because they do not appear as headings,
+while code-span contents remain because they are visible even when they look like
+comments. This keeps cue resolution aligned with what readers see. Angle-wrapped
 link destinations resolve against the same normalized path and fragment. See
 `tools/zero-drift-check.mjs`, `anchorsFor`, `githubSlug` and `checkSectionLink`.
 

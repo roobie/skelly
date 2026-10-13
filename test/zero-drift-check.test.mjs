@@ -51,6 +51,8 @@ before(() => {
       '## First',
       '## Second',
       '## Escaped \\_name\\_',
+      '## Doubled \\\\_name_',
+      '## `<!-- literal -->`',
       '<!--',
       '## Phantom',
       '-->',
@@ -240,9 +242,7 @@ describe('zero-drift section cues', () => {
       sections(`${cue('docs/anchors.md', 'First')} and ${code('engine/src/known.ts')}, ${code('assemble')}`),
       [],
     );
-    assert.ok(
-      checks(sections(`${cue('docs/anchors.md', 'First')} and ${code('Second')}`)).includes('section_form'),
-    );
+    assert.ok(checks(sections(`${cue('docs/anchors.md', 'First')} and ${code('Second')}`)).includes('section_form'));
   });
 
   it('rejects every alternate prose spelling even when its named anchor exists', () => {
@@ -265,6 +265,10 @@ describe('zero-drift section cues', () => {
     for (const body of variants) {
       assert.ok(checks(sections(body)).includes('section_form'), body);
     }
+  });
+
+  it('keeps GFM table cells separate while scanning cue syntax', () => {
+    assert.deepEqual(sections(`| ${code('docs/anchors.md')} | ${code('API')} |`), []);
   });
 
   it('checks explicit section cues in strings and comments but ignores unformatted strings and inline examples', () => {
@@ -295,6 +299,18 @@ describe('zero-drift section cues', () => {
     assert.equal(githubSlug('Escaped \\_name\\_'), 'escaped-_name_');
     assert.deepEqual(sections(link('target', 'docs/anchors.md#escaped-_name_')), []);
     assert.ok(checks(sections(link('target', 'docs/anchors.md#escaped-name'))).includes('section'));
+  });
+
+  it('uses backslash parity when computing rendered heading slugs', () => {
+    assert.equal(githubSlug('Doubled \\\\_name_'), 'doubled-name');
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#doubled-name')), []);
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#doubled-_name_'))).includes('section'));
+  });
+
+  it('keeps comment-shaped code-span text in heading identity', () => {
+    assert.equal(githubSlug('`<!-- literal -->`'), '---literal---');
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#---literal---')), []);
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#literal'))).includes('section'));
   });
 
   it('excludes headings inside HTML comments from named and slug anchors', () => {
