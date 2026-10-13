@@ -700,19 +700,16 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   Gungen's geometry and material export is the single source for attachment mass; `weightOf` uses `massKg` for attachment items, so their required content `weight` is not authoritative. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear; foregrips affect aim and stance; a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
 - **Military loot (3.2):** Restricting magazine-fed firearms and their compatible ammunition to military sources keeps ordinary scavenging from supplying a rifle. Recursive validation covers military items acquired through nesting, repackaging, crafting, salvage and fixed loot. Exported attachments use military loot in playtest 1 without being validation-locked to it, allowing later sites to carry optics. Reachability checks keep authored military sites part of the progression. See `src/core/magazine.ts`, `militaryLootItems`, `src/core/content.ts`, `checkMilitaryLoot`, and `src/core/reachability.ts`, `worldSources`.
-- **Spent cases per block:** Add each case to its landing pile at impact, using a
-  supported, clear nearby spot with room when needed; if the supported spill
-  search is full, discard the case rather than jam the firearm for a cosmetic
-  item. Stop an outward ejection at the last clear cell before terrain, then
-  settle it downward. A save taken during a case flight keeps its simulation
-  landing time but shows the case at the landing on Continue, without replaying
-  the presentation arc. The landing is gameplay state; the arc is transient
-  presentation. This keeps recoverable cases at their actual landing place
-  without saving an individual physics body for every shot. A deterministic
-  scatter represents the pile visually. See `docs/decisions/0006-firearm-handling.md`,
-  `src/game/firearmHandling.ts`, `FirearmMechanics.landing`,
-  `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`,
-  `spentCaseScatter`.
+- **Spent cases per block:** Cases must never end inside terrain; use only clear,
+  supported landing cells, including spill destinations. If none is available,
+  discard the case rather than jam the firearm for a cosmetic item. A save
+  taken during a case flight keeps its simulation landing time but shows the case
+  at the landing on Continue, without replaying the presentation arc. The landing
+  is gameplay state; the arc is transient presentation. This keeps recoverable
+  cases at their actual landing place without saving an individual physics body
+  for every shot. A deterministic scatter represents the pile visually. See
+  `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
+  `FirearmMechanics`, and `src/core/scatterPile.ts`, `spentCaseScatter`.
 - **Noise** is an event with loudness and position. Sprinting makes footsteps
   louder; melee, gunshots, doors, breaking glass and engines also make noise.
   Walls reduce how far it travels. Zombies hear, investigate and pass noise on

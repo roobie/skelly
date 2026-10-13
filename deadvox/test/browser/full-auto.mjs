@@ -139,7 +139,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?seed=73&debug=1&loadout=ar&firearmsCombat=0&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -188,6 +188,9 @@ try {
   });
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
+  await page.evaluate(() => {
+    globalThis.fullAutoRuntime.input.pitch = (-20 * Math.PI) / 180;
+  });
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
   const reviewMap = page.locator('iframe[title="Current-world review map"]');
