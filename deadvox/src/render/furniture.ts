@@ -36,7 +36,8 @@ export class FurnitureMeshes {
     new EdgesGeometry(new BoxGeometry(1, 1, 1)),
     new LineBasicMaterial({ color: '#ffe36e', depthTest: true, toneMapped: false }),
   );
-  private markedUid: number | undefined;
+  private markedUid: string | undefined;
+  private markedOpen: boolean | undefined;
   private drawn = -1;
 
   constructor(blockSize: number) {
@@ -45,21 +46,54 @@ export class FurnitureMeshes {
     this.group.add(this.marker);
   }
 
-  /** Marks only the furniture selected by the interaction ray. */
-  mark(entity: BlockEntity | undefined): void {
-    if (entity?.uid === this.markedUid) {
+  /** Marks the selected furniture using its visible panel pose when it has a door. */
+  mark(entity: BlockEntity | undefined, definition?: FurnitureDef): void {
+    if (entity && `furniture:${entity.uid}` === this.markedUid && entity.open === this.markedOpen) {
       return;
     }
-    this.markedUid = entity?.uid;
+    this.markedUid = entity ? `furniture:${entity.uid}` : undefined;
+    this.markedOpen = entity?.open;
     if (!entity) {
       this.marker.visible = false;
       return;
     }
-    const [x, y, z] = entity.pos;
-    const [w, h, d] = entity.size;
     const s = this.blockSize;
-    this.marker.scale.set(w * s + 0.035, h * s + 0.035, d * s + 0.035);
-    this.marker.position.set((x + w / 2) * s, (y + h / 2) * s, (z + d / 2) * s);
+    if (definition?.door) {
+      const panel = panelFor(entity, definition, s);
+      const sin = Math.sin(panel.rotationY);
+      const cos = Math.cos(panel.rotationY);
+      const centerX = panel.center[0] * cos + panel.center[2] * sin;
+      const centerZ = -panel.center[0] * sin + panel.center[2] * cos;
+      const width = Math.abs(panel.size[0] * cos) + Math.abs(panel.size[2] * sin);
+      const depth = Math.abs(panel.size[0] * sin) + Math.abs(panel.size[2] * cos);
+      this.marker.scale.set(width + 0.035, panel.size[1] + 0.035, depth + 0.035);
+      this.marker.position.set(panel.pivot[0] + centerX, panel.pivot[1] + panel.center[1], panel.pivot[2] + centerZ);
+    } else {
+      const [x, y, z] = entity.pos;
+      const [w, h, d] = entity.size;
+      this.marker.scale.set(w * s + 0.035, h * s + 0.035, d * s + 0.035);
+      this.marker.position.set((x + w / 2) * s, (y + h / 2) * s, (z + d / 2) * s);
+    }
+    this.marker.visible = true;
+  }
+
+  /** Marks another interaction owner using its display or pick bounds. */
+  markBounds(
+    uid: string | undefined,
+    position: readonly [number, number, number],
+    size: readonly [number, number, number],
+  ): void {
+    if (uid === this.markedUid) {
+      return;
+    }
+    this.markedUid = uid;
+    this.markedOpen = undefined;
+    if (!uid) {
+      this.marker.visible = false;
+      return;
+    }
+    this.marker.scale.set(size[0] + 0.035, size[1] + 0.035, size[2] + 0.035);
+    this.marker.position.set(...position);
     this.marker.visible = true;
   }
 

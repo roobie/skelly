@@ -3338,8 +3338,40 @@ export const startPlay = (
 
   const affordanceForFrame = (visible: Readonly<HudOptionsState>) =>
     interactionAffordance(interactionTargetAt, visible.interaction, input.locked, Boolean(debugTools?.buildOn));
-  const markFurnitureAffordance = (target: InteractionTarget | undefined): void =>
-    view.furniture.mark(target?.kind === 'furniture' ? target.entity : undefined);
+  const markFurnitureAffordance = (target: InteractionTarget | undefined): void => {
+    if (target?.kind === 'furniture') {
+      view.furniture.mark(target.entity, entities.defOf(target.entity));
+      return;
+    }
+    if (target?.kind === 'item') {
+      const pile = [...inventory.piles.values()].find(({ items }) =>
+        items.some(({ item }) => item.uid === target.item.uid),
+      );
+      if (pile) {
+        const [x, y, z] = pile.pos;
+        view.furniture.markBounds(
+          `item:${target.item.uid}`,
+          [(x + 0.5) * s, (y + 0.1) * s, (z + 0.5) * s],
+          [0.16, 0.12, 0.16],
+        );
+        return;
+      }
+    }
+    if (target?.kind === 'body') {
+      const downedBody = zombieStore.get(target.id)?.body;
+      if (downedBody) {
+        const [x, y, z] = downedBody.pos;
+        const width = downedBody.halfWidth * 2 * s;
+        view.furniture.markBounds(
+          `body:${target.id}`,
+          [x * s, (y + downedBody.height / 2) * s, z * s],
+          [width, downedBody.height * s, width],
+        );
+        return;
+      }
+    }
+    view.furniture.mark(undefined);
+  };
 
   const updateFrame = (now: RealTimestamp) => {
     const workStart = realNow();

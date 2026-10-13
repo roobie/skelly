@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Box3, type Group, type Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities, doorPanel, searchTime } from '../src/core/blockEntities.ts';
+import { BlockEntities, doorPanel, panelFor, searchTime } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
@@ -266,7 +266,7 @@ describe('furniture', () => {
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     furniture.sync(entities);
 
-    const meshes = furniture.group.children as Mesh[];
+    const meshes = furniture.group.children.filter((child) => child.type !== 'LineSegments') as Mesh[];
     expect(meshes).toHaveLength(3);
     expect(meshes.every((mesh) => mesh.isMesh && mesh.geometry.groups.length === 0)).toBe(true);
     expect(meshes.every((mesh) => !Array.isArray(mesh.material))).toBe(true);
@@ -317,6 +317,42 @@ describe('furniture', () => {
     expect(pick([5.5, 2.5, 7], [0, 0, 1], 3)).toBe(safe);
     expect(pick([3, 2, 9], [1, 0, 0], 3)).toBeUndefined();
     expect(pick([5.5, 2.5, 11], [0, 0, -1], 6)).toBeUndefined();
+  });
+
+  it('renders interaction-owner bounds for loose items and downed bodies through the marker', () => {
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    furniture.markBounds('item:fixture', [1, 0.1, 2], [0.16, 0.12, 0.16]);
+    const marker = furniture.group.children[0]!;
+    expect(marker.visible).toBe(true);
+    expect(marker.position.toArray()).toEqual([1, 0.1, 2]);
+
+    furniture.markBounds('body:fixture', [3, 0.5, 4], [0.8, 1, 0.8]);
+    expect(marker.position.toArray()).toEqual([3, 0.5, 4]);
+    expect(marker.scale.x).toBeCloseTo(0.835);
+  });
+
+  it('moves the affordance onto the open door panel and follows open state without a new selection', () => {
+    const definition = registry.furniture.get('wood_door')!;
+    const entities = new BlockEntities(registry);
+    const door = entities.add({ type: definition.id, pos: [4, 1, 8], size: definition.size, facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    const marker = furniture.group.children[0]!;
+
+    furniture.mark(door, definition);
+    const closedPosition = marker.position.clone();
+    entities.setOpen(door, true);
+    furniture.mark(door, definition);
+    expect(marker.position.distanceTo(closedPosition)).toBeGreaterThan(0.1);
+    const panel = panelFor(door, definition, BLOCK_SIZE);
+    const expected = new Vector3(
+      panel.pivot[0] + panel.center[0] * Math.cos(panel.rotationY) + panel.center[2] * Math.sin(panel.rotationY),
+      panel.pivot[1] + panel.center[1],
+      panel.pivot[2] - panel.center[0] * Math.sin(panel.rotationY) + panel.center[2] * Math.cos(panel.rotationY),
+    );
+    expect(marker.position.distanceTo(expected)).toBeLessThan(0.001);
+    entities.setOpen(door, false);
+    furniture.mark(door, definition);
+    expect(marker.position.distanceTo(closedPosition)).toBeLessThan(0.001);
   });
 
   it('keeps the open HQ safe body solid and pickable while its door swings outward', () => {
