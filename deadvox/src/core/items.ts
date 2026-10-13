@@ -378,8 +378,8 @@ export const defOf = (registry: Registry, type: string): ItemDef => {
 
 /** A magazine-fed chamber holds exactly one cartridge of the firearm's calibre when loaded. */
 const assertMagazineFedChamber = (registry: Registry, type: string, state: FirearmState): void => {
-  if (state.tube !== undefined || state.landing !== undefined) {
-    throw new Error('Tube/landing state needs a pump firearm');
+  if (state.tube !== undefined) {
+    throw new Error('Tube state needs a pump firearm');
   }
   const calibre = magazineWellCalibre(registry, type);
   if (

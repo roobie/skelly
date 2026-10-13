@@ -326,18 +326,19 @@ export class Inventory {
   /** The sole live item-tree projection; callers hold UIDs, not ownership caches. */
   items() {
     const inventory = this;
-    return walkItemTree(
-      itemRoots<Item, Pile, BlockEntity>({
-        hands: this.hands,
-        worn: this.worn,
+    function* roots() {
+      yield* itemRoots<Item, Pile, BlockEntity>({
+        hands: inventory.hands,
+        worn: inventory.worn,
         get piles() {
           return inventory.piles.values();
         },
         get entities() {
           return inventory.entities.all;
         },
-      }),
-    );
+      });
+    }
+    return walkItemTree(roots());
   }
 
   itemByUid(uid: number): Item | undefined {
@@ -534,6 +535,30 @@ export class Inventory {
   /** Grams held and worn, with everything inside. */
   carriedWeight(): number {
     return this.carried().reduce((sum, item) => sum + weightOf(this.registry, item), 0);
+  }
+
+  /** Transfers a released hand item into its landing pile before its visual arc begins. */
+  throwToPile(
+    item: Item,
+    side: HandSide,
+    target: Extract<Target, { kind: 'pile' }>,
+  ): { ok: true; item: Item } | { ok: false; reason: string } {
+    if (this.hands[side] !== item) {
+      return { ok: false, reason: 'It left your hand before the throw began' };
+    }
+    const placement = this.planAdd(item, target);
+    if (!placement.ok) {
+      return placement;
+    }
+    delete this.hands[side];
+    this.quickbarOrigins.delete(item.uid);
+    this.version += 1;
+    if (placement.merge) {
+      this.mergeStack(placement.merge, item);
+      return { ok: true, item: placement.merge };
+    }
+    this.put(item, target, placement.at);
+    return { ok: true, item };
   }
 
   /** Checks a move and works out its handling time, without changing anything. */
@@ -810,8 +835,7 @@ export class Inventory {
       let found = false;
       for (const pos of dropSpots(feet)) {
         const key = pileKey(pos);
-        const placed =
-          grids.get(key) ?? (this.pileAt(pos)?.items ?? []).filter(({ item: existing }) => existing !== work);
+        const placed = grids.get(key) ?? this.pilePlacements(pos).filter(({ item: existing }) => existing !== work);
         grids.set(key, placed);
         const spot = findSpot(this.registry, { size: PILE_GRID, placed }, item);
         if (spot) {
@@ -1279,6 +1303,10 @@ export class Inventory {
     return undefined;
   }
 
+  private pilePlacements(pos: Vec3): Placed[] {
+    return this.pileAt(pos)?.items ?? [];
+  }
+
   /** The grid a pocket, pile or furniture target points at. */
   private gridOf(target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>): GridState {
     switch (target.kind) {
@@ -1295,7 +1323,7 @@ export class Inventory {
         return { size: { w: spec.grid[0], h: spec.grid[1] }, placed: target.entity.pockets?.[target.pocket] ?? [] };
       }
       default:
-        return { size: PILE_GRID, placed: this.pileAt(target.pos)?.items ?? [] };
+        return { size: PILE_GRID, placed: this.pilePlacements(target.pos) };
     }
   }
 

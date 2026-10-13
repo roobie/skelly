@@ -1,8 +1,15 @@
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
+import type { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
-import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../src/core/itemThrow.ts';
+import {
+  hasMetThrowMinimumHold,
+  itemFlightPoint,
+  throwDistanceForItem,
+  traceItemLanding,
+} from '../src/core/itemThrow.ts';
+import { pileItemPosition } from '../src/core/pileLayout.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 
@@ -12,6 +19,14 @@ const testRegistry = (weights: Record<string, number>): Registry =>
     items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight }])),
     models: new Map(),
   }) as unknown as Registry;
+const presentationInventory = (item: Item): Inventory => {
+  const pile = { pos: [2, 0, 0] as [number, number, number], items: [{ item, x: 0, y: 0, rotated: false }] };
+  return {
+    itemByUid: (uid: number) => (uid === item.uid ? item : undefined),
+    locate: (candidate: Item) => (candidate === item ? { kind: 'pile', pile, placed: pile.items[0]! } : undefined),
+  } as unknown as Inventory;
+};
+
 const tuning = {
   maximumDistanceMetres: 8,
   chargeSimSeconds: 2,
@@ -58,6 +73,7 @@ describe('held-item throws', () => {
     const rifleModel = new Group();
     let requestedLook: import('../src/render/itemLook.ts').ItemLook | undefined;
     const models = {
+      has: () => true,
       groundLook: (look: import('../src/render/itemLook.ts').ItemLook) => {
         requestedLook = look;
         return rifleModel;
@@ -72,7 +88,7 @@ describe('held-item throws', () => {
     const magazine = testItem('magazine');
     const rifle = { ...testItem('rifle'), slots: { magazine } } as Item;
     const throws = new ItemThrows(registry, models, 1);
-    throws.spawn([0, 1, 0], [2, 1, 0], rifle);
+    throws.spawn({ origin: [0, 1, 0], item: rifle }, presentationInventory(rifle));
 
     expect(requestedLook).toMatchObject({
       model: 'rifle_model',
@@ -86,7 +102,8 @@ describe('held-item throws', () => {
     const registry = testRegistry({ rag: 20 });
     registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 2] } as never);
     const throws = new ItemThrows(registry, undefined, 1);
-    throws.spawn([0, 1, 0], [2, 1, 0], testItem('rag'));
+    const item = testItem('rag');
+    throws.spawn({ origin: [0, 1, 0], item }, presentationInventory(item));
     const flight = throws.group.children[0] as Group;
     const bundle = flight.children[0] as Mesh;
 
@@ -100,7 +117,8 @@ describe('held-item throws', () => {
     const light = { color: '#62ff81', emissive: 0.3, burning: { drop: 'stay' } };
     registry.items.set('glow', { id: 'glow', weight: 30, size: [1, 2], light } as never);
     const throws = new ItemThrows(registry, undefined, 1);
-    throws.spawn([0, 1, 0], [2, 1, 0], { ...testItem('glow'), on: true });
+    const item = { ...testItem('glow'), on: true };
+    throws.spawn({ origin: [0, 1, 0], item }, presentationInventory(item));
     const flight = throws.group.children[0] as Group;
     const marker = flight.children.find(
       (child) => child instanceof Mesh && child.material instanceof MeshBasicMaterial,
@@ -124,9 +142,13 @@ describe('held-item throws', () => {
     sourceMaterial.name = 'chemical-light tube';
     const model = new Group();
     model.add(new Mesh(geometry, sourceMaterial));
-    const models = { groundLook: () => model.clone() } as unknown as import('../src/render/models.ts').ModelLibrary;
+    const models = {
+      has: () => true,
+      groundLook: () => model.clone(),
+    } as unknown as import('../src/render/models.ts').ModelLibrary;
     const throws = new ItemThrows(registry, models, 1);
-    throws.spawn([0, 1, 0], [2, 1, 0], { ...testItem('glow'), on: true });
+    const item = { ...testItem('glow'), on: true };
+    throws.spawn({ origin: [0, 1, 0], item }, presentationInventory(item));
     const flight = throws.group.children[0] as Group;
     const shownModel = flight.children[0] as Group;
     let tube: Mesh | undefined;
@@ -147,14 +169,66 @@ describe('held-item throws', () => {
     sourceMaterial.dispose();
   });
 
+  it('ends the throw arc at its simulation landing time', () => {
+    const registry = testRegistry({ rag: 20 });
+    registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 1] } as never);
+    const throws = new ItemThrows(registry, undefined, 1);
+    const start: [number, number, number] = [0, 1, 0];
+    const item = testItem('rag');
+    const inventory = presentationInventory(item);
+    const pile = { pos: [2, 0, 0] as [number, number, number], items: [{ item, x: 0, y: 0, rotated: false }] };
+    const landing = pileItemPosition(registry, pile, item.uid, { blockSize: 1 })!;
+    throws.spawn({ origin: start, item, startedAtSimSeconds: 4, landingAt: 5 }, inventory);
+    const visual = throws.group.children[0] as Group;
+    throws.update(4.99, inventory);
+    expect(throws.activeCount).toBe(1);
+    throws.update(5, inventory);
+    expect(throws.activeCount).toBe(0);
+    expect(visual.visible).toBe(false);
+    expect(visual.position.toArray()).toEqual(itemFlightPoint(start, landing, 1));
+    throws.dispose();
+  });
+
   it('presents an item flight without adding a point light to the shader pool', () => {
     const registry = testRegistry({ rag: 20 });
     registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 2] } as never);
     const throws = new ItemThrows(registry);
-    throws.spawn([0, 1, 0], [2, 1, 0], testItem('rag'));
+    const item = testItem('rag');
+    throws.spawn({ origin: [0, 1, 0], item }, presentationInventory(item));
 
     expect(throws.group.children.some((child) => child instanceof PointLight)).toBe(false);
     throws.dispose();
+  });
+
+  it('settles an elevated throw onto the first solid surface below instead of retaining release height', () => {
+    const from: [number, number, number] = [1.5, 8.5, 1.5];
+    const isSolid: SolidAt = (_x, y) => y === 5 || y === 0;
+    const landing = traceItemLanding({
+      from,
+      direction: [1, 0, 0],
+      distanceMetres: 4,
+      blockSize: 1,
+      minY: -8,
+      isSolid,
+    });
+
+    expect(landing).toBeDefined();
+    expect(landing![1]).toBeLessThan(Math.floor(from[1]));
+    expect(isSolid(landing![0], landing![1] - 1, landing![2])).toBe(true);
+    expect(isSolid(landing![0], landing![1], landing![2])).toBe(false);
+  });
+
+  it('does not invent a landing surface when the column below the throw is unknown', () => {
+    const landing = traceItemLanding({
+      from: [1.5, 8.5, 1.5],
+      direction: [1, 0, 0],
+      distanceMetres: 4,
+      blockSize: 1,
+      minY: -8,
+      isSolid: () => false,
+    });
+
+    expect(landing).toBeUndefined();
   });
 
   it('settles a charged arc on the thrower side of a near wall', () => {

@@ -321,7 +321,16 @@ itemSchema = obj({
       chamber: enumeration(['empty', 'round', 'case']),
       roundType: opt(str({ id: true })),
       tube: opt(arr(str({ id: true }))),
-      landing: opt(obj({ at: nonNegative, position: vec3 })),
+      landings: opt(
+        arr(
+          obj({
+            at: nonNegative,
+            position: vec3,
+            type: str({ id: true }),
+            seed: num({ integer: true, safe: true, min: 0, max: 0xff_ff_ff_ff }),
+          }),
+        ),
+      ),
       pendingCase: opt(
         obj({
           origin: vec3,
@@ -1332,6 +1341,9 @@ function validateItemContentReferences(
     }
     item.firearm?.tube?.forEach((type, index) => {
       check('item', type, `${path}.firearm.tube[${index}]`);
+    });
+    item.firearm?.landings?.forEach(({ type }, index) => {
+      check('item', type, `${path}.firearm.landings[${index}].type`);
     });
     item.cartridges?.forEach((type, index) => {
       check('item', type, `${path}.cartridges[${index}]`);

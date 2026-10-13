@@ -6,7 +6,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { SPENT_CASE_SCATTER_CAP, spentCaseScatter } from '../src/core/scatterPile.ts';
 import type { FirearmShotEffect } from '../src/game/firearmHandling.ts';
-import { CaseEffects, FLYING_CASE_CAP } from '../src/render/caseEffects.ts';
+import { CaseEffects, caseFlightPoint, FLYING_CASE_CAP } from '../src/render/caseEffects.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 
@@ -18,6 +18,21 @@ const baseContent = readdirSync(BASE)
 const { registry } = buildRegistry(baseContent);
 
 describe('spent-case presentation', () => {
+  it('ends the ballistic presentation at the simulation landing position', () => {
+    const origin: [number, number, number] = [0.2, 1.1, -0.4];
+    const landing: [number, number, number] = [2, 0.5, 1];
+    const duration = 0.48;
+    const initialVelocity: [number, number, number] = [3.15, 0.7, 0];
+    const flight = { durationSimSeconds: duration, initialVelocity };
+    expect(caseFlightPoint(origin, landing, 1, flight)).toEqual(landing);
+    const progress = 0.001;
+    const elapsed = duration * progress;
+    const point = caseFlightPoint(origin, landing, progress, flight);
+    const horizontalVelocity = [(point[0] - origin[0]) / elapsed, (point[2] - origin[2]) / elapsed];
+    expect(
+      Math.hypot(horizontalVelocity[0]! - initialVelocity[0], horizontalVelocity[1]! - initialVelocity[2]),
+    ).toBeLessThan(0.1);
+  });
   it('scatters deterministically, spreads with count, and stops changing at its cap', () => {
     const pile: [number, number, number] = [7, 3, -2];
     const one = spentCaseScatter({ worldSeed: 25, pilePos: pile, count: 1, blockSize: 0.5 });
@@ -113,6 +128,9 @@ describe('spent-case presentation', () => {
         direction: [0.9, 0.15, 0],
         speed: 3.5,
         seed: 33,
+        landingPosition: [2, 0.5, 1],
+        startedAtSimSeconds: 0,
+        landingAt: 0.48,
         caseModelId: 'case_5_d_56x45',
       }),
     ).toBe(true);
@@ -139,6 +157,9 @@ describe('spent-case presentation', () => {
       direction: [0.9, 0.15, 0],
       speed: 3.5,
       seed: 33,
+      landingPosition: [2, 0.5, 1],
+      startedAtSimSeconds: 0,
+      landingAt: 0.48,
       caseModelId: 'case_5_d_56x45',
     };
     // Warm both model caches, then refire the first; the browser probe covers 100 waves.
@@ -152,7 +173,7 @@ describe('spent-case presentation', () => {
           }),
         ).toBe(true);
       }
-      effects.update(6.1, () => false);
+      effects.update(0.48);
     }
     expect(groundClones).toBe(FLYING_CASE_CAP * 2);
     expect(effects.mesh.children).toHaveLength(FLYING_CASE_CAP * 2);
@@ -268,13 +289,16 @@ describe('spent-case presentation', () => {
       direction: [1, 0, 0],
       speed: 3.5,
       seed: 13,
+      landingPosition: [2, 0.5, 1],
+      startedAtSimSeconds: 0,
+      landingAt: 0.48,
       caseModelId: 'first-case',
     };
     effects.spawn(shot);
-    effects.update(6.1, () => false);
+    effects.update(0.48);
     effects.spawn({ ...shot, caseModelId: 'second-case' });
     loaded = true;
-    effects.update(0.02, () => false);
+    effects.update(0.02);
     expect(effects.mesh.children).toHaveLength(2);
     expect(effects.mesh.children.filter((visual) => visual.visible)).toHaveLength(1);
     effects.dispose();
@@ -282,7 +306,15 @@ describe('spent-case presentation', () => {
 
   it('caps flying-case effects and hides their visuals after they settle', () => {
     const effects = new CaseEffects(1);
-    const shot: FirearmShotEffect = { origin: [0, 1.2, 0], direction: [0.9, 0.15, 0], speed: 3.5, seed: 33 };
+    const shot: FirearmShotEffect = {
+      origin: [0, 1.2, 0],
+      direction: [0.9, 0.15, 0],
+      speed: 3.5,
+      seed: 33,
+      landingPosition: [2, 0.5, 1],
+      startedAtSimSeconds: 0,
+      landingAt: 0.48,
+    };
     for (let index = 0; index < FLYING_CASE_CAP; index++) {
       expect(effects.spawn(shot)).toBe(true);
     }
@@ -290,7 +322,7 @@ describe('spent-case presentation', () => {
     expect(effects.activeCount).toBe(FLYING_CASE_CAP);
     let settledAt = -1;
     for (let frame = 0; frame < 120; frame++) {
-      effects.update(0.05, (_x, y) => y < 0);
+      effects.update((frame + 1) * 0.05);
       if (effects.activeCount === 0) {
         settledAt = frame;
         break;

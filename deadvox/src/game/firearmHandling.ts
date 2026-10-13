@@ -5,7 +5,7 @@ import type { AimBasis, AimFrame } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import type { Vec3 } from '../core/coords.ts';
+import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../core/firearmAttachments.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
@@ -20,14 +20,16 @@ import {
 } from '../core/firearmsSkill.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
 import { heldEjectionPose } from '../core/heldPose.ts';
-import type { Inventory } from '../core/inventory.ts';
+import { dropSpots, type Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { settleOnWorld } from '../core/itemThrow.ts';
 import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
-import { dropTarget, stowTarget } from '../core/options.ts';
+import { type dropTarget, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
-import type { SolidAt } from '../core/raycast.ts';
+import { raycast, type SolidAt } from '../core/raycast.ts';
+import { makeScale } from '../core/scale.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
@@ -182,7 +184,11 @@ export interface FirearmShotEffect {
   readonly origin: Vec3;
   readonly direction: Vec3;
   readonly speed: number;
+  readonly verticalDrop?: true;
   readonly seed: number;
+  readonly landingPosition: Vec3;
+  readonly startedAtSimSeconds: number;
+  readonly landingAt: number;
   readonly caseModelId?: string;
 }
 
@@ -224,6 +230,18 @@ export interface FirearmCycleFrame {
   readonly magazine?: { readonly removeShare: number; readonly incoming?: string };
 }
 
+interface EjectedCasePlacement {
+  readonly item: Item;
+  readonly instanceIndex: number;
+}
+
+interface CaseLanding {
+  readonly position: Vec3;
+  readonly direction: Vec3;
+  readonly speed: number;
+  readonly verticalDrop: boolean;
+}
+
 export class FirearmMechanics {
   /** Numeric ownership references only. Chamber/cycle data lives on the inventory item. */
   private readonly active = new Set<number>();
@@ -234,6 +252,7 @@ export class FirearmMechanics {
   private readonly isSolid: SolidAt;
   private readonly pose: (uid: number) => FirearmPoseInput | undefined;
   private readonly onEjection: (effect: FirearmShotEffect) => void;
+  private readonly onCaseLanded: (seed: number, item: Item, instanceIndex: number) => void;
   /** Simulation: resolves the shot's hits. It runs before `onTrajectory`, which is presentation only. */
   private readonly onShot: (shot: PelletShot, time: number, firearm: Item) => void;
   private readonly onTrajectory: (trajectory: FirearmTrajectory, time: number) => void;
@@ -259,6 +278,7 @@ export class FirearmMechanics {
       isSolid,
       pose,
       onEjection,
+      onCaseLanded = () => undefined,
       onShot = () => undefined,
       onTrajectory = () => undefined,
       onSound = () => undefined,
@@ -271,6 +291,7 @@ export class FirearmMechanics {
       isSolid?: SolidAt;
       pose: (uid: number) => FirearmPoseInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
+      onCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
       onShot?: (shot: PelletShot, time: number, firearm: Item) => void;
       onTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
       onSound?: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
@@ -292,6 +313,7 @@ export class FirearmMechanics {
     this.isSolid = isSolid ?? (() => false);
     this.pose = pose;
     this.onEjection = onEjection;
+    this.onCaseLanded = onCaseLanded;
     this.onShot = onShot;
     this.onTrajectory = onTrajectory;
     this.onSound = onSound;
@@ -309,7 +331,7 @@ export class FirearmMechanics {
         return tuning.skillZeroHandling;
       });
     for (const { item } of inventory.items()) {
-      if (item.firearm?.cycle || item.firearm?.landing) {
+      if (item.firearm?.cycle || item.firearm?.landings?.length) {
         this.active.add(item.uid);
       }
       if (item.firearm?.readying) {
@@ -617,6 +639,7 @@ export class FirearmMechanics {
     item.firearm = {
       chamber: 'case',
       ...(item.firearm?.readying === undefined ? {} : { readying: item.firearm.readying }),
+      ...(item.firearm?.landings === undefined ? {} : { landings: item.firearm.landings }),
       pendingCase: { ...emission, seed },
       cycle: {
         mode: 'fire',
@@ -664,8 +687,8 @@ export class FirearmMechanics {
     if (!emission) {
       return 'No held ejection pose';
     }
-    const drop = this.ejectionDrop(type, emission);
-    return drop.plan.ok ? undefined : drop.plan.reason;
+    // Case capacity must never jam a charge; the landing-time placement can spill or discard it.
+    return undefined;
   }
 
   private isPump(item: Item): boolean {
@@ -887,7 +910,7 @@ export class FirearmMechanics {
       : undefined;
   }
 
-  /** Puts an item leaving the held gun into a pocket, or onto the ground at the player's feet. */
+  /** Puts an ejected item in its supported landing pile, with the bounded spill search as fallback. */
   private stow(gun: Item, item: Item): boolean {
     const feet = this.pose(gun.uid)?.feet;
     const target = feet && stowTarget(this.inventory, item, feet);
@@ -962,14 +985,12 @@ export class FirearmMechanics {
 
   private advanceItem(uid: number, time: number): void {
     const item = this.inventory.itemByUid(uid);
-    const landing = item?.firearm?.landing;
-    if (landing && time + 1e-9 >= landing.at) {
-      item!.firearm!.landing = undefined;
-      this.onSound('shotgun_hull_drop', landing.position, landing.at);
+    if (item) {
+      this.advanceLandings(item, time);
     }
     const cycle = item?.firearm?.cycle;
     if (!(item && cycle)) {
-      if (!item?.firearm?.landing) {
+      if (!item?.firearm?.landings?.length) {
         this.active.delete(uid);
       }
       return;
@@ -979,6 +1000,31 @@ export class FirearmMechanics {
     } else {
       this.advanceCycle(item, Math.max(cycle.elapsed, time - cycle.startedAt));
     }
+  }
+
+  private advanceLandings(item: Item, time: number): void {
+    const landings = item.firearm?.landings;
+    if (!landings) {
+      return;
+    }
+    const pending: NonNullable<FirearmState['landings']> = [];
+    for (const landing of landings) {
+      if (time + 1e-9 < landing.at) {
+        pending.push(landing);
+        continue;
+      }
+      const placement = this.placeEjected(landing.type, landing.position);
+      if (placement && typeof placement !== 'string') {
+        this.onCaseLanded(landing.seed, placement.item, placement.instanceIndex);
+      }
+      const spentPumpCase =
+        this.isPump(item) &&
+        landing.type === spentCaseItemId(firearmHandlingFor(item, this.inventory.registry).calibre);
+      if (spentPumpCase) {
+        this.onSound('shotgun_hull_drop', landing.position, landing.at);
+      }
+    }
+    item.firearm!.landings = pending.length > 0 ? pending : undefined;
   }
 
   private advanceHand(item: Item): void {
@@ -995,7 +1041,7 @@ export class FirearmMechanics {
   }
 
   private retire(item: Item): void {
-    if (!item.firearm?.landing) {
+    if (!item.firearm?.landings?.length) {
       this.active.delete(item.uid);
     }
   }
@@ -1105,18 +1151,73 @@ export class FirearmMechanics {
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const twoHanded = Boolean(defOf(this.inventory.registry, item.type).twoHanded);
     const eye: Vec3 = pose.eye.map((value) => value * pose.blockSize) as Vec3;
-    return {
-      ...heldEjectionPose({ model: data.model, side, twoHanded, eye, yaw: pose.yaw, pitch: pose.pitch }),
-      feet: [...pose.feet],
-    };
+    const held = heldEjectionPose({ model: data.model, side, twoHanded, eye, yaw: pose.yaw, pitch: pose.pitch });
+    const { origin: portOrigin } = held;
+    let origin = portOrigin;
+    const originBlocks: Vec3 = origin.map((value) => value / this.blockSize) as Vec3;
+    if (this.isSolid(...(originBlocks.map(Math.floor) as Vec3))) {
+      const eyeBlocks: Vec3 = [...pose.eye];
+      const eyeCell: Vec3 = eyeBlocks.map(Math.floor) as Vec3;
+      const towardPort = originBlocks.map((value, axis) => value - eyeBlocks[axis]!) as Vec3;
+      const distance = Math.hypot(...towardPort);
+      if (distance > 0 && !this.isSolid(...eyeCell)) {
+        const direction = towardPort.map((value) => value / distance) as Vec3;
+        const hit = raycast(eyeBlocks, direction, distance, this.isSolid);
+        if (hit) {
+          const lastFreeDistance = Math.max(0, hit.distance - 1e-6);
+          origin = eye.map((value, axis) => value + direction[axis]! * lastFreeDistance * this.blockSize) as Vec3;
+        }
+      }
+    }
+    return { ...held, origin, feet: [...pose.feet] };
   }
 
   /**
-   * Metadata-only placement probe: never allocate a UID during read-only rack admission. An ejected item lands in
-   * the pile of the block it falls on, so cases are saved per block (`DESIGN.md`, "Spent cases per block").
+   * At impact, place the case in its landing pile or the first supported spill spot with room. A metadata-only probe
+   * avoids allocating an item UID until a destination is known (`DESIGN.md`, "Spent cases per block").
    */
-  private ejectionDrop(type: string, emission: Omit<PendingCase, 'seed'>): ReturnType<typeof dropTarget> {
-    return dropTarget(this.inventory, { uid: 0, type, count: 1, condition: 1 }, this.landing(emission));
+  private ejectionDrop(type: string, landing: Vec3): ReturnType<typeof dropTarget> {
+    const item = { uid: 0, type, count: 1, condition: 1 };
+    let first: ReturnType<typeof dropTarget> | undefined;
+    for (const pos of dropSpots(landing)) {
+      if (this.isSolid(...pos) || !this.isSolid(pos[0], pos[1] - 1, pos[2])) {
+        continue;
+      }
+      const target = { kind: 'pile', pos } as const;
+      const candidate = { target, plan: this.inventory.planAdd(item, target) };
+      first ??= candidate;
+      if (candidate.plan.ok) {
+        return candidate;
+      }
+    }
+    return (
+      first ?? {
+        target: { kind: 'pile', pos: landing },
+        plan: { ok: false, reason: 'No supported drop spot' },
+      }
+    );
+  }
+
+  private placeEjected(type: string, landing: Vec3 | undefined): EjectedCasePlacement | string | undefined {
+    if (!landing) {
+      // No supported outward landing: discard rather than create a floating pile.
+      return undefined;
+    }
+    const drop = this.ejectionDrop(type, landing);
+    if (!drop.plan.ok) {
+      return drop.plan.reason;
+    }
+    const item = this.inventory.create(type);
+    const placement = this.inventory.planAdd(item, drop.target);
+    if (!placement.ok) {
+      return placement.reason;
+    }
+    const landedItem = placement.merge ?? item;
+    const instanceIndex = placement.merge?.count ?? 0;
+    if (!this.inventory.add(item, drop.target)) {
+      return 'Ejection placement changed';
+    }
+    return { item: landedItem, instanceIndex };
   }
 
   private ejectLive(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
@@ -1126,35 +1227,61 @@ export class FirearmMechanics {
     }
     const emission = this.emission(item, data, pose);
     const type = state.roundType!;
-    const drop = this.ejectionDrop(type, emission);
-    if (!drop.plan.ok) {
-      return drop.plan.reason;
-    }
-    if (!this.inventory.add(this.inventory.create(type), drop.target)) {
-      return 'Ejection placement changed';
-    }
+    const landing = this.landing(emission);
     state.chamber = 'empty';
     state.roundType = undefined;
     state.cycle!.ejected = true;
+    if (!landing) {
+      return undefined;
+    }
     const seed = Math.floor(Rng.stream(item.uid, `live-shell:${state.cycle!.startedAt}`).next() * 4_294_967_296) >>> 0;
     const modelId = defOf(this.inventory.registry, type).model;
+    const startedAt = this.ejectionAt(state, data);
+    state.landings ??= [];
+    state.landings.push({
+      at: startedAt + CASE_FLIGHT_SECONDS,
+      position: [...landing.position],
+      type,
+      seed,
+    });
     this.onEjection({
       origin: emission.origin,
-      direction: emission.direction,
-      speed: CASE_SPEED,
+      direction: landing.direction,
+      speed: landing.speed,
+      ...(landing.verticalDrop ? { verticalDrop: true as const } : {}),
       seed,
+      landingPosition: landing.position,
+      startedAtSimSeconds: startedAt,
+      landingAt: startedAt + CASE_FLIGHT_SECONDS,
       ...(modelId ? { caseModelId: modelId } : {}),
     });
     return undefined;
   }
 
-  private landing(emission: Omit<PendingCase, 'seed'>): Vec3 {
-    const distance = CASE_SPEED * CASE_FLIGHT_SECONDS;
-    return [
-      Math.floor((emission.origin[0] + emission.direction[0] * distance) / this.blockSize),
-      emission.feet[1],
-      Math.floor((emission.origin[2] + emission.direction[2] * distance) / this.blockSize),
-    ];
+  private landing(emission: Omit<PendingCase, 'seed'>): CaseLanding | undefined {
+    const origin: Vec3 = emission.origin.map((axis) => axis / this.blockSize) as Vec3;
+    const distanceBlocks = (CASE_SPEED * CASE_FLIGHT_SECONDS) / this.blockSize;
+    const hit = raycast(origin, emission.direction, distanceBlocks, this.isSolid);
+    const safeDistance = hit ? Math.max(0, hit.distance - 1e-6) : distanceBlocks;
+    const endpoint: Vec3 = origin.map(
+      (axis, index) => (axis + emission.direction[index]! * safeDistance) * this.blockSize,
+    ) as Vec3;
+    const minY = makeScale(this.blockSize).minCy * CHUNK;
+    const landingPoint = hit ? emission.origin : endpoint;
+    const position = settleOnWorld(landingPoint, this.blockSize, minY, this.isSolid);
+    if (!position) {
+      return undefined;
+    }
+    const dropHeight = emission.origin[1] - (position[1] * this.blockSize + 0.006);
+    const speed = hit ? Math.max(0, dropHeight / CASE_FLIGHT_SECONDS) : CASE_SPEED;
+    return { position, direction: hit ? [0, -1, 0] : emission.direction, speed, verticalDrop: hit !== undefined };
+  }
+
+  private ejectionAt(state: FirearmState, data: FirearmHandlingData): number {
+    const cycle = state.cycle!;
+    const duration = cycle.duration ?? actionCycleSeconds(data.action, cycle.mode);
+    const timeScale = duration / actionCycleSeconds(data.action, cycle.mode);
+    return cycle.startedAt + ejectSeconds(data.action, cycle.mode) * timeScale;
   }
 
   private ejectCase(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
@@ -1166,30 +1293,31 @@ export class FirearmMechanics {
     const emission = pose ? this.emission(item, data, pose) : pending;
     const landing = this.landing(emission);
     const type = spentCaseItemId(data.calibre);
-    const drop = this.ejectionDrop(type, emission);
-    if (!drop.plan.ok) {
-      return drop.plan.reason;
-    }
-    if (!this.inventory.add(this.inventory.create(type), drop.target)) {
-      return 'Ejection placement changed';
-    }
     state.chamber = 'empty';
     state.pendingCase = undefined;
     // Commit the transition before output: a drawing failure must never double its case.
     state.cycle!.ejected = true;
-    if (this.isPump(item)) {
-      state.landing = {
-        at: state.cycle!.startedAt + ejectSeconds(data.action, 'hand') + CASE_FLIGHT_SECONDS,
-        position: [...landing],
-      };
+    if (landing) {
+      const startedAt = this.ejectionAt(state, data);
+      state.landings ??= [];
+      state.landings.push({
+        at: startedAt + CASE_FLIGHT_SECONDS,
+        position: [...landing.position],
+        type,
+        seed: pending.seed,
+      });
+      this.onEjection({
+        origin: emission.origin,
+        direction: landing.direction,
+        speed: landing.speed,
+        ...(landing.verticalDrop ? { verticalDrop: true as const } : {}),
+        seed: pending.seed,
+        landingPosition: landing.position,
+        startedAtSimSeconds: startedAt,
+        landingAt: startedAt + CASE_FLIGHT_SECONDS,
+        ...(data.caseModelId ? { caseModelId: data.caseModelId } : {}),
+      });
     }
-    this.onEjection({
-      origin: emission.origin,
-      direction: emission.direction,
-      speed: CASE_SPEED,
-      seed: pending.seed,
-      ...(data.caseModelId ? { caseModelId: data.caseModelId } : {}),
-    });
     return undefined;
   }
 }

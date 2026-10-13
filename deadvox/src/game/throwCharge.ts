@@ -1,6 +1,4 @@
-// A held item's throw, from the press that picks its hand and item, through the release or cancel that ends its
-// charge, to the player tick that lands it. The session owns it so a climber holds still while it charges (`DESIGN.md`, "Ladders and hatches"), and a replay, driven by the same recorded presses and releases, charges at the same ticks as
-// the live game and lands its recorded throws through the same `land`.
+// A held item's throw, from the press that picks its hand and item through release or cancel. The session owns it so a climber holds still while it charges (`DESIGN.md`, "Ladders and hatches").
 
 import { dominantSide, offSide } from '../core/character.ts';
 import type { HandSide, Inventory, Target } from '../core/inventory.ts';
@@ -106,33 +104,21 @@ export class ThrowCharge {
     return reason;
   }
 
-  /**
-   * Carries out a released throw: moves `item` from `hand` onto the pile it lands on, or says why not when the player
-   * should see it. The ladder admits the hand again here, as a hold can take it between the release and this tick.
-   */
-  land(
+  /** Commits the item to its pile at release; only the renderer presents the travel arc. */
+  place(
     item: Item,
     hand: HandSide,
     target: Extract<Target, { kind: 'pile' }>,
-  ): { readonly landed: true } | { readonly landed: false; readonly reason?: string } {
-    const { inventory } = this;
+  ): { readonly landed: true; readonly item: Item } | { readonly landed: false; readonly reason?: string } {
     const ladderRefusal = this.ladderHold.refusal(hand);
     if (ladderRefusal) {
       return { landed: false, reason: ladderRefusal };
     }
-    const placement = inventory.planAdd(item, target);
-    if (!placement.ok) {
-      return { landed: false, reason: `Can't throw it there: ${placement.reason}` };
+    const placed = this.inventory.throwToPile(item, hand, target);
+    if (!placed.ok) {
+      return { landed: false, reason: `Can't throw it there: ${placed.reason}` };
     }
-    const location = inventory.locate(item);
-    if (location?.kind !== 'hand' || location.side !== hand || !inventory.consume(item)) {
-      return { landed: false };
-    }
-    if (!inventory.add(item, target)) {
-      inventory.add(item, { kind: 'hand', side: location.side });
-      return { landed: false, reason: "Couldn't land the item there" };
-    }
-    return { landed: true };
+    return { landed: true, item: placed.item };
   }
 
   cancel(): void {

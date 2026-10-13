@@ -58,9 +58,14 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   }
 };
 
-const runtime = (isSolid: SolidAt = OPEN, restore?: Readonly<SaveSnapshot>) =>
+const runtime = (
+  isSolid: SolidAt = OPEN,
+  restore?: Readonly<SaveSnapshot>,
+  content = registry,
+  onDetonation?: (position: Vec3, radiusMetres: number) => void,
+) =>
   createSession({
-    registry,
+    registry: content,
     world: new World(),
     isSolid,
     isOpaque: () => false,
@@ -80,6 +85,7 @@ const runtime = (isSolid: SolidAt = OPEN, restore?: Readonly<SaveSnapshot>) =>
     audio: { play: () => undefined },
     notice: () => undefined,
     onRead: () => undefined,
+    ...(onDetonation ? { onDetonation } : {}),
     ...(restore ? { restore } : {}),
   });
 type Runtime = ReturnType<typeof runtime>;
@@ -122,6 +128,21 @@ const detonation = (origin: Vec3, blast: Detonation['blast'], fragmentCount = 0)
 });
 
 describe('hand grenade', () => {
+  it('detonates a lit grenade after release has committed it to the pile', () => {
+    const detonations: Vec3[] = [];
+    const session = runtime(OPEN, undefined, registry, (position) => detonations.push(position));
+    const grenade = session.inventory.create(GRENADE);
+    expect(session.inventory.add(grenade, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(session.fuses.togglePin(grenade)).toBe('pulled');
+    const target = { kind: 'pile' as const, pos: [2, 0, 0] as [number, number, number] };
+    expect(session.throwCharge.place(grenade, 'right', target).landed).toBe(true);
+    expect(session.inventory.locate(grenade)).toMatchObject({ kind: 'pile', pile: { pos: target.pos } });
+
+    session.sim.scheduler.advance(FUSE + 0.5);
+    expect(detonations).toEqual([[(target.pos[0] + 0.5) * BLOCK, 0.25 * BLOCK, (target.pos[2] + 0.5) * BLOCK]]);
+    expect(session.inventory.itemByUid(grenade.uid)).toBeUndefined();
+  });
+
   it('is pinned and unpinned by its primary action in hand', () => {
     const session = runtime();
     const grenade = session.inventory.create(GRENADE);

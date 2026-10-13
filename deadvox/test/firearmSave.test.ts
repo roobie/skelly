@@ -5,6 +5,7 @@ import { type AimStep, assertAimState } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import type { Item } from '../src/core/items.ts';
+import { ITEM_FLIGHT_SECONDS } from '../src/core/itemThrow.ts';
 import { pelletShot } from '../src/core/pellets.ts';
 import {
   decodeSave,
@@ -569,8 +570,11 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
     runtime.frame(frameSeconds);
   }
 
-  expect(spentCases()).toHaveLength(1);
   expect(runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle).toBeUndefined();
+  const landingAt = rifle.firearm?.landings?.[0]?.at;
+  expect(landingAt).toBeDefined();
+  runtime.firearms.advanceTo(landingAt!);
+  expect(spentCases()).toHaveLength(1);
 });
 
 it('a knockout codec save preserves an automatic cycle’s remaining frames', async () => {
@@ -629,7 +633,139 @@ it('a knockout codec save preserves an automatic cycle’s remaining frames', as
   expect(framesUntilCycleEnds(resumed)).toBe(framesUntilCycleEnds(continuous.runtime));
 });
 
-it('a codec save before ejectAt restores one pending case and ejects it exactly once', async () => {
+it('a mid-flight codec save preserves its landing without transient arc launch data', async () => {
+  const original = session([]);
+  const rifle = sessionRifle(original);
+  const { action, calibre } = firearmHandlingFor(rifle, registry);
+  if (!action.fire) {
+    throw new Error('AR save fixture needs exported automatic action data');
+  }
+  const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
+  expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
+  const frameSeconds = 1 / 60;
+  for (let frame = 0; frame < 120 && original.sim.time < ejectTime + frameSeconds; frame += 1) {
+    original.frame(frameSeconds);
+  }
+  const pending = rifle.firearm?.landings?.[0];
+  expect(pending).toBeDefined();
+  expect(pending).not.toHaveProperty('origin');
+  expect(pending).not.toHaveProperty('startedAtSimSeconds');
+  expect(pending).not.toHaveProperty('modelId');
+  expect(original.sim.time).toBeGreaterThan(ejectTime);
+  expect(original.sim.time).toBeLessThan(pending!.at);
+  const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
+  const bytes = await encodeSave(saved, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  const resumed = session([], (await decodeSave(bytes, { version, contentLookup })).snapshot);
+  resumed.sim.paused = false;
+  const cases = (runtime: ReturnType<typeof session>) =>
+    [...runtime.inventory.items()]
+      .filter(({ item }) => item.type === spentCaseItemId(calibre))
+      .map(({ item: { uid, count } }) => ({ uid, count }));
+  const resumedLanding = resumed.inventory.itemByUid(rifle.uid)?.firearm?.landings?.[0];
+  expect(resumedLanding).toEqual(pending);
+  expect(cases(original)).toEqual([]);
+  expect(cases(resumed)).toEqual([]);
+  const advanceSessionToLanding = (runtime: ReturnType<typeof session>) => {
+    for (let frame = 0; frame < 120 && runtime.sim.time < pending!.at; frame += 1) {
+      runtime.frame(frameSeconds);
+    }
+    expect(runtime.sim.time).toBeGreaterThanOrEqual(pending!.at);
+  };
+  advanceSessionToLanding(resumed);
+  expect(cases(resumed)).toEqual([{ uid: expect.any(Number), count: 1 }]);
+  advanceSessionToLanding(original);
+  expect(cases(resumed)).toEqual(cases(original));
+  expect(cases(resumed)).toEqual([{ uid: expect.any(Number), count: 1 }]);
+});
+
+it('rejects an unknown item type in a pending firearm landing', async () => {
+  const original = session([]);
+  const rifle = sessionRifle(original);
+  const { action } = firearmHandlingFor(rifle, registry);
+  if (!action.fire) {
+    throw new Error('AR save fixture needs exported automatic action data');
+  }
+  expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
+  const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
+  for (let frame = 0; frame < 120 && original.sim.time < ejectTime + 1 / 60; frame += 1) {
+    original.frame(1 / 60);
+  }
+  const snapshot = structuredClone(original.snapshot({ worldId: 'world', characterId: 'character' })) as SaveSnapshot;
+  const savedRifle = snapshot.character.inventory.hands.right;
+  if (!savedRifle?.firearm?.landings?.length) {
+    throw new Error('Pending case fixture did not eject');
+  }
+  savedRifle.firearm.landings[0]!.type = 'not_a_real_item';
+  const bytes = await encodeSave(snapshot, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  await expect(decodeSave(bytes, { version, contentLookup })).rejects.toThrow('Unknown item content id');
+});
+
+it('hides a committed pile item during its arc and lands at its current model position', async () => {
+  const { Group } = await import('three');
+  const { ItemThrows } = await import('../src/render/itemThrows.ts');
+  const { PileMeshes } = await import('../src/render/piles.ts');
+  const runtime = session([]);
+  const rifle = sessionRifle(runtime);
+  const target = { kind: 'pile' as const, pos: [2, 0, 0] as [number, number, number] };
+  const placed = runtime.throwCharge.place(rifle, 'right', target);
+  expect(placed.landed).toBe(true);
+  if (!placed.landed) {
+    throw new Error('Throw fixture did not enter its pile');
+  }
+  expect(runtime.inventory.locate(rifle)).toMatchObject({ kind: 'pile' });
+  const snapshot = runtime.inventory.snapshotState();
+  let ready = false;
+  const models = {
+    version: 0,
+    has: () => ready,
+    groundLook: () => new Group(),
+  } as unknown as import('../src/render/models.ts').ModelLibrary;
+  const throws = new ItemThrows(registry, models, 0.5);
+  const piles = new PileMeshes(0.5, models);
+  const startedAtSimSeconds = runtime.sim.time;
+  const landingAt = startedAtSimSeconds + ITEM_FLIGHT_SECONDS;
+  throws.spawn(
+    { item: rifle, itemUid: placed.item.uid, origin: [0, 1, 0], startedAtSimSeconds, landingAt },
+    runtime.inventory,
+  );
+
+  ready = true;
+  models.version += 1;
+  throws.update(startedAtSimSeconds + ITEM_FLIGHT_SECONDS / 2, runtime.inventory);
+  piles.sync(runtime.inventory, throws.hiddenItemUids);
+  expect(throws.hiddenItemUids.has(placed.item.uid)).toBe(true);
+  expect(piles.group.children.some((object) => object instanceof Group)).toBe(false);
+
+  throws.update(landingAt, runtime.inventory);
+  piles.sync(runtime.inventory, throws.hiddenItemUids);
+  const pileModel = piles.group.children.find((object) => object instanceof Group);
+  expect(throws.activeCount).toBe(0);
+  expect(throws.hiddenItemUids.has(placed.item.uid)).toBe(false);
+  expect(pileModel).toBeDefined();
+  expect(throws.group.children[0]!.position.distanceTo(pileModel!.position)).toBeLessThan(1e-5);
+  expect(runtime.inventory.snapshotState()).toEqual(snapshot);
+
+  const bytes = await encodeSave(runtime.snapshot({ worldId: 'world', characterId: 'character' }), {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  const saved = await decodeSave(bytes, { version, contentLookup });
+  const resumed = session([], saved.snapshot);
+  expect(resumed.inventory.locate(resumed.inventory.itemByUid(placed.item.uid)!)).toMatchObject({ kind: 'pile' });
+  piles.dispose();
+  throws.dispose();
+});
+
+it('a codec save before ejectAt restores one pending case and lands it exactly once', async () => {
   const originalEffects: FirearmShotEffect[] = [];
   const original = session(originalEffects);
   const rifle = sessionRifle(original);
@@ -660,13 +796,20 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
   restored.firearms.advanceTo(ejectTime - 1e-6);
   expect(cases(restored)).toEqual([]);
   restored.firearms.advanceTo(ejectTime);
+  const landingAt = restored.inventory.itemByUid(rifle.uid)?.firearm?.landings?.[0]?.at;
+  expect(landingAt).toBeDefined();
+  expect(cases(restored)).toEqual([]);
+  restored.firearms.advanceTo(landingAt! - 1e-6);
+  expect(cases(restored)).toEqual([]);
+  restored.firearms.advanceTo(landingAt!);
   const ejected = cases(restored);
   expect(ejected).toEqual([{ uid: expect.any(Number), count: 1 }]);
   restored.firearms.advanceTo(cycleTime);
   restored.firearms.advanceTo(cycleTime * 2);
   expect(cases(restored)).toEqual(ejected);
   expect(restoredEffects).toHaveLength(1);
-  original.firearms.advanceTo(cycleTime * 2);
+  original.firearms.advanceTo(ejectTime);
+  original.firearms.advanceTo(landingAt!);
   expect(cases(original)).toEqual(ejected);
   expect(restoredEffects).toEqual(originalEffects);
   expect(restored.audioState()).toEqual(pickerBefore);

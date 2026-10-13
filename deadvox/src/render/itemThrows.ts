@@ -1,9 +1,11 @@
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, Vector3 } from 'three';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { Inventory } from '../core/inventory.ts';
 import { PILE_GRID } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import { ITEM_ARC_HEIGHT_METRES, ITEM_FLIGHT_SECONDS, itemFlightPoint } from '../core/itemThrow.ts';
+import { effectivePileDisplay, effectivePileItemPosition } from '../core/pileDisplay.ts';
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -11,13 +13,14 @@ import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.
 import { itemLook } from './itemLook.ts';
 import type { ModelLibrary } from './models.ts';
 
-const MAX_ACTIVE = 4;
 const UP = new Vector3(0, 1, 0);
 const RIGHT = new Vector3(1, 0, 0);
 
 interface Flight {
   active: boolean;
-  age: number;
+  itemUid: number;
+  startedAtSimSeconds: number;
+  landingAt: number;
   readonly start: Vector3;
   readonly end: Vector3;
   readonly direction: Vector3;
@@ -28,28 +31,47 @@ interface Flight {
   modelVisual: boolean;
 }
 
-/** Render-only arc for an item already placed at its landing pile by the inventory owner. */
+/** Transient presentation arc; inventory ownership is immediate and arcs do not resume after load. */
 export class ItemThrows {
   readonly group = new Group();
   private readonly flights: Flight[] = [];
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly bundleMaterial = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }), 'piles');
-  private readonly models: Pick<ModelLibrary, 'groundLook'> | undefined;
+  private readonly models: Pick<ModelLibrary, 'groundLook' | 'has'> | undefined;
   private readonly registry: Registry;
   private readonly blockSize: number;
+  private readonly seed: number;
 
-  constructor(registry: Registry, models?: Pick<ModelLibrary, 'groundLook'>, blockSize = 1) {
+  constructor(registry: Registry, models?: Pick<ModelLibrary, 'groundLook' | 'has'>, blockSize = 1, seed = 1) {
     this.registry = registry;
     this.models = models;
     this.blockSize = blockSize;
+    this.seed = seed;
   }
 
-  spawn(from: Vec3, to: Vec3, item: Item): void {
+  spawn(
+    {
+      origin: from,
+      item,
+      itemUid = item.uid,
+      startedAtSimSeconds = 0,
+      landingAt = ITEM_FLIGHT_SECONDS,
+    }: {
+      origin: Vec3;
+      item: Item;
+      itemUid?: number;
+      startedAtSimSeconds?: number;
+      landingAt?: number;
+    },
+    inventory: Inventory,
+  ): void {
     const flight = this.flights.find((candidate) => !candidate.active) ?? this.createFlight();
     flight.active = true;
-    flight.age = 0;
+    flight.itemUid = itemUid;
+    flight.startedAtSimSeconds = startedAtSimSeconds;
+    flight.landingAt = landingAt;
     flight.start.set(...from);
-    flight.end.set(...to);
+    flight.end.set(...from);
     disposeItemEmissiveMaterials(flight.group);
     flight.group.clear();
     flight.modelVisual = false;
@@ -88,26 +110,59 @@ export class ItemThrows {
     }
 
     flight.group.visible = true;
-    this.drawFlight(flight, 0);
+    this.update(startedAtSimSeconds, inventory);
   }
 
-  update(dt: number): void {
+  update(simTime: number, inventory: Inventory): void {
     for (const flight of this.flights) {
       if (!flight.active) {
         continue;
       }
-      flight.age += dt;
-      if (flight.age >= ITEM_FLIGHT_SECONDS) {
+      const item = inventory.itemByUid(flight.itemUid);
+      const location = item && inventory.locate(item);
+      const otherHiddenItemUids = new Set(
+        this.flights
+          .filter(
+            (candidate) => candidate.active && simTime < candidate.landingAt && candidate.itemUid !== flight.itemUid,
+          )
+          .map((candidate) => candidate.itemUid),
+      );
+      const projection =
+        location?.kind === 'pile'
+          ? effectivePileDisplay({
+              registry: this.registry,
+              pile: location.pile,
+              blockSize: this.blockSize,
+              worldSeed: this.seed,
+              hasModel: (id) => this.models?.has(id) ?? false,
+              hiddenItemUids: otherHiddenItemUids,
+            })
+          : undefined;
+      const destination = projection && item ? effectivePileItemPosition(projection, item) : undefined;
+      if (!destination) {
         flight.active = false;
         flight.group.visible = false;
         continue;
       }
-      this.drawFlight(flight, flight.age / ITEM_FLIGHT_SECONDS);
+      flight.end.set(...destination);
+      const duration = flight.landingAt - flight.startedAtSimSeconds;
+      const progress = duration > 0 ? Math.max(0, (simTime - flight.startedAtSimSeconds) / duration) : 1;
+      if (simTime >= flight.landingAt) {
+        this.drawFlight(flight, 1);
+        flight.active = false;
+        flight.group.visible = false;
+        continue;
+      }
+      this.drawFlight(flight, progress);
     }
   }
 
   get activeCount(): number {
     return this.flights.filter((flight) => flight.active).length;
+  }
+
+  get hiddenItemUids(): ReadonlySet<number> {
+    return new Set(this.flights.filter((flight) => flight.active).map((flight) => flight.itemUid));
   }
 
   dispose(): void {
@@ -122,24 +177,15 @@ export class ItemThrows {
   }
 
   private createFlight(): Flight {
-    if (this.flights.length >= MAX_ACTIVE) {
-      const current = this.flights.find((candidate) => candidate.active);
-      if (!current) {
-        throw new Error('Item throw pool has no reusable flight');
-      }
-      current.active = false;
-      current.group.visible = false;
-      disposeItemEmissiveMaterials(current.group);
-      current.group.clear();
-      return current;
-    }
     const group = new Group();
     const bundle = new Mesh(this.geometry, this.bundleMaterial);
     const emissiveMaterial = new MeshBasicMaterial({ color: '#ffffff', toneMapped: false });
     const emissive = new Mesh(this.geometry, emissiveMaterial);
     const flight: Flight = {
       active: false,
-      age: 0,
+      itemUid: 0,
+      startedAtSimSeconds: 0,
+      landingAt: 0,
       start: new Vector3(),
       end: new Vector3(),
       direction: new Vector3(),
@@ -158,7 +204,9 @@ export class ItemThrows {
     const point = itemFlightPoint(flight.start.toArray() as Vec3, flight.end.toArray() as Vec3, progress);
     flight.group.position.set(...point);
     flight.direction.subVectors(flight.end, flight.start);
-    flight.direction.y += (Math.cos(Math.PI * progress) * ITEM_ARC_HEIGHT_METRES * Math.PI) / ITEM_FLIGHT_SECONDS;
+    flight.direction.y +=
+      (Math.cos(Math.PI * progress) * ITEM_ARC_HEIGHT_METRES * Math.PI) /
+      (flight.landingAt - flight.startedAtSimSeconds);
     flight.group.quaternion.setFromUnitVectors(flight.modelVisual ? RIGHT : UP, flight.direction.normalize());
   }
 }

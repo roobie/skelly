@@ -319,6 +319,8 @@ export interface SessionOptions {
   onHandlingOutcomes?: (result: TickResult) => void;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
+  /** Output only, after the simulation inserts an ejected item into its landing pile. */
+  onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
   onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
@@ -736,6 +738,7 @@ export const createSession = (options: SessionOptions) => {
           }
         : undefined,
     onEjection: (effect) => options.onFirearmEjection?.(effect),
+    onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
     onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
@@ -1112,7 +1115,11 @@ export const createSession = (options: SessionOptions) => {
   const detonate = (item: Item): void => {
     const spec = registry.items.get(item.type)?.explosive;
     const at = detonationPoint(item);
-    if (!(spec && at && inventory.consume(item))) {
+    if (!(spec && at)) {
+      return;
+    }
+    const consumed = inventory.consume(item);
+    if (!consumed) {
       return;
     }
     const directions = fragmentDirections(sim.rng(`fragments:${item.uid}`), spec.fragments.count);

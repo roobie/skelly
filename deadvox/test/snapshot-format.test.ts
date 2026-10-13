@@ -6,8 +6,9 @@ import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
-import { PILE_GRID } from '../src/core/inventory.ts';
+import { type InventoryState, PILE_GRID } from '../src/core/inventory.ts';
 import { restoreItem } from '../src/core/items.ts';
+import { savedItemTree } from '../src/core/itemTree.ts';
 import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { chunksFor } from '../src/core/scale.ts';
@@ -351,6 +352,26 @@ const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): 
 };
 
 describe('canonical save format', () => {
+  it('yields a saved carried root before reading world-owned item roots', () => {
+    const carried = { uid: 1, type: 'rag', count: 1, condition: 1 };
+    const state = {
+      nextItemUid: 2,
+      hands: { right: carried },
+      worn: {},
+      get piles() {
+        throw new Error('Saved carried lookup enumerated world piles');
+      },
+      looted: [],
+      quickbarOrigins: [],
+      entities: {
+        get entities() {
+          throw new Error('Saved carried lookup enumerated world entities');
+        },
+      },
+    } as unknown as InventoryState;
+    expect(savedItemTree(state).next().value?.item).toBe(carried);
+  });
+
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: integration test couples save round-trip, tick advancement and single-contact restore.
   it('round-trips an active player swing and resolves its one pending hit after restore', async () => {
     const source = createRuntime();

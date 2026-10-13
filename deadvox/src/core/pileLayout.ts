@@ -69,3 +69,21 @@ export const pileLayout = (
   }
   return layout;
 };
+
+export const pileItemPosition = (
+  registry: Registry,
+  pile: Pile,
+  itemUid: number,
+  { blockSize, hasModel = () => true }: { blockSize: number; hasModel?: (id: string) => boolean },
+): Vec3 | undefined => {
+  const layout = pileLayout(registry, pile, blockSize, hasModel);
+  const model = layout.models.find(({ placed }) => placed.item.uid === itemUid);
+  if (model) {
+    return model.at;
+  }
+  if (!layout.bundle.some(({ item }) => item.uid === itemUid)) {
+    return undefined;
+  }
+  const height = pileBundleHeight(registry, layout.bundle);
+  return [(pile.pos[0] + 0.5) * blockSize, pile.pos[1] * blockSize + height / 2, (pile.pos[2] + 0.5) * blockSize];
+};

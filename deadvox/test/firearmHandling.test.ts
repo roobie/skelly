@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
@@ -17,6 +18,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
+import { pileScatterPlacements } from '../src/core/scatterPile.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
@@ -28,8 +30,10 @@ import {
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
 import { FirearmTrigger } from '../src/game/firearmTrigger.ts';
+import { CaseEffects } from '../src/render/caseEffects.ts';
 import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
+import { PileMeshes } from '../src/render/piles.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
@@ -119,6 +123,7 @@ const armed = (
   const queue = new HandlingQueue(inventory);
   const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: 0.5,
+    isSolid: (_x, y, _z) => y < pose.feet[1],
     pose: fixturePose,
     onEjection: () => undefined,
     ...options,
@@ -136,10 +141,78 @@ const shot = (simTime = 1, prepare: (inventory: Inventory) => void = () => undef
     throw new Error('Test shot was refused');
   }
   mechanics.advanceTo(simTime + 0.02);
-  return { effect: effects[0], inventory, rifle };
+  return { effect: effects[0], inventory, mechanics, rifle };
 };
 
 describe('rifle firearm handling', () => {
+  it('ends the native case effect at the pile renderer instance position', () => {
+    const blockSize = 0.5;
+    const worldSeed = 17;
+    const effects = new CaseEffects(blockSize);
+    let inventory: Inventory | undefined;
+    let effect: FirearmShotEffect | undefined;
+    const {
+      inventory: sessionInventory,
+      mechanics,
+      rifle,
+    } = armed({
+      onEjection: (shotEffect) => {
+        effect = shotEffect;
+        effects.spawn({
+          ...shotEffect,
+          landingPosition: [
+            (shotEffect.landingPosition[0] + 0.5) * blockSize,
+            shotEffect.landingPosition[1] * blockSize + 0.006,
+            (shotEffect.landingPosition[2] + 0.5) * blockSize,
+          ],
+        });
+      },
+      onCaseLanded: (seed, item) => {
+        const location = inventory?.locate(item);
+        if (location?.kind !== 'pile') {
+          return;
+        }
+        const placement = pileScatterPlacements({
+          registry,
+          pile: location.pile,
+          worldSeed,
+          blockSize,
+        }).find(({ item: placed }) => placed.uid === item.uid);
+        if (placement) {
+          effects.retarget(seed, placement.position);
+        }
+      },
+    });
+    inventory = sessionInventory;
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
+    mechanics.advanceTo(2);
+    const landing = rifle.firearm?.landings?.[0];
+    expect(landing).toBeDefined();
+    mechanics.advanceTo(landing!.at);
+    mechanics.advanceTo(landing!.at);
+    expect(effect).toBeDefined();
+
+    const piledCase = [...inventory.items()].find(({ item }) => item.type === caseType);
+    expect(piledCase).toBeDefined();
+    const location = inventory.locate(piledCase!.item);
+    expect(location?.kind).toBe('pile');
+    if (location?.kind !== 'pile') {
+      throw new Error('Ejected case did not land in a pile');
+    }
+    const pile = new PileMeshes(blockSize, undefined, worldSeed);
+    pile.sync(inventory);
+    const instances = pile.group.children.find((child): child is InstancedMesh => child instanceof InstancedMesh);
+    expect(instances).toBeDefined();
+    const matrix = new Matrix4();
+    const renderedPosition = new Vector3();
+    instances!.getMatrixAt(0, matrix);
+    matrix.decompose(renderedPosition, new Quaternion(), new Vector3());
+    effects.update(landing!.at);
+    expect(effects.mesh.children[0]!.position.distanceTo(renderedPosition)).toBeLessThan(1e-5);
+    pile.dispose();
+    effects.dispose();
+  });
+
   it('wears a fitted suppressor on each committed shot', () => {
     const fitted = withDefaultAttachment(registry, 'rifle_assault', 'improvised_suppressor');
     const { mechanics, rifle } = armed({}, { content: fitted.registry });
@@ -523,6 +596,22 @@ describe('rifle firearm handling', () => {
     expect(kicks).toEqual([configuredKick]);
   });
 
+  it('keeps earlier case landings pending when automatic fire starts another cycle', () => {
+    const { mechanics, rifle } = armed();
+    const { action } = firearmHandlingFor(rifle, registry);
+    const cycleDuration = actionCycleSeconds(action, 'fire');
+    const ejectOffset = ejectSeconds(action, 'fire');
+
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
+    mechanics.advanceTo(1 + ejectOffset);
+    expect(rifle.firearm?.landings).toHaveLength(1);
+
+    const secondShotAt = 1 + cycleDuration;
+    expect(mechanics.fire(shotInput(rifle, secondShotAt))).toBe(true);
+    mechanics.advanceTo(secondShotAt + ejectOffset);
+    expect(rifle.firearm?.landings).toHaveLength(2);
+  });
+
   it('aligns ejection and held stroke when rpm caps a longer exported automatic cycle', () => {
     const model = registry.models.get('rifle_assault')!;
     const action = structuredClone(model.action!);
@@ -543,6 +632,12 @@ describe('rifle firearm handling', () => {
     mechanics.advanceTo(1 + ejectAt - 1e-6);
     expect(inventory.piles.size).toBe(0);
     mechanics.advanceTo(1 + ejectAt);
+    expect(inventory.piles.size).toBe(0);
+    const landingAt = rifle.firearm?.landings?.[0]?.at;
+    expect(landingAt).toBeDefined();
+    mechanics.advanceTo(landingAt! - 1e-6);
+    expect(inventory.piles.size).toBe(0);
+    mechanics.advanceTo(landingAt!);
     expect(inventory.piles.size).toBe(1);
     mechanics.advanceTo(1 + duration);
     expect(mechanics.frames()).toEqual([]);
@@ -631,6 +726,12 @@ describe('rifle firearm handling', () => {
     mechanics.advanceTo(1 + elapsed);
     expect(rifle.firearm).toMatchObject({ chamber: 'empty', cycle: undefined });
     expect(rifle.slots!.magazine!.cartridges).toHaveLength(loaded);
+    const landingAt = rifle.firearm?.landings?.[0]?.at;
+    expect(landingAt).toBeDefined();
+    expect([...inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type))).not.toContain(
+      chambered,
+    );
+    mechanics.advanceTo(landingAt!);
     expect([...inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type))).toContain(
       chambered,
     );
@@ -659,25 +760,31 @@ describe('rifle firearm handling', () => {
 
   it('drops each case in the pile of the block it lands on, never a case pile on a nearer block', () => {
     // Per-block counts keep saved case state independent of total shot count (`DESIGN.md`, "Spent cases per block").
-    const [landing] = [...shot(1).inventory.piles.values()].map((pile) => pile.pos);
+    const probe = shot(1);
+    const landingAt = probe.rifle.firearm?.landings?.[0]?.at;
+    const landing = probe.rifle.firearm?.landings?.[0]?.position;
     const feet: Vec3 = [
       Math.floor(pose.feet[0] / pose.blockSize),
       pose.feet[1],
       Math.floor(pose.feet[2] / pose.blockSize),
     ];
+    expect(landingAt).toBeDefined();
     expect(landing).toBeDefined();
     expect(landing).not.toEqual(feet);
     const cases = (ground: Inventory, pos: Vec3) =>
       ground.pileAt(pos)?.items.find(({ item }) => item.type === caseType)?.item.count;
 
-    const beside = shot(1, (prepared) => {
+    const besideShot = shot(1, (prepared) => {
       expect(prepared.add(prepared.create(caseType, 11), { kind: 'pile', pos: feet })).toBe(true);
-    }).inventory;
+    });
+    besideShot.mechanics.advanceTo(landingAt!);
+    const beside = besideShot.inventory;
     expect([cases(beside, feet), cases(beside, landing!)]).toEqual([11, 1]);
 
-    const { effect, inventory, rifle } = shot(1, (prepared) => {
+    const { effect, inventory, mechanics, rifle } = shot(1, (prepared) => {
       expect(prepared.add(prepared.create(caseType, 5), { kind: 'pile', pos: landing! })).toBe(true);
     });
+    mechanics.advanceTo(landingAt!);
     const { caseModelId } = firearmHandlingFor(rifle, registry);
     expect(caseModelId).toBeDefined();
     expect(effect?.caseModelId).toBe(caseModelId);
@@ -693,6 +800,14 @@ describe('rifle firearm handling', () => {
     const second = shot(2.5);
     expect(first.effect).toEqual(second.effect);
     expect(first.inventory.snapshotState()).toEqual(second.inventory.snapshotState());
+    expect(first.effect).toMatchObject({
+      landingPosition: first.rifle.firearm?.landings?.[0]?.position,
+      landingAt: first.rifle.firearm?.landings?.[0]?.at,
+    });
+    const landingAt = first.rifle.firearm?.landings?.[0]?.at;
+    expect(landingAt).toBeDefined();
+    first.mechanics.advanceTo(landingAt!);
+    second.mechanics.advanceTo(landingAt!);
     expect(first.inventory.piles.size).toBe(1);
     const [pile] = first.inventory.piles.values();
     expect(pile?.items.map(({ item }) => [item.type, item.count])).toEqual([[caseType, 1]]);

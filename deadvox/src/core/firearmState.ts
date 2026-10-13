@@ -25,14 +25,21 @@ interface FirearmRaiseState {
   duration: number;
 }
 
+interface FirearmLanding {
+  at: number;
+  position: Vec3;
+  type: string;
+  seed: number;
+}
+
 export interface FirearmState {
   chamber: 'empty' | 'round' | 'case';
   /** The chambered cartridge's item type, present exactly when the chamber holds a round. */
   roundType?: string | undefined;
   /** A pump's tube: cartridge item types in feed order. Magazine-fed firearms feed from their magazine slot. */
   tube?: string[];
-  /** Simulation-clock hull landing cue, committed separately from the already ejected case. */
-  landing?: { at: number; position: Vec3 } | undefined;
+  /** Ejected items awaiting their simulation-clock landings. */
+  landings?: FirearmLanding[] | undefined;
   pendingCase?: PendingCase | undefined;
   cycle?: FirearmCycleState | undefined;
   readying?: FirearmRaiseState | undefined;
@@ -40,28 +47,37 @@ export interface FirearmState {
 
 /** No live state is advanced or cancelled by a snapshot. */
 export const snapshotFirearm = (state: FirearmState): FirearmState => {
-  const { chamber, roundType, tube, landing, pendingCase, cycle, readying } = state;
+  const { chamber, roundType, tube, landings, pendingCase, cycle, readying } = state;
   return {
     chamber,
     ...(roundType === undefined ? {} : { roundType }),
     ...(tube === undefined ? {} : { tube: [...tube] }),
-    ...(landing === undefined ? {} : { landing: structuredClone(landing) }),
+    ...(landings === undefined ? {} : { landings: structuredClone(landings) }),
     ...(pendingCase === undefined ? {} : { pendingCase: structuredClone(pendingCase) }),
     ...(cycle === undefined || cycle.mode === 'hand' ? {} : { cycle: structuredClone(cycle) }),
     ...(readying === undefined ? {} : { readying: { ...readying } }),
   };
 };
 
-const assertPumpExtras = ({ tube, landing }: FirearmState): void => {
+const assertFirearmExtras = ({ tube, landings }: FirearmState): void => {
   if (tube && (!Array.isArray(tube) || tube.length > 64 || tube.some((type) => typeof type !== 'string'))) {
     throw new Error('Invalid firearm tube');
   }
   if (
-    landing &&
-    (!Number.isFinite(landing.at) ||
-      landing.at < 0 ||
-      landing.position.length !== 3 ||
-      landing.position.some((value) => !Number.isFinite(value)))
+    landings &&
+    (!Array.isArray(landings) ||
+      landings.length > 64 ||
+      landings.some(
+        (landing) =>
+          !Number.isFinite(landing.at) ||
+          landing.at < 0 ||
+          !Number.isSafeInteger(landing.seed) ||
+          landing.seed < 0 ||
+          landing.seed > 0xff_ff_ff_ff ||
+          !landing.type ||
+          landing.position.length !== 3 ||
+          landing.position.some((value) => !Number.isFinite(value)),
+      ))
   ) {
     throw new Error('Invalid firearm landing');
   }
@@ -93,7 +109,7 @@ export const assertFirearmState = (state: FirearmState): void => {
   if ((state.roundType !== undefined) !== (state.chamber === 'round')) {
     throw new Error('A loaded chamber needs exactly one cartridge type');
   }
-  assertPumpExtras(state);
+  assertFirearmExtras(state);
   const { cycle } = state;
   assertCycleState(cycle);
   if (cycle?.ejected && state.chamber === 'case') {

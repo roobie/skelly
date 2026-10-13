@@ -150,7 +150,7 @@ export const createPlayView = (
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
   const gore = new Gore(s, config.seed);
-  const itemThrows = new ItemThrows(registry, models, s);
+  const itemThrows = new ItemThrows(registry, models, s, config.seed);
   const targetCell = config.debug
     ? (block: Vec3) => {
         const entity = engine.entities.at(...block);
@@ -282,13 +282,13 @@ export const createPlayView = (
       frozen,
       perceptionLabels,
     }: PlayWorldFrame) => {
-      itemThrows.update(dt);
+      itemThrows.update(time, inventory);
       blastFlashes.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
       applySky(engine.sky, sky);
       engine.mood?.setSky(sky);
-      piles.sync(inventory);
+      piles.sync(inventory, itemThrows.hiddenItemUids);
       furniture.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));

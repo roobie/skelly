@@ -13,11 +13,12 @@ import {
   MeshLambertMaterial,
   Object3D,
 } from 'three';
-import type { Inventory, Pile } from '../core/inventory.ts';
-import { defOf } from '../core/items.ts';
-import { PILE_BUNDLE_WIDTH, pileBundleHeight, pileLayout } from '../core/pileLayout.ts';
-import { pileScatterPlacements, SPENT_CASE_SCATTER_CAP } from '../core/scatterPile.ts';
-import { PILE_DISPLAY_KIND } from '../core/schema.ts';
+import type { Inventory } from '../core/inventory.ts';
+import { defOf, type Placed } from '../core/items.ts';
+import { type EffectivePileDisplay, effectivePileDisplays } from '../core/pileDisplay.ts';
+import { PILE_BUNDLE_WIDTH } from '../core/pileLayout.ts';
+import type { PileScatterPlacement } from '../core/scatterPile.ts';
+import { SPENT_CASE_SCATTER_CAP } from '../core/scatterPile.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
@@ -63,9 +64,10 @@ export class PileMeshes {
     this.glowsticks = new InstancedMesh(this.glowstickGeometry, this.glowstickMaterial, 1);
   }
 
-  /** Rebuilds ordinary pile meshes when inventory or models changed; case scatter stays instanced. */
-  sync(inventory: Inventory): void {
-    const version = `${inventory.version}:${this.models?.version ?? 0}`;
+  /** Rebuilds pile meshes when inventory, models, or transient throw visibility changed. */
+  sync(inventory: Inventory, hiddenItemUids: ReadonlySet<number> = new Set()): void {
+    const hidden = [...hiddenItemUids].sort((a, b) => a - b).join(',');
+    const version = `${inventory.version}:${this.models?.version ?? 0}:${hidden}`;
     if (version === this.drawn) {
       return;
     }
@@ -73,14 +75,20 @@ export class PileMeshes {
     disposeItemEmissiveMaterials(this.group);
     this.group.clear();
     const casePlans = new Map<string, CasePlan>();
-    for (const pile of inventory.piles.values()) {
-      this.drawPile(inventory, pile, casePlans);
+    const displays = effectivePileDisplays(inventory, {
+      blockSize: this.blockSize,
+      worldSeed: this.seed,
+      hasModel: (id) => this.models?.has(id) ?? false,
+      hiddenItemUids,
+    });
+    for (const display of displays.values()) {
+      this.drawPile(inventory, display, casePlans);
     }
     const visibleCaseVisuals = new Set<string>();
     for (const plan of casePlans.values()) {
       this.drawCasePlan(plan, visibleCaseVisuals);
     }
-    this.drawEmissiveLights(inventory);
+    this.drawEmissiveLights(inventory, hiddenItemUids);
     if (this.glowsticks.count > 0) {
       this.group.add(this.glowsticks);
     }
@@ -108,21 +116,16 @@ export class PileMeshes {
     this.drawn = '';
   }
 
-  private drawPile(inventory: Inventory, pile: Pile, casePlans: Map<string, CasePlan>): void {
-    const regularPile = {
-      ...pile,
-      items: pile.items.filter(
-        ({ item }) => defOf(inventory.registry, item.type).pileDisplay !== PILE_DISPLAY_KIND.scatter,
-      ),
-    };
-    const layout = pileLayout(inventory.registry, regularPile, this.blockSize, (id) => this.models?.has(id) ?? false);
-    this.drawModels(inventory, layout.models);
-    this.planSpentCases(inventory, pile, casePlans);
-    this.drawBundle(inventory, pile, layout.bundle);
+  private drawPile(inventory: Inventory, display: EffectivePileDisplay, casePlans: Map<string, CasePlan>): void {
+    this.drawModels(inventory, display.layout.models);
+    this.planSpentCases(inventory, display.visiblePile.pos.join(','), display.scatter, casePlans);
+    if (display.bundlePosition && display.bundleHeight !== undefined) {
+      this.drawBundle(display.layout.bundle, display.bundlePosition, display.bundleHeight);
+    }
   }
 
   /** Each item as its own look, so a rifle on the ground shows the magazine it really has. */
-  private drawModels(inventory: Inventory, models: ReturnType<typeof pileLayout>['models']): void {
+  private drawModels(inventory: Inventory, models: EffectivePileDisplay['layout']['models']): void {
     for (const piled of models) {
       const { placed, at, yaw } = piled;
       const { item } = placed;
@@ -144,14 +147,13 @@ export class PileMeshes {
     }
   }
 
-  private planSpentCases(inventory: Inventory, pile: Pile, plans: Map<string, CasePlan>): void {
-    const pileKey = pile.pos.join(',');
-    for (const { item, position, rotation } of pileScatterPlacements({
-      registry: inventory.registry,
-      pile,
-      worldSeed: this.seed,
-      blockSize: this.blockSize,
-    })) {
+  private planSpentCases(
+    inventory: Inventory,
+    pileKey: string,
+    placements: readonly PileScatterPlacement[],
+    plans: Map<string, CasePlan>,
+  ): void {
+    for (const { item, position, rotation } of placements) {
       const modelId = defOf(inventory.registry, item.type).model;
       const key = `${pileKey}\u001f${modelId ?? ''}`;
       let plan = plans.get(key);
@@ -235,9 +237,12 @@ export class PileMeshes {
     }
   }
 
-  private drawEmissiveLights(inventory: Inventory): void {
+  private drawEmissiveLights(inventory: Inventory, hiddenItemUids: ReadonlySet<number>): void {
     const sources = [...inventory.piles.values()].flatMap((pile) =>
       pile.items.flatMap(({ item }) => {
+        if (hiddenItemUids.has(item.uid)) {
+          return [];
+        }
         const definition = defOf(inventory.registry, item.type);
         const { light } = definition;
         const bundleVisible = definition.model === undefined || !this.models?.has(definition.model);
@@ -270,18 +275,13 @@ export class PileMeshes {
     }
   }
 
-  private drawBundle(inventory: Inventory, pile: Pile, bundle: ReturnType<typeof pileLayout>['bundle']): void {
+  private drawBundle(bundle: readonly Placed[], position: readonly [number, number, number], height: number): void {
     if (bundle.length === 0) {
       return;
     }
-    const height = pileBundleHeight(inventory.registry, bundle);
     const mesh = new Mesh(this.geometry, this.material);
     mesh.scale.set(this.blockSize * PILE_BUNDLE_WIDTH, height, this.blockSize * PILE_BUNDLE_WIDTH);
-    mesh.position.set(
-      (pile.pos[0] + 0.5) * this.blockSize,
-      pile.pos[1] * this.blockSize + height / 2,
-      (pile.pos[2] + 0.5) * this.blockSize,
-    );
+    mesh.position.set(...position);
     this.group.add(castsAndReceives(mesh));
   }
 }

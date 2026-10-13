@@ -1,15 +1,19 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { NEUTRAL_AIM } from '../src/core/aim.ts';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { worldSolid } from '../src/core/collision.ts';
+import { blockId, buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
-import { weightOf } from '../src/core/items.ts';
+import { defOf, type Item, weightOf } from '../src/core/items.ts';
 import { BUCK_HALF_ANGLE, type PelletShot } from '../src/core/pellets.ts';
+import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
@@ -23,6 +27,7 @@ import {
   firearmHandlingFor,
   SHELL_LOAD_SECONDS,
 } from '../src/game/firearmHandling.ts';
+import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
@@ -48,7 +53,12 @@ const pose = {
   ready: true,
   sprinting: false,
 };
-const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0) => {
+const fixture = (
+  content = registry,
+  firearmsSkillLevel: () => number = () => 0,
+  ejectionPose = pose,
+  isSolid?: (x: number, y: number, z: number) => boolean,
+) => {
   // Own the capacity fixture rather than pinning the evolving exported tube count.
   const modelId = content.items.get('pump_shotgun')!.model!;
   const model = content.models.get(modelId)!;
@@ -75,8 +85,9 @@ const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0)
   const trajectories: FirearmTrajectory[] = [];
   const sounds: { event: SoundEventId; time: number }[] = [];
   const mechanics = new FirearmMechanics(inventory, queue, {
-    blockSize: pose.blockSize,
-    pose: () => pose,
+    blockSize: ejectionPose.blockSize,
+    isSolid: isSolid ?? ((_x, y, _z) => y < ejectionPose.feet[1]),
+    pose: () => ejectionPose,
     onEjection: (effect) => effects.push(effect),
     onShot: (shot) => shots.push(shot),
     onTrajectory: (trajectory) => trajectories.push(trajectory),
@@ -102,7 +113,7 @@ const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0)
     const duration = firearmHandlingFor(gun, inventory.registry).action.hand.durationSimSeconds;
     finish(duration, time + duration);
   };
-  const fire = (time: number) => mechanics.fire({ ...pose, item: gun, seed: 71, simTime: time });
+  const fire = (time: number) => mechanics.fire({ ...ejectionPose, item: gun, seed: 71, simTime: time });
   return {
     inventory,
     gun,
@@ -148,9 +159,252 @@ const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = ()
   });
 
 describe('real pump ammunition', () => {
-  it('ejection spills from a full landing pile and refuses a rack when all drop spots are full', () => {
-    // Discover the landing through a successful public rack, not a golden coordinate
-    // or a duplicated flight estimate. The actual scenarios use independent inventories.
+  it('drops a fired hull on supported ground at wall contact when the ejection port is clipped', () => {
+    const scale = makeScale(0.5);
+    const wallX = 2;
+    const world = new World();
+    const rock = blockId(registry, 'rock');
+    for (let x = -4; x <= 4; x++) {
+      for (let z = -4; z <= 4; z++) {
+        world.setBlock(x, 0, z, rock);
+      }
+    }
+    for (let y = 1; y <= 7; y++) {
+      for (let z = -4; z <= 4; z++) {
+        world.setBlock(wallX, y, z, rock);
+      }
+    }
+    const isSolid = worldSolid(world, registry, new BlockEntities(registry));
+    const yaw = -Math.PI / 2;
+    const body = createPlayerBody(scale, 0.9, 1.01, 0);
+    for (let frame = 0; frame < 30; frame++) {
+      steer(body, scale, yaw, { forward: 1, right: 0, jump: false, sprint: false, walk: true });
+      stepBody(body, 1 / 60, isSolid, physicsFor(scale));
+    }
+    expect(bodyOverlapsTerrain(body, isSolid)).toBe(false);
+    expect(body.onGround).toBe(true);
+    const ejectionPose = {
+      ...pose,
+      feet: [...body.pos] as Vec3,
+      eye: [body.pos[0], body.pos[1] + PLAYER.eye / scale.blockSize, body.pos[2]] as Vec3,
+      yaw,
+      pitch: 0,
+      aimFrame: NEUTRAL_AIM,
+    };
+    const f = fixture(registry, () => 0, ejectionPose, isSolid);
+    const port = heldEjectionPose({
+      model: firearmHandlingFor(f.gun, f.inventory.registry).model,
+      side: 'right',
+      twoHanded: defOf(registry, 'pump_shotgun').twoHanded === true,
+      eye: ejectionPose.eye.map((value) => value * scale.blockSize) as Vec3,
+      yaw,
+      pitch: 0,
+    }).origin;
+    expect(isSolid(...(port.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(true);
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    f.rack(4);
+    f.mechanics.advanceTo(8);
+    expect(f.effects).toHaveLength(1);
+    expect(isSolid(...(f.effects[0]!.origin.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
+
+    const casePiles = [...f.inventory.piles.values()].filter((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    );
+    expect(casePiles).toHaveLength(1);
+    const [casePile] = casePiles;
+    expect(casePile!.pos[0]).toBeLessThan(wallX);
+    expect(casePile!.pos[1]).toBe(1);
+    expect(isSolid(...casePile!.pos)).toBe(false);
+    expect(isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
+  });
+
+  it('lands at the foot of a wall that blocks the outward case path', () => {
+    const open = fixture();
+    open.load(0);
+    open.rack(1);
+    expect(open.fire(3)).toBe(true);
+    open.rack(4);
+    const endpoint = open.effects[0]!.landingPosition;
+    const world = new World();
+    for (let x = -8; x <= 8; x += 1) {
+      for (let z = -8; z <= 8; z += 1) {
+        world.setBlock(x, -1, z, 1);
+      }
+    }
+    for (let y = 0; y <= 8; y += 1) {
+      world.setBlock(endpoint[0], y, endpoint[2], 1);
+    }
+    const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
+    const f = fixture(registry, () => 0, pose, isSolid);
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    f.rack(4);
+
+    const casePile = [...f.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    );
+    expect(f.effects).toHaveLength(1);
+    expect(casePile).toBeDefined();
+    expect(isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
+    expect(isSolid(...casePile!.pos)).toBe(false);
+  });
+
+  it('chooses a free supported spill cell when the first neighbor is solid terrain', () => {
+    const probe = fixture();
+    probe.load(0);
+    probe.rack(1);
+    expect(probe.fire(3)).toBe(true);
+    probe.rack(4);
+    const landing = [...probe.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    )?.pos;
+    expect(landing).toBeDefined();
+    const blockedSpill = dropSpots(landing!)[1]!;
+    const world = new World();
+    for (let x = -8; x <= 8; x += 1) {
+      for (let z = -8; z <= 8; z += 1) {
+        world.setBlock(x, -1, z, 1);
+      }
+    }
+    world.setBlock(...blockedSpill, 1);
+    const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
+    const fillerType = 'owned_spill_filler';
+    const content = {
+      ...registry,
+      items: new Map(registry.items).set(fillerType, {
+        ...registry.items.get(shellType)!,
+        id: fillerType,
+        size: [1, 1] as [number, number],
+        stack: 1,
+        ammo: undefined,
+        model: undefined,
+        pileDisplay: undefined,
+      }),
+    };
+    const f = fixture(content, () => 0, pose, isSolid);
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    for (let cell = 0; cell < PILE_GRID.w * PILE_GRID.h; cell += 1) {
+      expect(f.inventory.add(f.inventory.create(fillerType), { kind: 'pile', pos: landing! })).toBe(true);
+    }
+    f.rack(4);
+
+    const casePile = [...f.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    );
+    expect(casePile).toBeDefined();
+    expect(casePile!.pos).not.toEqual(landing);
+    expect(casePile!.pos).not.toEqual(blockedSpill);
+    expect(isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
+    expect(isSolid(...casePile!.pos)).toBe(false);
+  });
+
+  it('lands an ejected hull outward from its port along the exported ejection direction', () => {
+    const f = fixture();
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    f.rack(4);
+    const effect = f.effects[0]!;
+    const landing = [...f.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    )?.pos;
+    expect(landing).toBeDefined();
+    const horizontalDirection = Math.hypot(effect.direction[0], effect.direction[2]);
+    const outwardDisplacement =
+      ((landing![0] + 0.5) * pose.blockSize - effect.origin[0]) * effect.direction[0] +
+      ((landing![2] + 0.5) * pose.blockSize - effect.origin[2]) * effect.direction[2];
+    expect(horizontalDirection).toBeGreaterThan(0);
+    expect(outwardDisplacement).toBeGreaterThan(0.5 * horizontalDirection);
+  });
+
+  it('discards a case when only the player column supports it instead of landing it straight below the port', () => {
+    const model = registry.models.get(registry.items.get('pump_shotgun')!.model!)!;
+    const ejection = heldEjectionPose({
+      model,
+      side: 'right',
+      twoHanded: registry.items.get('pump_shotgun')!.twoHanded === true,
+      eye: pose.eye.map((value) => value * pose.blockSize) as Vec3,
+      yaw: pose.yaw,
+      pitch: pose.pitch,
+    });
+    const releaseX = Math.floor(ejection.origin[0] / pose.blockSize);
+    const releaseZ = Math.floor(ejection.origin[2] / pose.blockSize);
+    const isSolid = (x: number, y: number, z: number) => x === releaseX && z === releaseZ && y < pose.feet[1];
+    const f = fixture(registry, () => 0, pose, isSolid);
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    f.rack(4);
+
+    expect(f.effects).toHaveLength(0);
+    expect([...f.inventory.piles.values()].flatMap(({ items }) => items)).toHaveLength(0);
+    expect(f.gun.firearm?.chamber).toBe('empty');
+  });
+
+  it('places an ejected shell on the first solid surface below its flight instead of at the thrower height', () => {
+    const highPose = { ...pose, feet: [0, 12, 0] as Vec3, eye: [0, 15, 0] as Vec3 };
+    const isSolid = (_x: number, blockY: number, _z: number) => blockY === 0 || blockY === 5;
+    const f = fixture(registry, () => 0, highPose, isSolid);
+    f.load(0);
+    f.rack(1);
+    f.rack(3);
+
+    const landedPile = [...f.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === shellType),
+    );
+    expect(landedPile).toBeDefined();
+    const [x, landingY, z] = landedPile!.pos;
+    expect(isSolid(x, landingY - 1, z)).toBe(true);
+    expect(isSolid(x, landingY, z)).toBe(false);
+    expect([...new Array(highPose.feet[1] - landingY).keys()].some((offset) => isSolid(x, landingY + offset, z))).toBe(
+      false,
+    );
+  });
+
+  it('discards an ejected shell rather than spilling onto an unsupported neighboring pile', () => {
+    const probe = fixture();
+    probe.load(0);
+    probe.rack(1);
+    probe.rack(3);
+    const landing = [...probe.inventory.piles.values()][0]?.pos;
+    expect(landing).toBeDefined();
+
+    const fillerType = 'supported_spill_filler';
+    const content = {
+      ...registry,
+      items: new Map(registry.items).set(fillerType, {
+        ...registry.items.get(shellType)!,
+        id: fillerType,
+        name: 'Test filler',
+        size: [1, 1] as [number, number],
+        stack: 1,
+        ammo: undefined,
+        model: undefined,
+      }),
+    };
+    const supported = (x: number, y: number, z: number) =>
+      x === landing![0] && y === landing![1] - 1 && z === landing![2];
+    const f = fixture(content, () => 0, pose, supported);
+    f.load(0);
+    f.rack(1);
+    for (let cell = 0; cell < PILE_GRID.w * PILE_GRID.h; cell++) {
+      expect(f.inventory.add(f.inventory.create(fillerType), { kind: 'pile', pos: landing! })).toBe(true);
+    }
+
+    expect(f.mechanics.cock(f.gun.uid, 3)).toBeUndefined();
+    const duration = firearmHandlingFor(f.gun, content).action.hand.durationSimSeconds;
+    f.finish(duration, 3 + duration);
+    expect(f.gun.firearm?.chamber).toBe('empty');
+    expect([...f.inventory.piles.values()].flatMap(({ items }) => items)).toHaveLength(PILE_GRID.w * PILE_GRID.h);
+    expect(f.effects).toHaveLength(1);
+  });
+
+  it('never refuses a rack for pile capacity and discards a case when every supported spot is full', () => {
     const probe = fixture();
     probe.load(0);
     probe.rack(1);
@@ -159,6 +413,7 @@ describe('real pump ammunition', () => {
     probe.finish(duration, 3 + duration);
     const landing = [...probe.inventory.piles.values()][0]?.pos;
     expect(landing).toBeDefined();
+
     const fillerType = 'owned_pile_filler';
     const content = {
       ...registry,
@@ -179,85 +434,43 @@ describe('real pump ammunition', () => {
         }
       }
     };
-    const scenarios = [
-      { spent: false, blocked: false },
-      { spent: false, blocked: true },
-      { spent: true, blocked: false },
-      { spent: true, blocked: true },
-    ];
-    const isSpillSpot = (pos: [number, number, number]) =>
-      pos.some((value, axis) => value !== landing![axis]) &&
-      dropSpots(landing!).some((spot) => spot.every((value, axis) => value === pos[axis]));
-    const capture = (f: ReturnType<typeof fixture>) =>
-      structuredClone({
-        inventory: f.inventory.snapshotState(),
-        firearm: f.gun.firearm,
-        jobs: f.queue.jobs,
-      });
-    const attemptRack = (f: ReturnType<typeof fixture>) => {
-      try {
-        const reason = f.mechanics.cock(f.gun.uid, 4);
-        if (reason === undefined) {
-          f.finish(duration, 4 + duration);
-        }
-        return { reason, error: undefined };
-      } catch (error) {
-        return { reason: undefined, error };
-      }
-    };
-    const outcomes = scenarios.map(({ spent, blocked }) => {
+
+    const spill = fixture(content);
+    spill.load(0);
+    spill.rack(1);
+    fill(spill.inventory, [landing!]);
+    expect(spill.mechanics.cock(spill.gun.uid, 3)).toBeUndefined();
+    spill.finish(duration, 3 + duration);
+    const spilled = [...spill.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === shellType),
+    );
+    expect(spilled).toBeDefined();
+    expect(spilled!.pos).not.toEqual(landing);
+    expect(dropSpots(landing!).some((spot) => spot.every((value, axis) => value === spilled!.pos[axis]))).toBe(true);
+
+    for (const spent of [false, true]) {
       const f = fixture(content);
       f.load(0);
       f.rack(1);
       if (spent) {
         expect(f.fire(3)).toBe(true);
       }
-      const positions = blocked ? dropSpots(landing!) : [landing!];
-      fill(f.inventory, positions);
-      const before = capture(f);
-      const { reason, error } = attemptRack(f);
+      fill(f.inventory, dropSpots(landing!));
+      expect(f.mechanics.cock(f.gun.uid, 4)).toBeUndefined();
+      f.finish(duration, 4 + duration);
       const outputType = spent ? hullType : shellType;
-      const output = [...f.inventory.piles.values()].filter((pile) =>
-        pile.items.some(({ item }) => item.type === outputType),
+      expect(f.effects).toHaveLength(1);
+      expect(f.gun.firearm?.chamber).toBe('empty');
+      expect(f.gun.firearm?.landings).toBeUndefined();
+      expect([...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item.type))).not.toContain(
+        outputType,
       );
-      return {
-        spent,
-        blocked,
-        error,
-        reason,
-        before,
-        after: capture(f),
-        ejected: f.effects.length === 1,
-        spilled: output.length === 1 && isSpillSpot(output[0]!.pos),
-      };
-    });
-    // Collect both live and fired outcomes before asserting, so pristine evidence
-    // exercises both former throwing branches rather than stopping at the first.
-    expect(outcomes.map((outcome) => outcome.error)).toEqual(outcomes.map(() => undefined));
-    for (const outcome of outcomes) {
-      if (outcome.blocked) {
-        expect(outcome.reason).toBeDefined();
-        expect(outcome.after).toEqual(outcome.before); // no chamber/UID/job admission side effects
-        expect(outcome.ejected).toBe(false);
-      } else {
-        expect(outcome.reason).toBeUndefined();
-        expect(outcome.ejected).toBe(true);
-        expect(outcome.spilled).toBe(true);
+      for (const pile of f.inventory.piles.values()) {
+        expect(pile.items.every(({ item }) => item.type === fillerType)).toBe(true);
+        expect(dropSpots(landing!).some((spot) => spot.every((value, axis) => value === pile.pos[axis]))).toBe(true);
+        expect(f.inventory.registry.items.has(fillerType)).toBe(true);
       }
     }
-    // Another actor/debug spawn can change a pile while an admitted rack runs.
-    // Completion must revalidate without clearing the chamber or throwing.
-    const concurrent = fixture(content);
-    concurrent.load(0);
-    concurrent.rack(1);
-    expect(concurrent.mechanics.cock(concurrent.gun.uid, 4)).toBeUndefined();
-    fill(concurrent.inventory, dropSpots(landing!));
-    const beforeCompletion = concurrent.inventory.snapshotState();
-    const result = concurrent.queue.tick(duration);
-    concurrent.mechanics.advanceTo(4 + duration);
-    expect(concurrent.inventory.snapshotState()).toEqual(beforeCompletion);
-    expect(concurrent.effects).toEqual([]);
-    expect(result.failed.length).toBeGreaterThan(0);
   });
   it('cannot load authored shells from a sealed unopened box', () => {
     const f = fixture();
@@ -500,10 +713,16 @@ describe('real pump ammunition', () => {
     expect(f.effects).toHaveLength(1);
     expect(f.effects[0]).toMatchObject({ ...expected, caseModelId: registry.items.get(shellType)!.model });
     expect(f.gun.firearm?.chamber).toBe('empty');
+    expect([...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item.type))).not.toContain(
+      shellType,
+    );
+    const landingAt = f.gun.firearm?.landings?.[0]?.at;
+    expect(landingAt).toBeDefined();
+    const duration = model.action!.hand.durationSimSeconds;
+    f.finish(landingAt! - (3 + at), landingAt!);
     const ground = [...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item));
     expect(ground.map((item) => [item.type, item.count])).toEqual([[shellType, 1]]);
-    const duration = model.action!.hand.durationSimSeconds;
-    f.finish(duration - at, 3 + duration);
+    f.finish(Math.max(0, 3 + duration - landingAt!), 3 + duration);
     expect(f.gun.firearm?.chamber).toBe('empty');
     expect(f.fire(5)).toBe(false);
     expect(f.effects).toHaveLength(1);
@@ -687,18 +906,22 @@ describe('real pump ammunition', () => {
     f.finish(ejectAt, 4 + ejectAt);
     const restored = Inventory.restoreState(f.inventory.registry, f.inventory.snapshotState());
     const cues: { event: SoundEventId; time: number }[] = [];
+    const landedCases: Item[] = [];
     const mechanics = new FirearmMechanics(restored, new HandlingQueue(restored), {
       blockSize: pose.blockSize,
       pose: () => pose,
+      isSolid: (_x, y, _z) => y < 0,
       onEjection: () => undefined,
+      onCaseLanded: (_seed, item) => landedCases.push(item),
       onSound: (event, _position, time) => cues.push({ event, time }),
     });
-    expect(f.gun.firearm?.landing).toBeDefined();
-    const landingAt = f.gun.firearm!.landing!.at;
+    expect(f.gun.firearm?.landings).toHaveLength(1);
+    const landingAt = f.gun.firearm!.landings![0]!.at;
     mechanics.advanceTo(landingAt - 1e-6);
     expect(cues).toEqual([]);
     mechanics.advanceTo(landingAt);
     mechanics.advanceTo(landingAt + 1);
+    expect(landedCases).toHaveLength(1);
     expect(cues).toEqual([{ event: 'shotgun_hull_drop', time: landingAt }]);
     const forwardAt = action.hand.rearwardSimSeconds + action.hand.dwellSimSeconds;
     f.finish(forwardAt - ejectAt, 4 + forwardAt);

@@ -18,13 +18,19 @@ import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.t
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
-import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
+import {
+  hasMetThrowMinimumHold,
+  ITEM_FLIGHT_SECONDS,
+  throwDistanceForItem,
+  traceItemLanding,
+} from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import { pileScatterPlacements } from '../core/scatterPile.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -171,6 +177,12 @@ import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const STARTUP_MESH_RADIUS = 1;
+
+const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
+  (x + 0.5) * blockSize,
+  y * blockSize + 0.006,
+  (z + 0.5) * blockSize,
+];
 
 interface PlayErrorReportPorts {
   readonly config: Engine['config'];
@@ -849,7 +861,23 @@ export const startPlay = (
       }
     },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
-    onFirearmEjection: (effect) => caseEffects.spawn(effect),
+    onFirearmEjection: (effect) =>
+      caseEffects.spawn({ ...effect, landingPosition: caseLandingWorldPosition(effect.landingPosition, s) }),
+    onFirearmCaseLanded: (seed, item, instanceIndex) => {
+      const location = inventory.locate(item);
+      if (location?.kind !== 'pile') {
+        return;
+      }
+      const placement = pileScatterPlacements({
+        registry,
+        pile: location.pile,
+        worldSeed: config.seed,
+        blockSize: s,
+      }).filter(({ item: placed }) => placed.uid === item.uid)[instanceIndex];
+      if (placement) {
+        caseEffects.retarget(seed, placement.position);
+      }
+    },
     onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
     onDetonation: (at, radiusMetres) => view.blastFlashes.spawn(at, radiusMetres),
     debug: () => debugTools,
@@ -2469,13 +2497,6 @@ export const startPlay = (
       showRefusal("Can't find a place for it to land", sim.time);
       return;
     }
-    const landed = session.throwCharge.land(item, hand, target);
-    if (!landed.landed) {
-      if (landed.reason) {
-        showRefusal(landed.reason, sim.time);
-      }
-      return;
-    }
     const throwOffset: Vec3 = throwingStance
       ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
       : [0, 0, 0];
@@ -2484,8 +2505,16 @@ export const startPlay = (
       body.pos[1] * s + session.playerEyeHeightMetres + throwOffset[1],
       body.pos[2] * s + throwOffset[2],
     ];
-    const landing: Vec3 = [(target.pos[0] + 0.5) * s, (target.pos[1] + 0.15) * s, (target.pos[2] + 0.5) * s];
-    itemThrows.spawn(origin, landing, item);
+    const startedAtSimSeconds = sim.time;
+    const landingAt = startedAtSimSeconds + ITEM_FLIGHT_SECONDS;
+    const landed = session.throwCharge.place(item, hand, target);
+    if (!landed.landed) {
+      if (landed.reason) {
+        showRefusal(landed.reason, sim.time);
+      }
+      return;
+    }
+    itemThrows.spawn({ item, itemUid: landed.item.uid, origin, startedAtSimSeconds, landingAt }, inventory);
   }
 
   function itemLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {
@@ -3324,7 +3353,7 @@ export const startPlay = (
     updateBodyNotices();
     advancePendingItemThrow();
     syncThrowingStance();
-    caseEffects.update(dt, engine.isSolid);
+    caseEffects.update(sim.time);
     updateGore(dt);
     impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = realNow() - mark;

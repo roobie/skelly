@@ -139,7 +139,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?seed=73&debug=1&loadout=ar&firearmsCombat=0&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -188,6 +188,9 @@ try {
   });
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
+  await page.evaluate(() => {
+    globalThis.fullAutoRuntime.input.pitch = (-20 * Math.PI) / 180;
+  });
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
   const reviewMap = page.locator('iframe[title="Current-world review map"]');
@@ -501,20 +504,12 @@ try {
     impactPresentation.laserSegments > 0 && impactPresentation.laserVisibleAfterFire,
     'debug trajectory segments are visible in the renderer',
   );
-  const cadence = await page.evaluate(() => ({
-    shots: globalThis.fullAutoProbe.shots,
-    cases:
-      [...globalThis.fullAutoRuntime.inventory.piles.values()]
-        .flatMap((pile) => pile.items)
-        .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
-        .reduce((sum, { item }) => sum + item.count, 0) - globalThis.fullAutoProbe.casesBefore,
-  }));
+  const cadence = await page.evaluate(() => ({ shots: globalThis.fullAutoProbe.shots }));
   assert.equal(
     cadence.shots.length,
     27,
     'holding AR primary fires 27 shots in the half-open two-second burst at 800 rpm',
   );
-  assert.equal(cadence.cases, 27, 'every automatic shot records a persistent case');
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.trajectories),
     cadence.shots.length,
@@ -619,6 +614,15 @@ try {
     nativeSpan >= 1.85 && nativeSpan <= 2.1,
     `native two-second burst span ${nativeSpan}s (1.95s attack span, <=150ms scheduling allowance)`,
   );
+  await page.waitForFunction(() => !globalThis.fullAutoRuntime.inventory.hands.right.firearm?.landings?.length);
+  const persistentCases = await page.evaluate(
+    () =>
+      [...globalThis.fullAutoRuntime.inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
+        .reduce((sum, { item }) => sum + item.count, 0) - globalThis.fullAutoProbe.casesBefore,
+  );
+  assert.equal(persistentCases, 54, 'both automatic bursts record every case at impact');
   assert.ok(native.peak <= 64, '32 full voices plus at most 32 fading tails');
   assert.ok(
     native.records.some(({ stops }) => stops.length),

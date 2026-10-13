@@ -119,18 +119,24 @@ export function* walkItemTree<Node extends NodeShape<Node>, Pile, Entity>(
   }
 }
 
-export const savedItemTree = (state: InventoryState, prefix = 'character.inventory') =>
-  walkItemTree(
-    itemRoots<ItemState, InventoryState['piles'][number], InventoryState['entities']['entities'][number]>(
+export const savedItemTree = (state: InventoryState, prefix = 'character.inventory') => {
+  function* roots() {
+    yield* itemRoots<ItemState, InventoryState['piles'][number], InventoryState['entities']['entities'][number]>(
       {
         hands: state.hands,
         worn: state.worn,
-        piles: state.piles,
-        entities: state.entities.entities,
+        get piles() {
+          return state.piles;
+        },
+        get entities() {
+          return state.entities.entities;
+        },
       },
       prefix,
-    ),
-  );
+    );
+  }
+  return walkItemTree(roots());
+};
 
 /** Transient validation set, not a live UID registry. */
 export const itemIds = (entries: Iterable<{ item: { uid: number }; path: string }>, nextUid: number): Set<number> => {

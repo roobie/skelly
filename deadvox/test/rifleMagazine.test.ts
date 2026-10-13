@@ -38,6 +38,7 @@ const rig = () => {
   const world = { grounded: true };
   const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: pose.blockSize,
+    isSolid: (_x, y, _z) => y < pose.feet[1],
     pose: () => (world.grounded ? { ...pose, feet: [...pose.feet], eye: [...pose.eye] } : undefined),
     onEjection: () => undefined,
     onCommittedShot: () => {

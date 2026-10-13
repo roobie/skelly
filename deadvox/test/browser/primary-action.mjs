@@ -1726,13 +1726,13 @@ try {
       stop: offHandOnlyThrow,
     },
   );
+  await page.waitForFunction(() => globalThis.primaryActionTest.itemThrows.activeCount > 0);
   await page.waitForFunction(
     (uid) =>
       globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
       'pile',
     throwFixture.offHandUid,
   );
-  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount > 0), true);
   assert.equal(
     await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
@@ -1997,10 +1997,13 @@ try {
   assert.equal(fullMeter, 100, 'maximum charge fills the handling meter');
   await releaseThrow();
   try {
-    await page.waitForFunction((uid) => {
-      const r = globalThis.primaryActionTest;
-      return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.itemThrows.activeCount > 0;
-    }, throwFixture.uid);
+    await page.waitForFunction(() => globalThis.primaryActionTest.itemThrows.activeCount > 0);
+    await page.waitForFunction(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+        'pile',
+      throwFixture.uid,
+    );
   } catch (error) {
     const state = await page.evaluate(
       ({ uid, seconds }) => {
@@ -2046,10 +2049,6 @@ try {
     const [x, , z] = location.pile.pos;
     return Math.hypot(x + 0.5 - start[0], z + 0.5 - start[2]) * blockSize;
   }, throwFixture);
-  assert.ok(
-    await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount > 0),
-    'item throw presents a visible arc to the landing point',
-  );
   assert.ok(
     thrown >= throwFixture.distance - landingTolerance,
     `throw reaches its tuned landing range (distance ${thrown})`,
@@ -2187,6 +2186,12 @@ try {
     loadedFirearm.modelId,
     'flight uses the firearm’s own ModelLibrary model',
   );
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'pile',
+    loadedFirearm.uid,
+  );
   const landedFirearm = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     const item = r.inventory.itemByUid(uid);
@@ -2305,11 +2310,16 @@ try {
       stop: releaseRifleThrow,
     },
   );
-  await page.waitForFunction(({ uid, lookKey }) => {
-    const r = globalThis.primaryActionTest;
-    const item = r.inventory.itemByUid(uid);
-    return item && r.inventory.locate(item)?.kind === 'pile' && r.itemThrows.group.getObjectByName(lookKey);
+  await page.waitForFunction(({ lookKey }) => {
+    const { itemThrows } = globalThis.primaryActionTest;
+    return itemThrows.activeCount > 0 && itemThrows.group.getObjectByName(lookKey);
   }, loadedRifle);
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'pile',
+    loadedRifle.uid,
+  );
   const landedRifle = await page.evaluate(({ uid, magazineUid }) => {
     const r = globalThis.primaryActionTest;
     const item = r.inventory.itemByUid(uid);
@@ -2511,6 +2521,7 @@ try {
   assert.deepEqual(opticView.frame, opticView.expected, 'ADS lens uses the mounted optic content and export');
   await page.mouse.click(640, 450);
   await page.evaluate(() => globalThis.primaryActionTest.session.frame(0.1));
+  await page.waitForFunction(() => globalThis.primaryActionTest.caseEffects.activeCount > 0);
   await page.waitForFunction(({ uid, cases }) => {
     const r = globalThis.primaryActionTest;
     const count = [...r.inventory.piles.values()]
@@ -2530,7 +2541,7 @@ try {
     };
   }, firearm);
   assert.equal(emission.uid, firearm.uid);
-  assert.ok(emission.flying > 0);
+  assert.equal(emission.flying, 0, 'the flight retires in the frame the pile case appears');
   assert.ok(emission.shot?.file);
   assert.equal(emission.shot?.distanceMetres, 0);
   assert.equal(emission.shot?.lowpassHz, null);
