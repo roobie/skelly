@@ -319,18 +319,6 @@ describe('furniture', () => {
     expect(pick([5.5, 2.5, 11], [0, 0, -1], 6)).toBeUndefined();
   });
 
-  it('renders interaction-owner bounds for loose items and downed bodies through the marker', () => {
-    const furniture = new FurnitureMeshes(BLOCK_SIZE);
-    furniture.markBounds('item:fixture', [1, 0.1, 2], [0.16, 0.12, 0.16]);
-    const marker = furniture.group.children[0]!;
-    expect(marker.visible).toBe(true);
-    expect(marker.position.toArray()).toEqual([1, 0.1, 2]);
-
-    furniture.markBounds('body:fixture', [3, 0.5, 4], [0.8, 1, 0.8]);
-    expect(marker.position.toArray()).toEqual([3, 0.5, 4]);
-    expect(marker.scale.x).toBeCloseTo(0.835);
-  });
-
   it('moves the affordance onto the open door panel and follows open state without a new selection', () => {
     const definition = registry.furniture.get('wood_door')!;
     const entities = new BlockEntities(registry);

@@ -83,9 +83,6 @@ export class FurnitureMeshes {
     position: readonly [number, number, number],
     size: readonly [number, number, number],
   ): void {
-    if (uid === this.markedUid) {
-      return;
-    }
     this.markedUid = uid;
     this.markedOpen = undefined;
     if (!uid) {

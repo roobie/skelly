@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { InstancedMesh, Matrix4, Vector3 } from 'three';
+import { Box3, BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -9,6 +9,9 @@ import { pickInteractionTarget } from '../src/core/interactionPick.ts';
 import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { PILE_DISPLAY_KIND } from '../src/core/schema.ts';
+import { FurnitureMeshes } from '../src/render/furniture.ts';
+import { markInteractionTarget } from '../src/render/interactionMarker.ts';
+import type { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 
 const BASE = 'src/content/base';
@@ -54,6 +57,60 @@ const options = (inventory: Inventory, origin: Vec3, direction: Vec3, isSolid: S
 });
 
 describe('F interaction target selection', () => {
+  it('encloses the drawn bundle and refreshes its bounds with the same selected item', () => {
+    const fixture = { ...registry, items: new Map(registry.items) };
+    fixture.items.set('marker_fixture', {
+      ...registry.items.get(itemType!)!,
+      id: 'marker_fixture',
+      size: [1, 1],
+      model: undefined,
+      stack: undefined,
+      pileDisplay: undefined,
+    });
+    const inventory = new Inventory(fixture);
+    const first = inventory.create('marker_fixture');
+    const destination = { kind: 'pile' as const, pos: [0, 0, 0] as Vec3 };
+    expect(inventory.add(first, destination)).toBe(true);
+    for (let index = 0; index < 23; index++) {
+      expect(inventory.add(inventory.create('marker_fixture'), destination)).toBe(true);
+    }
+    const piles = new PileMeshes(0.5);
+    const furniture = new FurnitureMeshes(0.5);
+    const target = pickInteractionTarget(options(inventory, [0.5, 1, 0.5], [0, -1, 0]));
+    expect(target?.kind).toBe('item');
+    const check = () => {
+      piles.sync(inventory);
+      markInteractionTarget(target, true, {
+        furniture,
+        piles,
+        definition: (entity) => inventory.entities.defOf(entity),
+        body: () => undefined,
+        blockSize: 0.5,
+      });
+      const marker = furniture.group.children[0]!;
+      expect(marker.visible).toBe(true);
+      const drawn = new Box3().setFromObject(piles.group);
+      const marked = new Box3().setFromObject(marker);
+      for (const axis of ['x', 'y', 'z'] as const) {
+        expect(marked.min[axis]).toBeLessThan(drawn.min[axis]);
+        expect(marked.max[axis]).toBeGreaterThan(drawn.max[axis]);
+      }
+      return marker.scale.y;
+    };
+    const initialHeight = check();
+    expect(inventory.add(inventory.create('marker_fixture'), destination)).toBe(true);
+    expect(check()).toBeGreaterThan(initialHeight);
+    markInteractionTarget(undefined, true, {
+      furniture,
+      piles,
+      blockSize: 0.5,
+      definition: (entity) => inventory.entities.defOf(entity),
+      body: () => undefined,
+    });
+    expect(furniture.group.children[0]!.visible).toBe(false);
+    piles.dispose();
+  });
+
   it('keeps the furniture marker and prompt on the picked interaction owner', () => {
     const inventory = new Inventory(registry);
     const cupboard = inventory.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 1], size: [2, 2, 1], facing: 'n' }, []);
@@ -62,15 +119,50 @@ describe('F interaction target selection', () => {
     const affordance = interactionAffordance(() => target, true, true, false);
 
     expect(affordance.target).toBe(target);
-    expect(affordance.furnitureUid).toBe(cupboard!.uid);
-    expect(interactionAffordance(() => undefined, true, true, false)).toEqual({
-      target: undefined,
-      furnitureUid: undefined,
-    });
-    expect(interactionAffordance(() => target, false, true, false)).toEqual({
-      target: undefined,
-      furnitureUid: undefined,
-    });
+    expect(interactionAffordance(() => undefined, true, true, false)).toEqual({ target: undefined });
+    expect(interactionAffordance(() => target, false, true, false)).toEqual({ target: undefined });
+  });
+
+  it('refreshes a selected item envelope when its model loads instead of the bundle', () => {
+    const inventory = new Inventory(registry);
+    const item = inventory.create(modelItemType!);
+    expect(inventory.add(item, { kind: 'pile', pos: [2, 0, 3] })).toBe(true);
+    const geometry = new BoxGeometry(0.4, 0.3, 0.2);
+    const material = new MeshBasicMaterial();
+    const model = new Group();
+    const mesh = new Mesh(geometry, material);
+    mesh.position.set(0.15, 0.15, -0.1);
+    model.add(mesh);
+    const library = { version: 0, has: () => library.version > 0, groundLook: () => model.clone() };
+    const piles = new PileMeshes(0.5, library as unknown as ModelLibrary);
+    const furniture = new FurnitureMeshes(0.5);
+    const target = pickInteractionTarget(options(inventory, [2.5, 1, 3.5], [0, -1, 0]));
+    expect(target).toMatchObject({ kind: 'item', item: { uid: item.uid } });
+    const services = {
+      furniture,
+      piles,
+      blockSize: 0.5,
+      definition: (entity: import('../src/core/blockEntities.ts').BlockEntity) => inventory.entities.defOf(entity),
+      body: () => undefined,
+    };
+    piles.sync(inventory);
+    markInteractionTarget(target, true, services);
+    const marker = furniture.group.children[0]!;
+    const bundlePosition = marker.position.clone();
+    library.version += 1;
+    piles.sync(inventory);
+    markInteractionTarget(target, true, services);
+    expect(marker.visible).toBe(true);
+    expect(marker.position.distanceTo(bundlePosition)).toBeGreaterThan(0);
+    const marked = new Box3().setFromObject(marker);
+    const drawn = new Box3().setFromObject(piles.group);
+    for (const axis of ['x', 'y', 'z'] as const) {
+      expect(marked.min[axis]).toBeLessThan(drawn.min[axis]);
+      expect(marked.max[axis]).toBeGreaterThan(drawn.max[axis]);
+    }
+    piles.dispose();
+    geometry.dispose();
+    material.dispose();
   });
 
   it('targets the visible bundle', () => {
@@ -119,6 +211,28 @@ describe('F interaction target selection', () => {
 
     const target = pickInteractionTarget({ ...options(inventory, [0.5, 0.05, -1], [0, 0, 1]), downedBodies });
     expect(target).toMatchObject({ kind: 'body', id: 7 });
+    const furniture = new FurnitureMeshes(0.5);
+    const piles = new PileMeshes(0.5);
+    markInteractionTarget(target, true, {
+      furniture,
+      piles,
+      blockSize: 0.5,
+      definition: (entity) => inventory.entities.defOf(entity),
+      body: (id) => downedBodies.find((entry) => entry.id === id)?.body,
+    });
+    const marker = furniture.group.children[0]!;
+    expect(marker.visible).toBe(true);
+    const marked = new Box3().setFromObject(marker);
+    const { pos, halfWidth, height } = downedBodies[0]!.body;
+    expect(
+      marked.containsPoint(new Vector3((pos[0] - halfWidth) * 0.5, pos[1] * 0.5, (pos[2] - halfWidth) * 0.5)),
+    ).toBe(true);
+    expect(
+      marked.containsPoint(
+        new Vector3((pos[0] + halfWidth) * 0.5, (pos[1] + height) * 0.5, (pos[2] + halfWidth) * 0.5),
+      ),
+    ).toBe(true);
+    piles.dispose();
   });
 
   it('lets furniture win when its face and a ground item start at the same ray distance', () => {
@@ -160,6 +274,26 @@ describe('F interaction target selection', () => {
       options(inventory, [position.x / 0.5, position.y / 0.5 + 0.5, position.z / 0.5], [0, -1, 0]),
     );
     expect(target).toMatchObject({ kind: 'item', item: { uid: item.uid } });
+    const furniture = new FurnitureMeshes(0.5);
+    markInteractionTarget(target, true, {
+      furniture,
+      piles,
+      blockSize: 0.5,
+      definition: (entity) => inventory.entities.defOf(entity),
+      body: () => undefined,
+    });
+    const marker = furniture.group.children[0]!;
+    expect(marker.visible).toBe(true);
+    expect(new Box3().setFromObject(marker).containsBox(new Box3().setFromObject(cases))).toBe(true);
+    piles.sync(inventory, new Set([item.uid]));
+    markInteractionTarget(target, true, {
+      furniture,
+      piles,
+      blockSize: 0.5,
+      definition: (entity) => inventory.entities.defOf(entity),
+      body: () => undefined,
+    });
+    expect(marker.visible).toBe(false);
     piles.dispose();
   });
 

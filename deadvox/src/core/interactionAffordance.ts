@@ -6,11 +6,10 @@ export const interactionAffordance = (
   visible: boolean,
   locked: boolean,
   buildMode: boolean,
-): { readonly target: InteractionTarget | undefined; readonly furnitureUid: number | undefined } => {
+): { readonly target: InteractionTarget | undefined } => {
   const enabled = visible && locked && !buildMode;
   const selected = enabled ? findTarget() : undefined;
   return {
     target: selected,
-    furnitureUid: selected?.kind === 'furniture' ? selected.entity.uid : undefined,
   };
 };

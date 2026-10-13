@@ -39,6 +39,7 @@ import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, real
 import { FISTS_MELEE, type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
+import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
@@ -3337,40 +3338,18 @@ export const startPlay = (
   };
 
   const affordanceForFrame = (visible: Readonly<HudOptionsState>) =>
-    interactionAffordance(interactionTargetAt, visible.interaction, input.locked, Boolean(debugTools?.buildOn));
-  const markFurnitureAffordance = (target: InteractionTarget | undefined): void => {
-    if (target?.kind === 'furniture') {
-      view.furniture.mark(target.entity, entities.defOf(target.entity));
-      return;
-    }
-    if (target?.kind === 'item') {
-      const pile = [...inventory.piles.values()].find(({ items }) =>
-        items.some(({ item }) => item.uid === target.item.uid),
-      );
-      if (pile) {
-        const [x, y, z] = pile.pos;
-        view.furniture.markBounds(
-          `item:${target.item.uid}`,
-          [(x + 0.5) * s, (y + 0.1) * s, (z + 0.5) * s],
-          [0.16, 0.12, 0.16],
-        );
-        return;
-      }
-    }
-    if (target?.kind === 'body') {
-      const downedBody = zombieStore.get(target.id)?.body;
-      if (downedBody) {
-        const [x, y, z] = downedBody.pos;
-        const width = downedBody.halfWidth * 2 * s;
-        view.furniture.markBounds(
-          `body:${target.id}`,
-          [x * s, (y + downedBody.height / 2) * s, z * s],
-          [width, downedBody.height * s, width],
-        );
-        return;
-      }
-    }
-    view.furniture.mark(undefined);
+    interactionAffordance(
+      interactionTargetAt,
+      visible.interaction || visible.interactionOutline,
+      input.locked,
+      Boolean(debugTools?.buildOn),
+    );
+  const markerServices = {
+    furniture: view.furniture,
+    piles: view.piles,
+    definition: (entity: BlockEntity) => entities.defOf(entity),
+    body: (id: EntityId) => zombieStore.get(id)?.body,
+    blockSize: s,
   };
 
   const updateFrame = (now: RealTimestamp) => {
@@ -3445,7 +3424,7 @@ export const startPlay = (
     menuPointer.update();
 
     const affordance = affordanceForFrame(visible);
-    markFurnitureAffordance(affordance.target);
+    markInteractionTarget(affordance.target, visible.interactionOutline, markerServices);
     const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
     debugTools?.setCrosshairVisible(visible.crosshair);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
