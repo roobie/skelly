@@ -1,7 +1,17 @@
 // Block entities as simple shapes: furniture is a box in its colour, filling its
 // cells; a door is a thin hinged panel. They share the sky's lights with everything else.
 
-import { BoxGeometry, type BufferGeometry, Color, Group, Mesh, MeshLambertMaterial } from 'three';
+import {
+  BoxGeometry,
+  type BufferGeometry,
+  Color,
+  EdgesGeometry,
+  Group,
+  LineBasicMaterial,
+  LineSegments,
+  Mesh,
+  MeshLambertMaterial,
+} from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, panelFor } from '../core/blockEntities.ts';
 import type { FurnitureDef } from '../core/schema.ts';
@@ -22,10 +32,35 @@ export class FurnitureMeshes {
   private readonly materials = new Map<string, MeshLambertMaterial>();
   private readonly shapeGeometries = new Map<string, BufferGeometry>();
   private readonly blockSize: number;
+  private readonly marker = new LineSegments(
+    new EdgesGeometry(new BoxGeometry(1, 1, 1)),
+    new LineBasicMaterial({ color: '#ffe36e', depthTest: true, toneMapped: false }),
+  );
+  private markedUid: number | undefined;
   private drawn = -1;
 
   constructor(blockSize: number) {
     this.blockSize = blockSize;
+    this.marker.visible = false;
+    this.group.add(this.marker);
+  }
+
+  /** Marks only the furniture selected by the interaction ray. */
+  mark(entity: BlockEntity | undefined): void {
+    if (entity?.uid === this.markedUid) {
+      return;
+    }
+    this.markedUid = entity?.uid;
+    if (!entity) {
+      this.marker.visible = false;
+      return;
+    }
+    const [x, y, z] = entity.pos;
+    const [w, h, d] = entity.size;
+    const s = this.blockSize;
+    this.marker.scale.set(w * s + 0.035, h * s + 0.035, d * s + 0.035);
+    this.marker.position.set((x + w / 2) * s, (y + h / 2) * s, (z + d / 2) * s);
+    this.marker.visible = true;
   }
 
   /** Rebuilds the meshes when furniture was added, opened or closed. */
@@ -54,6 +89,7 @@ export class FurnitureMeshes {
       }
       this.group.add(castsAndReceives(mesh));
     }
+    this.group.add(this.marker);
   }
 
   private material(color: string): MeshLambertMaterial {

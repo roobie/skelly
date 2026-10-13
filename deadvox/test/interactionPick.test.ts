@@ -4,6 +4,7 @@ import { InstancedMesh, Matrix4, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { interactionAffordance } from '../src/core/interactionAffordance.ts';
 import { pickInteractionTarget } from '../src/core/interactionPick.ts';
 import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
@@ -53,6 +54,25 @@ const options = (inventory: Inventory, origin: Vec3, direction: Vec3, isSolid: S
 });
 
 describe('F interaction target selection', () => {
+  it('keeps the furniture marker and prompt on the picked interaction owner', () => {
+    const inventory = new Inventory(registry);
+    const cupboard = inventory.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 1], size: [2, 2, 1], facing: 'n' }, []);
+    expect(cupboard).toBeDefined();
+    const target = pickInteractionTarget(options(inventory, [0.5, 0.05, 0], [0, 0, 1]));
+    const affordance = interactionAffordance(() => target, true, true, false);
+
+    expect(affordance.target).toBe(target);
+    expect(affordance.furnitureUid).toBe(cupboard!.uid);
+    expect(interactionAffordance(() => undefined, true, true, false)).toEqual({
+      target: undefined,
+      furnitureUid: undefined,
+    });
+    expect(interactionAffordance(() => target, false, true, false)).toEqual({
+      target: undefined,
+      furnitureUid: undefined,
+    });
+  });
+
   it('targets the visible bundle', () => {
     const inventory = new Inventory(registry);
     const first = inventory.create(itemType!);
