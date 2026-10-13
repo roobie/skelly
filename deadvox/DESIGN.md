@@ -7,6 +7,7 @@ read_if:
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
+  - you're implementing gauntlet scenario admission, discovery or its visual approval gate
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
@@ -300,6 +301,35 @@ not in authored layout geometry. See `AuthoredSite` in
 Small structures use authored templates because they are reviewable and
 content validation can check them. Keep template representation and import
 mechanics in the implementation rather than repeating the format here.
+
+### Gauntlet
+
+Gauntlet is a seeded city objective using the ordinary survival simulation, not
+another mission runtime. A reserved service block gives the basement lab a
+constructible street approach instead of hoping an arbitrary shop can fit it.
+The entrance is an unlocked hatch with a ladder; knowledge of a clue never grants
+access. Independent notes, including a plain-text schematic in the ordinary
+reader, provide alternate ways to infer the destination. There is no enforced
+world edge. Ordinary body defaults and existing spawn admission keep scenario
+pressure a content decision rather than a hidden needs or enemy-rule fork; city
+size, scarcity and pressure require in-game judgment. Multi-day growth and needs
+rate authoring are outside #671's first version.
+
+The objective's saved terminal win and permanent death must remain authoritative
+session/save decisions, not observer counters. Replay is a fresh attempt, with
+no attempt history or resurrection. The goal and terminal persistence contract
+are later #671 checkpoints, not behavior supplied by the visual fixture. A
+frozen playtest follows successful play approval and #660's separate publishing
+prerequisites so a round retains its build and origin.
+
+The small first look exists to judge plausibility, discoverability, cue strength
+and text tone before investing in full lab and clue construction. Full visual
+construction for #671 waits for that look's approval. The authored fixture is a
+prototype service building and shaft landing, not a seeded city, finished lab,
+all-seed route certificate or balance/performance verdict. It uses the ordinary
+reader, hatch, ladder and authored-site owners; its demo status keeps prototype
+stock out of playable-world reachability. See `src/content/base/gauntlet-look.jsonnet`
+and `AuthoredSite` in `src/core/authoredSite.ts`.
 
 ### Points of interest
 
