@@ -21,6 +21,7 @@ const warnSaveLockTimeout = (message: string, details: Record<string, unknown>):
 const SAVE_READ_RETRIES = 3;
 const SAVE_READ_RETRY_MS = 50;
 const STORAGE_METADATA_TIMEOUT_MS = 1000;
+const SAVE_REPLY_GRACE_REAL_MS = 50;
 type CrashStage =
   | 'before-truncate'
   | 'after-truncate'
@@ -137,8 +138,42 @@ export class SaveStorage {
     this.nextId += 1;
     const id = this.nextId;
     return new Promise<T>((resolve, reject) => {
+      const startedAtRealMs = performance.now();
+      const dueAtRealMs = startedAtRealMs + this.timeoutMs;
+      const backend = this.backend ?? null;
+      const inputBytes = message.payload instanceof ArrayBuffer ? message.payload.byteLength : null;
+      const fail = (timerOvershootRealMs: number, stallGraceApplied: boolean): void => {
+        if (!this.pending.has(id)) {
+          return;
+        }
+        const details = {
+          requestId: id,
+          operation: message.operation,
+          backend,
+          elapsedRealMs: performance.now() - startedAtRealMs,
+          timerOvershootRealMs,
+          inputBytes,
+          stallGraceApplied,
+        };
+        const error = new Error(`Save worker timed out; completion was not acknowledged: ${JSON.stringify(details)}`, {
+          cause: details,
+        });
+        // biome-ignore lint/suspicious/noConsole: reports must survive callers that catch a rejected request.
+        console.warn(error);
+        this.failWorker(error);
+      };
       const timer = globalThis.setTimeout(() => {
-        this.failWorker(new Error('Save worker timed out; the inactive record was not reported committed'));
+        const request = this.pending.get(id);
+        if (!request) {
+          return;
+        }
+        const timerOvershootRealMs = Math.max(0, performance.now() - dueAtRealMs);
+        // A stalled main thread may dispatch its due timer before an already queued worker reply.
+        if (timerOvershootRealMs >= SAVE_REPLY_GRACE_REAL_MS) {
+          request.timer = globalThis.setTimeout(() => fail(timerOvershootRealMs, true), SAVE_REPLY_GRACE_REAL_MS);
+        } else {
+          fail(timerOvershootRealMs, false);
+        }
       }, this.timeoutMs);
       this.pending.set(id, { resolve: resolve as (value: unknown) => void, reject, timer });
       worker.postMessage({ ...message, id });
