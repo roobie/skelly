@@ -667,11 +667,8 @@ export class FirearmMechanics {
       return 'No held ejection pose';
     }
     const landing = this.landing(emission);
-    if (!landing) {
-      return 'No solid surface below the ejected item';
-    }
-    const drop = this.ejectionDrop(type, landing);
-    return drop.plan.ok ? undefined : drop.plan.reason;
+    const drop = landing ? this.ejectionDrop(type, landing) : undefined;
+    return !drop || drop.plan.ok ? undefined : drop.plan.reason;
   }
 
   private isPump(item: Item): boolean {
@@ -1143,6 +1140,21 @@ export class FirearmMechanics {
     );
   }
 
+  private placeEjected(type: string, landing: Vec3 | undefined): string | undefined {
+    if (!landing) {
+      // The player's column should be streamed; if it is not, discard the case rather than create a floating pile.
+      return undefined;
+    }
+    const drop = this.ejectionDrop(type, landing);
+    if (!drop.plan.ok) {
+      return drop.plan.reason;
+    }
+    if (!this.inventory.add(this.inventory.create(type), drop.target)) {
+      return 'Ejection placement changed';
+    }
+    return undefined;
+  }
+
   private ejectLive(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
     const pose = this.pose(item.uid);
     if (!pose) {
@@ -1151,15 +1163,9 @@ export class FirearmMechanics {
     const emission = this.emission(item, data, pose);
     const type = state.roundType!;
     const landing = this.landing(emission);
-    if (!landing) {
-      return 'No solid surface below the ejected item';
-    }
-    const drop = this.ejectionDrop(type, landing);
-    if (!drop.plan.ok) {
-      return drop.plan.reason;
-    }
-    if (!this.inventory.add(this.inventory.create(type), drop.target)) {
-      return 'Ejection placement changed';
+    const placement = this.placeEjected(type, landing);
+    if (placement) {
+      return placement;
     }
     state.chamber = 'empty';
     state.roundType = undefined;
@@ -1184,7 +1190,10 @@ export class FirearmMechanics {
       emission.origin[2] + emission.direction[2] * distance,
     ];
     const minY = makeScale(this.blockSize).minCy * CHUNK;
-    return settleOnWorld(endpoint, this.blockSize, minY, this.isSolid);
+    return (
+      settleOnWorld(endpoint, this.blockSize, minY, this.isSolid) ??
+      settleOnWorld(emission.origin, this.blockSize, minY, this.isSolid)
+    );
   }
 
   private ejectCase(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
@@ -1195,22 +1204,16 @@ export class FirearmMechanics {
     const pose = this.pose(item.uid);
     const emission = pose ? this.emission(item, data, pose) : pending;
     const landing = this.landing(emission);
-    if (!landing) {
-      return 'No solid surface below the ejected item';
-    }
     const type = spentCaseItemId(data.calibre);
-    const drop = this.ejectionDrop(type, landing);
-    if (!drop.plan.ok) {
-      return drop.plan.reason;
-    }
-    if (!this.inventory.add(this.inventory.create(type), drop.target)) {
-      return 'Ejection placement changed';
+    const placement = this.placeEjected(type, landing);
+    if (placement) {
+      return placement;
     }
     state.chamber = 'empty';
     state.pendingCase = undefined;
     // Commit the transition before output: a drawing failure must never double its case.
     state.cycle!.ejected = true;
-    if (this.isPump(item)) {
+    if (this.isPump(item) && landing) {
       state.landing = {
         at: state.cycle!.startedAt + ejectSeconds(data.action, 'hand') + CASE_FLIGHT_SECONDS,
         position: [...landing],

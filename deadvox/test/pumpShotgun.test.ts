@@ -211,23 +211,38 @@ describe('real pump ammunition', () => {
     expect([...f.inventory.piles.values()].flatMap(({ items }) => items)).toHaveLength(PILE_GRID.w * PILE_GRID.h);
   });
 
-  it('keeps a pending case in the chamber while the ejection column has no known solid surface', () => {
-    const f = fixture(
-      registry,
-      () => 0,
-      pose,
-      () => false,
+  it('settles a spent case in the player column when its projected endpoint column is unknown', () => {
+    const probe = fixture();
+    probe.load(0);
+    probe.rack(1);
+    probe.rack(3);
+    const projectedPile = [...probe.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === shellType),
     );
+    expect(projectedPile).toBeDefined();
+    const { origin } = probe.effects[0]!;
+    const releaseX = Math.floor(origin[0] / pose.blockSize);
+    const releaseZ = Math.floor(origin[2] / pose.blockSize);
+    expect([releaseX, releaseZ]).not.toEqual([projectedPile!.pos[0], projectedPile!.pos[2]]);
+
+    const isSolid = (x: number, y: number, z: number) => x === releaseX && z === releaseZ && y < pose.feet[1];
+    const f = fixture(registry, () => 0, pose, isSolid);
     f.load(0);
     f.rack(1);
     expect(f.fire(3)).toBe(true);
 
-    const refusal = f.mechanics.cock(f.gun.uid, 4);
+    f.rack(4);
 
-    expect(refusal).toBeDefined();
-    expect(f.gun.firearm?.chamber).toBe('case');
-    expect(f.gun.firearm?.pendingCase).toBeDefined();
-    expect([...f.inventory.piles.values()].flatMap(({ items }) => items)).toHaveLength(0);
+    const casePile = [...f.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    );
+    expect(casePile).toBeDefined();
+    expect(casePile!.pos[0]).toBe(releaseX);
+    expect(casePile!.pos[2]).toBe(releaseZ);
+    expect(isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
+    expect(f.gun.firearm?.chamber).toBe('empty');
+    expect(f.gun.firearm?.pendingCase).toBeUndefined();
+    expect(f.effects).toHaveLength(1);
   });
 
   it('ejection spills from a full landing pile and refuses a rack when all drop spots are full', () => {
