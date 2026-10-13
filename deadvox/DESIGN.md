@@ -343,12 +343,44 @@ The composed terrain, furniture, resource and clue route belongs to #671's R2
 exit; later descents, goal persistence, discovery, survival pressure and hardware
 performance cannot be inferred from the local entry-portal proof.
 
-The lab is a multi-storey subterranean place whose danger rises with depth, with
-the objective at the bottom. Separate descents make deeper access a sequence of
-places to enter rather than a shortcut past them. Each level remains an extensible
-frame: weird and interesting content can accumulate without replacing the lab's
-spatial identity or relocating the objective. The deepest place must earn its
-higher risk through play; ominous set dressing in a look is not that proof.
+The lab is a multi-storey subterranean complex whose danger rises with depth,
+with the nuclear objective at the bottom. A storey contains several distinct
+special rooms, not one stop on a ladder shaft. Looped circulation and separated,
+offset descents make exploration and descent route choices rather than a single
+corridor followed by a continuous climb. Adjacent storeys share alternate links
+so returning need not retrace the approach.
+
+The look's scale, room assignments and links are authored in
+`src/content/base/gauntlet-lab.libsonnet`, `storeys`, `kinds` and `links`.
+Room-kind props and legible room labels distinguish laboratory work from storage,
+utilities and containment; reuse of those kinds across storeys gives the complex
+an identity without making every floor the same room. Support gives way to
+restricted research, damaged containment and critical-depth failures so depth
+has a visible risk direction. These are inert spatial cues, not a danger or
+balance proof: the deepest place must earn its higher risk through play.
+
+Storey spacing gives standing headroom and makes each descent a separate place
+to enter. Room and storey additions belong in the authoring tables, with linked
+floor heights and the surface foundation derived from the storey order, rather
+than in a new simulation or site generator. The underground campus extends
+beyond the small service facade because a surface disguise must not dictate the
+lab's capacity. One compiled placement owns their common excavation; incidental
+surface utilities stay inside that placement to avoid overlapping authored-site
+footprints. The look remains bounded so its geometry can be judged before
+investing in the full complex. See `src/content/base/gauntlet-look.jsonnet`,
+`cell` and `layouts`.
+
+Static admission indexes furniture occupancy for both door states before body
+queries, because a multi-room campus must not scan every room's furnishings for
+every clearance cell. Template character lookup avoids expanding ordinary rows
+for every cell while preserving code-point indexing for wider Unicode markers.
+These changes reduce large-look authoring cost without a second collision or
+compiler owner. The
+prototype profile takes its entry anchors from the same source metadata as the
+hatch and entry ladder instead of rediscovering markers by scanning the entire
+campus. See `src/core/templateSpatial.ts`, `TemplateSpace`;
+`src/core/templates.ts`, `charAt`; and
+`src/content/base/gauntlet-lab.libsonnet`, `entry`.
 
 The objective's saved terminal win and permanent death must remain authoritative
 session/save decisions, not observer counters. Replay is a fresh attempt, with

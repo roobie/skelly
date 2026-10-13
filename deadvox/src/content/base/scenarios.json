@@ -4,8 +4,8 @@
       "body": "player",
       "city": {
         "blend": 24,
-        "blockX": 72,
-        "blockZ": 64,
+        "blockX": 96,
+        "blockZ": 96,
         "blocksX": 1,
         "blocksZ": 1,
         "gap": 2,
@@ -19,8 +19,8 @@
       "portal": {
         "hatch": "T",
         "ladder": "H",
-        "lower": [18, 17, 16],
-        "upper": [22, 25, 16]
+        "lower": [42, 33, 40],
+        "upper": [46, 41, 40]
       },
       "serviceTemplate": "gauntlet_look_service"
     }

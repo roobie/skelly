@@ -1,18 +1,9 @@
 local look = import 'gauntlet-look.jsonnet';
+local lab = import 'gauntlet-lab.libsonnet';
 local service = look.templates[0];
-local ground = service.access.storeys[0].floor - 1;
-local cells = function(marker) [
-  [x, y, z]
-  for y in std.range(0, service.size[1] - 1)
-  for z in std.range(0, service.size[2] - 1)
-  for x in std.range(0, service.size[0] - 1)
-  if std.substr(service.layers[y][z], x, 1) == marker
-];
-local lowest = function(points)
-  assert std.length(points) > 0 : 'Prototype service needs its portal markers';
-  [std.foldl(std.min, [p[axis] for p in points], points[0][axis]) for axis in std.range(0, 2)];
-local hatch = lowest(cells('T'));
-local ladder = lowest(cells('H'));
+local ground = lab.ground;
+local hatch = lab.entry.hatch;
+local ladder = lab.entry.ladder;
 {
   scenarios: [{
     id: 'gauntlet', kind: 'gauntlet',
@@ -25,7 +16,9 @@ local ladder = lowest(cells('H'));
     },
     city: {
       blocksX: 1, blocksZ: 1,
-      street: 12, blockX: 72, blockZ: 64,
+      street: 12,
+      blockX: std.max(service.size[0], service.size[2]) + 24,
+      blockZ: std.max(service.size[0], service.size[2]) + 24,
       pad: 2, gap: 2, blend: 24,
       templates: ['small_house', 'shed', 'workshop_hall'],
     },
