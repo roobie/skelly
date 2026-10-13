@@ -434,13 +434,8 @@ Ground items form piles. A modeled item keeps its own look in the pile; an item
 without a model is shown as a generic bundle. Spent cases read as loose debris,
 not stacked material. See `PILE_DISPLAY_KIND` in `src/core/schema.ts`.
 
-A throw commits its pile space when released. Otherwise another pile admission
-could take the last cells before impact, leaving an inventory-owned item with no
-place to land. The shared `pileLayout` owner supplies the model endpoint; the
-renderer reads it without changing simulation state. See `Inventory.planAdd`
-and `Inventory.beginItemFlight` in `src/core/inventory.ts`. See
-`pileItemPosition` in `src/core/pileLayout.ts` and `ItemThrows.spawn` in
-`src/render/itemThrows.ts`.
+Pile models and presentation endpoints use the same `pileLayout` projection.
+See `pileLayout` and `pileItemPosition` in `src/core/pileLayout.ts`.
 
 Use one item look derived from that instance's own state in every view. A
 firearm with its magazine removed must not appear loaded in a hand or pile; a
@@ -837,26 +832,24 @@ beam. Fuel, batteries, and powered fixed lights keep illumination consequential.
 
 ## Held-item throws
 
-A released item remains inventory-owned as a pending landing until simulation
-reaches its landing time. It cannot be looted early, and a save restores both the
-item and the remainder of its flight; the render arc follows the same clock and
-endpoint. This keeps the transfer and its presentation on one impact. Flight and
-landing preserve item identity and state, including fitted parts, ammunition,
-and light. A fuse that expires mid-flight detonates at the flight's simulation
-position, not at the thrower's position. Mass limits range; #368 is the trigger
-for deciding whether atmospheric drag adds another limit. A throw adds no hit
-damage or landing lure;
-explosive effects belong to the grenade. See `src/core/inventory.ts`,
-`Inventory.beginItemFlight` and `Inventory.advanceItemLandings`, and
-`src/render/itemThrows.ts`, `ItemThrows.update`.
+A released item joins its target pile immediately, keeping inventory as its
+sole owner and preserving ordinary fuse and save behavior. While the arc plays,
+the pile renderer hides that item; its endpoint follows the current pile layout
+so model readiness cannot leave the arc at a stale position. This presentation-
+only hide avoids a second item owner; #678 tracks impact-time ownership. Mass
+limits range; #368 is the trigger for deciding whether atmospheric drag adds
+another limit. A throw adds no hit damage or landing lure; explosive effects
+belong to the grenade. See `ThrowCharge.place` in `src/game/throwCharge.ts`,
+`ItemThrows.update` in `src/render/itemThrows.ts`, and `PileMeshes.sync` in
+`src/render/piles.ts`.
 
 ## Hand grenade
 
 A grenade thrown into the horde is meant to be the playtest's climax: the one moment the player can answer a whole crowd at once, with the gore to show it. The FOB armoury holds the grenades, and the horde outside the FOB's west wall stands within earshot of prying the armoury lock through the compound's walls, so forcing the armoury brings the crowd the grenades are for, while the key leaves the horde where it stands. It stands on the west side so the crouch passage through the east wall stays a quiet way in, away from the crowd. See `src/content/base/items-explosives.jsonnet`, `frag_grenade`; `src/content/base/layouts-playtest.json`, `fob_west`; and `src/core/zombies.ts`, `hearVocalNoise`, for how far a horde hears.
 
 - **Pulling the pin is an action.** The held grenade's primary action pulls the pin, or puts it back, and says which; the item's details show the pin, or a burning fuse. Arming takes a deliberate act, so a grenade is never live by accident. See `src/core/explosive.ts`, `Fuses.togglePin`, and `src/game/play.ts`, `togglePin`.
-- **The fuse lights when the hand lets go.** An unpinned grenade lights the moment it is anywhere but a hand: thrown, dropped, or put away, because nothing holds the lever once the grip opens. A pinned grenade that is thrown lands as a dud, and re-pinning before release makes it safe. There is no cooking, and a lit fuse cannot be stopped. Pin and fuse are saved on the item, so a save mid-flight restores a live grenade. The fuse counts down in simulation time inside the zombies system's step rather than in a system of its own, because the scheduler's set of systems is part of the save. See `src/core/explosive.ts`, `Fuses.advance`, and `src/game/session.ts`, `detonate`.
-- **It goes off where it is:** at its simulation position even if the fuse expires during flight, in the pile it landed in, or with whoever picked it up again. Detonation consumes the flight-owned item so its presentation cannot continue after the blast. See `detonationPoint` and `detonate` in `src/game/session.ts`, and `Inventory.consumeItemFlight` in `src/core/inventory.ts`.
+- **The fuse lights when the hand lets go.** An unpinned grenade lights the moment it is anywhere but a hand: thrown, dropped, or put away, because nothing holds the lever once the grip opens. A pinned grenade that is thrown remains a dud, and re-pinning before release makes it safe. There is no cooking, and a lit fuse cannot be stopped. Pin and fuse are saved on the item, including while its presentation arc is playing. The fuse counts down in simulation time inside the zombies system's step rather than in a system of its own, because the scheduler's set of systems is part of the save. See `src/core/explosive.ts`, `Fuses.advance`, and `src/game/session.ts`, `detonate`.
+- **It goes off where it is:** at its simulation position, whether the grenade is in a pile or with whoever picked it up. A render-only throw arc never moves its fuse or detonation point. See `detonationPoint` and `detonate` in `src/game/session.ts`.
 - **The blast kills most of the way to its radius.** It reaches every body whose centre it sees, falling to nothing at its radius; a wall between stops it. It kills a shambler over most of its radius and severs limbs nearly to its edge, and it strikes the limbs before the region that kills, so a close blast tears limbs off before it drops the body: the giblets are the point. Which region kills is one rule shared with individual hits, so a blast and a hit never disagree on it. Its own push falls off with its damage and throws the severed parts outward. A full-strength level throw clears the blast, while fragments extend beyond it as a separate hazard; a short throw can still put the thrower in the blast. See `src/core/explosive.ts`, `blastShare`, and `src/core/zombies.ts`, `lethalRegion` and `ZombieSystem.detonate`.
 - **Fragments are seeded shots.** They are rays through the same hit test as shotgun pellets, so walls and bodies stop them and fewer reach a farther body. One fragment severs a shambler's limb, and they reach past the blast, so a crowd around the landing point comes apart. A full-strength throw carries the player beyond fragment reach; shorter throws can still expose the player to fragments. Each ray is traced against every body in range, so the count sets the cost of the moment; the schema caps it. See `src/core/explosive.ts`, `fragmentDirections`; `ZombieSystem.firePellets`; and `src/core/schema.ts`, `ExplosiveSchema`.
 - **The player takes the same falloff, line of sight and fragments** in a simpler model: one blast hit to the torso, and fragments traced against a body box, which zombie bodies do not shield. A short throw hurts the thrower. See `src/core/explosive.ts`, `fragmentHitsOnBody`.
