@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer, build as viteBuild, preview as vitePreview } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
+import { outgoingCancellation } from './save-request-cancellation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
@@ -237,6 +238,11 @@ try {
         return {
           url: location.href,
           readyState: document.readyState,
+          navigation: performance.getEntriesByType('navigation')[0]?.toJSON(),
+          moduleLoads: performance
+            .getEntriesByType('resource')
+            .filter((entry) => entry.name.includes('/src/'))
+            .map((entry) => ({ url: entry.name, startRealMs: entry.startTime, durationRealMs: entry.duration })),
           status: document.querySelector('#save-status')?.textContent ?? null,
           controller: controller
             ? {
@@ -259,9 +265,12 @@ try {
     const failure = request.failure()?.errorText;
     const state = navigationDiagnostics.get(trackedPage);
     const generation = state?.requestGeneration.get(request);
-    const navigation = generation === undefined ? undefined : state?.navigationByGeneration.get(generation);
+    const navigation = outgoingCancellation(request, state);
+    process.stdout.write(
+      `SAVE_REQUEST_FAILURE ${JSON.stringify({ url: request.url(), failure, resourceType: request.resourceType(), requestStartAbsoluteRealMs: request.timing().startTime, generation, currentGeneration: state?.generation, ownedOutgoing: Boolean(navigation), navigation })}\n`,
+    );
     // Firefox cancels outgoing-document module fetches during reload; destination-page failures remain errors.
-    if (failure === 'NS_BINDING_ABORTED' && navigation) {
+    if (navigation) {
       process.stdout.write(
         `${browserName}: ignored outgoing-page request cancellation during ${navigation.label}: ${request.url()} from ${JSON.stringify(navigation.source)}\n`,
       );
@@ -1092,7 +1101,7 @@ try {
     });
     try {
       // Closing the seed session triggers its lifecycle checkpoint; it cannot steal the held writer lock.
-      await page.close();
+      await navigatePage('busy-lock seed session close', () => page.close());
       page = await withTimeout('busy-lock relaunch page creation', context.newPage());
       trackPageNavigation(page);
       await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
@@ -1148,10 +1157,12 @@ try {
         globalThis.deadvoxReleaseSaveLock();
         await globalThis.deadvoxHeldSaveLock;
       });
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
-        page.click('#save-rescan', { timeout: STAGE_TIMEOUT_MS }),
-      ]);
+      await navigatePage('busy-lock rescan reload', () =>
+        Promise.all([
+          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+          page.click('#save-rescan', { timeout: STAGE_TIMEOUT_MS }),
+        ]),
+      );
       await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });

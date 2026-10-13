@@ -29,7 +29,7 @@ import {
   type Site,
   type ZombieSpawn,
 } from './site.ts';
-import { footprint, type Placement, placedPieces, placedSpawns, stampPlacement } from './templates.ts';
+import { type Placement, placedPieces, placedSpawns, stampPlacement } from './templates.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -79,7 +79,6 @@ export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
   readonly placements: readonly Placement[];
-  readonly skyBounds: NonNullable<Site['skyBounds']>;
   readonly trees: readonly TreePlacement[];
   private readonly spawns: readonly ZombieSpawn[];
   private readonly hordes: readonly HordeSpawn[];
@@ -119,19 +118,6 @@ export class AuthoredSite implements Site {
       beats: (layout.beats ?? []).map((beat) => ({ id: beat.id, area: rectBlocks(beat.area) })),
       keyLoot,
     };
-    this.skyBounds = this.placements
-      .filter((placement) => (placement.template.groundLayer ?? 0) > 0)
-      .map((placement) => {
-        const [w, d] = footprint(placement);
-        return {
-          min: [...placement.origin] as Vec3,
-          max: [
-            placement.origin[0] + w,
-            placement.origin[1] + placement.template.size[1],
-            placement.origin[2] + d,
-          ] as Vec3,
-        };
-      });
     this.spawn = { pos: [...layout.player.position], yaw: yawFromBearing(layout.player.bearing) };
     const spawnPoints: [number, number][] = [
       [layout.player.position[0], layout.player.position[2]],

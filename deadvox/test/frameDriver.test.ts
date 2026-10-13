@@ -1,10 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import { Compression, longActionLimits } from '../src/core/compression.ts';
-import { realSeconds, simSeconds } from '../src/core/time.ts';
-import { advanceLiveFrame, planRealFrame, RAMP_DOWN_SIM_SECONDS } from '../src/game/frameDriver.ts';
+import { realSeconds, realTimestamp, simSeconds } from '../src/core/time.ts';
+import { advanceLiveFrame, observeRealFrame, planRealFrame, RAMP_DOWN_SIM_SECONDS } from '../src/game/frameDriver.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 
 describe('outer frame time planning', () => {
+  it('observation preserves continuation and halt with or without a measured render frame', () => {
+    let continuing = true;
+    let observedStart: number | undefined;
+    const events: string[] = [];
+    const frame = observeRealFrame(
+      () => {
+        events.push('frame');
+        return continuing;
+      },
+      () => ({
+        before: () => observedStart,
+        after: () => {
+          events.push('after');
+        },
+      }),
+    );
+    expect(frame(realTimestamp(0))).toBe(true);
+    observedStart = 0;
+    expect(frame(realTimestamp(1))).toBe(true);
+    continuing = false;
+    expect(frame(realTimestamp(2))).toBe(false);
+    observedStart = undefined;
+    expect(frame(realTimestamp(3))).toBe(false);
+    expect(events).toEqual(['frame', 'frame', 'after', 'frame', 'after', 'frame']);
+  });
   it('converts a Real frame duration using the compression state after its ramp update', () => {
     const compression = new Compression(longActionLimits(COMPRESSION_CAPS_FIXTURE.wait));
     compression.start(undefined, 'debug');

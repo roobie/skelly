@@ -485,6 +485,7 @@ const panelTemplate = ({
     share: html`<div class="debug-actions"><button type="button" @click=${dumpLook}>Dump look settings (JSON)</button><button id="export-metrics" type="button" @click=${exportMetrics}>Export metrics</button></div>`,
   };
   return html`
+  <div id="sky-route-root"></div>
   <div id="debug-ui-root">
     <div id="debug-center-x" ?hidden=${!crosshairVisible} aria-hidden="true"></div>
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · ${labelForAction('debug.panel-toggle')}</div>
@@ -1039,6 +1040,8 @@ export const copyTextOrSelect = async (
   fallback.select();
   return false;
 };
+
+export const loadSkyRoute = async () => (await import('./skyRoute.ts')).attachSkyRoute;
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
   setDebugFirearmsSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);

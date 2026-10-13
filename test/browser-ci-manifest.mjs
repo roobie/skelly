@@ -63,6 +63,8 @@ export const browserStagesOfScripts = (scripts) =>
   );
 
 const routePattern = /^\$\{\{ inputs\.shard == '(control-[\w-]+)' \|\| inputs\.shard == '([\w-]+)' \}\}$/;
+const diagnosticRoutePattern =
+  /^\$\{\{ !cancelled\(\) && \(inputs\.shard == '(control-[\w-]+)' \|\| inputs\.shard == '([\w-]+)'\) \}\}$/;
 const reusablePath = './.github/workflows/deadvox-browser.yml';
 
 const matrixShards = (jobs) => {
@@ -107,7 +109,7 @@ const partitionSteps = (reusable, shards) => {
       continue;
     }
     requireValue(!('continue-on-error' in step), 'browser failures cannot be optional');
-    const [, group, route] = step.if?.match(routePattern) ?? [];
+    const [, group, route] = step.if?.match(routePattern) ?? step.if?.match(diagnosticRoutePattern) ?? [];
     requireValue(
       group && Object.hasOwn(control, group) && route && Object.hasOwn(partition, route),
       `unsupported browser route: ${step.if}`,
