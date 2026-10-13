@@ -305,7 +305,8 @@ export const createPlayView = (
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       held.setSkyVisibility(skyVisibility);
       cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
-      flashlight.daylightScale = cameraDaylightScale;
+      engine.skylight?.setDaylight(sky);
+      flashlight.daylightScale = engine.skylight ? 1 : flashlightDaylightScale(sky);
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (sky: ReturnType<typeof skyInWeather>) => {
