@@ -524,6 +524,22 @@ describe('rifle firearm handling', () => {
     expect(kicks).toEqual([configuredKick]);
   });
 
+  it('keeps earlier case landings pending when automatic fire starts another cycle', () => {
+    const { mechanics, rifle } = armed();
+    const { action } = firearmHandlingFor(rifle, registry);
+    const cycleDuration = actionCycleSeconds(action, 'fire');
+    const ejectOffset = ejectSeconds(action, 'fire');
+
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
+    mechanics.advanceTo(1 + ejectOffset);
+    expect(rifle.firearm?.landings).toHaveLength(1);
+
+    const secondShotAt = 1 + cycleDuration;
+    expect(mechanics.fire(shotInput(rifle, secondShotAt))).toBe(true);
+    mechanics.advanceTo(secondShotAt + ejectOffset);
+    expect(rifle.firearm?.landings).toHaveLength(2);
+  });
+
   it('aligns ejection and held stroke when rpm caps a longer exported automatic cycle', () => {
     const model = registry.models.get('rifle_assault')!;
     const action = structuredClone(model.action!);

@@ -622,6 +622,7 @@ export class FirearmMechanics {
     item.firearm = {
       chamber: 'case',
       ...(item.firearm?.readying === undefined ? {} : { readying: item.firearm.readying }),
+      ...(item.firearm?.landings === undefined ? {} : { landings: item.firearm.landings }),
       pendingCase: { ...emission, seed },
       cycle: {
         mode: 'fire',
