@@ -13,7 +13,9 @@ Start with the closest boundary and reproduce the observed condition; do not inf
 
 ## Startup and save discovery
 
-The title screen remains unavailable until save discovery and content validation finish. A loading status must remain visible while the startup screen covers the game; after a world starts, the separate spawn-meshing hint remains until nearby terrain is ready. See `src/main.ts`, `hideStartupScreen`, and `src/game/play.ts`, `updateStartupHint`.
+The title screen remains unavailable until save discovery and content validation finish. After a world starts, an opaque loading mask prevents incomplete geometry and lighting from revealing hidden structures. Simulation and player input stay paused until the owners certify readiness; rendering continues because it services lighting and shadows. Readiness respects the lighting owner's proximity demand, residency cap and distant roof-height fallback rather than requiring every distant volume in the atlas. See `src/main.ts`, `hideStartupScreen`, `src/game/worldLoading.ts`, `WorldLoading`, and `src/render/skylight.ts`, `loadingReadiness`.
+
+A stuck load keeps the scene covered and offers reload instead of exposing incomplete terrain. Its deadline scales with generation, meshing and lighting dependency work; owner errors fail immediately. Replay uses only its recorded initial terrain and requests lighting only where those dependencies exist, so loading never invents simulation columns. Recording begins after readiness to preserve a complete initial player view without load-time simulation ticks. See `src/game/play.ts`, `updateWorldLoading`, and `src/game/streamer.ts`, `unmeshedRecordedColumns`.
 
 Continue may wait for another page's origin-wide save lock. A timeout does not mean a frozen holder can be recovered from the current page; use the reported holder/pending state and the controlled busy-lock browser contract. A successful competing read does not prove that contention caused a failure. See `src/game/saveStorage.ts`, `SaveStorage.withLock`, and `test/browser/save-storage.mjs`.
 

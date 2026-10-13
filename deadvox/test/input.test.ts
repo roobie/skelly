@@ -95,10 +95,10 @@ describe('pointer input', () => {
       warn.mockRestore();
     }
   });
-  it('ignores viewer mouse transitions during replay while live input remains admitted', () => {
+  it('ignores viewer mouse transitions and look when the viewer is suppressed while live input remains admitted', () => {
     const run = (viewerAllowed: boolean, locked: boolean) => {
       const allowed = viewerAllowed;
-      const { input, target, document, targetListeners, windowListeners } = fixture(
+      const { input, target, document, targetListeners, windowListeners, documentListeners } = fixture(
         () => true,
         () => allowed,
       );
@@ -110,6 +110,8 @@ describe('pointer input', () => {
         rightMouseSuppressed: input.rightMouseHeld && !input.rightMouseActionHeld,
         dominantUsePressed: input.intent().useDominant,
         dominantUseDown: input.dominantUseHeld,
+        yaw: input.yaw,
+        pitch: input.pitch,
       });
       type MouseState = ReturnType<typeof read>;
       const initial = read();
@@ -118,6 +120,7 @@ describe('pointer input', () => {
         targetListeners.get('mousedown')!({ button } as MouseEvent);
         transitions.push(read());
         windowListeners.get('mouseup')!({ button } as MouseEvent);
+        documentListeners.get('mousemove')!({ movementX: 10, movementY: 5 } as MouseEvent);
         transitions.push(read());
       }
       return { initial, transitions };
@@ -132,6 +135,7 @@ describe('pointer input', () => {
       expect(live.transitions.some((state) => state.rightMousePressed)).toBe(true);
       expect(live.transitions.some((state) => !state.rightMouseSuppressed)).toBe(true);
       if (locked) {
+        expect(live.transitions.some((state) => state.yaw !== live.initial.yaw)).toBe(true);
         expect(live.transitions.some((state) => state.dominantUsePressed)).toBe(true);
         expect(live.transitions.some((state) => state.dominantUseDown)).toBe(true);
       }

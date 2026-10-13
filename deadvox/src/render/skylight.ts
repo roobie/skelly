@@ -128,6 +128,25 @@ export class Skylight {
   private readonly index: ReturnType<typeof regionIndex>;
   private readonly clock: () => number;
   private preparation: Preparation | undefined;
+  private recordedTerrain = false;
+
+  setRecordedTerrain(): void {
+    this.recordedTerrain = true;
+  }
+
+  private hasDependency(field: Field): boolean {
+    const { min, max } = field.dependency;
+    for (let z = Math.floor(min[2] / CHUNK); z < Math.ceil(max[2] / CHUNK); z++) {
+      for (let x = Math.floor(min[0] / CHUNK); x < Math.ceil(max[0] / CHUNK); x++) {
+        for (let y = Math.floor(Math.max(this.context.bottom, min[1]) / CHUNK); y < Math.ceil(max[1] / CHUNK); y++) {
+          if (!this.context.world.getChunk(x, y, z)) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
   private inFlight = false;
   private completed: { preparation: Preparation; result: SkyResult } | undefined;
   private entityVersion = -1;
@@ -254,20 +273,50 @@ export class Skylight {
     this.metadataDirty = true;
     this.atlasDirty = true;
   }
+  private demanded(position: Vec3): Field[] {
+    const range = PREFETCH_M / this.blockSize;
+    return this.nearby(position).filter(
+      (field) =>
+        position.every(
+          (value, axis) => value >= field.bounds.min[axis]! - range && value < field.bounds.max[axis]! + range,
+        ) &&
+        (!this.recordedTerrain || this.hasDependency(field)),
+    );
+  }
+
+  private residentCandidates(nearby: Field[]): Field[] {
+    return nearby.filter((field) => field.result?.volume).slice(0, RESIDENT_FIELDS);
+  }
+
+  loadingReadiness(position: Vec3) {
+    this.refreshEntities();
+    const fields = this.demanded(position);
+    const selected = this.residentCandidates(this.nearby(position));
+    return {
+      ready:
+        fields.every((field) => field.result?.complete && field.resultRevision === field.revision) &&
+        selected.every((field) => this.active.includes(field)) &&
+        !this.atlasDirty &&
+        !this.metadataDirty,
+      workUnits: fields.reduce(
+        (sum, field) =>
+          sum +
+          field.dependency.min.reduce(
+            (cells, min, axis) => cells * Math.ceil((field.dependency.max[axis]! - min) / CHUNK),
+            1,
+          ),
+        0,
+      ),
+    };
+  }
+
   private prepare(nearby: Field[], position: Vec3, deadline: number): void {
     if (this.preparation?.revision !== this.preparation?.field.revision) {
       this.preparation = undefined;
     }
     if (!this.preparation) {
-      const range = PREFETCH_M / this.blockSize;
-      const field = nearby.find(
-        (candidate) =>
-          !candidate.attempted &&
-          position.every(
-            (value, axis) =>
-              value >= candidate.bounds.min[axis]! - range && value < candidate.bounds.max[axis]! + range,
-          ),
-      );
+      const demanded = new Set(this.demanded(position));
+      const field = nearby.find((candidate) => !candidate.attempted && demanded.has(candidate));
       if (!field) {
         return;
       }
@@ -316,10 +365,7 @@ export class Skylight {
     this.refreshEntities();
     this.publish();
     const nearby = this.nearby(position);
-    const resident = nearby
-      .filter((field) => field.result?.volume)
-      .slice(0, RESIDENT_FIELDS)
-      .sort((a, b) => a.index - b.index);
+    const resident = this.residentCandidates(nearby).sort((a, b) => a.index - b.index);
     if (resident.length !== this.active.length || resident.some((field, index) => field !== this.active[index])) {
       this.active = resident;
       this.atlasDirty = true;

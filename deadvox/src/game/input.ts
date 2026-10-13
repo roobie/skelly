@@ -96,7 +96,7 @@ export class Input {
       }
     });
     document.addEventListener('mousemove', (event) => {
-      if (!(this.locked && !this.menuPointer)) {
+      if (!(this.viewerInputAllowed() && this.locked && !this.menuPointer)) {
         return;
       }
       if (this.mouseLookOverride?.(event.movementX, event.movementY)) {

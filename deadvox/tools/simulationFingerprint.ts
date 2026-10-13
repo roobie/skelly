@@ -130,6 +130,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/reading.ts',
   'src/ui/rest.ts',
   'src/ui/saveController.ts',
+  // Loading-mask drawing and browser errors are startup presentation, not simulation state.
+  'src/ui/worldLoading.ts',
 ] as const;
 
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);
