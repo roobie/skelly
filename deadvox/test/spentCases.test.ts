@@ -23,7 +23,7 @@ describe('spent-case presentation', () => {
     const landing: [number, number, number] = [2, 0.5, 1];
     const duration = 0.48;
     const initialVelocity: [number, number, number] = [3.15, 0.7, 0];
-    const flight = { duration, initialVelocity };
+    const flight = { durationSimSeconds: duration, initialVelocity };
     expect(caseFlightPoint(origin, landing, 1, flight)).toEqual(landing);
     const progress = 0.001;
     const elapsed = duration * progress;

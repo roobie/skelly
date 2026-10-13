@@ -14,17 +14,17 @@ export const caseFlightPoint = (
   from: Vec3,
   to: Vec3,
   progress: number,
-  { duration, initialVelocity }: { duration: number; initialVelocity: Vec3 },
+  { durationSimSeconds, initialVelocity }: { durationSimSeconds: number; initialVelocity: Vec3 },
 ): Vec3 => {
   const t = Math.max(0, Math.min(1, progress));
-  if (t === 1 || !(duration > 0)) {
+  if (t === 1 || !(durationSimSeconds > 0)) {
     return [...to];
   }
-  const elapsed = duration * t;
+  const elapsed = durationSimSeconds * t;
   const correction: Vec3 = [
-    to[0] - from[0] - initialVelocity[0] * duration,
-    to[1] - from[1] - initialVelocity[1] * duration + (GRAVITY * duration ** 2) / 2,
-    to[2] - from[2] - initialVelocity[2] * duration,
+    to[0] - from[0] - initialVelocity[0] * durationSimSeconds,
+    to[1] - from[1] - initialVelocity[1] * durationSimSeconds + (GRAVITY * durationSimSeconds ** 2) / 2,
+    to[2] - from[2] - initialVelocity[2] * durationSimSeconds,
   ];
   return [
     from[0] + initialVelocity[0] * elapsed + correction[0] * t ** 2,
@@ -133,7 +133,7 @@ export class CaseEffects {
       const elapsed = Math.max(0, simTime - particle.startedAtSimSeconds);
       const progress = duration > 0 ? elapsed / duration : 1;
       const point = caseFlightPoint(particle.origin.toArray() as Vec3, particle.landing.toArray() as Vec3, progress, {
-        duration,
+        durationSimSeconds: duration,
         initialVelocity: particle.velocity.toArray() as Vec3,
       });
       particle.position.set(...point);
