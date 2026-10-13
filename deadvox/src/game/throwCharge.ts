@@ -4,9 +4,10 @@
 
 import { dominantSide, offSide } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { HandSide, Inventory, Target } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
+import type { HandSide, Inventory, Pile, Plan, Spot, Target } from '../core/inventory.ts';
+import type { Item, Placed } from '../core/items.ts';
 import type { LadderHold } from '../core/ladders.ts';
+import { pileItemPosition } from '../core/pileLayout.ts';
 
 /** What a press did: refused, nothing to throw, already throwing, waiting for handling to finish, or charging. */
 export type ThrowStart =
@@ -22,13 +23,15 @@ export interface ThrowRelease {
 export class ThrowCharge {
   private readonly inventory: Inventory;
   private readonly ladderHold: LadderHold;
+  private readonly blockSize: number;
   private chargeStartedAtSimSeconds: number | undefined;
   private chargeItemUid: number | undefined;
   private chargeHand: HandSide | undefined;
 
-  constructor(inventory: Inventory, ladderHold: LadderHold) {
+  constructor(inventory: Inventory, ladderHold: LadderHold, blockSize = 1) {
     this.inventory = inventory;
     this.ladderHold = ladderHold;
+    this.blockSize = blockSize;
   }
 
   /** Sim time the charge began; undefined while none charges, including while one waits for handling. */
@@ -126,15 +129,55 @@ export class ThrowCharge {
     if (!placement.ok) {
       return { landed: false, reason: `Can't throw it there: ${placement.reason}` };
     }
+    const destination = this.destination(item, target, placement);
+    if (!destination) {
+      return { landed: false };
+    }
     const location = inventory.locate(item);
     if (
       location?.kind !== 'hand' ||
       location.side !== hand ||
-      !inventory.beginItemFlight(item, hand, { ...flight, targetPos: [...target.pos] })
+      !inventory.beginItemFlight(item, hand, {
+        ...flight,
+        ...(destination.landing ? { landing: destination.landing } : {}),
+        targetPos: [...target.pos],
+        targetSpot: destination.targetSpot,
+        ...(destination.mergeUid === undefined ? {} : { mergeUid: destination.mergeUid }),
+      })
     ) {
       return { landed: false };
     }
     return { landed: true };
+  }
+
+  private destination(
+    item: Item,
+    target: Extract<Target, { kind: 'pile' }>,
+    placement: Extract<Plan, { ok: true }>,
+  ): { targetSpot: Spot; mergeUid?: number; landing?: Vec3 } | undefined {
+    let targetSpot = placement.at;
+    let mergeUid: number | undefined;
+    if (placement.merge) {
+      const location = this.inventory.locate(placement.merge);
+      if (location?.kind !== 'pile' || !location.pile.pos.every((axis, index) => axis === target.pos[index])) {
+        return undefined;
+      }
+      targetSpot = { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated };
+      mergeUid = placement.merge.uid;
+    }
+    if (!targetSpot) {
+      return undefined;
+    }
+    const pile = this.inventory.pileAt(target.pos);
+    const items: Placed[] = [...(pile?.items ?? [])];
+    if (!placement.merge) {
+      items.push({ item, ...targetSpot });
+    }
+    const projectedPile: Pile = { pos: [...target.pos], items };
+    const landing = pileItemPosition(this.inventory.registry, projectedPile, mergeUid ?? item.uid, {
+      blockSize: this.blockSize,
+    });
+    return { targetSpot, ...(mergeUid === undefined ? {} : { mergeUid }), ...(landing ? { landing } : {}) };
   }
 
   cancel(): void {

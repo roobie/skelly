@@ -119,6 +119,8 @@ export interface ItemLanding<Node> {
   origin: Vec3;
   landing: Vec3;
   targetPos: Vec3;
+  targetSpot: Spot;
+  mergeUid?: number;
   startedAtSimSeconds: number;
   landingAt: number;
 }
@@ -228,6 +230,7 @@ export class Inventory {
         origin: [...flight.origin],
         landing: [...flight.landing],
         targetPos: [...flight.targetPos],
+        targetSpot: { ...flight.targetSpot },
       })),
       hands: Object.fromEntries(Object.entries(this.hands).map(([side, item]) => [side, snapshotItem(item!)])),
       worn: Object.fromEntries(Object.entries(this.worn).map(([slot, item]) => [slot, snapshotItem(item!)])),
@@ -288,6 +291,7 @@ export class Inventory {
         origin: [...flight.origin],
         landing: [...flight.landing],
         targetPos: [...flight.targetPos],
+        targetSpot: { ...flight.targetSpot },
       });
     }
     for (const [type, count] of state.looted) {
@@ -353,23 +357,28 @@ export class Inventory {
   /** The sole live item-tree projection; callers hold UIDs, not ownership caches. */
   items() {
     const inventory = this;
-    return walkItemTree([
-      ...itemRoots<Item, Pile, BlockEntity>({
-        hands: this.hands,
-        worn: this.worn,
+    function* roots() {
+      yield* itemRoots<Item, Pile, BlockEntity>({
+        hands: inventory.hands,
+        worn: inventory.worn,
         get piles() {
           return inventory.piles.values();
         },
         get entities() {
           return inventory.entities.all;
         },
-      }),
-      ...[...this.pendingLandings.values()].map((flight, index) => ({
-        item: flight.item,
-        location: { kind: 'flight' as const, uid: flight.item.uid },
-        path: `inventory.pendingLandings[${index}].item`,
-      })),
-    ]);
+      });
+      let index = 0;
+      for (const flight of inventory.pendingLandings.values()) {
+        yield {
+          item: flight.item,
+          location: { kind: 'flight' as const, uid: flight.item.uid },
+          path: `inventory.pendingLandings[${index}].item`,
+        };
+        index += 1;
+      }
+    }
+    return walkItemTree(roots());
   }
 
   itemByUid(uid: number): Item | undefined {
@@ -582,8 +591,27 @@ export class Inventory {
       origin: [...flight.origin],
       landing: [...flight.landing],
       targetPos: [...flight.targetPos],
+      targetSpot: { ...flight.targetSpot },
     });
     this.quickbarOrigins.delete(item.uid);
+    this.version += 1;
+    return true;
+  }
+
+  /** Removes an item consumed by simulation while it is still in flight. */
+  consumeItemFlight(item: Item, count = 1): boolean {
+    const flight = this.pendingLandings.get(item.uid);
+    if (!flight || flight.item !== item || count > item.count || count < 1) {
+      return false;
+    }
+    if (count < item.count) {
+      item.count -= count;
+      if (item.lootedCount !== undefined) {
+        item.lootedCount = Math.min(item.lootedCount, item.count);
+      }
+    } else {
+      this.pendingLandings.delete(item.uid);
+    }
     this.version += 1;
     return true;
   }
@@ -593,8 +621,8 @@ export class Inventory {
     const due = [...this.pendingLandings].filter(([, flight]) => time + 1e-9 >= flight.landingAt);
     for (const [uid, flight] of due) {
       this.pendingLandings.delete(uid);
-      if (!this.add(flight.item, { kind: 'pile', pos: flight.targetPos })) {
-        this.pendingLandings.set(uid, flight);
+      if (!this.add(flight.item, { kind: 'pile', pos: flight.targetPos, at: flight.targetSpot })) {
+        throw new Error('Reserved item landing no longer fits');
       }
     }
   }
@@ -876,8 +904,7 @@ export class Inventory {
       let found = false;
       for (const pos of dropSpots(feet)) {
         const key = pileKey(pos);
-        const placed =
-          grids.get(key) ?? (this.pileAt(pos)?.items ?? []).filter(({ item: existing }) => existing !== work);
+        const placed = grids.get(key) ?? this.pilePlacements(pos).filter(({ item: existing }) => existing !== work);
         grids.set(key, placed);
         const spot = findSpot(this.registry, { size: PILE_GRID, placed }, item);
         if (spot) {
@@ -1345,6 +1372,38 @@ export class Inventory {
     return undefined;
   }
 
+  private pendingMergeCount(uid: number): number {
+    let count = 0;
+    for (const flight of this.pendingLandings.values()) {
+      if (flight.mergeUid === uid) {
+        count += flight.item.count;
+      }
+    }
+    return count;
+  }
+
+  private pilePlacements(pos: Vec3): Placed[] {
+    const placed = [...(this.pileAt(pos)?.items ?? [])];
+    const reservedSpots = new Set<string>();
+    for (const flight of this.pendingLandings.values()) {
+      if (pileKey(flight.targetPos) !== pileKey(pos)) {
+        continue;
+      }
+      const target =
+        flight.mergeUid === undefined ? undefined : placed.find(({ item }) => item.uid === flight.mergeUid);
+      const targetMatchesSpot =
+        target?.x === flight.targetSpot.x &&
+        target.y === flight.targetSpot.y &&
+        target.rotated === flight.targetSpot.rotated;
+      const key = `${flight.targetSpot.x},${flight.targetSpot.y},${flight.targetSpot.rotated}`;
+      if (!(targetMatchesSpot || reservedSpots.has(key))) {
+        placed.push({ item: flight.item, ...flight.targetSpot });
+        reservedSpots.add(key);
+      }
+    }
+    return placed;
+  }
+
   /** The grid a pocket, pile or furniture target points at. */
   private gridOf(target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>): GridState {
     switch (target.kind) {
@@ -1361,7 +1420,7 @@ export class Inventory {
         return { size: { w: spec.grid[0], h: spec.grid[1] }, placed: target.entity.pockets?.[target.pocket] ?? [] };
       }
       default:
-        return { size: PILE_GRID, placed: this.pileAt(target.pos)?.items ?? [] };
+        return { size: PILE_GRID, placed: this.pilePlacements(target.pos) };
     }
   }
 
@@ -1379,7 +1438,10 @@ export class Inventory {
     if (!couldFit(this.registry, grid.size, item)) {
       return refuse('Too big for it');
     }
-    const joins = (p: Placed | undefined) => p !== undefined && stackRoom(this.registry, p.item, item) >= count;
+    const joins = (p: Placed | undefined) =>
+      p !== undefined &&
+      !this.pendingLandings.has(p.item.uid) &&
+      stackRoom(this.registry, p.item, item) - this.pendingMergeCount(p.item.uid) >= count;
     // Moving a whole item within its grid frees its own cells; moving part of a stack doesn't.
     const ignore = count === item.count ? item : undefined;
     if (at) {
@@ -1500,13 +1562,90 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
   }
 };
 
+const reserveMergeLanding = (
+  registry: Registry,
+  flight: ItemLanding<ItemState>,
+  pile: InventoryState['piles'][number] | undefined,
+  mergeCounts: Map<number, number>,
+): boolean => {
+  const target =
+    flight.mergeUid === undefined ? undefined : pile?.items.find(({ item }) => item.uid === flight.mergeUid);
+  if (
+    !target ||
+    target.x !== flight.targetSpot.x ||
+    target.y !== flight.targetSpot.y ||
+    target.rotated !== flight.targetSpot.rotated
+  ) {
+    return false;
+  }
+  const reserved = mergeCounts.get(target.item.uid) ?? 0;
+  if (stackRoom(registry, target.item, flight.item) < reserved + flight.item.count) {
+    throw new Error('Invalid pending item landing reservation');
+  }
+  mergeCounts.set(target.item.uid, reserved + flight.item.count);
+  return true;
+};
+
+interface LandingReservations {
+  mergeCounts: Map<number, number>;
+  reservedSpots: Map<string, PlacedState>;
+  reservedByPile: Map<string, PlacedState[]>;
+}
+
+const reserveLandingSpot = (
+  registry: Registry,
+  flight: ItemLanding<ItemState>,
+  pile: InventoryState['piles'][number] | undefined,
+  reservations: LandingReservations,
+): void => {
+  const pileKeyValue = pileKey(flight.targetPos);
+  const key = `${pileKeyValue}:${flight.targetSpot.x},${flight.targetSpot.y},${flight.targetSpot.rotated}`;
+  const previous = reservations.reservedSpots.get(key);
+  if (previous) {
+    if (
+      flight.mergeUid === undefined ||
+      previous.item.type !== flight.item.type ||
+      stackRoom(registry, previous.item, flight.item) < flight.item.count
+    ) {
+      throw new Error('Invalid pending item landing reservation');
+    }
+    previous.item.count += flight.item.count;
+    return;
+  }
+  const placed = [...(pile?.items ?? []), ...(reservations.reservedByPile.get(pileKeyValue) ?? [])];
+  if (!fitsAt(registry, { size: PILE_GRID, placed }, flight.item, flight.targetSpot)) {
+    throw new Error('Invalid pending item landing reservation');
+  }
+  const reservation = { item: { ...flight.item }, ...flight.targetSpot };
+  reservations.reservedSpots.set(key, reservation);
+  const pileReservations = reservations.reservedByPile.get(pileKeyValue) ?? [];
+  pileReservations.push(reservation);
+  reservations.reservedByPile.set(pileKeyValue, pileReservations);
+};
+
+const validateLandingReservations = (registry: Registry, state: InventoryState): void => {
+  const mergeCounts = new Map<number, number>();
+  const reservedSpots = new Map<string, PlacedState>();
+  const reservedByPile = new Map<string, PlacedState[]>();
+  for (const flight of state.pendingLandings) {
+    const key = pileKey(flight.targetPos);
+    const pile = state.piles.find((candidate) => pileKey(candidate.pos) === key);
+    if (reserveMergeLanding(registry, flight, pile, mergeCounts)) {
+      continue;
+    }
+    reserveLandingSpot(registry, flight, pile, { mergeCounts, reservedSpots, reservedByPile });
+  }
+};
+
 const validateInventoryTree = (registry: Registry, state: InventoryState): void => {
   if (
     state.pendingLandings.some(
-      ({ origin, landing, targetPos, startedAtSimSeconds, landingAt }) =>
+      ({ origin, landing, targetPos, targetSpot, mergeUid, startedAtSimSeconds, landingAt }) =>
         !(
           [...origin, ...landing].every(Number.isFinite) &&
           targetPos.every(Number.isSafeInteger) &&
+          validSpot(targetSpot) &&
+          (mergeUid === undefined || (Number.isSafeInteger(mergeUid) && mergeUid > 0)) &&
           Number.isFinite(startedAtSimSeconds) &&
           Number.isFinite(landingAt)
         ) ||
@@ -1558,6 +1697,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
   for (const pile of state.piles) {
     grid(pile.items, PILE_GRID);
   }
+  validateLandingReservations(registry, state);
   for (const entity of state.entities.entities) {
     const def = registry.furniture.get(entity.type);
     if (!def) {

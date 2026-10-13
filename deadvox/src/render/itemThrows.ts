@@ -1,9 +1,11 @@
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, Vector3 } from 'three';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { Pile, Spot } from '../core/inventory.ts';
 import { PILE_GRID } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import { ITEM_ARC_HEIGHT_METRES, ITEM_FLIGHT_SECONDS, itemFlightPoint } from '../core/itemThrow.ts';
+import { pileItemPosition } from '../core/pileLayout.ts';
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -16,6 +18,7 @@ const RIGHT = new Vector3(1, 0, 0);
 
 interface Flight {
   active: boolean;
+  itemUid: number;
   startedAtSimSeconds: number;
   landingAt: number;
   readonly start: Vector3;
@@ -34,35 +37,52 @@ export class ItemThrows {
   private readonly flights: Flight[] = [];
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly bundleMaterial = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }), 'piles');
-  private readonly models: Pick<ModelLibrary, 'groundLook'> | undefined;
+  private readonly models: Pick<ModelLibrary, 'groundLook' | 'has'> | undefined;
   private readonly registry: Registry;
   private readonly blockSize: number;
 
-  constructor(registry: Registry, models?: Pick<ModelLibrary, 'groundLook'>, blockSize = 1) {
+  constructor(registry: Registry, models?: Pick<ModelLibrary, 'groundLook' | 'has'>, blockSize = 1) {
     this.registry = registry;
     this.models = models;
     this.blockSize = blockSize;
   }
 
-  spawn({
-    origin: from,
-    landing: to,
-    item,
-    startedAtSimSeconds = 0,
-    landingAt = ITEM_FLIGHT_SECONDS,
-  }: {
-    origin: Vec3;
-    landing: Vec3;
-    item: Item;
-    startedAtSimSeconds?: number;
-    landingAt?: number;
-  }): void {
+  spawn(
+    {
+      origin: from,
+      landing: to,
+      item,
+      startedAtSimSeconds = 0,
+      landingAt = ITEM_FLIGHT_SECONDS,
+      targetPos,
+      targetSpot,
+      mergeUid,
+    }: {
+      origin: Vec3;
+      landing: Vec3;
+      item: Item;
+      startedAtSimSeconds?: number;
+      landingAt?: number;
+      targetPos?: Vec3;
+      targetSpot?: Spot;
+      mergeUid?: number;
+    },
+    pile?: Pile,
+  ): void {
     const flight = this.flights.find((candidate) => !candidate.active) ?? this.createFlight();
     flight.active = true;
+    flight.itemUid = item.uid;
     flight.startedAtSimSeconds = startedAtSimSeconds;
     flight.landingAt = landingAt;
     flight.start.set(...from);
-    flight.end.set(...to);
+    const destination =
+      pile && targetPos && targetSpot
+        ? (pileItemPosition(this.registry, pile, mergeUid ?? item.uid, {
+            blockSize: this.blockSize,
+            hasModel: (id) => this.models?.has(id) ?? false,
+          }) ?? to)
+        : to;
+    flight.end.set(...destination);
     disposeItemEmissiveMaterials(flight.group);
     flight.group.clear();
     flight.modelVisual = false;
@@ -104,9 +124,14 @@ export class ItemThrows {
     this.drawFlight(flight, 0);
   }
 
-  update(simTime: number): void {
+  update(simTime: number, pendingLandings?: ReadonlyMap<number, unknown>): void {
     for (const flight of this.flights) {
       if (!flight.active) {
+        continue;
+      }
+      if (pendingLandings && !pendingLandings.has(flight.itemUid) && simTime < flight.landingAt) {
+        flight.active = false;
+        flight.group.visible = false;
         continue;
       }
       const duration = flight.landingAt - flight.startedAtSimSeconds;
@@ -143,6 +168,7 @@ export class ItemThrows {
     const emissive = new Mesh(this.geometry, emissiveMaterial);
     const flight: Flight = {
       active: false,
+      itemUid: 0,
       startedAtSimSeconds: 0,
       landingAt: 0,
       start: new Vector3(),

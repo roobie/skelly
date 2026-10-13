@@ -405,6 +405,8 @@ const inventoryCore = obj({
       origin: vec3,
       landing: vec3,
       targetPos: vec3,
+      targetSpot: obj({ x: nonNegativeInt, y: nonNegativeInt, rotated: bool }),
+      mergeUid: opt(positiveInt),
       startedAtSimSeconds: finite,
       landingAt: finite,
     }),

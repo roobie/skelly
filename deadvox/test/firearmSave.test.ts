@@ -705,6 +705,104 @@ it('rejects an unknown item type in a pending firearm landing', async () => {
   await expect(decodeSave(bytes, { version, contentLookup })).rejects.toThrow('Unknown item content id');
 });
 
+it('a thrown model meets its committed pile-model position', async () => {
+  const { Group } = await import('three');
+  const { ItemThrows } = await import('../src/render/itemThrows.ts');
+  const { PileMeshes } = await import('../src/render/piles.ts');
+  const runtime = session([]);
+  const rifle = sessionRifle(runtime);
+  const target = { kind: 'pile' as const, pos: [2, 0, 0] as [number, number, number] };
+  const flight = {
+    origin: [0, 1, 0] as [number, number, number],
+    landing: [1.25, 0.075, 0.25] as [number, number, number],
+    startedAtSimSeconds: runtime.sim.time,
+    landingAt: runtime.sim.time + ITEM_FLIGHT_SECONDS,
+  };
+  expect(runtime.throwCharge.land(rifle, 'right', target, flight)).toEqual({ landed: true });
+  const models = {
+    version: 0,
+    has: () => true,
+    groundLook: () => new Group(),
+  } as unknown as import('../src/render/models.ts').ModelLibrary;
+  const pending = runtime.inventory.pendingLandings.get(rifle.uid)!;
+  const projectedPile = (landing: typeof pending) => ({
+    pos: [...landing.targetPos] as [number, number, number],
+    items: [{ item: landing.item, ...landing.targetSpot }],
+  });
+  const throws = new ItemThrows(registry, models, 0.5);
+  const piles = new PileMeshes(0.5, models);
+  throws.spawn(pending, projectedPile(pending));
+  const resumed = session([], runtime.snapshot({ worldId: 'world', characterId: 'character' }));
+  const resumedPending = resumed.inventory.pendingLandings.get(rifle.uid)!;
+  const resumedThrows = new ItemThrows(registry, models, 0.5);
+  const resumedPiles = new PileMeshes(0.5, models);
+  resumedThrows.spawn(resumedPending, projectedPile(resumedPending));
+  runtime.sim.paused = false;
+  resumed.sim.paused = false;
+  for (let frame = 0; frame < 120 && runtime.sim.time < flight.landingAt; frame += 1) {
+    runtime.frame(1 / 60);
+    resumed.frame(1 / 60);
+  }
+  throws.update(runtime.sim.time);
+  resumedThrows.update(resumed.sim.time);
+  piles.sync(runtime.inventory);
+  resumedPiles.sync(resumed.inventory);
+  const pileModel = piles.group.children.find((object) => object instanceof Group);
+  const resumedPileModel = resumedPiles.group.children.find((object) => object instanceof Group);
+  expect(pileModel).toBeDefined();
+  expect(resumedPileModel).toBeDefined();
+  expect(throws.group.children[0]!.position.distanceTo(pileModel!.position)).toBeLessThan(1e-5);
+  expect(resumedThrows.group.children[0]!.position.distanceTo(resumedPileModel!.position)).toBeLessThan(1e-5);
+  piles.dispose();
+  throws.dispose();
+  resumedPiles.dispose();
+  resumedThrows.dispose();
+});
+
+it('reserves thrown-item pile room through save and restore', async () => {
+  const { PILE_GRID } = await import('../src/core/inventory.ts');
+  const content = { ...registry, items: new Map(registry.items) };
+  content.items.set('large_throw_fixture', {
+    ...registry.items.get('rag')!,
+    id: 'large_throw_fixture',
+    name: 'Large throw fixture',
+    size: [PILE_GRID.w, PILE_GRID.h],
+  });
+  const runtime = session([], undefined, undefined, { registry: content });
+  const first = runtime.inventory.create('large_throw_fixture');
+  const second = runtime.inventory.create('large_throw_fixture');
+  expect(runtime.inventory.add(first, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(runtime.inventory.add(second, { kind: 'hand', side: 'left' })).toBe(true);
+  const target = { kind: 'pile' as const, pos: [2, 0, 0] as [number, number, number] };
+  const flight = (start: number) => ({
+    origin: [0, 1, 0] as [number, number, number],
+    landing: [1.25, 0.075, 0.25] as [number, number, number],
+    startedAtSimSeconds: start,
+    landingAt: start + ITEM_FLIGHT_SECONDS,
+  });
+  expect(runtime.throwCharge.land(first, 'right', target, flight(runtime.sim.time))).toEqual({ landed: true });
+  runtime.sim.paused = false;
+  runtime.frame(1 / 60);
+  expect(runtime.throwCharge.land(second, 'left', target, flight(runtime.sim.time)).landed).toBe(false);
+  expect(runtime.inventory.locate(second)).toMatchObject({ kind: 'hand', side: 'left' });
+
+  const bytes = await encodeSave(runtime.snapshot({ worldId: 'world', characterId: 'character' }), {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  const saved = await decodeSave(bytes, {
+    version,
+    contentLookup: (kind, id) => contentLookup(kind, id) || (kind === 'item' && id === 'large_throw_fixture'),
+  });
+  const resumed = session([], saved.snapshot, undefined, { registry: content });
+  const resumedFirst = resumed.inventory.itemByUid(first.uid)!;
+  const resumedSecond = resumed.inventory.itemByUid(second.uid)!;
+  expect(resumed.inventory.locate(resumedFirst)?.kind).toBe('flight');
+  expect(resumed.throwCharge.land(resumedSecond, 'left', target, flight(resumed.sim.time)).landed).toBe(false);
+  expect(resumed.inventory.locate(resumedSecond)).toMatchObject({ kind: 'hand', side: 'left' });
+});
+
 it('a mid-flight throw remains unavailable until its restored simulation landing', async () => {
   const original = session([]);
   const rifle = sessionRifle(original);

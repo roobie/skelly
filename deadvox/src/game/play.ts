@@ -178,12 +178,18 @@ const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
   (z + 0.5) * blockSize,
 ];
 
-const resumeItemThrows = (
-  inventory: Inventory,
-  spawn: (flight: Omit<ItemLanding<Item>, 'targetPos'>) => void,
-): void => {
+const pileForItemLanding = (inventory: Inventory, flight: ItemLanding<Item>): Pile => {
+  const pile = inventory.pileAt(flight.targetPos);
+  const items = [...(pile?.items ?? [])];
+  if (!items.some(({ item }) => item.uid === flight.mergeUid)) {
+    items.push({ item: flight.item, ...flight.targetSpot });
+  }
+  return { pos: [...flight.targetPos], items };
+};
+
+const resumeItemThrows = (inventory: Inventory, spawn: (flight: ItemLanding<Item>, pile: Pile) => void): void => {
   for (const flight of inventory.pendingLandings.values()) {
-    spawn(flight);
+    spawn(flight, pileForItemLanding(inventory, flight));
   }
 };
 
@@ -1048,7 +1054,7 @@ export const startPlay = (
   );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
   resumeCaseEffects(inventory, s, (effect) => caseEffects.spawn(effect));
-  resumeItemThrows(inventory, (flight) => itemThrows.spawn(flight));
+  resumeItemThrows(inventory, (flight, pile) => itemThrows.spawn(flight, pile));
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -2551,7 +2557,10 @@ export const startPlay = (
       }
       return;
     }
-    itemThrows.spawn({ origin, landing, item, startedAtSimSeconds, landingAt });
+    const flight = inventory.pendingLandings.get(item.uid);
+    if (flight) {
+      itemThrows.spawn(flight, pileForItemLanding(inventory, flight));
+    }
   }
 
   function itemLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {

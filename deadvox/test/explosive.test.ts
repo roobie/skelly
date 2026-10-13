@@ -6,6 +6,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { fragmentDirections } from '../src/core/explosive.ts';
 import type { Item } from '../src/core/items.ts';
+import { ITEM_FLIGHT_SECONDS, itemFlightPoint } from '../src/core/itemThrow.ts';
 import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import {
@@ -17,6 +18,7 @@ import {
 } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { SEVERED_ITEM, ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import type { ZombieRegions } from '../src/core/zombieRegions.ts';
@@ -58,9 +60,14 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   }
 };
 
-const runtime = (isSolid: SolidAt = OPEN, restore?: Readonly<SaveSnapshot>) =>
+const runtime = (
+  isSolid: SolidAt = OPEN,
+  restore?: Readonly<SaveSnapshot>,
+  content = registry,
+  onDetonation?: (position: Vec3, radiusMetres: number) => void,
+) =>
   createSession({
-    registry,
+    registry: content,
     world: new World(),
     isSolid,
     isOpaque: () => false,
@@ -80,6 +87,7 @@ const runtime = (isSolid: SolidAt = OPEN, restore?: Readonly<SaveSnapshot>) =>
     audio: { play: () => undefined },
     notice: () => undefined,
     onRead: () => undefined,
+    ...(onDetonation ? { onDetonation } : {}),
     ...(restore ? { restore } : {}),
   });
 type Runtime = ReturnType<typeof runtime>;
@@ -122,6 +130,57 @@ const detonation = (origin: Vec3, blast: Detonation['blast'], fragmentCount = 0)
 });
 
 describe('hand grenade', () => {
+  it('detonates an expiring fuse at the flying item position before impact', async () => {
+    const content = { ...registry, items: new Map(registry.items) };
+    const grenadeDef = registry.items.get(GRENADE)!;
+    content.items.set('short_fuse_grenade_fixture', {
+      ...grenadeDef,
+      id: 'short_fuse_grenade_fixture',
+      explosive: { ...grenadeDef.explosive!, fuseSimSeconds: simSeconds(ITEM_FLIGHT_SECONDS / 4) },
+    });
+    const detonations: Vec3[] = [];
+    const detonationTimes: number[] = [];
+    const session = runtime(OPEN, undefined, content, (position) => {
+      detonations.push(position);
+      detonationTimes.push(session.sim.time);
+    });
+    const grenade = session.inventory.create('short_fuse_grenade_fixture');
+    expect(session.inventory.add(grenade, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(session.fuses.togglePin(grenade)).toBe('pulled');
+    const origin: Vec3 = [0, 1, 0];
+    expect(
+      session.throwCharge.land(
+        grenade,
+        'right',
+        { kind: 'pile', pos: [2, 0, 0] },
+        {
+          origin,
+          landing: [1.25, 0.075, 0.25],
+          startedAtSimSeconds: session.sim.time,
+          landingAt: session.sim.time + ITEM_FLIGHT_SECONDS,
+        },
+      ),
+    ).toMatchObject({ landed: true });
+    const flight = session.inventory.pendingLandings.get(grenade.uid)!;
+    const { ItemThrows } = await import('../src/render/itemThrows.ts');
+    const throws = new ItemThrows(content);
+    throws.spawn(flight);
+    session.sim.paused = false;
+    for (let frame = 0; frame < 180 && detonations.length === 0; frame += 1) {
+      session.frame(1 / 60);
+    }
+    expect(detonations).toHaveLength(1);
+    expect(session.sim.time).toBeLessThan(flight.landingAt);
+    expect(session.inventory.itemByUid(grenade.uid)).toBeUndefined();
+    const progress =
+      (detonationTimes[0]! - flight.startedAtSimSeconds) / (flight.landingAt - flight.startedAtSimSeconds);
+    const expected = itemFlightPoint(flight.origin, flight.landing, progress);
+    expect(Math.hypot(...detonations[0]!.map((axis, index) => axis - expected[index]!))).toBeLessThan(1e-5);
+    throws.update(session.sim.time, session.inventory.pendingLandings);
+    expect(throws.activeCount).toBe(0);
+    throws.dispose();
+  });
+
   it('is pinned and unpinned by its primary action in hand', () => {
     const session = runtime();
     const grenade = session.inventory.create(GRENADE);

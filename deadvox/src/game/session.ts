@@ -37,6 +37,7 @@ import {
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { itemFlightPoint } from '../core/itemThrow.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
 import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
@@ -837,7 +838,7 @@ export const createSession = (options: SessionOptions) => {
     restored: restoredPlayer?.ladder,
   });
   inventory.handRefusal = (item, from, to) => ladderHold.moveRefusal(item, from, to);
-  const throwCharge = new ThrowCharge(inventory, ladderHold);
+  const throwCharge = new ThrowCharge(inventory, ladderHold, s);
   // A throw held when the ladder takes its hand ends there, so it is never released from the hand on the ladder.
   const refuseThrowForLadder = (): void => {
     const reason = throwCharge.refuseForLadder();
@@ -1101,6 +1102,15 @@ export const createSession = (options: SessionOptions) => {
     while (location?.kind === 'pocket' || location?.kind === 'slot' || location?.kind === 'work') {
       location = inventory.locate(location.owner);
     }
+    if (location?.kind === 'flight') {
+      const flight = inventory.pendingLandings.get(item.uid);
+      if (!flight) {
+        return undefined;
+      }
+      const progress = (sim.time - flight.startedAtSimSeconds) / (flight.landingAt - flight.startedAtSimSeconds);
+      const [x, y, z] = itemFlightPoint(flight.origin, flight.landing, progress);
+      return [x / s, y / s, z / s];
+    }
     if (location?.kind === 'pile') {
       const [x, y, z] = location.pile.pos;
       return [x + 0.5, y + 0.25, z + 0.5];
@@ -1115,7 +1125,12 @@ export const createSession = (options: SessionOptions) => {
   const detonate = (item: Item): void => {
     const spec = registry.items.get(item.type)?.explosive;
     const at = detonationPoint(item);
-    if (!(spec && at && inventory.consume(item))) {
+    if (!(spec && at)) {
+      return;
+    }
+    const consumed =
+      inventory.locate(item)?.kind === 'flight' ? inventory.consumeItemFlight(item) : inventory.consume(item);
+    if (!consumed) {
       return;
     }
     const directions = fragmentDirections(sim.rng(`fragments:${item.uid}`), spec.fragments.count);
