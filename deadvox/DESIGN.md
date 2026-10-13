@@ -798,6 +798,17 @@ diffuse sky transport; placement geometry only bounds discovery. Roofs, openings
 and doors therefore change the estimate through geometry, not template categories.
 See `src/core/skyTransport.ts`, `buildSkyResult`, and `src/render/skylight.ts`, `Skylight`.
 
+Mesh-first admission protects the first visible geometry without making it wait for
+lighting readiness. A copied sky request may wait outside the pool capacity;
+a mesh completion admits it before the next mesh refill, preventing persistent
+mesh backlog from starving lighting. Native worker FIFO remains the executor;
+its FIFO alone cannot guarantee fairness between these callers. Independent
+snapshot preparation overlaps the single lighting request within the presentation
+budget. Keeping one received result and one prepared successor bounds memory and
+validated publication work; another submission waits for the render update rather
+than overwriting a result awaiting publication. See `src/game/streamer.ts`,
+`dispatchSky`, and `src/render/skylight.ts`, `prepare`.
+
 Inside those application regions, an uncertified column uses a capped version of
 the existing estimate rather than blackout: cold discovery must not make an open
 surface appear sealed. The cap is provisional visual tuning for BR's first look,

@@ -254,9 +254,6 @@ export class Skylight {
     this.atlasDirty = true;
   }
   private prepare(nearby: Field[], position: Vec3, deadline: number): void {
-    if (this.inFlight) {
-      return;
-    }
     if (this.preparation?.revision !== this.preparation?.field.revision) {
       this.preparation = undefined;
     }
@@ -294,6 +291,9 @@ export class Skylight {
       this.stats.discarded += 1;
       return;
     }
+    if (this.inFlight) {
+      return;
+    }
     const start = this.clock();
     if (
       this.context.submit(preparation.captured.input, (result, ms) => {
@@ -307,6 +307,7 @@ export class Skylight {
       this.inFlight = true;
       this.stats.requested += 1;
       this.preparation = undefined;
+      this.prepare(nearby, position, deadline);
     }
   }
   update(scene: Scene, position: Vec3): void {

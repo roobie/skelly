@@ -62,6 +62,7 @@ const uncovered = (name) => browserStages[name].map(describeStage).filter((stage
 const missingCase = /enabled package-script cases/;
 const duplicateCase = /exactly once/;
 const serialControl = /start independently/;
+const unsupportedRoute = /unsupported browser route/;
 const playwrightInstallCommand = /\bnpx playwright install(?:\s|$)/;
 const withDepsFlag = /--with-deps\b/;
 
@@ -186,6 +187,19 @@ describe('deadvox browser CI coverage', () => {
     assert.ok(cache && install, 'the managed browser has both cache and install steps');
     assert.equal(cache.if, expression("inputs.shard != 'firefox'"));
     assert.equal(install.if, cache.if, 'all Chromium shards install the browser they cache');
+  });
+
+  it('preserves shard coverage for noncancelled diagnostics without accepting a widened route', () => {
+    const fixture = partitionFixture();
+    const expected = manifestOf(fixture);
+    fixture.reusable.jobs.run.steps[1].if = expression(
+      "!cancelled() && (inputs.shard == 'control-stages' || inputs.shard == 'beta')",
+    );
+    assert.deepEqual(manifestOf(fixture), expected);
+    fixture.reusable.jobs.run.steps[1].if = expression(
+      "!cancelled() || (inputs.shard == 'control-stages' || inputs.shard == 'beta')",
+    );
+    assert.throws(() => manifestOf(fixture), unsupportedRoute);
   });
 
   it('rejects a missing case or a case executed in duplicate shards', () => {

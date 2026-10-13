@@ -13,6 +13,7 @@ import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
+import { measureMainFirstMesh } from './sky-main-arrival.mjs';
 import { measureSkyRoute } from './sky-measurement.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
@@ -170,9 +171,22 @@ try {
     }),
   );
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
-  page = await browser.newPage({
-    viewport: isLightingMode ? { width: 1280, height: 800 } : { width: 640, height: 400 },
-  });
+  if (mode === 'lighting-outdoor') {
+    await timePhase('dense-camp-cold-warm-evidence', () => measureSkyRoute(browser, root, artifacts));
+  }
+  const viewport = isLightingMode ? { width: 1280, height: 800 } : { width: 640, height: 400 };
+  if (mode === 'camo') {
+    await timePhase('main-first-mesh-reference', () =>
+      measureMainFirstMesh(browser, {
+        root,
+        artifacts,
+        viewport,
+        fixtureTransform: vite.config.plugins.find((plugin) => plugin.name === 'stairs-test-observation').transform,
+        eventPath: process.env.GITHUB_EVENT_PATH,
+      }),
+    );
+  }
+  page = await browser.newPage({ viewport });
   const errors = [];
   const states = [];
   const helpDialogs = [];
@@ -455,17 +469,31 @@ try {
       },
       { data: png.toString('base64'), height: cropHeight },
     );
-  const waitForSkyFields = (points) =>
-    page.waitForFunction((samples) => {
-      const { engine } = globalThis.stairsWitness;
-      const blocks = samples.map((point) => point.map((value) => value / engine.config.scale.blockSize));
-      const fields = engine.skylight
-        .inspect()
-        .filter(({ bounds }) =>
-          blocks.some((point) => point.every((value, axis) => value >= bounds.min[axis] && value < bounds.max[axis])),
-        );
-      return fields.length > 0 && fields.every((field) => field.current);
-    }, points);
+  const waitForSkyFields = async (points) => {
+    try {
+      await page.waitForFunction((samples) => {
+        const { engine } = globalThis.stairsWitness;
+        const blocks = samples.map((point) => point.map((value) => value / engine.config.scale.blockSize));
+        const fields = engine.skylight
+          .inspect()
+          .filter(({ bounds }) =>
+            blocks.some((point) => point.every((value, axis) => value >= bounds.min[axis] && value < bounds.max[axis])),
+          );
+        return fields.length > 0 && fields.every((field) => field.current);
+      }, points);
+    } catch (error) {
+      const evidence = await page.evaluate(() => ({
+        camera: globalThis.stairsWitness.engine.camera.position.toArray(),
+        fields: globalThis.stairsWitness.engine.skylight.inspect().map(({ volume, ...field }) => field),
+        stats: globalThis.stairsWitness.engine.skylight.stats,
+        timing: { events: globalThis.skyTiming.events, jobs: globalThis.skyTiming.jobs },
+      }));
+      evidence.timing = summarizeSkyTiming(evidence.timing);
+      await writeFile(resolve(artifacts, `field-wait-${mode}.json`), JSON.stringify({ points, ...evidence }, null, 2));
+      process.stdout.write(`SKY_FIELD_WAIT_FAILURE ${JSON.stringify({ points, ...evidence })}\n`);
+      throw error;
+    }
+  };
   const camoWallPixels = async (png) =>
     page.evaluate(async (data) => {
       const image = new Image();
@@ -743,6 +771,11 @@ try {
             ...arrival,
             timeOriginRealMs: performance.timeOrigin,
             meshToReadyRealMs: arrival.readyRealMs - arrival.firstMeshRealMs,
+            startupFirstMesh: globalThis.skyTiming.events.find((event) => event.kind === 'first-mesh'),
+            engineReadyAbsoluteRealMs: globalThis.skyTiming.engineReadyAbsoluteRealMs,
+            engineToFirstMeshRealMs:
+              globalThis.skyTiming.events.find((event) => event.kind === 'first-mesh')?.absoluteRealMs -
+              globalThis.skyTiming.engineReadyAbsoluteRealMs,
           };
         }),
       };
@@ -1232,7 +1265,6 @@ try {
     ({ outdoorProof } = await lightingOutdoorProofs());
     await page.close();
     await vite.close();
-    await timePhase('dense-camp-cold-warm-evidence', () => measureSkyRoute(browser, root, artifacts));
   } else if (mode === 'lighting-atlas') {
     ({ secondSlotProof } = await lightingAtlasProofs());
   }

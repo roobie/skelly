@@ -73,21 +73,35 @@ export class Streamer {
   private readonly offsets: [number, number][] = [];
   private nextWorker = 0;
   private skyReply: ((result: SkyResult, ms: number) => void) | undefined;
+  private pendingSky: SkySnapshot | undefined;
+  private firstMeshDelivered = false;
+  private readonly workerLoads = new Map<Worker, number>();
 
-  /** One disposable lighting job shares the mesh pool and its capacity. */
+  /** One copied request can await admission without occupying a startup mesh slot. */
   requestSky(input: SkySnapshot, receive: (result: SkyResult, ms: number) => void): boolean {
-    if (this.skyReply || this.inFlight.size >= this.maxInFlight) {
+    if (this.skyReply) {
       return false;
     }
     this.skyReply = receive;
-    const worker = this.workers[this.nextWorker % this.workers.length]!;
-    this.nextWorker += 1;
-    this.send(worker, { type: 'sky', input });
+    this.pendingSky = input;
+    this.dispatchSky();
     return true;
   }
 
+  private dispatchSky(): void {
+    if (!(this.pendingSky && this.firstMeshDelivered) || this.inFlight.size >= this.maxInFlight) {
+      return;
+    }
+    const worker = this.workers.reduce((least, candidate) =>
+      (this.workerLoads.get(candidate) ?? 0) < (this.workerLoads.get(least) ?? 0) ? candidate : least,
+    );
+    const input = this.pendingSky;
+    this.pendingSky = undefined;
+    this.send(worker, { type: 'sky', input });
+  }
+
   private get occupied(): number {
-    return this.inFlight.size + Number(Boolean(this.skyReply));
+    return this.inFlight.size + Number(Boolean(this.skyReply) && !this.pendingSky);
   }
   private center: [number, number] = [Number.NaN, Number.NaN];
   /** Called after a column is generated, to add what stands in it (furniture). */
@@ -105,7 +119,7 @@ export class Streamer {
     const count = Math.max(1, Math.min(3, Math.floor((navigator.hardwareConcurrency || 2) / 2) - 1));
     for (let i = 0; i < count; i++) {
       const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
-      worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(e.data);
+      worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(worker, e.data);
       this.send(worker, { type: 'init', colors: opts.colors, patterns: opts.patterns, weatherable: opts.weatherable });
       this.workers.push(worker);
     }
@@ -361,13 +375,19 @@ export class Streamer {
     });
   }
 
-  private receive(msg: FromMesher): void {
+  private receive(worker: Worker, msg: FromMesher): void {
+    this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 1) - 1);
     if (msg.type === 'sky') {
       const callback = this.skyReply;
       this.skyReply = undefined;
       callback?.(msg.result, msg.workerRealMs);
       return;
     }
+    this.receiveMesh(msg);
+    this.dispatchSky();
+  }
+
+  private receiveMesh(msg: Extract<FromMesher, { type: 'mesh' }>): void {
     this.inFlight.delete(msg.key);
     const { stats } = this.opts;
     if (stats) {
@@ -387,9 +407,13 @@ export class Streamer {
       return;
     }
     this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);
+    this.firstMeshDelivered ||= msg.mesh.indices.length > 0;
   }
 
   private send(worker: Worker, msg: ToMesher): void {
+    if (msg.type !== 'init') {
+      this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 0) + 1);
+    }
     const transfer: ArrayBuffer[] = [];
     if (msg.type === 'mesh') {
       transfer.push(msg.padded.buffer as ArrayBuffer, msg.wide.buffer as ArrayBuffer);

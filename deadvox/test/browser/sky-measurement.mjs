@@ -16,9 +16,9 @@ const engineObservation = `
     const update = skylight.update.bind(skylight);
     skylight.update = (...args) => {
       const start = performance.now();
-      const result = update(...args);
-      evidence.serviceRealMs += performance.now()-start;
-      return result;
+      evidence.inSkyUpdate=true;
+      try { return update(...args); }
+      finally { evidence.inSkyUpdate=false; evidence.serviceRealMs += performance.now()-start; }
     };
     const at = skylight.at.bind(skylight);
     evidence.sample = at;
@@ -104,6 +104,7 @@ const frameObservation = `
         ? [{index,complete:field.complete,current:field.current,resident:field.resident}] : [];
     });
     evidence.frames.push({phase:evidence.phase,realMs:start,
+      startAbsoluteRealMs:performance.timeOrigin+start,endAbsoluteRealMs:performance.timeOrigin+start+frameRealMs,
       intervalRealMs:evidence.previousRealMs===null ? null : start-evidence.previousRealMs,
       frameRealMs,serviceRealMs:evidence.serviceRealMs,textureRealMs:evidence.textureRealMs,
       uniformRealMs:evidence.uniformRealMs,programRealMs:evidence.programRealMs,
@@ -339,6 +340,18 @@ export async function measureSkyRoute(browser, root, artifacts) {
         const uploads = captured.uploads.filter((upload) => upload.publicationJob === job.id);
         return {
           ...job,
+          returnRenderFrames: captured.frames
+            .filter(
+              (frame) =>
+                frame.endAbsoluteRealMs > job.workerEndAbsoluteRealMs &&
+                frame.startAbsoluteRealMs < job.receivedAbsoluteRealMs,
+            )
+            .map((frame) => ({
+              phase: frame.phase,
+              startAbsoluteRealMs: frame.startAbsoluteRealMs,
+              endAbsoluteRealMs: frame.endAbsoluteRealMs,
+              frameRealMs: frame.frameRealMs,
+            })),
           textureSubmissions: uploads,
           textureSubmissionRealMs: uploads.reduce((sum, upload) => sum + upload.realMs, 0),
         };

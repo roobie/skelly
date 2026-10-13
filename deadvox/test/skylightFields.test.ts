@@ -97,6 +97,18 @@ it('discards a worker completion after a roof edit instead of publishing stale f
   expect(fixture.sky.at([8.5, 8.5, 8.5])).toBeLessThan(1);
 });
 
+it('prepares the next independent snapshot while the first worker request is outstanding', () => {
+  const fixture = skyFixture([fixtureBox, { min: [40, 1, 4], max: [48, 9, 12] }]);
+  const chunks = vi.spyOn(fixture.world, 'getChunk');
+  fixture.update([24, 4, 8]);
+  expect(fixture.pending).toHaveLength(1);
+  const firstSource = new Set(
+    fixture.pending[0]!.input.chunks.map((chunk) => [chunk.cx, chunk.cy, chunk.cz].join(',')),
+  );
+  expect(chunks.mock.calls.some((coords) => !firstSource.has(coords.join(',')))).toBe(true);
+  chunks.mockRestore();
+});
+
 it('keeps a resident room dark during an opening edit and swaps only the accepted replacement', () => {
   const fixture = skyFixture();
   const point: Vec3 = [5.5, 5.5, 8.5];

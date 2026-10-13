@@ -16,6 +16,8 @@ jobs:
         working-directory: deadvox
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: Cache go-jsonnet
         uses: actions/cache@v4
         with:
@@ -200,8 +202,9 @@ jobs:
         timeout-minutes: 3
         run: node test/browser/stairs.mjs lighting-residents
       - name: Stairs lighting outdoor browser contract
-        if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}
-        timeout-minutes: 3
+        if: ${{ !cancelled() && (inputs.shard == 'control-stages' || inputs.shard == 'stages') }}
+        # Includes production boot and both bounded route legs, not just the fixture proof.
+        timeout-minutes: 10
         run: node test/browser/stairs.mjs lighting-outdoor
       - name: Stairs lighting atlas browser contract
         if: ${{ inputs.shard == 'control-stages' || inputs.shard == 'stages' }}

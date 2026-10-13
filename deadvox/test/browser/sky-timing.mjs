@@ -5,6 +5,7 @@ export function initializeSkyTiming() {
   const jobs = [];
   const queues = new Map();
   const seen = new Set();
+  const queued = new WeakMap();
   globalThis.skyTiming = {
     events,
     jobs,
@@ -17,6 +18,10 @@ export function initializeSkyTiming() {
       if (kind === 'published') {
         this.lastPublished = event;
       }
+      return event;
+    },
+    queue(input, mesh, firstMeshDelivered) {
+      queued.set(input, this.record('queued', { bounds: input.bounds, mesh, firstMeshDelivered }));
     },
     once(kind, key, data) {
       if (seen.has(`${kind}:${key}`)) {
@@ -32,6 +37,7 @@ export function initializeSkyTiming() {
         type: message.type,
         key: message.key ?? null,
         bounds: message.input?.bounds ?? null,
+        queued: message.input ? queued.get(message.input) : null,
         snapshotComplete: message.input?.complete ?? null,
         transferInBytes: message.input?.chunks.reduce((sum, chunk) => sum + (chunk.raw?.byteLength ?? 0), 0) ?? null,
         sentAbsoluteRealMs: absoluteRealMs(),
@@ -79,6 +85,12 @@ export function skyTimingPlugin() {
     enforce: 'pre',
     transform(code, id) {
       const [path] = id.split('?');
+      if (path.endsWith('/src/game/engine.ts')) {
+        return code.replace(
+          '  return {\n    ...worldSetup,',
+          '  if(globalThis.skyTiming) globalThis.skyTiming.engineReadyAbsoluteRealMs=performance.timeOrigin+performance.now();\n  return {\n    ...worldSetup,',
+        );
+      }
       if (path.endsWith('/src/game/streamer.ts')) {
         return code
           .replace(
@@ -87,18 +99,34 @@ export function skyTimingPlugin() {
 const timingJob = msg.type==='init' ? undefined : globalThis.skyTiming?.send(worker,msg);
 const postStartRealMs = performance.now();
 worker.postMessage(msg,transfer);
-if(timingJob) timingJob.postRealMs=performance.now()-postStartRealMs;
+if(timingJob) {
+  timingJob.postRealMs=performance.now()-postStartRealMs;
+  const evidence=globalThis.skyRouteEvidence;
+  if(msg.type==='sky' && evidence && !evidence.inSkyUpdate) evidence.serviceRealMs+=timingJob.postRealMs;
+}
 `,
           )
           .replace(
-            '  private receive(msg: FromMesher): void {',
-            '  private receive(msg: FromMesher): void {\nglobalThis.skyTiming?.receive(msg);',
+            '  private receive(worker: Worker, msg: FromMesher): void {',
+            '  private receive(worker: Worker, msg: FromMesher): void {\nglobalThis.skyTiming?.receive(msg);',
           )
           .replace(
-            '    if (this.skyReply || this.inFlight.size >= this.maxInFlight) {',
+            '    if (this.skyReply) {',
             `
 globalThis.skyTiming?.record('admission',{bounds:input.bounds,mesh:[...this.inFlight],meshCapacity:this.maxInFlight,lightingBusy:Boolean(this.skyReply)});
-    if (this.skyReply || this.inFlight.size >= this.maxInFlight) {`,
+    if (this.skyReply) {`,
+          )
+          .replace(
+            '    this.pendingSky = input;',
+            '    this.pendingSky = input;\nglobalThis.skyTiming?.queue(input,[...this.inFlight],this.firstMeshDelivered);',
+          )
+          .replace(
+            '    this.receiveMesh(msg);',
+            "    const meshApplyStartAbsoluteRealMs=performance.timeOrigin+performance.now();\nthis.receiveMesh(msg);\nglobalThis.skyTiming?.record('mesh-apply',{key:msg.key,startAbsoluteRealMs:meshApplyStartAbsoluteRealMs,realMs:performance.timeOrigin+performance.now()-meshApplyStartAbsoluteRealMs});",
+          )
+          .replace(
+            '    this.firstMeshDelivered ||= msg.mesh.indices.length > 0;',
+            "    if(!this.firstMeshDelivered && msg.mesh.indices.length>0) globalThis.skyTiming?.record('first-mesh',{key:msg.key});\n    this.firstMeshDelivered ||= msg.mesh.indices.length > 0;",
           );
       }
       if (path.endsWith('/src/worker/mesh.worker.ts')) {
@@ -177,7 +205,9 @@ export function summarizeSkyTiming({ events, jobs }) {
     .map((job) => {
       const boundKey = JSON.stringify(job.bounds);
       const matching = events.filter(
-        (event) => JSON.stringify(event.bounds) === boundKey && event.absoluteRealMs <= job.sentAbsoluteRealMs,
+        (event) =>
+          JSON.stringify(event.bounds) === boundKey &&
+          event.absoluteRealMs <= (job.queued?.absoluteRealMs ?? job.sentAbsoluteRealMs),
       );
       const selected = matching.filter((event) => event.kind === 'selected').at(-1);
       const candidate = matching
@@ -241,6 +271,14 @@ export function summarizeSkyTiming({ events, jobs }) {
         dispatchToWorkerRealMs: difference(job.sentAbsoluteRealMs, job.workerStartAbsoluteRealMs),
         workerToMainRealMs: difference(job.workerEndAbsoluteRealMs, job.receivedAbsoluteRealMs),
         publicationWaitRealMs: difference(job.receivedAbsoluteRealMs, published?.absoluteRealMs),
+        queueWaitRealMs: difference(job.queued?.absoluteRealMs, job.sentAbsoluteRealMs),
+        firstMesh: events.find((event) => event.kind === 'first-mesh'),
+        returnMeshApplications: events.filter(
+          (event) =>
+            event.kind === 'mesh-apply' &&
+            event.absoluteRealMs > job.workerEndAbsoluteRealMs &&
+            event.startAbsoluteRealMs < job.receivedAbsoluteRealMs,
+        ),
         busyAhead: ahead.map((prior) => ({
           id: prior.id,
           type: prior.type,
