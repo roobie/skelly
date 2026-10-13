@@ -703,17 +703,17 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 - **Spent cases per block:** Cases must never end inside terrain; use only clear,
   supported landing cells, including spill destinations. If none is available,
   discard the case rather than jam the firearm for a cosmetic item. When an
-  outward ejection path is blocked, its visible case drops from the clear launch
-  point to the simulation landing instead of carrying an outward arc into a wall.
-  Clear ejections retain their authored motion. This keeps corner contact from
-  making a recoverable case disappear into terrain. A save taken during a case
-  flight keeps its simulation landing time but shows the case at the landing on
-  Continue, without replaying the presentation arc. The landing is gameplay
-  state; the arc is transient presentation. This avoids saving an individual
-  physics body for every shot. A deterministic scatter represents the pile
-  visually. See `docs/decisions/0006-firearm-handling.md`,
-  `src/game/firearmHandling.ts`, `FirearmMechanics`, and
-  `src/core/scatterPile.ts`, `spentCaseScatter`.
+  outward ejection path is blocked, its visible case drops straight down,
+  monotonically from the clear launch point to its simulation landing, without
+  entering the floor or reversing upward. Clear ejections retain their authored motion. This keeps
+  corner contact, including a crouched shot, from making a recoverable case
+  disappear into terrain. A save taken during a case flight keeps its simulation
+  landing time but shows the case at the landing on Continue, without replaying
+  the presentation arc. The landing is gameplay state; the arc is transient
+  presentation. This avoids saving an individual physics body for every shot. A
+  deterministic scatter represents the pile visually. See
+  `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
+  `FirearmMechanics`, and `src/core/scatterPile.ts`, `spentCaseScatter`.
 - **Noise** is an event with loudness and position. Sprinting makes footsteps
   louder; melee, gunshots, doors, breaking glass and engines also make noise.
   Walls reduce how far it travels. Zombies hear, investigate and pass noise on

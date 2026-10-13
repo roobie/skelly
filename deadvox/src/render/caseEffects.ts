@@ -45,6 +45,7 @@ interface Particle {
   readonly rotation: Vector3;
   readonly spin: Vector3;
   caseModelId: string | undefined;
+  verticalDrop: boolean;
   seed: number;
   visual: Object3D | undefined;
   readonly visuals: Map<string, Object3D>;
@@ -66,6 +67,7 @@ export class CaseEffects {
     rotation: new Vector3(),
     spin: new Vector3(),
     caseModelId: undefined,
+    verticalDrop: false,
     seed: 0,
     visual: undefined,
     visuals: new Map(),
@@ -93,7 +95,12 @@ export class CaseEffects {
     particle.landingAt = effect.landingAt;
     particle.seed = effect.seed;
     particle.origin.set(...effect.origin);
-    particle.landing.set(...effect.landingPosition);
+    particle.verticalDrop = effect.verticalDrop === true;
+    particle.landing.set(
+      particle.verticalDrop ? effect.origin[0] : effect.landingPosition[0],
+      effect.landingPosition[1],
+      particle.verticalDrop ? effect.origin[2] : effect.landingPosition[2],
+    );
     particle.position.set(...effect.origin);
     particle.velocity.set(
       effect.direction[0] * effect.speed,
@@ -112,7 +119,11 @@ export class CaseEffects {
   retarget(seed: number, position: Vec3): void {
     const particle = this.particles.find((candidate) => candidate.active && candidate.seed === seed);
     if (particle) {
-      particle.landing.set(...position);
+      particle.landing.set(
+        particle.verticalDrop ? particle.origin.x : position[0],
+        position[1],
+        particle.verticalDrop ? particle.origin.z : position[2],
+      );
     }
   }
 

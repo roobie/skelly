@@ -184,6 +184,7 @@ export interface FirearmShotEffect {
   readonly origin: Vec3;
   readonly direction: Vec3;
   readonly speed: number;
+  readonly verticalDrop?: true;
   readonly seed: number;
   readonly landingPosition: Vec3;
   readonly startedAtSimSeconds: number;
@@ -238,6 +239,7 @@ interface CaseLanding {
   readonly position: Vec3;
   readonly direction: Vec3;
   readonly speed: number;
+  readonly verticalDrop: boolean;
 }
 
 export class FirearmMechanics {
@@ -1246,6 +1248,7 @@ export class FirearmMechanics {
       origin: emission.origin,
       direction: landing.direction,
       speed: landing.speed,
+      ...(landing.verticalDrop ? { verticalDrop: true as const } : {}),
       seed,
       landingPosition: landing.position,
       startedAtSimSeconds: startedAt,
@@ -1268,7 +1271,9 @@ export class FirearmMechanics {
     if (!position) {
       return undefined;
     }
-    return { position, direction: hit ? [0, -1, 0] : emission.direction, speed: CASE_SPEED };
+    const dropHeight = emission.origin[1] - (position[1] * this.blockSize + 0.006);
+    const speed = hit ? Math.max(0, dropHeight / CASE_FLIGHT_SECONDS) : CASE_SPEED;
+    return { position, direction: hit ? [0, -1, 0] : emission.direction, speed, verticalDrop: hit !== undefined };
   }
 
   private ejectionAt(state: FirearmState, data: FirearmHandlingData): number {
@@ -1304,6 +1309,7 @@ export class FirearmMechanics {
         origin: emission.origin,
         direction: landing.direction,
         speed: landing.speed,
+        ...(landing.verticalDrop ? { verticalDrop: true as const } : {}),
         seed: pending.seed,
         landingPosition: landing.position,
         startedAtSimSeconds: startedAt,

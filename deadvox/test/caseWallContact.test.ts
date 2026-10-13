@@ -19,8 +19,9 @@ import {
   firearmHandlingFor,
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
-import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
-import { caseFlightPoint } from '../src/render/caseEffects.ts';
+import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer } from '../src/game/player.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
+import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const { registry } = BUNDLED_CONTENT;
@@ -130,6 +131,134 @@ const fireAndCycle = (shot: ReturnType<typeof makeWallShot>, simTime = 1): void 
   shot.mechanics.advanceTo(simTime + 0.25);
 };
 
+type Session = ReturnType<typeof createSession>;
+interface CaseObservation {
+  readonly point: Vec3;
+  readonly solid: boolean;
+}
+
+const cornerWorld = (): World => {
+  const world = new World();
+  const rock = blockId(registry, 'rock');
+  for (let x = -5; x <= 5; x++) {
+    for (let z = -5; z <= 5; z++) {
+      world.setBlock(x, 0, z, rock);
+    }
+  }
+  for (let y = 1; y <= 7; y++) {
+    for (let z = -5; z <= 5; z++) {
+      world.setBlock(2, y, z, rock);
+    }
+    for (let x = -5; x <= 5; x++) {
+      world.setBlock(x, y, 3, rock);
+    }
+  }
+  return world;
+};
+
+const advanceFrames = (session: Session, count: number): void => {
+  for (let frame = 0; frame < count; frame++) {
+    session.frame(1 / 60);
+  }
+};
+
+const sessionPose = (session: Session, yaw: number) => ({
+  feet: [...session.body.pos] as Vec3,
+  eye: [
+    session.body.pos[0],
+    session.body.pos[1] + session.playerEyeHeightMetres / scale.blockSize,
+    session.body.pos[2],
+  ] as Vec3,
+  yaw,
+  pitch,
+  blockSize: scale.blockSize,
+});
+
+const observeCaseFrames = (
+  session: Session,
+  renderer: CaseEffects,
+  isSolid: ReturnType<typeof worldSolid>,
+  count: number,
+): CaseObservation[] => {
+  const observations: CaseObservation[] = [];
+  for (let frame = 0; frame < count; frame++) {
+    session.frame(1 / 60);
+    renderer.update(session.sim.time);
+    for (const visual of renderer.mesh.children.filter((child) => child.visible)) {
+      const point = visual.position.toArray() as Vec3;
+      const cell = point.map((value) => Math.floor(value / scale.blockSize)) as Vec3;
+      observations.push({ point, solid: isSolid(...cell) });
+    }
+  }
+  return observations;
+};
+
+const makeCrouchedCornerRuntime = () => {
+  const world = cornerWorld();
+  const entities = new BlockEntities(registry);
+  const isSolid = worldSolid(world, registry, entities);
+  const renderer = new CaseEffects(scale.blockSize);
+  const effects: FirearmShotEffect[] = [];
+  const spawnResults: boolean[] = [];
+  const yaw = (-80 * Math.PI) / 180;
+  let intent: MoveIntent = { ...IDLE, forward: 1, right: 1, walk: true };
+  let crouchToggle = true;
+  const session = createSession({
+    registry,
+    world,
+    entities,
+    isSolid,
+    isOpaque: isSolid,
+    scale,
+    seed: 73,
+    start: 43_200,
+    spawn: [0.9, 1.01, 1.9],
+    ready: () => true,
+    controls: {
+      active: () => true,
+      intent: () => intent,
+      readyHeld: () => true,
+      consumeCrouchToggle: () => {
+        const pressed = crouchToggle;
+        crouchToggle = false;
+        return pressed;
+      },
+      yaw: () => yaw,
+      pitch: () => pitch,
+      walking: () => intent.walk,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: () => undefined,
+    onRead: () => undefined,
+    onFirearmEjection: (effect) => {
+      effects.push(effect);
+      const [x, y, z] = effect.landingPosition;
+      const landingPosition: Vec3 = [
+        (x + 0.5) * scale.blockSize,
+        y * scale.blockSize + 0.006,
+        (z + 0.5) * scale.blockSize,
+      ];
+      spawnResults.push(renderer.spawn({ ...effect, landingPosition }));
+    },
+  });
+  const { rifle } = chargedRifle(session.inventory, session.queue, session.firearms, {
+    magazines: session.magazines,
+  });
+  return {
+    effects,
+    isSolid,
+    renderer,
+    spawnResults,
+    rifle,
+    session,
+    yaw,
+    setIntent: (next: MoveIntent) => {
+      intent = next;
+    },
+  };
+};
+
 describe('firearm case wall contact', () => {
   it('keeps a case when the free port starts on the wall face at zero outward distance', () => {
     const yaw = (3 * Math.PI) / 4;
@@ -236,6 +365,7 @@ describe('firearm case wall contact', () => {
     expect(shot.effects).toHaveLength(1);
     expect(shot.effects[0]!.origin).toEqual(raw.origin);
     expect(shot.effects[0]!.direction).toEqual(raw.direction);
+    expect(shot.effects[0]!.verticalDrop).toBeUndefined();
   });
 
   it('keeps a clipped diagonal case arc outside the wall until its supported landing', () => {
@@ -334,5 +464,46 @@ describe('firearm case wall contact', () => {
       });
       expect(shot.isSolid(...(point.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
     }
+  });
+
+  it('keeps a crouched corner drop descending to its landing without entering the floor', () => {
+    const runtime = makeCrouchedCornerRuntime();
+    advanceFrames(runtime.session, 120);
+    expect(runtime.session.crouching).toBe(true);
+    expect(runtime.session.body.onGround).toBe(true);
+    expect(bodyOverlapsTerrain(runtime.session.body, runtime.isSolid)).toBe(false);
+    runtime.setIntent({ ...IDLE });
+    const pose = sessionPose(runtime.session, runtime.yaw);
+    expect(
+      runtime.session.firearms.fire({
+        ...pose,
+        aimFrame: NEUTRAL_AIM,
+        item: runtime.rifle,
+        ready: true,
+        sprinting: false,
+        seed: 71,
+        simTime: runtime.session.sim.time,
+      }),
+    ).toBe(true);
+
+    const observations = observeCaseFrames(runtime.session, runtime.renderer, runtime.isSolid, 60);
+    expect(runtime.effects).toHaveLength(1);
+    expect(runtime.spawnResults).toEqual([true]);
+    expect(observations.length).toBeGreaterThan(0);
+    const effect = runtime.effects[0]!;
+    const duration = effect.landingAt - effect.startedAtSimSeconds;
+    const landingY = effect.landingPosition[1] * scale.blockSize + 0.006;
+    expect(observations.filter(({ solid }) => solid)).toEqual([]);
+    expect(observations.every(({ point }) => point[1] >= landingY - 1e-6)).toBe(true);
+    expect(effect.direction).toEqual([0, -1, 0]);
+    expect(effect.verticalDrop).toBe(true);
+    expect(effect.speed * duration).toBeCloseTo(effect.origin[1] - landingY);
+    expect(observations.every(({ point }) => point[0] === effect.origin[0] && point[2] === effect.origin[2])).toBe(
+      true,
+    );
+    for (let frame = 1; frame < observations.length; frame++) {
+      expect(observations[frame]!.point[1]).toBeLessThanOrEqual(observations[frame - 1]!.point[1] + 1e-6);
+    }
+    runtime.renderer.dispose();
   });
 });
