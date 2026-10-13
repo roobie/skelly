@@ -74,13 +74,41 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
   const box: SkyBounds = geometry === 'doorway' ? { min: [8, 1, 8], max: [23, 7, 25] } : { min: [-10, 1, -10], max: [11, 7, 13] };
   const owner = skyWorldFixture([box]);
   if (geometry === 'doorway') {
-    for (let y = 2; y < 6; y++) for (let z = 15; z <= 17; z++) owner.world.setBlock(8, y, z, 0);
-    for (let x = -2; x <= 2; x++) for (let z = 14; z <= 18; z++) owner.world.setBlock(x, 0, z, owner.wall);
+    for (let y = 2; y < 6; y++) {
+      for (let z = 15; z <= 17; z++) {
+        owner.world.setBlock(8, y, z, 0);
+      }
+    }
+    for (let x = -2; x <= 2; x++) {
+      for (let z = 14; z <= 18; z++) {
+        owner.world.setBlock(x, 0, z, owner.wall);
+      }
+    }
   } else {
-    for (let x = -10; x <= 10; x++) for (let y = 1; y < 7; y++) for (let z = -10; z < 13; z++) owner.world.setBlock(x, y, z, 0);
-    for (let x = -10; x <= 10; x++) for (let z = -10; z < 13; z++) owner.world.setBlock(x, 0, z, owner.wall);
-    for (let x = -10; x <= 10; x++) for (let z = 0; z < 13; z++) owner.world.setBlock(x, 6, z, owner.wall);
-    for (let x = -10; x <= 10; x++) for (let y = 1; y < 6; y++) for (let z = -6; z <= -4; z++) owner.world.setBlock(x, y, z, owner.wall);
+    for (let x = -10; x <= 10; x++) {
+      for (let y = 1; y < 7; y++) {
+        for (let z = -10; z < 13; z++) {
+          owner.world.setBlock(x, y, z, 0);
+        }
+      }
+    }
+    for (let x = -10; x <= 10; x++) {
+      for (let z = -10; z < 13; z++) {
+        owner.world.setBlock(x, 0, z, owner.wall);
+      }
+    }
+    for (let x = -10; x <= 10; x++) {
+      for (let z = 0; z < 13; z++) {
+        owner.world.setBlock(x, 6, z, owner.wall);
+      }
+    }
+    for (let x = -10; x <= 10; x++) {
+      for (let y = 1; y < 6; y++) {
+        for (let z = -6; z <= -4; z++) {
+          owner.world.setBlock(x, y, z, owner.wall);
+        }
+      }
+    }
   }
   const pending: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
   const scene = new Scene();
@@ -98,11 +126,17 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
   const job = pending.shift()!;
   job.receive(buildSkyResult(job.input), 0);
   sky.update(scene, position);
-  expect(sky.inspect()[0]).toMatchObject({ complete: true, current: true, resident: true });
+  if (!sky.inspect()[0]?.complete || !sky.inspect()[0]?.current || !sky.inspect()[0]?.resident) {
+    throw new Error('test skylight fixture did not become current and resident');
+  }
   const inventory = new Inventory({ ...registry, models: new Map() });
   const flashlight = inventory.create('flashlight');
-  expect(inventory.add(flashlight, { kind: 'hand', side: 'left' })).toBe(true);
-  expect(toggleLight(inventory.registry, flashlight, 0)).toBeUndefined();
+  if (!inventory.add(flashlight, { kind: 'hand', side: 'left' })) {
+    throw new Error('test flashlight could not be placed in the hand');
+  }
+  if (toggleLight(inventory.registry, flashlight, 0) !== undefined) {
+    throw new Error('test flashlight could not be switched on');
+  }
   const engine = {
     config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' }, registry: inventory.registry, scene, camera,
     sky: {}, skylight: sky, isSolid: owner.knownOpaque,
@@ -119,8 +153,9 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
     view.updateHeld(0, restingHands, flashlight);
   };
   updateFrame();
-  expect(view.held.lensOf(flashlight, new Vector3())).toBe(true);
-  expect(view.flashlight.light.intensity).toBeGreaterThan(0);
+  if (!view.held.lensOf(flashlight, new Vector3()) || view.flashlight.light.intensity <= 0) {
+    throw new Error('test flashlight did not emit a held beam');
+  }
   return { owner, engine, inventory, flashlight, view, sky, daylight, updateFrame, cleanup: () => { view.dispose(); sky.dispose(); } };
 }
 
