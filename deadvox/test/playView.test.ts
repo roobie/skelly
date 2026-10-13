@@ -7,10 +7,10 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Body } from '../src/core/physics.ts';
 import { skyAt } from '../src/core/sky.ts';
-import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
+import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { createPlayView } from '../src/render/playView.ts';
 
 const BASE = 'src/content/base';
@@ -128,7 +128,9 @@ describe('play presentation ownership', () => {
     engine.camera.position.set(1, 1, 0);
     engine.camera.lookAt(1, 1, -1);
     engine.camera.updateMatrixWorld();
-    engine.skylight = { at: ([, , z]: Vec3) => (z < -0.2 && z > -1 ? 1 : 0) } as unknown as NonNullable<Engine['skylight']>;
+    engine.skylight = {
+      at: ([, , z]: Vec3) => (z < -0.2 && z > -1 ? 1 : 0),
+    } as unknown as NonNullable<Engine['skylight']>;
     view.flashlight.light.position.copy(engine.camera.position);
     view.flashlight.light.distance = 20;
     view.flashlight.light.intensity = 1;

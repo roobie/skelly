@@ -318,7 +318,7 @@ export const createPlayView = (
         ];
         const direction: Vec3 = [beamDirection.x, beamDirection.y, beamDirection.z];
         const hit = raycast(origin, direction, flashlight.light.distance / blockSize, engine.isSolid);
-        if (hit && hit.normal.some((component) => component !== 0)) {
+        if (hit?.normal.some((component) => component !== 0)) {
           const freeAirSide: Vec3 = [
             (origin[0] + direction[0] * hit.distance + hit.normal[0] * 0.01) * blockSize,
             (origin[1] + direction[1] * hit.distance + hit.normal[1] * 0.01) * blockSize,
