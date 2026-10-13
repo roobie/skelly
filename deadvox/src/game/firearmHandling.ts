@@ -234,6 +234,12 @@ interface EjectedCasePlacement {
   readonly instanceIndex: number;
 }
 
+interface CaseLanding {
+  readonly position: Vec3;
+  readonly direction: Vec3;
+  readonly speed: number;
+}
+
 export class FirearmMechanics {
   /** Numeric ownership references only. Chamber/cycle data lives on the inventory item. */
   private readonly active = new Set<number>();
@@ -1232,16 +1238,16 @@ export class FirearmMechanics {
     state.landings ??= [];
     state.landings.push({
       at: startedAt + CASE_FLIGHT_SECONDS,
-      position: [...landing],
+      position: [...landing.position],
       type,
       seed,
     });
     this.onEjection({
       origin: emission.origin,
-      direction: emission.direction,
-      speed: CASE_SPEED,
+      direction: landing.direction,
+      speed: landing.speed,
       seed,
-      landingPosition: landing,
+      landingPosition: landing.position,
       startedAtSimSeconds: startedAt,
       landingAt: startedAt + CASE_FLIGHT_SECONDS,
       ...(modelId ? { caseModelId: modelId } : {}),
@@ -1249,19 +1255,32 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  private landing(emission: Omit<PendingCase, 'seed'>): Vec3 | undefined {
+  private landing(emission: Omit<PendingCase, 'seed'>): CaseLanding | undefined {
     const origin: Vec3 = emission.origin.map((axis) => axis / this.blockSize) as Vec3;
     const distanceBlocks = (CASE_SPEED * CASE_FLIGHT_SECONDS) / this.blockSize;
     const hit = raycast(origin, emission.direction, distanceBlocks, this.isSolid);
-    const safeDistance = hit ? hit.distance - 1e-6 : distanceBlocks;
-    if (safeDistance < 0) {
-      return undefined;
-    }
+    const safeDistance = hit ? Math.max(0, hit.distance - 1e-6) : distanceBlocks;
     const endpoint: Vec3 = origin.map(
       (axis, index) => (axis + emission.direction[index]! * safeDistance) * this.blockSize,
     ) as Vec3;
     const minY = makeScale(this.blockSize).minCy * CHUNK;
-    return settleOnWorld(endpoint, this.blockSize, minY, this.isSolid);
+    const position = settleOnWorld(endpoint, this.blockSize, minY, this.isSolid);
+    if (!position) {
+      return undefined;
+    }
+    const { direction: launchDirection } = emission;
+    let direction = launchDirection;
+    let speed = CASE_SPEED;
+    if (hit) {
+      const intoWall = launchDirection.reduce((dot, value, axis) => dot + value * hit.normal[axis]!, 0);
+      if (intoWall < 0) {
+        const tangent = launchDirection.map((value, axis) => value - intoWall * hit.normal[axis]!) as Vec3;
+        const tangentLength = Math.hypot(...tangent);
+        direction = tangentLength > 0 ? (tangent.map((value) => value / tangentLength) as Vec3) : [0, 0, 0];
+        speed *= tangentLength;
+      }
+    }
+    return { position, direction, speed };
   }
 
   private ejectionAt(state: FirearmState, data: FirearmHandlingData): number {
@@ -1289,16 +1308,16 @@ export class FirearmMechanics {
       state.landings ??= [];
       state.landings.push({
         at: startedAt + CASE_FLIGHT_SECONDS,
-        position: [...landing],
+        position: [...landing.position],
         type,
         seed: pending.seed,
       });
       this.onEjection({
         origin: emission.origin,
-        direction: emission.direction,
-        speed: CASE_SPEED,
+        direction: landing.direction,
+        speed: landing.speed,
         seed: pending.seed,
-        landingPosition: landing,
+        landingPosition: landing.position,
         startedAtSimSeconds: startedAt,
         landingAt: startedAt + CASE_FLIGHT_SECONDS,
         ...(data.caseModelId ? { caseModelId: data.caseModelId } : {}),
