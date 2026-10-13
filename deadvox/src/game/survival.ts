@@ -1,4 +1,4 @@
-// Using what's in your hands (DESIGN.md, "Hands"): eating, drinking and taking a painkiller
+// Using what's in your hands (`DESIGN.md`, "Hands"): eating, drinking and taking a painkiller
 // are short actions in the handling queue, a light switches on and off, and a battery goes into
 // the light you're holding. Head-worn beam lights also remain usable while worn.
 // The needs themselves are in the simulation (core/needs.ts).

@@ -3067,7 +3067,7 @@ export class ZombieSystem {
   }
 
   /**
-   * A detonation at the fragments' origin (DESIGN.md, "Hand grenade"). The blast takes its falloff damage from
+   * A detonation at the fragments' origin (`DESIGN.md`, "Hand grenade"). The blast takes its falloff damage from
    * every region of each standing body whose centre it sees, the lethal region last so limbs come off before the
    * kill; then the fragments fly as a shot does. Returns the bodies the blast reached.
    */

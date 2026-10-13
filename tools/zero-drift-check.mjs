@@ -4,6 +4,12 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import GithubSlugger from 'github-slugger';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { frontmatterFromMarkdown } from 'mdast-util-frontmatter';
+import { gfmFromMarkdown } from 'mdast-util-gfm';
+import { frontmatter } from 'micromark-extension-frontmatter';
+import { gfm } from 'micromark-extension-gfm';
 import { parse } from 'yaml';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -16,25 +22,22 @@ const POLICY_EXEMPT = new Set([
   'test/zero-drift-check.test.mjs',
 ]);
 const PACKAGE_LOCK = /(?:^|\/)package-lock\.json$/;
-const STRICT_CHECKS = new Set(['host', 'historical_doc']);
+const STRICT_CHECKS = new Set(['host', 'historical_doc', 'section_form']);
 const PRIVATE_IPV4 =
   /(?<![\d.])(?:10(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}|172\.(?:1[6-9]|2\d|3[01])(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){2}|192\.168(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){2})(?![\d.])/g;
 const HOST_PATH = /\/(?:home|Users|tmp)\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*/g;
 const RUN_USER_PATH = /\/run\/user\/\d+[A-Za-z0-9_./$-]*/g;
 const HOME_SHORTCUT = /(^|[\s"'`(=])(~\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*)/gm;
 const HOST_PATH_VALUE_EXEMPTIONS = new Set(['~/.cache/ms-playwright']);
-const INLINE_CODE_SPAN = /(`+)[\s\S]*?\1/g;
 const QUOTED_TEXT = /“[^”\n]*”|"[^"\n]*"/g;
-const SUBPROJECTS = new Set(['deadvox', 'gungen', 'mobgen']);
-const LINE_CITATION = /(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9_-]*:\d+(?:-\d+)?/g;
+const SUBPROJECTS = new Set(['deadvox', 'engine', 'gungen', 'mobgen']);
+const LINE_CITATION = /(?<![\w/@.-])(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9_-]*:\d+(?:-\d+)?/g;
 const INLINE_CODE = /(?<!`)`([^`\n]+)`(?!`)/g;
 const LINK = /\[[^\]]*\]\(([^)]+)\)/g;
 const SYMBOL_PAIR = /`([^`\n]+)`, `([^`\n]+)`/g;
 const SYMBOL_LINK = /\[`([^`\n]+)`\]\(([^)]+)\)/g;
 const SYMBOL_IDENTIFIER = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/;
 const NEWLINE = /\r?\n/;
-const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})/;
-const FENCE_CLOSE = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
 const PATH_PLACEHOLDER = /[<>{}*…]|\.\.\.|\[|\]/;
 const URI_SCHEME = /^[a-z][a-z\d+.-]*:/i;
 const LINE_SUFFIX = /:\d+(?:-\d+)?$/;
@@ -42,6 +45,25 @@ const PATH_SHAPE = /\/$|\/[^/]+\.[A-Za-z][A-Za-z0-9_-]*$/;
 const WHITESPACE = /\s+/;
 const LINK_TARGET = /^(<[^>]+>|[^\s]+)/;
 const TRAILING_SLASH = /\/$/;
+const FILE_EXTENSION = /\.(?:[cm]?[jt]sx?|jsonc?|jsonnet|libsonnet|ya?ml|md|css|html|py|sh|lua|mjs)$/;
+const CUE_PAIR = /(?<!`)`([^`\s]+)`\s*([,;:—-]?)\s*(?:"((?:\\.|[^"\\])+)"|“([^”]+)”|`([^`]+)`|'([^']+)')/g;
+const BARE_SECTION =
+  /(?<![\w/@`"'.=?&-])([\w./-]+\.md)(?!`)\s*([,;:—-]?)\s*(?:"((?:\\.|[^"\\])+)"|“([^”]+)”|`([^`]+)`|'([^']+)')/g;
+const LINK_SECTION = /\[[^\]]*\]\(([^)]+)\)\s*([,;:]?)\s*(?:"((?:\\.|[^"\\])+)"|“([^”]+)”|`([^`]+)`)/g;
+const OTHER_SECTION =
+  /(?:`[^`\s]+\.md`|(?<![\w/@`"'.-])[\w./-]+\.md)\s*(?:§\s*\d[\d.]*|(?:section|chapter)\b[^.;\n]*|#\d[\d.]*|[,;:]\s*\d+(?:\.\d+)*\b)/gi;
+const SECTION_NUMBER = /§\s*\d+(?:\.\d+)*/g;
+const NAME_MARKUP = /`|\*[^*]+\*|(?<!\w)_+[^_]+_+(?!\w)|<[^>]+>|\[[^\]]*\]\([^)]*\)/;
+const EXTRA_NAME = /^\s*(?:,\s*(?:and\s+)?|and\s+)(?:"((?:\\.|[^"\\])+)"|“([^”]+)”|`([^`]+)`)/;
+const EXTRA_CANONICAL_NAME = /^\s*,\s*(?:"[^"\n]+"|“[^”\n]+”)/;
+const BACKTICKED_IDENTIFIER = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*:?$/;
+const PATH_CHARACTERS = /^[\p{L}\p{M}\p{N}_./-]+$/u;
+const LEADING_SECTION_NUMBER = /^(?:§\s*)?\d+(?:\.\d+)*(?:[.)]|\s)\s*/;
+const TRAILING_PUNCTUATION = /[.,:;!?]+$/;
+const TRAILING_PARENTHETICAL = /\s*\([^()]*\)\s*$/;
+const SUBTITLE = /: | — /;
+const NUMERIC_NAME = /^\d+(?:\.\d+)*$/;
+const QUOTE_ESCAPE = /\\(["\\])/g;
 
 const exec = (command, args, options = {}) => execFileSync(command, args, { cwd: ROOT, encoding: 'utf8', ...options });
 
@@ -61,15 +83,197 @@ export function parsePythonReadIf(output) {
   return docs;
 }
 
-function frontMatter(text) {
-  const lines = text.split(NEWLINE);
-  if (lines[0]?.trim() !== '---') {
-    return;
-  }
-  const end = lines.findIndex((line, index) => index > 0 && line.trim() === '---');
-  return end < 0 ? undefined : lines.slice(1, end).join('\n');
+const MARKDOWN_OPTIONS = {
+  extensions: [gfm(), frontmatter(['yaml'])],
+  mdastExtensions: [gfmFromMarkdown(), frontmatterFromMarkdown(['yaml'])],
+};
+
+function parseMarkdown(source) {
+  return fromMarkdown(source, MARKDOWN_OPTIONS);
 }
 
+function walkMarkdown(node, visit) {
+  visit(node);
+  for (const child of node.children ?? []) {
+    walkMarkdown(child, visit);
+  }
+}
+
+function isHtmlComment(node) {
+  return node.type === 'html' && node.value.trimStart().startsWith('<!--');
+}
+
+function renderedText(node) {
+  if (node.type === 'text' || node.type === 'inlineCode') {
+    return node.value;
+  }
+  if (node.type === 'image') {
+    return node.alt;
+  }
+  if (node.type === 'html' || node.type === 'yaml' || node.type === 'code') {
+    return '';
+  }
+  if (node.type === 'break') {
+    return '\n';
+  }
+  return (node.children ?? []).map(renderedText).join('');
+}
+
+function markdownText(node, { skipBlockquotes = false, skipInlineCode = false } = {}) {
+  if (
+    node.type === 'yaml' ||
+    node.type === 'code' ||
+    isHtmlComment(node) ||
+    (skipBlockquotes && node.type === 'blockquote') ||
+    (skipInlineCode && node.type === 'inlineCode')
+  ) {
+    return '';
+  }
+  if (node.type === 'text' || node.type === 'inlineCode') {
+    return node.value;
+  }
+  if (node.type === 'html') {
+    return node.value;
+  }
+  if (node.type === 'break') {
+    return '\n';
+  }
+  const children = (node.children ?? []).map((child) => markdownText(child, { skipBlockquotes, skipInlineCode }));
+  if (node.type === 'tableRow') {
+    return children.join(' | ');
+  }
+  if (['root', 'blockquote', 'list', 'listItem', 'table', 'footnoteDefinition'].includes(node.type)) {
+    return children.join('\n');
+  }
+  return children.join('');
+}
+
+function hiddenCueNode(node, { skipLinks, skipInlineCode }) {
+  return (
+    node.type === 'yaml' ||
+    node.type === 'code' ||
+    isHtmlComment(node) ||
+    (skipLinks && ['link', 'linkReference'].includes(node.type)) ||
+    (skipInlineCode && node.type === 'inlineCode')
+  );
+}
+
+function cueContainerSeparator(type) {
+  if (type === 'tableRow') {
+    return ' | ';
+  }
+  return ['root', 'blockquote', 'list', 'listItem', 'table', 'footnoteDefinition'].includes(type) ? '\n' : undefined;
+}
+
+function wrapCueChildren(type, content) {
+  if (type === 'strong') {
+    return `**${content}**`;
+  }
+  if (type === 'emphasis') {
+    return `*${content}*`;
+  }
+  return type === 'delete' ? `~~${content}~~` : content;
+}
+
+function markdownCueText(node, { skipLinks = false, skipInlineCode = false } = {}) {
+  const options = { skipLinks, skipInlineCode };
+  if (hiddenCueNode(node, options)) {
+    return '';
+  }
+  if (node.type === 'text' || node.type === 'html') {
+    return node.value;
+  }
+  if (node.type === 'inlineCode') {
+    return node.value.includes('`') ? '' : `\`${node.value}\``;
+  }
+  if (node.type === 'link') {
+    const label = (node.children ?? []).map((child) => markdownCueText(child, options)).join('');
+    return `[${label}](${node.url})`;
+  }
+  if (node.type === 'image') {
+    return `![${node.alt}](${node.url})`;
+  }
+  if (node.type === 'break') {
+    return '\n';
+  }
+  const children = (node.children ?? []).map((child) => markdownCueText(child, options));
+  const separator = cueContainerSeparator(node.type);
+  return separator === undefined ? wrapCueChildren(node.type, children.join('')) : children.join(separator);
+}
+
+function markdownCueDocument(tree) {
+  return markdownCueText(tree);
+}
+
+function markdownLinks(tree) {
+  const definitions = new Map();
+  walkMarkdown(tree, (node) => {
+    if (node.type === 'definition' && !definitions.has(node.identifier)) {
+      definitions.set(node.identifier, node);
+    }
+  });
+
+  const links = [];
+  walkMarkdown(tree, (node) => {
+    if (node.type === 'link') {
+      links.push({ url: node.url, children: node.children ?? [] });
+    } else if (node.type === 'linkReference') {
+      const definition = definitions.get(node.identifier);
+      if (definition) {
+        links.push({ url: definition.url, children: node.children ?? [] });
+      }
+    }
+  });
+  return links;
+}
+
+function markdownCodeSpans(tree) {
+  const spans = [];
+  walkMarkdown(tree, (node) => {
+    if (node.type === 'inlineCode') {
+      spans.push(node.value);
+    }
+  });
+  return spans;
+}
+
+function markdownSourceText(source, tree, { skipBlockquotes = false, skipInlineCode = false } = {}) {
+  const excluded = [];
+  const visit = (node) => {
+    const hidden =
+      node.type === 'yaml' ||
+      node.type === 'code' ||
+      isHtmlComment(node) ||
+      (skipBlockquotes && node.type === 'blockquote') ||
+      (skipInlineCode && node.type === 'inlineCode');
+    if (hidden) {
+      if (node.position) {
+        excluded.push({ start: node.position.start.offset, end: node.position.end.offset });
+      }
+      return;
+    }
+    for (const child of node.children ?? []) {
+      visit(child);
+    }
+  };
+  visit(tree);
+  excluded.sort((a, b) => a.start - b.start || b.end - a.end);
+  const visible = [];
+  let offset = 0;
+  for (const range of excluded) {
+    if (range.start < offset) {
+      continue;
+    }
+    visible.push(source.slice(offset, range.start));
+    offset = range.end;
+  }
+  visible.push(source.slice(offset));
+  return visible.join('');
+}
+
+function inlineMarkdownText(text) {
+  return parseMarkdown(text).children.map(renderedText).join('\n');
+}
 function add(failures, path, check, text) {
   const key = JSON.stringify([path, check, text]);
   const previous = failures.get(key);
@@ -84,8 +288,8 @@ function validReadIf(reasons) {
   );
 }
 
-function readIfReasons(path, text, failures) {
-  const metadata = frontMatter(text);
+function readIfReasons(path, markdown, failures) {
+  const metadata = markdown.children.find((node) => node.type === 'yaml')?.value;
   if (metadata === undefined) {
     add(failures, path, 'read_if', 'missing YAML front matter');
     return;
@@ -112,39 +316,35 @@ function checkReadIfParity(path, reasons, pythonReadIf, failures) {
   }
 }
 
-function visibleMarkdown(text) {
-  let fence;
-  return text
-    .split(NEWLINE)
-    .map((line) => {
-      const marker = line.match(fence ? FENCE_CLOSE : FENCE_OPEN);
-      if (fence) {
-        if (marker && marker[1][0] === fence.char && marker[1].length >= fence.length) {
-          fence = undefined;
-        }
-        return '';
-      }
-      if (marker) {
-        fence = { char: marker[1][0], length: marker[1].length };
-        return '';
-      }
-      return line;
-    })
-    .join('\n');
+function linkDestination(raw) {
+  const destination = raw.trim().match(LINK_TARGET)?.[1];
+  return destination?.startsWith('<') && destination.endsWith('>') ? destination.slice(1, -1) : destination;
 }
 
-function pathValue(raw) {
+function pathValue(raw, bare = false) {
   let value = raw.trim();
   if (value.startsWith('<') && value.endsWith('>')) {
     value = value.slice(1, -1);
   }
-  if (!value || PATH_PLACEHOLDER.test(value) || URI_SCHEME.test(value) || value.startsWith('/')) {
+  if (
+    !value ||
+    PATH_PLACEHOLDER.test(value) ||
+    URI_SCHEME.test(value) ||
+    value.startsWith('/') ||
+    value.startsWith('@')
+  ) {
     return;
   }
   const [withoutAnchor] = value.split('#', 1);
   const [withoutQuery] = withoutAnchor.split('?', 1);
   value = withoutQuery.replace(LINE_SUFFIX, '');
-  if (value?.includes('/') && PATH_SHAPE.test(value)) {
+  if (!PATH_CHARACTERS.test(value)) {
+    return;
+  }
+  if (
+    (value?.includes('/') && PATH_SHAPE.test(value)) ||
+    (value && (value.endsWith('.md') || (bare && FILE_EXTENSION.test(value))))
+  ) {
     return value;
   }
 }
@@ -154,24 +354,29 @@ function isInsideRepo(root, candidate) {
   return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
 }
 
-function pathCandidates(visible) {
+function pathCandidates(visible, markdown) {
   const found = [];
-  for (const match of visible.matchAll(INLINE_CODE)) {
-    for (const token of match[1].trim().split(WHITESPACE)) {
+  const codeValues = markdown
+    ? markdownCodeSpans(markdown)
+    : [...visible.matchAll(INLINE_CODE)].map((match) => match[1]);
+  for (const code of codeValues) {
+    for (const token of code.trim().split(WHITESPACE)) {
       const value = pathValue(token);
       if (value) {
-        found.push({ raw: token, value });
+        found.push({ raw: token, value, kind: 'code' });
       }
     }
   }
-  for (const match of visible.matchAll(LINK)) {
-    const raw = match[1].trim().match(LINK_TARGET)?.[1];
+  const destinations = markdown
+    ? markdownLinks(markdown).map((link) => link.url)
+    : [...visible.matchAll(LINK)].map((match) => linkDestination(match[1]));
+  for (const raw of destinations) {
     if (!raw || raw.startsWith('/')) {
       continue;
     }
     const value = pathValue(raw);
     if (value) {
-      found.push({ raw, value });
+      found.push({ raw, value, kind: 'link' });
     }
   }
   return found;
@@ -210,7 +415,7 @@ function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
   if (!SYMBOL_IDENTIFIER.test(symbol)) {
     return;
   }
-  const value = pathValue(rawPath);
+  const value = pathValue(rawPath, true);
   if (!value) {
     return;
   }
@@ -223,7 +428,7 @@ function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
   const targetPath = relative(tree.root, target);
   let targetSource;
   try {
-    targetSource = readFileSync(target, 'utf8');
+    targetSource = sourceFor(target, tree);
   } catch {
     add(failures, path, 'symbol', `${targetPath}, ${symbol}`);
     return;
@@ -233,13 +438,310 @@ function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
   }
 }
 
-function checkSymbols({ path, visible, tree, failures }) {
+function checkSymbols({ path, visible, markdown, tree, failures }) {
   for (const match of visible.matchAll(SYMBOL_PAIR)) {
+    if (pathValue(match[1])?.endsWith('.md')) {
+      continue;
+    }
     checkSymbolCue({ path, symbol: match[2], rawPath: match[1], tree, failures });
   }
-  for (const match of visible.matchAll(SYMBOL_LINK)) {
-    checkSymbolCue({ path, symbol: match[1], rawPath: match[2], tree, failures });
+  const links = markdown
+    ? markdownLinks(markdown)
+    : [...visible.matchAll(SYMBOL_LINK)].map((match) => ({
+        url: linkDestination(match[2]),
+        children: [{ type: 'inlineCode', value: match[1] }],
+      }));
+  for (const link of links) {
+    if (link.url.includes('#') || link.url.endsWith('.md')) {
+      continue;
+    }
+    const codeLabels = [];
+    for (const child of link.children) {
+      walkMarkdown(child, (node) => {
+        if (node.type === 'inlineCode') {
+          codeLabels.push(node.value);
+        }
+      });
+    }
+    for (const symbol of codeLabels) {
+      if (symbol !== link.url.split('/').at(-1)) {
+        checkSymbolCue({ path, symbol, rawPath: link.url, tree, failures });
+      }
+    }
   }
+}
+
+function sourceFor(target, tree) {
+  if (!tree.sources.has(target)) {
+    tree.sources.set(target, readFileSync(target, 'utf8'));
+  }
+  return tree.sources.get(target);
+}
+
+function normalizeAnchor(text) {
+  return text
+    .trim()
+    .replace(LEADING_SECTION_NUMBER, '')
+    .replace(TRAILING_PUNCTUATION, '')
+    .split(SUBTITLE, 1)[0]
+    .trim()
+    .replace(TRAILING_PARENTHETICAL, '')
+    .trim()
+    .replace(TRAILING_PUNCTUATION, '');
+}
+
+function namedAnchor(text) {
+  return normalizeAnchor(inlineMarkdownText(text));
+}
+
+export function githubSlug(text) {
+  return new GithubSlugger().slug(inlineMarkdownText(text));
+}
+
+function parsedMarkdownFor(target, tree) {
+  if (!tree.markdown.has(target)) {
+    tree.markdown.set(target, parseMarkdown(sourceFor(target, tree)));
+  }
+  return tree.markdown.get(target);
+}
+
+function isUnrenderedFootnote(node, renderedFootnotes) {
+  return node.type === 'footnoteDefinition' && !renderedFootnotes.has(node.identifier);
+}
+
+function firstBoldLeadIn(node) {
+  if (node.type !== 'paragraph') {
+    return;
+  }
+  const children = node.children ?? [];
+  const first = children[0]?.type === 'text' && !children[0].value.trim() ? children[1] : children[0];
+  return first?.type === 'strong' ? renderedText(first) : undefined;
+}
+
+function boldLeadIns(markdown, renderedFootnotes = new Set()) {
+  const labels = [];
+  const visit = (node) => {
+    if (isUnrenderedFootnote(node, renderedFootnotes)) {
+      return;
+    }
+    const label = firstBoldLeadIn(node);
+    if (label) {
+      labels.push(label);
+    }
+    for (const child of node.children ?? []) {
+      visit(child);
+    }
+  };
+  visit(markdown);
+  return labels;
+}
+
+function collectRenderedContent(node, headings, footnoteReferences) {
+  if (node.type === 'footnoteDefinition') {
+    return;
+  }
+  if (node.type === 'heading') {
+    headings.push(renderedText(node));
+  }
+  if (node.type === 'footnoteReference') {
+    footnoteReferences.push(node.identifier);
+  }
+  for (const child of node.children ?? []) {
+    collectRenderedContent(child, headings, footnoteReferences);
+  }
+}
+
+function renderedMarkdownHeadings(markdown) {
+  const definitions = new Map();
+  walkMarkdown(markdown, (node) => {
+    if (node.type === 'footnoteDefinition') {
+      definitions.set(node.identifier, node);
+    }
+  });
+  const headings = [];
+  const footnoteReferences = [];
+  collectRenderedContent(markdown, headings, footnoteReferences);
+  const renderedFootnotes = new Set();
+  for (const identifier of footnoteReferences) {
+    if (renderedFootnotes.has(identifier)) {
+      continue;
+    }
+    renderedFootnotes.add(identifier);
+    const definition = definitions.get(identifier);
+    for (const child of definition?.children ?? []) {
+      collectRenderedContent(child, headings, footnoteReferences);
+    }
+  }
+  return { headings, renderedFootnotes };
+}
+
+function markdownAnchors(markdown) {
+  const { headings, renderedFootnotes } = renderedMarkdownHeadings(markdown);
+  const labels = boldLeadIns(markdown, renderedFootnotes);
+  const slugger = new GithubSlugger();
+  const slugs = new Set();
+  for (const heading of headings) {
+    slugs.add(slugger.slug(heading));
+  }
+  return { names: new Set([...headings, ...labels].map(normalizeAnchor)), slugs };
+}
+
+function anchorsFor(target, tree) {
+  if (!tree.anchors.has(target)) {
+    tree.anchors.set(target, markdownAnchors(parsedMarkdownFor(target, tree)));
+  }
+  return tree.anchors.get(target);
+}
+
+function checkNamedCue({ path, rawPath, name, tree, failures }) {
+  const value = pathValue(rawPath, true);
+  if (!value) {
+    return;
+  }
+  const target = resolvedCandidates(path, value, tree.root).find((candidate) => pathExists(candidate, value, tree));
+  let exists = false;
+  if (target) {
+    try {
+      exists = value.endsWith('.md')
+        ? anchorsFor(target, tree).names.has(namedAnchor(name))
+        : sourceFor(target, tree).includes(name);
+    } catch {
+      // Ignored/generated paths can resolve spatially but cannot certify a section without readable content.
+    }
+  }
+  if (!exists) {
+    add(failures, path, 'section', `${rawPath}, "${name}"`);
+  }
+}
+
+function* overlappingMatches(text, pattern) {
+  const scanner = new RegExp(pattern.source, pattern.flags);
+  for (let match = scanner.exec(text); match; match = scanner.exec(text)) {
+    yield match;
+    scanner.lastIndex = match.index + 1;
+  }
+}
+
+function skippedExtraLength(extra, tail, name, rawPath) {
+  if (extra[3] === undefined) {
+    return 0;
+  }
+  const targetPath = pathValue(name, true);
+  if (targetPath || name.startsWith('/')) {
+    const following = tail.slice(extra[0].length);
+    const followingName = following.match(EXTRA_CANONICAL_NAME);
+    const codeName = targetPath && !targetPath.endsWith('.md') ? following.match(EXTRA_NAME) : undefined;
+    const codeSymbol = codeName?.[3] && BACKTICKED_IDENTIFIER.test(codeName[3]) ? codeName[0].length : 0;
+    return extra[0].length + (followingName?.[0].length ?? codeSymbol);
+  }
+  const originalTarget = pathValue(rawPath, true);
+  return originalTarget && !originalTarget.endsWith('.md') && BACKTICKED_IDENTIFIER.test(name) ? extra[0].length : 0;
+}
+
+function checkExtraNames(remaining, context) {
+  let tail = remaining;
+  for (let extra = tail.match(EXTRA_NAME); extra; extra = tail.match(EXTRA_NAME)) {
+    const name = (extra[1] ?? extra[2] ?? extra[3]).replace(QUOTE_ESCAPE, '$1');
+    const skip = skippedExtraLength(extra, tail, name, context.rawPath);
+    if (skip) {
+      tail = tail.slice(skip);
+      continue;
+    }
+    if (!NAME_MARKUP.test(name)) {
+      add(context.failures, context.path, 'section_form', `${context.rawPath}, "${name}" (implicit path)`);
+      checkNamedCue({ ...context, name });
+    }
+    tail = tail.slice(extra[0].length);
+  }
+}
+
+function nonSectionName(value, name, backticked) {
+  return (
+    backticked &&
+    (pathValue(name, true) || name.startsWith('/') || (!value.endsWith('.md') && SYMBOL_IDENTIFIER.test(name)))
+  );
+}
+
+function checkSectionPair(match, bare, context) {
+  const [original, rawPath, separator, quoted, curly, backticked, single] = match;
+  const value = pathValue(rawPath, true);
+  const name = (quoted ?? curly ?? backticked ?? single).replace(QUOTE_ESCAPE, '$1');
+  const prefix = bare ? rawPath : `\`${rawPath}\``;
+  const possessive = single && !separator && original.startsWith(`${prefix}'`);
+  if (!value || possessive || nonSectionName(value, name, backticked)) {
+    return;
+  }
+  if (bare || separator !== ',' || !quoted || NUMERIC_NAME.test(name)) {
+    add(context.failures, context.path, 'section_form', original);
+  }
+  if (NAME_MARKUP.test(name)) {
+    return;
+  }
+  checkNamedCue({ ...context, rawPath, name });
+  checkExtraNames(context.visible.slice(match.index + original.length), {
+    ...context,
+    rawPath,
+  });
+}
+
+function checkSectionLink(raw, { path, tree, failures }) {
+  const destination = linkDestination(raw);
+  if (!destination || URI_SCHEME.test(destination) || destination.startsWith('/') || !destination.includes('#')) {
+    return;
+  }
+  const [rawPath, fragment] = destination.split('#');
+  const value = rawPath ? pathValue(rawPath) : path;
+  if (!(fragment && value)) {
+    return;
+  }
+  const target = resolvedCandidates(path, value, tree.root).find((candidate) => pathExists(candidate, value, tree));
+  let exists = false;
+  try {
+    exists = target && value.endsWith('.md') && anchorsFor(target, tree).slugs.has(decodeURIComponent(fragment));
+  } catch {
+    // An unreadable target or malformed escaped fragment cannot certify an anchor.
+  }
+  if (!exists) {
+    add(failures, path, 'section', destination);
+  }
+}
+
+const QUOTED_PATH_SECTION = /(?<![\w/])"([\w./-]+\.md)"\s*,\s*"([^"\n]+)"/g;
+
+function checkSections(context) {
+  const { path, visible, failures, markdown } = context;
+  for (const [pattern, bare] of [
+    [CUE_PAIR, false],
+    [BARE_SECTION, true],
+    [LINK_SECTION, true],
+  ]) {
+    for (const match of overlappingMatches(visible, pattern)) {
+      checkSectionPair(match, bare, context);
+    }
+  }
+  const withoutLinks = markdown ? markdownCueText(markdown, { skipLinks: true }) : visible.replace(LINK, '');
+  if (markdown) {
+    const prose = markdownCueText(markdown, { skipLinks: true, skipInlineCode: true });
+    for (const match of prose.matchAll(QUOTED_PATH_SECTION)) {
+      add(failures, path, 'section_form', match[0]);
+    }
+  }
+  const references = markdown ? markdownText(markdown, { skipInlineCode: true }) : withoutLinks;
+  for (const pattern of [OTHER_SECTION, SECTION_NUMBER]) {
+    for (const match of references.matchAll(pattern)) {
+      add(failures, path, 'section_form', match[0]);
+    }
+  }
+  const links = markdown
+    ? markdownLinks(markdown).map((link) => link.url)
+    : [...visible.matchAll(LINK)].map((match) => match[1].trim());
+  for (const raw of links) {
+    checkSectionLink(raw, context);
+  }
+}
+
+function joinedCues(text) {
+  return text.replace(/\r?\n\s*(?:\/\/|\*|#)?\s*/g, ' ');
 }
 
 function checkLineNumbers(path, visible, failures) {
@@ -248,6 +750,9 @@ function checkLineNumbers(path, visible, failures) {
       continue;
     }
     for (const match of line.matchAll(LINE_CITATION)) {
+      if (!(path.endsWith('.md') || FILE_EXTENSION.test(match[0].replace(LINE_SUFFIX, '')))) {
+        continue;
+      }
       add(failures, path, 'line_number', match[0]);
     }
   }
@@ -267,7 +772,7 @@ function policyExempt(path) {
 }
 
 function checkCitations(path, text, markdown, failures) {
-  const visible = markdown ? visibleMarkdown(text) : text;
+  const visible = markdown ? markdownSourceText(text, markdown) : text;
   for (const line of visible.split('\n')) {
     const matches = CITATION_PATTERNS.flatMap((pattern) =>
       [...line.matchAll(pattern)].map((match) => ({
@@ -308,22 +813,17 @@ function checkHost(path, text, failures) {
   }
 }
 
-function visibleWhenMarkdown(text) {
-  return visibleMarkdown(text)
-    .split('\n')
-    .map((line) =>
-      line.trimStart().startsWith('>') ? '' : line.replace(INLINE_CODE_SPAN, '').replace(QUOTED_TEXT, ''),
-    )
-    .join('\n');
-}
-
-function checkWhen(path, text, failures) {
-  for (const match of visibleWhenMarkdown(text).matchAll(/\b(?:today|currently)\b/gi)) {
+function checkWhen(path, text, markdown, failures) {
+  const visible = markdownSourceText(text, markdown, { skipBlockquotes: true, skipInlineCode: true }).replace(
+    QUOTED_TEXT,
+    '',
+  );
+  for (const match of visible.matchAll(/\b(?:today|currently)\b/gi)) {
     add(failures, path, 'when', match[0].toLowerCase());
   }
 }
 
-export function checkPolicyRules({ path, text }) {
+export function checkPolicyRules({ path, text, parsedMarkdown }) {
   const failures = new Map();
   if (policyExempt(path)) {
     return [];
@@ -332,45 +832,74 @@ export function checkPolicyRules({ path, text }) {
     add(failures, path, 'historical_doc', 'reviews and retros belong in git history, not tracked files');
     return [...failures.values()];
   }
-  const markdown = path.endsWith('.md');
+  const markdown = path.endsWith('.md') ? (parsedMarkdown ?? parseMarkdown(text)) : undefined;
   checkCitations(path, text, markdown, failures);
   checkHost(path, text, failures);
   if (markdown) {
-    checkWhen(path, text, failures);
+    checkWhen(path, text, markdown, failures);
   }
   return [...failures.values()];
 }
 
-function checkPaths({ path, visible, tree, failures }) {
-  for (const candidate of pathCandidates(visible)) {
+function checkPaths({ path, visible, markdown, tree, failures }) {
+  for (const candidate of pathCandidates(visible, markdown)) {
     const targets = resolvedCandidates(path, candidate.value, tree.root);
-    if (!targets.some((target) => pathExists(target, candidate.value, tree))) {
+    const target = targets.find((item) => pathExists(item, candidate.value, tree));
+    if (!target) {
       add(failures, path, 'path', candidate.raw);
+    } else if (candidate.kind === 'code') {
+      const [sourceProject] = path.split('/');
+      const [targetProject] = relative(tree.root, target).split(sep);
+      const crossProject =
+        SUBPROJECTS.has(sourceProject) && SUBPROJECTS.has(targetProject) && sourceProject !== targetProject;
+      if (crossProject && !candidate.value.startsWith(`${targetProject}/`)) {
+        add(failures, path, 'path_scope', candidate.raw);
+      }
     }
   }
-  checkSymbols({ path, visible, tree, failures });
+  checkSymbols({ path, visible, markdown, tree, failures });
 }
 
-export function checkDocument({ path, text, root = ROOT, tracked, ignored = new Set(), pythonReadIf = new Map() }) {
+export function checkDocument({
+  path,
+  text,
+  root = ROOT,
+  tracked,
+  ignored = new Set(),
+  pythonReadIf = new Map(),
+  sources = new Map(),
+  anchors = new Map(),
+  parsedMarkdown = new Map(),
+}) {
   const failures = new Map();
-  const reasons = readIfReasons(path, text, failures);
-  if (reasons) {
-    checkReadIfParity(path, reasons, pythonReadIf, failures);
+  if (path.startsWith('mobgen/reference/')) {
+    return [];
   }
-  const visible = visibleMarkdown(text);
   if (!tracked) {
     throw new Error('tracked file set is required for path checks');
   }
-  const tree = { root, tracked, ignored };
-  checkLineNumbers(path, visible, failures);
-  checkPaths({ path, visible, tree, failures });
+  const owner = resolve(root, path);
+  if (sources.get(owner) !== text) {
+    sources.set(owner, text);
+    anchors.delete(owner);
+    parsedMarkdown.delete(owner);
+  }
+  const markdown = path.endsWith('.md') ? (parsedMarkdown.get(owner) ?? parseMarkdown(text)) : undefined;
+  if (markdown) {
+    parsedMarkdown.set(owner, markdown);
+  }
+  if (markdown && !ISSUE_TEMPLATE.test(path)) {
+    const reasons = readIfReasons(path, markdown, failures);
+    if (reasons) {
+      checkReadIfParity(path, reasons, pythonReadIf, failures);
+    }
+  }
+  const tree = { root, tracked, ignored, sources, anchors, markdown: parsedMarkdown };
+  const visible = markdown ? markdownCueDocument(markdown) : joinedCues(text);
+  checkLineNumbers(path, markdown ? markdownSourceText(text, markdown) : text, failures);
+  checkPaths({ path, visible, markdown, tree, failures });
+  checkSections({ path, visible, markdown, tree, failures });
   return [...failures.values()];
-}
-
-function trackedMarkdown() {
-  return exec('git', ['ls-files', '-z', '--', '*.md'])
-    .split('\0')
-    .filter((path) => path && !ISSUE_TEMPLATE.test(path));
 }
 
 function trackedTextFiles() {
@@ -401,13 +930,22 @@ function ignoredPaths(candidates) {
 function observedFailures(paths) {
   const tracked = new Set(exec('git', ['ls-files', '-z']).split('\0').filter(Boolean));
   const docTexts = new Map(paths.map((path) => [path, readFileSync(resolve(ROOT, path), 'utf8')]));
-  const candidates = [...docTexts].map(([path, text]) =>
-    pathCandidates(visibleMarkdown(text)).flatMap(({ value }) =>
+  const sources = new Map([...docTexts].map(([path, text]) => [resolve(ROOT, path), text]));
+  const parsedMarkdown = new Map(
+    [...docTexts]
+      .filter(([path]) => path.endsWith('.md'))
+      .map(([path, text]) => [resolve(ROOT, path), parseMarkdown(text)]),
+  );
+  const anchors = new Map();
+  const candidates = [...docTexts].map(([path, text]) => {
+    const markdown = parsedMarkdown.get(resolve(ROOT, path));
+    const visible = markdown ? markdownCueDocument(markdown) : joinedCues(text);
+    return pathCandidates(visible, markdown).flatMap(({ value }) =>
       resolvedCandidates(path, value, ROOT).map(
         (candidate) => `${relative(ROOT, candidate)}${value.endsWith('/') ? '/' : ''}`,
       ),
-    ),
-  );
+    );
+  });
   const ignored = ignoredPaths(candidates);
   const pythonReadIf = parsePythonReadIf(exec('python3', ['tools/read_if.py']));
   const failures = new Map();
@@ -417,13 +955,19 @@ function observedFailures(paths) {
     failures.set(key, { ...failure, count: (previous?.count ?? 0) + failure.count });
   };
   for (const [path, text] of docTexts) {
-    for (const failure of checkDocument({ path, text, tracked, ignored, pythonReadIf })) {
+    for (const failure of checkDocument({
+      path,
+      text,
+      tracked,
+      ignored,
+      pythonReadIf,
+      sources,
+      anchors,
+      parsedMarkdown,
+    })) {
       mergeFailure(failure);
     }
-  }
-  for (const path of trackedTextFiles()) {
-    const text = readFileSync(resolve(ROOT, path), 'utf8');
-    for (const failure of checkPolicyRules({ path, text })) {
+    for (const failure of checkPolicyRules({ path, text, parsedMarkdown: parsedMarkdown.get(resolve(ROOT, path)) })) {
       mergeFailure(failure);
     }
   }
@@ -517,7 +1061,10 @@ const FAILURE_HINTS = new Map([
   ['read_if_parity', 'make YAML read_if agree with python3 tools/read_if.py'],
   ['line_number', 'cite the code by path and symbol, not line number'],
   ['path', 'use a valid repo-relative code cue'],
+  ['path_scope', 'use a repo-root path when citing another subproject'],
   ['symbol', 'use a symbol present in the cited source'],
+  ['section', 'use a current heading, bold lead-in label, link anchor or verbatim name in the cited file'],
+  ['section_form', 'use a backticked path, comma and double-quoted name; repeat the path for each section'],
 ]);
 
 function failureHint(item) {
@@ -538,7 +1085,7 @@ function printFailures(items) {
 
 function main() {
   const args = new Set(process.argv.slice(2));
-  const observed = observedFailures(trackedMarkdown());
+  const observed = observedFailures(trackedTextFiles());
   const strictFailures = observed.filter(({ check }) => STRICT_CHECKS.has(check));
   const ratchetedFailures = ratcheted(observed);
   if (args.has('--report')) {
@@ -576,7 +1123,7 @@ function main() {
   } = comparePolicy(observed, baseline.violations);
   if (strictBaselineRows.length > 0) {
     throw new Error(
-      `${BASELINE_PATH} contains strict check rows: ${strictBaselineRows.map(({ check }) => check).join(', ')}; remove them and fix any observed host violation`,
+      `${BASELINE_PATH} contains strict check rows: ${strictBaselineRows.map(({ check }) => check).join(', ')}; regenerate after fixing the strict violations`,
     );
   }
   const failures = [...policyStrictFailures.map((item) => ({ ...item, kind: 'strict' })), ...differences];

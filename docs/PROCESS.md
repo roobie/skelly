@@ -81,7 +81,7 @@ The lead reconciles cases the workflow cannot update. Slice 3's checklist is #29
 
 ## Recording decisions
 
-- A small ruling belongs beside the rule it governs in `PROJECT.md`, `DESIGN.md` or
+- A small ruling belongs beside the rule it governs in the subproject's owning doc or
   `SLICE-*.md`. State the current rule and its reason in the document's own voice.
 - A cross-cutting or format-defining decision belongs in an ADR under
   `<subproject>/docs/decisions/`. Each ADR states one current decision and why; it

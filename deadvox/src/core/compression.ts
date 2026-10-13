@@ -16,7 +16,7 @@ export interface CompressionLimits {
 
 /**
  * The largest Sim step one frame of a long action takes: enough for the highest content cap at 60
- * frames a second, and a bound on a frame's cost when many shamblers are active (DESIGN.md, "Long actions").
+ * frames a second, and a bound on a frame's cost when many shamblers are active (`DESIGN.md`, "Long actions").
  */
 const LONG_ACTION_MAX_SIM_PER_FRAME = simSeconds(6);
 

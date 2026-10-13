@@ -1,6 +1,6 @@
 // The mood pass's numbers: colour grade, film and bloom. Pure; render/mood.ts feeds them to
 // the shaders. The grade is one strength in [0, 1]: 0 leaves the picture alone, 1 is the
-// designed look (DESIGN.md, "Rendering": muted and grey, colour kept for what means something).
+// designed look (`DESIGN.md`, "Rendering": muted and grey, colour kept for what means something).
 
 import type { Rgb } from './sky.ts';
 

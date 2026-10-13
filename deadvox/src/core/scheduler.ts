@@ -1,7 +1,7 @@
 // The fixed-step scheduler. Systems declare a tick rate in simulation seconds. Under
 // compression a slow system takes bigger steps instead of more ticks, up to its
-// maxStep, so the cost per frame stays bounded (DESIGN.md, "Simulation architecture";
-// CHALLENGES.md, "Compressed time"). Ticks from all systems run in time order.
+// maxStep, so the cost per frame stays bounded (`DESIGN.md`, "Simulation architecture";
+// `CHALLENGES.md`, "Compressed time"). Ticks from all systems run in time order.
 
 export interface SystemSpec {
   readonly id: string;

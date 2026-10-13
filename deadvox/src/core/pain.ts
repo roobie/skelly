@@ -1,4 +1,4 @@
-// Pain: the body's report of injury, kept apart from health, region damage and shock (DESIGN.md, "Pain").
+// Pain: the body's report of injury, kept apart from health, region damage and shock (`DESIGN.md`, "Pain").
 // `Body` owns the state and composes these pieces; everything here is pure arithmetic over it.
 
 import type { BodyTuningDef, ItemDef } from './schema.ts';

@@ -17,6 +17,8 @@ export interface RestAction {
   startFatigue: number;
   /** The Sim time a sleep set with an alarm ends at; without one, sleep ends once rested. */
   wakeAt?: number;
+  /** Saved Game-second progress before sleep begins; absent once the player is asleep. */
+  sleepOnset?: { durationGameSeconds: number; elapsedGameSeconds: number } | undefined;
 }
 const WAIT_CANCELLING_MOVEMENTS = new Set([
   'movement.forward',
@@ -52,6 +54,41 @@ export type LongJob =
       elapsed: number;
       duration: number;
     };
+export interface RestStartOptions {
+  wakeAt?: number;
+  sleepOnsetGameSeconds?: number;
+}
+const restActionRefusal = (job: LongJob | undefined): string | undefined => {
+  if (!job || job.stopped) {
+    return undefined;
+  }
+  switch (job.jobType) {
+    case 'craft':
+      return 'Stop crafting first';
+    case 'reading':
+      return 'Stop reading first';
+    case 'pry':
+      return 'Stop prying first';
+    default:
+      return undefined;
+  }
+};
+const restStartTimingRefusal = (
+  kind: RestKind,
+  simTime: number,
+  { wakeAt, sleepOnsetGameSeconds }: RestStartOptions,
+): string | undefined => {
+  if (wakeAt !== undefined && (kind !== 'sleep' || !(wakeAt > simTime))) {
+    return 'Invalid wake time';
+  }
+  if (
+    sleepOnsetGameSeconds !== undefined &&
+    (kind !== 'sleep' || !Number.isFinite(sleepOnsetGameSeconds) || sleepOnsetGameSeconds <= 0)
+  ) {
+    return 'Invalid sleep onset time';
+  }
+  return undefined;
+};
 export interface ReadingActionHooks {
   owns: (bookUid: number) => boolean;
   validate: (bookUid: number) => string | undefined;
@@ -98,6 +135,13 @@ const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
     !Number.isFinite(rest.startFatigue) ||
     rest.startFatigue < 0 ||
     (rest.wakeAt !== undefined && (rest.kind !== 'sleep' || !Number.isFinite(rest.wakeAt))) ||
+    (rest.sleepOnset !== undefined &&
+      (rest.kind !== 'sleep' ||
+        !Number.isFinite(rest.sleepOnset.durationGameSeconds) ||
+        rest.sleepOnset.durationGameSeconds <= 0 ||
+        !Number.isFinite(rest.sleepOnset.elapsedGameSeconds) ||
+        rest.sleepOnset.elapsedGameSeconds < 0 ||
+        rest.sleepOnset.elapsedGameSeconds > rest.sleepOnset.durationGameSeconds)) ||
     !Number.isSafeInteger(rest.furnitureUid) ||
     rest.furnitureUid < 1 ||
     typeof rest.label !== 'string'
@@ -228,7 +272,7 @@ export class LongActions {
   }
   /**
    * Prying runs at 1×, and so do treatment, crafting and reading while the body refuses compression: a
-   * bleeding player must still be able to treat the wound or make something to treat it (DESIGN.md, "Bleeding").
+   * bleeding player must still be able to treat the wound or make something to treat it (`DESIGN.md`, "Bleeding").
    */
   runsUncompressed(jobType: LongJob['jobType']): boolean {
     return jobType === 'pry' || (RUN_WHILE_REFUSED.has(jobType) && this.sim.body.compressionRefusal !== undefined);
@@ -255,9 +299,12 @@ export class LongActions {
       : undefined;
   }
   get restRate(): number | undefined {
-    return this.current && !this.current.stopped && this.sim.compression.active ? this.rest?.rate : undefined;
+    const { rest } = this;
+    return this.current && !this.current.stopped && this.sim.compression.active && !rest?.sleepOnset
+      ? rest?.rate
+      : undefined;
   }
-  /** Asleep: a sleep is running, so recovery runs at the body's sleep factor. */
+  /** Asleep: sleep onset has finished and recovery runs at the body's sleep factor. */
   get asleep(): boolean {
     return this.restRate !== undefined && this.rest?.kind === 'sleep';
   }
@@ -319,26 +366,19 @@ export class LongActions {
     this.current = { jobType: 'wait', stopped: false, last: this.sim.time };
     return undefined;
   }
-  /** `wakeAt` (Sim time) runs a sleep to that time instead of until rested; the caller checks for an alarm. */
-  startRest(kind: RestKind, rate: number, furnitureUid: number, wakeAt?: number): string | undefined {
-    const actionRefusal = this.bodyActionRefusal();
+  /** `wakeAt` is Sim time; `sleepOnsetGameSeconds` is a saved Game-time delay before sleep. */
+  startRest(kind: RestKind, rate: number, furnitureUid: number, options: RestStartOptions = {}): string | undefined {
+    const { wakeAt, sleepOnsetGameSeconds } = options;
+    const actionRefusal = this.bodyActionRefusal() ?? restStartTimingRefusal(kind, this.sim.time, options);
     if (actionRefusal) {
       return actionRefusal;
-    }
-    if (wakeAt !== undefined && (kind !== 'sleep' || !(wakeAt > this.sim.time))) {
-      return 'Invalid wake time';
     }
     if (wakeAt === undefined && this.sim.needs.fatigue <= 0) {
       return "You're not tired";
     }
-    if (this.current?.jobType === 'craft' && !this.current.stopped) {
-      return 'Stop crafting first';
-    }
-    if (this.current?.jobType === 'reading' && !this.current.stopped) {
-      return 'Stop reading first';
-    }
-    if (this.current?.jobType === 'pry' && !this.current.stopped) {
-      return 'Stop prying first';
+    const currentActionRefusal = restActionRefusal(this.current);
+    if (currentActionRefusal) {
+      return currentActionRefusal;
     }
     const result = this.sim.compressLongAction(kind);
     if (!result.ok) {
@@ -356,6 +396,11 @@ export class LongActions {
         rate,
         startFatigue: this.sim.needs.fatigue,
         ...(wakeAt === undefined ? {} : { wakeAt }),
+        ...(sleepOnsetGameSeconds === undefined
+          ? {}
+          : {
+              sleepOnset: { durationGameSeconds: sleepOnsetGameSeconds, elapsedGameSeconds: 0 },
+            }),
       },
     };
     return undefined;
@@ -658,9 +703,10 @@ export class LongActions {
       return;
     }
     if (job.jobType === 'sleep' && reason !== undefined) {
+      const wasFallingAsleep = job.rest.sleepOnset !== undefined;
       this.current = undefined;
       this.sim.compression.stop();
-      this.notice(`You wake up: ${reason}`);
+      this.notice(wasFallingAsleep ? `You can't fall asleep: ${reason}` : `You wake up: ${reason}`);
       return;
     }
     // A job bleeding held at 1× compresses again once the body allows it, rather than stopping.
@@ -709,6 +755,20 @@ export class LongActions {
       return job.elapsed === job.duration;
     }
     if (job.jobType === 'wait') {
+      return false;
+    }
+    if (job.jobType === 'sleep' && job.rest.wakeAt !== undefined && job.last >= job.rest.wakeAt) {
+      return true;
+    }
+    if (job.rest.sleepOnset !== undefined) {
+      job.rest.sleepOnset.elapsedGameSeconds = Math.min(
+        job.rest.sleepOnset.durationGameSeconds,
+        job.rest.sleepOnset.elapsedGameSeconds + seconds,
+      );
+      if (job.rest.sleepOnset.elapsedGameSeconds >= job.rest.sleepOnset.durationGameSeconds) {
+        const { sleepOnset: _sleepOnset, ...rest } = job.rest;
+        job.rest = rest;
+      }
       return false;
     }
     job.elapsed += seconds;

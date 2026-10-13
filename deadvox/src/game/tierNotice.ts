@@ -1,7 +1,7 @@
 /**
- * Speaks a tier's notice (INTERFACE.md, class 3) once each time a tiered body state, such as the worst bleeding
- * or felt pain, worsens to a tier that has one; content leaves the notice off a tier that passes without mention
- * (DESIGN.md, "Bleeding" and "Pain").
+ * Speaks a tier's notice (`INTERFACE.md`, "Class 3: the character's voice") whenever a tiered body state
+ * worsens to a tier that has a notice; content leaves the notice off a tier that passes without mention
+ * (`DESIGN.md`, "Bleeding"; `DESIGN.md`, "Pain").
  */
 export class TierNotice {
   private tier: number | undefined;

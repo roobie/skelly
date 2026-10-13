@@ -16,7 +16,7 @@ Attachment mass is a geometry-and-material estimate, not inventory weight or a p
 
 ## Muzzle devices
 
-A muzzle device fits only a muzzle cut for the bore it was built for, because fit is a property of both the gun and the device: shotguns take muzzle devices, but not rifle suppressors. Both muzzle ports declare that bore as their port `standard` (`src/gun/mounts.ts`, `MuzzleBore`). The engine's `portCompat` (`../engine/src/core/rules.ts`) requires both sides of a connection to declare the same standard or neither, so the rule holds for designs and certificates alike, and an undeclared side fits nothing that declares one. The pump's smoothbore muzzle keeps its slot, and a device built for smoothbores certifies there without a rule change.
+A muzzle device fits only a muzzle cut for the bore it was built for, because fit is a property of both the gun and the device: shotguns take muzzle devices, but not rifle suppressors. Both muzzle ports declare that bore as their port `standard` (`src/gun/mounts.ts`, `MuzzleBore`). The engine's `portCompat` (`engine/src/core/rules.ts`) requires both sides of a connection to declare the same standard or neither, so the rule holds for designs and certificates alike, and an undeclared side fits nothing that declares one. The pump's smoothbore muzzle keeps its slot, and a device built for smoothbores certifies there without a rule change.
 
 ## Viewer previews
 

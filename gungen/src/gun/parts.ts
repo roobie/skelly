@@ -1,5 +1,5 @@
 // biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: Geometry assembly branches encode firearm configuration and keep aperture construction visible.
-// Stylized proportions, not real-world specifications; see `PROJECT.md`, `Modeling boundary`.
+// Stylized proportions, not real-world specifications; see `PROJECT.md`, "Modeling boundary".
 //
 // The receiver normally carries the action body and bore line. The revolver's
 // frame, cylinder, and barrel are dedicated families in revolver.ts. Layout
@@ -316,7 +316,7 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     straightBottom: 0,
     topSlopeDegrees: 5,
   },
-  // Fitted to the magazine in the golden AKM reference (see `PROJECT.md`, `Design and variants`).
+  // Fitted to the magazine in the golden AKM reference (see `PROJECT.md`, "Design and variants").
   akm: {
     seat: 'face',
     straightTop: 1,

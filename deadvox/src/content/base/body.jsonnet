@@ -1,4 +1,4 @@
-// The player's body (DESIGN.md, "Needs"). Fatigue is sleep debt: 100 is what a normal sleep clears.
+// The player's body (`DESIGN.md`, "Character"). Fatigue is sleep debt: 100 is what a normal sleep clears.
 local normalSleepGameHours = 8;
 local normalSleep = 100 / normalSleepGameHours;
 
@@ -73,7 +73,7 @@ local normalSleep = 100 / normalSleepGameHours;
         },
       ],
     },
-    // Pain (DESIGN.md, "Pain") is open-ended. knockoutAt is its balance point, where felt pain is meant to knock out
+    // Pain (`DESIGN.md`, "Pain") is open-ended. knockoutAt is its balance point, where felt pain is meant to knock out
     // once the knockout lands (#654); until then nothing happens there. Tiers are shares of it.
     pain: {
       knockoutAt: 100,
@@ -101,6 +101,11 @@ local normalSleep = 100 / normalSleepGameHours;
     // Resting clears a fixed share of a normal sleep, so sitting never beats sleeping.
     restFatigueRecoveryPerGameHour: normalSleep * 0.3,
     sleepFatigueRecoveryPerGameHour: normalSleep,
+    sleepOnset: {
+      minGameMinutes: 2,
+      maxGameMinutes: 20,
+      fatigueAtMinimum: 100,
+    },
     // Sleeping rough (rest quality 0) clears this share of a normal sleep.
     roughSleepShare: 0.6,
     healthRecoveryPerGameHour: 2,

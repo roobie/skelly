@@ -2,7 +2,7 @@
 /**
  * Real milliseconds. A press held for `hold` loads; a second press starting within `doublePress` of a tap racks
  * if released before `hold`. Held for `hold`, it removes the magazine, or on a gun without one keeps racking
- * (CONTROLS.md, "Reload, rack, remove").
+ * (`CONTROLS.md`, "Reload, rack, remove").
  */
 export const RELOAD_GESTURE_MS = { hold: 250, doublePress: 250 } as const;
 

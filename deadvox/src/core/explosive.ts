@@ -8,7 +8,7 @@ import { raycast, type SolidAt } from './raycast.ts';
 import type { ItemDef } from './schema.ts';
 import { rayBoxEntry } from './zombieRegions.ts';
 
-/** A thrown charge's content (DESIGN.md, "Hand grenade"). */
+/** A thrown charge's content (`DESIGN.md`, "Hand grenade"). */
 export type ExplosiveSpec = NonNullable<ItemDef['explosive']>;
 
 /** Where an explosive's pin and fuse stand: pin in, pin pulled while still held, or fuse burning. */

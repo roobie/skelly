@@ -1,4 +1,4 @@
-// Ladders and roof hatches (DESIGN.md, "Ladders and hatches"). A ladder is stacked one piece per layer, so one
+// Ladders and roof hatches (`DESIGN.md`, "Ladders and hatches"). A ladder is stacked one piece per layer, so one
 // piece serves any height. A ladder up a roof edge reaches the roof's layer, so the climb ends with the feet level
 // with the roof; one under a hatch ends below it, and the climber steps up through the open hatch.
 local rail = function(x) { position: [x, 0, 0.55], size: [0.12, 1, 0.12] };

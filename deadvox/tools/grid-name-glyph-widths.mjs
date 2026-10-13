@@ -1,6 +1,6 @@
 // biome-ignore-all lint/correctness/noNodejsModules: a local measuring tool run with Node and Playwright
 // Prints `GLYPH_WIDTHS_EM` for src/core/inventoryGridName.ts: each glyph's widest advance among the UI fonts the grid
-// name layout covers, measured in Chromium and Firefox and rounded up to 0.01 em (DESIGN.md, "Inventory screen").
+// name layout covers, measured in Chromium and Firefox and rounded up to 0.01 em (`DESIGN.md`, "Inventory screen").
 // DejaVu Sans, Liberation Sans and Nimbus Sans must be installed. Adwaita Sans is fetched from its pinned release and
 // measured in Firefox only: Chromium snaps a fetched font's advances to whole pixels at these sizes, which players,
 // who have it installed, don't get.

@@ -402,7 +402,11 @@ try {
     assert.equal(sleepRefusal, undefined);
     await page.waitForFunction((uid) => {
       const { session } = globalThis.readingWitness;
-      return session.rest.action?.kind === 'sleep' && session.rest.action.furnitureUid === uid;
+      return (
+        session.rest.action?.kind === 'sleep' &&
+        session.rest.action.furnitureUid === uid &&
+        session.rest.action.sleepOnset === undefined
+      );
     }, bedUid);
     const sleeping = await page.evaluate(() => {
       const { body, session } = globalThis.readingWitness;

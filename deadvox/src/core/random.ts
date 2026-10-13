@@ -90,8 +90,7 @@ const hashString = (text: string): number => {
 
 /**
  * A seeded random stream (sfc32). Every system draws from its own stream, derived
- * from the world seed and the system's id, never from `Math.random` (DESIGN.md,
- * "Determinism").
+ * from the world seed and the system's id, never from `Math.random` (`DESIGN.md`, "Determinism").
  */
 export class Rng {
   private a: number;

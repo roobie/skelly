@@ -139,7 +139,7 @@ export const playNeedsText = ({
     `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}`,
     `pain ${pain.felt.toFixed(0)}${painTier ? ` · ${painTier}` : ''}`,
     `acute ${pain.acute.toFixed(0)} + injuries ${pain.injuries.toFixed(0)} − relief ${pain.relief.toFixed(0)}`,
-    // Only a tier content marks `warn` gets the warning sign (DESIGN.md, "Bleeding").
+    // Only a tier content marks `warn` gets the warning sign (`DESIGN.md`, "Bleeding").
     ...bleeding.map(({ region, label, warn }) => `${warn ? '⚠ ' : ''}${label} — ${region}`),
   ].join('\n');
 };

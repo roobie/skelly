@@ -317,7 +317,7 @@ local campWallRunCrouchHole = campWallRun + {
           "furniture": "camp_closing_note"
         },
         // Leave room for a body between the ladder and magazine crate; it climbs through the roof hatch so the
-        // climber steps onto the roof rather than the strip above a wall (DESIGN.md, "Ladders and hatches").
+        // climber steps onto the roof rather than the strip above a wall (`DESIGN.md`, "Ladders and hatches").
         "H": {
           "furniture": "ladder",
           "facing": "w"

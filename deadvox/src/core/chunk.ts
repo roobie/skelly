@@ -6,7 +6,7 @@ import { CHUNK_VOLUME, localIndex } from './coords.ts';
  * A chunk where every block has the same id (all air, all stone) stores just that
  * id. The full array is allocated on the first write that differs, and `compact`
  * goes back to a single id when possible. Most chunks are uniform, so this is what
- * keeps 0.5 m blocks affordable (CHALLENGES.md §1).
+ * keeps 0.5 m blocks affordable (`CHALLENGES.md`, "Half-metre blocks").
  */
 export class Chunk {
   readonly cx: number;

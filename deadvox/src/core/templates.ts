@@ -1,4 +1,4 @@
-// Building templates (DESIGN.md, "Generating the world in layers"): ASCII layers
+// Building templates (`DESIGN.md`, "Generating the world in layers"): ASCII layers
 // with a palette. A template is compiled once against the registry: every cell gets a
 // block id, and furniture marks become pieces anchored at their lowest corner. A
 // placement puts it in the world at an origin, turned by quarter turns, and stamps

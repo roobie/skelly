@@ -55,7 +55,7 @@ export const SHELL_LOAD_SECONDS = 0.9;
  * an AR magazine in 3–5 s and an AK one in 4–6 s, a proficient one an AR magazine in about 2 s, all dropping the old
  * magazine. A change here stows it, which is slower, so skill 0 sits at the slow end. Taking a magazine out and
  * stowing it is one half, drawing one and seating it the other: a removal or an insert into an empty gun takes only
- * its half (DESIGN.md, "Combat and noise", rifles).
+ * its half (`DESIGN.md`, "Combat and noise", rifles).
  */
 const MAGAZINE_REMOVE_SIM_SECONDS = 3;
 const MAGAZINE_INSERT_SIM_SECONDS = 3;
@@ -282,7 +282,7 @@ export class FirearmMechanics {
       ) => void;
       firearmsSkillLevel?: () => number;
       firearmsSkillZeroHandling?: () => FirearmsSkillZeroHandling;
-      /** What the body multiplies hand loading and racking times by (DESIGN.md, "Pain"). */
+      /** What the body multiplies hand loading and racking times by (`DESIGN.md`, "Pain"). */
       handlingSlowdown?: () => number;
     },
   ) {
@@ -779,7 +779,7 @@ export class FirearmMechanics {
 
   /**
    * Swaps in the fullest carried magazine that fits (lowest UID on a tie, so the choice is save-stable), whatever
-   * the fitted one holds (CONTROLS.md, "Reload, rack, remove").
+   * the fitted one holds (`CONTROLS.md`, "Reload, rack, remove").
    */
   private changeMagazine(gun: Item, time: number): string | undefined {
     if (this.queue.busy || gun.firearm?.cycle) {
@@ -793,7 +793,7 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  /** Takes the fitted magazine out to a pocket or the ground: tap, then hold R (CONTROLS.md, "Reload, rack, remove"). */
+  /** Takes the fitted magazine out to a pocket or the ground: tap, then hold R (`CONTROLS.md`, "Reload, rack, remove"). */
   removeMagazine(uid: number, time: number): string | undefined {
     const gun = this.heldMagazineFed();
     if (gun?.uid !== uid) {
@@ -1113,7 +1113,7 @@ export class FirearmMechanics {
 
   /**
    * Metadata-only placement probe: never allocate a UID during read-only rack admission. An ejected item lands in
-   * the pile of the block it falls on, so cases are saved per block (DESIGN.md, "Spent cases per block").
+   * the pile of the block it falls on, so cases are saved per block (`DESIGN.md`, "Spent cases per block").
    */
   private ejectionDrop(type: string, emission: Omit<PendingCase, 'seed'>): ReturnType<typeof dropTarget> {
     return dropTarget(this.inventory, { uid: 0, type, count: 1, condition: 1 }, this.landing(emission));

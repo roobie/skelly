@@ -141,8 +141,7 @@ the authored map specified in [#181](https://github.com/roobie/skelly/issues/181
 and detailed in [SLICE-3.md](SLICE-3.md). The task is authored in
 `site/playtest.jsonnet`, `en.task`.
 Each tester plays on their own for as long and in as many sittings as they like;
-Continue resumes their run ([docs/playtest-run.md](docs/playtest-run.md),
-"Session format"). There is no scripted session or fixed play time. Do not teach
+Continue resumes their run (`docs/playtest-run.md`, "Session format"). There is no scripted session or fixed play time. Do not teach
 the systems first. Testers can send feedback through the public form and may
 choose to attach their local metrics and a recent replay. Testers without GitHub
 can email their metrics and feedback to the organiser; the organiser provides
@@ -327,7 +326,7 @@ qualities, the body model, saves, dark nights and sound. They are the game.
 
 ## How each slice runs
 
-1. **Plan:** a `SLICE-N.md` with its goal, playtest questions, scope, ordered
+1. **Plan:** a `SLICE-<number>.md` with its goal, playtest questions, scope, ordered
    milestones and a definition of done. Run or explicitly reuse the slice-start
    consolidation surveys for deadvox, gungen and mobgen, following
    [Continuous consolidation](../docs/PROCESS.md#continuous-consolidation).

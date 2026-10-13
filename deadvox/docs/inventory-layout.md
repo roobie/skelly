@@ -7,7 +7,7 @@ read_if:
 
 # Clickable inventory layout
 
-Inventory layout must preserve pointer access as content changes: an item's DOM presence does not prove its apparent click point lands inside its pane. Keep the selected-item details between the two item locations, and let it yield space before the panes are squeezed. The nearby pane must fit a cap-wide container without horizontal scrolling; wider justified grids scroll within their own cap. See `src/ui/inventoryScreen.ts`, `splitBounds` and `InventoryScreen.syncSplitterToLayout`, and `src/ui/style.css`, `#inventory .inv-body[data-tab-panel="items"]`.
+Inventory layout must preserve pointer access as content changes: an item's DOM presence does not prove its apparent click point lands inside its pane. Keep the selected-item details between the two item locations, and let it yield space before the panes are squeezed. The nearby pane must fit a cap-wide container without horizontal scrolling; wider justified grids scroll within their own cap. See `src/ui/inventoryScreen.ts`, `splitBounds` and `InventoryScreen.syncSplitterToLayout`, and `src/ui/style.css`, "#inventory .inv-body[data-tab-panel=\"items\"]".
 
 Display packing must not change saved pile positions. A drop onto a displayed item maps back to its stored cell for compatible merges or swaps; otherwise it uses ordinary free-space placement. The replayable inventory command remains the authority for move outcomes. See `src/ui/inventoryScreen.ts`, `targetForPackedFloorDrop`, and `src/core/inventory.ts`, `Inventory.plan` and `Inventory.move`.
 

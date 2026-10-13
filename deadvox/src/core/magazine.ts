@@ -1,4 +1,4 @@
-// A detachable box magazine (SLICE-3.md, 3.2): an item whose model carries gungen's fitted round column.
+// A detachable box magazine (`SLICE-3.md`, "Firearms for real"): an item whose model carries gungen's fitted round column.
 // Its cartridges are item state in feed order: index 0 is the top round, the next one fed or stripped.
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import {
@@ -44,8 +44,8 @@ export const magazineFits = (registry: Registry, firearmType: string, magazineTy
 };
 
 /**
- * The current military loot set includes magazine-fed rifles, their magazines and cartridges, and packages that
- * unpack into military-only items. BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2); their ammunition follows.
+ * Restricting a rifle's magazines, ammunition and packages with the rifle keeps ordinary scavenging
+ * from bypassing military progression; see `DESIGN.md`, "Military loot".
  */
 
 const addFirearmsToMilitaryLoot = (registry: Registry, calibres: Set<string>, items: Set<string>): void => {
