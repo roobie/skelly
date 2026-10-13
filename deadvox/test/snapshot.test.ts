@@ -22,6 +22,7 @@ import {
   contentLookup,
   createRuntime,
   encodeFixture,
+  fixtureColumns,
   formatVersion,
   registry,
   registryWithPlayerBodyTuning,
@@ -91,18 +92,16 @@ describe('snapshot state components', () => {
   it('keeps a mid-sleep bed snapshot saveable when a frame elapsed is invalid', async () => {
     const { registry: sleepRegistry, issues } = registryWithSleepScenario(64);
     expect(issues).toEqual([]);
-    const runtime = createRuntime(undefined, true, undefined, { registry: sleepRegistry });
+    const runtime = createRuntime(undefined, true, [fixtureColumns[0]!], { registry: sleepRegistry });
     expect(startRest(runtime, 'sleep')).toBeUndefined();
     const frame = (elapsed: RealSeconds): void => {
       advanceLiveFrame(runtime.sim, elapsed, undefined, (simDt, until) => runtime.session.frame(simDt, until));
     };
     for (let index = 0; runtime.sim.actions.rest?.sleepOnset !== undefined && index < 200; index++) {
-      frame(realSeconds(1 / 60));
+      frame(realSeconds(0.25));
     }
     expect(runtime.sim.actions.asleep).toBe(true);
-    for (let index = 0; index < 4; index++) {
-      frame(realSeconds(1 / 60));
-    }
+    frame(realSeconds(0.25));
     expect(runtime.sim.actions.asleep).toBe(true);
     expect(runtime.sim.compression.active).toBe(true);
     expect(runtime.sim.compression.c).toBeGreaterThan(1);
