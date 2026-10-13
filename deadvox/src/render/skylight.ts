@@ -9,6 +9,7 @@ import {
   RedFormat,
   RGBAFormat,
   type Scene,
+  ShaderChunk,
   UnsignedByteType,
   Vector2,
   Vector3,
@@ -16,6 +17,7 @@ import {
 import type { BlockEntities } from '../core/blockEntities.ts';
 import type { Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
+import type { Sky } from '../core/sky.ts';
 import type { SkyBounds } from '../core/skylight.ts';
 import { skyIndex } from '../core/skylight.ts';
 import {
@@ -31,6 +33,7 @@ import {
 } from '../core/skySnapshot.ts';
 import { type SkyResult, sampleSky } from '../core/skyTransport.ts';
 import type { World } from '../core/world.ts';
+import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 
 const RESIDENT_FIELDS = 4;
 const PREPARE_MS = 0.5;
@@ -117,6 +120,7 @@ export class Skylight {
   private readonly fields: Field[];
   private active: Field[] = [];
   private readonly enabled = { value: 0 };
+  private readonly daylight = { value: 0 };
   private readonly minimum = { value: vectors() };
   private readonly extent = { value: vectors() };
   private readonly atlasScale = { value: vectors() };
@@ -393,6 +397,9 @@ export class Skylight {
     this.texture.value.dispose();
     this.texture.value = volumeTexture(light, size);
   }
+  setDaylight(sky: Pick<Sky, 'lightIntensity' | 'ambientIntensity'>): void {
+    this.daylight.value = sky.lightIntensity + sky.ambientIntensity;
+  }
   at(position: Vec3): number {
     this.refreshEntities();
     const point = position.map((value) => value / this.blockSize) as Vec3;
@@ -458,6 +465,7 @@ export class Skylight {
         return;
       }
       const shaderStartedRealMs = this.onShader ? this.clock() : undefined;
+      shader.uniforms.uSkyDaylight = this.daylight;
       shader.uniforms.uSkyVolume = this.texture;
       shader.uniforms.uSkyMinimum = this.minimum;
       shader.uniforms.uSkyExtent = this.extent;
@@ -489,6 +497,7 @@ vSkyNormal = normalize(mat3(modelMatrix) * skyNormal);`,
         .replace(
           '#include <common>',
           `#include <common>
+uniform float uSkyDaylight;
 uniform highp sampler3D uSkyVolume;
 uniform sampler2D uSkyRegions;
 uniform sampler2D uSkyHeights;
@@ -540,13 +549,24 @@ float skyVisibility() {
   return eligible ? (known ? fallback : float(${UNKNOWN_SKY_CAP})) : 1.0;
 }`,
         )
-        .replace('#include <lights_fragment_end>', 'irradiance *= skyVisibility();\n#include <lights_fragment_end>');
+        .replace(
+          '#include <lights_fragment_begin>',
+          `float receiverSkyVisibility = skyVisibility();\n${ShaderChunk.lights_fragment_begin.replace(
+            'getSpotLightInfo( spotLight, geometryPosition, directLight );',
+            `getSpotLightInfo( spotLight, geometryPosition, directLight );
+        directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyVisibility / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));`,
+          )}`,
+        )
+        .replace(
+          '#include <lights_fragment_end>',
+          'irradiance *= receiverSkyVisibility;\n#include <lights_fragment_end>',
+        );
       if (shaderStartedRealMs !== undefined) {
         this.onShader?.(shader.uniforms, this.clock() - shaderStartedRealMs);
       }
     };
     material.customProgramCacheKey = () =>
-      `${key.call(material)}:bounded-voxel-skylight:${this.blockSize}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
+      `${key.call(material)}:receiver-daylight-skylight:${this.blockSize}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
     material.needsUpdate = true;
   }
 }
