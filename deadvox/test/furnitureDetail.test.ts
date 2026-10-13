@@ -1,0 +1,110 @@
+import { Box3, Color, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { describe, expect, it } from 'vitest';
+import { BlockEntities } from '../src/core/blockEntities.ts';
+import { buildRegistry } from '../src/core/content.ts';
+import type { FurnitureDef } from '../src/core/schema.ts';
+import type { Facing } from '../src/core/templates.ts';
+import { FurnitureMeshes } from '../src/render/furniture.ts';
+
+const definitions = [
+  { kind: 'cabinet', surface: 'wood', size: [3, 4, 1] },
+  { kind: 'drawers', surface: 'plastic', size: [2, 2, 1] },
+  { kind: 'fridge', surface: 'painted-metal', size: [2, 4, 2] },
+  { kind: 'crate', surface: 'wood', size: [1, 1, 1] },
+].map(({ kind, surface, size }, index) => ({
+  id: `detail_fixture_${index}`,
+  name: 'Detail fixture',
+  size,
+  color: '#8a7654',
+  appearance: { kind, surface },
+  container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
+}));
+
+function fixture() {
+  const { registry, issues } = buildRegistry([{ source: 'detail-fixture.json', data: { furniture: definitions } }]);
+  if (issues.length > 0) {
+    throw new Error(JSON.stringify(issues));
+  }
+  return { registry, entities: new BlockEntities(registry), furniture: new FurnitureMeshes(0.5) };
+}
+
+describe('furniture detail', () => {
+  it('merges coloured detail into one draw object inside the rotated fixture envelope, with handles on its facing side', () => {
+    const { registry, entities, furniture } = fixture();
+    const facings: Facing[] = ['e', 's', 'w', 'n'];
+    const outward = {
+      n: new Vector3(0, 0, -1),
+      e: new Vector3(1, 0, 0),
+      s: new Vector3(0, 0, 1),
+      w: new Vector3(-1, 0, 0),
+    };
+    for (const [index, definition] of definitions.entries()) {
+      const def = registry.furniture.get(definition.id)!;
+      const facing = facings[index]!;
+      const size: [number, number, number] =
+        facing === 'e' || facing === 'w' ? [def.size[2], def.size[1], def.size[0]] : [...def.size];
+      const entity = entities.add({ type: def.id, size, pos: [index * 8, 2, 3], facing })!;
+      furniture.sync(entities);
+      furniture.group.updateMatrixWorld(true);
+      const mesh = furniture.group.children[index] as Mesh;
+      expect(mesh).toBeInstanceOf(Mesh);
+      expect(mesh.geometry.groups).toEqual([]);
+      expect(Array.isArray(mesh.material)).toBe(false);
+      expect((mesh.material as MeshLambertMaterial).vertexColors).toBe(true);
+      const envelope = new Box3(
+        new Vector3(...entity.pos).multiplyScalar(0.5),
+        new Vector3(...entity.pos).add(new Vector3(...size)).multiplyScalar(0.5),
+      );
+      const bounds = new Box3().setFromObject(mesh);
+      expect(envelope.clone().expandByScalar(1e-6).containsBox(bounds)).toBe(true);
+      const colors = mesh.geometry.getAttribute('color');
+      const positions = mesh.geometry.getAttribute('position');
+      const metal = new Color('#91979a');
+      const handleCenter = new Vector3();
+      let handles = 0;
+      for (let vertex = 0; vertex < colors.count; vertex++) {
+        if (
+          Math.abs(colors.getX(vertex) - metal.r) < 1e-6 &&
+          Math.abs(colors.getY(vertex) - metal.g) < 1e-6 &&
+          Math.abs(colors.getZ(vertex) - metal.b) < 1e-6
+        ) {
+          handleCenter.add(new Vector3().fromBufferAttribute(positions, vertex).applyMatrix4(mesh.matrixWorld));
+          handles += 1;
+        }
+      }
+      expect(handles).toBeGreaterThan(0);
+      handleCenter.divideScalar(handles).sub(envelope.getCenter(new Vector3()));
+      expect(handleCenter.dot(outward[facing])).toBeGreaterThan(0);
+    }
+    expect(furniture.group.children).toHaveLength(definitions.length);
+  });
+
+  it('reuses detail geometry across instances and search redraws, and leaves unchanged frames alone', () => {
+    const { registry, entities, furniture } = fixture();
+    const def = registry.furniture.get(definitions[0]!.id)! as FurnitureDef;
+    const first = entities.add({ type: def.id, size: def.size, pos: [0, 0, 0], facing: 'n' })!;
+    entities.add({ type: def.id, size: def.size, pos: [5, 0, 0], facing: 'n' });
+    furniture.sync(entities);
+    const meshes = furniture.group.children as Mesh[];
+    expect(meshes[0]!.geometry).toBe(meshes[1]!.geometry);
+    furniture.sync(entities);
+    expect(furniture.group.children[0]).toBe(meshes[0]);
+    entities.markSearched(first);
+    furniture.sync(entities);
+    expect((furniture.group.children[0] as Mesh).geometry).toBe(meshes[0]!.geometry);
+  });
+
+  it('rejects detail on furniture whose other visual authority would hide it', () => {
+    const definition = definitions[0]!;
+    for (const extra of [
+      { shape: [{ position: [0, 0, 0], size: [1, 1, 1] }] },
+      { door: { handlingSimSeconds: 1 } },
+      { container: undefined },
+    ]) {
+      const { issues } = buildRegistry([
+        { source: 'invalid-detail.json', data: { furniture: [{ ...definition, ...extra }] } },
+      ]);
+      expect(issues.length).toBeGreaterThan(0);
+    }
+  });
+});

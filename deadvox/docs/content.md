@@ -12,7 +12,7 @@ read_if:
   - you're authoring or changing playtest fixed loot
   - you're assigning noise to a furniture action
   - you're authoring base surface materials or procedural pattern tuning
-  - you're authoring or changing visual furniture shapes
+  - you're authoring or changing visual furniture shapes or container appearance
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
   - you're authoring or changing Deadvox content sources or their build pipeline
@@ -67,7 +67,11 @@ Debug fixtures, runtime escrow, spent cases, and body-part policy stay out of ac
 
 ## Furniture visual shapes
 
-A furniture shape refines its drawn form without changing occupied cells. Collision, rest, search, and line of sight keep using those cells, so visual detail cannot change gameplay. Author furniture definitions in `src/content/base/furniture.jsonnet`; see `FurnitureSchema` in `src/core/schema.ts` and `FurnitureMeshes` in `src/render/furniture.ts`.
+Visual furniture detail must not change occupied cells or expose hidden contents. Collision, rest, search, and line of sight keep their existing authorities, so a visual refinement cannot change gameplay.
+
+Container appearance belongs to its definition rather than an ID switch or a guess from dimensions: similarly sized furniture can serve different purposes. Keep procedural detail inside the cell envelope so handles do not promise reach outside the pickable fixture. Definition-owned appearance also keeps empty and unsearched containers visually indistinguishable. See `src/core/schema.ts`, `FurnitureSchema`; `src/render/furnitureDetail.ts`, `furnitureDetail`; and `src/render/furniture.ts`, `FurnitureMeshes`.
+
+Merge detail into the fixture's existing draw object and cache geometry between state changes. Shared vertex-coloured Lambert shading preserves the scene's lighting and fog without texture assets, material groups, or another rendering pass. This favours recognizable silhouettes and panel relief over fine surface realism while frame cost is a concern (#680). See `src/render/furniture.ts`, `FurnitureMeshes`.
 
 ## Furniture action noise
 

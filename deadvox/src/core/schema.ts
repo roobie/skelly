@@ -889,6 +889,12 @@ const FurnitureSchema = pipe(
     ),
     /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */
     climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
+    appearance: optional(
+      strictObject({
+        kind: picklist(['cabinet', 'drawers', 'fridge', 'crate']),
+        surface: picklist(['wood', 'painted-metal', 'plastic']),
+      }),
+    ),
     /** Render-only boxes in cell coordinates; gameplay continues to use the furniture cells. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
@@ -909,6 +915,11 @@ const FurnitureSchema = pipe(
         ({ position: [x, y, z], size: [w, h, d] }) => x + w <= size[0] && y + h <= size[1] && z + d <= size[2],
       ),
     'shape boxes must stay within furniture size',
+  ),
+  check(
+    ({ appearance, container, shape, door, readable }) =>
+      !appearance || (container !== undefined && !shape && !door && !readable),
+    'appearance needs a plain container without a shape, door or readable',
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
   check(({ climbable, solid }) => !climbable || solid === false, 'a climbable piece must not be solid'),
