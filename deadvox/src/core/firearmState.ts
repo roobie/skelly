@@ -25,24 +25,24 @@ interface FirearmRaiseState {
   duration: number;
 }
 
+interface FirearmLanding {
+  at: number;
+  startedAtSimSeconds: number;
+  position: Vec3;
+  origin: Vec3;
+  type: string;
+  seed: number;
+  modelId?: string | undefined;
+}
+
 export interface FirearmState {
   chamber: 'empty' | 'round' | 'case';
   /** The chambered cartridge's item type, present exactly when the chamber holds a round. */
   roundType?: string | undefined;
   /** A pump's tube: cartridge item types in feed order. Magazine-fed firearms feed from their magazine slot. */
   tube?: string[];
-  /** Ejected item awaiting its simulation-clock landing; presentation follows this same endpoint and time. */
-  landing?:
-    | {
-        at: number;
-        startedAtSimSeconds: number;
-        position: Vec3;
-        origin: Vec3;
-        type: string;
-        seed: number;
-        modelId?: string | undefined;
-      }
-    | undefined;
+  /** Ejected items awaiting simulation-clock landings; presentation follows each endpoint and time. */
+  landings?: FirearmLanding[] | undefined;
   pendingCase?: PendingCase | undefined;
   cycle?: FirearmCycleState | undefined;
   readying?: FirearmRaiseState | undefined;
@@ -50,35 +50,40 @@ export interface FirearmState {
 
 /** No live state is advanced or cancelled by a snapshot. */
 export const snapshotFirearm = (state: FirearmState): FirearmState => {
-  const { chamber, roundType, tube, landing, pendingCase, cycle, readying } = state;
+  const { chamber, roundType, tube, landings, pendingCase, cycle, readying } = state;
   return {
     chamber,
     ...(roundType === undefined ? {} : { roundType }),
     ...(tube === undefined ? {} : { tube: [...tube] }),
-    ...(landing === undefined ? {} : { landing: structuredClone(landing) }),
+    ...(landings === undefined ? {} : { landings: structuredClone(landings) }),
     ...(pendingCase === undefined ? {} : { pendingCase: structuredClone(pendingCase) }),
     ...(cycle === undefined || cycle.mode === 'hand' ? {} : { cycle: structuredClone(cycle) }),
     ...(readying === undefined ? {} : { readying: { ...readying } }),
   };
 };
 
-const assertFirearmExtras = ({ tube, landing }: FirearmState): void => {
+const assertFirearmExtras = ({ tube, landings }: FirearmState): void => {
   if (tube && (!Array.isArray(tube) || tube.length > 64 || tube.some((type) => typeof type !== 'string'))) {
     throw new Error('Invalid firearm tube');
   }
   if (
-    landing &&
-    (!Number.isFinite(landing.at) ||
-      landing.at < 0 ||
-      !Number.isFinite(landing.startedAtSimSeconds) ||
-      landing.startedAtSimSeconds < 0 ||
-      landing.startedAtSimSeconds > landing.at ||
-      !Number.isSafeInteger(landing.seed) ||
-      landing.seed < 0 ||
-      landing.seed > 0xff_ff_ff_ff ||
-      !landing.type ||
-      [landing.position, landing.origin].some(
-        (vector) => vector.length !== 3 || vector.some((value) => !Number.isFinite(value)),
+    landings &&
+    (!Array.isArray(landings) ||
+      landings.length > 64 ||
+      landings.some(
+        (landing) =>
+          !Number.isFinite(landing.at) ||
+          landing.at < 0 ||
+          !Number.isFinite(landing.startedAtSimSeconds) ||
+          landing.startedAtSimSeconds < 0 ||
+          landing.startedAtSimSeconds > landing.at ||
+          !Number.isSafeInteger(landing.seed) ||
+          landing.seed < 0 ||
+          landing.seed > 0xff_ff_ff_ff ||
+          !landing.type ||
+          [landing.position, landing.origin].some(
+            (vector) => vector.length !== 3 || vector.some((value) => !Number.isFinite(value)),
+          ),
       ))
   ) {
     throw new Error('Invalid firearm landing');

@@ -570,7 +570,7 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
   }
 
   expect(runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle).toBeUndefined();
-  const landingAt = rifle.firearm?.landing?.at;
+  const landingAt = rifle.firearm?.landings?.[0]?.at;
   expect(landingAt).toBeDefined();
   runtime.firearms.advanceTo(landingAt!);
   expect(spentCases()).toHaveLength(1);
@@ -642,7 +642,7 @@ it('a mid-flight codec save resumes the case landing at the same simulation time
   const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
   expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
   original.firearms.advanceTo(ejectTime);
-  const pending = rifle.firearm?.landing;
+  const pending = rifle.firearm?.landings?.[0];
   expect(pending).toBeDefined();
   const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
   const bytes = await encodeSave(saved, {
@@ -655,7 +655,7 @@ it('a mid-flight codec save resumes the case landing at the same simulation time
     [...runtime.inventory.items()]
       .filter(({ item }) => item.type === spentCaseItemId(calibre))
       .map(({ item: { uid, count } }) => ({ uid, count }));
-  const resumedLanding = resumed.inventory.itemByUid(rifle.uid)?.firearm?.landing;
+  const resumedLanding = resumed.inventory.itemByUid(rifle.uid)?.firearm?.landings?.[0];
   expect(resumedLanding).toEqual(pending);
   expect(cases(original)).toEqual([]);
   expect(cases(resumed)).toEqual([]);
@@ -698,7 +698,7 @@ it('a codec save before ejectAt restores one pending case and lands it exactly o
   restored.firearms.advanceTo(ejectTime - 1e-6);
   expect(cases(restored)).toEqual([]);
   restored.firearms.advanceTo(ejectTime);
-  const landingAt = restored.inventory.itemByUid(rifle.uid)?.firearm?.landing?.at;
+  const landingAt = restored.inventory.itemByUid(rifle.uid)?.firearm?.landings?.[0]?.at;
   expect(landingAt).toBeDefined();
   expect(cases(restored)).toEqual([]);
   restored.firearms.advanceTo(landingAt! - 1e-6);

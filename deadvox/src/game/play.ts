@@ -168,26 +168,24 @@ const STARTUP_MESH_RADIUS = 1;
 
 const resumeCaseEffects = (inventory: Inventory, spawn: (effect: FirearmShotEffect) => boolean): void => {
   for (const { item } of inventory.items()) {
-    const landing = item.firearm?.landing;
-    if (!landing) {
-      continue;
+    for (const landing of item.firearm?.landings ?? []) {
+      const delta: Vec3 = [
+        landing.position[0] - landing.origin[0],
+        landing.position[1] - landing.origin[1],
+        landing.position[2] - landing.origin[2],
+      ];
+      const distance = Math.hypot(...delta);
+      spawn({
+        origin: landing.origin,
+        direction: distance > 0 ? (delta.map((axis) => axis / distance) as Vec3) : [0, 1, 0],
+        speed: distance / Math.max(landing.at - landing.startedAtSimSeconds, 1e-9),
+        seed: landing.seed,
+        landingPosition: landing.position,
+        startedAtSimSeconds: landing.startedAtSimSeconds,
+        landingAt: landing.at,
+        ...(landing.modelId ? { caseModelId: landing.modelId } : {}),
+      });
     }
-    const delta: Vec3 = [
-      landing.position[0] - landing.origin[0],
-      landing.position[1] - landing.origin[1],
-      landing.position[2] - landing.origin[2],
-    ];
-    const distance = Math.hypot(...delta);
-    spawn({
-      origin: landing.origin,
-      direction: distance > 0 ? (delta.map((axis) => axis / distance) as Vec3) : [0, 1, 0],
-      speed: distance / Math.max(landing.at - landing.startedAtSimSeconds, 1e-9),
-      seed: landing.seed,
-      landingPosition: landing.position,
-      startedAtSimSeconds: landing.startedAtSimSeconds,
-      landingAt: landing.at,
-      ...(landing.modelId ? { caseModelId: landing.modelId } : {}),
-    });
   }
 };
 

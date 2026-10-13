@@ -2511,6 +2511,7 @@ try {
   assert.deepEqual(opticView.frame, opticView.expected, 'ADS lens uses the mounted optic content and export');
   await page.mouse.click(640, 450);
   await page.evaluate(() => globalThis.primaryActionTest.session.frame(0.1));
+  await page.waitForFunction(() => globalThis.primaryActionTest.caseEffects.activeCount > 0);
   await page.waitForFunction(({ uid, cases }) => {
     const r = globalThis.primaryActionTest;
     const count = [...r.inventory.piles.values()]
@@ -2530,7 +2531,7 @@ try {
     };
   }, firearm);
   assert.equal(emission.uid, firearm.uid);
-  assert.ok(emission.flying > 0);
+  assert.equal(emission.flying, 0, 'the flight retires in the frame the pile case appears');
   assert.ok(emission.shot?.file);
   assert.equal(emission.shot?.distanceMetres, 0);
   assert.equal(emission.shot?.lowpassHz, null);

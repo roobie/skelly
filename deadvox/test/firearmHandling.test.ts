@@ -545,7 +545,7 @@ describe('rifle firearm handling', () => {
     expect(inventory.piles.size).toBe(0);
     mechanics.advanceTo(1 + ejectAt);
     expect(inventory.piles.size).toBe(0);
-    const landingAt = rifle.firearm?.landing?.at;
+    const landingAt = rifle.firearm?.landings?.[0]?.at;
     expect(landingAt).toBeDefined();
     mechanics.advanceTo(landingAt! - 1e-6);
     expect(inventory.piles.size).toBe(0);
@@ -638,7 +638,7 @@ describe('rifle firearm handling', () => {
     mechanics.advanceTo(1 + elapsed);
     expect(rifle.firearm).toMatchObject({ chamber: 'empty', cycle: undefined });
     expect(rifle.slots!.magazine!.cartridges).toHaveLength(loaded);
-    const landingAt = rifle.firearm?.landing?.at;
+    const landingAt = rifle.firearm?.landings?.[0]?.at;
     expect(landingAt).toBeDefined();
     expect([...inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type))).not.toContain(
       chambered,
@@ -673,8 +673,8 @@ describe('rifle firearm handling', () => {
   it('drops each case in the pile of the block it lands on, never a case pile on a nearer block', () => {
     // BR, 2026-10-07 11:27 (DESIGN.md, "Spent cases per block"): cases are saved per block.
     const probe = shot(1);
-    const landingAt = probe.rifle.firearm?.landing?.at;
-    const landing = probe.rifle.firearm?.landing?.position;
+    const landingAt = probe.rifle.firearm?.landings?.[0]?.at;
+    const landing = probe.rifle.firearm?.landings?.[0]?.position;
     const feet: Vec3 = [
       Math.floor(pose.feet[0] / pose.blockSize),
       pose.feet[1],
@@ -713,11 +713,11 @@ describe('rifle firearm handling', () => {
     expect(first.effect).toEqual(second.effect);
     expect(first.inventory.snapshotState()).toEqual(second.inventory.snapshotState());
     expect(first.effect).toMatchObject({
-      landingPosition: first.rifle.firearm?.landing?.position,
-      startedAtSimSeconds: first.rifle.firearm?.landing?.startedAtSimSeconds,
-      landingAt: first.rifle.firearm?.landing?.at,
+      landingPosition: first.rifle.firearm?.landings?.[0]?.position,
+      startedAtSimSeconds: first.rifle.firearm?.landings?.[0]?.startedAtSimSeconds,
+      landingAt: first.rifle.firearm?.landings?.[0]?.at,
     });
-    const landingAt = first.rifle.firearm?.landing?.at;
+    const landingAt = first.rifle.firearm?.landings?.[0]?.at;
     expect(landingAt).toBeDefined();
     first.mechanics.advanceTo(landingAt!);
     second.mechanics.advanceTo(landingAt!);

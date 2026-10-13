@@ -501,6 +501,7 @@ try {
     impactPresentation.laserSegments > 0 && impactPresentation.laserVisibleAfterFire,
     'debug trajectory segments are visible in the renderer',
   );
+  await page.waitForFunction(() => !globalThis.fullAutoRuntime.inventory.hands.right.firearm?.landings?.length);
   const cadence = await page.evaluate(() => ({
     shots: globalThis.fullAutoProbe.shots,
     cases:

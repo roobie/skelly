@@ -303,7 +303,7 @@ describe('real pump ammunition', () => {
       const outputType = spent ? hullType : shellType;
       expect(f.effects).toHaveLength(1);
       expect(f.gun.firearm?.chamber).toBe('empty');
-      expect(f.gun.firearm?.landing).toBeUndefined();
+      expect(f.gun.firearm?.landings).toBeUndefined();
       expect([...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item.type))).not.toContain(
         outputType,
       );
@@ -558,7 +558,7 @@ describe('real pump ammunition', () => {
     expect([...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item.type))).not.toContain(
       shellType,
     );
-    const landingAt = f.gun.firearm?.landing?.at;
+    const landingAt = f.gun.firearm?.landings?.[0]?.at;
     expect(landingAt).toBeDefined();
     const duration = model.action!.hand.durationSimSeconds;
     f.finish(landingAt! - (3 + at), landingAt!);
@@ -755,8 +755,8 @@ describe('real pump ammunition', () => {
       onEjection: () => undefined,
       onSound: (event, _position, time) => cues.push({ event, time }),
     });
-    expect(f.gun.firearm?.landing).toBeDefined();
-    const landingAt = f.gun.firearm!.landing!.at;
+    expect(f.gun.firearm?.landings).toHaveLength(1);
+    const landingAt = f.gun.firearm!.landings![0]!.at;
     mechanics.advanceTo(landingAt - 1e-6);
     expect(cues).toEqual([]);
     mechanics.advanceTo(landingAt);

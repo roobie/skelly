@@ -314,7 +314,7 @@ export class FirearmMechanics {
         return tuning.skillZeroHandling;
       });
     for (const { item } of inventory.items()) {
-      if (item.firearm?.cycle || item.firearm?.landing) {
+      if (item.firearm?.cycle || item.firearm?.landings?.length) {
         this.active.add(item.uid);
       }
       if (item.firearm?.readying) {
@@ -967,21 +967,12 @@ export class FirearmMechanics {
 
   private advanceItem(uid: number, time: number): void {
     const item = this.inventory.itemByUid(uid);
-    const landing = item?.firearm?.landing;
-    if (item && landing && time + 1e-9 >= landing.at) {
-      const placement = this.placeEjected(landing.type, landing.position);
-      item.firearm!.landing = undefined;
-      if (
-        !placement &&
-        this.isPump(item) &&
-        landing.type === spentCaseItemId(firearmHandlingFor(item, this.inventory.registry).calibre)
-      ) {
-        this.onSound('shotgun_hull_drop', landing.position, landing.at);
-      }
+    if (item) {
+      this.advanceLandings(item, time);
     }
     const cycle = item?.firearm?.cycle;
     if (!(item && cycle)) {
-      if (!item?.firearm?.landing) {
+      if (!item?.firearm?.landings?.length) {
         this.active.delete(uid);
       }
       return;
@@ -991,6 +982,28 @@ export class FirearmMechanics {
     } else {
       this.advanceCycle(item, Math.max(cycle.elapsed, time - cycle.startedAt));
     }
+  }
+
+  private advanceLandings(item: Item, time: number): void {
+    const landings = item.firearm?.landings;
+    if (!landings) {
+      return;
+    }
+    const pending: NonNullable<FirearmState['landings']> = [];
+    for (const landing of landings) {
+      if (time + 1e-9 < landing.at) {
+        pending.push(landing);
+        continue;
+      }
+      const placement = this.placeEjected(landing.type, landing.position);
+      const spentPumpCase =
+        this.isPump(item) &&
+        landing.type === spentCaseItemId(firearmHandlingFor(item, this.inventory.registry).calibre);
+      if (!placement && spentPumpCase) {
+        this.onSound('shotgun_hull_drop', landing.position, landing.at);
+      }
+    }
+    item.firearm!.landings = pending.length > 0 ? pending : undefined;
   }
 
   private advanceHand(item: Item): void {
@@ -1007,7 +1020,7 @@ export class FirearmMechanics {
   }
 
   private retire(item: Item): void {
-    if (!item.firearm?.landing) {
+    if (!item.firearm?.landings?.length) {
       this.active.delete(item.uid);
     }
   }
@@ -1181,7 +1194,8 @@ export class FirearmMechanics {
     const seed = Math.floor(Rng.stream(item.uid, `live-shell:${state.cycle!.startedAt}`).next() * 4_294_967_296) >>> 0;
     const modelId = defOf(this.inventory.registry, type).model;
     const startedAt = this.ejectionAt(state, data);
-    state.landing = {
+    state.landings ??= [];
+    state.landings.push({
       at: startedAt + CASE_FLIGHT_SECONDS,
       startedAtSimSeconds: startedAt,
       position: [...landing],
@@ -1189,7 +1203,7 @@ export class FirearmMechanics {
       type,
       seed,
       ...(modelId ? { modelId } : {}),
-    };
+    });
     this.onEjection({
       origin: emission.origin,
       direction: emission.direction,
@@ -1239,7 +1253,8 @@ export class FirearmMechanics {
     state.cycle!.ejected = true;
     if (landing) {
       const startedAt = this.ejectionAt(state, data);
-      state.landing = {
+      state.landings ??= [];
+      state.landings.push({
         at: startedAt + CASE_FLIGHT_SECONDS,
         startedAtSimSeconds: startedAt,
         position: [...landing],
@@ -1247,7 +1262,7 @@ export class FirearmMechanics {
         type,
         seed: pending.seed,
         ...(data.caseModelId ? { modelId: data.caseModelId } : {}),
-      };
+      });
       this.onEjection({
         origin: emission.origin,
         direction: emission.direction,
