@@ -501,21 +501,12 @@ try {
     impactPresentation.laserSegments > 0 && impactPresentation.laserVisibleAfterFire,
     'debug trajectory segments are visible in the renderer',
   );
-  await page.waitForFunction(() => !globalThis.fullAutoRuntime.inventory.hands.right.firearm?.landings?.length);
-  const cadence = await page.evaluate(() => ({
-    shots: globalThis.fullAutoProbe.shots,
-    cases:
-      [...globalThis.fullAutoRuntime.inventory.piles.values()]
-        .flatMap((pile) => pile.items)
-        .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
-        .reduce((sum, { item }) => sum + item.count, 0) - globalThis.fullAutoProbe.casesBefore,
-  }));
+  const cadence = await page.evaluate(() => ({ shots: globalThis.fullAutoProbe.shots }));
   assert.equal(
     cadence.shots.length,
     27,
     'holding AR primary fires 27 shots in the half-open two-second burst at 800 rpm',
   );
-  assert.equal(cadence.cases, 27, 'every automatic shot records a persistent case');
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.trajectories),
     cadence.shots.length,
@@ -620,6 +611,15 @@ try {
     nativeSpan >= 1.85 && nativeSpan <= 2.1,
     `native two-second burst span ${nativeSpan}s (1.95s attack span, <=150ms scheduling allowance)`,
   );
+  await page.waitForFunction(() => !globalThis.fullAutoRuntime.inventory.hands.right.firearm?.landings?.length);
+  const persistentCases = await page.evaluate(
+    () =>
+      [...globalThis.fullAutoRuntime.inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
+        .reduce((sum, { item }) => sum + item.count, 0) - globalThis.fullAutoProbe.casesBefore,
+  );
+  assert.equal(persistentCases, 27, 'every automatic shot records a persistent case');
   assert.ok(native.peak <= 64, '32 full voices plus at most 32 fading tails');
   assert.ok(
     native.records.some(({ stops }) => stops.length),
