@@ -104,8 +104,8 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   expect(world.getChunk(0, 1, 0)).toBeUndefined();
   expect(events).toContainEqual([0, 32, 0]);
   update();
-  expect(sky.at([2, 14.5, 2])).toBeGreaterThan(0);
-  expect(sky.at([2, 14.5, 2])).toBeLessThan(1);
+  expect(sky.at([2, 14.5, 2])).toBe(1);
+  expect(sky.inspect()[0]!.current).toBe(false);
 });
 
 it('reports generated-column transitions that match the generated-column snapshot', () => {

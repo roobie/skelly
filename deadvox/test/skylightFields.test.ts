@@ -97,6 +97,27 @@ it('discards a worker completion after a roof edit instead of publishing stale f
   expect(fixture.sky.at([8.5, 8.5, 8.5])).toBeLessThan(1);
 });
 
+it('keeps a resident room dark during an opening edit and swaps only the accepted replacement', () => {
+  const fixture = skyFixture();
+  const point: Vec3 = [5.5, 5.5, 8.5];
+  fixture.update();
+  fixture.complete();
+  fixture.update();
+  const before = fixture.sky.at(point);
+  expect(before).toBe(0);
+  fixture.world.setBlock(4, 5, 8, 0);
+  fixture.sky.chunkChanged([0, 0, 0]);
+  fixture.update();
+  expect(fixture.pending.length).toBeGreaterThan(0);
+  expect(fixture.sky.at(point)).toBe(before);
+  expect(fixture.sky.inspect()[0]!.current).toBe(false);
+  fixture.complete();
+  fixture.update();
+  expect(fixture.sky.inspect()[0]!.current).toBe(true);
+  expect(fixture.sky.at(point)).toBeGreaterThan(before);
+  expect(fixture.sky.at(point)).toBeLessThan(1);
+});
+
 it('retains CPU results across GPU eviction and reentry without a bright fallback or rebuild', () => {
   const boxes = Array.from({ length: 5 }, (_, index) => ({
     min: fixtureBox.min.map((value, axis) => value + (axis === 0 ? index * 32 : 0)) as Vec3,

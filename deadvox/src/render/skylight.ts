@@ -43,6 +43,7 @@ interface Field {
   revision: number;
   attempted: boolean;
   result: SkyResult | undefined;
+  resultRevision: number | undefined;
   entityKey: string;
   heightOffset: number;
 }
@@ -159,6 +160,7 @@ export class Skylight {
         revision: 0,
         attempted: false,
         result: undefined,
+        resultRevision: undefined,
         entityKey: '',
         heightOffset,
       };
@@ -178,7 +180,6 @@ export class Skylight {
 
   private invalidate(field: Field): void {
     field.revision += 1;
-    field.result = undefined;
     field.attempted = false;
     this.metadataDirty = true;
   }
@@ -234,6 +235,7 @@ export class Skylight {
       return;
     }
     preparation.field.result = result;
+    preparation.field.resultRevision = preparation.revision;
     this.stats.accepted += 1;
     if (result.volume) {
       this.stats.volumes += 1;
@@ -424,6 +426,7 @@ export class Skylight {
       return {
         bounds: { min: [...field.bounds.min] as Vec3, max: [...field.bounds.max] as Vec3 },
         complete: field.result !== undefined,
+        current: field.result !== undefined && field.resultRevision === field.revision,
         resident: this.active.includes(field),
         volume: volume
           ? {

@@ -13,7 +13,9 @@ import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
+import { measureSkyRoute } from './sky-measurement.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
+import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
@@ -65,7 +67,7 @@ engine.scene.onBeforeRender = function(...args) {
   if(!fields.length) throw new Error('Camo arrival witness has no eligible field');
   arrival.renderedFrames++;
   arrival.firstMeshRealMs ??= performance.now();
-  if(fields.every(field=>field.complete)) arrival.readyRealMs ??= performance.now();
+  if(fields.every(field=>field.current)) arrival.readyRealMs ??= performance.now();
   else arrival.pendingFrames++;
 };
 `
@@ -77,6 +79,7 @@ const vite = await createServer({
   logLevel: 'error',
   server: { host: '127.0.0.1', port: 0 },
   plugins: [
+    skyTimingPlugin(),
     {
       name: 'stairs-test-observation',
       enforce: 'pre',
@@ -177,6 +180,7 @@ try {
     helpDialogs.push(dialog.message());
     await dialog.dismiss();
   });
+  await page.addInitScript(initializeSkyTiming);
   await page.addInitScript(() => {
     globalThis.nativeGateEvents = [];
     for (const type of ['keydown', 'keyup']) {
@@ -451,6 +455,17 @@ try {
       },
       { data: png.toString('base64'), height: cropHeight },
     );
+  const waitForSkyFields = (points) =>
+    page.waitForFunction((samples) => {
+      const { engine } = globalThis.stairsWitness;
+      const blocks = samples.map((point) => point.map((value) => value / engine.config.scale.blockSize));
+      const fields = engine.skylight
+        .inspect()
+        .filter(({ bounds }) =>
+          blocks.some((point) => point.every((value, axis) => value >= bounds.min[axis] && value < bounds.max[axis])),
+        );
+      return fields.length > 0 && fields.every((field) => field.current);
+    }, points);
   const camoWallPixels = async (png) =>
     page.evaluate(async (data) => {
       const image = new Image();
@@ -504,14 +519,7 @@ try {
     }, png.toString('base64'));
   const lightingCellarProofs = async () => {
     await stage([134, 35.0001, 115]);
-    await page.waitForFunction(() => {
-      const { engine } = globalThis.stairsWitness;
-      const point = [81.5, 28, 59].map((value) => value / engine.config.scale.blockSize);
-      const fields = engine.skylight
-        .inspect()
-        .filter(({ bounds }) => point.every((value, axis) => value >= bounds.min[axis] && value < bounds.max[axis]));
-      return fields.length > 0 && fields.every((field) => field.complete);
-    });
+    await waitForSkyFields([[81.5, 28, 59]]);
     const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
     assert.equal(raisedOutdoor, 1);
     const lightProof = await timePhase('cellar-dark-beam-pixels', async () => {
@@ -555,6 +563,12 @@ try {
         const { engine } = globalThis.stairsWitness;
         return [engine.skylight.at([67, 17.6, 57.5]), engine.skylight.at([83, 23.6, 57.5])];
       });
+    await timePhase('resident-field-readiness', () =>
+      waitForSkyFields([
+        [67, 17.6, 57.5],
+        [83, 23.6, 57.5],
+      ]),
+    );
     const first = await timePhase('first-resident-samples', residents);
     assert.deepEqual(first, [0, 0]);
     await stage([166, 47.0001, 115]);
@@ -591,8 +605,22 @@ try {
       'the known noncandidate canopy column is covered by the height texture',
     );
     assert.deepEqual(selection.roofFree, { cpu: 1, shader: 1 }, 'completed roof-free discovery is not stuck pending');
+    assert.deepEqual(
+      selection.editedPending,
+      { cpu: 0, shader: 0 },
+      'an edited resident room keeps its committed darkness',
+    );
+    assert.ok(
+      selection.editedReady.cpu > 0 && selection.editedReady.shader > 0,
+      'the accepted opening admits diffuse sky',
+    );
+    assert.ok(
+      Math.abs(selection.editedReady.cpu - selection.editedReady.shader) <= 1 / 255,
+      'the replacement agrees on CPU/shader',
+    );
     const outdoorProof = await timePhase('outdoor-sky-equivalence', async () => {
       await stage([125, 43.0001, 118]);
+      await waitForSkyFields([[62.5, 21.5, 59]]);
       await page.evaluate(() => {
         globalThis.stairsWitness.input.pitch = -0.3;
       });
@@ -614,12 +642,16 @@ try {
   };
   const lightingAtlasProofs = async () => {
     const secondSlotProof = await timePhase('atlas-slot-wall-equivalence', async () => {
+      const frameAtStage = await stage([157, 43.0001, 118], undefined, undefined, { captureFrame: true });
+      await waitForSkyFields([
+        [65.75, 18.75, 59.25],
+        [81.75, 24.75, 59.25],
+      ]);
       const contrast = await page.evaluate(() => {
         const { engine } = globalThis.stairsWitness;
         return [engine.skylight.at([65.75, 18.75, 59.25]), engine.skylight.at([81.75, 24.75, 59.25])];
       });
       assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
-      const frameAtStage = await stage([157, 43.0001, 118], undefined, undefined, { captureFrame: true });
       await page.waitForFunction(
         (frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame,
         frameAtStage,
@@ -654,19 +686,10 @@ try {
   };
   if (mode === 'camo') {
     await stage([155, 43.0001, 122], Math.PI / 2, -0.2);
-    await page.waitForFunction(() => {
-      const { engine } = globalThis.stairsWitness;
-      const points = [
-        [151.5, 43.1, 121.1],
-        [151.5, 43.5, 121.5],
-      ];
-      const fields = engine.skylight
-        .inspect()
-        .filter(({ bounds }) =>
-          points.some((point) => point.every((value, axis) => value >= bounds.min[axis] && value < bounds.max[axis])),
-        );
-      return fields.length > 0 && fields.every((field) => field.complete);
-    });
+    await waitForSkyFields([
+      [75.75, 21.55, 60.55],
+      [75.75, 21.75, 60.75],
+    ]);
     const originalModes = await page.evaluate(() => {
       const { engine } = globalThis.stairsWitness;
       return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn };
@@ -708,12 +731,19 @@ try {
         plain,
         patternedRatio: ratio(patterned),
         plainRatio: ratio(plain),
+        timing: summarizeSkyTiming(
+          await page.evaluate(() => ({ events: globalThis.skyTiming.events, jobs: globalThis.skyTiming.jobs })),
+        ),
         arrival: await page.evaluate(() => {
           const arrival = globalThis.stairsWitness.camoArrival;
           if (arrival.firstMeshRealMs === null || arrival.readyRealMs === null || arrival.renderedFrames === 0) {
             throw new Error('Missing camo arrival observation');
           }
-          return { ...arrival, meshToReadyRealMs: arrival.readyRealMs - arrival.firstMeshRealMs };
+          return {
+            ...arrival,
+            timeOriginRealMs: performance.timeOrigin,
+            meshToReadyRealMs: arrival.readyRealMs - arrival.firstMeshRealMs,
+          };
         }),
       };
       process.stdout.write(`CAMO_SKY_EVIDENCE ${JSON.stringify(camoAo)}\n`);
@@ -1200,6 +1230,9 @@ try {
     ({ residentProof } = await timePhase('lighting-resident-proofs', lightingResidentProofs));
   } else if (mode === 'lighting-outdoor') {
     ({ outdoorProof } = await lightingOutdoorProofs());
+    await page.close();
+    await vite.close();
+    await timePhase('dense-camp-cold-warm-evidence', () => measureSkyRoute(browser, root, artifacts));
   } else if (mode === 'lighting-atlas') {
     ({ secondSlotProof } = await lightingAtlasProofs());
   }

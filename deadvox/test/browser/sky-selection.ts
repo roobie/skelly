@@ -64,6 +64,15 @@ export function runSkySelectionProof() {
       canopy: sample(canopy),
       above: sample([room[0], fixtureBox.max[1] + 0.5, room[2]]),
     };
+    fixture.world.setBlock(4, 5, 8, 0);
+    fixture.sky.chunkChanged([0, 0, 0]);
+    fixture.update();
+    const editedPending = sample([5.5, 5.5, 8.5]);
+    while (fixture.pending.length > 0) {
+      fixture.complete();
+      fixture.update();
+    }
+    const editedReady = sample([5.5, 5.5, 8.5]);
     const heightTexture = compiled.uniforms.uSkyHeights!.value.image;
     const regionData = compiled.uniforms.uSkyRegions!.value.image.data;
     const canopyColumn =
@@ -88,6 +97,8 @@ export function runSkySelectionProof() {
     const roofFree = sample(room);
     return {
       canopyColumnHeight,
+      editedPending,
+      editedReady,
       roofFree,
       requested: fixture.sky.stats.requested,
       completed: fixture.sky.stats.completed,

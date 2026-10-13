@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you decide how sunlight, shadows or uncertified interior sky should read in play
+  - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you change the player's collision body, movement pace by direction, or what crouching lets the player fit through
@@ -801,10 +801,14 @@ See `src/core/skyTransport.ts`, `buildSkyResult`, and `src/render/skylight.ts`, 
 Inside those application regions, an uncertified column uses a capped version of
 the existing estimate rather than blackout: cold discovery must not make an open
 surface appear sealed. The cap is provisional visual tuning for BR's first look,
-not proof that the geometry is open. Current column heights certify open air above
-opaque tops; below them, nonresident transport uses the conservative height estimate.
-An unknown overlapping field cannot brighten a column another field has certified.
-CPU and shader share this policy. Cached CPU results survive GPU eviction so
+not proof that the geometry is open. Once lighting has been published, keep that
+committed estimate while geometry edits are revalidated: replacing a dark room with
+the uncertainty cap would flash it bright when a door opens. The accepted replacement
+swaps atomically; a late result for superseded geometry still cannot publish.
+Retained column heights supply the nonresident estimate, and an unknown overlapping
+field cannot override a published certificate. CPU and shader share this policy.
+This stale display can delay a darkening edit or step visibly at replacement; it is
+presentation latency, not permission to treat stale geometry as a current result. Cached CPU results survive GPU eviction so
 re-entry does not repeat transport. Outside these
 regions, preserve the existing sky estimate: otherwise a canopy with no discovery job
 could remain permanently dark. Solve halos and spatial lookup cells do not expand

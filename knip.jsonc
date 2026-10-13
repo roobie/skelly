@@ -21,7 +21,8 @@
       "ignoreUnresolved": [
         // Vite resolves this browser URL from the Deadvox root at runtime.
         "/src/game/saveStorage.ts",
-        "/test/browser/sky-selection.ts"
+        "/test/browser/sky-selection.ts",
+        "/test/browser/sky-geometry.ts"
       ],
       "entry": [
         "index.html!",
