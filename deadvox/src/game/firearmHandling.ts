@@ -1143,10 +1143,25 @@ export class FirearmMechanics {
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const twoHanded = Boolean(defOf(this.inventory.registry, item.type).twoHanded);
     const eye: Vec3 = pose.eye.map((value) => value * pose.blockSize) as Vec3;
-    return {
-      ...heldEjectionPose({ model: data.model, side, twoHanded, eye, yaw: pose.yaw, pitch: pose.pitch }),
-      feet: [...pose.feet],
-    };
+    const held = heldEjectionPose({ model: data.model, side, twoHanded, eye, yaw: pose.yaw, pitch: pose.pitch });
+    const { origin: portOrigin } = held;
+    let origin = portOrigin;
+    const originBlocks: Vec3 = origin.map((value) => value / this.blockSize) as Vec3;
+    if (this.isSolid(...(originBlocks.map(Math.floor) as Vec3))) {
+      const eyeBlocks: Vec3 = [...pose.eye];
+      const eyeCell: Vec3 = eyeBlocks.map(Math.floor) as Vec3;
+      const towardPort = originBlocks.map((value, axis) => value - eyeBlocks[axis]!) as Vec3;
+      const distance = Math.hypot(...towardPort);
+      if (distance > 0 && !this.isSolid(...eyeCell)) {
+        const direction = towardPort.map((value) => value / distance) as Vec3;
+        const hit = raycast(eyeBlocks, direction, distance, this.isSolid);
+        if (hit) {
+          const lastFreeDistance = Math.max(0, hit.distance - 1e-6);
+          origin = eye.map((value, axis) => value + direction[axis]! * lastFreeDistance * this.blockSize) as Vec3;
+        }
+      }
+    }
+    return { ...held, origin, feet: [...pose.feet] };
   }
 
   /**

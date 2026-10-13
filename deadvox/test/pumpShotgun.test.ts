@@ -1,15 +1,19 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { NEUTRAL_AIM } from '../src/core/aim.ts';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { worldSolid } from '../src/core/collision.ts';
+import { blockId, buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
-import { type Item, weightOf } from '../src/core/items.ts';
+import { defOf, type Item, weightOf } from '../src/core/items.ts';
 import { BUCK_HALF_ANGLE, type PelletShot } from '../src/core/pellets.ts';
+import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
@@ -23,6 +27,7 @@ import {
   firearmHandlingFor,
   SHELL_LOAD_SECONDS,
 } from '../src/game/firearmHandling.ts';
+import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
@@ -108,7 +113,7 @@ const fixture = (
     const duration = firearmHandlingFor(gun, inventory.registry).action.hand.durationSimSeconds;
     finish(duration, time + duration);
   };
-  const fire = (time: number) => mechanics.fire({ ...pose, item: gun, seed: 71, simTime: time });
+  const fire = (time: number) => mechanics.fire({ ...ejectionPose, item: gun, seed: 71, simTime: time });
   return {
     inventory,
     gun,
@@ -154,6 +159,67 @@ const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = ()
   });
 
 describe('real pump ammunition', () => {
+  it('drops a fired hull on supported ground at wall contact when the ejection port is clipped', () => {
+    const scale = makeScale(0.5);
+    const wallX = 2;
+    const world = new World();
+    const rock = blockId(registry, 'rock');
+    for (let x = -4; x <= 4; x++) {
+      for (let z = -4; z <= 4; z++) {
+        world.setBlock(x, 0, z, rock);
+      }
+    }
+    for (let y = 1; y <= 7; y++) {
+      for (let z = -4; z <= 4; z++) {
+        world.setBlock(wallX, y, z, rock);
+      }
+    }
+    const isSolid = worldSolid(world, registry, new BlockEntities(registry));
+    const yaw = -Math.PI / 2;
+    const body = createPlayerBody(scale, 0.9, 1.01, 0);
+    for (let frame = 0; frame < 30; frame++) {
+      steer(body, scale, yaw, { forward: 1, right: 0, jump: false, sprint: false, walk: true });
+      stepBody(body, 1 / 60, isSolid, physicsFor(scale));
+    }
+    expect(bodyOverlapsTerrain(body, isSolid)).toBe(false);
+    expect(body.onGround).toBe(true);
+    const ejectionPose = {
+      ...pose,
+      feet: [...body.pos] as Vec3,
+      eye: [body.pos[0], body.pos[1] + PLAYER.eye / scale.blockSize, body.pos[2]] as Vec3,
+      yaw,
+      pitch: 0,
+      aimFrame: NEUTRAL_AIM,
+    };
+    const f = fixture(registry, () => 0, ejectionPose, isSolid);
+    const port = heldEjectionPose({
+      model: firearmHandlingFor(f.gun, f.inventory.registry).model,
+      side: 'right',
+      twoHanded: defOf(registry, 'pump_shotgun').twoHanded === true,
+      eye: ejectionPose.eye.map((value) => value * scale.blockSize) as Vec3,
+      yaw,
+      pitch: 0,
+    }).origin;
+    expect(isSolid(...(port.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(true);
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    f.rack(4);
+    f.mechanics.advanceTo(8);
+    expect(f.effects).toHaveLength(1);
+    expect(isSolid(...(f.effects[0]!.origin.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
+
+    const casePiles = [...f.inventory.piles.values()].filter((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    );
+    expect(casePiles).toHaveLength(1);
+    const [casePile] = casePiles;
+    expect(casePile!.pos[0]).toBeLessThan(wallX);
+    expect(casePile!.pos[1]).toBe(1);
+    expect(isSolid(...casePile!.pos)).toBe(false);
+    expect(isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
+  });
+
   it('lands at the foot of a wall that blocks the outward case path', () => {
     const open = fixture();
     open.load(0);
