@@ -356,7 +356,6 @@ describe('canonical save format', () => {
     const carried = { uid: 1, type: 'rag', count: 1, condition: 1 };
     const state = {
       nextItemUid: 2,
-      pendingLandings: [],
       hands: { right: carried },
       worn: {},
       get piles() {

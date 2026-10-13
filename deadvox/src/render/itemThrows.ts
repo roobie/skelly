@@ -1,7 +1,7 @@
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, Vector3 } from 'three';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { Pile, Spot } from '../core/inventory.ts';
+import type { Inventory } from '../core/inventory.ts';
 import { PILE_GRID } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import { ITEM_ARC_HEIGHT_METRES, ITEM_FLIGHT_SECONDS, itemFlightPoint } from '../core/itemThrow.ts';
@@ -50,39 +50,26 @@ export class ItemThrows {
   spawn(
     {
       origin: from,
-      landing: to,
       item,
+      itemUid = item.uid,
       startedAtSimSeconds = 0,
       landingAt = ITEM_FLIGHT_SECONDS,
-      targetPos,
-      targetSpot,
-      mergeUid,
     }: {
       origin: Vec3;
-      landing: Vec3;
       item: Item;
+      itemUid?: number;
       startedAtSimSeconds?: number;
       landingAt?: number;
-      targetPos?: Vec3;
-      targetSpot?: Spot;
-      mergeUid?: number;
     },
-    pile?: Pile,
+    inventory: Inventory,
   ): void {
     const flight = this.flights.find((candidate) => !candidate.active) ?? this.createFlight();
     flight.active = true;
-    flight.itemUid = item.uid;
+    flight.itemUid = itemUid;
     flight.startedAtSimSeconds = startedAtSimSeconds;
     flight.landingAt = landingAt;
     flight.start.set(...from);
-    const destination =
-      pile && targetPos && targetSpot
-        ? (pileItemPosition(this.registry, pile, mergeUid ?? item.uid, {
-            blockSize: this.blockSize,
-            hasModel: (id) => this.models?.has(id) ?? false,
-          }) ?? to)
-        : to;
-    flight.end.set(...destination);
+    flight.end.set(...from);
     disposeItemEmissiveMaterials(flight.group);
     flight.group.clear();
     flight.modelVisual = false;
@@ -121,19 +108,29 @@ export class ItemThrows {
     }
 
     flight.group.visible = true;
-    this.drawFlight(flight, 0);
+    this.update(startedAtSimSeconds, inventory);
   }
 
-  update(simTime: number, pendingLandings?: ReadonlyMap<number, unknown>): void {
+  update(simTime: number, inventory: Inventory): void {
     for (const flight of this.flights) {
       if (!flight.active) {
         continue;
       }
-      if (pendingLandings && !pendingLandings.has(flight.itemUid) && simTime < flight.landingAt) {
+      const item = inventory.itemByUid(flight.itemUid);
+      const location = item && inventory.locate(item);
+      const destination =
+        location?.kind === 'pile'
+          ? pileItemPosition(this.registry, location.pile, flight.itemUid, {
+              blockSize: this.blockSize,
+              hasModel: (id) => this.models?.has(id) ?? false,
+            })
+          : undefined;
+      if (!destination) {
         flight.active = false;
         flight.group.visible = false;
         continue;
       }
+      flight.end.set(...destination);
       const duration = flight.landingAt - flight.startedAtSimSeconds;
       const progress = duration > 0 ? Math.max(0, (simTime - flight.startedAtSimSeconds) / duration) : 1;
       if (simTime >= flight.landingAt) {
@@ -148,6 +145,10 @@ export class ItemThrows {
 
   get activeCount(): number {
     return this.flights.filter((flight) => flight.active).length;
+  }
+
+  get hiddenItemUids(): ReadonlySet<number> {
+    return new Set(this.flights.filter((flight) => flight.active).map((flight) => flight.itemUid));
   }
 
   dispose(): void {
@@ -189,7 +190,9 @@ export class ItemThrows {
     const point = itemFlightPoint(flight.start.toArray() as Vec3, flight.end.toArray() as Vec3, progress);
     flight.group.position.set(...point);
     flight.direction.subVectors(flight.end, flight.start);
-    flight.direction.y += (Math.cos(Math.PI * progress) * ITEM_ARC_HEIGHT_METRES * Math.PI) / ITEM_FLIGHT_SECONDS;
+    flight.direction.y +=
+      (Math.cos(Math.PI * progress) * ITEM_ARC_HEIGHT_METRES * Math.PI) /
+      (flight.landingAt - flight.startedAtSimSeconds);
     flight.group.quaternion.setFromUnitVectors(flight.modelVisual ? RIGHT : UP, flight.direction.normalize());
   }
 }

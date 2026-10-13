@@ -282,13 +282,13 @@ export const createPlayView = (
       frozen,
       perceptionLabels,
     }: PlayWorldFrame) => {
-      itemThrows.update(time, inventory.pendingLandings);
+      itemThrows.update(time, inventory);
       blastFlashes.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
       applySky(engine.sky, sky);
       engine.mood?.setSky(sky);
-      piles.sync(inventory);
+      piles.sync(inventory, itemThrows.hiddenItemUids);
       furniture.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));

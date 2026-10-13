@@ -399,18 +399,6 @@ const targetStateSchema = obj({
 });
 const inventoryCore = obj({
   nextItemUid: positiveInt,
-  pendingLandings: arr(
-    obj({
-      item: lazy(() => itemSchema),
-      origin: vec3,
-      landing: vec3,
-      targetPos: vec3,
-      targetSpot: obj({ x: nonNegativeInt, y: nonNegativeInt, rotated: bool }),
-      mergeUid: opt(positiveInt),
-      startedAtSimSeconds: finite,
-      landingAt: finite,
-    }),
-  ),
   hands: obj({ right: opt(lazy(() => itemSchema)), left: opt(lazy(() => itemSchema)) }),
   worn: obj({
     head: opt(lazy(() => itemSchema)),
@@ -1006,7 +994,6 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       aim: snapshot.character.aim,
       inventory: {
         nextItemUid: savedInventory.nextItemUid,
-        pendingLandings: savedInventory.pendingLandings,
         hands: savedInventory.hands,
         worn: savedInventory.worn,
         looted: savedInventory.looted,

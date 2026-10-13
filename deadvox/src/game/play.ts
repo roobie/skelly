@@ -16,7 +16,7 @@ import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
-import type { HandSide, Inventory, ItemLanding, Pile, Target } from '../core/inventory.ts';
+import type { HandSide, Inventory, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import {
   hasMetThrowMinimumHold,
@@ -177,21 +177,6 @@ const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
   y * blockSize + 0.006,
   (z + 0.5) * blockSize,
 ];
-
-const pileForItemLanding = (inventory: Inventory, flight: ItemLanding<Item>): Pile => {
-  const pile = inventory.pileAt(flight.targetPos);
-  const items = [...(pile?.items ?? [])];
-  if (!items.some(({ item }) => item.uid === flight.mergeUid)) {
-    items.push({ item: flight.item, ...flight.targetSpot });
-  }
-  return { pos: [...flight.targetPos], items };
-};
-
-const resumeItemThrows = (inventory: Inventory, spawn: (flight: ItemLanding<Item>, pile: Pile) => void): void => {
-  for (const flight of inventory.pendingLandings.values()) {
-    spawn(flight, pileForItemLanding(inventory, flight));
-  }
-};
 
 const resumeCaseEffects = (
   inventory: Inventory,
@@ -1054,7 +1039,6 @@ export const startPlay = (
   );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
   resumeCaseEffects(inventory, s, (effect) => caseEffects.spawn(effect));
-  resumeItemThrows(inventory, (flight, pile) => itemThrows.spawn(flight, pile));
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -2542,25 +2526,16 @@ export const startPlay = (
       body.pos[1] * s + session.playerEyeHeightMetres + throwOffset[1],
       body.pos[2] * s + throwOffset[2],
     ];
-    const landing: Vec3 = [(target.pos[0] + 0.5) * s, (target.pos[1] + 0.15) * s, (target.pos[2] + 0.5) * s];
     const startedAtSimSeconds = sim.time;
     const landingAt = startedAtSimSeconds + ITEM_FLIGHT_SECONDS;
-    const landed = session.throwCharge.land(item, hand, target, {
-      origin,
-      landing,
-      startedAtSimSeconds,
-      landingAt,
-    });
+    const landed = session.throwCharge.place(item, hand, target);
     if (!landed.landed) {
       if (landed.reason) {
         showRefusal(landed.reason, sim.time);
       }
       return;
     }
-    const flight = inventory.pendingLandings.get(item.uid);
-    if (flight) {
-      itemThrows.spawn(flight, pileForItemLanding(inventory, flight));
-    }
+    itemThrows.spawn({ item, itemUid: landed.item.uid, origin, startedAtSimSeconds, landingAt }, inventory);
   }
 
   function itemLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {

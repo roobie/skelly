@@ -63,9 +63,10 @@ export class PileMeshes {
     this.glowsticks = new InstancedMesh(this.glowstickGeometry, this.glowstickMaterial, 1);
   }
 
-  /** Rebuilds ordinary pile meshes when inventory or models changed; case scatter stays instanced. */
-  sync(inventory: Inventory): void {
-    const version = `${inventory.version}:${this.models?.version ?? 0}`;
+  /** Rebuilds pile meshes when inventory, models, or transient throw visibility changed. */
+  sync(inventory: Inventory, hiddenItemUids: ReadonlySet<number> = new Set()): void {
+    const hidden = [...hiddenItemUids].sort((a, b) => a - b).join(',');
+    const version = `${inventory.version}:${this.models?.version ?? 0}:${hidden}`;
     if (version === this.drawn) {
       return;
     }
@@ -74,13 +75,13 @@ export class PileMeshes {
     this.group.clear();
     const casePlans = new Map<string, CasePlan>();
     for (const pile of inventory.piles.values()) {
-      this.drawPile(inventory, pile, casePlans);
+      this.drawPile(inventory, pile, casePlans, hiddenItemUids);
     }
     const visibleCaseVisuals = new Set<string>();
     for (const plan of casePlans.values()) {
       this.drawCasePlan(plan, visibleCaseVisuals);
     }
-    this.drawEmissiveLights(inventory);
+    this.drawEmissiveLights(inventory, hiddenItemUids);
     if (this.glowsticks.count > 0) {
       this.group.add(this.glowsticks);
     }
@@ -108,16 +109,25 @@ export class PileMeshes {
     this.drawn = '';
   }
 
-  private drawPile(inventory: Inventory, pile: Pile, casePlans: Map<string, CasePlan>): void {
-    const regularPile = {
+  private drawPile(
+    inventory: Inventory,
+    pile: Pile,
+    casePlans: Map<string, CasePlan>,
+    hiddenItemUids: ReadonlySet<number>,
+  ): void {
+    const visiblePile = {
       ...pile,
-      items: pile.items.filter(
+      items: pile.items.filter(({ item }) => !hiddenItemUids.has(item.uid)),
+    };
+    const regularPile = {
+      ...visiblePile,
+      items: visiblePile.items.filter(
         ({ item }) => defOf(inventory.registry, item.type).pileDisplay !== PILE_DISPLAY_KIND.scatter,
       ),
     };
     const layout = pileLayout(inventory.registry, regularPile, this.blockSize, (id) => this.models?.has(id) ?? false);
     this.drawModels(inventory, layout.models);
-    this.planSpentCases(inventory, pile, casePlans);
+    this.planSpentCases(inventory, visiblePile, casePlans);
     this.drawBundle(inventory, pile, layout.bundle);
   }
 
@@ -235,9 +245,12 @@ export class PileMeshes {
     }
   }
 
-  private drawEmissiveLights(inventory: Inventory): void {
+  private drawEmissiveLights(inventory: Inventory, hiddenItemUids: ReadonlySet<number>): void {
     const sources = [...inventory.piles.values()].flatMap((pile) =>
       pile.items.flatMap(({ item }) => {
+        if (hiddenItemUids.has(item.uid)) {
+          return [];
+        }
         const definition = defOf(inventory.registry, item.type);
         const { light } = definition;
         const bundleVisible = definition.model === undefined || !this.models?.has(definition.model);

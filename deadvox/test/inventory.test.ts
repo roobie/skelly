@@ -112,6 +112,23 @@ describe('grid placement', () => {
     expect(() => Inventory.restoreState(registry, after)).not.toThrow();
   });
 
+  it('refuses a same-pile swap when the final footprints overlap', () => {
+    const { inv } = dressed();
+    const small = onFloor(inv, 'rag');
+    const large = onFloor(inv, 'chocolate_bar');
+    const pile = { kind: 'pile', pos: [10, 0, 0] as [number, number, number] } as const;
+    const smallSpot = { ...pile, at: { x: 0, y: 0, rotated: false } };
+    const largeSpot = { ...pile, at: { x: 1, y: 0, rotated: false } };
+    expect(inv.move(small, smallSpot).ok).toBe(true);
+    expect(inv.move(large, largeSpot).ok).toBe(true);
+    const before = inv.snapshotState();
+
+    expect(inv.move(small, largeSpot).ok).toBe(false);
+    const after = inv.snapshotState();
+    expect(after).toEqual(before);
+    expect(() => Inventory.restoreState(registry, after)).not.toThrow();
+  });
+
   it('swaps items across containers when each fits the other stored place', () => {
     const { inv, backpack, hoodie } = dressed();
     const carried = onFloor(inv, 'rag', 1, 1);

@@ -1,13 +1,9 @@
-// A held item's throw, from the press that picks its hand and item, through the release or cancel that ends its
-// charge, to the player tick that lands it. The session owns it so a climber holds still while it charges (`DESIGN.md`, "Ladders and hatches"), and a replay, driven by the same recorded presses and releases, charges at the same ticks as
-// the live game and lands its recorded throws through the same `land`.
+// A held item's throw, from the press that picks its hand and item through release or cancel. The session owns it so a climber holds still while it charges (`DESIGN.md`, "Ladders and hatches").
 
 import { dominantSide, offSide } from '../core/character.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { HandSide, Inventory, Pile, Plan, Spot, Target } from '../core/inventory.ts';
-import type { Item, Placed } from '../core/items.ts';
+import type { HandSide, Inventory, Target } from '../core/inventory.ts';
+import type { Item } from '../core/items.ts';
 import type { LadderHold } from '../core/ladders.ts';
-import { pileItemPosition } from '../core/pileLayout.ts';
 
 /** What a press did: refused, nothing to throw, already throwing, waiting for handling to finish, or charging. */
 export type ThrowStart =
@@ -23,15 +19,13 @@ export interface ThrowRelease {
 export class ThrowCharge {
   private readonly inventory: Inventory;
   private readonly ladderHold: LadderHold;
-  private readonly blockSize: number;
   private chargeStartedAtSimSeconds: number | undefined;
   private chargeItemUid: number | undefined;
   private chargeHand: HandSide | undefined;
 
-  constructor(inventory: Inventory, ladderHold: LadderHold, blockSize = 1) {
+  constructor(inventory: Inventory, ladderHold: LadderHold) {
     this.inventory = inventory;
     this.ladderHold = ladderHold;
-    this.blockSize = blockSize;
   }
 
   /** Sim time the charge began; undefined while none charges, including while one waits for handling. */
@@ -110,74 +104,21 @@ export class ThrowCharge {
     return reason;
   }
 
-  /**
-   * Admits a released throw and transfers its item into simulation-owned flight state. The ladder admits the hand
-   * again here, as a hold can take it between the release and this tick.
-   */
-  land(
+  /** Commits the item to its pile at release; only the renderer presents the travel arc. */
+  place(
     item: Item,
     hand: HandSide,
     target: Extract<Target, { kind: 'pile' }>,
-    flight: { origin: Vec3; landing: Vec3; startedAtSimSeconds: number; landingAt: number },
-  ): { readonly landed: true } | { readonly landed: false; readonly reason?: string } {
-    const { inventory } = this;
+  ): { readonly landed: true; readonly item: Item } | { readonly landed: false; readonly reason?: string } {
     const ladderRefusal = this.ladderHold.refusal(hand);
     if (ladderRefusal) {
       return { landed: false, reason: ladderRefusal };
     }
-    const placement = inventory.planAdd(item, target);
-    if (!placement.ok) {
-      return { landed: false, reason: `Can't throw it there: ${placement.reason}` };
+    const placed = this.inventory.throwToPile(item, hand, target);
+    if (!placed.ok) {
+      return { landed: false, reason: `Can't throw it there: ${placed.reason}` };
     }
-    const destination = this.destination(item, target, placement);
-    if (!destination) {
-      return { landed: false };
-    }
-    const location = inventory.locate(item);
-    if (
-      location?.kind !== 'hand' ||
-      location.side !== hand ||
-      !inventory.beginItemFlight(item, hand, {
-        ...flight,
-        ...(destination.landing ? { landing: destination.landing } : {}),
-        targetPos: [...target.pos],
-        targetSpot: destination.targetSpot,
-        ...(destination.mergeUid === undefined ? {} : { mergeUid: destination.mergeUid }),
-      })
-    ) {
-      return { landed: false };
-    }
-    return { landed: true };
-  }
-
-  private destination(
-    item: Item,
-    target: Extract<Target, { kind: 'pile' }>,
-    placement: Extract<Plan, { ok: true }>,
-  ): { targetSpot: Spot; mergeUid?: number; landing?: Vec3 } | undefined {
-    let targetSpot = placement.at;
-    let mergeUid: number | undefined;
-    if (placement.merge) {
-      const location = this.inventory.locate(placement.merge);
-      if (location?.kind !== 'pile' || !location.pile.pos.every((axis, index) => axis === target.pos[index])) {
-        return undefined;
-      }
-      targetSpot = { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated };
-      mergeUid = placement.merge.uid;
-    }
-    if (!targetSpot) {
-      return undefined;
-    }
-    const pile = this.inventory.pileAt(target.pos);
-    const items: Placed[] = [...(pile?.items ?? [])];
-    if (!placement.merge) {
-      items.push({ item, ...targetSpot });
-    }
-    const projectedPile: Pile = { pos: [...target.pos], items };
-    const landing = pileItemPosition(this.inventory.registry, projectedPile, mergeUid ?? item.uid, {
-      blockSize: this.blockSize,
-    });
-    return { targetSpot, ...(mergeUid === undefined ? {} : { mergeUid }), ...(landing ? { landing } : {}) };
+    return { landed: true, item: placed.item };
   }
 
   cancel(): void {
