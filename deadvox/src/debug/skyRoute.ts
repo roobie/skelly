@@ -152,6 +152,7 @@ export function attachSkyRoute({ engine, session, debug, active }: Parameters<Sk
     }
     releaseSprint = holdRouteAction('movement.sprint');
     releaseMovement = holdRouteAction('movement.forward');
+    observer.reset();
     startedRealMs = performance.now();
     panel.progress('Sky route cold');
   };
