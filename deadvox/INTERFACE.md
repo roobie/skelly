@@ -60,6 +60,14 @@ The drawn cursor stays above ordinary panels while pointer lock is held; otherwi
 
 Keep the nearby inventory pane wide enough for a content-capped container; selected details yield before useful grids are squeezed. See [inventory-layout](docs/inventory-layout.md).
 
+## Title choice
+
+A compatible saved world makes Continue and replacement the primary, centred title
+choice. Replacement names its destructive effect and still requires confirmation;
+an empty canvas click must not choose it. Storage and build diagnostics stay secondary
+so they cannot bury the decision. Without a compatible save, the simple start remains.
+See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#overlay.startup-ready.saved-choice".
+
 ## Open direction
 
 - Add a spatial outline for the one usable thing in reach.
