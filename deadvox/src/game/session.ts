@@ -288,6 +288,7 @@ interface SessionDebug {
 
 export interface SessionOptions {
   registry: Registry;
+  scenario?: Readonly<{ body: string; compression: string }> | undefined;
   world: World;
   isSolid: SolidAt;
   isOpaque: SolidAt;
@@ -432,16 +433,16 @@ const createSessionCharacter = (
 ): Character =>
   restored ? Character.restoreState(registry, restored.character.progression) : new Character(registry, { handedness });
 
-const playerBodyTuning = (registry: Registry) => {
-  const tuning = registry.body.get(CORE_CONTENT_IDS.player);
+const playerBodyTuning = (registry: Registry, id: string = CORE_CONTENT_IDS.player) => {
+  const tuning = registry.body.get(id);
   if (!tuning) {
     throw new Error('Missing player body tuning');
   }
   return tuning;
 };
 
-const playerCompressionCaps = (registry: Registry) => {
-  const tuning = registry.compression.get(CORE_CONTENT_IDS.player);
+const playerCompressionCaps = (registry: Registry, id: string = CORE_CONTENT_IDS.player) => {
+  const tuning = registry.compression.get(id);
   if (!tuning) {
     throw new Error('Missing player compression tuning');
   }
@@ -610,12 +611,12 @@ export const createSession = (options: SessionOptions) => {
   const chest = (): Vec3 => [body.pos[0], body.pos[1] + INVENTORY_CHEST / s, body.pos[2]];
   const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
 
-  const bodyTuning = playerBodyTuning(registry);
+  const bodyTuning = playerBodyTuning(registry, options.scenario?.body);
   const sim = new Simulation({
     seed,
     bodyTuning,
     analgesics: (item) => registry.items.get(item)?.analgesic,
-    compressionCaps: playerCompressionCaps(registry),
+    compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),
     clock: { ratio: CLOCK_RATIO, start: options.start },
   });
   const { compression } = sim;

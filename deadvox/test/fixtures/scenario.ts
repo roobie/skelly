@@ -1,0 +1,125 @@
+import { readFileSync } from 'node:fs';
+import type { ContentSource } from '../../src/core/content.ts';
+import type { ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
+
+export const fixtureScenario = (): ScenarioDef => ({
+  id: 'fixture_scenario',
+  kind: 'gauntlet',
+  body: 'fixture_body',
+  compression: 'fixture_compression',
+  serviceTemplate: 'fixture_service',
+  portal: { hatch: 'T', ladder: 'H', upper: [6.5, 7, 4], lower: [3, 1, 4] },
+  city: {
+    blocksX: 1,
+    blocksZ: 1,
+    street: 4,
+    blockX: 20,
+    blockZ: 20,
+    pad: 2,
+    gap: 2,
+    blend: 4,
+    templates: ['fixture_house'],
+  },
+});
+
+const serviceCell = (x: number, y: number, z: number): string => {
+  if (y === 0) {
+    return '=';
+  }
+  if (y === 6) {
+    return x >= 3 && x <= 5 && z >= 3 && z <= 4 ? 'T' : '=';
+  }
+  if (y >= 6) {
+    return '.';
+  }
+  if (x === 4 && z >= 3 && z <= 4) {
+    return 'H';
+  }
+  return x > 0 && x < 7 && z > 0 && z < 7 ? '.' : '=';
+};
+
+export const fixtureService = (): TemplateDef => ({
+  id: 'fixture_service',
+  size: [10, 40, 8],
+  palette: {
+    '.': 'air',
+    '=': 'fixture_solid',
+    H: { furniture: 'fixture_ladder', facing: 'w' },
+    T: { furniture: 'fixture_hatch', facing: 'w' },
+  },
+  layers: Array.from({ length: 40 }, (_layerValue, layer) =>
+    Array.from({ length: 8 }, (_rowValue, row) =>
+      Array.from({ length: 10 }, (_columnValue, column) => serviceCell(column, layer, row)).join(''),
+    ),
+  ),
+  access: { ground: 'ground', entrance: [2, 7, 2], storeys: [{ id: 'ground', floor: 7 }], stairs: [] },
+});
+
+export const fixtureScenarioSources = (scenario = fixtureScenario(), service = fixtureService()): ContentSource[] => {
+  const {
+    body: [body],
+  } = JSON.parse(readFileSync('src/content/base/body.json', 'utf8'));
+  const {
+    compression: [compression],
+  } = JSON.parse(readFileSync('src/content/base/compression.json', 'utf8'));
+  return [
+    {
+      source: 'scenario-fixture.json',
+      data: {
+        blocks: [
+          { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
+          { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },
+        ],
+        furniture: [
+          {
+            id: 'fixture_ladder',
+            name: 'Fixture ladder',
+            size: [2, 1, 1],
+            color: '#808080',
+            solid: false,
+            climbable: { speedMetresPerSimSecond: 1.5 },
+          },
+          {
+            id: 'fixture_hatch',
+            name: 'Fixture hatch',
+            size: [2, 1, 3],
+            color: '#808080',
+            door: { handlingSimSeconds: 0.2, hatch: true },
+          },
+          {
+            id: 'fixture_crate',
+            name: 'Fixture crate',
+            size: [1, 1, 1],
+            color: '#808080',
+            container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 1 }] },
+            loot: 'fixture_loot',
+          },
+        ],
+        items: [{ id: 'fixture_token', name: 'Fixture token', category: 'material', weight: 1, size: [1, 1] }],
+        loot: [{ id: 'fixture_loot', rolls: [1, 2], entries: [{ weight: 1, item: 'fixture_token' }] }],
+        templates: [
+          service,
+          {
+            id: 'fixture_small_house',
+            size: [3, 3, 4],
+            palette: { '=': 'fixture_solid' },
+            layers: Array.from({ length: 3 }, (_layerValue) => Array.from({ length: 4 }, () => '===')),
+          },
+          {
+            id: 'fixture_house',
+            size: [4, 3, 4],
+            palette: { '=': 'fixture_solid', C: { furniture: 'fixture_crate' } },
+            layers: Array.from({ length: 3 }, (_layerValue, layer) =>
+              Array.from({ length: 4 }, (_rowValue, row) => (layer === 1 && row === 1 ? '=C==' : '====')),
+            ),
+          },
+        ],
+        body: [{ ...body, id: scenario.body, fatigueRisePerGameHour: body.fatigueRisePerGameHour + 1 }],
+        compression: [
+          { ...compression, id: scenario.compression, caps: { ...compression.caps, wait: compression.caps.wait + 1 } },
+        ],
+        scenarios: [scenario],
+      },
+    },
+  ];
+};

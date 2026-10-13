@@ -7,7 +7,7 @@ read_if:
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
-  - you're implementing gauntlet scenario admission, discovery, underground lab depth or its visual approval gate
+  - you're implementing gauntlet scenario admission, shared city planning, portal proofs, underground lab depth or its visual approval gate
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
@@ -314,6 +314,34 @@ world edge. Ordinary body defaults and existing spawn admission keep scenario
 pressure a content decision rather than a hidden needs or enemy-rule fork; city
 size, scarcity and pressure require in-game judgment. Multi-day growth and needs
 rate authoring are outside #671's first version.
+
+The benchmark and scenario consume one finished placement plan so their street
+and stamping rules cannot diverge as city authoring changes. Planning reserves
+connected street space and an apron before filling ordinary lots; the service
+choice uses a separate seed domain so incidental template changes cannot move
+the destination. Benchmark stacking stays a deliberate stress policy, not a
+promise of playable upper floors or scenario population. See `src/core/cityPlan.ts`,
+`buildCityPlan`; `src/core/citySite.ts`, `CitySite`; and the consumers in
+`src/core/city.ts` and `src/core/gauntlet.ts`.
+
+Admission fails closed because a profile with dangling references, an ambiguous
+selector or a service footprint that fits only some turns is not a valid seeded
+scenario. Local portal predicates include landing support and open-hatch body
+clearance; palette markers distinguish the entry column from later descents that
+reuse the same furniture. Voxel queries must address whole cells even when a
+sweep samples fractional feet heights. The plan freezes placement decisions;
+compiled template buffers remain compiler-owned inputs. Stamping never consumes
+the column index, because a later vertical chunk or furniture request needs the
+same complete plan. See `scenarioPlanIssues` in `src/core/cityPlan.ts`,
+`scenarioPortalIssues` in `src/core/scenarioPortal.ts`, and `templateBodySpace`
+in `src/core/templateSpatial.ts`.
+
+R1's owned fixtures and plan certificate deliberately stop short of the composed
+world. Reusing the bounded look's service template in `src/content/base/scenarios.jsonnet`
+allows profile plumbing to be exercised without approving it as final content.
+The composed terrain, furniture, resource and clue route belongs to #671's R2
+exit; later descents, goal persistence, discovery, survival pressure and hardware
+performance cannot be inferred from the local entry-portal proof.
 
 The lab is a multi-storey subterranean place whose danger rises with depth, with
 the objective at the bottom. Separate descents make deeper access a sequence of

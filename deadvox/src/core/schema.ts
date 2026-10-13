@@ -1133,6 +1133,31 @@ const SiteLayoutSchema = strictObject({
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
 });
 
+const ScenarioSchema = strictObject({
+  id: Id,
+  kind: literal('gauntlet'),
+  body: Id,
+  compression: Id,
+  serviceTemplate: Id,
+  portal: strictObject({
+    hatch: Char,
+    ladder: Char,
+    upper: CellPosition,
+    lower: CellPosition,
+  }),
+  city: strictObject({
+    blocksX: pipe(Count, minValue(1), maxValue(4)),
+    blocksZ: pipe(Count, minValue(1), maxValue(4)),
+    street: pipe(Count, minValue(4), maxValue(64)),
+    blockX: pipe(Count, minValue(8), maxValue(256)),
+    blockZ: pipe(Count, minValue(8), maxValue(256)),
+    pad: pipe(Count, minValue(2), maxValue(32)),
+    gap: pipe(Count, minValue(1), maxValue(32)),
+    blend: pipe(Count, maxValue(64)),
+    templates: pipe(array(Id), minLength(1), maxLength(32)),
+  }),
+});
+
 // ---- zombies ----
 
 export type ShamblerHitRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
@@ -1763,6 +1788,7 @@ const SECTION_DESCRIPTOR = {
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
   compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
+  scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1783,6 +1809,7 @@ export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
+export type ScenarioDef = InferOutput<typeof ScenarioSchema>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;

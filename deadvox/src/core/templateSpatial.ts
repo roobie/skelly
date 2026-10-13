@@ -11,7 +11,7 @@ const BODY_HEIGHT = STAIR_BODY_HEIGHT;
 const BODY_HALF_WIDTH = STAIR_BODY_HALF_WIDTH;
 
 function* bodyCells([x, feet, z]: Vec3): Generator<Vec3> {
-  for (let y = feet; y < Math.ceil(feet + BODY_HEIGHT); y++) {
+  for (let y = Math.floor(feet); y < Math.ceil(feet + BODY_HEIGHT); y++) {
     for (let bz = Math.floor(z - BODY_HALF_WIDTH); bz < Math.ceil(z + BODY_HALF_WIDTH); bz++) {
       for (let bx = Math.floor(x - BODY_HALF_WIDTH); bx < Math.ceil(x + BODY_HALF_WIDTH); bx++) {
         yield [bx, y, bz];
@@ -20,6 +20,11 @@ function* bodyCells([x, feet, z]: Vec3): Generator<Vec3> {
   }
 }
 export type SpatialIssue = [string, string];
+
+export const templateBodySpace = (registry: Registry, template: CompiledTemplate) => {
+  const space = new TemplateSpace(registry, template);
+  return { standing: (position: Vec3) => space.standing(position), clear: (position: Vec3) => space.clear(position) };
+};
 const key = (pos: Vec3): string => pos.join(',');
 
 class TemplateSpace {

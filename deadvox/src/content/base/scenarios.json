@@ -1,0 +1,28 @@
+{
+  "scenarios": [
+    {
+      "body": "player",
+      "city": {
+        "blend": 24,
+        "blockX": 72,
+        "blockZ": 64,
+        "blocksX": 1,
+        "blocksZ": 1,
+        "gap": 2,
+        "pad": 2,
+        "street": 12,
+        "templates": ["small_house", "shed", "workshop_hall"]
+      },
+      "compression": "player",
+      "id": "gauntlet",
+      "kind": "gauntlet",
+      "portal": {
+        "hatch": "T",
+        "ladder": "H",
+        "lower": [18, 17, 16],
+        "upper": [22, 25, 16]
+      },
+      "serviceTemplate": "gauntlet_look_service"
+    }
+  ]
+}

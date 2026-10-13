@@ -744,6 +744,7 @@ export const startPlay = (
   let perceptionLabelsEnabled = false;
   const session = createSession({
     registry,
+    scenario: engine.scenario,
     handedness: config.debugHandedness ?? options.handedness,
     world: engine.world,
     isSolid: engine.isSolid,

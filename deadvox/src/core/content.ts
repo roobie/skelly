@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { scenarioPlanIssues } from './cityPlan.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
@@ -1018,6 +1019,26 @@ const checkCamoBlocks = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkScenarios = (registry: Registry, report: Report): void => {
+  for (const scenario of registry.scenarios.values()) {
+    for (const [path, message] of scenarioPlanIssues(registry, scenario)) {
+      report('scenarios', scenario.id, path, message);
+    }
+    if (!registry.body.has(scenario.body)) {
+      report('scenarios', scenario.id, '.body', `no body tuning "${scenario.body}"`);
+    }
+    if (!registry.compression.has(scenario.compression)) {
+      report('scenarios', scenario.id, '.compression', `no compression tuning "${scenario.compression}"`);
+    }
+    if (
+      registry.layouts.has(scenario.id) ||
+      ['hamlet', 'city', 'forest', 'testHouse', 'weatheringTest'].includes(scenario.id)
+    ) {
+      report('scenarios', scenario.id, '.id', 'scenario id collides with another site selector');
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -1046,6 +1067,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }
+  checkScenarios(registry, report);
   return issues;
 };
 

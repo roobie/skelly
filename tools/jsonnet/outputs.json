@@ -49,6 +49,10 @@
       "output": "deadvox/src/content/base/saves.json"
     },
     {
+      "source": "deadvox/src/content/base/scenarios.jsonnet",
+      "output": "deadvox/src/content/base/scenarios.json"
+    },
+    {
       "source": "deadvox/src/content/base/senses.jsonnet",
       "output": "deadvox/src/content/base/senses.json"
     },

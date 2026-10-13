@@ -5,12 +5,14 @@ import { worldOpaque, worldSolid } from '../core/collision.ts';
 import { blockColors, blockId, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
+import { GauntletSite } from '../core/gauntlet.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { Rng } from '../core/random.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
+import type { ScenarioDef } from '../core/schema.ts';
 import type { FurnitureSpawn, Rect, Site } from '../core/site.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
@@ -28,6 +30,7 @@ export interface WorldSetup {
   registry: Registry;
   /** Content problems, one per line; empty when all content loaded. */
   contentErrors: string;
+  scenario: ScenarioDef | undefined;
   world: World;
   /** Furniture and doors. The game adds them as their columns generate. */
   entities: BlockEntities;
@@ -186,6 +189,10 @@ export const buildDebugTestHouseSite = (
  * Otherwise (other block sizes, broken content) the world has the test house.
  */
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
+  const scenario = registry.scenarios.get(config.site);
+  if (scenario) {
+    return new GauntletSite(config.seed, registry, config.scale, scenario);
+  }
   const layout = registry.layouts.get(config.site);
   if (layout) {
     return new AuthoredSite(config.seed, registry, config.scale, layout);
@@ -251,6 +258,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     config,
     registry,
     contentErrors,
+    scenario: registry.scenarios.get(config.site),
     world,
     entities,
     site: built,
