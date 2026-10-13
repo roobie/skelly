@@ -1,5 +1,4 @@
-// A rifle as the player sees it: drawn with the magazine it really has in every view (DESIGN.md, "One item, one
-// look"), and its handling played on it from the job alone.
+// A rifle as the player sees it: drawn with the magazine it really has in every view (`DESIGN.md`, "Piles and item models"), and its handling played on it from the job alone.
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {

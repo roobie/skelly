@@ -1,4 +1,4 @@
-// Ladders (DESIGN.md, "Ladders and hatches"): furniture only the player climbs, after grabbing it. A body is on a
+// Ladders (`DESIGN.md`, "Ladders and hatches"): furniture only the player climbs, after grabbing it. A body is on a
 // ladder while it overlaps one of the ladder's cells, counting a step's height below its feet. A climb ends with the
 // feet level with the ladder's top, where moving toward the ladder steps off onto what it serves.
 

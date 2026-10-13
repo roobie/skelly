@@ -8,6 +8,7 @@ import {
   checkPolicyRules,
   compare,
   comparePolicy,
+  githubSlug,
   parsePythonReadIf,
 } from '../tools/zero-drift-check.mjs';
 
@@ -15,6 +16,10 @@ const docPath = 'docs/test.md';
 const pythonReadIf = (reasons = ['read this']) => new Map([[docPath, reasons]]);
 const document = (body = '', frontMatter = 'read_if: [read this]') => `---\n${frontMatter}\n---\n${body}`;
 let root;
+const code = (text) => `${String.fromCharCode(96)}${text}${String.fromCharCode(96)}`;
+const cue = (path, name) => `${code(path)}, ${JSON.stringify(name)}`;
+const link = (text, target) => `[${text}](${target})`;
+const lineCue = (file, range) => `${file}:${range}`;
 
 before(() => {
   root = mkdtempSync(join(tmpdir(), 'zero-drift-'));
@@ -27,6 +32,44 @@ before(() => {
     'export function startBench() {}\nexport class ChunkMeshes { cull() {} }\n',
   );
   writeFileSync(join(root, 'deadvox/src/known.ts'), 'export function startBench() {}\n');
+  writeFileSync(
+    join(root, 'docs/anchors.md'),
+    [
+      '---',
+      'read_if: [fixture]',
+      '# Metadata is not a heading',
+      '---',
+      '# Anchors',
+      'Setext topic',
+      '============',
+      '## 3.5 API: ownership — details',
+      '## Duplicate',
+      '## Duplicate',
+      '- **Decision (fixture stamp):** explanation',
+      '## Combined (fixture stamp): subtitle',
+      '## API_label',
+      '## First',
+      '## Second',
+      '## Escaped \\_name\\_',
+      '## Doubled \\\\_name_',
+      '## `<!-- literal -->`',
+      '[^unused]:',
+      '    ## Phantom',
+      '    ## Duplicate',
+      '<!--',
+      '## Phantom',
+      '-->',
+      '```md',
+      '# Not an anchor',
+      '```',
+    ].join('\n'),
+  );
+  writeFileSync(
+    join(root, 'src/fixture.yaml'),
+    'entries:\n  - name: exact fixture name\n  - name: exact "quoted" name\n  - name: exact second fixture name\n',
+  );
+  mkdirSync(join(root, 'engine/src'), { recursive: true });
+  writeFileSync(join(root, 'engine/src/known.ts'), 'export function assemble() {}\n');
 });
 after(() => rmSync(root, { recursive: true, force: true }));
 
@@ -80,15 +123,21 @@ describe('zero-drift read_if check', () => {
 
 describe('zero-drift line-number check', () => {
   it('rejects prose citations and ignores fenced or quoted output', () => {
-    assert.ok(checks(scan(document('The implementation is in foo.mjs:12-30.'))).includes('line_number'));
-    assert.ok(!checks(scan(document('> stack at foo.mjs:12\n\n```text\nfoo.ts:3\n```'))).includes('line_number'));
+    assert.ok(
+      checks(scan(document(`The implementation is in ${lineCue('foo.mjs', '12-30')}.`))).includes('line_number'),
+    );
+    assert.ok(
+      !checks(
+        scan(document(`> stack at ${lineCue('foo.mjs', '12')}\n\n\`\`\`text\n${lineCue('foo.ts', '3')}\n\`\`\``)),
+      ).includes('line_number'),
+    );
   });
 
   it('checks review paths and line citations instead of exempting them', () => {
     const path = 'docs/reviews/fixture.md';
     const failures = checkDocument({
       path,
-      text: document('See `src/missing.ts` and foo.ts:12-14.'),
+      text: document(`See ${code('src/missing.ts')} and ${lineCue('foo.ts', '12-14')}.`),
       root,
       tracked: new Set(),
       pythonReadIf: new Map([[path, ['read this']]]),
@@ -99,17 +148,17 @@ describe('zero-drift line-number check', () => {
 
 describe('zero-drift path check', () => {
   it('rejects missing code-span paths and accepts repo-relative links and ignored paths', () => {
-    assert.ok(checks(scan(document('See `src/missing.ts`.'))).includes('path'));
+    assert.ok(checks(scan(document(`See ${code('src/missing.ts')}.`))).includes('path'));
     assert.ok(
       !checks(
-        scan(document('[source](../src/known.ts#setup); ignored `.claude/worktrees/session/file.ts`'), {
+        scan(document(`${link('source', '../src/known.ts')}; ignored ${code('.claude/worktrees/session/file.ts')}`), {
           ignored: new Set(['.claude/worktrees/session/file.ts']),
         }),
       ).includes('path'),
     );
     assert.ok(
       !checks(
-        scan(document('Run `python3 tools/read_if.py saves stairs`.'), {
+        scan(document(`Run ${code('python3 tools/read_if.py saves stairs')}.`), {
           tracked: new Set(['src/known.ts', 'tools/read_if.py']),
         }),
       ).includes('path'),
@@ -120,26 +169,253 @@ describe('zero-drift path check', () => {
     const path = 'deadvox/docs/fixture.md';
     const failures = checkDocument({
       path,
-      text: document('See `src/known.ts`, `startBench`.'),
+      text: document(`See ${code('src/known.ts')}, ${code('startBench')}.`),
       root,
       tracked: new Set(['deadvox/src/known.ts']),
       pythonReadIf: new Map([[path, ['read this']]]),
     });
     assert.deepEqual(checks(failures), []);
+    const cross = (value) =>
+      checkDocument({
+        path,
+        text: document(`See ${code(value)}, ${code('assemble')}.`),
+        root,
+        tracked: new Set(['engine/src/known.ts']),
+        pythonReadIf: new Map([[path, ['read this']]]),
+      });
+    assert.deepEqual(cross('engine/src/known.ts'), []);
+    assert.ok(checks(cross('../engine/src/known.ts')).includes('path_scope'));
   });
 
   it('ignores URLs, globs, and placeholders', () => {
-    const failures = scan(document('[source](https://example.com/src/file.ts) `src/*/file.ts` `src/<name>.ts`'));
+    const failures = scan(
+      document(
+        `${link('source', 'https://example.com/src/file.ts')} ${code('src/*/file.ts')} ${code('src/<name>.ts')}`,
+      ),
+    );
     assert.ok(!checks(failures).includes('path'));
   });
 });
 
 describe('zero-drift symbol check', () => {
   it('checks the pair and markdown-link cue forms against whole-word identifiers', () => {
-    assert.ok(!checks(scan(document('See `src/known.ts`, `startBench`; [`cull`](src/known.ts).'))).includes('symbol'));
-    assert.ok(!checks(scan(document('See `src/known.ts`, `ChunkMeshes.cull`.'))).includes('symbol'));
-    assert.ok(checks(scan(document('See `src/known.ts`, `missingSymbol`.'))).includes('symbol'));
-    assert.ok(checks(scan(document('[`missingSymbol`](src/known.ts).'))).includes('symbol'));
+    assert.ok(
+      !checks(
+        scan(document(`See ${code('src/known.ts')}, ${code('startBench')}; ${link(code('cull'), 'src/known.ts')}.`)),
+      ).includes('symbol'),
+    );
+    assert.ok(!checks(scan(document(`See ${code('src/known.ts')}, ${code('ChunkMeshes.cull')}.`))).includes('symbol'));
+    assert.ok(checks(scan(document(`See ${code('src/known.ts')}, ${code('missingSymbol')}.`))).includes('symbol'));
+    assert.ok(checks(scan(document(`${link(code('missingSymbol'), 'src/known.ts')}.`))).includes('symbol'));
+    assert.deepEqual(scan(document(link(code('known.ts'), 'src/known.ts'))), []);
+  });
+});
+
+describe('zero-drift section cues', () => {
+  const tracked = new Set(['docs/anchors.md', 'src/fixture.yaml', 'engine/src/known.ts']);
+  const sections = (body, path = docPath, trackedFiles = tracked) =>
+    checkDocument({
+      path,
+      text: path.endsWith('.md') ? document(body) : body,
+      root,
+      tracked: trackedFiles,
+      pythonReadIf: new Map([[path, ['read this']]]),
+    });
+
+  it('resolves normalized headings and bold lead-in labels with the canonical prose form', () => {
+    for (const name of [
+      'API',
+      '3.5 API: ownership — details.',
+      'Decision',
+      'Decision (other stamp):',
+      'Combined',
+      'Setext topic',
+      'API_label',
+    ]) {
+      assert.deepEqual(sections(cue('docs/anchors.md', name)), []);
+    }
+    assert.ok(checks(sections(cue('docs/anchors.md', 'Missing'))).includes('section'));
+    assert.ok(checks(sections(cue('docs/anchors.md', 'Missing_label'))).includes('section'));
+    assert.ok(checks(sections(cue('docs/anchors.md', 'Not an anchor'))).includes('section'));
+    assert.ok(checks(sections(cue('docs/anchors.md', 'Metadata is not a heading'))).includes('section'));
+  });
+
+  it('requires explicit paths for identifier-shaped Markdown section names', () => {
+    assert.deepEqual(sections(`${cue('docs/anchors.md', 'First')}; ${cue('docs/anchors.md', 'Second')}`), []);
+    assert.deepEqual(
+      sections(`${cue('docs/anchors.md', 'First')} and ${code('engine/src/known.ts')}, ${code('assemble')}`),
+      [],
+    );
+    assert.ok(checks(sections(`${cue('docs/anchors.md', 'First')} and ${code('Second')}`)).includes('section_form'));
+  });
+
+  it('rejects every alternate prose spelling even when its named anchor exists', () => {
+    const variants = [
+      'docs/anchors.md "API"',
+      'docs/anchors.md, "API"',
+      `${code('docs/anchors.md')}, ${code('API')}`,
+      `${code('docs/anchors.md')}, ${code('API_label')}`,
+      `${code('docs/anchors.md')} "API"`,
+      `${code('docs/anchors.md')}; "API"`,
+      `${code('docs/anchors.md')} — "API"`,
+      `${code('docs/anchors.md')}, 'API'`,
+      `${link('target', 'docs/anchors.md')}, "API"`,
+      `${code('docs/anchors.md')}, “API”`,
+      ['docs/anchors.md', `${String.fromCharCode(167)}3.5`].join(' '),
+      'docs/anchors.md section 3.5',
+      'docs/anchors.md, 3.5',
+      `${cue('docs/anchors.md', 'API')} and "Decision"`,
+    ];
+    for (const body of variants) {
+      assert.ok(checks(sections(body)).includes('section_form'), body);
+    }
+  });
+
+  it('resolves reference links through definitions and checks their destinations and code labels', () => {
+    assert.deepEqual(sections('[target][ref]\n\n[ref]: docs/anchors.md#anchors'), []);
+    assert.ok(checks(sections('[target][ref]\n\n[ref]: docs/anchors.md#missing')).includes('section'));
+    assert.ok(checks(sections('[target][ref]\n\n[ref]: docs/missing.md')).includes('path'));
+    assert.ok(
+      checks(
+        sections('[`missing`][ref]\n\n[ref]: src/known.ts', docPath, new Set([...tracked, 'src/known.ts'])),
+      ).includes('symbol'),
+    );
+    assert.deepEqual(sections('[target][undefined]'), []);
+  });
+
+  it('first definition wins for duplicate reference labels', () => {
+    const referenceDefinition = (fragment) => ['[ref]: docs/anchors.md', fragment].join('#');
+    const referenceLink = (first, second) =>
+      ['[target][ref]', '', referenceDefinition(first), ...(second ? [referenceDefinition(second)] : [])].join('\n');
+    const singleValid = referenceLink('anchors');
+    const singleMissing = referenceLink('missing');
+    const firstValid = referenceLink('anchors', 'missing');
+    const firstMissing = referenceLink('missing', 'anchors');
+
+    assert.deepEqual(sections(singleValid), []);
+    assert.ok(checks(sections(singleMissing)).includes('section'));
+    assert.deepEqual(sections(firstValid), []);
+    assert.ok(checks(sections(firstMissing)).includes('section'));
+  });
+
+  it('does not index headings in unreferenced footnotes or let them take slug suffixes', () => {
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#anchors')), []);
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#phantom'))).includes('section'));
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#duplicate-2'))).includes('section'));
+  });
+
+  it('keeps cues in distinct cells of a real GFM table', () => {
+    const failures = sections(
+      `| Target | Cue |\n| --- | --- |\n| ${cue('docs/anchors.md', 'API')} | ${cue('docs/anchors.md', 'Missing')} |\n| ${['docs/missing', 'md'].join('.')} | "API" |`,
+    );
+    assert.deepEqual(
+      failures.filter(({ check }) => check === 'section').map(({ text }) => text),
+      ['docs/anchors.md, "Missing"'],
+    );
+  });
+
+  it('checks explicit section cues in strings and comments but ignores unformatted strings and inline examples', () => {
+    assert.deepEqual(sections(cue('src/fixture.yaml', 'exact fixture name')), []);
+    assert.ok(
+      checks(
+        sections(`${cue('src/fixture.yaml', 'exact fixture name')} and ${code('exact second fixture name')}`),
+      ).includes('section_form'),
+    );
+    assert.ok(checks(sections('See "docs/anchors.md", "API".')).includes('section_form'));
+    assert.deepEqual(sections('See `"docs/anchors.md", "API"`.'), []);
+    assert.deepEqual(sections('const source = "docs/anchors.md, API";', 'src/fixture.ts'), []);
+    const sourceString = `${code('src/fixture.yaml')}, ${JSON.stringify('exact fixture name')} and ${code('exact second fixture name')}`;
+    assert.ok(checks(sections(`const note = '${sourceString}';`, 'src/fixture.ts')).includes('section_form'));
+    const plainComment = `// Both: ${cue('src/fixture.yaml', 'exact fixture name')} and ${code('exact second fixture name')}`;
+    const apostropheComment = `// Author's both: ${cue('src/fixture.yaml', 'exact fixture name')} and ${code('exact second fixture name')}`;
+    assert.ok(checks(sections(plainComment, 'src/source.ts')).includes('section_form'));
+    assert.ok(checks(sections(apostropheComment, 'src/source.ts')).includes('section_form'));
+  });
+
+  it('validates angle-wrapped link destinations for both paths and fragments', () => {
+    assert.deepEqual(sections(link('target', '<docs/anchors.md#anchors>')), []);
+    assert.ok(checks(sections(link('target', '<docs/anchors.md#missing>'))).includes('section'));
+    assert.deepEqual(sections(link('external', '<https://example.com/doc.md#absent>')), []);
+  });
+
+  it('uses rendered escaped-underscore headings for GitHub slugs', () => {
+    assert.equal(githubSlug('Escaped \\_name\\_'), 'escaped-_name_');
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#escaped-_name_')), []);
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#escaped-name'))).includes('section'));
+  });
+
+  it('uses backslash parity when computing rendered heading slugs', () => {
+    assert.equal(githubSlug('Doubled \\\\_name_'), 'doubled-name');
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#doubled-name')), []);
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#doubled-_name_'))).includes('section'));
+  });
+
+  it('keeps comment-shaped code-span text in heading identity', () => {
+    assert.equal(githubSlug('`<!-- literal -->`'), '---literal---');
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#---literal---')), []);
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#literal'))).includes('section'));
+  });
+
+  it('excludes headings inside HTML comments from named and slug anchors', () => {
+    assert.deepEqual(sections(cue('docs/anchors.md', 'Anchors')), []);
+    assert.deepEqual(sections(link('target', 'docs/anchors.md#anchors')), []);
+    assert.ok(checks(sections(cue('docs/anchors.md', 'Phantom'))).includes('section'));
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#phantom'))).includes('section'));
+  });
+
+  it('validates link slugs with punctuation removal, Unicode and duplicate suffixes', () => {
+    assert.equal(githubSlug('API: `état` & ownership!'), 'api-état--ownership');
+    assert.equal(githubSlug('A **bold** _label_ with snake_case'), 'a-bold-label-with-snake_case');
+    assert.equal(githubSlug('API: `_value_` and `<Thing>`'), 'api-_value_-and-thing');
+    for (const anchor of ['35-api-ownership--details', 'setext-topic', 'duplicate', 'duplicate-1']) {
+      assert.deepEqual(sections(link('target', `docs/anchors.md#${anchor}`)), []);
+    }
+    assert.ok(checks(sections(link('target', 'docs/anchors.md#gone'))).includes('section'));
+    assert.ok(checks(sections(link('target', 'src/fixture.yaml#entries'))).includes('section'));
+    assert.deepEqual(sections(link('external', 'https://example.com/doc.md#absent')), []);
+    const self = checkDocument({
+      path: docPath,
+      text: document(`## Own anchor\n${link('self', '#own-anchor')}`),
+      root,
+      tracked: new Set([...tracked, docPath]),
+      pythonReadIf: pythonReadIf(),
+    });
+    assert.deepEqual(self, []);
+  });
+
+  it('checks names in non-Markdown targets verbatim, without heading normalization', () => {
+    assert.deepEqual(sections(cue('src/fixture.yaml', 'exact fixture name')), []);
+    assert.deepEqual(sections(cue('src/fixture.yaml', 'exact "quoted" name')), []);
+    assert.ok(checks(sections(cue('src/fixture.yaml', 'fixture name.'))).includes('section'));
+  });
+
+  it('uses the same cue scanner in source, tests, config and content, joining comment-wrapped names', () => {
+    for (const path of ['engine/src/fixture.ts', 'test/fixture.mjs', 'config.yaml', 'content.jsonnet']) {
+      const body = `${code('docs/anchors.md')}, "API:\n * ownership — details"`;
+      assert.deepEqual(sections(body, path), []);
+      const bad = sections(
+        `${code('src/missing.ts')}; ${code('engine/src/known.ts')}, ${code('missing')}; ${cue('docs/anchors.md', 'Gone')}`,
+        path,
+      );
+      assert.deepEqual(new Set(checks(bad)), new Set(['path', 'symbol', 'section']));
+    }
+    assert.deepEqual(sections(`// ${code('src/known.ts')}, ${code('assemble')}`, 'engine/src/fixture.ts'), []);
+  });
+
+  it('excludes module specifiers, markup names and non-file line-like expressions from code cues', () => {
+    assert.deepEqual(
+      sections(
+        `${code('@scope/module.ts')} ${lineCue('@scope/module.ts', '3')} ${cue('docs/anchors.md', '*example*')} ${lineCue('object.field', '3')}`,
+        'src/fixture.ts',
+      ),
+      [],
+    );
+    assert.deepEqual(sections(`${code('docs/anchors.md')}'s label is the player's cue.`, 'src/fixture.ts'), []);
+    assert.ok(checks(sections(lineCue('foo.ts', '3'), 'src/fixture.ts')).includes('line_number'));
+    assert.deepEqual(
+      sections(`${code('src/missing.ts')} ${cue('docs/anchors.md', 'Gone')}`, 'mobgen/reference/fixture.txt'),
+      [],
+    );
   });
 });
 
@@ -214,6 +490,7 @@ describe('zero-drift policy rules', () => {
 
   it('fails strict policy violations even when the baseline lists them', () => {
     const violations = [
+      { path: 'docs/fixture.md', check: 'section_form', text: 'alternate spelling', count: 1 },
       { path: 'src/fixture.ts', check: 'host', text: '/home/ann', count: 1 },
       {
         path: 'docs/reviews/fixture.md',

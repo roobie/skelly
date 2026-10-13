@@ -11,7 +11,7 @@ These are reusable constraints, not incident timelines. Code and tests own the m
 
 ## Input capture
 
-Apply mode-specific suppression when input is captured, using the mode at that edge; retain the later guard as defense in depth. Fixed-step simulation may consume an input after the rendering mode has changed. Browser proof should observe the actual simulation boundary, not infer consumption from a frame. See `test/input.test.ts`, `does not queue primary clicks rejected at press time`.
+Apply mode-specific suppression when input is captured, using the mode at that edge; retain the later guard as defense in depth. Fixed-step simulation may consume an input after the rendering mode has changed. Browser proof should observe the actual simulation boundary, not infer consumption from a frame. See `test/input.test.ts`, "does not retain a dominant press refused by the active owner".
 
 ## Browser readiness
 
@@ -43,7 +43,7 @@ Renderer memory counters do not cover every instance buffer or VAO. Dispose owne
 
 ## Shader interpolation
 
-With MSAA, edge samples can extrapolate non-flat varyings beyond their vertex values. Use centroid interpolation for shading inputs and clamp derived values to their valid range. Run the hot check after the final shading stage, and confirm driver-specific claims on a real GPU; SwiftShader cannot rule them out. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md), “Debug and rendering”.
+With MSAA, edge samples can extrapolate non-flat varyings beyond their vertex values. Use centroid interpolation for shading inputs and clamp derived values to their valid range. Run the hot check after the final shading stage, and confirm driver-specific claims on a real GPU; SwiftShader cannot rule them out. See `TROUBLESHOOTING.md`, "Debug and rendering".
 
 ## Pointer-lock scrolling
 

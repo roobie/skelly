@@ -1,5 +1,5 @@
-// Loading a wielded magazine round by round, like DayZ (SLICE-3.md, 3.2: "magazines are real, you load
-// them one by one"). Each round is one handling job, so a cancelled press loses no ammunition.
+// Each round is one handling job, so releasing the input loses no ammunition.
+// See `SLICE-3.md`, "Firearms for real".
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -18,7 +18,7 @@ export class MagazineHandling {
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly feet: () => Vec3;
-  /** The firearms skill's reload-duration factor (DESIGN.md, "Firearms"). */
+  /** The firearms skill's reload-duration factor (`DESIGN.md`, "Firearms"). */
   private readonly reloadFactor: () => number;
   private readonly onSound: (event: SoundEventId, time: number) => void;
   private heldStripUid: number | undefined;

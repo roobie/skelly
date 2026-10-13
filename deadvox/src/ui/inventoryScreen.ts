@@ -1,4 +1,4 @@
-// The inventory screen (DESIGN.md, "Inventory screen"): what you hold and wear, with
+// The inventory screen (`DESIGN.md`, "Inventory screen"): what you hold and wear, with
 // each pocket drawn as its grid, and the piles and furniture within reach. Items move
 // by drag and drop with a destination preview, or by keys. Every move
 // goes through the handling queue, so it takes real seconds while the world keeps
@@ -186,7 +186,7 @@ interface DetailsViewModel {
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
 }
 
-/** Only a tier content marks `warn` gets the warning style (DESIGN.md, "Bleeding"). */
+/** Only a tier content marks `warn` gets the warning style (`DESIGN.md`, "Bleeding"). */
 const bleedingTemplate = (bleeding: BodyRegionViewModel['bleeding']) => {
   if (!bleeding) {
     return nothing;

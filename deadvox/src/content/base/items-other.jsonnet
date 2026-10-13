@@ -78,7 +78,7 @@ local spentCase(id, name, weight, description, model) = {
       description: 'An antibiotic. Treats a progressed wound infection.',
     },
     {
-      // Paracetamol-like: it starts within the hour and lasts a few hours (DESIGN.md, "Pain").
+      // Paracetamol-like: it starts within the hour and lasts a few hours (`DESIGN.md`, "Pain").
       id: 'painkillers',
       name: 'Painkiller',
       category: 'medical',
