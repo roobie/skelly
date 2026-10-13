@@ -7,7 +7,7 @@ read_if:
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
-  - you're implementing gauntlet scenario admission, discovery or its visual approval gate
+  - you're implementing gauntlet scenario admission, discovery, underground lab depth or its visual approval gate
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
@@ -305,7 +305,7 @@ mechanics in the implementation rather than repeating the format here.
 ### Gauntlet
 
 Gauntlet is a seeded city objective using the ordinary survival simulation, not
-another mission runtime. A reserved service block gives the basement lab a
+another mission runtime. A reserved service block gives the underground lab a
 constructible street approach instead of hoping an arbitrary shop can fit it.
 The entrance is an unlocked hatch with a ladder; knowledge of a clue never grants
 access. Independent notes, including a plain-text schematic in the ordinary
@@ -314,6 +314,13 @@ world edge. Ordinary body defaults and existing spawn admission keep scenario
 pressure a content decision rather than a hidden needs or enemy-rule fork; city
 size, scarcity and pressure require in-game judgment. Multi-day growth and needs
 rate authoring are outside #671's first version.
+
+The lab is a multi-storey subterranean place whose danger rises with depth, with
+the objective at the bottom. Separate descents make deeper access a sequence of
+places to enter rather than a shortcut past them. Each level remains an extensible
+frame: weird and interesting content can accumulate without replacing the lab's
+spatial identity or relocating the objective. The deepest place must earn its
+higher risk through play; ominous set dressing in a look is not that proof.
 
 The objective's saved terminal win and permanent death must remain authoritative
 session/save decisions, not observer counters. Replay is a fresh attempt, with
@@ -330,8 +337,8 @@ independent notes; visual redundancy is not a false-destination quest chain.
 
 Bounded rendered looks precede full lab and clue construction because geometry,
 lighting and clue interpretation need player judgment before large investments.
-Full visual construction for #671 waits for approval of the lab and contextual
-cue look. The authored fixture is a prototype service building and basement
+Full visual construction for #671 waits for approval of the multi-storey lab
+look. The authored fixture is a prototype service building and underground lab
 sketch, not a seeded city, finished lab, all-seed route certificate or
 balance/performance verdict. Its console is explicitly inactive: no goal command
 or saved win is supplied by that furniture. Darkness uses the existing
