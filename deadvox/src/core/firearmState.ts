@@ -27,12 +27,9 @@ interface FirearmRaiseState {
 
 interface FirearmLanding {
   at: number;
-  startedAtSimSeconds: number;
   position: Vec3;
-  origin: Vec3;
   type: string;
   seed: number;
-  modelId?: string | undefined;
 }
 
 export interface FirearmState {
@@ -41,7 +38,7 @@ export interface FirearmState {
   roundType?: string | undefined;
   /** A pump's tube: cartridge item types in feed order. Magazine-fed firearms feed from their magazine slot. */
   tube?: string[];
-  /** Ejected items awaiting simulation-clock landings; presentation follows each endpoint and time. */
+  /** Ejected items awaiting their simulation-clock landings. */
   landings?: FirearmLanding[] | undefined;
   pendingCase?: PendingCase | undefined;
   cycle?: FirearmCycleState | undefined;
@@ -74,16 +71,12 @@ const assertFirearmExtras = ({ tube, landings }: FirearmState): void => {
         (landing) =>
           !Number.isFinite(landing.at) ||
           landing.at < 0 ||
-          !Number.isFinite(landing.startedAtSimSeconds) ||
-          landing.startedAtSimSeconds < 0 ||
-          landing.startedAtSimSeconds > landing.at ||
           !Number.isSafeInteger(landing.seed) ||
           landing.seed < 0 ||
           landing.seed > 0xff_ff_ff_ff ||
           !landing.type ||
-          [landing.position, landing.origin].some(
-            (vector) => vector.length !== 3 || vector.some((value) => !Number.isFinite(value)),
-          ),
+          landing.position.length !== 3 ||
+          landing.position.some((value) => !Number.isFinite(value)),
       ))
   ) {
     throw new Error('Invalid firearm landing');

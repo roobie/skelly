@@ -154,6 +154,89 @@ const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = ()
   });
 
 describe('real pump ammunition', () => {
+  it('lands at the foot of a wall that blocks the outward case path', () => {
+    const open = fixture();
+    open.load(0);
+    open.rack(1);
+    expect(open.fire(3)).toBe(true);
+    open.rack(4);
+    const endpoint = open.effects[0]!.landingPosition;
+    const world = new World();
+    for (let x = -8; x <= 8; x += 1) {
+      for (let z = -8; z <= 8; z += 1) {
+        world.setBlock(x, -1, z, 1);
+      }
+    }
+    for (let y = 0; y <= 8; y += 1) {
+      world.setBlock(endpoint[0], y, endpoint[2], 1);
+    }
+    const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
+    const f = fixture(registry, () => 0, pose, isSolid);
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    f.rack(4);
+
+    const casePile = [...f.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    );
+    expect(f.effects).toHaveLength(1);
+    expect(casePile).toBeDefined();
+    expect(isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
+    expect(isSolid(...casePile!.pos)).toBe(false);
+  });
+
+  it('chooses a free supported spill cell when the first neighbor is solid terrain', () => {
+    const probe = fixture();
+    probe.load(0);
+    probe.rack(1);
+    expect(probe.fire(3)).toBe(true);
+    probe.rack(4);
+    const landing = [...probe.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    )?.pos;
+    expect(landing).toBeDefined();
+    const blockedSpill = dropSpots(landing!)[1]!;
+    const world = new World();
+    for (let x = -8; x <= 8; x += 1) {
+      for (let z = -8; z <= 8; z += 1) {
+        world.setBlock(x, -1, z, 1);
+      }
+    }
+    world.setBlock(...blockedSpill, 1);
+    const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
+    const fillerType = 'owned_spill_filler';
+    const content = {
+      ...registry,
+      items: new Map(registry.items).set(fillerType, {
+        ...registry.items.get(shellType)!,
+        id: fillerType,
+        size: [1, 1] as [number, number],
+        stack: 1,
+        ammo: undefined,
+        model: undefined,
+        pileDisplay: undefined,
+      }),
+    };
+    const f = fixture(content, () => 0, pose, isSolid);
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    for (let cell = 0; cell < PILE_GRID.w * PILE_GRID.h; cell += 1) {
+      expect(f.inventory.add(f.inventory.create(fillerType), { kind: 'pile', pos: landing! })).toBe(true);
+    }
+    f.rack(4);
+
+    const casePile = [...f.inventory.piles.values()].find((pile) =>
+      pile.items.some(({ item }) => item.type === hullType),
+    );
+    expect(casePile).toBeDefined();
+    expect(casePile!.pos).not.toEqual(landing);
+    expect(casePile!.pos).not.toEqual(blockedSpill);
+    expect(isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
+    expect(isSolid(...casePile!.pos)).toBe(false);
+  });
+
   it('lands an ejected hull outward from its port along the exported ejection direction', () => {
     const f = fixture();
     f.load(0);

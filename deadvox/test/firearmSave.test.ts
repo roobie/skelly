@@ -633,7 +633,7 @@ it('a knockout codec save preserves an automatic cycle’s remaining frames', as
   expect(framesUntilCycleEnds(resumed)).toBe(framesUntilCycleEnds(continuous.runtime));
 });
 
-it('a mid-flight codec save resumes the case landing at the same simulation time', async () => {
+it('a mid-flight codec save preserves its landing without transient arc launch data', async () => {
   const original = session([]);
   const rifle = sessionRifle(original);
   const { action, calibre } = firearmHandlingFor(rifle, registry);
@@ -648,6 +648,9 @@ it('a mid-flight codec save resumes the case landing at the same simulation time
   }
   const pending = rifle.firearm?.landings?.[0];
   expect(pending).toBeDefined();
+  expect(pending).not.toHaveProperty('origin');
+  expect(pending).not.toHaveProperty('startedAtSimSeconds');
+  expect(pending).not.toHaveProperty('modelId');
   expect(original.sim.time).toBeGreaterThan(ejectTime);
   expect(original.sim.time).toBeLessThan(pending!.at);
   const saved = original.snapshot({ worldId: 'world', characterId: 'character' });

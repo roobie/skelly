@@ -32,6 +32,7 @@ read_if:
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
+  - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
   - you're changing when a running game warns before page exit relative to its last save
   - you're changing what the death card identifies about the played world
@@ -700,13 +701,18 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
 - **Military loot (3.2):** Restricting magazine-fed firearms and their compatible ammunition to military sources keeps ordinary scavenging from supplying a rifle. Recursive validation covers military items acquired through nesting, repackaging, crafting, salvage and fixed loot. Exported attachments use military loot in playtest 1 without being validation-locked to it, allowing later sites to carry optics. Reachability checks keep authored military sites part of the progression. See `src/core/magazine.ts`, `militaryLootItems`, `src/core/content.ts`, `checkMilitaryLoot`, and `src/core/reachability.ts`, `worldSources`.
 - **Spent cases per block:** Add each case to its landing pile at impact, using a
-  supported nearby spot with room when needed; if the supported spill search is
-  full, discard the case rather than jam the firearm for a cosmetic item. This
-  keeps recoverable cases at their actual landing place without saving an
-  individual physics body for every shot. A deterministic scatter represents the
-  pile visually. See `docs/decisions/0006-firearm-handling.md`,
-  `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`, and
-  `src/core/scatterPile.ts`, `spentCaseScatter`.
+  supported, clear nearby spot with room when needed; if the supported spill
+  search is full, discard the case rather than jam the firearm for a cosmetic
+  item. Stop an outward ejection at the last clear cell before terrain, then
+  settle it downward. A save taken during a case flight keeps its simulation
+  landing time but shows the case at the landing on Continue, without replaying
+  the presentation arc. The landing is gameplay state; the arc is transient
+  presentation. This keeps recoverable cases at their actual landing place
+  without saving an individual physics body for every shot. A deterministic
+  scatter represents the pile visually. See `docs/decisions/0006-firearm-handling.md`,
+  `src/game/firearmHandling.ts`, `FirearmMechanics.landing`,
+  `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`,
+  `spentCaseScatter`.
 - **Noise** is an event with loudness and position. Sprinting makes footsteps
   louder; melee, gunshots, doors, breaking glass and engines also make noise.
   Walls reduce how far it travels. Zombies hear, investigate and pass noise on

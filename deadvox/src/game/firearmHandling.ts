@@ -28,7 +28,7 @@ import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { type dropTarget, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
-import type { SolidAt } from '../core/raycast.ts';
+import { raycast, type SolidAt } from '../core/raycast.ts';
 import { makeScale } from '../core/scale.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { firearmBoreRay } from './firearmAim.ts';
@@ -1157,7 +1157,7 @@ export class FirearmMechanics {
     const item = { uid: 0, type, count: 1, condition: 1 };
     let first: ReturnType<typeof dropTarget> | undefined;
     for (const pos of dropSpots(landing)) {
-      if (!this.isSolid(pos[0], pos[1] - 1, pos[2])) {
+      if (this.isSolid(...pos) || !this.isSolid(pos[0], pos[1] - 1, pos[2])) {
         continue;
       }
       const target = { kind: 'pile', pos } as const;
@@ -1177,7 +1177,7 @@ export class FirearmMechanics {
 
   private placeEjected(type: string, landing: Vec3 | undefined): EjectedCasePlacement | string | undefined {
     if (!landing) {
-      // The player's column should be streamed; if it is not, discard the case rather than create a floating pile.
+      // No supported outward landing: discard rather than create a floating pile.
       return undefined;
     }
     const drop = this.ejectionDrop(type, landing);
@@ -1217,12 +1217,9 @@ export class FirearmMechanics {
     state.landings ??= [];
     state.landings.push({
       at: startedAt + CASE_FLIGHT_SECONDS,
-      startedAtSimSeconds: startedAt,
       position: [...landing],
-      origin: [...emission.origin],
       type,
       seed,
-      ...(modelId ? { modelId } : {}),
     });
     this.onEjection({
       origin: emission.origin,
@@ -1238,12 +1235,16 @@ export class FirearmMechanics {
   }
 
   private landing(emission: Omit<PendingCase, 'seed'>): Vec3 | undefined {
-    const distance = CASE_SPEED * CASE_FLIGHT_SECONDS;
-    const endpoint: Vec3 = [
-      emission.origin[0] + emission.direction[0] * distance,
-      emission.origin[1],
-      emission.origin[2] + emission.direction[2] * distance,
-    ];
+    const origin: Vec3 = emission.origin.map((axis) => axis / this.blockSize) as Vec3;
+    const distanceBlocks = (CASE_SPEED * CASE_FLIGHT_SECONDS) / this.blockSize;
+    const hit = raycast(origin, emission.direction, distanceBlocks, this.isSolid);
+    const safeDistance = hit ? hit.distance - 1e-6 : distanceBlocks;
+    if (safeDistance < 0) {
+      return undefined;
+    }
+    const endpoint: Vec3 = origin.map(
+      (axis, index) => (axis + emission.direction[index]! * safeDistance) * this.blockSize,
+    ) as Vec3;
     const minY = makeScale(this.blockSize).minCy * CHUNK;
     return settleOnWorld(endpoint, this.blockSize, minY, this.isSolid);
   }
@@ -1273,12 +1274,9 @@ export class FirearmMechanics {
       state.landings ??= [];
       state.landings.push({
         at: startedAt + CASE_FLIGHT_SECONDS,
-        startedAtSimSeconds: startedAt,
         position: [...landing],
-        origin: [...emission.origin],
         type,
         seed: pending.seed,
-        ...(data.caseModelId ? { modelId: data.caseModelId } : {}),
       });
       this.onEjection({
         origin: emission.origin,

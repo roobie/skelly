@@ -325,12 +325,9 @@ itemSchema = obj({
         arr(
           obj({
             at: nonNegative,
-            startedAtSimSeconds: nonNegative,
             position: vec3,
-            origin: vec3,
             type: str({ id: true }),
             seed: num({ integer: true, safe: true, min: 0, max: 0xff_ff_ff_ff }),
-            modelId: opt(str({ id: true })),
           }),
         ),
       ),

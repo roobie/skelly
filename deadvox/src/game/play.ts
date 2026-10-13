@@ -99,7 +99,7 @@ import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
-import { type FirearmShotEffect, firearmHandlingFor } from './firearmHandling.ts';
+import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
@@ -183,33 +183,6 @@ const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
   y * blockSize + 0.006,
   (z + 0.5) * blockSize,
 ];
-
-const resumeCaseEffects = (
-  inventory: Inventory,
-  blockSize: number,
-  spawn: (effect: FirearmShotEffect) => boolean,
-): void => {
-  for (const { item } of inventory.items()) {
-    for (const landing of item.firearm?.landings ?? []) {
-      const delta: Vec3 = [
-        landing.position[0] - landing.origin[0],
-        landing.position[1] - landing.origin[1],
-        landing.position[2] - landing.origin[2],
-      ];
-      const distance = Math.hypot(...delta);
-      spawn({
-        origin: landing.origin,
-        direction: distance > 0 ? (delta.map((axis) => axis / distance) as Vec3) : [0, 1, 0],
-        speed: distance / Math.max(landing.at - landing.startedAtSimSeconds, 1e-9),
-        seed: landing.seed,
-        landingPosition: caseLandingWorldPosition(landing.position, blockSize),
-        startedAtSimSeconds: landing.startedAtSimSeconds,
-        landingAt: landing.at,
-        ...(landing.modelId ? { caseModelId: landing.modelId } : {}),
-      });
-    }
-  }
-};
 
 interface PlayErrorReportPorts {
   readonly config: Engine['config'];
@@ -1045,7 +1018,6 @@ export const startPlay = (
     ),
   );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
-  resumeCaseEffects(inventory, s, (effect) => caseEffects.spawn(effect));
   const damageEvents = sim.events.reader();
 
   // ---- UI ----

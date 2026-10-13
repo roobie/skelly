@@ -802,7 +802,6 @@ describe('rifle firearm handling', () => {
     expect(first.inventory.snapshotState()).toEqual(second.inventory.snapshotState());
     expect(first.effect).toMatchObject({
       landingPosition: first.rifle.firearm?.landings?.[0]?.position,
-      startedAtSimSeconds: first.rifle.firearm?.landings?.[0]?.startedAtSimSeconds,
       landingAt: first.rifle.firearm?.landings?.[0]?.at,
     });
     const landingAt = first.rifle.firearm?.landings?.[0]?.at;
