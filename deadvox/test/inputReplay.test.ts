@@ -1693,7 +1693,7 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
-  it('replays a tap, then R held, racking the pump empty, to the same gun, ground and fingerprint', async () => {
+  it('replays pump racking without a known landing surface without creating a floating shell pile', async () => {
     const loads = 3;
     const { runtime, pump, shell } = createPumpReplayFixture(loads);
     const start = capture(runtime);
@@ -1706,7 +1706,7 @@ describe('input replay', () => {
         .flatMap((pile) => pile.items)
         .reduce((sum, { item }) => sum + (item.type === shell ? item.count : 0), 0),
     });
-    expect(racked(source)).toEqual({ gun: expect.objectContaining({ chamber: 'empty', tube: [] }), onGround: loads });
+    expect(racked(source)).toEqual({ gun: expect.objectContaining({ chamber: 'empty', tube: [] }), onGround: 0 });
 
     const sourceEnd = capture(source);
     const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);

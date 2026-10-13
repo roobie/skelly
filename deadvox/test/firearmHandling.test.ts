@@ -119,6 +119,7 @@ const armed = (
   const queue = new HandlingQueue(inventory);
   const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: 0.5,
+    isSolid: (_x, y, _z) => y < pose.feet[1],
     pose: fixturePose,
     onEjection: () => undefined,
     ...options,
