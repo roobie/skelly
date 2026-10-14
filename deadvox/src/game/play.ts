@@ -3376,7 +3376,10 @@ export const startPlay = (
       menuPointer: input.menuPointer,
       firearmReady,
     });
-    debugTools.drawInteractionRay(eye(), lookDir(), USE_REACH, nowMs);
+    const interactionDistanceBlocks = debugTools.interactionRayEnabled
+      ? interactionTargetAt()?.distanceBlocks
+      : undefined;
+    debugTools.drawInteractionRay(eye(), lookDir(), USE_REACH, nowMs, interactionDistanceBlocks);
     const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(ray.origin, ray.direction, meleeWeapon()) : undefined;
     debugTools.updateAim(zombieAim);
     debugTools.updateLookedAt(ray.origin, ray.direction, input.locked);

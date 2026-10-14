@@ -899,8 +899,6 @@ export const createDebugActions = ({
         detail: () => `${look.shadowState.distance} m`,
         run: () => look.stepShadowDistance(),
       },
-      // Diagnostics for a stray bright pixel (see render/hotCheck.ts and Mood.render): End paints the background
-      // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments in a per-material colour.
       {
         id: 'debug.interaction-ray-toggle',
         label: 'Interaction ray',
@@ -908,6 +906,8 @@ export const createDebugActions = ({
         state: interactionRay.enabled,
         run: interactionRay.toggle,
       },
+      // Diagnostics for a stray bright pixel (see render/hotCheck.ts and Mood.render): End paints the background
+      // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments in a per-material colour.
       {
         id: 'debug.crack-check-toggle',
         label: 'Crack check (magenta background)',
@@ -1811,20 +1811,30 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       drawShell();
     },
     target: (eye, dir, active) => build.target(eye, dir, active),
-    drawInteractionRay(origin, direction, reachMetres, nowMs) {
+    get interactionRayEnabled() {
+      return interactionRayEnabled;
+    },
+    drawInteractionRay(origin, direction, reachMetres, nowMs, interactionDistanceBlocks) {
       if (!(transientDraw.enabled && interactionRayEnabled)) {
         return;
       }
-      const hit = raycast(origin, direction, reachMetres / metresPerBlock, hooks.engine.isOpaque);
-      const distanceMetres = hit ? hit.distance * metresPerBlock : reachMetres;
+      const opaqueHit = raycast(origin, direction, reachMetres / metresPerBlock, hooks.engine.isOpaque);
+      const opaqueDistance = opaqueHit?.distance;
+      const distanceBlocks = Math.min(
+        reachMetres / metresPerBlock,
+        opaqueDistance ?? Number.POSITIVE_INFINITY,
+        interactionDistanceBlocks ?? Number.POSITIVE_INFINITY,
+      );
+      const distanceMetres = distanceBlocks * metresPerBlock;
       const start = origin.map((coordinate) => coordinate * metresPerBlock) as Vec3;
       const end = start.map((coordinate, axis) => coordinate + direction[axis]! * distanceMetres) as Vec3;
       transientDraw.line(start, end, nowMs);
-      const markerSizeMetres = 0.08;
-      const marker = end.map(
-        (coordinate, axis) => coordinate + (hit?.normal[axis] ?? 0) * (markerSizeMetres + 0.01),
+      const marker = end.map((coordinate, axis) =>
+        opaqueDistance !== undefined && opaqueDistance <= (interactionDistanceBlocks ?? Number.POSITIVE_INFINITY)
+          ? coordinate + opaqueHit!.normal[axis]! * 0.09
+          : coordinate - direction[axis]! * 0.09,
       ) as Vec3;
-      transientDraw.point(marker, nowMs, { size: markerSizeMetres });
+      transientDraw.point(marker, nowMs);
     },
     updateTransientDraw: (nowMs) => transientDraw.update(nowMs),
     click: (button, eye, dir) => build.click(button, eye, dir),
