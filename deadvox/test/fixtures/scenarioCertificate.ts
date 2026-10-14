@@ -12,8 +12,9 @@ import { scenarioCertificate } from '../../src/core/scenarioCertificate.ts';
 import type { ScenarioDef } from '../../src/core/schema.ts';
 import { compileTemplate, placedPieces } from '../../src/core/templates.ts';
 import { DOOR_ACTION } from '../../src/game/doorAction.ts';
-import { createSession, IDLE } from '../../src/game/session.ts';
+import { createSession, IDLE, type SessionOptions } from '../../src/game/session.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
+import { descentLid, queueDescentLidOpening } from './descentLid.ts';
 
 export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): CitySite => {
   const own = buildFixtureRegistry([
@@ -119,9 +120,11 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
   const solid = worldSolid(space.world, registry, entities);
   let intent = { ...IDLE };
   let yaw = 0;
-  const session = createSession({
+  let pitch = 0;
+  const options: SessionOptions = {
     registry,
     scenario: profile,
+    objective: plan.composition!.objective,
     world: space.world,
     entities,
     scale,
@@ -135,14 +138,15 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
       active: () => true,
       intent: () => intent,
       yaw: () => yaw,
-      pitch: () => 0,
+      pitch: () => pitch,
       walking: () => intent.walk,
       descending: () => false,
     },
     audio: { play: () => undefined },
     notice: () => undefined,
     onRead: () => undefined,
-  });
+  };
+  const session = createSession(options);
   const loaded = new Set<string>();
   const load = () => {
     for (const chunk of space.world.chunks.values()) {
@@ -265,15 +269,7 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
       bottom.pos[2] + bottom.size[2] / 2 - oz,
     ];
     walk(route(position, approach));
-    const lid = [...entities.all].find(
-      (entity) =>
-        entities.defOf(entity).door?.hatch &&
-        entity.pos[1] === descent.upper[1] - 1 &&
-        bottom.pos[0] >= entity.pos[0] &&
-        bottom.pos[0] < entity.pos[0] + entity.size[0] &&
-        bottom.pos[2] >= entity.pos[2] &&
-        bottom.pos[2] < entity.pos[2] + entity.size[2],
-    );
+    const lid = descentLid(session, bottom, descent.upper[1]);
     if (descent.ladder) {
       assert(!lid?.open);
       const centre: Vec3 = [bottom.pos[0] + bottom.size[0] / 2, descent.upper[1], bottom.pos[2] + bottom.size[2] / 2];
@@ -287,13 +283,8 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
       }
       walk([approach]);
     }
-    assert(lid);
-    if (!lid.open) {
-      const lidOpening = doorPlan(session.inventory, lid, 'open');
-      assert(lidOpening.ok);
-      session.queue.enqueueAction(DOOR_ACTION, 'open descent hatch', lidOpening.time, { entityUid: lid.uid });
-      until(() => lid.open, Math.ceil((lidOpening.time + 1) * 60));
-    }
+    const openingTime = queueDescentLidOpening(session, lid);
+    until(() => lid.open, Math.ceil((openingTime + 1) * 60));
     const [top] = [...entities.all]
       .filter(
         (entity) =>
@@ -319,6 +310,7 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
   }
   walk(route(position, plan.composition!.objectiveFace));
   assert(Math.abs(session.body.pos[1] - plan.composition!.objectiveFace[1]) < 0.001);
+  const atObjective = session.snapshot({ worldId: 'route-world', characterId: 'route-survivor' });
   position = plan.composition!.objectiveFace;
   for (const ascent of completed.reverse()) {
     const bottom = entities.at(...(ascent.ladder as Vec3))!;
@@ -343,4 +335,18 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
   walk(route(position, plan.composition!.retreat));
   assert(session.body.onGround);
   assert(session.sim.body.health > 0);
+
+  // Winning ends movement; restore the player's goal-face save after proving the return route.
+  const restored = createSession({ ...options, restore: atObjective });
+  const objective = restored.entities.at(...(plan.composition!.objective as Vec3));
+  assert(objective && restored.isObjective(objective));
+  const dx = objective.pos[0] + objective.size[0] / 2 - restored.body.pos[0];
+  const dz = objective.pos[2] + objective.size[2] / 2 - restored.body.pos[2];
+  const dy =
+    objective.pos[1] + objective.size[1] / 2 - restored.body.pos[1] - restored.playerEyeHeightMetres / scale.blockSize;
+  yaw = Math.atan2(-dx, -dz);
+  pitch = Math.atan2(dy, Math.hypot(dx, dz));
+  assert(!restored.won);
+  assert(restored.activateGoal(objective) === undefined);
+  assert(restored.won && restored.sim.paused);
 };

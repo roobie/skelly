@@ -354,14 +354,15 @@ vertical chunks and furniture requests need the same complete plan. See `scenari
 in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `src/core/ladders.ts`, `ladderOutward`.
 
-Scenario composition promotes the approved campus geometry without making the
-look layout the playable world's authority. Fixed resources must survive the transition
-from a rendered demo to a seeded world rather than depending on incidental loot.
+One owned assembly supplies the service facade and underground campus, so the
+playable world and visual inspection cannot diverge into separate geometry.
+Fixed resources must remain available independently of incidental loot.
 Public documentary leads must be independently useful and spatially separate;
 reading one cannot authorize another. Reserving their destination landmarks with
 the service block keeps their descriptions seed-correct. Related utility
-silhouettes keep matching metal alone from becoming a unique destination cue. See `src/content/base/gauntlet.jsonnet`, `templates` and
-`furniture`; `src/content/base/scenarios.jsonnet`, `composition`; and
+silhouettes keep matching metal alone from becoming a unique destination cue. See
+`src/content/base/gauntlet-service.libsonnet`, `mapAssemblies`;
+`src/content/base/scenarios.jsonnet`, `composition`; and
 `src/core/scenarioComposition.ts`, `composeScenario`.
 
 Furniture anchors rotate as occupied boxes, while standing poses rotate as

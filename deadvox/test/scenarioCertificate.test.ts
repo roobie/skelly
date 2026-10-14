@@ -10,6 +10,7 @@ import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
+import { generateChunk, terrainBlockIds } from '../src/core/worldgen.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 
@@ -107,7 +108,7 @@ describe('final composed body-route certificate', () => {
   });
 
   it('rejects a shaft-neighbor obstruction in the final furnished production lab', () => {
-    const descent = base.composition!.descents[0]!;
+    const [descent] = base.composition!.descents;
     if (!descent) {
       throw new Error('Production lab has no descent witness');
     }
@@ -192,8 +193,58 @@ describe('final composed body-route certificate', () => {
   });
 });
 
+it('resolves production service ownership, furnished loot and terrain stamps independently of chunk request order', () => {
+  const first = siteOf();
+  const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid: profile.city, scenario: profile }));
+  const composition = first.plan.composition!;
+  const points = [
+    first.plan.portal!.upper,
+    first.plan.portal!.lower,
+    composition.objective,
+    ...composition.descents.flatMap(({ upper, lower, ladder }) => [upper, lower, ladder]),
+    ...composition.resources.map(({ at }) => at),
+  ];
+  const cells = new Map(
+    points.map((point) => {
+      const cell = point.map(toChunk) as Vec3;
+      return [cell.join(','), cell] as const;
+    }),
+  );
+  expect(cells.size).toBeGreaterThan(1);
+  const service = first.plan.service!.template;
+  expect(service.provenance!.some((owner) => owner && owner.slotPath.split('/').length > 2)).toBe(true);
+  const selected = (site: CitySite) => ({
+    origin: site.plan.service!.origin,
+    turn: site.plan.service!.turn,
+    provenance: site.plan.service!.template.provenance,
+  });
+  const before = structuredClone(selected(first));
+  const request = (site: CitySite, order: readonly Vec3[]) => {
+    const terrain = {
+      seed: site.seed,
+      scale,
+      surface: site.surface,
+      blocks: terrainBlockIds((id) => registry.blockIds.get(id)!),
+    };
+    return new Map(
+      order.map((cell) => {
+        const chunk = generateChunk(terrain, cell);
+        site.stamp(chunk);
+        return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
+      }),
+    );
+  };
+  const forward = request(first, [...cells.values()]);
+  const backward = request(second, [...cells.values()].reverse());
+  for (const key of cells.keys()) {
+    expect(backward.get(key)).toEqual(forward.get(key));
+  }
+  expect(selected(first)).toEqual(before);
+  expect(selected(second)).toEqual(before);
+});
+
 it(
-  'walks the closed descent lids without side-cell drops, opens them, reaches the objective and returns through session commands',
+  'walks closed lids, opens descents, returns alive and activates the objective from the goal-face save',
   () => {
     traverseScenario(siteOf(candidatePlan(base.candidates[0]!, 1)), profile, scale);
   },

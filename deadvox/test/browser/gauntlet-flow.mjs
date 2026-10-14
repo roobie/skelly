@@ -153,6 +153,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const { doorPlan } = await import('/src/core/options.ts');
       const { DOOR_ACTION } = await import('/src/game/doorAction.ts');
       const { ladderOutward } = await import('/src/core/ladders.ts');
+      const { descentLid, queueDescentLidOpening } = await import('/test/fixtures/descentLid.ts');
       const { IDLE } = await import('/src/game/session.ts');
       const { plan } = engine.site;
       const certificate = scenarioCertificate(engine.site);
@@ -324,6 +325,9 @@ export const gauntletFlow = async (browser, baseUrl) => {
           bottom.pos[2] + bottom.size[2] / 2 - oz,
         ];
         await walk(route(position, approach));
+        const lid = descentLid(session, bottom, descent.upper[1]);
+        const openingTime = queueDescentLidOpening(session, lid);
+        await until(() => lid.open, Math.ceil((openingTime + 1) * 60), 'descent lid');
         const [top] = [...engine.entities.all]
           .filter(
             (entity) =>
