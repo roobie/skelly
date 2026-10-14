@@ -98,6 +98,33 @@ const nativeDefinitions = (id: string) => {
   });
 };
 
+const SIDES = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+] as const;
+
+/** Exterior floor and roof courses of a compiled template, each with the wall block below it. */
+const exteriorCourses = (template: ReturnType<typeof compileTemplate>) => {
+  const [sx, sy, sz] = template.size;
+  const at = (x: number, y: number, z: number) =>
+    x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz ? 0 : template.blocks[x + sx * (z + sz * y)]!;
+  const solid = (block: number) => BUNDLED_CONTENT.registry.blocks[block]?.solid === true;
+  const courses: { at: Vec3; wall: number; block: number }[] = [];
+  for (const [x, y, z] of cellsOf(template.size)) {
+    const wall = at(x, y - 1, z);
+    if (solid(wall) && at(x, y - 2, z) === wall && solid(at(x, y, z))) {
+      const exposed = SIDES.some(([dx, dz]) => !solid(at(x + dx, y - 1, z + dz)));
+      const slab = SIDES.some(([dx, dz]) => solid(at(x + dx, y, z + dz)) && at(x + dx, y, z + dz) !== wall);
+      if (exposed && slab) {
+        courses.push({ at: [x, y, z], wall, block: at(x, y, z) });
+      }
+    }
+  }
+  return courses;
+};
+
 describe('one finished city plan', () => {
   it('keeps compiled building floor and roof courses in the exterior wall material', () => {
     const native = BUNDLED_CONTENT.registry;
@@ -105,35 +132,11 @@ describe('one finished city plan', () => {
     let checked = 0;
     for (const id of scenario.city.templates) {
       for (const [variant, template] of nativeDefinitions(id).entries()) {
-        const [sx, sy, sz] = template.size;
-        const at = (x: number, y: number, z: number) =>
-          x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz ? 0 : template.blocks[x + sx * (z + sz * y)]!;
-        const solid = (block: number) => native.blocks[block]?.solid === true;
-        let courses = 0;
-        for (const [x, y, z] of cellsOf(template.size)) {
-          const wall = at(x, y - 1, z);
-          if (!solid(wall) || at(x, y - 2, z) !== wall) {
-            continue;
-          }
-          const exposed = [
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [0, -1],
-          ].some(([dx, dz]) => !solid(at(x + dx!, y - 1, z + dz!)));
-          const slab = [
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [0, -1],
-          ].some(([dx, dz]) => solid(at(x + dx!, y, z + dz!)) && at(x + dx!, y, z + dz!) !== wall);
-          if (!(exposed && slab && solid(at(x, y, z)))) {
-            continue;
-          }
-          expect(at(x, y, z), `${id} variant ${variant}: exterior course at ${x},${y},${z}`).toBe(wall);
-          courses += 1;
+        const courses = exteriorCourses(template);
+        for (const course of courses) {
+          expect(course.block, `${id} variant ${variant}: exterior course at ${course.at}`).toBe(course.wall);
         }
-        expect(courses, `${id} variant ${variant}`).toBeGreaterThan(0);
+        expect(courses.length, `${id} variant ${variant}`).toBeGreaterThan(0);
         checked += 1;
       }
     }

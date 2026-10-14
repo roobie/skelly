@@ -70,6 +70,13 @@ it('a fixture mod can replace a role style by id without changing curated geomet
   });
   expect(facadeCells.length).toBeGreaterThan(0);
   expect(facadeCells.every((index) => compiled.blocks[index] === facade)).toBe(true);
+  const base = buildRegistry(sources);
+  expect(base.issues).toEqual([]);
+  const original = compileMapPiece(base.registry, base.registry.mapPieces.get(piece.id)!);
+  expect(compiled.ownership).toEqual(original.ownership);
+  expect(compiled.reserved).toEqual(original.reserved);
+  const facadeSet = new Set(facadeCells);
+  expect(compiled.blocks.every((block, index) => facadeSet.has(index) || block === original.blocks[index])).toBe(true);
   expect(registry.mapStyles.get(style.id)).toEqual(style);
   expect(registry.contentOrigins.get(`mapStyles:${style.id}`)!.source).toBe('fixture-style-mod.json');
 });

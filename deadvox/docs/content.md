@@ -86,14 +86,15 @@ whole pool would repeat the same furnishings across the city. See `src/core/city
 
 Choose facade treatment for the whole building so floor and roof edges cannot become
 unrelated stripes. Decoration must stay outside reserved roof and street circulation:
-tuning its frequency must not seal a ladder landing or entrance. Cellar street courses
-retain doorway support while interior openings belong to the stair owner. See
+tuning its frequency must not seal a ladder landing or entrance. The cellar street
+course keeps the street-side `=` footing solid so the yard and entrance stand on it, and
+leaves the interior to the floor piece (`gauntlet_city_floor_lower`, `floor_inside`
+slot) and the stair owners; only the stair hole belongs to the stairs. See
 `src/content/base/gauntlet-city-variants.libsonnet`, `dressed`;
 `src/content/base/gauntlet-city-decor.libsonnet`, `rooftop`;
 `src/content/base/gauntlet-city-yards.libsonnet`, `yard`; and
-`src/content/base/gauntlet-city-cellars.libsonnet`, `street`. Route witnesses preserve
-reserved paths except at openable door owners; see `test/cityKitRoutes.test.ts`,
-`knownBody`. The fixture mod in `test/fixtures/jsonnet/concrete-style-mod.jsonnet`
+`src/content/base/gauntlet-city-cellars.libsonnet`, `street`. A route may pass through
+an unlocked door but never through a wall, a window or furniture. The fixture mod in `test/fixtures/jsonnet/concrete-style-mod.jsonnet`
 exercises the ordinary whole-definition style override boundary.
 
 City placement honours the authored ground storey so a cellar stays underground

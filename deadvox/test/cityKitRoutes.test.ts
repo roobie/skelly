@@ -33,7 +33,9 @@ const cityAlternatives = function* () {
   const { registry } = BUNDLED_CONTENT;
   const pool = new Set([...registry.scenarios.values()].flatMap((scenario) => scenario.city.templates));
   const buildings = [...registry.mapAssemblies.values()].filter((assembly) => pool.has(assembly.id) && assembly.access);
-  expect(buildings.length).toBeGreaterThan(0);
+  if (buildings.length === 0) {
+    throw new Error('no city-pool building declares access');
+  }
   const alternatives = Math.max(
     ...[...registry.mapAssemblies.values()].flatMap((assembly) => assembly.slots.map((slot) => slot.choices.length)),
   );
@@ -65,41 +67,45 @@ const cityAlternatives = function* () {
   }
 };
 
-it('city buildings leave no sealed owned air below grade that nothing can stand in or reach', () => {
-  const OWNED_AIR = 2;
-  for (const { building, compiled } of cityAlternatives()) {
-    const [sx, sy, sz] = compiled.size;
-    const grade = compiled.access!.entrance[1];
-    const open = (x: number, y: number, z: number) =>
-      x >= 0 &&
-      y >= 0 &&
-      z >= 0 &&
-      x < sx &&
-      y < sy &&
-      z < sz &&
-      compiled.ownership![ownershipCell(compiled.size, [x, y, z])] === OWNED_AIR;
-    const seen = new Set<number>();
-    const queue: Vec3[] = Object.values(compiled.anchors!)
-      .filter((anchor) => anchor.kind === 'standing')
-      .map((anchor) => anchor.at.map(Math.floor) as Vec3);
-    for (let head = 0; head < queue.length; head++) {
-      const [x, y, z] = queue[head]!;
-      if (!open(x, y, z) || seen.has(ownershipCell(compiled.size, [x, y, z]))) {
-        continue;
-      }
+const OWNED_AIR = 2;
+
+/** Owned air below grade that no standing anchor reaches through owned air, if any. */
+const sealedBelowGrade = (compiled: CompiledTemplate): Vec3 | undefined => {
+  const [sx, sy, sz] = compiled.size;
+  const [, grade] = compiled.access!.entrance;
+  const open = (x: number, y: number, z: number) =>
+    x >= 0 &&
+    y >= 0 &&
+    z >= 0 &&
+    x < sx &&
+    y < sy &&
+    z < sz &&
+    compiled.ownership![ownershipCell(compiled.size, [x, y, z])] === OWNED_AIR;
+  const seen = new Set<number>();
+  const queue: Vec3[] = Object.values(compiled.anchors!)
+    .filter((anchor) => anchor.kind === 'standing')
+    .map((anchor) => anchor.at.map(Math.floor) as Vec3);
+  for (const [x, y, z] of queue) {
+    if (open(x, y, z) && !seen.has(ownershipCell(compiled.size, [x, y, z]))) {
       seen.add(ownershipCell(compiled.size, [x, y, z]));
       queue.push([x + 1, y, z], [x - 1, y, z], [x, y + 1, z], [x, y - 1, z], [x, y, z + 1], [x, y, z - 1]);
     }
-    for (let y = 0; y < grade; y++) {
-      for (let z = 0; z < sz; z++) {
-        for (let x = 0; x < sx; x++) {
-          expect(
-            !open(x, y, z) || seen.has(ownershipCell(compiled.size, [x, y, z])),
-            `${building.id}: sealed owned air at ${[x, y, z]}`,
-          ).toBe(true);
+  }
+  for (let y = 0; y < grade; y++) {
+    for (let z = 0; z < sz; z++) {
+      for (let x = 0; x < sx; x++) {
+        if (open(x, y, z) && !seen.has(ownershipCell(compiled.size, [x, y, z]))) {
+          return [x, y, z];
         }
       }
     }
+  }
+  return undefined;
+};
+
+it('city buildings leave no sealed owned air below grade that nothing can stand in or reach', () => {
+  for (const { building, compiled } of cityAlternatives()) {
+    expect(sealedBelowGrade(compiled), `${building.id}: sealed owned air`).toBeUndefined();
   }
 });
 
