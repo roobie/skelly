@@ -13,10 +13,10 @@ import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
 import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
 import { generateChunk, terrainBlockIds } from '../src/core/worldgen.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 
-const { registry } = BUNDLED_CONTENT;
+const { registry } = buildBundledContent();
 const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
 if (!profile) {
   throw new Error('Missing composed scenario');

@@ -77,14 +77,15 @@ describe('bench plan', () => {
   });
 
   it('keeps a valid time and carries the detailed population through each full phase run', () => {
-    const run = benchRunFromUrl(new URLSearchParams('bench=1&time=23:30&shamblers=7&actors=detailed'));
+    const registry = { layouts: new Map(), scenarios: new Map() };
+    const run = benchRunFromUrl(new URLSearchParams('bench=1&time=23:30&shamblers=7&actors=detailed'), registry);
     expect(run).toMatchObject({ time: '23:30', shamblers: 7 });
-    expect(benchRunFromUrl(new URLSearchParams('bench=1&time=25:00')).time).toBeUndefined();
-    const lightsOnly = benchRunFromUrl(new URLSearchParams('bench=1'));
+    expect(benchRunFromUrl(new URLSearchParams('bench=1&time=25:00'), registry).time).toBeUndefined();
+    const lightsOnly = benchRunFromUrl(new URLSearchParams('bench=1'), registry);
     expect(lightsOnly.time).toBeUndefined();
-    expect(benchRunFromUrl(new URLSearchParams(nextUrl(lightsOnly, 73))).shamblers).toBe(0);
+    expect(benchRunFromUrl(new URLSearchParams(nextUrl(lightsOnly, 73)), registry).shamblers).toBe(0);
     expect(new URLSearchParams(nextUrl(run, 73)).get('shamblers')).toBe('7');
-    expect(benchRunFromUrl(new URLSearchParams('bench=1&shamblers=7,8')).shamblers).toBeUndefined();
+    expect(benchRunFromUrl(new URLSearchParams('bench=1&shamblers=7,8'), registry).shamblers).toBeUndefined();
   });
 
   it('runs 0.5 m blocks at 64, 96 and 128 m by default', () => {

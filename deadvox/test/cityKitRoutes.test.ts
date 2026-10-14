@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
 import { templateStandingRoute } from '../src/core/templateSpatial.ts';
 import { compileAssembly } from '../src/core/templates.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
 
 it('curated multi-storey buildings retain furnished entry and return routes to every standing anchor', () => {
-  const { registry } = BUNDLED_CONTENT;
+  const { registry } = buildBundledContent();
   const buildings = [...registry.mapAssemblies.values()].filter(
     (assembly) => (assembly.access?.storeys.length ?? 0) > 1,
   );

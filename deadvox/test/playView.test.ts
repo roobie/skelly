@@ -22,7 +22,6 @@ import { skyAt } from '../src/core/sky.ts';
 import type { SkyBounds } from '../src/core/skylight.ts';
 import type { SkySnapshot } from '../src/core/skySnapshot.ts';
 import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
-import { makeConfig } from '../src/game/config.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
@@ -30,6 +29,7 @@ import { createPlayView } from '../src/render/playView.ts';
 import { Skylight } from '../src/render/skylight.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { skyWorldFixture } from './fixtures/skyWorld.ts';
+import { makeConfig } from './fixtures/startupContent.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(

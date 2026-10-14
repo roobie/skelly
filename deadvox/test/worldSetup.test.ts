@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeScale } from '../src/core/scale.ts';
-import { configFromUrl } from '../src/game/config.ts';
 import { playerStartFromWorld } from '../src/game/worldSetup.ts';
+import { configFromUrl } from './fixtures/startupContent.ts';
 
 describe('player start from world setup', () => {
   it('converts the generated metre-space spawn to a block-space body origin', () => {
