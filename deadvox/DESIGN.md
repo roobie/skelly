@@ -1256,7 +1256,7 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
   | --- | --- | --- |
   | Active | Nearby actors | Detailed AI, body physics and beeline movement (implemented) |
   | Background | Distant actors in loaded chunks | Reduced-rate, collision-resolved beeline toward attention (implemented) |
-  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (Slice 4) |
+  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (Slice 4b) |
 
   Loaded distant actors remain in the same store and switch their update
   schedule by derived proximity and terrain availability. The hamlet's first
@@ -1406,7 +1406,7 @@ play, not only decorate it.
   - **Movement and landmarks:** solid trunks channel movement for you and the
     dead; passable hedges conceal it. A lone big tree is a landmark.
 - **Motion:** cosmetic wind moves foliage and loose debris, and rain falls
-  (Slice 4). It makes exposure and the weather readable, rather than leaving a
+  (Slice 4a). It makes exposure and the weather readable, rather than leaving a
   world that reads as paused. Wind here is render and audio ambience, not
   another simulated weather system beyond version 1's rain and temperature.
 - **Sound of the place:** wind in the trees by biome, birds by day, insects at
@@ -1437,7 +1437,7 @@ so scale does not force a later redesign:
   and cutting come in their scheduled slices. Solid and cut-out leaves are
   measured on the same forest workload, including meshing, overdraw, shadows
   and memory. Neither is assumed faster in advance.
-- **Far away (Slice 4),** simplified tree shapes are planned in the far-terrain
+- **Far away (Slice 4b),** simplified tree shapes are planned in the far-terrain
   meshes (see [Rendering](#rendering)), aiming for a forest that still reads as
   one at 512 m. That distance and its cost are unmeasured. Neither far-tree
   detail levels nor grass instancing is part of Slice 2's sneak peek.
@@ -1468,7 +1468,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   hands share the room's sky visibility, so they do not glow in enclosed dark
   spaces; see `src/render/playView.ts`, `prepareLighting`, and
   `src/render/hands.ts`, `HeldItems.render`. Light from torches, lamps and hot
-  zombies through the grid is planned for Slice 4, with
+  zombies through the grid is planned for Slice 4a, with
   the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be

@@ -11,7 +11,7 @@ read_if:
 
 This document defines what version 1 is, then breaks the way there into
 slices. Each slice is playable and deployed to GitHub Pages. The first real
-playtest is at the end of Slice 3, before Slice 4 starts, so the base game is in
+playtest is at the end of Slice 3, before Slice 4a starts, so the base game is in
 place; later slices are playtested before the next one starts. The systems are
 described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES.md).
 
@@ -94,7 +94,8 @@ described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES
 | 1 | **The loot run** | Is looting a house in real time, with handling time, tense and fun? Is 0.5 m the right scale? Is the first night frightening? |
 | 2 | **Craft and mend** | Does crafting from scavenged materials give looting a purpose? |
 | 3 | **Flesh and noise** | Is combat readable, and do noise and wounds change how you play? Do players listen before they move? |
-| 4 | **The region** | Does the open world pull you from town to town? Does it feel like a place that was abandoned? |
+| 4a | **Gauntlet** | Is the gauntlet tense? Is the action fun, and does it run well enough? |
+| 4b | **The region** | Does the open world pull you from town to town? Does it feel like a place that was abandoned? |
 | 5 | **Holding ground** | Is a base worth building and defending? |
 | 6 | **Wheels** | Are vehicles worth the effort to build and keep running? |
 | 7 | **The cordon and the labs** | Does the weird endgame feel earned and grounded? |
@@ -103,7 +104,7 @@ described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES
 The order follows dependencies:
 
 - Each slice needs the one before it, and 2–5 are the core.
-- The vehicle and lab slices both need the region map from Slice 4.
+- The vehicle and lab slices both need the region map from Slice 4b.
 - Slice 7 needs the electricity and fire systems from Slice 5, because labs
   have powered doors and hot zombies start fires.
 
@@ -123,12 +124,12 @@ rendering separate from simulation state. Craft and mend covers:
 - About 80 item types. The validator checks that every component can be found
   or crafted.
 - More templates: a hardware store and a garage.
-- A sneak peek at trees and hedges in the hamlet, pulled forward from Slice 4
+- A sneak peek at trees and hedges in the hamlet, pulled forward from Slice 4a
   (2.13).
 
 ### 3. Flesh and noise
 
-The first real playtest is at this slice's end, before Slice 4 starts, so the
+The first real playtest is at this slice's end, before Slice 4a starts, so the
 base game is in place. It combines the questions below with those about crafting,
 wear and light. Slice 3's milestone scope and gates are in
 [SLICE-3.md](SLICE-3.md); work proceeds one milestone at a time.
@@ -163,7 +164,7 @@ Use the metrics and feedback testers choose to share to assess:
 5. Are a few shamblers enough threat to make looting and sleep meaningful?
 6. Is the first night frightening? What scared the player, and did it come from
    darkness and sounds rather than a scripted moment? Until voxel light arrives
-   in Slice 4, interiors are no darker than outdoors; interpret feedback with
+   in Slice 4a, interiors are no darker than outdoors; interpret feedback with
    that in mind ([DESIGN.md](DESIGN.md#light)).
 7. Does the 1:8 clock ratio give players enough time to explore the world?
 8. Do non-respawning shamblers make the second night too safe?
@@ -182,7 +183,7 @@ Use the metrics and feedback testers choose to share to assess:
 The metrics show how far testers get, what they find and when they reach map
 beats. Their feedback issues or emails can explain what felt tense, confusing,
 satisfying or frustrating, and which moments annoyed or delighted them. Use that
-evidence to update DESIGN, CHALLENGES and this EPIC before planning Slice 4. If
+evidence to update DESIGN, CHALLENGES and this EPIC before planning Slice 4a. If
 the second night is too safe, add night wanderers after the first playtest. The
 organiser's sheet in [docs/playtest-run.md](docs/playtest-run.md) explains
 how testers can export and share their metrics and feedback.
@@ -194,24 +195,29 @@ Slice 3's scope and milestone-by-milestone plan are in [SLICE-3.md](SLICE-3.md).
 The body model, melee and firearm work, ready stance, senses, light, weapon mods,
 zombie types, hordes, input replay and authored playtest map are planned there.
 
-### 4. The region
+### 4a. Gauntlet
 
-- The region map: biomes, the road graph, settlements and point-of-interest
-  sites with tiers.
-- Towns from templates plus procedural houses. Room types choose furniture and
-  loot.
-- Far-terrain level of detail, and worldgen in workers.
-- A world that feels real, including vegetation and its role in play (see
-  [DESIGN.md](DESIGN.md#a-world-that-feels-real)).
+- The gauntlet game mode (#671); playtest 2 runs on it at this slice's end.
+- Room types choose furniture and loot.
 - Voxel light: interiors pitch black at night and dim by day. Light through
   windows and doors can be seen from outside.
 - Body temperature, clothing warmth, and rain.
 - The night sky: the moon and stars, moon phases, and overcast nights that come
   with the rain.
-- Driveable surfaces in worldgen, ready for vehicles.
+- A world that feels real, including vegetation and its role in play within the
+  town (see [DESIGN.md](DESIGN.md#a-world-that-feels-real)).
 - The dystopian dressing: notices, marked doors, roadblocks and triage sites
   in the templates, a radio with the emergency broadcast, and distant sounds
   from the simulation (see [Dystopia](DESIGN.md#dystopia)).
+
+### 4b. The region
+
+- The region map: biomes, the road graph, settlements and point-of-interest
+  sites with tiers.
+- Towns from templates plus procedural houses at region scale.
+- Far-terrain level of detail, and worldgen in workers.
+- Drivable surfaces in worldgen, ready for vehicles.
+- Abstract region-map hordes.
 
 ### 5. Holding ground
 
