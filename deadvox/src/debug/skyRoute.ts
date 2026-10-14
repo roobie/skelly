@@ -47,6 +47,14 @@ export function attachSkyRoute({ engine, session, debug, active }: Parameters<Sk
   }
   const panel = createSkyRoutePanel(skyRouteUrl());
   const holdRouteAction = forwardedActionHolds(keyboardInput);
+  const routeMovementActions = ['movement.sprint', 'movement.forward', 'movement.back'];
+  // The input owner's live context decides whether play (and so the route's forwarded movement) is allowed.
+  const inputPermitsRoute = () => {
+    const { context } = keyboardInput.context();
+    return routeMovementActions.every(
+      (action) => keyboardInput.registry.binding(action)?.contexts.includes(context) ?? false,
+    );
+  };
   const frames: SkyRouteFrame[] = [];
   const jobs: SkyRouteJob[] = [];
   let phase: SkyRoutePhase = 'cold';
@@ -181,7 +189,7 @@ export function attachSkyRoute({ engine, session, debug, active }: Parameters<Sk
         return;
       }
       try {
-        if (startedRealMs === undefined && active()) {
+        if (startedRealMs === undefined && active() && inputPermitsRoute()) {
           begin();
         }
       } catch (error) {
