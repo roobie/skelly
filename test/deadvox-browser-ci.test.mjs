@@ -219,6 +219,24 @@ describe('deadvox browser CI coverage', () => {
     assert.throws(() => manifestOf(fixture), serialControl);
   });
 
+  it('retains quarantined Chromium navigation locally without disabling Firefox navigation', () => {
+    const diagnostic = 'test:browser:chromium:navigation';
+    assert.ok(Object.hasOwn(quarantinedScripts, diagnostic), 'the navigation quarantine remains explicit');
+    const cases = stagesOf(scripts[diagnostic]);
+    assert.deepEqual(cases, [
+      { env: { SAVE_NAVIGATION_ONLY: '1' }, command: 'node test/browser/save-storage.mjs chromium' },
+    ]);
+    assert.deepEqual(uncovered(diagnostic), cases.map(describeStage), 'Chromium navigation is not executed in CI');
+    assert.ok(
+      stagesOf(scripts['test:browser:firefox']).some(
+        ({ env, command }) =>
+          env.SAVE_NAVIGATION_ONLY === '1' && command === 'node test/browser/save-storage.mjs firefox',
+      ),
+      'Firefox retains its independent navigation coverage',
+    );
+    assert.ok(!Object.hasOwn(quarantinedScripts, 'test:browser:firefox'));
+  });
+
   it('quarantines only scripts that exist and have no executed cases', () => {
     for (const [name, reason] of Object.entries(quarantinedScripts)) {
       assert.ok(name in scripts, `${name} is gone: drop the quarantine (${reason})`);
