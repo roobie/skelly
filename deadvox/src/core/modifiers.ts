@@ -1,5 +1,6 @@
 /** The mechanism inputs a modifier can change: engine vocabulary, which content modifiers name. */
 const MODIFIED_EFFECTS = [
+  'attack.damage',
   /** Blood one bleeding wound loses per Sim second. */
   'bleeding.lossPerSimSecond',
   /** Severity a bleeding wound closes by itself per Sim second. */
@@ -30,7 +31,7 @@ export interface Modifier {
   readonly add?: number;
 }
 
-/** Whatever carries modifiers: the body. */
+/** Whatever carries modifiers. */
 export interface ModifierActor {
   readonly modifiers: readonly Modifier[];
 }
