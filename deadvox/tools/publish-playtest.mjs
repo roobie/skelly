@@ -20,7 +20,21 @@ export const playtestRound = (round) => {
   return config;
 };
 
-const git = (root, ...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
+export const gitEnvironment = () => {
+  // Git hooks export repository bindings that must not redirect a fixture or detached game checkout.
+  // biome-ignore lint/style/noProcessEnv: child processes retain caller settings except Git's local repository bindings.
+  const environment = { ...process.env };
+  const localVariables = execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' })
+    .trim()
+    .split('\n');
+  for (const name of localVariables) {
+    delete environment[name];
+  }
+  return environment;
+};
+
+const git = (root, ...args) =>
+  execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', env: gitEnvironment() }).trim();
 const cleanRevision = (root) => {
   const changes = git(root, 'status', '--porcelain', '--untracked-files=all');
   if (changes) {
@@ -71,8 +85,7 @@ const buildGame = (root, gameSha, output) => {
     execFileSync('npm', ['run', 'build'], {
       cwd: join(checkout, 'deadvox'),
       stdio: 'inherit',
-      // biome-ignore lint/style/noProcessEnv: publication opts into the analytics described by the consent page.
-      env: { ...process.env, PAGES_ANALYTICS: '1' },
+      env: { ...gitEnvironment(), PAGES_ANALYTICS: '1' },
     });
     if (cleanRevision(checkout) !== gameSha) {
       throw new Error('Game build changed its frozen checkout; refusing publication.');

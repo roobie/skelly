@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { playtestRound, publishPlaytest } from '../deadvox/tools/publish-playtest.mjs';
+import { gitEnvironment, playtestRound, publishPlaytest } from '../deadvox/tools/publish-playtest.mjs';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
@@ -285,7 +285,7 @@ describe('site launcher playtest entry', () => {
       );
       const frozenGame = '<main>Frozen fixture game</main>';
       writeFileSync(join(root, 'deadvox/index.html'), frozenGame);
-      const git = (...args) => execFileSync('git', ['-C', root, ...args]);
+      const git = (...args) => execFileSync('git', ['-C', root, ...args], { env: gitEnvironment() });
       git('init', '-q');
       git('add', '.');
       git(
