@@ -91,6 +91,7 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
           return labelForAction('debug.performance-toggle');
         },
       },
+      { label: 'Interaction ray', param: 'interactionray=1' },
     ],
   },
   {

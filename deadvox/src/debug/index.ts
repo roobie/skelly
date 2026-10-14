@@ -60,6 +60,7 @@ import {
   spawnZombieType,
 } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
+import { TransientDebugDraw } from './transientDraw.ts';
 
 const COMPASS_DEBUG_LOADOUT = 'compass';
 
@@ -577,6 +578,7 @@ interface ActionContext {
   isGameFrozen: () => boolean;
   toggleGameFrozen: () => void;
   impactLaser: DebugHooks['impactLaser'];
+  interactionRay: { enabled: () => boolean; toggle: () => void };
   exportInputReplay: () => void;
   chooseInputReplay: () => void;
   look: LookControls;
@@ -600,6 +602,7 @@ export const createDebugActions = ({
   isGameFrozen,
   toggleGameFrozen,
   impactLaser,
+  interactionRay,
   exportInputReplay,
   chooseInputReplay,
   look,
@@ -898,6 +901,13 @@ export const createDebugActions = ({
       // Diagnostics for a stray bright pixel (see render/hotCheck.ts and Mood.render): End paints the background
       // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments in a per-material colour.
       {
+        id: 'debug.interaction-ray-toggle',
+        label: 'Interaction ray',
+        group: 'diagnostics',
+        state: interactionRay.enabled,
+        run: interactionRay.toggle,
+      },
+      {
         id: 'debug.crack-check-toggle',
         label: 'Crack check (magenta background)',
         group: 'diagnostics',
@@ -1092,6 +1102,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let snapshotStatus = '';
   let snapshotCopyStatus = '';
   let aimEnabled = true;
+  let interactionRayEnabled = new URLSearchParams(location.search).get('interactionray') === '1';
+  const transientDraw = new TransientDebugDraw(hooks.engine.scene, hooks.engine.config.debug);
   let lastHitText = '';
   let lastHitUntil = 0;
   let readout = emptyReadout;
@@ -1244,6 +1256,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const actions = createDebugActions({
     hooks,
     impactLaser: hooks.impactLaser,
+    interactionRay: {
+      enabled: () => interactionRayEnabled,
+      toggle: () => { interactionRayEnabled = !interactionRayEnabled; },
+    },
     exportInputReplay,
     chooseInputReplay,
     look,
@@ -1792,6 +1808,14 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       drawShell();
     },
     target: (eye, dir, active) => build.target(eye, dir, active),
+    drawInteractionRay(origin, direction, nowMs) {
+      if (!transientDraw.enabled || !interactionRayEnabled) {
+        return;
+      }
+      const end: Vec3 = [origin[0] + direction[0] * 8, origin[1] + direction[1] * 8, origin[2] + direction[2] * 8];
+      transientDraw.line(origin, end, nowMs);
+    },
+    updateTransientDraw: (nowMs) => transientDraw.update(nowMs),
     click: (button, eye, dir) => build.click(button, eye, dir),
     wheel: (delta) => build.wheel(delta),
     stepNoclip: (step: DebugNoclipStep) => stepNoclip(step),

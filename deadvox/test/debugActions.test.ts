@@ -117,7 +117,7 @@ describe('debug action dispatch', () => {
         (def.notes ?? []).flatMap((note) => (note.param ? [paramName(note.param)] : [])),
       ),
     ]);
-    expect([...catalogued].sort()).toEqual([...LOOK_PARAMS, 'cam'].sort());
+    expect([...catalogued].sort()).toEqual([...LOOK_PARAMS, 'cam', 'interactionray'].sort());
   });
 });
 
@@ -231,6 +231,7 @@ const makeActions = (
   let frozen = false;
   let gameFrozen = false;
   let laserEnabled = true;
+  let interactionRayEnabled = false;
   const spawnCounts: number[] = [];
   const spawnRequests: { typeId: string; count: number }[] = [];
   const replayCalls: string[] = [];
@@ -271,6 +272,10 @@ const makeActions = (
     },
     chooseInputReplay: () => {
       replayCalls.push('import');
+    },
+    interactionRay: {
+      enabled: () => interactionRayEnabled,
+      toggle: () => { interactionRayEnabled = !interactionRayEnabled; },
     },
     impactLaser: {
       enabled: () => laserEnabled,

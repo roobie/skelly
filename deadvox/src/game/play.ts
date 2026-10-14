@@ -3376,6 +3376,7 @@ export const startPlay = (
       menuPointer: input.menuPointer,
       firearmReady,
     });
+    debugTools.drawInteractionRay(ray.origin, ray.direction, performance.now());
     const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(ray.origin, ray.direction, meleeWeapon()) : undefined;
     debugTools.updateAim(zombieAim);
     debugTools.updateLookedAt(ray.origin, ray.direction, input.locked);
@@ -3565,6 +3566,7 @@ export const startPlay = (
     updateHeldItems(dt, readiness);
     const bore = heldFirearmBore(readiness);
     updateDebugTargets(bore);
+    debugTools?.updateTransientDraw(now);
     updateDebugReadout(now);
     mark = realNow();
 
