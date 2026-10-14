@@ -40,6 +40,8 @@ import type { HumanoidParams } from '../mob/humanoid.ts';
 import { type IdleStance, idlePose } from '../mob/idle.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '../mob/lookAt.ts';
 import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
+import { QUADRUPED_SEVERABLE_PARTS } from '../mob/quadruped.ts';
+import { quadrupedGaitPose, quadrupedHitPose, quadrupedPose, quadrupedStyle } from '../mob/quadrupedPose.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
@@ -154,6 +156,7 @@ interface Loaded {
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
 let crawlerPhase = 0;
+let quadrupedPhase = 0;
 let gridZ = 0;
 // Runs unconditionally (walking, standing, attacking...) so breathing/sway never stalls; only its phase
 // matters, so it's never reset on load/death — a fresh actor just joins the motion already in progress,
@@ -213,8 +216,14 @@ const playDeath = (): void => {
     return;
   }
   const actor = current.walkActor;
-  if (current.genome.template === 'crawler') {
+  if (current.template.bodyPlan === 'crawler') {
     deathBasePose = crawlerPose(current.realized);
+    deathDirection = dieBackward.checked ? -1 : 1;
+    deathTime = 0;
+    return;
+  }
+  if (current.template.bodyPlan === 'quadruped') {
+    deathBasePose = quadrupedPose(current.realized);
     deathDirection = dieBackward.checked ? -1 : 1;
     deathTime = 0;
     return;
@@ -366,7 +375,8 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   } else {
     const extents = footRestExtents(realized.body.bones, realized.voxels);
     const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-    const legGeometry = template.bodyPlan === 'crawler' ? undefined : legGeometryFor(realized.body.bones, extents, 'L');
+    const legGeometry =
+      template.bodyPlan === 'humanoid' ? legGeometryFor(realized.body.bones, extents, 'L') : undefined;
     const params = genome.params as HumanoidParams;
     const walkActor: WalkActor = {
       bones: realized.body.bones,
@@ -377,11 +387,20 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     };
     // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
     // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
-    actor.applyPose(
-      template.bodyPlan === 'crawler' ? crawlerPose(realized) : idlePose(walkActor, currentStance(), idleTime),
-    );
+    let initialPose = idlePose(walkActor, currentStance(), idleTime);
+    if (template.bodyPlan === 'crawler') {
+      initialPose = crawlerPose(realized);
+    }
+    if (template.bodyPlan === 'quadruped') {
+      initialPose = quadrupedPose(realized);
+    }
+    actor.applyPose(initialPose);
     loaded = { ...loaded, params, extents, bodyExtents, legGeometry, walkActor };
-    severPart.replaceChildren(...SEVERABLE_PARTS.map((part) => new Option(part, part)));
+    severPart.replaceChildren(
+      ...(template.bodyPlan === 'quadruped' ? QUADRUPED_SEVERABLE_PARTS : SEVERABLE_PARTS).map(
+        (part) => new Option(part, part),
+      ),
+    );
   }
   walkFieldset.hidden = staticOnly;
   attackFieldset.hidden = staticOnly;
@@ -389,6 +408,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   current = loaded;
   clock = INITIAL_CLOCK;
   crawlerPhase = 0;
+  quadrupedPhase = 0;
   gridZ = 0;
   attackTime = undefined;
   attackCooldown = 0;
@@ -589,6 +609,12 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     groundGroup.position.z = gridZ;
     return;
   }
+  if (current.template.bodyPlan === 'quadruped') {
+    quadrupedPhase += speed * dt * Math.PI;
+    gridZ = (gridZ + speed * dt) % 0.5;
+    groundGroup.position.z = gridZ;
+    return;
+  }
   if (!(current.walkActor && current.params && current.legGeometry)) {
     return;
   }
@@ -659,6 +685,17 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
     advanceHit(dt);
     const basePose = crawlerGaitPose(loaded.realized, crawlerPhase, speed);
     const pose = hitTime === undefined ? basePose : crawlerHitPose(loaded.realized, basePose, hitTime, hitSide);
+    applyLookAt(loaded, pose, dt);
+    return;
+  }
+  if (loaded.template.bodyPlan === 'quadruped') {
+    const walking = walkOn.checked;
+    const speed = walking ? Number(speedInput.value) : 0;
+    advanceWalk(dt, walking, speed);
+    advanceHit(dt);
+    const style = quadrupedStyle(loaded.genome.params);
+    const basePose = quadrupedGaitPose(loaded.realized, quadrupedPhase, speed, style);
+    const pose = hitTime === undefined ? basePose : quadrupedHitPose(loaded.realized, basePose, hitTime, hitSide);
     applyLookAt(loaded, pose, dt);
     return;
   }

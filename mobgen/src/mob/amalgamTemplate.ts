@@ -1,5 +1,6 @@
 import { registerTemplate, type Template } from '../core/template.ts';
 import { AMALGAM_MEMBER_IDS, MAX_AMALGAM_MEMBERS, MIN_AMALGAM_MEMBERS } from './amalgam.ts';
+import { dogTemplate } from './dogTemplate.ts';
 import { shambler, TEMPLATES } from './templates.ts';
 
 const memberParam = (member: number, name: string): string => `member.${member}.${name}`;
@@ -46,4 +47,6 @@ export const amalgamTemplate: Template = {
 };
 registerTemplate(amalgamTemplate);
 
-export const VIEWER_TEMPLATES: readonly Template[] = [...TEMPLATES, amalgamTemplate];
+/** Everything a mobgen viewer mob may load: the spawnable `TEMPLATES`, plus the opt-in bodies
+ * (the dog quadruped and the amalgam) that consumers must choose explicitly. */
+export const VIEWER_TEMPLATES: readonly Template[] = [...TEMPLATES, dogTemplate, amalgamTemplate];
