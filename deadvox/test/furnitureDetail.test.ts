@@ -71,7 +71,7 @@ describe('furniture detail', () => {
       reliefCenter.divideScalar(reliefVertices).sub(envelope.getCenter(new Vector3()));
       expect(reliefCenter.dot(outward[facing])).toBeGreaterThan(0);
     }
-    expect(furniture.group.children).toHaveLength(definitions.length);
+    expect(furniture.group.children.filter((child) => child instanceof Mesh)).toHaveLength(definitions.length);
   });
 
   it('reuses detail geometry across instances and search redraws, and leaves unchanged frames alone', () => {
@@ -80,7 +80,7 @@ describe('furniture detail', () => {
     const first = entities.add({ type: def.id, size: def.size, pos: [0, 0, 0], facing: 'n' })!;
     entities.add({ type: def.id, size: def.size, pos: [5, 0, 0], facing: 'n' });
     furniture.sync(entities);
-    const meshes = [...furniture.group.children] as Mesh[];
+    const meshes = furniture.group.children.filter((child): child is Mesh => child instanceof Mesh);
     const { geometry } = meshes[0]!;
     expect(geometry).toBe(meshes[1]!.geometry);
     furniture.sync(entities);
