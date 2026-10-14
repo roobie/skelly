@@ -302,9 +302,13 @@ const renderPanel = (realizeMs: number): void => {
   const { genome, realized } = current;
   const template = TEMPLATES.find((t) => t.name === genome.template)!;
   const comparisonOnly = template.status === 'comparison-only';
-  description.innerHTML = comparisonOnly
-    ? `<span class="comparison-only">comparison only — not for use</span> ${template.description}`
-    : template.description;
+  description.textContent = template.description;
+  if (comparisonOnly) {
+    const label = document.createElement('span');
+    label.className = 'comparison-only';
+    label.textContent = 'comparison only — not for use';
+    description.prepend(label, ' ');
+  }
   const { report } = realized;
   status.innerHTML = report.ok
     ? '<span class="pass">PASS</span>'

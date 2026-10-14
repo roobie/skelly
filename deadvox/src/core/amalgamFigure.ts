@@ -2,9 +2,12 @@
 import { generateValid } from '@mobgen/core/generate.ts';
 import { mulMV, rotY } from '@mobgen/core/math.ts';
 import { boneTransforms } from '@mobgen/core/pose.ts';
+import { consumableTemplate } from '@mobgen/core/template.ts';
 import { worldPosition } from '@mobgen/core/voxelize.ts';
 import { amalgamManifest } from '@mobgen/mob/amalgam.ts';
-import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
+// Side effect: registers 'amalgam' so `consumableTemplate` can resolve it and refuse it if it is ever
+// marked comparison-only.
+import '@mobgen/mob/amalgamTemplate.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import type { BoneVoxelBox } from '@mobgen/mob/shamblerFigure.ts';
 import type { Vec3 } from './coords.ts';
@@ -185,7 +188,7 @@ export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
   if (!(Number.isFinite(scale) && scale > 0)) {
     throw new Error(`Invalid amalgam body scale ${scale}`);
   }
-  const generated = generateValid(amalgamTemplate, seed);
+  const generated = generateValid(consumableTemplate('amalgam'), seed);
   if (!generated) {
     throw new Error(`No valid amalgam realization from seed ${seed}`);
   }

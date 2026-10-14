@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { generate, realize } from '../src/core/generate.ts';
 import { applyPoint } from '../src/core/math.ts';
@@ -92,8 +95,21 @@ describe('dog shambler', () => {
 
   it('is refused by the consumer that hands figures to deadvox', () => {
     // The tag is what refuses it, not the model name: `zombieFigure` is deadvox's selection boundary.
-    expect(dogTemplate.status).toBe('comparison-only');
     expect(() => zombieFigure('dog', 1)).toThrowError('comparison-only');
+  });
+
+  it('is refused by the export CLI before it can write a genome', () => {
+    let stderr = '';
+    try {
+      execFileSync(
+        process.execPath,
+        [join(import.meta.dirname, '../src/cli/generate.ts'), '--template', 'dog', '--seed', '1'],
+        { cwd: join(import.meta.dirname, '..'), encoding: 'utf8', stdio: 'pipe' },
+      );
+    } catch (error) {
+      stderr = (error as { stderr?: string }).stderr ?? '';
+    }
+    expect(stderr).toContain('comparison-only');
   });
 
   it.each(DOG_SEEDS)('validates as a connected, grounded, budgeted body for seed %i', (seed) => {
