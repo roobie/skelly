@@ -2,6 +2,7 @@
 read_if:
   - "you're changing mobgen's core, authoring or body-plan boundaries"
   - "you're changing the crawler's body-plan or gait constraints"
+  - "you're changing the quadruped (dog) body plan, its paw supports or its poses"
   - "you're reviewing the amalgam's visual quality pass in #378"
   - "you're changing the Mobgen/Deadvox boundary or the amalgam movement-cost trade-off in #574"
   - "you change the crowd gore-mask encoding"
@@ -25,11 +26,17 @@ Mobgen keeps body construction independent of feasibility rules and rendering so
 
 The crawler is a distinct prone creature, not a humanoid gait variant: its arm-drag silhouette and trailing leg stumps define its identity. Other proposed forms need their own body plans. See `src/mob/crawler.ts`, `crawlerPose`, `crawlerGaitPose`, `crawlerHitPose`, and `test/crawler.test.ts`.
 
+The dog quadruped is its own body plan for the same reason: a horizontal torso, dog legs and a muzzle are not a humanoid gait either. Its generated supports are the four flat paw soles it actually stands on, resolved through the declared-support rules, and every other bone must stay clear of the ground row. It samples on a finer grid than the humanoid mobs because a dog-sized body at their voxel size reduces the muzzle and ears to a voxel or two, and the look is meant to read at game distance. See `src/mob/quadruped.ts`, `buildQuadruped`, `QUADRUPED_SUPPORT_BONES`, `src/mob/dogTemplate.ts`, `dogTemplate`, and `test/quadruped.test.ts`.
+
+The quadruped's poses layer over one grounded standing pose: a planted paw keeps its standing rotations through the whole gait cycle, so only swinging legs and the body lurch move anything, and every layer re-grounds against the paw supports the template declares. A cut that takes a leg leaves the body standing on its remaining contacts rather than suspended by the pose. See `src/mob/quadrupedPose.ts`, `quadrupedPose`, `groundQuadrupedPose`, `quadrupedGaitPose`, and `src/mob/dismember.ts`, `severedBoneSet`.
+
 The playtest apex enemy must read as one grotesque fusion, not several unrelated actors. Complete shambler members remain severable subtrees beneath a non-severable shared core; members may hang or turn in any orientation, while support comes from actual ground contacts. The core's spreading lower mass should read as flesh rather than a platform or extra limbs. Its member count is a visual choice, not a budget ceiling. See `src/mob/amalgam.ts`, `amalgamManifest`, `src/core/generate.ts`, `resolveSupportBones`, and `test/amalgam.test.ts`.
 
 A cut's surviving boundary needs the severed state of its neighbouring bone to show stump gore; every bone index in a body plan must therefore survive the crowd mask handoff. See `src/mob/crowd.ts`, `packSeveredMask` and `crowdBoneSevered`.
 
 Mobgen supplies the generated body used by Deadvox collision, hit regions and rendering; sharing that figure keeps gameplay contact tied to the visible anatomy. The amalgam template stays outside the ordinary `TEMPLATES` list so regular actor consumers opt into the boss explicitly. See `src/mob/amalgamTemplate.ts`, `VIEWER_TEMPLATES`, `deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and `deadvox/test/simulationFingerprint.test.ts`.
+
+The dog template stays outside that list too, until its Deadvox feature: deadvox spawns from `TEMPLATES` and `HUMANOID_TEMPLATES` alone, and a body with no collision, AI or hit regions there would be a promise the game cannot keep. Until then it registers for the viewer only. See `src/mob/dogTemplate.ts`, `dogTemplate`, `src/mob/amalgamTemplate.ts`, `VIEWER_TEMPLATES`, and `src/viewer/main.ts`, `applyLiveFrame`.
 
 The Mobgen viewer keeps the amalgam static because arbitrarily oriented member heads have no single humanoid gaze target. Do not enable its gaze solver until it can resolve each member's head transform. See `src/viewer/main.ts`, `applyLiveFrame`, `src/mob/amalgam.ts`, and `src/mob/lookAt.ts`, `lookAtPose`.
 
