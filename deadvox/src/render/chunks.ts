@@ -203,11 +203,15 @@ if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheri
   float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) * (1.0 - smoothstep(0.0, 0.75, fract(patUV.y / uWeatheringStreakLength))) * broadStrength;
   float northShade = 0.65 + 0.35 * step(vFaceN.z, -0.5);
   float baseMoss = (1.0 - sheltered) * (0.4 + 0.6 * weatherPatch) * (0.25 + 0.75 * verticalFace) * northShade;
+#ifdef DEADVOX_COARSE_WEATHER
+  float mossNoise = broadNoise;
+#else
   vec2 warp = (vec2(
     vnoise(patUV / uWeatheringVariationScale + vec2(17.2, 31.7)),
     vnoise(patUV / uWeatheringVariationScale + vec2(47.1, 11.8))
   ) - 0.5) * 1.4;
   float mossNoise = vnoise(patUV / (uWeatheringVariationScale * 0.28) + warp);
+#endif
   float environment = clamp(vWeather.y * 0.65 + (1.0 - vWeather.x) * 0.35, 0.0, 1.0);
   float mossCutoff = uMossThreshold - uMossBias * environment;
   float mossPatches = smoothstep(mossCutoff, mossCutoff + 0.18, mossNoise) * environment * uWeatheringVariation;
@@ -313,6 +317,36 @@ export class ChunkMeshes {
   /** Takes effect next frame; the uniform is shared, so no recompile. */
   setLinearColors(on: boolean): void {
     this.linearColors.value = on ? 1 : 0;
+  }
+
+  get fastCamo(): boolean {
+    return this.material.defines?.DEADVOX_FAST_CAMO === 1;
+  }
+
+  setFastCamo(on: boolean): void {
+    this.setDetailDefine('DEADVOX_FAST_CAMO', on);
+  }
+
+  get coarseWeathering(): boolean {
+    return this.material.defines?.DEADVOX_COARSE_WEATHER === 1;
+  }
+
+  setCoarseWeathering(on: boolean): void {
+    this.setDetailDefine('DEADVOX_COARSE_WEATHER', on);
+  }
+
+  private setDetailDefine(name: 'DEADVOX_FAST_CAMO' | 'DEADVOX_COARSE_WEATHER', on: boolean): void {
+    this.material.defines ??= {};
+    const { defines } = this.material;
+    if ((defines[name] === 1) === on) {
+      return;
+    }
+    if (on) {
+      defines[name] = 1;
+    } else {
+      delete defines[name];
+    }
+    this.material.needsUpdate = true;
   }
 
   /** Whether patterned blocks draw their procedural surface pattern. On by default. */

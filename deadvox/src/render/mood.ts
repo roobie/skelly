@@ -54,6 +54,7 @@ import { DrawPass } from './drawPass.ts';
 import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
 import { createMoodOutputPass } from './moodOutput.ts';
+import { bloomRenderScale, sceneRenderScale } from './moodQuality.ts';
 import { OpticLensRenderer, opticLensPass } from './opticLens.ts';
 
 const RETICLE_UNIFORM: Record<ReticleKind, number> = { dot: 0, crosshair: 1, chevron: 2 };
@@ -80,6 +81,8 @@ export class Mood {
   private state: MoodState = { post: false, bloom: false, film: false, grade: 0, bloomClip: null };
   private width = 1;
   private height = 1;
+  private renderScaleValue = 1;
+  private bloomScaleValue = 1;
   private frame = 0;
   private skyBloom = 0;
   private skyMist = 0;
@@ -183,6 +186,24 @@ export class Mood {
       this.painDesaturation = clamped;
       this.sync();
     }
+  }
+
+  get renderScale(): number {
+    return this.renderScaleValue;
+  }
+
+  setRenderScale(value: number): void {
+    this.renderScaleValue = sceneRenderScale(value);
+    this.composer?.setPixelRatio(this.renderer.getPixelRatio() * this.renderScaleValue);
+  }
+
+  get bloomScale(): number {
+    return this.bloomScaleValue;
+  }
+
+  setBloomScale(value: number): void {
+    this.bloomScaleValue = bloomRenderScale(value);
+    this.composer?.setSize(this.width, this.height);
   }
 
   /** Follows the renderer's size, in CSS pixels. */
@@ -395,12 +416,17 @@ export class Mood {
       BLOOM_RADIUS,
       bloomThreshold(this.renderer.toneMappingExposure, this.effectiveBloomClip()),
     );
+    const resizeBloom = this.bloomPass.setSize.bind(this.bloomPass);
+    this.bloomPass.setSize = (width, height) =>
+      resizeBloom(Math.max(1, width * this.bloomScaleValue), Math.max(1, height * this.bloomScaleValue));
     composer.addPass(this.bloomPass);
     const output = createMoodOutputPass();
     // The `auto` tone mapping's weight (render/autoTone.ts); the same object every frame, so it needs no copying.
     output.uniforms.autoToneWeight = autoToneUniforms.autoToneWeight;
     composer.addPass(output);
     this.outputPass = output;
+    // Keep the canvas and DOM at display resolution; only the post chain's input targets scale.
+    composer.setPixelRatio(ratio * this.renderScaleValue);
     // The constructor treats a given target's size as CSS pixels' worth, so size everything here.
     composer.setSize(this.width, this.height);
     this.composer = composer;

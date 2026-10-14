@@ -48,6 +48,7 @@ import type { WeatheringDef } from '../core/schema.ts';
 import { clampFogginess, DEFAULT_FOGGINESS } from '../core/weather.ts';
 import { WEATHERING_URL_PARAMS, type WeatheringUrlState, writeWeatheringParams } from '../core/weatheringUrl.ts';
 import { TONE_MODES } from '../render/look.ts';
+import { bloomRenderScale, sceneRenderScale } from '../render/moodQuality.ts';
 
 export interface LookUrlState extends LookState, MoodState {
   fogginess: number;
@@ -60,6 +61,11 @@ export interface LookUrlState extends LookState, MoodState {
   crackCheck: boolean;
   /** Hot fragments drawn cyan (PageDown). */
   hotCheck: boolean;
+  renderScale?: number;
+  bloomScale?: number;
+  smallSunMap?: boolean;
+  fastCamo?: boolean;
+  coarseWeathering?: boolean;
 }
 
 export const DEFAULT_LOOK_URL_STATE: LookUrlState = {
@@ -92,6 +98,11 @@ export const LOOK_PARAMS = [
   'shadowdist',
   'crackcheck',
   'hotcheck',
+  'renderscale',
+  'bloomscale',
+  'sunsmall',
+  'camofast',
+  'weathercoarse',
   ...WEATHERING_URL_PARAMS,
 ] as const;
 
@@ -113,7 +124,14 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
   const bloomClip = numberParam(params, 'bloomclip');
   const toneKey = TONE_MODES.some((mode) => mode.key === tone) ? tone : DEFAULT_LOOK.tone;
   const clip = Number.isFinite(bloomClip) ? clampBloomClip(bloomClip) : null;
+  const renderScale = sceneRenderScale(numberParam(params, 'renderscale'));
+  const bloomScale = bloomRenderScale(numberParam(params, 'bloomscale'));
   return {
+    ...(renderScale < 1 ? { renderScale } : {}),
+    ...(bloomScale < 1 ? { bloomScale } : {}),
+    ...(params.get('sunsmall') === '1' ? { smallSunMap: true } : {}),
+    ...(params.get('camofast') === '1' ? { fastCamo: true } : {}),
+    ...(params.get('weathercoarse') === '1' ? { coarseWeathering: true } : {}),
     post: params.get('post') !== '0',
     bloom: params.get('bloom') !== '0',
     film: params.get('film') !== '0',
@@ -154,6 +172,26 @@ const writeMoodParams = (next: URLSearchParams, state: LookUrlState): void => {
   }
   if (state.grade !== DEFAULT_GRADE) {
     next.set('grade', state.grade.toFixed(1));
+  }
+};
+
+const writeQualityParams = (next: URLSearchParams, state: LookUrlState): void => {
+  const renderScale = sceneRenderScale(state.renderScale ?? 1);
+  const bloomScale = bloomRenderScale(state.bloomScale ?? 1);
+  if (renderScale < 1) {
+    next.set('renderscale', String(renderScale));
+  }
+  if (bloomScale < 1) {
+    next.set('bloomscale', String(bloomScale));
+  }
+  if (state.smallSunMap) {
+    next.set('sunsmall', '1');
+  }
+  if (state.fastCamo) {
+    next.set('camofast', '1');
+  }
+  if (state.coarseWeathering) {
+    next.set('weathercoarse', '1');
   }
 };
 
@@ -203,6 +241,7 @@ export const writeLookParams = (
     next.set('shadowdist', String(state.shadows.distance));
   }
   writeCheckParams(next, state);
+  writeQualityParams(next, state);
   return writeWeatheringParams(next, weathering, profiles);
 };
 

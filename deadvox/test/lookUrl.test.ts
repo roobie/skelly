@@ -1,9 +1,11 @@
 import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SHADOWS, SHADOW_DISTANCES } from '../src/core/mood.ts';
+import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS, DEFAULT_TORCH, SHADOW_DISTANCES } from '../src/core/mood.ts';
+import { DEFAULT_FOGGINESS } from '../src/core/weather.ts';
 import { LookControls } from '../src/debug/look.ts';
 import {
   DEFAULT_LOOK_URL_STATE,
+  LOOK_PARAMS,
   type LookUrlState,
   lookUrl,
   parseLookParams,
@@ -23,25 +25,22 @@ describe('look URL parameters', () => {
     expect(parse('debug=1&site=testHouse&seed=7')).toEqual(DEFAULT_LOOK_URL_STATE);
   });
 
-  it('omits defaults so the URL stays short', () => {
-    expect(write('debug=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+  it('removes every registered look override when writing game defaults', () => {
+    const params = new URLSearchParams('debug=1&seed=7');
+    expect(LOOK_PARAMS.length).toBeGreaterThan(0);
+    for (const name of LOOK_PARAMS) {
+      params.set(name, 'fixture');
+    }
+    expect(write(params.toString(), DEFAULT_LOOK_URL_STATE)).toBe('debug=1&seed=7');
   });
 
   it('has the game look as its defaults', () => {
     expect(DEFAULT_LOOK_URL_STATE).toEqual({
-      tone: 'auto',
-      exposure: 3,
-      srgb: true,
-      patterns: true,
-      vao: true,
+      ...DEFAULT_LOOK,
+      ...DEFAULT_MOOD,
       freeze: false,
-      post: true,
-      bloom: true,
-      film: true,
-      grade: 1,
-      bloomClip: null,
-      fogginess: 0.2,
-      torch: 1,
+      fogginess: DEFAULT_FOGGINESS,
+      torch: DEFAULT_TORCH,
       shadows: DEFAULT_SHADOWS,
       crackCheck: false,
       hotCheck: false,
@@ -74,10 +73,12 @@ describe('look URL parameters', () => {
       shadows: { sun: false, torch: false, distance: 64 },
       crackCheck: true,
       hotCheck: true,
+      renderScale: 0.8,
+      bloomScale: 0.6,
+      smallSunMap: true,
+      fastCamo: true,
+      coarseWeathering: true,
     };
-    expect(write('', state)).toBe(
-      'tone=none&exposure=1.4&srgb=0&patterns=0&vao=0&freeze=1&post=0&bloom=0&bloomclip=3.5&film=0&grade=0.6&fog=0.7&torch=1.56&sunshadow=0&torchshadow=0&shadowdist=64&crackcheck=1&hotcheck=1',
-    );
     expect(parse(write('', state))).toEqual(state);
   });
 
@@ -229,7 +230,11 @@ describe('look URL parameters', () => {
   });
 
   it('ignores invalid values instead of throwing', () => {
-    expect(parse('tone=sepia&exposure=abc&srgb=yes&freeze=yes')).toEqual(DEFAULT_LOOK_URL_STATE);
+    expect(
+      parse(
+        'tone=sepia&exposure=abc&srgb=yes&freeze=yes&renderscale=NaN&bloomscale=&sunsmall=yes&camofast=on&weathercoarse=off',
+      ),
+    ).toEqual(DEFAULT_LOOK_URL_STATE);
     expect(parse('exposure=&tone=')).toEqual(DEFAULT_LOOK_URL_STATE);
     expect(parse('exposure=Infinity').exposure).toBe(3);
   });
