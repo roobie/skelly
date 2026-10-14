@@ -7,7 +7,7 @@ import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
-import { cellsOf, compileTemplate, footprint } from '../src/core/templates.ts';
+import { cellsOf, compileAssembly, compileTemplate, footprint } from '../src/core/templates.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
@@ -68,22 +68,21 @@ const generated = (reverse: boolean) => {
   return { chunks, furniture };
 };
 
+const nativeDefinition = (id: string) => {
+  const native = BUNDLED_CONTENT.registry;
+  const assembly = native.mapAssemblies.get(id);
+  return assembly
+    ? compileAssembly(native, assembly, { seed: 73, siteId: 'facade-course-witness' })
+    : compileTemplate(native, native.templates.get(id)!);
+};
+
 describe('one finished city plan', () => {
-  it('keeps generated building floor and roof courses in the exterior wall material', () => {
+  it('keeps compiled building floor and roof courses in the exterior wall material', () => {
     const native = BUNDLED_CONTENT.registry;
     const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
     let checked = 0;
     for (const id of scenario.city.templates) {
-      const plan = buildCityPlan({
-        seed: 73,
-        registry: native,
-        floor,
-        grid: { ...scenario.city, templates: [id] },
-        scenario,
-      });
-      const placement = plan.placements.find((candidate) => candidate.template.id === id)!;
-      expect(placement).toBeDefined();
-      const { template } = placement;
+      const template = nativeDefinition(id);
       const [sx, sy, sz] = template.size;
       const at = (x: number, y: number, z: number) =>
         x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz ? 0 : template.blocks[x + sx * (z + sz * y)]!;
