@@ -504,7 +504,7 @@ export interface ZombieSystemOptions {
    * it the bricks are read from `isSolid` on every query: right, but slower.
    */
   solidBricks?: SolidBricks | undefined;
-  /** True only while terrain at the actor's position is loaded; unloaded actors wait for Slice 4 catch-up. */
+  /** True only while terrain at the actor's position is loaded; unloaded actors wait for Slice 4b catch-up. */
   isLoaded?: ((x: number, z: number) => boolean) | undefined;
   /** Visibility alone uses sight opacity. */
   isOpaque: SolidAt;
