@@ -993,6 +993,9 @@ const hearingTier = ({
     return undefined;
   }
   const distance = Math.hypot(...sub(player.pos, from)) * blockSize;
+  if (distance > range * zombie.hearingModel.farMultiplier) {
+    return undefined;
+  }
   const earOffset = 1.3 / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [player.pos[0], player.pos[1] + earOffset, player.pos[2]];
@@ -1067,6 +1070,9 @@ export const hearVocalNoise = ({
     return undefined;
   }
   const distance = Math.hypot(...sub(noise.pos, from)) * blockSize;
+  if (distance > noise.radiusMetres * zombie.hearing * zombie.hearingModel.farMultiplier) {
+    return undefined;
+  }
   const earOffset = 1.3 / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [noise.pos[0], noise.pos[1] + earOffset, noise.pos[2]];
@@ -1107,6 +1113,13 @@ const seesPlayer = ({
   if (!inCone || metres <= 0) {
     return false;
   }
+  let sightRange = zombie.nightSight + (zombie.sight - zombie.nightSight) * sightBlend;
+  const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos) ?? dayPhase === 'day';
+  const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
+  const maximumRange = Math.max(sightRange, player.lit ? player.lightSeenFrom * playerLightScale : 0);
+  if (metres > maximumRange) {
+    return false;
+  }
   const rayOrigin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
   const eyeHeight = player.eyeHeightMetres ?? 1.3;
   const lightHeight = player.lightHeightMetres ?? eyeHeight;
@@ -1117,9 +1130,6 @@ const seesPlayer = ({
   };
   const clear = clearAtHeight(eyeHeight);
   const lightClear = !player.lit || clearAtHeight(lightHeight);
-  let sightRange = zombie.nightSight + (zombie.sight - zombie.nightSight) * sightBlend;
-  const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos) ?? dayPhase === 'day';
-  const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
   if (player.lit && lightClear && playerLightScale > 0) {
     sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale);
   } else if (player.crouching) {

@@ -1217,6 +1217,13 @@ worse the world gets.
 
 ### Senses and AI
 
+Occlusion cannot make a target beyond the maximum detection range detectable.
+Reject those targets before querying terrain, rather than reducing AI cadence or
+changing attention rules to handle dense crowds. The bound must include far
+hearing and carried-light reach; nearer targets still use ordinary occlusion and
+crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
+`seesPlayer`.
+
 - **Senses:** sight (a view cone and range, blended smoothly from day range to
   night range through twilight and reduced when you crouch), hearing (noise events)
   and smell (a trail the player leaves, which rain washes out). The base pack's
