@@ -1,6 +1,7 @@
 // The quickbar and handling progress shown while playing (`DESIGN.md`, "Inventory screen").
 
 import { html, render, type TemplateResult } from 'lit-html';
+import { activityProgress } from './activityProgress.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
@@ -186,32 +187,16 @@ export const handlingViewModel = (queue: HandlingPresentationSource): HandlingVi
   };
 };
 
-const handlingTemplate = (vm: HandlingViewModel): TemplateResult => html`
-  <div class="hd-row">
-    <span>${vm.label}</span>
-    <span class="hd-time">${vm.simSecondsLabel}</span>
-  </div>
-  <div class="hd-meter">
-    <div class="hd-bar">
-      <div class="hd-fill" style=${`width: ${vm.percent}%`}></div>
-      ${
-        vm.minimumPercent === undefined
-          ? ''
-          : html`<span class="hd-minimum" style=${`left: ${vm.minimumPercent}%`}></span>`
-      }
-    </div>
-    ${
-      vm.minimumPercent === undefined
-        ? ''
-        : html`<div class="hd-meter-minimum" style=${`left: ${vm.minimumPercent}%`}>Minimum release</div>`
-    }
-  </div>
-  <div class="hd-row hd-muted">
-    <span>${vm.next}</span>
-    <span>${vm.cancelLabel}</span>
-  </div>
-  ${vm.movementLabel ? html`<div class="hd-slow">${vm.movementLabel}</div>` : ''}
-`;
+const handlingTemplate = (vm: HandlingViewModel): TemplateResult =>
+  activityProgress({
+    label: vm.label,
+    percent: vm.percent,
+    time: vm.simSecondsLabel,
+    ...(vm.minimumPercent === undefined ? {} : { minimumPercent: vm.minimumPercent }),
+    detail: html`${vm.next ? html`<span>${vm.next}</span>` : ''}
+      ${vm.cancelLabel ? html`<span>${vm.cancelLabel}</span>` : ''}
+      ${vm.movementLabel ? html`<span>${vm.movementLabel}</span>` : ''}`,
+  });
 
 export const renderHandling = (root: HTMLElement, queue: HandlingPresentationSource): void => {
   const vm = handlingViewModel(queue);

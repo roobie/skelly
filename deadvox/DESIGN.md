@@ -27,6 +27,7 @@ read_if:
   - you add or change a first-person handling animation (what it may read its timing from)
   - you tune body infection or unconsciousness through content packs
   - you're changing the HUD defaults or why players can turn HUD elements off
+  - you're changing timed-action progress presentation or its relationship to HUD scale
   - you're changing content-defined UI spacing or HUD scale, or choosing rem or px for a UI length
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
@@ -399,6 +400,8 @@ Queued actions transfer one at a time, so each move remains visible and
 interruptible. Tune handling duration in content, not in this rulebook.
 
 ### Inventory screen
+
+Timed actions use one circular progress indicator at screen centre, including crafting and play actions. Its simulation-owned progress and existing stop or resume controls remain authoritative; a shared high-contrast ring keeps progress visible over dark scenes and across HUD scales. See `src/ui/activityProgress.ts`, `activityProgress`, `src/ui/hud.ts`, `renderHandling`, and `src/ui/crafting.ts`, `renderCraftStatus`.
 
 The inventory is a keyboard-first HTML overlay with **you** and **around**
 panes. Hands and worn storage appear beside reachable piles and furniture.

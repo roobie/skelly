@@ -7,7 +7,8 @@
   --ui-layer-inventory: 20;
   --ui-layer-inventory-feedback: 21;
   --ui-layer-crafting: 21;
-  --ui-layer-drag-ghost: 22;
+  --ui-layer-activity-progress: 22;
+  --ui-layer-drag-ghost: 23;
   --ui-layer-reading: 40;
   --ui-layer-debug-ui: 50;
   --ui-layer-debug-overlay: 1000;
@@ -299,28 +300,6 @@ body.unconscious::after {
 #world-loading[hidden] {
   display: none;
 }
-.loading-spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 0.2rem solid var(--line);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: world-loading-spin 1s linear infinite;
-}
-#world-loading[data-state="failed"] .loading-spinner {
-  display: none;
-}
-@keyframes world-loading-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .loading-spinner {
-    animation: none;
-  }
-}
-
 #overlay {
   position: fixed;
   z-index: var(--ui-layer-menu-overlay);
@@ -1134,40 +1113,14 @@ button.inv-option.game-cursor-hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.inv-bar,
-.hd-bar {
+.inv-bar {
   display: block;
   height: 0.375rem;
   overflow: hidden;
   border-radius: 0.1875rem;
   background: #262a30;
 }
-.hd-bar {
-  position: relative;
-}
-/* The padding is room for the minimum's label under the bar, so it follows the label's size, not the spacing. */
-.hd-meter {
-  position: relative;
-  padding-bottom: 0.875rem;
-}
-.hd-minimum {
-  position: absolute;
-  top: -1px;
-  bottom: -1px;
-  width: 2px;
-  transform: translateX(-1px);
-  background: #f6c766;
-}
-.hd-meter-minimum {
-  position: absolute;
-  top: 0.5rem;
-  transform: translateX(-50%);
-  color: #f6c766;
-  font-size: 0.625rem;
-  white-space: nowrap;
-}
-.inv-bar-fill,
-.hd-fill {
+.inv-bar-fill {
   display: block;
   height: 100%;
   background: var(--accent);
@@ -1218,40 +1171,89 @@ button.inv-option.game-cursor-hover {
   color: var(--muted);
 }
 #handling {
-  position: fixed;
-  left: 50%;
-  bottom: 5.5rem;
-  transform: translateX(-50%);
-  width: 27.5rem;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--ui-spacing) * 0.3125rem);
-  padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.75rem);
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  background: var(--panel);
+  position: static;
   pointer-events: none;
 }
-.hd-row {
+.activity-progress {
+  position: fixed;
+  z-index: var(--ui-layer-activity-progress);
+  inset: 0;
+  color: #f3f4f6;
+  text-align: center;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+.activity-progress-gauge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 6.5rem;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  place-items: center;
+}
+.activity-progress-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.activity-progress-track,
+.activity-progress-value {
+  fill: none;
+  stroke-width: 7;
+}
+.activity-progress-track {
+  stroke: rgb(227 230 234 / 32%);
+}
+.activity-progress-value {
+  stroke: #f0bd4e;
+  stroke-dasharray: 276.46;
+  stroke-linecap: round;
+}
+.activity-progress-minimum {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--minimum-angle));
+}
+.activity-progress-minimum::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0.125rem;
+  height: 0.625rem;
+  transform: translateX(-50%);
+  background: #fff;
+  content: "";
+}
+.activity-progress-percent {
+  font: 1rem ui-monospace, monospace;
+}
+.activity-progress-copy {
+  position: absolute;
+  top: calc(50% + 4rem);
+  left: 50%;
+  display: grid;
+  gap: 0.125rem;
+  width: min(17rem, calc(100vw - 2rem));
+  padding: calc(var(--ui-spacing) * 0.5rem);
+  transform: translateX(-50%);
+  border: 1px solid rgb(227 230 234 / 35%);
+  border-radius: 0.5rem;
+  background: rgb(0 0 0 / 78%);
+  overflow-wrap: anywhere;
+}
+.activity-progress-copy > span,
+.activity-progress-copy > strong {
+  line-height: 1.35;
+}
+.activity-progress-controls {
   display: flex;
-  justify-content: space-between;
-  gap: calc(var(--ui-spacing) * 0.75rem);
-  font-size: 0.8125rem;
-}
-.hd-muted {
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-.hd-time {
-  font:
-    0.75rem ui-monospace,
-    monospace;
-  color: #c4cad2;
-}
-.hd-slow {
-  font-size: 0.75rem;
-  color: var(--accent);
+  justify-content: center;
+  gap: 0.5rem;
+  pointer-events: auto;
 }
 .inv-skill-list {
   gap: calc(var(--ui-spacing) * 0.5rem);
@@ -1725,20 +1727,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   font-size: 0.75rem;
 }
 #craft-status {
-  position: fixed;
-  bottom: 4.75rem;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: calc(var(--ui-spacing) * 0.75rem) calc(var(--ui-spacing) * 1rem);
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  background: var(--panel);
-  min-width: 18.75rem;
-}
-#craft-status progress {
-  display: block;
-  width: 100%;
-  margin: calc(var(--ui-spacing) * 0.5rem) 0;
+  position: static;
 }
 /* ---- rest and sleep (1.8) ---- */
 #rest {

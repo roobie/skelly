@@ -1803,7 +1803,7 @@ try {
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
     const root = document.querySelector('#handling');
-    return r.isChargingItemThrow() && !root.hidden && root.querySelector('.hd-minimum');
+    return r.isChargingItemThrow() && !root.hidden && root.querySelector('.activity-progress-minimum');
   });
   const meterStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
   await waitForSimulation(
@@ -1819,16 +1819,16 @@ try {
   const meterMidpoint = await page.evaluate(() => {
     const root = document.querySelector('#handling');
     return {
-      fill: Number.parseFloat(root.querySelector('.hd-fill').style.width),
-      marker: Number.parseFloat(root.querySelector('.hd-minimum').style.left),
-      minimumLabel: root.querySelector('.hd-meter-minimum')?.textContent,
+      value: Number(root.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')),
+      marker: Number.parseFloat(root.querySelector('.activity-progress-minimum').style.getPropertyValue('--minimum-angle')) / 3.6,
+      minimumLabel: root.querySelector('.activity-progress-copy')?.textContent,
     };
   });
-  assert.ok(meterMidpoint.fill > 0 && meterMidpoint.fill < 100, 'charge meter reports partial throw force');
+  assert.ok(meterMidpoint.value > 0 && meterMidpoint.value < 100, 'charge ring reports partial throw force');
   assert.equal(
     meterMidpoint.marker,
     Math.round((throwFixture.minimumHoldSimSeconds / throwFixture.chargeSimSeconds) * 100),
-    'meter marks the authored minimum release point',
+    'ring marks the authored minimum release point',
   );
   assert.ok(meterMidpoint.minimumLabel?.trim(), 'minimum marker has a non-empty label');
   await page.evaluate(() => {
@@ -2022,9 +2022,9 @@ try {
     },
   );
   const fullMeter = await page.evaluate(() =>
-    Number.parseFloat(document.querySelector('#handling .hd-fill').style.width),
+    Number(document.querySelector('#handling [role="progressbar"]').getAttribute('aria-valuenow')),
   );
-  assert.equal(fullMeter, 100, 'maximum charge fills the handling meter');
+  assert.equal(fullMeter, 100, 'maximum charge fills the activity ring');
   await releaseThrow();
   try {
     await page.waitForFunction(() => globalThis.primaryActionTest.itemThrows.activeCount > 0);
@@ -2664,7 +2664,7 @@ try {
   });
   await page.waitForFunction(() => {
     const root = document.querySelector('#handling');
-    return !root.hidden && root.querySelector('.hd-bar');
+    return !root.hidden && root.querySelector('.activity-progress-gauge');
   });
   const pryElapsed = await page.evaluate(() => {
     const { session } = globalThis.primaryActionTest;
@@ -2690,9 +2690,15 @@ try {
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
     const root = document.querySelector('#handling');
-    const fill = root.querySelector('.hd-fill');
+    const gauge = root.querySelector('.activity-progress-gauge');
+    const bounds = gauge?.getBoundingClientRect();
+    const centered = bounds && Math.abs(bounds.left + bounds.width / 2 - innerWidth / 2) < 2 && Math.abs(bounds.top + bounds.height / 2 - innerHeight / 2) < 2;
     return (
-      r.session.sim.actions.job?.jobType === 'pry' && !root.hidden && fill && Number.parseFloat(fill.style.width) > 0
+      r.session.sim.actions.job?.jobType === 'pry' &&
+      !root.hidden &&
+      gauge?.querySelector('.activity-progress-value') &&
+      Number(gauge.getAttribute('aria-valuenow')) > 0 &&
+      centered
     );
   });
   const resumedElapsed = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.elapsed);
@@ -2709,8 +2715,8 @@ try {
   });
   await page.waitForFunction(() => {
     const root = document.querySelector('#handling');
-    const fill = root.querySelector('.hd-fill');
-    return !root.hidden && fill && Number.parseFloat(fill.style.width) > 0;
+    const gauge = root.querySelector('.activity-progress-gauge');
+    return !root.hidden && gauge && Number(gauge.getAttribute('aria-valuenow')) > 0;
   });
   const pryingScreenshot = resolve(projectRoot, 'test-results/primary-action/prying-progress.png');
   await mkdir(resolve(projectRoot, 'test-results/primary-action'), { recursive: true });
