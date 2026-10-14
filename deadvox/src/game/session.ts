@@ -58,6 +58,7 @@ import {
 import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
+import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
 import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import { Simulation } from '../core/sim.ts';
 import type { Site } from '../core/site.ts';
@@ -298,6 +299,7 @@ export interface SessionOptions {
   registry: Registry;
   scenario?: Readonly<{ id: string; body: string; compression: string }> | undefined;
   objective?: Readonly<Vec3> | undefined;
+  discovery?: Readonly<ScenarioDiscovery> | undefined;
   world: World;
   isSolid: SolidAt;
   isOpaque: SolidAt;
@@ -1225,6 +1227,40 @@ export const createSession = (options: SessionOptions) => {
   const standingZombieBodies = (): Body[] =>
     [...zombieStore.entries()].filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body);
 
+  const observeEntry = (run: ScenarioRun, discovery: ScenarioDiscovery, climbing: boolean): void => {
+    if (!nearDiscoveryBox(body.pos, discovery.entrance, 0)) {
+      return;
+    }
+    if (climbing) {
+      run.discover('entranceTravel', sim.calendar);
+    }
+    for (const entity of entities.all) {
+      if (
+        entities.defOf(entity).door?.hatch &&
+        nearDiscoveryBox(entity.pos, discovery.entrance, 0) &&
+        inventory.canReachEntity(entity)
+      ) {
+        run.discover('hatchEncounter', sim.calendar);
+        if (entity.open) {
+          run.discover('hatchOpened', sim.calendar);
+        }
+      }
+    }
+  };
+  const observeDiscovery = (climbing: boolean): void => {
+    const { discovery } = options;
+    if (!(scenarioRun && discovery) || sim.dead || debug?.()?.noclip) {
+      return;
+    }
+    if (discovery.landmarks.some((box) => nearDiscoveryBox(body.pos, box, 4 / s))) {
+      scenarioRun.discover('landmarkArrival', sim.calendar);
+    }
+    if (nearDiscoveryBox(body.pos, discovery.building, 2 / s)) {
+      scenarioRun.discover('buildingArrival', sim.calendar);
+    }
+    observeEntry(scenarioRun, discovery, climbing);
+  };
+
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
@@ -1259,6 +1295,7 @@ export const createSession = (options: SessionOptions) => {
       climbing,
       calendar: sim.calendar,
     });
+    observeDiscovery(climbing);
     updatePlayerSounds(wasGrounded, previousPosition, time);
     if (climbing) {
       // A climb down is not a fall: a drop is measured from where the ladder was let go.
@@ -1729,6 +1766,9 @@ export const createSession = (options: SessionOptions) => {
         return 'Nothing to read';
       }
       scenarioRun?.read(sim.calendar);
+      if (options.discovery?.clues.some((at) => at.every((value, axis) => value === entity.pos[axis]))) {
+        scenarioRun?.discover('clueRead', sim.calendar);
+      }
       options.onRead(readable);
       return undefined;
     },

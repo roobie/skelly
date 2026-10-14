@@ -34,6 +34,7 @@ import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { pileScatterPlacements } from '../core/scatterPile.ts';
+import { discoveryForPlan } from '../core/scenarioDiscovery.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -190,6 +191,9 @@ const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
   y * blockSize + 0.006,
   (z + 0.5) * blockSize,
 ];
+
+const scenarioDiscovery = (site: Engine['site']) =>
+  site instanceof CitySite ? discoveryForPlan(site.plan) : undefined;
 
 const scenarioObjective = (site: Engine['site']): Readonly<Vec3> | undefined =>
   site instanceof CitySite ? site.plan.composition?.objective : undefined;
@@ -784,6 +788,7 @@ export const startPlay = (
     registry,
     scenario: engine.scenario,
     objective: scenarioObjective(engine.site),
+    discovery: scenarioDiscovery(engine.site),
     handedness: config.debugHandedness ?? options.handedness,
     world: engine.world,
     isSolid: engine.isSolid,

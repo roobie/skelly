@@ -1,4 +1,10 @@
 import type { Vec3 } from './coords.ts';
+import {
+  DISCOVERY_EVENTS,
+  type DiscoveryEvent,
+  emptyDiscovery,
+  type ScenarioDiscoveryState,
+} from './scenarioDiscovery.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 export interface ScenarioRunState {
@@ -9,7 +15,15 @@ export interface ScenarioRunState {
   distanceMetres: number;
   firstFurnitureReadAtGameTimestamp: number | null;
   firstLadderUseAtGameTimestamp: number | null;
+  discovery: ScenarioDiscoveryState;
 }
+
+const discoveryTimestamps = (state: ScenarioDiscoveryState): (number | null)[] => {
+  if (!state || DISCOVERY_EVENTS.some((event) => !(event in state))) {
+    throw new Error('Invalid scenario discovery');
+  }
+  return DISCOVERY_EVENTS.map((event) => state[event]);
+};
 
 export const assertScenarioRun = (
   state: ScenarioRunState | null,
@@ -36,6 +50,7 @@ export const assertScenarioRun = (
     throw new Error('Invalid scenario run');
   }
   for (const timestamp of [
+    ...discoveryTimestamps(state.discovery),
     state.completedAtGameTimestamp,
     state.firstFurnitureReadAtGameTimestamp,
     state.firstLadderUseAtGameTimestamp,
@@ -68,6 +83,7 @@ export class ScenarioRun {
           distanceMetres: 0,
           firstFurnitureReadAtGameTimestamp: null,
           firstLadderUseAtGameTimestamp: null,
+          discovery: emptyDiscovery(),
         };
   }
   get won(): boolean {
@@ -96,6 +112,11 @@ export class ScenarioRun {
   entered(calendar: number): void {
     if (!this.won) {
       this.state.firstLadderUseAtGameTimestamp ??= calendar;
+    }
+  }
+  discover(event: DiscoveryEvent, calendar: number): void {
+    if (!this.won) {
+      this.state.discovery[event] ??= calendar;
     }
   }
   snapshot(): Readonly<ScenarioRunState> {

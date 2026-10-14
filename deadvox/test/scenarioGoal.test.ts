@@ -7,6 +7,8 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { emptyDiscovery } from '../src/core/scenarioDiscovery.ts';
+import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { World } from '../src/core/world.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -23,6 +25,7 @@ const own = buildRegistry([
           size: [1, 4, 1],
           color: '#aaaaaa',
           scenarioGoal: true,
+          readable: { title: 'Fixture lead', text: 'Fixture destination' },
         },
       ],
     },
@@ -55,6 +58,12 @@ const fixture = (restore?: Readonly<SaveSnapshot>, spawn: Vec3 = [8.5, 1, 8.5], 
     registry,
     scenario: profile,
     objective: designated,
+    discovery: {
+      clues: [objective],
+      landmarks: [],
+      building: { min: [7, 1, 5], max: [10, 5, 9] },
+      entrance: { min: [7, 1, 5], max: [10, 5, 9] },
+    },
     world,
     entities,
     scale: makeScale(0.5),
@@ -137,6 +146,7 @@ it.each(['firstFurnitureReadAtGameTimestamp', 'firstLadderUseAtGameTimestamp'] a
     const snapshot = structuredClone(f.capture());
     const run = snapshot.character.scenarioRun!;
     run.completedAtGameTimestamp = run.startedAtGameTimestamp;
+    run.discovery = emptyDiscovery();
     run[observation] = run.completedAtGameTimestamp;
     const options = { generation: 1, version: formatVersion, worldOptions };
     const decoded = await decodeSave(await encodeSave(snapshot, options), {
@@ -150,12 +160,44 @@ it.each(['firstFurnitureReadAtGameTimestamp', 'firstLadderUseAtGameTimestamp'] a
   },
 );
 
+it('records only a designated public lead, not any nearby readable furniture, as clue discovery', () => {
+  const f = fixture();
+  const unrelated = f.session.inventory.furnish(
+    { type: 'fixture_goal', pos: [10, 1, 7], size: [1, 4, 1], facing: 'n' },
+    [],
+  )!;
+  expect(f.session.readFurniture(unrelated)).toBeUndefined();
+  expect(f.session.scenarioRun!.firstFurnitureReadAtGameTimestamp).not.toBeNull();
+  expect(f.session.scenarioRun!.discovery.clueRead).toBeNull();
+  expect(f.session.readFurniture(f.entity)).toBeUndefined();
+  expect(f.session.scenarioRun!.discovery.clueRead).not.toBeNull();
+});
+
+it('keeps discovery observations distinct from generic reads and ladder use across completion and restore', () => {
+  const run = new ScenarioRun('fixture', 10);
+  run.read(11);
+  run.entered(12);
+  expect(run.snapshot().discovery).toEqual(emptyDiscovery());
+  run.discover('clueRead', 13);
+  run.discover('buildingArrival', 14);
+  const restored = new ScenarioRun('fixture', 14, run.snapshot());
+  restored.discover('clueRead', 15);
+  expect(restored.snapshot().discovery.clueRead).toBe(13);
+  restored.complete(16);
+  const won = restored.snapshot();
+  restored.discover('entranceTravel', 17);
+  expect(restored.snapshot()).toEqual(won);
+});
+
 it('round-trips running and won attempts without replaying success or counting restore movement and title time', async () => {
   const f = fixture();
   f.move();
   f.session.observeRunFrame(2, true);
   f.session.observeRunFrame(7, false);
+  expect(f.session.readFurniture(f.entity)).toBeUndefined();
   const running = f.capture();
+  expect(running.character.scenarioRun!.discovery.clueRead).not.toBeNull();
+  expect(running.character.scenarioRun!.discovery.buildingArrival).not.toBeNull();
   expect(running.character.scenarioRun!.distanceMetres).toBeGreaterThan(0);
   expect(running.character.scenarioRun!.activeRealSeconds).toBe(2);
   const load = async (snapshot: Readonly<SaveSnapshot>) =>

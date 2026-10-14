@@ -646,6 +646,14 @@ const scenarioRun = nullable(
     distanceMetres: nonNegative,
     firstFurnitureReadAtGameTimestamp: nullable(finite),
     firstLadderUseAtGameTimestamp: nullable(finite),
+    discovery: obj({
+      clueRead: nullable(finite),
+      landmarkArrival: nullable(finite),
+      buildingArrival: nullable(finite),
+      hatchEncounter: nullable(finite),
+      hatchOpened: nullable(finite),
+      entranceTravel: nullable(finite),
+    }),
   }),
 );
 

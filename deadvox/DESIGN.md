@@ -375,6 +375,17 @@ never authorize the route. These are construction guarantees, not proof of clue
 interpretation or survival balance. Those judgments remain the integrated play
 gate on #671.
 
+Discovery observations distinguish designated public-lead reads, landmark and
+building proximity, reachable entrance hatch encounters/open state, and accepted
+travel through the entry ladder envelope. Generic furniture reads or other ladder
+travel cannot stand in for this funnel. Missing events are missing observations,
+not proof that a player failed to interpret a note or that an entrance was broken;
+optional player descriptions and BR's play supply those judgments. Direct discovery
+remains legitimate. The attempt snapshot preserves first observations and completion
+freezes them so Continue cannot rewrite the journey. See
+`src/core/scenarioDiscovery.ts`, `discoveryForPlan`; `src/core/scenarioRun.ts`,
+`ScenarioRun`; and `src/game/session.ts`, `createSession`.
+
 The lab is a multi-storey subterranean complex whose danger rises with depth,
 with the nuclear objective at the bottom. A storey contains several distinct
 special rooms, not one stop on a ladder shaft. Looped circulation and separated,
