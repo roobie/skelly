@@ -270,7 +270,13 @@ try {
     document.querySelector('#go').click();
     window.__pointerCalls.request = 0;
   })()`);
-  await waitFor(() => evaluate("Boolean(document.querySelector('#debug-ui-root'))"), 'post-acceptance debug UI mount');
+  await waitFor(
+    () =>
+      evaluate(
+        "Boolean(document.querySelector('#debug-ui-root')) && document.querySelector('#world-loading')?.dataset.state === 'ready' && document.querySelector('#world-loading').hidden",
+      ),
+    'post-acceptance world readiness',
+  );
   // The tokens go to a document of the probe's own (an iframe with the game's style sheet), so the live game's root
   // and HUD stay untouched. Spacing and scale are measured apart, so neither passes on the other's change.
   const uiTokens = await evaluate(`(async () => {

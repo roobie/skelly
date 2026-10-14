@@ -152,7 +152,7 @@ describe('crafting read-only presentation', () => {
     expect(buttons).toHaveLength(2);
     (buttons[1] as HTMLButtonElement).click();
     expect(stop).toHaveBeenCalledOnce();
-    expect(root.querySelector('progress')?.value).toBe(status.percent);
+    expect(Number(root.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow'))).toBe(status.percent);
     expect(item.work!.elapsed).toBe(recipeSeconds);
     renderCraftStatus(root, undefined, { continue: resume, stop });
     expect(root.hidden).toBe(true);
