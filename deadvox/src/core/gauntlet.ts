@@ -2,13 +2,7 @@ import { buildCityPlan, scenarioPlanIssues } from './cityPlan.ts';
 import { CitySite } from './citySite.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import {
-  HAMLET_HORDE_MEMBERS,
-  HAMLET_HORDE_TYPE,
-  HAMLET_TEMPLATES,
-  hamletZombieSpawns,
-  ordinaryHamletSpawnWeights,
-} from './hamlet.ts';
+import { HAMLET_TEMPLATES, hamletHordeSpawn, hamletZombieSpawns, ordinaryHamletSpawnWeights } from './hamlet.ts';
 import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import { scenarioCertificate } from './scenarioCertificate.ts';
@@ -68,12 +62,20 @@ const gauntletPopulation = (site: CitySite, scenarioId: string) => {
   for (let start = 0; start < ordinary.length; start += HAMLET_TEMPLATES.length) {
     const group = ordinary.slice(start, start + HAMLET_TEMPLATES.length);
     const first = group[0]!;
-    const [width, depth] = footprint(first);
+    const [, depth] = footprint(first);
+    const frontage = group.filter(
+      (placement) => placement.origin[2] === first.origin[2] && placement.turn === first.turn,
+    );
     const z =
       first.turn === 0
         ? first.origin[2] - grid.pad - grid.street / 2
         : first.origin[2] + depth + grid.pad + grid.street / 2;
-    const road = { x0: first.origin[0], x1: first.origin[0] + width, z0: z - grid.street / 2, z1: z + grid.street / 2 };
+    const road = {
+      x0: Math.min(...frontage.map((placement) => placement.origin[0])),
+      x1: Math.max(...frontage.map((placement) => placement.origin[0] + footprint(placement)[0])),
+      z0: z - grid.street / 2,
+      z1: z + grid.street / 2,
+    };
     const seed = Math.floor(hash3(site.seed, start, 0, 601) * 0x7f_ff_ff_ff);
     for (const spawn of hamletZombieSpawns(seed, road, group.flatMap(placedSpawns), {
       roadHeightAt: () => floor,
@@ -82,12 +84,10 @@ const gauntletPopulation = (site: CitySite, scenarioId: string) => {
     })) {
       append(zombies, spawn);
     }
-    append(hordes, {
-      id: `scenario:${scenarioId}:horde:${start}`,
-      type: HAMLET_HORDE_TYPE,
-      pos: [(road.x0 + road.x1) / 2, floor + 1, z],
-      members: Rng.stream(seed, 'hamlet-first-horde').int(...HAMLET_HORDE_MEMBERS),
-    });
+    append(
+      hordes,
+      hamletHordeSpawn(seed, road, () => floor, `scenario:${scenarioId}:horde:${start}`),
+    );
   }
   for (const marker of site.placements.filter((placement) => !ordinary.includes(placement)).flatMap(placedSpawns)) {
     if (Rng.stream(site.seed, `scenario:${scenarioId}:spawn:${marker.pos.join(',')}`).chance(marker.chance)) {

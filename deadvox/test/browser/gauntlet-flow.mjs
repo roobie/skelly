@@ -157,7 +157,10 @@ export const gauntletFlow = async (browser, baseUrl) => {
               const dz = target[2] - session.body.pos[2];
               input.yaw = Math.atan2(-dx, -dz);
               input.pitch = 0;
-              return Math.hypot(dx, dz) < 0.04;
+              const remaining = Math.hypot(dx, dz);
+              const sprint = target[1] === plan.spawn[1] && remaining > 2;
+              intent = { ...IDLE, forward: 1, sprint, walk: !sprint };
+              return remaining < 0.04;
             },
             Math.ceil((distance / 2 + 3) * 60),
             'walk',

@@ -70,6 +70,22 @@ const ZOMBIE_COUNT = [6, 10] as const;
 export const HAMLET_HORDE_TYPE = 'shambler';
 export const HAMLET_HORDE_MEMBERS = [20, 50] as const;
 
+export const hamletHordeSpawn = (
+  seed: number,
+  road: Rect,
+  roadHeightAt: (x: number) => number,
+  id: string,
+): HordeSpawn => {
+  const rng = Rng.stream(seed, 'hamlet-first-horde');
+  const x = Math.floor(road.x0 + (road.x1 - road.x0) * 0.68);
+  return {
+    id,
+    type: HAMLET_HORDE_TYPE,
+    pos: [x + 0.5, roadHeightAt(x) + 1, (road.z0 + road.z1) / 2],
+    members: rng.int(...HAMLET_HORDE_MEMBERS),
+  };
+};
+
 /** Keeps authored-only kinds out of ordinary spawns and their static reachability sources. */
 export const ordinaryHamletSpawnWeights = (registry: Pick<Registry, 'zombies'>): Map<string, number> =>
   new Map(
@@ -355,14 +371,7 @@ export class Hamlet implements Site {
         spawnWeights: ordinaryHamletSpawnWeights(this.registry),
       }),
     );
-    const rng = Rng.stream(this.seed, 'hamlet-first-horde');
-    const x = Math.floor(this.road.x0 + (this.road.x1 - this.road.x0) * 0.68);
-    this.hordeSpawn = {
-      id: 'first-horde',
-      type: HAMLET_HORDE_TYPE,
-      pos: [x + 0.5, this.roadHeightAt(x) + 1, (this.road.z0 + this.road.z1) / 2],
-      members: rng.int(...HAMLET_HORDE_MEMBERS),
-    };
+    this.hordeSpawn = hamletHordeSpawn(this.seed, this.road, (x) => this.roadHeightAt(x), 'first-horde');
   }
 
   // ---- internals ----
