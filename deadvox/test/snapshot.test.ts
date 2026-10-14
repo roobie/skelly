@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -36,8 +37,10 @@ const registryWithSleepScenario = (sleepCap: number) => {
       source,
       data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
     }));
-  const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === 'player');
-  const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === 'player');
+  const compression = files
+    .flatMap(({ data }) => data.compression ?? [])
+    .find((row) => row.id === CORE_CONTENT_IDS.player);
+  const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === CORE_CONTENT_IDS.player);
   if (!(compression && body)) {
     throw new Error('Missing scenario compression or body definition');
   }
@@ -46,6 +49,10 @@ const registryWithSleepScenario = (sleepCap: number) => {
   body.sleepOnset.maxGameMinutes = 0.001;
   return buildRegistry(files);
 };
+
+// Compile the shared immutable scenario once; each runtime still owns fresh session state.
+const SLEEP_SCENARIO_CAP = 64;
+const bedSleepScenario = registryWithSleepScenario(SLEEP_SCENARIO_CAP);
 
 describe('snapshot state components', () => {
   it('round-trips an active Wait through the save codec', async () => {
@@ -58,9 +65,9 @@ describe('snapshot state components', () => {
     expect(restored.sim.actions.job).toMatchObject({ jobType: 'wait', stopped: false });
     expect(restored.sim.compression.active).toBe(true);
   });
-  it('round-trips bed sleep above the former save compression ceiling', async () => {
-    const formerSaveCeiling = 30;
-    const { registry: sleepRegistry, issues } = registryWithSleepScenario(formerSaveCeiling + 34);
+  it('round-trips high-cap bed sleep without changing its compression', async () => {
+    const highCompression = SLEEP_SCENARIO_CAP / 2;
+    const { registry: sleepRegistry, issues } = bedSleepScenario;
     expect(issues).toEqual([]);
 
     const runtime = createRuntime(undefined, true, [fixtureColumns[0]!], { registry: sleepRegistry });
@@ -76,12 +83,12 @@ describe('snapshot state components', () => {
       frame();
     }
     expect(runtime.sim.actions.asleep).toBe(true);
-    for (let frames = 0; runtime.sim.compression.c <= formerSaveCeiling && frames < 200; frames++) {
+    for (let frames = 0; runtime.sim.compression.c <= highCompression && frames < 200; frames++) {
       frame();
     }
     expect(runtime.sim.compression.active).toBe(true);
     expect(runtime.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
-    expect(runtime.sim.compression.c).toBeGreaterThan(formerSaveCeiling);
+    expect(runtime.sim.compression.c).toBeGreaterThan(highCompression);
     expect(Number.isFinite(runtime.sim.compression.c)).toBe(true);
 
     const snapshot = capture(runtime);
@@ -90,7 +97,7 @@ describe('snapshot state components', () => {
   });
 
   it('keeps a mid-sleep bed snapshot saveable when a frame elapsed is invalid', async () => {
-    const { registry: sleepRegistry, issues } = registryWithSleepScenario(64);
+    const { registry: sleepRegistry, issues } = bedSleepScenario;
     expect(issues).toEqual([]);
     const runtime = createRuntime(undefined, true, [fixtureColumns[0]!], { registry: sleepRegistry });
     expect(startRest(runtime, 'sleep')).toBeUndefined();

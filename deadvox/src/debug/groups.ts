@@ -39,7 +39,11 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
   { id: 'survival', title: 'Survival' },
   { id: 'shamblers', title: 'Shamblers' },
   { id: 'time', title: 'Time' },
-  { id: 'look', title: 'Look' },
+  {
+    id: 'look',
+    title: 'Look',
+    notes: [{ label: 'Projected camouflage (URL-only quality trial)', param: 'camofast=1' }],
+  },
   {
     id: 'weathering',
     title: 'Weathering',
@@ -59,10 +63,22 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
       { label: 'Moss shelter bias', param: 'weatheringMossBias' },
       { label: 'Mix ceiling', param: 'weatheringMixCeiling' },
       { label: 'Weathering blend', param: 'weatheringBlend' },
+      { label: 'Coarser moss patches (URL-only quality trial)', param: 'weathercoarse=1' },
     ],
   },
-  { id: 'post', title: 'Post-processing' },
-  { id: 'lighting', title: 'Lighting' },
+  {
+    id: 'post',
+    title: 'Post-processing',
+    notes: [
+      { label: 'Scene scale (URL-only quality trial)', param: 'renderscale' },
+      { label: 'Bloom-chain scale (URL-only quality trial)', param: 'bloomscale' },
+    ],
+  },
+  {
+    id: 'lighting',
+    title: 'Lighting',
+    notes: [{ label: 'Smaller sun map (URL-only quality trial)', param: 'sunsmall=1' }],
+  },
   { id: 'atmosphere', title: 'Atmosphere' },
   {
     id: 'diagnostics',
