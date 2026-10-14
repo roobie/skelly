@@ -42,7 +42,10 @@ export const assertScenarioRun = (
   ]) {
     if (
       timestamp !== null &&
-      (!Number.isFinite(timestamp) || timestamp < state.startedAtGameTimestamp || timestamp > calendar)
+      (!Number.isFinite(timestamp) ||
+        timestamp < state.startedAtGameTimestamp ||
+        timestamp > calendar ||
+        (state.completedAtGameTimestamp !== null && timestamp > state.completedAtGameTimestamp))
     ) {
       throw new Error('Invalid scenario run timestamp');
     }

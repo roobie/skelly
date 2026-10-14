@@ -128,6 +128,28 @@ it('gives death before goal admission precedence and rejects a dead won snapshot
   );
 });
 
+it.each(['firstFurnitureReadAtGameTimestamp', 'firstLadderUseAtGameTimestamp'] as const)(
+  'rejects a won save with %s after completion even when within the calendar',
+  async (observation) => {
+    const f = fixture();
+    f.session.frame(1 / 60);
+    expect(f.session.activateGoal(f.entity)).toBeUndefined();
+    const snapshot = structuredClone(f.capture());
+    const run = snapshot.character.scenarioRun!;
+    run.completedAtGameTimestamp = run.startedAtGameTimestamp;
+    run[observation] = run.completedAtGameTimestamp;
+    const options = { generation: 1, version: formatVersion, worldOptions };
+    const decoded = await decodeSave(await encodeSave(snapshot, options), {
+      version: formatVersion,
+      contentLookup: () => true,
+    });
+    expect(decoded.snapshot.character.scenarioRun).toEqual(run);
+    run[observation] = f.session.sim.calendar;
+    expect(run[observation]).toBeGreaterThan(run.completedAtGameTimestamp);
+    await expect(encodeSave(snapshot, options)).rejects.toThrow('Invalid scenario run timestamp');
+  },
+);
+
 it('round-trips running and won attempts without replaying success or counting restore movement and title time', async () => {
   const f = fixture();
   f.move();
