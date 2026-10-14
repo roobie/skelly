@@ -57,48 +57,6 @@ const options = (inventory: Inventory, origin: Vec3, direction: Vec3, isSolid: S
 });
 
 describe('F interaction target selection', () => {
-  it('dims the selected marker at a darker target and hides it at zero light', () => {
-    const furniture = new FurnitureMeshes(0.5);
-    const piles = new PileMeshes(0.5);
-    let illumination = 1;
-    const target = { kind: 'body' as const, id: 1, distanceBlocks: 1 };
-    const body = { pos: [3, 0, 4] as Vec3, halfWidth: 0.4, height: 0.5 };
-    const services = {
-      furniture,
-      piles,
-      blockSize: 0.5,
-      definition: () => {
-        throw new Error('Not furniture');
-      },
-      body: () => body,
-      lightAt: (position: Vec3) => {
-        expect(position).toEqual([body.pos[0] * 0.5, (body.pos[1] + body.height / 2) * 0.5, body.pos[2] * 0.5]);
-        return illumination;
-      },
-    };
-    markInteractionTarget(target, true, services);
-    const marker = furniture.group.children[0] as import('three').LineSegments<
-      import('three').BufferGeometry,
-      import('three').LineBasicMaterial
-    >;
-    const daylight = marker.material.color.clone();
-    expect(marker.visible).toBe(true);
-    illumination = 0.1;
-    markInteractionTarget(target, true, services);
-    expect(marker.visible).toBe(true);
-    for (const channel of ['r', 'g', 'b'] as const) {
-      expect(marker.material.color[channel]).toBeGreaterThan(0);
-      expect(marker.material.color[channel]).toBeLessThan(daylight[channel]);
-    }
-    illumination = 0;
-    markInteractionTarget(target, true, services);
-    expect(marker.visible).toBe(false);
-    illumination = 1;
-    markInteractionTarget(target, true, services);
-    expect(marker.visible).toBe(true);
-    piles.dispose();
-  });
-
   it('encloses the drawn bundle and refreshes its bounds with the same selected item', () => {
     const fixture = { ...registry, items: new Map(registry.items) };
     fixture.items.set('marker_fixture', {
@@ -128,7 +86,6 @@ describe('F interaction target selection', () => {
         definition: (entity) => inventory.entities.defOf(entity),
         body: () => undefined,
         blockSize: 0.5,
-        lightAt: () => 1,
       });
       const marker = furniture.group.children[0]!;
       expect(marker.visible).toBe(true);
@@ -144,7 +101,6 @@ describe('F interaction target selection', () => {
     expect(inventory.add(inventory.create('marker_fixture'), destination)).toBe(true);
     expect(check()).toBeGreaterThan(initialHeight);
     markInteractionTarget(undefined, true, {
-      lightAt: () => 1,
       furniture,
       piles,
       blockSize: 0.5,
@@ -183,7 +139,6 @@ describe('F interaction target selection', () => {
     const target = pickInteractionTarget(options(inventory, [2.5, 1, 3.5], [0, -1, 0]));
     expect(target).toMatchObject({ kind: 'item', item: { uid: item.uid } });
     const services = {
-      lightAt: () => 1,
       furniture,
       piles,
       blockSize: 0.5,
@@ -263,7 +218,6 @@ describe('F interaction target selection', () => {
       piles,
       blockSize: 0.5,
       definition: (entity) => inventory.entities.defOf(entity),
-      lightAt: () => 1,
       body: (id) => downedBodies.find((entry) => entry.id === id)?.body,
     });
     const marker = furniture.group.children[0]!;
@@ -322,7 +276,6 @@ describe('F interaction target selection', () => {
     expect(target).toMatchObject({ kind: 'item', item: { uid: item.uid } });
     const furniture = new FurnitureMeshes(0.5);
     markInteractionTarget(target, true, {
-      lightAt: () => 1,
       furniture,
       piles,
       blockSize: 0.5,
@@ -334,7 +287,6 @@ describe('F interaction target selection', () => {
     expect(new Box3().setFromObject(marker).containsBox(new Box3().setFromObject(cases))).toBe(true);
     piles.sync(inventory, new Set([item.uid]));
     markInteractionTarget(target, true, {
-      lightAt: () => 1,
       furniture,
       piles,
       blockSize: 0.5,

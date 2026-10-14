@@ -6,15 +6,14 @@ import {
   type BufferGeometry,
   Color,
   EdgesGeometry,
+  Float32BufferAttribute,
   Group,
-  LineBasicMaterial,
   LineSegments,
   Mesh,
   MeshLambertMaterial,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, panelFor } from '../core/blockEntities.ts';
-import type { Vec3 } from '../core/coords.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -27,6 +26,25 @@ const BODY_DOOR_HANDLE_COLOR = '#c6b98e';
 const BODY_DOOR_HANDLE_SIZE_M = { alongWidth: 0.1, acrossWidth: 0.06, height: 0.22 } as const;
 const BODY_DOOR_HANDLE_EDGE_OFFSET_M = 0.14;
 
+function markerEdges(): EdgesGeometry {
+  const box = new BoxGeometry(1, 1, 1);
+  const edges = new EdgesGeometry(box);
+  box.dispose();
+  const positions = edges.getAttribute('position');
+  const normals = new Float32Array(positions.count * 3);
+  for (let edge = 0; edge < positions.count; edge += 2) {
+    // The midpoint's two nonzero axes bisect the adjacent faces, not the endpoint's three faces.
+    const x = positions.getX(edge) + positions.getX(edge + 1);
+    const y = positions.getY(edge) + positions.getY(edge + 1);
+    const z = positions.getZ(edge) + positions.getZ(edge + 1);
+    const length = Math.hypot(x, y, z);
+    normals.set([x / length, y / length, z / length], edge * 3);
+    normals.set([x / length, y / length, z / length], (edge + 1) * 3);
+  }
+  edges.setAttribute('normal', new Float32BufferAttribute(normals, 3));
+  return edges;
+}
+
 export class FurnitureMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
@@ -34,8 +52,8 @@ export class FurnitureMeshes {
   private readonly shapeGeometries = new Map<string, BufferGeometry>();
   private readonly blockSize: number;
   private readonly marker = new LineSegments(
-    new EdgesGeometry(new BoxGeometry(1, 1, 1)),
-    new LineBasicMaterial({ color: '#ffe36e', depthTest: true, toneMapped: false }),
+    markerEdges(),
+    withHeightFog(new MeshLambertMaterial({ color: '#ffe36e', depthTest: true }), 'furniture'),
   );
   private markedUid: string | undefined;
   private markedOpen: boolean | undefined;
@@ -44,6 +62,7 @@ export class FurnitureMeshes {
   constructor(blockSize: number) {
     this.blockSize = blockSize;
     this.marker.visible = false;
+    this.marker.receiveShadow = true;
     this.group.add(this.marker);
   }
 
@@ -93,15 +112,6 @@ export class FurnitureMeshes {
     this.marker.scale.set(size[0] + 0.035, size[1] + 0.035, size[2] + 0.035);
     this.marker.position.set(...position);
     this.marker.visible = true;
-  }
-
-  lightMarker(lightAt: (position: Vec3) => number): void {
-    if (!this.markedUid) {
-      return;
-    }
-    const intensity = Math.max(0, Math.min(1, lightAt(this.marker.position.toArray() as Vec3)));
-    this.marker.material.color.set('#ffe36e').multiplyScalar(intensity);
-    this.marker.visible = intensity > 0;
   }
 
   /** Rebuilds the meshes when furniture was added, opened or closed. */
