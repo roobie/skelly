@@ -34,6 +34,7 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
+import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
@@ -1811,6 +1812,8 @@ const RecipeSchema = strictObject({
   workstation: optional(nullable(Id)),
 });
 
+const GraphicsTuningSchema = strictObject({ id: Id, ...GraphicsOptionsSchema.entries });
+
 // ---- files ----
 
 /** Native schemas and section metadata live here, not in parallel loader/validator lists. */
@@ -1858,6 +1861,7 @@ const SECTION_DESCRIPTOR = {
   compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
   scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
+  graphics: { schema: optional(array(GraphicsTuningSchema)), label: 'graphics tuning', order: 22 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };

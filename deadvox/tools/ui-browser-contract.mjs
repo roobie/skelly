@@ -515,12 +515,36 @@ try {
     report: () => {},
   }).settings)`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
+  await evaluate("document.querySelector('#graphics-fastCamo').scrollIntoView({ block: 'center' })");
+  const initialCamo = await evaluate("document.querySelector('#graphics-fastCamo').checked");
+  await clickAt('#graphics-fastCamo');
+  assert.equal(
+    await evaluate("document.querySelector('#graphics-fastCamo').checked"),
+    !initialCamo,
+    'locked menu click changes the graphics preference',
+  );
+  const restoredGraphics = await evaluate(`Promise.all([
+    import('/src/game/graphicsSettings.ts'), import('/src/content/base/graphics.json')
+  ]).then(([{ readGraphicsSettings }, { default: content }]) => readGraphicsSettings(content.graphics[0]))`);
+  assert.equal(restoredGraphics.fastCamo, !initialCamo, 'fresh graphics settings read the persisted machine choice');
+  await clickAt('[data-graphics-key="fastCamo"] button');
+  assert.equal(
+    await evaluate("document.querySelector('#graphics-fastCamo').checked"),
+    initialCamo,
+    'clearing the preference restores the mod default',
+  );
+  assert.equal(
+    await evaluate("Object.hasOwn(JSON.parse(localStorage.getItem('deadvox.graphics-settings')), 'fastCamo')"),
+    false,
+    'clear removes the explicit setting rather than persisting the resolved default',
+  );
   const initialHudToggles = await evaluate(
     "[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)",
   );
   assert.ok(initialHudToggles.every(Boolean), 'HUD options start enabled');
   const statsLabel = '#hud-options [data-hud-option="stats"]';
   const clockLabel = '#hud-options [data-hud-option="clock"]';
+  await evaluate(`document.querySelector('${statsLabel}').scrollIntoView({ block: 'center' })`);
   const statsOption = `document.querySelector('${statsLabel} input')`;
   const clockOption = `document.querySelector('${clockLabel} input')`;
   const statsOptionInitiallyChecked = await evaluate(`${statsOption}.checked`);

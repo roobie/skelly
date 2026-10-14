@@ -35,6 +35,7 @@ import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import type { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { assertGraphicsValue, type GraphicsOptions } from '../core/graphics.ts';
 import {
   BLOOM_RADIUS,
   bloomClipFor,
@@ -54,7 +55,6 @@ import { DrawPass } from './drawPass.ts';
 import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
 import { createMoodOutputPass } from './moodOutput.ts';
-import { bloomRenderScale, sceneRenderScale } from './moodQuality.ts';
 import { OpticLensRenderer, opticLensPass } from './opticLens.ts';
 
 const RETICLE_UNIFORM: Record<ReticleKind, number> = { dot: 0, crosshair: 1, chevron: 2 };
@@ -81,8 +81,9 @@ export class Mood {
   private state: MoodState = { post: false, bloom: false, film: false, grade: 0, bloomClip: null };
   private width = 1;
   private height = 1;
-  private renderScaleValue = 1;
-  private bloomScaleValue = 1;
+  private renderScaleValue: number;
+  private bloomScaleValue: number;
+  private readonly graphicsTuning: GraphicsOptions;
   private frame = 0;
   private skyBloom = 0;
   private skyMist = 0;
@@ -96,7 +97,10 @@ export class Mood {
   private bloomPass: UnrealBloomPass | undefined;
   private outputPass: OutputPass | undefined;
 
-  constructor(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera) {
+  constructor(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, graphicsTuning: GraphicsOptions) {
+    this.graphicsTuning = graphicsTuning;
+    this.renderScaleValue = graphicsTuning.renderScale.default;
+    this.bloomScaleValue = graphicsTuning.bloomScale.default;
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
@@ -193,7 +197,8 @@ export class Mood {
   }
 
   setRenderScale(value: number): void {
-    this.renderScaleValue = sceneRenderScale(value);
+    assertGraphicsValue(this.graphicsTuning, 'renderScale', value);
+    this.renderScaleValue = value;
     this.composer?.setPixelRatio(this.renderer.getPixelRatio() * this.renderScaleValue);
   }
 
@@ -202,7 +207,8 @@ export class Mood {
   }
 
   setBloomScale(value: number): void {
-    this.bloomScaleValue = bloomRenderScale(value);
+    assertGraphicsValue(this.graphicsTuning, 'bloomScale', value);
+    this.bloomScaleValue = value;
     this.composer?.setSize(this.width, this.height);
   }
 
