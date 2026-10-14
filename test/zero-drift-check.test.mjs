@@ -209,6 +209,10 @@ describe('zero-drift symbol check', () => {
     assert.ok(checks(scan(document(`${link(code('missingSymbol'), 'src/known.ts')}.`))).includes('symbol'));
     assert.deepEqual(scan(document(link(code('known.ts'), 'src/known.ts'))), []);
   });
+
+  it('checks a symbol pair wrapped across a line break', () => {
+    assert.ok(checks(scan(document(`See ${code('src/known.ts')},\n${code('missingSymbol')}.`))).includes('symbol'));
+  });
 });
 
 describe('zero-drift section cues', () => {
