@@ -278,11 +278,11 @@ describe('zero-drift section cues', () => {
     assert.deepEqual(new Set(checks(sections(body))), new Set(['section_form', 'section']));
   });
 
-  it('catches numbered section references after emphasized paths, not code or links', () => {
+  it('catches numbered section references in emphasized and linked text, not code', () => {
     const path = ['docs/anchors', 'md'].join('.');
     assert.deepEqual(checks(sections(`**${path}** section 3`)), ['section_form']);
     assert.deepEqual(sections(`${code(path)} section 3`), []);
-    assert.deepEqual(sections(`[${path} section 3](${path})`), []);
+    assert.deepEqual(checks(sections(`[${path} section 3](${path})`)), ['section_form']);
   });
 
   it('does not promote escaped backticks in text to code cue nodes', () => {

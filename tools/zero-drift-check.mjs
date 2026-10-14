@@ -347,7 +347,7 @@ function markdownTextFormText(node) {
   if (node.type === 'break') {
     return '\n';
   }
-  if (node.type === 'inlineCode' || node.type === 'link' || node.type === 'linkReference' || isHtmlComment(node)) {
+  if (node.type === 'inlineCode' || isHtmlComment(node)) {
     return '';
   }
   return (node.children ?? []).map(markdownTextFormText).join('');
