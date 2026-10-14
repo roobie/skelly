@@ -2708,9 +2708,11 @@ try {
   });
   const resumedElapsed = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.elapsed);
   assert.ok(resumedElapsed >= pryElapsed, 'resuming never moves the pry cursor backwards');
-  const pryProgressText = await page.locator('#handling').textContent();
-  assert.match(pryProgressText ?? '', /X pauses/);
-  assert.doesNotMatch(pryProgressText ?? '', /Half speed/);
+  const stopLabel = await page.evaluate(async (moduleUrl) => {
+    const { labelForAction } = await import(moduleUrl);
+    return labelForAction('handling.stop');
+  }, inputBindingsModule);
+  assert.ok((await page.locator('#handling').textContent())?.includes(stopLabel));
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.handling = false;
   });

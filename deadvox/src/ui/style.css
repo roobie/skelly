@@ -48,6 +48,34 @@ body {
     0.875rem / 1.4 system-ui,
     sans-serif;
 }
+.fact-detail {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted var(--muted);
+}
+.fact-detail[hidden] {
+  display: none;
+}
+.fact-detail-copy {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: var(--ui-layer-inventory-feedback);
+  display: none;
+  width: max-content;
+  max-width: min(32rem, 80vw);
+  pointer-events: none;
+  padding: 0.4rem;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: normal;
+}
+.fact-detail.game-cursor-hover > .fact-detail-copy,
+.fact-detail:focus-within > .fact-detail-copy,
+body:not(.menu-pointer-locked) .fact-detail:hover > .fact-detail-copy {
+  display: block;
+}
 #tutorial-objective {
   position: fixed;
   top: 1rem;

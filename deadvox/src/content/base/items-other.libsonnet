@@ -227,14 +227,14 @@ local spentCase(id, name, weight, description, model) = {
       'spent_case_5_d_56x45',
       'Spent 5.56×45 case',
       6,
-      'A spent case from debug firearm handling.',
+      'A fired 5.56×45 case.',
       'case_5_d_56x45',
     ),
     spentCase(
       'spent_case_7_d_62x39',
       'Spent 7.62×39 case',
       6,
-      'A spent case from debug firearm handling. Gameplay mass estimate: 6 g, not a sourced case mass.',
+      'A fired 7.62×39 case.',
       'case_7_d_62x39',
     ),
     {
@@ -244,7 +244,7 @@ local spentCase(id, name, weight, description, model) = {
       weight: 40,
       size: [1, 1],
       stack: 25,
-      description: 'Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy. Payload from gungen cartridges/12-gauge-00-buck.json: Federal PFC154 00 (9 pellets), SAAMI shotshell standard p.39 (8.38 mm nominal 00). Per-pellet damage, push and reach are gameplay estimates.',
+      description: 'Nine-pellet 00 buckshot.',
       ammo: {
         calibre: '12-gauge-00-buck',
         pellets: 9,
@@ -261,14 +261,14 @@ local spentCase(id, name, weight, description, model) = {
       category: 'ammo',
       weight: 840,
       size: [2, 2],
-      description: 'Sealed cardboard box of twenty 00-buck shells. Size, 40 g cardboard and 40 g per shell are gameplay mass estimates.',
+      description: 'Sealed cardboard box of twenty 00-buck shells.',
       unpack: { item: 'shell_12_gauge_00_buck', count: 20 },
     },
     spentCase(
       'spent_case_12_h_gauge_h_00_h_buck',
       'Spent 12 gauge hull',
       5,
-      'An opened shotshell hull. Fired-hull gameplay mass estimate: 5 g, not a manufacturer specification.',
+      'A fired shotshell hull.',
       'case_12_h_gauge_h_00_h_buck',
     ),
     {

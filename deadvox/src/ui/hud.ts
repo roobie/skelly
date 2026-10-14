@@ -139,7 +139,7 @@ export const timedActionHandlingPresentation = (
 ): HandlingPresentationSource => ({
   jobs: [],
   ...(action.stopped ? {} : { longAction: action }),
-  cancelLabel: action.stopped ? '' : `${stopLabel} pauses`,
+  cancelLabel: action.stopped ? '' : `Pause (${stopLabel})`,
   movementLabel: '',
 });
 
@@ -183,7 +183,7 @@ export const handlingViewModel = (queue: HandlingPresentationSource): HandlingVi
     percent: Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100),
     next: next ? `Then: ${next.label}` : '',
     cancelLabel: queue.cancelLabel ?? '',
-    movementLabel: queue.movementLabel ?? 'Half speed · no sprinting',
+    movementLabel: queue.movementLabel ?? '',
   };
 };
 

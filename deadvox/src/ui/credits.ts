@@ -57,12 +57,7 @@ const entryTemplate = (entry: CreditsEntryViewModel): TemplateResult => html`
 
 const creditsTemplate = (vm: CreditsViewModel, onBack: (e: Event) => void): TemplateResult => html`
   <h1>Credits</h1>
-  <p>deadvox uses these assets. Thank you to the people who made them.</p>
-  ${
-    vm.entries.length === 0
-      ? html`<p>No assets yet.</p>`
-      : html`<ul class="credits">${vm.entries.map(entryTemplate)}</ul>`
-  }
+  ${vm.entries.length === 0 ? html`<p>No assets</p>` : html`<ul class="credits">${vm.entries.map(entryTemplate)}</ul>`}
   <p><a href="#" rel="noopener" @click=${onBack}>Back</a></p>
 `;
 
