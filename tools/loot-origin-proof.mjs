@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
+process.chdir('deadvox');
 const path = 'src/core/items.ts';
 const original = readFileSync(path, 'utf8');
 const needle = 'origin: copyOrigin(item.origin),';
