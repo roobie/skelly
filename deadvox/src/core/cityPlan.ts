@@ -119,28 +119,34 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
   const { city, serviceTemplate } = scenario;
   const width = city.blockX - 2 * city.pad;
   issues.push(...cityDecorationIssues(registry, city), ...cityPoolIssues(registry, city));
-  const service = registry.templates.get(serviceTemplate);
-  if (service) {
-    if (Math.max(service.size[0], service.size[2]) > Math.min(width, city.blockZ - 2 * city.pad)) {
-      issues.push(['.serviceTemplate', 'service template must fit every quarter turn inside its reserved block']);
-    }
-    if (templateResolves(registry, service)) {
-      const compiled = compileTemplate(registry, service);
-      issues.push(...scenarioPortalIssues(registry, scenario, compiled));
-      issues.push(...scenarioCompositionIssues(registry, scenario, compiled));
-    } else {
-      issues.push(['.serviceTemplate', 'service template has unresolved palette references']);
-    }
-  } else {
-    issues.push(['.serviceTemplate', `no template "${serviceTemplate}"`]);
+  const template = registry.templates.get(serviceTemplate);
+  const assembly = registry.mapAssemblies.get(serviceTemplate);
+  const service = template ?? assembly;
+  if (!service || (template && assembly)) {
+    return [...issues, ['.serviceTemplate', `missing or ambiguous template/assembly "${serviceTemplate}"`]];
+  }
+  if (Math.max(service.size[0], service.size[2]) > Math.min(width, city.blockZ - 2 * city.pad)) {
+    issues.push(['.serviceTemplate', 'service template must fit every quarter turn inside its reserved block']);
+  }
+  if (template && !templateResolves(registry, template)) {
+    return [...issues, ['.serviceTemplate', 'service template has unresolved palette references']];
+  }
+  try {
+    const compiled = assembly
+      ? compileAssembly(registry, assembly, { seed: 0, siteId: `scenario:${scenario.id}:service` })
+      : compileTemplate(registry, template!);
+    issues.push(...scenarioPortalIssues(registry, scenario, compiled));
+    issues.push(...scenarioCompositionIssues(registry, scenario, compiled));
+  } catch (error) {
+    issues.push(['.serviceTemplate', error instanceof Error ? error.message : String(error)]);
   }
   return issues;
 };
 
-const portalOf = (registry: Registry, service: Placement, scenario: ScenarioDef): Portal => {
+const portalOf = (service: Placement, scenario: ScenarioDef): Portal => {
   const upper = placedPoint(service, scenario.portal.upper);
   const lower = placedPoint(service, scenario.portal.lower);
-  const shaft = placedPoint(service, portalLadderPoint(registry, scenario, service.template));
+  const shaft = placedPoint(service, portalLadderPoint(scenario, service.template));
   const min: Vec3 = [
     Math.min(upper[0], lower[0], shaft[0]) - STAIR_BODY_HALF_WIDTH,
     lower[1] - 1,
@@ -304,7 +310,7 @@ export const buildCityPlan = ({
   const service =
     scenario && serviceBlock
       ? servicePlacement({
-          template: context.compiled(scenario.serviceTemplate, 1),
+          template: context.compiled(scenario.serviceTemplate, 1, `scenario:${scenario.id}:service`),
           floor,
           grid,
           cell: serviceBlock,
@@ -362,7 +368,7 @@ export const buildCityPlan = ({
     serviceBlock,
     candidates: Object.freeze(candidates),
     spawn: Object.freeze(spawn),
-    portal: service && scenario ? portalOf(registry, service, scenario) : undefined,
+    portal: service && scenario ? portalOf(service, scenario) : undefined,
     composition,
   });
 };

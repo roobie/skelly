@@ -10,7 +10,7 @@ import { doorPlan } from '../../src/core/options.ts';
 import type { Scale } from '../../src/core/scale.ts';
 import { scenarioCertificate } from '../../src/core/scenarioCertificate.ts';
 import type { ScenarioDef } from '../../src/core/schema.ts';
-import { compileTemplate } from '../../src/core/templates.ts';
+import { compileTemplate, placedPieces } from '../../src/core/templates.ts';
 import { DOOR_ACTION } from '../../src/game/doorAction.ts';
 import { createSession, IDLE } from '../../src/game/session.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
@@ -223,7 +223,11 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
   ];
   walk([[...plan.spawn], [corner[0], corner[1], plan.spawn[2]], corner]);
   walk(route(corner, plan.portal!.upper));
-  const hatch = [...entities.all].find((entity) => entities.defOf(entity).door?.hatch)!;
+  const hatchIndex = plan.service!.template.pieces.findIndex((piece) =>
+    piece.pos.every((value, axis) => value === profile.portal.hatch[axis]),
+  );
+  assert(hatchIndex >= 0);
+  const hatch = entities.at(...placedPieces(plan.service!)[hatchIndex]!.pos)!;
   assert(!hatch.open);
   const opening = doorPlan(session.inventory, hatch, 'open');
   assert(opening.ok);
@@ -261,6 +265,35 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
       bottom.pos[2] + bottom.size[2] / 2 - oz,
     ];
     walk(route(position, approach));
+    const lid = [...entities.all].find(
+      (entity) =>
+        entities.defOf(entity).door?.hatch &&
+        entity.pos[1] === descent.upper[1] - 1 &&
+        bottom.pos[0] >= entity.pos[0] &&
+        bottom.pos[0] < entity.pos[0] + entity.size[0] &&
+        bottom.pos[2] >= entity.pos[2] &&
+        bottom.pos[2] < entity.pos[2] + entity.size[2],
+    );
+    if (descent.ladder) {
+      assert(!lid?.open);
+      const centre: Vec3 = [bottom.pos[0] + bottom.size[0] / 2, descent.upper[1], bottom.pos[2] + bottom.size[2] / 2];
+      const sides: Vec3[] = [
+        [centre[0] + ox * 0.75, centre[1], centre[2] + oz * 0.75],
+        [centre[0] - ox * 0.75, centre[1], centre[2] - oz * 0.75],
+      ];
+      for (const side of sides) {
+        walk([side]);
+        assert(session.body.onGround && Math.abs(session.body.pos[1] - descent.upper[1]) < 0.001);
+      }
+      walk([approach]);
+    }
+    assert(lid);
+    if (!lid.open) {
+      const lidOpening = doorPlan(session.inventory, lid, 'open');
+      assert(lidOpening.ok);
+      session.queue.enqueueAction(DOOR_ACTION, 'open descent hatch', lidOpening.time, { entityUid: lid.uid });
+      until(() => lid.open, Math.ceil((lidOpening.time + 1) * 60));
+    }
     const [top] = [...entities.all]
       .filter(
         (entity) =>

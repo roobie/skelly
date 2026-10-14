@@ -1251,8 +1251,8 @@ const ScenarioSchema = strictObject({
     }),
   ),
   portal: strictObject({
-    hatch: Char,
-    ladder: Char,
+    hatch: CellPosition,
+    ladder: CellPosition,
     upper: CellPosition,
     lower: CellPosition,
   }),

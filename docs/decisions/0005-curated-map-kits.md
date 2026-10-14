@@ -1,7 +1,7 @@
 ---
 read_if:
   - you author map pieces, assemblies or intended site routes
-  - you change template ownership, circulation or deterministic selection
+  - you change template ownership, circulation, descent lids or deterministic selection
 ---
 
 # 5. Curated spaces with exclusive ownership
@@ -73,9 +73,21 @@ certificate: exclusive ownership prevents overlapping writes, not a body obstruc
 an adjacent cell. See `deadvox/src/content/base/gauntlet-lab-descents.libsonnet`, `shaft`,
 and `deadvox/test/labDescentKit.test.ts`.
 
-These pieces are admitted content, not yet the production lab. Issue #712 still requires
-storey circulation, fixed room placement and the objective room to replace the generated
-lab. Furnished room and connector witnesses do not establish a final lab climb or return.
+Production storeys compose literal circulation strips and furnished room assemblies.
+Equipment bays belong to their room, while descent shafts and floor openings belong to
+connectors. Closed descent lids support both side cells of the opening, so crossing an
+upper room cannot silently become a drop route. Opening the lid deliberately admits the
+climb. See `deadvox/src/content/base/gauntlet-lab.libsonnet`, `storey`,
+`deadvox/src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`, and
+`deadvox/src/content/base/gauntlet-lab-descents.libsonnet`, `mapPieces`.
+
+The service facade and underground campus share one owned assembly rather than a second
+copy of the lab geometry. Portal anchors address finished furniture positions, not source
+palette characters, because markers belong to individual pieces. The final city-site
+witness walks closed descent lids, opens them, descends and returns through ordinary
+session commands. See `deadvox/src/content/base/gauntlet-service.libsonnet`,
+`mapAssemblies`, `deadvox/src/core/scenarioPortal.ts`, `portalPieces`, and
+`deadvox/test/fixtures/scenarioCertificate.ts`, `traverseScenario`.
 
 ## Consequences
 

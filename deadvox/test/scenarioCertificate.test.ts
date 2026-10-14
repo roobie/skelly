@@ -9,7 +9,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
-import { compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
+import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 
@@ -21,7 +21,10 @@ if (!profile) {
 const COMPOSED_LADDER = /composed ladder/;
 const scale = makeScale(0.5);
 const base = buildCityPlan({ seed: 9, registry, floor: 64, grid: profile.city, scenario: profile });
-const compiled = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
+const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.serviceTemplate)!, {
+  seed: 9,
+  siteId: `scenario:${profile.id}:service`,
+});
 
 const candidatePlan = (cell: readonly [number, number], turn: Turn): CityPlan => {
   const service = servicePlacement({ template: compiled, floor: base.floor, grid: profile.city, cell, turn });
@@ -103,6 +106,20 @@ describe('final composed body-route certificate', () => {
     }
   });
 
+  it('rejects a shaft-neighbor obstruction in the final furnished production lab', () => {
+    const descent = base.composition!.descents[0]!;
+    if (!descent) {
+      throw new Error('Production lab has no descent witness');
+    }
+    const obstruction: Vec3 = [descent.ladder[0] + 1, descent.ladder[1] + 4, descent.ladder[2]];
+    const result = scenarioCertificate(new ObstructedSite(obstruction));
+    expect(
+      result.issues.some(
+        ([path, message]) => path === '.composition.descents[0]' && message.includes('continuous body-clear shaft'),
+      ),
+    ).toBe(true);
+  });
+
   it('rejects support removed from the stamped objective face', () => {
     const site = siteOf();
     const original = site.stamp.bind(site);
@@ -176,7 +193,7 @@ describe('final composed body-route certificate', () => {
 });
 
 it(
-  'walks from the city start, opens the hatch, descends to the bottom and retreats through ordinary session commands',
+  'walks the closed descent lids without side-cell drops, opens them, reaches the objective and returns through session commands',
   () => {
     traverseScenario(siteOf(candidatePlan(base.candidates[0]!, 1)), profile, scale);
   },

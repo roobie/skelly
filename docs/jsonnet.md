@@ -4,6 +4,7 @@ read_if:
   - you change the shared Jsonnet compiler or its import and validation rules
   - you add build-specific content or a Jsonnet module
   - you author map features or decide what belongs in a map template
+  - you check which generated map features still require curated migration
 ---
 
 # Jsonnet authoring
@@ -26,7 +27,11 @@ A placed content template is spatial data, not a Jsonnet constructor. Constructo
 
 Curated geometry lets authors inspect and change intended spaces without reverse-engineering a generator. Exclusive ownership prevents composition from repainting a correctly authored shell, while reserved walking space protects circulation from furnishing. See `docs/decisions/0005-curated-map-kits.md`, "Decision".
 
-Known exceptions remain until #712 replaces generated map geometry with curated kit assemblies: `deadvox/src/content/base/gauntlet-lab.libsonnet`, `deadvox/src/content/base/gauntlet-look.jsonnet`, `deadvox/src/content/base/camp.jsonnet`, `deadvox/src/content/base/ladders.jsonnet`, and `deadvox/src/content/base/locks.jsonnet`. Keeping these exceptions explicit permits the gauntlet's curated city to land without claiming that its underground lab or the other generated features already satisfy the rule.
+Generated geometry in `deadvox/src/content/base/camp.jsonnet`,
+`deadvox/src/content/base/ladders.jsonnet` and `deadvox/src/content/base/locks.jsonnet`
+remains outside #712's city-and-lab migration. Those features need a separate curated
+migration before they satisfy this rule; the gauntlet migration does not authorize
+additional generators.
 
 ## Reasons
 

@@ -8,6 +8,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
   - you're implementing gauntlet scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth or its visual approval gate
+  - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
@@ -408,43 +409,29 @@ offset descents make exploration and descent route choices rather than a single
 corridor followed by a continuous climb. Adjacent storeys share alternate links
 so returning need not retrace the approach.
 
-The campus scale, room assignments and links are authored in
-`src/content/base/gauntlet-lab.libsonnet`, `storeys`, `kinds` and `links`.
-Its `anchors` derives storey and descent poses and the objective location from
-those tables so composition metadata cannot silently retain an older campus.
-Room-kind props and legible room labels distinguish laboratory work from storage,
-utilities and containment; reuse of those kinds across storeys gives the complex
-an identity without making every floor the same room. Support gives way to
-restricted research, damaged containment and critical-depth failures so depth
-has a visible risk direction. These are inert spatial cues, not a danger or
-balance proof: the deepest place must earn its higher risk through play.
+Author room assignments, storey placement and offset links as curated composition,
+not as partition or row-building code. Shared room shells delegate equipment bays so
+furnishing cannot borrow a threshold or connector's body space. Different equipment
+and damage distinguish laboratory work, support and containment, but those inert cues
+are not a danger or balance proof. See `src/content/base/gauntlet-lab.libsonnet`,
+`storey`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
 
-Storey spacing gives standing headroom and makes each descent a separate place
-to enter. Room and storey additions belong in the authoring tables, with linked
-floor heights and the surface foundation derived from the storey order, rather
-than in a new simulation or site generator. The underground campus extends
-beyond the small service facade because a surface disguise must not dictate the
-lab's capacity. One compiled placement owns their common excavation; incidental
-surface utilities stay inside that placement to avoid overlapping authored-site
-footprints. The separate demo preserves the shape baseline independently of
-seeded-city composition and its later route proof. See `src/content/base/gauntlet-look.jsonnet`,
-`row` and `layouts`.
+The underground campus extends beyond the small service facade because a surface
+disguise must not dictate the lab's capacity. One compiled assembly owns their common
+excavation; an independent copy would let the visual preview and playable routes drift.
+Closed descent lids support the neighboring floor cells as well as the ladder column,
+so walking an upper room does not accidentally commit the survivor to a drop. The
+real-city session witness opens these lids and proves the furnished descent and return.
+See `src/content/base/gauntlet-service.libsonnet`, `mapAssemblies`,
+`src/content/base/gauntlet-lab-descents.libsonnet`, `mapPieces`, and
+`test/fixtures/scenarioCertificate.ts`, `traverseScenario`.
 
-Static admission indexes furniture occupancy for both door states before body
-queries, because a multi-room campus must not scan every room's furnishings for
-every clearance cell. Template character lookup avoids expanding ordinary rows
-for every cell while preserving code-point indexing for wider Unicode markers.
-These changes reduce campus authoring cost without a second collision or
-compiler owner. Jsonnet paints shared row strings instead of reevaluating every
-cell's sparse furniture and partition queries; retaining painting priority keeps
-that evaluation optimization separate from changing the campus. See
-`src/content/base/gauntlet-lab.libsonnet`, `rows`, and
-`src/content/base/gauntlet-look.jsonnet`, `row`.
-The scenario profile takes its entry anchors from the same source metadata as the
-hatch and entry ladder instead of rediscovering markers by scanning the entire
-campus. See `src/core/templateSpatial.ts`, `TemplateSpace`;
-`src/core/templates.ts`, `charAt`; and
-`src/content/base/gauntlet-lab.libsonnet`, `entry`.
+Portal anchors address furniture in the finished assembly rather than palette markers
+inside one source piece. This keeps portal admission independent of how the facade and
+lab are decomposed. Static admission indexes occupancy before body queries because a
+multi-room campus must not scan every furnishing for each clearance cell. See
+`src/core/scenarioPortal.ts`, `portalPieces`, and `src/core/templateSpatial.ts`,
+`TemplateSpace`.
 
 The objective's terminal win is a session/save decision, not an observer counter.
 Live entity, reach and unobstructed gaze admission prevents a stale displayed
@@ -471,14 +458,11 @@ so the exhausts reward recognizing their arrangement and context instead of
 spotting the only matching colour. Keep that ambiguity compatible with the
 independent notes; visual redundancy is not a false-destination quest chain.
 
-Bounded rendered looks precede full lab and clue construction because geometry,
-lighting and clue interpretation need player judgment before large investments.
-The approved campus is the shape baseline for #671 composition; changed landmark
-and lead presentation still needs a player look. The separate authored demo is
-not a seeded city or an all-seed route certificate. Its console remains inactive
-because the visual baseline must not become objective authority; no saved win
-is supplied by readable furniture. See `src/content/base/gauntlet-look.jsonnet` and `AuthoredSite` in
-`src/core/authoredSite.ts`.
+Rendered geometry, lighting and clue interpretation still need player judgment:
+construction and route proofs cannot establish a legible discovery experience.
+Readable furniture does not confer objective authority; the live interaction must
+reach the terminal button. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`,
+and `src/game/session.ts`, `activateGoal`.
 
 Darkness uses world-derived sky transport and an ordinary carried light, not
 invented powered lab fixtures. Finished site placements expose the same sky

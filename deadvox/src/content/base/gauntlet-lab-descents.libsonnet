@@ -51,5 +51,10 @@ local shaft = {
   anchors: {}, ports: [],
 };
 {
-  mapPieces: [incoming, outgoing, shaft],
+  mapPieces: [incoming, outgoing, shaft, shaft + {
+    id: 'gauntlet_lab_descent_hatched',
+    palette: shaft.palette + { T: { furniture: 'roof_hatch', facing: 'w' } },
+    layers: [shaft.layers[0], shaft.layers[1], shaft.layers[2], shaft.layers[3], shaft.layers[4], shaft.layers[5], shaft.layers[6], ['TTT', 'TTT']],
+    ownership: { layers: [shaft.ownership.layers[0], shaft.ownership.layers[1], shaft.ownership.layers[2], shaft.ownership.layers[3], shaft.ownership.layers[4], shaft.ownership.layers[5], shaft.ownership.layers[6], ['SSS', 'SSS']] },
+  }],
 }
