@@ -31,7 +31,7 @@ Wide ambient occlusion darkens indirect light according to enclosure, while dire
 ## Unresolved constraints
 
 - Sun-shadow rendering and flashlight falloff rely on three.js internals; upgrades must fail loudly until these hooks have a supported replacement.
-- Wide occlusion is tuned by eye on limited indoor scenes. Revisit its strength when Slice 4 skylight overlaps with it.
+- Wide occlusion is tuned by eye on limited indoor scenes. Revisit its strength when Slice 4a skylight overlaps with it.
 - Dawn/dusk tone transitions and weathering profiles need review on a real GPU.
 - Debug-only look controls must move before their reserved gameplay inputs are bound.
 - Shader warm-up gaps remain for model materials and the no-post-processing path.
