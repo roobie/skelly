@@ -66,6 +66,12 @@ Reachability is a type-source contract, not a quantity, seed, or whole-game solv
 
 Debug fixtures, runtime escrow, spent cases, and body-part policy stay out of acquired-content totals. Keep their exclusions with `CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts`. Reachability stores no runtime state; progression, crafting, and disassembly remain separate owners. Winning-override diagnostics retain source-file provenance so a broken effective definition can be traced to its authoring source.
 
+## Loot economy descriptions
+
+Separate item admission from table weights and world placement. Exact tier membership and intersecting usage keep a shared supply eligible without making every military-usable item military-only. Explicit empty metadata means no random admission, rather than a wildcard. See `src/core/loot.ts`, `ItemEconomySchema`, `economyEligible`, and `militaryOnlyEconomy`.
+
+Keep empty source descriptions so future refill work need not regenerate geometry. Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
+
 ## Furniture visual shapes
 
 Visual furniture detail must not change occupied cells or expose hidden contents. Collision, rest, search, and line of sight keep their existing authorities, so a visual refinement cannot change gameplay.

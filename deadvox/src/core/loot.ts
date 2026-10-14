@@ -3,9 +3,98 @@
 // table (rolled in full), or nothing. What comes out is a list of items to make, not
 // instances, so worldgen stays free of item uids.
 
+import { array, check, type InferOutput, picklist, pipe, strictObject } from 'valibot';
 import type { LootEntry, Registry } from './content.ts';
-import type { Rng } from './random.ts';
+import { toChunk, type Vec3 } from './coords.ts';
+import { Rng } from './random.ts';
 import type { FixedLootItemDef } from './schema.ts';
+
+const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
+
+export const UsageSchema = pipe(
+  array(picklist(['Residential', 'Industrial', 'Medical', 'Hunting', 'Military', 'Infected'])),
+  check(distinct, 'usage tags must be unique'),
+);
+export const LootTierSchema = picklist(['Tier1', 'Tier2', 'Tier3']);
+export const ItemEconomySchema = strictObject({
+  usage: UsageSchema,
+  tiers: pipe(array(LootTierSchema), check(distinct, 'tiers must be unique')),
+});
+export const LootContextSchema = strictObject({ usage: UsageSchema, tier: LootTierSchema });
+
+export type ItemEconomy = InferOutput<typeof ItemEconomySchema>;
+export type LootContext = InferOutput<typeof LootContextSchema>;
+export type UsageTag = ItemEconomy['usage'][number];
+
+export const economyEligible = (economy: ItemEconomy, context: LootContext): boolean =>
+  economy.tiers.includes(context.tier) && economy.usage.some((usage) => context.usage.includes(usage));
+
+export const militaryOnlyEconomy = (economy: ItemEconomy): boolean =>
+  economy.usage.length === 1 && economy.usage[0] === 'Military';
+
+export type LootSupply =
+  | { readonly kind: 'table'; readonly table: string }
+  | { readonly kind: 'fixed'; readonly items: readonly FixedLootItemDef[] }
+  | { readonly kind: 'empty' };
+
+export interface LootSpawnPoint {
+  readonly id: string;
+  readonly channel: 'container' | 'surface';
+  readonly position: Vec3;
+  readonly destination: Vec3;
+  readonly context: LootContext;
+  readonly supply: LootSupply;
+  readonly required: boolean;
+}
+
+export interface LootPointSource {
+  readonly site: string;
+  readonly building: string;
+  /** Include the local vertical coordinate so stress-test storeys cannot alias. */
+  readonly anchor: Vec3;
+  readonly channel: LootSpawnPoint['channel'];
+  readonly position: Vec3;
+  readonly destination: Vec3;
+  readonly context: LootContext;
+  readonly usage?: readonly UsageTag[];
+  readonly supply: LootSupply;
+  readonly required: boolean;
+}
+
+export const lootSpawnPoint = (source: LootPointSource): LootSpawnPoint => ({
+  // Tuple encoding prevents separators inside authored IDs from aliasing another source.
+  id: JSON.stringify([source.site, source.building, source.anchor, source.channel]),
+  channel: source.channel,
+  position: source.position,
+  destination: source.destination,
+  context: {
+    usage: source.usage === undefined ? [...source.context.usage] : [...source.usage],
+    tier: source.context.tier,
+  },
+  supply: source.supply,
+  required: source.required,
+});
+
+export const lootPointStream = (seed: number, point: LootSpawnPoint): Rng => Rng.stream(seed, `loot:${point.id}`);
+
+export const lootPointsByColumn = (
+  sources: readonly LootPointSource[],
+): ReadonlyMap<string, readonly LootSpawnPoint[]> => {
+  const columns = new Map<string, LootSpawnPoint[]>();
+  const ids = new Set<string>();
+  for (const source of sources) {
+    const point = lootSpawnPoint(source);
+    if (ids.has(point.id)) {
+      throw new Error(`duplicate loot spawn point ${point.id}`);
+    }
+    ids.add(point.id);
+    const key = `${toChunk(point.destination[0])},${toChunk(point.destination[2])}`;
+    const points = columns.get(key) ?? [];
+    points.push(point);
+    columns.set(key, points);
+  }
+  return columns;
+};
 
 export interface Rolled {
   type: string;
