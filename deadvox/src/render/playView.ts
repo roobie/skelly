@@ -174,6 +174,7 @@ export const createPlayView = (
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const flashlight = new Flashlight(scene);
+  let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
@@ -286,8 +287,6 @@ export const createPlayView = (
       blastFlashes.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
-      applySky(engine.sky, sky);
-      engine.mood?.setSky(sky);
       piles.sync(inventory, itemThrows.hiddenItemUids);
       furniture.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
@@ -300,9 +299,14 @@ export const createPlayView = (
       return { sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
-      const skyVisibility = engine.skylight?.at([camera.position.x, camera.position.y, camera.position.z]) ?? 1;
+      const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
+      const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
+      applySky(engine.sky, sky, skyVisibility);
+      engine.mood?.setSky(sky, skyVisibility);
       held.setSkyVisibility(skyVisibility);
-      flashlight.daylightScale = flashlightDaylightScale(sky, skyVisibility);
+      cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
+      engine.skylight?.setDaylight(sky);
+      flashlight.daylightScale = engine.skylight ? 1 : flashlightDaylightScale(sky);
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (sky: ReturnType<typeof skyInWeather>) => {
@@ -348,7 +352,7 @@ export const createPlayView = (
       const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
       held.update(camera, pose, recoil, handling);
       flashlight.update({ registry, lit: light, held, camera, inventory });
-      lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: flashlight.daylightScale });
+      lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: cameraDaylightScale });
     },
     render: (): number | null => {
       if (!renderer) {

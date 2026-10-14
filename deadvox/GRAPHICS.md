@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're changing procedural surface weathering or building appearance
-  - you're changing the solar-phase look or evaluating renderer performance
+  - you're changing the solar-phase look, flashlight daylight adaptation, or evaluating renderer performance
   - you're changing wide ambient occlusion or its interaction with skylight
 ---
 
@@ -12,6 +12,10 @@ The graphics direction is driven by atmosphere and readability, not realism. The
 ## Look decisions
 
 Tone mapping follows the solar cycle: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night. The by-eye choice gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `src/core/mood.ts`, `DEFAULT_LOOK`, and `src/render/autoTone.ts`.
+
+Distance fog, the clear background and height mist share the camera's diffuse sky visibility so they cannot glow where the sky cannot reach. Use the interior field's spatial interpolation rather than a separate transition, keeping doorway changes aligned with held-item lighting. See `src/render/playView.ts`, `prepareLighting`; `src/render/sky.ts`, `applySky`; and `src/render/mood.ts`, `Mood.setSky`.
+
+A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. See `src/render/playView.ts`, `prepareLighting`, and `src/render/flashlight.ts`, `flashlightDaylightScale`.
 
 Post-processing and shadows support the intended mood, but their cost on a reference GPU remains unmeasured. SwiftShader is not evidence of reference-GPU performance. Keep same-workload comparisons before making performance claims. See `src/bench/post.ts`, `benchDraw`.
 

@@ -964,6 +964,15 @@ rule ("Hand grenade").
 
 ## Light
 
+A flashlight must illuminate a semi-dark room plausibly, including when its user
+stands outside in daylight. Turning the aim must not rescale the whole beam:
+a nearby sunlit face must not suppress illumination elsewhere in a dark interior.
+Keep source output independent of aim and judge daylight washout at the receiving
+surface, using the same diffuse sky estimate that lights that surface. This keeps
+bright outdoor surfaces washed out without making dark targets inherit the user's
+outdoor lighting. See `src/render/playView.ts`, `prepareLighting`, and
+`src/render/skylight.ts`, `Skylight`.
+
 Dark interiors make carried light useful without an authored indoor flag.
 For authored sites and hamlets, live opaque blocks and blocking furniture determine
 diffuse sky transport; placement geometry only bounds discovery. Roofs, openings

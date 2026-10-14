@@ -1,16 +1,35 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PerspectiveCamera, Scene } from 'three';
+import { runInNewContext } from 'node:vm';
+import {
+  BoxGeometry,
+  DirectionalLight,
+  HemisphereLight,
+  Mesh,
+  MeshLambertMaterial,
+  PerspectiveCamera,
+  Scene,
+  ShaderLib,
+  Vector3,
+} from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import type { Body } from '../src/core/physics.ts';
+import { raycast } from '../src/core/raycast.ts';
 import { skyAt } from '../src/core/sky.ts';
+import type { SkyBounds } from '../src/core/skylight.ts';
+import type { SkySnapshot } from '../src/core/skySnapshot.ts';
+import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
+import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { createPlayView } from '../src/render/playView.ts';
+import { Skylight } from '../src/render/skylight.ts';
+import { skyWorldFixture } from './fixtures/skyWorld.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -32,6 +51,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     restore: vi.fn(),
     render: vi.fn((draw: () => void) => draw()),
     setPainDesaturation: vi.fn(),
+    setSky: vi.fn(),
   };
   const shadows = { restore: vi.fn(), attachTorch: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
   const engine = {
@@ -43,18 +63,193 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
     mood,
     shadows,
-    sky: {},
+    sky: {
+      scene: new Scene(),
+      light: new DirectionalLight(),
+      ambient: new HemisphereLight(),
+      camera: new PerspectiveCamera(),
+      radiusM: 64,
+    },
     isSolid,
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), page);
   return {
     engine,
+    inventory,
     view,
     page,
     mood,
     shadows,
   };
 };
+
+const restingHands = {
+  right: { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 },
+  left: { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 },
+};
+
+const litBounds: Record<'doorway' | 'near-wall', SkyBounds> = {
+  doorway: { min: [8, 1, 8], max: [23, 7, 25] },
+  'near-wall': { min: [-10, 1, -10], max: [11, 7, 13] },
+};
+
+function populateDoorway(owner: ReturnType<typeof skyWorldFixture>): void {
+  for (let y = 2; y < 6; y++) {
+    for (let z = 15; z <= 17; z++) {
+      owner.world.setBlock(8, y, z, 0);
+    }
+  }
+  for (let x = -2; x <= 2; x++) {
+    for (let z = 14; z <= 18; z++) {
+      owner.world.setBlock(x, 0, z, owner.wall);
+    }
+  }
+}
+
+function populateNearWall(owner: ReturnType<typeof skyWorldFixture>): void {
+  for (let x = -10; x <= 10; x++) {
+    for (let y = 1; y < 7; y++) {
+      for (let z = -10; z < 13; z++) {
+        owner.world.setBlock(x, y, z, 0);
+      }
+    }
+    for (let z = -10; z < 13; z++) {
+      owner.world.setBlock(x, 0, z, owner.wall);
+    }
+    for (let z = 0; z < 13; z++) {
+      owner.world.setBlock(x, 6, z, owner.wall);
+    }
+    for (let y = 1; y < 6; y++) {
+      for (let z = -6; z <= -4; z++) {
+        owner.world.setBlock(x, y, z, owner.wall);
+      }
+    }
+  }
+}
+
+function litWorld(geometry: 'doorway' | 'near-wall') {
+  const box = litBounds[geometry];
+  const owner = skyWorldFixture([box]);
+  if (geometry === 'doorway') {
+    populateDoorway(owner);
+  } else {
+    populateNearWall(owner);
+  }
+  const pending: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
+  const scene = new Scene();
+  const camera = new PerspectiveCamera();
+  const cameraPosition: Vec3 = geometry === 'doorway' ? [0.25, 2.12, 8.25] : [0.25, 2.12, 0.25];
+  const aim: Vec3 = geometry === 'doorway' ? [1, 0, 0] : [0, 0, -1];
+  camera.position.set(...cameraPosition);
+  camera.lookAt(camera.position.clone().add(new Vector3(...aim)));
+  const sky = new Skylight(
+    [box],
+    { blockSize: 0.5, top: 31, viewRadiusM: 64 },
+    {
+      ...owner,
+      bottom: 0,
+      clock: () => 0,
+      submit: (input, receive) => {
+        pending.push({ input, receive });
+        return true;
+      },
+    },
+  );
+  const position = camera.position.toArray().map((axis) => axis / 0.5) as Vec3;
+  sky.update(scene, position);
+  const job = pending.shift()!;
+  job.receive(buildSkyResult(job.input), 0);
+  sky.update(scene, position);
+  if (!(sky.inspect()[0]?.complete && sky.inspect()[0]?.current && sky.inspect()[0]?.resident)) {
+    throw new Error('test skylight fixture did not become current and resident');
+  }
+  const inventory = new Inventory({ ...registry, models: new Map() });
+  const flashlight = inventory.create('flashlight');
+  if (!inventory.add(flashlight, { kind: 'hand', side: 'left' })) {
+    throw new Error('test flashlight could not be placed in the hand');
+  }
+  if (toggleLight(inventory.registry, flashlight, 0) !== undefined) {
+    throw new Error('test flashlight could not be switched on');
+  }
+  const engine = {
+    config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
+    registry: inventory.registry,
+    scene,
+    camera,
+    sky: { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), camera, radiusM: 64 },
+    skylight: sky,
+    isSolid: owner.knownOpaque,
+    renderer: { toneMapping: 0, toneMappingExposure: 1 },
+    meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
+    mood: {
+      post: false,
+      restore: vi.fn(),
+      render: vi.fn((draw: () => void) => draw()),
+      setSky: vi.fn(),
+    },
+    shadows: { torchOn: true, restore: vi.fn(), attachTorch: vi.fn() },
+  } as unknown as Engine;
+  const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+  const daylight = skyAt(12);
+  const updateFrame = () => {
+    view.updateHeld(0, restingHands, flashlight);
+    view.prepareLighting(daylight);
+    view.updateHeld(0, restingHands, flashlight);
+  };
+  updateFrame();
+  if (!view.held.lensOf(flashlight, new Vector3()) || view.flashlight.light.intensity <= 0) {
+    throw new Error('test flashlight did not emit a held beam');
+  }
+  return {
+    owner,
+    engine,
+    inventory,
+    flashlight,
+    view,
+    sky,
+    daylight,
+    updateFrame,
+    cleanup: () => {
+      view.dispose();
+      sky.dispose();
+    },
+  };
+}
+
+const RECEIVER_SCALE =
+  /getSpotLightInfo\( spotLight, geometryPosition, directLight \);\s*directLight.color \*= ([^;]+);/;
+
+function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3) {
+  const material = new MeshLambertMaterial();
+  const geometry = new BoxGeometry();
+  const mesh = new Mesh(geometry, material);
+  f.engine.scene.add(mesh);
+  f.sky.update(f.engine.scene, f.engine.camera.position.toArray().map((axis) => axis / 0.5) as Vec3);
+  const shader = {
+    uniforms: {} as Record<string, { value: unknown }>,
+    vertexShader: ShaderLib.lambert.vertexShader,
+    fragmentShader: ShaderLib.lambert.fragmentShader,
+  };
+  material.onBeforeCompile(shader as never, null as never);
+  try {
+    const expression = RECEIVER_SCALE.exec(shader.fragmentShader)?.[1];
+    if (!expression) {
+      throw new Error('Skylight did not patch spotlight receiver attenuation');
+    }
+    // Execute the emitted scalar GLSL with the CPU sample of the same published field.
+    const scale = Number(
+      runInNewContext(expression.replaceAll('float(', 'Number(').replaceAll('pow(', 'Math.pow('), {
+        uSkyDaylight: shader.uniforms.uSkyDaylight!.value,
+        receiverSkyVisibility: f.sky.at(target),
+      }),
+    );
+    return { scale, shader: shader.fragmentShader };
+  } finally {
+    f.engine.scene.remove(mesh);
+    geometry.dispose();
+    material.dispose();
+  }
+}
 
 describe('play presentation ownership', () => {
   it('routes one held draw through Mood with renderer, camera, and sky', async () => {
@@ -73,18 +268,105 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('shares one camera sky-visibility sample with held ambient and flashlight adaptation', () => {
-    const { engine, view } = fixture();
-    const at = vi.fn(() => 0);
-    engine.skylight = { at } as unknown as NonNullable<Engine['skylight']>;
-    engine.camera.position.set(2, 1, -3);
-    const setSkyVisibility = vi.spyOn(view.held, 'setSkyVisibility');
+  it('gives a dark receiver useful beam strength even with a sunlit camera', () => {
+    const f = litWorld('doorway');
+    try {
+      const cameraPosition = f.engine.camera.position.toArray() as Vec3;
+      const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+      const hit = raycast(
+        cameraPosition.map((axis) => axis / 0.5) as Vec3,
+        direction,
+        f.view.flashlight.light.distance / 0.5,
+        f.owner.knownOpaque,
+      );
+      expect(hit).toBeDefined();
+      expect(hit!.distance * 0.5).toBeLessThan(f.view.flashlight.light.distance);
+      const face = new Vector3(...cameraPosition).addScaledVector(new Vector3(...direction), hit!.distance * 0.5);
+      const target = face.addScaledVector(new Vector3(...hit!.normal), 0.25).toArray() as Vec3;
+      expect(f.sky.at(cameraPosition)).toBe(1);
+      expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
+      expect(f.sky.at(target)).toBeLessThan(f.sky.at(cameraPosition));
+      const receiver = receiverLighting(f, target);
+      expect(receiver.shader).toContain('float receiverSkyVisibility = skyVisibility();');
+      expect(receiver.shader).toContain('irradiance *= receiverSkyVisibility;');
+      expect(f.view.flashlight.daylightScale * receiver.scale).toBeGreaterThan(
+        flashlightDaylightScale(f.daylight) * 10,
+      );
+    } finally {
+      f.cleanup();
+    }
+  });
 
-    view.prepareLighting(skyAt(12));
+  it('keeps beam output stable when aim crosses a sunlit doorway edge', () => {
+    const f = litWorld('doorway');
+    try {
+      const glowstick = f.inventory.create('glowstick');
+      expect(f.inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
+      expect(toggleLight(f.inventory.registry, glowstick, 0)).toBeUndefined();
+      f.engine.camera.position.set(0.25, 2.12, 8.25);
+      expect(
+        f.owner.knownOpaque(...(f.engine.camera.position.toArray().map((axis) => Math.floor(axis / 0.5)) as Vec3)),
+      ).toBe(false);
+      f.engine.camera.lookAt(f.engine.camera.position.clone().add(new Vector3(1, 0, 0)));
+      f.updateFrame();
+      const aimAt = (targetPoint: Vec3) => {
+        f.engine.camera.lookAt(new Vector3(...targetPoint));
+        f.updateFrame();
+        const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+        const hit = raycast(
+          f.view.flashlight.light.position.toArray().map((axis) => axis / 0.5) as Vec3,
+          direction,
+          f.view.flashlight.light.distance / 0.5,
+          f.owner.knownOpaque,
+        );
+        expect(hit).toBeDefined();
+        const target = f.view.flashlight.light.position
+          .clone()
+          .addScaledVector(new Vector3(...direction), hit!.distance * 0.5)
+          .addScaledVector(new Vector3(...hit!.normal), 0.005)
+          .toArray() as Vec3;
+        return {
+          scale: f.view.flashlight.daylightScale,
+          targetVisibility: f.sky.at(target),
+          pointLights: f.view.lightPool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity),
+        };
+      };
+      const first = aimAt([11, 2.12, 8.25]);
+      const second = aimAt([11, 2.12, 11]);
+      expect(first.targetVisibility).not.toBe(second.targetVisibility);
+      expect(second.scale).toBeCloseTo(first.scale);
 
-    expect(at).toHaveBeenCalledExactlyOnceWith([2, 1, -3]);
-    expect(setSkyVisibility).toHaveBeenCalledExactlyOnceWith(0);
-    view.dispose();
+      expect(first.pointLights).toHaveLength(1);
+      expect(second.pointLights).toEqual(first.pointLights);
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  it('suppresses beam strength on a sunlit receiver even with a shaded camera', () => {
+    const f = litWorld('near-wall');
+    try {
+      const cameraPosition = f.engine.camera.position.toArray() as Vec3;
+      const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+      const hit = raycast(
+        cameraPosition.map((axis) => axis / 0.5) as Vec3,
+        direction,
+        f.view.flashlight.light.distance / 0.5,
+        f.owner.knownOpaque,
+      );
+      expect(hit).toBeDefined();
+      expect(hit!.distance * 0.5).toBeLessThan(f.view.flashlight.light.distance);
+      const face = new Vector3(...cameraPosition).addScaledVector(new Vector3(...direction), hit!.distance * 0.5);
+      const target = face.addScaledVector(new Vector3(...hit!.normal), 0.25).toArray() as Vec3;
+      expect(f.sky.at(cameraPosition)).toBeLessThan(1);
+      expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
+      expect(f.sky.at(target)).toBe(1);
+      expect(f.view.flashlight.daylightScale * receiverLighting(f, target).scale).toBeLessThan(
+        flashlightDaylightScale(f.daylight, f.sky.at(cameraPosition)),
+      );
+    } finally {
+      f.cleanup();
+    }
   });
 
   it('skips drawing and shadow warmup without renderer resources', async () => {
