@@ -10,6 +10,7 @@ import { resolve as resolvePath } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launchChromium } from './chromium.mjs';
+import { gauntletFlow } from './gauntlet-flow.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
@@ -33,7 +34,7 @@ const observation = {
     assert(code.includes(marker), 'game-ready observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { saveControllerPlayStarted: true, tutorialSession: options.tutorial ? session : undefined });\n${marker}`,
+      '  Object.assign(globalThis, { saveControllerPlayStarted: true, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, input, eye, lookedAt, manual: false } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));',
     );
   },
 };
@@ -60,6 +61,10 @@ const BASE_MISMATCH = /Generated base mismatch/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 
 try {
+  await test('gauntlet discovery, resources and ordinary traversal preserve running, won and dead save boundaries', async () => {
+    await gauntletFlow(browser, url);
+  });
+
   await test('practice launch, lifecycle and death leave the normal save untouched and exit returns to start', async () => {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
     try {
@@ -113,7 +118,8 @@ try {
         await page.evaluate((namespace) => sessionStorage.getItem(`deadvox.dead-world:${namespace}`), saved.namespace),
         null,
       );
-      await page.locator('#death button').click();
+      // Terminal visibility can precede native pointer-lock release; keyboard activation does not use its old cursor.
+      await page.locator('#death button').press('Enter');
       await page.waitForURL((target) => !target.searchParams.has('tutorial'));
       await page.waitForFunction(
         () => document.querySelector('#tutorial-start') && document.querySelector('#startup-screen').hidden,
@@ -122,7 +128,7 @@ try {
       assert.equal(await page.locator('#continue').isEnabled(), true);
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
-      await page.getByRole('button', { name: 'Exit practice', exact: true }).click();
+      await page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter');
       await page.waitForURL((target) => !target.searchParams.has('tutorial'));
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
       assert.equal(await page.locator('#continue').isEnabled(), true);
