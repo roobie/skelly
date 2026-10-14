@@ -83,7 +83,7 @@ export const tutorialRequested = (params: URLSearchParams): boolean =>
 export const tutorialUrl = (href: string, practice: boolean): string => {
   const url = new URL(href);
   const presentation = new URLSearchParams();
-  for (const name of ['render', 'radius', 'actors']) {
+  for (const name of ['render', 'radius', 'actors', 'save-backend']) {
     const value = url.searchParams.get(name);
     if (value !== null) {
       presentation.set(name, value);

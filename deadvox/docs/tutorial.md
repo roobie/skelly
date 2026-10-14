@@ -13,6 +13,6 @@ Avoidance teaches that fighting is optional. The threat has ordinary senses and 
 
 Practice must never touch the player's save. Its startup branch does not construct a save controller; play also rejects a practice session bound to persistence or restoration. This avoids periodic checkpoints, sleep saves, lifecycle writes and death markers sharing a normal world identity. See `src/main.ts` and `src/game/play.ts`, `startPlay`.
 
-Completion, death and voluntary exit return to the start choice rather than silently creating a world or transferring equipment. Returning by navigation discards the entire practice runtime and its listeners; see `src/game/tutorial.ts`, `tutorialUrl`.
+Completion, death and voluntary exit return to the start choice rather than silently creating a world or transferring equipment. Returning by navigation discards the entire practice runtime and its listeners. Storage-backend selection survives navigation so Continue discovers the same normal save rather than a different storage area; world and debug selections do not follow practice. See `src/game/tutorial.ts`, `tutorialUrl`.
 
 Five minutes is a nominal teaching target, not a timer or test assertion. Slower reading is allowed. Teachability, threat intensity and readability require a newcomer playtest; automated proofs establish outcome observation, an injury-free route and save isolation, not whether the lesson feels clear.

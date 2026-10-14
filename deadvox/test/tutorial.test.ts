@@ -93,9 +93,12 @@ describe('practice objectives', () => {
     expect(tutorialRequested(new URLSearchParams('site=tutorial'))).toBe(true);
     expect(tutorialRequested(new URLSearchParams('tutorial=1'))).toBe(true);
     expect(tutorialRequested(new URLSearchParams('site=hamlet'))).toBe(false);
-    const start = new URL(tutorialUrl('https://example.org/deadvox/?tutorial=1&debug=1#continue', false));
+    const start = new URL(
+      tutorialUrl('https://example.org/deadvox/?tutorial=1&debug=1&save-backend=indexeddb#continue', false),
+    );
     expect(start.pathname).toBe('/deadvox/');
-    expect(start.search).toBe('');
+    expect(start.searchParams.get('save-backend')).toBe('indexeddb');
+    expect([...start.searchParams.keys()]).toEqual(['save-backend']);
     expect(start.hash).toBe('');
   });
 });
