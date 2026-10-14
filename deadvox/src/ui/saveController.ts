@@ -19,6 +19,7 @@ import {
 } from '../game/saveStorage.ts';
 import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
 import { CheckpointSchedule } from './checkpointSchedule.ts';
+import { factDetail } from './factDetail.ts';
 import { computeMenuState } from './menuState.ts';
 
 const SCHEDULER_IDS = new Set([
@@ -261,7 +262,7 @@ export class SaveController {
       return;
     }
     if (!this.currentRecord) {
-      this.statusText = 'No saved world found. Choose New world to begin.';
+      this.statusText = 'No saved world found.';
       return;
     }
     this.candidate = this.currentRecord;
@@ -276,7 +277,7 @@ export class SaveController {
         this.candidate = undefined;
         this.restoreWorldOptions = undefined;
         this.restored = undefined;
-        this.statusText = 'The saved survivor died. Continue is unavailable; start a new world.';
+        this.statusText = 'The saved survivor died.';
         return;
       }
       if (markedDeadWorld) {
@@ -340,7 +341,6 @@ export class SaveController {
     const { candidate } = this;
     if (!candidate || this.protectedCurrent) {
       this.ready = true;
-      this.statusText = `${this.statusText} Title screen ready.`;
       this.render();
       return undefined;
     }
@@ -358,7 +358,7 @@ export class SaveController {
         this.lastSaveCompletedAtRealTimestamp = realTimestamp(performance.now() / 1000);
         this.worldId = decoded.snapshot.world.id;
         this.characterId = decoded.snapshot.character.id;
-        this.statusText = 'Saved world continued. It starts paused; debug tools are off.';
+        this.statusText = 'Saved world continued.';
       }
     } catch (error) {
       this.protectedCurrent = true;
@@ -370,7 +370,6 @@ export class SaveController {
       }
     }
     this.ready = true;
-    this.statusText = `${this.statusText} Title screen ready.`;
     this.render();
     return this.restored;
   }
@@ -538,7 +537,7 @@ export class SaveController {
       this.statusText = `Saved generation ${result.generation} · ${task.reason}`;
       this.failure = '';
     } catch (error) {
-      this.failure = `Save failed (${task.reason}): ${errorMessage(error)}. The previous A/B generation remains available.`;
+      this.failure = `Save failed (${task.reason}): ${errorMessage(error)}`;
       this.statusText = this.failure;
     }
     this.render();
@@ -560,7 +559,7 @@ export class SaveController {
     if (this.protectedCurrent) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      this.statusText = 'New world is blocked so the existing save can be recovered first.';
+      this.statusText = 'Saved world needs recovery.';
       this.render();
       return;
     }
@@ -594,7 +593,7 @@ export class SaveController {
       this.snapshot = undefined;
       this.simTime = undefined;
       this.worldOptions = undefined;
-      this.failure = `Could not start the world: ${errorMessage(error)} Reload to try again; saved data is untouched.`;
+      this.failure = `Could not start the world: ${errorMessage(error)}`;
       this.statusText = this.failure;
       this.render();
       return;
@@ -605,7 +604,7 @@ export class SaveController {
     $('continue').hidden = true;
     this.statusText = this.storageUnavailable
       ? `New world ready. ${this.environmentProblem ?? 'Save storage is unavailable; this session will not be saved.'}`
-      : 'New world ready. The existing save is retained until the first checkpoint commits.';
+      : 'New world ready.';
     this.render();
     entry.enter();
   }
@@ -669,7 +668,7 @@ export class SaveController {
       link.download = `deadvox-current-${this.namespace}.bin`;
       link.click();
       URL.revokeObjectURL(url);
-      this.statusText = 'Current world snapshot exported from the save worker.';
+      this.statusText = 'Current world snapshot exported.';
     } catch (error) {
       this.statusText = `Could not export current snapshot: ${errorMessage(error)}`;
     }
@@ -758,7 +757,10 @@ export class SaveController {
     render(html`${[this.statusText, this.oldVersionLabel, this.failure].filter(Boolean).join('\n')}`, status);
     // Title and pause reuse the same card, so this copy has one rendering site.
     render(
-      html`Saves are kept in this browser. When two tabs play the same world, the last one to save wins.`,
+      factDetail(
+        'Save storage',
+        'Saves are kept in this browser. When two tabs play the same world, the last one to save wins.',
+      ),
       $('save-note'),
     );
     const savedChoice = this.showSavedChoice;

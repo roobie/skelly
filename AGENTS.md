@@ -19,6 +19,8 @@ don't require byte-identical exports. What must still work: gungen exports a mod
 that deadvox validates and loads. Migration, especially of save games, starts
 mattering at v1.0 beta.
 
+Before writing or changing player-visible text, apply `deadvox/INTERFACE.md`, "Text".
+
 ## Jsonnet
 
 The repository-wide authoring and conversion rule is `docs/jsonnet.md`.

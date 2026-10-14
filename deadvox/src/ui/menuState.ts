@@ -75,7 +75,7 @@ const titleMenuState = (input: MenuStateInput): MenuState => ({
   menuPointer: true,
   overlayHidden: false,
   paused: true,
-  goLabel: input.titleNewWorldLabel ?? 'Click to play',
+  goLabel: input.titleNewWorldLabel ?? 'Play',
   ...saveState(input),
 });
 
@@ -111,7 +111,7 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
     menuPointer: mainMenuOpen || inventoryOpen || readingOpen || debugMenuOpen || Boolean(input.reviewMapOpen),
     overlayHidden,
     paused: !overlayHidden,
-    goLabel: started ? 'Paused. Click to continue' : (input.titleNewWorldLabel ?? 'Click to play'),
+    goLabel: started ? 'Continue' : (input.titleNewWorldLabel ?? 'Play'),
     ...goVisibility(input.dead),
     ...saveState(input),
   };

@@ -113,7 +113,7 @@
       "weight": 12,
       "size": [1, 1],
       "stack": 30,
-      "description": "A loose 5.56×45 rifle cartridge. Bullet diameter from gungen cartridges/5.56x45.json (C.I.P. .223 Rem projectile G1 as a modelling proxy). Loaded mass 12 g is a gameplay estimate, not a sourced specification. Damage, push and reach are gameplay estimates too.",
+      "description": "A loose 5.56×45 rifle cartridge.",
       "ammo": {
         "calibre": "5.56x45",
         "pellets": 1,
@@ -132,7 +132,7 @@
       "weight": 16,
       "size": [1, 1],
       "stack": 30,
-      "description": "A loose 7.62×39 rifle cartridge. Bullet diameter from gungen cartridges/7.62x39.json (C.I.P. projectile G1). Loaded mass 16 g is a gameplay estimate, not a sourced specification. Damage, push and reach are gameplay estimates too.",
+      "description": "A loose 7.62×39 rifle cartridge.",
       "ammo": {
         "calibre": "7.62x39",
         "pellets": 1,
@@ -150,7 +150,7 @@
       "category": "ammo",
       "weight": 280,
       "size": [2, 1],
-      "description": "Sealed cardboard box of twenty 5.56×45 cartridges. Size, 40 g cardboard and 12 g per cartridge are gameplay mass estimates.",
+      "description": "Sealed cardboard box of twenty 5.56×45 cartridges.",
       "unpack": { "item": "cartridge_5_d_56x45", "count": 20 }
     },
     {
@@ -159,7 +159,7 @@
       "category": "ammo",
       "weight": 360,
       "size": [2, 1],
-      "description": "Sealed cardboard box of twenty 7.62×39 cartridges. Size, 40 g cardboard and 16 g per cartridge are gameplay mass estimates.",
+      "description": "Sealed cardboard box of twenty 7.62×39 cartridges.",
       "unpack": { "item": "cartridge_7_d_62x39", "count": 20 }
     },
     {
@@ -168,7 +168,7 @@
       "category": "ammo",
       "weight": 117,
       "size": [1, 2],
-      "description": "A 30-round 5.56×45 box magazine for AR-pattern rifles, from gungen's stanag-30 prefab. Holds loose 5.56×45 cartridges. Empty mass 117 g is a gameplay estimate.",
+      "description": "A 30-round 5.56×45 box magazine for AR-pattern rifles.",
       "model": "magazine_stanag_30"
     },
     {
@@ -177,7 +177,7 @@
       "category": "ammo",
       "weight": 79,
       "size": [1, 2],
-      "description": "A 20-round 5.56×45 straight-body magazine for AR-pattern rifles, from gungen's stanag-20 prefab. Holds loose 5.56×45 cartridges. Empty mass 79 g is the Brownells listing's shipping weight.",
+      "description": "A 20-round 5.56×45 straight-body magazine for AR-pattern rifles.",
       "model": "magazine_stanag_20"
     },
     {
@@ -186,7 +186,7 @@
       "category": "ammo",
       "weight": 330,
       "size": [1, 2],
-      "description": "A 30-round 7.62×39 steel box magazine for AK-pattern rifles, from gungen's akm-30 prefab. Holds loose 7.62×39 cartridges. Empty mass 330 g is a gameplay estimate.",
+      "description": "A 30-round 7.62×39 steel box magazine for AK-pattern rifles.",
       "model": "magazine_akm_30"
     }
   ]

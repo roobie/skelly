@@ -556,7 +556,7 @@ describe('base pack shotshells', () => {
     const cartridges = [...registry.items.values()].filter((item) => item.ammo && item.model);
     expect(cartridges.length).toBeGreaterThan(0);
     for (const loaded of cartridges) {
-      const calibre = loaded.ammo!.calibre;
+      const { calibre } = loaded.ammo!;
       const fired = registry.items.get(spentCaseItemId(calibre));
       expect(fired).toBeDefined();
       expect(registry.models.get(loaded.model!)?.calibre).toBe(calibre);

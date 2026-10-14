@@ -51,7 +51,7 @@ export const restViewModel = (
     label,
     clock: formatClock(sim.calendar),
     percent,
-    stopHint: canStop ? `${labelForAction('handling.stop')} to stop` : '',
+    stopHint: canStop ? `Stop (${labelForAction('handling.stop')})` : '',
     canStop,
     prompt: messagesVisible ? sim.compression.interruption : undefined,
   };

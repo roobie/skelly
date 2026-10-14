@@ -290,7 +290,7 @@
       "weight": 120,
       "size": [1, 2],
       "model": "flashlight_mount",
-      "description": "A loose strap-and-bracket assembly; fitting it to a weapon is not modeled.",
+      "description": "A loose strap-and-bracket assembly.",
       "disassembly": {
         "timeGameMinutes": 7,
         "skill": "mechanics",
@@ -307,7 +307,7 @@
       "weight": 180,
       "size": [1, 2],
       "model": "scrap_foregrip",
-      "description": "A rough grip made from a wood offcut and rubber; fitting is not modeled.",
+      "description": "A rough grip made from a wood offcut and rubber.",
       "disassembly": {
         "timeGameMinutes": 7,
         "skill": "mechanics",
