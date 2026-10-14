@@ -69,6 +69,10 @@ export class DebugWeatheringTestSite implements Site {
     stampChunk(chunk, this.structures);
   }
 
+  lootPointsIn() {
+    return [];
+  }
+
   furnitureIn(): ReturnType<Site['furnitureIn']> {
     return [];
   }

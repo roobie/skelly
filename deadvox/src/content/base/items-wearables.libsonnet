@@ -1,0 +1,138 @@
+{
+  "items": [
+    {
+      "id": "jeans",
+      "name": "Jeans",
+      "category": "clothing",
+      "weight": 700,
+      "size": [3, 3],
+      "wearable": {
+        "slot": "legs",
+        "encumbrance": 10,
+        "warmth": 10,
+        "wearPerHit": 0.01
+      },
+      "container": {
+        "pockets": [
+          { "name": "front left", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "front right", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "back left", "grid": [1, 2], "handlingSimSeconds": 0.6 },
+          { "name": "back right", "grid": [1, 2], "handlingSimSeconds": 0.6 }
+        ]
+      }
+    },
+    {
+      "id": "cargo_pants",
+      "name": "Cargo pants",
+      "category": "clothing",
+      "weight": 800,
+      "size": [3, 3],
+      "wearable": {
+        "slot": "legs",
+        "encumbrance": 12,
+        "warmth": 12,
+        "wearPerHit": 0.01
+      },
+      "container": {
+        "pockets": [
+          { "name": "front left", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "front right", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "cargo left", "grid": [2, 2], "handlingSimSeconds": 0.8 },
+          { "name": "cargo right", "grid": [2, 2], "handlingSimSeconds": 0.8 }
+        ]
+      }
+    },
+    {
+      "id": "hoodie",
+      "name": "Hoodie",
+      "category": "clothing",
+      "weight": 600,
+      "size": [3, 3],
+      "wearable": {
+        "slot": "torso",
+        "encumbrance": 8,
+        "warmth": 25,
+        "wearPerHit": 0.012
+      },
+      "container": { "pockets": [{ "name": "front", "grid": [3, 2], "handlingSimSeconds": 0.5 }] }
+    },
+    {
+      "id": "jacket",
+      "name": "Jacket",
+      "category": "clothing",
+      "weight": 1200,
+      "size": [3, 3],
+      "wearable": {
+        "slot": "torso",
+        "encumbrance": 12,
+        "warmth": 35,
+        "wearPerHit": 0.008
+      },
+      "container": {
+        "pockets": [
+          { "name": "left", "grid": [2, 2], "handlingSimSeconds": 0.5 },
+          { "name": "right", "grid": [2, 2], "handlingSimSeconds": 0.5 },
+          { "name": "inner", "grid": [1, 2], "handlingSimSeconds": 0.7 }
+        ]
+      }
+    },
+    {
+      "id": "utility_vest",
+      "name": "Utility vest",
+      "category": "clothing",
+      "weight": 900,
+      "size": [3, 3],
+      "wearable": {
+        "slot": "torso",
+        "encumbrance": 6,
+        "warmth": 5,
+        "wearPerHit": 0.015
+      },
+      "container": {
+        "pockets": [
+          { "name": "pouch 1", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "pouch 2", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "pouch 3", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "pouch 4", "grid": [1, 2], "handlingSimSeconds": 0.5 }
+        ]
+      }
+    },
+    {
+      "id": "fanny_pack",
+      "name": "Fanny pack",
+      "category": "bag",
+      "weight": 200,
+      "size": [2, 2],
+      "wearable": { "slot": "waist", "encumbrance": 3 },
+      "container": { "pockets": [{ "grid": [3, 2], "handlingSimSeconds": 0.8 }] }
+    },
+    {
+      "id": "school_backpack",
+      "name": "School backpack",
+      "category": "bag",
+      "weight": 600,
+      "size": [4, 4],
+      "wearable": { "slot": "back", "encumbrance": 10 },
+      "container": {
+        "pockets": [
+          { "name": "main", "grid": [5, 6], "handlingSimSeconds": 1.5 },
+          { "name": "front", "grid": [3, 2], "handlingSimSeconds": 1.2 }
+        ]
+      }
+    },
+    {
+      "id": "hiking_backpack",
+      "name": "Hiking backpack",
+      "category": "bag",
+      "weight": 1400,
+      "size": [4, 5],
+      "wearable": { "slot": "back", "encumbrance": 12 },
+      "container": {
+        "pockets": [
+          { "name": "main", "grid": [6, 8], "handlingSimSeconds": 1.5 },
+          { "name": "lid", "grid": [3, 2], "handlingSimSeconds": 1.0 }
+        ]
+      }
+    }
+  ]
+}

@@ -3,9 +3,152 @@
 // table (rolled in full), or nothing. What comes out is a list of items to make, not
 // instances, so worldgen stays free of item uids.
 
-import type { LootEntry, Registry } from './content.ts';
-import type { Rng } from './random.ts';
+import { array, check, type InferOutput, picklist, pipe, strictObject } from 'valibot';
+import type { ItemDef, LootEntry, Registry } from './content.ts';
+import { toChunk, type Vec3 } from './coords.ts';
+import { Rng } from './random.ts';
 import type { FixedLootItemDef } from './schema.ts';
+
+const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
+
+export const UsageSchema = pipe(
+  array(picklist(['Residential', 'Industrial', 'Medical', 'Hunting', 'Military', 'Infected'])),
+  check(distinct, 'usage tags must be unique'),
+);
+const LootTierSchema = picklist(['Tier1', 'Tier2', 'Tier3']);
+export const ItemEconomySchema = strictObject({
+  usage: UsageSchema,
+  tiers: pipe(array(LootTierSchema), check(distinct, 'tiers must be unique')),
+});
+export const LootContextSchema = strictObject({ usage: UsageSchema, tier: LootTierSchema });
+
+export type ItemEconomy = InferOutput<typeof ItemEconomySchema>;
+export type LootContext = InferOutput<typeof LootContextSchema>;
+type UsageTag = ItemEconomy['usage'][number];
+
+export const economyEligible = (economy: ItemEconomy, context: LootContext): boolean =>
+  economy.tiers.includes(context.tier) && economy.usage.some((usage) => context.usage.includes(usage));
+
+export const militaryOnlyEconomy = (economy: ItemEconomy): boolean =>
+  economy.usage.length === 1 && economy.usage[0] === 'Military';
+
+type LootSupply =
+  | { readonly kind: 'table'; readonly table: string }
+  | { readonly kind: 'fixed'; readonly items: readonly FixedLootItemDef[]; readonly table?: string }
+  | { readonly kind: 'empty' };
+
+export interface LootSpawnPoint {
+  readonly id: string;
+  readonly channel: 'container' | 'surface';
+  readonly position: Vec3;
+  readonly destination: Vec3;
+  readonly context: LootContext;
+  readonly supply: LootSupply;
+  readonly required: boolean;
+  readonly fixture?: true;
+}
+
+export interface LootPointSource {
+  readonly site: string;
+  readonly building: string;
+  /** Include the local vertical coordinate so stress-test storeys cannot alias. */
+  readonly anchor: Vec3;
+  readonly channel: LootSpawnPoint['channel'];
+  readonly position: Vec3;
+  readonly destination: Vec3;
+  readonly context: LootContext;
+  readonly usage?: readonly UsageTag[];
+  readonly supply: LootSupply;
+  readonly required: boolean;
+  readonly fixture?: true;
+}
+
+export const lootSpawnPoint = (source: LootPointSource): LootSpawnPoint => ({
+  // Tuple encoding prevents separators inside authored IDs from aliasing another source.
+  id: JSON.stringify([source.site, source.building, source.anchor, source.channel]),
+  channel: source.channel,
+  position: [...source.position],
+  destination: [...source.destination],
+  context: {
+    usage: source.usage === undefined ? [...source.context.usage] : [...source.usage],
+    tier: source.context.tier,
+  },
+  supply: source.supply,
+  required: source.required,
+  ...(source.fixture === true ? { fixture: true } : {}),
+});
+
+export const lootPointStream = (seed: number, point: LootSpawnPoint): Rng => Rng.stream(seed, `loot:${point.id}`);
+
+export const lootPointsByColumn = (
+  sources: readonly LootPointSource[],
+): ReadonlyMap<string, readonly LootSpawnPoint[]> => {
+  const columns = new Map<string, LootSpawnPoint[]>();
+  const ids = new Set<string>();
+  for (const source of sources) {
+    const point = lootSpawnPoint(source);
+    if (ids.has(point.id)) {
+      throw new Error(`duplicate loot spawn point ${point.id}`);
+    }
+    ids.add(point.id);
+    const key = `${toChunk(point.destination[0])},${toChunk(point.destination[2])}`;
+    const points = columns.get(key) ?? [];
+    points.push(point);
+    columns.set(key, points);
+  }
+  return columns;
+};
+
+const installedLootTypes = (
+  registry: Registry,
+  item: ItemDef,
+  overrides: Readonly<Record<string, string>>,
+): (string | undefined)[] => {
+  const attachments = registry.models.get(item.model ?? '')?.attachments ?? [];
+  const children = attachments
+    .filter((attachment) => overrides[attachment.mountedAt] === undefined)
+    .map(
+      (attachment) =>
+        [...registry.items.values()].find(
+          (entry) => registry.models.get(entry.model ?? '')?.attachment?.id === attachment.id,
+        )?.id,
+    );
+  if (item.light?.power && overrides.battery === undefined) {
+    children.push(item.light.power.battery);
+  }
+  return [...Object.values(overrides), ...children];
+};
+
+export const lootTypeIssue = (
+  registry: Registry,
+  type: string,
+  context: LootContext,
+  fitted: Readonly<Record<string, string>> = {},
+): string | undefined => {
+  const seen = new Set<string>();
+  const pending = [{ type, fitted }];
+  while (pending.length > 0) {
+    const candidate = pending.pop()!;
+    if (seen.has(candidate.type)) {
+      continue;
+    }
+    seen.add(candidate.type);
+    const item = registry.items.get(candidate.type);
+    if (!item) {
+      return `no item "${candidate.type}"`;
+    }
+    if (!economyEligible(item.economy, context)) {
+      return `"${candidate.type}" is outside the source loot context`;
+    }
+    for (const child of installedLootTypes(registry, item, candidate.fitted)) {
+      if (child === undefined) {
+        return 'no item for a default attachment';
+      }
+      pending.push({ type: child, fitted: {} });
+    }
+  }
+  return undefined;
+};
 
 export interface Rolled {
   type: string;

@@ -5,7 +5,8 @@ import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { ItemFactory } from './items.ts';
-import { militaryLootItems, slotsReason } from './magazine.ts';
+import { type LootContext, lootTypeIssue } from './loot.ts';
+import { slotsReason } from './magazine.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { FixedLootItemDef, SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
@@ -47,12 +48,7 @@ const fittedItemsIssue = (
 };
 
 /** Why this item can't be fixed loot, or undefined when its source is allowed. */
-const fixedItemIssue = (
-  registry: Registry,
-  military: ReadonlySet<string>,
-  fixed: FixedLootItemDef,
-  source: { loot: string | undefined; militaryTemplate: boolean },
-): string | undefined => {
+const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: LootContext): string | undefined => {
   if (!registry.items.has(fixed.item)) {
     return `no item "${fixed.item}"`;
   }
@@ -60,24 +56,16 @@ const fixedItemIssue = (
   if (fittedIssue) {
     return fittedIssue;
   }
-  const militarySource =
-    fixed.placement === 'surface' ? source.militaryTemplate : registry.loot.get(source.loot ?? '')?.military;
-  if (!military.has(fixed.item) || militarySource) {
-    return undefined;
-  }
-  return fixed.placement === 'surface'
-    ? `"${fixed.item}" is military loot only; surface placement requires a military template`
-    : `"${fixed.item}" is military loot only; place it where a "military" table rolls`;
+  return lootTypeIssue(registry, fixed.item, context, fixed.fitted);
 };
 
-interface LootContext {
-  readonly registry: Registry;
-  /** `militaryLootItems`, computed once per layout. */
-  readonly military: ReadonlySet<string>;
-}
+const fixedLootContext = (context: LootContext, usage: LootContext['usage'] | undefined): LootContext => ({
+  usage: usage ?? context.usage,
+  tier: context.tier,
+});
 
 const fixedLootIssues = (
-  { registry, military }: LootContext,
+  { registry, context }: { registry: Registry; context: LootContext },
   building: LayoutBuilding,
   index: number,
   compiled: CompiledTemplate,
@@ -87,8 +75,7 @@ const fixedLootIssues = (
   }
   const issues: [string, string][] = [];
   const fixedAnchors = new Set<string>();
-  const militaryTemplate = registry.templates.get(building.template)?.military === true;
-  for (const [j, override] of (building.fixedLoot ?? []).entries()) {
+  for (const [j, override] of building.fixedLoot.entries()) {
     const key = override.at.join(',');
     const path = `.buildings[${index}].fixedLoot[${j}]`;
     if (fixedAnchors.has(key)) {
@@ -104,8 +91,9 @@ const fixedLootIssues = (
     if (needsContainer && !registry.furniture.get(piece.furniture)?.container) {
       issues.push([`${path}.at`, `furniture at ${key} has no container`]);
     }
+    const lootContext = fixedLootContext(context, override.lootUsage ?? piece.lootUsage);
     for (const [itemIndex, fixed] of override.items.entries()) {
-      const issue = fixedItemIssue(registry, military, fixed, { loot: piece.loot, militaryTemplate });
+      const issue = fixedItemIssue(registry, fixed, lootContext);
       if (issue !== undefined) {
         issues.push([`${path}.items[${itemIndex}].item`, issue]);
       }
@@ -126,7 +114,6 @@ const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['building
 
 export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry): [string, string][] => {
   const issues: [string, string][] = [];
-  const loot: LootContext = { registry, military: militaryLootItems(registry) };
   if (['hamlet', 'city', 'forest'].includes(layout.id)) {
     issues.push(['.id', 'reserved built-in site id']);
   }
@@ -186,8 +173,8 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (!templateResolves(registry, template)) {
       return; // checkTemplates reports the palette; the placement can't compile without it.
     }
-    const placement = placementOf(registry, building);
-    issues.push(...fixedLootIssues(loot, building, i, placement.template));
+    const placement = placementOf(registry, building, layout.lootContext);
+    issues.push(...fixedLootIssues({ registry, context: placement.lootContext! }, building, i, placement.template));
     if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
       issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
     }

@@ -4,11 +4,13 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { createServer } from 'vite';
 
-const sources = [
+const BRANCH_REF_PREFIX = /^refs\/heads\//;
+
+export const mainSourceOverlays = [
   'game/engine.ts',
-  'core/authoredSite.ts',
-  'core/site.ts',
   'render/skylight.ts',
+  'render/playView.ts',
+  'render/flashlight.ts',
   'game/streamer.ts',
   'worker/mesh.worker.ts',
   'worker/protocol.ts',
@@ -22,14 +24,20 @@ export function mainOverlayPath(root, id) {
 
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
-  const ref = event?.pull_request?.base?.sha ?? 'origin/main';
+  const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
+  if (eventPath && ref === 'origin/main') {
+    throw new Error('GitHub event has neither a pull-request base nor a branch ref');
+  }
   const repository = resolve(root, '..');
   const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8' }).trim();
+  let base;
   if (eventPath) {
     git(['fetch', '--no-tags', '--depth=1', 'origin', ref]);
+    base = git(['rev-parse', 'FETCH_HEAD']);
+  } else {
+    base = git(['rev-parse', ref]);
   }
-  const base = git(['rev-parse', ref]);
-  const overlays = new Map(sources.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
+  const overlays = new Map(mainSourceOverlays.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
   const appliedSources = new Set();
   const server = await createServer({
     root,
@@ -92,7 +100,13 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
       { timeout: 60_000 },
     );
     await page.locator('#go').click();
-    for (const source of ['game/engine.ts', 'game/streamer.ts']) {
+    for (const source of [
+      'game/engine.ts',
+      'game/streamer.ts',
+      'render/skylight.ts',
+      'render/playView.ts',
+      'render/flashlight.ts',
+    ]) {
       if (!appliedSources.has(source)) {
         throw new Error(`Main overlay was not applied: ${source}`);
       }
@@ -108,13 +122,13 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
     }));
     Object.assign(evidence, {
       base,
-      sourceOverlays: sources,
+      sourceOverlays: mainSourceOverlays,
       appliedSources: [...appliedSources],
       errors,
       browser: browser.version(),
       viewport: page.viewportSize(),
       attribution:
-        'Main lighting, site and worker sources on the same fixture/content and browser; startup mesh delivery, not first rendered pixels or a pristine whole-build screenshot.',
+        'Main lighting and worker sources with branch core contracts, the same fixture/content and browser; startup mesh delivery, not first rendered pixels or a pristine whole-build screenshot.',
     });
     await writeFile(resolve(artifacts, 'main-first-mesh.json'), JSON.stringify(evidence, null, 2));
     process.stdout.write(`MAIN_FIRST_MESH_EVIDENCE ${JSON.stringify(evidence)}\n`);

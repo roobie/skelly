@@ -1,5 +1,14 @@
 {
-  "items": [{ "id": "fixture_trinket", "name": "Trinket", "category": "misc", "weight": 10, "size": [1, 1] }],
+  "items": [
+    {
+      "id": "fixture_trinket",
+      "economy": { "usage": [], "tiers": [] },
+      "name": "Trinket",
+      "category": "misc",
+      "weight": 10,
+      "size": [1, 1]
+    }
+  ],
   "loot": [
     {
       "id": "fixture_drawer",

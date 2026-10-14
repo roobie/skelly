@@ -3,6 +3,10 @@
     {
       "category": "weapon",
       "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "firearm": {
         "dispersionRadians": 0,
         "pump": true,
@@ -30,6 +34,10 @@
     {
       "category": "weapon",
       "description": "Curated 12-gauge hunting-cabin pump from gungen, with a hand-racked action and four-shell tube. No loot table has it; it is available only in debug mode. Runtime pumping/loading is not implemented yet.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "debug_shotgun_pump",
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
@@ -40,6 +48,10 @@
     {
       "category": "weapon",
       "description": "A curated gungen AR in 5.56×45, fed from STANAG magazines. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "economy": {
+        "tiers": ["Tier2", "Tier3"],
+        "usage": ["Military"]
+      },
       "firearm": {
         "dispersionRadians": 0.012,
         "recoilKickRadians": 0.0060000000000000001,
@@ -66,6 +78,10 @@
     {
       "category": "weapon",
       "description": "A curated gungen AK in 7.62×39, fed from AKM magazines, with its handle on the carrier. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "economy": {
+        "tiers": ["Tier2", "Tier3"],
+        "usage": ["Military"]
+      },
       "firearm": {
         "dispersionRadians": 0.017999999999999999,
         "recoilKickRadians": 0.012,

@@ -4,6 +4,7 @@
   "width": 128, "height": 128, "tilewidth": 1, "tileheight": 1, "infinite": false,
   "nextlayerid": 6, "nextobjectid": 12, "tilesets": [],
   "properties": [
+    {"name": "loot_context", "type": "string", "value": "{\"usage\":[\"Residential\"],\"tier\":\"Tier1\"}"},
     {"name": "id", "type": "string", "value": "hunting_cabins"},
     {"name": "ground", "type": "float", "value": 21}
   ],

@@ -224,7 +224,6 @@ const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
 
   const compiledHq = compileTemplate(result.registry, hqDefinition);
   expectHqMaterialsAndFloorEdges();
-  expect(hqDefinition.military).toBe(true);
   expect(compiledHq.pieces.some((piece) => piece.loot === 'military_armoury')).toBe(false);
   expect(hqDefinition.access?.storeys.length).toBeGreaterThanOrEqual(3);
   expect(templateSpatialIssues(result.registry, compiledHq)).toEqual([]);
@@ -1294,10 +1293,10 @@ describe('authored fixed loot', () => {
     expectCampHqProperties(compiledArmoury);
   });
 
-  it('rejects a surface military item in a non-military template', () => {
+  it('rejects surface supply outside its source economy context', () => {
     const buildingIndex = layout.buildings.findIndex(
       (candidate) =>
-        candidate.fixedLoot?.length && result.registry.templates.get(candidate.template)?.military !== true,
+        candidate.fixedLoot?.length && !(candidate.lootContext ?? layout.lootContext).usage.includes('Military'),
     );
     const building = layout.buildings[buildingIndex];
     if (!building?.fixedLoot?.length) {
@@ -1317,7 +1316,7 @@ describe('authored fixed loot', () => {
 
     expect(issues).toContainEqual([
       `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`,
-      expect.stringContaining('military loot only'),
+      expect.stringContaining('outside the source loot context'),
     ]);
   });
 

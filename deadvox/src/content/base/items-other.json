@@ -2,6 +2,10 @@
   "items": [
     {
       "category": "material",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "work_in_progress",
       "name": "Work in progress",
       "size": [2, 2],
@@ -13,6 +17,10 @@
         "capacity": 1
       },
       "category": "battery",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "aa_battery",
       "name": "AA battery",
       "size": [1, 1],
@@ -22,6 +30,10 @@
     {
       "category": "medical",
       "description": "Slows or stops bleeding on one body part.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "bandage",
       "name": "Bandage",
       "size": [1, 1],
@@ -34,6 +46,10 @@
     {
       "category": "medical",
       "description": "Treats an early wound infection.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "antiseptic",
       "name": "Antiseptic",
       "size": [1, 1],
@@ -49,6 +65,10 @@
     {
       "category": "medical",
       "description": "An antibiotic. Treats a progressed wound infection.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "antibiotics",
       "name": "Tetracycline",
       "size": [1, 1],
@@ -72,6 +92,10 @@
       },
       "category": "medical",
       "description": "An over-the-counter pill. Eases pain for a few hours; it heals nothing.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "painkillers",
       "name": "Painkiller",
       "size": [1, 1],
@@ -80,6 +104,10 @@
     },
     {
       "category": "material",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "rag",
       "name": "Rag",
       "size": [1, 1],
@@ -91,6 +119,10 @@
     },
     {
       "category": "material",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "duct_tape",
       "name": "Duct tape",
       "size": [1, 1],
@@ -98,6 +130,10 @@
     },
     {
       "category": "material",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "nails",
       "name": "Nails",
       "size": [1, 1],
@@ -106,6 +142,10 @@
     },
     {
       "category": "material",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "scrap_metal",
       "name": "Scrap metal",
       "size": [1, 2],
@@ -125,6 +165,10 @@
         "title": "Field Manual: Making Do"
       },
       "category": "book",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "field_manual",
       "name": "Field Manual: Making Do",
       "readable": {
@@ -148,6 +192,10 @@
         "title": "Camp Craft"
       },
       "category": "book",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "camp_craft_book",
       "name": "Camp Craft",
       "readable": {
@@ -182,6 +230,10 @@
         "title": "Home Repair Handbook"
       },
       "category": "book",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "home_repair_book",
       "name": "Home Repair Handbook",
       "readable": {
@@ -206,6 +258,10 @@
         "title": "Workshop Notes"
       },
       "category": "book",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "workshop_notes",
       "name": "Workshop Notes",
       "readable": {
@@ -218,6 +274,10 @@
     {
       "category": "book",
       "description": "Water-stained. Someone underlined things.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "paperback",
       "name": "Paperback novel",
       "size": [2, 2],
@@ -226,6 +286,10 @@
     {
       "category": "misc",
       "description": "A battered handheld radio. Its battery and metal casing can be salvaged.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "portable_radio",
       "name": "Portable radio",
       "salvage": [
@@ -244,6 +308,10 @@
     {
       "category": "misc",
       "description": "A fuel-filled can.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "jerry_can",
       "name": "Jerry can",
       "size": [3, 3],
@@ -252,6 +320,10 @@
     {
       "category": "material",
       "description": "A spent case from debug firearm handling.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "spent_case_5_d_56x45",
       "model": "case_5_d_56x45",
       "name": "Spent 5.56×45 case",
@@ -263,6 +335,10 @@
     {
       "category": "material",
       "description": "A spent case from debug firearm handling. Gameplay mass estimate: 6 g, not a sourced case mass.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "spent_case_7_d_62x39",
       "model": "case_7_d_62x39",
       "name": "Spent 7.62×39 case",
@@ -282,6 +358,10 @@
       },
       "category": "ammo",
       "description": "Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy. Payload from gungen cartridges/12-gauge-00-buck.json: Federal PFC154 00 (9 pellets), SAAMI shotshell standard p.39 (8.38 mm nominal 00). Per-pellet damage, push and reach are gameplay estimates.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "shell_12_gauge_00_buck",
       "model": "round_12_h_gauge_h_00_h_buck",
       "name": "12 gauge 00 buckshot shell",
@@ -292,6 +372,10 @@
     {
       "category": "ammo",
       "description": "Sealed cardboard box of twenty 00-buck shells. Size, 40 g cardboard and 40 g per shell are gameplay mass estimates.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "shotshell_box",
       "name": "Sealed shotshell box (20)",
       "size": [2, 2],
@@ -304,6 +388,10 @@
     {
       "category": "material",
       "description": "An opened shotshell hull. Fired-hull gameplay mass estimate: 5 g, not a manufacturer specification.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "spent_case_12_h_gauge_h_00_h_buck",
       "model": "case_12_h_gauge_h_00_h_buck",
       "name": "Spent 12 gauge hull",
@@ -314,6 +402,10 @@
     },
     {
       "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "shambler_torso",
       "name": "Severed shambler torso",
       "size": [3, 3],
@@ -321,6 +413,10 @@
     },
     {
       "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "shambler_head",
       "name": "Severed shambler head",
       "size": [2, 2],
@@ -328,6 +424,10 @@
     },
     {
       "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "shambler_left_arm",
       "name": "Severed shambler left arm",
       "size": [2, 2],
@@ -335,6 +435,10 @@
     },
     {
       "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "shambler_right_arm",
       "name": "Severed shambler right arm",
       "size": [2, 2],
@@ -342,6 +446,10 @@
     },
     {
       "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "shambler_left_leg",
       "name": "Severed shambler left leg",
       "size": [2, 3],
@@ -349,6 +457,10 @@
     },
     {
       "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "shambler_right_leg",
       "name": "Severed shambler right leg",
       "size": [2, 3],

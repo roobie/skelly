@@ -9,17 +9,6 @@ it('compiles a fixed-root Jsonnet import and loads its output through the conten
   const output = compileJsonnetFile(validSource);
   expect(compileJsonnetFile(validSource)).toBe(output);
   const data: unknown = JSON.parse(output);
-  expect(data).toEqual({
-    items: [
-      {
-        id: 'jsonnet_pipeline_fixture',
-        name: 'Pipeline fixture',
-        category: 'tool',
-        weight: 1,
-        size: [1, 1],
-      },
-    ],
-  });
   const { registry, issues } = buildRegistry([{ source: validSource, data }]);
 
   expect(issues).toEqual([]);

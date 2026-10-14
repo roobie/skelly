@@ -1,0 +1,201 @@
+{
+  "furniture": [
+    {
+      "color": "#8d986d",
+      "container": {
+        "pockets": [
+          {
+            "grid": [8, 8],
+            "handlingSimSeconds": 0.20000000000000001,
+            "name": "Supplies"
+          }
+        ]
+      },
+      "id": "tutorial_cabinet",
+      "name": "Supply cabinet",
+      "size": [2, 3, 1]
+    }
+  ],
+  "layouts": [
+    {
+      "beats": [
+        {
+          "area": {
+            "x0": -10,
+            "x1": -6,
+            "z0": -15,
+            "z1": -11
+          },
+          "id": "tutorial_exit"
+        }
+      ],
+      "bounds": {
+        "x0": -32,
+        "x1": 64,
+        "z0": -32,
+        "z1": 48
+      },
+      "buildings": [
+        {
+          "fixedLoot": [
+            {
+              "at": [1, 1, 2],
+              "items": [
+                {
+                  "count": 2,
+                  "item": "canned_beans"
+                },
+                {
+                  "count": 2,
+                  "item": "water_bottle"
+                },
+                {
+                  "fitted": {
+                    "battery": "aa_battery"
+                  },
+                  "item": "flashlight"
+                },
+                {
+                  "count": 2,
+                  "item": "bandage"
+                }
+              ]
+            }
+          ],
+          "position": [-3, 0, -4],
+          "rotation": 0,
+          "template": "tutorial_station"
+        }
+      ],
+      "demo": true,
+      "ground": 0,
+      "id": "tutorial",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 0,
+        "position": [0, 0.5, 8]
+      },
+      "shamblers": [
+        {
+          "position": [24, 0.5, 2],
+          "type": "shambler"
+        }
+      ],
+      "startTimeGameTimeOfDay": "17:00",
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[0, 12], [0, 1], [-8, 1], [-8, -12]],
+          "surface": "dirt",
+          "width": 3
+        }
+      ],
+      "woodlands": []
+    }
+  ],
+  "templates": [
+    {
+      "id": "tutorial_station",
+      "layers": [
+        [
+          "############",
+          "############",
+          "############",
+          "############",
+          "############",
+          "############",
+          "############",
+          "############",
+          "############"
+        ],
+        [
+          "WWWWWWWWWWWW",
+          "W..........W",
+          "WKK........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "WWWWWDDWWWWW"
+        ],
+        [
+          "WWWWWWWWWWWW",
+          "W..........W",
+          "WKK........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "WWWWWDDWWWWW"
+        ],
+        [
+          "WWWWWWWWWWWW",
+          "W..........W",
+          "WKK........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "WWWWWDDWWWWW"
+        ],
+        [
+          "WWWWWWWWWWWW",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "WWWWWDDWWWWW"
+        ],
+        [
+          "WWWWWWWWWWWW",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "W..........W",
+          "WWWWWWWWWWWW"
+        ],
+        [
+          "RRRRRRRRRRRR",
+          "RRRRRRRRRRRR",
+          "RRRRRRRRRRRR",
+          "RRRRRRRRRRRR",
+          "RRRRRRRRRRRR",
+          "RRRRRRRRRRRR",
+          "RRRRRRRRRRRR",
+          "RRRRRRRRRRRR",
+          "RRRRRRRRRRRR"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        "#": "planks",
+        ".": "air",
+        "D": {
+          "facing": "s",
+          "furniture": "wood_door"
+        },
+        "K": {
+          "furniture": "tutorial_cabinet"
+        },
+        "R": "roof",
+        "W": "siding_blue"
+      },
+      "size": [12, 7, 9]
+    }
+  ]
+}

@@ -1,27 +1,18 @@
 {
   "templates": [
     {
-      "id": "medical_hall",
-      "size": [32, 6, 24],
-      "palette": {
-        ".": "air",
-        "k": "concrete",
-        "#": "brick",
-        "^": "roof",
-        "D": { "furniture": "wood_door" },
-        "L": { "furniture": "wood_door", "lock": { "id": "medical_pharmacy", "locked": true } },
-        "B": { "furniture": "bed" },
-        "S": { "furniture": "sofa" },
-        "O": { "furniture": "dead_officer_body" },
-        "P": { "furniture": "medical_cabinet", "loot": "medical_filler" },
-        "W": { "furniture": "desk", "loot": "medical_filler" },
-        "R": { "furniture": "sample_rack" },
-        "T": { "furniture": "sample_tray" },
-        "C": { "furniture": "counter", "loot": "medical_filler" },
-        "N": { "furniture": "medical_research_notice", "facing": "e" },
-        "z": { "spawn": "shambler" },
-        "c": { "spawn": "crawler" }
+      "access": {
+        "entrance": [16, 1, 22],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
       },
+      "id": "medical_hall",
       "layers": [
         [
           "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
@@ -180,23 +171,78 @@
           "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
         ]
       ],
-      "access": {
-        "ground": "ground",
-        "entrance": [16, 1, 22],
-        "storeys": [{ "id": "ground", "floor": 1 }],
-        "stairs": []
-      }
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Medical"]
+      },
+      "palette": {
+        "#": "brick",
+        ".": "air",
+        "B": {
+          "furniture": "bed"
+        },
+        "C": {
+          "furniture": "counter",
+          "loot": "medical_filler"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "L": {
+          "furniture": "wood_door",
+          "lock": {
+            "id": "medical_pharmacy",
+            "locked": true
+          }
+        },
+        "N": {
+          "facing": "e",
+          "furniture": "medical_research_notice"
+        },
+        "O": {
+          "furniture": "dead_officer_body"
+        },
+        "P": {
+          "furniture": "medical_cabinet",
+          "loot": "medical_filler"
+        },
+        "R": {
+          "furniture": "sample_rack"
+        },
+        "S": {
+          "furniture": "sofa"
+        },
+        "T": {
+          "furniture": "sample_tray"
+        },
+        "W": {
+          "furniture": "desk",
+          "loot": "medical_filler"
+        },
+        "^": "roof",
+        "c": {
+          "spawn": "crawler"
+        },
+        "k": "concrete",
+        "z": {
+          "spawn": "shambler"
+        }
+      },
+      "size": [32, 6, 24]
     },
     {
-      "id": "triage_tent",
-      "size": [14, 7, 8],
-      "palette": {
-        ".": "air",
-        "d": "dirt",
-        "f": "fabric",
-        "r": "roof",
-        "B": { "furniture": "bed" }
+      "access": {
+        "entrance": [7, 1, 7],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
       },
+      "id": "triage_tent",
       "layers": [
         [
           "dddddddddddddd",
@@ -269,12 +315,20 @@
           "....rrrrrr...."
         ]
       ],
-      "access": {
-        "ground": "ground",
-        "entrance": [7, 1, 7],
-        "storeys": [{ "id": "ground", "floor": 1 }],
-        "stairs": []
-      }
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Medical"]
+      },
+      "palette": {
+        ".": "air",
+        "B": {
+          "furniture": "bed"
+        },
+        "d": "dirt",
+        "f": "fabric",
+        "r": "roof"
+      },
+      "size": [14, 7, 8]
     }
   ]
 }

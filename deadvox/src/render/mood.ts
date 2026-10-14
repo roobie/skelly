@@ -213,11 +213,11 @@ export class Mood {
    * Takes the sky's bloom strength and mist (the sky as weather has shaped it, core/weather.ts);
    * cheap enough to call every frame.
    */
-  setSky(sky: Sky): void {
+  setSky(sky: Sky, skyVisibility = 1): void {
     // sRGB in, working (linear) colour out: the mist is mixed in while the scene is still linear.
     setAutoToneWeight(sky.tone);
     const [r, g, b] = sky.heightFogColor;
-    heightFogUniforms.uHeightFogColor.value.setRGB(r, g, b, SRGBColorSpace);
+    heightFogUniforms.uHeightFogColor.value.setRGB(r, g, b, SRGBColorSpace).multiplyScalar(skyVisibility);
     if (sky.bloom !== this.skyBloom || sky.heightFog !== this.skyMist) {
       this.skyBloom = sky.bloom;
       this.skyMist = sky.heightFog;
@@ -435,6 +435,8 @@ export class Mood {
     const target = new WebGLRenderTarget(this.width * ratio, this.height * ratio, {
       type: HalfFloatType,
       samples: MSAA_SAMPLES,
+      // No pass samples resolved depth; resolving it adds a depth blit per pass.
+      resolveDepthBuffer: false,
     });
     const composer = new EffectComposer(this.renderer, target);
     composer.addPass(new RenderPass(this.scene, this.camera));

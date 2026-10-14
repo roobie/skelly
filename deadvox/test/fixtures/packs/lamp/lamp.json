@@ -10,6 +10,7 @@
   "items": [
     {
       "id": "lamp",
+      "economy": { "usage": [], "tiers": [] },
       "name": "Lamp",
       "category": "light",
       "weight": 400,

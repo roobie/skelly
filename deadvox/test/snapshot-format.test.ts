@@ -3,7 +3,6 @@ import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { type InventoryState, PILE_GRID } from '../src/core/inventory.ts';
@@ -17,6 +16,7 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
 import { PLAYER } from '../src/game/player.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withFixtureBody } from './simulationFixture.ts';
 import {
   advance,

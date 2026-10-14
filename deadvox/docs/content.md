@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
+  - you change item economy metadata, source contexts or loot-point descriptions
   - you change skill content tuning or training rules
   - you're authoring or changing base template geometry or palettes
   - you change content references, static reachability, or disassembly-output contracts
@@ -12,7 +13,8 @@ read_if:
   - you're authoring or changing playtest fixed loot
   - you're assigning noise to a furniture action
   - you're authoring base surface materials or procedural pattern tuning
-  - you're authoring or changing visual furniture shapes
+  - you're authoring or changing visual furniture shapes or container appearance
+  - you need the procedure or isolated look probe for furniture refinement
   - you're assigning noise to opening a door
   - you change site-generation tuning or its content schema
   - you're authoring or changing Deadvox content sources or their build pipeline
@@ -35,7 +37,7 @@ Weathering is a render-only content choice, not saved world state. Named profile
 
 ## Content test registries
 
-Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`.
+Fixture builders should include only the content an assertion exercises. Use one validated full-pack registry read-only when a contract needs cross-file references or reachability, and copy each section a test changes. This keeps unrelated validation from dominating tests and prevents changes leaking between assertions. See the registry fixtures in `test/content.test.ts`, `test/audioGunshot.test.ts`, `test/disassembly.test.ts`, and `test/firearmSave.test.ts`. Unrelated contract fixtures may author common-supply metadata through `test/economyFixtures.ts`, `buildFixtureRegistry`; admission tests must use raw sources so the fixture builder cannot conceal missing metadata.
 
 ## Authored structures and sites
 
@@ -65,9 +67,33 @@ Reachability is a type-source contract, not a quantity, seed, or whole-game solv
 
 Debug fixtures, runtime escrow, spent cases, and body-part policy stay out of acquired-content totals. Keep their exclusions with `CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts`. Reachability stores no runtime state; progression, crafting, and disassembly remain separate owners. Winning-override diagnostics retain source-file provenance so a broken effective definition can be traced to its authoring source.
 
+## Loot economy descriptions
+
+Separate item admission from table weights and world placement. Exact tier membership and intersecting usage keep a shared supply eligible without making every military-usable item military-only. Explicit empty metadata means no random admission, rather than a wildcard. See `src/core/loot.ts`, `ItemEconomySchema`, `economyEligible`, and `militaryOnlyEconomy`.
+
+Templates own procedural defaults. Authored building contexts override them; when that override is absent, the site's tier combines with template usage. Anchor overrides replace usage without changing the resolved tier. See `src/core/authoredPlacement.ts`, `placementOf`, and `src/core/site.ts`, `lootSourcesOf`. Native content metadata is an explicit authoring choice with unknown-row assertions, not a runtime default; see `src/content/base/economy.libsonnet`, `authorItem` and `context`.
+
+Keep empty source descriptions so future refill work need not regenerate geometry. Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
+
+Debug descriptions are fixture-scoped so showcase stock cannot define production eligibility. Preserve their explicit contexts without admitting nonspawnable demonstration items into ordinary world pools; see `src/game/worldSetup.ts`, `fixtureLootSource`.
+
 ## Furniture visual shapes
 
-A furniture shape refines its drawn form without changing occupied cells. Collision, rest, search, and line of sight keep using those cells, so visual detail cannot change gameplay. Author furniture definitions in `src/content/base/furniture.jsonnet`; see `FurnitureSchema` in `src/core/schema.ts` and `FurnitureMeshes` in `src/render/furniture.ts`.
+Visual furniture detail must not change occupied cells or expose hidden contents. Collision, rest, search, and line of sight keep their existing authorities, so a visual refinement cannot change gameplay.
+
+Container appearance belongs to its definition rather than an ID switch or a guess from dimensions: similarly sized furniture can serve different purposes. Keep procedural detail inside the cell envelope so handles do not promise reach outside the pickable fixture. Definition-owned appearance also keeps empty and unsearched containers visually indistinguishable. See `src/core/schema.ts`, `FurnitureSchema`; `src/render/furnitureDetail.ts`, `furnitureDetail`; and `src/render/furniture.ts`, `FurnitureMeshes`.
+
+Merge detail into the fixture's existing draw object and cache geometry between state changes. Shared vertex-coloured Lambert shading preserves the scene's lighting and fog without texture assets, material groups, or another rendering pass. This favours recognizable silhouettes and panel relief over fine surface realism while frame cost is a concern (#680). See `src/render/furniture.ts`, `FurnitureMeshes`.
+
+### Refining a fixture
+
+Survey the fixture's real-world construction and its authored role before choosing detail. Identify the recognizable silhouette, front, panels and opening hardware without inspecting hidden loot; recognition should help a player understand the fixture, not reveal its search state.
+
+Choose the structural appearance in content through `src/core/schema.ts`, `FurnitureSchema`, rather than a renderer ID exception. Follow `../../docs/jsonnet.md`, "Jsonnet authoring", for the source boundary. Derive procedural parts from the definition's dimensions in `src/render/furnitureDetail.ts`, `furnitureDetail`, so the same construction works for differently sized definitions. Keep front relief within the occupied envelope and check rotated facings: protruding decoration would advertise interaction space the picker cannot reach.
+
+Use `tools/furniture-detail-probe.mjs` to inspect the appearance-bearing definitions together in an isolated lit scene. The tool starts its own development server and takes a screenshot destination as its argument; its draw report separates geometry cost from the rest of the game. Compare the screenshot for recognition and the report for the single-draw-per-fixture budget, then inspect the actual game lighting before requesting look approval. An isolated screenshot cannot establish in-world readability or real-GPU performance.
+
+Keep the cache, facing and envelope evidence in `test/furnitureDetail.test.ts`, and follow the tiered checks in `../../AGENTS.md`, "Before pushing: tiered checks". Do not pin content counts, colours or triangle totals: those may change while the one-object and interaction-envelope contracts remain. The agent workflow is `docs/furniture-detail-skill.md`.
 
 ## Furniture action noise
 

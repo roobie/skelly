@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { bookReadingHooks } from '../src/core/bookReading.ts';
 import { Character } from '../src/core/character.ts';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
@@ -14,6 +14,7 @@ import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
 const baseContent = readdirSync('src/content/base')

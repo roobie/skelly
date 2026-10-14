@@ -49,6 +49,9 @@ export class Forest implements Site {
   stamp(chunk: Chunk): void {
     stampTrees(chunk, this.treeIndex.inColumn(chunk.cx, chunk.cz));
   }
+  lootPointsIn() {
+    return [];
+  }
   furnitureIn() {
     return [];
   }

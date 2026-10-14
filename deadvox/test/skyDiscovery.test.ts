@@ -15,6 +15,7 @@ it('discovers an above-ground authored placement without an indoor authoring fla
   const scale = makeScale(0.5);
   const site = new AuthoredSite(1, fixture.registry, scale, {
     id: 'fixture_site',
+    lootContext: { usage: ['Residential'], tier: 'Tier1' },
     bounds: { x0: 0, z0: 0, x1: 32, z1: 32 },
     ground: 0,
     terrain: [],
@@ -25,6 +26,7 @@ it('discovers an above-ground authored placement without an indoor authoring fla
     buildings: [
       {
         template: 'fixture_shell',
+        lootContext: { usage: ['Residential'], tier: 'Tier1' },
         position: fixtureBox.min.map((value) => value * scale.blockSize) as Vec3,
         rotation: 0,
         storeys: 1,

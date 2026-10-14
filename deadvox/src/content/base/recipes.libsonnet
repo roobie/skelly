@@ -1,0 +1,204 @@
+{
+  "skills": [
+    { "id": "crafting", "name": "Crafting", "training": { "craftingTierOffset": 1 } },
+    { "id": "mechanics", "name": "Mechanics" },
+    {
+      "id": "inventory_management",
+      "name": "Inventory Management (IM)",
+      "training": { "activities": { "handling": { "practice": 10 } } },
+      "inventory": { "handlingFactorFloor": 0, "handlingFactorHalfLifeLevels": 1.1 }
+    },
+    {
+      "id": "firearms_combat",
+      "name": "Firearms Combat (FC)",
+      "training": {
+        "activities": {
+          "readying": { "practicePerSimSecond": 0.1, "tier": 1 },
+          "handling": { "practice": 1, "tier": 3 },
+          "shot": { "practice": 1, "tier": 3 },
+          "hit": { "practice": 1, "tier": 5 },
+          "attachment": { "practice": 1, "tier": 1 }
+        }
+      },
+      "combat": {
+        "firearms": {
+          "raiseMinimumSimSeconds": 0.28,
+          "raiseRangeSimSeconds": 0.42,
+          "raiseHalfLifeLevels": 5,
+          "readyMovementMinimum": 0.45,
+          "readyMovementRange": 0.35,
+          "readyMovementHalfLifeLevels": 5,
+          "loweredPitchRadians": 0.55,
+          "adsApertureFill": 0.85,
+          "skillZeroHandling": {
+            "singleShot": { "variance": 20, "recoilKickScale": 6, "recoilRecoveryScale": 0.5 },
+            "automaticFollowup": { "variance": 40, "recoilKickScale": 12, "recoilRecoveryScale": 0.25 }
+          },
+          "wobbleSkillTenVariance": 0.05,
+          "wobbleLimitRadians": 0.14,
+          "wobbleVerticalToHorizontalRatio": 0.225,
+          "wobbleLuneArchPower": 2,
+          "wobbleLunePhaseOffsetRadians": 0.08,
+          "wobbleNoiseReversionRatePerSimSecond": 2.4,
+          "wobbleNoiseSigmaRadiansPerSqrtSecond": 0.002,
+          "wobbleNoiseSmoothingSimSeconds": 0.12,
+          "reloadFactorFloor": 0.025,
+          "reloadFactorHalfLifeLevels": 5,
+          "rackFactorFloor": 0.16,
+          "rackFactorHalfLifeLevels": 3,
+          "attachmentFactorFloor": 0,
+          "attachmentFactorHalfLifeLevels": 1.1
+        }
+      }
+    },
+    {
+      "id": "melee_combat",
+      "name": "Melee Combat (MC)",
+      "training": {
+        "activities": {
+          "block": { "practice": 1, "tier": 5 },
+          "hit": { "practice": 1, "tier": 5 }
+        }
+      },
+      "combat": {
+        "melee": {
+          "blockChanceMinimum": 0.12,
+          "blockChanceRange": 0.7,
+          "blockChanceHalfLifeLevels": 4
+        }
+      }
+    }
+  ],
+  "items": [
+    { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
+    { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
+    {
+      "id": "wooden_plank",
+      "name": "Wooden plank",
+      "category": "material",
+      "weight": 500,
+      "size": [2, 4],
+      "disassembly": {
+        "timeGameMinutes": 4,
+        "skill": "crafting",
+        "yields": [{ "item": "stick", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }]
+      }
+    },
+    {
+      "id": "repair_kit",
+      "name": "Repair kit",
+      "category": "tool",
+      "weight": 1250,
+      "size": [2, 2],
+      "description": "Metal patches, tape and rags for a makeshift repair.",
+      "disassembly": {
+        "timeGameMinutes": 15,
+        "skill": "crafting",
+        "yields": [
+          { "item": "scrap_metal", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "duct_tape", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "rag", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
+        ]
+      },
+      "tool": { "qualities": { "repairing": 1 } }
+    },
+    {
+      "id": "copper_wire",
+      "name": "Salvaged wire",
+      "category": "material",
+      "weight": 80,
+      "size": [1, 2],
+      "model": "wire_spool",
+      "disassembly": {
+        "timeGameMinutes": 8,
+        "skill": "mechanics",
+        "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    },
+    {
+      "id": "field_patch",
+      "name": "Field repair patch",
+      "category": "material",
+      "weight": 120,
+      "size": [1, 2],
+      "disassembly": {
+        "timeGameMinutes": 12,
+        "skill": "mechanics",
+        "yields": [
+          { "item": "copper_wire", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "duct_tape", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "torch",
+      "result": { "item": "torch", "count": 1 },
+      "timeGameMinutes": 20,
+      "skills": { "crafting": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [
+        [{ "item": "stick", "count": 1 }],
+        [{ "item": "rag", "count": 2 }],
+        [{ "item": "wax", "count": 1 }]
+      ]
+    },
+    {
+      "id": "candle",
+      "result": { "item": "candle", "count": 1 },
+      "timeGameMinutes": 10,
+      "skills": { "crafting": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [[{ "item": "wax", "count": 2 }], [{ "item": "rag", "count": 1 }]],
+      "workstation": null
+    },
+    {
+      "id": "repair_kit",
+      "result": { "item": "repair_kit", "count": 1 },
+      "timeGameMinutes": 30,
+      "skills": { "crafting": 1 },
+      "qualities": { "hammering": 1 },
+      "components": [
+        [{ "item": "scrap_metal", "count": 2 }],
+        [{ "item": "duct_tape", "count": 1 }],
+        [{ "item": "rag", "count": 2 }]
+      ]
+    },
+    {
+      "id": "strip_wire",
+      "result": { "item": "copper_wire", "count": 1 },
+      "timeGameMinutes": 8,
+      "skills": { "mechanics": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }]]
+    },
+    {
+      "id": "field_patch",
+      "result": { "item": "field_patch", "count": 1 },
+      "timeGameMinutes": 12,
+      "skills": { "mechanics": 2 },
+      "qualities": {},
+      "components": [[{ "item": "copper_wire", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "repair_crowbar",
+      "kind": "repair",
+      "result": { "item": "crowbar", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "timeGameMinutes": 15,
+      "skills": { "crafting": 0 },
+      "qualities": { "repairing": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "sawn_plank",
+      "result": { "item": "wooden_plank", "count": 1 },
+      "timeGameMinutes": 4,
+      "skills": { "crafting": 0 },
+      "qualities": { "sawing": 1 },
+      "components": [[{ "item": "stick", "count": 2 }]],
+      "workstation": "workbench"
+    }
+  ]
+}

@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { gitEnvironment, playtestRound, publishPlaytest } from '../deadvox/tools/publish-playtest.mjs';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
@@ -10,17 +13,16 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const selectLanguage = (languages, search) => applyPlaytestLanguage(languages, search);
 const page = read('site/launcher.js');
-const round1Page = read('site/deadvox/playtest/round1/round1.js');
-const round1Html = read('site/deadvox/playtest/round1/index.html');
-const round1Css = read('site/deadvox/playtest/round1/round1.css');
+const round1Page = read('deadvox/playtests/round1/round1.js');
 const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
 const SELECT_PATTERN = /<select\b/;
 const WEATHERING_SITE_OPTION_PATTERN =
   /state\.deadvox\.debug && state\.deadvox\.bench === ''[\s\S]*value="weatheringTest"/;
 const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
-const ROUND1_PLAY_LINK_PATTERN = /<a[^>]*href="\.\.\/\.\.\/\.\.\/deadvox\/\?site=playtest"[^>]*>/;
-const ROUND1_STATIC_URL = 'https://roobie.github.io/skelly/deadvox/playtest/round1/';
+const PLAY_LINK_PATTERN = /<a[^>]*class="playtest-action"[^>]*>/;
+const TUTORIAL_LINK_PATTERN = /<a[^>]*class="tutorial-action"[^>]*>/;
+const ROUND1_STATIC_URL = playtestRound(1).url;
 const ROUND1_LANGUAGE_PATTERN = /lang=\$\{language\}/;
 const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title|deadvox-playtest/;
 const LINKS_CARD_PATTERN = /<section class="card" aria-labelledby="links-title">([\s\S]*?)<\/section>/;
@@ -29,19 +31,23 @@ const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/fo
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
 const DEADVOX_CONTENT = 'deadvox/src/content/base';
-const RELATIVE_URL_PATTERNS = [
+const RESOURCE_URL_PATTERNS = [
   /\b(?:href|src)\s*=\s*["']([^"']+)["']/g,
   /url\(\s*["']?([^"')\s]+)["']?\s*\)/g,
   /\bfrom\s+["']([^"']+)["']/g,
   /\bnew URL\(\s*["']([^"']+)["']/g,
+  /<meta\b[^>]*(?:property="og:(?:url|image)"|name="twitter:image")[^>]*content="([^"]+)"/g,
 ];
-const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+.-]*:/i;
-const ROUND1_FALLBACK_PLAY_URL_PATTERN = /playtest-action|href="\.\.\/\.\.\/\.\.\/deadvox\/\?site=playtest"/;
-const PAGES_PROJECT_ROOT_PATTERN = /^(?:gungen|deadvox|mobgen)\/$/;
-const relativeUrlsIn = (source) =>
-  RELATIVE_URL_PATTERNS.flatMap((pattern) => [...source.matchAll(pattern)].map((match) => match[1])).filter(
-    (reference) => !(ABSOLUTE_URL_PATTERN.test(reference) || reference.startsWith('//')),
-  );
+const ROUND1_FALLBACK_PLAY_URL_PATTERN = /playtest-action|tutorial-action|\{\{PLAY_URL\}\}/;
+const TEXT_ASSET_PATTERN = /\.(?:html|css|js)$/;
+const ROBOTS_DISALLOW_PATTERN = /Disallow: \/\s*$/;
+const resourceUrlsIn = (source) =>
+  RESOURCE_URL_PATTERNS.flatMap((pattern) => [...source.matchAll(pattern)].map((match) => match[1]));
+const filesUnder = (directory) =>
+  readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    return entry.isDirectory() ? filesUnder(path) : [path];
+  });
 
 const authoredLayoutIds = () =>
   readdirSync(join(ROOT, DEADVOX_CONTENT))
@@ -164,6 +170,11 @@ describe('playtest language and catalog', () => {
     const englishKeys = Object.keys(catalog.en).sort();
     assert.ok(englishKeys.length > 0, 'the English playtest catalog has strings');
     assert.deepEqual(englishKeys, Object.keys(catalog.sv).sort());
+    for (const match of round1Page.matchAll(/\btext\.(\w+)/g)) {
+      for (const language of ['en', 'sv']) {
+        assert.ok(catalog[language][match[1]]?.trim(), `${language} provides the rendered ${match[1]} string`);
+      }
+    }
   });
 });
 
@@ -250,42 +261,105 @@ describe('site launcher playtest entry', () => {
     assert.doesNotMatch(fallback, ROUND1_FALLBACK_PLAY_URL_PATTERN);
   });
 
-  it('opens the authored Round 1 site without development tools', () => {
-    const anchor = round1Page.match(ROUND1_PLAY_LINK_PATTERN)?.[0];
-    assert.ok(anchor, 'the Round 1 page has a play link');
-    const href = anchor.match(HREF_PATTERN)?.[1];
-    assert.ok(href, 'the play link has an href');
-    const base = new URL(ROUND1_STATIC_URL);
-    const url = new URL(href, base);
-    assert.equal(`${url.origin}${url.pathname}`, 'https://roobie.github.io/skelly/deadvox/');
-    const site = url.searchParams.get('site');
-    assert.ok(authoredLayoutIds().includes(site), `site ${site} is an authored layout`);
-    assert.equal(url.searchParams.has('debug'), false);
-  });
-
-  it('serves Round 1 social metadata and the referenced static preview image', () => {
-    assert.ok(round1Html.includes(`<link rel="canonical" href="${ROUND1_STATIC_URL}"`));
-    assert.ok(round1Html.includes(`<meta property="og:url" content="${ROUND1_STATIC_URL}"`));
-    assert.ok(round1Html.includes('<meta property="og:image:alt" content="'));
-    assert.ok(round1Html.includes('<meta name="twitter:card" content="summary_large_image"'));
-    const references = [...relativeUrlsIn(round1Html), ...relativeUrlsIn(round1Css), ...relativeUrlsIn(round1Page)];
-    assert.ok(references.length > 0, 'Round 1 has relative URL references');
-    for (const reference of references) {
-      const url = new URL(reference, ROUND1_STATIC_URL);
-      assert.equal(url.origin, 'https://roobie.github.io', `${reference} stays on Pages`);
-      assert.ok(url.pathname.startsWith('/skelly/'), `${reference} stays within the Pages project`);
-      const projectPath = url.pathname.slice('/skelly/'.length);
-      if (PAGES_PROJECT_ROOT_PATTERN.test(projectPath)) {
-        continue;
+  it('dry-run pairs the current landing with the frozen game and carries every referenced local file', () => {
+    const root = mkdtempSync(join(tmpdir(), 'skelly-playtest-'));
+    try {
+      mkdirSync(join(root, 'deadvox'), { recursive: true });
+      cpSync(join(ROOT, 'deadvox/playtests'), join(root, 'deadvox/playtests'), { recursive: true });
+      cpSync(join(ROOT, 'site'), join(root, 'site'), { recursive: true });
+      writeFileSync(
+        join(root, '.gitignore'),
+        '/deadvox/dist-playtest/\n/deadvox/dist/\nnode_modules/\n/tools/jsonnet/bin/\n',
+      );
+      writeFileSync(join(root, 'deadvox/package-lock.json'), JSON.stringify({ lockfileVersion: 3 }));
+      mkdirSync(join(root, 'deadvox/node_modules/fixture-dep'), { recursive: true });
+      writeFileSync(join(root, 'deadvox/node_modules/fixture-dep/index.js'), '// fixture dependency');
+      mkdirSync(join(root, 'tools/jsonnet/bin'), { recursive: true });
+      writeFileSync(join(root, 'tools/jsonnet/runtime.json'), JSON.stringify({ version: 'fixture' }));
+      writeFileSync(join(root, 'tools/jsonnet/bin/fixture'), 'compiler fixture');
+      writeFileSync(
+        join(root, 'deadvox/package.json'),
+        JSON.stringify({ type: 'module', scripts: { build: 'node build.mjs' } }),
+      );
+      writeFileSync(
+        join(root, 'deadvox/build.mjs'),
+        [
+          "import { mkdirSync, copyFileSync, realpathSync } from 'node:fs';",
+          "if (!realpathSync('node_modules/fixture-dep').startsWith(process.cwd() + '/node_modules/')) throw new Error('Dependency escaped checkout');",
+          "mkdirSync('dist'); copyFileSync('index.html', 'dist/index.html');",
+        ].join('\n'),
+      );
+      const frozenGame = '<main>Frozen fixture game</main>';
+      writeFileSync(join(root, 'deadvox/index.html'), frozenGame);
+      const git = (...args) => execFileSync('git', ['-C', root, ...args], { env: gitEnvironment() });
+      git('init', '-q');
+      git('add', '.');
+      git(
+        '-c',
+        'user.name=Fixture',
+        '-c',
+        'user.email=fixture@example.com',
+        'commit',
+        '--no-gpg-sign',
+        '-qm',
+        'fixture',
+      );
+      const gameSha = git('rev-parse', 'HEAD').toString().trim();
+      writeFileSync(join(root, 'deadvox/index.html'), '<main>Unpublished fixture game</main>');
+      const landingPath = join(root, 'deadvox/playtests/round1/index.html');
+      const landingMarker = '<meta name="fixture-landing" content="latest">';
+      writeFileSync(landingPath, readFileSync(landingPath, 'utf8').replace('</head>', `${landingMarker}</head>`));
+      git('add', '.');
+      git(
+        '-c',
+        'user.name=Fixture',
+        '-c',
+        'user.email=fixture@example.com',
+        'commit',
+        '--no-gpg-sign',
+        '-qm',
+        'landing',
+      );
+      const { output, landingSha } = publishPlaytest({ round: 1, gameSha, dryRun: true, root });
+      assert.notEqual(landingSha, gameSha, 'the fixture has separate landing and frozen game commits');
+      const config = playtestRound(1);
+      assert.equal(readFileSync(join(output, config.playPath, 'index.html'), 'utf8'), frozenGame);
+      const html = readFileSync(join(output, 'index.html'), 'utf8');
+      assert.ok(html.includes(landingMarker), 'the landing comes from the current commit, not the game commit');
+      const script = readFileSync(join(output, 'round1.js'), 'utf8');
+      const href = script.match(PLAY_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
+      assert.ok(href, 'the assembled page has a play link');
+      assert.equal(href, `${config.playPath}?site=playtest`, 'play stays relative to the round domain');
+      const tutorialHref = script.match(TUTORIAL_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
+      assert.ok(tutorialHref, 'the assembled page has a tutorial link');
+      const tutorial = new URL(tutorialHref, config.url);
+      assert.equal(tutorial.searchParams.get('tutorial'), '1', 'the tutorial action requests practice');
+      tutorial.searchParams.delete('tutorial');
+      const play = new URL(href, config.url);
+      assert.equal(tutorial.href, play.href, 'practice uses the same frozen game URL');
+      assert.ok(authoredLayoutIds().includes(play.searchParams.get('site')), 'play selects an authored site');
+      assert.equal(play.searchParams.has('debug'), false);
+      assert.ok(html.includes(`<link rel="canonical" href="${config.url}"`));
+      assert.ok(html.includes(`<meta property="og:url" content="${config.url}"`));
+      let localReferences = 0;
+      for (const path of filesUnder(output).filter((file) => TEXT_ASSET_PATTERN.test(file))) {
+        const base = new URL(path.slice(output.length + 1), config.url);
+        const source = readFileSync(path, 'utf8');
+        assert.ok(!source.includes('{{'), `${path} has no unexpanded URLs`);
+        for (const reference of resourceUrlsIn(source)) {
+          const url = new URL(reference, base);
+          if (url.origin !== new URL(config.url).origin) {
+            continue;
+          }
+          localReferences += 1;
+          const target = join(output, url.pathname, url.pathname.endsWith('/') ? 'index.html' : '');
+          assert.ok(existsSync(target), `${reference} in ${path} is carried in the landing output`);
+        }
       }
-      const sitePath = join(ROOT, 'site', ...projectPath.split('/'));
-      const siteTarget = url.pathname.endsWith('/') ? join(sitePath, 'index.html') : sitePath;
-      assert.ok(existsSync(siteTarget), `${reference} resolves to a site file`);
+      assert.ok(localReferences > 0, 'the check exercised local resources');
+      assert.match(readFileSync(join(output, 'robots.txt'), 'utf8'), ROBOTS_DISALLOW_PATTERN);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
-
-    const imagePath = 'site/deadvox/playtest/round1/assets/round1-social.webp';
-    const imageUrl = 'https://roobie.github.io/skelly/deadvox/playtest/round1/assets/round1-social.webp';
-    assert.ok(round1Html.includes(`<meta property="og:image" content="${imageUrl}"`));
-    assert.ok(existsSync(join(ROOT, imagePath)));
   });
 });

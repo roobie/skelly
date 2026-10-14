@@ -12,6 +12,8 @@
     feedbackLink: 'the playtest feedback form',
     feedbackAfter: '. It opens a public GitHub issue and needs a GitHub account.',
     email: 'No GitHub account? You can email your metrics, and any feedback, to the person who sent you the link.',
+    tutorialLink: 'Practice tutorial (unsaved)',
+    tutorialHint: 'Learn the controls without changing your saved world.',
   },
   sv: {
     round: 'Runda',
@@ -26,5 +28,7 @@
     feedbackLink: 'formuläret för speltestet',
     feedbackAfter: '. Det öppnar ett offentligt ärende på GitHub och kräver ett GitHub-konto.',
     email: 'Har du inget GitHub-konto? Då kan du mejla din speldata, och eventuell återkoppling, till den som skickade länken till dig.',
+    tutorialLink: 'Öva i introduktionen (sparas inte)',
+    tutorialHint: 'Lär dig kontrollerna utan att ändra din sparade värld.',
   },
 }

@@ -2,12 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
 import { EAT_TIME, options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const directory = join(import.meta.dirname, '../src/content/base');
 const { registry } = buildRegistry(

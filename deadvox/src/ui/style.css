@@ -47,6 +47,32 @@ body {
     0.875rem / 1.4 system-ui,
     sans-serif;
 }
+#tutorial-objective {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  max-width: min(34rem, 70vw);
+  padding: 0.6rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  z-index: var(--ui-layer-inventory-feedback);
+  pointer-events: none;
+}
+.tutorial-copy {
+  margin: 0.3rem 0;
+}
+.tutorial-note {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+#tutorial-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+#tutorial-actions:empty {
+  display: none;
+}
 #startup-screen {
   position: fixed;
   z-index: var(--ui-layer-startup-screen);
@@ -409,6 +435,11 @@ body.unconscious::after {
   margin-bottom: calc(var(--ui-spacing) * 0.25rem);
 }
 #overlay .go {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
   color: var(--text);
   font-weight: 600;
   margin: 0;
@@ -426,6 +457,40 @@ body.unconscious::after {
   cursor: pointer;
   font-weight: 400;
   white-space: nowrap;
+}
+#overlay.startup-ready.saved-choice {
+  place-items: center;
+  cursor: default;
+}
+#overlay.startup-ready.saved-choice .card-scroll-shell {
+  width: min(32rem, calc(100vw - 2rem));
+  margin-right: 0;
+}
+#overlay.startup-ready.saved-choice #about > :not(#title-choice, #save-status, #save-note) {
+  display: none;
+}
+#overlay.startup-ready.saved-choice #title-choice-heading {
+  margin: 0 0 1rem;
+}
+#overlay.startup-ready.saved-choice #new-character-options {
+  margin: 0 0 0.75rem;
+}
+#overlay.startup-ready.saved-choice .go {
+  position: static;
+  transform: none;
+  white-space: normal;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.375rem;
+  color: var(--accent);
+}
+:where(#overlay.startup-ready.saved-choice) #continue {
+  width: 100%;
+}
+#overlay.startup-ready.saved-choice #save-status {
+  font-size: 0.75rem;
 }
 #continue,
 #save-persist,
