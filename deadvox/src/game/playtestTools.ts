@@ -18,7 +18,7 @@ export interface MetricStamp {
 export type KeyItemEvent = 'looted' | 'read';
 export type KeyItemMetric = Readonly<Partial<Record<KeyItemEvent, MetricStamp>>>;
 
-const METRICS_HISTORY_LIMIT = 512;
+export const METRICS_HISTORY_LIMIT = 512;
 const POCKET_KEY_LIMIT = 128;
 const MARK_KEY_LIMIT = 128;
 
