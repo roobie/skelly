@@ -2,7 +2,7 @@
 // (tools/simulationFingerprint.ts). When weather starts to affect the simulation, remove that
 // exclusion and bring the weather state into the save (docs/decisions/0002-saves.md).
 //
-// Weather as it reaches the look. There is no weather system yet (DESIGN.md, Slice 4); this is the
+// Weather as it reaches the look. There is no weather system yet (DESIGN.md, Slice 4a); this is the
 // hook it will drive: set `Weather.fogginess` and the sky's fog follows. Pure; game/play.ts holds the
 // one `Weather` and applies `skyInWeather` to each frame's sky before render/sky.ts uses it.
 

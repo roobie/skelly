@@ -17,7 +17,7 @@ Homogeneous chunks collapse to one id. Palette packing is a proposed storage opt
 
 ## 2. View distance
 
-Long sightlines matter, but full-detail voxels do not scale to distant towns. Slice 4 pairs near full-detail terrain with cheaper far terrain derived from world generation, then blends the boundary so distant settlements remain recognizable without consuming near-field budget.
+Long sightlines matter, but full-detail voxels do not scale to distant towns. Slice 4b pairs near full-detail terrain with cheaper far terrain derived from world generation, then blends the boundary so distant settlements remain recognizable without consuming near-field budget.
 
 ## 3. Compressed time
 
@@ -25,7 +25,7 @@ Long actions must advance the world quickly without letting entities tunnel thro
 
 ## 4. Many zombies in a browser
 
-Hundreds of fully active agents would compete with rendering and player simulation. The v1 acceptance target is 60 active zombies and 300 in the background tier, with simulation under 4 ms per frame. Use activity tiers: only nearby threats need detailed behavior; background threats can move in cheaper steps, while distant hordes remain abstract. Keep active attention selection unchanged when simplifying background movement. Grow data-oriented storage or move systems to a worker only when counts require it. Slice 3 develops background movement; abstract hordes remain Slice 4 work. Benchmark simulation cost separately from the complete rendered scene. See `src/bench/shamblers.ts`, `startShamblerBench`, and `mobgen/src/cli/bench.ts`.
+Hundreds of fully active agents would compete with rendering and player simulation. The v1 acceptance target is 60 active zombies and 300 in the background tier, with simulation under 4 ms per frame. Use activity tiers: only nearby threats need detailed behavior; background threats can move in cheaper steps, while distant hordes remain abstract. Keep active attention selection unchanged when simplifying background movement. Grow data-oriented storage or move systems to a worker only when counts require it. Slice 3 develops background movement; abstract hordes remain Slice 4b work. Benchmark simulation cost separately from the complete rendered scene. See `src/bench/shamblers.ts`, `startShamblerBench`, and `mobgen/src/cli/bench.ts`.
 
 ## 5. Inventory speed in real time
 
@@ -41,7 +41,7 @@ A save spans edited terrain, nested items, world entities and clocks; silently r
 
 ## 8. Vehicles on voxels
 
-Half-metre terrain steps exceed ordinary wheel clearance, and fast vehicles can cross thin obstacles between samples. Vehicle work needs traversable surfaces, collision that prevents tunnelling, and an arcade handling model before simulation detail. Slice 6 depends on drivable surfaces from Slice 4.
+Half-metre terrain steps exceed ordinary wheel clearance, and fast vehicles can cross thin obstacles between samples. Vehicle work needs traversable surfaces, collision that prevents tunnelling, and an arcade handling model before simulation detail. Slice 6 depends on drivable surfaces from Slice 4b.
 
 ## 9. Lighting
 
