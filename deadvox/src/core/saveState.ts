@@ -11,6 +11,7 @@ import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
 import type { LongActionState } from './longAction.ts';
 import type { PlayerCombat, PlayerCombatState } from './playerCombat.ts';
+import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
@@ -27,6 +28,7 @@ export interface SaveSnapshot {
   };
   character: {
     id: string;
+    scenarioRun: ScenarioRunState | null;
     progression: CharacterState;
     simulation: SimulationState;
     player: PlayerState;
@@ -53,6 +55,7 @@ export interface PlayerAudioSnapshot {
 export interface SnapshotSessionInput {
   worldId: string;
   characterId: string;
+  scenarioRun: Readonly<ScenarioRunState> | null;
   world: World;
   /** Runtime block number to stable content id. */
   blockContentId: (blockId: number) => string;
@@ -79,6 +82,7 @@ export interface SnapshotSessionInput {
 export const snapshotSession = ({
   worldId,
   characterId,
+  scenarioRun,
   world,
   blockContentId,
   inventory,
@@ -115,6 +119,7 @@ export const snapshotSession = ({
     },
     character: {
       id: characterId,
+      scenarioRun: structuredClone(scenarioRun),
       progression: character.snapshotState(),
       simulation: simulation.snapshotState() as SimulationState,
       player: structuredClone(player),

@@ -871,6 +871,7 @@ const FurnitureSchema = pipe(
     solid: optional(vBoolean()),
     /** A debug practice surface; hits may receive a profile-specific presentation ping. */
     shotTarget: optional(literal(true)),
+    scenarioGoal: optional(literal(true)),
     readable: optional(ReadableSchema),
     container: optional(ContainerSchema),
     /** The loot table rolled into its container when the chunk generates. */

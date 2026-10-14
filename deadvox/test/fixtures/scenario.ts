@@ -88,6 +88,7 @@ export const fixtureScenarioSources = (scenario = fixtureScenario(), service = f
           },
           {
             id: 'fixture_crate',
+            scenarioGoal: true,
             name: 'Fixture crate',
             size: [1, 1, 1],
             color: '#808080',

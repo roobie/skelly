@@ -3,6 +3,7 @@ local lab = import 'gauntlet-lab.libsonnet';
 local original = look.templates[0];
 local memo = std.filter(function(f) f.id == 'gauntlet_look_memo', look.furniture)[0];
 local metal = '#707b7e';
+local button = std.filter(function(f) f.id == 'gauntlet_look_button', look.furniture)[0];
 local note = function(id, title, text) memo + {
   id: id, name: title, readable: { title: title, text: text },
 };
@@ -17,6 +18,9 @@ local utilities = [
 ];
 {
   furniture: [
+    { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
+      id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
+    },
     note('gauntlet_maintenance_memo', 'Ventilation invoice', |||
       Accounts queried the extra ducting again. The low brick service building beside the square water tank and yellow delivery frame has paired narrow exhausts on its rear apron, rather more ventilation than a stores room needs. The inspection hatch beside them has a ladder under the lid. Please use that access, not the office door.
 
@@ -54,7 +58,10 @@ local utilities = [
   ],
   templates: [original + {
     id: 'gauntlet_service',
-    palette: original.palette + { N: { furniture: 'gauntlet_maintenance_memo' } },
+    palette: original.palette + {
+      N: { furniture: 'gauntlet_maintenance_memo' },
+      B: { furniture: 'gauntlet_button' },
+    },
   }] + [
     {
       id: u.id, size: [u.size[0], u.size[1] + 1, u.size[2]],

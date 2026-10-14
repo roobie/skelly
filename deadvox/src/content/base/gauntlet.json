@@ -1,6 +1,19 @@
 {
   "furniture": [
     {
+      "color": "#c94b3d",
+      "id": "gauntlet_button",
+      "name": "Nuclear objective button",
+      "scenarioGoal": true,
+      "shape": [
+        {
+          "position": [0.20000000000000001, 0, 0.20000000000000001],
+          "size": [0.59999999999999998, 0.29999999999999999, 0.59999999999999998]
+        }
+      ],
+      "size": [1, 1, 1]
+    },
+    {
       "color": "#dfd6b9",
       "id": "gauntlet_maintenance_memo",
       "name": "Ventilation invoice",
@@ -3374,7 +3387,7 @@
         },
         "=": "concrete",
         "B": {
-          "furniture": "gauntlet_look_button"
+          "furniture": "gauntlet_button"
         },
         "C": {
           "furniture": "gauntlet_look_console"

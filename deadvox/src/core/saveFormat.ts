@@ -16,6 +16,7 @@ import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
+import { assertScenarioRun } from './scenarioRun.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { HordeState, ZombieState } from './zombies.ts';
 
@@ -55,7 +56,8 @@ export type SaveContentKind =
   | 'sound'
   | 'scheduler'
   | 'skill'
-  | 'recipe';
+  | 'recipe'
+  | 'scenario';
 type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
 
 export interface EncodeSaveOptions {
@@ -122,6 +124,7 @@ interface WirePayload {
   };
   character: {
     id: string;
+    scenarioRun: SaveSnapshot['character']['scenarioRun'];
     simulation: Omit<SaveSnapshot['character']['simulation'], 'seed' | 'clock'>;
     player: SaveSnapshot['character']['player'];
     aim: AimSnapshotState;
@@ -634,6 +637,18 @@ const versionComponentsSchema = obj({
   contentPacks: arr(obj({ id: str({ nonEmpty: true }), version: str({ nonEmpty: true }), canonicalHash: str() })),
 });
 
+const scenarioRun = nullable(
+  obj({
+    scenario: str({ id: true }),
+    startedAtGameTimestamp: finite,
+    completedAtGameTimestamp: nullable(finite),
+    activeRealSeconds: nonNegative,
+    distanceMetres: nonNegative,
+    firstFurnitureReadAtGameTimestamp: nullable(finite),
+    firstLadderUseAtGameTimestamp: nullable(finite),
+  }),
+);
+
 const wirePayloadSchema = obj({
   world: obj({
     id: str({ nonEmpty: true }),
@@ -665,6 +680,7 @@ const wirePayloadSchema = obj({
   character: obj({
     id: str({ nonEmpty: true }),
     progression,
+    scenarioRun,
     simulation: simulationWithoutWorldIdentity,
     player: playerState,
     aim,
@@ -1002,6 +1018,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       quickbar: [...snapshot.character.quickbar],
       handling: snapshot.character.handling,
       playerAudio: snapshot.character.playerAudio,
+      scenarioRun: snapshot.character.scenarioRun,
     },
   };
   return wire;
@@ -1100,6 +1117,13 @@ function encodeChunkRunsValidate(chunks: EncodedChunk[], path: string): void {
 function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapshot {
   validateSchema(wirePayloadSchema, wire, 'payload');
   const worldOptions = wire.world.options;
+  assertScenarioRun(wire.character.scenarioRun, {
+    calendar: worldOptions.clock.start + wire.character.simulation.time * worldOptions.clock.ratio,
+    dead: wire.character.simulation.dead !== undefined,
+  });
+  if ((wire.character.scenarioRun?.scenario ?? worldOptions.site) !== worldOptions.site) {
+    throw new Error('Scenario run does not match saved site');
+  }
   if (wire.character.handling.jobs.length > 0) {
     throw new Error('Pending handling jobs are not supported in save payloads');
   }
@@ -1371,6 +1395,9 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
       check('block', cell.id, `world.diffs.chunks.${chunk.cx},${chunk.cy},${chunk.cz}.cells[${index}].id`);
     }
   }
+  if (snapshot.character.scenarioRun) {
+    check('scenario', snapshot.character.scenarioRun.scenario, 'character.scenarioRun.scenario');
+  }
   for (const skill of Object.keys(snapshot.character.progression.skills)) {
     check('skill', skill, `character.progression.skills.${skill}`);
   }
@@ -1433,6 +1460,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
       character: obj({
         id: str({ nonEmpty: true }),
         progression,
+        scenarioRun,
         simulation,
         player: playerState,
         aim,

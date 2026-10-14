@@ -79,8 +79,14 @@ const localAnchorIssues = (registry: Registry, composition: CompositionDef, serv
   anchor(composition.objective, '.composition.objective');
   anchor(composition.objectiveFace, '.composition.objectiveFace');
   anchor(composition.retreat, '.composition.retreat');
-  if (!service.pieces.some((piece) => piece.pos.join(',') === composition.objective.join(','))) {
-    issues.push(['.composition.objective', 'objective needs a furniture anchor']);
+  if (
+    !service.pieces.some(
+      (piece) =>
+        piece.pos.join(',') === composition.objective.join(',') &&
+        registry.furniture.get(piece.furniture)?.scenarioGoal,
+    )
+  ) {
+    issues.push(['.composition.objective', 'objective needs a scenario-goal furniture anchor']);
   }
   composition.storeys.forEach((storey, index) => {
     anchor(storey.standing, `.composition.storeys[${index}]`);
