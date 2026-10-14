@@ -260,7 +260,7 @@ describe('870-derived pump silhouette', () => {
     ['tapered', 'M'],
     ['tapered', 'L'],
     ['tapered-sawed', 'M'],
-  ])('%s %s keeps the wrist aligned and within 5–7u of the trigger', (style, length) => {
+  ])('%s %s holds behind the trigger with a watertight stock', (style, length) => {
     const assembly = assemblyFor(style, length);
     const resolved = resolve(assembly, gunDomain);
     const stock = resolved.defs.get('stock')!;
@@ -272,8 +272,7 @@ describe('870-derived pump silhouette', () => {
       resolved.placed.get('lower')!,
       lower.keepOuts.find((v) => v.id === 'trigger-finger')!.box.center,
     );
-    const reach = Math.hypot(...hold.map((v, i) => v - trigger[i]!));
-    expect(reach, 'hold sits behind the trigger').toBeGreaterThan(0);
+    expect(hold[0]!, 'hold sits behind the trigger (rear is -x)').toBeLessThan(trigger[0]!);
     expectWatertightMesh(meshForSolidGroup(stock.solids.filter((s) => s.id !== 'butt-pad')), 'merged stock wood');
     if (style === 'tapered') {
       const butt = stock.solids.find((s) => s.id === 'butt-pad')!;
