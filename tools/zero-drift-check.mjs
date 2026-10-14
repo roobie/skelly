@@ -181,7 +181,7 @@ function* markdownSymbolPairs(markdown) {
   }
 }
 
-const TEXT_CUE_TOKEN = /"((?:\\.|[^"\\])+)"|“([^”]+)”|'([^']+)'|(?<![\w/@`"'.=?&-])([\w./-]+\.md)(?!`)/g;
+const TEXT_CUE_TOKEN = /"((?:\\.|[^"\\])+)"|“([^”]+)”|(?<!\w)'([^']+)'(?!\w)|(?<![\w/@`"'.=?&-])([\w./-]+\.md)(?!`)/g;
 const CUE_SEPARATOR = /^\s*([,;:—-]?)\s*$/;
 const EXTRA_SEPARATOR = /^\s*(?:,\s*(?:and\s+)?|and\s+)$/;
 const TEXT_OTHER_SECTION =
@@ -340,15 +340,56 @@ function checkMarkdownPair(pair, tokens, context) {
   }
 }
 
+function markdownTextFormText(node) {
+  if (node.type === 'text') {
+    return node.value;
+  }
+  if (node.type === 'break') {
+    return '\n';
+  }
+  if (node.type === 'inlineCode' || node.type === 'link' || node.type === 'linkReference' || isHtmlComment(node)) {
+    return '';
+  }
+  return (node.children ?? []).map(markdownTextFormText).join('');
+}
+
 function checkMarkdownTextForms(nodes, { path, failures }) {
   for (const node of nodes) {
     if (node.type !== 'text') {
       continue;
     }
-    for (const pattern of [QUOTED_PATH_SECTION, TEXT_OTHER_SECTION, SECTION_NUMBER]) {
+    for (const pattern of [QUOTED_PATH_SECTION, SECTION_NUMBER]) {
       for (const match of node.value.matchAll(pattern)) {
         add(failures, path, 'section_form', match[0]);
       }
+    }
+  }
+}
+
+function* markdownTextFormRuns(node) {
+  if (
+    node.type === 'yaml' ||
+    node.type === 'code' ||
+    node.type === 'inlineCode' ||
+    node.type === 'link' ||
+    node.type === 'linkReference' ||
+    isHtmlComment(node)
+  ) {
+    return;
+  }
+  if (['paragraph', 'heading', 'tableCell'].includes(node.type)) {
+    yield node.children ?? [];
+  }
+  for (const child of node.children ?? []) {
+    yield* markdownTextFormRuns(child);
+  }
+}
+
+function checkMarkdownOtherSections(markdown, { path, failures }) {
+  for (const nodes of markdownTextFormRuns(markdown)) {
+    const text = nodes.map(markdownTextFormText).join('');
+    for (const match of text.matchAll(TEXT_OTHER_SECTION)) {
+      add(failures, path, 'section_form', match[0]);
     }
   }
 }
@@ -367,6 +408,7 @@ function checkMarkdownSections(context) {
       }
     }
   }
+  checkMarkdownOtherSections(markdown, context);
   for (const link of links) {
     checkSectionLink(link.url, context);
   }
@@ -901,9 +943,7 @@ function checkSections(context) {
       add(failures, path, 'section_form', match[0]);
     }
   }
-  const links = markdown
-    ? markdownLinks(markdown).map((link) => link.url)
-    : [...visible.matchAll(LINK)].map((match) => match[1].trim());
+  const links = [...visible.matchAll(LINK)].map((match) => match[1].trim());
   for (const raw of links) {
     checkSectionLink(raw, context);
   }

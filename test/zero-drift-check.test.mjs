@@ -271,6 +271,20 @@ describe('zero-drift section cues', () => {
     }
   });
 
+  it('does not let possessive apostrophes hide a bare section cue', () => {
+    const apostrophe = String.fromCharCode(39);
+    const path = ['docs/anchors', 'md'].join('.');
+    const body = ['BR', apostrophe, 's rule: ', path, ', "Missing" isn', apostrophe, 't kept.'].join('');
+    assert.deepEqual(new Set(checks(sections(body))), new Set(['section_form', 'section']));
+  });
+
+  it('catches numbered section references after emphasized paths, not code or links', () => {
+    const path = ['docs/anchors', 'md'].join('.');
+    assert.deepEqual(checks(sections(`**${path}** section 3`)), ['section_form']);
+    assert.deepEqual(sections(`${code(path)} section 3`), []);
+    assert.deepEqual(sections(`[${path} section 3](${path})`), []);
+  });
+
   it('does not promote escaped backticks in text to code cue nodes', () => {
     const escaped = (value) => code(value).replaceAll('`', '\\`');
     assert.deepEqual(sections(`${escaped('docs/anchors.md')}, ${escaped('Missing')}`), []);
