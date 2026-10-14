@@ -68,12 +68,34 @@ const generated = (reverse: boolean) => {
   return { chunks, furniture };
 };
 
-const nativeDefinition = (id: string) => {
+// Slot choices are enumerated, not rolled: a seeded roll may never pick the style that breaks the rule.
+const nativeDefinitions = (id: string) => {
   const native = BUNDLED_CONTENT.registry;
   const assembly = native.mapAssemblies.get(id);
-  return assembly
-    ? compileAssembly(native, assembly, { seed: 73, siteId: 'facade-course-witness' })
-    : compileTemplate(native, native.templates.get(id)!);
+  if (!assembly) {
+    return [compileTemplate(native, native.templates.get(id)!)];
+  }
+  const alternatives = Math.max(
+    ...[...native.mapAssemblies.values()].flatMap((candidate) => candidate.slots.map((slot) => slot.choices.length)),
+  );
+  return Array.from({ length: alternatives }, (_, variant) => {
+    const selected = {
+      ...native,
+      mapAssemblies: new Map(
+        [...native.mapAssemblies.values()].map((candidate) => [
+          candidate.id,
+          {
+            ...candidate,
+            slots: candidate.slots.map((slot) => ({
+              ...slot,
+              choices: [slot.choices[variant % slot.choices.length]!],
+            })),
+          },
+        ]),
+      ),
+    };
+    return compileAssembly(selected, selected.mapAssemblies.get(id)!, { seed: 73, siteId: 'facade-course-witness' });
+  });
 };
 
 describe('one finished city plan', () => {
@@ -82,37 +104,38 @@ describe('one finished city plan', () => {
     const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
     let checked = 0;
     for (const id of scenario.city.templates) {
-      const template = nativeDefinition(id);
-      const [sx, sy, sz] = template.size;
-      const at = (x: number, y: number, z: number) =>
-        x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz ? 0 : template.blocks[x + sx * (z + sz * y)]!;
-      const solid = (block: number) => native.blocks[block]?.solid === true;
-      let courses = 0;
-      for (const [x, y, z] of cellsOf(template.size)) {
-        const wall = at(x, y - 1, z);
-        if (!solid(wall) || at(x, y - 2, z) !== wall) {
-          continue;
+      for (const [variant, template] of nativeDefinitions(id).entries()) {
+        const [sx, sy, sz] = template.size;
+        const at = (x: number, y: number, z: number) =>
+          x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz ? 0 : template.blocks[x + sx * (z + sz * y)]!;
+        const solid = (block: number) => native.blocks[block]?.solid === true;
+        let courses = 0;
+        for (const [x, y, z] of cellsOf(template.size)) {
+          const wall = at(x, y - 1, z);
+          if (!solid(wall) || at(x, y - 2, z) !== wall) {
+            continue;
+          }
+          const exposed = [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ].some(([dx, dz]) => !solid(at(x + dx!, y - 1, z + dz!)));
+          const slab = [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ].some(([dx, dz]) => solid(at(x + dx!, y, z + dz!)) && at(x + dx!, y, z + dz!) !== wall);
+          if (!(exposed && slab && solid(at(x, y, z)))) {
+            continue;
+          }
+          expect(at(x, y, z), `${id} variant ${variant}: exterior course at ${x},${y},${z}`).toBe(wall);
+          courses += 1;
         }
-        const exposed = [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ].some(([dx, dz]) => !solid(at(x + dx!, y - 1, z + dz!)));
-        const slab = [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ].some(([dx, dz]) => solid(at(x + dx!, y, z + dz!)) && at(x + dx!, y, z + dz!) !== wall);
-        if (!(exposed && slab && solid(at(x, y, z)))) {
-          continue;
-        }
-        expect(at(x, y, z), `${id}: exterior course at ${x},${y},${z}`).toBe(wall);
-        courses += 1;
+        expect(courses, `${id} variant ${variant}`).toBeGreaterThan(0);
+        checked += 1;
       }
-      expect(courses, id).toBeGreaterThan(0);
-      checked += 1;
     }
     expect(checked).toBeGreaterThan(0);
   });
