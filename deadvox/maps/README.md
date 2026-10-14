@@ -16,7 +16,7 @@ Keep exported layouts outside the Jsonnet output manifest so the Tiled exporter 
 
 ## Fixed loot
 
-Surface placement makes authored gear visible without bypassing source economy eligibility or the ordinary slot rules for fitted items. Keep authored progression and craft ingredients ahead of seeded filler so incidental loot cannot crowd them out. Regeneration must not replace inventory's authority over already looted state. Authored layouts and seeded scenario placements share fixed-loot admission and assembly rather than defining different item rules. See `src/core/placementLoot.ts`, `placementLootIssues` and `collectPlacementLoot`, and `src/core/inventory.ts`, `Inventory.furnish`.
+Surface placement makes authored gear visible without bypassing source economy eligibility or the ordinary slot rules for fitted items. Keep authored progression and craft ingredients ahead of seeded filler so incidental loot cannot crowd them out. Regeneration must not replace inventory's authority over already looted state. Authored layouts and seeded scenario placements share fixed-loot admission and assembly rather than defining different item rules. See `src/core/placementLoot.ts`, `placementLootIssues`; `src/core/loot.ts`, `rollLoot`; and `src/core/inventory.ts`, `Inventory.furnish`.
 
 The layout owns the playtest start time, with an explicit URL time taking precedence. Beat rectangles and key-item markers feed observation metrics only; they do not affect simulation. See `src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and `src/game/config.ts`, `configFromUrl`.
 

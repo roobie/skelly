@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
-  - you change item economy metadata, source contexts or loot-point descriptions
+  - you change item economy metadata, source contexts, loot selection or loot-point descriptions
   - you change skill content tuning or training rules
   - you're authoring or changing base template geometry or palettes
   - you change content references, static reachability, or disassembly-output contracts
@@ -77,7 +77,7 @@ Templates own procedural defaults. Authored building contexts override them; whe
 
 Keep empty source descriptions so future refill work need not regenerate geometry. Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
 
-Debug descriptions are fixture-scoped so showcase stock cannot define production eligibility. Preserve their explicit contexts without admitting nonspawnable demonstration items into ordinary world pools; see `src/game/worldSetup.ts`, `fixtureLootSource`.
+Debug descriptions are fixture-scoped so showcase stock cannot define production eligibility. Explicit fixture stock may include demonstration items without changing their economy metadata. The world selector still rejects those types in ordinary pools; see `src/game/worldSetup.ts`, `fixtureLootSource`, and `src/core/loot.ts`, `selectLootType`.
 
 ## Furniture visual shapes
 

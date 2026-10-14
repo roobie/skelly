@@ -14,7 +14,12 @@ describe('look settings dump', () => {
       fogginess: 0.300_000_000_4,
       torch: 1.560_000_000_2,
       shadows: { sun: true, torch: false, distance: 64 },
-      performance: { fps: 59.6, frame: { p50: 16.66, p95: 21.04 }, work: { p50: 5.04, p95: 6.25 } },
+      performance: {
+        fps: 59.6,
+        frame: { p50: 16.66, p95: 21.04 },
+        work: { p50: 5.04, p95: 6.25 },
+        drawSubmission: { calls: 7, triangles: 19, drawingBufferWidth: 800, drawingBufferHeight: 600 },
+      },
       gameTime: 'Day 2, 12:00',
       site: 'testHouse',
       seed: 7,
@@ -48,7 +53,12 @@ describe('look settings dump', () => {
         shadows: { sun: true, flashlight: false, distanceM: 64 },
         gameTime: 'Day 2, 12:00',
       },
-      performance: { fps: 60, frameMs: { p50: 16.7, p95: 21 }, cpuMs: { p50: 5, p95: 6.3 } },
+      performance: {
+        fps: 60,
+        frameMs: { p50: 16.7, p95: 21 },
+        cpuMs: { p50: 5, p95: 6.3 },
+        cpuSubmission: { calls: 7, triangles: 19, drawingBufferWidth: 800, drawingBufferHeight: 600 },
+      },
       world: { site: 'testHouse', seed: 7, viewRadiusM: 120, blockSizeM: 0.5 },
       player: { positionM: [1.23, 2, -3.46], yawRad: -1.571, pitchRad: 0.123, cam: '1.23,2.00,-3.46,-90.0,7.1,0.6' },
     });

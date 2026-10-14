@@ -31,4 +31,4 @@ The menu can export playtest metrics and a recent replay during play or after de
 
 ## Findings
 
-Use feedback and any shared metrics to assess the playtest questions in EPIC. Record findings in the living design and challenge documents before planning Slice 4. The authored beats and key items are observation-only; they must not affect simulation. See `src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and `src/game/playtestObserver.ts`, `PlaytestObserver`.
+Use feedback and any shared metrics to assess the playtest questions in EPIC. Record findings in the living design and challenge documents before planning Slice 4a. The authored beats and key items are observation-only; they must not affect simulation. See `src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and `src/game/playtestObserver.ts`, `PlaytestObserver`.

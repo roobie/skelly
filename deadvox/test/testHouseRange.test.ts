@@ -4,6 +4,7 @@ import { worldSolid } from '../src/core/collision.ts';
 import type { Registry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import type { Rolled } from '../src/core/loot.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { HandlingRange } from '../src/core/range.ts';
 import { furnitureDistance, INVENTORY_REACH } from '../src/core/reach.ts';
@@ -15,7 +16,7 @@ import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHand
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../src/game/testHouse.ts';
-import { isTestHouseRangeStockItem, testHouseRangeStock } from '../src/game/testHouseRange.ts';
+import { isTestHouseRangeStockItem } from '../src/game/testHouseRange.ts';
 import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
 import { buildTestHouseRangeRoute, routeMovementInput } from './testHouseRangeRoute.ts';
 
@@ -46,7 +47,7 @@ const withRangeStockFixtures = (): { registry: Registry; firearm: string; ammo: 
   return { registry: { ...base, items, models }, firearm, ammo, box };
 };
 
-const stockedTypes = (registry: Registry, stock: ReturnType<typeof testHouseRangeStock>): Set<string> => {
+const stockedTypes = (registry: Registry, stock: readonly Rolled[]): Set<string> => {
   const furniture = registry.furniture.get('range_rack');
   if (!furniture) {
     throw new Error('range rack content is missing');
@@ -288,7 +289,9 @@ describe('the debug test-house range', () => {
 
   it('stocks every firearm and compatible ammunition item discovered from registry data', () => {
     const { registry, firearm, ammo, box } = withRangeStockFixtures();
-    const stock = testHouseRangeStock(registry);
+    const config = makeConfig(13, 64);
+    const site = new DebugTestHouseSite(config, registry, testHouseScene(config, registry));
+    const stock = rangeFurnitureFor(site).find((spawn) => spawn.spec.type === 'range_rack')!.loot;
     const stored = stockedTypes(registry, stock);
     expect(stored.has(firearm)).toBe(true);
     expect(stored.has(ammo)).toBe(true);

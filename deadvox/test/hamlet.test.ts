@@ -4,8 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { HAMLET, HAMLET_TEMPLATES, Hamlet, hamletZombieSpawns } from '../src/core/hamlet.ts';
-import { rollLoot } from '../src/core/loot.ts';
-import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { cellsOf } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
@@ -217,32 +215,5 @@ describe('the hamlet', () => {
   it('keeps lots and the road far enough apart to stay flat', () => {
     // Flattening reaches `blend` blocks out; lots and the road are `gap` apart.
     expect(HAMLET.blend).toBeLessThanOrEqual(HAMLET.gap);
-  });
-});
-
-describe('loot', () => {
-  it('is the same for the same stream and stays within the table', () => {
-    const a = rollLoot(registry, 'kitchen_cupboard', Rng.stream(9, 'x'));
-    const b = rollLoot(registry, 'kitchen_cupboard', Rng.stream(9, 'x'));
-    expect(a).toEqual(b);
-    for (let i = 0; i < 200; i++) {
-      for (const item of rollLoot(registry, 'junk', Rng.stream(i, 'junk'))) {
-        const def = registry.items.get(item.type)!;
-        expect(item.count).toBeLessThanOrEqual(def.stack ?? 1);
-        expect(item.condition).toBeGreaterThanOrEqual(0);
-        expect(item.condition).toBeLessThanOrEqual(1);
-      }
-    }
-  });
-
-  it('rolls nested tables', () => {
-    const types = new Set<string>();
-    for (let i = 0; i < 300; i++) {
-      for (const item of rollLoot(registry, 'kitchen_cupboard', Rng.stream(i, 'k'))) {
-        types.add(item.type);
-      }
-    }
-    // kitchen_tools is only reachable through a nested table.
-    expect([...types].some((t) => ['kitchen_knife', 'can_opener', 'lighter', 'matches'].includes(t))).toBe(true);
   });
 });

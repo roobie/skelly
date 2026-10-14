@@ -12,7 +12,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { isLongGun } from '../src/core/firearmFitting.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { fixedItems, rollLoot } from '../src/core/loot.ts';
+import { lootPointStream, rollLoot } from '../src/core/loot.ts';
 import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
 import { doorOptions } from '../src/core/options.ts';
 import { Rng } from '../src/core/random.ts';
@@ -35,6 +35,7 @@ import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
 import { wheel } from '../src/vehicles/rangeRover.ts';
 import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
+import { fixtureLootPoint } from './economyFixtures.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -128,7 +129,11 @@ const maximumLootRoll = (table: LootTable, entryIndexes: readonly number[]) => {
     }
     return value;
   };
-  const rolled = rollLoot(result.registry, table.id, rng);
+  const rolled = rollLoot(
+    result.registry,
+    fixtureLootPoint({ kind: 'table', table: table.id }, { usage: ['Military'], tier: 'Tier2' }),
+    rng,
+  );
   if (values.length > 0) {
     throw new Error('Unconsumed random draws while rolling armoury loot');
   }
@@ -750,7 +755,14 @@ const seededFillerCounts = (
     return undefined;
   }
   const placed = placedPieces(placement)[localIndex]!;
-  const seeded = rollLoot(result.registry, localPiece.loot, Rng.stream(73, `loot:${placed.pos.join(',')}`));
+  const point = site
+    .lootPointsIn(toChunk(placed.pos[0]), toChunk(placed.pos[2]))
+    .find((source) => source.channel === 'container' && source.destination.join(',') === placed.pos.join(','))!;
+  const seeded = rollLoot(
+    result.registry,
+    { ...point, supply: { kind: 'table', table: localPiece.loot } },
+    lootPointStream(73, point),
+  );
   if (seeded.length === 0) {
     return undefined;
   }
@@ -1522,7 +1534,14 @@ describe('authored fixed loot', () => {
 
     for (const piece of containers) {
       const override = armoury.fixedLoot?.find(({ at }) => at.join(',') === piece.pos.join(','));
-      const fixed = fixedItems(result.registry, override?.items ?? []);
+      const fixed = rollLoot(
+        result.registry,
+        fixtureLootPoint(
+          { kind: 'fixed', items: override?.items ?? [] },
+          armoury.lootContext ?? definition.lootContext,
+        ),
+        Rng.stream(1, 'fixed'),
+      );
       for (const entryIndexes of entryIndexTuples(table.entries.length, table.rolls[1])) {
         const rolled = maximumLootRoll(table, entryIndexes);
         const supplied = [...fixed, ...rolled];

@@ -3,6 +3,7 @@
 
 import type { Vec3 } from '../core/coords.ts';
 import type { MoodState, ShadowState } from '../core/mood.ts';
+import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import { camValue } from './camUrl.ts';
 
@@ -24,7 +25,7 @@ export interface LookDumpInput {
   /** Sun and flashlight shadows, and the sun's shadow distance. */
   shadows: ShadowState;
   /** The readout's last numbers, so a screenshot's cost comes with it: smoothed fps, frame interval and CPU work. */
-  performance: { fps: number; frame: FrameSummary; work: FrameSummary };
+  performance: { fps: number; frame: FrameSummary; work: FrameSummary; drawSubmission: DrawSubmission | null };
   /** The game clock, "Day N, HH:MM". */
   gameTime: string;
   site: string;
@@ -71,6 +72,7 @@ export const lookDump = (input: LookDumpInput) => ({
     gameTime: input.gameTime,
   },
   performance: {
+    cpuSubmission: input.performance.drawSubmission,
     fps: round(input.performance.fps, 0),
     frameMs: { p50: round(input.performance.frame.p50, 1), p95: round(input.performance.frame.p95, 1) },
     cpuMs: { p50: round(input.performance.work.p50, 1), p95: round(input.performance.work.p95, 1) },

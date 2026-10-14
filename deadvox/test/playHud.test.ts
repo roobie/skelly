@@ -22,6 +22,7 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
   const chunks = [{ bytes: 10 }, { bytes: 20 }];
   const revealedPositions = [[-4, 2, 6]] as const;
   const measurements = {
+    drawSubmission: null,
     fps: 61,
     frame: { p50: 1, p95: 2 },
     work: { p50: 1, p95: 2 },
