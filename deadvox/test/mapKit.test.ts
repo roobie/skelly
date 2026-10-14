@@ -6,7 +6,9 @@ import type { ContentFile } from '../src/core/schema.ts';
 import { compileAssembly } from '../src/core/templates.ts';
 
 const FIXTURE = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
+const CLIMB_FIXTURE = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/climb-kits.jsonnet')) as ContentFile;
 const fixture = (): ContentFile => structuredClone(FIXTURE);
+const climbFixture = (): ContentFile => structuredClone(CLIMB_FIXTURE);
 const build = (data: ContentFile) => buildRegistry([{ source: 'fixture-kits.json', data }]);
 const registryOf = (data: ContentFile) => {
   const result = build(data);
@@ -75,16 +77,30 @@ it('rejects a seam that cannot mate its declared endpoints', () => {
   expect(build(data).issues.some((issue) => INCOMPATIBLE_PORT.test(issue.message))).toBe(true);
 });
 
-it('rejects an unselected alternative that removes supported body clearance', () => {
+it('rejects individually admissible alternatives with different solid-support contracts', () => {
   const data = fixture();
   const alternative = data.mapPieces![1]!;
-  alternative.layers[0] = ['....', '....', '....', '....'];
-  alternative.ownership.layers[0] = ['AAAA', 'AAAA', 'AAAA', 'AAAA'];
+  alternative.layers[0]![0] = '.===';
+  alternative.ownership.layers[0]![0] = 'ASSS';
   const result = build(data);
+  expect(result.issues.some((issue) => issue.path.startsWith('mapPieces['))).toBe(false);
   expect(
-    result.issues.some((issue) => issue.path.startsWith('mapPieces[1]') && issue.message.includes('supported landing')),
+    result.issues.some(
+      (issue) => issue.path.startsWith('mapAssemblies[0]') && issue.message.includes('equal solid support and ports'),
+    ),
   ).toBe(true);
-  expect(result.registry.mapSites.size).toBe(0);
+});
+
+it('rejects individually admissible alternatives with different public port contracts', () => {
+  const data = fixture();
+  data.mapPieces![1]!.ports[0]!.type = 'different_corridor';
+  const result = build(data);
+  expect(result.issues.some((issue) => issue.path.startsWith('mapPieces['))).toBe(false);
+  expect(
+    result.issues.some(
+      (issue) => issue.path.startsWith('mapAssemblies[0]') && issue.message.includes('equal solid support and ports'),
+    ),
+  ).toBe(true);
 });
 
 it('rejects assigning an interior-floor binding to shell cells', () => {
@@ -94,13 +110,91 @@ it('rejects assigning an interior-floor binding to shell cells', () => {
   expect(build(data).issues.some((issue) => issue.message.includes('shell cannot take material floor'))).toBe(true);
 });
 
-it('refuses climbing recipes without a final placed certificate', () => {
+it.each([0, 1, 2, 3] as const)('certifies a placed climb and return after quarter turn %s', (turn) => {
+  const data = climbFixture();
+  data.mapSites![0]!.turn = turn;
+  const registry = registryOf(data);
+  const placement = compileMapSite(registry, data.mapSites![0]!, { seed: 1, siteId: 'fixture_climb_site' });
+  expect(placement.turn).toBe(turn);
+  expect(placement.template.pieces.some((piece) => registry.furniture.get(piece.furniture)?.climbable)).toBe(true);
+});
+
+it('rejects a climb with a discontinuous ladder column', () => {
+  const data = climbFixture();
+  data.mapPieces![0]!.layers[3] = [
+    '........',
+    '........',
+    '........',
+    '........',
+    '........',
+    '........',
+    '........',
+    '........',
+  ];
+  data.mapPieces![0]!.ownership.layers[3] = [
+    'RRRRRRRR',
+    'RRRRRRRR',
+    'RRRRRRRR',
+    'RRRRRRRR',
+    'RRRRRRRR',
+    'RRRRRRRR',
+    'RRRRRRRR',
+    'RRRRRRRR',
+  ];
+  expect(
+    build(data).issues.some(
+      (issue) => issue.path.startsWith('mapSites[0]') && issue.message.includes('continuous body-clear shaft'),
+    ),
+  ).toBe(true);
+});
+
+it('rejects a climb whose upper anchor is supported but has no braced return landing', () => {
+  const data = climbFixture();
+  for (const row of [2, 3, 4, 5]) {
+    data.mapPieces![0]!.layers[6]![row] = '===....=';
+    data.mapPieces![0]!.ownership.layers[6]![row] = 'SSSRRRRS';
+  }
+  const result = build(data);
+  expect(
+    result.issues.some((issue) => issue.path.startsWith('mapPieces[') || issue.path.startsWith('mapAssemblies[')),
+  ).toBe(false);
+  expect(
+    result.issues.some(
+      (issue) => issue.path.startsWith('mapSites[0]') && issue.message.includes('supported braced landings'),
+    ),
+  ).toBe(true);
+});
+
+it('rejects individually admissible alternatives with different climb geometry', () => {
+  const data = climbFixture();
+  const alternative = structuredClone(data.mapPieces![0]!);
+  alternative.id = 'fixture_nonclimbing_descent';
+  alternative.palette.L = { furniture: 'fixture_nonclimber', facing: 'w' };
+  data.furniture!.push({
+    id: 'fixture_nonclimber',
+    name: 'Nonclimber',
+    size: [2, 1, 1],
+    color: '#808080',
+    solid: false,
+  });
+  data.mapPieces!.push(alternative);
+  data.mapAssemblies![0]!.slots[0]!.choices.push({ ref: { kind: 'piece', id: alternative.id }, weight: 1 });
+  const result = build(data);
+  expect(result.issues.some((issue) => issue.path.startsWith('mapPieces['))).toBe(false);
+  expect(
+    result.issues.some(
+      (issue) => issue.path.startsWith('mapAssemblies[0]') && issue.message.includes('ladder geometry'),
+    ),
+  ).toBe(true);
+});
+
+it('rejects a climbing graph edge with no distinct physical landings', () => {
   const data = fixture();
   data.mapSites![0]!.routes[0]!.traversal = 'climb';
   const result = build(data);
   expect(
     result.issues.some(
-      (issue) => issue.path.startsWith('mapSites[0]') && issue.message.includes('final placed scenario certificate'),
+      (issue) => issue.path.startsWith('mapSites[0]') && issue.message.includes('distinct ordered landing heights'),
     ),
   ).toBe(true);
   expect(result.registry.mapSites.size).toBe(0);

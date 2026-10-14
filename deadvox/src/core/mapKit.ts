@@ -5,6 +5,7 @@ import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { ownershipCell } from './templateOwnership.ts';
 import {
   templateBodySpace,
+  templateClimbCertificate,
   templateDoorIssues,
   templateSpawnClearanceIssues,
   templateStandingRoute,
@@ -18,6 +19,7 @@ import {
   compileMapPiece,
   contentPointer,
   type Placement,
+  placedPoint,
 } from './templates.ts';
 
 export interface MapKitIssue {
@@ -153,6 +155,22 @@ const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [str
   ...templateSpawnClearanceIssues(registry, template),
 ];
 
+const climbIssues = (
+  registry: Registry,
+  placement: Placement,
+  [from, to]: readonly [Vec3, Vec3],
+  path: string,
+): [string, string][] => {
+  const a = placedPoint(placement, from);
+  const b = placedPoint(placement, to);
+  const issue = templateClimbCertificate(
+    registry,
+    placement,
+    a[1] > b[1] ? { upper: a, lower: b } : { upper: b, lower: a },
+  );
+  return issue ? [[path, issue]] : [];
+};
+
 const routeIssues = (registry: Registry, template: CompiledTemplate, site: MapSiteDef): [string, string][] => {
   const issues: [string, string][] = [];
   for (const [index, route] of site.routes.entries()) {
@@ -171,7 +189,7 @@ const routeIssues = (registry: Registry, template: CompiledTemplate, site: MapSi
       issues.push([path, 'intended walking route and its declared return must have supported body paths']);
     }
     if (route.traversal === 'climb') {
-      issues.push([path, 'climbing routes require a final placed scenario certificate before publication']);
+      issues.push(...climbIssues(registry, { template, origin: site.origin, turn: site.turn }, [from.at, to.at], path));
     }
   }
   return issues;
@@ -187,7 +205,7 @@ export const compileMapSite = (registry: Registry, site: MapSiteDef, context: As
   const issues = [...compiledKitIssues(registry, template), ...routeIssues(registry, template, site)];
   if (issues.length > 0) {
     throw new Error(
-      `seed=${context.seed} source=${source}: ${issues.map(([path, message]) => `${path}: ${message}`).join('; ')}`,
+      `seed=${context.seed} site=${context.siteId} slot=${context.slotPath ?? assembly.id} variant=${template.id} turn=${site.turn} source=${source}: ${issues.map(([path, message]) => `${path}: ${message}`).join('; ')}`,
     );
   }
   return { template, origin: [...site.origin], turn: site.turn };

@@ -1,11 +1,13 @@
 // Static spatial acceptance, not recipe closure and not runtime navigation. Doors may be opened.
+import { BlockEntities } from './blockEntities.ts';
+import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import type { StairDef } from './schema.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
-import { type CompiledTemplate, cellsOf } from './templates.ts';
+import { type CompiledTemplate, cellsOf, type Placement, placedPieces, placedPoint } from './templates.ts';
 
 const BODY_HEIGHT = STAIR_BODY_HEIGHT;
 const BODY_HALF_WIDTH = STAIR_BODY_HALF_WIDTH;
@@ -350,6 +352,92 @@ export const templateSpawnClearanceIssues = (registry: Registry, template: Compi
   });
 };
 
+const reservedBody = (template: CompiledTemplate, position: Vec3): boolean =>
+  !template.reserved ||
+  [...bodyCells(position)].every(
+    ([x, y, z]) =>
+      x >= 0 &&
+      x < template.size[0] &&
+      y >= 0 &&
+      y < template.size[1] &&
+      z >= 0 &&
+      z < template.size[2] &&
+      template.reserved![x + template.size[0] * (z + template.size[2] * y)] === 1,
+  );
+
+export const templateClimbCertificate = (
+  registry: Registry,
+  placement: Placement,
+  link: ClimbLink,
+): string | undefined => {
+  const { template } = placement;
+  const space = new TemplateSpace(registry, template);
+  const entities = new BlockEntities(registry);
+  const ladderCells = new Set<string>();
+  for (const piece of template.pieces) {
+    if (registry.furniture.get(piece.furniture)?.climbable) {
+      for (const offset of cellsOf(piece.size)) {
+        ladderCells.add(offset.map((value, axis) => value + piece.pos[axis]!).join(','));
+      }
+    }
+  }
+  for (const piece of placedPieces(placement)) {
+    entities.add({
+      type: piece.furniture,
+      pos: piece.pos,
+      size: piece.size,
+      facing: piece.facing,
+      ...(piece.lock ? { lock: piece.lock } : {}),
+    });
+  }
+  const origin = placedPoint(placement, [0, 0, 0]);
+  const xAxis = placedPoint(placement, [1, 0, 0]).map((value, axis) => value - origin[axis]!);
+  const zAxis = placedPoint(placement, [0, 0, 1]).map((value, axis) => value - origin[axis]!);
+  const local = (point: Readonly<Vec3>): Vec3 => {
+    const offset = point.map((value, axis) => value - origin[axis]!);
+    return [
+      offset.reduce((sum, value, axis) => sum + value * xAxis[axis]!, 0),
+      offset[1]!,
+      offset.reduce((sum, value, axis) => sum + value * zAxis[axis]!, 0),
+    ];
+  };
+  // Ladder cells are owned connector furniture, not owned-air reservations.
+  const admittedBody = (point: Vec3): boolean =>
+    [...bodyCells(point)].every(
+      ([x, y, z]) =>
+        x >= 0 &&
+        x < template.size[0] &&
+        y >= 0 &&
+        y < template.size[1] &&
+        z >= 0 &&
+        z < template.size[2] &&
+        (template.reserved?.[x + template.size[0] * (z + template.size[2] * y)] === 1 ||
+          ladderCells.has([x, y, z].join(','))),
+    );
+  const clear = (point: Readonly<Vec3>): boolean => admittedBody(local(point)) && space.clear(local(point));
+  const standing = (point: Readonly<Vec3>): boolean => admittedBody(local(point)) && space.standing(local(point));
+  return climbCertificate(
+    {
+      entities,
+      entityAt: (point) => entities.at(...point),
+      clear,
+      standing,
+      connected: (from, to) => from[1] === to[1] && templateStandingRoute(registry, template, local(from), local(to)),
+      sweep: (from, to, supported = true) => {
+        const steps = Math.max(1, Math.ceil(Math.hypot(...to.map((value, axis) => value - from[axis]!)) * 4));
+        for (let step = 0; step <= steps; step++) {
+          const point = from.map((value, axis) => value + ((to[axis]! - value) * step) / steps) as Vec3;
+          if (!(supported ? standing(point) : clear(point))) {
+            return false;
+          }
+        }
+        return true;
+      },
+    },
+    link,
+  );
+};
+
 export const templateStandingRoute = (
   registry: Registry,
   template: CompiledTemplate,
@@ -357,11 +445,7 @@ export const templateStandingRoute = (
   to: Vec3,
 ): boolean => {
   const space = new TemplateSpace(registry, template);
-  const reserved = (position: Vec3): boolean =>
-    !template.reserved ||
-    [...bodyCells(position)].every(
-      ([x, y, z]) => template.reserved![x + template.size[0] * (z + template.size[2] * y)] === 1,
-    );
+  const reserved = (position: Vec3): boolean => reservedBody(template, position);
   return (
     space.standing(from) &&
     space.standing(to) &&

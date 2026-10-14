@@ -391,6 +391,41 @@ const compileKitRef = (registry: Registry, ref: KitRef, context: AssemblyContext
 const slotLabel = (context: AssemblyContext, assembly: TemplateAssembly, slot: TemplateSlot): string =>
   `seed=${context.seed} site=${context.siteId} slot=${context.slotPath ?? assembly.id}/${slot.id} turn=${slot.turn}`;
 
+const traversalContract = (registry: Registry, template: CompiledTemplate): string => {
+  const occupied = new Set<number>();
+  const ladders: string[] = [];
+  const layer = template.size[0] * template.size[2];
+  for (const piece of template.pieces) {
+    const def = registry.furniture.get(piece.furniture)!;
+    if (def.climbable) {
+      ladders.push(JSON.stringify([piece.pos, piece.size, piece.facing]));
+    }
+    const blocksBody = def.door ? piece.lock?.locked === true : def.solid !== false;
+    if (!blocksBody) {
+      continue;
+    }
+    for (const offset of cellsOf(piece.size)) {
+      const at = offset.map((value, axis) => value + piece.pos[axis]!) as Vec3;
+      const index = ownershipCell(template.size, at);
+      if (template.reserved?.[index] === 1 || template.reserved?.[index + layer] === 1) {
+        occupied.add(index);
+      }
+    }
+  }
+  return JSON.stringify([
+    Object.entries(template.anchors ?? {})
+      .sort(([a], [b]) => {
+        if (a === b) {
+          return 0;
+        }
+        return a < b ? -1 : 1;
+      })
+      .map(([id, anchor]) => [id, anchor.kind, anchor.at]),
+    [...occupied].sort((a, b) => a - b),
+    ladders.sort(),
+  ]);
+};
+
 const resolveSlot = (
   registry: Registry,
   assembly: TemplateAssembly,
@@ -447,10 +482,11 @@ const resolveSlot = (
         (block, index) =>
           Boolean(registry.blocks[block]?.solid) !== Boolean(registry.blocks[reference.blocks[index]!]?.solid),
       ) ||
-      portContract(placement.template) !== portContract(reference)
+      portContract(placement.template) !== portContract(reference) ||
+      traversalContract(registry, placement.template) !== traversalContract(registry, reference)
     ) {
       throw new Error(
-        `${label} variant=${placement.template.id}: alternatives need the same ownership domain and reserved voids, with equal solid support and ports`,
+        `${label} variant=${placement.template.id}: alternatives need the same ownership domain and reserved voids, with equal solid support and ports, anchors, reserved-body furniture collision and ladder geometry`,
       );
     }
   }

@@ -55,11 +55,14 @@ Windowed template spawns use named game-clock boundaries. Keep their rule and re
 ### Curated kits
 
 A weighted alternative must preserve its consumer's spatial contract, not merely fit a
-bounding box. Exclusive ownership prevents write order from changing a facade; reserved
-mouths and walking space keep furnishing from changing a promised route. Structural
-material roles must agree with the style binding so interior flooring cannot silently
-become shell treatment. See `src/core/schema.ts`, `MapPieceSchema` and `MapAssemblySchema`,
-and `src/core/templates.ts`, `compileMapPiece` and `compileAssembly`.
+bounding box. Alternatives must not move promised endpoints, remove a climb connector,
+or change body obstruction and support within reserved circulation. This permits a
+certificate for the selected composition to cover every alternative without searching
+combinations. Exclusive ownership prevents write order from changing a facade.
+Structural material roles must agree with the style binding so interior flooring cannot
+silently become shell treatment. See `src/core/schema.ts`, `MapPieceSchema` and
+`MapAssemblySchema`, and `src/core/templates.ts`, `compileMapPiece`, `traversalContract`
+and `compileAssembly`.
 
 Bound authored volumes before allocating compilation buffers so a short metadata file
 cannot request unbounded memory. See `src/core/schema.ts`, `KitSize`.
@@ -69,13 +72,15 @@ winning definition through nested placement so a conflict identifies the authors
 claims rather than just the final block. See `src/core/content.ts`, `buildRegistry`, and
 `src/core/mapKit.ts`, `mapKitIssues`.
 
-A route graph is intent, not body reachability. Walking admission uses reserved volume and
-known support rather than assuming that unclaimed cells or terrain outside a piece are
-empty or load-bearing. Climbing recipes remain refused until #712 connects the final
-placed scenario certificate to their publication boundary; an abstract link or the
-presence of a ladder cannot prove a climb. See `src/core/mapKit.ts`, `compileMapSite`,
-`src/core/templateSpatial.ts`, `templateStandingRoute`, and `src/core/scenarioCertificate.ts`,
-`scenarioCertificate`.
+A route graph is intent, not body reachability. Admission uses reserved volume and known
+support rather than assuming that unclaimed cells or terrain outside a piece are empty
+or load-bearing. Climbing also requires a continuous body-clear connector with a
+supported, braced exit that permits return. Ladder furniture owns its connector cells;
+those cells are not reserved air, but do not excuse missing clearance around the body.
+Use the same physical certificate for composed scenarios and kit publication so the two
+boundaries cannot disagree about a usable climb. See `src/core/mapKit.ts`, `compileMapSite`,
+`src/core/templateSpatial.ts`, `templateClimbCertificate` and `templateStandingRoute`,
+and `src/core/climbCertificate.ts`, `climbCertificate`.
 
 ## Recipes
 
