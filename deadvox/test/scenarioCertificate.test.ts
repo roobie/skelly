@@ -57,7 +57,7 @@ const substitutedRegistry: Registry = {
           {
             ...assembly,
             slots: assembly.slots.map((slot) => {
-              const ref = slot.choices[0]!.ref;
+              const { ref } = slot.choices[0]!;
               const choices = ref.kind === 'assembly' ? alternatives.get(ref.id) : undefined;
               const replacements = choices?.filter((room) => room.id !== ref.id);
               return replacements && replacements.length > 0
