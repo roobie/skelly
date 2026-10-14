@@ -134,7 +134,7 @@ would intersect a solid overhead block. On a restore admitted by
 body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
 `src/content/base/senses.jsonnet`, `crouch.bodyHeightMetres`;
 `src/game/session.ts`, `settleStance`; `src/core/schema.ts`, `SenseSchema`;
-`src/content/base/camp.jsonnet`, `camp_wall_run_crouch_hole`; and
+`src/content/base/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
 ### Block shapes
@@ -901,7 +901,7 @@ See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 
 ## Hand grenade
 
-A grenade thrown into the horde is meant to be the playtest's climax: the one moment the player can answer a whole crowd at once, with the gore to show it. The FOB armoury holds the grenades, and the horde outside the FOB's west wall stands within earshot of prying the armoury lock through the compound's walls, so forcing the armoury brings the crowd the grenades are for, while the key leaves the horde where it stands. It stands on the west side so the crouch passage through the east wall stays a quiet way in, away from the crowd. See `src/content/base/items-explosives.jsonnet`, `frag_grenade`; `src/content/base/layouts-playtest.json`, `fob_west`; and `src/core/zombies.ts`, `hearVocalNoise`, for how far a horde hears.
+A grenade thrown into the horde is meant to be the playtest's climax: the one moment the player can answer a whole crowd at once, with the gore to show it. The FOB armoury holds the grenades, and the horde outside the FOB's west wall stands within earshot of prying the armoury lock through the compound's walls, so forcing the armoury brings the crowd the grenades are for, while the key leaves the horde where it stands. It stands on the west side so the crouch passage through the east wall stays a quiet way in, away from the crowd. See `src/content/base/items-explosives.libsonnet`, `frag_grenade`; `src/content/base/layouts-playtest.json`, `fob_west`; and `src/core/zombies.ts`, `hearVocalNoise`, for how far a horde hears.
 
 - **Pulling the pin is an action.** The held grenade's primary action pulls the pin, or puts it back, and says which; the item's details show the pin, or a burning fuse. Arming takes a deliberate act, so a grenade is never live by accident. See `src/core/explosive.ts`, `Fuses.togglePin`, and `src/game/play.ts`, `togglePin`.
 - **The fuse lights when the hand lets go.** An unpinned grenade lights the moment it is anywhere but a hand: thrown, dropped, or put away, because nothing holds the lever once the grip opens. A pinned grenade that is thrown remains a dud, and re-pinning before release makes it safe. There is no cooking, and a lit fuse cannot be stopped. Pin and fuse are saved on the item, including while its presentation arc is playing. The fuse counts down in simulation time inside the zombies system's step rather than in a system of its own, because the scheduler's set of systems is part of the save. See `src/core/explosive.ts`, `Fuses.advance`, and `src/game/session.ts`, `detonate`.
@@ -1220,9 +1220,8 @@ play, not only decorate it.
 - **Dilapidation:** built things show abandonment through collapsed sections,
   breaches, slumped or missing segments and rubble. A passable breach is a real
   route, so each authored site names the gaps a player can cross. New structures
-  and reworks follow this direction, starting with the camp walls in #385;
-  retrofitting existing structures is tracked in #396. See
-  `src/content/base/camp.jsonnet`, `camp_wall_run`, `camp_gate`, and
+  and reworks follow this direction; retrofitting existing structures is tracked
+  in #396. See `src/content/base/camp.libsonnet`, `camp_wall_run`, `camp_gate`, and
   `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an
