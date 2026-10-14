@@ -30,12 +30,8 @@ import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.
 import { rectsOverlap } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
-
-const BUNDLED_CONTENT = buildBundledContent();
-
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
-import { configFromUrl } from './fixtures/startupContent.ts';
+import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
 
 const base = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))

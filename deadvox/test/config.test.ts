@@ -1,12 +1,8 @@
 import { expect, it, vi } from 'vitest';
 import { SPAWN_TIME, SPAWN_TIMES } from '../src/core/clock.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
-
-const BUNDLED_CONTENT = buildBundledContent();
-
 import { applyWeatheringConfig } from '../src/game/config.ts';
-import { configFromUrl, makeConfig } from './fixtures/startupContent.ts';
+import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
 
 it('uses SPAWN_TIME when the URL has no time for a site without its own start', () => {
   expect(configFromUrl(new URLSearchParams('site=city')).start).toBe(SPAWN_TIME);

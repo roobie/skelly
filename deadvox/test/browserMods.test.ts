@@ -12,7 +12,7 @@ const mod = (data: unknown): BrowserMod => ({ source: 'fixture.json', text: JSON
 
 describe('browser mod admission', () => {
   it('caps UTF-8 bytes rather than character count before parsing', () => {
-    const oversized = { ...mod({}), text: 'é'.repeat(MAX_MOD_BYTES / 2 + 1) };
+    const oversized = mod({ items: [{ ...fixture.items[0], description: 'é'.repeat(MAX_MOD_BYTES / 2) }] });
     expect(oversized.text.length).toBeLessThan(MAX_MOD_BYTES);
     const result = evaluateMods([oversized]);
     expect(result.canStart).toBe(false);
