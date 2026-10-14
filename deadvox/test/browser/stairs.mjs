@@ -766,7 +766,7 @@ try {
     ]);
     const originalModes = await page.evaluate(() => {
       const { engine } = globalThis.stairsWitness;
-      return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn };
+      return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn, film: engine.mood.film };
     });
     const setShaderLook = async (linear, patterns) => {
       const before = await page.evaluate(() => globalThis.stairsWitness.engine.renderer.info.render.frame);
@@ -782,8 +782,33 @@ try {
     };
     let camoAo;
     try {
+      // Animated film grain makes independent lighting samples compare different noise realizations.
+      await page.evaluate(() => globalThis.stairsWitness.engine.mood.setFilm(false));
       await setShaderLook(true, true);
+      const captureState = () =>
+        page.evaluate(() => {
+          const { engine, session } = globalThis.stairsWitness;
+          return {
+            realMs: performance.now(),
+            frame: engine.renderer.info.render.frame,
+            camera: engine.camera.position.toArray(),
+            body: [...session.body.pos],
+            velocity: [...session.body.vel],
+            calendar: session.sim.calendar,
+            meshes: engine.meshes.group.children.length,
+            film: engine.mood.film,
+            grain: engine.mood.gradePass?.uniforms.uGrain.value,
+            grainSeed: engine.mood.gradePass?.uniforms.uSeed.value,
+            stats: { ...engine.skylight.stats },
+            fields: engine.skylight.inspect().map(({ volume, ...field }) => field),
+            jobs: globalThis.skyTiming.jobs
+              .filter((job) => !job.receivedAbsoluteRealMs)
+              .map((job) => ({ id: job.id, type: job.type, key: job.key })),
+          };
+        });
+      const captureStates = { patternedBefore: await captureState() };
       const patterned = await camoWallPixels(await shot('camo-ao-patterned'));
+      captureStates.patternedAfter = await captureState();
       const referenceFrame = await page.evaluate(() => {
         globalThis.skyProofControl.value = 1;
         return globalThis.stairsWitness.engine.renderer.info.render.frame;
@@ -792,7 +817,9 @@ try {
         (frame) => globalThis.stairsWitness.engine.renderer.info.render.frame > frame,
         referenceFrame,
       );
+      captureStates.mainBefore = await captureState();
       const mainEstimate = await camoWallPixels(await shot('camo-ao-main-estimate'));
+      captureStates.mainAfter = await captureState();
       await page.evaluate(() => {
         globalThis.skyProofControl.value = 0;
       });
@@ -802,6 +829,7 @@ try {
       camoAo = {
         patterned,
         mainEstimate,
+        captureStates,
         plain,
         patternedRatio: ratio(patterned),
         plainRatio: ratio(plain),
@@ -830,6 +858,7 @@ try {
       await page.evaluate(() => {
         globalThis.skyProofControl.value = 0;
       });
+      await page.evaluate((film) => globalThis.stairsWitness.engine.mood.setFilm(film), originalModes.film);
       await setShaderLook(originalModes.linear, originalModes.patterns);
     }
     await writeFile(resolve(artifacts, 'camo-inner-corner-ao.json'), JSON.stringify(camoAo, null, 2));
