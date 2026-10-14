@@ -761,7 +761,7 @@ try {
     ]);
     const originalModes = await page.evaluate(() => {
       const { engine } = globalThis.stairsWitness;
-      return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn };
+      return { linear: engine.meshes.linearColorsOn, patterns: engine.meshes.patternsOn, film: engine.mood.film };
     });
     const setShaderLook = async (linear, patterns) => {
       const before = await page.evaluate(() => globalThis.stairsWitness.engine.renderer.info.render.frame);
@@ -777,6 +777,8 @@ try {
     };
     let camoAo;
     try {
+      // Animated film grain makes independent lighting samples compare different noise realizations.
+      await page.evaluate(() => globalThis.stairsWitness.engine.mood.setFilm(false));
       await setShaderLook(true, true);
       const captureState = () =>
         page.evaluate(() => {
@@ -789,6 +791,9 @@ try {
             velocity: [...session.body.vel],
             calendar: session.sim.calendar,
             meshes: engine.meshes.group.children.length,
+            film: engine.mood.film,
+            grain: engine.mood.gradePass?.uniforms.uGrain.value,
+            grainSeed: engine.mood.gradePass?.uniforms.uSeed.value,
             stats: { ...engine.skylight.stats },
             fields: engine.skylight.inspect().map(({ volume, ...field }) => field),
             jobs: globalThis.skyTiming.jobs
@@ -848,6 +853,7 @@ try {
       await page.evaluate(() => {
         globalThis.skyProofControl.value = 0;
       });
+      await page.evaluate((film) => globalThis.stairsWitness.engine.mood.setFilm(film), originalModes.film);
       await setShaderLook(originalModes.linear, originalModes.patterns);
     }
     await writeFile(resolve(artifacts, 'camo-inner-corner-ao.json'), JSON.stringify(camoAo, null, 2));
