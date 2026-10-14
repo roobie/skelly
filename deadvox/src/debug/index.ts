@@ -1814,7 +1814,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     get interactionRayEnabled() {
       return interactionRayEnabled;
     },
-    drawInteractionRay(origin, direction, reachMetres, nowMs, interactionDistanceBlocks) {
+    drawInteractionRay({ origin, direction, reachMetres, nowMs, interactionDistanceBlocks }) {
       if (!(transientDraw.enabled && interactionRayEnabled)) {
         return;
       }
