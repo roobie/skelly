@@ -589,10 +589,17 @@ describe('authored layout acceptance', () => {
   });
   it('validates optional windows on authored shambler markers', () => {
     const timed = {
-      ...layout,
-      shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' } }],
+      ...validationLayout('timed_marker_fixture'),
+      shamblers: [
+        {
+          ...layout.shamblers[0]!,
+          position: [5, 0.5, 5],
+          window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' },
+        },
+      ],
     };
-    expect(load(timed).issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
+    const result = buildRegistry([...layoutValidationBase, { source: 'layout-test.json', data: { layouts: [timed] } }]);
+    expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
     invalid(
       { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'sunset' } }] },
       'expected a named game time or HH:MM',

@@ -12,6 +12,16 @@ local normalSleep = 100 / normalSleepGameHours;
     staminaRegenDelaySimSeconds: 5,
     proneEyeHeightMetres: 0.3,
     shockPerDamage: { blunt: 2, cut: 0, pierce: 0 },
+    landing: {
+      safeSpeedMetresPerSimSecond: 9,
+      damagePerSquaredSpeed: 0.18,
+      kind: 'blunt',
+      cause: 'a fall',
+      regions: [
+        { region: 'leftLeg', weight: 1 },
+        { region: 'rightLeg', weight: 1 },
+      ],
+    },
     treatmentSimSeconds: 8,
     treatmentSpread: { min: 0.5, max: 1.5 },
     wakeShock: 10,

@@ -21,6 +21,7 @@ read_if:
   - you're changing loaded-distance simulation or the horde representation
   - you're restructuring the per-tick zombie simulation
   - you're changing bleeding cues
+  - you change landing injuries or their content tuning
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
   - you're changing zombie attack moves or the damage kinds they deal
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
@@ -708,6 +709,28 @@ counts distinct item units taken from containers, not inventory actions, so
 returning and retaking an item is not another find. See `die` in
 `src/game/play.ts`, `showDeath` in `src/ui/death.ts`, and `Inventory.countLooted`
 in `src/core/inventory.ts`.
+
+### Landing injuries
+
+A fall loads the body at terrain contact, not at its highest point: catching a
+ladder reduces the impact, and a stair landing counts even if the player leaves
+that step again within the same tick. Landing injuries reuse localized hits,
+so pain, shock, movement impairment, bleeding and saves have one owner rather
+than a separate fall-health system. The body has legs but no separate feet or
+fracture state; landing content chooses the affected regions. Zombies share
+collision physics but not the player's body-hit path, so they do not take
+landing injuries. See `src/core/physics.ts`, `stepBody`, `src/core/sim.ts`,
+`Simulation.land`, and `src/game/session.ts`, `advancePlayerBody`.
+
+Starting tuning uses an approximate three-metre human storey as a play reference:
+a one-storey drop should be survivable but hurt, while three storeys should be
+serious and larger drops can kill. This is a gameplay reference, not a medical
+prediction. Speed squared represents impact energy; removing the safe-speed
+energy gives a continuous onset without punishing an ordinary jump. Gravity
+is deliberately heavier than Earth's, so starting values are calibrated to
+in-game speeds rather than real-world free-fall speeds. BR tunes these starting
+values by playing; they are not final balance. See `src/content/base/body.jsonnet`,
+`landing`, and `src/game/player.ts`, `physicsFor`.
 
 ### Bleeding
 

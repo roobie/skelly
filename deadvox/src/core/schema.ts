@@ -1700,6 +1700,20 @@ const BodyTuningSchema = strictObject({
   proneEyeHeightMetres: Positive,
   /** Shock damage per point of health damage, by the hit's damage kind. */
   shockPerDamage: perDamageKind(NonNegative),
+  landing: strictObject({
+    safeSpeedMetresPerSimSecond: SimRate,
+    damagePerSquaredSpeed: Positive,
+    kind: picklist(DAMAGE_KINDS),
+    cause: Name,
+    regions: pipe(
+      array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
+      nonEmpty('needs at least one landing region'),
+      check(
+        (regions) => new Set(regions.map(({ region }) => region)).size === regions.length,
+        'landing regions must be unique',
+      ),
+    ),
+  }),
   /** Sim seconds required to apply wound treatment. */
   treatmentSimSeconds: PositiveSimSeconds,
   /** The range each treatment application's strength is multiplied by, rolled per application. */

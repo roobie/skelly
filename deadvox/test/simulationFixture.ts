@@ -13,6 +13,16 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   staminaRegenDelaySimSeconds: simSeconds(5),
   proneEyeHeightMetres: 0.2,
   shockPerDamage: { blunt: 2, cut: 0, pierce: 0 },
+  landing: {
+    safeSpeedMetresPerSimSecond: simRate(8),
+    damagePerSquaredSpeed: 0.25,
+    kind: 'blunt',
+    cause: 'a fixture fall',
+    regions: [
+      { region: 'leftLeg', weight: 1 },
+      { region: 'rightLeg', weight: 1 },
+    ],
+  },
   treatmentSimSeconds: simSeconds(1),
   treatmentSpread: { min: 0.5, max: 1.5 },
   wakeShock: 5,
