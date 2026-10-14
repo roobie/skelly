@@ -249,6 +249,7 @@ try {
         x,
         y,
         insideGo: Boolean(target?.closest('#go')),
+        insideSaveNote: Boolean(target?.closest('#save-note')),
         buttonText: target?.closest('button')?.textContent?.trim() ?? '',
       };
       return target;
@@ -569,7 +570,18 @@ try {
     initialHudToggles,
     'menu interactions restore the initial HUD settings',
   );
-  await clickAt('#go', 'edge');
+  const unscrolledResume = await evaluate(`(() => {
+    const button = document.querySelector('#go');
+    const rect = button.getBoundingClientRect();
+    return {
+      scrollTop: document.querySelector('#overlay .card').scrollTop,
+      top: rect.top,
+      hitGo: Boolean(document.elementFromPoint(rect.left + 1, rect.top + 1)?.closest('#go')),
+    };
+  })()`);
+  process.stdout.write(`Resume before scrolling: ${JSON.stringify(unscrolledResume)}\n`);
+  await evaluate("document.querySelector('#save-note').scrollIntoView({ block: 'center', behavior: 'instant' })");
+  await clickAt('#save-note');
   const arrowTip = await evaluate(`(() => {
     const click = window.__lastForwardedClick;
     const cursor = window.__cursorBeforeClick;
@@ -581,7 +593,7 @@ try {
       background: cursor.background,
       blend: cursor.blend,
       rootBlend: cursor.rootBlend,
-      hitGo: click.hitTest.insideGo,
+      hitSaveNote: click.hitTest.insideSaveNote,
       hitX: click.hitTest.x,
       hitY: click.hitTest.y,
     };
@@ -591,11 +603,31 @@ try {
   assert.equal(arrowTip.background, 'rgb(255, 255, 255)', 'cursor mask is filled white');
   assert.equal(arrowTip.blend, 'difference', 'the cursor is difference-blended');
   assert.equal(arrowTip.rootBlend, 'difference', 'cursor root uses difference blending');
-  assert.equal(arrowTip.hitGo, true, 'elementFromPoint at the arrow tip targets the known button edge');
+  assert.equal(arrowTip.hitSaveNote, true, 'elementFromPoint at the arrow tip targets non-button save status');
   assert.ok(Math.abs(arrowTip.x - cursor.x) < 0.1, 'standard arrow tip is at cursor x');
   assert.ok(Math.abs(arrowTip.y - cursor.y) < 0.1, 'standard arrow tip is at cursor y');
   assert.ok(Math.abs(arrowTip.hitX - cursor.x) < 0.1, 'arrow-tip hit test uses cursor x');
   assert.ok(Math.abs(arrowTip.hitY - cursor.y) < 0.1, 'arrow-tip hit test uses cursor y');
+  await evaluate("document.querySelector('#go').scrollIntoView({ block: 'center', behavior: 'instant' })");
+  await clickAt('#go', 'edge');
+  const resumeTip = await evaluate(`(() => {
+    const click = window.__lastForwardedClick;
+    const before = window.__cursorBeforeClick;
+    return {
+      hand: before.hand,
+      x: before.left + 4,
+      y: before.top,
+      hitGo: click.hitTest.insideGo,
+      hitX: click.hitTest.x,
+      hitY: click.hitTest.y,
+    };
+  })()`);
+  assert.equal(resumeTip.hand, true, 'native resume button uses the pointing hand');
+  assert.equal(resumeTip.hitGo, true, 'elementFromPoint at the fingertip targets the visible resume button edge');
+  assert.ok(Math.abs(resumeTip.x - cursor.x) < 0.1, 'resume fingertip is at cursor x');
+  assert.ok(Math.abs(resumeTip.y - cursor.y) < 0.1, 'resume fingertip is at cursor y');
+  assert.ok(Math.abs(resumeTip.hitX - cursor.x) < 0.1, 'resume hit test uses fingertip x');
+  assert.ok(Math.abs(resumeTip.hitY - cursor.y) < 0.1, 'resume hit test uses fingertip y');
   assert.equal(await evaluate("document.querySelector('#overlay').hidden"), true, 'edge click resumes play');
   const browserKeyEventsBefore = await evaluate('window.__keyEvents.length');
   await pressBinding(keyBindings.browserMenuBar);

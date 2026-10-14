@@ -58,19 +58,9 @@
           <label for="controls-search">Search controls</label>
           <input id="controls-search" type="search" autocomplete="off" spellcheck="false">
           <dl id="controls"></dl>
-          <p id="save-status" role="status">Checking saved worlds…</p>
-          <p id="save-note" class="scale"></p>
-          <button id="continue" type="button" disabled hidden>Continue</button>
-          <button id="save-rescan" type="button" hidden>Retry saved worlds</button>
-          <button id="save-persist" type="button" hidden>Request persistent storage</button>
-          <p id="save-persist-note" class="scale" hidden>Asks your browser to protect saves from automatic eviction; it may show a permission prompt.</p>
-          <button id="save-export" type="button" hidden>Export raw save records</button>
-          <a id="save-download" href="about:blank" aria-label="Download save record" hidden>Download save record</a>
-          <div id="playtest-export" hidden>
-            <button id="playtest-metrics-export" type="button">Export playtest metrics</button>
-            <button id="playtest-replay-export" type="button">Export recent replay</button>
-            <p id="playtest-export-status" class="scale" role="status"></p>
-          </div>
+          <section id="title-choice" aria-label="Choose your world">
+          <h2 id="title-choice-heading" hidden>Saved world</h2>
+          <button id="continue" type="button" disabled hidden>Continue saved world</button>
           <div id="save-confirmation" hidden role="dialog" aria-modal="true" aria-labelledby="save-confirm-title">
             <p id="save-confirm-title">Replace this saved world? Its newest A/B generation remains until the new world’s first checkpoint commits.</p>
             <button id="save-replace-confirm" type="button">Replace saved world</button>
@@ -84,7 +74,20 @@
               <option value="left">Left</option>
             </select>
           </fieldset>
-          <p class="go" id="go"></p>
+          <button class="go" id="go" type="button"></button>
+          </section>
+          <p id="save-status" role="status">Checking saved worlds…</p>
+          <p id="save-note" class="scale"></p>
+          <button id="save-rescan" type="button" hidden>Retry saved worlds</button>
+          <button id="save-persist" type="button" hidden>Request persistent storage</button>
+          <p id="save-persist-note" class="scale" hidden>Asks your browser to protect saves from automatic eviction; it may show a permission prompt.</p>
+          <button id="save-export" type="button" hidden>Export raw save records</button>
+          <a id="save-download" href="about:blank" aria-label="Download save record" hidden>Download save record</a>
+          <div id="playtest-export" hidden>
+            <button id="playtest-metrics-export" type="button">Export playtest metrics</button>
+            <button id="playtest-replay-export" type="button">Export recent replay</button>
+            <p id="playtest-export-status" class="scale" role="status"></p>
+          </div>
           <div id="hud-options"></div>
           <div id="audio-options"></div>
           <div id="input-options"></div>

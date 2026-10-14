@@ -44,9 +44,9 @@ export const FLASHLIGHT_INTENSITY = 5;
 export const FLASHLIGHT_DECAY = 1;
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
-const HALF_BRIGHTNESS = 0.9;
+export const HALF_BRIGHTNESS = 0.9;
 /** How sharply the beam fades around `HALF_BRIGHTNESS`; high enough that night stays ~1 and noon is negligible. */
-const FADE_SHARPNESS = 5;
+export const FADE_SHARPNESS = 5;
 
 /**
  * The share of the beam's strength to keep, in (0, 1]: about 1 by night, a few percent of
@@ -100,7 +100,7 @@ export class Flashlight {
     scene.add(this.light, this.light.target);
   }
 
-  /** `flashlightDaylightScale` of the sky being drawn; set it each frame before `update`. */
+  /** Outdoor fallback only; Skylight applies daylight suppression at each receiver when available. */
   daylightScale = 1;
 
   /** Multiplier on the beam's intensity, 1 by default; the debug controls change it to tune the beam by eye. */

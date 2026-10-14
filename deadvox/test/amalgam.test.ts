@@ -226,6 +226,8 @@ interface ObstacleResult {
   crossed: boolean;
   leftGround: boolean;
   maxZ: number;
+  startZ: number;
+  reachedBarrier: boolean;
   stalled: boolean;
   mode: string;
 }
@@ -233,7 +235,7 @@ interface ObstacleResult {
 const placeFenceRow = (world: World): void => {
   const fence = compileTemplate(registry, registry.templates.get('rickety_fence')!);
   const [sx, sy, sz] = fence.size;
-  for (let originX = -70; originX <= 70; originX += sx) {
+  for (let originX = -2 * sx; originX <= 2 * sx; originX += sx) {
     for (let y = 0; y < sy; y++) {
       for (let z = 0; z < sz; z++) {
         for (let x = 0; x < sx; x++) {
@@ -255,11 +257,12 @@ const runObstacleCase = (
   const world = new World();
   const entities = new BlockEntities(registry);
   const centerX = kind === 'fence' ? 0 : 50;
-  const startZ = -30;
+  // The contract is collision response at the barrier, not long-range pursuit across the map.
+  const startZ = -8;
   if (kind === 'fence') {
     placeFenceRow(world);
   } else {
-    for (let x = centerX - 50; x <= centerX + 50; x += 2) {
+    for (let x = centerX - 6; x <= centerX + 6; x += 2) {
       entities.add({ type: 'crate', pos: [x, 0, 0], size: [2, 2, 2], facing: 'n' });
     }
   }
@@ -287,7 +290,20 @@ const runObstacleCase = (
   let stalledTicks = 0;
   let previousZ = startZ;
   let maxZ = Number.NEGATIVE_INFINITY;
+  let reachedBarrier = false;
+  const barrierInNextStep = (): boolean => {
+    const approaching = simulation.store.get(id)!;
+    const shape = simulation.shapeOf(approaching.body);
+    const [x, y, beforeZ] = approaching.body.pos;
+    const forwardStep = configuredType.speed.chaseMetresPerSimSecond / BLOCK_SIZE / 60;
+    return (
+      shape !== undefined &&
+      !shape.overlapsTerrain(approaching.body.pos) &&
+      shape.overlapsTerrain([x, y, beforeZ + forwardStep])
+    );
+  };
   for (let tick = 0; tick < 1200; tick++) {
+    reachedBarrier ||= barrierInNextStep();
     simulation.tick(1 / 60);
     const { body } = simulation.store.get(id)!;
     const [, , z] = body.pos;
@@ -304,7 +320,16 @@ const runObstacleCase = (
       break;
     }
   }
-  return { barrierSolid, crossed, leftGround, maxZ, stalled, mode: simulation.store.get(id)!.mode };
+  return {
+    barrierSolid,
+    crossed,
+    leftGround,
+    maxZ,
+    startZ,
+    reachedBarrier,
+    stalled,
+    mode: simulation.store.get(id)!.mode,
+  };
 };
 
 describe('amalgam body and combat seam', () => {
@@ -529,7 +554,8 @@ describe('amalgam body and combat seam', () => {
     expect(amalgam.barrierSolid).toBe(true);
     expect(amalgam.mode).toBe('chase');
     expect(amalgam.stalled).toBe(true);
-    expect(amalgam.maxZ).toBeGreaterThan(-30);
+    expect(amalgam.maxZ).toBeGreaterThan(amalgam.startZ);
+    expect(amalgam.reachedBarrier).toBe(true);
     expect(amalgam.crossed).toBe(false);
     expect(amalgam.leftGround).toBe(false);
     expect(runObstacleCase(kind, 'shambler').crossed).toBe(true);

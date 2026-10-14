@@ -671,6 +671,41 @@ try {
     if (restoreMenu.disabled !== false) {
       throw new Error(`${backend} saved generation was not Continue-compatible: ${restoreMenu.status}`);
     }
+    const savedWorldId = await page.evaluate(() => globalThis.deadvoxSaveTest.controller.restored.world.id);
+    const originalViewport = page.viewportSize();
+    await page.setViewportSize({ width: 1159, height: 414 });
+    const choice = await page.evaluate(() => {
+      const card = document.querySelector('#title-choice');
+      const bounds = card.getBoundingClientRect();
+      const controls = ['continue', 'go'].map((id) => {
+        const element = document.getElementById(id);
+        const rect = element.getBoundingClientRect();
+        return (
+          !element.hidden &&
+          rect.width > 0 &&
+          rect.height > 0 &&
+          rect.top >= 0 &&
+          rect.bottom <= innerHeight &&
+          rect.left >= 0 &&
+          rect.right <= innerWidth
+        );
+      });
+      return {
+        controls,
+        centred: Math.abs((bounds.left + bounds.right) / 2 - innerWidth / 2) < 1,
+        scrollTop: document.querySelector('#overlay .card').scrollTop,
+      };
+    });
+    assert.deepEqual(choice.controls, [true, true], `${backend} title choices must be visible without scrolling`);
+    assert.equal(choice.centred, true, `${backend} saved-world choice must be centred`);
+    assert.equal(choice.scrollTop, 0, `${backend} title choice must not need menu scrolling`);
+    await page.locator('#overlay').click({ position: { x: 1, y: 1 } });
+    assert.equal(
+      await page.locator('#save-confirmation').isVisible(),
+      false,
+      `${backend} a title background click must not choose replacement`,
+    );
+    await page.setViewportSize(originalViewport);
     const beforeContinue = await readGeneration('before Continue');
     assert(Number.isInteger(beforeContinue), `${backend} Continue check needs a committed generation`);
     if (beforeContinue < firstGeneration) {
@@ -721,6 +756,11 @@ try {
       if (restoredMenu.pointerLocked || restoredMenu.overlayHidden) {
         throw new Error(`${backend} Continue did not start paused: ${JSON.stringify(restoredMenu)}`);
       }
+      assert.equal(
+        await page.evaluate(() => globalThis.deadvoxSaveTest.controller.restored.world.id),
+        savedWorldId,
+        `${backend} Continue must restore the chosen world`,
+      );
       return { backend, continued: true, paused: true, generation: beforeContinue };
     }
 
@@ -734,6 +774,11 @@ try {
     }
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
     await page.click('#save-replace-confirm', { timeout: STAGE_TIMEOUT_MS });
+    assert.notEqual(
+      await page.evaluate(() => globalThis.deadvoxSaveTest.controller.snapshot().world.id),
+      savedWorldId,
+      `${backend} replacement must start a different world`,
+    );
     if ((await readGeneration('after replacement confirmation')) !== beforeContinue) {
       throw new Error(`${backend} replaced the prior A/B generation before a new snapshot`);
     }
@@ -756,7 +801,7 @@ try {
       throw new Error(`${backend} failed replacement write damaged the previous generation`);
     }
     await page.evaluate(() => {
-      globalThis.deadvoxSaveTest.controller.entered = false;
+      globalThis.deadvoxSaveTest.controller.halt();
     });
     await navigatePage('reload after failed replacement write', () =>
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
