@@ -3,6 +3,7 @@ read_if:
   - you write or run a code review (cr-*) and need its principles section
   - you add a pillar, principle or engineering rule that code reviews should apply
   - you change review verdicts, FIX causes or what blocks a merge on principle
+  - you assess content ownership, mechanism selectors or modifier scope
 ---
 
 # Principles review skill
@@ -17,10 +18,8 @@ engineering rules, inside the code review's single verdict.
 check zero drift, and "Continuous consolidation" asks every review to name the
 ownership or duplicated decision and to review callers and secondary consumers.
 The gap is in how those rules are applied: from memory, with no list of which
-rules apply, so a review can skip one and nobody sees it. Content-versus-code
-ownership is the easiest to skip: outside deadvox's own pillars it has no settled
-rule until r74. Listing every lens with its owner, and reporting a status for
-each, makes a skipped lens visible.
+rules apply, so a review can skip one and nobody sees it. Listing every lens
+with its owner, and reporting a status for each, makes a skipped lens visible.
 
 ## Shape: a required section of the code review
 
@@ -33,7 +32,7 @@ Each lens cites its owning doc and section. Read the rule there at review time;
 the skill keeps no second copy.
 
 1. **Engineering pillars and repository rules:** `README.md`, "Pillars"; `README.md`, "Static analysis"; `README.md`, "Maintainability"; `AGENTS.md`, "Project stage"; `AGENTS.md`, "No host-specific information in tracked files"; `AGENTS.md`, "Dependency age".
-2. **Subproject pillars and content ownership:** each subproject's own pillars,
+2. **Subproject pillars and content ownership:** `README.md`, "Content forward compatibility", and each subproject's own pillars,
    such as `deadvox/DESIGN.md`, "Pillars", whose "Depth through data" covers
    deadvox code that owns a decision belonging to content; for performance,
    `deadvox/DESIGN.md`, "Performance and scale"; for authored data, `docs/jsonnet.md`, "Jsonnet authoring"; and `docs/PROCESS.md`, "Continuous consolidation", for ownership and duplicated decisions.
@@ -67,8 +66,9 @@ would need an edit to code that should only interpret content.
 Delegate unambiguous patterns to scripts. A passing checker is evidence only for
 the constraint it checks, not for the principle. Content-id literals and closed
 unions are not violations by themselves: fixtures and structural discriminants
-may use them. When r74's owner doc lands, its allowlist decides which closed lists
-may stay.
+may use them. Judge content identities versus mechanism selectors and engine
+structure under `README.md`, "Content forward compatibility"; no separate
+allowlist or scanner is required to assess the rule.
 
 Coders don't run the skill as a pre-push check; `AGENTS.md`, "Before pushing: tiered checks", lists none. Add one only if reviews show misses a coder could have
 caught, and list it there.
@@ -94,8 +94,9 @@ one of:
 - **assessed;**
 - **not applicable**, with the reason;
 - **not assessed**, only when the lens's rule isn't settled yet; the report names
-  the item that settles it (r74). This never blocks the merge, and the lens is
-  listed as open.
+  the item that settles it. This never blocks the merge, and the lens is listed
+  as open. Content forward compatibility is settled and must be assessed when
+  applicable (`README.md`, "Content forward compatibility").
 
 Each finding states:
 
@@ -131,12 +132,6 @@ contract without creating competing rule owners.
 
 ## Unresolved dependencies
 
-- **r74** settles what deadvox's "Depth through data" doesn't cover: gungen and
-  mobgen templates, the selector and closed-list rule, the modifier point, and the
-  ratchet checks for content-id literals and closed lists. Until its owner doc
-  lands, those parts of lens 2 are not assessed. Forward compatibility, accepting
-  new authored values, stays apart from backwards compatibility; it must not bring
-  in an obligation to keep old schemas or saves working (`AGENTS.md`, "Project stage").
 - **Additional lenses:** a lens such as accessibility needs an owning project rule
   first. The skill applies settled rules; it doesn't make policy through review
   findings.
