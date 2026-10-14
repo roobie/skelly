@@ -37,7 +37,8 @@ const page = (state) => html`  <main>
                 <option id="deadvox-default-site" value="">${state.deadvox.bench === '1' ? 'Test house (benchmark default)' : 'Hamlet (default)'}</option>
                 <option value="city">Stress-test city</option>
                 <option value="forest">Forest (tree first look)</option>
-                ${state.deadvox.debug && state.deadvox.bench === '' ? html`<option value="testHouse">Test house (debug)</option><option value="weatheringTest">Debug weathering comparison</option>` : ''}
+                ${siteOffered(state.deadvox, 'gauntlet') ? html`<option value="gauntlet">Gauntlet</option>` : ''}
+                ${siteOffered(state.deadvox, 'testHouse') ? html`<option value="testHouse">Test house (debug)</option><option value="weatheringTest">Debug weathering comparison</option>` : ''}
               </select>
             </label>
             <label id="deadvox-storeys-field" ?hidden=${!visible('deadvox-storeys-field', state)}>Tallest city building (storeys)
@@ -138,6 +139,7 @@ const page = (state) => html`  <main>
           <button type="button" data-deadvox-preset="noon">Noon</button>
           <button type="button" data-deadvox-preset="night">Dead of night</button>
           <button type="button" data-deadvox-preset="city">City</button>
+          <button type="button" data-deadvox-preset="gauntlet">Gauntlet</button>
           <button type="button" data-deadvox-preset="debug">Debug before dawn</button>
           <button type="button" data-deadvox-preset="benchmark">Benchmark</button>
         </fieldset>
@@ -316,6 +318,16 @@ const defaultTime = (d) => {
   }
   return '10:00';
 };
+// Which site choices a mode offers: the gauntlet scenario and the debug sites are play-only.
+const siteOffered = (d, site) => {
+  if (site === 'gauntlet') {
+    return d.bench === '';
+  }
+  if (site === 'testHouse' || site === 'weatheringTest') {
+    return d.bench === '' && d.debug;
+  }
+  return true;
+};
 const parsePlan = (v) => {
   const rows = v.split(',').map((x) => x.split(':'));
   return rows.length > 0 &&
@@ -347,7 +359,7 @@ const addDebugParams = (params, d) => {
   setDefault(params, 'weathering', d.weathering.trim(), '');
   setDefault(params, 'weatheringVariation', d.weatheringVariation.trim(), '');
   setDefault(params, 'weatheringSplit', d.weatheringSplit.trim(), '');
-  if (d.site === 'testHouse' || d.site === 'weatheringTest') {
+  if (siteOffered(d, d.site) && (d.site === 'testHouse' || d.site === 'weatheringTest')) {
     params.set('site', d.site);
   }
 };
@@ -377,6 +389,9 @@ const makeDeadvox = (d) => {
   if (d.site === 'forest') {
     p.set('site', 'forest');
     setDefault(p, 'density', d.density, '');
+  }
+  if (siteOffered(d, 'gauntlet') && d.site === 'gauntlet') {
+    p.set('site', 'gauntlet');
   }
   if (m === '1') {
     p.set('shamblers', d.shamblers);
@@ -468,11 +483,11 @@ const onInput = (e) => {
     }
   } else if (t.type === 'checkbox') {
     m[k] = t.checked;
-    if (f === 'deadvox' && k === 'debug' && !t.checked && ['testHouse', 'weatheringTest'].includes(m.site)) {
-      m.site = '';
-    }
   } else {
     m[k] = t.value;
+  }
+  if (f === 'deadvox' && !siteOffered(m, m.site)) {
+    m.site = '';
   }
   refresh(f);
 };
@@ -521,6 +536,15 @@ const presets = {
     radius: '96',
     site: 'city',
     storeys: '5',
+    debug: false,
+  },
+  gauntlet: {
+    bench: '',
+    seed: '1',
+    time: '19:30',
+    radius: '96',
+    site: 'gauntlet',
+    storeys: '1',
     debug: false,
   },
   debug: {
