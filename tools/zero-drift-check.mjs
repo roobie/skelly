@@ -35,6 +35,7 @@ const LINE_CITATION = /(?<![\w/@.-])(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.[A-Za
 const INLINE_CODE = /(?<!`)`([^`\n]+)`(?!`)/g;
 const LINK = /\[[^\]]*\]\(([^)]+)\)/g;
 const SYMBOL_PAIR = /`([^`\n]+)`, `([^`\n]+)`/g;
+const SYMBOL_PAIR_SEPARATOR = /^\s*,\s*$/;
 const SYMBOL_LINK = /\[`([^`\n]+)`\]\(([^)]+)\)/g;
 const SYMBOL_IDENTIFIER = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/;
 const NEWLINE = /\r?\n/;
@@ -172,7 +173,7 @@ function* markdownSymbolPairs(markdown) {
       if (
         first.type === 'inlineCode' &&
         separator?.type === 'text' &&
-        separator.value === ', ' &&
+        SYMBOL_PAIR_SEPARATOR.test(separator.value) &&
         second?.type === 'inlineCode'
       ) {
         yield [undefined, first.value, second.value];

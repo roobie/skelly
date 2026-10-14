@@ -139,7 +139,7 @@ describe('food', () => {
   const beans = registry.items.get('canned_beans')!;
 
   it('rots on the clock, the same whether checked every game minute or once', () => {
-    const item = { uid: 1, type: 'apple', count: 1, condition: 1 };
+    const item = { uid: 1, type: 'apple', count: 1, condition: 1, origin: { kind: 'fixture' } as const };
     let firstRotten: number | undefined;
     let firstGoingOff: number | undefined;
     for (let minute = 0; minute <= 12 * 24 * 60; minute++) {
@@ -154,9 +154,18 @@ describe('food', () => {
   });
 
   it('counts from when it was made, and canned food keeps', () => {
-    const picked = { uid: 1, type: 'apple', count: 1, condition: 1, madeAtGameTimestamp: 100 * SECONDS_PER_HOUR };
+    const picked = {
+      uid: 1,
+      type: 'apple',
+      count: 1,
+      condition: 1,
+      madeAtGameTimestamp: 100 * SECONDS_PER_HOUR,
+      origin: { kind: 'fixture' } as const,
+    };
     expect(spoilage(apple, picked, 220 * SECONDS_PER_HOUR)).toBeCloseTo(0.5, 9);
-    expect(spoilage(beans, { uid: 2, type: 'canned_beans', count: 1, condition: 1 }, 1e9)).toBeUndefined();
+    expect(
+      spoilage(beans, { uid: 2, type: 'canned_beans', count: 1, condition: 1, origin: { kind: 'fixture' } }, 1e9),
+    ).toBeUndefined();
   });
 
   it('feeds you', () => {

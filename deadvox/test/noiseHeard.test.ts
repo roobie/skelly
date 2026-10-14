@@ -792,6 +792,7 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR and A
   const firearm = (type: string, slots: Item['slots'] = {}): Item => ({
     uid: 1,
     type,
+    origin: { kind: 'fixture' },
     count: 1,
     condition: 1,
     slots,

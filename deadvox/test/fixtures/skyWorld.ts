@@ -1,3 +1,4 @@
+import graphicsFile from '../../src/content/base/graphics.json' with { type: 'json' };
 import { BlockEntities } from '../../src/core/blockEntities.ts';
 import { Chunk } from '../../src/core/chunk.ts';
 import { worldOpaque } from '../../src/core/collision.ts';
@@ -23,6 +24,7 @@ function room(world: World, box: SkyBounds, wall: number): void {
 export const fixtureBox: SkyBounds = { min: [4, 1, 4], max: [13, 10, 13] };
 export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
   const { registry } = buildRegistry([
+    { source: 'graphics.json', data: graphicsFile },
     {
       source: 'sky-fixture.json',
       data: {

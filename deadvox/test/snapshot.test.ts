@@ -370,6 +370,7 @@ describe('snapshot state components', () => {
   it('saves stopped reading with the book in a pile and resumes only after it is held', async () => {
     const runtime = createRuntime();
     const initialFeet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    runtime.world.setBlock(initialFeet[0], initialFeet[1] - 1, initialFeet[2], blockId('grass'));
     const otherPile: import('../src/core/coords.ts').Vec3 = [initialFeet[0] + 1, initialFeet[1], initialFeet[2]];
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
       if (item) {
@@ -384,8 +385,6 @@ describe('snapshot state components', () => {
     const elapsed = runtime.sim.actions.job?.jobType === 'reading' ? runtime.sim.actions.job.elapsed : 0;
     const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
     expect(runtime.inventory.move(book, { kind: 'pile', pos: feet }).ok).toBe(true);
-    // The test player starts in freefall; keep the pile reachable after the tick.
-    runtime.world.setBlock(feet[0], feet[1] - 1, feet[2], blockId('grass'));
     runtime.sim.scheduler.advance(1);
 
     const snapshot = capture(runtime);
@@ -657,7 +656,7 @@ describe('craft job codec and ownership', () => {
         gather: 0,
         elapsed: 37,
         duration: SALVAGE_DURATION,
-        components: [{ uid: sourceUid, type: radio.id, count: 1, condition: 0 }],
+        components: [{ uid: sourceUid, type: radio.id, count: 1, condition: 0, origin: { kind: 'fixture' } }],
       };
       const decodedDisassembly = await decodeSave(await encodeFixture(disassembly), {
         version: formatVersion,

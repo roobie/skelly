@@ -25,6 +25,10 @@
       "output": "deadvox/src/content/base/gauntlet.json"
     },
     {
+      "source": "deadvox/src/content/base/graphics.jsonnet",
+      "output": "deadvox/src/content/base/graphics.json"
+    },
+    {
       "source": "deadvox/src/content/base/items-ammunition.jsonnet",
       "output": "deadvox/src/content/base/items-ammunition.json"
     },

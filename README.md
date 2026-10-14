@@ -2,6 +2,7 @@
 read_if:
   - you're choosing a project or need to run or check it
   - you're changing the repository's engineering or documentation principles
+  - you add or change a content mechanism or review its forward compatibility
 ---
 
 # skelly
@@ -29,6 +30,14 @@ Static analysis catches type, style and unused-code defects early; see each subp
 ### Maintainability
 
 Prefer a maintainable design over minimizing short-term churn, unless the churn is too costly. Record the reason for trade-offs.
+
+### Content forward compatibility
+
+Content holds values; code holds mechanisms, so a new content ID selecting an existing mechanism must work without a code edit. Content entries explicitly select mechanisms and presentation: a block selects a footstep sound, a damage kind a pose, an item a firearm sound. Validation checks selections, not a whitelist of handled content IDs. Missing required metadata and unsupported selections are errors, never silent runtime fallbacks. Use the shared validation boundary; see `deadvox/src/core/content.ts`, `referenceIssues` and `buildRegistry`. Jsonnet authoring defaults are fine when compiled values remain explicit (`docs/jsonnet.md`, "Jsonnet authoring"). Mechanism dispatch tables own selector keys, with no parallel hand-kept list.
+
+Content identity is not a code selector: a new mechanism needs code, a new entry using it does not. Content owns kind-dependent rates, chances, weights and thresholds, including zero; code owns true state impossibilities, physics, geometry and save integrity. Content presentation belongs to content; UI chrome and engine-internal dispatch do not. Apply this rule to added or changed mechanisms across all subprojects, without a sweep or opt-outs; generators without actor modifiers still follow the content, selection and validation requirements.
+
+Actor, body and action values use actor-carried modifiers; see `deadvox/src/core/modifiers.ts`, `modified`. An actor is the source whose effect is being resolved, including an attacking zombie. Apply each modifier once, at the owner resolving the effect; decide subjects, conditions, bounds and persistence with their first consumer rather than building speculative machinery. Tune for the core pack, but never assume a modified value cannot cross a threshold the core numbers do not cross.
 
 ### Zero drift
 

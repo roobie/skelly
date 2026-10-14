@@ -12,7 +12,8 @@ read_if:
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
-  - you're changing how the amalgam's flesh meets terrain, the player or shots, or what that costs per tick (#563)
+  - you're changing how the amalgam's flesh meets terrain, the player or shots
+  - you're measuring or reducing amalgam collision cost against its per-tick budget (#574)
   - you're changing the holes hits carve in the amalgam or the flesh chunks that fly off
   - you're changing the crawler's established silhouette
   - you're changing crawler gait, hit response or generation validation
@@ -22,6 +23,7 @@ read_if:
   - you're changing loaded-distance simulation or the horde representation
   - you're restructuring the per-tick zombie simulation
   - you're changing bleeding cues
+  - you change landing injuries or their content tuning
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
   - you're changing zombie attack moves or the damage kinds they deal
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
@@ -322,7 +324,7 @@ benchmark stacking. Elevated routes reward getting onto structures and traversin
 away from default ground; not every structure must provide one, and existing
 movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`;
 `src/core/citySite.ts`, `CitySite`; and `src/content/base/gauntlet-city.libsonnet`,
-`building`.
+`templates`.
 
 Marker-only population omits the ordinary settlement's wanderers and horde, making
 empty marker sets silently remove street pressure. Gauntlet therefore scales the
@@ -371,7 +373,7 @@ metadata from pointing beside its furniture. Fixed-loot reference, container and
 source-context rules share an owner across authored layouts and city composition;
 the same placement transform supplies their runtime items. This makes a resource
 independent of incidental loot without bypassing ordinary inventory rules. See
-`src/core/placementLoot.ts`, `placementLootIssues` and `collectPlacementLoot`;
+`src/core/placementLoot.ts`, `placementLootIssues`; `src/core/loot.ts`, `rollLoot`;
 `src/core/authoredLayout.ts`, `authoredLayoutIssues`; and
 `src/core/citySite.ts`, `furnitureIn`.
 
@@ -487,14 +489,24 @@ specific sites and their rewards.
 Keep the firearm-handling range in the debug test house, not ordinary world
 sites, so test stock cannot become a playable-world loot source. Derive rack
 contents from firearm and ammunition compatibility. See `HandlingRange` in
-`src/core/range.ts` and `testHouseRangeStock` in `src/game/testHouseRange.ts`.
+`src/core/range.ts` and `testHouseRangeSupply` in `src/game/testHouseRange.ts`.
 
 ### Loot
 
-Keep loot in data and derive its random stream from the container's position.
-Rolling only when a chunk first generates avoids saving untouched loot and keeps
-results independent of chunk request order. See `rollLoot` in
-`src/core/loot.ts`.
+Choose every world-supply item through one selector so source-specific rules cannot
+bypass admission and a later budget has one candidate-filtering boundary. Tables
+own relative weights and variants, not geography; fixed progression stock uses the
+same admission without becoming optional. Source-point identity owns the random
+stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
+`selectLootType`, `rollLoot` and `lootPointStream`.
+
+Keep an item's birth origin when it moves, splits, acquires fitted parts or is saved.
+Unlike origins do not merge, so later counts can attribute supply without confusing
+its source with its current map, cargo or player owner. Explicit debug stock is
+fixture supply, never ordinary economy stock; crafted results have a separate origin.
+Current ownership stays in the inventory tree, not in the birth record. See
+`src/core/itemOrigin.ts`, `ItemOrigin`; `src/core/items.ts`, `stackRoom`; and
+`src/core/inventory.ts`, `Inventory.items`.
 
 ## Items and inventory
 
@@ -693,6 +705,36 @@ counts distinct item units taken from containers, not inventory actions, so
 returning and retaking an item is not another find. See `die` in
 `src/game/play.ts`, `showDeath` in `src/ui/death.ts`, and `Inventory.countLooted`
 in `src/core/inventory.ts`.
+
+### Landing injuries
+
+A fall loads the body at terrain contact, not at its highest point: catching a
+ladder reduces the impact, and a stair landing counts even if the player leaves
+that step again within the same tick. Landing injuries reuse localized hits,
+so pain, shock, movement impairment, bleeding and saves have one owner rather
+than a separate fall-health system. The body has legs but no separate feet or
+fracture state; landing content chooses the affected regions. Zombies share
+collision physics but not the player's body-hit path, so they do not take
+landing injuries. See `src/core/physics.ts`, `stepBody`, `src/core/sim.ts`,
+`Simulation.land`, and `src/game/session.ts`, `advancePlayerBody`.
+
+The lowest gauntlet roofs should hurt modestly without normally opening an
+artery; the tallest should kill roughly one fall in three, not guarantee death.
+These are play-balancing goals, not medical predictions or frozen test rates.
+Calibrate against roof-to-street distances in the authored buildings rather
+than an assumed human storey. See `src/content/base/gauntlet-city.libsonnet`,
+`templates`, and `src/core/cityPlan.ts`, `buildCityPlan`.
+
+Speed squared represents impact energy; removing the safe-speed energy gives
+a continuous onset without punishing an ordinary jump. One seeded damage
+multiplier per fall gives a wide range of outcomes before distributing the hit
+across regions: a tall roof remains a gamble instead of a deterministic death
+boundary. The shared roll keeps both legs part of the same impact. Gravity is
+deliberately heavier than Earth's, so calibration uses in-game speeds rather
+than real-world free-fall speeds. Content owns the threshold, scale and spread
+so balance can change without changing the injury mechanism. See
+`src/content/base/body.jsonnet`, `landing`, `src/core/sim.ts`, `Simulation.land`,
+and `src/game/player.ts`, `physicsFor`.
 
 ### Bleeding
 
@@ -1148,7 +1190,7 @@ A damaging hit on the amalgam knocks a chunk of flesh out of it and leaves a hol
 
 Holes change where shots land and where the body fits, never how much it can take: a hole shows damage the regions already took, so damage, region health and severing are as they would be without holes. `test/amalgam.test.ts` compares the hit that carves with the same hit without holes. A hole is simulation state, the amalgam's removed voxels as `Zombie.carved`, so it is deterministic, survives a save and replays. A restore refuses holes no play could make: a cell outside the grid or without flesh, the protected core voxel, or any hole on a type that doesn't carve. See `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, and `src/core/zombies.ts`, `ZombieSystem.restoreState`.
 
-**Exact collision.** Terrain, the player and shots meet the amalgam's flesh, not its boxes (#563). Rounded lobes make box-only collision stop it short of gaps its body fits and take shots that pass beside visible flesh. Keep near-wall contact search below 0.1 ms per amalgam per tick with about ten simultaneous amalgams; #574 remains open on its p95 and snug-corridor cases, distinct from the one-amalgam playtest. Do not restore a per-facing height-extents table: rebuilding one facing costs more than a whole worst-case tick. In open terrain, collision should cost no more than a box. Holes count for shots and movement as long as maintaining them stays cheap beside the tests themselves.
+**Exact collision.** Terrain, the player and shots meet the amalgam's flesh, not its boxes. Rounded lobes make box-only collision stop it short of gaps its body fits and take shots that pass beside visible flesh. Hold near-wall collision work to at most 0.1 ms per amalgam per tick at p95, including snug corridors, so about ten simultaneous amalgams remain affordable; #574 tracks the remaining gap. Measure collision work separately from perception and attack, rather than comparing unlike tick costs. In open terrain, collision should cost no more than a box. Holes count for shots and movement as long as maintaining them stays cheap beside the tests themselves. See `src/bench/amalgam-cpu.mjs`, `scenarios`, for the rerunnable workload and measurement boundary.
 
 A ray that enters a posed region box walks that bone's voxels and strikes the first flesh still there, so a ray beside the flesh misses, a shot into a hole strikes the flesh behind it, and a shot through a hole that goes all the way passes. See `src/core/amalgamCarving.ts`, `fleshHit`.
 
@@ -1162,6 +1204,15 @@ rules for the cost target as well as plausibility: shape collision should not
 make many simultaneous amalgams unaffordable. See `AmalgamShape` in
 `src/core/amalgamShape.ts` and `ZombieSystem.settleTurn` in
 `src/core/zombies.ts`.
+
+Keep invariant geometry out of the repeated contact search: turns and small
+translations revisit the same tree and terrain layer shapes. Hoisting that
+arithmetic reduces work without changing the axis-by-axis movement path or
+assuming nearby poses share collision answers. A filled leaf can answer as a
+box only while no holes or height filter invalidate that equivalence; push-out
+still needs individual overlapping voxels. Do not rebuild a per-facing
+height-extents table: its upkeep costs more than the collision it avoids. See
+`src/core/amalgamShape.ts`, `AmalgamShape.nodeOverlaps` and `layerBox`.
 
 **Movement and corners.** A type's `locomotion` says how it moves relative to its facing. A `forward` walker, as every shambler type is, moves only where it faces, so it turns before it heads somewhere new. The amalgam is `omnidirectional`: it moves toward its goal at once while its facing turns toward the goal at the type's turn rate, so its sight, its reach and its look still follow the facing. A body its size that must face where it walks spends its time turning before it can move off a wall or toward a player beside it. Its pose has no gait, so moving sideways or backwards shows no foot slide.
 

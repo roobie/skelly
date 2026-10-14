@@ -34,6 +34,7 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
+import { GraphicsOptionsSchema } from './graphics.ts';
 import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
@@ -1776,6 +1777,24 @@ const BodyTuningSchema = strictObject({
   proneEyeHeightMetres: Positive,
   /** Shock damage per point of health damage, by the hit's damage kind. */
   shockPerDamage: perDamageKind(NonNegative),
+  landing: strictObject({
+    safeSpeedMetresPerSimSecond: SimRate,
+    damagePerSquaredSpeed: Positive,
+    damageSpread: pipe(
+      strictObject({ min: Positive, max: Positive }),
+      check(({ min, max }) => min <= max, 'min must not be more than max'),
+    ),
+    kind: picklist(DAMAGE_KINDS),
+    cause: Name,
+    regions: pipe(
+      array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
+      nonEmpty('needs at least one landing region'),
+      check(
+        (regions) => new Set(regions.map(({ region }) => region)).size === regions.length,
+        'landing regions must be unique',
+      ),
+    ),
+  }),
   /** Sim seconds required to apply wound treatment. */
   treatmentSimSeconds: PositiveSimSeconds,
   /** The range each treatment application's strength is multiplied by, rolled per application. */
@@ -1869,6 +1888,8 @@ const RecipeSchema = strictObject({
   workstation: optional(nullable(Id)),
 });
 
+const GraphicsTuningSchema = strictObject({ id: Id, ...GraphicsOptionsSchema.entries });
+
 // ---- files ----
 
 /** Native schemas and section metadata live here, not in parallel loader/validator lists. */
@@ -1916,10 +1937,11 @@ const SECTION_DESCRIPTOR = {
   compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
   scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
-  mapStyles: { schema: optional(array(MapStyleSchema)), label: 'map styles', order: 22 },
-  mapPieces: { schema: optional(array(MapPieceSchema)), label: 'map pieces', order: 23 },
-  mapAssemblies: { schema: optional(array(MapAssemblySchema)), label: 'map assemblies', order: 24 },
-  mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 25 },
+  graphics: { schema: optional(array(GraphicsTuningSchema)), label: 'graphics tuning', order: 22 },
+  mapStyles: { schema: optional(array(MapStyleSchema)), label: 'map styles', order: 23 },
+  mapPieces: { schema: optional(array(MapPieceSchema)), label: 'map pieces', order: 24 },
+  mapAssemblies: { schema: optional(array(MapAssemblySchema)), label: 'map assemblies', order: 25 },
+  mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };

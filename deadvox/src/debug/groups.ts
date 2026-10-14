@@ -42,7 +42,7 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
   {
     id: 'look',
     title: 'Look',
-    notes: [{ label: 'Projected camouflage (URL-only quality trial)', param: 'camofast=1' }],
+    notes: [{ label: 'Projected camouflage (debug URL override)', param: 'camofast=1' }],
   },
   {
     id: 'weathering',
@@ -63,21 +63,21 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
       { label: 'Moss shelter bias', param: 'weatheringMossBias' },
       { label: 'Mix ceiling', param: 'weatheringMixCeiling' },
       { label: 'Weathering blend', param: 'weatheringBlend' },
-      { label: 'Coarser moss patches (URL-only quality trial)', param: 'weathercoarse=1' },
+      { label: 'Coarser moss patches (debug URL override)', param: 'weathercoarse=1' },
     ],
   },
   {
     id: 'post',
     title: 'Post-processing',
     notes: [
-      { label: 'Scene scale (URL-only quality trial)', param: 'renderscale' },
-      { label: 'Bloom-chain scale (URL-only quality trial)', param: 'bloomscale' },
+      { label: 'Scene scale (debug URL override)', param: 'renderscale' },
+      { label: 'Bloom-chain scale (debug URL override)', param: 'bloomscale' },
     ],
   },
   {
     id: 'lighting',
     title: 'Lighting',
-    notes: [{ label: 'Smaller sun map (URL-only quality trial)', param: 'sunsmall=1' }],
+    notes: [{ label: 'Smaller sun map (debug URL override)', param: 'sunsmall=1' }],
   },
   { id: 'atmosphere', title: 'Atmosphere' },
   {
@@ -91,6 +91,7 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
           return labelForAction('debug.performance-toggle');
         },
       },
+      { label: 'Interaction ray', param: 'interactionray=1' },
     ],
   },
   {

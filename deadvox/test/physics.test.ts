@@ -24,6 +24,16 @@ describe('stepBody', () => {
     expect(body.vel[1]).toBe(0);
   });
 
+  it('reports impact speed even when the body walks off the landing within the same step', () => {
+    const body = createPlayerBody(metre, 0.5, 1.1, 0.5);
+    body.vel = [8, -10, 0];
+    const downwardSpeed = -body.vel[1];
+    const impact = stepBody(body, 0.2, (x, y) => x === 0 && y === 0, { gravity: 0, stepHeight: 0 });
+    expect(body.onGround).toBe(false);
+    expect(impact).toBe(downwardSpeed);
+    expect(body.vel[1]).toBe(0);
+  });
+
   it('is stopped by a wall', () => {
     const body = createPlayerBody(metre, 0.5, 10.001, 0.5);
     run(60, () => {

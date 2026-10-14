@@ -1,0 +1,34 @@
+{
+  "graphics": [
+    {
+      "bloomScale": {
+        "default": 1,
+        "label": "Bloom render scale",
+        "max": 1,
+        "min": 0.25
+      },
+      "coarseWeathering": {
+        "default": false,
+        "label": "Coarse weathering grid",
+        "options": [false, true]
+      },
+      "fastCamo": {
+        "default": false,
+        "label": "Fast camouflage pattern",
+        "options": [false, true]
+      },
+      "id": "core",
+      "renderScale": {
+        "default": 1,
+        "label": "Scene render scale",
+        "max": 1,
+        "min": 0.5
+      },
+      "smallSunMap": {
+        "default": false,
+        "label": "Smaller sun shadow map",
+        "options": [false, true]
+      }
+    }
+  ]
+}

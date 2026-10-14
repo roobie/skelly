@@ -186,6 +186,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugModifiedRow('debug.input-replay-export', 'Export input replay', 'Backquote', 'shift'),
   debugModifiedRow('debug.input-replay-import', 'Import input replay', 'KeyI', 'shift'),
   debugRow('debug.performance-toggle', 'Performance overlay', 'F4', all),
+  debugRow('debug.interaction-ray-toggle', 'Interaction ray', 'KeyU', all),
   debugRow('debug.build-toggle', 'Build tools', 'KeyB'),
   debugRow('debug.impact-laser', 'Impact laser', 'KeyC'),
   debugRow('debug.spawn-menu-toggle', 'Spawn item menu', 'KeyG'),
