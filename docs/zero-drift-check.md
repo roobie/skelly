@@ -26,7 +26,9 @@ file extension so ordinary member/value expressions are not mistaken for citatio
 Bare Markdown-path recognition excludes string/attribute delimiters and possessives;
 a URL query ending in a Markdown filename is not a prose section cue. These boundaries keep the
 same scanner usable without language-specific exceptions or a file exemption for
-its own negative fixtures.
+its own negative fixtures. Markdown cue pairs retain inline-node identity so escaped
+backticks in prose cannot become code cues. Regex classification stays within extracted
+text strings; it does not reconstruct Markdown to decide which spans are code or links.
 
 Wrapped names and cue separators join through line breaks and comment continuation
 markers because changing a comment's wrapping must not hide a dangling cue. Paths

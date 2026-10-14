@@ -148,61 +148,228 @@ function markdownText(node, { skipBlockquotes = false, skipInlineCode = false } 
   return children.join('');
 }
 
-function hiddenCueNode(node, { skipLinks, skipInlineCode }) {
-  return (
-    node.type === 'yaml' ||
-    node.type === 'code' ||
-    isHtmlComment(node) ||
-    (skipLinks && ['link', 'linkReference'].includes(node.type)) ||
-    (skipInlineCode && node.type === 'inlineCode')
-  );
+function* markdownCueRuns(node) {
+  if (node.type === 'code' || node.type === 'yaml' || isHtmlComment(node)) {
+    return;
+  }
+  if (['paragraph', 'heading', 'tableCell'].includes(node.type)) {
+    yield node.children ?? [];
+  }
+  if (['strong', 'emphasis', 'delete', 'link', 'linkReference'].includes(node.type)) {
+    yield node.children ?? [];
+  }
+  for (const child of node.children ?? []) {
+    yield* markdownCueRuns(child);
+  }
 }
 
-function cueContainerSeparator(type) {
-  if (type === 'tableRow') {
-    return ' | ';
+function* markdownSymbolPairs(markdown) {
+  for (const nodes of markdownCueRuns(markdown)) {
+    for (let index = 0; index < nodes.length; index++) {
+      const first = nodes[index];
+      const separator = nodes[index + 1];
+      const second = nodes[index + 2];
+      if (
+        first.type === 'inlineCode' &&
+        separator?.type === 'text' &&
+        separator.value === ', ' &&
+        second?.type === 'inlineCode'
+      ) {
+        yield [undefined, first.value, second.value];
+      }
+    }
   }
-  return ['root', 'blockquote', 'list', 'listItem', 'table', 'footnoteDefinition'].includes(type) ? '\n' : undefined;
 }
 
-function wrapCueChildren(type, content) {
-  if (type === 'strong') {
-    return `**${content}**`;
-  }
-  if (type === 'emphasis') {
-    return `*${content}*`;
-  }
-  return type === 'delete' ? `~~${content}~~` : content;
+const TEXT_CUE_TOKEN = /"((?:\\.|[^"\\])+)"|“([^”]+)”|'([^']+)'|(?<![\w/@`"'.=?&-])([\w./-]+\.md)(?!`)/g;
+const CUE_SEPARATOR = /^\s*([,;:—-]?)\s*$/;
+const EXTRA_SEPARATOR = /^\s*(?:,\s*(?:and\s+)?|and\s+)$/;
+const TEXT_OTHER_SECTION =
+  /(?<![\w/@`"'.-])[\w./-]+\.md\s*(?:§\s*\d[\d.]*|(?:section|chapter)\b[^.;\n]*|#\d[\d.]*|[,;:]\s*\d+(?:\.\d+)*\b)/gi;
+
+const ESCAPED_QUOTE = /\\["\\]/;
+const COMMA_PREFIX = /^\s*,/;
+
+function cueTokens(nodes, source) {
+  return nodes.flatMap((node) => (node.type === 'text' ? textCueTokens(node, source) : [node]));
 }
 
-function markdownCueText(node, { skipLinks = false, skipInlineCode = false } = {}) {
-  const options = { skipLinks, skipInlineCode };
-  if (hiddenCueNode(node, options)) {
-    return '';
+function textCueTokens(node, source) {
+  const tokens = [];
+  // Preserve escaped quotes within a text node: their decoded value loses the name's closing boundary.
+  const raw = source.slice(node.position.start.offset, node.position.end.offset);
+  const text = ESCAPED_QUOTE.test(raw) ? raw : node.value;
+  let offset = 0;
+  for (const match of text.matchAll(TEXT_CUE_TOKEN)) {
+    if (match.index > offset) {
+      tokens.push({ type: 'text', value: text.slice(offset, match.index) });
+    }
+    tokens.push(
+      match[4] === undefined
+        ? {
+            type: 'name',
+            value: (match[1] ?? match[2] ?? match[3]).replace(QUOTE_ESCAPE, '$1'),
+            quoted: match[1] !== undefined,
+            single: match[3] !== undefined,
+            spelling: match[0],
+          }
+        : { type: 'bare', value: match[4] },
+    );
+    offset = match.index + match[0].length;
   }
-  if (node.type === 'text' || node.type === 'html') {
-    return node.value;
+  if (offset < text.length) {
+    tokens.push({ type: 'text', value: text.slice(offset) });
   }
-  if (node.type === 'inlineCode') {
-    return node.value.includes('`') ? '' : `\`${node.value}\``;
-  }
-  if (node.type === 'link') {
-    const label = (node.children ?? []).map((child) => markdownCueText(child, options)).join('');
-    return `[${label}](${node.url})`;
-  }
-  if (node.type === 'image') {
-    return `![${node.alt}](${node.url})`;
-  }
-  if (node.type === 'break') {
-    return '\n';
-  }
-  const children = (node.children ?? []).map((child) => markdownCueText(child, options));
-  const separator = cueContainerSeparator(node.type);
-  return separator === undefined ? wrapCueChildren(node.type, children.join('')) : children.join(separator);
+  return tokens;
 }
 
-function markdownCueDocument(tree) {
-  return markdownCueText(tree);
+function cueName(token) {
+  return token && ['name', 'inlineCode'].includes(token.type) ? token : undefined;
+}
+
+function nextExplicitCueLength(tokens, index, target) {
+  const following = cueName(tokens[index + 1]);
+  const separator = tokens[index]?.type === 'text' ? tokens[index].value : '';
+  if (!(EXTRA_SEPARATOR.test(separator) && following)) {
+    return 0;
+  }
+  const named = following.type === 'name' && following.quoted && COMMA_PREFIX.test(separator);
+  const symbol =
+    target && !target.endsWith('.md') && following.type === 'inlineCode' && BACKTICKED_IDENTIFIER.test(following.value);
+  return named || symbol ? 2 : 0;
+}
+
+function skippedMarkdownExtra(tokens, index, name, rawPath) {
+  if (name.type !== 'inlineCode') {
+    return 0;
+  }
+  const target = pathValue(name.value, true);
+  if (target || name.value.startsWith('/')) {
+    return 2 + nextExplicitCueLength(tokens, index + 2, target);
+  }
+  return !pathValue(rawPath, true)?.endsWith('.md') && BACKTICKED_IDENTIFIER.test(name.value) ? 2 : 0;
+}
+
+function checkMarkdownExtraNames(tokens, start, context) {
+  let index = start;
+  while (tokens[index]?.type === 'text' && EXTRA_SEPARATOR.test(tokens[index].value)) {
+    const name = cueName(tokens[index + 1]);
+    if (!name) {
+      return;
+    }
+    const skip = skippedMarkdownExtra(tokens, index, name, context.rawPath);
+    index += skip || 2;
+    if (skip) {
+      continue;
+    }
+    if (!NAME_MARKUP.test(name.value)) {
+      add(context.failures, context.path, 'section_form', `${context.rawPath}, "${name.value}" (implicit path)`);
+      checkNamedCue({ ...context, name: name.value });
+    }
+  }
+}
+
+const OPEN_FORMATTED_NAME = /^(\s*[,;:—-]?\s*)(["“])([^"”]*)$/;
+
+function formattedNameAt(tokens, index) {
+  const opening = tokens[index]?.type === 'text' && tokens[index].value.match(OPEN_FORMATTED_NAME);
+  if (!opening) {
+    return;
+  }
+  const close = opening[2] === '“' ? '”' : '"';
+  let [, , , value] = opening;
+  for (let end = index + 1; end < tokens.length; end++) {
+    const token = tokens[end];
+    const text = token.type === 'name' ? token.spelling : token.value;
+    if (['text', 'name'].includes(token.type) && text.includes(close)) {
+      value += text.slice(0, text.indexOf(close));
+      return {
+        gap: opening[1],
+        nameIndex: end,
+        name: {
+          type: 'name',
+          value,
+          quoted: opening[2] === '"',
+          markup: true,
+          spelling: `${opening[2]}${value}${close}`,
+        },
+      };
+    }
+    if (!['strong', 'emphasis', 'delete', 'inlineCode', 'link', 'linkReference', 'html', 'text'].includes(token.type)) {
+      return;
+    }
+    value += renderedText(token);
+  }
+}
+
+function markdownPairAt(tokens, index, links) {
+  const target = tokens[index];
+  if (!['inlineCode', 'bare', 'link', 'linkReference'].includes(target.type)) {
+    return;
+  }
+  const rawPath =
+    target.type === 'linkReference'
+      ? links.find((link) => link.children === target.children)?.url
+      : (target.url ?? target.value);
+  const value = rawPath && pathValue(rawPath, true);
+  if (!value) {
+    return;
+  }
+  const formatted = formattedNameAt(tokens, index + 1);
+  const middle = tokens[index + 1];
+  const gap = formatted?.gap ?? (middle?.type === 'text' ? middle.value : '');
+  const separator = gap.match(CUE_SEPARATOR);
+  const nameIndex = formatted?.nameIndex ?? index + (gap ? 2 : 1);
+  const name = formatted?.name ?? cueName(tokens[nameIndex]);
+  if (!(separator && name) || (name.single && !gap) || nonSectionName(value, name.value, name.type === 'inlineCode')) {
+    return;
+  }
+  return { target, rawPath, gap, separator: separator[1], name, nameIndex };
+}
+
+function checkMarkdownPair(pair, tokens, context) {
+  const { target, rawPath, gap, separator, name, nameIndex } = pair;
+  const prefix = target.type === 'inlineCode' ? `\`${rawPath}\`` : rawPath;
+  const spelling = name.type === 'inlineCode' ? `\`${name.value}\`` : name.spelling;
+  if (target.type !== 'inlineCode' || separator !== ',' || !name.quoted || NUMERIC_NAME.test(name.value)) {
+    add(context.failures, context.path, 'section_form', `${prefix}${gap}${spelling}`);
+  }
+  if (!(name.markup || NAME_MARKUP.test(name.value))) {
+    checkNamedCue({ ...context, rawPath, name: name.value });
+    checkMarkdownExtraNames(tokens, nameIndex + 1, { ...context, rawPath });
+  }
+}
+
+function checkMarkdownTextForms(nodes, { path, failures }) {
+  for (const node of nodes) {
+    if (node.type !== 'text') {
+      continue;
+    }
+    for (const pattern of [QUOTED_PATH_SECTION, TEXT_OTHER_SECTION, SECTION_NUMBER]) {
+      for (const match of node.value.matchAll(pattern)) {
+        add(failures, path, 'section_form', match[0]);
+      }
+    }
+  }
+}
+
+function checkMarkdownSections(context) {
+  const { markdown, tree, path } = context;
+  const source = tree.sources.get(resolve(tree.root, path));
+  const links = markdownLinks(markdown);
+  for (const nodes of markdownCueRuns(markdown)) {
+    checkMarkdownTextForms(nodes, context);
+    const tokens = cueTokens(nodes, source);
+    for (let index = 0; index < tokens.length; index++) {
+      const pair = markdownPairAt(tokens, index, links);
+      if (pair) {
+        checkMarkdownPair(pair, tokens, context);
+      }
+    }
+  }
+  for (const link of links) {
+    checkSectionLink(link.url, context);
+  }
 }
 
 function markdownLinks(tree) {
@@ -438,8 +605,13 @@ function checkSymbolCue({ path, symbol, rawPath, tree, failures }) {
   }
 }
 
+function symbolPairs(visible, markdown) {
+  return markdown ? markdownSymbolPairs(markdown) : visible.matchAll(SYMBOL_PAIR);
+}
+
 function checkSymbols({ path, visible, markdown, tree, failures }) {
-  for (const match of visible.matchAll(SYMBOL_PAIR)) {
+  const pairs = symbolPairs(visible, markdown);
+  for (const match of pairs) {
     if (pathValue(match[1])?.endsWith('.md')) {
       continue;
     }
@@ -710,6 +882,10 @@ const QUOTED_PATH_SECTION = /(?<![\w/])"([\w./-]+\.md)"\s*,\s*"([^"\n]+)"/g;
 
 function checkSections(context) {
   const { path, visible, failures, markdown } = context;
+  if (markdown) {
+    checkMarkdownSections(context);
+    return;
+  }
   for (const [pattern, bare] of [
     [CUE_PAIR, false],
     [BARE_SECTION, true],
@@ -719,14 +895,7 @@ function checkSections(context) {
       checkSectionPair(match, bare, context);
     }
   }
-  const withoutLinks = markdown ? markdownCueText(markdown, { skipLinks: true }) : visible.replace(LINK, '');
-  if (markdown) {
-    const prose = markdownCueText(markdown, { skipLinks: true, skipInlineCode: true });
-    for (const match of prose.matchAll(QUOTED_PATH_SECTION)) {
-      add(failures, path, 'section_form', match[0]);
-    }
-  }
-  const references = markdown ? markdownText(markdown, { skipInlineCode: true }) : withoutLinks;
+  const references = visible.replace(LINK, '');
   for (const pattern of [OTHER_SECTION, SECTION_NUMBER]) {
     for (const match of references.matchAll(pattern)) {
       add(failures, path, 'section_form', match[0]);
@@ -895,7 +1064,7 @@ export function checkDocument({
     }
   }
   const tree = { root, tracked, ignored, sources, anchors, markdown: parsedMarkdown };
-  const visible = markdown ? markdownCueDocument(markdown) : joinedCues(text);
+  const visible = markdown ? markdownText(markdown) : joinedCues(text);
   checkLineNumbers(path, markdown ? markdownSourceText(text, markdown) : text, failures);
   checkPaths({ path, visible, markdown, tree, failures });
   checkSections({ path, visible, markdown, tree, failures });
@@ -939,7 +1108,7 @@ function observedFailures(paths) {
   const anchors = new Map();
   const candidates = [...docTexts].map(([path, text]) => {
     const markdown = parsedMarkdown.get(resolve(ROOT, path));
-    const visible = markdown ? markdownCueDocument(markdown) : joinedCues(text);
+    const visible = markdown ? markdownText(markdown) : joinedCues(text);
     return pathCandidates(visible, markdown).flatMap(({ value }) =>
       resolvedCandidates(path, value, ROOT).map(
         (candidate) => `${relative(ROOT, candidate)}${value.endsWith('/') ? '/' : ''}`,

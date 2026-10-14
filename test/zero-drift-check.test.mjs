@@ -271,6 +271,12 @@ describe('zero-drift section cues', () => {
     }
   });
 
+  it('does not promote escaped backticks in text to code cue nodes', () => {
+    const escaped = (value) => code(value).replaceAll('`', '\\`');
+    assert.deepEqual(sections(`${escaped('docs/anchors.md')}, ${escaped('Missing')}`), []);
+    assert.deepEqual(sections(`${escaped('engine/src/known.ts')}, ${escaped('missing')}`), []);
+  });
+
   it('resolves reference links through definitions and checks their destinations and code labels', () => {
     assert.deepEqual(sections('[target][ref]\n\n[ref]: docs/anchors.md#anchors'), []);
     assert.ok(checks(sections('[target][ref]\n\n[ref]: docs/anchors.md#missing')).includes('section'));
@@ -281,6 +287,8 @@ describe('zero-drift section cues', () => {
       ).includes('symbol'),
     );
     assert.deepEqual(sections('[target][undefined]'), []);
+    const adjacentName = sections('[target][ref], "Missing"\n\n[ref]: docs/anchors.md');
+    assert.deepEqual(new Set(checks(adjacentName)), new Set(['section_form', 'section']));
   });
 
   it('first definition wins for duplicate reference labels', () => {
@@ -410,6 +418,8 @@ describe('zero-drift section cues', () => {
       ),
       [],
     );
+    assert.deepEqual(sections(`${code('docs/anchors.md')}, "*example*"`), []);
+    assert.deepEqual(checks(sections(`${code('docs/anchors.md')}; "*example*"`)), ['section_form']);
     assert.deepEqual(sections(`${code('docs/anchors.md')}'s label is the player's cue.`, 'src/fixture.ts'), []);
     assert.ok(checks(sections(lineCue('foo.ts', '3'), 'src/fixture.ts')).includes('line_number'));
     assert.deepEqual(
