@@ -1,10 +1,14 @@
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import { buildCityPlan, scenarioPlanIssues } from '../src/core/cityPlan.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { placedPoint } from '../src/core/templates.ts';
+import { ownershipCell } from '../src/core/templateOwnership.ts';
+import { type CompiledTemplate, compileAssembly, type PlacedPiece, placedPoint } from '../src/core/templates.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { fixtureScenario } from './fixtures/scenario.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 it('resolves one repeatable variant per slot and varies city assemblies across buildings and seeds', () => {
   const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
@@ -111,4 +115,85 @@ it('rejects ambiguous city pool identities instead of choosing a template or ass
     '.city.templates',
     'ambiguous template and assembly "fixture_route"',
   ]);
+});
+
+const insideKitPlane = (compiled: CompiledTemplate, x: number, z: number, y: number): boolean =>
+  x >= 0 && z >= 0 && y >= 0 && x < compiled.size[0] && z < compiled.size[2] && y < compiled.size[1];
+
+/** Floods a wall plane from the given cells and returns the bounding box, in cells. */
+const floodOpening = (
+  seed: readonly (readonly [number, number])[],
+  solid: (y: number, along: number) => boolean,
+): { across: number; height: number } => {
+  const pending: [number, number][] = seed.map(([y, along]) => [y, along]);
+  const seen = new Set<string>();
+  let minAlong = Number.POSITIVE_INFINITY;
+  let maxAlong = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  while (pending.length > 0) {
+    const [y, along] = pending.pop()!;
+    const key = `${y},${along}`;
+    if (seen.has(key) || solid(y, along)) {
+      continue;
+    }
+    seen.add(key);
+    minAlong = Math.min(minAlong, along);
+    maxAlong = Math.max(maxAlong, along);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+    pending.push([y + 1, along], [y - 1, along], [y, along + 1], [y, along - 1]);
+  }
+  return { across: maxAlong - minAlong + 1, height: maxY - minY + 1 };
+};
+
+const doorOpening = (registry: Registry, compiled: CompiledTemplate, piece: PlacedPiece) => {
+  const acrossX = piece.facing === 'e' || piece.facing === 'w';
+  const [px, py, pz] = piece.pos;
+  const [sx, sy, sz] = piece.size;
+  const plane = acrossX ? px : pz;
+  const alongStart = acrossX ? pz : px;
+  const alongLength = acrossX ? sz : sx;
+  const solid = (y: number, along: number): boolean => {
+    const x = acrossX ? plane : along;
+    const z = acrossX ? along : plane;
+    return (
+      !insideKitPlane(compiled, x, z, y) ||
+      registry.blocks[compiled.blocks[ownershipCell(compiled.size, [x, y, z])]!]?.solid === true
+    );
+  };
+  const seed: [number, number][] = [];
+  for (let y = py; y < py + sy; y++) {
+    for (let along = alongStart; along < alongStart + alongLength; along++) {
+      seed.push([y, along]);
+    }
+  }
+  return floodOpening(seed, solid);
+};
+
+describe('gauntlet door openings', () => {
+  it('places every wall door in an opening that matches the door size', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const assemblies = [...registry.mapAssemblies.values()].filter((assembly) => assembly.id.startsWith('gauntlet'));
+    expect(assemblies.length).toBeGreaterThan(0);
+    let doors = 0;
+    for (const assembly of assemblies) {
+      const compiled = compileAssembly(registry, assembly, { seed: 1, siteId: `door-openings:${assembly.id}` });
+      for (const piece of compiled.pieces) {
+        const def = registry.furniture.get(piece.furniture);
+        // A hatch opens through the space above and below it, not across a wall.
+        if (!def?.door || def.shape || def.door.hatch) {
+          continue;
+        }
+        doors += 1;
+        const [width, height, depth] = piece.size;
+        const acrossX = piece.facing === 'e' || piece.facing === 'w';
+        const opening = doorOpening(registry, compiled, piece);
+        const label = `${assembly.id} ${piece.furniture} at ${piece.pos.join(',')}`;
+        expect(opening.across, `${label} opening width`).toBe(acrossX ? depth : width);
+        expect(opening.height, `${label} opening height`).toBe(height);
+      }
+    }
+    expect(doors).toBeGreaterThan(0);
+  });
 });
