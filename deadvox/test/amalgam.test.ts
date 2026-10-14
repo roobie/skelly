@@ -232,10 +232,14 @@ interface ObstacleResult {
   mode: string;
 }
 
-const placeFenceRow = (world: World): void => {
+const placeFenceRow = (world: World): { minX: number; maxX: number } => {
   const fence = compileTemplate(registry, registry.templates.get('rickety_fence')!);
   const [sx, sy, sz] = fence.size;
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
   for (let originX = -2 * sx; originX <= 2 * sx; originX += sx) {
+    minX = Math.min(minX, originX);
+    maxX = Math.max(maxX, originX + sx);
     for (let y = 0; y < sy; y++) {
       for (let z = 0; z < sz; z++) {
         for (let x = 0; x < sx; x++) {
@@ -247,6 +251,23 @@ const placeFenceRow = (world: World): void => {
       }
     }
   }
+  return { minX, maxX };
+};
+
+/** Places the barrier and returns the x range it occupies, so only a crossing inside it counts. */
+const placeBarrier = (
+  kind: ObstacleKind,
+  world: World,
+  entities: BlockEntities,
+  centerX: number,
+): { minX: number; maxX: number } => {
+  if (kind === 'fence') {
+    return placeFenceRow(world);
+  }
+  for (let x = centerX - 6; x <= centerX + 6; x += 2) {
+    entities.add({ type: 'crate', pos: [x, 0, 0], size: [2, 2, 2], facing: 'n' });
+  }
+  return { minX: centerX - 6, maxX: centerX + 8 };
 };
 
 const runObstacleCase = (
@@ -259,13 +280,8 @@ const runObstacleCase = (
   const centerX = kind === 'fence' ? 0 : 50;
   // The contract is collision response at the barrier, not long-range pursuit across the map.
   const startZ = -8;
-  if (kind === 'fence') {
-    placeFenceRow(world);
-  } else {
-    for (let x = centerX - 6; x <= centerX + 6; x += 2) {
-      entities.add({ type: 'crate', pos: [x, 0, 0], size: [2, 2, 2], facing: 'n' });
-    }
-  }
+  const { minX: barrierMinX, maxX: barrierMaxX } = placeBarrier(kind, world, entities, centerX);
+  const insideBarrierWidth = (x: number): boolean => x >= barrierMinX && x <= barrierMaxX;
   const isSolid = (x: number, y: number, z: number): boolean =>
     y === 0 || Boolean(registry.blocks[world.getBlock(x, y, z)]?.solid) || entities.isSolid(x, y, z);
   const barrierSolid = isSolid(centerX, 1, 0);
@@ -307,7 +323,9 @@ const runObstacleCase = (
     simulation.tick(1 / 60);
     const { body } = simulation.store.get(id)!;
     const [, , z] = body.pos;
-    crossed ||= z > 2.5;
+    // Crossing the barrier means passing its z = 0 plane inside the barrier's x range; sliding to a
+    // gap-free end and walking around it crosses z = 0 outside that range, which is a detour.
+    crossed ||= previousZ <= 0 && z > 0 && insideBarrierWidth(body.pos[0]);
     leftGround ||= !body.onGround;
     maxZ = Math.max(maxZ, z);
     stalledTicks = z <= previousZ + 1e-8 ? stalledTicks + 1 : 0;
