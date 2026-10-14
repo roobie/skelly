@@ -247,6 +247,9 @@ try {
       }
     }
     if (mode === 'lighting-outdoor') {
+      await timePhase('mood-output-display-order', () =>
+        page.evaluate(async (path) => (await import(path)).moodOutputProof(), '/test/browser/mood-output.ts'),
+      );
       // The owned GL proof must not contend with an unrelated full-size game render loop.
       selectionEvidence = await timePhase('owned-sky-selection', () => skySelectionProof(page));
     }

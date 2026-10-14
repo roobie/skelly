@@ -17,7 +17,9 @@ Distance fog, the clear background and height mist share the camera's diffuse sk
 
 A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. See `src/render/playView.ts`, `prepareLighting`, and `src/render/flashlight.ts`, `flashlightDaylightScale`.
 
-Post-processing and shadows support the intended mood, but their cost on a reference GPU remains unmeasured. SwiftShader is not evidence of reference-GPU performance. Keep same-workload comparisons before making performance claims. See `src/bench/post.ts`, `benchDraw`.
+Post-processing and shadows support the intended mood. Compare the same workload on a real GPU before claiming a performance win; SwiftShader cannot establish reference-GPU cost. Keep image changes separate from waste removal so visual quality remains an operator decision. See `src/bench/post.ts`, `benchDraw`.
+
+Tone mapping, display transfer and colour grading share a fullscreen draw because storing and sampling an intermediate display-space image adds GPU work without adding an effect. Grade remains after tone mapping and transfer so its controls keep their display-referred meaning; bloom stays before them in linear light. See `src/render/moodOutput.ts`, `createMoodOutputPass`, and `src/render/mood.ts`, `Mood`.
 
 Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `src/core/occlusion.ts` and `src/render/chunks.ts`, `chunkMaterial`.
 

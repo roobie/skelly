@@ -3,12 +3,11 @@
 // straight to the screen with `renderer.render`, exactly as before the pass existed.
 //
 // Pipeline (post on), all in an MSAA half-float linear target until the last step:
-//   RenderPass (scene) -> hands -> bloom -> OutputPass (tone mapping + sRGB) -> grade/film -> screen
+//   RenderPass (scene) -> hands -> bloom -> output (tone mapping + sRGB + grade/film) -> screen
 // Tone mapping happens exactly once, in OutputPass, which reads the renderer's `toneMapping`
 // and `toneMappingExposure` (what the debug look controls set). three.js skips its own
 // per-material tone mapping while rendering to a target, so nothing is applied twice. The
-// grade runs after it, in display space, and writes to the screen without a colour-space
-// conversion (a ShaderMaterial gets none unless it asks).
+// grade runs after its transfer function, in display space, within the same fullscreen draw.
 // Bloom therefore works in pre-exposure linear light: its threshold is the tone mapper's clip / exposure
 // (core/mood.ts), set each frame, so it follows what OutputPass will push towards white.
 
@@ -32,9 +31,9 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import type { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {
   BLOOM_RADIUS,
@@ -54,6 +53,7 @@ import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './a
 import { DrawPass } from './drawPass.ts';
 import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
+import { createMoodOutputPass } from './moodOutput.ts';
 import { OpticLensRenderer, opticLensPass } from './opticLens.ts';
 
 const RETICLE_UNIFORM: Record<ReticleKind, number> = { dot: 0, crosshair: 1, chevron: 2 };
@@ -70,58 +70,6 @@ const screenToneMapping = (mapping: ToneMapping): ToneMapping => {
     return mapping;
   }
   return autoToneUniforms.autoToneWeight.value >= 0.5 ? ACESFilmicToneMapping : NeutralToneMapping;
-};
-
-// Display-referred colour in, display-referred colour out (this runs after OutputPass), so the
-// numbers read as they would in a grading tool. Contrast is a smoothstep S-curve blend, which
-// keeps black and white where they are. Grain is hashed from the pixel and a per-frame seed.
-const GRADE_SHADER = {
-  name: 'MoodGradeShader',
-  uniforms: {
-    tDiffuse: { value: null },
-    uSaturation: { value: 1 },
-    uContrast: { value: 0 },
-    uShadowTint: { value: [0, 0, 0] },
-    uHighlightTint: { value: [0, 0, 0] },
-    uVignette: { value: 0 },
-    uGrain: { value: 0 },
-    uSeed: { value: 0 },
-  },
-  vertexShader: `
-varying vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`,
-  fragmentShader: `
-uniform sampler2D tDiffuse;
-uniform float uSaturation;
-uniform float uContrast;
-uniform vec3 uShadowTint;
-uniform vec3 uHighlightTint;
-uniform float uVignette;
-uniform float uGrain;
-uniform float uSeed;
-varying vec2 vUv;
-
-float hash(vec2 p) {
-  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-  p3 += dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
-}
-
-void main() {
-  vec3 c = clamp(texture2D(tDiffuse, vUv).rgb, 0.0, 1.0);
-  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  c = mix(vec3(l), c, uSaturation);
-  c += uShadowTint * (1.0 - smoothstep(0.0, 0.5, l)) + uHighlightTint * smoothstep(0.5, 1.0, l);
-  c = clamp(c, 0.0, 1.0);
-  c = mix(c, c * c * (3.0 - 2.0 * c), uContrast);
-  // 0.7071 is the corner's distance from the centre.
-  c *= 1.0 - uVignette * smoothstep(0.25, 0.7071, length(vUv - 0.5));
-  c += (hash(gl_FragCoord.xy + uSeed) - 0.5) * uGrain;
-  gl_FragColor = vec4(c, 1.0);
-}`,
 };
 
 export class Mood {
@@ -143,7 +91,7 @@ export class Mood {
   private readonly opticLens = new OpticLensRenderer();
   private opticPass: ShaderPass | undefined;
   private bloomPass: UnrealBloomPass | undefined;
-  private gradePass: ShaderPass | undefined;
+  private outputPass: OutputPass | undefined;
 
   constructor(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera) {
     this.renderer = renderer;
@@ -293,7 +241,7 @@ export class Mood {
     this.updateOpticPass(opticFrame);
     // A new seed each frame animates the grain; any irrational-ish step will do.
     this.frame = (this.frame + 1) % 4096;
-    this.gradePass!.uniforms.uSeed!.value = (this.frame * 97.31) % 1000;
+    this.outputPass!.uniforms.uSeed!.value = (this.frame * 97.31) % 1000;
     // Bloom sees the linear frame before OutputPass applies exposure, so its threshold follows the
     // exposure and the tone mapper (the debug controls change both at any time) to keep selecting
     // what will be near white.
@@ -377,8 +325,7 @@ export class Mood {
     for (const { scene, camera } of scenes) {
       compile(target, scene, camera);
     }
-    // The full-screen passes' materials draw from a quad of their own; a stand-in scene makes
-    // three.js build them. The grade draws to the screen (it is the last pass), the bloom into targets.
+    // The bloom materials draw from a quad of their own; a stand-in scene makes three.js build them.
     const quad = new PlaneGeometry(2, 2);
     const stand = (materials: readonly Material[]): Scene => {
       const holder = new Scene();
@@ -398,7 +345,6 @@ export class Mood {
       ]),
       this.camera,
     );
-    compile(null, stand([this.gradePass!.material]), this.camera);
     // OutputPass builds its defines from the renderer when it first renders, so it compiles then.
     return Promise.all(compiling).finally(() => quad.dispose());
   }
@@ -413,11 +359,9 @@ export class Mood {
     const bloomPass = this.bloomPass!;
     bloomPass.enabled = bloom && this.skyBloom > 0;
     bloomPass.strength = this.skyBloom;
-    const gradePass = this.gradePass!;
-    // Nothing to grade, film or drain: leave the pass out, so OutputPass is the last and draws to the screen.
-    gradePass.enabled = grade > 0 || film || this.painDesaturation > 0;
     const params = gradeParams(grade);
-    const u = gradePass.uniforms;
+    const u = this.outputPass!.uniforms;
+    u.uGradeEnabled!.value = grade > 0 || film || this.painDesaturation > 0 ? 1 : 0;
     u.uSaturation!.value = params.saturation * (1 - this.painDesaturation);
     u.uContrast!.value = params.contrast;
     u.uShadowTint!.value = [...params.shadowTint];
@@ -452,12 +396,11 @@ export class Mood {
       bloomThreshold(this.renderer.toneMappingExposure, this.effectiveBloomClip()),
     );
     composer.addPass(this.bloomPass);
-    const output = new OutputPass();
+    const output = createMoodOutputPass();
     // The `auto` tone mapping's weight (render/autoTone.ts); the same object every frame, so it needs no copying.
     output.uniforms.autoToneWeight = autoToneUniforms.autoToneWeight;
     composer.addPass(output);
-    this.gradePass = new ShaderPass(GRADE_SHADER);
-    composer.addPass(this.gradePass);
+    this.outputPass = output;
     // The constructor treats a given target's size as CSS pixels' worth, so size everything here.
     composer.setSize(this.width, this.height);
     this.composer = composer;
