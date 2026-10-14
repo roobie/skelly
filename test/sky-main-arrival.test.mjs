@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import { it } from 'node:test';
-import { mainOverlayPath } from '../deadvox/test/browser/sky-main-arrival.mjs';
+import { mainOverlayPath, mainSourceOverlays } from '../deadvox/test/browser/sky-main-arrival.mjs';
+
+it('main rendering overlays retain branch core API owners', () => {
+  assert.ok(mainSourceOverlays.length > 0);
+  assert.ok(mainSourceOverlays.every((path) => !path.startsWith('core/')));
+});
 
 it('main overlays accept the directory URL trailing separator and worker module query', () => {
   const root = resolve('fixture-root');

@@ -20,6 +20,10 @@
     {
       "category": "tool",
       "description": "A small key for the shed's door.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "shed_key",
       "key": {
         "lock": "test_shed"
@@ -39,6 +43,10 @@
       },
       "buildings": [
         {
+          "lootContext": {
+            "tier": "Tier1",
+            "usage": ["Industrial"]
+          },
           "position": [-2, 0, -1],
           "rotation": 0,
           "template": "locked_shed"
@@ -47,6 +55,10 @@
       "demo": true,
       "ground": 0,
       "id": "lock_test",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
       "player": {
         "bearing": 180,
         "position": [0, 0.5, -1.5]
@@ -81,6 +93,10 @@
         ["........", "........", "WWWDDWWW", "W......W", "W......W", "W......W", "W......W", "WWWWWWWW"],
         ["........", "........", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR"]
       ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
       "palette": {
         "#": "planks",
         ".": "air",

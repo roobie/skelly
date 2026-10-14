@@ -1,4 +1,5 @@
 local rows = import 'tools/jsonnet/lib/rows.libsonnet';
+local lootContext = { usage: ['Residential'], tier: 'Tier1' };
 local wall = ['WWWWWWWWWWWW', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'W..........W', 'WWWWWDDWWWWW'];
 local cabinetWall = wall[:2] + ['WKK........W'] + wall[3:];
 {
@@ -11,6 +12,7 @@ local cabinetWall = wall[:2] + ['WKK........W'] + wall[3:];
   }],
   templates: [{
     id: 'tutorial_station',
+    lootContext: lootContext,
     size: [12, 7, 9],
     palette: {
       '.': 'air', '#': 'planks', W: 'siding_blue', R: 'roof',
@@ -23,6 +25,7 @@ local cabinetWall = wall[:2] + ['WKK........W'] + wall[3:];
   }],
   layouts: [{
     id: 'tutorial',
+    lootContext: lootContext,
     demo: true,
     bounds: { x0: -32, z0: -32, x1: 64, z1: 48 },
     ground: 0,

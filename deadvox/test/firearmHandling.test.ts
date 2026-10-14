@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest';
 import { aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import type { Registry } from '../src/core/content.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
@@ -34,6 +33,7 @@ import { CaseEffects } from '../src/render/caseEffects.ts';
 import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 

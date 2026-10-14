@@ -2,13 +2,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { SPENT_CASE_SCATTER_CAP, spentCaseScatter } from '../src/core/scatterPile.ts';
 import type { FirearmShotEffect } from '../src/game/firearmHandling.ts';
 import { CaseEffects, caseFlightPoint, FLYING_CASE_CAP } from '../src/render/caseEffects.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const BASE = 'src/content/base';
 const baseContent = readdirSync(BASE)

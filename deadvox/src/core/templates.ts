@@ -9,6 +9,7 @@ import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
+import type { LootContext } from './loot.ts';
 import type { DoorLockDef, TemplateAccess } from './schema.ts';
 import { constructFlight } from './stairFlight.ts';
 
@@ -91,6 +92,7 @@ export const templateLockIds = (registry: Registry, template: TemplateDef): stri
 
 /** A piece of furniture in a template, in template coordinates. */
 interface Piece {
+  lootUsage?: LootContext['usage'];
   lock?: DoorLockDef;
   furniture: string;
   /** The palette's loot table, or the furniture's own. */
@@ -107,6 +109,7 @@ export interface SpawnMarker extends SpawnTimeWindowField {
 }
 
 export interface CompiledTemplate {
+  readonly lootContext: LootContext;
   readonly id: string;
   readonly size: Vec3;
   /** A block id per cell, x + sx * (z + sz * y). Furniture and spawn cells are air. */
@@ -160,6 +163,7 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
       pieces.push({
         furniture: def.id,
         loot: entry.loot ?? def.loot,
+        ...(entry.lootUsage === undefined ? {} : { lootUsage: entry.lootUsage }),
         facing,
         pos,
         size,
@@ -177,6 +181,7 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
   const groundLayer = template.access?.storeys.find((floor) => floor.id === template.access?.ground)?.floor;
   return {
     id: template.id,
+    lootContext: template.lootContext,
     size: [sx, sy, sz],
     blocks,
     pieces,
@@ -187,6 +192,7 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
 
 /** A template put in the world. `origin` is the lowest corner of its turned footprint; layer 0 is at origin[1]. */
 export interface Placement {
+  readonly lootContext?: LootContext;
   readonly template: CompiledTemplate;
   readonly origin: Vec3;
   readonly turn: Turn;
@@ -256,6 +262,7 @@ export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
 
 /** A placed piece in world coordinates. */
 export interface PlacedPiece {
+  lootUsage?: LootContext['usage'];
   lock?: DoorLockDef;
   furniture: string;
   loot?: string | undefined;
@@ -275,6 +282,7 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
       furniture: piece.furniture,
       ...(piece.lock ? { lock: piece.lock } : {}),
       loot: piece.loot,
+      ...(piece.lootUsage === undefined ? {} : { lootUsage: piece.lootUsage }),
       facing: turnFacing(piece.facing, turn),
       pos: [origin[0] + Math.min(ax, bx), origin[1] + piece.pos[1], origin[2] + Math.min(az, bz)],
       size: [Math.abs(bx - ax) + 1, piece.size[1], Math.abs(bz - az) + 1],
@@ -323,5 +331,12 @@ export const stackTemplate = (template: CompiledTemplate, storeys: number): Comp
       })),
     );
   }
-  return { id: `${template.id}×${storeys}`, size: [sx, height, sz], blocks, pieces, spawns };
+  return {
+    id: `${template.id}×${storeys}`,
+    lootContext: template.lootContext,
+    size: [sx, height, sz],
+    blocks,
+    pieces,
+    spawns,
+  };
 };

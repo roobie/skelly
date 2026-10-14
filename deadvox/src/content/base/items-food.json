@@ -1,94 +1,126 @@
 {
   "items": [
     {
-      "id": "canned_beans",
-      "name": "Can of beans",
       "category": "food",
-      "weight": 450,
-      "size": [1, 2],
       "description": "Dented but sealed.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "food": {
         "calories": 350,
         "water": 100
-      }
+      },
+      "id": "canned_beans",
+      "name": "Can of beans",
+      "size": [1, 2],
+      "weight": 450
     },
     {
-      "id": "canned_soup",
-      "name": "Can of soup",
       "category": "food",
-      "weight": 430,
-      "size": [1, 2],
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "food": {
         "calories": 200,
         "water": 250
-      }
+      },
+      "id": "canned_soup",
+      "name": "Can of soup",
+      "size": [1, 2],
+      "weight": 430
     },
     {
-      "id": "crackers",
-      "name": "Box of crackers",
       "category": "food",
-      "weight": 250,
-      "size": [2, 2],
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "food": {
         "calories": 1100,
         "water": 0
-      }
+      },
+      "id": "crackers",
+      "name": "Box of crackers",
+      "size": [2, 2],
+      "weight": 250
     },
     {
-      "id": "apple",
-      "name": "Apple",
       "category": "food",
-      "weight": 180,
-      "size": [1, 1],
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "food": {
         "calories": 95,
-        "water": 150,
-        "rotsAfterGameHours": 240
-      }
+        "rotsAfterGameHours": 240,
+        "water": 150
+      },
+      "id": "apple",
+      "name": "Apple",
+      "size": [1, 1],
+      "weight": 180
     },
     {
-      "id": "chocolate_bar",
-      "name": "Chocolate bar",
       "category": "food",
-      "weight": 100,
-      "size": [2, 1],
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "food": {
         "calories": 530,
         "water": 0
-      }
+      },
+      "id": "chocolate_bar",
+      "name": "Chocolate bar",
+      "size": [2, 1],
+      "weight": 100
     },
     {
-      "id": "soda_can",
-      "name": "Can of soda",
       "category": "drink",
-      "weight": 360,
-      "size": [1, 2],
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "food": {
         "calories": 140,
         "water": 300
-      }
+      },
+      "id": "soda_can",
+      "name": "Can of soda",
+      "size": [1, 2],
+      "weight": 360
     },
     {
-      "id": "water_bottle",
-      "name": "Bottle of water",
       "category": "drink",
-      "weight": 1050,
-      "size": [1, 3],
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "food": {
         "calories": 0,
         "water": 1000
-      }
+      },
+      "id": "water_bottle",
+      "name": "Bottle of water",
+      "size": [1, 3],
+      "weight": 1050
     },
     {
-      "id": "juice_carton",
-      "name": "Carton of juice",
       "category": "drink",
-      "weight": 1050,
-      "size": [1, 3],
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "food": {
         "calories": 450,
         "water": 900
-      }
+      },
+      "id": "juice_carton",
+      "name": "Carton of juice",
+      "size": [1, 3],
+      "weight": 1050
     }
   ]
 }

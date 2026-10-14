@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're authoring or exporting a Deadvox site in Tiled
+  - you change economy contexts or exporter ownership for authored sites
   - you're changing fixed loot, playtest beats or spawn markers
   - you're reviewing the military compound's routes
 ---
@@ -10,6 +11,8 @@ read_if:
 Tiled-edited maps are authored `.tmj` files; do not pair them with generated `.tmj.jsonnet` sources, because content compilation can overwrite edits. Use Jsonnet map sources only when the `.tmj` is generated rather than edited in Tiled. The exporter turns Tiled site data into content layouts; keep the authored map and exported layout together, while reusable interiors remain ASCII templates. See `tools/jsonnet/compile.mjs`, `SOURCE_ROOTS`, and `maps/extensions/deadvox.mjs`, `exportLayout`.
 
 The playtest route treats the shelter, Mike's place, medical site and military compound as distinct beats. The vehicle-width road reaches the compound's north gate; the narrower trail covers the remaining gap, while the south breach remains an alternate approach. Keep these approaches legible without making the compound a dead end. See `maps/playtest.tmj` and `test/authoredFixedLoot.test.ts`, "routes through the north double gate while keeping the south wall breach open".
+
+Keep exported layouts outside the Jsonnet output manifest so the Tiled exporter remains their only writer. Author the fallback context on the map and export a building context only when it has an explicit override: otherwise template usage must inherit the site's tier. Author tier exceptions on the building rather than manufacturing them from template defaults in the exporter. See `maps/extensions/deadvox.mjs`, `exportLayout` and `addBuilding`, and `src/core/authoredPlacement.ts`, `placementOf`.
 
 ## Fixed loot
 

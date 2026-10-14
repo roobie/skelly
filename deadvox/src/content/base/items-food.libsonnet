@@ -1,0 +1,94 @@
+{
+  "items": [
+    {
+      "id": "canned_beans",
+      "name": "Can of beans",
+      "category": "food",
+      "weight": 450,
+      "size": [1, 2],
+      "description": "Dented but sealed.",
+      "food": {
+        "calories": 350,
+        "water": 100
+      }
+    },
+    {
+      "id": "canned_soup",
+      "name": "Can of soup",
+      "category": "food",
+      "weight": 430,
+      "size": [1, 2],
+      "food": {
+        "calories": 200,
+        "water": 250
+      }
+    },
+    {
+      "id": "crackers",
+      "name": "Box of crackers",
+      "category": "food",
+      "weight": 250,
+      "size": [2, 2],
+      "food": {
+        "calories": 1100,
+        "water": 0
+      }
+    },
+    {
+      "id": "apple",
+      "name": "Apple",
+      "category": "food",
+      "weight": 180,
+      "size": [1, 1],
+      "food": {
+        "calories": 95,
+        "water": 150,
+        "rotsAfterGameHours": 240
+      }
+    },
+    {
+      "id": "chocolate_bar",
+      "name": "Chocolate bar",
+      "category": "food",
+      "weight": 100,
+      "size": [2, 1],
+      "food": {
+        "calories": 530,
+        "water": 0
+      }
+    },
+    {
+      "id": "soda_can",
+      "name": "Can of soda",
+      "category": "drink",
+      "weight": 360,
+      "size": [1, 2],
+      "food": {
+        "calories": 140,
+        "water": 300
+      }
+    },
+    {
+      "id": "water_bottle",
+      "name": "Bottle of water",
+      "category": "drink",
+      "weight": 1050,
+      "size": [1, 3],
+      "food": {
+        "calories": 0,
+        "water": 1000
+      }
+    },
+    {
+      "id": "juice_carton",
+      "name": "Carton of juice",
+      "category": "drink",
+      "weight": 1050,
+      "size": [1, 3],
+      "food": {
+        "calories": 450,
+        "water": 900
+      }
+    }
+  ]
+}

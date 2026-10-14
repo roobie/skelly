@@ -3,6 +3,10 @@
     {
       "category": "tool",
       "description": "A small electronic compass with an illuminated heading display. Prototype: battery use is not yet modeled.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "heldDisplay": "compass",
       "id": "compass",
       "name": "Compass",
@@ -12,6 +16,10 @@
     {
       "category": "tool",
       "description": "Pries open doors and crates. Also a weapon.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "crowbar",
       "model": "crowbar",
       "name": "Crowbar",
@@ -37,6 +45,10 @@
     },
     {
       "category": "tool",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "hammer",
       "model": "hammer",
       "name": "Hammer",
@@ -61,6 +73,10 @@
     },
     {
       "category": "tool",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "kitchen_knife",
       "model": "kitchen_knife",
       "name": "Kitchen knife",
@@ -85,6 +101,10 @@
     },
     {
       "category": "tool",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "kabar",
       "model": "kabar",
       "name": "Kabar",
@@ -109,6 +129,10 @@
     },
     {
       "category": "tool",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "machete",
       "model": "machete",
       "name": "Machete",
@@ -133,6 +157,10 @@
     },
     {
       "category": "tool",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "can_opener",
       "name": "Can opener",
       "size": [1, 1],
@@ -145,6 +173,10 @@
     },
     {
       "category": "weapon",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "baseball_bat",
       "model": "baseball_bat",
       "name": "Baseball bat",
@@ -165,6 +197,10 @@
     },
     {
       "category": "weapon",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "steel_pipe",
       "model": "steel_pipe",
       "name": "Steel pipe",
@@ -185,6 +221,10 @@
     {
       "category": "light",
       "description": "Lets you see. Lets them see you.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "flashlight",
       "light": {
         "beam": {
@@ -208,6 +248,10 @@
     {
       "category": "light",
       "description": "A battery-powered beam worn on the head, leaving both hands free.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "headlamp",
       "light": {
         "beam": {
@@ -258,6 +302,10 @@
           }
         ]
       },
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "torch",
       "light": {
         "burnTimeGameHours": 4,
@@ -299,6 +347,10 @@
           }
         ]
       },
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "candle",
       "light": {
         "burnTimeGameHours": 6,
@@ -322,6 +374,10 @@
     {
       "category": "light",
       "description": "A sealed chemical light.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "glowstick",
       "light": {
         "burnTimeGameHours": 8,
@@ -346,6 +402,10 @@
     },
     {
       "category": "light",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "lighter",
       "igniter": {
         "capacity": 100,
@@ -364,6 +424,10 @@
     },
     {
       "category": "light",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "matches",
       "igniter": {
         "capacity": 10,

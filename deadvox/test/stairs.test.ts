@@ -177,7 +177,12 @@ describe('explicit storeys and ordinary-block flights', () => {
     const scale = makeScale(0.5);
     const layout = structuredClone(registry.layouts.get('stair_demo')!);
     layout.buildings = [
-      { template: 'stairs_cabin', position: [59.5, 17, 59.5], rotation: (turn * 90) as 0 | 90 | 180 | 270 },
+      {
+        template: 'stairs_cabin',
+        lootContext: registry.templates.get('stairs_cabin')!.lootContext,
+        position: [59.5, 17, 59.5],
+        rotation: (turn * 90) as 0 | 90 | 180 | 270,
+      },
     ];
     const site = new AuthoredSite(1, registry, scale, layout);
     const placement = site.placements[0]!;

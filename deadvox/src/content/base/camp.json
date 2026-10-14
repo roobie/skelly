@@ -166,6 +166,10 @@
     {
       "category": "tool",
       "description": "A key for the locked armoury container.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "camp_armoury_key",
       "key": {
         "lock": "camp_armoury"
@@ -176,6 +180,10 @@
     },
     {
       "category": "book",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "camp_supply_manifest",
       "name": "Military supply manifest",
       "readable": {
@@ -188,6 +196,10 @@
     {
       "category": "tool",
       "description": "A key for the reserve safe in the officers' quarters.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "camp_hq_safe_key",
       "key": {
         "lock": "camp_hq_safe"
@@ -198,6 +210,10 @@
     },
     {
       "category": "book",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "camp_hq_safe_note",
       "name": "Officer's note",
       "readable": {
@@ -243,7 +259,6 @@
         }
       ],
       "id": "camp_hq_secure_cache",
-      "military": true,
       "rolls": [1, 1]
     },
     {
@@ -343,7 +358,6 @@
         }
       ],
       "id": "military_armoury",
-      "military": true,
       "rolls": [1, 2]
     }
   ],
@@ -436,7 +450,10 @@
           "####################"
         ]
       ],
-      "military": true,
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         "#": "galvanized",
         ".": "air",
@@ -568,6 +585,10 @@
           "TTTTTTTTTTTTTTTT"
         ]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         ".": "air",
         "=": "planks",
@@ -666,6 +687,10 @@
           "##################"
         ]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         "#": "galvanized",
         ".": "air",
@@ -725,6 +750,10 @@
           "............"
         ]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         ".": "air",
         "=": "dirt",
@@ -925,6 +954,10 @@
           "............"
         ]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         "#": "planks",
         ".": "air",
@@ -945,6 +978,10 @@
         ["================================", "================================"],
         ["================================", "================================"]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         ".": "air",
         "=": "sandbag"
@@ -963,6 +1000,10 @@
         ["================================", "================================"],
         ["================================", "================================"]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         ".": "air",
         "=": "sandbag"
@@ -989,6 +1030,10 @@
         ["........", "........", "........", "........", "........", "........", "........", "........"],
         ["........", "........", "........", "........", "........", "........", "........", "........"]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         ".": "air",
         "=": "planks",
@@ -1379,7 +1424,10 @@
           "................"
         ]
       ],
-      "military": true,
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         "#": "camo_woodland",
         ".": "air",
@@ -1414,7 +1462,8 @@
           "loot": "camp_hq_secure_cache"
         },
         "R": {
-          "furniture": "wardrobe"
+          "furniture": "wardrobe",
+          "lootUsage": ["Residential"]
         },
         "S": "sandbag",
         "W": {
@@ -1441,6 +1490,10 @@
         ["################", "################"],
         ["################", "################"]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         "#": "sandbag",
         ".": "air",
@@ -1469,6 +1522,10 @@
         ["################", "################"],
         ["################", "################"]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         "#": "sandbag",
         ".": "air",
@@ -1497,6 +1554,10 @@
         ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"],
         ["##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##", "##"]
       ],
+      "lootContext": {
+        "tier": "Tier2",
+        "usage": ["Military"]
+      },
       "palette": {
         "#": "sandbag",
         ".": "air",

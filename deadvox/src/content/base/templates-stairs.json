@@ -1,20 +1,44 @@
 {
+  "loot": [
+    {
+      "entries": [
+        {
+          "count": [6, 6],
+          "item": "shell_12_gauge_00_buck",
+          "weight": 1
+        }
+      ],
+      "id": "stairs_demo_shells",
+      "rolls": [1, 1]
+    }
+  ],
   "templates": [
     {
-      "id": "stairs_house",
-      "size": [16, 16, 16],
-      "palette": {
-        ".": "air",
-        "s": "stone",
-        "p": "planks",
-        "w": "brick",
-        "D": {
-          "furniture": "wood_door"
-        },
-        "Z": {
-          "spawn": "shambler"
-        }
+      "access": {
+        "entrance": [2, 1, 2],
+        "ground": "downstairs",
+        "stairs": [
+          {
+            "block": "planks",
+            "from": "downstairs",
+            "lower": [2, 1, 5],
+            "to": "bedroom",
+            "upper": [11, 9, 5],
+            "width": 2
+          }
+        ],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "downstairs"
+          },
+          {
+            "floor": 9,
+            "id": "bedroom"
+          }
+        ]
       },
+      "id": "stairs_house",
       "layers": [
         [
           "pppppppppppppppp",
@@ -305,44 +329,50 @@
           "pppppppppppppppp"
         ]
       ],
-      "access": {
-        "ground": "downstairs",
-        "entrance": [2, 1, 2],
-        "storeys": [
-          {
-            "id": "downstairs",
-            "floor": 1
-          },
-          {
-            "id": "bedroom",
-            "floor": 9
-          }
-        ],
-        "stairs": [
-          {
-            "from": "downstairs",
-            "to": "bedroom",
-            "lower": [2, 1, 5],
-            "upper": [11, 9, 5],
-            "width": 2,
-            "block": "planks"
-          }
-        ]
-      }
-    },
-    {
-      "id": "stairs_cabin",
-      "size": [16, 16, 16],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
       "palette": {
         ".": "air",
-        "s": "stone",
+        "D": {
+          "furniture": "wood_door"
+        },
+        "Z": {
+          "spawn": "shambler"
+        },
         "p": "planks",
-        "w": "brick",
-        "C": {
-          "furniture": "kitchen_cupboard",
-          "loot": "stairs_demo_shells"
-        }
+        "s": "stone",
+        "w": "brick"
       },
+      "size": [16, 16, 16]
+    },
+    {
+      "access": {
+        "entrance": [2, 9, 2],
+        "ground": "ground",
+        "stairs": [
+          {
+            "block": "planks",
+            "from": "cellar",
+            "lower": [2, 1, 5],
+            "to": "ground",
+            "upper": [11, 9, 5],
+            "width": 2
+          }
+        ],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "cellar"
+          },
+          {
+            "floor": 9,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "stairs_cabin",
       "layers": [
         [
           "ssssssssssssssss",
@@ -633,43 +663,21 @@
           "pppppppppppppppp"
         ]
       ],
-      "access": {
-        "ground": "ground",
-        "entrance": [2, 9, 2],
-        "storeys": [
-          {
-            "id": "cellar",
-            "floor": 1
-          },
-          {
-            "id": "ground",
-            "floor": 9
-          }
-        ],
-        "stairs": [
-          {
-            "from": "cellar",
-            "to": "ground",
-            "lower": [2, 1, 5],
-            "upper": [11, 9, 5],
-            "width": 2,
-            "block": "planks"
-          }
-        ]
-      }
-    }
-  ],
-  "loot": [
-    {
-      "id": "stairs_demo_shells",
-      "rolls": [1, 1],
-      "entries": [
-        {
-          "weight": 1,
-          "item": "shell_12_gauge_00_buck",
-          "count": [6, 6]
-        }
-      ]
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "C": {
+          "furniture": "kitchen_cupboard",
+          "loot": "stairs_demo_shells"
+        },
+        "p": "planks",
+        "s": "stone",
+        "w": "brick"
+      },
+      "size": [16, 16, 16]
     }
   ]
 }

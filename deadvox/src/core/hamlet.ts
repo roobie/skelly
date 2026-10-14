@@ -13,6 +13,7 @@ import {
   furnitureOf,
   grow,
   type HordeSpawn,
+  lootPointsOf,
   type Rect,
   rectDistance,
   type Site,
@@ -315,6 +316,10 @@ export class Hamlet implements Site {
    * Furniture anchored in the column (cx, cz), with loot rolled for each container
    * from a stream of its own, keyed by where it is.
    */
+  lootPointsIn(cx: number, cz: number) {
+    return this.lots.flatMap((lot) => [...lootPointsOf(this.registry, 'hamlet', lot.placement, [cx, cz])]);
+  }
+
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
     return [
       ...this.lots.flatMap((lot) => furnitureOf(this, lot.placement, [cx, cz])),

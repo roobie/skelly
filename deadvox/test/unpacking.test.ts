@@ -1,7 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { options, toHands } from '../src/core/options.ts';
@@ -9,6 +8,7 @@ import { reach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { BOX_UNPACK_SECONDS, Unpacking } from '../src/game/unpacking.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json'))
