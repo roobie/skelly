@@ -1820,7 +1820,10 @@ try {
     const root = document.querySelector('#handling');
     return {
       value: Number(root.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')),
-      marker: Number.parseFloat(root.querySelector('.activity-progress-minimum').style.getPropertyValue('--minimum-angle')) / 3.6,
+      marker:
+        Number.parseFloat(
+          root.querySelector('.activity-progress-minimum').style.getPropertyValue('--minimum-angle'),
+        ) / 3.6,
       minimumLabel: root.querySelector('.activity-progress-copy')?.textContent,
     };
   });

@@ -1,11 +1,11 @@
 // The quickbar and handling progress shown while playing (`DESIGN.md`, "Inventory screen").
 
 import { html, render, type TemplateResult } from 'lit-html';
-import { activityProgress } from './activityProgress.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { Quickbar } from '../game/quickbar.ts';
+import { activityProgress } from './activityProgress.ts';
 
 /** Where a quickbar item is, and how long it takes to get it in hand. */
 const whereText = (inv: Inventory, item: Item, at: Location | undefined): string => {

@@ -1181,6 +1181,7 @@ button.inv-option.game-cursor-hover {
   color: #f3f4f6;
   text-align: center;
   text-shadow: 0 1px 2px #000;
+  line-height: 1.35;
   pointer-events: none;
 }
 .activity-progress-gauge {
@@ -1244,10 +1245,6 @@ button.inv-option.game-cursor-hover {
   border-radius: 0.5rem;
   background: rgb(0 0 0 / 78%);
   overflow-wrap: anywhere;
-}
-.activity-progress-copy > span,
-.activity-progress-copy > strong {
-  line-height: 1.35;
 }
 .activity-progress-controls {
   display: flex;

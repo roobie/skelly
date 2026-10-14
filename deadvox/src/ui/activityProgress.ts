@@ -39,13 +39,15 @@ export const activityProgress = ({
           style=${`stroke-dashoffset: ${RING_CIRCUMFERENCE * (1 - progress / 100)}`}
         ></circle>
       </svg>
-      ${minimumPercent === undefined
-        ? nothing
-        : html`<span
-            class="activity-progress-minimum"
-            aria-hidden="true"
-            style=${`--minimum-angle: ${minimumPercent * 3.6}deg`}
-          ></span>`}
+      ${
+        minimumPercent === undefined
+          ? nothing
+          : html`<span
+              class="activity-progress-minimum"
+              aria-hidden="true"
+              style=${`--minimum-angle: ${minimumPercent * 3.6}deg`}
+            ></span>`
+      }
       <span class="activity-progress-percent" aria-hidden="true">${progress}%</span>
     </div>
     <div class="activity-progress-copy">

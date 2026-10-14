@@ -62,12 +62,18 @@ export const renderCraftStatus = (
           label: status.name,
           percent: status.percent,
           time: status.progress,
-          detail: html`${status.stopped ? html`<span>Stopped</span>` : nothing}
-            ${status.reason ? html`<span class="craft-gap">${status.reason}</span>` : nothing}`,
-          controls: html`${status.stopped
-            ? html`<button type="button" @click=${actions.continue}>Continue (${labelForAction('craft.continue')})</button>`
-            : nothing}
-            <button type="button" @click=${actions.stop}>Stop (X)</button>`,
+          detail: html`
+            ${status.stopped ? html`<span>Stopped</span>` : nothing}
+            ${status.reason ? html`<span class="craft-gap">${status.reason}</span>` : nothing}
+          `,
+          controls: html`
+            ${
+              status.stopped
+                ? html`<button type="button" @click=${actions.continue}>Continue (${labelForAction('craft.continue')})</button>`
+                : nothing
+            }
+            <button type="button" @click=${actions.stop}>Stop (X)</button>
+          `,
         })
       : nothing,
     root,
