@@ -1409,18 +1409,18 @@ their state.
 
 - **Content types are defined with Valibot schemas,** chosen for its bundle
   size. The schema gives both the TypeScript types and the runtime validation.
-- **Packs.** A pack is a folder of JSON files. The base pack loads first; mods
-  load after it and can add new ids or override existing ones. Ids are strings,
-  namespaced by pack when they would clash (for example `base:shambler`).
-- **Every kind of content goes through the same validator:** blocks, shapes,
-  items, recipes, loot tables, templates, zombie types, vehicle parts, sounds.
-  It reports references to missing ids.
-- **Versioned saves.** A save records which packs, and which pack versions, it
-  was made with. Ids that no longer exist are kept as "unknown" rather than
-  dropped (see [CHALLENGES.md](CHALLENGES.md#7-saves-and-migration)).
-- **Larger authored buildings.** Importing voxel-editor work from tools such as
-  MagicaVoxel or vengi remains a direction when building scale outgrows the
-  current authoring path; no importer contract is settled.
+- **Packs.** Packs apply in order; a later pack adds ids or replaces a whole
+  definition, and a file that fails validation is skipped whole so one broken
+  mod cannot leave half-applied content. See `src/core/content.ts`, `buildRegistry`.
+- **Every content section passes the same validator,** which reports references
+  to missing ids.
+- **Versioned saves.** A save records each pack's id, version and canonical
+  hash; a save whose content changed is refused rather than migrated until v1.0
+  beta (`../AGENTS.md`, "Project stage: pre-pre-alpha, no backwards
+  compatibility"). See `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
+- **Larger authored buildings.** Import voxel-editor work (MagicaVoxel, vengi)
+  only when a building outgrows curated Jsonnet pieces (`../docs/jsonnet.md`,
+  "Curated map features"); no importer contract is settled.
 
 ## A world that feels real
 
