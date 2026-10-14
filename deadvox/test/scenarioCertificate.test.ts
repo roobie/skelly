@@ -310,9 +310,11 @@ it('resolves production service ownership, furnished loot and terrain stamps ind
 });
 
 it(
-  'walks closed lids, opens descents, returns alive and activates the objective from the goal-face save',
+  'walks substituted rooms and closed lids, opens descents, returns alive and activates the objective from the goal-face save',
   () => {
-    traverseScenario(siteOf(candidatePlan(base.candidates[0]!, 1)), profile, scale);
+    const selected = selectedServices[0]!;
+    const plan = candidatePlan(base.candidates[0]!, 1, selected.template, substitutedRegistry);
+    traverseScenario(new CitySite(selected.seed, substitutedRegistry, scale, plan), profile, scale);
   },
   profile.composition!.storeys.length * 2000,
 );
