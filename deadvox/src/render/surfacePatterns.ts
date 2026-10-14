@@ -176,9 +176,14 @@ vec4 voronoi3(vec3 p) {
   return vec4(d1, d2, id, 0.0);
 }
 
-// World-anchored 3D blotches continue across chunk edges and changes in face orientation.
+// World anchoring keeps blotches continuous across chunk edges and changes in face orientation.
 vec3 camoColor(vec3 world, float fw) {
+#ifdef DEADVOX_FAST_CAMO
+  vec3 projected = voronoi(vec2(world.x + world.z * 0.61, world.y + world.z * 0.37) / 0.72);
+  vec4 v = vec4(projected, 0.0);
+#else
   vec4 v = voronoi3(world / 0.72);
+#endif
   float edge = 1.0 - smoothstep(0.015, 0.08, (v.y - v.x) * 0.72);
   float paletteIndex = floor(v.z * 4.0);
   vec3 blotch = uCamoPalette[0];

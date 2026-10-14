@@ -148,6 +148,7 @@ export class Shadows {
   private readonly snapped = new Vector3();
   private sunCasters = 0;
   private torchCasters = 0;
+  private smallSunMapValue = false;
 
   /** `sun` is the scene's directional light and the group holding it and its target (engine.ts). */
   constructor(
@@ -179,6 +180,22 @@ export class Shadows {
 
   get torchOn(): boolean {
     return this.state.torch;
+  }
+
+  get smallSunMap(): boolean {
+    return this.smallSunMapValue;
+  }
+
+  setSmallSunMap(on: boolean): void {
+    if (on === this.smallSunMapValue) {
+      return;
+    }
+    this.smallSunMapValue = on;
+    const size = on ? SUN_MAP_SIZE / 2 : SUN_MAP_SIZE;
+    this.light.shadow.map?.dispose();
+    this.light.shadow.map = null;
+    this.light.shadow.mapSize.set(size, size);
+    this.configureSun();
   }
 
   get distance(): number {
@@ -243,7 +260,7 @@ export class Shadows {
       return;
     }
     this.toSun.copy(light.position).normalize();
-    snapToTexels(center, this.toSun, sunShadowTexelSize(this.state.distance), this.snapped);
+    snapToTexels(center, this.toSun, sunShadowTexelSize(this.state.distance, light.shadow.mapSize.x), this.snapped);
     rig.position.copy(this.snapped);
     rig.updateMatrixWorld(true);
     const changed =
@@ -293,7 +310,7 @@ export class Shadows {
     camera.near = -BOX_TOWARDS_SUN * distance;
     camera.far = BOX_AWAY_FROM_SUN * distance;
     camera.updateProjectionMatrix();
-    Object.assign(light.shadow, sunShadowBias(distance));
+    Object.assign(light.shadow, sunShadowBias(distance, light.shadow.mapSize.x));
     light.castShadow = sun;
     this.stale = true;
   }

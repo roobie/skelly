@@ -3,6 +3,7 @@ read_if:
   - you author or change structured game data in any subproject
   - you change the shared Jsonnet compiler or its import and validation rules
   - you add build-specific content or a Jsonnet module
+  - you author map features or decide what belongs in a map template
 ---
 
 # Jsonnet authoring
@@ -17,9 +18,17 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 - Deadvox core-pack data is authored under `deadvox/src/content/base` and consumed through `deadvox/src/game/bundledContent.ts`, `BUNDLED_CONTENT`, and `deadvox/src/core/content.ts`, `buildRegistry`. Keep local helpers beside their source and shared helpers under `tools/jsonnet/lib` so module ownership is explicit.
 - Build-specific settings must be explicit top-level arguments, not hidden environment inputs, so identical sources produce identical output.
 
+## Curated map features
+
+Every map feature not constructed from noise comes from a curated template. Author its geometry as readable source, not as generated Jsonnet or layer-building code. Deterministic semi-procedural code may place and apply those templates; it does not replace their authored geometry. An exception needs a concrete reason and an operator decision before implementation.
+
+Curated geometry lets authors inspect and change the intended space directly, rather than reverse-engineering a generator to discover which walls, openings or material courses it produces.
+
+Known exceptions remain until #712 replaces generated map geometry with curated kit assemblies: `deadvox/src/content/base/gauntlet-lab.libsonnet`, `deadvox/src/content/base/gauntlet-look.jsonnet`, `deadvox/src/content/base/camp.jsonnet`, `deadvox/src/content/base/ladders.jsonnet`, and `deadvox/src/content/base/locks.jsonnet`. Keeping these exceptions explicit permits the gauntlet's curated city to land without claiming that its underground lab or the other generated features already satisfy the rule.
+
 ## Reasons
 
-- Use templates and constructors when they expose a real relationship; shared structure keeps variants from drifting. Keep irregular authored choices explicit when abstraction would obscure them.
+- Outside map geometry, use templates and constructors when they expose a real relationship; shared structure keeps variants from drifting. Keep irregular authored choices explicit when abstraction would obscure them.
 - No source-coverage gate is used: the JSON exception depends on whether a particular edit exposes repetition. A file-wide gate would force unrelated migrations, while a history-based gate would have to classify content diffs against that exception. Review the exception when editing a file.
 - Treat IDs as content interfaces: explicit references remain stable when display names change.
 - Keep module exports deliberate and inheritance shallow so ownership and composition stay inspectable.

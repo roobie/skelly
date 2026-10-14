@@ -5,7 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
-import { AimController, type AimWobbleNoiseTuning } from '../core/aim.ts';
+import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
@@ -34,6 +34,7 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
+import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -47,10 +48,18 @@ import { PlayerCombat } from '../core/playerCombat.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
 import type { SolidAt } from '../core/raycast.ts';
-import { bindReach, pileDistance as distanceToPile, furnitureDistance, INVENTORY_CHEST } from '../core/reach.ts';
+import {
+  bindReach,
+  pileDistance as distanceToPile,
+  furnitureDistance,
+  INVENTORY_CHEST,
+  INVENTORY_REACH,
+} from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
+import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
+import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
 import { Simulation } from '../core/sim.ts';
 import type { Site } from '../core/site.ts';
 import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
@@ -288,6 +297,9 @@ interface SessionDebug {
 
 export interface SessionOptions {
   registry: Registry;
+  scenario?: Readonly<{ id: string; body: string; compression: string }> | undefined;
+  objective?: Readonly<Vec3> | undefined;
+  discovery?: Readonly<ScenarioDiscovery> | undefined;
   world: World;
   isSolid: SolidAt;
   isOpaque: SolidAt;
@@ -433,16 +445,16 @@ const createSessionCharacter = (
 ): Character =>
   restored ? Character.restoreState(registry, restored.character.progression) : new Character(registry, { handedness });
 
-const playerBodyTuning = (registry: Registry) => {
-  const tuning = registry.body.get(CORE_CONTENT_IDS.player);
+const playerBodyTuning = (registry: Registry, id: string = CORE_CONTENT_IDS.player) => {
+  const tuning = registry.body.get(id);
   if (!tuning) {
     throw new Error('Missing player body tuning');
   }
   return tuning;
 };
 
-const playerCompressionCaps = (registry: Registry) => {
-  const tuning = registry.compression.get(CORE_CONTENT_IDS.player);
+const playerCompressionCaps = (registry: Registry, id: string = CORE_CONTENT_IDS.player) => {
+  const tuning = registry.compression.get(id);
   if (!tuning) {
     throw new Error('Missing player compression tuning');
   }
@@ -523,6 +535,50 @@ const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? o
 /** Play's `isSolid` is core/collision.ts `worldSolid` over the world and its entities, so their bricks stand in. */
 const solidBricksFor = ({ world, registry, entities }: SessionOptions): SolidBricks | undefined =>
   entities ? worldBricks(world, registry, entities) : undefined;
+
+const scenarioRunSnapshot = (run: ScenarioRun | undefined) => run?.snapshot() ?? null;
+const scenarioRunWon = (run: ScenarioRun | undefined): boolean => run?.won ?? false;
+
+const restoreScenarioRun = (options: SessionOptions, sim: Simulation): ScenarioRun | undefined => {
+  const restored = options.restore;
+  assertScenarioRun(restored?.character.scenarioRun ?? null, {
+    calendar: sim.calendar,
+    dead: sim.dead !== undefined,
+    ...(restored && options.scenario ? { scenario: options.scenario.id } : {}),
+  });
+  if (restored?.character.scenarioRun && !options.scenario) {
+    throw new Error('Unexpected scenario run');
+  }
+  const run = options.scenario
+    ? new ScenarioRun(options.scenario.id, sim.calendar, restored?.character.scenarioRun ?? undefined)
+    : undefined;
+  if (run?.won) {
+    sim.paused = true;
+  }
+  return run;
+};
+
+const observeScenarioMovement = (
+  run: ScenarioRun | undefined,
+  {
+    before,
+    after,
+    blockSize,
+    climbing,
+    calendar,
+  }: {
+    before: Vec3;
+    after: Vec3;
+    blockSize: number;
+    climbing: boolean;
+    calendar: number;
+  },
+): void => {
+  run?.moved(before, after, blockSize);
+  if (climbing) {
+    run?.entered(calendar);
+  }
+};
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
@@ -611,15 +667,16 @@ export const createSession = (options: SessionOptions) => {
   const chest = (): Vec3 => [body.pos[0], body.pos[1] + INVENTORY_CHEST / s, body.pos[2]];
   const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
 
-  const bodyTuning = playerBodyTuning(registry);
+  const bodyTuning = playerBodyTuning(registry, options.scenario?.body);
   const sim = new Simulation({
     seed,
     bodyTuning,
     analgesics: (item) => registry.items.get(item)?.analgesic,
-    compressionCaps: playerCompressionCaps(registry),
+    compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),
     clock: { ratio: CLOCK_RATIO, start: options.start },
   });
   const { compression } = sim;
+  let scenarioRun: ScenarioRun | undefined;
   const audioEvents = sim.events.reader();
   const soundPicker = new SoundPicker(seed, registry.sounds);
 
@@ -1170,6 +1227,46 @@ export const createSession = (options: SessionOptions) => {
   const standingZombieBodies = (): Body[] =>
     [...zombieStore.entries()].filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body);
 
+  const observeEntry = (
+    run: ScenarioRun,
+    discovery: ScenarioDiscovery,
+    climbing: boolean,
+    before: Readonly<Vec3>,
+  ): void => {
+    if (!nearDiscoveryBox(body.pos, discovery.entrance, 0)) {
+      return;
+    }
+    // Collision contact correction is not ladder travel.
+    if (climbing && Math.hypot(...body.pos.map((value, axis) => value - before[axis]!)) > 2 * CONTACT_SKIN) {
+      run.discover('entranceTravel', sim.calendar);
+    }
+    for (const entity of entities.all) {
+      if (
+        entities.defOf(entity).door?.hatch &&
+        nearDiscoveryBox(entity.pos, discovery.entrance, 0) &&
+        inventory.canReachEntity(entity)
+      ) {
+        run.discover('hatchEncounter', sim.calendar);
+        if (entity.open) {
+          run.discover('hatchOpened', sim.calendar);
+        }
+      }
+    }
+  };
+  const observeDiscovery = (climbing: boolean, before: Readonly<Vec3>): void => {
+    const { discovery } = options;
+    if (!(scenarioRun && discovery) || sim.dead || debug?.()?.noclip) {
+      return;
+    }
+    if (discovery.landmarks.some((box) => nearDiscoveryBox(body.pos, box, 4 / s))) {
+      scenarioRun.discover('landmarkArrival', sim.calendar);
+    }
+    if (nearDiscoveryBox(body.pos, discovery.building, 2 / s)) {
+      scenarioRun.discover('buildingArrival', sim.calendar);
+    }
+    observeEntry(scenarioRun, discovery, climbing, before);
+  };
+
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
@@ -1197,6 +1294,14 @@ export const createSession = (options: SessionOptions) => {
       obstacles: standingZombieBodies(),
       shapeOf: zombieSystem.shapeOf,
     });
+    observeScenarioMovement(scenarioRun, {
+      before: previousPosition,
+      after: body.pos,
+      blockSize: s,
+      climbing,
+      calendar: sim.calendar,
+    });
+    observeDiscovery(climbing, previousPosition);
     updatePlayerSounds(wasGrounded, previousPosition, time);
     if (climbing) {
       // A climb down is not a fall: a drop is measured from where the ladder was let go.
@@ -1469,7 +1574,63 @@ export const createSession = (options: SessionOptions) => {
     quickbar.restoreState(restored.character.quickbar, inventory);
   }
 
+  scenarioRun = restoreScenarioRun(options, sim);
+  const isObjective = (entity: BlockEntity): boolean =>
+    Boolean(
+      options.objective &&
+        entity.pos.every((value, axis) => value === options.objective![axis]) &&
+        entities.defOf(entity).scenarioGoal,
+    );
+
   return {
+    get scenarioRun() {
+      return scenarioRunSnapshot(scenarioRun);
+    },
+    get won() {
+      return scenarioRunWon(scenarioRun);
+    },
+    isObjective,
+    activateGoal: (entity: BlockEntity): string | undefined => {
+      if (sim.dead) {
+        return 'This survivor died';
+      }
+      if (entities.byUid(entity.uid) !== entity) {
+        return 'It is no longer there';
+      }
+      if (!(scenarioRun && isObjective(entity))) {
+        return 'Not the designated objective';
+      }
+      if (scenarioRun.won) {
+        return undefined;
+      }
+      if (sim.body.actionRefusal) {
+        return sim.body.actionRefusal;
+      }
+      if (!inventory.canReachEntity(entity)) {
+        return 'Too far away';
+      }
+      const yaw = controls.yaw();
+      const pitch = controls.pitch();
+      const selected = pickFurniture({
+        entities,
+        origin: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
+        direction: aimDirection(yaw, pitch, NEUTRAL_AIM),
+        maxDistance: INVENTORY_REACH / s,
+        blockSize: s,
+        isSolid: options.isOpaque,
+      });
+      if (selected !== entity) {
+        return 'Face the unobstructed objective';
+      }
+      scenarioRun.complete(sim.calendar);
+      sim.paused = true;
+      return undefined;
+    },
+    observeRunFrame: (seconds: number, active: boolean): void => {
+      if (!sim.dead) {
+        scenarioRun?.observeFrame(seconds, active && !sim.paused);
+      }
+    },
     sim,
     inventory,
     entities,
@@ -1610,6 +1771,10 @@ export const createSession = (options: SessionOptions) => {
       if (!readable) {
         return 'Nothing to read';
       }
+      scenarioRun?.read(sim.calendar);
+      if (options.discovery?.clues.some((at) => at.every((value, axis) => value === entity.pos[axis]))) {
+        scenarioRun?.discover('clueRead', sim.calendar);
+      }
       options.onRead(readable);
       return undefined;
     },
@@ -1617,6 +1782,9 @@ export const createSession = (options: SessionOptions) => {
     nameOf,
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
+      if (scenarioRun?.won) {
+        return;
+      }
       clearSunExposureCache();
       updateStance();
       rest.frame(dt, until);
@@ -1627,6 +1795,9 @@ export const createSession = (options: SessionOptions) => {
       }
     },
     frameReplay: (realSeconds: number): void => {
+      if (scenarioRun?.won) {
+        return;
+      }
       clearSunExposureCache();
       updateStance();
       rest.frameReplay(realSeconds);
@@ -1641,6 +1812,7 @@ export const createSession = (options: SessionOptions) => {
       snapshotSession({
         worldId,
         characterId,
+        scenarioRun: scenarioRunSnapshot(scenarioRun),
         world,
         blockContentId: (id) => registry.blocks[id]!.id,
         inventory,

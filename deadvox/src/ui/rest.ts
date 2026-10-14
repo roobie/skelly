@@ -3,6 +3,7 @@ import { calendarAt, formatClock } from '../core/clock.ts';
 import type { RestAction } from '../core/longAction.ts';
 import type { Simulation } from '../core/sim.ts';
 import { labelForAction } from '../game/inputBindings.ts';
+import { activityProgress } from './activityProgress.ts';
 
 export interface WaitViewAction {
   readonly label: 'Waiting';
@@ -33,7 +34,7 @@ export const restViewModel = (
     percent = Math.min(100, (action.sleepOnset.elapsedGameSeconds / action.sleepOnset.durationGameSeconds) * 100);
     label = 'Falling asleep';
   } else if ('startFatigue' in action && action.wakeAt !== undefined) {
-    // An alarm sleep runs to its wake time, not to rested, so its bar tracks the time slept.
+    // An alarm sleep runs to its wake time, not to rested, so progress tracks the time slept.
     const { job } = sim.actions;
     const slept = job?.jobType === 'sleep' ? job.elapsed : 0;
     const remaining = Math.max(0, action.wakeAt - sim.time);
@@ -50,7 +51,7 @@ export const restViewModel = (
     label,
     clock: formatClock(sim.calendar),
     percent,
-    stopHint: canStop ? `${labelForAction('handling.stop')} to stop` : '',
+    stopHint: canStop ? `Stop (${labelForAction('handling.stop')})` : '',
     canStop,
     prompt: messagesVisible ? sim.compression.interruption : undefined,
   };
@@ -58,14 +59,15 @@ export const restViewModel = (
 
 const restTemplate = (vm: RestViewModel): TemplateResult => html`
   <div class="rest-edge"></div>
-  <div class="rest-card">
-    <div class="rest-clock"><div class="rest-hand"></div></div>
-    <h2>${vm.label}…</h2>
-    <div class="hd-bar"><div class="hd-fill" style=${`width: ${vm.percent}%`}></div></div>
-    <p class="rest-time">${vm.clock}</p>
-    ${vm.stopHint ? html`<p class="hd-muted">${vm.stopHint}</p>` : ''}
-    ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   ${labelForAction('compression.continue')}: continue${vm.canStop ? `   ${labelForAction('handling.stop')}: stop` : ''}</p>` : ''}
-  </div>
+  ${activityProgress({
+    label: vm.label,
+    percent: vm.percent,
+    progressText: vm.clock,
+    detail: html`
+      ${vm.stopHint ? html`<p class="hd-muted">${vm.stopHint}</p>` : ''}
+      ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   ${labelForAction('compression.continue')}: continue${vm.canStop ? `   ${labelForAction('handling.stop')}: stop` : ''}</p>` : ''}
+    `,
+  })}
 `;
 
 export const renderRest = ({

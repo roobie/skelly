@@ -5,7 +5,9 @@
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
+import { getBuildRevision } from '../core/buildInfo.ts';
 import { dominantSide, offSide } from '../core/character.ts';
+import { CitySite } from '../core/citySite.ts';
 import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
@@ -32,6 +34,7 @@ import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { pileScatterPlacements } from '../core/scatterPile.ts';
+import { discoveryForPlan } from '../core/scenarioDiscovery.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -82,6 +85,8 @@ import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { mountTutorial } from '../ui/tutorial.ts';
+import { showWin } from '../ui/win.ts';
+import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
@@ -166,7 +171,7 @@ import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandO
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
-import { updateStartupHintLatch } from './startupHint.ts';
+
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import {
   isOrbitResetMovementAction,
@@ -177,10 +182,10 @@ import {
 import { TierNotice } from './tierNotice.ts';
 import { Tutorial, tutorialUrl } from './tutorial.ts';
 import { Unpacking } from './unpacking.ts';
+import { WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const STARTUP_MESH_RADIUS = 1;
 
 const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
   (x + 0.5) * blockSize,
@@ -188,11 +193,17 @@ const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
   (z + 0.5) * blockSize,
 ];
 
+const scenarioDiscovery = (site: Engine['site']) =>
+  site instanceof CitySite ? discoveryForPlan(site.plan) : undefined;
+
+const scenarioObjective = (site: Engine['site']): Readonly<Vec3> | undefined =>
+  site instanceof CitySite ? site.plan.composition?.objective : undefined;
+
 interface PlayErrorReportPorts {
   readonly config: Engine['config'];
   readonly sim: ReturnType<typeof createSession>['sim'];
   readonly input: Input;
-  readonly metrics: SessionMetrics;
+  readonly metricsFile: () => HandBackFile;
   readonly exportReplay: () => Promise<Uint8Array>;
   readonly halted: { value: boolean };
   readonly saveController: SaveController | undefined;
@@ -215,7 +226,7 @@ const bindPlayErrorReport = ({
   config,
   sim,
   input,
-  metrics,
+  metricsFile: exportMetricsFile,
   exportReplay,
   halted,
   saveController,
@@ -225,7 +236,7 @@ const bindPlayErrorReport = ({
     site: config.site,
     clockText: () => formatClock(sim.calendar),
     stop: () => stopPlayAfterError(sim, input, halted, saveController),
-    metricsFile: () => metricsFile(metrics),
+    metricsFile: exportMetricsFile,
     replayFile: async () => replayFile(await exportReplay(), new Date()),
   };
   setErrorReportContext(context);
@@ -252,7 +263,6 @@ const guardDebugErrorFrame = (
     return frame(now);
   };
 };
-const STARTUP_COLUMN_COUNT = (STARTUP_MESH_RADIUS * 2 + 1) ** 2;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 export const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
@@ -535,7 +545,7 @@ const handlingPresentationFor = ({
     return { jobs: [], throwCharge };
   }
   const stopLabel = labelForAction('handling.stop');
-  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? `${stopLabel} cancels` };
+  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? `Cancel (${stopLabel})` };
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
@@ -577,9 +587,10 @@ export interface StartPlayOptions {
   };
 }
 
-const configureReplayStreaming = (streamer: Engine['streamer'], replay: StartPlayOptions['replay']): void => {
+const configureReplayStreaming = (engine: Engine, replay: StartPlayOptions['replay']): void => {
   if (replay) {
-    streamer.setReplayControlled();
+    engine.streamer.setReplayControlled();
+    engine.skylight?.setRecordedTerrain();
   }
 };
 
@@ -635,10 +646,10 @@ export const startPlay = (
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
-  const startupHint = $('startup-hint');
-  const startupProgress = $('startup-hint-progress') as HTMLProgressElement;
+  const worldLoading = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
+  const drawWorldLoading = mountWorldLoading(worldLoading);
   configureRestoreFailure(streamer, options.saveController);
-  configureReplayStreaming(streamer, options.replay);
+  configureReplayStreaming(engine, options.replay);
   const { scale } = config;
   const s = scale.blockSize;
   const { tutorial, drawTutorial } = createPlayTutorial(engine, options.tutorial);
@@ -652,7 +663,7 @@ export const startPlay = (
     inputTarget,
     () => !debugTools?.buildOn,
     () => shouldCancelForViewerFocus('window-blur'),
-    () => replayPlayer === undefined,
+    () => worldLoading.ready && replayPlayer === undefined,
   );
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
@@ -776,6 +787,9 @@ export const startPlay = (
   let perceptionLabelsEnabled = false;
   const session = createSession({
     registry,
+    scenario: engine.scenario,
+    objective: scenarioObjective(engine.site),
+    discovery: scenarioDiscovery(engine.site),
     handedness: config.debugHandedness ?? options.handedness,
     world: engine.world,
     isSolid: engine.isSolid,
@@ -792,7 +806,7 @@ export const startPlay = (
     ready: (x, z) => streamer.isReady(x, z),
     zombieReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
     controls: {
-      active: () => Boolean(options.replay) || (input.locked && !input.menuPointer),
+      active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
       intent: (): MoveIntent =>
         spectatorCameraEnabled ? { forward: 0, right: 0, jump: false, sprint: false, walk: false } : input.intent(),
       sampleAtPlayerTick: samplePlayerInput,
@@ -1209,7 +1223,7 @@ export const startPlay = (
   let revealZombies = false;
   const storedMetrics = (() => {
     try {
-      return loadMetrics(config.seed, localStorage);
+      return engine.scenario ? null : loadMetrics(config.seed, localStorage);
     } catch {
       // Storage can be disabled; metrics start fresh for this run.
       return null;
@@ -1218,7 +1232,7 @@ export const startPlay = (
   const metrics = new SessionMetrics(config.seed, storedMetrics);
   playtestObserver = new PlaytestObserver(metrics, engine.site?.playtestMarks);
   const saveMetrics = (): void => {
-    if (options.tutorial) {
+    if (engine.scenario || options.tutorial) {
       return;
     }
     try {
@@ -1227,7 +1241,39 @@ export const startPlay = (
       /* Storage can be disabled; gameplay remains available. */
     }
   };
-  const exportMetrics = (): void => downloadFile(metricsFile(metrics));
+  const attemptMetricsFile = (): HandBackFile => {
+    if (!session.scenarioRun) {
+      return metricsFile(metrics);
+    }
+    const snapshot = captureSnapshot();
+    return {
+      name: `deadvox-attempt-${snapshot.character.id}.json`,
+      blob: new Blob(
+        [
+          JSON.stringify(
+            {
+              build: getBuildRevision(),
+              saveIdentity: options.saveController?.namespace || null,
+              site: config.site,
+              seed: sim.seed,
+              worldId: snapshot.world.id,
+              characterId: snapshot.character.id,
+              outcome: (sim.dead && 'dead') || (session.won && 'won') || 'running',
+              death: sim.dead ?? null,
+              run: session.scenarioRun,
+              elapsedGameSeconds: sim.calendar - session.scenarioRun.startedAtGameTimestamp,
+              searched: snapshot.character.inventory.entities.entities.filter((entity) => entity.searched).length,
+              looted: snapshot.character.inventory.looted,
+            },
+            null,
+            2,
+          ),
+        ],
+        { type: 'application/json' },
+      ),
+    };
+  };
+  const exportMetrics = (): void => downloadFile(attemptMetricsFile());
   const measureSnapshot = () => playtestObserver!.measureSnapshot(captureSnapshot, session);
   const openInventoryScreen = (): void => {
     screen.open();
@@ -1328,7 +1374,7 @@ export const startPlay = (
     config,
     sim,
     input,
-    metrics,
+    metricsFile: attemptMetricsFile,
     exportReplay: inputReplayHooks.export,
     halted: playHalted,
     saveController: options.saveController,
@@ -1344,7 +1390,7 @@ export const startPlay = (
     }
   };
   // Assigned, not added: a later world on this page must not save each file twice.
-  $('playtest-metrics-export').onclick = () => handBack(() => metricsFile(metrics));
+  $('playtest-metrics-export').onclick = () => handBack(attemptMetricsFile);
   $('playtest-replay-export').onclick = () =>
     handBack(async () => replayFile(await inputReplayHooks.export(), new Date()));
   $('playtest-export').hidden = false;
@@ -1493,8 +1539,9 @@ export const startPlay = (
     }
   });
   let mainMenuOpen = !options.replay;
-  let startupHintPending = !options.replay;
   let resumeRequested = false;
+  const titleMenuOptions = () =>
+    started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel };
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
       started,
@@ -1504,10 +1551,10 @@ export const startPlay = (
       debugMenuOpen: debugTools?.menuOpen ?? false,
       reviewMapOpen,
       pointerLocked: input.locked || Boolean(options.replay),
-      dead: sim.dead !== undefined,
+      dead: sim.dead !== undefined || session.won,
       pointerLockChanged,
       resumeRequested,
-      ...(started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel }),
+      ...titleMenuOptions(),
       titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
@@ -1519,7 +1566,7 @@ export const startPlay = (
       closeInventoryScreen();
       debugTools?.closeMenus();
     }
-    input.menuPointer = state.menuPointer;
+    input.menuPointer = state.menuPointer || !worldLoading.ready;
     keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
     $('go').hidden = state.showGo === false;
@@ -1530,20 +1577,27 @@ export const startPlay = (
     }
     return state;
   };
-  const updateStartupHint = () => {
-    if (options.replay || !started || mainMenuOpen || screen.isOpen || reading.isOpen || debugTools?.menuOpen) {
-      startupHint.hidden = true;
-      return;
+  const updateWorldLoading = (now: RealTimestamp) => {
+    const wasReady = worldLoading.ready;
+    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);
+    drawWorldLoading();
+    if (worldLoading.state === 'failed') {
+      input.unlock();
+    } else if (worldLoading.ready && !wasReady) {
+      input.cancel();
+      keyboardInput.cancel();
+      sim.paused = syncMenuState().paused || (debugTools?.frozen ?? false);
+      replayPlayState.restore(options.replay?.startState);
+      inputRecorder = createInputReplayRecorder(
+        Boolean(options.replay),
+        captureSnapshot,
+        streamer.generatedColumns(),
+        captureReplayStartState,
+      );
     }
-    const unmeshed = streamer.unmeshedColumns(body.pos[0], body.pos[2], STARTUP_MESH_RADIUS);
-    startupProgress.max = STARTUP_COLUMN_COUNT;
-    startupProgress.value = STARTUP_COLUMN_COUNT - unmeshed;
-    const latch = updateStartupHintLatch(startupHintPending, unmeshed);
-    startupHintPending = latch.pending;
-    startupHint.hidden = !latch.visible;
   };
   const resume = () => {
-    if (replayPlayer || sim.dead || playHalted.value) {
+    if (replayPlayer || sim.dead || session.won || playHalted.value) {
       return;
     }
     resumeRequested = true;
@@ -1920,6 +1974,9 @@ export const startPlay = (
     return debugTools?.noclip || spectatorCameraEnabled ? 'noclip' : 'play';
   };
   const inputContext = (): InputContext => {
+    if (!worldLoading.ready) {
+      return 'title';
+    }
     if (reviewMapOpen) {
       return 'review-map';
     }
@@ -2144,7 +2201,7 @@ export const startPlay = (
     }
   };
   const dispatchInputCommand = ({ action, phase, at }: InputCommand, fromReplay = false): void => {
-    if (replayPlayer && !fromReplay) {
+    if (!worldLoading.ready || (replayPlayer && !fromReplay)) {
       return;
     }
     const context = inputContext();
@@ -2219,7 +2276,6 @@ export const startPlay = (
   };
   keyboardInput.install();
   keyboardInput.sync();
-  replayPlayState.restore(options.replay?.startState);
   const cycleWieldedAction = (deltaY: number): boolean => {
     const item = inventory.hands[dominantSide(inventory.character)];
     return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
@@ -2305,11 +2361,14 @@ export const startPlay = (
     }
     const dismember = session.downedBodyPlan(id, 'dismember');
     const reason = dismember.ok ? '' : ` — ${dismember.reason.toLowerCase()}`;
-    return `${labelForAction('world.interact')}: ${finish.label.toLowerCase()}; hold to dismember${reason}`;
+    return `${labelForAction('world.interact')}: ${finish.label.toLowerCase()} · ${labelForAction('world.interact')} (hold): dismember${reason}`;
   };
 
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): string => {
+    if (session.isObjective(entity)) {
+      return `${labelForAction('world.interact')}: activate ${nameOf(entity)}`;
+    }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
     const doorReason = !prying && door?.plan.ok === false ? door.plan.reason : undefined;
@@ -2366,6 +2425,9 @@ export const startPlay = (
     const entity = entities.byUid(uid);
     if (!entity) {
       return 'The target is no longer available';
+    }
+    if (session.isObjective(entity)) {
+      return session.activateGoal(entity);
     }
     if (compression.locksInput && rest.action?.furnitureUid !== entity.uid) {
       return undefined;
@@ -2763,7 +2825,7 @@ export const startPlay = (
   const togglePin = (item: Item): void => {
     const state = session.fuses.togglePin(item);
     if (state === 'pulled') {
-      showNotice('Pin pulled: the fuse lights when it leaves your hand');
+      showNotice('Pin pulled');
     } else if (state === 'in') {
       showNotice('Pin back in');
     } else if (state === 'burning') {
@@ -2927,7 +2989,7 @@ export const startPlay = (
   ): string => {
     let interactionHint: string | undefined;
     if (target?.kind === 'item') {
-      interactionHint = `${labelForAction('world.interact')}: pocket the ${inventory.name(target.item)}; hold to wield`;
+      interactionHint = `${labelForAction('world.interact')}: pocket ${inventory.name(target.item)} · ${labelForAction('world.interact')} (hold): wield`;
     } else if (target?.kind === 'furniture') {
       interactionHint = useText(target.entity);
     } else if (target?.kind === 'body') {
@@ -3263,6 +3325,10 @@ export const startPlay = (
 
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
+    if (!worldLoading.ready) {
+      sim.paused = true;
+      return false;
+    }
     cancelItemThrowOnRightClick();
     handleInputRecorderColumnOverflow();
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
@@ -3371,6 +3437,22 @@ export const startPlay = (
     });
   };
 
+  const observeScenarioFrame = (seconds: number): void =>
+    session.observeRunFrame(
+      seconds,
+      worldLoading.ready && started && !mainMenuOpen && document.visibilityState === 'visible',
+    );
+
+  const prepareStreaming = (now: RealTimestamp): void => {
+    streamer.update(body.pos[0], body.pos[2]);
+    if (!worldLoading.ready && replayDriver && !replayDriver.initializeColumns()) {
+      worldLoading.fail('Recorded terrain could not be initialized. Reload and choose another replay.');
+    }
+    if (worldLoading.ready) {
+      updateActionInputs(now);
+    }
+  };
+
   const updateTutorial = () => {
     tutorial?.observe({
       position: body.pos,
@@ -3385,6 +3467,7 @@ export const startPlay = (
     });
     drawTutorial?.();
   };
+
   const affordanceForFrame = (visible: Readonly<HudOptionsState>) =>
     interactionAffordance(
       interactionTargetAt,
@@ -3400,33 +3483,7 @@ export const startPlay = (
     blockSize: s,
   };
 
-  const updateFrame = (now: RealTimestamp) => {
-    const workStart = realNow();
-    const elapsedReal = Math.max(0, (now - last) / 1000);
-    const dt = realDuration(Math.min(0.1, elapsedReal));
-    frameInterval.record(now, now - last);
-    last = now;
-    fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
-
-    const menuState = syncMenuState();
-    const visible = hudVisibility(hudOptions);
-    let mark = realNow();
-    streamer.update(body.pos[0], body.pos[2]);
-    updateStartupHint();
-    meshingQueueMs = realNow() - mark;
-    updateActionInputs(now);
-    playtestObserver?.beforeFrame(queue, inventory);
-    mark = realNow();
-    const gameFrozen = stepSimulation(dt, menuState.paused);
-    updateBodyNotices();
-    advancePendingItemThrow();
-    syncThrowingStance();
-    caseEffects.update(sim.time);
-    updateGore(dt);
-    impactEffects.update(dt, config.debug && debugLaserEnabled);
-    simulationMs = realNow() - mark;
-    options.saveController?.afterFrame();
-    updateTutorial();
+  const observePlaytestFrame = (elapsedReal: number, now: RealTimestamp): void => {
     playtestObserver?.afterFrame(
       { realSeconds: elapsedReal, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
       queue,
@@ -3444,6 +3501,53 @@ export const startPlay = (
     ) {
       saveMetrics();
     }
+  };
+
+  const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
+    if (!renderer) {
+      engine.skylight?.update(engine.scene, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);
+    }
+    view.prepareLighting(sky);
+    view.updateShadows(sky);
+    renderMs = view.render();
+    updateWorldLoading(now);
+    if (worldLoading.state === 'failed') {
+      return false;
+    }
+    if (sim.dead) {
+      die(sim.dead);
+      return false;
+    }
+    return true;
+  };
+
+  const updateFrame = (now: RealTimestamp) => {
+    const workStart = realNow();
+    const elapsedReal = Math.max(0, (now - last) / 1000);
+    const dt = realDuration(Math.min(0.1, elapsedReal));
+    frameInterval.record(now, now - last);
+    last = now;
+    observeScenarioFrame(elapsedReal);
+    fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
+
+    const menuState = syncMenuState();
+    const visible = hudVisibility(hudOptions);
+    let mark = realNow();
+    prepareStreaming(now);
+    meshingQueueMs = realNow() - mark;
+    playtestObserver?.beforeFrame(queue, inventory);
+    mark = realNow();
+    const gameFrozen = stepSimulation(dt, menuState.paused);
+    updateBodyNotices();
+    advancePendingItemThrow();
+    syncThrowingStance();
+    caseEffects.update(sim.time);
+    updateGore(dt);
+    impactEffects.update(dt, config.debug && debugLaserEnabled);
+    simulationMs = realNow() - mark;
+    options.saveController?.afterFrame();
+    updateTutorial();
+    observePlaytestFrame(elapsedReal, now);
     const { sky } = view.syncWorld({
       calendar: sim.calendar,
       time: sim.time,
@@ -3509,15 +3613,9 @@ export const startPlay = (
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling);
-    view.prepareLighting(sky);
-    view.updateShadows(sky);
-    renderMs = view.render();
+    const continuing = finishDraw(sky, now);
     frameWork.record(now, realNow() - workStart);
-    if (sim.dead) {
-      die(sim.dead);
-      return false;
-    }
-    return true;
+    return continuing;
   };
   const skyRoute = options.skyRoute?.({
     engine,
@@ -3535,12 +3633,57 @@ export const startPlay = (
   });
   const frame = guardDebugErrorFrame(
     observeRealFrame(
-      (now) => !playHalted.value && updateFrame(now),
+      (now) => {
+        try {
+          if (playHalted.value) {
+            return false;
+          }
+          if (session.won) {
+            win();
+            return true;
+          }
+          return updateFrame(now);
+        } catch (error) {
+          if (worldLoading.ready) {
+            throw error;
+          }
+          worldLoading.fail(error);
+          drawWorldLoading();
+          input.unlock();
+          return false;
+        }
+      },
       () => skyRoute,
     ),
     debugErrorEnabled(config.debug, location.search),
     () => input.locked,
   );
+
+  let winPresented = false;
+  const win = (): void => {
+    if (!winPresented) {
+      winPresented = true;
+      input.unlock();
+      mainMenuOpen = false;
+      debugTools?.closeMenus();
+      reading.close();
+      closeInventoryScreen();
+      inventoryPanel.hidden = true;
+      syncMenuState();
+      prompt.hidden = true;
+      if (!options.restore || options.restore.character.scenarioRun?.completedAtGameTimestamp === null) {
+        options.saveController?.finishWin();
+      }
+    }
+    showWin($('death'), {
+      seed: sim.seed,
+      run: session.scenarioRun!,
+      checkpoint: options.saveController?.winCheckpointStatus ?? 'unavailable',
+      newWorld: () => location.assign(newWorldQuery(location.search, config.seed)),
+      freshAttempt: () => location.assign(newWorldQuery(location.search, config.seed - 1)),
+      exportRun: exportMetrics,
+    });
+  };
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
   const die = ({ cause, time }: { cause: string; time: number }) => {
@@ -3580,12 +3723,6 @@ export const startPlay = (
       },
     );
   }
-  inputRecorder = createInputReplayRecorder(
-    Boolean(options.replay),
-    captureSnapshot,
-    streamer.generatedColumns(),
-    captureReplayStartState,
-  );
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));

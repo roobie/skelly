@@ -105,6 +105,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/audioOptions.ts',
   'src/ui/credits.ts',
   'src/ui/death.ts',
+  'src/ui/win.ts',
   // Blocking player-facing error presentation; its state and exports do not affect simulation or saves.
   'src/ui/errorReport.ts',
   'src/ui/gameCursor.ts',
@@ -131,6 +132,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/reading.ts',
   'src/ui/rest.ts',
   'src/ui/saveController.ts',
+  // Loading-mask drawing and browser errors are startup presentation, not simulation state.
+  'src/ui/worldLoading.ts',
 ] as const;
 
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);

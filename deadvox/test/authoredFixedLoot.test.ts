@@ -1293,6 +1293,72 @@ describe('authored fixed loot', () => {
     expectCampHqProperties(compiledArmoury);
   });
 
+  it('admits surface loot through a stacked placement with its authored source context', () => {
+    const template: TemplateDef = {
+      id: 'fixture_military',
+      lootContext: { usage: ['Military'], tier: 'Tier1' },
+      size: [2, 3, 2],
+      palette: { '.': 'air', S: { furniture: 'fixture_shelf' } },
+      layers: [
+        ['..', '..'],
+        ['S.', '..'],
+        ['..', '..'],
+      ],
+    };
+    const registry = {
+      ...result.registry,
+      templates: new Map([[template.id, template]]),
+      furniture: new Map([
+        [
+          'fixture_shelf',
+          {
+            id: 'fixture_shelf',
+            name: 'Shelf',
+            color: '#888888',
+            size: [1, 1, 1] as [number, number, number],
+            solid: false,
+          },
+        ],
+      ]),
+      items: new Map([
+        [
+          'fixture_gear',
+          {
+            id: 'fixture_gear',
+            name: 'Fixture gear',
+            category: 'material' as const,
+            weight: 1,
+            size: [1, 1] as [number, number],
+            economy: { usage: ['Military' as const], tiers: ['Tier1' as const] },
+          },
+        ],
+      ]),
+    };
+    const fixture: SiteLayoutDef = {
+      ...layout,
+      bounds: { x0: 0, z0: 0, x1: 10, z1: 10 },
+      ground: 0,
+      player: { ...layout.player, position: [8, 0.5, 8] },
+      buildings: [
+        {
+          template: template.id,
+          position: [1, 0, 1],
+          rotation: 0,
+          storeys: 2,
+          fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'fixture_gear', placement: 'surface' }] }],
+        },
+      ],
+      terrain: [],
+      woodlands: [],
+      tracks: [],
+      shamblers: [],
+      hordes: [],
+      beats: [],
+    };
+
+    expect(authoredLayoutIssues(fixture, registry)).toEqual([]);
+  });
+
   it('rejects surface supply outside its source economy context', () => {
     const buildingIndex = layout.buildings.findIndex(
       (candidate) =>

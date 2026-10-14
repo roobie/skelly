@@ -607,14 +607,9 @@ try {
       timeout: STAGE_TIMEOUT_MS,
     });
     try {
-      await page.waitForFunction(
-        () => {
-          const status = document.querySelector('#save-status')?.textContent ?? '';
-          return status.includes('Title screen ready');
-        },
-        undefined,
-        { timeout: STAGE_TIMEOUT_MS },
-      );
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready === true, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
     } catch (error) {
       const status = await page.locator('#save-status').textContent();
       throw new Error(`${backend} startup stalled with status ${status}; errors: ${pageErrors.join('; ')}`, {
@@ -622,10 +617,11 @@ try {
       });
     }
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
-    const initialStatus = await page.locator('#save-status').textContent();
-    if (!initialStatus?.includes('No saved world found')) {
-      throw new Error(`${backend} title startup reported: ${initialStatus}`);
-    }
+    assert.equal(
+      await page.evaluate(() => globalThis.deadvoxSaveTest.controller.currentRecord),
+      undefined,
+      `${backend} fresh storage must have no saved world`,
+    );
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
     await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
     const periodicGeneration = await waitForGeneration(undefined, 'periodic');
@@ -643,14 +639,9 @@ try {
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
     try {
-      await page.waitForFunction(
-        () => {
-          const status = document.querySelector('#save-status')?.textContent ?? '';
-          return status.includes('Title screen ready');
-        },
-        undefined,
-        { timeout: STAGE_TIMEOUT_MS },
-      );
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready === true, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
     } catch (error) {
       const status = await page.locator('#save-status').textContent();
       throw new Error(`${backend} refresh stayed at ${status}; errors: ${pageErrors.join('; ')}`, { cause: error });
@@ -724,11 +715,9 @@ try {
     await navigatePage('reload after title-pagehide check', () =>
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
-    await page.waitForFunction(
-      () => (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
-    );
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready === true, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     if (autosaveScenario === 'continue') {
       await navigatePage('continue from restored title screen', () =>
@@ -738,11 +727,9 @@ try {
         ]),
       );
       try {
-        await page.waitForFunction(
-          () => (document.querySelector('#save-status')?.textContent ?? '').includes('Saved world continued'),
-          undefined,
-          { timeout: STAGE_TIMEOUT_MS },
-        );
+        await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+          timeout: STAGE_TIMEOUT_MS,
+        });
       } catch (error) {
         const status = await page.locator('#save-status').textContent();
         throw new Error(`${backend} Continue stalled at ${status}; errors: ${pageErrors.join('; ')}`, { cause: error });
@@ -806,11 +793,9 @@ try {
     await navigatePage('reload after failed replacement write', () =>
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
-    await page.waitForFunction(
-      () => (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
-    );
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready === true, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.saveState !== undefined, undefined, {
       timeout: STAGE_TIMEOUT_MS,

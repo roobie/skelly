@@ -2,9 +2,10 @@
 read_if:
   - "you're changing mobgen's core, authoring or body-plan boundaries"
   - "you're changing the crawler's body-plan or gait constraints"
-  - "you're changing the quadruped (dog) body plan, its paw supports or its poses"
+  - "you're changing the dog shambler's body plans, paw supports, poses or gait constraints"
   - "you're reviewing the amalgam's visual quality pass in #378"
   - "you're changing the Mobgen/Deadvox boundary or the amalgam movement-cost trade-off in #574"
+  - "you're marking a template ready or comparison-only"
   - "you change the crowd gore-mask encoding"
 ---
 
@@ -30,13 +31,17 @@ The dog quadruped is its own body plan for the same reason: a horizontal torso, 
 
 The quadruped's poses layer over one grounded standing pose: a planted paw keeps its standing rotations through the whole gait cycle, so only swinging legs and the body lurch move anything, and every layer re-grounds against the paw supports the template declares. A cut that takes a leg leaves the body standing on its remaining contacts rather than suspended by the pose. See `src/mob/quadrupedPose.ts`, `quadrupedPose`, `groundQuadrupedPose`, `quadrupedGaitPose`, and `src/mob/dismember.ts`, `severedBoneSet`.
 
+The dog shambler's earlier build is its own body plan for the same reason (body plan `dog`): four paws, a hanging head and a limping diagonal gait whose opposite-corner pairs (fore-left with hind-right, fore-right with hind-left) define it. The four paws are the declared supports. The two builds are kept side by side as templates (`dog` and `dog-m3`) only while their results are being compared; each is registered under its own name so the viewer can show both at once. Both templates are `comparison-only` (`src/core/template.ts`, `TemplateStatus`): kept to compare gaits against other quadrupeds, not fit for a player to meet, and so never shipped. Consumers refuse them through `consumableTemplate` and the viewer labels them. See `src/mob/dog.ts`, `buildDog`, `dogPose`, `dogGaitPose`, `dogHitPose`, `src/mob/dogTemplate.ts`, `dogM3Template`, and `test/dog.test.ts`.
+
+A template's readiness is a contract, not a naming convention: a comparison-only model may be generated, validated and viewed like any other, but it must not be spawned or exported. Every path that chooses a model for a consumer resolves it through `consumableTemplate`: the Deadvox spawn boundary (`src/mob/shamblerFigure.ts`, `zombieFigure`), the amalgam realization (`deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`) and the `generate` export CLI (`src/cli/generate.ts`). The tag therefore refuses a comparison-only model by itself rather than relying on its absence from a list. The viewer and the dev CLIs are not consumers: the viewer opts a comparison-only template into its own list (`src/mob/viewerTemplates.ts`, `VIEWER_TEMPLATES`) and labels it so it stays available to compare, while the dev CLIs work from the shipped `TEMPLATES`. See `src/core/template.ts`, `TemplateStatus`, `consumableTemplate`, `src/viewer/main.ts`, `src/cli/stats.ts`, `src/cli/view.ts`, `src/cli/bench.ts`, and `test/dog.test.ts`.
+
 The playtest apex enemy must read as one grotesque fusion, not several unrelated actors. Complete shambler members remain severable subtrees beneath a non-severable shared core; members may hang or turn in any orientation, while support comes from actual ground contacts. The core's spreading lower mass should read as flesh rather than a platform or extra limbs. Its member count is a visual choice, not a budget ceiling. See `src/mob/amalgam.ts`, `amalgamManifest`, `src/core/generate.ts`, `resolveSupportBones`, and `test/amalgam.test.ts`.
 
 A cut's surviving boundary needs the severed state of its neighbouring bone to show stump gore; every bone index in a body plan must therefore survive the crowd mask handoff. See `src/mob/crowd.ts`, `packSeveredMask` and `crowdBoneSevered`.
 
-Mobgen supplies the generated body used by Deadvox collision, hit regions and rendering; sharing that figure keeps gameplay contact tied to the visible anatomy. The amalgam template stays outside the ordinary `TEMPLATES` list so regular actor consumers opt into the boss explicitly. See `src/mob/amalgamTemplate.ts`, `VIEWER_TEMPLATES`, `deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and `deadvox/test/simulationFingerprint.test.ts`.
+Mobgen supplies the generated body used by Deadvox collision, hit regions and rendering; sharing that figure keeps gameplay contact tied to the visible anatomy. The amalgam template stays outside the ordinary `TEMPLATES` list so regular actor consumers opt into the boss explicitly. See `src/mob/amalgamTemplate.ts`, `amalgamTemplate`, `src/mob/viewerTemplates.ts`, `VIEWER_TEMPLATES`, `deadvox/src/core/amalgamFigure.ts`, `amalgamFigure`, and `deadvox/test/simulationFingerprint.test.ts`.
 
-The dog template stays outside that list too, until its Deadvox feature: deadvox spawns from `TEMPLATES` and `HUMANOID_TEMPLATES` alone, and a body with no collision, AI or hit regions there would be a promise the game cannot keep. Until then it registers for the viewer only. See `src/mob/dogTemplate.ts`, `dogTemplate`, `src/mob/amalgamTemplate.ts`, `VIEWER_TEMPLATES`, and `src/viewer/main.ts`, `applyLiveFrame`.
+The dog templates stay outside that list too, until their Deadvox feature: deadvox spawns from `TEMPLATES` and `HUMANOID_TEMPLATES` alone, and a body with no collision, AI or hit regions there would be a promise the game cannot keep. Until then they register for the viewer only. See `src/mob/dogTemplate.ts`, `dogTemplate`, `dogM3Template`, `src/mob/viewerTemplates.ts`, `VIEWER_TEMPLATES`, and `src/viewer/main.ts`, `applyLiveFrame`.
 
 The Mobgen viewer keeps the amalgam static because arbitrarily oriented member heads have no single humanoid gaze target. Do not enable its gaze solver until it can resolve each member's head transform. See `src/viewer/main.ts`, `applyLiveFrame`, `src/mob/amalgam.ts`, and `src/mob/lookAt.ts`, `lookAtPose`.
 

@@ -10,8 +10,10 @@ import { resolve as resolvePath } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launchChromium } from './chromium.mjs';
+import { gauntletFlow } from './gauntlet-flow.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
 const { createServer } = await import(pathToFileURL(`${root}/node_modules/vite/dist/node/index.js`));
@@ -20,6 +22,14 @@ const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
   transform(code, id) {
+    if (id.endsWith('/src/game/worldSetup.ts')) {
+      const marker = 'new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario })';
+      assert(code.includes(marker), 'scenario population fixture admission point exists');
+      return code.replace(
+        marker,
+        "new GauntletSite({ seed: config.seed, registry, scale: config.scale, scenario, settlementPressure: new URLSearchParams(location.search).get('route-fixture') !== '1' })",
+      );
+    }
     if (id.endsWith('/src/ui/saveController.ts')) {
       return code.replace(
         '    this.environmentProblem = saveEnvironmentProblem();',
@@ -33,7 +43,7 @@ const observation = {
     assert(code.includes(marker), 'game-ready observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { saveControllerPlayStarted: true, tutorialSession: options.tutorial ? session : undefined });\n${marker}`,
+      '  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, input, eye, lookedAt, manual: false } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));',
     );
   },
 };
@@ -58,8 +68,13 @@ const PERSISTENCE_GRANTED = /Persistent storage granted/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
 const BASE_MISMATCH = /Generated base mismatch/;
 const REPLAY_REJECTED = /^Replay rejected:/;
+const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
 
 try {
+  await test('gauntlet discovery, resources and ordinary traversal preserve running, won and dead save boundaries', async () => {
+    await gauntletFlow(browser, url);
+  });
+
   await test('practice launch, lifecycle and death leave the normal save untouched and exit returns to start', async () => {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
     try {
@@ -105,16 +120,23 @@ try {
         // biome-ignore lint/correctness/noUnresolvedImports: this module is resolved by the page's Vite server.
         const { SaveStorage } = await import('/src/game/saveStorage.ts');
         const storage = new SaveStorage({ backend: 'indexeddb' });
-        const record = await storage.load(namespace);
-        return { namespace, generation: record.generation, payload: Array.from(record.payload) };
+        try {
+          const record = await storage.load(namespace);
+          return { namespace, generation: record.generation, payload: Array.from(record.payload) };
+        } finally {
+          storage.close();
+        }
       }, saved.namespace);
       assert.deepEqual(after, saved, 'no checkpoint or death marker replaces the normal generation');
       assert.equal(
         await page.evaluate((namespace) => sessionStorage.getItem(`deadvox.dead-world:${namespace}`), saved.namespace),
         null,
       );
-      await page.locator('#death button').click();
-      await page.waitForURL((target) => !target.searchParams.has('tutorial'));
+      // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
+      await Promise.all([
+        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.locator('#death button').press('Enter'),
+      ]);
       await page.waitForFunction(
         () => document.querySelector('#tutorial-start') && document.querySelector('#startup-screen').hidden,
       );
@@ -122,8 +144,10 @@ try {
       assert.equal(await page.locator('#continue').isEnabled(), true);
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
-      await page.getByRole('button', { name: 'Exit practice', exact: true }).click();
-      await page.waitForURL((target) => !target.searchParams.has('tutorial'));
+      await Promise.all([
+        page.waitForURL((target) => !target.searchParams.has('tutorial'), { waitUntil: 'commit' }),
+        page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
+      ]);
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
       assert.equal(await page.locator('#continue').isEnabled(), true);
     } finally {
@@ -171,6 +195,9 @@ try {
       assert.equal(await button.isVisible(), true, 'request remains reachable when state is unknown and API exists');
       assert.match(await page.locator('#save-status').textContent(), BEST_EFFORT);
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
+      await button.focus();
+      const detail = button.locator('[role="tooltip"]');
+      assert.equal(await detail.isVisible(), true, 'focus exposes the persistence rule on its action');
       await button.click();
       await page.waitForFunction(() =>
         document.querySelector('#save-status').textContent.includes('Persistent storage granted'),
@@ -181,6 +208,16 @@ try {
         'one player click makes one native API call',
       );
       assert.equal(await button.isVisible(), false, 'granted status removes the request button');
+      assert.equal(await detail.isVisible(), false, 'the persistence rule leaves with its action');
+      assert.equal(
+        await button.evaluate((action) => {
+          action.blur();
+          action.focus();
+          return document.activeElement === action;
+        }),
+        false,
+        'the hidden persistence action cannot retain keyboard focus',
+      );
       assert.equal(await page.evaluate(() => globalThis.deadvoxSaveTest.controller.storageStatus.persistent), true);
       assert.equal(
         await page.evaluate(async () => (await globalThis.deadvoxSaveTest.storage.status()).persistent),
@@ -294,8 +331,11 @@ try {
     }
   });
 
-  await test('title, periodic checkpoint, and visible save-failure recovery', async () => {
+  // biome-ignore lint/style/noDoneCallback: Node's TestContext registers cleanup, not a done callback.
+  await test('title, loading mask, periodic checkpoint, and visible save-failure recovery', async (t) => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
+    t.after(() => context.close());
+    await context.addInitScript(installWorldMeshControl);
     const page = await context.newPage();
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -370,8 +410,52 @@ try {
     assert.equal(after.hasSnapshot, false, 'title keys cannot construct a session');
     assert.equal(after.overlayHidden, false);
 
+    await page.evaluate(() => {
+      globalThis.holdWorldMeshes = true;
+    });
     await page.click('#go');
     await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
+    assert.equal(
+      await page.locator('#world-loading').isVisible(),
+      true,
+      'start click covers the view before meshes complete',
+    );
+    await page.waitForFunction(() => document.pointerLockElement !== null && document.querySelector('#overlay').hidden);
+    const masked = await page.evaluate(() => {
+      const { session, worldLoading, frame, engine } = globalThis.worldLoadWitness;
+      const { time } = session.sim;
+      const position = [...session.body.pos];
+      const now = performance.now();
+      for (let step = 1; step <= 3; step++) {
+        frame(now + step * 100);
+      }
+      return {
+        ready: worldLoading.ready,
+        paused: session.sim.paused,
+        timeUnchanged: session.sim.time === time,
+        positionUnchanged: session.body.pos.every((value, axis) => value === position[axis]),
+        pending: engine.streamer.unmeshedColumns(session.body.pos[0], session.body.pos[2], engine.config.radiusChunks),
+      };
+    });
+    assert.equal(masked.ready, false);
+    assert(masked.pending > 0, 'the controlled mesh owner has actual unfinished work');
+    assert.equal(masked.paused, true);
+    assert.equal(masked.timeUnchanged, true, 'simulation does not advance behind the mask');
+    assert.equal(masked.positionUnchanged, true);
+    await page.evaluate(() => globalThis.releaseWorldMeshes());
+    await page.waitForFunction(() => globalThis.worldLoadWitness.worldLoading.ready);
+    assert.equal(
+      await page.locator('#world-loading').isVisible(),
+      false,
+      'the combined readiness signal clears the mask',
+    );
+    const canAdvance = await page.evaluate(() => {
+      const { session, frame } = globalThis.worldLoadWitness;
+      const { time } = session.sim;
+      frame(performance.now() + 100);
+      return session.sim.time > time;
+    });
+    assert.equal(canAdvance, true, 'the same frame driver advances simulation after the mask clears');
     const schedule = await page.evaluate(async () => {
       const { controller } = deadvoxSaveTest;
       // The interval play bound from content; the schedule below is expressed in it.
@@ -488,7 +572,20 @@ try {
       () => !deadvoxSaveTest.controller.failure && deadvoxSaveTest.controller.savedGeneration === 99,
     );
     assert.deepEqual(pageErrors, []);
-    await context.close();
+
+    const faultPage = await context.newPage();
+    await faultPage.goto(url);
+    await faultPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+    await faultPage.evaluate(() => {
+      globalThis.holdWorldMeshes = true;
+    });
+    await faultPage.click('#go');
+    await faultPage.waitForFunction(() => Boolean(globalThis.worldLoadWitness));
+    await faultPage.evaluate(() => globalThis.failWorldMesh());
+    await faultPage.waitForFunction(() => globalThis.worldLoadWitness.worldLoading.state === 'failed');
+    assert.equal(await faultPage.locator('#world-loading').isVisible(), true, 'failed loading never exposes the scene');
+    assert.equal(await faultPage.locator('#world-loading-reload').isVisible(), true, 'failed loading offers recovery');
+    assert.match(await faultPage.locator('#world-loading-message').textContent(), LOADING_WORKER_FAILURE);
   });
 
   await test('retry saves the latest capture rather than restoring an older failed snapshot', async () => {

@@ -768,7 +768,7 @@ const HUE_WEDGES: readonly (readonly [number, (c: number, x: number) => Vec3])[]
   [360, (c, x) => [c, 0, x]],
 ];
 
-/** HSL to palette RGB; exported for the other body plans' palettes (see mob/quadruped.ts). */
+/** HSL to palette RGB; exported for the other body plans' palettes (see mob/dog.ts, mob/quadruped.ts). */
 export const hslToRgb = (hDeg: number, s: number, l: number): Vec3 => {
   const h = ((hDeg % 360) + 360) % 360;
   const c = (1 - Math.abs(2 * l - 1)) * s;

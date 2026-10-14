@@ -293,6 +293,41 @@ try {
   );
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
   await page.locator('#inventory .inv-tab[data-tab="items"]').click();
+  const inventoryFact = page.locator('#inventory .inv-title h2 .fact-detail');
+  const factCopy = inventoryFact.locator('[role="tooltip"]');
+  assert.equal(await inventoryFact.count(), 1, 'inventory rule has a focusable owner');
+  await page.mouse.move(0, 0);
+  assert.equal(await factCopy.isVisible(), false, 'rule is absent from the resting screen');
+  const restingBounds = await inventoryFact.boundingBox();
+  assert.ok(restingBounds);
+  await inventoryFact.focus();
+  assert.equal(await factCopy.isVisible(), true, 'keyboard focus exposes the rule');
+  assert.deepEqual(await inventoryFact.boundingBox(), restingBounds, 'disclosure does not move its owner');
+  await page.locator('#inventory .inv-tab[data-tab="items"]').focus();
+  assert.equal(await factCopy.isVisible(), false, 'rule retires after focus leaves');
+  await inventoryFact.hover();
+  assert.equal(await factCopy.isVisible(), true, 'hover exposes the same rule');
+  await page.mouse.move(0, 0);
+  await inventoryFact.evaluate((owner) => {
+    const { input, menu } = globalThis.scrollFixture;
+    const bounds = owner.getBoundingClientRect();
+    input.setPointerModeForTest(true);
+    input.cursorX = bounds.left + 2;
+    input.cursorY = bounds.top + 2;
+    menu.update();
+  });
+  assert.equal(await factCopy.isVisible(), true, 'drawn menu cursor exposes the rule while locked');
+  await page.evaluate(() => {
+    const { input, menu } = globalThis.scrollFixture;
+    input.cursorX = 0;
+    input.cursorY = 0;
+    menu.update();
+  });
+  assert.equal(await factCopy.isVisible(), false, 'drawn cursor departure retires the rule');
+  await page.evaluate(() => {
+    globalThis.scrollFixture.input.setPointerModeForTest(false);
+    globalThis.scrollFixture.menu.update();
+  });
   await page.setViewportSize({ width: 800, height: 400 });
   await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
   // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
@@ -1059,9 +1094,15 @@ try {
       timeout: 30_000,
     });
     await page.locator('#go').click();
-    await page.waitForFunction(() => globalThis.foregripFitTest && document.querySelector('#overlay')?.hidden, null, {
-      timeout: 20_000,
-    });
+    await page.waitForFunction(
+      () =>
+        globalThis.foregripFitTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
+      null,
+      { timeout: 20_000 },
+    );
     const clickThroughMenuCursor = async (selector) => {
       const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
       const bounds = await targetLocator.boundingBox();

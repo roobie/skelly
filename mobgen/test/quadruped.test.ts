@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateValid, type Realized } from '../src/core/generate.ts';
 import { posedVoxelSurfaceBounds, posedVoxelSurfaceBoundsForBones } from '../src/core/voxelBounds.ts';
-import { VIEWER_TEMPLATES } from '../src/mob/amalgamTemplate.ts';
 import { crowdTextureLayout, isSeveredInMask, packSeveredMask } from '../src/mob/crowd.ts';
 import { severedBoneSet } from '../src/mob/dismember.ts';
 import { dogTemplate } from '../src/mob/dogTemplate.ts';
@@ -21,6 +20,7 @@ import {
 } from '../src/mob/quadrupedPose.ts';
 import { HIT_FLINCH } from '../src/mob/reactions.ts';
 import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
+import { VIEWER_TEMPLATES } from '../src/mob/viewerTemplates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 /** The figure each seed's search finds, realized once — every test below reads properties off it. */

@@ -173,7 +173,7 @@ if (bench === 'report') {
     startPlay(engine, undefined, { tutorial: true });
     document.getElementById('new-character-options')!.hidden = true;
     document.getElementById('tutorial-start')!.hidden = true;
-    document.getElementById('save-status')!.textContent = 'Unsaved practice — saved worlds are untouched.';
+    document.getElementById('save-status')!.textContent = 'Unsaved practice';
     hideStartupScreen();
   } else {
     document.getElementById('tutorial-start')!.addEventListener('click', (event) => {
@@ -237,7 +237,7 @@ if (bench === 'report') {
           },
         };
       });
-      saveController.setNewWorldGoLabel('Click to start game');
+      saveController.setNewWorldGoLabel('New world');
       overlay.classList.add('startup-ready');
       hideStartupScreen();
     }

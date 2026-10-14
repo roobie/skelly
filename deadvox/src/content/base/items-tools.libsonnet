@@ -49,7 +49,7 @@ local items = [
     category: 'tool',
     weight: 120,
     size: [1, 2],
-    description: 'A small electronic compass with an illuminated heading display. Prototype: battery use is not yet modeled.',
+    description: 'An electronic compass with an illuminated heading display.',
     heldDisplay: 'compass',
   },
   {
@@ -136,7 +136,7 @@ local items = [
     category: 'light',
     weight: 250,
     size: [1, 2],
-    description: 'Lets you see. Lets them see you.',
+    description: 'A battery-powered flashlight. Its light is visible to nearby zombies.',
     model: 'flashlight',
     light: batteryBeam(
       radius=20,

@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you're writing or changing any player-visible text
   - you're deciding what the interface may tell the player and in what voice
   - you're changing prompts, HUD language, feedback or bodily cues
   - you're changing HUD options, UI layering or choice controls
@@ -26,9 +27,11 @@ Pain tiers drive diegetic bodily cues. Pain itself has no upper bound, so its nu
 
 ## Text
 
-The interface affords actions rather than writing procedures. Shipped text may be world-authored information, names/facts the character knows, or short first-person refusal/observation. Text naming keys, clicks, menus or procedures is development instruction and must stay out of the shipped profile.
+A screen is not a narrator. Before writing or changing text a player sees in the shipped or playtest profile, keep only labels, values, characters speaking, events and button text. Everything else is narration: cut it when the player can already see it or will learn it by playing. A needed rule the player cannot observe, such as a threshold, multiplier or hidden cause, belongs in a hover or keyboard-focus detail on the thing it explains. During pointer-locked play, put that detail on a surface the player opens rather than an unhoverable HUD element.
 
-Key labels come from bindings so rebinding cannot leave stale instructions. A future hint channel should own the remaining instructional text and expose it only in development/playtest profiles. A first-run tutorial should be diegetic before relying on hints. Review asks whether the player could learn the information from the world or their hands. Numbers stay available on surfaces the player opens, but are not pushed during play; this keeps simulation facts accessible without undermining diegesis.
+Hover and focus details use one or two sentences of plain fact. No wordplay, contrasts such as “fewer X, more Y”, reassurance or “you should”. World-authored notes, books and signs are characters speaking; short first-person refusals and observations name the world or the character's state, not procedures.
+
+The interface affords actions rather than writing procedures. Control labels come from bindings so rebinding cannot leave stale labels. Numbers stay available on surfaces the player opens rather than being pushed during play, keeping simulation facts accessible without undermining diegesis. Gungen and mobgen viewers are development tools, outside this rule.
 
 ## Class 3: the character's voice
 
@@ -50,11 +53,11 @@ Bleeding feedback names each region's tier when messages are enabled. A content 
 
 ## Development, playtest and errors
 
-`?debug=1` is a development profile whose tools and readouts may be instructional. A separate playtest profile remains planned: it should show needed hints without god mode, spawning, noclip or time controls. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
+`?debug=1` is a development profile whose tools and readouts may be instructional. A separate playtest profile remains planned, without god mode, spawning, noclip or time controls. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
 
 A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
 
-The HUD toggle hides every element owned by HUD options without changing individual settings. World, bodily cues and the compass display remain; inventory help and the rest card's stop hint remain because they are not governed by those options. See `src/ui/hudOptions.ts`, `HudSettings`, and `hudVisibility`.
+The HUD toggle hides every element owned by HUD options without changing individual settings. World, bodily cues and the compass display remain; inventory controls and the rest card remain because they are not governed by those options. See `src/ui/hudOptions.ts`, `HudSettings`, and `hudVisibility`.
 
 ## Layout
 
@@ -72,7 +75,6 @@ See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#over
 
 ## Open direction
 
-- Build the hint channel and its guard before expanding shipped instructions.
-- Add the playtest profile, then shape a diegetic first-run introduction from playtest findings.
+- Add the playtest profile and shape a diegetic first-run introduction from playtest findings.
 - Make the clock diegetic through a watch.
 - Develop bodily cues one state at a time; retire a HUD line only after its replacement is judged in play.

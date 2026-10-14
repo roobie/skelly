@@ -5,13 +5,13 @@ import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import type { StairDef } from './schema.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
 import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
-import type { CompiledTemplate } from './templates.ts';
+import { type CompiledTemplate, cellsOf } from './templates.ts';
 
 const BODY_HEIGHT = STAIR_BODY_HEIGHT;
 const BODY_HALF_WIDTH = STAIR_BODY_HALF_WIDTH;
 
 function* bodyCells([x, feet, z]: Vec3): Generator<Vec3> {
-  for (let y = feet; y < Math.ceil(feet + BODY_HEIGHT); y++) {
+  for (let y = Math.floor(feet); y < Math.ceil(feet + BODY_HEIGHT); y++) {
     for (let bz = Math.floor(z - BODY_HALF_WIDTH); bz < Math.ceil(z + BODY_HALF_WIDTH); bz++) {
       for (let bx = Math.floor(x - BODY_HALF_WIDTH); bx < Math.ceil(x + BODY_HALF_WIDTH); bx++) {
         yield [bx, y, bz];
@@ -20,16 +20,40 @@ function* bodyCells([x, feet, z]: Vec3): Generator<Vec3> {
   }
 }
 export type SpatialIssue = [string, string];
+
+export const templateBodySpace = (registry: Registry, template: CompiledTemplate) => {
+  const space = new TemplateSpace(registry, template);
+  return { standing: (position: Vec3) => space.standing(position), clear: (position: Vec3) => space.clear(position) };
+};
 const key = (pos: Vec3): string => pos.join(',');
 
 class TemplateSpace {
   readonly registry: Registry;
   readonly template: CompiledTemplate;
   readonly solids: Set<number>;
+  readonly furniture: Uint8Array;
   constructor(registry: Registry, template: CompiledTemplate) {
     this.registry = registry;
     this.template = template;
     this.solids = new Set(registry.blocks.flatMap((block, index) => (block.solid ? [index] : [])));
+    const [sx, sy, sz] = template.size;
+    this.furniture = new Uint8Array(sx * sy * sz);
+    for (const piece of template.pieces) {
+      const flags =
+        Number(this.furnitureStops(piece.furniture, false)) | (Number(this.furnitureStops(piece.furniture, true)) << 1);
+      if (flags === 0) {
+        continue;
+      }
+      const [px, py, pz] = piece.pos;
+      for (const [dx, dy, dz] of cellsOf(piece.size)) {
+        const x = px + dx;
+        const y = py + dy;
+        const z = pz + dz;
+        if (x >= 0 && x < sx && y >= 0 && y < sy && z >= 0 && z < sz) {
+          this.furniture[x + sx * (z + sz * y)]! |= flags;
+        }
+      }
+    }
   }
   terrain(x: number, y: number, z: number): boolean {
     const [sx, sy, sz] = this.template.size;
@@ -48,19 +72,8 @@ class TemplateSpace {
     return def.door ? !doorsOpen : def.solid !== false;
   }
   occupied(x: number, y: number, z: number, doorsOpen: boolean): boolean {
-    return (
-      this.terrain(x, y, z) ||
-      this.template.pieces.some(
-        (piece) =>
-          this.furnitureStops(piece.furniture, doorsOpen) &&
-          x >= piece.pos[0] &&
-          x < piece.pos[0] + piece.size[0] &&
-          y >= piece.pos[1] &&
-          y < piece.pos[1] + piece.size[1] &&
-          z >= piece.pos[2] &&
-          z < piece.pos[2] + piece.size[2],
-      )
-    );
+    const [sx, , sz] = this.template.size;
+    return this.terrain(x, y, z) || (this.furniture[x + sx * (z + sz * y)]! & (doorsOpen ? 2 : 1)) !== 0;
   }
   clear([x, feet, z]: Vec3): boolean {
     for (const [bx, y, bz] of bodyCells([x, feet, z])) {
@@ -206,7 +219,7 @@ class TemplateSpace {
     // The physics step-up sweep raises the body one block before moving sideways.
     return next[1] <= from[1] || (this.clear([from[0], next[1], from[2]]) && this.clear(next));
   }
-  reached(entrance: Vec3): Set<string> {
+  reached(entrance: Vec3, within: (position: Vec3) => boolean = () => true): Set<string> {
     const reached = new Set([key(entrance)]);
     const queue: Vec3[] = [entrance];
     for (const from of queue) {
@@ -217,7 +230,7 @@ class TemplateSpace {
         [0, -0.5],
       ].flatMap(([dx, dz]) => [0, 1, -1].map((dy): Vec3 => [from[0] + dx!, from[1] + dy, from[2] + dz!]));
       for (const next of neighbours) {
-        if (!reached.has(key(next)) && this.canMove(from, next)) {
+        if (!reached.has(key(next)) && within(next) && this.canMove(from, next)) {
           reached.add(key(next));
           queue.push(next);
         }
@@ -325,13 +338,17 @@ export const templateSpawnClearanceIssues = (registry: Registry, template: Compi
   });
 };
 
-export const templateReachableStandingPositions = (registry: Registry, template: CompiledTemplate): Vec3[] => {
+export const templateReachableStandingPositions = (
+  registry: Registry,
+  template: CompiledTemplate,
+  options?: { entrance?: Vec3; within?: (position: Vec3) => boolean },
+): Vec3[] => {
   if (!template.access) {
     return [];
   }
-  return [...new TemplateSpace(registry, template).reached(template.access.entrance)].map(
-    (position) => position.split(',').map(Number) as Vec3,
-  );
+  return [
+    ...new TemplateSpace(registry, template).reached(options?.entrance ?? template.access.entrance, options?.within),
+  ].map((position) => position.split(',').map(Number) as Vec3);
 };
 
 export const templateSpatialIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {

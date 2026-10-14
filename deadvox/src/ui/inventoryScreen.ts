@@ -22,6 +22,7 @@ import type { WearSlot } from '../core/schema.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
+import { factDetail } from './factDetail.ts';
 import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 
 /** One cell's rendered size in a node's document, for maths against pointer coordinates. */
@@ -366,7 +367,7 @@ const detailsTemplate = (
   attachmentAction: (payload: ReplayActionPayload) => void,
 ): TemplateResult => {
   if (vm.empty) {
-    return html`<aside class="inv-details" data-pane="details" data-selected-uid=""><p class="inv-muted">Pick an item to see what it is and where it can go.</p></aside>`;
+    return html`<aside class="inv-details" data-pane="details" data-selected-uid=""><p class="inv-muted">No item selected</p></aside>`;
   }
   const item = vm.item!;
   return html`
@@ -434,7 +435,7 @@ const inventoryTemplate = (
   },
 ): TemplateResult => html`
   <header class="inv-head">
-    <div class="inv-title"><h2>Inventory</h2><span class="inv-weight">Carrying ${vm.weight}</span></div>
+    <div class="inv-title"><h2>${factDetail('Inventory', 'The world continues while inventory is open.')}</h2><span class="inv-weight">Carrying ${vm.weight}</span></div>
     <nav class="inv-tabs" aria-label="Character screen">
       ${(['items', 'skills', 'crafting', 'actions'] as const).map(
         (name) => html`
@@ -447,7 +448,7 @@ const inventoryTemplate = (
     <div class="inv-needs" aria-label="Needs">${vm.needs}</div>
     <details class="inv-help">
       <summary>Controls</summary>
-      <span>Drag items · Hold ${labelForAction('inventory.quick-action-gate')} and click for quick move · ${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
+      <span>${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
     </details>
   </header>
   <div
@@ -609,8 +610,8 @@ const queueTemplate = (queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>
   }));
   return html`
     <div class="inv-queue-title">
-      <strong>Doing next</strong>
-      <span class="inv-muted">${queue.busy ? `${secs(queue.remaining)} left · half speed, no sprinting · ${labelForAction('handling.stop')} cancels` : 'Nothing queued'}</span>
+      <strong>${factDetail('Doing next', 'Handling halves movement speed and prevents sprinting.')}</strong>
+      <span class="inv-muted">${queue.busy ? `${secs(queue.remaining)} left · Cancel (${labelForAction('handling.stop')})` : 'Nothing queued'}</span>
     </div>
     ${rows.map(
       (row) => html`

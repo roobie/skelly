@@ -395,11 +395,48 @@ try {
       }
       return entity.uid;
     });
+    await page.evaluate(async () => {
+      const restUiModule = '/src/ui/rest.ts';
+      globalThis.readingWitness.restViewModel = (await import(restUiModule)).restViewModel;
+    });
     const sleepRefusal = await page.evaluate((uid) => {
       const { session } = globalThis.readingWitness;
       return session.rest.start('sleep', uid);
     }, bedUid);
     assert.equal(sleepRefusal, undefined);
+    const progressHandle = await page.waitForFunction(() => {
+      const { session, restViewModel } = globalThis.readingWitness;
+      const gauge = document.querySelector('#rest [role="progressbar"]');
+      const vm = restViewModel(session.rest.action, true, session.sim, true);
+      if (
+        !(gauge && session.rest.action?.sleepOnset) ||
+        vm.percent <= 0 ||
+        vm.percent >= 100 ||
+        Number(gauge.getAttribute('aria-valuenow')) !== vm.percent
+      ) {
+        return false;
+      }
+      const ring = gauge.querySelector('.activity-progress-value');
+      const rect = gauge.getBoundingClientRect();
+      const style = getComputedStyle(ring);
+      return {
+        percent: vm.percent,
+        offset: Number.parseFloat(style.strokeDashoffset),
+        circumference: Number.parseFloat(style.strokeDasharray),
+        visible: rect.width > 0 && rect.height > 0 && getComputedStyle(gauge).visibility === 'visible',
+        stroke: style.stroke,
+        strokeWidth: Number.parseFloat(style.strokeWidth),
+      };
+    });
+    const sleepProgress = await progressHandle.jsonValue();
+    await progressHandle.dispose();
+    assert.ok(sleepProgress.visible, 'sleep onset progress gauge has visible dimensions');
+    assert.notEqual(sleepProgress.stroke, 'none', 'sleep onset progress ring is painted');
+    assert.ok(sleepProgress.strokeWidth > 0);
+    assert.ok(
+      Math.abs(sleepProgress.offset / sleepProgress.circumference - (1 - sleepProgress.percent / 100)) < 0.001,
+      'sleep onset ring follows simulation-owned progress',
+    );
     await page.waitForFunction((uid) => {
       const { session } = globalThis.readingWitness;
       return (

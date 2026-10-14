@@ -2,8 +2,10 @@
 import { html, nothing, render } from 'lit-html';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { labelForAction } from '../game/inputBindings.ts';
+import { activityProgress } from './activityProgress.ts';
 import { comboBox } from './comboBox.ts';
 import type { CraftRow, CraftStatus } from './craftReadout.ts';
+import { factDetail } from './factDetail.ts';
 
 const REPAIR_PREFIX = /^Repair: /;
 
@@ -13,7 +15,7 @@ export interface CraftPanelActions {
 }
 export const renderCrafting = (root: HTMLElement, rows: readonly CraftRow[], actions: CraftPanelActions): void => {
   render(
-    html`<header><h2>Crafting</h2><p>Known recipes · clear both hands to start.</p></header>
+    html`<header><h2>${factDetail('Crafting', 'Starting a recipe requires both hands free.')}</h2></header>
     ${repeat(
       // Keyed by recipe so an open combo box stays with its own recipe when rows change.
       rows,
@@ -57,11 +59,23 @@ export const renderCraftStatus = (
   root.hidden = status === undefined;
   render(
     status
-      ? html`<strong>${status.name}</strong><div>${status.progress} · ${status.percent}% ${status.stopped ? '· stopped' : ''}</div>
-    <progress max="100" value=${status.percent} aria-label="Craft progress"></progress>
-    ${status.reason ? html`<div class="craft-gap">${status.reason}</div>` : nothing}
-    ${status.stopped ? html`<button type="button" @click=${actions.continue}>Continue (${labelForAction('craft.continue')})</button>` : nothing}
-    <button type="button" @click=${actions.stop}>Stop (X)</button>`
+      ? activityProgress({
+          label: status.name,
+          percent: status.percent,
+          progressText: status.progress,
+          detail: html`
+            ${status.stopped ? html`<span>Stopped</span>` : nothing}
+            ${status.reason ? html`<span class="craft-gap">${status.reason}</span>` : nothing}
+          `,
+          controls: html`
+            ${
+              status.stopped
+                ? html`<button type="button" @click=${actions.continue}>Continue (${labelForAction('craft.continue')})</button>`
+                : nothing
+            }
+            <button type="button" @click=${actions.stop}>Stop (X)</button>
+          `,
+        })
       : nothing,
     root,
   );

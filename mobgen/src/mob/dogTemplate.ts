@@ -1,10 +1,19 @@
-// The dog template: the quadruped body plan's single archetype so far. Like the amalgam, it
-// registers itself but stays OUT of mob/templates.ts's `TEMPLATES` list — deadvox consumes that
-// list (and `HUMANOID_TEMPLATES`) to pick what it spawns, and this mob has no deadvox AI,
-// collision or spawning until its own feature lands. `VIEWER_TEMPLATES` (amalgamTemplate.ts) is
-// what puts it in the mobgen viewer.
+// The dog shambler's two model-comparison builds, kept side by side so their results can be looked at
+// together: `dogTemplate` is the quadruped build (body plan 'quadruped', mob/quadruped.ts and
+// mob/quadrupedPose.ts), `dogM3Template` the earlier build (body plan 'dog', mob/dog.ts). Each keeps its
+// own body plan, poses and look; only the template names differ.
+//
+// Both are `comparison-only` (core/template.ts's `TemplateStatus`): kept to be compared against others,
+// not fit for a player to meet, so a consumer refuses them (core/template.ts's `consumableTemplate`) and
+// the viewer labels them. They stay outside mob/templates.ts's TEMPLATES list, so Deadvox's enumerations
+// never see them; the viewer opts both in explicitly (mob/viewerTemplates.ts).
+//
+// The quadruped build keeps the plain `dog` name because the look URL under review opens that name
+// (?template=dog&seed=7&walk=1&speed=0.8); the merged-in earlier build is `dog-m3` beside it.
 
 import { registerTemplate, type Template } from '../core/template.ts';
+// Side effect: registers the 'dog' body plan (mob/dog.ts's registerBodyPlan call).
+import './dog.ts';
 import { QUADRUPED_SUPPORT_BONES } from './quadruped.ts';
 
 /** Shares of nominal mass for severable parts; each key covers the whole subtree it cuts off
@@ -65,6 +74,39 @@ export const dogTemplate: Template = {
     // parameter extremes those seeds did not hit.
     groups: { head: { bones: ['head', 'jaw'], min: 160, max: 420 } },
   },
+  status: 'comparison-only',
+};
+
+/** The earlier build of the same mob, kept only for the side-by-side comparison this template family
+ * exists for (see mobgen/PROJECT.md's body-plan constraints). */
+export const dogM3Template: Template = {
+  name: 'dog-m3',
+  description: 'Dog-sized infected quadruped, earlier build: a lurching, limping four-paw shamble with a hanging head.',
+  bodyPlan: 'dog',
+  voxelSize: 0.5 / 12,
+  bodyMassKg: 30,
+  params: {
+    height: { min: 0.5, max: 0.72 },
+    girth: { min: 0.85, max: 1.2 },
+    headScale: { min: 0.9, max: 1.1 },
+    neckLength: { min: 0.85, max: 1.15 },
+    tailLength: { min: 0.7, max: 1.3 },
+    headTilt: { choices: [-8, -4, 0, 0, 4, 8] },
+    jawOpen: { choices: [0, 0, 0.2, 0.4, 0.6] },
+    skinHue: { min: 55, max: 110 },
+    skinSat: { min: 0.12, max: 0.3 },
+    skinLight: { min: 0.35, max: 0.55 },
+    woundCount: { choices: [0, 0, 1, 1, 2, 3] },
+    limp: { min: 0, max: 0.5 },
+  },
+  supportBones: ['forePaw.L', 'forePaw.R', 'hindPaw.L', 'hindPaw.R'],
+  budgets: {
+    totalVoxels: { min: 110, max: 1500 },
+    totalTriangles: { min: 400, max: 8500 },
+    groups: { head: { bones: ['head', 'jaw'], min: 18, max: 140 } },
+  },
+  status: 'comparison-only',
 };
 
 registerTemplate(dogTemplate);
+registerTemplate(dogM3Template);

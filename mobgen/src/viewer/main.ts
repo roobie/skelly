@@ -18,12 +18,12 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, generateValid, type Realized, realize, realizeLod } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
-import type { Genome, Template } from '../core/template.ts';
+import type { BodyPlan, Genome, Template } from '../core/template.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
-import { VIEWER_TEMPLATES as TEMPLATES } from '../mob/amalgamTemplate.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
+import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';
 import {
   advanceClock,
   bodyRestExtents,
@@ -43,7 +43,22 @@ import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
 import { QUADRUPED_SEVERABLE_PARTS } from '../mob/quadruped.ts';
 import { quadrupedGaitPose, quadrupedHitPose, quadrupedPose, quadrupedStyle } from '../mob/quadrupedPose.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
+import { standPose } from '../mob/standPose.ts';
+import { VIEWER_TEMPLATES } from '../mob/viewerTemplates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
+
+// The viewer shows both comparison builds of the dog even though neither is in TEMPLATES (so Deadvox
+// does not spawn them yet); mob/viewerTemplates.ts opts them in explicitly, so Deadvox's module graph
+// (which imports mob/amalgamTemplate.ts) never reaches them.
+const TEMPLATES: readonly Template[] = VIEWER_TEMPLATES;
+
+/** The sever menu's parts per pose-able body plan; the amalgam lists its manifest parts instead (load). */
+const SEVER_MENU_PARTS: Record<Exclude<BodyPlan, 'amalgam'>, readonly string[]> = {
+  humanoid: SEVERABLE_PARTS,
+  crawler: SEVERABLE_PARTS,
+  dog: DOG_SEVERABLE_PARTS,
+  quadruped: QUADRUPED_SEVERABLE_PARTS,
+};
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
@@ -157,12 +172,20 @@ let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
 let crawlerPhase = 0;
 let quadrupedPhase = 0;
+// Ground distance the dog has advanced; drives the walk directly, so its planted paws stay planted at any
+// speed (see mob/dog.ts, dogGaitPose). Reset on load like the other walk clocks.
+let dogDistance = 0;
 let gridZ = 0;
 // Runs unconditionally (walking, standing, attacking...) so breathing/sway never stalls; only its phase
 // matters, so it's never reset on load/death — a fresh actor just joins the motion already in progress,
 // same spirit as idle.ts's own seed-based phase offset for a crowd of actors sharing one body.
 let idleTime = 0;
 const currentStance = (): IdleStance => idleStanceSelect.value as IdleStance;
+const dogStance = (genome: Genome, severed?: ReadonlySet<string>) => ({
+  limp: genome.params.limp ?? 0,
+  headTilt: genome.params.headTilt ?? 0,
+  severed,
+});
 const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
 let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
 let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
@@ -179,6 +202,9 @@ let deathDirection: 1 | -1 = 1;
  * it, for free). Reset on Heal or a fresh load. Not yet the crowd texture's mask (that's a deadvox/renderer
  * concern) — the main viewer just hides bone meshes directly (see scene.ts's setSeveredBones). */
 let severedCuts: string[] = [];
+/** The bones hidden by `severedCuts`, recomputed whenever a cut changes; the dog's grounding needs it so
+ * severed limbs stop bearing the body. */
+let severedBones: ReadonlySet<string> = new Set();
 
 const playAttack = (): void => {
   attackTime = 0; // (re)starts even if one is already playing
@@ -193,7 +219,8 @@ const applySeveredBones = (): void => {
   if (!current) {
     return;
   }
-  current.actor.setSeveredBones(severedBoneSet(current.realized.body.bones, severedCuts));
+  severedBones = severedBoneSet(current.realized.body.bones, severedCuts);
+  current.actor.setSeveredBones(severedBones);
 };
 
 const sever = (): void => {
@@ -216,24 +243,20 @@ const playDeath = (): void => {
     return;
   }
   const actor = current.walkActor;
-  if (current.template.bodyPlan === 'crawler') {
-    deathBasePose = crawlerPose(current.realized);
-    deathDirection = dieBackward.checked ? -1 : 1;
-    deathTime = 0;
-    return;
-  }
-  if (current.template.bodyPlan === 'quadruped') {
+  if (current.template.bodyPlan === 'dog') {
+    deathBasePose = dogPose(current.realized, dogStance(current.genome, severedBones));
+  } else if (current.template.bodyPlan === 'quadruped') {
     deathBasePose = quadrupedPose(current.realized);
-    deathDirection = dieBackward.checked ? -1 : 1;
-    deathTime = 0;
-    return;
+  } else if (current.template.bodyPlan === 'crawler') {
+    deathBasePose = crawlerPose(current.realized);
+  } else {
+    const walking = walkOn.checked;
+    const speed = walking ? Number(speedInput.value) : 0;
+    const idle = idlePose(actor, currentStance(), idleTime);
+    const walkBase: Pose = walkPose(actor, clock, speed, { idle });
+    deathBasePose =
+      attackTime === undefined ? walkBase : attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, attackTime, walkBase);
   }
-  const walking = walkOn.checked;
-  const speed = walking ? Number(speedInput.value) : 0;
-  const idle = idlePose(actor, currentStance(), idleTime);
-  const walkBase: Pose = walkPose(actor, clock, speed, { idle });
-  deathBasePose =
-    attackTime === undefined ? walkBase : attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, attackTime, walkBase);
   deathDirection = dieBackward.checked ? -1 : 1;
   deathTime = 0;
 };
@@ -289,7 +312,14 @@ const renderPanel = (realizeMs: number): void => {
   }
   const { genome, realized } = current;
   const template = TEMPLATES.find((t) => t.name === genome.template)!;
+  const comparisonOnly = template.status === 'comparison-only';
   description.textContent = template.description;
+  if (comparisonOnly) {
+    const label = document.createElement('span');
+    label.className = 'comparison-only';
+    label.textContent = 'comparison only — not for use';
+    description.prepend(label, ' ');
+  }
   const { report } = realized;
   status.innerHTML = report.ok
     ? '<span class="pass">PASS</span>'
@@ -386,21 +416,17 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
       cache: createGaitCache(),
     };
     // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
-    // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
-    let initialPose = idlePose(walkActor, currentStance(), idleTime);
-    if (template.bodyPlan === 'crawler') {
-      initialPose = crawlerPose(realized);
-    }
-    if (template.bodyPlan === 'quadruped') {
-      initialPose = quadrupedPose(realized);
-    }
+    // render loop ticks) — same idle stance the live frame loop would settle into at speed 0. Each plan
+    // stands through its own pose layer; see mob/standPose.ts, standPose.
+    const initialPose = standPose(template.bodyPlan, realized, {
+      walkActor,
+      idleStance: currentStance(),
+      idleTime,
+      dogStance: dogStance(genome),
+    });
     actor.applyPose(initialPose);
     loaded = { ...loaded, params, extents, bodyExtents, legGeometry, walkActor };
-    severPart.replaceChildren(
-      ...(template.bodyPlan === 'quadruped' ? QUADRUPED_SEVERABLE_PARTS : SEVERABLE_PARTS).map(
-        (part) => new Option(part, part),
-      ),
-    );
+    severPart.replaceChildren(...SEVER_MENU_PARTS[template.bodyPlan].map((part) => new Option(part, part)));
   }
   walkFieldset.hidden = staticOnly;
   attackFieldset.hidden = staticOnly;
@@ -409,6 +435,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   clock = INITIAL_CLOCK;
   crawlerPhase = 0;
   quadrupedPhase = 0;
+  dogDistance = 0;
   gridZ = 0;
   attackTime = undefined;
   attackCooldown = 0;
@@ -609,6 +636,14 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     groundGroup.position.z = gridZ;
     return;
   }
+  if (current.template.bodyPlan === 'dog') {
+    // Ground distance the dog has advanced; drives the walk directly, so its planted paws stay planted at
+    // any speed (see mob/dog.ts, dogGaitPose).
+    dogDistance += speed * dt;
+    gridZ = (gridZ + speed * dt) % 0.5;
+    groundGroup.position.z = gridZ;
+    return;
+  }
   if (current.template.bodyPlan === 'quadruped') {
     quadrupedPhase += speed * dt * Math.PI;
     gridZ = (gridZ + speed * dt) % 0.5;
@@ -674,18 +709,37 @@ const applyLookAt = (loaded: Loaded, pose: Pose, dt: number): void => {
 
 /** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
  * standing), optionally attacked, optionally flinched on top. */
+const applyCrawlerFrame = (loaded: Loaded, dt: number): void => {
+  const speed = walkOn.checked ? Number(speedInput.value) : 0;
+  advanceWalk(dt, walkOn.checked, speed);
+  advanceHit(dt);
+  const basePose = crawlerGaitPose(loaded.realized, crawlerPhase, speed);
+  const pose = hitTime === undefined ? basePose : crawlerHitPose(loaded.realized, basePose, hitTime, hitSide);
+  applyLookAt(loaded, pose, dt);
+};
+
+const applyDogFrame = (loaded: Loaded, dt: number): void => {
+  const speed = walkOn.checked ? Number(speedInput.value) : 0;
+  advanceWalk(dt, walkOn.checked, speed);
+  advanceHit(dt);
+  const basePose = dogGaitPose(loaded.realized, dogDistance, speed, dogStance(loaded.genome, severedBones));
+  const pose =
+    hitTime === undefined
+      ? basePose
+      : dogHitPose(loaded.realized, basePose, hitTime, { side: hitSide, severed: severedBones });
+  applyLookAt(loaded, pose, dt);
+};
+
 const applyLiveFrame = (loaded: Loaded, dt: number): void => {
   if (loaded.template.bodyPlan === 'amalgam') {
     return;
   }
   if (loaded.template.bodyPlan === 'crawler') {
-    const walking = walkOn.checked;
-    const speed = walking ? Number(speedInput.value) : 0;
-    advanceWalk(dt, walking, speed);
-    advanceHit(dt);
-    const basePose = crawlerGaitPose(loaded.realized, crawlerPhase, speed);
-    const pose = hitTime === undefined ? basePose : crawlerHitPose(loaded.realized, basePose, hitTime, hitSide);
-    applyLookAt(loaded, pose, dt);
+    applyCrawlerFrame(loaded, dt);
+    return;
+  }
+  if (loaded.template.bodyPlan === 'dog') {
+    applyDogFrame(loaded, dt);
     return;
   }
   if (loaded.template.bodyPlan === 'quadruped') {
