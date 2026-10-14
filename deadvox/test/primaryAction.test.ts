@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { ignitionTargetForHand, selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival } from '../src/game/survival.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
 
 // A painkiller is one by its component, whatever its category.

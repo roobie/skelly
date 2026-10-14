@@ -56,6 +56,10 @@
         ["H", "H"],
         ["H", "H"]
       ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
       "palette": {
         "=": "concrete",
         "H": {

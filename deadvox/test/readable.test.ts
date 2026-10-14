@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { useOption } from '../src/core/options.ts';
@@ -11,6 +10,7 @@ import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { Survival } from '../src/game/survival.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 

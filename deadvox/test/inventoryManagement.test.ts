@@ -36,6 +36,7 @@ const fixtureRegistry = (): Registry => {
   const definitions: ItemDef[] = [
     {
       id: 'fixture_inventory_bag',
+      economy: { usage: [], tiers: [] },
       name: 'Fixture bag',
       category: 'misc',
       weight: 1,
@@ -43,9 +44,17 @@ const fixtureRegistry = (): Registry => {
       wearable: { slot: 'back', encumbrance: 0 },
       container: { pockets: [{ grid: [4, 4], handlingSimSeconds: simSeconds(0.2) }] },
     },
-    { id: 'fixture_inventory_item', name: 'Fixture item', category: 'misc', weight: 1, size: [1, 1] },
+    {
+      id: 'fixture_inventory_item',
+      economy: { usage: [], tiers: [] },
+      name: 'Fixture item',
+      category: 'misc',
+      weight: 1,
+      size: [1, 1],
+    },
     {
       id: 'fixture_inventory_magazine',
+      economy: { usage: [], tiers: [] },
       name: 'Fixture magazine',
       category: 'misc',
       weight: 1,

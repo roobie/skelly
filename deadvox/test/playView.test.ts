@@ -13,7 +13,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
@@ -29,6 +28,7 @@ import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { createPlayView } from '../src/render/playView.ts';
 import { Skylight } from '../src/render/skylight.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { skyWorldFixture } from './fixtures/skyWorld.ts';
 
 const BASE = 'src/content/base';

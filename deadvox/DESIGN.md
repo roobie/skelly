@@ -33,6 +33,7 @@ read_if:
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're changing firearm attachments, nested item slots or their save behavior
+  - you're changing military progression or loot economy admission
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
   - you're changing when a running game warns before page exit relative to its last save
@@ -134,7 +135,7 @@ would intersect a solid overhead block. On a restore admitted by
 body height is derived from content. See `src/core/saveFormat.ts`, `decodeSave`;
 `src/content/base/senses.jsonnet`, `crouch.bodyHeightMetres`;
 `src/game/session.ts`, `settleStance`; `src/core/schema.ts`, `SenseSchema`;
-`src/content/base/camp.jsonnet`, `camp_wall_run_crouch_hole`; and
+`src/content/base/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
 
 ### Block shapes
@@ -702,7 +703,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
   Gungen's geometry and material export is the single source for attachment mass; `weightOf` uses `massKg` for attachment items, so their required content `weight` is not authoritative. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear; foregrips affect aim and stance; a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
-- **Military loot (3.2):** Restricting magazine-fed firearms and their compatible ammunition to military sources keeps ordinary scavenging from supplying a rifle. Recursive validation covers military items acquired through nesting, repackaging, crafting, salvage and fixed loot. Exported attachments use military loot in playtest 1 without being validation-locked to it, allowing later sites to carry optics. Reachability checks keep authored military sites part of the progression. See `src/core/magazine.ts`, `militaryLootItems`, `src/core/content.ts`, `checkMilitaryLoot`, and `src/core/reachability.ts`, `worldSources`.
+- **Military loot (3.2):** Authored Military-only usage protects military progression without inferring admission from calibre or furniture type. Shared supplies remain craftable even when military sources can carry them; ordinary crafting, salvage and unpacking cannot manufacture Military-only supplies. Fixed stock and its installed descendants must match their resolved source context. Tables supply weights, not a second geography authority. See `src/core/loot.ts`, `economyEligible` and `lootTypeIssue`, `src/core/magazine.ts`, `militaryLootItems`, and `src/core/content.ts`, `checkMilitaryLoot`.
 - **Spent cases per block:** Cases must never end inside terrain; use only clear,
   supported landing cells, including spill destinations. If none is available,
   discard the case rather than jam the firearm for a cosmetic item. When an
@@ -903,7 +904,7 @@ See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 
 ## Hand grenade
 
-A grenade thrown into the horde is meant to be the playtest's climax: the one moment the player can answer a whole crowd at once, with the gore to show it. The FOB armoury holds the grenades, and the horde outside the FOB's west wall stands within earshot of prying the armoury lock through the compound's walls, so forcing the armoury brings the crowd the grenades are for, while the key leaves the horde where it stands. It stands on the west side so the crouch passage through the east wall stays a quiet way in, away from the crowd. See `src/content/base/items-explosives.jsonnet`, `frag_grenade`; `src/content/base/layouts-playtest.json`, `fob_west`; and `src/core/zombies.ts`, `hearVocalNoise`, for how far a horde hears.
+A grenade thrown into the horde is meant to be the playtest's climax: the one moment the player can answer a whole crowd at once, with the gore to show it. The FOB armoury holds the grenades, and the horde outside the FOB's west wall stands within earshot of prying the armoury lock through the compound's walls, so forcing the armoury brings the crowd the grenades are for, while the key leaves the horde where it stands. It stands on the west side so the crouch passage through the east wall stays a quiet way in, away from the crowd. See `src/content/base/items-explosives.libsonnet`, `frag_grenade`; `src/content/base/layouts-playtest.json`, `fob_west`; and `src/core/zombies.ts`, `hearVocalNoise`, for how far a horde hears.
 
 - **Pulling the pin is an action.** The held grenade's primary action pulls the pin, or puts it back, and says which; the item's details show the pin, or a burning fuse. Arming takes a deliberate act, so a grenade is never live by accident. See `src/core/explosive.ts`, `Fuses.togglePin`, and `src/game/play.ts`, `togglePin`.
 - **The fuse lights when the hand lets go.** An unpinned grenade lights the moment it is anywhere but a hand: thrown, dropped, or put away, because nothing holds the lever once the grip opens. A pinned grenade that is thrown remains a dud, and re-pinning before release makes it safe. There is no cooking, and a lit fuse cannot be stopped. Pin and fuse are saved on the item, including while its presentation arc is playing. The fuse counts down in simulation time inside the zombies system's step rather than in a system of its own, because the scheduler's set of systems is part of the save. See `src/core/explosive.ts`, `Fuses.advance`, and `src/game/session.ts`, `detonate`.
@@ -1222,9 +1223,8 @@ play, not only decorate it.
 - **Dilapidation:** built things show abandonment through collapsed sections,
   breaches, slumped or missing segments and rubble. A passable breach is a real
   route, so each authored site names the gaps a player can cross. New structures
-  and reworks follow this direction, starting with the camp walls in #385;
-  retrofitting existing structures is tracked in #396. See
-  `src/content/base/camp.jsonnet`, `camp_wall_run`, `camp_gate`, and
+  and reworks follow this direction; retrofitting existing structures is tracked
+  in #396. See `src/content/base/camp.libsonnet`, `camp_wall_run`, `camp_gate`, and
   `camp_gate_return`.
 - **Wildlife as scenery:** birds, crows on the dead and flies help the player
   read the place, the bodies and the decay. They're environmental cues, not an

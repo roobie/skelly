@@ -1,10 +1,20 @@
 {
-  "items": [{ "id": "review_only_item", "name": "Only here", "category": "material", "weight": 1, "size": [1, 1] }],
+  "items": [
+    {
+      "id": "review_only_item",
+      "economy": { "usage": [], "tiers": [] },
+      "name": "Only here",
+      "category": "material",
+      "weight": 1,
+      "size": [1, 1]
+    }
+  ],
   "furniture": [{ "id": "review_pedestal", "name": "Pedestal", "size": [1, 1, 1], "color": "#123456" }],
   "loot": [{ "id": "review_only_loot", "rolls": [1, 1], "entries": [{ "item": "review_only_item", "weight": 1 }] }],
   "templates": [
     {
       "id": "shed",
+      "lootContext": { "usage": ["Residential"], "tier": "Tier1" },
       "size": [1, 1, 1],
       "palette": { "Ω": { "furniture": "review_pedestal", "loot": "review_only_loot" } },
       "layers": [["Ω"]]

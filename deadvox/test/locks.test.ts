@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -10,6 +9,7 @@ import { doorOptions } from '../src/core/options.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { placedPieces } from '../src/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const base = readdirSync('src/content/base')
   .filter((f) => f.endsWith('.json'))
@@ -77,8 +77,8 @@ describe('door locks', () => {
     const layout = structuredClone(registry.layouts.get('stair_demo')!);
     layout.id = 'locks_storeys';
     layout.buildings = [
-      { template: bedroom.id, position: [55, 21, 55], rotation: 90 },
-      { template: cellar.id, position: [75, 21, 55], rotation: 270 },
+      { template: bedroom.id, lootContext: bedroom.lootContext, position: [55, 21, 55], rotation: 90 },
+      { template: cellar.id, lootContext: cellar.lootContext, position: [75, 21, 55], rotation: 270 },
     ];
     const result = buildRegistry([
       ...base,

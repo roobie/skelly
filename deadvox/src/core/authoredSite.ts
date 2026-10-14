@@ -16,7 +16,7 @@ import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from './hamlet.ts';
-import { fixedItems, type Rolled } from './loot.ts';
+import { fixedItems, type LootSpawnPoint, lootPointsByColumn, type Rolled } from './loot.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
@@ -24,6 +24,7 @@ import {
   furnitureOf,
   grow,
   type HordeSpawn,
+  lootSourcesOf,
   type PlaytestMarks,
   type Rect,
   type Site,
@@ -83,6 +84,7 @@ export class AuthoredSite implements Site {
   private readonly spawns: readonly ZombieSpawn[];
   private readonly hordes: readonly HordeSpawn[];
   private readonly treeIndex: TreeIndex;
+  private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   private readonly fixedLoot: Map<string, Rolled[]>;
   private readonly fixedSurfaceLoot: Map<string, Rolled[]>;
   readonly playtestMarks: PlaytestMarks;
@@ -106,7 +108,13 @@ export class AuthoredSite implements Site {
       const rect = buildingBounds(building, registry.templates.get(building.template)!.size);
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
-    this.placements = layout.buildings.map((building) => placementOf(registry, building));
+    this.placements = layout.buildings.map((building) => placementOf(registry, building, layout.lootContext));
+    this.lootColumns = lootPointsByColumn(
+      this.placements.flatMap((placement, i) => {
+        const sources = lootSourcesOf(registry, layout.id, placement, layout.buildings[i]!.fixedLoot);
+        return layout.demo ? sources.map((source) => ({ ...source, fixture: true as const })) : sources;
+      }),
+    );
     const {
       fixedLoot: containerLoot,
       fixedSurfaceLoot,
@@ -378,6 +386,10 @@ export class AuthoredSite implements Site {
     for (const placement of this.placements) {
       stampPlacement(chunk, placement);
     }
+  }
+
+  lootPointsIn(cx: number, cz: number): readonly LootSpawnPoint[] {
+    return this.lootColumns.get(`${cx},${cz}`) ?? [];
   }
 
   furnitureIn(cx: number, cz: number) {

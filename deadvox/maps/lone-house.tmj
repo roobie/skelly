@@ -12,6 +12,7 @@
   "nextlayerid": 5,
   "nextobjectid": 7,
   "properties": [
+    {"name": "loot_context", "type": "string", "value": "{\"usage\":[\"Residential\"],\"tier\":\"Tier1\"}"},
     {"name": "id", "type": "string", "value": "lone_house"},
     {"name": "ground", "type": "float", "value": 21}
   ],

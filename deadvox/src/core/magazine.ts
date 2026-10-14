@@ -12,6 +12,7 @@ import {
   SLING_SLOT,
 } from './firearmFitting.ts';
 import type { Item } from './items.ts';
+import { militaryOnlyEconomy } from './loot.ts';
 
 export interface MagazineSpec {
   readonly calibre: string;
@@ -43,51 +44,8 @@ export const magazineFits = (registry: Registry, firearmType: string, magazineTy
   return calibre !== undefined && magazineSpec(registry, magazineType)?.calibre === calibre;
 };
 
-/**
- * Restricting a rifle's magazines, ammunition and packages with the rifle keeps ordinary scavenging
- * from bypassing military progression; see `DESIGN.md`, "Military loot".
- */
-
-const addFirearmsToMilitaryLoot = (registry: Registry, calibres: Set<string>, items: Set<string>): void => {
-  for (const id of registry.items.keys()) {
-    const calibre = magazineWellCalibre(registry, id);
-    if (calibre !== undefined) {
-      calibres.add(calibre);
-      items.add(id);
-    }
-  }
-};
-
-const addMilitaryCalibreItems = (registry: Registry, calibres: ReadonlySet<string>, items: Set<string>): void => {
-  for (const [id, def] of registry.items) {
-    const calibre = magazineSpec(registry, id)?.calibre ?? def.ammo?.calibre;
-    if (calibre !== undefined && calibres.has(calibre)) {
-      items.add(id);
-    }
-  }
-};
-
-const addUnpackedMilitaryItems = (registry: Registry, items: Set<string>): void => {
-  // A box may hold another box; repeat until no package joins, so content order can't hide one.
-  let before: number;
-  do {
-    before = items.size;
-    for (const [id, def] of registry.items) {
-      if (def.unpack && items.has(def.unpack.item)) {
-        items.add(id);
-      }
-    }
-  } while (items.size !== before);
-};
-
-export const militaryLootItems = (registry: Registry): ReadonlySet<string> => {
-  const calibres = new Set<string>();
-  const items = new Set<string>();
-  addFirearmsToMilitaryLoot(registry, calibres, items);
-  addMilitaryCalibreItems(registry, calibres, items);
-  addUnpackedMilitaryItems(registry, items);
-  return items;
-};
+export const militaryLootItems = (registry: Registry): ReadonlySet<string> =>
+  new Set([...registry.items.values()].filter((item) => militaryOnlyEconomy(item.economy)).map((item) => item.id));
 
 interface FittedAttachment {
   readonly slotId: string;

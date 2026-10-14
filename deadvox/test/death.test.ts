@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { defOf } from '../src/core/items.ts';
 import { type DeathSummary, deathViewModel, lootedText, newWorldQuery, showDeath } from '../src/ui/death.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const { registry } = buildRegistry([
   {

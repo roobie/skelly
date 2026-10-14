@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../src/core/wear.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const { registry } = buildRegistry(
   readdirSync('src/content/base')

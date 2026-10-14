@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Modifier } from '../src/core/modifiers.ts';
 import type { AnalgesicDef } from '../src/core/pain.ts';
 import { gameMinutes } from '../src/core/time.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
 // The test's own painkillers: two items sharing one group, and one of another group.

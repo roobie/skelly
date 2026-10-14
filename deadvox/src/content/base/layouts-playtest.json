@@ -2,6 +2,10 @@
   "layouts": [
     {
       "id": "playtest",
+      "lootContext": {
+        "usage": ["Residential"],
+        "tier": "Tier1"
+      },
       "bounds": {
         "x0": 0,
         "z0": 0,
@@ -550,6 +554,10 @@
           "position": [468, 21, 495],
           "rotation": 0,
           "storeys": 1,
+          "lootContext": {
+            "usage": ["Military"],
+            "tier": "Tier2"
+          },
           "fixedLoot": [
             {
               "at": [6, 1, 6],
@@ -566,43 +574,71 @@
           "template": "camp_sandbag_post",
           "position": [480, 21, 495],
           "rotation": 0,
-          "storeys": 1
+          "storeys": 1,
+          "lootContext": {
+            "usage": ["Military"],
+            "tier": "Tier2"
+          }
         },
         {
           "template": "camp_sandbag_post",
           "position": [486, 21, 537],
           "rotation": 0,
-          "storeys": 1
+          "storeys": 1,
+          "lootContext": {
+            "usage": ["Military"],
+            "tier": "Tier2"
+          }
         },
         {
           "template": "camp_watchtower",
           "position": [486, 21, 516],
           "rotation": 0,
-          "storeys": 1
+          "storeys": 1,
+          "lootContext": {
+            "usage": ["Military"],
+            "tier": "Tier2"
+          }
         },
         {
           "template": "camp_command_tent",
           "position": [452, 21, 516],
           "rotation": 0,
-          "storeys": 1
+          "storeys": 1,
+          "lootContext": {
+            "usage": ["Military"],
+            "tier": "Tier2"
+          }
         },
         {
           "template": "camp_tent",
           "position": [452, 21, 525],
           "rotation": 0,
-          "storeys": 1
+          "storeys": 1,
+          "lootContext": {
+            "usage": ["Military"],
+            "tier": "Tier2"
+          }
         },
         {
           "template": "camp_container",
           "position": [452, 21, 533],
           "rotation": 0,
-          "storeys": 1
+          "storeys": 1,
+          "lootContext": {
+            "usage": ["Military"],
+            "tier": "Tier2"
+          }
         },
         {
           "template": "camp_hq",
           "position": [476, 21, 517],
           "rotation": 0,
           "storeys": 1,
+          "lootContext": {
+            "usage": ["Military"],
+            "tier": "Tier2"
+          },
           "fixedLoot": [
             {
               "at": [5, 1, 4],
@@ -669,6 +705,10 @@
           "position": [470, 21, 526],
           "rotation": 0,
           "storeys": 1,
+          "lootContext": {
+            "usage": ["Military"],
+            "tier": "Tier2"
+          },
           "fixedLoot": [
             {
               "at": [3, 1, 3],
@@ -1199,7 +1239,12 @@
           "chance": 1
         }
       ],
-      "hordes": [{ "id": "fob_west", "position": [427, 21.5, 526] }],
+      "hordes": [
+        {
+          "id": "fob_west",
+          "position": [427, 21.5, 526]
+        }
+      ],
       "beats": [
         {
           "id": "lone_house",
