@@ -189,8 +189,12 @@ describe('content-owned city building types', () => {
       expect(issues).toEqual([]);
       const ids = new Set<string>();
       for (const seed of [11, 73, 191, 307]) {
-        for (const { template } of buildCityPlan({ seed, registry, floor: 0, grid: cityGridOf(registry, scenario.city) })
-          .placements) {
+        for (const { template } of buildCityPlan({
+          seed,
+          registry,
+          floor: 0,
+          grid: cityGridOf(registry, scenario.city),
+        }).placements) {
           ids.add(template.id);
         }
       }

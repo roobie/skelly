@@ -183,7 +183,11 @@ describe('one finished city plan', () => {
     };
     const admitted = buildRegistry(fixtureScenarioSources(scenario));
     expect(admitted.issues).toEqual([]);
-    const plan = buildCityPlan({ seed: 73, registry: admitted.registry, floor, grid: cityGridOf(admitted.registry, scenario.city),
+    const plan = buildCityPlan({
+      seed: 73,
+      registry: admitted.registry,
+      floor,
+      grid: cityGridOf(admitted.registry, scenario.city),
       scenario,
     });
     const normal = plan.placements.filter((placement) => placement !== plan.service);

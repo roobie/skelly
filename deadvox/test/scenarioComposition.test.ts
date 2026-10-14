@@ -157,7 +157,13 @@ it('plans incidental utilities in addition to the reserved campus', () => {
   const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
   expect(profile).toBeDefined();
   const scale = makeScale(0.5);
-  const plan = buildCityPlan({ seed: 9, registry, floor: 64, grid: cityGridOf(registry, profile.city), scenario: profile });
+  const plan = buildCityPlan({
+    seed: 9,
+    registry,
+    floor: 64,
+    grid: cityGridOf(registry, profile.city),
+    scenario: profile,
+  });
   const site = new CitySite(9, registry, scale, plan);
   expect(
     site.placements.some((placement: Placement) =>
