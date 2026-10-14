@@ -261,7 +261,10 @@ describe('site launcher playtest entry', () => {
       mkdirSync(join(root, 'deadvox'), { recursive: true });
       cpSync(join(ROOT, 'deadvox/playtests'), join(root, 'deadvox/playtests'), { recursive: true });
       cpSync(join(ROOT, 'site'), join(root, 'site'), { recursive: true });
-      writeFileSync(join(root, '.gitignore'), '/deadvox/dist-playtest/\n/deadvox/dist/\nnode_modules/\n/tools/jsonnet/bin/\n');
+      writeFileSync(
+        join(root, '.gitignore'),
+        '/deadvox/dist-playtest/\n/deadvox/dist/\nnode_modules/\n/tools/jsonnet/bin/\n',
+      );
       writeFileSync(join(root, 'deadvox/package-lock.json'), JSON.stringify({ lockfileVersion: 3 }));
       mkdirSync(join(root, 'deadvox/node_modules/fixture-dep'), { recursive: true });
       writeFileSync(join(root, 'deadvox/node_modules/fixture-dep/index.js'), '// fixture dependency');
