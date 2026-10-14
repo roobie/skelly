@@ -64,6 +64,13 @@ silently become shell treatment. See `src/core/schema.ts`, `MapPieceSchema` and
 `MapAssemblySchema`, and `src/core/templates.ts`, `compileMapPiece`, `traversalContract`
 and `compileAssembly`.
 
+City building pools may name an assembly instead of a literal template, but not both
+under the same identity. An assembly owns its authored floor topology; stress-test
+stacking cannot invent additional floors. Resolve alternatives independently for each
+stable building location before requesting chunks: caching one selected assembly for a
+whole pool would repeat the same furnishings across the city. See `src/core/cityPlan.ts`,
+`buildCityPlan` and `templateCompiler`.
+
 Bound authored volumes before allocating compilation buffers so a short metadata file
 cannot request unbounded memory. See `src/core/schema.ts`, `KitSize`.
 

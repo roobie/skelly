@@ -9,6 +9,7 @@ import type { Rect } from './site.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { BlockBox } from './structure.ts';
 import {
+  compileAssembly,
   compileTemplate,
   footprint,
   type Placement,
@@ -96,6 +97,20 @@ const cityPerimeter = (registry: Registry, grid: CityGrid, floor: number, bounds
   return structures;
 };
 
+const cityPoolIssues = (registry: Registry, city: CityGrid): [string, string][] =>
+  city.templates.flatMap((id): [string, string][] => {
+    const template = registry.templates.get(id) ?? registry.mapAssemblies.get(id);
+    if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
+      return [['.city.templates', `ambiguous template and assembly "${id}"`]];
+    }
+    if (!template) {
+      return [['.city.templates', `no template or assembly "${id}"`]];
+    }
+    return template.size[0] > city.blockX - 2 * city.pad || template.size[2] > cityRowDepth(city)
+      ? [['.city.templates', `template "${id}" does not fit the reserved row`]]
+      : [];
+  });
+
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
   if (!registry.blockIds.has('asphalt')) {
@@ -103,16 +118,7 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
   }
   const { city, serviceTemplate } = scenario;
   const width = city.blockX - 2 * city.pad;
-  const depth = cityRowDepth(city);
-  issues.push(...cityDecorationIssues(registry, city));
-  for (const id of city.templates) {
-    const template = registry.templates.get(id);
-    if (!template) {
-      issues.push(['.city.templates', `no template "${id}"`]);
-    } else if (template.size[0] > width || template.size[2] > depth) {
-      issues.push(['.city.templates', `template "${id}" does not fit the reserved row`]);
-    }
-  }
+  issues.push(...cityDecorationIssues(registry, city), ...cityPoolIssues(registry, city));
   const service = registry.templates.get(serviceTemplate);
   if (service) {
     if (Math.max(service.size[0], service.size[2]) > Math.min(width, city.blockZ - 2 * city.pad)) {
@@ -167,17 +173,25 @@ const cityCells = (grid: CityGrid): Cell[] => {
   return cells;
 };
 
-const templateCompiler = (registry: Registry) => {
+const templateCompiler = (registry: Registry, seed: number) => {
   const cache = new Map<string, ReturnType<typeof compileTemplate>>();
-  return (id: string, storeys: number) => {
-    const key = `${id}:${storeys}`;
+  return (id: string, storeys: number, siteId = 'dimensions') => {
+    const assembly = registry.mapAssemblies.get(id);
+    if (assembly && registry.templates.has(id)) {
+      throw new Error(`Ambiguous city template and assembly "${id}"`);
+    }
+    const key = assembly ? JSON.stringify([id, siteId]) : JSON.stringify([id, storeys]);
     let template = cache.get(key);
     if (!template) {
-      const definition = registry.templates.get(id);
-      if (!definition) {
-        throw new Error(`Missing city template "${id}"`);
+      if (assembly) {
+        template = compileAssembly(registry, assembly, { seed, siteId });
+      } else {
+        const definition = registry.templates.get(id);
+        if (!definition) {
+          throw new Error(`Missing city template or assembly "${id}"`);
+        }
+        template = stackTemplate(compileTemplate(registry, definition), storeys);
       }
-      template = stackTemplate(compileTemplate(registry, definition), storeys);
       cache.set(key, template);
     }
     return template;
@@ -218,7 +232,7 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
     const storeys = SINGLE_STOREY.has(id)
       ? 1
       : 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * maxStoreys);
-    const template = compiled(id, storeys);
+    const template = compiled(id, storeys, `city:${i},${j}/row:${row}/building:${k}`);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const bank = j * pitchZ + cityRowStart(grid, row);
     const z = row % 2 === 0 ? bank : bank + 2 * cityRowDepth(grid) - depth;
@@ -285,7 +299,7 @@ export const buildCityPlan = ({
     grid,
     maxStoreys: scenario ? 1 : maxStoreys,
     incidentalTemplates: scenario?.composition?.incidentalTemplates ?? [],
-    compiled: templateCompiler(registry),
+    compiled: templateCompiler(registry, seed),
   };
   const service =
     scenario && serviceBlock

@@ -103,6 +103,43 @@ it('rejects individually admissible alternatives with different public port cont
   ).toBe(true);
 });
 
+it('rejects individually admissible alternatives with moved anchors', () => {
+  const data = fixture();
+  const first = data.mapPieces![0]!;
+  first.anchors.marker = { kind: 'point', at: [1, 1, 1] };
+  const alternative = structuredClone(first);
+  alternative.id = 'room_b';
+  alternative.anchors.marker!.at = [2, 1, 1];
+  data.mapPieces![1] = alternative;
+  const result = build(data);
+  expect(result.issues.some((issue) => issue.path.startsWith('mapPieces['))).toBe(false);
+  expect(
+    result.issues.some((issue) => issue.path.startsWith('mapAssemblies[0]') && issue.message.includes('anchors')),
+  ).toBe(true);
+});
+
+it('rejects individually admissible alternatives changing furniture support under reserved circulation', () => {
+  const data = fixture();
+  data.furniture = [
+    { id: 'passable', name: 'Passable fixture', size: [1, 1, 1], color: '#808080', solid: false },
+    { id: 'blocking', name: 'Blocking fixture', size: [1, 1, 1], color: '#808080', solid: true },
+  ];
+  const first = data.mapPieces![0]!;
+  first.layers[0]![0] = 'F===';
+  first.palette.F = { furniture: 'passable' };
+  const alternative = structuredClone(first);
+  alternative.id = 'room_b';
+  alternative.palette.F = { furniture: 'blocking' };
+  data.mapPieces![1] = alternative;
+  const result = build(data);
+  expect(result.issues.some((issue) => issue.path.startsWith('mapPieces['))).toBe(false);
+  expect(
+    result.issues.some(
+      (issue) => issue.path.startsWith('mapAssemblies[0]') && issue.message.includes('reserved-body furniture'),
+    ),
+  ).toBe(true);
+});
+
 it('rejects assigning an interior-floor binding to shell cells', () => {
   const data = fixture();
   data.mapStyles![0]!.bindings.floor!.role = 'interior_floor';

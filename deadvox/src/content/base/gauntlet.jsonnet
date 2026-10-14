@@ -1,5 +1,6 @@
 local look = import 'gauntlet-look.jsonnet';
 local city = import 'gauntlet-city.libsonnet';
+local kits = import 'gauntlet-city-kits.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local original = look.templates[0];
 local memo = std.filter(function(f) f.id == 'gauntlet_look_memo', look.furniture)[0];
@@ -68,6 +69,8 @@ local utilities = [
   },
 ];
 {
+  mapPieces: kits.mapPieces,
+  mapAssemblies: kits.mapAssemblies,
   furniture: city.furniture + [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
