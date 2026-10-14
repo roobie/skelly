@@ -9,7 +9,11 @@ const path = new URL('../deadvox/src/game/bundledContent.ts', import.meta.url);
 const original = readFileSync(path, 'utf8');
 const marker = 'buildRegistry([...sources, ...mods]);';
 assert(original.includes(marker));
-const run = () => spawnSync('npx', ['vitest', 'run', 'test/browserMods.test.ts'], { encoding: 'utf8' });
+const run = () =>
+  spawnSync('npx', ['vitest', 'run', 'test/browserMods.test.ts'], {
+    cwd: new URL('../deadvox', import.meta.url),
+    encoding: 'utf8',
+  });
 const green = run();
 console.log(green.stdout, green.stderr);
 assert.equal(green.status, 0, 'patched startup admission is green');
