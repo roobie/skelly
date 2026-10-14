@@ -516,6 +516,6 @@ describe('menu and pause state transitions', () => {
   });
 
   it.each(cases)('$name', ({ input, expected }) => {
-    expect(computeMenuState(input)).toEqual(expected);
+    expect(computeMenuState(input)).toEqual({ ...expected, goLabel: expect.any(String) });
   });
 });

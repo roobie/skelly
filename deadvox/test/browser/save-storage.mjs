@@ -608,10 +608,7 @@ try {
     });
     try {
       await page.waitForFunction(
-        () => {
-          const status = document.querySelector('#save-status')?.textContent ?? '';
-          return status.includes('Title screen ready');
-        },
+        () => globalThis.deadvoxSaveTest?.controller.ready === true,
         undefined,
         { timeout: STAGE_TIMEOUT_MS },
       );
@@ -644,10 +641,7 @@ try {
     );
     try {
       await page.waitForFunction(
-        () => {
-          const status = document.querySelector('#save-status')?.textContent ?? '';
-          return status.includes('Title screen ready');
-        },
+        () => globalThis.deadvoxSaveTest?.controller.ready === true,
         undefined,
         { timeout: STAGE_TIMEOUT_MS },
       );
@@ -725,7 +719,7 @@ try {
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
     await page.waitForFunction(
-      () => (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
+      () => globalThis.deadvoxSaveTest?.controller.ready === true,
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
@@ -807,7 +801,7 @@ try {
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
     await page.waitForFunction(
-      () => (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
+      () => globalThis.deadvoxSaveTest?.controller.ready === true,
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
