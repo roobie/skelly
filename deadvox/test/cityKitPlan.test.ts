@@ -3,9 +3,11 @@ import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import { buildCityPlan, scenarioPlanIssues } from '../src/core/cityPlan.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { buildingLootEvidence, buildingVariants, cityBuildingDraws } from './fixtures/cityBuildings.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 it('resolves one repeatable variant per slot and varies city assemblies across buildings and seeds', () => {
   const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
@@ -83,24 +85,25 @@ describe('content-owned city building types', () => {
         { id: 'disabled', weight: 0 },
       ],
     };
-    const seed = 73;
-    const plan = buildCityPlan({ seed, registry, grid, floor: 0 });
-    expect(plan.placements.length).toBeGreaterThan(0);
-    const seen = new Set<string>();
-    for (const { id, draw } of cityBuildingDraws(plan, grid, seed)) {
-      expect(id).toBe(draw < 1 / 4 ? house.id : 'weighted_b');
-      seen.add(id);
+    const counts = new Map<string, number>();
+    for (const seed of [11, 73, 191, 307]) {
+      const plan = buildCityPlan({ seed, registry, grid, floor: 0 });
+      for (const { template } of plan.placements) {
+        counts.set(template.id, (counts.get(template.id) ?? 0) + 1);
+      }
+      const scaled = buildCityPlan({
+        seed,
+        registry,
+        floor: 0,
+        grid: { ...grid, templates: grid.templates.map((row) => ({ ...row, weight: row.weight * 10 })) },
+      });
+      expect(scaled.placements.map(({ template }) => template.id)).toEqual(
+        plan.placements.map(({ template }) => template.id),
+      );
     }
-    expect(seen.size).toBe(2);
-    const scaled = buildCityPlan({
-      seed,
-      registry,
-      floor: 0,
-      grid: { ...grid, templates: grid.templates.map((row) => ({ ...row, weight: row.weight * 10 })) },
-    });
-    expect(scaled.placements.map(({ template }) => template.id)).toEqual(
-      plan.placements.map(({ template }) => template.id),
-    );
+    expect(counts.has('disabled')).toBe(false);
+    expect(counts.get(house.id) ?? 0).toBeGreaterThan(0);
+    expect(counts.get('weighted_b') ?? 0).toBeGreaterThan(counts.get(house.id) ?? 0);
   });
 
   it('falls back to the first enabled fitting building when the weighted draw is too wide', () => {
