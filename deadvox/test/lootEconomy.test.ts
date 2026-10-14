@@ -70,6 +70,8 @@ describe('loot economy descriptions', () => {
   });
 
   it('keeps empty stacked points and their streams independent of enumeration order', () => {
+    const layers = [['.'], ['C'], ['.']];
+    const storeys = 2;
     const { registry, issues } = buildRegistry([
       {
         source: 'economy-fixture',
@@ -99,14 +101,14 @@ describe('loot economy descriptions', () => {
               lootContext: context,
               size: [1, 3, 1],
               palette: { '.': 'air', C: { furniture: 'fixture_container', lootUsage: ['Hunting'] } },
-              layers: [['.'], ['C'], ['.']],
+              layers,
             },
           ],
         },
       },
     ]);
     expect(issues).toEqual([]);
-    const template = stackTemplate(compileTemplate(registry, registry.templates.get('fixture_template')!), 2);
+    const template = stackTemplate(compileTemplate(registry, registry.templates.get('fixture_template')!), storeys);
     const first = { template, origin: [0, 0, 0] as [number, number, number], turn: 0 as const };
     const second = { ...first, origin: [32, 0, 0] as [number, number, number] };
     const sources = [
@@ -118,7 +120,19 @@ describe('loot economy descriptions', () => {
     expect(
       sources.some((point) => point.channel === 'surface' && point.required && point.supply.kind === 'fixed'),
     ).toBe(true);
-    expect(sources.length).toBeGreaterThan(0);
+    const containerAnchors = Array.from({ length: storeys }, (_, floor) => [
+      0,
+      layers.findIndex((layer) => layer.includes('C')) + floor * (layers.length - 1),
+      0,
+    ]);
+    for (const placement of [first, second]) {
+      const building = JSON.stringify([placement.origin, placement.turn]);
+      expect(
+        sources
+          .filter((point) => point.building === building && point.channel === 'container')
+          .map((point) => point.anchor),
+      ).toEqual(containerAnchors);
+    }
     expect(sources.every((point) => point.context.tier === context.tier)).toBe(true);
     expect(sources.every((point) => point.usage?.includes('Hunting'))).toBe(true);
     const read = (input: readonly LootPointSource[]) =>

@@ -22,10 +22,16 @@ function readJson(path) {
 }
 function writeJson(path, value) {
   const file = new TextFile(path, TextFile.WriteOnly);
-  const json = JSON.stringify(value, null, 2).replace(
-    /\[\s*((?:"(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?)(?:\s*,\s*(?:"(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?))*)\s*\]/g,
-    (_match, values) => `[${values.replace(/,\s*/g, ', ')}]`,
-  );
+  const json = JSON.stringify(value, null, 2)
+    .replace(
+      /\[\s*((?:"(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?)(?:\s*,\s*(?:"(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?))*)\s*\]/g,
+      (_match, values) => `[${values.replace(/,\s*/g, ', ')}]`,
+    )
+    .replace(/\[\s*(\[[-\d., ]+\](?:,\s*\[[-\d., ]+\])*)\s*\]/g, (match, rows, offset, text) => {
+      const compact = `[${rows.replace(/,\s*/g, ', ')}]`;
+      const prefixLength = offset - text.lastIndexOf('\n', offset) - 1;
+      return prefixLength + compact.length < 120 ? compact : match;
+    });
   file.write(`${json}\n`);
   file.commit(); // QSaveFile: close() without commit silently cancels the write.
 }
@@ -169,7 +175,7 @@ function addBuilding(object, info, context) {
     throw new Error(`${name}: buildings overlap`);
   }
   footprints.push(rect);
-  const building = { template, position, rotation, storeys, lootContext: definition.lootContext };
+  const building = { template, position, rotation, storeys };
   const lootContext = optionalString(object, 'loot_context');
   if (lootContext !== undefined) {
     building.lootContext = JSON.parse(lootContext);
@@ -216,8 +222,8 @@ function addSpawn(object, info, context) {
   const window =
     fromGameTimeOfDay === undefined
       ? undefined
-      : { fromGameTimeOfDay, ...(toGameTimeOfDay === undefined ? {} : { toGameTimeOfDay }) };
-  layout.shamblers.push({ type, position, chance, ...(window ? { window } : {}) });
+      : Object.assign({ fromGameTimeOfDay }, toGameTimeOfDay === undefined ? {} : { toGameTimeOfDay });
+  layout.shamblers.push(Object.assign({ type, position, chance }, window ? { window } : {}));
 }
 function addHorde(object, info, { layout, pack }) {
   const { name, x, z } = info;

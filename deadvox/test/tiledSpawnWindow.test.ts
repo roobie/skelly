@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { placementOf } from '../src/core/authoredPlacement.ts';
+import { buildRegistry } from '../src/core/content.ts';
+import type { LootContext } from '../src/core/loot.ts';
+import type { SiteLayoutDef } from '../src/core/schema.ts';
 
 const mapsPath = join(process.cwd(), 'maps');
 const projectPath = join(mapsPath, 'deadvox.tiled-project');
@@ -83,6 +87,72 @@ const object = (className: string, x: number, y: number, properties: Record<stri
 });
 
 describe('Tiled spawn-window export', () => {
+  it('inherits the site tier with template usage unless a building context is authored', () => {
+    const templateContext: LootContext = { usage: ['Medical'], tier: 'Tier1' };
+    const siteContext: LootContext = { usage: ['Residential'], tier: 'Tier3' };
+    const override: LootContext = { usage: ['Military'], tier: 'Tier2' };
+    const template = {
+      id: 'fixture_template',
+      lootContext: templateContext,
+      size: [2, 2, 2],
+      palette: { '.': 'air' },
+      layers: [
+        ['..', '..'],
+        ['..', '..'],
+      ],
+    };
+    const { registry, issues } = buildRegistry([{ source: 'fixture', data: { templates: [template] } }]);
+    expect(issues).toEqual([]);
+    const read = vi
+      .spyOn(TiledTextFile.prototype, 'readAll')
+      .mockReturnValue(JSON.stringify({ templates: [template] }));
+    try {
+      const building = (x: number, overrides: Record<string, unknown>) => ({
+        ...object('building', x, 1, { template: template.id, ...overrides }),
+        shape: 'rectangle',
+        width: template.size[0]! * 0.5,
+        height: template.size[2]! * 0.5,
+      });
+      const layer = {
+        offset: { x: 0, y: 0 },
+        isGroupLayer: false,
+        isObjectLayer: true,
+        objects: [
+          building(1, {}),
+          building(3, { [LOOT_CONTEXT]: JSON.stringify(override) }),
+          object('player_spawn', 5, 5, { elevation: 0.5 }),
+        ],
+      };
+      const properties: Record<string, unknown> = {
+        id: 'fixture_site',
+        ground: 0,
+        [LOOT_CONTEXT]: JSON.stringify(siteContext),
+      };
+      const {
+        layouts: [layout],
+      }: { layouts: SiteLayoutDef[] } = exportLayout({
+        tileWidth: 1,
+        tileHeight: 1,
+        infinite: false,
+        orientation: 'orthogonal',
+        width: 20,
+        height: 20,
+        layerCount: 1,
+        layerAt: () => layer,
+        property: (name: string) => properties[name],
+      });
+      const [inherited, explicit] = layout!.buildings;
+      expect(placementOf(registry, inherited!, layout!.lootContext).lootContext).toEqual({
+        usage: templateContext.usage,
+        tier: siteContext.tier,
+      });
+      expect(inherited).not.toHaveProperty('lootContext');
+      expect(placementOf(registry, explicit!, layout!.lootContext).lootContext).toEqual(override);
+    } finally {
+      read.mockRestore();
+    }
+  });
+
   it('exports optional marker windows as authored-layout window objects', () => {
     const layer = {
       offset: { x: 0, y: 0 },

@@ -12,7 +12,7 @@ Tiled-edited maps are authored `.tmj` files; do not pair them with generated `.t
 
 The playtest route treats the shelter, Mike's place, medical site and military compound as distinct beats. The vehicle-width road reaches the compound's north gate; the narrower trail covers the remaining gap, while the south breach remains an alternate approach. Keep these approaches legible without making the compound a dead end. See `maps/playtest.tmj` and `test/authoredFixedLoot.test.ts`, "routes through the north double gate while keeping the south wall breach open".
 
-Keep exported layouts outside the Jsonnet output manifest so the Tiled exporter remains their only writer. Site context is authored on the map; building overrides are deliberate exceptions to compiled template defaults. See `maps/extensions/deadvox.mjs`, `exportLayout` and `addBuilding`.
+Keep exported layouts outside the Jsonnet output manifest so the Tiled exporter remains their only writer. Author the fallback context on the map and export a building context only when it has an explicit override: otherwise template usage must inherit the site's tier. Author tier exceptions on the building rather than manufacturing them from template defaults in the exporter. See `maps/extensions/deadvox.mjs`, `exportLayout` and `addBuilding`, and `src/core/authoredPlacement.ts`, `placementOf`.
 
 ## Fixed loot
 
