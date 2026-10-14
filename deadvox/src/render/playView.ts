@@ -287,8 +287,6 @@ export const createPlayView = (
       blastFlashes.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
-      applySky(engine.sky, sky);
-      engine.mood?.setSky(sky);
       piles.sync(inventory, itemThrows.hiddenItemUids);
       furniture.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
@@ -303,6 +301,8 @@ export const createPlayView = (
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
+      applySky(engine.sky, sky, skyVisibility);
+      engine.mood?.setSky(sky, skyVisibility);
       held.setSkyVisibility(skyVisibility);
       cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
       engine.skylight?.setDaylight(sky);

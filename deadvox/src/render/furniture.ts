@@ -1,10 +1,8 @@
-// Block entities as simple shapes: furniture is a box in its colour, filling its
-// cells; a door is a thin hinged panel. They share the sky's lights with everything else.
-
 import { BoxGeometry, type BufferGeometry, Color, Group, Mesh, MeshLambertMaterial } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, panelFor } from '../core/blockEntities.ts';
 import type { FurnitureDef } from '../core/schema.ts';
+import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { workshopCar, workshopLift } from './workshopVehicle.ts';
@@ -36,31 +34,39 @@ export class FurnitureMeshes {
     this.drawn = entities.version;
     this.group.clear();
     for (const entity of entities.all) {
-      const def = entities.defOf(entity);
-      const material = this.material(def.color);
-      let mesh: Group | Mesh;
-      if (def.id === 'workshop_lift') {
-        mesh = workshopLift(entity, this.blockSize);
-      } else if (def.id === 'workshop_stripped_car') {
-        mesh = workshopCar(entity, this.blockSize);
-      } else if (def.door) {
-        mesh = this.door(entity, material, def);
-      } else if (def.readable && def.solid === false) {
-        mesh = this.wallBoard(entity, material);
-      } else if (def.shape) {
-        mesh = this.shaped(entity, def, material);
-      } else {
-        mesh = this.box(entity, material);
-      }
-      this.group.add(castsAndReceives(mesh));
+      this.group.add(castsAndReceives(this.meshFor(entity, entities.defOf(entity))));
     }
   }
 
-  private material(color: string): MeshLambertMaterial {
-    let material = this.materials.get(color);
+  private meshFor(entity: BlockEntity, def: FurnitureDef): Group | Mesh {
+    const material = this.material(def.color);
+    if (def.id === 'workshop_lift') {
+      return workshopLift(entity, this.blockSize);
+    }
+    if (def.id === 'workshop_stripped_car') {
+      return workshopCar(entity, this.blockSize);
+    }
+    if (def.door) {
+      return this.door(entity, material, def);
+    }
+    if (def.readable && def.solid === false) {
+      return this.wallBoard(entity, material);
+    }
+    if (def.appearance) {
+      return this.shaped(entity, def, this.material('#ffffff', true));
+    }
+    if (def.shape) {
+      return this.shaped(entity, def, material);
+    }
+    return this.box(entity, material);
+  }
+
+  private material(color: string, vertexColors = false): MeshLambertMaterial {
+    const key = `${color}:${vertexColors}`;
+    let material = this.materials.get(key);
     if (!material) {
-      material = withHeightFog(new MeshLambertMaterial({ color }), 'furniture');
-      this.materials.set(color, material);
+      material = withHeightFog(new MeshLambertMaterial({ color, vertexColors }), 'furniture');
+      this.materials.set(key, material);
     }
     return material;
   }
@@ -79,12 +85,12 @@ export class FurnitureMeshes {
     let geometry = this.shapeGeometries.get(def.id);
     if (!geometry) {
       const [width, , depth] = def.size;
-      const parts = def.shape!.map(({ position, size }) => {
+      const parts = (def.shape ?? []).map(({ position, size }) => {
         const [x, y, z] = position;
         const [w, h, d] = size;
         return new BoxGeometry(w, h, d).translate(x + w / 2 - width / 2, y + h / 2, z + d / 2 - depth / 2);
       });
-      geometry = mergeGeometries(parts, false);
+      geometry = def.appearance ? furnitureDetail(def) : mergeGeometries(parts, false);
       for (const part of parts) {
         part.dispose();
       }
