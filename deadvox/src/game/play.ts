@@ -3347,6 +3347,8 @@ export const startPlay = (
   const markerServices = {
     furniture: view.furniture,
     piles: view.piles,
+    lightAt: (position: Vec3) =>
+      (engine.sky.light.intensity + engine.sky.ambient.intensity) * (engine.skylight?.at(position) ?? 1),
     definition: (entity: BlockEntity) => entities.defOf(entity),
     body: (id: EntityId) => zombieStore.get(id)?.body,
     blockSize: s,

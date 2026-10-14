@@ -38,7 +38,7 @@ Short first-person refusals and observations name the world or the character's s
 
 The HUD options and master toggle govern HUD-owned elements. World, bodily and held-item cues remain outside them. See `src/ui/hudOptions.ts`, `hudVisibility`.
 
-The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. See `src/render/interactionMarker.ts`, `markInteractionTarget`.
+The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. The outline follows light at the target without a minimum visibility floor: darkness weakens it and full darkness hides it, so this aid does not become a glowing substitute for seeing the object. See `src/render/interactionMarker.ts`, `markInteractionTarget`, and `src/render/furniture.ts`, `FurnitureMeshes.lightMarker`.
 
 The optional stats readout is a tuning surface for viewing felt pain and its components during play. It is a development-style meta readout, not a bodily cue; this exception keeps the scale available for tuning without putting an unbounded number in player-facing cues.
 

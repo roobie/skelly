@@ -14,6 +14,7 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type BlockEntities, type BlockEntity, panelFor } from '../core/blockEntities.ts';
+import type { Vec3 } from '../core/coords.ts';
 import type { FurnitureDef } from '../core/schema.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -92,6 +93,15 @@ export class FurnitureMeshes {
     this.marker.scale.set(size[0] + 0.035, size[1] + 0.035, size[2] + 0.035);
     this.marker.position.set(...position);
     this.marker.visible = true;
+  }
+
+  lightMarker(lightAt: (position: Vec3) => number): void {
+    if (!this.markedUid) {
+      return;
+    }
+    const intensity = Math.max(0, Math.min(1, lightAt(this.marker.position.toArray() as Vec3)));
+    this.marker.material.color.set('#ffe36e').multiplyScalar(intensity);
+    this.marker.visible = intensity > 0;
   }
 
   /** Rebuilds the meshes when furniture was added, opened or closed. */

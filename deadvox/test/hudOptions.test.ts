@@ -42,6 +42,7 @@ describe('HUD options', () => {
     const piles = new PileMeshes(0.5);
     const target: InteractionTarget = { kind: 'body', id: 1, distanceBlocks: 1 };
     const services = {
+      lightAt: () => 1,
       furniture,
       piles,
       blockSize: 0.5,

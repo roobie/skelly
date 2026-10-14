@@ -1,4 +1,5 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
+import type { Vec3 } from '../core/coords.ts';
 import type { InteractionTarget } from '../core/interactionPick.ts';
 import type { Body } from '../core/physics.ts';
 import type { FurnitureDef } from '../core/schema.ts';
@@ -15,7 +16,17 @@ export const markInteractionTarget = (
     readonly definition: (entity: BlockEntity) => FurnitureDef;
     readonly body: (id: number) => Pick<Body, 'pos' | 'halfWidth' | 'height'> | undefined;
     readonly blockSize: number;
+    readonly lightAt: (position: Vec3) => number;
   },
+): void => {
+  projectInteractionTarget(target, enabled, services);
+  services.furniture.lightMarker(services.lightAt);
+};
+
+const projectInteractionTarget = (
+  target: InteractionTarget | undefined,
+  enabled: boolean,
+  services: Parameters<typeof markInteractionTarget>[2],
 ): void => {
   const { furniture, piles, blockSize: s } = services;
   if (!enabled) {
