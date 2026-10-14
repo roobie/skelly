@@ -94,7 +94,7 @@ described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES
 | 1 | **The loot run** | Is looting a house in real time, with handling time, tense and fun? Is 0.5 m the right scale? Is the first night frightening? |
 | 2 | **Craft and mend** | Does crafting from scavenged materials give looting a purpose? |
 | 3 | **Flesh and noise** | Is combat readable, and do noise and wounds change how you play? Do players listen before they move? |
-| 4a | **Gauntlet** | (BR to word) |
+| 4a | **Gauntlet** | Is the gauntlet tense? Is the action fun, and does it run well enough? |
 | 4b | **The region** | Does the open world pull you from town to town? Does it feel like a place that was abandoned? |
 | 5 | **Holding ground** | Is a base worth building and defending? |
 | 6 | **Wheels** | Are vehicles worth the effort to build and keep running? |
@@ -197,8 +197,7 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 
 ### 4a. Gauntlet
 
-- The gauntlet game mode and its playtest 2 run at this slice's end, confined
-  to the gauntlet.
+- The gauntlet game mode (#671); playtest 2 runs on it at this slice's end.
 - Room types choose furniture and loot.
 - Voxel light: interiors pitch black at night and dim by day. Light through
   windows and doors can be seen from outside.
@@ -218,7 +217,7 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 - Towns from templates plus procedural houses at region scale.
 - Far-terrain level of detail, and worldgen in workers.
 - Drivable surfaces in worldgen, ready for vehicles.
-- Abstract region-map hordes, carried over from Slice 3.
+- Abstract region-map hordes.
 
 ### 5. Holding ground
 
