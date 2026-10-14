@@ -103,7 +103,7 @@ const floorCourses = (id: string) => {
     if (!(shellBlocksByPiece.get(owner?.variant ?? '')?.has(wall) && solid(wall)) || at(x, y - 2, z) !== wall) {
       continue;
     }
-    scanned++;
+    scanned += 1;
     const exposed = [
       [1, 0],
       [-1, 0],
