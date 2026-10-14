@@ -11,8 +11,6 @@ const sources = [
   'core/authoredSite.ts',
   'core/site.ts',
   'render/skylight.ts',
-  'render/playView.ts',
-  'render/flashlight.ts',
   'game/streamer.ts',
   'worker/mesh.worker.ts',
   'worker/protocol.ts',
@@ -120,8 +118,6 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
       'game/play.ts',
       'game/streamer.ts',
       'render/skylight.ts',
-      'render/playView.ts',
-      'render/flashlight.ts',
     ]) {
       if (!appliedSources.has(source)) {
         throw new Error(`Main overlay was not applied: ${source}`);
