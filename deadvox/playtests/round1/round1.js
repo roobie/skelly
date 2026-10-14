@@ -22,7 +22,11 @@ const app = text
           <li>${text.feedbackBefore}<a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">${text.feedbackLink}</a>${text.feedbackAfter}</li>
           <li>${text.email}</li>
         </ul>
-        <p><a class="playtest-action" href="{{PLAY_URL}}">${text.playLink}</a></p>
+        <p>
+          <a class="playtest-action" href="{{PLAY_URL}}">${text.playLink}</a>
+          <a class="tutorial-action" href="{{PLAY_URL}}&tutorial=1">${text.tutorialLink}</a>
+        </p>
+        <p>${text.tutorialHint}</p>
       </section>
       <footer><a href="https://roobie.github.io/skelly/">skelly projects</a></footer>
     </main>`

@@ -7,7 +7,7 @@ read_if:
 
 # Slice 3 playtest
 
-The playtest is self-serve: testers use the landing page and play link, and may share feedback or metrics by choice. The Round 1 page asks them to survive and find the military camp. See `../EPIC.md`, "Playtest plan", and the [playtest feedback form](../../.github/ISSUE_TEMPLATE/playtest-feedback.md).
+The playtest is self-serve: testers use the landing page to play or practise the controls, and may share feedback or metrics by choice. Practice is unsaved and leaves the saved world alone so newcomers can learn without risking a run. The Round 1 page asks them to survive and find the military camp. See `../EPIC.md`, "Playtest plan", and the [playtest feedback form](../../.github/ISSUE_TEMPLATE/playtest-feedback.md).
 
 ## Frozen round publication
 

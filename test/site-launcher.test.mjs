@@ -21,6 +21,7 @@ const WEATHERING_SITE_OPTION_PATTERN =
 const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAY_LINK_PATTERN = /<a[^>]*class="playtest-action"[^>]*>/;
+const TUTORIAL_LINK_PATTERN = /<a[^>]*class="tutorial-action"[^>]*>/;
 const ROUND1_STATIC_URL = playtestRound(1).url;
 const ROUND1_LANGUAGE_PATTERN = /lang=\$\{language\}/;
 const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title|deadvox-playtest/;
@@ -37,7 +38,7 @@ const RESOURCE_URL_PATTERNS = [
   /\bnew URL\(\s*["']([^"']+)["']/g,
   /<meta\b[^>]*(?:property="og:(?:url|image)"|name="twitter:image")[^>]*content="([^"]+)"/g,
 ];
-const ROUND1_FALLBACK_PLAY_URL_PATTERN = /playtest-action|\{\{PLAY_URL\}\}/;
+const ROUND1_FALLBACK_PLAY_URL_PATTERN = /playtest-action|tutorial-action|\{\{PLAY_URL\}\}/;
 const TEXT_ASSET_PATTERN = /\.(?:html|css|js)$/;
 const ROBOTS_DISALLOW_PATTERN = /Disallow: \/\s*$/;
 const resourceUrlsIn = (source) =>
@@ -169,6 +170,11 @@ describe('playtest language and catalog', () => {
     const englishKeys = Object.keys(catalog.en).sort();
     assert.ok(englishKeys.length > 0, 'the English playtest catalog has strings');
     assert.deepEqual(englishKeys, Object.keys(catalog.sv).sort());
+    for (const match of round1Page.matchAll(/\btext\.(\w+)/g)) {
+      for (const language of ['en', 'sv']) {
+        assert.ok(catalog[language][match[1]]?.trim(), `${language} provides the rendered ${match[1]} string`);
+      }
+    }
   });
 });
 
@@ -324,7 +330,13 @@ describe('site launcher playtest entry', () => {
       const href = script.match(PLAY_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
       assert.ok(href, 'the assembled page has a play link');
       assert.equal(href, `${config.playPath}?site=playtest`, 'play stays relative to the round domain');
+      const tutorialHref = script.match(TUTORIAL_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
+      assert.ok(tutorialHref, 'the assembled page has a tutorial link');
+      const tutorial = new URL(tutorialHref, config.url);
+      assert.equal(tutorial.searchParams.get('tutorial'), '1', 'the tutorial action requests practice');
+      tutorial.searchParams.delete('tutorial');
       const play = new URL(href, config.url);
+      assert.equal(tutorial.href, play.href, 'practice uses the same frozen game URL');
       assert.ok(authoredLayoutIds().includes(play.searchParams.get('site')), 'play selects an authored site');
       assert.equal(play.searchParams.has('debug'), false);
       assert.ok(html.includes(`<link rel="canonical" href="${config.url}"`));
