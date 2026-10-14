@@ -37,6 +37,7 @@ const page = (state) => html`  <main>
                 <option id="deadvox-default-site" value="">${state.deadvox.bench === '1' ? 'Test house (benchmark default)' : 'Hamlet (default)'}</option>
                 <option value="city">Stress-test city</option>
                 <option value="forest">Forest (tree first look)</option>
+                ${state.deadvox.bench === '' ? html`<option value="gauntlet">Gauntlet</option>` : ''}
                 ${state.deadvox.debug && state.deadvox.bench === '' ? html`<option value="testHouse">Test house (debug)</option><option value="weatheringTest">Debug weathering comparison</option>` : ''}
               </select>
             </label>
@@ -138,6 +139,7 @@ const page = (state) => html`  <main>
           <button type="button" data-deadvox-preset="noon">Noon</button>
           <button type="button" data-deadvox-preset="night">Dead of night</button>
           <button type="button" data-deadvox-preset="city">City</button>
+          <button type="button" data-deadvox-preset="gauntlet">Gauntlet</button>
           <button type="button" data-deadvox-preset="debug">Debug before dawn</button>
           <button type="button" data-deadvox-preset="benchmark">Benchmark</button>
         </fieldset>
@@ -378,6 +380,9 @@ const makeDeadvox = (d) => {
     p.set('site', 'forest');
     setDefault(p, 'density', d.density, '');
   }
+  if (m === '' && d.site === 'gauntlet') {
+    p.set('site', 'gauntlet');
+  }
   if (m === '1') {
     p.set('shamblers', d.shamblers);
     setDefault(p, 'plan', d.plan, '0.5:64,0.5:96,0.5:128');
@@ -521,6 +526,15 @@ const presets = {
     radius: '96',
     site: 'city',
     storeys: '5',
+    debug: false,
+  },
+  gauntlet: {
+    bench: '',
+    seed: '1',
+    time: '19:30',
+    radius: '96',
+    site: 'gauntlet',
+    storeys: '1',
     debug: false,
   },
   debug: {
