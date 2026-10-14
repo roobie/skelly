@@ -1,5 +1,4 @@
 // biome-ignore-all lint/correctness/noNodejsModules: dev tool starts Vite and writes a screenshot
-// biome-ignore-all lint/correctness/noUnresolvedImports: page imports resolve through the probe's Vite server
 // biome-ignore-all lint/suspicious/noConsole: CLI evidence goes to stdout
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -36,11 +35,11 @@ try {
   );
   await page.goto(url);
   const cost = await page.evaluate(async () => {
-    const Three = await import('/node_modules/three/build/three.module.js');
-    const { buildRegistry } = await import('/src/core/content.ts');
-    const { BlockEntities } = await import('/src/core/blockEntities.ts');
-    const { FurnitureMeshes } = await import('/src/render/furniture.ts');
-    const { default: data } = await import('/src/content/base/furniture.json');
+    const Three = await import(new URL('/node_modules/three/build/three.module.js', location.href).href);
+    const { buildRegistry } = await import(new URL('/src/core/content.ts', location.href).href);
+    const { BlockEntities } = await import(new URL('/src/core/blockEntities.ts', location.href).href);
+    const { FurnitureMeshes } = await import(new URL('/src/render/furniture.ts', location.href).href);
+    const { default: data } = await import(new URL('/src/content/base/furniture.json', location.href).href);
     const definitions = data.furniture
       .filter((definition) => definition.appearance)
       .map(({ loot, ...definition }) => definition);
