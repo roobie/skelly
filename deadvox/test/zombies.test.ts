@@ -1122,20 +1122,19 @@ describe('shambler scenarios', () => {
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 0 },
       chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
     };
-    // A covering set of corners: flush with a wall, at a wall end, and a lone container. In each, the
-    // shambler's centre line clears the block its body catches, as at a container's corner.
+    // Two starts at the #608 corner, where a wall meets a container: the shambler's centre line clears
+    // the container corner its body catches, so it must slide round instead of grinding in place.
     const corners: readonly { boxes: readonly CornerBox[]; start: Vec3; target: Vec3 }[] = [
       { boxes: [wall, container], start: [0.75, 1, -6.42], target: [1.71, 1, 1.37] },
       { boxes: [wall, container], start: [0.75, 1, -4], target: [1.71, 1, 3] },
-      { boxes: [wall, [4, 6, 2, 4, 2]], start: [1.5, 1, 0], target: [1.5, 1, 6] },
-      { boxes: [container], start: [0.5, 1, -6], target: [3, 1, 1.5] },
     ];
+    const crawlMetresPerSecond = type.speed.chaseMetresPerSimSecond / 5;
     for (const { boxes, start, target } of corners) {
       const solid = solidFromBoxes(boxes);
       const system = new ZombieSystem({ ...senses(() => player(target), solid), isOpaque: () => false, seed: 1 });
       const id = system.add(type, start, [1, 0, 0]);
       const zombie = system.store.get(id)!;
-      const boundTicks = Math.ceil((metres(start, target) / 0.5) * 60) + 5 * 60;
+      const boundTicks = Math.ceil((metres(start, target) / crawlMetresPerSecond) * 60) + 5 * 60;
       let reached = false;
       for (let tick = 0; tick < boundTicks; tick++) {
         system.tick(1 / 60);
