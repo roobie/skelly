@@ -1442,9 +1442,9 @@ This also gives later persistence and save-pack identity work an explicit owner;
 see `src/game/browserMods.ts`, `readMod` and `evaluateMods`.
 
 A save records each pack's id, version and canonical hash; a save whose content
-changed is refused rather than migrated until v1.0 beta (`../AGENTS.md`, "Project
-stage: pre-pre-alpha, no backwards compatibility"). See `src/core/saveFormat.ts`,
-`SAVE_SCHEMA_VERSION`.
+changed is refused rather than migrated until v1.0 beta
+(`../AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
+See `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
 
 Import voxel-editor work (MagicaVoxel, vengi) only when a building outgrows curated
 Jsonnet pieces (`../docs/jsonnet.md`, "Curated map features"); no importer contract
