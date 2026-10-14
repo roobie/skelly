@@ -90,7 +90,7 @@ describe('playtest metrics', () => {
     expect(loadMetrics(13, storage)).toBeUndefined();
   });
 
-  it('rejects malformed versioned metrics and bounds retained history on load', () => {
+  it('rejects malformed versioned metrics and bounds recorded history', () => {
     const stored = new Map<string, string>([[metricsStorageKey(73), '{"schemaVersion":1,"seed":73}']]);
     const storage = { getItem: (key: string) => stored.get(key) ?? null };
     expect(loadMetrics(73, storage)).toBeUndefined();
