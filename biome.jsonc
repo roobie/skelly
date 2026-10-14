@@ -112,7 +112,7 @@
     },
     {
       // Standalone Node benchmarks import game systems and print measured timings.
-      "includes": ["**/src/bench/shamblers-cpu.mjs", "**/deadvox/tools/bench-zombie-swings.mjs"],
+      "includes": ["**/src/bench/*-cpu.mjs", "**/deadvox/tools/bench-zombie-swings.mjs"],
       "linter": {
         "rules": {
           "correctness": { "noNodejsModules": "off" },
