@@ -5,8 +5,10 @@ import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { ownershipCell } from '../src/core/templateOwnership.ts';
 import { type CompiledTemplate, compileAssembly, type PlacedPiece } from '../src/core/templates.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { fixtureScenario } from './fixtures/scenario.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 it('resolves one repeatable variant per slot and varies city assemblies across buildings and seeds', () => {
   const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
