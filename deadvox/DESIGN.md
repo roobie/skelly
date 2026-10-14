@@ -9,6 +9,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
   - you're implementing gauntlet scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth or its visual approval gate
+  - you author lab equipment bays, curated storeys or supported descent lids
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
@@ -357,14 +358,15 @@ vertical chunks and furniture requests need the same complete plan. See `scenari
 in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `src/core/ladders.ts`, `ladderOutward`.
 
-Scenario composition promotes the approved campus geometry without making the
-look layout the playable world's authority. Fixed resources must survive the transition
-from a rendered demo to a seeded world rather than depending on incidental loot.
+One owned assembly supplies the service facade and underground campus, so the
+playable world and visual inspection cannot diverge into separate geometry.
+Fixed resources must remain available independently of incidental loot.
 Public documentary leads must be independently useful and spatially separate;
 reading one cannot authorize another. Reserving their destination landmarks with
 the service block keeps their descriptions seed-correct. Related utility
-silhouettes keep matching metal alone from becoming a unique destination cue. See `src/content/base/gauntlet.jsonnet`, `templates` and
-`furniture`; `src/content/base/scenarios.jsonnet`, `composition`; and
+silhouettes keep matching metal alone from becoming a unique destination cue. See
+`src/content/base/gauntlet-service.libsonnet`, `mapAssemblies`;
+`src/content/base/scenarios.jsonnet`, `composition`; and
 `src/core/scenarioComposition.ts`, `composeScenario`.
 
 Furniture anchors rotate as occupied boxes, while standing poses rotate as
@@ -412,43 +414,29 @@ offset descents make exploration and descent route choices rather than a single
 corridor followed by a continuous climb. Adjacent storeys share alternate links
 so returning need not retrace the approach.
 
-The campus scale, room assignments and links are authored in
-`src/content/base/gauntlet-lab.libsonnet`, `storeys`, `kinds` and `links`.
-Its `anchors` derives storey and descent poses and the objective location from
-those tables so composition metadata cannot silently retain an older campus.
-Room-kind props and legible room labels distinguish laboratory work from storage,
-utilities and containment; reuse of those kinds across storeys gives the complex
-an identity without making every floor the same room. Support gives way to
-restricted research, damaged containment and critical-depth failures so depth
-has a visible risk direction. These are inert spatial cues, not a danger or
-balance proof: the deepest place must earn its higher risk through play.
+Author room assignments, storey placement and offset links as curated composition,
+not as partition or row-building code. Shared room shells delegate equipment bays so
+furnishing cannot borrow a threshold or connector's body space. Different equipment
+and damage distinguish laboratory work, support and containment, but those inert cues
+are not a danger or balance proof. See `src/content/base/gauntlet-lab.libsonnet`,
+`storey`, and `src/content/base/gauntlet-lab-equipment.libsonnet`, `furnished`.
 
-Storey spacing gives standing headroom and makes each descent a separate place
-to enter. Room and storey additions belong in the authoring tables, with linked
-floor heights and the surface foundation derived from the storey order, rather
-than in a new simulation or site generator. The underground campus extends
-beyond the small service facade because a surface disguise must not dictate the
-lab's capacity. One compiled placement owns their common excavation; incidental
-surface utilities stay inside that placement to avoid overlapping authored-site
-footprints. The separate demo preserves the shape baseline independently of
-seeded-city composition and its later route proof. See `src/content/base/gauntlet-look.jsonnet`,
-`row` and `layouts`.
+The underground campus extends beyond the small service facade because a surface
+disguise must not dictate the lab's capacity. One compiled assembly owns their common
+excavation; an independent copy would let the visual preview and playable routes drift.
+Closed descent lids support the neighboring floor cells as well as the ladder column,
+so walking an upper room does not accidentally commit the survivor to a drop. The
+real-city session witness opens these lids and proves the furnished descent and return.
+See `src/content/base/gauntlet-service.libsonnet`, `mapAssemblies`,
+`src/content/base/gauntlet-lab-descents.libsonnet`, `mapPieces`, and
+`test/fixtures/scenarioCertificate.ts`, `traverseScenario`.
 
-Static admission indexes furniture occupancy for both door states before body
-queries, because a multi-room campus must not scan every room's furnishings for
-every clearance cell. Template character lookup avoids expanding ordinary rows
-for every cell while preserving code-point indexing for wider Unicode markers.
-These changes reduce campus authoring cost without a second collision or
-compiler owner. Jsonnet paints shared row strings instead of reevaluating every
-cell's sparse furniture and partition queries; retaining painting priority keeps
-that evaluation optimization separate from changing the campus. See
-`src/content/base/gauntlet-lab.libsonnet`, `rows`, and
-`src/content/base/gauntlet-look.jsonnet`, `row`.
-The scenario profile takes its entry anchors from the same source metadata as the
-hatch and entry ladder instead of rediscovering markers by scanning the entire
-campus. See `src/core/templateSpatial.ts`, `TemplateSpace`;
-`src/core/templates.ts`, `charAt`; and
-`src/content/base/gauntlet-lab.libsonnet`, `entry`.
+Portal anchors address furniture in the finished assembly rather than palette markers
+inside one source piece. This keeps portal admission independent of how the facade and
+lab are decomposed. Static admission indexes occupancy before body queries because a
+multi-room campus must not scan every furnishing for each clearance cell. See
+`src/core/scenarioPortal.ts`, `portalPieces`, and `src/core/templateSpatial.ts`,
+`TemplateSpace`.
 
 The objective's terminal win is a session/save decision, not an observer counter.
 Live entity, reach and unobstructed gaze admission prevents a stale displayed
@@ -475,14 +463,11 @@ so the exhausts reward recognizing their arrangement and context instead of
 spotting the only matching colour. Keep that ambiguity compatible with the
 independent notes; visual redundancy is not a false-destination quest chain.
 
-Bounded rendered looks precede full lab and clue construction because geometry,
-lighting and clue interpretation need player judgment before large investments.
-The approved campus is the shape baseline for #671 composition; changed landmark
-and lead presentation still needs a player look. The separate authored demo is
-not a seeded city or an all-seed route certificate. Its console remains inactive
-because the visual baseline must not become objective authority; no saved win
-is supplied by readable furniture. See `src/content/base/gauntlet-look.jsonnet` and `AuthoredSite` in
-`src/core/authoredSite.ts`.
+Rendered geometry, lighting and clue interpretation still need player judgment:
+construction and route proofs cannot establish a legible discovery experience.
+Readable furniture does not confer objective authority; the live interaction must
+reach the terminal button. See `src/core/scenarioCertificate.ts`, `scenarioCertificate`,
+and `src/game/session.ts`, `activateGoal`.
 
 Darkness uses world-derived sky transport and an ordinary carried light, not
 invented powered lab fixtures. Finished site placements expose the same sky
@@ -1233,7 +1218,7 @@ height-extents table: its upkeep costs more than the collision it avoids. See
 
 **Movement and corners.** A type's `locomotion` says how it moves relative to its facing. A `forward` walker, as every shambler type is, moves only where it faces, so it turns before it heads somewhere new. The amalgam is `omnidirectional`: it moves toward its goal at once while its facing turns toward the goal at the type's turn rate, so its sight, its reach and its look still follow the facing. A body its size that must face where it walks spends its time turning before it can move off a wall or toward a player beside it. Its pose has no gait, so moving sideways or backwards shows no foot slide.
 
-It keeps a shambler's decisions, the same senses, targets and modes, but steers its size round corners, door frames, pillars and wall ends, so it stays a threat instead of grinding against them. A shambler notices a wall with a short ray from its centre, slides off it to a seeded side and sometimes wanders. The amalgam's flesh reaches metres past its centre, so that ray never meets the wall it presses on, and it would freeze at any wall square across its path. It moves its shape the same distance along its aim instead. At a new contact it slides to the side its flesh can move to: met at a slant, that is the side the wall leads it along, and caught on a door frame, the side that frees it, where a random side could back it out of the doorway it is squeezing through. If both sides are open, or neither side is free as when snug in a doorway, it draws its side as a shambler does. This costs one shape test per moving tick and two more when a contact starts. See `src/core/schema.ts`, `ZombieSchema`; `src/content/base/zombies.jsonnet`, the amalgam type; and `src/core/zombies.ts`, `steer`, `ZombieSystem.wallAhead` and `ZombieSystem.openSide`.
+It keeps a shambler's decisions, the same senses, targets and modes, but steers its size round corners, door frames, pillars and wall ends, so it stays a threat instead of grinding against them. `ZombieSystem.wallAhead` notices a wall by moving a body's shape the lookahead distance along its aim and testing that shape against terrain, so a block corner the centre line clears but the body catches still counts as contact. A shambler's body box and the amalgam's flesh both pass that shape-along-aim test, the amalgam's shape being its flesh. A shambler then slides off to a seeded side and sometimes wanders, while at a new contact the amalgam slides to the side its flesh can move to: met at a slant, that is the side the wall leads it along, and caught on a door frame, the side that frees it, where a random side could back it out of the doorway it is squeezing through. If both sides are open, or neither side is free as when snug in a doorway, it draws its side as a shambler does. This costs one shape test per moving tick and two more when a contact starts. See `src/core/schema.ts`, `ZombieSchema`; `src/content/base/zombies.jsonnet`, the amalgam type; and `src/core/zombies.ts`, `steer`, `ZombieSystem.wallAhead` and `ZombieSystem.openSide`.
 
 The renderer rebuilds a holed amalgam's mesh without its removed voxels, and the faces the hole exposes take the type's interior colour. They are marked as wound faces (`CARVED_NEIGHBOUR`). The removed voxels fly off along the shot as a render-only rigid chunk that lands, lies, sinks and is removed, with a cap on live chunks. Gore covers the amalgam as it does shamblers ("Gore is presentation only" above): carving throws an extra burst of blood, and a chunk leaves a large splat where it lands. Neither the chunk nor the rebuilt mesh enters the simulation, and the corpse keeps the holes. See `src/render/amalgamFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
 

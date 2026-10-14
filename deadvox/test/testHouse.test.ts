@@ -144,6 +144,30 @@ describe('test house', () => {
     });
   }
 
+  it('keeps the shed roof within its siding wall footprint at either block scale', () => {
+    for (const blockSize of [1, 0.5]) {
+      const { boxes } = build(blockSize);
+      const roofs = boxes.filter(({ block }) => block === blocks.galvanized);
+      expect(roofs.length).toBeGreaterThan(0);
+      for (const roof of roofs) {
+        const walls = boxes.filter(
+          ({ block, max }) => (block === blocks.sidingRed || block === blocks.sidingBlue) && max[1] === roof.min[1],
+        );
+        expect(walls.length).toBeGreaterThan(0);
+        const wallCells = rasterize(walls, blockSize);
+        const roofCells = rasterize([roof], blockSize);
+        for (const axis of [0, 2] as const) {
+          expect(Math.min(...roofCells.map(({ min }) => min[axis]))).toBeGreaterThanOrEqual(
+            Math.min(...wallCells.map(({ min }) => min[axis])),
+          );
+          expect(Math.max(...roofCells.map(({ max }) => max[axis]))).toBeLessThanOrEqual(
+            Math.max(...wallCells.map(({ max }) => max[axis])),
+          );
+        }
+      }
+    }
+  });
+
   describe('furniture', () => {
     const specs = testHouseFurniture([4, 10, -4], 0.5, sizeOf);
 

@@ -118,8 +118,8 @@
       "id": "gauntlet",
       "kind": "gauntlet",
       "portal": {
-        "hatch": "T",
-        "ladder": "H",
+        "hatch": [42, 40, 39],
+        "ladder": [43, 33, 39],
         "lower": [42, 33, 40],
         "upper": [46, 41, 40]
       },

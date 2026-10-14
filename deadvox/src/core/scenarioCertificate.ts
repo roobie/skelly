@@ -1,20 +1,14 @@
 import type { BlockEntity } from './blockEntities.ts';
 import type { CitySite } from './citySite.ts';
+import { type ClimbLink, climbCertificate } from './climbCertificate.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import { ladderOutward } from './ladders.ts';
 import type { ScenarioComposition } from './scenarioComposition.ts';
 import { ScenarioRouteSpace } from './scenarioRoute.ts';
-import { STAIR_BODY_HALF_WIDTH } from './stairFlight.ts';
 import { type Placement, placedPieces } from './templates.ts';
 
 export interface ScenarioCertificate {
   readonly issues: readonly [string, string][];
   readonly space: ScenarioRouteSpace;
-}
-interface Descent {
-  readonly ladder?: Readonly<Vec3> | undefined;
-  readonly upper: Readonly<Vec3>;
-  readonly lower: Readonly<Vec3>;
 }
 
 class Certificate {
@@ -83,77 +77,24 @@ class Certificate {
     return this.space.entities.at(...(point as Vec3));
   }
 
-  bottomOf(descent: Descent): BlockEntity | undefined {
-    if (descent.ladder) {
-      return this.entityAt(descent.ladder);
-    }
-    this.space.clear(descent.lower);
-    return [...this.space.entities.all].find(
-      (entity) =>
-        this.space.entities.defOf(entity).climbable &&
-        entity.pos[1] === descent.lower[1] &&
-        Math.hypot(entity.pos[0] - descent.lower[0], entity.pos[2] - descent.lower[2]) <= 3,
+  ladder(descent: ClimbLink, path: string): void {
+    const issue = climbCertificate(
+      {
+        entities: this.space.entities,
+        entityAt: (point) => this.entityAt(point),
+        clear: (point) => this.space.clear(point),
+        standing: (point) => this.space.standing(point),
+        sweep: (from, to, supported) => this.space.sweep(from, to, supported),
+        connected: (from, to) => this.space.path(from, to) !== undefined,
+      },
+      descent,
     );
-  }
-
-  shaft(descent: Descent, bottom: BlockEntity, centre: Vec3): boolean {
-    const [, lower] = descent.lower;
-    for (let feet = lower; feet <= descent.upper[1]; feet += 0.5) {
-      if (!this.space.clear([centre[0], feet, centre[2]])) {
-        return false;
-      }
-      const probeY = Math.min(Math.floor(feet), descent.upper[1] - 2);
-      const piece = this.entityAt([Math.floor(centre[0]), probeY, Math.floor(centre[2])]);
-      if (!(piece && this.space.entities.defOf(piece).climbable && piece.facing === bottom.facing)) {
-        return false;
-      }
-    }
-    return this.space.sweep(descent.lower, [centre[0], descent.lower[1], centre[2]]);
-  }
-
-  exitSupported(descent: Descent, bottom: BlockEntity, centre: Vec3, [dx, dz]: readonly [number, number]): boolean {
-    const top: Vec3 = [centre[0] + dx, descent.upper[1], centre[2] + dz];
-    const [ox, oz] = ladderOutward(bottom.facing);
-    const h = STAIR_BODY_HALF_WIDTH;
-    const overlaps =
-      top[0] + h > bottom.pos[0] &&
-      top[0] - h < bottom.pos[0] + bottom.size[0] &&
-      top[2] + h > bottom.pos[2] &&
-      top[2] - h < bottom.pos[2] + bottom.size[2];
-    return (
-      overlaps &&
-      dx * ox + dz * oz <= 0 &&
-      this.space.standing(top) &&
-      this.space.sweep([centre[0], top[1], centre[2]], top, false) &&
-      this.space.path(descent.upper, top) !== undefined
-    );
-  }
-
-  exit(descent: Descent, bottom: BlockEntity, centre: Vec3): boolean {
-    for (let dx = -1; dx <= 1; dx += 0.5) {
-      for (let dz = -1; dz <= 1; dz += 0.5) {
-        if (this.exitSupported(descent, bottom, centre, [dx, dz])) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  ladder(descent: Descent, path: string): void {
-    const bottom = this.bottomOf(descent);
-    if (!(bottom && this.space.entities.defOf(bottom).climbable)) {
-      this.fail(path, 'missing composed ladder');
-      return;
-    }
-    const centre: Vec3 = [bottom.pos[0] + bottom.size[0] / 2, bottom.pos[1], bottom.pos[2] + bottom.size[2] / 2];
-    const clear = this.shaft(descent, bottom, centre) && this.exit(descent, bottom, centre);
-    if (!clear) {
-      this.fail(path, 'composed ladder needs continuous body-clear shaft and supported braced landings');
+    if (issue) {
+      this.fail(path, issue);
     }
     const upper = this.floorLink(descent.upper, path);
     const lower = this.floorLink(descent.lower, path);
-    if (upper && lower && clear) {
+    if (upper && lower && !issue) {
       this.links.push([descent.upper[1], descent.lower[1]]);
     }
   }

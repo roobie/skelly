@@ -9,6 +9,7 @@ import { observeRealFrame } from '../src/game/frameDriver.ts';
 import type { Skylight } from '../src/render/skylight.ts';
 
 const witness = vi.hoisted(() => ({ json: '' }));
+const inputFixture = vi.hoisted(() => ({ context: 'play', issued: [] as string[] }));
 vi.mock('../src/ui/skyRoutePanel.ts', () => ({
   createSkyRoutePanel: () => ({
     progress: () => undefined,
@@ -19,11 +20,19 @@ vi.mock('../src/ui/skyRoutePanel.ts', () => ({
   }),
 }));
 vi.mock('../src/game/inputBindings.ts', () => ({
-  keyboardInput: {},
-  forwardedActionHolds: () => () => () => undefined,
+  keyboardInput: {
+    context: () => ({ context: inputFixture.context, debug: false }),
+    registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },
+  },
+  forwardedActionHolds: () => (action: string) => {
+    inputFixture.issued.push(action);
+    return () => undefined;
+  },
 }));
 afterEach(() => {
   witness.json = '';
+  inputFixture.context = 'play';
+  inputFixture.issued.length = 0;
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -177,4 +186,64 @@ it('route activation excludes inactive rendered work without clearing startup jo
   expect(evidence.completedJobDenominator).toBe(1);
   expect(evidence.censoredJobDenominator).toBe(1);
   expect(evidence.jobs[1].latencyRealMs).toBeNull();
+});
+
+it('waits for the input owner to permit play before starting the route', () => {
+  let active = false;
+  const noop = () => undefined;
+  vi.stubGlobal('location', {
+    href: 'https://example.invalid/?debug=1&skyRoute=1',
+    origin: 'https://example.invalid',
+    pathname: '/',
+    search: '?debug=1&skyRoute=1',
+  });
+  vi.stubGlobal('devicePixelRatio', 1);
+  vi.stubGlobal('navigator', { userAgent: 'owned-renderer-port' });
+  const gl = new Proxy(
+    {
+      getExtension: () => null,
+      getParameter: () => 'owned-renderer',
+      drawingBufferWidth: 1,
+      drawingBufferHeight: 1,
+    } as Record<string, unknown>,
+    { get: (target, name) => Reflect.get(target, name) ?? noop },
+  ) as Record<string, (...args: unknown[]) => unknown>;
+  const sky = {
+    update: noop,
+    at: () => 1,
+    inspect: () => [],
+    stats: { requested: 0, completed: 0, accepted: 0, discarded: 0, volumes: 0, roofFree: 0 },
+    onShader: undefined as Skylight['onShader'],
+  };
+  const debug = {
+    noclip: false,
+    handleAction: () => {
+      debug.noclip = !debug.noclip;
+    },
+  };
+  const engine = {
+    skylight: sky,
+    streamer: { onSkyService: undefined, requestSky: () => true },
+    renderer: { getContext: () => gl, info: { render: { frame: 0 } }, properties: { get: () => ({}) } },
+    config: { site: 'playtest', seed: 1, radiusM: 48, scale: { blockSize: 1, maxCy: 0 } },
+    camera: { position: { toArray: () => [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
+    entities: { all: [] },
+  };
+  const route = attachSkyRoute({
+    engine,
+    session: { body: { pos: [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
+    debug,
+    active: () => active,
+  } as unknown as Parameters<typeof attachSkyRoute>[0]);
+  if (!route) {
+    throw new Error('Owned ports did not attach the route');
+  }
+  inputFixture.context = 'title';
+  active = true;
+  route.before();
+  expect(inputFixture.issued).toEqual([]);
+  inputFixture.context = 'play';
+  route.before();
+  expect(inputFixture.issued).toContain('movement.sprint');
+  expect(inputFixture.issued).toContain('movement.forward');
 });

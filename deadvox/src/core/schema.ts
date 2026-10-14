@@ -1019,6 +1019,10 @@ const TemplateAccessSchema = strictObject({
   stairs: array(StairSchema),
 });
 
+const OwnershipSchema = strictObject({
+  /** '.' leaves terrain alone, S claims occupancy, A excavates, R reserves empty circulation. */
+  layers: array(array(pipe(string(), regex(/^[.SAR]*$/)))),
+});
 const TemplateSchema = strictObject({
   id: Id,
   lootContext: LootContextSchema,
@@ -1030,6 +1034,78 @@ const TemplateSchema = strictObject({
   layers: array(array(string())),
   /** Explicit floors and flights, never stress-test repetitions. Floor heights are feet heights in blocks. */
   access: optional(TemplateAccessSchema),
+  ownership: optional(OwnershipSchema),
+});
+
+const KitSize = pipe(
+  Size,
+  check(
+    ([x, y, z]) => Number.isSafeInteger(x * y * z) && x * y * z <= 1_048_576,
+    'kit volume exceeds the allocation bound',
+  ),
+);
+const MaterialRole = picklist(['shell', 'interior_floor', 'support', 'trim', 'opening']);
+const MapStyleSchema = strictObject({
+  id: Id,
+  bindings: record(Id, strictObject({ role: MaterialRole, block: Id })),
+});
+const KitBoxSchema = strictObject({ min: tuple([Count, Count, Count]), size: KitSize });
+const KitAnchorSchema = strictObject({ at: CellPosition, kind: picklist(['standing', 'interaction', 'point']) });
+const KitPortSchema = strictObject({
+  id: Id,
+  type: Id,
+  at: CellPosition,
+  facing: picklist(['n', 'e', 's', 'w', 'up', 'down']),
+  traversal: picklist(['walk', 'climb', 'drop', 'sealed']),
+  aperture: tuple([pipe(Count, minValue(1)), pipe(Count, minValue(1))]),
+  clearance: KitBoxSchema,
+  standing: CellPosition,
+});
+const MapPieceSchema = strictObject({
+  id: Id,
+  lootContext: LootContextSchema,
+  size: KitSize,
+  style: Id,
+  palette: record(Char, union([strictObject({ role: MaterialRole, material: Id }), PaletteThingSchema])),
+  layers: array(array(string())),
+  ownership: OwnershipSchema,
+  anchors: record(Id, KitAnchorSchema),
+  ports: array(KitPortSchema),
+});
+const KitRefSchema = strictObject({ kind: picklist(['piece', 'assembly']), id: Id });
+const KitSlotSchema = strictObject({
+  id: Id,
+  at: tuple([Count, Count, Count]),
+  size: KitSize,
+  turn: picklist([0, 1, 2, 3]),
+  choices: pipe(array(strictObject({ ref: KitRefSchema, weight: Positive })), nonEmpty()),
+});
+const KitEndpointSchema = strictObject({ slot: Id, port: Id });
+const KitJoinSchema = strictObject({
+  id: Id,
+  a: KitEndpointSchema,
+  b: KitEndpointSchema,
+  seam: strictObject({ piece: Id, at: tuple([Count, Count, Count]), turn: picklist([0, 1, 2, 3]), a: Id, b: Id }),
+});
+const MapAssemblySchema = strictObject({
+  id: Id,
+  lootContext: LootContextSchema,
+  size: KitSize,
+  slots: array(KitSlotSchema),
+  joins: array(KitJoinSchema),
+  anchors: record(Id, KitAnchorSchema),
+  ports: array(strictObject({ id: Id, slot: Id, port: Id })),
+  access: optional(TemplateAccessSchema),
+});
+const MapSiteSchema = strictObject({
+  id: Id,
+  assembly: Id,
+  origin: tuple([pipe(number(), integer()), pipe(number(), integer()), pipe(number(), integer())]),
+  turn: picklist([0, 1, 2, 3]),
+  routes: pipe(
+    array(strictObject({ from: Id, to: Id, traversal: picklist(['walk', 'climb']), return: vBoolean() })),
+    nonEmpty(),
+  ),
 });
 
 // ---- authored site layouts (metres, independent of chunk/block order) ----
@@ -1176,8 +1252,8 @@ const ScenarioSchema = strictObject({
     }),
   ),
   portal: strictObject({
-    hatch: Char,
-    ladder: Char,
+    hatch: CellPosition,
+    ladder: CellPosition,
     upper: CellPosition,
     lower: CellPosition,
   }),
@@ -1862,6 +1938,10 @@ const SECTION_DESCRIPTOR = {
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
   scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
   graphics: { schema: optional(array(GraphicsTuningSchema)), label: 'graphics tuning', order: 22 },
+  mapStyles: { schema: optional(array(MapStyleSchema)), label: 'map styles', order: 23 },
+  mapPieces: { schema: optional(array(MapPieceSchema)), label: 'map pieces', order: 24 },
+  mapAssemblies: { schema: optional(array(MapAssemblySchema)), label: 'map assemblies', order: 25 },
+  mapSites: { schema: optional(array(MapSiteSchema)), label: 'map site recipes', order: 26 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1878,6 +1958,12 @@ export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
 type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
+export type MapPieceDef = InferOutput<typeof MapPieceSchema>;
+export type MapAssemblyDef = InferOutput<typeof MapAssemblySchema>;
+export type MapSiteDef = InferOutput<typeof MapSiteSchema>;
+export type KitPort = InferOutput<typeof KitPortSchema>;
+export type KitAnchor = InferOutput<typeof KitAnchorSchema>;
+export type KitRef = InferOutput<typeof KitRefSchema>;
 export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;

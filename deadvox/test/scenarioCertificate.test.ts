@@ -1,22 +1,22 @@
 import { describe, expect, it, vi } from 'vitest';
+import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import type { Chunk } from '../src/core/chunk.ts';
 import { buildCityPlan, type CityPlan, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
-import { compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
+import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
+import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
+import { generateChunk, terrainBlockIds } from '../src/core/worldgen.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
-
-const BUNDLED_CONTENT = buildBundledContent();
-
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 
-const { registry } = BUNDLED_CONTENT;
+const { registry } = buildBundledContent();
 const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
 if (!profile) {
   throw new Error('Missing composed scenario');
@@ -24,11 +24,76 @@ if (!profile) {
 const COMPOSED_LADDER = /composed ladder/;
 const scale = makeScale(0.5);
 const base = buildCityPlan({ seed: 9, registry, floor: 64, grid: profile.city, scenario: profile });
-const compiled = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
+const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.serviceTemplate)!, {
+  seed: 9,
+  siteId: `scenario:${profile.id}:service`,
+});
 
-const candidatePlan = (cell: readonly [number, number], turn: Turn): CityPlan => {
-  const service = servicePlacement({ template: compiled, floor: base.floor, grid: profile.city, cell, turn });
-  const composition = composeScenario(registry, profile, service, base.floor)!;
+const lab = JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-lab.libsonnet')) as ContentFile;
+const roomPools = new Map<string, MapAssemblyDef[]>();
+for (const room of lab.mapAssemblies!) {
+  const shell = room.slots.find((slot) => slot.id === 'shell');
+  if (!shell) {
+    continue;
+  }
+  const template = compileAssembly(registry, room, { seed: 9, siteId: 'fixture_room_pool' });
+  if (template.pieces.some((piece) => registry.furniture.get(piece.furniture)?.scenarioGoal)) {
+    continue;
+  }
+  const key = shell.choices[0]!.ref.id;
+  roomPools.set(key, [...(roomPools.get(key) ?? []), room]);
+}
+const alternatives = new Map(
+  [...roomPools.values()].flatMap((rooms) => rooms.map((room) => [room.id, rooms] as const)),
+);
+const substitutedRegistry: Registry = {
+  ...registry,
+  mapAssemblies: new Map([
+    ...registry.mapAssemblies,
+    ...lab.mapAssemblies!.map(
+      (assembly) =>
+        [
+          assembly.id,
+          {
+            ...assembly,
+            slots: assembly.slots.map((slot) => {
+              const { ref } = slot.choices[0]!;
+              const choices = ref.kind === 'assembly' ? alternatives.get(ref.id) : undefined;
+              const replacements = choices?.filter((room) => room.id !== ref.id);
+              return replacements && replacements.length > 0
+                ? {
+                    ...slot,
+                    choices: replacements.map((room) => ({
+                      ref: { kind: 'assembly' as const, id: room.id },
+                      weight: 1,
+                    })),
+                  }
+                : slot;
+            }),
+          },
+        ] as const,
+    ),
+  ]),
+};
+if (![...roomPools.values()].some((rooms) => rooms.length > 1)) {
+  throw new Error('Production lab fixture needs substitutable furnished rooms');
+}
+const selectedServices = [9, 10, 11].map((seed) => ({
+  seed,
+  template: compileAssembly(substitutedRegistry, substitutedRegistry.mapAssemblies.get(profile.serviceTemplate)!, {
+    seed,
+    siteId: `scenario:${profile.id}:service`,
+  }),
+}));
+
+const candidatePlan = (
+  cell: readonly [number, number],
+  turn: Turn,
+  template = compiled,
+  content = registry,
+): CityPlan => {
+  const service = servicePlacement({ template, floor: base.floor, grid: profile.city, cell, turn });
+  const composition = composeScenario(content, profile, service, base.floor)!;
   const [width, depth] = footprint(service);
   const placements = base.placements.filter((placement) => {
     if (
@@ -86,9 +151,11 @@ class ObstructedSite extends CitySite {
 describe('final composed body-route certificate', () => {
   for (const cell of base.candidates) {
     it.each([0, 1, 2, 3] as const)(
-      `joins the street, every landing, resources and button face for candidate ${cell}, turn %s`,
+      `joins substituted production rooms, street, landings, resources and button face for candidate ${cell}, turn %s`,
       (turn) => {
-        expect(scenarioCertificate(siteOf(candidatePlan(cell, turn))).issues).toEqual([]);
+        const selected = selectedServices[(base.candidates.indexOf(cell) + turn) % selectedServices.length]!;
+        const plan = candidatePlan(cell, turn, selected.template, substitutedRegistry);
+        expect(scenarioCertificate(new CitySite(selected.seed, substitutedRegistry, scale, plan)).issues).toEqual([]);
       },
     );
   }
@@ -104,6 +171,20 @@ describe('final composed body-route certificate', () => {
     } finally {
       stamp.mockRestore();
     }
+  });
+
+  it('rejects a shaft-neighbor obstruction in the final furnished production lab', () => {
+    const [descent] = base.composition!.descents;
+    if (!descent) {
+      throw new Error('Production lab has no descent witness');
+    }
+    const obstruction: Vec3 = [descent.ladder[0] + 1, descent.ladder[1] + 4, descent.ladder[2]];
+    const result = scenarioCertificate(new ObstructedSite(obstruction));
+    expect(
+      result.issues.some(
+        ([path, message]) => path === '.composition.descents[0]' && message.includes('continuous body-clear shaft'),
+      ),
+    ).toBe(true);
   });
 
   it('rejects support removed from the stamped objective face', () => {
@@ -178,10 +259,62 @@ describe('final composed body-route certificate', () => {
   });
 });
 
+it('resolves production service ownership, furnished loot and terrain stamps independently of chunk request order', () => {
+  const first = siteOf();
+  const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid: profile.city, scenario: profile }));
+  const composition = first.plan.composition!;
+  const points = [
+    first.plan.portal!.upper,
+    first.plan.portal!.lower,
+    composition.objective,
+    ...composition.descents.flatMap(({ upper, lower, ladder }) => [upper, lower, ladder]),
+    ...composition.resources.map(({ at }) => at),
+  ];
+  const cells = new Map(
+    points.map((point) => {
+      const cell = point.map(toChunk) as Vec3;
+      return [cell.join(','), cell] as const;
+    }),
+  );
+  expect(cells.size).toBeGreaterThan(1);
+  const service = first.plan.service!.template;
+  expect(service.provenance!.some((owner) => owner && owner.slotPath.split('/').length > 2)).toBe(true);
+  const selected = (site: CitySite) => ({
+    origin: site.plan.service!.origin,
+    turn: site.plan.service!.turn,
+    provenance: site.plan.service!.template.provenance,
+  });
+  const before = structuredClone(selected(first));
+  const request = (site: CitySite, order: readonly Vec3[]) => {
+    const terrain = {
+      seed: site.seed,
+      scale,
+      surface: site.surface,
+      blocks: terrainBlockIds((id) => registry.blockIds.get(id)!),
+    };
+    return new Map(
+      order.map((cell) => {
+        const chunk = generateChunk(terrain, cell);
+        site.stamp(chunk);
+        return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
+      }),
+    );
+  };
+  const forward = request(first, [...cells.values()]);
+  const backward = request(second, [...cells.values()].reverse());
+  for (const key of cells.keys()) {
+    expect(backward.get(key)).toEqual(forward.get(key));
+  }
+  expect(selected(first)).toEqual(before);
+  expect(selected(second)).toEqual(before);
+});
+
 it(
-  'walks from the city start, opens the hatch, descends to the bottom and retreats through ordinary session commands',
+  'walks substituted rooms and closed lids, opens descents, returns alive and activates the objective from the goal-face save',
   () => {
-    traverseScenario(siteOf(candidatePlan(base.candidates[0]!, 1)), profile, scale);
+    const selected = selectedServices[0]!;
+    const plan = candidatePlan(base.candidates[0]!, 1, selected.template, substitutedRegistry);
+    traverseScenario(new CitySite(selected.seed, substitutedRegistry, scale, plan), profile, scale);
   },
   profile.composition!.storeys.length * 2000,
 );

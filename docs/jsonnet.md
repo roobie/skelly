@@ -4,6 +4,7 @@ read_if:
   - you change the shared Jsonnet compiler or its import and validation rules
   - you add build-specific content or a Jsonnet module
   - you author map features or decide what belongs in a map template
+  - you check which generated map features still require curated migration
 ---
 
 # Jsonnet authoring
@@ -22,13 +23,19 @@ Author new content in Jsonnet, except maps edited in Tiled. Convert existing JSO
 
 Every map feature not constructed from noise comes from a curated template. Author its geometry as readable source, not as generated Jsonnet or layer-building code. Deterministic semi-procedural code may place and apply those templates; it does not replace their authored geometry. An exception needs a concrete reason and an operator decision before implementation.
 
-Curated geometry lets authors inspect and change the intended space directly, rather than reverse-engineering a generator to discover which walls, openings or material courses it produces.
+A placed content template is spatial data, not a Jsonnet constructor. Constructors may express non-spatial relationships or reference curated pieces; they are not permission to generate architecture. Literal layers describe both structures and intentional negative space. Code may choose, rotate and place them, but not invent partitions through coordinate predicates or successive paint passes.
 
-Known exceptions remain until #712 replaces generated map geometry with curated kit assemblies: `deadvox/src/content/base/gauntlet-lab.libsonnet`, `deadvox/src/content/base/gauntlet-look.jsonnet`, `deadvox/src/content/base/camp.jsonnet`, `deadvox/src/content/base/ladders.jsonnet`, and `deadvox/src/content/base/locks.jsonnet`. Keeping these exceptions explicit permits the gauntlet's curated city to land without claiming that its underground lab or the other generated features already satisfy the rule.
+Curated geometry lets authors inspect and change intended spaces without reverse-engineering a generator. Exclusive ownership prevents composition from repainting a correctly authored shell, while reserved walking space protects circulation from furnishing. See `docs/decisions/0005-curated-map-kits.md`, "Decision".
+
+Generated geometry in `deadvox/src/content/base/camp.jsonnet`,
+`deadvox/src/content/base/ladders.jsonnet` and `deadvox/src/content/base/locks.jsonnet`
+remains outside #712's city-and-lab migration. Those features need a separate curated
+migration before they satisfy this rule; the gauntlet migration does not authorize
+additional generators.
 
 ## Reasons
 
-- Outside map geometry, use templates and constructors when they expose a real relationship; shared structure keeps variants from drifting. Keep irregular authored choices explicit when abstraction would obscure them.
+- Use constructors for non-spatial relationships when shared structure keeps variants from drifting. Keep irregular authored choices explicit when abstraction would obscure them.
 - No source-coverage gate is used: the JSON exception depends on whether a particular edit exposes repetition. A file-wide gate would force unrelated migrations, while a history-based gate would have to classify content diffs against that exception. Review the exception when editing a file.
 - Treat IDs as content interfaces: explicit references remain stable when display names change.
 - Keep module exports deliberate and inheritance shallow so ownership and composition stay inspectable.

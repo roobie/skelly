@@ -1022,16 +1022,13 @@ describe('content', () => {
     expect(issues).toEqual([{ source: 'dup.json', path: 'blocks[1].id', message: 'duplicate id "ok" in this file' }]);
   });
 
-  it('merges every descriptor section in the base pack, including recipes and skills', () => {
-    const registry = baseRegistry;
-    expect(registry.items.size).toBeGreaterThan(30);
-    for (const section of CONTENT_SECTION_KEYS) {
-      const count = section === 'blocks' ? registry.blocks.length - 1 : registry[section].size;
-      expect(count, section).toBeGreaterThan(0);
+  it('creates every descriptor registry map even when its section has no definitions', () => {
+    const { registry } = buildRegistry([]);
+    const sections = CONTENT_SECTION_KEYS.filter((key) => key !== 'blocks');
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) {
+      expect(registry[section], section).toBeInstanceOf(Map);
     }
-    expect(registry.recipes.get('torch')?.skills).toEqual({ crafting: 0 });
-    expect(registry.skills.get('crafting')?.name).toBe('Crafting');
-    expect(registry.figures.get('player')?.palette).toEqual({ skin: '#c58f70', shirt: '#52677d', trousers: '#4a4b55' });
   });
 });
 

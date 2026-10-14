@@ -1108,6 +1108,46 @@ describe('shambler scenarios', () => {
     }
   });
 
+  it('slides around the block corner its body catches instead of grinding in place (#608)', () => {
+    type CornerBox = readonly [number, number, number, number, number];
+    const solidFromBoxes =
+      (boxes: readonly CornerBox[]): SolidAt =>
+      (x, y, z) =>
+        FLOOR(x, y, z) ||
+        boxes.some(([x0, x1, z0, z1, top]) => y >= 1 && y <= top && x >= x0 && x < x1 && z >= z0 && z < z1);
+    const wall: CornerBox = [4, 5, -10, 10, 4];
+    const container: CornerBox = [2, 4, -2, 2, 2];
+    const type = {
+      ...SHAMBLER,
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 0 },
+      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
+    };
+    // Two starts at the #608 corner, where a wall meets a container: the shambler's centre line clears
+    // the container corner its body catches, so it must slide round instead of grinding in place.
+    const corners: readonly { boxes: readonly CornerBox[]; start: Vec3; target: Vec3 }[] = [
+      { boxes: [wall, container], start: [0.75, 1, -6.42], target: [1.71, 1, 1.37] },
+      { boxes: [wall, container], start: [0.75, 1, -4], target: [1.71, 1, 3] },
+    ];
+    const crawlMetresPerSecond = type.speed.chaseMetresPerSimSecond / 5;
+    for (const { boxes, start, target } of corners) {
+      const solid = solidFromBoxes(boxes);
+      const system = new ZombieSystem({ ...senses(() => player(target), solid), isOpaque: () => false, seed: 1 });
+      const id = system.add(type, start, [1, 0, 0]);
+      const zombie = system.store.get(id)!;
+      const boundTicks = Math.ceil((metres(start, target) / crawlMetresPerSecond) * 60) + 5 * 60;
+      let reached = false;
+      for (let tick = 0; tick < boundTicks; tick++) {
+        system.tick(1 / 60);
+        expect(bodyHitsSolid(zombie.body, solid)).toBe(false);
+        if (metres(zombie.body.pos, target) <= type.attack.reach) {
+          reached = true;
+          break;
+        }
+      }
+      expect(reached).toBe(true);
+    }
+  });
+
   it('does not wander through repeated obstacle contacts while its target stays visible', () => {
     const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5 && z >= -2 && z <= 2);
     const target: Vec3 = [30, 1, 0];

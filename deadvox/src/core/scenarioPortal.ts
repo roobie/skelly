@@ -6,37 +6,23 @@ import { INVENTORY_REACH } from './reach.ts';
 import type { ScenarioDef } from './schema.ts';
 import { STAIR_BODY_HALF_WIDTH } from './stairFlight.ts';
 import { templateBodySpace, templateReachableStandingPositions } from './templateSpatial.ts';
-import { type CompiledTemplate, findPieces, pieceSize } from './templates.ts';
+import type { CompiledTemplate } from './templates.ts';
 
 type Piece = CompiledTemplate['pieces'][number];
-const markedPieces = (
-  registry: Registry,
-  scenario: ScenarioDef,
-  template: CompiledTemplate,
-  marker: string,
-): Piece[] => {
-  const definition = registry.templates.get(scenario.serviceTemplate)!;
-  const entry = definition.palette[marker];
-  if (typeof entry !== 'object' || !entry.furniture) {
-    return [];
-  }
-  const furniture = registry.furniture.get(entry.furniture);
-  if (!furniture) {
-    return [];
-  }
-  const size = pieceSize(furniture.size, entry.facing ?? 'n');
-  const anchors = findPieces(definition, marker, size).anchors ?? [];
-  return template.pieces.filter(
-    (piece) =>
-      piece.furniture === entry.furniture &&
-      anchors.some((anchor) => anchor.every((value, axis) => value === piece.pos[axis])),
+const portalPieces = (template: CompiledTemplate, scenario: ScenarioDef, kind: 'hatch' | 'ladder'): Piece[] => {
+  const anchor = scenario.portal[kind];
+  return template.pieces.filter((piece) =>
+    kind === 'hatch'
+      ? piece.pos.every((value, axis) => value === anchor[axis])
+      : piece.pos[0] === anchor[0] &&
+        piece.pos[2] === anchor[2] &&
+        piece.pos[1] >= anchor[1] &&
+        piece.pos[1] < scenario.portal.hatch[1],
   );
 };
 
-export const portalLadderPoint = (registry: Registry, scenario: ScenarioDef, template: CompiledTemplate): Vec3 => {
-  const bottom = markedPieces(registry, scenario, template, scenario.portal.ladder).sort(
-    (a, b) => a.pos[1] - b.pos[1],
-  )[0]!;
+export const portalLadderPoint = (scenario: ScenarioDef, template: CompiledTemplate): Vec3 => {
+  const bottom = portalPieces(template, scenario, 'ladder').sort((a, b) => a.pos[1] - b.pos[1])[0]!;
   return [bottom.pos[0] + bottom.size[0] / 2, bottom.pos[1], bottom.pos[2] + bottom.size[2] / 2];
 };
 
@@ -134,22 +120,20 @@ export const scenarioPortalIssues = (
   scenario: ScenarioDef,
   template: CompiledTemplate,
 ): [string, string][] => {
-  const hatches = markedPieces(registry, scenario, template, scenario.portal.hatch);
-  const ladders = markedPieces(registry, scenario, template, scenario.portal.ladder).sort(
-    (a, b) => a.pos[1] - b.pos[1],
-  );
+  const hatches = portalPieces(template, scenario, 'hatch');
+  const ladders = portalPieces(template, scenario, 'ladder').sort((a, b) => a.pos[1] - b.pos[1]);
   if (hatches.length !== 1 || !registry.furniture.get(hatches[0]!.furniture)?.door?.hatch || hatches[0]!.lock?.locked) {
-    return [['.portal.hatch', 'portal needs one unlocked hatch marker']];
+    return [['.portal.hatch', 'portal needs one unlocked hatch at its anchor']];
   }
-  if (ladders.length === 0 || !registry.furniture.get(ladders[0]!.furniture)?.climbable) {
-    return [['.portal.ladder', 'portal needs a ladder marker']];
+  if (ladders.length === 0 || ladders.some((piece) => !registry.furniture.get(piece.furniture)?.climbable)) {
+    return [['.portal.ladder', 'portal needs a climbable ladder column at its anchor']];
   }
   const issues = columnIssues(template, scenario, hatches[0]!, ladders);
   if (issues.length > 0) {
     return issues;
   }
   const space = templateBodySpace(registry, template);
-  const centre = portalLadderPoint(registry, scenario, template);
+  const centre = portalLadderPoint(scenario, template);
   for (const [name, position] of [
     ['upper', scenario.portal.upper],
     ['lower', scenario.portal.lower],
