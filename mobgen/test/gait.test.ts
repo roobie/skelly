@@ -178,7 +178,7 @@ describe('walkPose', () => {
   for (const name of TEMPLATES.map((t) => t.name)) {
     for (const speed of SPEEDS) {
       for (const seed of seeds) {
-        it(`${name} seed ${seed}: the planted foot doesn't slide at ${speed} m/s over ${StepsToCheck} steps`, () => {
+        it(`${name} seed ${seed}: grounded foot drift stays inside the roll envelope at ${speed} m/s over ${StepsToCheck} steps`, () => {
           const found = setup(name, seed);
           let worstHeelDrift = 0;
           let worstToeDrift = 0;
