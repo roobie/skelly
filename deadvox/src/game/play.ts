@@ -82,6 +82,7 @@ import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { mountTutorial } from '../ui/tutorial.ts';
+import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
@@ -166,7 +167,7 @@ import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandO
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
-import { updateStartupHintLatch } from './startupHint.ts';
+
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import {
   isOrbitResetMovementAction,
@@ -177,10 +178,10 @@ import {
 import { TierNotice } from './tierNotice.ts';
 import { Tutorial, tutorialUrl } from './tutorial.ts';
 import { Unpacking } from './unpacking.ts';
+import { WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const STARTUP_MESH_RADIUS = 1;
 
 const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
   (x + 0.5) * blockSize,
@@ -252,7 +253,6 @@ const guardDebugErrorFrame = (
     return frame(now);
   };
 };
-const STARTUP_COLUMN_COUNT = (STARTUP_MESH_RADIUS * 2 + 1) ** 2;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 export const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
@@ -577,9 +577,10 @@ export interface StartPlayOptions {
   };
 }
 
-const configureReplayStreaming = (streamer: Engine['streamer'], replay: StartPlayOptions['replay']): void => {
+const configureReplayStreaming = (engine: Engine, replay: StartPlayOptions['replay']): void => {
   if (replay) {
-    streamer.setReplayControlled();
+    engine.streamer.setReplayControlled();
+    engine.skylight?.setRecordedTerrain();
   }
 };
 
@@ -635,10 +636,10 @@ export const startPlay = (
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const autosave = autosaveTuning(registry);
   const inputTarget = renderer?.domElement ?? $('view');
-  const startupHint = $('startup-hint');
-  const startupProgress = $('startup-hint-progress') as HTMLProgressElement;
+  const worldLoading = new WorldLoading(engine, options.replay?.inputs.generatedColumns);
+  const drawWorldLoading = mountWorldLoading(worldLoading);
   configureRestoreFailure(streamer, options.saveController);
-  configureReplayStreaming(streamer, options.replay);
+  configureReplayStreaming(engine, options.replay);
   const { scale } = config;
   const s = scale.blockSize;
   const { tutorial, drawTutorial } = createPlayTutorial(engine, options.tutorial);
@@ -652,7 +653,7 @@ export const startPlay = (
     inputTarget,
     () => !debugTools?.buildOn,
     () => shouldCancelForViewerFocus('window-blur'),
-    () => replayPlayer === undefined,
+    () => worldLoading.ready && replayPlayer === undefined,
   );
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
@@ -792,7 +793,7 @@ export const startPlay = (
     ready: (x, z) => streamer.isReady(x, z),
     zombieReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
     controls: {
-      active: () => Boolean(options.replay) || (input.locked && !input.menuPointer),
+      active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
       intent: (): MoveIntent =>
         spectatorCameraEnabled ? { forward: 0, right: 0, jump: false, sprint: false, walk: false } : input.intent(),
       sampleAtPlayerTick: samplePlayerInput,
@@ -1493,7 +1494,6 @@ export const startPlay = (
     }
   });
   let mainMenuOpen = !options.replay;
-  let startupHintPending = !options.replay;
   let resumeRequested = false;
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
@@ -1519,7 +1519,7 @@ export const startPlay = (
       closeInventoryScreen();
       debugTools?.closeMenus();
     }
-    input.menuPointer = state.menuPointer;
+    input.menuPointer = state.menuPointer || !worldLoading.ready;
     keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
     $('go').hidden = state.showGo === false;
@@ -1530,17 +1530,24 @@ export const startPlay = (
     }
     return state;
   };
-  const updateStartupHint = () => {
-    if (options.replay || !started || mainMenuOpen || screen.isOpen || reading.isOpen || debugTools?.menuOpen) {
-      startupHint.hidden = true;
-      return;
+  const updateWorldLoading = (now: RealTimestamp) => {
+    const wasReady = worldLoading.ready;
+    worldLoading.check(body.pos, now, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);
+    drawWorldLoading();
+    if (worldLoading.state === 'failed') {
+      input.unlock();
+    } else if (worldLoading.ready && !wasReady) {
+      input.cancel();
+      keyboardInput.cancel();
+      sim.paused = syncMenuState().paused || (debugTools?.frozen ?? false);
+      replayPlayState.restore(options.replay?.startState);
+      inputRecorder = createInputReplayRecorder(
+        Boolean(options.replay),
+        captureSnapshot,
+        streamer.generatedColumns(),
+        captureReplayStartState,
+      );
     }
-    const unmeshed = streamer.unmeshedColumns(body.pos[0], body.pos[2], STARTUP_MESH_RADIUS);
-    startupProgress.max = STARTUP_COLUMN_COUNT;
-    startupProgress.value = STARTUP_COLUMN_COUNT - unmeshed;
-    const latch = updateStartupHintLatch(startupHintPending, unmeshed);
-    startupHintPending = latch.pending;
-    startupHint.hidden = !latch.visible;
   };
   const resume = () => {
     if (replayPlayer || sim.dead || playHalted.value) {
@@ -1920,6 +1927,9 @@ export const startPlay = (
     return debugTools?.noclip || spectatorCameraEnabled ? 'noclip' : 'play';
   };
   const inputContext = (): InputContext => {
+    if (!worldLoading.ready) {
+      return 'title';
+    }
     if (reviewMapOpen) {
       return 'review-map';
     }
@@ -2144,7 +2154,7 @@ export const startPlay = (
     }
   };
   const dispatchInputCommand = ({ action, phase, at }: InputCommand, fromReplay = false): void => {
-    if (replayPlayer && !fromReplay) {
+    if (!worldLoading.ready || (replayPlayer && !fromReplay)) {
       return;
     }
     const context = inputContext();
@@ -2219,7 +2229,6 @@ export const startPlay = (
   };
   keyboardInput.install();
   keyboardInput.sync();
-  replayPlayState.restore(options.replay?.startState);
   const cycleWieldedAction = (deltaY: number): boolean => {
     const item = inventory.hands[dominantSide(inventory.character)];
     return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
@@ -3263,6 +3272,10 @@ export const startPlay = (
 
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
+    if (!worldLoading.ready) {
+      sim.paused = true;
+      return false;
+    }
     cancelItemThrowOnRightClick();
     handleInputRecorderColumnOverflow();
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
@@ -3371,6 +3384,16 @@ export const startPlay = (
     });
   };
 
+  const prepareStreaming = (now: RealTimestamp): void => {
+    streamer.update(body.pos[0], body.pos[2]);
+    if (!worldLoading.ready && replayDriver && !replayDriver.initializeColumns()) {
+      worldLoading.fail('Recorded terrain could not be initialized. Reload and choose another replay.');
+    }
+    if (worldLoading.ready) {
+      updateActionInputs(now);
+    }
+  };
+
   const updateTutorial = () => {
     tutorial?.observe({
       position: body.pos,
@@ -3400,33 +3423,7 @@ export const startPlay = (
     blockSize: s,
   };
 
-  const updateFrame = (now: RealTimestamp) => {
-    const workStart = realNow();
-    const elapsedReal = Math.max(0, (now - last) / 1000);
-    const dt = realDuration(Math.min(0.1, elapsedReal));
-    frameInterval.record(now, now - last);
-    last = now;
-    fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
-
-    const menuState = syncMenuState();
-    const visible = hudVisibility(hudOptions);
-    let mark = realNow();
-    streamer.update(body.pos[0], body.pos[2]);
-    updateStartupHint();
-    meshingQueueMs = realNow() - mark;
-    updateActionInputs(now);
-    playtestObserver?.beforeFrame(queue, inventory);
-    mark = realNow();
-    const gameFrozen = stepSimulation(dt, menuState.paused);
-    updateBodyNotices();
-    advancePendingItemThrow();
-    syncThrowingStance();
-    caseEffects.update(sim.time);
-    updateGore(dt);
-    impactEffects.update(dt, config.debug && debugLaserEnabled);
-    simulationMs = realNow() - mark;
-    options.saveController?.afterFrame();
-    updateTutorial();
+  const observePlaytestFrame = (elapsedReal: number, now: RealTimestamp): void => {
     playtestObserver?.afterFrame(
       { realSeconds: elapsedReal, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
       queue,
@@ -3444,6 +3441,52 @@ export const startPlay = (
     ) {
       saveMetrics();
     }
+  };
+
+  const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
+    if (!renderer) {
+      engine.skylight?.update(engine.scene, [camera.position.x / s, camera.position.y / s, camera.position.z / s]);
+    }
+    view.prepareLighting(sky);
+    view.updateShadows(sky);
+    renderMs = view.render();
+    updateWorldLoading(now);
+    if (worldLoading.state === 'failed') {
+      return false;
+    }
+    if (sim.dead) {
+      die(sim.dead);
+      return false;
+    }
+    return true;
+  };
+
+  const updateFrame = (now: RealTimestamp) => {
+    const workStart = realNow();
+    const elapsedReal = Math.max(0, (now - last) / 1000);
+    const dt = realDuration(Math.min(0.1, elapsedReal));
+    frameInterval.record(now, now - last);
+    last = now;
+    fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
+
+    const menuState = syncMenuState();
+    const visible = hudVisibility(hudOptions);
+    let mark = realNow();
+    prepareStreaming(now);
+    meshingQueueMs = realNow() - mark;
+    playtestObserver?.beforeFrame(queue, inventory);
+    mark = realNow();
+    const gameFrozen = stepSimulation(dt, menuState.paused);
+    updateBodyNotices();
+    advancePendingItemThrow();
+    syncThrowingStance();
+    caseEffects.update(sim.time);
+    updateGore(dt);
+    impactEffects.update(dt, config.debug && debugLaserEnabled);
+    simulationMs = realNow() - mark;
+    options.saveController?.afterFrame();
+    updateTutorial();
+    observePlaytestFrame(elapsedReal, now);
     const { sky } = view.syncWorld({
       calendar: sim.calendar,
       time: sim.time,
@@ -3509,15 +3552,9 @@ export const startPlay = (
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling);
-    view.prepareLighting(sky);
-    view.updateShadows(sky);
-    renderMs = view.render();
+    const continuing = finishDraw(sky, now);
     frameWork.record(now, realNow() - workStart);
-    if (sim.dead) {
-      die(sim.dead);
-      return false;
-    }
-    return true;
+    return continuing;
   };
   const skyRoute = options.skyRoute?.({
     engine,
@@ -3535,7 +3572,19 @@ export const startPlay = (
   });
   const frame = guardDebugErrorFrame(
     observeRealFrame(
-      (now) => !playHalted.value && updateFrame(now),
+      (now) => {
+        try {
+          return !playHalted.value && updateFrame(now);
+        } catch (error) {
+          if (worldLoading.ready) {
+            throw error;
+          }
+          worldLoading.fail(error);
+          drawWorldLoading();
+          input.unlock();
+          return false;
+        }
+      },
       () => skyRoute,
     ),
     debugErrorEnabled(config.debug, location.search),
@@ -3580,12 +3629,6 @@ export const startPlay = (
       },
     );
   }
-  inputRecorder = createInputReplayRecorder(
-    Boolean(options.replay),
-    captureSnapshot,
-    streamer.generatedColumns(),
-    captureReplayStartState,
-  );
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));

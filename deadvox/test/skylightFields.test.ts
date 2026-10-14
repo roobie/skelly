@@ -36,6 +36,35 @@ it('dims an uncertified eligible column without blackout but preserves the old n
   expect(data[3]).toBe(1);
 });
 
+it('certifies only current, published proximity lighting while leaving distant fields to the existing fallback', () => {
+  const fixture = skyFixture([fixtureBox, { min: [80, 1, 4], max: [88, 9, 12] }]);
+  const position: Vec3 = [8, 4, 8];
+  expect(fixture.sky.loadingReadiness(position).ready).toBe(false);
+  fixture.update(position);
+  expect(fixture.pending).toHaveLength(1);
+  fixture.complete();
+  expect(fixture.sky.loadingReadiness(position).ready).toBe(false);
+  fixture.update(position);
+  expect(fixture.sky.loadingReadiness(position).ready).toBe(true);
+  expect(fixture.sky.inspect()[0]!.resident).toBe(true);
+  expect(fixture.sky.inspect()[1]!.complete).toBe(false);
+  fixture.sky.chunkChanged([0, 0, 0]);
+  fixture.update(position);
+  expect(fixture.sky.loadingReadiness(position).ready).toBe(false);
+  fixture.complete();
+  fixture.update(position);
+  expect(fixture.sky.loadingReadiness(position).ready).toBe(true);
+});
+
+it('does not request unavailable lighting dependencies in a partial recorded world', () => {
+  const fixture = skyFixture();
+  fixture.world.removeChunk(0, 0, 0);
+  fixture.sky.setRecordedTerrain();
+  fixture.update();
+  expect(fixture.pending).toHaveLength(0);
+  expect(fixture.sky.loadingReadiness([8, 4, 8]).ready).toBe(true);
+});
+
 it('patches a late lit mesh without a geometry or entity revision', () => {
   const fixture = skyFixture();
   fixture.update();
