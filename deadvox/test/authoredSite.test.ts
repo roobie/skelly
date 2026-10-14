@@ -373,7 +373,12 @@ describe('authored layout acceptance', () => {
     });
   });
   it('carries a spawn window from an authored marker into its world column', () => {
-    const marker = { ...layout.shamblers[0]!, position: [5, 0.5, 5], chance: 1, window: { fromGameTimeOfDay: 'dusk' } };
+    const marker = {
+      ...layout.shamblers[0]!,
+      position: [5, 0.5, 5] as const,
+      chance: 1,
+      window: { fromGameTimeOfDay: 'dusk' },
+    };
     const timedLayout = { ...validationLayout('timed_spawn_fixture'), shamblers: [marker] };
     const result = buildRegistry([
       ...layoutValidationBase,
@@ -381,7 +386,7 @@ describe('authored layout acceptance', () => {
     ]);
     expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
     const admitted = result.registry.layouts.get(timedLayout.id)!;
-    const site = new AuthoredSite(1, result.registry, scale, admitted);
+    const site = new AuthoredSite(1, registry, scale, admitted);
     const x = marker.position[0] / scale.blockSize;
     const z = marker.position[2] / scale.blockSize;
     expect(site.zombiesIn(toChunk(x), toChunk(z))).toContainEqual({
