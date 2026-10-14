@@ -8,8 +8,10 @@ import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
 import { cellsOf, compileAssembly, compileTemplate, footprint } from '../src/core/templates.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 const profile = fixtureScenario();
 const { registry, issues } = buildRegistry(fixtureScenarioSources(profile));
@@ -68,7 +70,7 @@ const generated = (reverse: boolean) => {
   return { chunks, furniture };
 };
 
-const floorCourses = (id: string): [number, number, string][] => {
+const floorCourses = (id: string) => {
   const native = BUNDLED_CONTENT.registry;
   const shellBlocksByPiece = new Map(
     [...native.mapPieces.values()].map((piece) => [
@@ -91,6 +93,7 @@ const floorCourses = (id: string): [number, number, string][] => {
     ...assembly.slots.filter((slot) => slot.id.includes('roof')).map((slot) => slot.at[1]),
   ]);
   const courses: [number, number, string][] = [];
+  let scanned = 0;
   for (const [x, y, z] of cellsOf(template.size)) {
     if (!slabLayers.has(y)) {
       continue;
@@ -100,6 +103,7 @@ const floorCourses = (id: string): [number, number, string][] => {
     if (!(shellBlocksByPiece.get(owner?.variant ?? '')?.has(wall) && solid(wall)) || at(x, y - 2, z) !== wall) {
       continue;
     }
+    scanned++;
     const exposed = [
       [1, 0],
       [-1, 0],
@@ -117,17 +121,19 @@ const floorCourses = (id: string): [number, number, string][] => {
     }
     courses.push([at(x, y, z), wall, `${id}: exterior course at ${x},${y},${z}`]);
   }
-  return courses;
+  return { courses, scanned };
 };
 
 describe('one finished city plan', () => {
   it('keeps generated building floor and roof courses in the exterior wall material', () => {
     const native = BUNDLED_CONTENT.registry;
     const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-    const courses = scenario.city.templates.flatMap(({ id }) => floorCourses(id));
-    expect(courses.length).toBeGreaterThan(0);
-    for (const [actual, wall, message] of courses) {
-      expect(actual, message).toBe(wall);
+    for (const { id } of scenario.city.templates) {
+      const { courses, scanned } = floorCourses(id);
+      expect(scanned, `${id}: no shell wall under a floor or roof layer was scanned`).toBeGreaterThan(0);
+      for (const [actual, wall, message] of courses) {
+        expect(actual, message).toBe(wall);
+      }
     }
   });
   it('supplies ordinary wanderers and hordes even when city buildings have no spawn markers', () => {

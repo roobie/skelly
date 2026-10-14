@@ -2,7 +2,9 @@ import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import { compileMapSite } from '../src/core/mapKit.ts';
 import type { ContentFile, MapAssemblyDef, MapSiteDef } from '../src/core/schema.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 const content = JSON.parse(
   compileJsonnetFile('deadvox/src/content/base/gauntlet-lab-descents.libsonnet'),

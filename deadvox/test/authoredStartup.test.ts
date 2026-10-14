@@ -10,7 +10,7 @@ it('starts normal sites when a malformed bundled layout file is rejected whole',
       vi.doMock(`../src/content/base/${file}`, () => ({ default: file === 'layouts.json' ? { layouts: {} } : {} }));
     }
   }
-  const config = await import('../src/game/config.ts');
+  const config = await import('./fixtures/startupContent.ts');
   expect(config.configFromUrl(new URLSearchParams()).site).toBe('hamlet');
   expect(config.configFromUrl(new URLSearchParams('site=city')).site).toBe('city');
   expect(config.configFromUrl(new URLSearchParams('site=lone_house')).site).toBe('hamlet');

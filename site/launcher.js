@@ -38,6 +38,7 @@ const page = (state) => html`  <main>
                 <option value="city">Stress-test city</option>
                 <option value="forest">Forest (tree first look)</option>
                 ${siteOffered(state.deadvox, 'gauntlet') ? html`<option value="gauntlet">Gauntlet</option>` : ''}
+                ${siteOffered(state.deadvox, 'tutorial') ? html`<option value="tutorial">Practice tutorial (unsaved)</option>` : ''}
                 ${siteOffered(state.deadvox, 'testHouse') ? html`<option value="testHouse">Test house (debug)</option><option value="weatheringTest">Debug weathering comparison</option>` : ''}
               </select>
             </label>
@@ -318,9 +319,9 @@ const defaultTime = (d) => {
   }
   return '10:00';
 };
-// Which site choices a mode offers: the gauntlet scenario and the debug sites are play-only.
+// Which site choices a mode offers: the gauntlet scenario, the practice tutorial and the debug sites are play-only.
 const siteOffered = (d, site) => {
-  if (site === 'gauntlet') {
+  if (site === 'gauntlet' || site === 'tutorial') {
     return d.bench === '';
   }
   if (site === 'testHouse' || site === 'weatheringTest') {
@@ -363,6 +364,14 @@ const addDebugParams = (params, d) => {
     params.set('site', d.site);
   }
 };
+// Sites the game offers only in play compose into the URL only then, never with a benchmark.
+const setPlayOnlySite = (params, d) => {
+  for (const site of ['gauntlet', 'tutorial']) {
+    if (siteOffered(d, site) && d.site === site) {
+      params.set('site', site);
+    }
+  }
+};
 const makeDeadvox = (d) => {
   const u = new URL('deadvox/', location.href);
   const p = u.searchParams;
@@ -390,9 +399,7 @@ const makeDeadvox = (d) => {
     p.set('site', 'forest');
     setDefault(p, 'density', d.density, '');
   }
-  if (siteOffered(d, 'gauntlet') && d.site === 'gauntlet') {
-    p.set('site', 'gauntlet');
-  }
+  setPlayOnlySite(p, d);
   if (m === '1') {
     p.set('shamblers', d.shamblers);
     setDefault(p, 'plan', d.plan, '0.5:64,0.5:96,0.5:128');

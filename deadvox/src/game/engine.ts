@@ -16,7 +16,6 @@ import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
-import { BUNDLED_CONTENT } from './bundledContent.ts';
 import type { GameConfig } from './config.ts';
 import { GraphicsControls } from './graphicsControls.ts';
 import type { StreamerStats } from './streamer.ts';
@@ -87,7 +86,7 @@ export function createEngine(
   scene.add(sky.ambient, sunRig);
   applySky(sky, DAY_SKY);
 
-  const meshes = new ChunkMeshes(scale.blockSize, BUNDLED_CONTENT.registry);
+  const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
   meshes.setWeathering(config.weathering, config.weatheringSplit);
   const worldSetup = createWorldSetup(config, meshes, stats);
   scene.add(meshes.group);

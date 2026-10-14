@@ -25,7 +25,10 @@ import type { MeshData } from '../src/core/mesher.ts';
 import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { skyAt, sunShadowStrength } from '../src/core/sky.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { FLASHLIGHT_INTENSITY, flashlightCastsShadow } from '../src/render/flashlight.ts';
 import { FrameTimes } from '../src/render/frameTimes.ts';

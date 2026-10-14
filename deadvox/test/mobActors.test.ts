@@ -256,6 +256,7 @@ const makeZombie = (
   const type = options.type ?? SHAMBLER;
   return {
     type,
+    modifiers: [],
     figureSeed,
     incapacitated: false,
     body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },

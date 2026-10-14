@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { tutorialRequested } from '../deadvox/src/game/tutorial.ts';
 import { gitEnvironment, playtestRound, publishPlaytest } from '../deadvox/tools/publish-playtest.mjs';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
@@ -53,6 +54,7 @@ const authoredLayoutIds = () =>
     .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
 
 const intentionallyUnofferedDeadvoxParams = {
+  mods: 'An opt-in browser-mod preview pending save identity in #633, not a launcher option.',
   skyRoute:
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
@@ -149,7 +151,7 @@ const extractDeclaration = (name) => {
 };
 
 const makeDeadvoxForTest = () => {
-  const source = ['defaultTime', 'setDefault', 'siteOffered', 'addDebugParams', 'makeDeadvox']
+  const source = ['defaultTime', 'setDefault', 'siteOffered', 'setPlayOnlySite', 'addDebugParams', 'makeDeadvox']
     .map(extractDeclaration)
     .join('\n');
   return new Function('location', `${source}\nreturn makeDeadvox;`)({ href: 'https://example.test/site/' });
@@ -297,6 +299,26 @@ describe('site launchers track the games’ URL parameters', () => {
     for (const bench of ['1', 'shamblers', 'report']) {
       const url = makeDeadvox({ ...gauntlet, bench });
       assert.equal(url.searchParams.has('site'), false, `bench ${bench} does not carry a gauntlet site`);
+    }
+  });
+
+  it('composes a practice tutorial URL the game accepts from the launcher', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const offered = siteOfferedForTest();
+    const defaults = launcherModelForTest().deadvox;
+    assert.equal(
+      tutorialRequested(makeDeadvox({ ...defaults, site: 'tutorial' }).searchParams),
+      true,
+      'play composes a URL the game accepts as practice',
+    );
+    assert.equal(offered(defaults, 'tutorial'), true, 'play offers the practice tutorial');
+    for (const bench of ['1', 'shamblers', 'report']) {
+      assert.equal(offered({ ...defaults, bench }, 'tutorial'), false, `bench ${bench} hides the practice tutorial`);
+      assert.equal(
+        tutorialRequested(makeDeadvox({ ...defaults, site: 'tutorial', bench }).searchParams),
+        false,
+        `bench ${bench} does not compose a practice URL`,
+      );
     }
   });
 
