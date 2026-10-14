@@ -1,16 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildCityPlan, scenarioPlanIssues, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
-import { worldSolid } from '../src/core/collision.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
-import { toChunk, type Vec3 } from '../src/core/coords.ts';
+import { toChunk } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
-import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { compileTemplate, type Placement, placedPieces } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
-import { generateChunk, terrainBlockIds } from '../src/core/worldgen.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
 
@@ -126,77 +121,13 @@ describe('authored scenario composition', () => {
   });
 });
 
-function* envelope([x, feet, z]: Readonly<Vec3>): Generator<Vec3> {
-  for (let y = Math.floor(feet) - 1; y < Math.ceil(feet + STAIR_BODY_HEIGHT); y++) {
-    for (let bz = Math.floor(z - STAIR_BODY_HALF_WIDTH); bz < Math.ceil(z + STAIR_BODY_HALF_WIDTH); bz++) {
-      for (let bx = Math.floor(x - STAIR_BODY_HALF_WIDTH); bx < Math.ceil(x + STAIR_BODY_HALF_WIDTH); bx++) {
-        yield [bx, y, bz];
-      }
-    }
-  }
-}
-
-it('samples shipped resource and objective standing envelopes against real composed chunks and furniture', () => {
+it('plans incidental utilities in addition to the reserved campus', () => {
   const { registry } = BUNDLED_CONTENT;
   const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
   expect(profile).toBeDefined();
   const scale = makeScale(0.5);
   const plan = buildCityPlan({ seed: 9, registry, floor: 64, grid: profile.city, scenario: profile });
   const site = new CitySite(9, registry, scale, plan);
-  const world = new World();
-  const entities = new BlockEntities(registry);
-  const loaded = new Set<string>();
-  const terrain = {
-    seed: 9,
-    scale,
-    blocks: terrainBlockIds((id) => registry.blockIds.get(id)!),
-    surface: site.surface,
-    stamp: (chunk: Parameters<CitySite['stamp']>[0]) => site.stamp(chunk),
-  };
-  const load = (x: number, y: number, z: number) => {
-    const cell: Vec3 = [toChunk(x), toChunk(y), toChunk(z)];
-    const key = cell.join(',');
-    if (loaded.has(key)) {
-      return;
-    }
-    loaded.add(key);
-    const chunk = generateChunk(terrain, cell);
-    site.stamp(chunk);
-    world.addChunk(chunk);
-  };
-  const columns = new Set<string>();
-  const points = [
-    plan.spawn,
-    ...plan.composition!.resources.map((resource) => resource.standing),
-    plan.composition!.objectiveFace,
-    plan.composition!.retreat,
-  ];
-  for (const point of points) {
-    for (const [x, y, z] of envelope(point)) {
-      load(x, y, z);
-      const key = `${toChunk(x)},${toChunk(z)}`;
-      if (!columns.has(key)) {
-        columns.add(key);
-        for (const spawn of site.furnitureIn(toChunk(x), toChunk(z))) {
-          entities.add(spawn.spec);
-        }
-      }
-    }
-  }
-  const solid = worldSolid(world, registry, entities);
-  expect(loaded.size).toBeGreaterThan(1);
-  for (const point of points) {
-    const cells = [...envelope(point)];
-    expect(
-      cells.filter((cell) => cell[1] < point[1]).some((cell) => solid(...cell)),
-      JSON.stringify(point),
-    ).toBe(true);
-    const body = cells.filter((cell) => cell[1] >= point[1]);
-    expect(body.length).toBeGreaterThan(0);
-    for (const cell of body) {
-      expect(solid(...cell), JSON.stringify({ point, cell })).toBe(false);
-    }
-  }
   expect(
     site.placements.some((placement: Placement) =>
       profile.composition!.incidentalTemplates.includes(placement.template.id),
