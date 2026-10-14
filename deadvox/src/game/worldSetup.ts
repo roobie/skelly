@@ -17,7 +17,6 @@ import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
 import { type Surface, terrainBlockIds, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
-import { BUNDLED_CONTENT } from './bundledContent.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
@@ -273,12 +272,12 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
 
 export const siteForReviewMap = (
   config: GameConfig,
-  registry = BUNDLED_CONTENT.registry,
+  registry = config.content.registry,
   house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined,
 ): Site | undefined => buildDebugTestHouseSite(config, registry, house) ?? buildSite(config, registry);
 
 export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?: StreamerStats): WorldSetup {
-  const { registry, issues } = BUNDLED_CONTENT;
+  const { registry, issues } = config.content;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
   const { seed, scale } = config;
   const id = (name: string) => blockId(registry, name);

@@ -4,6 +4,7 @@
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
 import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import type { Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
 import type { Body } from '../core/physics.ts';
@@ -68,7 +69,10 @@ type Phase = 'load' | 'settle' | 'look' | 'render' | 'jog' | 'sprint';
 
 const parseBenchShamblers = (value: string): number[] | undefined => (value === '0' ? [0] : parseShamblerCounts(value));
 
-export const benchRunFromUrl = (params: URLSearchParams): BenchRun => {
+export const benchRunFromUrl = (
+  params: URLSearchParams,
+  registry: Pick<Registry, 'layouts' | 'scenarios'>,
+): BenchRun => {
   const plan = parsePlan(params.get('plan') ?? '') ?? [...DEFAULT_PLAN];
   const index = Number(params.get('i') ?? 0);
   const time = params.get('time') ?? '';
@@ -79,7 +83,7 @@ export const benchRunFromUrl = (params: URLSearchParams): BenchRun => {
     quick: params.has('quick'),
     post: benchPostFromUrl(params),
     shamblers: shamblerValues?.length === 1 ? shamblerValues[0]! : undefined,
-    ...siteFromUrl(params, 'testHouse'),
+    ...siteFromUrl(params, 'testHouse', registry),
     ...(parseTimeOfDay(time) === undefined ? {} : { time }),
   };
 };

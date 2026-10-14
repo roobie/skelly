@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change browser mod identity or startup admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
@@ -33,6 +34,7 @@ read_if:
   - you're changing the HUD defaults or why players can turn HUD elements off
   - you're changing timed-action progress presentation or its relationship to HUD scale
   - you're changing content-defined UI spacing or HUD scale, or choosing rem or px for a UI length
+  - you're changing startup content selection or browser mod admission
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
@@ -1407,20 +1409,46 @@ their state.
 
 ## Content and modding
 
-- **Content types are defined with Valibot schemas,** chosen for its bundle
-  size. The schema gives both the TypeScript types and the runtime validation.
-- **Packs.** Packs apply in order; a later pack adds ids or replaces a whole
-  definition, and a file that fails validation is skipped whole so one broken
-  mod cannot leave half-applied content. See `src/core/content.ts`, `buildRegistry`.
-- **Every content section passes the same validator,** which reports references
-  to missing ids.
-- **Versioned saves.** A save records each pack's id, version and canonical
-  hash; a save whose content changed is refused rather than migrated until v1.0
-  beta (`../AGENTS.md`, "Project stage: pre-pre-alpha, no backwards
-  compatibility"). See `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
-- **Larger authored buildings.** Import voxel-editor work (MagicaVoxel, vengi)
-  only when a building outgrows curated Jsonnet pieces (`../docs/jsonnet.md`,
-  "Curated map features"); no importer contract is settled.
+Content is data, never JavaScript: mods must not bypass simulation ownership or
+persistence. Schema validation keeps authored definitions and runtime types in
+agreement; reference validation prevents partial files from entering a world, and a
+file that fails validation is skipped whole, so one broken mod cannot leave
+half-applied content. See `src/core/content.ts`, `buildRegistry`.
+
+The registry is built after startup content selection and passed through the world
+configuration so URL discovery, weathering, rendering and simulation all use the
+same admitted definitions. A module-load registry would freeze the base pack before
+a player could select mods. See `src/game/bundledContent.ts`, `buildBundledContent`,
+and `src/game/config.ts`, `GameConfig`. Startup admission remains part of the
+simulation fingerprint because it can change a world without changing a simulation
+call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
+
+Whole-definition overrides keep composition in the authoring language rather than
+creating a second patch language. Browser Jsonnet, mod persistence, save-pack identity
+and uploaded assets remain follow-up work in #633. The preview panel is opt-in while
+that save boundary is unfinished; see `src/ui/modsPanel.ts`, `chooseMods`.
+
+Remote intake shares local admission so a host cannot bypass the content contract.
+Browser-owned fetching keeps credentials and cross-origin permission with their
+owners, without a proxy that widens access. Streaming bounds memory before parsing;
+see `src/ui/modsPanel.ts`, `readPaste`.
+
+Browser mods require an explicit mod identity independent of their URL or upload
+name. Repeated selection of that identity is an error, not a second admission;
+changing transport must not bypass the clash. Different mod identities may still
+override the same definitions. Identity belongs to browser intake rather than
+bundled content fragments, which are parts of one core pack, not separate mods.
+This also gives later persistence and save-pack identity work an explicit owner;
+see `src/game/browserMods.ts`, `readMod` and `evaluateMods`.
+
+A save records each pack's id, version and canonical hash; a save whose content
+changed is refused rather than migrated until v1.0 beta (`../AGENTS.md`, "Project
+stage: pre-pre-alpha, no backwards compatibility"). See `src/core/saveFormat.ts`,
+`SAVE_SCHEMA_VERSION`.
+
+Import voxel-editor work (MagicaVoxel, vengi) only when a building outgrows curated
+Jsonnet pieces (`../docs/jsonnet.md`, "Curated map features"); no importer contract
+is settled.
 
 ## A world that feels real
 

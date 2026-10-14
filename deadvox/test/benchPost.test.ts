@@ -20,8 +20,8 @@ describe('benchmark post-processing option', () => {
   });
 
   it('is read by both benchmark modes', () => {
-    expect(benchRunFromUrl(params('bench=1')).post).toBe(false);
-    expect(benchRunFromUrl(params('bench=1&post=1')).post).toBe(true);
+    expect(benchRunFromUrl(params('bench=1'), { layouts: new Map(), scenarios: new Map() }).post).toBe(false);
+    expect(benchRunFromUrl(params('bench=1&post=1'), { layouts: new Map(), scenarios: new Map() }).post).toBe(true);
     expect(shamblerRunFromUrl(params('bench=shamblers'))?.post).toBe(false);
     expect(shamblerRunFromUrl(params('bench=shamblers&post=1'))?.post).toBe(true);
   });

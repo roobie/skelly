@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { realTimestamp } from '../src/core/time.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 
 const confirmationWindow = BUNDLED_CONTENT.registry.saves.get('autosave')!.leaveConfirmationRealSeconds;

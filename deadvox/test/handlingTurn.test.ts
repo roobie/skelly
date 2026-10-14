@@ -2,7 +2,10 @@ import { Euler, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { ModelDef } from '../src/core/content.ts';
 import type { HandSide } from '../src/core/inventory.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { handlingRotation } from '../src/render/handlingTurn.ts';
 
 const { registry } = BUNDLED_CONTENT;

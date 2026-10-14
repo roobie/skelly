@@ -3,7 +3,10 @@ import { expect, it } from 'vitest';
 import type { ModelDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { firearmBoreRay, firearmBoreTarget } from '../src/game/firearmAim.ts';
 import { playCrosshairFrame, projectCrosshairScreenPosition } from '../src/ui/playHud.ts';
 import { farWallTarget, zombieAimFixture } from './zombieAimFixture.ts';

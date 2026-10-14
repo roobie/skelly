@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
+import { assertFixtureMods, selectFixtureMods } from './mods-startup.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 
@@ -86,9 +87,10 @@ try {
   await page.goto(
     browserStageUrl(
       'firefox-ui',
-      `http://127.0.0.1:${address.port}/?debug=1&actors=detailed&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?mods=1&debug=1&actors=detailed&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
+  const fixtureMod = await selectFixtureMods(page);
   try {
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
       timeout: 30_000,
@@ -108,6 +110,7 @@ try {
   }
   await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view')));
+  await assertFixtureMods(page, fixtureMod);
   const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
   await page.waitForFunction(
     () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),

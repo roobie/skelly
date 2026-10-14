@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { resolveGraphics } from '../src/core/graphics.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createEngine } from '../src/game/engine.ts';
 import { writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
@@ -40,7 +41,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
       observe = vi.fn();
     },
   );
-  const config = configFromUrl(new URLSearchParams('debug=1'));
+  const config = configFromUrl(new URLSearchParams('debug=1'), buildBundledContent());
   const view = { clientWidth: 1, clientHeight: 1 } as HTMLElement;
   const player = createEngine(config, view, undefined, { render: false });
   expect(player.graphics.values.fastCamo).toBe(false);
