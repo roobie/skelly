@@ -4,7 +4,10 @@ import { buildRegistry } from '../src/core/content.ts';
 import { CONTACT_SKIN } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';

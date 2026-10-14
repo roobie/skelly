@@ -5,7 +5,9 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { templateStandingRoute } from '../src/core/templateSpatial.ts';
 import { compileAssembly, compileMapPiece } from '../src/core/templates.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 it('equipment alternatives leave declared level circulation reachable in both directions', () => {
   const { registry } = BUNDLED_CONTENT;

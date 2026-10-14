@@ -10,7 +10,10 @@ import { makeScale } from '../src/core/scale.ts';
 import { emptyDiscovery } from '../src/core/scenarioDiscovery.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { World } from '../src/core/world.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { createSession, IDLE } from '../src/game/session.ts';
 import { formatVersion } from './snapshotTestSupport.ts';
 

@@ -5,13 +5,14 @@ import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID } from '../core/weather.ts';
 import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
-import { BUNDLED_CONTENT } from './bundledContent.ts';
+import type { StartupContent } from './bundledContent.ts';
 
 export const DEFAULT_RADIUS_M = 96;
 const MIN_RADIUS_M = 32;
 const MAX_RADIUS_M = 256;
 
 export interface GameConfig {
+  content: StartupContent;
   seed: number;
   scale: Scale;
   /** View (mesh) radius in metres. */
@@ -55,10 +56,16 @@ export interface GameConfig {
 export type ActorRenderer = 'boxes' | 'detailed';
 
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
-export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE): GameConfig => {
+export const makeConfig = (
+  seed: number,
+  radiusM: number,
+  content: StartupContent,
+  blockSize = BLOCK_SIZE,
+): GameConfig => {
   const scale = makeScale(blockSize);
-  const profile = BUNDLED_CONTENT.registry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID);
+  const profile = content.registry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID);
   return {
+    content,
     seed,
     scale,
     radiusM,
@@ -155,7 +162,7 @@ const MAX_STOREYS = 20;
 export const siteFromUrl = (
   params: URLSearchParams,
   fallback: SiteName,
-  registry: Pick<Registry, 'layouts' | 'scenarios'> = BUNDLED_CONTENT.registry,
+  registry: Pick<Registry, 'layouts' | 'scenarios'>,
 ): Pick<GameConfig, 'site' | 'storeys' | 'density'> => {
   const densityText = params.get('density');
   const density = densityText === null || densityText.trim() === '' ? null : Number(densityText);
@@ -180,7 +187,7 @@ export const siteFromUrl = (
 export const applyWeatheringConfig = (
   config: GameConfig,
   params: URLSearchParams,
-  registry: Pick<typeof BUNDLED_CONTENT.registry, 'layouts' | 'weathering'> = BUNDLED_CONTENT.registry,
+  registry: Pick<Registry, 'layouts' | 'weathering'> = config.content.registry,
 ): void => {
   config.weatheringDefaultProfileId =
     registry.layouts.get(config.site)?.weatheringProfile ?? DEFAULT_WEATHERING_PROFILE_ID;
@@ -193,14 +200,15 @@ export const applyWeatheringConfig = (
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
  * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in src/debug/lookUrl.ts.
  */
-export const configFromUrl = (params: URLSearchParams): GameConfig => {
+export const configFromUrl = (params: URLSearchParams, content: StartupContent): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
   const config = makeConfig(
     Number(params.get('seed') ?? 1) | 0,
     radius >= MIN_RADIUS_M && radius <= MAX_RADIUS_M ? radius : DEFAULT_RADIUS_M,
+    content,
   );
-  Object.assign(config, siteFromUrl(params, 'hamlet'));
-  const layoutTime = BUNDLED_CONTENT.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
+  Object.assign(config, siteFromUrl(params, 'hamlet', content.registry));
+  const layoutTime = content.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
   const requestedTime = params.get('time');
   config.start =
     requestedTime === null

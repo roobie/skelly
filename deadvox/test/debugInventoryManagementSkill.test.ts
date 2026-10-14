@@ -1,7 +1,9 @@
 import { expect, it } from 'vitest';
 import { Character, SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { setDebugInventoryManagementSkill } from '../src/debug/debugInventoryManagementSkill.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 const character = () => new Character(BUNDLED_CONTENT.registry);
 

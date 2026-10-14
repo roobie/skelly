@@ -17,7 +17,10 @@ import {
 } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';

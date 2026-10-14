@@ -27,7 +27,7 @@ import type { Vec3 } from '../core/coords.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
 import { DAY_SKY } from '../core/sky.ts';
 import { FIGURE_BOXES } from '../core/zombieRegions.ts';
-import { BUNDLED_CONTENT } from '../game/bundledContent.ts';
+import { buildBundledContent } from '../game/bundledContent.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
@@ -891,7 +891,7 @@ const playerGroup = new Group();
 scene.add(playerGroup);
 
 const addPlayer = (): void => {
-  const player = BUNDLED_CONTENT.registry.figures.get(CORE_CONTENT_IDS.player);
+  const player = buildBundledContent().registry.figures.get(CORE_CONTENT_IDS.player);
   if (!player) {
     throw new Error('The bundled player figure is missing');
   }

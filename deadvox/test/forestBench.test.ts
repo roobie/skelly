@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type BenchRecord, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
 import { benchRunFromUrl, benchSiteLabel, forestWorkload, nextUrl } from '../src/bench/run.ts';
-import { configFromUrl, siteFromUrl } from '../src/game/config.ts';
+import { configFromUrl, siteFromUrl } from './fixtures/startupContent.ts';
 
 it('parses forest density strictly, including zero/one, without silently switching the requested site', () => {
   for (const density of ['0', '0.25', '1']) {
@@ -23,20 +23,37 @@ describe('forest benchmark workload identity', () => {
   it('keeps forest site, density, seed, time and post on the second run instead of reverting to the test house', () => {
     const run = benchRunFromUrl(
       new URLSearchParams('site=forest&density=0.75&seed=7&time=23:30&post=1&plan=0.5:64,0.5:96'),
+      { layouts: new Map(), scenarios: new Map() },
     );
     const next = new URLSearchParams(nextUrl(run, 7));
-    expect(benchRunFromUrl(next)).toMatchObject({ site: 'forest', density: 0.75, index: 1, time: '23:30', post: true });
+    expect(benchRunFromUrl(next, { layouts: new Map(), scenarios: new Map() })).toMatchObject({
+      site: 'forest',
+      density: 0.75,
+      index: 1,
+      time: '23:30',
+      post: true,
+    });
     expect(next.get('seed')).toBe('7');
     expect(configFromUrl(next)).toMatchObject({ site: 'forest', density: 0.75, seed: 7 });
     expect(benchSiteLabel(run)).toBe('forest, density 0.75');
-    const field = benchRunFromUrl(new URLSearchParams('site=forest&plan=0.5:64,0.5:96'));
+    const field = benchRunFromUrl(new URLSearchParams('site=forest&plan=0.5:64,0.5:96'), {
+      layouts: new Map(),
+      scenarios: new Map(),
+    });
     const nextField = new URLSearchParams(nextUrl(field, 1));
     expect(nextField.has('density')).toBe(false);
-    expect(benchRunFromUrl(nextField)).toMatchObject({ site: 'forest', density: null, index: 1 });
+    expect(benchRunFromUrl(nextField, { layouts: new Map(), scenarios: new Map() })).toMatchObject({
+      site: 'forest',
+      density: null,
+      index: 1,
+    });
   });
 
   it('retains the seeded field, shape mix, extent, opacity and full camera routes in both result export formats', () => {
-    const run = benchRunFromUrl(new URLSearchParams('site=forest&post=1'));
+    const run = benchRunFromUrl(new URLSearchParams('site=forest&post=1'), {
+      layouts: new Map(),
+      scenarios: new Map(),
+    });
     const record: BenchRecord = {
       startedAt: 'first-look',
       quick: false,

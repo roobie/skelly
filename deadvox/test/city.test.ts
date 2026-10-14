@@ -4,9 +4,8 @@ import { CITY } from '../src/core/cityPlan.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
-import { siteFromUrl } from '../src/game/config.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
+import { content as BUNDLED_CONTENT, siteFromUrl } from './fixtures/startupContent.ts';
 
 const { registry } = BUNDLED_CONTENT;
 const scale = makeScale(0.5);

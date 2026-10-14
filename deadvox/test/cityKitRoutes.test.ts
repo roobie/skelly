@@ -4,7 +4,9 @@ import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFligh
 import { ownershipCell } from '../src/core/templateOwnership.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, cellsOf, compileAssembly } from '../src/core/templates.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 const knownBody = (template: CompiledTemplate, [x, feet, z]: Vec3, doors: Set<number>): boolean => {
   for (let y = Math.floor(feet); y < Math.ceil(feet + STAIR_BODY_HEIGHT); y++) {

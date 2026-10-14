@@ -19,7 +19,7 @@ system-owned simulation and persistence.
 The base content pack is the core mod. New content and tuning values belong there with schema
 validation, so authored rules have one canonical identity while exact mechanics stay
 system-owned. Existing TypeScript tuning moves only through scoped follow-up work. See
-`deadvox/src/game/bundledContent.ts`, `BUNDLED_CONTENT`, and `deadvox/src/core/content.ts`,
+`deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `deadvox/src/core/content.ts`,
 `buildRegistry`; see `docs/jsonnet.md` for the authoring rule.
 
 Runtime mod functions and their expression format remain undecided. A mod-facing rule may
