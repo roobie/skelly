@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
 import { resolveWeatheringUrl, writeWeatheringParams } from '../src/core/weatheringUrl.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 describe('weathering profile URLs', () => {
   const profiles = BUNDLED_CONTENT.registry.weathering;

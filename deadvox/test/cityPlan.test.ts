@@ -8,7 +8,10 @@ import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
 import { cellsOf, compileTemplate, footprint } from '../src/core/templates.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const profile = fixtureScenario();

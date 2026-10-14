@@ -2,9 +2,9 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { configFromUrl } from '../src/game/config.ts';
 import { createEngine } from '../src/game/engine.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
+import { configFromUrl } from './fixtures/startupContent.ts';
 
 const owner = vi.hoisted(() => ({ setup: undefined as unknown }));
 vi.mock('../src/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));

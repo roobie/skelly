@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { CHUNK } from '../src/core/coords.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { skyAt } from '../src/core/sky.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { applySky, type SkyTargets } from '../src/render/sky.ts';
 import { phaseMidpoint } from './dayPhaseFixture.ts';
