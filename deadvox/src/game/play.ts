@@ -1216,6 +1216,7 @@ export const startPlay = (
           JSON.stringify(
             {
               build: getBuildRevision(),
+              saveIdentity: options.saveController?.namespace || null,
               site: config.site,
               seed: sim.seed,
               worldId: snapshot.world.id,

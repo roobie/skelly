@@ -38,7 +38,7 @@ const registry = {
 const profile = [...registry.scenarios.values()][0]!;
 const objective: Vec3 = [8, 1, 6];
 const worldOptions = { blockSize: 0.5, site: profile.id, storeys: 1, density: null };
-const fixture = (restore?: Readonly<SaveSnapshot>, spawn: Vec3 = [8.5, 1, 8.5]) => {
+const fixture = (restore?: Readonly<SaveSnapshot>, spawn: Vec3 = [8.5, 1, 8.5], designated: Vec3 = objective) => {
   const world = new World();
   const chunk = new Chunk(0, 0, 0);
   for (let x = 0; x < 16; x++) {
@@ -54,7 +54,7 @@ const fixture = (restore?: Readonly<SaveSnapshot>, spawn: Vec3 = [8.5, 1, 8.5]) 
   const session = createSession({
     registry,
     scenario: profile,
-    objective,
+    objective: designated,
     world,
     entities,
     scale: makeScale(0.5),
@@ -97,6 +97,9 @@ const fixture = (restore?: Readonly<SaveSnapshot>, spawn: Vec3 = [8.5, 1, 8.5]) 
 
 it('revalidates the living attempt, designated instance, reach, face and live obstruction', () => {
   const f = fixture();
+  const undesignated = fixture(undefined, undefined, [7, 1, 6]);
+  expect(undesignated.session.activateGoal(undesignated.entity)).toBeDefined();
+  expect(undesignated.session.won).toBe(false);
   expect(f.session.activateGoal({ ...f.entity })).toBeDefined();
   const distant = fixture(undefined, [8.5, 1, 14.5]);
   expect(distant.session.activateGoal(distant.entity)).toBeDefined();
