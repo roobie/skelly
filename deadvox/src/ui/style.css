@@ -1771,51 +1771,6 @@ body.inventory-open.inventory-tab-crafting #crafting {
   pointer-events: none;
   box-shadow: inset 0 0 140px 50px rgb(0 0 0 / 85%);
 }
-.rest-card {
-  width: min(22.5rem, calc(100vw - 2rem));
-  padding: calc(var(--ui-spacing) * 1.25rem) calc(var(--ui-spacing) * 1.5rem);
-  border: 1px solid var(--line);
-  border-radius: 0.625rem;
-  background: var(--panel);
-  text-align: center;
-}
-#rest h2 {
-  margin: calc(var(--ui-spacing) * 0.625rem) 0 calc(var(--ui-spacing) * 0.875rem);
-  font-size: 1.125rem;
-}
-.rest-clock {
-  width: 3rem;
-  height: 3rem;
-  margin: 0 auto;
-  border: 2px solid var(--accent);
-  border-radius: 50%;
-  position: relative;
-}
-.rest-hand {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 2px;
-  height: 1rem;
-  background: var(--accent);
-  transform-origin: 50% 0%;
-  animation: rest-spin 2s linear infinite;
-}
-@keyframes rest-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-.rest-time {
-  margin: calc(var(--ui-spacing) * 0.625rem) 0 0;
-  color: var(--muted);
-  font:
-    0.75rem ui-monospace,
-    monospace;
-}
 .rest-prompt {
   margin: calc(var(--ui-spacing) * 0.625rem) 0 0;
   color: var(--accent);
