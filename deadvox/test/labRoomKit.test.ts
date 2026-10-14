@@ -20,6 +20,8 @@ it('lab room substitutions preserve furnished threshold-to-circulation and retur
     const template = compileMapPiece(registry, room);
     expect(template.ports!.length).toBeGreaterThan(0);
     expect(template.pieces.length).toBeGreaterThan(0);
+    const standing = Object.entries(template.anchors!).filter(([, anchor]) => anchor.kind === 'standing');
+    expect(standing.length).toBeGreaterThan(0);
     for (const turn of [0, 1, 2, 3] as const) {
       const placement = { template, origin: [0, 0, 0] as [number, number, number], turn };
       const [width, depth] = footprint(placement);
@@ -40,11 +42,11 @@ it('lab room substitutions preserve furnished threshold-to-circulation and retur
         ports: template.ports!.map((port) => ({ id: port.id, slot: 'room', port: port.id })),
         anchors: Object.fromEntries([
           ...Object.entries(template.anchors!).map(([id, anchor]) => [
-            id,
+            `anchor_${id}`,
             { ...anchor, at: placedPoint(placement, anchor.at) },
           ]),
           ...template.ports!.map((port) => [
-            port.id,
+            `port_${port.id}`,
             { kind: 'standing' as const, at: placedPoint(placement, port.standing) },
           ]),
         ]),
@@ -54,7 +56,14 @@ it('lab room substitutions preserve furnished threshold-to-circulation and retur
         assembly: assembly.id,
         origin: [0, 0, 0],
         turn: 0,
-        routes: template.ports!.map((port) => ({ from: port.id, to: 'circulation', traversal: 'walk', return: true })),
+        routes: template.ports!.flatMap((port) =>
+          standing.map(([id]) => ({
+            from: `port_${port.id}`,
+            to: `anchor_${id}`,
+            traversal: 'walk' as const,
+            return: true,
+          })),
+        ),
       };
       const local = { ...registry, mapAssemblies: new Map([...registry.mapAssemblies, [assembly.id, assembly]]) };
       expect(() => compileMapSite(local, site, { seed: 1, siteId: site.id })).not.toThrow();
