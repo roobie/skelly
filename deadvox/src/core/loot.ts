@@ -45,6 +45,7 @@ export interface LootSpawnPoint {
   readonly context: LootContext;
   readonly supply: LootSupply;
   readonly required: boolean;
+  readonly fixture?: true;
 }
 
 export interface LootPointSource {
@@ -59,20 +60,22 @@ export interface LootPointSource {
   readonly usage?: readonly UsageTag[];
   readonly supply: LootSupply;
   readonly required: boolean;
+  readonly fixture?: true;
 }
 
 export const lootSpawnPoint = (source: LootPointSource): LootSpawnPoint => ({
   // Tuple encoding prevents separators inside authored IDs from aliasing another source.
   id: JSON.stringify([source.site, source.building, source.anchor, source.channel]),
   channel: source.channel,
-  position: source.position,
-  destination: source.destination,
+  position: [...source.position],
+  destination: [...source.destination],
   context: {
     usage: source.usage === undefined ? [...source.context.usage] : [...source.usage],
     tier: source.context.tier,
   },
   supply: source.supply,
   required: source.required,
+  ...(source.fixture === true ? { fixture: true } : {}),
 });
 
 export const lootPointStream = (seed: number, point: LootSpawnPoint): Rng => Rng.stream(seed, `loot:${point.id}`);

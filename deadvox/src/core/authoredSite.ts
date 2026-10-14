@@ -110,9 +110,10 @@ export class AuthoredSite implements Site {
     });
     this.placements = layout.buildings.map((building) => placementOf(registry, building, layout.lootContext));
     this.lootColumns = lootPointsByColumn(
-      this.placements.flatMap((placement, i) =>
-        lootSourcesOf(registry, layout.id, placement, layout.buildings[i]!.fixedLoot),
-      ),
+      this.placements.flatMap((placement, i) => {
+        const sources = lootSourcesOf(registry, layout.id, placement, layout.buildings[i]!.fixedLoot);
+        return layout.demo ? sources.map((source) => ({ ...source, fixture: true as const })) : sources;
+      }),
     );
     const {
       fixedLoot: containerLoot,

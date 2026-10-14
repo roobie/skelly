@@ -75,6 +75,8 @@ Templates own procedural defaults. Authored building contexts override them; whe
 
 Keep empty source descriptions so future refill work need not regenerate geometry. Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
 
+Debug descriptions are fixture-scoped so showcase stock cannot define production eligibility. Preserve their explicit contexts without admitting nonspawnable demonstration items into ordinary world pools; see `src/game/worldSetup.ts`, `fixtureLootSource`.
+
 ## Furniture visual shapes
 
 Visual furniture detail must not change occupied cells or expose hidden contents. Collision, rest, search, and line of sight keep their existing authorities, so a visual refinement cannot change gameplay.

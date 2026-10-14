@@ -6,7 +6,7 @@ import { blockColors, blockId, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
-import { rollLoot } from '../core/loot.ts';
+import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn, rollLoot } from '../core/loot.ts';
 import { blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { Rng } from '../core/random.ts';
 import { HandlingRange } from '../core/range.ts';
@@ -20,7 +20,7 @@ import { BUNDLED_CONTENT } from './bundledContent.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
-import { testHouseRangeStock } from './testHouseRange.ts';
+import { testHouseRangeStock, testHouseRangeSupply } from './testHouseRange.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
 export interface WorldSetup {
@@ -43,7 +43,25 @@ export interface WorldSetup {
   spawn: { pos: Vec3; yaw: number };
   /** The test house's furniture and table-authored loot in a column; authored/procedural sites bring their own. */
   furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
+  lootPointsIn: Site['lootPointsIn'];
 }
+
+const fixtureLootSource = (
+  spec: EntitySpec,
+  supply: LootPointSource['supply'],
+  { building, anchor }: Pick<LootPointSource, 'building' | 'anchor'>,
+): LootPointSource => ({
+  site: 'test-house',
+  building,
+  anchor,
+  channel: 'container',
+  position: spec.pos,
+  destination: spec.pos,
+  context: { usage: ['Residential'], tier: 'Tier1' },
+  supply,
+  required: false,
+  fixture: true,
+});
 
 /** The test house, rasterized, and a spawn point facing its front door. */
 export const testHouseScene = (config: GameConfig, registry: Registry) => {
@@ -84,7 +102,24 @@ export const testHouseScene = (config: GameConfig, registry: Registry) => {
           return def.size;
         })
       : [];
+  const lootSources = furniture.flatMap(({ loot, ...spec }): LootPointSource[] => {
+    if (!registry.furniture.get(spec.type)?.container) {
+      return [];
+    }
+    const anchor: Vec3 = [
+      spec.pos[0] - HOUSE_OFFSET[0] / scale.blockSize,
+      spec.pos[1] - floor / scale.blockSize,
+      spec.pos[2] - HOUSE_OFFSET[1] / scale.blockSize,
+    ];
+    return [
+      fixtureLootSource(spec, loot === undefined ? { kind: 'empty' } : { kind: 'table', table: loot }, {
+        building: 'house',
+        anchor,
+      }),
+    ];
+  });
   return {
+    lootSources,
     structures: rasterize(house, scale.blockSize),
     spawn: { pos: spawn, yaw: SPAWN_YAW },
     furniture: furniture.map(({ loot, ...spec }) => ({
@@ -115,6 +150,7 @@ export class DebugTestHouseSite implements Site {
   private readonly rack: EntitySpec;
   private readonly stock: ReturnType<typeof testHouseRangeStock>;
   private readonly target: EntitySpec;
+  private readonly lootPoints: ReadonlyMap<string, readonly LootSpawnPoint[]>;
 
   constructor(config: GameConfig, registry: Registry, house: ReturnType<typeof testHouseScene>) {
     this.structures = house.structures;
@@ -140,6 +176,17 @@ export class DebugTestHouseSite implements Site {
       facing: 's',
     };
     this.stock = testHouseRangeStock(registry);
+    this.lootPoints = lootPointsByColumn([
+      ...house.lootSources,
+      fixtureLootSource(
+        this.rack,
+        { kind: 'fixed', items: testHouseRangeSupply(registry) },
+        {
+          building: 'range-rack',
+          anchor: [0, 0, 0],
+        },
+      ),
+    ]);
     const targetType = 'range_target';
     const targetSize = registry.furniture.get(targetType)?.size;
     if (!targetSize) {
@@ -158,8 +205,8 @@ export class DebugTestHouseSite implements Site {
     this.range.stamp(chunk);
   }
 
-  lootPointsIn() {
-    return [];
+  lootPointsIn(cx: number, cz: number) {
+    return this.lootPoints.get(`${cx},${cz}`) ?? [];
   }
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
@@ -231,6 +278,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     : (house ?? testHouseScene(config, registry));
   // Without a site this is the formula the 1.0 and 1.1 benchmarks used, so their results still compare.
   const groundAt = (xm: number, zm: number): number => worldGroundAt({ seed, scale, surface: built?.surface, xm, zm });
+  const houseLootPoints = lootPointsByColumn(house?.lootSources ?? []);
 
   const world = new World();
   const entities = new BlockEntities(registry);
@@ -263,6 +311,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     isOpaque: worldOpaque(world, registry, entities),
     streamer,
     spawn: site.spawn,
+    lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? houseLootPoints.get(`${cx},${cz}`) ?? [],
     furnitureIn: (cx, cz) =>
       site.furniture.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
   };
