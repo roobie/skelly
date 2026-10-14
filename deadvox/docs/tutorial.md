@@ -7,7 +7,7 @@ read_if:
 
 Practice is a separate authored place, not a guided replacement world. Guaranteed supplies and a compact route let a newcomer learn ordinary interactions without depending on random scavenging. Use `src/content/base/tutorial.jsonnet` and `src/core/authoredSite.ts`, `AuthoredSite`.
 
-Short contextual objectives observe completed outcomes rather than pressed buttons. This prevents an attempted, refused or cancelled action from being taught as success. Outcomes are retained even when performed early so lesson order cannot strand a player who already ate the supplies. The observer cannot execute actions; see `src/game/tutorial.ts`, `Tutorial`, and `src/ui/tutorial.ts`, `mountTutorial`.
+Short contextual objectives observe completed outcomes rather than pressed buttons. This prevents an attempted, refused or cancelled action from being taught as success. Outcomes are retained even when performed early so lesson order cannot strand a player who already ate the supplies. Completed bean consumption also satisfies the hands prerequisite: quickbar use handles pocket food without leaving it wielded, and requiring the vanished beans afterward would punish a successful ordinary interaction. The observer cannot execute actions; see `src/game/tutorial.ts`, `Tutorial`, and `src/ui/tutorial.ts`, `mountTutorial`.
 
 Avoidance teaches that fighting is optional. The threat has ordinary senses and damage, and the route offers separation and cover instead of immunity, scripted injury or a required kill. A bandage hint supports recovery without making injury a graduation requirement. Restart and exit remain available in the pause menu because practice supplies can be lost or exhausted.
 

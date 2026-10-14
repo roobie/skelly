@@ -1,4 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
+import { HandlingQueue } from '../src/core/handling.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { bindReach } from '../src/core/reach.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { Survival } from '../src/game/survival.ts';
+import { Simulation } from './simulationFixture.ts';
 import { Tutorial, type TutorialObservation, tutorialRequested, tutorialUrl } from '../src/game/tutorial.ts';
 
 const observation = (): TutorialObservation => ({
@@ -73,9 +79,32 @@ describe('practice objectives', () => {
 
   it('remembers out-of-order supplies instead of requiring already consumed items again', () => {
     const { tutorial, state, observe } = fixture();
-    tutorial.consumed('canned_beans');
-    tutorial.consumed('water_bottle');
-    state.wielded = true;
+    const inventory = new Inventory(BUNDLED_CONTENT.registry);
+    const queue = new HandlingQueue(inventory);
+    const survival = new Survival(new Simulation({ seed: 1 }), inventory, queue, {
+      reach: bindReach({ inventory, position: state.position, blockSize: 1 }),
+      feet: () => ({ kind: 'pile', pos: state.position }),
+      notice: () => {},
+      read: () => {},
+      consumed: (type) => tutorial.consumed(type),
+    });
+    const jeans = inventory.create('jeans');
+    expect(inventory.add(jeans, { kind: 'worn' })).toBe(true);
+    for (const type of ['canned_beans', 'canned_beans']) {
+      const item = inventory.create(type);
+      expect(inventory.add(item, { kind: 'pocket', owner: jeans, pocket: 0 })).toBe(true);
+      expect(survival.useFromQuickbar(item)).toBeUndefined();
+      state.wielded = Object.values(inventory.hands).some((held) => held?.type === 'canned_beans');
+      observe();
+      expect(tutorial.stage).toBe('move');
+      queue.tick(queue.remaining);
+      expect(inventory.itemByUid(item.uid)).toBeUndefined();
+    }
+    expect(Object.values(inventory.hands).every((item) => item === undefined)).toBe(true);
+    const water = inventory.create('water_bottle');
+    expect(inventory.add(water, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(survival.useFromQuickbar(water)).toBeUndefined();
+    queue.tick(queue.remaining);
     state.lightOn = true;
     observe();
     state.lightOn = false;

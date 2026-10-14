@@ -67,7 +67,7 @@ export class Tutorial {
       ['move', this.achieved.has('move') && this.achieved.has('look')],
       ['door', this.achieved.has('door')],
       ['loot', this.achieved.has('loot')],
-      ['hands', this.achieved.has('hands')],
+      ['hands', this.achieved.has('hands') || this.achieved.has('consumed:canned_beans')],
       ['eat', this.achieved.has('consumed:canned_beans')],
       ['drink', this.achieved.has('consumed:water_bottle')],
       ['light', this.achieved.has('light')],
