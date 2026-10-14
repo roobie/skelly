@@ -6,11 +6,13 @@ import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { currentSaveVersionIdentity, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
+import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { realTimestamp } from '../src/core/time.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import type { SaveLoadResult } from '../src/game/saveStorage.ts';
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 import { SaveController } from '../src/ui/saveController.ts';
+import { showWin } from '../src/ui/win.ts';
 import { capture, createRuntime, registry as saveFixtureRegistry } from './snapshotTestSupport.ts';
 
 const BODY_MARKUP = /<body\b[^>]*>([\s\S]*)<\/body>/;
@@ -61,7 +63,12 @@ const recordOf = async (
     generation: 1,
     version: identity.components,
     buildRevision: identity.buildRevision,
-    worldOptions: { blockSize: 0.5, site: 'forest', storeys: 1, density: 0.75 },
+    worldOptions: {
+      blockSize: 0.5,
+      site: snapshot.character.scenarioRun?.scenario ?? 'forest',
+      storeys: 1,
+      density: 0.75,
+    },
   }),
   corruptSlots: [],
 });
@@ -317,4 +324,105 @@ it('refuses invalid creation choice and freezes Left only on accepted creation',
   document.getElementById('go')!.click();
   expect(actors).toHaveLength(1);
   expect(actors[0]!.handedness).toBe('left');
+});
+
+it('acknowledges only the won checkpoint and keeps a failed completion visible for retry', async () => {
+  enableSaveEnvironment();
+  const identity = await currentSaveVersionIdentity();
+  const controller = title();
+  const calendar =
+    fixtureSnapshot.character.simulation.clock.start +
+    fixtureSnapshot.character.simulation.time * fixtureSnapshot.character.simulation.clock.ratio;
+  const run = new ScenarioRun([...saveFixtureRegistry.scenarios.keys()][0]!, calendar);
+  let snapshot = { ...fixtureSnapshot, character: { ...fixtureSnapshot.character, scenarioRun: run.snapshot() } };
+  stubLiveRecord(controller, await recordOf(snapshot, identity));
+  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  await controller.prepare();
+  await controller.validateContent(saveFixtureRegistry);
+  controller.bindSession(
+    () => snapshot,
+    () => 0,
+    { blockSize: 0.5, site: run.snapshot().scenario, storeys: 1, density: null },
+    { checkpointSimSeconds: 1 },
+  );
+  const acknowledgements = Array.from({ length: 3 }, () => {
+    let resolve!: (value: { generation: number; slot: 'a'; backend: 'indexeddb' }) => void;
+    let reject!: (error: Error) => void;
+    const promise = new Promise<{ generation: number; slot: 'a'; backend: 'indexeddb' }>((yes, no) => {
+      resolve = yes;
+      reject = no;
+    });
+    return { promise, resolve, reject };
+  });
+  let writes = 0;
+  let secondStarted!: () => void;
+  const queuedStarted = new Promise<void>((resolve) => {
+    secondStarted = resolve;
+  });
+  vi.spyOn(controller.storage, 'save').mockImplementation(() => {
+    const index = writes;
+    writes += 1;
+    if (index === 1) {
+      secondStarted();
+    }
+    return acknowledgements[index]!.promise;
+  });
+  controller.beforeSleep();
+  run.complete(calendar);
+  snapshot = { ...snapshot, character: { ...snapshot.character, scenarioRun: run.snapshot() } };
+  controller.finishWin();
+  expect(controller.winCheckpointStatus).toBe('pending');
+  acknowledgements[0]!.resolve({ generation: 2, slot: 'a', backend: 'indexeddb' });
+  await queuedStarted;
+  expect(controller.winCheckpointStatus).toBe('pending');
+  acknowledgements[1]!.reject(new Error('fixture storage refusal'));
+  await acknowledgements[1]!.promise.catch(() => undefined);
+  expect(controller.winCheckpointStatus).toBe('failed');
+  expect(document.getElementById('save-recovery')!.hidden).toBe(false);
+  const winRoot = document.getElementById('death')!;
+  showWin(winRoot, {
+    seed: 13,
+    run: run.snapshot(),
+    checkpoint: controller.winCheckpointStatus,
+    newWorld: () => undefined,
+    freshAttempt: () => undefined,
+    exportRun: () => undefined,
+  });
+  expect(winRoot.querySelectorAll('button').length).toBeGreaterThan(0);
+  document.getElementById('save-retry')!.click();
+  acknowledgements[2]!.resolve({ generation: 3, slot: 'a', backend: 'indexeddb' });
+  await acknowledgements[2]!.promise;
+  expect(controller.winCheckpointStatus).toBe('saved');
+  expect(document.getElementById('save-recovery')!.hidden).toBe(true);
+  expect(controller.lastCompletedSaveRealTimestamp).toBeDefined();
+});
+
+it('continues a won record as terminal but refuses an ordinary dead record', async () => {
+  enableSaveEnvironment();
+  const identity = await currentSaveVersionIdentity();
+  const calendar =
+    fixtureSnapshot.character.simulation.clock.start +
+    fixtureSnapshot.character.simulation.time * fixtureSnapshot.character.simulation.clock.ratio;
+  const run = new ScenarioRun([...saveFixtureRegistry.scenarios.keys()][0]!, calendar);
+  run.complete(calendar);
+  const won = { ...fixtureSnapshot, character: { ...fixtureSnapshot.character, scenarioRun: run.snapshot() } };
+  const controller = title();
+  stubLiveRecord(controller, await recordOf(won, identity));
+  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  await controller.prepare();
+  expect((await controller.validateContent(saveFixtureRegistry))!.character.scenarioRun).toEqual(run.snapshot());
+  expect(controller.isEntered).toBe(true);
+  expect(controller.winCheckpointStatus).toBe('saved');
+  sessionStorage.clear();
+  const dead = createRuntime();
+  dead.sim.hurt(1000, 'fixture injury');
+  dead.session.frame(1 / 60);
+  expect(dead.sim.dead).toBeDefined();
+  const deadController = title();
+  stubLiveRecord(deadController, await recordOf(capture(dead), identity));
+  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  await deadController.prepare();
+  expect(await deadController.validateContent(saveFixtureRegistry)).toBeUndefined();
+  expect(deadController.isEntered).toBe(false);
+  expect(document.getElementById('continue')!.hidden).toBe(true);
 });

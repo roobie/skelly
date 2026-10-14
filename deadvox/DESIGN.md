@@ -372,8 +372,8 @@ whose acquisition depends on itself. An unlocked door is reversible; a locked
 door is not assumed open simply because its key exists somewhere. Independent
 public clue access must survive missing either lead; possession and reading
 never authorize the route. These are construction guarantees, not proof of clue
-interpretation, survival balance, goal activation or terminal persistence. Those
-judgments remain the later checkpoint gates on #671.
+interpretation or survival balance. Those judgments remain the integrated play
+gate on #671.
 
 The lab is a multi-storey subterranean complex whose danger rises with depth,
 with the nuclear objective at the bottom. A storey contains several distinct
@@ -415,12 +415,24 @@ campus. See `src/core/templateSpatial.ts`, `TemplateSpace`;
 `src/core/templates.ts`, `charAt`; and
 `src/content/base/gauntlet-lab.libsonnet`, `entry`.
 
-The objective's saved terminal win and permanent death must remain authoritative
-session/save decisions, not observer counters. Replay is a fresh attempt, with
-no attempt history or resurrection. The goal and terminal persistence contract
-are later #671 checkpoints, not behavior supplied by the visual fixture. A
-frozen playtest follows successful play approval and #660's separate publishing
-prerequisites so a round retains its build and origin.
+The objective's terminal win is a session/save decision, not an observer counter.
+Live entity, reach and unobstructed gaze admission prevents a stale displayed
+interaction from winning remotely; an already dead survivor cannot activate it.
+Completion stops the attempt, while presentation distinguishes victory from
+acknowledged storage. A failed write leaves the earlier checkpoint intact and
+keeps ordinary save recovery visible, rather than claiming the win is durable.
+A restored completion remains terminal and cannot count another success. See
+`src/game/session.ts`, `activateGoal`; `src/core/scenarioRun.ts`, `ScenarioRun`;
+`src/core/saveFormat.ts`, `validateWire`; and `src/ui/saveController.ts`, `finishWin`.
+
+Attempt observation belongs in the snapshot so Continue neither pools another
+survivor's counters nor counts the restored pose as travel. Export identifies
+the build, scenario, world and character instead of pooling by seed. Accepted
+physics movement includes ladder travel, while debug displacement is not play
+travel. Observation never authorizes the objective. Replay is a fresh attempt,
+with no attempt history or resurrection. A frozen playtest follows successful
+play approval and #660's separate publishing prerequisites so a round retains
+its build and origin.
 
 Discovery cues must not be unique merely by material. The city plan must scatter
 incidental structures in the same visual family with different silhouettes,
@@ -433,8 +445,8 @@ lighting and clue interpretation need player judgment before large investments.
 The approved campus is the shape baseline for #671 composition; changed landmark
 and lead presentation still needs a player look. The separate authored demo is
 not a seeded city or an all-seed route certificate. Its console remains inactive
-until the authoritative goal round; no saved win is supplied by readable
-furniture. See `src/content/base/gauntlet-look.jsonnet` and `AuthoredSite` in
+because the visual baseline must not become objective authority; no saved win
+is supplied by readable furniture. See `src/content/base/gauntlet-look.jsonnet` and `AuthoredSite` in
 `src/core/authoredSite.ts`.
 
 Darkness uses world-derived sky transport and an ordinary carried light, not
