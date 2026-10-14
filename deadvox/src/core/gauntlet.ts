@@ -52,7 +52,7 @@ export class GauntletSite extends CitySite {
   }
 }
 
-export const gauntletPopulation = (site: CitySite, scenarioId: string) => {
+const gauntletPopulation = (site: CitySite, scenarioId: string) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
