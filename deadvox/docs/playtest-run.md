@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're preparing, operating or closing the Slice 3 playtest
-  - you're changing deployment freeze, tester feedback or error-report handling
+  - you're publishing a frozen playtest or changing tester feedback or error-report handling
   - you're using playtest results to plan the next slice
 ---
 
@@ -9,13 +9,15 @@ read_if:
 
 The playtest is self-serve: testers use the landing page and play link, and may share feedback or metrics by choice. The Round 1 page asks them to survive and find the military camp. See `../EPIC.md`, "Playtest plan", and the [playtest feedback form](../../.github/ISSUE_TEMPLATE/playtest-feedback.md).
 
-## Deployment freeze
+## Frozen round publication
 
-Freeze Pages only after in-flight changes have merged, BR has played the deployed build without a blocker, and BR gives the go-ahead. Then share the Round 1 landing page and keep the deployed build unchanged while testers play; saves are tied to that code. Clear the freeze when the window closes.
+The lead publishes a round locally after BR approves the build. One domain per round holds both the landing and game, published together because Surge replaces the whole domain. The landing comes from the current clean checkout; the game always comes from the explicitly chosen frozen game commit, even for a landing-only correction. This prevents a consent-page edit from accidentally shipping newer game code. See `deadvox/tools/publish-playtest.mjs`, `publishPlaytest` and `playtestRound`, for the command and round address. Dry runs assemble the same output without contacting Surge. The temporary detached game checkout reuses installed dependencies only when their lockfiles match; this avoids extra installs without silently changing the frozen build's dependencies.
 
-Set and clear the repository variable with `gh variable set PAGES_FREEZE --body true` and `gh variable delete PAGES_FREEZE`. After setting it, wait until no Pages run is queued or in progress. Use the SHA from the latest successful run only after confirming its deploy job succeeded; do not use the current main head as a substitute.
+GitHub Actions never publishes to Surge; Pages continues rolling with main so merged development remains available without changing the testers' build. The landing carries the consent brief and links relatively to the game beneath the same domain, not the rolling Pages build. Browser saves belong to an origin, so changing the game address strands saves: keep its address for the whole round. Moving from Pages does not transfer saves; the old landing page explains this before linking onward.
 
-Tag the deployed commit `playtest-1-deployed`. A hotfix BR approves during the freeze branches from that tag and contains only the fix. Dispatch Pages from the hotfix branch and move the tag only after deployment succeeds; send the same fix to main through a normal PR. A dispatch from main publishes every merge since the freeze began, so approving it means approving all of those changes. Clearing the variable does not replay skipped pushes; dispatch main after the window closes.
+An approved hotfix is built from the round's published commit with only the intended fix and republishes the same game address. Record the commit printed after successful publication, and send the fix to main through a reviewed PR. Save compatibility requires matching simulation, schema, generators and content identity; the reported build revision is not a compatibility check. See `src/core/saveFormat.ts`, `versionDifferences`. A presentation-only hotfix preserves saves at the same game origin. A simulation, content or generator change invalidates saves regardless of domain; the lead's tester message must warn that the hotfix starts a fresh run. The Pages cutover also starts testers fresh, both because the origin changes and because simulation and content have changed. The menu shows the existing build revision, and error reports include it, so feedback can identify the published build.
+
+Keep the consent description aligned with the frozen game: both use the explicit publication analytics opt-in. Robots exclusions discourage search indexing; they do not make a playtest private.
 
 ## Session format
 

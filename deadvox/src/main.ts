@@ -7,6 +7,7 @@ import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from './core/assets.ts';
+import { getBuildRevision } from './core/buildInfo.ts';
 import { parseTimeOfDay } from './core/clock.ts';
 import { BUNDLED_CONTENT } from './game/bundledContent.ts';
 import { applyWeatheringConfig, configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
@@ -25,6 +26,7 @@ import { contentLookup, SaveController } from './ui/saveController.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
 
 applyUiTokens(BUNDLED_CONTENT.registry, document.documentElement);
+document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
