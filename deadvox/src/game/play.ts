@@ -50,6 +50,7 @@ import { mountCraftPanel } from '../ui/craftController.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
+import { renderGraphicsOptions } from '../ui/graphicsOptions.ts';
 import {
   type HandlingPresentationSource,
   quickbarKey,
@@ -1098,6 +1099,7 @@ export const startPlay = (
   const restBox = $('rest');
   $('errors').textContent = [$('errors').textContent, engine.contentErrors].filter(Boolean).join('\n');
   renderAudioOptions($('audio-options'), audio.settings, (category, value) => audio.setVolume(category, value));
+  renderGraphicsOptions($('graphics-options'), engine.graphics);
 
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
