@@ -4,6 +4,7 @@ import type { Registry } from './content.ts';
 import { toChunk } from './coords.ts';
 import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
+import { scenarioCertificate } from './scenarioCertificate.ts';
 import type { ScenarioDef } from './schema.ts';
 import type { ZombieSpawn } from './site.ts';
 import { placedSpawns } from './templates.ts';
@@ -22,6 +23,10 @@ export class GauntletSite extends CitySite {
       scale,
       buildCityPlan({ seed, registry, floor: terrainHeight(seed, scale, 0, 0), grid: scenario.city, scenario }),
     );
+    const certificate = scenarioCertificate(this);
+    if (certificate.issues.length > 0) {
+      throw new Error(certificate.issues.map(([path, message]) => `${path}: ${message}`).join('\n'));
+    }
     this.scenario = scenario;
   }
 

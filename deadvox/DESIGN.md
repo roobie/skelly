@@ -7,7 +7,7 @@ read_if:
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
-  - you're implementing gauntlet scenario admission, shared city planning, portal proofs, underground lab depth or its visual approval gate
+  - you're implementing gauntlet scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth or its visual approval gate
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
@@ -326,17 +326,14 @@ promise of playable upper floors or scenario population. See `src/core/cityPlan.
 
 Admission fails closed because a profile with dangling references, an ambiguous
 selector or a service footprint that fits only some turns is not a valid seeded
-scenario. Portal admission requires a supported, body-clear local connection
-between each landing and the ladder, not proximity across a partition. The
-bottom joins the ordinary standing flood; the hatch exit may step off while
-braced, inward or sideways according to the normal ladder owner. A local reach
-bound keeps this proof about entry instead of silently promoting it into the
-deferred composed-world route certificate. Palette markers distinguish the
-entry column from later descents that reuse the same furniture. Voxel queries
-must address whole cells even when a sweep samples fractional feet heights. The plan freezes placement decisions;
-compiled template buffers remain compiler-owned inputs. Stamping never consumes
-the column index, because a later vertical chunk or furniture request needs the
-same complete plan. See `scenarioPlanIssues` in `src/core/cityPlan.ts`,
+scenario. A landing near a ladder is insufficient if a partition separates them;
+local portal admission and the final composition must both preserve the normal
+ladder owner's supported, body-clear entry and braced exit. Entry palette markers
+prevent later descents from being mistaken for the entrance. Whole-cell voxel
+queries prevent fractional sweep poses from reading an unrelated array slot.
+The plan freezes placement decisions; compiled template buffers remain
+compiler-owned inputs. Stamping never consumes the column index, because later
+vertical chunks and furniture requests need the same complete plan. See `scenarioPlanIssues` in `src/core/cityPlan.ts`,
 `scenarioPortalIssues` in `src/core/scenarioPortal.ts`, and `templateBodySpace`
 in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
 there and `src/core/ladders.ts`, `ladderOutward`.
@@ -361,11 +358,22 @@ independent of incidental loot without bypassing ordinary inventory rules. See
 `src/core/authoredLayout.ts`, `authoredLayoutIssues`; and
 `src/core/citySite.ts`, `furnitureIn`.
 
-#671's R2 exit requires a composed-route certificate and ordinary traversal,
-not merely authoring integration. Anchor admission and sampled standing envelopes
-cannot certify connected start-to-button travel, every candidate/turn class,
-deep ladder traversal, resource dependency freedom or one-missed-clue accessibility. Goal persistence, discovery, survival pressure and hardware performance
-also cannot be inferred from the local entry-portal proof.
+The final composition fails closed before Play: a locally valid template cannot
+protect the route from later stamping or furniture. The certificate reads the
+same generated, stamped chunks and furniture occupancy as play, without
+materializing the whole city. Furniture anchored across a chunk boundary still
+belongs to an envelope that crosses that boundary. Clearance caching is private
+to this immutable initial-world proof, not a cache of live edited terrain. See
+`src/core/scenarioRoute.ts`, `ScenarioRouteSpace`; `src/core/scenarioCertificate.ts`,
+`scenarioCertificate`; and `src/core/gauntlet.ts`, `GauntletSite`.
+
+Fixed resources require an initially accessible route, rather than a key or tool
+whose acquisition depends on itself. An unlocked door is reversible; a locked
+door is not assumed open simply because its key exists somewhere. Independent
+public clue access must survive missing either lead; possession and reading
+never authorize the route. These are construction guarantees, not proof of clue
+interpretation, survival balance, goal activation or terminal persistence. Those
+judgments remain the later checkpoint gates on #671.
 
 The lab is a multi-storey subterranean complex whose danger rises with depth,
 with the nuclear objective at the bottom. A storey contains several distinct
