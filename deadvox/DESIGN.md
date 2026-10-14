@@ -322,7 +322,7 @@ benchmark stacking. Elevated routes reward getting onto structures and traversin
 away from default ground; not every structure must provide one, and existing
 movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`;
 `src/core/citySite.ts`, `CitySite`; and `src/content/base/gauntlet-city.libsonnet`,
-`building`.
+`templates`.
 
 Marker-only population omits the ordinary settlement's wanderers and horde, making
 empty marker sets silently remove street pressure. Gauntlet therefore scales the
