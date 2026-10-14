@@ -21,7 +21,7 @@ import {
 
 export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
 const SINGLE_STOREY = new Set(['gas_station', 'shed']);
-export type CityPoolRow = ScenarioDef['city']['templates'][number];
+type CityPoolRow= ScenarioDef['city']['templates'][number];
 type PoolRef = Pick<CityPoolRow['ref'], 'id' | 'style'>;
 export type CityGrid = Omit<ScenarioDef['city'], 'templates' | 'streetProps'> & {
   readonly templates: readonly CityPoolRow[];
