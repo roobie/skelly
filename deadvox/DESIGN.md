@@ -370,7 +370,7 @@ metadata from pointing beside its furniture. Fixed-loot reference, container and
 source-context rules share an owner across authored layouts and city composition;
 the same placement transform supplies their runtime items. This makes a resource
 independent of incidental loot without bypassing ordinary inventory rules. See
-`src/core/placementLoot.ts`, `placementLootIssues` and `collectPlacementLoot`;
+`src/core/placementLoot.ts`, `placementLootIssues`; `src/core/loot.ts`, `rollLoot`;
 `src/core/authoredLayout.ts`, `authoredLayoutIssues`; and
 `src/core/citySite.ts`, `furnitureIn`.
 
@@ -503,14 +503,24 @@ specific sites and their rewards.
 Keep the firearm-handling range in the debug test house, not ordinary world
 sites, so test stock cannot become a playable-world loot source. Derive rack
 contents from firearm and ammunition compatibility. See `HandlingRange` in
-`src/core/range.ts` and `testHouseRangeStock` in `src/game/testHouseRange.ts`.
+`src/core/range.ts` and `testHouseRangeSupply` in `src/game/testHouseRange.ts`.
 
 ### Loot
 
-Keep loot in data and derive its random stream from the container's position.
-Rolling only when a chunk first generates avoids saving untouched loot and keeps
-results independent of chunk request order. See `rollLoot` in
-`src/core/loot.ts`.
+Choose every world-supply item through one selector so source-specific rules cannot
+bypass admission and a later budget has one candidate-filtering boundary. Tables
+own relative weights and variants, not geography; fixed progression stock uses the
+same admission without becoming optional. Source-point identity owns the random
+stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
+`selectLootType`, `rollLoot` and `lootPointStream`.
+
+Keep an item's birth origin when it moves, splits, acquires fitted parts or is saved.
+Unlike origins do not merge, so later counts can attribute supply without confusing
+its source with its current map, cargo or player owner. Explicit debug stock is
+fixture supply, never ordinary economy stock; crafted results have a separate origin.
+Current ownership stays in the inventory tree, not in the birth record. See
+`src/core/itemOrigin.ts`, `ItemOrigin`; `src/core/items.ts`, `stackRoom`; and
+`src/core/inventory.ts`, `Inventory.items`.
 
 ## Items and inventory
 

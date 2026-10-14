@@ -1,9 +1,8 @@
 import type { Registry } from './content.ts';
 import { ItemFactory } from './items.ts';
-import { fixedItems, type LootContext, lootTypeIssue, type Rolled } from './loot.ts';
+import { type LootContext, lootTypeIssue } from './loot.ts';
 import { slotsReason } from './magazine.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
-import type { FurnitureSpawn } from './site.ts';
 import { type CompiledTemplate, type Placement, placedPieces } from './templates.ts';
 
 const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: LootContext): string | undefined => {
@@ -71,57 +70,20 @@ export interface PlacementLootSource {
   readonly fixedLoot?: readonly FixedLootOverrideDef[] | undefined;
 }
 
-interface PlacementLoot {
-  fixedLoot: Map<string, Rolled[]>;
-  fixedSurfaceLoot: Map<string, Rolled[]>;
-  keyLoot: Map<string, Set<string>>;
-}
-
-const addPlacementLoot = (
-  registry: Registry,
-  { placement, fixedLoot: overrides = [] }: PlacementLootSource,
-  { fixedLoot, fixedSurfaceLoot, keyLoot }: PlacementLoot,
-): void => {
-  const placed = placedPieces(placement);
-  for (const override of overrides) {
-    const index = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === override.at.join(','));
-    if (index < 0) {
-      throw new Error(`Missing fixed loot anchor ${override.at.join(',')} in ${placement.template.id}`);
-    }
-    const anchor = placed[index]!.pos.join(',');
-    const container = override.items.filter((item) => item.placement !== 'surface');
-    const surface = override.items.filter((item) => item.placement === 'surface');
-    if (container.length > 0) {
-      fixedLoot.set(anchor, fixedItems(registry, container));
-    }
-    if (surface.length > 0) {
-      fixedSurfaceLoot.set(anchor, fixedItems(registry, surface));
-    }
-    const keys = override.items.filter((item) => item.key).map((item) => item.item);
-    if (keys.length > 0) {
-      keyLoot.set(anchor, new Set(keys));
+export const placementKeyLoot = (sources: readonly PlacementLootSource[]): Map<string, Set<string>> => {
+  const keys = new Map<string, Set<string>>();
+  for (const { placement, fixedLoot = [] } of sources) {
+    const placed = placedPieces(placement);
+    for (const override of fixedLoot) {
+      const index = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === override.at.join(','));
+      if (index < 0) {
+        throw new Error(`Missing fixed loot anchor ${override.at.join(',')} in ${placement.template.id}`);
+      }
+      const items = override.items.filter((item) => item.key).map((item) => item.item);
+      if (items.length > 0) {
+        keys.set(placed[index]!.pos.join(','), new Set(items));
+      }
     }
   }
-};
-
-export const collectPlacementLoot = (registry: Registry, sources: readonly PlacementLootSource[]): PlacementLoot => {
-  const loot: PlacementLoot = { fixedLoot: new Map(), fixedSurfaceLoot: new Map(), keyLoot: new Map() };
-  for (const source of sources) {
-    addPlacementLoot(registry, source, loot);
-  }
-  return loot;
-};
-
-export const applyPlacementLoot = (
-  spawn: FurnitureSpawn,
-  loot: ReturnType<typeof collectPlacementLoot>,
-): FurnitureSpawn => {
-  const anchor = spawn.spec.pos.join(',');
-  const fixed = loot.fixedLoot.get(anchor);
-  const surfaceLoot = loot.fixedSurfaceLoot.get(anchor);
-  return {
-    ...spawn,
-    ...(fixed ? { loot: [...fixed, ...spawn.loot] } : {}),
-    ...(surfaceLoot ? { surfaceLoot } : {}),
-  };
+  return keys;
 };

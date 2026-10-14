@@ -196,6 +196,7 @@ export const composeScenario = (
     ),
   );
   const fixedLoot = authored.fixedLoot.map((source) => ({
+    ...source,
     at: Object.freeze([...source.at]) as Vec3,
     items: source.items.map((item) =>
       Object.freeze({ ...item, ...(item.fitted ? { fitted: Object.freeze({ ...item.fitted }) } : {}) }),

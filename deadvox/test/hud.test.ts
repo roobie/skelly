@@ -29,7 +29,7 @@ const kitchen = () => {
   const hoodie = inv.create('hoodie');
   inv.worn.torso = hoodie;
   const cupboard = inv.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' }, [
-    { type: 'canned_beans', count: 1, condition: 1 },
+    { type: 'canned_beans', count: 1, condition: 1, origin: { kind: 'fixture' } },
   ])!;
   const [beans] = cupboard.pockets![0]!.map((p) => p.item);
   return { inv, hoodie, cupboard, beans: beans! };

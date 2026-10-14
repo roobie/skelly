@@ -40,7 +40,7 @@ import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
 import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
-import { rollLoot } from '../core/loot.ts';
+import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
@@ -1095,8 +1095,8 @@ export const createSession = (options: SessionOptions) => {
           Math.floor(zombie.body.pos[1]),
           Math.floor(zombie.body.pos[2]),
         ];
-        for (const drop of rollLoot(registry, table, sim.rng(`zombie-loot:${zombie.body.pos.join(',')}`))) {
-          inventory.add(inventory.create(drop.type, drop.count, drop.condition), { kind: 'pile', pos });
+        for (const drop of rollLoot(registry, corpseLootPoint(table, id, pos), sim.rng(`zombie-loot:${id}`))) {
+          inventory.add(inventory.createRolled(drop), { kind: 'pile', pos });
         }
       }
       options.zombieEffects?.onDeath?.(id, zombie);
