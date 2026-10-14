@@ -50,22 +50,29 @@ const substitutedRegistry: Registry = {
   ...registry,
   mapAssemblies: new Map([
     ...registry.mapAssemblies,
-    ...lab.mapAssemblies!.map((assembly) => [
-      assembly.id,
-      {
-        ...assembly,
-        slots: assembly.slots.map((slot) => {
-          const choices = slot.choices[0]!.ref.kind === 'assembly' && alternatives.get(slot.choices[0]!.ref.id);
-          const replacements = choices && choices.filter((room) => room.id !== slot.choices[0]!.ref.id);
-          return replacements && replacements.length > 0
-            ? {
-                ...slot,
-                choices: replacements.map((room) => ({ ref: { kind: 'assembly' as const, id: room.id }, weight: 1 })),
-              }
-            : slot;
-        }),
-      },
-    ] as const),
+    ...lab.mapAssemblies!.map(
+      (assembly) =>
+        [
+          assembly.id,
+          {
+            ...assembly,
+            slots: assembly.slots.map((slot) => {
+              const ref = slot.choices[0]!.ref;
+              const choices = ref.kind === 'assembly' ? alternatives.get(ref.id) : undefined;
+              const replacements = choices?.filter((room) => room.id !== ref.id);
+              return replacements && replacements.length > 0
+                ? {
+                    ...slot,
+                    choices: replacements.map((room) => ({
+                      ref: { kind: 'assembly' as const, id: room.id },
+                      weight: 1,
+                    })),
+                  }
+                : slot;
+            }),
+          },
+        ] as const,
+    ),
   ]),
 };
 if (![...roomPools.values()].some((rooms) => rooms.length > 1)) {
