@@ -1,6 +1,5 @@
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -44,7 +43,11 @@ const reuseDependencies = (root, checkout) => {
     if (!existsSync(modules)) {
       throw new Error(`Missing installed dependencies: ${modules}. Run npm run setup first.`);
     }
-    symlinkSync(modules, join(checkout, directory, 'node_modules'), 'dir');
+    const target = join(checkout, directory, 'node_modules');
+    execFileSync('cp', ['-al', modules, target]);
+    for (const cache of ['.vite', '.vite-temp', '.cache']) {
+      rmSync(join(target, cache), { recursive: true, force: true });
+    }
   }
   const runtime = 'tools/jsonnet/runtime.json';
   if (existsSync(join(checkout, runtime))) {
@@ -56,7 +59,8 @@ const reuseDependencies = (root, checkout) => {
 };
 
 const buildGame = (root, gameSha, output) => {
-  const temporary = mkdtempSync(join(tmpdir(), 'deadvox-playtest-'));
+  // Dependency hard links need the checkout on the same filesystem; symlinks escape the source fingerprint boundary.
+  const temporary = mkdtempSync(join(root, 'deadvox/dist-playtest/.build-'));
   const checkout = join(temporary, 'checkout');
   let added = false;
   try {
