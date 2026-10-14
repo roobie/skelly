@@ -1,4 +1,7 @@
-local inside = function(x, z, box) x >= box[0] && x <= box[1] && z >= box[2] && z <= box[3];
+local width = 72;
+local depth = 64;
+local paint = function(row, x, count, marker)
+  std.substr(row, 0, x) + std.repeat(marker, count) + std.substr(row, x + count, width - x - count);
 local prop = function(marker, x, z) { marker: marker, at: [x, 0, z] };
 local kinds = [
   { id: 'intake', name: 'Intake / sample triage', props: [prop('Q', 2, 3), prop('Q', 11, 8)] },
@@ -68,22 +71,40 @@ local roomPlacements = [
   { marker: std.toString(i), at: [39, floor(i) + 2, 23], size: [2, 2, 1] }
   for i in std.range(0, std.length(storeys) - 1)
 ];
-local coordinate = function(x, y, z) std.join(',', [std.toString(v) for v in [x, y, z]]);
-local furnished = {
-  [coordinate(p.at[0] + x, p.at[1] + y, p.at[2] + z)]: p.marker
-  for p in roomPlacements
-  for y in std.range(0, p.size[1] - 1)
-  for z in std.range(0, p.size[2] - 1)
-  for x in std.range(0, p.size[0] - 1)
-};
-local shafts = {
-  [coordinate(d.x, y, z)]: 'J'
-  for d in descents for y in std.range(d.bottom, d.top) for z in std.range(d.z, d.z + 1)
-};
-local openings = {
-  [coordinate(x, d.top, z)]: true
-  for d in descents for x in std.range(d.x - 1, d.x + 1) for z in std.range(d.z, d.z + 1)
-};
+local partitionRows = [
+  std.join('', [
+    local col = std.floor((x - 4) / 23);
+    local roomRow = std.floor((z - 4) / 19);
+    local rx = x - (4 + col * 23);
+    local rz = z - (4 + roomRow * 19);
+    local inRoom = col >= 0 && col < 3 && roomRow >= 0 && roomRow < 3 && rx >= 0 && rx <= 17 && rz >= 0 && rz <= 13;
+    local wall = inRoom && ((rx == 0 || rx == 17) && !(rz >= 5 && rz <= 8) || (rz == 0 || rz == 13) && !(rx >= 7 && rx <= 10));
+    if x == 0 || x == width - 1 || z == 0 || z == depth - 1 || wall then '=' else '.'
+    for x in std.range(0, width - 1)
+  ]) for z in std.range(0, depth - 1)
+];
+// Row painting preserves priority without repeating sparse occupancy and partition work for every cell.
+local rows = [
+  local pieces = std.filter(function(p) y >= p.at[1] && y < p.at[1] + p.size[1], roomPlacements);
+  local shafts = std.filter(function(d) y >= d.bottom && y <= d.top, descents);
+  local openings = std.filter(function(d) y == d.top, descents);
+  [
+    local rowPieces = std.sort(std.filter(function(p) z >= p.at[2] && z < p.at[2] + p.size[2], pieces), function(p) p.at[0]);
+    assert std.all([rowPieces[i].at[0] + rowPieces[i].size[0] <= rowPieces[i + 1].at[0] for i in std.range(0, std.length(rowPieces) - 2)]) : 'overlapping lab furniture';
+    local base = if y % pitch == 0 then std.repeat('=', width) else partitionRows[z];
+    local furnished = if y % pitch == 0 then base else std.foldl(
+      function(row, p) paint(row, p.at[0], p.size[0], p.marker), rowPieces, base);
+    local entryClear = if y % pitch != 0 && y >= floor(0) && z >= entry.ladder[2] - 2 && z <= entry.ladder[2] + 4 then
+      local clear = paint(furnished, entry.ladder[0] - 3, 7, '.');
+      if z >= entry.ladder[2] && z <= entry.ladder[2] + 1 then paint(clear, entry.ladder[0], 1, 'H') else clear
+      else furnished;
+    local opened = std.foldl(function(row, d) paint(row, d.x - 1, 3, '.'),
+      std.filter(function(d) z >= d.z && z <= d.z + 1, openings), entryClear);
+    std.foldl(function(row, d) paint(row, d.x, 1, 'J'),
+      std.filter(function(d) z >= d.z && z <= d.z + 1, shafts), opened)
+    for z in std.range(0, depth - 1)
+  ] for y in std.range(0, ground - 1)
+];
 local placard = function(id, title, text, color) {
   id: id, name: title, size: [2, 2, 1], color: color, solid: false,
   shape: [{ position: [0.1, 0.1, 0], size: [1.8, 1.8, 0.1] }],
@@ -96,7 +117,7 @@ local cabinetShape = [
   { position: [0.3, 4.7, 0], size: [3.4, 0.3, 2] },
 ];
 {
-  width: 72, depth: 64, ground: ground, surfaceOffset: surfaceOffset, entry: entry,
+  width: width, depth: depth, ground: ground, surfaceOffset: surfaceOffset, entry: entry,
   anchors: {
     storeys: [{ id: s.id, standing: [35, floor(i), 29] } for i in std.range(0, std.length(storeys) - 1) for s in [storeys[i]]],
     descents: [{ ladder: [d.x, d.bottom, d.z], upper: [d.x - 1, d.top + 1, d.z + 1], lower: [d.x - 1, d.bottom, d.z + 1] } for d in descents],
@@ -106,23 +127,7 @@ local cabinetShape = [
       for p in kindById[s.rooms[box.index]].props if p.marker == 'B'
     ][0],
   },
-  cell(x, y, z):
-    local key = coordinate(x, y, z);
-    local col = std.floor((x - 4) / 23);
-    local row = std.floor((z - 4) / 19);
-    local rx = x - (4 + col * 23);
-    local rz = z - (4 + row * 19);
-    local inRoom = col >= 0 && col < 3 && row >= 0 && row < 3 && rx >= 0 && rx <= 17 && rz >= 0 && rz <= 13;
-    local wall = inRoom && ((rx == 0 || rx == 17) && !(rz >= 5 && rz <= 8) || (rz == 0 || rz == 13) && !(rx >= 7 && rx <= 10));
-    if y == 0 then '='
-    else if std.objectHas(shafts, key) then shafts[key]
-    else if std.objectHas(openings, key) then '.'
-    else if y % pitch == 0 then '='
-    else if y >= floor(0) && inside(x, z, [entry.ladder[0] - 3, entry.ladder[0] + 3, entry.ladder[2] - 2, entry.ladder[2] + 4]) then
-      if x == entry.ladder[0] && z >= entry.ladder[2] && z <= entry.ladder[2] + 1 then 'H' else '.'
-    else if std.objectHas(furnished, key) then furnished[key]
-    else if x == 0 || x == self.width - 1 || z == 0 || z == self.depth - 1 || wall then '='
-    else '.',
+  rows: rows,
   palette: { J: { furniture: 'ladder', facing: 'w' } } + {
     [marker]: { furniture: props[marker].id } for marker in std.objectFields(props)
   } + {

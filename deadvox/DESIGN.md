@@ -402,14 +402,19 @@ lab's capacity. One compiled placement owns their common excavation; incidental
 surface utilities stay inside that placement to avoid overlapping authored-site
 footprints. The separate demo preserves the shape baseline independently of
 seeded-city composition and its later route proof. See `src/content/base/gauntlet-look.jsonnet`,
-`cell` and `layouts`.
+`row` and `layouts`.
 
 Static admission indexes furniture occupancy for both door states before body
 queries, because a multi-room campus must not scan every room's furnishings for
 every clearance cell. Template character lookup avoids expanding ordinary rows
 for every cell while preserving code-point indexing for wider Unicode markers.
 These changes reduce campus authoring cost without a second collision or
-compiler owner. The scenario profile takes its entry anchors from the same source metadata as the
+compiler owner. Jsonnet paints shared row strings instead of reevaluating every
+cell's sparse furniture and partition queries; retaining painting priority keeps
+that evaluation optimization separate from changing the campus. See
+`src/content/base/gauntlet-lab.libsonnet`, `rows`, and
+`src/content/base/gauntlet-look.jsonnet`, `row`.
+The scenario profile takes its entry anchors from the same source metadata as the
 hatch and entry ladder instead of rediscovering markers by scanning the entire
 campus. See `src/core/templateSpatial.ts`, `TemplateSpace`;
 `src/core/templates.ts`, `charAt`; and

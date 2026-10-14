@@ -6,13 +6,8 @@ local surfaceOffset = lab.surfaceOffset;
 local roof = ground + 8;
 local metal = '#707b7e';
 
-local hatch = function(x, z)
-  local hx = lab.entry.hatch[0] - surfaceOffset;
-  local hz = lab.entry.hatch[2] - surfaceOffset;
-  x >= hx && x <= hx + 2 && z >= hz && z <= hz + 1;
 local surface = function(x, y, z)
-  if y == ground then (if hatch(x, z) then 'T' else '=')
-  else if x >= 4 && x <= 7 && z >= 14 && z <= 15 then 'V'
+  if x >= 4 && x <= 7 && z >= 14 && z <= 15 then 'V'
   else if x >= 15 && x <= 16 && y >= ground + 3 && y <= ground + 4 && z == 14 then 'N'
   else if x >= 9 && x <= 12 && y <= ground + 2 && z >= 18 && z <= 19 then 'Q'
   else if z <= 13 then
@@ -26,14 +21,22 @@ local utilities = [
   { marker: 'X', at: [52, ground + 1, 26], size: [4, 3, 2] },
   { marker: 'Y', at: [16, ground + 1, 30], size: [3, 5, 3] },
 ];
-local cell = function(x, y, z)
-  if y < ground then lab.cell(x, y, z)
-  else if y == ground then surface(x - surfaceOffset, y, z - surfaceOffset)
+local paint = function(row, x, count, marker)
+  std.substr(row, 0, x) + std.repeat(marker, count) + std.substr(row, x + count, width - x - count);
+local surfaceRows = [
+  [std.repeat('.', surfaceOffset) + std.join('', [surface(x, y, z) for x in std.range(0, 23)]) + std.repeat('.', width - surfaceOffset - 24)
+   for z in std.range(0, 21)]
+  for y in std.range(ground + 1, roof)
+];
+local row = function(y, z)
+  if y < ground then lab.rows[y][z]
+  else if y == ground then
+    local base = std.repeat('=', width);
+    if z >= lab.entry.hatch[2] && z <= lab.entry.hatch[2] + 1 then paint(base, lab.entry.hatch[0], 3, 'T') else base
   else
-    local matches = std.filter(function(p) x >= p.at[0] && x < p.at[0] + p.size[0] && y >= p.at[1] && y < p.at[1] + p.size[1] && z >= p.at[2] && z < p.at[2] + p.size[2], utilities);
-    if std.length(matches) > 0 then matches[0].marker
-    else if x >= surfaceOffset && x < surfaceOffset + 24 && z >= surfaceOffset && z < surfaceOffset + 22 then surface(x - surfaceOffset, y, z - surfaceOffset)
-    else '.';
+    local base = if z >= surfaceOffset && z < surfaceOffset + 22 then surfaceRows[y - ground - 1][z - surfaceOffset] else std.repeat('.', width);
+    std.foldl(function(r, p) paint(r, p.at[0], p.size[0], p.marker),
+      std.reverse(std.filter(function(p) y >= p.at[1] && y < p.at[1] + p.size[1] && z >= p.at[2] && z < p.at[2] + p.size[2], utilities)), base);
 {
   furniture: lab.furniture + [
     {
@@ -158,7 +161,7 @@ local cell = function(x, y, z)
       Q: { furniture: 'gauntlet_look_bench' },
     } + lab.palette,
     layers: [
-      [std.join('', [cell(x, y, z) for x in std.range(0, width - 1)]) for z in std.range(0, depth - 1)]
+      [row(y, z) for z in std.range(0, depth - 1)]
       for y in std.range(0, roof)
     ],
     access: {
