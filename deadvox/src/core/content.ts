@@ -26,6 +26,7 @@ import {
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
+import { ownershipShapeIssues } from './templateOwnership.ts';
 import { templateDoorIssues, templateSpatialIssues, templateSpawnClearanceIssues } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 
@@ -113,7 +114,7 @@ const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'obj
 /** Checks inside one template: layer sizes, and that every character is in the palette. */
 const templateIssues = (template: TemplateDef, path: string): [string, string][] => {
   const [sx, , sz] = template.size;
-  const out: [string, string][] = [];
+  const out: [string, string][] = ownershipShapeIssues(template).map(([at, message]) => [`${path}${at}`, message]);
   if (template.layers.length !== template.size[1]) {
     out.push([`${path}.layers`, `has ${template.layers.length} layers; size[1] is ${template.size[1]}`]);
   }
@@ -785,7 +786,13 @@ const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: R
   if (!templateResolves(registry, template)) {
     return;
   }
-  const compiled = compileTemplate(registry, template);
+  let compiled: ReturnType<typeof compileTemplate>;
+  try {
+    compiled = compileTemplate(registry, template);
+  } catch (error) {
+    report('templates', template.id, '.ownership', error instanceof Error ? error.message : String(error));
+    return;
+  }
   for (const [path, message] of templateDoorIssues(registry, compiled)) {
     report('templates', template.id, path, message);
   }

@@ -9,7 +9,9 @@ read_if:
 
 # Explicit storeys, stairs and root cellars
 
-ASCII layers remain the floor plans. Optional named storeys and stair access generate ordinary blocks for a flight, avoiding hand-maintained treads and overhead holes across layers. The generated blocks, not a separate route object, are placed in the site. See `src/core/stairFlight.ts`, `planFlight`, and `constructFlight`.
+Curated pieces own stair geometry and overhead openings, just as they own walls and floors. Access metadata describes traversal rather than permission to overwrite another owner. An owned piece cannot use a generated flight post-pass; author the transition within its delegated space. See `src/core/templates.ts`, `compileTemplate`.
+
+Templates awaiting the scoped migration in #712 retain their named-flight compiler. That exception is not permission to generate architecture for new curated pieces. See `src/core/stairFlight.ts`, `planFlight` and `constructFlight`, and `../../docs/jsonnet.md`, "Curated map features".
 
 Template coordinates are blocks; site placement remains in metres. Storey height is standing-feet height, while layer indices identify support layers. Placement lowers the template origin for below-ground floors. Air cells in the authored template carve the cellar consistently, including across chunk borders; the surrounding terrain and structure remain. See `src/core/templates.ts`, `compileTemplate`, and `src/core/authoredSite.ts`, `AuthoredSite.stamp`.
 

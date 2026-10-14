@@ -10,8 +10,10 @@ import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import type { LootContext } from './loot.ts';
+import { Rng } from './random.ts';
 import type { DoorLockDef, TemplateAccess } from './schema.ts';
 import { constructFlight } from './stairFlight.ts';
+import { compileOwnership, ownershipCell } from './templateOwnership.ts';
 
 /** Horizontal front facings follow WORLD_NORTH in coords.ts. */
 export type Facing = 'n' | 'e' | 's' | 'w';
@@ -123,12 +125,24 @@ export interface SpawnMarker extends SpawnTimeWindowField {
   pos: Vec3;
 }
 
+export interface VoxelProvenance {
+  readonly owner: string;
+  readonly source: string;
+  readonly variant: string;
+  readonly slotPath: string;
+  readonly turn: Turn;
+}
+
 export interface CompiledTemplate {
   readonly lootContext: LootContext;
   readonly id: string;
   readonly size: Vec3;
   /** A block id per cell, x + sx * (z + sz * y). Furniture and spawn cells are air. */
   readonly blocks: Uint16Array;
+  /** Zero is unclaimed, one owns occupancy, two owns air. */
+  readonly ownership?: Uint8Array;
+  readonly reserved?: Uint8Array;
+  readonly provenance?: readonly (VoxelProvenance | undefined)[];
   readonly pieces: readonly Piece[];
   readonly spawns: readonly SpawnMarker[];
   readonly access?: TemplateAccess;
@@ -190,6 +204,9 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
     const entry = template.palette[charAt(template, x, y, z) ?? ''];
     blocks[x + sx * (z + sz * y)] = typeof entry === 'string' ? registry.blockIds.get(entry)! : 0;
   }
+  if (template.ownership && (template.access?.stairs.length ?? 0) > 0) {
+    throw new Error(`${template.id}: owned pieces must author stair geometry, not use a post-pass flight`);
+  }
   for (const stair of template.access?.stairs ?? []) {
     constructFlight(blocks, template.size, stair, registry.blockIds.get(stair.block) ?? 0);
   }
@@ -199,6 +216,7 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
     lootContext: template.lootContext,
     size: [sx, sy, sz],
     blocks,
+    ...compileOwnership(template, blocks, pieces),
     pieces,
     spawns,
     ...(template.access ? { access: template.access, groundLayer: (groundLayer ?? 1) - 1 } : {}),
@@ -253,7 +271,11 @@ export const placedBlockAt = (placement: Placement, [x, y, z]: Vec3): number | u
   const [u, v] = unturned(template.size, turn, x - origin[0], z - origin[2]);
   const h = y - origin[1];
   const [sx, sy, sz] = template.size;
-  return u >= 0 && u < sx && v >= 0 && v < sz && h >= 0 && h < sy ? template.blocks[u + sx * (v + sz * h)] : undefined;
+  if (!(u >= 0 && u < sx && v >= 0 && v < sz && h >= 0 && h < sy)) {
+    return undefined;
+  }
+  const index = u + sx * (v + sz * h);
+  return template.ownership?.[index] === 0 ? undefined : template.blocks[index];
 };
 
 /** Writes the part of a placed template that falls inside the chunk. */
@@ -269,10 +291,174 @@ export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
     for (let lz = lo[2]!; lz < hi[2]!; lz++) {
       for (let lx = lo[0]!; lx < hi[0]!; lx++) {
         const [x, z] = unturned(template.size, turn, base[0] + lx - origin[0], base[2] + lz - origin[2]);
-        chunk.set(lx, ly, lz, template.blocks[x + sx * (z + sz * y)]!);
+        const index = x + sx * (z + sz * y);
+        if (template.ownership?.[index] !== 0) {
+          chunk.set(lx, ly, lz, template.blocks[index]!);
+        }
       }
     }
   }
+};
+
+export interface TemplateSlot {
+  readonly id: string;
+  readonly at: Vec3;
+  readonly size: Vec3;
+  readonly turn: Turn;
+  readonly choices: readonly { readonly template: string; readonly weight: number }[];
+}
+
+export interface TemplateAssembly {
+  readonly id: string;
+  readonly lootContext: CompiledTemplate['lootContext'];
+  readonly size: Vec3;
+  readonly slots: readonly TemplateSlot[];
+  readonly access?: TemplateAccess;
+}
+
+export interface AssemblyContext {
+  readonly seed: number;
+  readonly siteId: string;
+}
+
+const slotLabel = (context: AssemblyContext, assembly: TemplateAssembly, slot: TemplateSlot): string =>
+  `seed=${context.seed} site=${context.siteId} slot=${assembly.id}/${slot.id} turn=${slot.turn}`;
+
+const resolveSlot = (
+  registry: Registry,
+  assembly: TemplateAssembly,
+  slot: TemplateSlot,
+  context: AssemblyContext,
+): Placement => {
+  const label = slotLabel(context, assembly, slot);
+  const choices = [...slot.choices].sort((a, b) => {
+    if (a.template === b.template) {
+      return 0;
+    }
+    return a.template < b.template ? -1 : 1;
+  });
+  if (choices.length === 0 || new Set(choices.map((choice) => choice.template)).size !== choices.length) {
+    throw new Error(`${label}: choices must be nonempty and unique`);
+  }
+  const candidates = choices.map((choice) => {
+    if (!(Number.isFinite(choice.weight) && choice.weight > 0)) {
+      throw new Error(`${label} variant=${choice.template}: weight must be finite and positive`);
+    }
+    const definition = registry.templates.get(choice.template);
+    if (!(definition?.ownership && templateResolves(registry, definition))) {
+      throw new Error(`${label} source=${choice.template}: missing or unresolved owned literal piece`);
+    }
+    const template = compileTemplate(registry, definition);
+    const placement = { template, origin: slot.at, turn: slot.turn };
+    const [width, depth] = footprint(placement);
+    if (width !== slot.size[0] || template.size[1] !== slot.size[1] || depth !== slot.size[2]) {
+      throw new Error(`${label} variant=${template.id} source=${definition.id}: piece must equal its delegated slot`);
+    }
+    return { choice, placement };
+  });
+  const reference = candidates[0]!.placement.template;
+  for (const { placement } of candidates) {
+    if (
+      placement.template.ownership!.some(
+        (claim, index) =>
+          (claim !== 0) !== (reference.ownership![index] !== 0) ||
+          placement.template.reserved![index] !== reference.reserved![index],
+      )
+    ) {
+      throw new Error(
+        `${label} variant=${placement.template.id}: alternatives need the same ownership domain and reserved voids`,
+      );
+    }
+  }
+  const total = choices.reduce((sum, choice) => sum + choice.weight, 0);
+  if (!Number.isFinite(total)) {
+    throw new Error(`${label}: total weight must be finite`);
+  }
+  let roll = Rng.stream(context.seed, JSON.stringify([context.siteId, assembly.id, slot.id])).range(0, total);
+  for (const { choice, placement } of candidates) {
+    roll -= choice.weight;
+    if (roll < 0) {
+      return placement;
+    }
+  }
+  return candidates.at(-1)!.placement;
+};
+
+const validateSlots = (assembly: TemplateAssembly): void => {
+  const ids = new Set<string>();
+  for (const slot of assembly.slots) {
+    if (ids.has(slot.id)) {
+      throw new Error(`${assembly.id}: duplicate slot ${slot.id}`);
+    }
+    ids.add(slot.id);
+    if (
+      slot.at.some(
+        (value, axis) => !Number.isInteger(value) || value < 0 || value + slot.size[axis]! > assembly.size[axis]!,
+      ) ||
+      slot.size.some((value) => !Number.isInteger(value) || value <= 0)
+    ) {
+      throw new Error(`${assembly.id}/${slot.id}: delegated slot lies outside assembly`);
+    }
+  }
+  if (assembly.size.some((value) => !Number.isInteger(value) || value <= 0)) {
+    throw new Error(`${assembly.id}: dimensions must be positive integers`);
+  }
+};
+
+export const compileAssembly = (
+  registry: Registry,
+  assembly: TemplateAssembly,
+  context: AssemblyContext,
+): CompiledTemplate => {
+  validateSlots(assembly);
+  // Resolving every slot first prevents chunk demand from owning selection.
+  const resolved = assembly.slots.map((slot) => ({ slot, placement: resolveSlot(registry, assembly, slot, context) }));
+  const volume = assembly.size[0] * assembly.size[1] * assembly.size[2];
+  const blocks = new Uint16Array(volume);
+  const ownership = new Uint8Array(volume);
+  const reserved = new Uint8Array(volume);
+  const provenance: (VoxelProvenance | undefined)[] = new Array(volume);
+  for (const { slot, placement } of resolved) {
+    for (const cell of cellsOf(placement.template.size)) {
+      const from = ownershipCell(placement.template.size, cell);
+      if (placement.template.ownership![from] === 0) {
+        continue;
+      }
+      const point = placedPoint(placement, [cell[0] + 0.5, cell[1], cell[2] + 0.5]);
+      const at: Vec3 = [point[0] - 0.5, point[1], point[2] - 0.5];
+      const to = ownershipCell(assembly.size, at);
+      const owner = `${assembly.id}/${slot.id}`;
+      if (ownership[to] !== 0) {
+        throw new Error(
+          `${slotLabel(context, assembly, slot)} variant=${placement.template.id} source=${placement.template.id}: ` +
+            `${reserved[to] ? 'reserved circulation collision' : 'ownership collision'} at ${at.join(',')} between ${provenance[to]!.owner} and ${owner}`,
+        );
+      }
+      blocks[to] = placement.template.blocks[from]!;
+      ownership[to] = placement.template.ownership![from]!;
+      reserved[to] = placement.template.reserved![from]!;
+      provenance[to] = {
+        owner,
+        source: placement.template.id,
+        variant: placement.template.id,
+        slotPath: owner,
+        turn: slot.turn,
+      };
+    }
+  }
+  const ground = assembly.access?.storeys.find((storey) => storey.id === assembly.access?.ground);
+  return {
+    id: assembly.id,
+    lootContext: assembly.lootContext,
+    size: [...assembly.size],
+    blocks,
+    ownership,
+    reserved,
+    provenance,
+    pieces: resolved.flatMap(({ placement }) => placedPieces(placement)),
+    spawns: resolved.flatMap(({ placement }) => placedSpawns(placement)),
+    ...(assembly.access ? { access: assembly.access, groundLayer: (ground?.floor ?? 1) - 1 } : {}),
+  };
 };
 
 /** A placed piece in world coordinates. */
@@ -325,8 +511,8 @@ export const stackTemplate = (template: CompiledTemplate, storeys: number): Comp
   if (storeys <= 1) {
     return template;
   }
-  if (template.access) {
-    throw new Error('Explicit storeys cannot be stress-test stacked');
+  if (template.access || template.ownership) {
+    throw new Error('Explicit storeys and owned pieces cannot be stress-test stacked');
   }
   const [sx, sy, sz] = template.size;
   const layer = sx * sz;

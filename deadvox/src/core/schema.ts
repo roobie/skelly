@@ -1029,6 +1029,12 @@ const TemplateSchema = strictObject({
   layers: array(array(string())),
   /** Explicit floors and flights, never stress-test repetitions. Floor heights are feet heights in blocks. */
   access: optional(TemplateAccessSchema),
+  ownership: optional(
+    strictObject({
+      /** '.' leaves terrain alone, S claims occupancy, A excavates, R reserves empty circulation. */
+      layers: array(array(pipe(string(), regex(/^[.SAR]*$/)))),
+    }),
+  ),
 });
 
 // ---- authored site layouts (metres, independent of chunk/block order) ----
