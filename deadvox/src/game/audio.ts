@@ -19,7 +19,7 @@ export interface AudioVolumes {
 }
 
 const DEFAULT_VOLUMES: AudioVolumes = { master: 0.8, world: 0.8, body: 0.8, ui: 0.8 };
-const VOICE_CAPS = new Map<SoundEventId, number>([
+export const VOICE_CAPS: ReadonlyMap<SoundEventId, number> = new Map([
   ['gunshot', 32],
   ['gunshot_pbs1_reference', 32],
   ['gunshot_m4', 32],
