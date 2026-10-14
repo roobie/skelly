@@ -7,6 +7,7 @@ import {
   NATIVE_EDITING,
   NATIVE_INPUTS,
 } from '../game/inputBindings.ts';
+import { factDetail } from './factDetail.ts';
 
 export const mountInputOptions = (root: HTMLElement, debugRun = false): void => {
   let capture: { id: string; alternative: number } | undefined;
@@ -51,9 +52,9 @@ export const mountInputOptions = (root: HTMLElement, debugRun = false): void => 
     render(
       html`
       <details class="input-options"><summary>Input bindings</summary>
-        <p>${NATIVE_EDITING}</p>
-        <p>Bindings are preferences for this browser, not part of a saved character.</p>
-        ${capture ? html`<p>Press a key or mouse button for ${inputBindings.binding(capture.id)!.description}. <button type="button" @click=${stop}>Cancel</button></p>` : ''}
+        <p>${factDetail('Browser controls', NATIVE_EDITING)}</p>
+        <p>${factDetail('Binding storage', 'Bindings are preferences for this browser, not part of a saved character.')}</p>
+        ${capture ? html`<p>Binding: ${inputBindings.binding(capture.id)!.description} <button type="button" @click=${stop}>Cancel</button></p>` : ''}
         <p class="input-binding-status" role="status">${status || inputBindings.diagnostics.at(-1) || ''}</p>
         ${contexts.map(
           (context) => html`<section><h3>${context}</h3>

@@ -545,7 +545,7 @@ const handlingPresentationFor = ({
     return { jobs: [], throwCharge };
   }
   const stopLabel = labelForAction('handling.stop');
-  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? `${stopLabel} cancels` };
+  const inactive = { ...queue, cancelLabel: queue.cancelLabel ?? `Cancel (${stopLabel})` };
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
@@ -2361,7 +2361,7 @@ export const startPlay = (
     }
     const dismember = session.downedBodyPlan(id, 'dismember');
     const reason = dismember.ok ? '' : ` — ${dismember.reason.toLowerCase()}`;
-    return `${labelForAction('world.interact')}: ${finish.label.toLowerCase()}; hold to dismember${reason}`;
+    return `${labelForAction('world.interact')}: ${finish.label.toLowerCase()} · ${labelForAction('world.interact')} (hold): dismember${reason}`;
   };
 
   /** Describes the displayed action for the selected target. */
@@ -2825,7 +2825,7 @@ export const startPlay = (
   const togglePin = (item: Item): void => {
     const state = session.fuses.togglePin(item);
     if (state === 'pulled') {
-      showNotice('Pin pulled: the fuse lights when it leaves your hand');
+      showNotice('Pin pulled');
     } else if (state === 'in') {
       showNotice('Pin back in');
     } else if (state === 'burning') {
@@ -2989,7 +2989,7 @@ export const startPlay = (
   ): string => {
     let interactionHint: string | undefined;
     if (target?.kind === 'item') {
-      interactionHint = `${labelForAction('world.interact')}: pocket the ${inventory.name(target.item)}; hold to wield`;
+      interactionHint = `${labelForAction('world.interact')}: pocket ${inventory.name(target.item)} · ${labelForAction('world.interact')} (hold): wield`;
     } else if (target?.kind === 'furniture') {
       interactionHint = useText(target.entity);
     } else if (target?.kind === 'body') {

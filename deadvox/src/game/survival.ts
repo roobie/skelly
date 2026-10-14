@@ -289,7 +289,7 @@ export class Survival {
       return this.useTreatmentFromQuickbar(item, at);
     }
     if (def.firearm) {
-      return 'Use R to work the firearm';
+      return "I can't use the firearm from here";
     }
     // A weapon or key keeps its own action; a tool's category refuses only when nothing in it can be consumed.
     const use = consumption(def);
@@ -302,7 +302,7 @@ export class Survival {
     if (use && at.kind === 'pocket') {
       return this.useQuickbarConsumable(item, use, at);
     }
-    return `Take the ${def.name.toLowerCase()} in your hands first`;
+    return `The ${def.name.toLowerCase()} isn't in my hands`;
   }
 
   /** Whether the player is sprinting; content can extinguish lights when this changes. */
@@ -359,7 +359,7 @@ export class Survival {
   private heldFirestarterFor(light: Item): Item | string {
     const hand = this.handOf(light);
     if (!hand) {
-      return 'Take the light in your hands first';
+      return "The light isn't in my hands";
     }
     const igniter = this.inventory.hands[hand === 'right' ? 'left' : 'right'];
     if (!igniter) {

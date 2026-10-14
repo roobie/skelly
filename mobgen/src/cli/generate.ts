@@ -8,7 +8,10 @@ import { writeFileSync } from 'node:fs';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { generate, generateValid, realize } from '../core/generate.ts';
-import type { Genome } from '../core/template.ts';
+import { consumableTemplate, type Genome, type Template } from '../core/template.ts';
+// Side effect: registers the comparison-only dog so the gate below refuses it, rather than the CLI
+// quietly relying on its absence from TEMPLATES.
+import '../mob/dogTemplate.ts';
 import { TEMPLATES } from '../mob/templates.ts';
 
 const { values } = parseArgs({
@@ -22,9 +25,11 @@ const { values } = parseArgs({
 });
 
 const names = TEMPLATES.map((t) => t.name).join(', ');
-const template = TEMPLATES.find((t) => t.name === values.template);
-if (!template) {
-  console.error(`--template must be one of: ${names}`);
+let template: Template;
+try {
+  template = consumableTemplate(values.template ?? '');
+} catch (error) {
+  console.error(`${error instanceof Error ? error.message : String(error)}\n--template must be one of: ${names}`);
   process.exit(2);
 }
 const seed = Number(values.seed);

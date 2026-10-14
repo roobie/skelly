@@ -41,7 +41,7 @@ export interface DeathViewModel {
   readonly cause: string;
   readonly worldSeed: number;
   readonly span: string;
-  /** "You searched 3 containers and took can of beans." / "You searched nothing." */
+  /** Container count and looted item names. */
   readonly summary: string;
 }
 
@@ -51,17 +51,14 @@ export const deathViewModel = (registry: Registry, summary: DeathSummary): Death
     cause: summary.cause,
     worldSeed: summary.worldSeed,
     span: formatSpan(summary.survived),
-    summary:
-      summary.searched === 0
-        ? 'You searched nothing.'
-        : `You searched ${summary.searched} ${summary.searched === 1 ? 'container' : 'containers'}${looted ? ` and took ${looted}` : ' and took nothing'}.`,
+    summary: `Containers searched: ${summary.searched} · Loot: ${looted || 'none'}`,
   };
 };
 
 const deathTemplate = (vm: DeathViewModel, feedbackHref: string, newWorld: () => void): TemplateResult => html`
   <div class="card">
     <h1>You died</h1>
-    <p>Of ${vm.cause}, after ${vm.span}.</p>
+    <p>Cause: ${vm.cause} · Survived: ${vm.span}</p>
     <p>World seed: ${vm.worldSeed}</p>
     <p>${vm.summary}</p>
     <p><a href=${feedbackHref} target="_blank" rel="noopener">Send feedback</a></p>

@@ -2,7 +2,7 @@
   "items": [
     {
       "category": "weapon",
-      "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling.",
+      "description": "12-gauge pump shotgun. The tube holds four shells, with one more in the chamber.",
       "firearm": {
         "dispersionRadians": 0,
         "pump": true,
@@ -39,7 +39,7 @@
     },
     {
       "category": "weapon",
-      "description": "A curated gungen AR in 5.56×45, fed from STANAG magazines. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "description": "5.56×45 rifle fed from STANAG magazines.",
       "firearm": {
         "dispersionRadians": 0.012,
         "recoilKickRadians": 0.0060000000000000001,
@@ -65,7 +65,7 @@
     },
     {
       "category": "weapon",
-      "description": "A curated gungen AK in 7.62×39, fed from AKM magazines, with its handle on the carrier. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "description": "7.62×39 rifle fed from AKM magazines.",
       "firearm": {
         "dispersionRadians": 0.017999999999999999,
         "recoilKickRadians": 0.012,

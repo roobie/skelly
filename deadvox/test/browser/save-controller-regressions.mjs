@@ -195,6 +195,9 @@ try {
       assert.equal(await button.isVisible(), true, 'request remains reachable when state is unknown and API exists');
       assert.match(await page.locator('#save-status').textContent(), BEST_EFFORT);
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
+      await button.focus();
+      const detail = button.locator('[role="tooltip"]');
+      assert.equal(await detail.isVisible(), true, 'focus exposes the persistence rule on its action');
       await button.click();
       await page.waitForFunction(() =>
         document.querySelector('#save-status').textContent.includes('Persistent storage granted'),
@@ -205,6 +208,16 @@ try {
         'one player click makes one native API call',
       );
       assert.equal(await button.isVisible(), false, 'granted status removes the request button');
+      assert.equal(await detail.isVisible(), false, 'the persistence rule leaves with its action');
+      assert.equal(
+        await button.evaluate((action) => {
+          action.blur();
+          action.focus();
+          return document.activeElement === action;
+        }),
+        false,
+        'the hidden persistence action cannot retain keyboard focus',
+      );
       assert.equal(await page.evaluate(() => globalThis.deadvoxSaveTest.controller.storageStatus.persistent), true);
       assert.equal(
         await page.evaluate(async () => (await globalThis.deadvoxSaveTest.storage.status()).persistent),

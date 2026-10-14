@@ -15,7 +15,7 @@ export function mountWorldLoading(loading: WorldLoading): () => void {
     render(
       html`
       ${startupProgress}
-      <span id="world-loading-message">${loading.state === 'failed' ? `Unable to load the world: ${loading.error}` : 'Building the world around you…'}</span>
+      <span id="world-loading-message">${loading.state === 'failed' ? `Unable to load the world: ${loading.error}` : 'Loading world…'}</span>
       <button id="world-loading-reload" type="button" ?hidden=${loading.state !== 'failed'} @click=${() => location.reload()}>Reload game</button>
     `,
       mask,

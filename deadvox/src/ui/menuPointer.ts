@@ -205,6 +205,7 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
 
   let forwardingClick = false;
   let hoveredElement: Element | null = null;
+  let hoveredFact: Element | null = null;
   document.addEventListener(
     'click',
     (e) => {
@@ -243,7 +244,11 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
     update: () => {
       cursor.hidden = !(input.locked && input.menuPointer);
       cursor.style.transform = `translate(${input.cursorX}px, ${input.cursorY}px)`;
+      document.body.classList.toggle('menu-pointer-locked', input.locked && input.menuPointer);
       const underCursor = document.elementFromPoint(input.cursorX, input.cursorY);
+      hoveredFact?.classList.remove('game-cursor-hover');
+      hoveredFact = input.locked && input.menuPointer ? (underCursor?.closest('.fact-detail') ?? null) : null;
+      hoveredFact?.classList.add('game-cursor-hover');
       const clickable =
         underCursor?.closest('button, a, input, select, textarea, [role="button"], [role="option"]') ?? null;
       cursor.classList.toggle('hand', clickable !== null);

@@ -2,7 +2,7 @@
   "items": [
     {
       "category": "tool",
-      "description": "A small electronic compass with an illuminated heading display. Prototype: battery use is not yet modeled.",
+      "description": "An electronic compass with an illuminated heading display.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
@@ -220,7 +220,7 @@
     },
     {
       "category": "light",
-      "description": "Lets you see. Lets them see you.",
+      "description": "A battery-powered flashlight. Its light is visible to nearby zombies.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]

@@ -5,6 +5,7 @@ import { labelForAction } from '../game/inputBindings.ts';
 import { activityProgress } from './activityProgress.ts';
 import { comboBox } from './comboBox.ts';
 import type { CraftRow, CraftStatus } from './craftReadout.ts';
+import { factDetail } from './factDetail.ts';
 
 const REPAIR_PREFIX = /^Repair: /;
 
@@ -14,7 +15,7 @@ export interface CraftPanelActions {
 }
 export const renderCrafting = (root: HTMLElement, rows: readonly CraftRow[], actions: CraftPanelActions): void => {
   render(
-    html`<header><h2>Crafting</h2><p>Known recipes · clear both hands to start.</p></header>
+    html`<header><h2>${factDetail('Crafting', 'Starting a recipe requires both hands free.')}</h2></header>
     ${repeat(
       // Keyed by recipe so an open combo box stays with its own recipe when rows change.
       rows,
