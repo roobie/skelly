@@ -3361,7 +3361,7 @@ export const startPlay = (
     return gameFrozen;
   };
 
-  const updateDebugTargets = (bore: ReturnType<typeof firearmBoreRay> | undefined) => {
+  const updateDebugTargets = (bore: ReturnType<typeof firearmBoreRay> | undefined, nowMs: number) => {
     if (!debugTools) {
       return;
     }
@@ -3375,6 +3375,16 @@ export const startPlay = (
       pointerLocked: input.locked,
       menuPointer: input.menuPointer,
       firearmReady,
+    });
+    const interactionDistanceBlocks = debugTools.interactionRayEnabled
+      ? interactionTargetAt()?.distanceBlocks
+      : undefined;
+    debugTools.drawInteractionRay({
+      origin: eye(),
+      direction: lookDir(),
+      reachMetres: USE_REACH,
+      frame: nowMs,
+      ...(interactionDistanceBlocks === undefined ? {} : { interactionDistanceBlocks }),
     });
     const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(ray.origin, ray.direction, meleeWeapon()) : undefined;
     debugTools.updateAim(zombieAim);
@@ -3564,7 +3574,8 @@ export const startPlay = (
     const readiness = firearmReadiness();
     updateHeldItems(dt, readiness);
     const bore = heldFirearmBore(readiness);
-    updateDebugTargets(bore);
+    updateDebugTargets(bore, now);
+    debugTools?.updateTransientDraw(now);
     updateDebugReadout(now);
     mark = realNow();
 

@@ -122,6 +122,15 @@ export interface DebugRuntime {
   setCrosshairVisible: (visible: boolean) => void;
   /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when a shambler is aimed at. */
   updateLookedAt: (eye: Vec3, dir: Vec3, active: boolean) => void;
+  readonly interactionRayEnabled: boolean;
+  drawInteractionRay: (options: {
+    readonly origin: Vec3;
+    readonly direction: Vec3;
+    readonly reachMetres: number;
+    readonly frame: number;
+    readonly interactionDistanceBlocks?: number;
+  }) => void;
+  updateTransientDraw: (nowMs: number) => void;
   recordMeleeResult: (result: MeleeResult) => void;
   readonly buildOn: boolean;
   readonly noclip: boolean;

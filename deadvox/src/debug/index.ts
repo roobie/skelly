@@ -12,6 +12,7 @@ import {
   type FirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
 import type { ShadowState } from '../core/mood.ts';
+import { raycast } from '../core/raycast.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { WEATHERING_RANGES } from '../core/weather.ts';
 import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
@@ -60,6 +61,7 @@ import {
   spawnZombieType,
 } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
+import { TransientDebugDraw } from './transientDraw.ts';
 
 const COMPASS_DEBUG_LOADOUT = 'compass';
 
@@ -577,6 +579,7 @@ interface ActionContext {
   isGameFrozen: () => boolean;
   toggleGameFrozen: () => void;
   impactLaser: DebugHooks['impactLaser'];
+  interactionRay: { enabled: () => boolean; toggle: () => void };
   exportInputReplay: () => void;
   chooseInputReplay: () => void;
   look: LookControls;
@@ -600,6 +603,7 @@ export const createDebugActions = ({
   isGameFrozen,
   toggleGameFrozen,
   impactLaser,
+  interactionRay,
   exportInputReplay,
   chooseInputReplay,
   look,
@@ -895,6 +899,13 @@ export const createDebugActions = ({
         detail: () => `${look.shadowState.distance} m`,
         run: () => look.stepShadowDistance(),
       },
+      {
+        id: 'debug.interaction-ray-toggle',
+        label: 'Interaction ray',
+        group: 'diagnostics',
+        state: interactionRay.enabled,
+        run: interactionRay.toggle,
+      },
       // Diagnostics for a stray bright pixel (see render/hotCheck.ts and Mood.render): End paints the background
       // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments in a per-material colour.
       {
@@ -1092,6 +1103,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let snapshotStatus = '';
   let snapshotCopyStatus = '';
   let aimEnabled = true;
+  let interactionRayEnabled = new URLSearchParams(location.search).get('interactionray') === '1';
+  const transientDraw = new TransientDebugDraw(hooks.engine.scene, hooks.engine.config.debug);
   let lastHitText = '';
   let lastHitUntil = 0;
   let readout = emptyReadout;
@@ -1244,6 +1257,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const actions = createDebugActions({
     hooks,
     impactLaser: hooks.impactLaser,
+    interactionRay: {
+      enabled: () => interactionRayEnabled,
+      toggle: () => {
+        interactionRayEnabled = !interactionRayEnabled;
+      },
+    },
     exportInputReplay,
     chooseInputReplay,
     look,
@@ -1792,6 +1811,32 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       drawShell();
     },
     target: (eye, dir, active) => build.target(eye, dir, active),
+    get interactionRayEnabled() {
+      return interactionRayEnabled;
+    },
+    drawInteractionRay({ origin, direction, reachMetres, frame, interactionDistanceBlocks }) {
+      if (!(transientDraw.enabled && interactionRayEnabled)) {
+        return;
+      }
+      const opaqueHit = raycast(origin, direction, reachMetres / metresPerBlock, hooks.engine.isOpaque);
+      const opaqueDistance = opaqueHit?.distance;
+      const distanceBlocks = Math.min(
+        reachMetres / metresPerBlock,
+        opaqueDistance ?? Number.POSITIVE_INFINITY,
+        interactionDistanceBlocks ?? Number.POSITIVE_INFINITY,
+      );
+      const distanceMetres = distanceBlocks * metresPerBlock;
+      const start = origin.map((coordinate) => coordinate * metresPerBlock) as Vec3;
+      const end = start.map((coordinate, axis) => coordinate + direction[axis]! * distanceMetres) as Vec3;
+      transientDraw.line(start, end, frame);
+      const marker = end.map((coordinate, axis) =>
+        opaqueDistance !== undefined && opaqueDistance <= (interactionDistanceBlocks ?? Number.POSITIVE_INFINITY)
+          ? coordinate + opaqueHit!.normal[axis]! * 0.09
+          : coordinate - direction[axis]! * 0.09,
+      ) as Vec3;
+      transientDraw.point(marker, frame);
+    },
+    updateTransientDraw: (nowMs) => transientDraw.update(nowMs),
     click: (button, eye, dir) => build.click(button, eye, dir),
     wheel: (delta) => build.wheel(delta),
     stepNoclip: (step: DebugNoclipStep) => stepNoclip(step),
