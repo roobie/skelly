@@ -7,6 +7,7 @@ read_if:
   - you're changing world block shapes or slab geometry
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing the rules for time, survival, light or zombies
+  - you're implementing gauntlet scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth or its visual approval gate
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
@@ -302,6 +303,192 @@ not in authored layout geometry. See `AuthoredSite` in
 Small structures use authored templates because they are reviewable and
 content validation can check them. Keep template representation and import
 mechanics in the implementation rather than repeating the format here.
+
+### Gauntlet
+
+Gauntlet uses ordinary survival rules, not a second mission runtime. Reserving
+the service campus makes its street approach constructible; knowing a clue never
+grants access. Independent notes give alternate ways to infer the destination.
+Physical perimeter walls enclose the core without an enforced world edge: ordinary
+movement, doors and destruction remain authoritative. City size, scarcity and
+pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
+remain outside #671's first version.
+
+Dense blocks need inner circulation, not deeper empty lots behind two facade rows.
+The benchmark and scenario share a finished plan so streets, reserved approaches
+and stamping cannot diverge. Playable upper floors use authored stairs rather than
+benchmark stacking. Elevated routes reward getting onto structures and traversing
+away from default ground; not every structure must provide one, and existing
+movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`;
+`src/core/citySite.ts`, `CitySite`; and `src/content/base/gauntlet-city.libsonnet`,
+`building`.
+
+Marker-only population omits the ordinary settlement's wanderers and horde, making
+empty marker sets silently remove street pressure. Gauntlet therefore scales the
+ordinary settlement policy by building groups, not by the reserved campus's empty
+area, while the lab retains its authored markers. This reuses population and spawn
+admission instead of inventing an enemy-density runtime. See `src/core/gauntlet.ts`,
+`gauntletPopulation`; `src/core/hamlet.ts`, `hamletZombieSpawns`; and
+`src/core/zombieSpawns.ts`, `ZombieSpawner`.
+
+The route/save browser flow proves connectivity and persistence, not balance. Its
+test-only admission selects authored-marker pressure before world construction,
+including on reload, so settlement crowds cannot turn that proof into a balance
+trial. Damage, collision, lab encounters and the dead-survivor barrier remain
+ordinary rules; default play keeps settlement pressure. See `src/core/gauntlet.ts`,
+`GauntletSite`; `test/browser/save-controller-regressions.mjs`, `observation`; and
+`test/browser/gauntlet-flow.mjs`, `gauntletFlow`.
+
+Admission fails closed because a profile with dangling references, an ambiguous
+selector or a service footprint that fits only some turns is not a valid seeded
+scenario. A landing near a ladder is insufficient if a partition separates them;
+local portal admission and the final composition must both preserve the normal
+ladder owner's supported, body-clear entry and braced exit. Entry palette markers
+prevent later descents from being mistaken for the entrance. Whole-cell voxel
+queries prevent fractional sweep poses from reading an unrelated array slot.
+The plan freezes placement decisions; compiled template buffers remain
+compiler-owned inputs. Stamping never consumes the column index, because later
+vertical chunks and furniture requests need the same complete plan. See `scenarioPlanIssues` in `src/core/cityPlan.ts`,
+`scenarioPortalIssues` in `src/core/scenarioPortal.ts`, and `templateBodySpace`
+in `src/core/templateSpatial.ts`; see also `templateReachableStandingPositions`
+there and `src/core/ladders.ts`, `ladderOutward`.
+
+Scenario composition promotes the approved campus geometry without making the
+look layout the playable world's authority. Fixed resources must survive the transition
+from a rendered demo to a seeded world rather than depending on incidental loot.
+Public documentary leads must be independently useful and spatially separate;
+reading one cannot authorize another. Reserving their destination landmarks with
+the service block keeps their descriptions seed-correct. Related utility
+silhouettes keep matching metal alone from becoming a unique destination cue. See `src/content/base/gauntlet.jsonnet`, `templates` and
+`furniture`; `src/content/base/scenarios.jsonnet`, `composition`; and
+`src/core/scenarioComposition.ts`, `composeScenario`.
+
+Furniture anchors rotate as occupied boxes, while standing poses rotate as
+continuous points. Keeping these distinct prevents turned resource and objective
+metadata from pointing beside its furniture. Fixed-loot reference, container and
+source-context rules share an owner across authored layouts and city composition;
+the same placement transform supplies their runtime items. This makes a resource
+independent of incidental loot without bypassing ordinary inventory rules. See
+`src/core/placementLoot.ts`, `placementLootIssues` and `collectPlacementLoot`;
+`src/core/authoredLayout.ts`, `authoredLayoutIssues`; and
+`src/core/citySite.ts`, `furnitureIn`.
+
+The final composition fails closed before Play: a locally valid template cannot
+protect the route from later stamping or furniture. The certificate reads the
+same generated, stamped chunks and furniture occupancy as play, without
+materializing the whole city. Furniture anchored across a chunk boundary still
+belongs to an envelope that crosses that boundary. Clearance caching is private
+to this immutable initial-world proof, not a cache of live edited terrain. See
+`src/core/scenarioRoute.ts`, `ScenarioRouteSpace`; `src/core/scenarioCertificate.ts`,
+`scenarioCertificate`; and `src/core/gauntlet.ts`, `GauntletSite`.
+
+Fixed resources require an initially accessible route, rather than a key or tool
+whose acquisition depends on itself. An unlocked door is reversible; a locked
+door is not assumed open simply because its key exists somewhere. Independent
+public clue access must survive missing either lead; possession and reading
+never authorize the route. These are construction guarantees, not proof of clue
+interpretation or survival balance. Those judgments remain the integrated play
+gate on #671.
+
+Discovery observations distinguish designated public-lead reads, landmark and
+building proximity, reachable entrance hatch encounters/open state, and accepted
+travel through the entry ladder envelope. Generic furniture reads or other ladder
+travel cannot stand in for this funnel. Missing events are missing observations,
+not proof that a player failed to interpret a note or that an entrance was broken;
+optional player descriptions and BR's play supply those judgments. Direct discovery
+remains legitimate. The attempt snapshot preserves first observations and completion
+freezes them so Continue cannot rewrite the journey. See
+`src/core/scenarioDiscovery.ts`, `discoveryForPlan`; `src/core/scenarioRun.ts`,
+`ScenarioRun`; and `src/game/session.ts`, `createSession`.
+
+The lab is a multi-storey subterranean complex whose danger rises with depth,
+with the nuclear objective at the bottom. A storey contains several distinct
+special rooms, not one stop on a ladder shaft. Looped circulation and separated,
+offset descents make exploration and descent route choices rather than a single
+corridor followed by a continuous climb. Adjacent storeys share alternate links
+so returning need not retrace the approach.
+
+The campus scale, room assignments and links are authored in
+`src/content/base/gauntlet-lab.libsonnet`, `storeys`, `kinds` and `links`.
+Its `anchors` derives storey and descent poses and the objective location from
+those tables so composition metadata cannot silently retain an older campus.
+Room-kind props and legible room labels distinguish laboratory work from storage,
+utilities and containment; reuse of those kinds across storeys gives the complex
+an identity without making every floor the same room. Support gives way to
+restricted research, damaged containment and critical-depth failures so depth
+has a visible risk direction. These are inert spatial cues, not a danger or
+balance proof: the deepest place must earn its higher risk through play.
+
+Storey spacing gives standing headroom and makes each descent a separate place
+to enter. Room and storey additions belong in the authoring tables, with linked
+floor heights and the surface foundation derived from the storey order, rather
+than in a new simulation or site generator. The underground campus extends
+beyond the small service facade because a surface disguise must not dictate the
+lab's capacity. One compiled placement owns their common excavation; incidental
+surface utilities stay inside that placement to avoid overlapping authored-site
+footprints. The separate demo preserves the shape baseline independently of
+seeded-city composition and its later route proof. See `src/content/base/gauntlet-look.jsonnet`,
+`row` and `layouts`.
+
+Static admission indexes furniture occupancy for both door states before body
+queries, because a multi-room campus must not scan every room's furnishings for
+every clearance cell. Template character lookup avoids expanding ordinary rows
+for every cell while preserving code-point indexing for wider Unicode markers.
+These changes reduce campus authoring cost without a second collision or
+compiler owner. Jsonnet paints shared row strings instead of reevaluating every
+cell's sparse furniture and partition queries; retaining painting priority keeps
+that evaluation optimization separate from changing the campus. See
+`src/content/base/gauntlet-lab.libsonnet`, `rows`, and
+`src/content/base/gauntlet-look.jsonnet`, `row`.
+The scenario profile takes its entry anchors from the same source metadata as the
+hatch and entry ladder instead of rediscovering markers by scanning the entire
+campus. See `src/core/templateSpatial.ts`, `TemplateSpace`;
+`src/core/templates.ts`, `charAt`; and
+`src/content/base/gauntlet-lab.libsonnet`, `entry`.
+
+The objective's terminal win is a session/save decision, not an observer counter.
+Live entity, reach and unobstructed gaze admission prevents a stale displayed
+interaction from winning remotely; an already dead survivor cannot activate it.
+Completion stops the attempt, while presentation distinguishes victory from
+acknowledged storage. A failed write leaves the earlier checkpoint intact and
+keeps ordinary save recovery visible, rather than claiming the win is durable.
+A restored completion remains terminal and cannot count another success. See
+`src/game/session.ts`, `activateGoal`; `src/core/scenarioRun.ts`, `ScenarioRun`;
+`src/core/saveFormat.ts`, `validateWire`; and `src/ui/saveController.ts`, `finishWin`.
+
+Attempt observation belongs in the snapshot so Continue neither pools another
+survivor's counters nor counts the restored pose as travel. Export identifies
+the build, scenario, world and character instead of pooling by seed. Accepted
+physics movement includes ladder travel, while debug displacement is not play
+travel. Observation never authorizes the objective. Replay is a fresh attempt,
+with no attempt history or resurrection. A frozen playtest follows successful
+play approval and #660's separate publishing prerequisites so a round retains
+its build and origin.
+
+Discovery cues must not be unique merely by material. The city plan must scatter
+incidental structures in the same visual family with different silhouettes,
+so the exhausts reward recognizing their arrangement and context instead of
+spotting the only matching colour. Keep that ambiguity compatible with the
+independent notes; visual redundancy is not a false-destination quest chain.
+
+Bounded rendered looks precede full lab and clue construction because geometry,
+lighting and clue interpretation need player judgment before large investments.
+The approved campus is the shape baseline for #671 composition; changed landmark
+and lead presentation still needs a player look. The separate authored demo is
+not a seeded city or an all-seed route certificate. Its console remains inactive
+because the visual baseline must not become objective authority; no saved win
+is supplied by readable furniture. See `src/content/base/gauntlet-look.jsonnet` and `AuthoredSite` in
+`src/core/authoredSite.ts`.
+
+Darkness uses world-derived sky transport and an ordinary carried light, not
+invented powered lab fixtures. Finished site placements expose the same sky
+eligibility contract across authored layouts, hamlets and scenario composition;
+there is no lab lighting category. Benchmark city plans do not opt into scenario
+sky work, preserving their stress policy. Demo stock stays outside ordinary
+reachability, while admitted scenario templates and fixed items are world sources.
+See `src/core/site.ts`, `Site`; `src/game/engine.ts`, `createEngine`;
+`src/core/citySite.ts`, `authoredPlacements`; and `src/core/reachability.ts`,
+`worldSources`.
 
 ### Points of interest
 
@@ -1032,6 +1219,13 @@ toughen up. This is the game's long-term clock: the longer you survive, the
 worse the world gets.
 
 ### Senses and AI
+
+Occlusion cannot make a target beyond the maximum detection range detectable.
+Reject those targets before querying terrain, rather than reducing AI cadence or
+changing attention rules to handle dense crowds. The bound must include far
+hearing and carried-light reach; nearer targets still use ordinary occlusion and
+crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
+`seesPlayer`.
 
 - **Senses:** sight (a view cone and range, blended smoothly from day range to
   night range through twilight and reduced when you crouch), hearing (noise events)

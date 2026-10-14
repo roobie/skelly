@@ -404,6 +404,64 @@ describe('melee hit sounds', () => {
 });
 
 describe('shambler perception', () => {
+  it('rejects unreachable senses before terrain queries without shortening far hearing or carried-light reach', () => {
+    const type = {
+      ...SHAMBLER,
+      sight: 5,
+      nightSight: 5,
+      hearing: 1,
+      hearingRange: { walk: 5, jog: 5, sprint: 5 },
+      hearingModel: { ...SHAMBLER.hearingModel, farMultiplier: 2 },
+    };
+    let queries = 0;
+    const clear = () => {
+      queries += 1;
+      return false;
+    };
+    const distant: Vec3 = [100, 0, 0];
+    const perception = {
+      zombie: type,
+      from: [0, 0, 0] as Vec3,
+      facing: [1, 0, 0] as Vec3,
+      player: player(distant, [-1, 0, 0], 'walking'),
+      dayPhase: 'day' as const,
+      sightBlend: 1,
+      blockSize: 1,
+      isSolid: clear,
+      tuning: SENSE_TUNING,
+    };
+    expect(perceivePlayer(perception)).toBe(false);
+    expect(
+      hearVocalNoise({
+        zombie: type,
+        from: perception.from,
+        noise: { id: 1, pos: distant, radiusMetres: 5, expiresAt: 1 },
+        time: 0,
+        blockSize: 1,
+        isSolid: clear,
+        rng: Rng.stream(1, 'sense-bounds'),
+        tuning: SENSE_TUNING,
+      }),
+    ).toBeUndefined();
+    expect(queries).toBe(0);
+    expect(
+      hearPlayer({
+        ...perception,
+        player: player([9, 0, 0], [-1, 0, 0], 'walking'),
+        rng: Rng.stream(1, 'sense-bounds'),
+      })?.tier,
+    ).toBe('far');
+    expect(
+      perceivePlayer({
+        ...perception,
+        player: player([9, 0, 0], [-1, 0, 0], 'still', true),
+        dayPhase: 'night',
+        sightBlend: 0,
+      }),
+    ).toBe(true);
+    expect(queries).toBeGreaterThan(0);
+  });
+
   it('uses configured day/night/light/cone/ray bounds and movement hearing bounds', () => {
     // biome-ignore lint/complexity/useMaxParams: compact table-driven test inputs vary independent perception dimensions.
     const sees = (

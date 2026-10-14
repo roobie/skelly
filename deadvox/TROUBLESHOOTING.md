@@ -35,6 +35,8 @@ Wait for application readiness rather than optional third-party resources. For n
 
 Keep Playwright's managed Chromium launch and isolated browser profiles. Treat system Chrome plus Playwright as unsupported until a root cause is established. Firefox pointer-lock refusal (#168) and built IndexedDB Continue (#170) remain quarantined: do not restore either case without a fixed trial plan and before/after/restored-before evidence. Issue #287 remains open for the system-Chrome launch root cause. See `test/browser/chromium.mjs`, `launchChromium`, and [browser-ci.md](../docs/browser-ci.md).
 
+Native pointer activation of the practice terminal return and Exit practice transitions is quarantined in #705. The readiness hypothesis did not explain the navigation failure; keyboard activation preserves the save contract but does not fix or prove the pointer path. Investigate native event delivery, pointer lock and drawn-cursor capture before restoring clicks with deterministic before/after/restored-before evidence. The work tracker owns the revisit. See `test/browser/save-controller-regressions.mjs`.
+
 A busy-lock fixture uses an actual exclusive Web Lock in a same-origin blank document; it tests lock recovery without a second world or save worker. It simulates pointer lock and does not establish native-gesture coverage.
 
 ## Tiled site export

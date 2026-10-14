@@ -105,6 +105,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/audioOptions.ts',
   'src/ui/credits.ts',
   'src/ui/death.ts',
+  'src/ui/win.ts',
   // Blocking player-facing error presentation; its state and exports do not affect simulation or saves.
   'src/ui/errorReport.ts',
   'src/ui/gameCursor.ts',

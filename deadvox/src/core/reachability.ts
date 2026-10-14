@@ -4,6 +4,7 @@ import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
 import { HAMLET_TEMPLATES, ordinaryHamletSpawnWeights, possibleHamletZombies } from './hamlet.ts';
 import { WORK_IN_PROGRESS } from './inventory.ts';
+import { scenarioSources } from './scenarioComposition.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 import { SEVERED_ITEM } from './zombieRegionNames.ts';
@@ -163,8 +164,9 @@ const worldSources = (registry: Registry) => {
   const markers = new Map<string, readonly SpawnMarker[]>();
   const authoredLayouts = [...registry.layouts.values()].filter((layout) => !layout.demo);
   const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
+  const scenario = scenarioSources(registry);
   // Compiling uses the actual marked pieces/spawns, not unused palette declarations.
-  for (const id of new Set([...HAMLET_TEMPLATES, ...authoredTemplates])) {
+  for (const id of new Set([...HAMLET_TEMPLATES, ...authoredTemplates, ...scenario.templates])) {
     const definition = registry.templates.get(id);
     if (!definition) {
       continue; // A rejected/missing template provides no sources.
@@ -190,6 +192,9 @@ const worldSources = (registry: Registry) => {
   const found = addLoot(registry, roots);
   for (const item of authoredFixedLootItems(authoredLayouts)) {
     found.add(item);
+  }
+  for (const fixed of scenario.fixedLoot.flatMap((source) => source.items)) {
+    found.add(fixed.item);
   }
   addUnpackedContents(registry, found);
   return { found, workstations, workstationQualities };

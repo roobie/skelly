@@ -873,6 +873,7 @@ const FurnitureSchema = pipe(
     solid: optional(vBoolean()),
     /** A debug practice surface; hits may receive a profile-specific presentation ping. */
     shotTarget: optional(literal(true)),
+    scenarioGoal: optional(literal(true)),
     readable: optional(ReadableSchema),
     container: optional(ContainerSchema),
     /** The loot table rolled into its container when the chunk generates. */
@@ -1145,6 +1146,67 @@ const SiteLayoutSchema = strictObject({
   ),
   /** Observation only: playtest metrics record when the player first stands in each beat's area. */
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
+});
+
+const ScenarioSchema = strictObject({
+  id: Id,
+  kind: literal('gauntlet'),
+  body: Id,
+  compression: Id,
+  serviceTemplate: Id,
+  composition: optional(
+    strictObject({
+      fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
+      leads: tuple([Id, Id]),
+      landmarks: tuple([Id, Id]),
+      incidentalTemplates: pipe(array(Id), minLength(1), maxLength(32)),
+      objective: CellPosition,
+      objectiveFace: CellPosition,
+      retreat: CellPosition,
+      resources: pipe(
+        array(strictObject({ at: CellPosition, standing: CellPosition })),
+        nonEmpty('needs a resource standing pose'),
+      ),
+      storeys: pipe(array(strictObject({ id: Id, standing: CellPosition })), minLength(1), maxLength(16)),
+      descents: pipe(
+        array(strictObject({ ladder: CellPosition, upper: CellPosition, lower: CellPosition })),
+        maxLength(32),
+      ),
+    }),
+  ),
+  portal: strictObject({
+    hatch: Char,
+    ladder: Char,
+    upper: CellPosition,
+    lower: CellPosition,
+  }),
+  city: strictObject({
+    blocksX: pipe(Count, minValue(1), maxValue(4)),
+    blocksZ: pipe(Count, minValue(1), maxValue(4)),
+    street: pipe(Count, minValue(4), maxValue(64)),
+    blockX: pipe(Count, minValue(8), maxValue(256)),
+    blockZ: pipe(Count, minValue(8), maxValue(256)),
+    pad: pipe(Count, minValue(2), maxValue(32)),
+    gap: pipe(Count, minValue(1), maxValue(32)),
+    blend: pipe(Count, maxValue(64)),
+    rows: optional(
+      pipe(
+        Count,
+        minValue(2),
+        maxValue(8),
+        check((value) => value % 2 === 0, 'needs paired rows'),
+      ),
+    ),
+    perimeter: optional(
+      strictObject({
+        block: Id,
+        height: pipe(Count, minValue(1), maxValue(32)),
+        thickness: pipe(Count, minValue(2), maxValue(8)),
+      }),
+    ),
+    streetProps: optional(pipe(array(Id), maxLength(16))),
+    templates: pipe(array(Id), minLength(1), maxLength(32)),
+  }),
 });
 
 // ---- zombies ----
@@ -1777,6 +1839,7 @@ const SECTION_DESCRIPTOR = {
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
   compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
+  scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1797,6 +1860,8 @@ export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
+export type ScenarioDef = InferOutput<typeof ScenarioSchema>;
+export type FixedLootOverrideDef = InferOutput<typeof FixedLootOverride>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;

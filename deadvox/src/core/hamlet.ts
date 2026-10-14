@@ -70,6 +70,22 @@ const ZOMBIE_COUNT = [6, 10] as const;
 export const HAMLET_HORDE_TYPE = 'shambler';
 export const HAMLET_HORDE_MEMBERS = [20, 50] as const;
 
+export const hamletHordeSpawn = (
+  seed: number,
+  road: Rect,
+  roadHeightAt: (x: number) => number,
+  id: string,
+): HordeSpawn => {
+  const rng = Rng.stream(seed, 'hamlet-first-horde');
+  const x = Math.floor(road.x0 + (road.x1 - road.x0) * 0.68);
+  return {
+    id,
+    type: HAMLET_HORDE_TYPE,
+    pos: [x + 0.5, roadHeightAt(x) + 1, (road.z0 + road.z1) / 2],
+    members: rng.int(...HAMLET_HORDE_MEMBERS),
+  };
+};
+
 /** Keeps authored-only kinds out of ordinary spawns and their static reachability sources. */
 export const ordinaryHamletSpawnWeights = (registry: Pick<Registry, 'zombies'>): Map<string, number> =>
   new Map(
@@ -126,6 +142,7 @@ export const hamletZombieSpawns = (
   options: {
     readonly roadHeightAt: (x: number) => number;
     readonly spawnWeights?: ReadonlyMap<string, number>;
+    readonly roadsideOffset?: number;
   },
 ): ZombieSpawn[] => {
   const { roadHeightAt } = options;
@@ -149,12 +166,16 @@ export const hamletZombieSpawns = (
     return weightedTypes.at(-1)![0];
   };
   const count = rng.int(...ZOMBIE_COUNT);
-  const spawns = selected.slice(0, count).map(({ zombie, pos }) => ({ type: zombie, pos }));
+  const spawns = selected.slice(0, count).map(({ zombie, pos, window: spawnWindow }) => ({
+    type: zombie,
+    pos,
+    ...(spawnWindow ? { window: spawnWindow } : {}),
+  }));
   const wanderers = count - spawns.length;
   for (let i = 0; i < wanderers; i++) {
     const x = Math.floor(road.x0 + ((i + 1) * (road.x1 - road.x0)) / (wanderers + 1));
     const side = i % 2 === 0 ? -1 : 1;
-    const z = Math.floor((road.z0 + road.z1) / 2 + side * (HAMLET.road / 2 + 2));
+    const z = Math.floor((road.z0 + road.z1) / 2 + side * (options.roadsideOffset ?? HAMLET.road / 2 + 2));
     spawns.push({ type: wandererType(), pos: [x, roadHeightAt(x) + 1, z] });
   }
   return spawns;
@@ -174,6 +195,9 @@ export interface Lot {
 export class Hamlet implements Site {
   readonly road: Rect;
   readonly lots: readonly Lot[];
+  get authoredPlacements(): readonly Placement[] {
+    return this.lots.map((lot) => lot.placement);
+  }
   /** Everything the hamlet touches, flattening included, in blocks. */
   readonly bounds: Rect;
   readonly range: HandlingRange;
@@ -347,14 +371,7 @@ export class Hamlet implements Site {
         spawnWeights: ordinaryHamletSpawnWeights(this.registry),
       }),
     );
-    const rng = Rng.stream(this.seed, 'hamlet-first-horde');
-    const x = Math.floor(this.road.x0 + (this.road.x1 - this.road.x0) * 0.68);
-    this.hordeSpawn = {
-      id: 'first-horde',
-      type: HAMLET_HORDE_TYPE,
-      pos: [x + 0.5, this.roadHeightAt(x) + 1, (this.road.z0 + this.road.z1) / 2],
-      members: rng.int(...HAMLET_HORDE_MEMBERS),
-    };
+    this.hordeSpawn = hamletHordeSpawn(this.seed, this.road, (x) => this.roadHeightAt(x), 'first-horde');
   }
 
   // ---- internals ----

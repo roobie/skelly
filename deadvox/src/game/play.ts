@@ -5,7 +5,9 @@
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
+import { getBuildRevision } from '../core/buildInfo.ts';
 import { dominantSide, offSide } from '../core/character.ts';
+import { CitySite } from '../core/citySite.ts';
 import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
@@ -32,6 +34,7 @@ import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { pileScatterPlacements } from '../core/scatterPile.ts';
+import { discoveryForPlan } from '../core/scenarioDiscovery.ts';
 import type { BodyTuningDef } from '../core/schema.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -82,6 +85,7 @@ import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { mountTutorial } from '../ui/tutorial.ts';
+import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
 import { GameAudio } from './audio.ts';
 import {
@@ -189,11 +193,17 @@ const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number): Vec3 => [
   (z + 0.5) * blockSize,
 ];
 
+const scenarioDiscovery = (site: Engine['site']) =>
+  site instanceof CitySite ? discoveryForPlan(site.plan) : undefined;
+
+const scenarioObjective = (site: Engine['site']): Readonly<Vec3> | undefined =>
+  site instanceof CitySite ? site.plan.composition?.objective : undefined;
+
 interface PlayErrorReportPorts {
   readonly config: Engine['config'];
   readonly sim: ReturnType<typeof createSession>['sim'];
   readonly input: Input;
-  readonly metrics: SessionMetrics;
+  readonly metricsFile: () => HandBackFile;
   readonly exportReplay: () => Promise<Uint8Array>;
   readonly halted: { value: boolean };
   readonly saveController: SaveController | undefined;
@@ -216,7 +226,7 @@ const bindPlayErrorReport = ({
   config,
   sim,
   input,
-  metrics,
+  metricsFile: exportMetricsFile,
   exportReplay,
   halted,
   saveController,
@@ -226,7 +236,7 @@ const bindPlayErrorReport = ({
     site: config.site,
     clockText: () => formatClock(sim.calendar),
     stop: () => stopPlayAfterError(sim, input, halted, saveController),
-    metricsFile: () => metricsFile(metrics),
+    metricsFile: exportMetricsFile,
     replayFile: async () => replayFile(await exportReplay(), new Date()),
   };
   setErrorReportContext(context);
@@ -777,6 +787,9 @@ export const startPlay = (
   let perceptionLabelsEnabled = false;
   const session = createSession({
     registry,
+    scenario: engine.scenario,
+    objective: scenarioObjective(engine.site),
+    discovery: scenarioDiscovery(engine.site),
     handedness: config.debugHandedness ?? options.handedness,
     world: engine.world,
     isSolid: engine.isSolid,
@@ -1210,7 +1223,7 @@ export const startPlay = (
   let revealZombies = false;
   const storedMetrics = (() => {
     try {
-      return loadMetrics(config.seed, localStorage);
+      return engine.scenario ? null : loadMetrics(config.seed, localStorage);
     } catch {
       // Storage can be disabled; metrics start fresh for this run.
       return null;
@@ -1219,7 +1232,7 @@ export const startPlay = (
   const metrics = new SessionMetrics(config.seed, storedMetrics);
   playtestObserver = new PlaytestObserver(metrics, engine.site?.playtestMarks);
   const saveMetrics = (): void => {
-    if (options.tutorial) {
+    if (engine.scenario || options.tutorial) {
       return;
     }
     try {
@@ -1228,7 +1241,39 @@ export const startPlay = (
       /* Storage can be disabled; gameplay remains available. */
     }
   };
-  const exportMetrics = (): void => downloadFile(metricsFile(metrics));
+  const attemptMetricsFile = (): HandBackFile => {
+    if (!session.scenarioRun) {
+      return metricsFile(metrics);
+    }
+    const snapshot = captureSnapshot();
+    return {
+      name: `deadvox-attempt-${snapshot.character.id}.json`,
+      blob: new Blob(
+        [
+          JSON.stringify(
+            {
+              build: getBuildRevision(),
+              saveIdentity: options.saveController?.namespace || null,
+              site: config.site,
+              seed: sim.seed,
+              worldId: snapshot.world.id,
+              characterId: snapshot.character.id,
+              outcome: (sim.dead && 'dead') || (session.won && 'won') || 'running',
+              death: sim.dead ?? null,
+              run: session.scenarioRun,
+              elapsedGameSeconds: sim.calendar - session.scenarioRun.startedAtGameTimestamp,
+              searched: snapshot.character.inventory.entities.entities.filter((entity) => entity.searched).length,
+              looted: snapshot.character.inventory.looted,
+            },
+            null,
+            2,
+          ),
+        ],
+        { type: 'application/json' },
+      ),
+    };
+  };
+  const exportMetrics = (): void => downloadFile(attemptMetricsFile());
   const measureSnapshot = () => playtestObserver!.measureSnapshot(captureSnapshot, session);
   const openInventoryScreen = (): void => {
     screen.open();
@@ -1329,7 +1374,7 @@ export const startPlay = (
     config,
     sim,
     input,
-    metrics,
+    metricsFile: attemptMetricsFile,
     exportReplay: inputReplayHooks.export,
     halted: playHalted,
     saveController: options.saveController,
@@ -1345,7 +1390,7 @@ export const startPlay = (
     }
   };
   // Assigned, not added: a later world on this page must not save each file twice.
-  $('playtest-metrics-export').onclick = () => handBack(() => metricsFile(metrics));
+  $('playtest-metrics-export').onclick = () => handBack(attemptMetricsFile);
   $('playtest-replay-export').onclick = () =>
     handBack(async () => replayFile(await inputReplayHooks.export(), new Date()));
   $('playtest-export').hidden = false;
@@ -1495,6 +1540,8 @@ export const startPlay = (
   });
   let mainMenuOpen = !options.replay;
   let resumeRequested = false;
+  const titleMenuOptions = () =>
+    started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel };
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
       started,
@@ -1504,10 +1551,10 @@ export const startPlay = (
       debugMenuOpen: debugTools?.menuOpen ?? false,
       reviewMapOpen,
       pointerLocked: input.locked || Boolean(options.replay),
-      dead: sim.dead !== undefined,
+      dead: sim.dead !== undefined || session.won,
       pointerLockChanged,
       resumeRequested,
-      ...(started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel }),
+      ...titleMenuOptions(),
       titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
@@ -1550,7 +1597,7 @@ export const startPlay = (
     }
   };
   const resume = () => {
-    if (replayPlayer || sim.dead || playHalted.value) {
+    if (replayPlayer || sim.dead || session.won || playHalted.value) {
       return;
     }
     resumeRequested = true;
@@ -2319,6 +2366,9 @@ export const startPlay = (
 
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): string => {
+    if (session.isObjective(entity)) {
+      return `${labelForAction('world.interact')}: activate ${nameOf(entity)}`;
+    }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
     const doorReason = !prying && door?.plan.ok === false ? door.plan.reason : undefined;
@@ -2375,6 +2425,9 @@ export const startPlay = (
     const entity = entities.byUid(uid);
     if (!entity) {
       return 'The target is no longer available';
+    }
+    if (session.isObjective(entity)) {
+      return session.activateGoal(entity);
     }
     if (compression.locksInput && rest.action?.furnitureUid !== entity.uid) {
       return undefined;
@@ -3384,6 +3437,12 @@ export const startPlay = (
     });
   };
 
+  const observeScenarioFrame = (seconds: number): void =>
+    session.observeRunFrame(
+      seconds,
+      worldLoading.ready && started && !mainMenuOpen && document.visibilityState === 'visible',
+    );
+
   const prepareStreaming = (now: RealTimestamp): void => {
     streamer.update(body.pos[0], body.pos[2]);
     if (!worldLoading.ready && replayDriver && !replayDriver.initializeColumns()) {
@@ -3408,6 +3467,7 @@ export const startPlay = (
     });
     drawTutorial?.();
   };
+
   const affordanceForFrame = (visible: Readonly<HudOptionsState>) =>
     interactionAffordance(
       interactionTargetAt,
@@ -3467,6 +3527,7 @@ export const startPlay = (
     const dt = realDuration(Math.min(0.1, elapsedReal));
     frameInterval.record(now, now - last);
     last = now;
+    observeScenarioFrame(elapsedReal);
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
@@ -3574,7 +3635,14 @@ export const startPlay = (
     observeRealFrame(
       (now) => {
         try {
-          return !playHalted.value && updateFrame(now);
+          if (playHalted.value) {
+            return false;
+          }
+          if (session.won) {
+            win();
+            return true;
+          }
+          return updateFrame(now);
         } catch (error) {
           if (worldLoading.ready) {
             throw error;
@@ -3590,6 +3658,32 @@ export const startPlay = (
     debugErrorEnabled(config.debug, location.search),
     () => input.locked,
   );
+
+  let winPresented = false;
+  const win = (): void => {
+    if (!winPresented) {
+      winPresented = true;
+      input.unlock();
+      mainMenuOpen = false;
+      debugTools?.closeMenus();
+      reading.close();
+      closeInventoryScreen();
+      inventoryPanel.hidden = true;
+      syncMenuState();
+      prompt.hidden = true;
+      if (!options.restore || options.restore.character.scenarioRun?.completedAtGameTimestamp === null) {
+        options.saveController?.finishWin();
+      }
+    }
+    showWin($('death'), {
+      seed: sim.seed,
+      run: session.scenarioRun!,
+      checkpoint: options.saveController?.winCheckpointStatus ?? 'unavailable',
+      newWorld: () => location.assign(newWorldQuery(location.search, config.seed)),
+      freshAttempt: () => location.assign(newWorldQuery(location.search, config.seed - 1)),
+      exportRun: exportMetrics,
+    });
+  };
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
   const die = ({ cause, time }: { cause: string; time: number }) => {

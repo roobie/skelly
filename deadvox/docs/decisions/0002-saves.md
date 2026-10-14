@@ -24,6 +24,14 @@ Write snapshots through crash-safe A/B records. Disk work is asynchronous; a fai
 
 After death, do not offer a death-bearing world for Continue. Mark death before the asynchronous final write so an unfinished write cannot revive the survivor; clear that marker only after another world's snapshot completes. Whether a new character may enter the same world after death remains an open decision for BR.
 
+A completed scenario checkpoints its terminal outcome without treating the write
+request as durable success. Only storage acknowledgement grants that claim;
+failure leaves the prior record available and ordinary save recovery visible.
+Continue of an acknowledged completion shows the terminal card, not a playable
+pre-win survivor. Unlike death, an unsaved win does not invalidate the older
+checkpoint: losing an unacknowledged completion is not resurrection. See
+`src/ui/saveController.ts`, `finishWin` and `winCheckpointStatus`.
+
 Autosave checkpoints count simulated play time, not wall-clock time or game hours. Pausing therefore does not advance the interval, and changing the clock ratio does not change its cadence. Saves before sleep, on `visibilitychange` and on `pagehide` cover the time between periodic checkpoints.
 
 ## Compatibility
