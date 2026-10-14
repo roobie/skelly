@@ -191,7 +191,7 @@ const handlingTemplate = (vm: HandlingViewModel): TemplateResult =>
   activityProgress({
     label: vm.label,
     percent: vm.percent,
-    time: vm.simSecondsLabel,
+    progressText: vm.simSecondsLabel,
     ...(vm.minimumPercent === undefined ? {} : { minimumPercent: vm.minimumPercent }),
     detail: html`${vm.next ? html`<span>${vm.next}</span>` : ''}
       ${vm.cancelLabel ? html`<span>${vm.cancelLabel}</span>` : ''}

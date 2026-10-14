@@ -5,7 +5,7 @@ const RING_CIRCUMFERENCE = 276.46;
 export interface ActivityProgressOptions {
   readonly label: string;
   readonly percent: number;
-  readonly time: string;
+  readonly progressText: string;
   readonly minimumPercent?: number;
   readonly detail?: TemplateResult | typeof nothing;
   readonly controls?: TemplateResult | typeof nothing;
@@ -14,7 +14,7 @@ export interface ActivityProgressOptions {
 export const activityProgress = ({
   label,
   percent,
-  time,
+  progressText,
   minimumPercent,
   detail = nothing,
   controls = nothing,
@@ -52,7 +52,7 @@ export const activityProgress = ({
     </div>
     <div class="activity-progress-copy">
       <strong>${label}</strong>
-      <span>${time}</span>
+      <span>${progressText}</span>
       ${minimumPercent === undefined ? nothing : html`<span>Minimum release ${minimumPercent}%</span>`}
       ${detail}
     </div>

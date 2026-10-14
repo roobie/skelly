@@ -61,7 +61,7 @@ export const renderCraftStatus = (
       ? activityProgress({
           label: status.name,
           percent: status.percent,
-          time: status.progress,
+          progressText: status.progress,
           detail: html`
             ${status.stopped ? html`<span>Stopped</span>` : nothing}
             ${status.reason ? html`<span class="craft-gap">${status.reason}</span>` : nothing}
