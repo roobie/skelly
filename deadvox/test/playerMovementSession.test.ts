@@ -155,14 +155,22 @@ describe('landing injuries', () => {
     return { runtime, before, after: runtime.session.sim.body.snapshotState() };
   };
 
-  it('survives low fixture drops while high fixture drops can kill or spare a healthy player', () => {
+  it('survives low fixture drops even at the maximum landing damage spread', () => {
     const gravity = physicsFor(scale).gravity * scale.blockSize;
-    const outcomes = [4, 12].map((height) =>
-      [1, 2, 3, 4].map((seed) => drop(Math.sqrt(2 * gravity * height), seed).runtime.session.sim.dead !== undefined),
-    );
-    expect(outcomes[0]).not.toContain(true);
-    expect(outcomes[1]).toContain(true);
-    expect(outcomes[1]).toContain(false);
+    const speed = Math.sqrt(2 * gravity * 4);
+    const { health } = makeRuntime().session.sim.body;
+    const damage = Math.max(0, speed ** 2 - tuning.safeSpeedMetresPerSimSecond ** 2) * tuning.damagePerSquaredSpeed;
+    expect(damage * tuning.damageSpread.max).toBeLessThan(health);
+    expect(drop(speed).runtime.session.sim.dead).toBeUndefined();
+  });
+
+  it('allows high fixture drops to kill or spare full health across the content damage spread', () => {
+    const gravity = physicsFor(scale).gravity * scale.blockSize;
+    const speed = Math.sqrt(2 * gravity * 12);
+    const { health } = makeRuntime().session.sim.body;
+    const damage = Math.max(0, speed ** 2 - tuning.safeSpeedMetresPerSimSecond ** 2) * tuning.damagePerSquaredSpeed;
+    expect(damage * tuning.damageSpread.min).toBeLessThan(health);
+    expect(damage * tuning.damageSpread.max).toBeGreaterThan(health);
   });
 
   it('leaves the body unchanged after a safe landing', () => {
