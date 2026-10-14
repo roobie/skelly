@@ -8,14 +8,64 @@ local button = std.filter(function(f) f.id == 'gauntlet_look_button', look.furni
 local note = function(id, title, text) memo + {
   id: id, name: title, readable: { title: title, text: text },
 };
+local emptyLoot = { usage: [], tier: 'Tier1' };
 local utilities = [
-  { id: 'gauntlet_public_memo', furniture: 'gauntlet_public_memo', size: [2, 2, 1] },
-  { id: 'gauntlet_public_directions', furniture: 'gauntlet_public_directions', size: [2, 2, 1] },
-  { id: 'gauntlet_water_tank', furniture: 'gauntlet_water_tank', size: [6, 12, 6] },
-  { id: 'gauntlet_loading_frame', furniture: 'gauntlet_loading_frame', size: [6, 8, 2] },
-  { id: 'gauntlet_incidental_bollard', furniture: 'gauntlet_look_bollard', size: [2, 4, 2] },
-  { id: 'gauntlet_incidental_cabinet', furniture: 'gauntlet_look_cabinet', size: [4, 3, 2] },
-  { id: 'gauntlet_incidental_riser', furniture: 'gauntlet_look_riser', size: [3, 5, 3] },
+  {
+    id: 'gauntlet_public_memo', size: [2, 3, 1], lootContext: emptyLoot,
+    palette: { '=': 'concrete', F: { furniture: 'gauntlet_public_memo' } },
+    layers: [['=='], ['FF'], ['FF']],
+  },
+  {
+    id: 'gauntlet_public_directions', size: [2, 3, 1], lootContext: emptyLoot,
+    palette: { '=': 'concrete', F: { furniture: 'gauntlet_public_directions' } },
+    layers: [['=='], ['FF'], ['FF']],
+  },
+  {
+    id: 'gauntlet_water_tank', size: [6, 13, 6], lootContext: emptyLoot,
+    palette: { '=': 'concrete', F: { furniture: 'gauntlet_water_tank' } },
+    layers: [
+      ['======', '======', '======', '======', '======', '======'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF', 'FFFFFF'],
+    ],
+  },
+  {
+    id: 'gauntlet_loading_frame', size: [6, 9, 2], lootContext: emptyLoot,
+    palette: { '=': 'concrete', F: { furniture: 'gauntlet_loading_frame' } },
+    layers: [
+      ['======', '======'],
+      ['FFFFFF', 'FFFFFF'], ['FFFFFF', 'FFFFFF'], ['FFFFFF', 'FFFFFF'], ['FFFFFF', 'FFFFFF'],
+      ['FFFFFF', 'FFFFFF'], ['FFFFFF', 'FFFFFF'], ['FFFFFF', 'FFFFFF'], ['FFFFFF', 'FFFFFF'],
+    ],
+  },
+  {
+    id: 'gauntlet_incidental_bollard', size: [2, 5, 2], lootContext: emptyLoot,
+    palette: { '=': 'concrete', F: { furniture: 'gauntlet_look_bollard' } },
+    layers: [['==', '=='], ['FF', 'FF'], ['FF', 'FF'], ['FF', 'FF'], ['FF', 'FF']],
+  },
+  {
+    id: 'gauntlet_incidental_cabinet', size: [4, 4, 2], lootContext: emptyLoot,
+    palette: { '=': 'concrete', F: { furniture: 'gauntlet_look_cabinet' } },
+    layers: [['====', '===='], ['FFFF', 'FFFF'], ['FFFF', 'FFFF'], ['FFFF', 'FFFF']],
+  },
+  {
+    id: 'gauntlet_incidental_riser', size: [3, 6, 3], lootContext: emptyLoot,
+    palette: { '=': 'concrete', F: { furniture: 'gauntlet_look_riser' } },
+    layers: [
+      ['===', '===', '==='], ['FFF', 'FFF', 'FFF'], ['FFF', 'FFF', 'FFF'],
+      ['FFF', 'FFF', 'FFF'], ['FFF', 'FFF', 'FFF'], ['FFF', 'FFF', 'FFF'],
+    ],
+  },
 ];
 {
   furniture: city.furniture + [
@@ -63,16 +113,5 @@ local utilities = [
       N: { furniture: 'gauntlet_maintenance_memo' },
       B: { furniture: 'gauntlet_button' },
     },
-  }] + [
-    {
-      id: u.id, size: [u.size[0], u.size[1] + 1, u.size[2]],
-      lootContext: { usage: [], tier: 'Tier1' },
-      palette: { '=': 'concrete', F: { furniture: u.furniture } },
-      layers: [
-        [std.repeat(if y == 0 then '=' else 'F', u.size[0]) for z in std.range(0, u.size[2] - 1)]
-        for y in std.range(0, u.size[1])
-      ],
-    }
-    for u in utilities
-  ],
+  }] + utilities,
 }

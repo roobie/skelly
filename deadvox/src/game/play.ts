@@ -1540,6 +1540,8 @@ export const startPlay = (
   });
   let mainMenuOpen = !options.replay;
   let resumeRequested = false;
+  const titleMenuOptions = () =>
+    started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel };
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
       started,
@@ -1552,7 +1554,7 @@ export const startPlay = (
       dead: sim.dead !== undefined || session.won,
       pointerLockChanged,
       resumeRequested,
-      ...(started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel }),
+      ...titleMenuOptions(),
       titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
@@ -3436,7 +3438,10 @@ export const startPlay = (
   };
 
   const observeScenarioFrame = (seconds: number): void =>
-    session.observeRunFrame(seconds, worldLoading.ready && started && !mainMenuOpen && document.visibilityState === 'visible');
+    session.observeRunFrame(
+      seconds,
+      worldLoading.ready && started && !mainMenuOpen && document.visibilityState === 'visible',
+    );
 
   const prepareStreaming = (now: RealTimestamp): void => {
     streamer.update(body.pos[0], body.pos[2]);
