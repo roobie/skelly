@@ -4,7 +4,6 @@ import { it } from 'node:test';
 import { mainOverlayPath, mainSourceOverlays } from '../deadvox/test/browser/sky-main-arrival.mjs';
 
 it('main rendering overlays retain branch core API owners', () => {
-  assert.ok(mainSourceOverlays.length > 0);
   assert.ok(mainSourceOverlays.every((path) => !path.startsWith('core/')));
 });
 

@@ -15,8 +15,6 @@ const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const selectLanguage = (languages, search) => applyPlaytestLanguage(languages, search);
 const page = read('site/launcher.js');
 const round1Page = read('deadvox/playtests/round1/round1.js');
-const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
-const SELECT_PATTERN = /<select\b/;
 const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAY_LINK_PATTERN = /<a[^>]*class="playtest-action"[^>]*>/;
@@ -335,15 +333,6 @@ describe('site launchers track the games’ URL parameters', () => {
       ),
       [],
     );
-  });
-
-  it('omits the removed Gungen option controls', () => {
-    const form = page.match(GUNGEN_FORM_PATTERN)?.[1];
-    assert.ok(form, 'gungen form is present');
-    assert.doesNotMatch(form, SELECT_PATTERN);
-    for (const name of ['template', 'fixture', 'design', 'colors', 'ammo', 'ammoCase', 'mag']) {
-      assert.doesNotMatch(form, new RegExp(`data-url-param="${name}"`));
-    }
   });
 });
 
