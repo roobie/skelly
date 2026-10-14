@@ -11,8 +11,8 @@ export const selectFixtureMods = async (page) => {
   await page.locator('#mods-screen input[type=file]').setInputFiles(path);
   await page.locator('[data-mod-source="mod-1/browser-mod.json"]').waitFor();
   const paste = async (data) => {
-    await page.getByRole('textbox', { name: 'Mod JSON' }).fill(data);
-    await page.getByRole('button', { name: 'Add JSON', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Mod JSON or URL' }).fill(data);
+    await page.getByRole('button', { name: 'Add', exact: true }).click();
   };
   await paste(JSON.stringify({ items: [{ ...fixture.items[0], name: 'Earlier override' }] }));
   await paste('{');
@@ -25,6 +25,9 @@ export const selectFixtureMods = async (page) => {
     await page.locator('[data-mod-source]').evaluateAll((rows) => rows.map((row) => row.dataset.modSource)),
     ['mod-2/pasted.json', 'mod-1/browser-mod.json', 'mod-3/pasted.json'],
   );
+  const url = new URL('/test/fixtures/mods/browser-mod.json', page.url()).href;
+  await paste(url);
+  await page.locator(`[data-mod-source="mod-4/${url}"]`).waitFor();
   assert.equal(await page.locator('#mods-start').isDisabled(), false, 'disabled invalid file cannot block startup');
   await page.locator('#mods-start').click();
   return fixture;
@@ -40,6 +43,6 @@ export const assertFixtureMods = async (page, fixture) => {
     },
     { itemId: item.id, zombieId: zombie.id },
   );
-  assert.equal(actual.item.name, item.name, 'the later uploaded definition wins after reordering');
+  assert.equal(actual.item.name, item.name, 'the URL definition reaches the running registry');
   assert.deepEqual(actual.speed, zombie.speed, 'the selected mod reaches the running world');
 };

@@ -1401,6 +1401,11 @@ creating a second patch language. Browser Jsonnet, mod persistence, save-pack id
 and uploaded assets remain follow-up work in #633. The preview panel is opt-in while
 that save boundary is unfinished; see `src/ui/modsPanel.ts`, `chooseMods`.
 
+Remote intake shares local admission so a host cannot bypass the content contract.
+Browser-owned fetching keeps credentials and cross-origin permission with their
+owners, without a proxy that widens access. Streaming bounds memory before parsing;
+see `src/ui/modsPanel.ts`, `readPaste`.
+
 Importing larger authored buildings from voxel editors remains an open direction;
 no importer contract is settled.
 
