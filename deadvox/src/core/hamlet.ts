@@ -346,7 +346,7 @@ export class Hamlet implements Site {
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
     return [
-      ...this.lots.flatMap((lot) => furnitureOf(this, lot.placement, [cx, cz])),
+      ...this.lots.flatMap((lot) => furnitureOf(this, lot.placement, [cx, cz], this.lootPointsIn(cx, cz))),
       ...this.range.furnitureIn(cx, cz),
     ];
   }

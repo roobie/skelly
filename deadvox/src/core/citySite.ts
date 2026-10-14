@@ -4,10 +4,9 @@ import { type CityPlan, cityRowDepth, cityRowStart } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
-import type { LootSpawnPoint } from './loot.ts';
-import { applyPlacementLoot, collectPlacementLoot } from './placementLoot.ts';
+import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import type { Scale } from './scale.ts';
-import { type FurnitureSpawn, furnitureOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
+import { type FurnitureSpawn, furnitureOf, lootSourcesOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
 import { stampChunk } from './structure.ts';
 import { footprint, type Placement, stampPlacement } from './templates.ts';
 import type { Surface } from './worldgen.ts';
@@ -21,7 +20,7 @@ export class CitySite implements Site {
   readonly spawn: Site['spawn'];
   protected readonly byColumn = new Map<string, Placement[]>();
   private readonly asphalt: number;
-  private readonly loot: ReturnType<typeof collectPlacementLoot>;
+  private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
 
   constructor(seed: number, registry: Registry, scale: Scale, plan: CityPlan) {
     if (scale.blockSize !== HAMLET_BLOCK_SIZE) {
@@ -35,7 +34,16 @@ export class CitySite implements Site {
     this.registry = registry;
     this.plan = plan;
     this.asphalt = asphalt;
-    this.loot = collectPlacementLoot(registry, plan.composition?.lootSources ?? []);
+    this.lootColumns = lootPointsByColumn(
+      plan.placements.flatMap((placement) =>
+        lootSourcesOf(
+          registry,
+          'city',
+          placement,
+          plan.composition?.lootSources.find((source) => source.placement === placement)?.fixedLoot,
+        ),
+      ),
+    );
     this.spawn = { pos: plan.spawn.map((value) => value * scale.blockSize) as Vec3, yaw: -Math.PI / 2 };
     for (const placement of plan.placements) {
       const [width, depth] = footprint(placement);
@@ -101,15 +109,14 @@ export class CitySite implements Site {
     }
   }
 
-  // Gauntlet sources are not part of the ordinary economy selector's round-one contract.
-  lootPointsIn(_cx: number, _cz: number): readonly LootSpawnPoint[] {
-    return [];
+  lootPointsIn(cx: number, cz: number): readonly LootSpawnPoint[] {
+    return this.lootColumns.get(`${cx},${cz}`) ?? [];
   }
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
-    return (this.byColumn.get(`${cx},${cz}`) ?? [])
-      .flatMap((placement) => furnitureOf(this, placement, [cx, cz]))
-      .map((spawn) => applyPlacementLoot(spawn, this.loot));
+    return (this.byColumn.get(`${cx},${cz}`) ?? []).flatMap((placement) =>
+      furnitureOf(this, placement, [cx, cz], this.lootPointsIn(cx, cz)),
+    );
   }
 
   zombiesIn(_cx: number, _cz: number): ZombieSpawn[] {

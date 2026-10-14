@@ -306,6 +306,15 @@ let placedSchema: Schema;
 itemSchema = obj({
   uid: positiveInt,
   type: str({ id: true }),
+  origin: union(
+    obj({
+      kind: enumeration(['economy']),
+      source: str({ nonEmpty: true }),
+      channel: enumeration(['container', 'surface', 'corpse']),
+      mode: enumeration(['fixed', 'random']),
+    }),
+    obj({ kind: enumeration(['crafted', 'fixture', 'created']) }),
+  ),
   count: positiveInt,
   lootedCount: opt(nonNegativeInt),
   condition: num({ min: 0, max: 1 }),

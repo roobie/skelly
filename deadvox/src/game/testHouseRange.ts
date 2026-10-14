@@ -1,5 +1,4 @@
 import type { ItemDef, Registry } from '../core/content.ts';
-import type { Rolled } from '../core/loot.ts';
 import { ammoMatchesCalibre, firearmModelForType } from './firearmHandling.ts';
 
 /** Add-ons join the debug range when the item schema defines either capability. */
@@ -36,6 +35,3 @@ export const testHouseRangeSupply = (registry: Registry): RangeSupply[] => {
 
   return [...stock].sort().map((item) => ({ item, count: 1, condition: 1 }));
 };
-
-export const testHouseRangeStock = (registry: Registry): Rolled[] =>
-  testHouseRangeSupply(registry).map(({ item, count, condition }) => ({ type: item, count, condition }));

@@ -1,11 +1,24 @@
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
-import type { ItemEconomy, LootContext } from '../src/core/loot.ts';
+import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.ts';
 
 export const fixtureEconomy = (): ItemEconomy => ({
   usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Military', 'Infected'],
   tiers: ['Tier1', 'Tier2', 'Tier3'],
 });
 export const fixtureLootContext = (): LootContext => ({ usage: ['Residential'], tier: 'Tier1' });
+
+export const fixtureLootPoint = (
+  supply: LootSpawnPoint['supply'],
+  context: LootContext = fixtureLootContext(),
+): LootSpawnPoint => ({
+  id: 'fixture-point',
+  channel: 'container',
+  position: [0, 0, 0],
+  destination: [0, 0, 0],
+  context,
+  supply,
+  required: supply.kind === 'fixed',
+});
 
 const object = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);

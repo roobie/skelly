@@ -296,7 +296,8 @@ export const swapBattery = (inventory: Inventory, light: Item, battery: Item, sp
   }
   const oldBattery = light.slots?.battery;
   const old = oldBattery ? (chargeOf(registry, oldBattery) ?? 0) : 0;
-  const replacement = battery.count > 1 ? inventory.create(battery.type, 1, battery.condition) : battery;
+  const replacement =
+    battery.count > 1 ? inventory.create(battery.type, 1, battery.condition, battery.origin) : battery;
   if (battery.charges !== undefined) {
     replacement.charges = battery.charges;
   }

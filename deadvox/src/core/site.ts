@@ -9,9 +9,15 @@ import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn, type Rolled, rollLoot } from './loot.ts';
-import { Rng } from './random.ts';
-import type { FixedLootItemDef, SiteLayoutDef } from './schema.ts';
+import {
+  type LootPointSource,
+  type LootSpawnPoint,
+  lootPointStream,
+  lootPointsByColumn,
+  type Rolled,
+  rollLoot,
+} from './loot.ts';
+import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import { type Placement, placedPieces } from './templates.ts';
 import type { Surface } from './worldgen.ts';
 
@@ -91,7 +97,7 @@ export const lootSourcesOf = (
   registry: Registry,
   site: string,
   placement: Placement,
-  fixedLoot: NonNullable<SiteLayoutDef['buildings'][number]['fixedLoot']> = [],
+  fixedLoot: readonly FixedLootOverrideDef[] = [],
 ): LootPointSource[] => {
   const context = placement.lootContext ?? placement.template.lootContext;
   const building = JSON.stringify([placement.origin, placement.turn]);
@@ -149,17 +155,37 @@ export const furnitureOf = (
   { seed, registry }: { seed: number; registry: Registry },
   placement: Placement,
   [cx, cz]: readonly [number, number],
+  points: readonly LootSpawnPoint[],
 ): FurnitureSpawn[] =>
-  placedPieces(placement)
-    .filter((piece) => toChunk(piece.pos[0]) === cx && toChunk(piece.pos[2]) === cz)
-    .map((piece) => ({
-      spec: {
-        type: piece.furniture,
-        pos: piece.pos,
-        size: piece.size,
-        facing: piece.facing,
-        ...(piece.lock ? { lock: piece.lock } : {}),
-      },
-      loot:
-        piece.loot === undefined ? [] : rollLoot(registry, piece.loot, Rng.stream(seed, `loot:${piece.pos.join(',')}`)),
-    }));
+  fillFurnitureLoot(
+    registry,
+    seed,
+    placedPieces(placement)
+      .filter((piece) => toChunk(piece.pos[0]) === cx && toChunk(piece.pos[2]) === cz)
+      .map((piece) => ({
+        spec: {
+          type: piece.furniture,
+          pos: piece.pos,
+          size: piece.size,
+          facing: piece.facing,
+          ...(piece.lock ? { lock: piece.lock } : {}),
+        },
+        loot: [],
+      })),
+    points,
+  );
+
+export const fillFurnitureLoot = (
+  registry: Registry,
+  seed: number,
+  spawns: readonly FurnitureSpawn[],
+  points: readonly LootSpawnPoint[],
+): FurnitureSpawn[] =>
+  spawns.map((spawn) => {
+    const at = points.filter((point) => point.destination.every((value, axis) => value === spawn.spec.pos[axis]));
+    const items = (channel: LootSpawnPoint['channel']) =>
+      at
+        .filter((point) => point.channel === channel)
+        .flatMap((point) => rollLoot(registry, point, lootPointStream(seed, point)));
+    return { ...spawn, loot: items('container'), surfaceLoot: items('surface') };
+  });
