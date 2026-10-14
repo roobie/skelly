@@ -1,139 +1,39 @@
-local width = 72;
-local depth = 64;
-local paint = function(row, x, count, marker)
-  std.substr(row, 0, x) + std.repeat(marker, count) + std.substr(row, x + count, width - x - count);
-local prop = function(marker, x, z) { marker: marker, at: [x, 0, z] };
-local kinds = [
-  { id: 'intake', name: 'Intake / sample triage', props: [prop('Q', 2, 3), prop('Q', 11, 8)] },
-  { id: 'records', name: 'Records / sealed archives', props: [prop('L', 2, 3), prop('L', 11, 8)] },
-  { id: 'clinic', name: 'Examination / isolation', props: [prop('M', 2, 3), prop('Q', 11, 8)] },
-  { id: 'cold_store', name: 'Cold specimen store', props: [prop('O', 2, 3), prop('O', 11, 8)] },
-  { id: 'workshop', name: 'Instrument repair', props: [prop('Q', 2, 3), prop('U', 11, 8)] },
-  { id: 'utilities', name: 'Pressure / circulation plant', props: [prop('U', 2, 3), prop('U', 11, 8)] },
-  { id: 'observation', name: 'Observation / control', props: [prop('C', 2, 3), prop('P', 11, 8)] },
-  { id: 'culture', name: 'Culture growth', props: [prop('G', 2, 3), prop('Q', 11, 8)] },
-  { id: 'security', name: 'Security / monitoring', props: [prop('C', 2, 3), prop('L', 11, 8)] },
-  { id: 'containment', name: 'Containment cells', props: [prop('P', 2, 3), prop('P', 11, 8)] },
-  { id: 'assay', name: 'Anomalous material assay', props: [prop('G', 2, 3), prop('P', 11, 8)] },
-  { id: 'decon', name: 'Decontamination / waste', props: [prop('U', 2, 3), prop('S', 11, 8)] },
-  { id: 'breach', name: 'Breached experiment', props: [prop('F', 2, 3), prop('S', 11, 8)] },
-  { id: 'quarantine', name: 'Failed quarantine', props: [prop('F', 2, 3), prop('F', 11, 8), prop('S', 7, 8)] },
-  { id: 'objective', name: 'Nuclear control / inactive prototype', props: [prop('C', 2, 3), prop('F', 11, 8), { marker: 'B', at: [3, 2, 3] }] },
-];
-local storeys = [
-  { id: 'intake', name: 'Intake and support', color: '#d7d5c0', rooms: ['intake', 'records', 'clinic', 'cold_store', 'workshop', 'utilities', 'observation', 'culture', 'security'] },
-  { id: 'research', name: 'Research and observation', color: '#c7b16d', rooms: ['culture', 'assay', 'observation', 'clinic', 'security', 'cold_store', 'workshop', 'containment', 'decon'] },
-  { id: 'containment', name: 'Restricted containment', color: '#c78b42', rooms: ['containment', 'assay', 'cold_store', 'observation', 'culture', 'decon', 'breach', 'security', 'containment'] },
-  { id: 'failure', name: 'Containment failure', color: '#b96448', rooms: ['breach', 'quarantine', 'containment', 'decon', 'assay', 'breach', 'quarantine', 'utilities', 'observation'] },
-  { id: 'bottom', name: 'Critical depth / nuclear control', color: '#b84b43', rooms: ['quarantine', 'breach', 'quarantine', 'breach', 'objective', 'breach', 'quarantine', 'decon', 'quarantine'] },
-];
-local links = [
-  { from: 'intake', to: 'research', at: [[12, 10], [59, 48]] },
-  { from: 'research', to: 'containment', at: [[59, 10], [12, 48]] },
-  { from: 'containment', to: 'failure', at: [[35, 10], [35, 48]] },
-  { from: 'failure', to: 'bottom', at: [[12, 29], [59, 29]] },
-];
-local pitch = 8;
-local ground = std.length(storeys) * pitch;
-local surfaceOffset = 24;
-local floor = function(index) ground - (index + 1) * pitch + 1;
-local entry = { hatch: [surfaceOffset + 18, ground, surfaceOffset + 15], ladder: [surfaceOffset + 19, floor(0), surfaceOffset + 15] };
-local floorOf = { [storeys[i].id]: floor(i) for i in std.range(0, std.length(storeys) - 1) };
-local descents = [
-  { top: floorOf[link.from] - 1, bottom: floorOf[link.to], x: at[0], z: at[1] }
-  for link in links for at in link.at
-];
-local roomBoxes = [
-  { x: 4 + col * 23, z: 4 + row * 19, index: row * 3 + col }
-  for row in std.range(0, 2) for col in std.range(0, 2)
-];
-local kindById = { [kinds[i].id]: kinds[i] + { marker: std.char(97 + i) } for i in std.range(0, std.length(kinds) - 1) };
-local props = {
-  Q: { id: 'gauntlet_look_bench', size: [4, 2, 2] },
-  C: { id: 'gauntlet_look_console', size: [4, 2, 2] },
-  P: { id: 'gauntlet_look_containment_bay', size: [4, 4, 2] },
-  F: { id: 'gauntlet_look_breached_bay', size: [4, 5, 2] },
-  S: { id: 'gauntlet_look_spill', size: [4, 1, 3] },
-  B: { id: 'gauntlet_look_button', size: [1, 1, 1] },
-  L: { id: 'gauntlet_look_archive', size: [4, 5, 2] },
-  M: { id: 'gauntlet_look_exam', size: [4, 2, 2] },
-  O: { id: 'gauntlet_look_cold_store', size: [4, 5, 2] },
-  U: { id: 'gauntlet_look_pump', size: [4, 4, 3] },
-  G: { id: 'gauntlet_look_culture', size: [4, 4, 2] },
-};
-local roomPlacements = [
-  { marker: kindById[s.rooms[box.index]].marker, at: [box.x + 2, floor(i) + 2, box.z], size: [2, 2, 1] }
-  for i in std.range(0, std.length(storeys) - 1) for s in [storeys[i]] for box in roomBoxes
-] + [
-  { marker: p.marker, at: [box.x + p.at[0], floor(i) + p.at[1], box.z + p.at[2]], size: props[p.marker].size }
-  for i in std.range(0, std.length(storeys) - 1) for s in [storeys[i]] for box in roomBoxes for p in kindById[s.rooms[box.index]].props
-] + [
-  { marker: std.toString(i), at: [39, floor(i) + 2, 23], size: [2, 2, 1] }
-  for i in std.range(0, std.length(storeys) - 1)
-];
-local partitionRows = [
-  std.join('', [
-    local col = std.floor((x - 4) / 23);
-    local roomRow = std.floor((z - 4) / 19);
-    local rx = x - (4 + col * 23);
-    local rz = z - (4 + roomRow * 19);
-    local inRoom = col >= 0 && col < 3 && roomRow >= 0 && roomRow < 3 && rx >= 0 && rx <= 17 && rz >= 0 && rz <= 13;
-    local wall = inRoom && ((rx == 0 || rx == 17) && !(rz >= 5 && rz <= 8) || (rz == 0 || rz == 13) && !(rx >= 7 && rx <= 10));
-    if x == 0 || x == width - 1 || z == 0 || z == depth - 1 || wall then '=' else '.'
-    for x in std.range(0, width - 1)
-  ]) for z in std.range(0, depth - 1)
-];
-// Row painting preserves priority without repeating sparse occupancy and partition work for every cell.
-local rows = [
-  local pieces = std.filter(function(p) y >= p.at[1] && y < p.at[1] + p.size[1], roomPlacements);
-  local shafts = std.filter(function(d) y >= d.bottom && y <= d.top, descents);
-  local openings = std.filter(function(d) y == d.top, descents);
-  [
-    local rowPieces = std.sort(std.filter(function(p) z >= p.at[2] && z < p.at[2] + p.size[2], pieces), function(p) p.at[0]);
-    assert std.all([rowPieces[i].at[0] + rowPieces[i].size[0] <= rowPieces[i + 1].at[0] for i in std.range(0, std.length(rowPieces) - 2)]) : 'overlapping lab furniture';
-    local base = if y % pitch == 0 then std.repeat('=', width) else partitionRows[z];
-    local furnished = if y % pitch == 0 then base else std.foldl(
-      function(row, p) paint(row, p.at[0], p.size[0], p.marker), rowPieces, base);
-    local entryClear = if y % pitch != 0 && y >= floor(0) && z >= entry.ladder[2] - 2 && z <= entry.ladder[2] + 4 then
-      local clear = paint(furnished, entry.ladder[0] - 3, 7, '.');
-      if z >= entry.ladder[2] && z <= entry.ladder[2] + 1 then paint(clear, entry.ladder[0], 1, 'H') else clear
-      else furnished;
-    local opened = std.foldl(function(row, d) paint(row, d.x - 1, 3, '.'),
-      std.filter(function(d) z >= d.z && z <= d.z + 1, openings), entryClear);
-    std.foldl(function(row, d) paint(row, d.x, 1, 'J'),
-      std.filter(function(d) z >= d.z && z <= d.z + 1, shafts), opened)
-    for z in std.range(0, depth - 1)
-  ] for y in std.range(0, ground - 1)
-];
-local placard = function(id, title, text, color) {
-  id: id, name: title, size: [2, 2, 1], color: color, solid: false,
-  shape: [{ position: [0.1, 0.1, 0], size: [1.8, 1.8, 0.1] }],
-  readable: { title: title, text: text },
+local circulation = import 'gauntlet-lab-circulation.libsonnet';
+local equipment = import 'gauntlet-lab-equipment.libsonnet';
+local descents = import 'gauntlet-lab-descents.libsonnet';
+local context = { usage: ['Industrial', 'Medical'], tier: 'Tier1' };
+local slot = function(id, kind, ref, at, size) { id: id, at: at, size: size, turn: 0, choices: [{ ref: { kind: kind, id: ref }, weight: 1 }] };
+local room = function(id, shell, first, second) equipment.room('gauntlet_lab_' + id, 'gauntlet_lab_shell' + shell, first, second);
+local placedRoom = function(id, ref, at) slot(id, 'assembly', 'gauntlet_lab_' + ref, at, [18, 8, 14]);
+local storey = function(id, rooms, entry=false) {
+  id: 'gauntlet_lab_storey_' + id, size: [72, 8, 64], lootContext: context,
+  slots: (if entry then [if s.id == 'cross_south' then s + { choices: [{ ref: { kind: 'piece', id: 'gauntlet_lab_entry_cross' }, weight: 1 }] } else s for s in circulation.slots] else circulation.slots) + rooms,
+  joins: [], ports: [], anchors: {},
 };
 local cabinetShape = [
-  { position: [0, 0, 0], size: [4, 0.3, 2] },
-  { position: [0, 0.3, 0], size: [0.3, 4.7, 2] },
-  { position: [3.7, 0.3, 0], size: [0.3, 4.7, 2] },
-  { position: [0.3, 4.7, 0], size: [3.4, 0.3, 2] },
+  { position: [0, 0, 0], size: [4, 0.3, 2] }, { position: [0, 0.3, 0], size: [0.3, 4.7, 2] },
+  { position: [3.7, 0.3, 0], size: [0.3, 4.7, 2] }, { position: [0.3, 4.7, 0], size: [3.4, 0.3, 2] },
 ];
 {
-  width: width, depth: depth, ground: ground, surfaceOffset: surfaceOffset, entry: entry,
+  width: 72, depth: 64, ground: 40, surfaceOffset: 24,
+  entry: { hatch: [42, 40, 39], ladder: [43, 33, 39] },
   anchors: {
-    storeys: [{ id: s.id, standing: [35, floor(i), 29] } for i in std.range(0, std.length(storeys) - 1) for s in [storeys[i]]],
-    descents: [{ ladder: [d.x, d.bottom, d.z], upper: [d.x - 1, d.top + 1, d.z + 1], lower: [d.x - 1, d.bottom, d.z + 1] } for d in descents],
-    objective: [
-      [box.x + p.at[0], floor(i) + p.at[1], box.z + p.at[2]]
-      for i in std.range(0, std.length(storeys) - 1) for s in [storeys[i]] for box in roomBoxes
-      for p in kindById[s.rooms[box.index]].props if p.marker == 'B'
-    ][0],
-  },
-  rows: rows,
-  palette: { J: { furniture: 'ladder', facing: 'w' } } + {
-    [marker]: { furniture: props[marker].id } for marker in std.objectFields(props)
-  } + {
-    [kindById[kind.id].marker]: { furniture: 'gauntlet_look_room_' + kind.id } for kind in kinds
-  } + {
-    [std.toString(i)]: { furniture: 'gauntlet_look_level_' + storeys[i].id } for i in std.range(0, std.length(storeys) - 1)
+    storeys: [
+      { id: 'intake', standing: [35, 33, 29] }, { id: 'research', standing: [35, 25, 29] },
+      { id: 'containment', standing: [35, 17, 29] }, { id: 'failure', standing: [35, 9, 29] },
+      { id: 'bottom', standing: [35, 1, 29] },
+    ],
+    descents: [
+      { ladder: [12, 25, 10], upper: [11, 33, 11], lower: [11, 25, 11] },
+      { ladder: [59, 25, 48], upper: [58, 33, 49], lower: [58, 25, 49] },
+      { ladder: [59, 17, 10], upper: [58, 25, 11], lower: [58, 17, 11] },
+      { ladder: [12, 17, 48], upper: [11, 25, 49], lower: [11, 17, 49] },
+      { ladder: [35, 9, 10], upper: [34, 17, 11], lower: [34, 9, 11] },
+      { ladder: [35, 9, 48], upper: [34, 17, 49], lower: [34, 9, 49] },
+      { ladder: [12, 1, 29], upper: [11, 9, 30], lower: [11, 1, 30] },
+      { ladder: [59, 1, 29], upper: [58, 9, 30], lower: [58, 1, 30] },
+    ],
+    objective: [30, 3, 26],
   },
   furniture: [
     { id: 'gauntlet_look_archive', name: 'Prototype archive shelves', size: [4, 5, 2], color: '#a0a6a0', shape: cabinetShape + [{ position: [0.3, 2.3, 0], size: [3.4, 0.3, 2] }] },
@@ -141,19 +41,63 @@ local cabinetShape = [
     { id: 'gauntlet_look_exam', name: 'Prototype examination slab', size: [4, 2, 2], color: '#c7cfc7', shape: [{ position: [0, 1.5, 0], size: [4, 0.5, 2] }, { position: [0.5, 0, 0.5], size: [3, 1.5, 1] }] },
     { id: 'gauntlet_look_pump', name: 'Prototype pressure plant', size: [4, 4, 3], color: '#738981', shape: [{ position: [0, 0, 0], size: [4, 0.4, 3] }, { position: [0.3, 0.4, 0.3], size: [1.2, 3.6, 2.4] }, { position: [2.5, 0.4, 0.3], size: [1.2, 3.6, 2.4] }] },
     { id: 'gauntlet_look_culture', name: 'Prototype culture apparatus', size: [4, 4, 2], color: '#91a978', shape: [{ position: [0, 0, 0], size: [4, 0.4, 2] }, { position: [0.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [1.7, 0.4, 0.2], size: [0.6, 3.6, 1.6] }, { position: [3.2, 0.4, 0.2], size: [0.6, 3.6, 1.6] }] },
-  ] + [
-    placard('gauntlet_look_room_' + kind.id, 'Prototype — ' + kind.name,
-      'Room-kind sketch: ' + kind.name + '. Equipment, specimens and damage are inert set dressing. No powered machinery, hazards or enemies are supplied by this look.', '#c5cbbf')
-    for kind in kinds
-  ] + [
-    local downward = std.filter(function(link) link.from == s.id, links);
-    local route = if std.length(downward) == 0 then 'Bottom storey. The inactive red objective button is in the central nuclear-control room.'
-      else 'Two descents to ' + storeys[i + 1].name + ': ' + std.join(' and ', [
-        storeys[i].rooms[std.floor((at[1] - 4) / 19) * 3 + std.floor((at[0] - 4) / 23)]
-        for at in downward[0].at
-      ]) + '. They land in different wings; the next pair is offset, not a continuous shaft.';
-    placard('gauntlet_look_level_' + s.id, 'Prototype — ' + s.name,
-      route + '\n\nCirculation loops around and between the rooms. Rooms have open thresholds on each side. Danger is suggested by deeper containment failures only; the final lab must earn it through play.\n\nNorth row: ' + std.join(' / ', [kindById[s.rooms[n]].name for n in std.range(0, 2)]) + '\nMiddle row: ' + std.join(' / ', [kindById[s.rooms[n]].name for n in std.range(3, 5)]) + '\nSouth row: ' + std.join(' / ', [kindById[s.rooms[n]].name for n in std.range(6, 8)]), s.color)
-    for i in std.range(0, std.length(storeys) - 1) for s in [storeys[i]]
+  ],
+  mapPieces: circulation.mapPieces + equipment.mapPieces,
+  mapAssemblies: [
+    room('intake_outgoing', '_outgoing', 'bench', 'bench'), room('records', '', 'archive', 'archive'), room('clinic', '', 'exam', 'bench'),
+    room('cold_store', '', 'cold_store', 'cold_store'), room('workshop', '', 'bench', 'pump'), room('utilities', '', 'pump', 'pump'),
+    room('observation', '', 'console', 'containment'), room('culture', '', 'culture', 'bench'), room('security_outgoing_east', '_outgoing_east', 'console', 'archive'),
+    room('security', '', 'console', 'archive'), room('assay_outgoing', '_outgoing', 'culture', 'containment'),
+    room('culture_incoming', '_incoming', 'culture', 'bench'), room('assay', '', 'culture', 'containment'), room('observation_outgoing_east', '_outgoing_east', 'console', 'containment'),
+    room('workshop_outgoing', '_outgoing', 'bench', 'pump'), room('containment', '', 'containment', 'containment'), room('decon_incoming_east', '_incoming_east', 'pump', 'spill'),
+    room('cold_store_incoming_east', '_incoming_east', 'cold_store', 'cold_store'),
+    room('breach_incoming', '_incoming', 'breach', 'spill'), room('security_outgoing', '_outgoing', 'console', 'archive'),
+    room('quarantine_incoming', '_incoming', 'breach', 'breach'), room('utilities_incoming', '_incoming', 'pump', 'pump'),
+    room('decon_outgoing', '_outgoing', 'pump', 'spill'), room('breach_outgoing_east', '_outgoing_east', 'breach', 'spill'),
+    room('quarantine', '', 'breach', 'breach'), room('breach', '', 'breach', 'spill'), room('decon', '', 'pump', 'spill'),
+    room('objective', '', 'objective', 'breach'), room('quarantine_incoming_east', '_incoming_east', 'breach', 'breach'),
+    storey('intake', [
+      placedRoom('north_west', 'intake_outgoing', [4, 0, 4]), placedRoom('north_middle', 'records', [27, 0, 4]), placedRoom('north_east', 'clinic', [50, 0, 4]),
+      placedRoom('middle_west', 'cold_store', [4, 0, 23]), placedRoom('middle_middle', 'workshop', [27, 0, 23]), placedRoom('middle_east', 'utilities', [50, 0, 23]),
+      placedRoom('south_west', 'observation', [4, 0, 42]), placedRoom('south_middle', 'culture', [27, 0, 42]), placedRoom('south_east', 'security_outgoing_east', [50, 0, 42]),
+    ], true),
+    storey('research', [
+      placedRoom('north_west', 'culture_incoming', [4, 0, 4]), placedRoom('north_middle', 'assay', [27, 0, 4]), placedRoom('north_east', 'observation_outgoing_east', [50, 0, 4]),
+      placedRoom('middle_west', 'clinic', [4, 0, 23]), placedRoom('middle_middle', 'security', [27, 0, 23]), placedRoom('middle_east', 'cold_store', [50, 0, 23]),
+      placedRoom('south_west', 'workshop_outgoing', [4, 0, 42]), placedRoom('south_middle', 'containment', [27, 0, 42]), placedRoom('south_east', 'decon_incoming_east', [50, 0, 42]),
+    ]),
+    storey('containment', [
+      placedRoom('north_west', 'containment', [4, 0, 4]), placedRoom('north_middle', 'assay_outgoing', [27, 0, 4]), placedRoom('north_east', 'cold_store_incoming_east', [50, 0, 4]),
+      placedRoom('middle_west', 'observation', [4, 0, 23]), placedRoom('middle_middle', 'culture', [27, 0, 23]), placedRoom('middle_east', 'decon', [50, 0, 23]),
+      placedRoom('south_west', 'breach_incoming', [4, 0, 42]), placedRoom('south_middle', 'security_outgoing', [27, 0, 42]), placedRoom('south_east', 'containment', [50, 0, 42]),
+    ]),
+    storey('failure', [
+      placedRoom('north_west', 'breach', [4, 0, 4]), placedRoom('north_middle', 'quarantine_incoming', [27, 0, 4]), placedRoom('north_east', 'containment', [50, 0, 4]),
+      placedRoom('middle_west', 'decon_outgoing', [4, 0, 23]), placedRoom('middle_middle', 'assay', [27, 0, 23]), placedRoom('middle_east', 'breach_outgoing_east', [50, 0, 23]),
+      placedRoom('south_west', 'quarantine', [4, 0, 42]), placedRoom('south_middle', 'utilities_incoming', [27, 0, 42]), placedRoom('south_east', 'observation', [50, 0, 42]),
+    ]),
+    storey('bottom', [
+      placedRoom('north_west', 'quarantine', [4, 0, 4]), placedRoom('north_middle', 'breach', [27, 0, 4]), placedRoom('north_east', 'quarantine', [50, 0, 4]),
+      placedRoom('middle_west', 'breach_incoming', [4, 0, 23]), placedRoom('middle_middle', 'objective', [27, 0, 23]), placedRoom('middle_east', 'quarantine_incoming_east', [50, 0, 23]),
+      placedRoom('south_west', 'quarantine', [4, 0, 42]), placedRoom('south_middle', 'decon', [27, 0, 42]), placedRoom('south_east', 'quarantine', [50, 0, 42]),
+    ]),
+    {
+      id: 'gauntlet_lab', size: [72, 40, 64], lootContext: context,
+      slots: [
+        slot('intake', 'assembly', 'gauntlet_lab_storey_intake', [0, 32, 0], [72, 8, 64]),
+        slot('research', 'assembly', 'gauntlet_lab_storey_research', [0, 24, 0], [72, 8, 64]),
+        slot('containment', 'assembly', 'gauntlet_lab_storey_containment', [0, 16, 0], [72, 8, 64]),
+        slot('failure', 'assembly', 'gauntlet_lab_storey_failure', [0, 8, 0], [72, 8, 64]),
+        slot('bottom', 'assembly', 'gauntlet_lab_storey_bottom', [0, 0, 0], [72, 8, 64]),
+        slot('intake_west_descent', 'piece', descents.mapPieces[3].id, [11, 25, 10], [3, 8, 2]),
+        slot('intake_east_descent', 'piece', descents.mapPieces[3].id, [58, 25, 48], [3, 8, 2]),
+        slot('research_east_descent', 'piece', descents.mapPieces[3].id, [58, 17, 10], [3, 8, 2]),
+        slot('research_west_descent', 'piece', descents.mapPieces[3].id, [11, 17, 48], [3, 8, 2]),
+        slot('containment_north_descent', 'piece', descents.mapPieces[3].id, [34, 9, 10], [3, 8, 2]),
+        slot('containment_south_descent', 'piece', descents.mapPieces[3].id, [34, 9, 48], [3, 8, 2]),
+        slot('failure_west_descent', 'piece', descents.mapPieces[3].id, [11, 1, 29], [3, 8, 2]),
+        slot('failure_east_descent', 'piece', descents.mapPieces[3].id, [58, 1, 29], [3, 8, 2]),
+      ], joins: [], ports: [], anchors: {},
+    },
   ],
 }

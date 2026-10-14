@@ -1,6 +1,6 @@
 local content = import 'gauntlet.jsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
-local service = std.filter(function(t) t.id == 'gauntlet_service', content.templates)[0];
+local service = std.filter(function(t) t.id == 'gauntlet_service', content.mapAssemblies)[0];
 local ground = lab.ground;
 local hatch = lab.entry.hatch;
 local ladder = lab.entry.ladder;
@@ -25,7 +25,7 @@ local ladder = lab.entry.ladder;
       descents: lab.anchors.descents,
     },
     portal: {
-      hatch: 'T', ladder: 'H',
+      hatch: hatch, ladder: ladder,
       upper: [hatch[0] + 4, ground + 1, hatch[2] + 1],
       lower: [hatch[0], ladder[1], hatch[2] + 1],
     },

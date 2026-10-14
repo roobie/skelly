@@ -30,6 +30,20 @@ describe('scenario admission', () => {
     },
   );
 
+  it('rejects nonclimbable furniture filling a gap in the declared entry column', () => {
+    const service = fixtureService();
+    service.palette.X = { furniture: 'fixture_crate' };
+    for (const row of [3, 4]) {
+      service.layers[3]![row] = `${service.layers[3]![row]!.slice(0, 4)}X${service.layers[3]![row]!.slice(5)}`;
+    }
+    const rejected = buildRegistry(fixtureScenarioSources(fixtureScenario(), service));
+    expect(
+      rejected.issues.some(
+        (issue) => issue.path.endsWith('.portal.ladder') && issue.message.includes('climbable ladder column'),
+      ),
+    ).toBe(true);
+  });
+
   it('rejects a lane prop that reaches into the reserved street-centre body envelope', () => {
     const profile = fixtureScenario();
     profile.city.streetProps = ['fixture_lane_prop'];
@@ -67,6 +81,8 @@ describe('scenario admission', () => {
     const profile = fixtureScenario();
     profile.portal.upper = [8.5, 7, 4];
     profile.portal.lower = [2.5, 1, 4];
+    profile.portal.hatch = [5, 6, 3];
+    profile.portal.ladder = [6, 1, 3];
     for (const partition of [false, true]) {
       const service = fixtureService();
       service.size[0] = 12;

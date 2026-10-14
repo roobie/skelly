@@ -48,6 +48,7 @@ import {
   readClosedGroups,
   writeClosedGroups,
 } from './groups.ts';
+import { KitOverlay } from './kitOverlay.ts';
 import { LookControls } from './look.ts';
 import { lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
@@ -490,6 +491,7 @@ const panelTemplate = ({
   return html`
   <div id="sky-route-root"></div>
   <div id="debug-ui-root">
+    <div id="debug-kit-root"></div>
     <div id="debug-center-x" ?hidden=${!crosshairVisible} aria-hidden="true"></div>
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · ${labelForAction('debug.panel-toggle')}</div>
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · ${labelForAction('debug.freeze-game')}</div>
@@ -1073,6 +1075,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       });
     }
   }
+  const kitOverlay = new KitOverlay(hooks.engine.site?.authoredPlacements);
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;
   let mouseText = formatMouseDiag(undefined);
@@ -1570,6 +1573,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       host.querySelector<HTMLElement>('#debug-ui-root')!.dataset.rendering = hooks.engine.renderer
         ? 'available'
         : 'unavailable';
+      kitOverlay.mount(host.querySelector<HTMLElement>('#debug-kit-root')!);
       build.setHotbar(host.querySelector<HTMLElement>('#hotbar')!);
       spawnMenu.setRoot(host.querySelector<HTMLElement>('#spawn')!);
       aimReadout = host.querySelector<HTMLElement>('#debug-aim-readout');

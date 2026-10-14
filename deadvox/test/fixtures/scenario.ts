@@ -9,7 +9,7 @@ export const fixtureScenario = (): ScenarioDef => ({
   body: 'fixture_body',
   compression: 'fixture_compression',
   serviceTemplate: 'fixture_service',
-  portal: { hatch: 'T', ladder: 'H', upper: [6.5, 7, 4], lower: [3, 1, 4] },
+  portal: { hatch: [3, 6, 3], ladder: [4, 1, 3], upper: [6.5, 7, 4], lower: [3, 1, 4] },
   city: {
     blocksX: 1,
     blocksZ: 1,

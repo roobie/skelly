@@ -78,6 +78,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     const url = new URL(baseUrl);
     url.searchParams.set('site', 'gauntlet');
     url.searchParams.set('route-fixture', '1');
+    url.searchParams.set('debug', '1');
     url.searchParams.delete('actors');
     await page.goto(url.href);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
@@ -85,6 +86,53 @@ export const gauntletFlow = async (browser, baseUrl) => {
     await page.waitForFunction(
       () => globalThis.gauntletWitness?.input.locked && !globalThis.gauntletWitness.session.sim.paused,
     );
+    await page.evaluate(() => {
+      const w = globalThis.gauntletWitness;
+      const { engine } = w;
+      const overlay = document.querySelector('#debug-kit-overlay');
+      if (!overlay) {
+        throw new Error('Debug kit overlay missing');
+      }
+      overlay.querySelector('button').click();
+      const placements = engine.site.authoredPlacements.filter((item) => item.template.ownership);
+      const selected = placements.findIndex((item) => item.template.reserved.includes(1));
+      if (selected < 0) {
+        throw new Error('No compiled reserved void to inspect');
+      }
+      const placementInput = overlay.querySelector('[aria-label="Kit placement"]');
+      placementInput.value = String(selected);
+      placementInput.dispatchEvent(new Event('change'));
+      const { template } = placements[selected];
+      const index = template.reserved.indexOf(1);
+      const x = index % template.size[0];
+      const z = Math.floor(index / template.size[0]) % template.size[2];
+      const y = Math.floor(index / (template.size[0] * template.size[2]));
+      const layer = overlay.querySelector('[aria-label="Kit layer"]');
+      layer.value = String(y);
+      layer.dispatchEvent(new Event('change'));
+      const canvas = overlay.querySelector('canvas');
+      const rect = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: rect.left + ((x + 0.5) * rect.width) / template.size[0],
+          clientY: rect.top + ((z + 0.5) * rect.height) / template.size[2],
+        }),
+      );
+      const detail = overlay.querySelector('pre').textContent;
+      const record = template.provenance[index];
+      if (!record) {
+        throw new Error('Reserved cell lacks compiler provenance');
+      }
+      for (const field of ['owner', 'source', 'variant']) {
+        if (!detail.includes(`${field} ${record[field]}`)) {
+          throw new Error(`Overlay differs from compiler ${field}`);
+        }
+      }
+      if (!detail.includes('reserved void yes')) {
+        throw new Error('Overlay lost reserved void');
+      }
+      overlay.querySelector('button').click();
+    });
     await page.evaluate(async () => {
       const w = globalThis.gauntletWitness;
       const { engine, session, input } = w;
@@ -153,6 +201,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const { doorPlan } = await import('/src/core/options.ts');
       const { DOOR_ACTION } = await import('/src/game/doorAction.ts');
       const { ladderOutward } = await import('/src/core/ladders.ts');
+      const { descentLid, queueDescentLidOpening } = await import('/test/fixtures/descentLid.ts');
       const { IDLE } = await import('/src/game/session.ts');
       const { plan } = engine.site;
       const certificate = scenarioCertificate(engine.site);
@@ -324,6 +373,9 @@ export const gauntletFlow = async (browser, baseUrl) => {
           bottom.pos[2] + bottom.size[2] / 2 - oz,
         ];
         await walk(route(position, approach));
+        const lid = descentLid(session, bottom, descent.upper[1]);
+        const openingTime = queueDescentLidOpening(session, lid);
+        await until(() => lid.open, Math.ceil((openingTime + 1) * 60), 'descent lid');
         const [top] = [...engine.entities.all]
           .filter(
             (entity) =>

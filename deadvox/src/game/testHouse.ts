@@ -95,13 +95,12 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
     box([9.5, STOREY + 1.5, 4.5], [11.5, STOREY + 2, 7], b.dressedStone),
     // A dressed-stone doorstep, flush with the path.
     box([-1, -0.5, 2.5], [0, 0, 4.5], b.dressedStone),
-    // A shed north-west of the path: siding walls, a doorway facing south, a galvanized roof overhanging its walls.
     box([-9, 0, -3], [-6, 2.5, -2.5], b.sidingBlue),
     box([-9, 0, -1], [-6, 2.5, -0.5], b.sidingBlue),
     box([-9, 0, -3], [-8.5, 2.5, -0.5], b.sidingBlue),
     box([-6.5, 0, -3], [-6, 2.5, -0.5], b.sidingBlue),
     box([-8, 0, -1], [-7, 2, -0.5], air),
-    box([-9.5, 2.5, -3], [-5.5, 3, 0], b.galvanized),
+    box([-9, 2.5, -3], [-6, 3, -0.5], b.galvanized),
     // Kitchen: counter along the north wall, table. Bedroom: bed.
     box([1, 0, 0.5], [4, 0.9, 1.1], b.tiles),
     box([2.5, 0, 4.5], [4, 0.75, 5.5], b.planks),

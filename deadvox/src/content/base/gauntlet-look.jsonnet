@@ -1,42 +1,5 @@
 local lab = import 'gauntlet-lab.libsonnet';
-local width = lab.width;
-local depth = lab.depth;
-local ground = lab.ground;
-local surfaceOffset = lab.surfaceOffset;
-local roof = ground + 8;
 local metal = '#707b7e';
-
-local surface = function(x, y, z)
-  if x >= 4 && x <= 7 && z >= 14 && z <= 15 then 'V'
-  else if x >= 15 && x <= 16 && y >= ground + 3 && y <= ground + 4 && z == 14 then 'N'
-  else if x >= 9 && x <= 12 && y <= ground + 2 && z >= 18 && z <= 19 then 'Q'
-  else if z <= 13 then
-    if y == roof then 'R'
-    else if (z == 0 || z == 13) && x >= 11 && x <= 12 && y <= ground + 4 then 'D'
-    else if x == 0 || x == 23 || z == 0 || z == 13 then '#'
-    else '.'
-  else '.';
-local utilities = [
-  { marker: 'W', at: [30, ground + 1, 50], size: [2, 4, 2] },
-  { marker: 'X', at: [52, ground + 1, 26], size: [4, 3, 2] },
-  { marker: 'Y', at: [16, ground + 1, 30], size: [3, 5, 3] },
-];
-local paint = function(row, x, count, marker)
-  std.substr(row, 0, x) + std.repeat(marker, count) + std.substr(row, x + count, width - x - count);
-local surfaceRows = [
-  [std.repeat('.', surfaceOffset) + std.join('', [surface(x, y, z) for x in std.range(0, 23)]) + std.repeat('.', width - surfaceOffset - 24)
-   for z in std.range(0, 21)]
-  for y in std.range(ground + 1, roof)
-];
-local row = function(y, z)
-  if y < ground then lab.rows[y][z]
-  else if y == ground then
-    local base = std.repeat('=', width);
-    if z >= lab.entry.hatch[2] && z <= lab.entry.hatch[2] + 1 then paint(base, lab.entry.hatch[0], 3, 'T') else base
-  else
-    local base = if z >= surfaceOffset && z < surfaceOffset + 22 then surfaceRows[y - ground - 1][z - surfaceOffset] else std.repeat('.', width);
-    std.foldl(function(r, p) paint(r, p.at[0], p.size[0], p.marker),
-      std.reverse(std.filter(function(p) y >= p.at[1] && y < p.at[1] + p.size[1] && z >= p.at[2] && z < p.at[2] + p.size[2], utilities)), base);
 {
   furniture: lab.furniture + [
     {
@@ -145,48 +108,5 @@ local row = function(y, z)
       },
     },
   ],
-  templates: [{
-    id: 'gauntlet_look_service',
-    lootContext: { usage: ['Industrial', 'Medical'], tier: 'Tier1' },
-    size: [width, roof + 1, depth],
-    palette: {
-      '.': 'air', '=': 'concrete', '#': 'brick', R: 'galvanized',
-      D: { furniture: 'wood_door', facing: 'n' },
-      H: { furniture: 'ladder', facing: 'w' },
-      W: { furniture: 'gauntlet_look_bollard' },
-      X: { furniture: 'gauntlet_look_cabinet' },
-      Y: { furniture: 'gauntlet_look_riser' },
-      T: { furniture: 'roof_hatch', facing: 'w' },
-      V: { furniture: 'gauntlet_look_exhaust' },
-      N: { furniture: 'gauntlet_look_memo' },
-      Q: { furniture: 'gauntlet_look_bench' },
-    } + lab.palette,
-    layers: [
-      [row(y, z) for z in std.range(0, depth - 1)]
-      for y in std.range(0, roof)
-    ],
-    access: {
-      ground: 'ground', entrance: [surfaceOffset + 12, ground + 1, surfaceOffset + 2],
-      storeys: [{ id: 'ground', floor: ground + 1 }], stairs: [],
-    },
-  }],
-  layouts: [{
-    id: 'gauntlet_look',
-    lootContext: { usage: ['Industrial', 'Medical'], tier: 'Tier1' },
-    demo: true,
-    bounds: { x0: 40, z0: 40, x1: 82, z1: 78 },
-    ground: 21,
-    startTimeGameTimeOfDay: '13:00',
-    terrain: [],
-    buildings: [
-      {
-        template: 'gauntlet_look_service', position: [43, 21, 43], rotation: 0,
-        fixedLoot: [{ at: [surfaceOffset + 9, ground + 1, surfaceOffset + 18], items: [{ item: 'flashlight', placement: 'surface' }] }],
-      },
 
-    ],
-    player: { position: [62, 21.5, 67], bearing: 0 },
-    shamblers: [], woodlands: [],
-    tracks: [{ points: [[50, 53], [72, 53]], width: 4, surface: 'asphalt' }],
-  }],
 }

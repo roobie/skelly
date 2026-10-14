@@ -19,6 +19,8 @@ read_if:
   - you change site-generation tuning or its content schema
   - you're authoring or changing Deadvox content sources or their build pipeline
   - you add code that reads a content row by a fixed id
+  - you author or validate curated map kits, role styles or connector contracts
+  - you change the debug kit ownership view
   - you author graphics defaults or permitted player graphics choices
 ---
 
@@ -53,6 +55,8 @@ Fixture builders should include only the content an assertion exercises. Use one
 
 Keep exterior shells visually continuous around authored openings; doors and solid window frames remain deliberate gaps. Floor and roof courses meeting an exterior wall use that wall's material, so interior flooring does not appear as an exposed facade stripe. Interior flooring retains its authored material. Doors need clear space on both sides so a player can pass through. See `floorCourseWallGap` and `checkTemplateSpace` in `src/core/content.ts`, and `templateDoorIssues` in `src/core/templateSpatial.ts`.
 
+Keep enclosed building roofs flush with their exterior wall footprint so the roof silhouette follows the shell instead of adding projecting eaves. Open forecourt canopies are separate structures, not building eaves. See `src/content/base/gauntlet-city-kits.libsonnet`, `gauntlet_city_roof`, and `src/game/testHouse.ts`, `testHouse`.
+
 Fixed loot takes eligibility from its resolved authored source context, not a compiled placement's ID. Stacking changes that ID without changing the source's authority. Anchor usage overrides retain the resolved tier; fitted children meet the same context. See `placementLootIssues` in `src/core/placementLoot.ts` and its callers in `src/core/authoredLayout.ts` and `src/core/scenarioComposition.ts`.
 
 Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `siteGeneration` in `src/core/schema.ts`, `site-generation.json`, and `AuthoredSite` in `src/core/authoredSite.ts`.
@@ -60,6 +64,48 @@ Keep authored-site terrain and vegetation controls in base content rather than m
 Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
 
 Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, "Spawning"; see `PaletteThingSchema` in `src/core/schema.ts` and `SPAWN_TIMES` in `src/core/clock.ts`.
+
+### Curated kits
+
+A weighted alternative must preserve its consumer's spatial contract, not merely fit a
+bounding box. Alternatives must not move promised endpoints, remove a climb connector,
+or change body obstruction and support within reserved circulation. This permits a
+certificate for the selected composition to cover every alternative without searching
+combinations. Exclusive ownership prevents write order from changing a facade.
+Structural material roles must agree with the style binding so interior flooring cannot
+silently become shell treatment. See `src/core/schema.ts`, `MapPieceSchema` and
+`MapAssemblySchema`, and `src/core/templates.ts`, `compileMapPiece`, `traversalContract`
+and `compileAssembly`.
+
+City building pools may name an assembly instead of a literal template, but not both
+under the same identity. An assembly owns its authored floor topology; stress-test
+stacking cannot invent additional floors. Resolve alternatives independently for each
+stable building location before requesting chunks: caching one selected assembly for a
+whole pool would repeat the same furnishings across the city. See `src/core/cityPlan.ts`,
+`buildCityPlan` and `templateCompiler`.
+
+Bound authored volumes before allocating compilation buffers so a short metadata file
+cannot request unbounded memory. See `src/core/schema.ts`, `KitSize`.
+
+Whole-definition overrides revalidate retained consumers. Source provenance follows the
+winning definition through nested placement so a conflict identifies the authors of both
+claims rather than just the final block. See `src/core/content.ts`, `buildRegistry`, and
+`src/core/mapKit.ts`, `mapKitIssues`.
+
+Kit inspection stays in the development profile and reads compiled ownership and
+provenance, including air claims. Reconstructing claims from visible blocks would hide
+reserved voids and could blame the wrong nested source. See `src/debug/kitOverlay.ts`,
+`KitOverlay` and `kitSlice`.
+
+A route graph is intent, not body reachability. Admission uses reserved volume and known
+support rather than assuming that unclaimed cells or terrain outside a piece are empty
+or load-bearing. Climbing also requires a continuous body-clear connector with a
+supported, braced exit that permits return. Ladder furniture owns its connector cells;
+those cells are not reserved air, but do not excuse missing clearance around the body.
+Use the same physical certificate for composed scenarios and kit publication so the two
+boundaries cannot disagree about a usable climb. See `src/core/mapKit.ts`, `compileMapSite`,
+`src/core/templateSpatial.ts`, `templateClimbCertificate` and `templateStandingRoute`,
+and `src/core/climbCertificate.ts`, `climbCertificate`.
 
 ## Recipes
 
