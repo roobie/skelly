@@ -1282,7 +1282,22 @@ const ScenarioSchema = strictObject({
       }),
     ),
     streetProps: optional(pipe(array(Id), maxLength(16))),
-    templates: pipe(array(Id), minLength(1), maxLength(32)),
+    templates: pipe(
+      array(
+        strictObject({
+          id: Id,
+          weight: pipe(
+            number(),
+            minValue(0),
+            check((value) => Number.isFinite(value), 'must be finite'),
+          ),
+        }),
+      ),
+      minLength(1),
+      maxLength(32),
+      check((rows) => new Set(rows.map(({ id }) => id)).size === rows.length, 'building ids must be unique'),
+      check((rows) => rows.some(({ weight }) => weight > 0), 'needs a positive building weight'),
+    ),
   }),
 });
 

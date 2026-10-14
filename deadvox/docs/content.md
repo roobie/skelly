@@ -107,6 +107,14 @@ boundaries cannot disagree about a usable climb. See `src/core/mapKit.ts`, `comp
 `src/core/templateSpatial.ts`, `templateClimbCertificate` and `templateStandingRoute`,
 and `src/core/climbCertificate.ts`, `climbCertificate`.
 
+## City building types
+
+The city pool is authored, not inferred from item usage or building names. Each row names a template or kit assembly and owns its relative weight; an enabled fitting row is selected before its seeded kit slots resolve. Conditioning the pool on available lot width preserves relative weights at row tails rather than favouring the first fitting building. A zero weight disables a type without removing its geometry or loot definitions. See `src/core/schema.ts`, `ScenarioSchema`, and `src/core/cityPlan.ts`, `fillRow`.
+
+Mods replace the scenario by id to add or reweight pool rows, and may independently override its referenced assemblies, pieces, styles and loot tables by id. Separate type geometry from the pool so changing prevalence never requires editing a building. See `src/content/base/scenarios.jsonnet` and `test/fixtures/jsonnet/gauntlet-gun-district.jsonnet`.
+
+Residential buildings dominate the authored gauntlet mix; supply shops supplement them, while police equipment rooms and gun shops remain rare draws. Their civilian weapons use hunting eligibility rather than military admission, and empty outcomes keep an equipment room from promising a weapon. Medical tents provide treatment supplies rather than a guaranteed full kit. Existing source-context and nested-loot selection rules still own admission. See `src/content/base/gauntlet-building-types.libsonnet`, `src/content/base/gauntlet-medical-tents.libsonnet`, and `src/core/loot.ts`, `lootTypeIssue`.
+
 ## Recipes
 
 Recipe data names the result, inputs, skill and quality requirements, and optional workstation; `RecipeSchema` in `src/core/schema.ts` owns its shape and bounds. Keep alternative inputs bounded so validation cannot expand without limit.

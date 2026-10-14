@@ -19,7 +19,7 @@ export const fixtureScenario = (): ScenarioDef => ({
     pad: 2,
     gap: 2,
     blend: 4,
-    templates: ['fixture_house'],
+    templates: [{ id: 'fixture_house', weight: 1 }],
   },
 });
 

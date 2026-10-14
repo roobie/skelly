@@ -142,7 +142,7 @@ export const scenarioSources = (registry: Registry) => {
   return {
     templates: scenarios.flatMap((scenario) => [
       scenario.serviceTemplate,
-      ...scenario.city.templates,
+      ...scenario.city.templates.filter(({ weight }) => weight > 0).map(({ id }) => id),
       ...(scenario.composition
         ? [
             ...scenario.composition.leads,

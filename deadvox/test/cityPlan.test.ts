@@ -7,7 +7,7 @@ import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
-import { cellsOf, compileTemplate, footprint } from '../src/core/templates.ts';
+import { cellsOf, compileAssembly, compileTemplate, footprint } from '../src/core/templates.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
@@ -68,54 +68,67 @@ const generated = (reverse: boolean) => {
   return { chunks, furniture };
 };
 
+const floorCourses = (id: string): [number, number, string][] => {
+  const native = BUNDLED_CONTENT.registry;
+  const shellBlocksByPiece = new Map(
+    [...native.mapPieces.values()].map((piece) => [
+      piece.id,
+      new Set(
+        Object.values(native.mapStyles.get(piece.style)!.bindings)
+          .filter(({ role }) => role === 'shell')
+          .map(({ block }) => native.blockIds.get(block)),
+      ),
+    ]),
+  );
+  const assembly = native.mapAssemblies.get(id)!;
+  const template = compileAssembly(native, assembly, { seed: 73, siteId: 'floor_course' });
+  const [sx, sy, sz] = template.size;
+  const at = (x: number, y: number, z: number) =>
+    x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz ? 0 : template.blocks[x + sx * (z + sz * y)]!;
+  const solid = (block: number) => native.blocks[block]?.solid === true;
+  const slabLayers = new Set([
+    ...template.access!.storeys.map((storey) => storey.floor - 1),
+    ...assembly.slots.filter((slot) => slot.id.includes('roof')).map((slot) => slot.at[1]),
+  ]);
+  const courses: [number, number, string][] = [];
+  for (const [x, y, z] of cellsOf(template.size)) {
+    if (!slabLayers.has(y)) {
+      continue;
+    }
+    const wall = at(x, y - 1, z);
+    const owner = template.provenance?.[x + sx * (z + sz * (y - 1))];
+    if (!(shellBlocksByPiece.get(owner?.variant ?? '')?.has(wall) && solid(wall)) || at(x, y - 2, z) !== wall) {
+      continue;
+    }
+    const exposed = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ].some(([dx, dz]) => !solid(at(x + dx!, y - 1, z + dz!)));
+    const slab = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ].some(([dx, dz]) => solid(at(x + dx!, y, z + dz!)) && at(x + dx!, y, z + dz!) !== wall);
+    if (!(exposed && slab && solid(at(x, y, z)))) {
+      continue;
+    }
+    courses.push([at(x, y, z), wall, `${id}: exterior course at ${x},${y},${z}`]);
+  }
+  return courses;
+};
+
 describe('one finished city plan', () => {
   it('keeps generated building floor and roof courses in the exterior wall material', () => {
     const native = BUNDLED_CONTENT.registry;
     const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-    let checked = 0;
-    for (const id of scenario.city.templates) {
-      const plan = buildCityPlan({
-        seed: 73,
-        registry: native,
-        floor,
-        grid: { ...scenario.city, templates: [id] },
-        scenario,
-      });
-      const placement = plan.placements.find((candidate) => candidate.template.id === id)!;
-      expect(placement).toBeDefined();
-      const { template } = placement;
-      const [sx, sy, sz] = template.size;
-      const at = (x: number, y: number, z: number) =>
-        x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz ? 0 : template.blocks[x + sx * (z + sz * y)]!;
-      const solid = (block: number) => native.blocks[block]?.solid === true;
-      let courses = 0;
-      for (const [x, y, z] of cellsOf(template.size)) {
-        const wall = at(x, y - 1, z);
-        if (!solid(wall) || at(x, y - 2, z) !== wall) {
-          continue;
-        }
-        const exposed = [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ].some(([dx, dz]) => !solid(at(x + dx!, y - 1, z + dz!)));
-        const slab = [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ].some(([dx, dz]) => solid(at(x + dx!, y, z + dz!)) && at(x + dx!, y, z + dz!) !== wall);
-        if (!(exposed && slab && solid(at(x, y, z)))) {
-          continue;
-        }
-        expect(at(x, y, z), `${id}: exterior course at ${x},${y},${z}`).toBe(wall);
-        courses += 1;
-      }
-      expect(courses, id).toBeGreaterThan(0);
-      checked += 1;
+    const courses = scenario.city.templates.flatMap(({ id }) => floorCourses(id));
+    expect(courses.length).toBeGreaterThan(0);
+    for (const [actual, wall, message] of courses) {
+      expect(actual, message).toBe(wall);
     }
-    expect(checked).toBeGreaterThan(0);
   });
   it('supplies ordinary wanderers and hordes even when city buildings have no spawn markers', () => {
     const native = BUNDLED_CONTENT.registry;
@@ -130,7 +143,7 @@ describe('one finished city plan', () => {
       seed: 73,
       registry: cityRegistry,
       scale,
-      scenario: { ...scenario, city: { ...scenario.city, templates: [fixture.id] } },
+      scenario: { ...scenario, city: { ...scenario.city, templates: [{ id: fixture.id, weight: 1 }] } },
     });
     const spawns: ZombieSpawn[] = [];
     const hordes: HordeSpawn[] = [];
@@ -218,7 +231,7 @@ describe('one finished city plan', () => {
     expect(plan.placements.length).toBeGreaterThan(1);
     for (const placement of plan.placements) {
       if (placement !== plan.service) {
-        expect(profile.city.templates.includes(placement.template.id)).toBe(true);
+        expect(profile.city.templates.some(({ id }) => id === placement.template.id)).toBe(true);
       }
       const [width, depth] = footprint(placement);
       expect(mod(placement.origin[0], pitchX)).toBeGreaterThanOrEqual(grid.street + grid.pad);
@@ -234,10 +247,10 @@ describe('one finished city plan', () => {
   });
 
   it('chooses the service block/turn independently of incidental template selection', () => {
-    const forPool = (templates: string[]) =>
+    const forPool = (templates: typeof profile.city.templates) =>
       buildCityPlan({ seed: 74, registry, floor, grid: { ...profile.city, templates }, scenario: profile });
     const first = forPool(profile.city.templates);
-    const varied = forPool(['fixture_small_house']);
+    const varied = forPool([{ id: 'fixture_small_house', weight: 1 }]);
     expect(varied.placements.some((placement) => placement.template.id === 'fixture_small_house')).toBe(true);
     expect(varied.serviceBlock).toEqual(first.serviceBlock);
     expect(varied.service?.turn).toEqual(first.service?.turn);

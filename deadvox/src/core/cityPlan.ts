@@ -22,7 +22,7 @@ import {
 export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
 const SINGLE_STOREY = new Set(['gas_station', 'shed']);
 export type CityGrid = Omit<ScenarioDef['city'], 'templates' | 'streetProps'> & {
-  readonly templates: readonly string[];
+  readonly templates: readonly Readonly<{ id: string; weight: number }>[];
   readonly streetProps?: readonly string[] | undefined;
 };
 type Cell = readonly [number, number];
@@ -54,7 +54,7 @@ export const benchmarkCityGrid = (): CityGrid => ({
   blend: CITY.blend,
   blocksX: Math.ceil(CITY.reach / (CITY.street + CITY.blockX)),
   blocksZ: Math.ceil(CITY.reach / (CITY.street + CITY.blockZ)),
-  templates: [...HAMLET_TEMPLATES],
+  templates: HAMLET_TEMPLATES.map((id) => ({ id, weight: 1 })),
 });
 
 const cityDecorationIssues = (registry: Registry, city: CityGrid): [string, string][] => {
@@ -98,7 +98,7 @@ const cityPerimeter = (registry: Registry, grid: CityGrid, floor: number, bounds
 };
 
 const cityPoolIssues = (registry: Registry, city: CityGrid): [string, string][] =>
-  city.templates.flatMap((id): [string, string][] => {
+  city.templates.flatMap(({ id }): [string, string][] => {
     const template = registry.templates.get(id) ?? registry.mapAssemblies.get(id);
     if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
       return [['.city.templates', `ambiguous template and assembly "${id}"`]];
@@ -218,6 +218,27 @@ export const cityRowDepth = (grid: CityGrid): number =>
 export const cityRowStart = (grid: CityGrid, row: number): number =>
   grid.street + grid.pad + Math.floor(row / 2) * (2 * cityRowDepth(grid) + grid.street);
 
+const weightedBuilding = (
+  pool: CityGrid['templates'],
+  fits: (id: string) => boolean,
+  draw: number,
+): string | undefined => {
+  const candidates = pool.filter((choice) => choice.weight > 0 && fits(choice.id));
+  if (candidates.length === 0) {
+    return undefined;
+  }
+  const largest = Math.max(...candidates.map(({ weight }) => weight));
+  const total = candidates.reduce((sum, { weight }) => sum + weight / largest, 0);
+  let remaining = draw * total;
+  for (const candidate of candidates) {
+    remaining -= candidate.weight / largest;
+    if (remaining < 0) {
+      return candidate.id;
+    }
+  }
+  return candidates.at(-1)!.id;
+};
+
 const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
   const { seed, floor, grid, compiled, maxStoreys } = context;
   const pitchX = grid.street + grid.blockX;
@@ -229,16 +250,18 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
   for (let k = 0; ; k++) {
     const fits = (name: string) => footprint({ template: compiled(name, 1), origin: [0, 0, 0], turn })[0] <= end - x;
     const pool =
-      k === 0 && row === 0 && context.incidentalTemplates.length > 0 ? context.incidentalTemplates : grid.templates;
-    const first = pool[Math.floor(hash3(seed, i * 64 + k, j * (grid.rows ?? 2) + row, 0) * pool.length)]!;
-    const id = fits(first) ? first : grid.templates.find(fits);
-    if (!id) {
+      k === 0 && row === 0 && context.incidentalTemplates.length > 0
+        ? context.incidentalTemplates.map((id) => ({ id, weight: 1 }))
+        : grid.templates;
+    const draw = hash3(seed, i * 64 + k, j * (grid.rows ?? 2) + row, 0);
+    const buildingId = weightedBuilding(pool, fits, draw) ?? weightedBuilding(grid.templates, fits, draw);
+    if (!buildingId) {
       break;
     }
-    const storeys = SINGLE_STOREY.has(id)
+    const storeys = SINGLE_STOREY.has(buildingId)
       ? 1
       : 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * maxStoreys);
-    const template = compiled(id, storeys, `city:${i},${j}/row:${row}/building:${k}`);
+    const template = compiled(buildingId, storeys, `city:${i},${j}/row:${row}/building:${k}`);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const bank = j * pitchZ + cityRowStart(grid, row);
     const z = row % 2 === 0 ? bank : bank + 2 * cityRowDepth(grid) - depth;
@@ -274,7 +297,7 @@ export const servicePlacement = ({
 const freezeGrid = (grid: CityGrid): Readonly<CityGrid> =>
   Object.freeze({
     ...grid,
-    templates: Object.freeze([...grid.templates]),
+    templates: Object.freeze(grid.templates.map((choice) => Object.freeze({ ...choice }))),
     ...(grid.perimeter ? { perimeter: Object.freeze({ ...grid.perimeter }) } : {}),
     ...(grid.streetProps ? { streetProps: Object.freeze([...grid.streetProps]) } : {}),
   });

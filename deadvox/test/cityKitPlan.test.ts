@@ -18,7 +18,7 @@ it('resolves one repeatable variant per slot and varies city assemblies across b
     blend: 2,
     blocksX: 1,
     blocksZ: 1,
-    templates: ['fixture_route'],
+    templates: [{ id: 'fixture_route', weight: 1 }],
   };
   const plan = (seed: number) => buildCityPlan({ seed, registry, floor: 0, grid });
   const variants = (result: ReturnType<typeof plan>) =>
@@ -57,7 +57,7 @@ it('rejects ambiguous city pool identities instead of choosing a template or ass
   const { registry, issues } = buildRegistry([{ source: 'fixture-city-kits.json', data }]);
   expect(issues).toEqual([]);
   const scenario = fixtureScenario();
-  scenario.city.templates = ['fixture_route'];
+  scenario.city.templates = [{ id: 'fixture_route', weight: 1 }];
   expect(scenarioPlanIssues(registry, scenario)).toContainEqual([
     '.city.templates',
     'ambiguous template and assembly "fixture_route"',
