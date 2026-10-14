@@ -13,8 +13,11 @@ import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 
 it('lab room substitutions preserve furnished threshold-to-circulation and return routes at every quarter turn', () => {
   const data = JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-lab-rooms.libsonnet')) as ContentFile;
-  const { registry } = BUNDLED_CONTENT;
   const rooms = data.mapPieces!;
+  const registry = {
+    ...BUNDLED_CONTENT.registry,
+    mapPieces: new Map([...BUNDLED_CONTENT.registry.mapPieces, ...rooms.map((room) => [room.id, room] as const)]),
+  };
   expect(rooms.length).toBeGreaterThan(1);
   for (const room of rooms) {
     const template = compileMapPiece(registry, room);

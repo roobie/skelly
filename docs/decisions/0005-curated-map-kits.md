@@ -66,9 +66,16 @@ the walking body, not adjacent equipment: declaring an unnecessarily deep mouth 
 turn a valid furnishing bay into a circulation conflict. See
 `deadvox/src/content/base/gauntlet-lab-rooms.libsonnet`, `room`.
 
+A descent shaft owns its ladder column, body clearance and opening through the upper
+floor. The receiving room leaves the shaft volume unclaimed; the departing room leaves
+its floor opening unclaimed. Furnishing beside the column still needs a final climb
+certificate: exclusive ownership prevents overlapping writes, not a body obstruction in
+an adjacent cell. See `deadvox/src/content/base/gauntlet-lab-descents.libsonnet`, `shaft`,
+and `deadvox/test/labDescentKit.test.ts`.
+
 These pieces are admitted content, not yet the production lab. Issue #712 still requires
-storey circulation, exclusively owned descent openings and the objective room to replace
-the generated lab. Furnished room witnesses do not establish a final lab climb or return.
+storey circulation, fixed room placement and the objective room to replace the generated
+lab. Furnished room and connector witnesses do not establish a final lab climb or return.
 
 ## Consequences
 

@@ -4016,6 +4016,745 @@
       ],
       "size": [18, 8, 14],
       "style": "concrete_lab"
+    },
+    {
+      "anchors": {
+        "circulation": {
+          "at": [9, 1, 11],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_lab_room_incoming",
+      "layers": [
+        [
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp"
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=.FFFF...........=",
+          "=.FFFF...........=",
+          "..................",
+          "..................",
+          "..................",
+          "...........FFFF...",
+          "=..........FFFF..=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=.FFFF...........=",
+          "=.FFFF...........=",
+          "..................",
+          "..................",
+          "..................",
+          "...........FFFF...",
+          "=..........FFFF..=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRSSSSRRRRRRRRRRRS",
+            "SRSSSSRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRRRRRRSSSSRRR",
+            "SRRRRRRRRRRSSSSRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRSSSSRRRRRRRRRRRS",
+            "SRSSSSRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRRRRRRSSSSRRR",
+            "SRRRRRRRRRRSSSSRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRR...RRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [
+        {
+          "aperture": [4, 4],
+          "at": [9, 1, 0],
+          "clearance": {
+            "min": [7, 1, 0],
+            "size": [4, 4, 4]
+          },
+          "facing": "n",
+          "id": "north",
+          "standing": [9, 1, 2],
+          "traversal": "walk",
+          "type": "lab_room"
+        },
+        {
+          "aperture": [4, 4],
+          "at": [9, 1, 14],
+          "clearance": {
+            "min": [7, 1, 10],
+            "size": [4, 4, 4]
+          },
+          "facing": "s",
+          "id": "south",
+          "standing": [9, 1, 12],
+          "traversal": "walk",
+          "type": "lab_room"
+        },
+        {
+          "aperture": [4, 4],
+          "at": [0, 1, 7],
+          "clearance": {
+            "min": [0, 1, 5],
+            "size": [2, 4, 4]
+          },
+          "facing": "w",
+          "id": "west",
+          "standing": [1, 1, 7],
+          "traversal": "walk",
+          "type": "lab_room"
+        },
+        {
+          "aperture": [4, 4],
+          "at": [18, 1, 7],
+          "clearance": {
+            "min": [16, 1, 5],
+            "size": [2, 4, 4]
+          },
+          "facing": "e",
+          "id": "east",
+          "standing": [17, 1, 7],
+          "traversal": "walk",
+          "type": "lab_room"
+        }
+      ],
+      "size": [18, 8, 14],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {
+        "circulation": {
+          "at": [9, 1, 11],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_lab_room_outgoing",
+      "layers": [
+        [
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "ppppppp...pppppppp",
+          "ppppppp...pppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp",
+          "pppppppppppppppppp"
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=.FFFF...........=",
+          "=.FFFF...........=",
+          "..................",
+          "..................",
+          "..................",
+          "...........FFFF...",
+          "=..........FFFF..=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=.FFFF...........=",
+          "=.FFFF...........=",
+          "..................",
+          "..................",
+          "..................",
+          "...........FFFF...",
+          "=..........FFFF..=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ],
+        [
+          "=======....=======",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=................=",
+          "=======....======="
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSS...SSSSSSSS",
+            "SSSSSSS...SSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS",
+            "SSSSSSSSSSSSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRSSSSRRRRRRRRRRRS",
+            "SRSSSSRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRSSSSRRR",
+            "SRRRRRRRRRRSSSSRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRSSSSRRRRRRRRRRRS",
+            "SRSSSSRRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRSSSSRRR",
+            "SRRRRRRRRRRSSSSRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ],
+          [
+            "SSSSSSSRRRRSSSSSSS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "SRAAAARRRRRRRRRRRS",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRAAAARRR",
+            "SRRRRRRRRRRAAAARRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SRRRRRRRRRRRRRRRRS",
+            "SSSSSSSRRRRSSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "=": {
+          "material": "concrete",
+          "role": "shell"
+        },
+        "F": {
+          "furniture": "gauntlet_look_bench"
+        },
+        "p": {
+          "material": "floor",
+          "role": "interior_floor"
+        }
+      },
+      "ports": [
+        {
+          "aperture": [4, 4],
+          "at": [9, 1, 0],
+          "clearance": {
+            "min": [7, 1, 0],
+            "size": [4, 4, 4]
+          },
+          "facing": "n",
+          "id": "north",
+          "standing": [9, 1, 2],
+          "traversal": "walk",
+          "type": "lab_room"
+        },
+        {
+          "aperture": [4, 4],
+          "at": [9, 1, 14],
+          "clearance": {
+            "min": [7, 1, 10],
+            "size": [4, 4, 4]
+          },
+          "facing": "s",
+          "id": "south",
+          "standing": [9, 1, 12],
+          "traversal": "walk",
+          "type": "lab_room"
+        },
+        {
+          "aperture": [4, 4],
+          "at": [0, 1, 7],
+          "clearance": {
+            "min": [0, 1, 5],
+            "size": [2, 4, 4]
+          },
+          "facing": "w",
+          "id": "west",
+          "standing": [1, 1, 7],
+          "traversal": "walk",
+          "type": "lab_room"
+        },
+        {
+          "aperture": [4, 4],
+          "at": [18, 1, 7],
+          "clearance": {
+            "min": [16, 1, 5],
+            "size": [2, 4, 4]
+          },
+          "facing": "e",
+          "id": "east",
+          "standing": [17, 1, 7],
+          "traversal": "walk",
+          "type": "lab_room"
+        }
+      ],
+      "size": [18, 8, 14],
+      "style": "concrete_lab"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_lab_descent_shaft",
+      "layers": [
+        [".J.", ".J."],
+        [".J.", ".J."],
+        [".J.", ".J."],
+        [".J.", ".J."],
+        [".J.", ".J."],
+        [".J.", ".J."],
+        [".J.", ".J."],
+        [".J.", ".J."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["RSR", "RSR"],
+          ["RSR", "RSR"],
+          ["RSR", "RSR"],
+          ["RSR", "RSR"],
+          ["RSR", "RSR"],
+          ["RSR", "RSR"],
+          ["RSR", "RSR"],
+          ["RSR", "RSR"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "air",
+          "role": "opening"
+        },
+        "J": {
+          "facing": "w",
+          "furniture": "ladder"
+        }
+      },
+      "ports": [],
+      "size": [3, 8, 2],
+      "style": "concrete_lab"
     }
   ],
   "mapStyles": [
