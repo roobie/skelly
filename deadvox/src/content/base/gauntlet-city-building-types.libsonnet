@@ -90,8 +90,8 @@ local shopTall = [
 ];
 local stock = function(table) { furniture: 'shelf', loot: table };
 local box = function(table) { furniture: 'crate', loot: table };
-local slot(id, piece, at, size) = {
-  id: id, at: at, size: size, turn: 0,
+local slot(id, piece, at, size, turn=0) = {
+  id: id, at: at, size: size, turn: turn,
   choices: [{ ref: { kind: 'piece', id: piece }, weight: 1 }],
 };
 local building(id, context, shellId, roomId) = {

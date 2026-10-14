@@ -1,7 +1,7 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_TEMPLATES } from './hamlet.ts';
-import { hash3, Rng } from './random.ts';
+import { hash3, pickWeighted, Rng } from './random.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
 import type { ScenarioDef } from './schema.ts';
@@ -218,27 +218,6 @@ export const cityRowDepth = (grid: CityGrid): number =>
 export const cityRowStart = (grid: CityGrid, row: number): number =>
   grid.street + grid.pad + Math.floor(row / 2) * (2 * cityRowDepth(grid) + grid.street);
 
-const weightedBuilding = (
-  pool: CityGrid['templates'],
-  fits: (id: string) => boolean,
-  draw: number,
-): string | undefined => {
-  const candidates = pool.filter((choice) => choice.weight > 0 && fits(choice.id));
-  if (candidates.length === 0) {
-    return undefined;
-  }
-  const largest = Math.max(...candidates.map(({ weight }) => weight));
-  const total = candidates.reduce((sum, { weight }) => sum + weight / largest, 0);
-  let remaining = draw * total;
-  for (const candidate of candidates) {
-    remaining -= candidate.weight / largest;
-    if (remaining < 0) {
-      return candidate.id;
-    }
-  }
-  return candidates.at(-1)!.id;
-};
-
 const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
   const { seed, floor, grid, compiled, maxStoreys } = context;
   const pitchX = grid.street + grid.blockX;
@@ -253,8 +232,11 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
       k === 0 && row === 0 && context.incidentalTemplates.length > 0
         ? context.incidentalTemplates.map((id) => ({ id, weight: 1 }))
         : grid.templates;
-    const draw = hash3(seed, i * 64 + k, j * (grid.rows ?? 2) + row, 0);
-    const buildingId = weightedBuilding(pool, fits, draw) ?? weightedBuilding(grid.templates, fits, draw);
+    const selected = pickWeighted(pool, Rng.stream(seed, `city:${i},${j}/row:${row}/building:${k}/type`));
+    const buildingId =
+      selected && fits(selected.id)
+        ? selected.id
+        : grid.templates.find((choice) => choice.weight > 0 && fits(choice.id))?.id;
     if (!buildingId) {
       break;
     }

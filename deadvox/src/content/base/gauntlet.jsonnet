@@ -1,8 +1,8 @@
 local look = import 'gauntlet-look.jsonnet';
 local city = import 'gauntlet-city.libsonnet';
 local kits = import 'gauntlet-city-kits.libsonnet';
-local types = import 'gauntlet-building-types.libsonnet';
-local tents = import 'gauntlet-medical-tents.libsonnet';
+local types = import 'gauntlet-city-building-types.libsonnet';
+local tents = import 'gauntlet-city-medical.libsonnet';
 local rooms = import 'gauntlet-lab-rooms.libsonnet';
 local descents = import 'gauntlet-lab-descents.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
@@ -75,12 +75,12 @@ local utilities = [
 {
   blocks: tents.blocks,
   loot: types.loot + tents.loot,
-  mapStyles: rooms.mapStyles + types.mapStyles + tents.mapStyles + [{ id: 'service_brick', bindings: {
+  mapStyles: rooms.mapStyles + [{ id: 'service_brick', bindings: {
     air: { role: 'opening', block: 'air' }, concrete: { role: 'interior_floor', block: 'concrete' },
     brick: { role: 'shell', block: 'brick' }, galvanized: { role: 'shell', block: 'galvanized' },
-  } }],
-  mapPieces: kits.mapPieces + types.mapPieces + tents.mapPieces + rooms.mapPieces + descents.mapPieces + lab.mapPieces + service.mapPieces,
-  mapAssemblies: kits.mapAssemblies + types.mapAssemblies + tents.mapAssemblies + lab.mapAssemblies + service.mapAssemblies,
+  } }] + types.mapStyles + tents.mapStyles,
+  mapPieces: kits.mapPieces + rooms.mapPieces + descents.mapPieces + lab.mapPieces + service.mapPieces + types.mapPieces + tents.mapPieces,
+  mapAssemblies: kits.mapAssemblies + lab.mapAssemblies + service.mapAssemblies + types.mapAssemblies + tents.mapAssemblies,
   furniture: city.furniture + [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,

@@ -1225,6 +1225,15 @@ const SiteLayoutSchema = strictObject({
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
 });
 
+const CityBuildingWeightSchema = strictObject({
+  id: Id,
+  weight: pipe(
+    number(),
+    minValue(0),
+    check((value) => Number.isFinite(value), 'must be finite'),
+  ),
+});
+
 const ScenarioSchema = strictObject({
   id: Id,
   kind: literal('gauntlet'),
@@ -1283,16 +1292,7 @@ const ScenarioSchema = strictObject({
     ),
     streetProps: optional(pipe(array(Id), maxLength(16))),
     templates: pipe(
-      array(
-        strictObject({
-          id: Id,
-          weight: pipe(
-            number(),
-            minValue(0),
-            check((value) => Number.isFinite(value), 'must be finite'),
-          ),
-        }),
-      ),
+      array(CityBuildingWeightSchema),
       minLength(1),
       maxLength(32),
       check((rows) => new Set(rows.map(({ id }) => id)).size === rows.length, 'building ids must be unique'),

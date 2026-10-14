@@ -51,9 +51,9 @@ local piece(id, size, layers, claims) = {
   id: id, size: size, style: 'gauntlet_canvas', lootContext: context,
   palette: palette, layers: layers, ownership: { layers: claims }, anchors: {}, ports: [],
 };
-local slot(id, ref, at, size) = {
-  id: id, at: at, size: size, turn: 0,
-  choices: [{ ref: { kind: 'piece', id: ref }, weight: 1 }],
+local slot(id, piece, at, size, turn=0) = {
+  id: id, at: at, size: size, turn: turn,
+  choices: [{ ref: { kind: 'piece', id: piece }, weight: 1 }],
 };
 {
   blocks: [{ id: 'gauntlet_canvas', name: 'Tent canvas', color: '#d9d2b7', solid: true, weatherable: false }],

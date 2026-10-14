@@ -74,6 +74,26 @@ export const fbm2 = (seed: number, x: number, z: number, octaves: number): numbe
   return sum / norm;
 };
 
+export const pickWeighted = <T extends { readonly weight: number }>(choices: readonly T[], rng: Rng): T | undefined => {
+  if (choices.some(({ weight }) => !Number.isFinite(weight) || weight < 0)) {
+    throw new Error('Weights must be finite and nonnegative');
+  }
+  const candidates = choices.filter(({ weight }) => weight > 0);
+  if (candidates.length === 0) {
+    return undefined;
+  }
+  const largest = Math.max(...candidates.map(({ weight }) => weight));
+  const total = candidates.reduce((sum, { weight }) => sum + weight / largest, 0);
+  let remaining = rng.range(0, total);
+  for (const candidate of candidates) {
+    remaining -= candidate.weight / largest;
+    if (remaining < 0) {
+      return candidate;
+    }
+  }
+  return candidates.at(-1);
+};
+
 // ---- random streams ----
 
 /** The four words of an sfc32 generator's state; saves store it as is. */

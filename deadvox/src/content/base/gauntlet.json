@@ -834,505 +834,6 @@
       ]
     },
     {
-      "access": {
-        "entrance": [8, 1, 6],
-        "ground": "floor_0",
-        "stairs": [],
-        "storeys": [
-          {
-            "floor": 1,
-            "id": "floor_0"
-          }
-        ]
-      },
-      "anchors": {
-        "entry": {
-          "at": [8, 1, 6],
-          "kind": "standing"
-        },
-        "stock": {
-          "at": [8, 1, 12],
-          "kind": "standing"
-        }
-      },
-      "id": "gauntlet_police_station",
-      "joins": [],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Hunting"]
-      },
-      "ports": [],
-      "size": [18, 9, 16],
-      "slots": [
-        {
-          "at": [0, 0, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_city_ground",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "ground",
-          "size": [18, 1, 16],
-          "turn": 0
-        },
-        {
-          "at": [0, 1, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_police_front",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "front",
-          "size": [18, 7, 16],
-          "turn": 0
-        },
-        {
-          "at": [1, 1, 3],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_police_rooms",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "stockroom",
-          "size": [14, 7, 12],
-          "turn": 0
-        },
-        {
-          "at": [0, 8, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_city_roof",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "roof",
-          "size": [18, 1, 16],
-          "turn": 0
-        }
-      ]
-    },
-    {
-      "access": {
-        "entrance": [8, 1, 6],
-        "ground": "floor_0",
-        "stairs": [],
-        "storeys": [
-          {
-            "floor": 1,
-            "id": "floor_0"
-          }
-        ]
-      },
-      "anchors": {
-        "entry": {
-          "at": [8, 1, 6],
-          "kind": "standing"
-        },
-        "stock": {
-          "at": [8, 1, 12],
-          "kind": "standing"
-        }
-      },
-      "id": "gauntlet_food_store",
-      "joins": [],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "ports": [],
-      "size": [18, 9, 16],
-      "slots": [
-        {
-          "at": [0, 0, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_city_ground",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "ground",
-          "size": [18, 1, 16],
-          "turn": 0
-        },
-        {
-          "at": [0, 1, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_food_front",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "front",
-          "size": [18, 7, 16],
-          "turn": 0
-        },
-        {
-          "at": [1, 1, 3],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_food_aisles",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "stockroom",
-          "size": [14, 7, 12],
-          "turn": 0
-        },
-        {
-          "at": [0, 8, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_city_roof",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "roof",
-          "size": [18, 1, 16],
-          "turn": 0
-        }
-      ]
-    },
-    {
-      "access": {
-        "entrance": [8, 1, 6],
-        "ground": "floor_0",
-        "stairs": [],
-        "storeys": [
-          {
-            "floor": 1,
-            "id": "floor_0"
-          }
-        ]
-      },
-      "anchors": {
-        "entry": {
-          "at": [8, 1, 6],
-          "kind": "standing"
-        },
-        "stock": {
-          "at": [8, 1, 12],
-          "kind": "standing"
-        }
-      },
-      "id": "gauntlet_gun_store",
-      "joins": [],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Hunting"]
-      },
-      "ports": [],
-      "size": [18, 9, 16],
-      "slots": [
-        {
-          "at": [0, 0, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_city_ground",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "ground",
-          "size": [18, 1, 16],
-          "turn": 0
-        },
-        {
-          "at": [0, 1, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_gun_front",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "front",
-          "size": [18, 7, 16],
-          "turn": 0
-        },
-        {
-          "at": [1, 1, 3],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_gun_sales",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "stockroom",
-          "size": [14, 7, 12],
-          "turn": 0
-        },
-        {
-          "at": [0, 8, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_city_roof",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "roof",
-          "size": [18, 1, 16],
-          "turn": 0
-        }
-      ]
-    },
-    {
-      "access": {
-        "entrance": [8, 1, 6],
-        "ground": "floor_0",
-        "stairs": [],
-        "storeys": [
-          {
-            "floor": 1,
-            "id": "floor_0"
-          }
-        ]
-      },
-      "anchors": {
-        "entry": {
-          "at": [8, 1, 6],
-          "kind": "standing"
-        },
-        "stock": {
-          "at": [8, 1, 12],
-          "kind": "standing"
-        }
-      },
-      "id": "gauntlet_hardware_store",
-      "joins": [],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Industrial"]
-      },
-      "ports": [],
-      "size": [18, 9, 16],
-      "slots": [
-        {
-          "at": [0, 0, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_city_ground",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "ground",
-          "size": [18, 1, 16],
-          "turn": 0
-        },
-        {
-          "at": [0, 1, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_hardware_front",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "front",
-          "size": [18, 7, 16],
-          "turn": 0
-        },
-        {
-          "at": [1, 1, 3],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_hardware_aisles",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "stockroom",
-          "size": [14, 7, 12],
-          "turn": 0
-        },
-        {
-          "at": [0, 8, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_city_roof",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "roof",
-          "size": [18, 1, 16],
-          "turn": 0
-        }
-      ]
-    },
-    {
-      "access": {
-        "entrance": [9, 1, 2],
-        "ground": "floor_0",
-        "stairs": [],
-        "storeys": [
-          {
-            "floor": 1,
-            "id": "floor_0"
-          }
-        ]
-      },
-      "anchors": {
-        "east": {
-          "at": [14, 1, 11],
-          "kind": "standing"
-        },
-        "entry": {
-          "at": [9, 1, 2],
-          "kind": "standing"
-        },
-        "west": {
-          "at": [5, 1, 11],
-          "kind": "standing"
-        }
-      },
-      "id": "gauntlet_medical_site",
-      "joins": [],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Medical"]
-      },
-      "ports": [],
-      "size": [18, 9, 16],
-      "slots": [
-        {
-          "at": [0, 0, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_city_ground",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "ground",
-          "size": [18, 1, 16],
-          "turn": 0
-        },
-        {
-          "at": [0, 1, 0],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_triage_apron",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "apron",
-          "size": [18, 8, 16],
-          "turn": 0
-        },
-        {
-          "at": [1, 1, 3],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_triage_tent",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_tent",
-          "size": [7, 6, 12],
-          "turn": 0
-        },
-        {
-          "at": [10, 1, 3],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_triage_tent",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_tent",
-          "size": [7, 6, 12],
-          "turn": 0
-        },
-        {
-          "at": [1, 7, 3],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_tent_roof",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "west_roof",
-          "size": [7, 2, 12],
-          "turn": 0
-        },
-        {
-          "at": [10, 7, 3],
-          "choices": [
-            {
-              "ref": {
-                "id": "gauntlet_tent_roof",
-                "kind": "piece"
-              },
-              "weight": 1
-            }
-          ],
-          "id": "east_roof",
-          "size": [7, 2, 12],
-          "turn": 0
-        }
-      ]
-    },
-    {
       "anchors": {
         "circulation": {
           "at": [9, 1, 11],
@@ -5825,6 +5326,505 @@
           "turn": 0
         }
       ]
+    },
+    {
+      "access": {
+        "entrance": [8, 1, 6],
+        "ground": "floor_0",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "floor_0"
+          }
+        ]
+      },
+      "anchors": {
+        "entry": {
+          "at": [8, 1, 6],
+          "kind": "standing"
+        },
+        "stock": {
+          "at": [8, 1, 12],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_police_station",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Hunting"]
+      },
+      "ports": [],
+      "size": [18, 9, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_ground",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "ground",
+          "size": [18, 1, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_police_front",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "front",
+          "size": [18, 7, 16],
+          "turn": 0
+        },
+        {
+          "at": [1, 1, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_police_rooms",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "stockroom",
+          "size": [14, 7, 12],
+          "turn": 0
+        },
+        {
+          "at": [0, 8, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_roof",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "roof",
+          "size": [18, 1, 16],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [8, 1, 6],
+        "ground": "floor_0",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "floor_0"
+          }
+        ]
+      },
+      "anchors": {
+        "entry": {
+          "at": [8, 1, 6],
+          "kind": "standing"
+        },
+        "stock": {
+          "at": [8, 1, 12],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_food_store",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ports": [],
+      "size": [18, 9, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_ground",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "ground",
+          "size": [18, 1, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_food_front",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "front",
+          "size": [18, 7, 16],
+          "turn": 0
+        },
+        {
+          "at": [1, 1, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_food_aisles",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "stockroom",
+          "size": [14, 7, 12],
+          "turn": 0
+        },
+        {
+          "at": [0, 8, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_roof",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "roof",
+          "size": [18, 1, 16],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [8, 1, 6],
+        "ground": "floor_0",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "floor_0"
+          }
+        ]
+      },
+      "anchors": {
+        "entry": {
+          "at": [8, 1, 6],
+          "kind": "standing"
+        },
+        "stock": {
+          "at": [8, 1, 12],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_gun_store",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Hunting"]
+      },
+      "ports": [],
+      "size": [18, 9, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_ground",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "ground",
+          "size": [18, 1, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_gun_front",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "front",
+          "size": [18, 7, 16],
+          "turn": 0
+        },
+        {
+          "at": [1, 1, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_gun_sales",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "stockroom",
+          "size": [14, 7, 12],
+          "turn": 0
+        },
+        {
+          "at": [0, 8, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_roof",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "roof",
+          "size": [18, 1, 16],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [8, 1, 6],
+        "ground": "floor_0",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "floor_0"
+          }
+        ]
+      },
+      "anchors": {
+        "entry": {
+          "at": [8, 1, 6],
+          "kind": "standing"
+        },
+        "stock": {
+          "at": [8, 1, 12],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_hardware_store",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ports": [],
+      "size": [18, 9, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_ground",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "ground",
+          "size": [18, 1, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_hardware_front",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "front",
+          "size": [18, 7, 16],
+          "turn": 0
+        },
+        {
+          "at": [1, 1, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_hardware_aisles",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "stockroom",
+          "size": [14, 7, 12],
+          "turn": 0
+        },
+        {
+          "at": [0, 8, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_roof",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "roof",
+          "size": [18, 1, 16],
+          "turn": 0
+        }
+      ]
+    },
+    {
+      "access": {
+        "entrance": [9, 1, 2],
+        "ground": "floor_0",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "floor_0"
+          }
+        ]
+      },
+      "anchors": {
+        "east": {
+          "at": [14, 1, 11],
+          "kind": "standing"
+        },
+        "entry": {
+          "at": [9, 1, 2],
+          "kind": "standing"
+        },
+        "west": {
+          "at": [5, 1, 11],
+          "kind": "standing"
+        }
+      },
+      "id": "gauntlet_medical_site",
+      "joins": [],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Medical"]
+      },
+      "ports": [],
+      "size": [18, 9, 16],
+      "slots": [
+        {
+          "at": [0, 0, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_city_ground",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "ground",
+          "size": [18, 1, 16],
+          "turn": 0
+        },
+        {
+          "at": [0, 1, 0],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_triage_apron",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "apron",
+          "size": [18, 8, 16],
+          "turn": 0
+        },
+        {
+          "at": [1, 1, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_triage_tent",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "west_tent",
+          "size": [7, 6, 12],
+          "turn": 0
+        },
+        {
+          "at": [10, 1, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_triage_tent",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "east_tent",
+          "size": [7, 6, 12],
+          "turn": 0
+        },
+        {
+          "at": [1, 7, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_tent_roof",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "west_roof",
+          "size": [7, 2, 12],
+          "turn": 0
+        },
+        {
+          "at": [10, 7, 3],
+          "choices": [
+            {
+              "ref": {
+                "id": "gauntlet_tent_roof",
+                "kind": "piece"
+              },
+              "weight": 1
+            }
+          ],
+          "id": "east_roof",
+          "size": [7, 2, 12],
+          "turn": 0
+        }
+      ]
     }
   ],
   "mapPieces": [
@@ -8438,2740 +8438,6 @@
       "ports": [],
       "size": [18, 1, 16],
       "style": "brick_townhouse"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_police_front",
-      "layers": [
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###..##DD##..###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###..##DD##..###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#TTTTTTTTTTTTTT#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Hunting"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAASSSSSSAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAASSSSSSAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "T": {
-          "material": "sign",
-          "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [18, 7, 16],
-      "style": "gauntlet_police"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_food_front",
-      "layers": [
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###....DD....###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###....DD....###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#TTTTTTTTTTTTTT#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAAAASSAAAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAAAASSAAAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "T": {
-          "material": "sign",
-          "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [18, 7, 16],
-      "style": "gauntlet_food_shop"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_gun_front",
-      "layers": [
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###....DD....###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###....DD....###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#TTTTTTTTTTTTTT#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Hunting"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAAAASSAAAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAAAASSAAAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "T": {
-          "material": "sign",
-          "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [18, 7, 16],
-      "style": "gauntlet_gun_shop"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_hardware_front",
-      "layers": [
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#######DD#######..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###....DD....###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "###....DD....###..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "#TTTTTTTTTTTTTT#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ],
-        [
-          "..................",
-          "..................",
-          "################..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "#..............#..",
-          "################.."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Industrial"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAAAASSAAAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSAAAASSAAAASSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ],
-          [
-            "AAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAA",
-            "SSSSSSSSSSSSSSSSAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "S..............SAA",
-            "SSSSSSSSSSSSSSSSAA"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "T": {
-          "material": "sign",
-          "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [18, 7, 16],
-      "style": "gauntlet_hardware_shop"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_police_rooms",
-      "layers": [
-        [
-          "..............",
-          "..............",
-          ".CCC..........",
-          ".CCC..........",
-          "..............",
-          "..............",
-          "..............",
-          "######DD######",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          ".CCC..........",
-          ".CCC..........",
-          "..............",
-          "..............",
-          "..............",
-          "######DD######",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "######DD######",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "######DD######",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Hunting"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSSRRRRRRRRRR",
-            "RSSSRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSSRRRRRRRRRR",
-            "RSSSRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "SSSSSSSSSSSSSS",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "A": {
-          "furniture": "crate",
-          "loot": "gauntlet_ammunition"
-        },
-        "C": {
-          "furniture": "desk",
-          "loot": "gauntlet_police_gear"
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "G": {
-          "furniture": "range_rack",
-          "loot": "gauntlet_civilian_guns"
-        }
-      },
-      "ports": [],
-      "size": [14, 7, 12],
-      "style": "brick_townhouse"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_food_aisles",
-      "layers": [
-        [
-          "..............",
-          "..............",
-          ".CC...........",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          ".CC...........",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Residential"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "A": {
-          "furniture": "crate",
-          "loot": "gauntlet_food_stock"
-        },
-        "C": {
-          "furniture": "counter",
-          "loot": "gauntlet_food_stock"
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "G": {
-          "furniture": "shelf",
-          "loot": "gauntlet_food_stock"
-        },
-        "S": {
-          "furniture": "shelf",
-          "loot": "gauntlet_food_stock"
-        }
-      },
-      "ports": [],
-      "size": [14, 7, 12],
-      "style": "brick_townhouse"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_gun_sales",
-      "layers": [
-        [
-          "..............",
-          "..............",
-          ".CC...........",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          ".CC...........",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Hunting"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "A": {
-          "furniture": "crate",
-          "loot": "gauntlet_ammunition"
-        },
-        "C": {
-          "furniture": "counter",
-          "loot": "gauntlet_police_gear"
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "G": {
-          "furniture": "range_rack",
-          "loot": "gauntlet_civilian_guns"
-        },
-        "S": {
-          "furniture": "shelf",
-          "loot": "gauntlet_ammunition"
-        }
-      },
-      "ports": [],
-      "size": [14, 7, 12],
-      "style": "brick_townhouse"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_hardware_aisles",
-      "layers": [
-        [
-          "..............",
-          "..............",
-          ".CC...........",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          ".CC...........",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG.......AA..",
-          "..........AA..",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "...SS....SS...",
-          "...SS....SS...",
-          "..............",
-          "..............",
-          "..............",
-          ".GG...........",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ],
-        [
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          "..............",
-          ".............."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Industrial"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRSSRR",
-            "RRRRRRRRRRSSRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRSSRRRRSSRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RSSRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRR"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "facade",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "A": {
-          "furniture": "crate",
-          "loot": "hardware_store_stock"
-        },
-        "C": {
-          "furniture": "counter",
-          "loot": "hardware_store_stock"
-        },
-        "D": {
-          "furniture": "wood_door"
-        },
-        "G": {
-          "furniture": "shelf",
-          "loot": "hardware_store_stock"
-        },
-        "S": {
-          "furniture": "shelf",
-          "loot": "hardware_store_stock"
-        }
-      },
-      "ports": [],
-      "size": [14, 7, 12],
-      "style": "brick_townhouse"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_triage_tent",
-      "layers": [
-        [
-          "##...##",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#BB...#",
-          "#BB...#",
-          "#BB...#",
-          "#BB...#",
-          "#.....#",
-          "#..MM.#",
-          "#..MM.#",
-          "#######"
-        ],
-        [
-          "##...##",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#..MM.#",
-          "#..MM.#",
-          "#######"
-        ],
-        [
-          "##...##",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#######"
-        ],
-        [
-          "##...##",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#######"
-        ],
-        [
-          "##TTT##",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#######"
-        ],
-        [
-          "###T###",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#.....#",
-          "#######"
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Medical"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSRRRSS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SSSRRRS",
-            "SSSRRRS",
-            "SSSRRRS",
-            "SSSRRRS",
-            "SRRRRRS",
-            "SRRSSRS",
-            "SRRSSRS",
-            "SSSSSSS"
-          ],
-          [
-            "SSRRRSS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRSSRS",
-            "SRRSSRS",
-            "SSSSSSS"
-          ],
-          [
-            "SSRRRSS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SSSSSSS"
-          ],
-          [
-            "SSRRRSS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SSSSSSS"
-          ],
-          [
-            "SSSSSSS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SSSSSSS"
-          ],
-          [
-            "SSSSSSS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SRRRRRS",
-            "SSSSSSS"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "canvas",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "B": {
-          "furniture": "bed"
-        },
-        "M": {
-          "furniture": "crate",
-          "loot": "gauntlet_medical_stock"
-        },
-        "T": {
-          "material": "cross",
-          "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [7, 6, 12],
-      "style": "gauntlet_canvas"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_tent_roof",
-      "layers": [
-        [
-          "#######",
-          "#######",
-          "#######",
-          "#######",
-          "#######",
-          "#######",
-          "#######",
-          "#######",
-          "#######",
-          "#######",
-          "#######",
-          "#######"
-        ],
-        [
-          "..###..",
-          "..###..",
-          "..###..",
-          "..###..",
-          "..###..",
-          "..###..",
-          "..###..",
-          "..###..",
-          "..###..",
-          "..###..",
-          "..###..",
-          "..###.."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Medical"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS",
-            "SSSSSSS"
-          ],
-          [
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR",
-            "RRSSSRR"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "canvas",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "B": {
-          "furniture": "bed"
-        },
-        "M": {
-          "furniture": "crate",
-          "loot": "gauntlet_medical_stock"
-        },
-        "T": {
-          "material": "cross",
-          "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [7, 2, 12],
-      "style": "gauntlet_canvas"
-    },
-    {
-      "anchors": {},
-      "id": "gauntlet_triage_apron",
-      "layers": [
-        [
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          ".................."
-        ],
-        [
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          ".................."
-        ],
-        [
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          ".................."
-        ],
-        [
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          ".................."
-        ],
-        [
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          ".................."
-        ],
-        [
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          ".................."
-        ],
-        [
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          ".................."
-        ],
-        [
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          "..................",
-          ".................."
-        ]
-      ],
-      "lootContext": {
-        "tier": "Tier1",
-        "usage": ["Medical"]
-      },
-      "ownership": {
-        "layers": [
-          [
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "RRRRRRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "RRRRRRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "RRRRRRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "RRRRRRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "RRRRRRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "RRRRRRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "RRRRRRRRRRRRRRRRRR"
-          ],
-          [
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "RRRRRRRRRRRRRRRRRR",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "R.......RR.......R",
-            "RRRRRRRRRRRRRRRRRR"
-          ]
-        ]
-      },
-      "palette": {
-        "#": {
-          "material": "canvas",
-          "role": "shell"
-        },
-        ".": {
-          "material": "opening",
-          "role": "opening"
-        },
-        "B": {
-          "furniture": "bed"
-        },
-        "M": {
-          "furniture": "crate",
-          "loot": "gauntlet_medical_stock"
-        },
-        "T": {
-          "material": "cross",
-          "role": "trim"
-        }
-      },
-      "ports": [],
-      "size": [18, 8, 16],
-      "style": "gauntlet_canvas"
     },
     {
       "anchors": {
@@ -16845,6 +14111,2740 @@
       "ports": [],
       "size": [3, 7, 2],
       "style": "service_brick"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_police_front",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "###..##DD##..###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "###..##DD##..###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#TTTTTTTTTTTTTT#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Hunting"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSAASSSSSSAASSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSAASSSSSSAASSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "T": {
+          "material": "sign",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [18, 7, 16],
+      "style": "gauntlet_police"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_food_front",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "###....DD....###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "###....DD....###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#TTTTTTTTTTTTTT#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSAAAASSAAAASSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSAAAASSAAAASSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "T": {
+          "material": "sign",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [18, 7, 16],
+      "style": "gauntlet_food_shop"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_gun_front",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "###....DD....###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "###....DD....###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#TTTTTTTTTTTTTT#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Hunting"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSAAAASSAAAASSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSAAAASSAAAASSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "T": {
+          "material": "sign",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [18, 7, 16],
+      "style": "gauntlet_gun_shop"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_hardware_front",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#######DD#######..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "###....DD....###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "###....DD....###..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "#TTTTTTTTTTTTTT#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ],
+        [
+          "..................",
+          "..................",
+          "################..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "#..............#..",
+          "################.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSAAAASSAAAASSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSAAAASSAAAASSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ],
+          [
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "SSSSSSSSSSSSSSSSAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "S..............SAA",
+            "SSSSSSSSSSSSSSSSAA"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "T": {
+          "material": "sign",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [18, 7, 16],
+      "style": "gauntlet_hardware_shop"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_police_rooms",
+      "layers": [
+        [
+          "..............",
+          "..............",
+          ".CCC..........",
+          ".CCC..........",
+          "..............",
+          "..............",
+          "..............",
+          "######DD######",
+          "..............",
+          ".GG.......AA..",
+          "..........AA..",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          ".CCC..........",
+          ".CCC..........",
+          "..............",
+          "..............",
+          "..............",
+          "######DD######",
+          "..............",
+          ".GG.......AA..",
+          "..........AA..",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "######DD######",
+          "..............",
+          ".GG...........",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "######DD######",
+          "..............",
+          ".GG...........",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Hunting"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSSRRRRRRRRRR",
+            "RSSSRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSS",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRSSRR",
+            "RRRRRRRRRRSSRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSSRRRRRRRRRR",
+            "RSSSRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSS",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRSSRR",
+            "RRRRRRRRRRSSRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSS",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "SSSSSSSSSSSSSS",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "A": {
+          "furniture": "crate",
+          "loot": "gauntlet_ammunition"
+        },
+        "C": {
+          "furniture": "desk",
+          "loot": "gauntlet_police_gear"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "G": {
+          "furniture": "range_rack",
+          "loot": "gauntlet_civilian_guns"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 12],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_food_aisles",
+      "layers": [
+        [
+          "..............",
+          "..............",
+          ".CC...........",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG.......AA..",
+          "..........AA..",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          ".CC...........",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG.......AA..",
+          "..........AA..",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG...........",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG...........",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRSSRR",
+            "RRRRRRRRRRSSRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRSSRR",
+            "RRRRRRRRRRSSRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "A": {
+          "furniture": "crate",
+          "loot": "gauntlet_food_stock"
+        },
+        "C": {
+          "furniture": "counter",
+          "loot": "gauntlet_food_stock"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "G": {
+          "furniture": "shelf",
+          "loot": "gauntlet_food_stock"
+        },
+        "S": {
+          "furniture": "shelf",
+          "loot": "gauntlet_food_stock"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 12],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_gun_sales",
+      "layers": [
+        [
+          "..............",
+          "..............",
+          ".CC...........",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG.......AA..",
+          "..........AA..",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          ".CC...........",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG.......AA..",
+          "..........AA..",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG...........",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG...........",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Hunting"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRSSRR",
+            "RRRRRRRRRRSSRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRSSRR",
+            "RRRRRRRRRRSSRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "A": {
+          "furniture": "crate",
+          "loot": "gauntlet_ammunition"
+        },
+        "C": {
+          "furniture": "counter",
+          "loot": "gauntlet_police_gear"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "G": {
+          "furniture": "range_rack",
+          "loot": "gauntlet_civilian_guns"
+        },
+        "S": {
+          "furniture": "shelf",
+          "loot": "gauntlet_ammunition"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 12],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_hardware_aisles",
+      "layers": [
+        [
+          "..............",
+          "..............",
+          ".CC...........",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG.......AA..",
+          "..........AA..",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          ".CC...........",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG.......AA..",
+          "..........AA..",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG...........",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "...SS....SS...",
+          "...SS....SS...",
+          "..............",
+          "..............",
+          "..............",
+          ".GG...........",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ],
+        [
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          "..............",
+          ".............."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRSSRR",
+            "RRRRRRRRRRSSRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRSSRR",
+            "RRRRRRRRRRSSRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRSSRRRRSSRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RSSRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRR"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "facade",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "A": {
+          "furniture": "crate",
+          "loot": "hardware_store_stock"
+        },
+        "C": {
+          "furniture": "counter",
+          "loot": "hardware_store_stock"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "G": {
+          "furniture": "shelf",
+          "loot": "hardware_store_stock"
+        },
+        "S": {
+          "furniture": "shelf",
+          "loot": "hardware_store_stock"
+        }
+      },
+      "ports": [],
+      "size": [14, 7, 12],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_triage_tent",
+      "layers": [
+        [
+          "##...##",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#BB...#",
+          "#BB...#",
+          "#BB...#",
+          "#BB...#",
+          "#.....#",
+          "#..MM.#",
+          "#..MM.#",
+          "#######"
+        ],
+        [
+          "##...##",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#..MM.#",
+          "#..MM.#",
+          "#######"
+        ],
+        [
+          "##...##",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#######"
+        ],
+        [
+          "##...##",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#######"
+        ],
+        [
+          "##TTT##",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#######"
+        ],
+        [
+          "###T###",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#.....#",
+          "#######"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Medical"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSRRRSS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SSSRRRS",
+            "SSSRRRS",
+            "SSSRRRS",
+            "SSSRRRS",
+            "SRRRRRS",
+            "SRRSSRS",
+            "SRRSSRS",
+            "SSSSSSS"
+          ],
+          [
+            "SSRRRSS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRSSRS",
+            "SRRSSRS",
+            "SSSSSSS"
+          ],
+          [
+            "SSRRRSS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SSSSSSS"
+          ],
+          [
+            "SSRRRSS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SSSSSSS"
+          ],
+          [
+            "SSSSSSS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SSSSSSS"
+          ],
+          [
+            "SSSSSSS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SRRRRRS",
+            "SSSSSSS"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "canvas",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "furniture": "bed"
+        },
+        "M": {
+          "furniture": "crate",
+          "loot": "gauntlet_medical_stock"
+        },
+        "T": {
+          "material": "cross",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [7, 6, 12],
+      "style": "gauntlet_canvas"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_tent_roof",
+      "layers": [
+        [
+          "#######",
+          "#######",
+          "#######",
+          "#######",
+          "#######",
+          "#######",
+          "#######",
+          "#######",
+          "#######",
+          "#######",
+          "#######",
+          "#######"
+        ],
+        [
+          "..###..",
+          "..###..",
+          "..###..",
+          "..###..",
+          "..###..",
+          "..###..",
+          "..###..",
+          "..###..",
+          "..###..",
+          "..###..",
+          "..###..",
+          "..###.."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Medical"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS",
+            "SSSSSSS"
+          ],
+          [
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR",
+            "RRSSSRR"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "canvas",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "furniture": "bed"
+        },
+        "M": {
+          "furniture": "crate",
+          "loot": "gauntlet_medical_stock"
+        },
+        "T": {
+          "material": "cross",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [7, 2, 12],
+      "style": "gauntlet_canvas"
+    },
+    {
+      "anchors": {},
+      "id": "gauntlet_triage_apron",
+      "layers": [
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Medical"]
+      },
+      "ownership": {
+        "layers": [
+          [
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "RRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "RRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "RRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "RRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "RRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "RRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "RRRRRRRRRRRRRRRRRR"
+          ],
+          [
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "RRRRRRRRRRRRRRRRRR",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "R.......RR.......R",
+            "RRRRRRRRRRRRRRRRRR"
+          ]
+        ]
+      },
+      "palette": {
+        "#": {
+          "material": "canvas",
+          "role": "shell"
+        },
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "B": {
+          "furniture": "bed"
+        },
+        "M": {
+          "furniture": "crate",
+          "loot": "gauntlet_medical_stock"
+        },
+        "T": {
+          "material": "cross",
+          "role": "trim"
+        }
+      },
+      "ports": [],
+      "size": [18, 8, 16],
+      "style": "gauntlet_canvas"
     }
   ],
   "mapStyles": [
@@ -16864,6 +16864,27 @@
         }
       },
       "id": "concrete_lab"
+    },
+    {
+      "bindings": {
+        "air": {
+          "block": "air",
+          "role": "opening"
+        },
+        "brick": {
+          "block": "brick",
+          "role": "shell"
+        },
+        "concrete": {
+          "block": "concrete",
+          "role": "interior_floor"
+        },
+        "galvanized": {
+          "block": "galvanized",
+          "role": "shell"
+        }
+      },
+      "id": "service_brick"
     },
     {
       "bindings": {
@@ -16949,27 +16970,6 @@
         }
       },
       "id": "gauntlet_canvas"
-    },
-    {
-      "bindings": {
-        "air": {
-          "block": "air",
-          "role": "opening"
-        },
-        "brick": {
-          "block": "brick",
-          "role": "shell"
-        },
-        "concrete": {
-          "block": "concrete",
-          "role": "interior_floor"
-        },
-        "galvanized": {
-          "block": "galvanized",
-          "role": "shell"
-        }
-      },
-      "id": "service_brick"
     }
   ],
   "templates": [
