@@ -242,13 +242,13 @@ local lowerSlots = [
       id: 'gauntlet_city_roof', size: [18, 1, 16], style: 'brick_townhouse',
       lootContext: context, palette: palette,
       layers: [[
-        'pppppppppppppppp..', 'pppppppppppppppp..', '################..', '#pppppppppppppp#..',
+        '..................', '..................', '################..', '#pppppppppppppp#..',
         '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..',
         '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..',
         '#pppppppppppppp#..', '#pppppppppppppp#..', '#pppppppppppppp#..', '################..',
       ]],
       ownership: { layers: [[
-        'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
+        'AAAAAAAAAAAAAAAAAA', 'AAAAAAAAAAAAAAAAAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
         'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
         'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',
         'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA', 'SSSSSSSSSSSSSSSSAA',

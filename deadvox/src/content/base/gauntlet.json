@@ -7735,8 +7735,8 @@
       "id": "gauntlet_city_roof",
       "layers": [
         [
-          "pppppppppppppppp..",
-          "pppppppppppppppp..",
+          "..................",
+          "..................",
           "################..",
           "#pppppppppppppp#..",
           "#pppppppppppppp#..",
@@ -7760,8 +7760,8 @@
       "ownership": {
         "layers": [
           [
-            "SSSSSSSSSSSSSSSSAA",
-            "SSSSSSSSSSSSSSSSAA",
+            "AAAAAAAAAAAAAAAAAA",
+            "AAAAAAAAAAAAAAAAAA",
             "SSSSSSSSSSSSSSSSAA",
             "SSSSSSSSSSSSSSSSAA",
             "SSSSSSSSSSSSSSSSAA",
