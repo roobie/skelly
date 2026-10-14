@@ -19,15 +19,26 @@ test('URL intake uses ordinary validation and rejects HTTP failures and streamed
   expect((await readPaste(url, fetchMod)).issue).toBeDefined();
   const cancel = vi.fn();
   let pulls = 0;
-  fetchMod.mockResolvedValueOnce(new Response(new ReadableStream<Uint8Array>({
-    pull(controller) {
-      pulls += 1;
-      if (pulls === 1) controller.enqueue(new Uint8Array(MAX_MOD_BYTES));
-      else if (pulls === 2) controller.enqueue(new Uint8Array([32]));
-      else controller.close();
-    },
-    cancel,
-  }, { highWaterMark: 0 })));
+  fetchMod.mockResolvedValueOnce(
+    new Response(
+      new ReadableStream<Uint8Array>(
+        {
+          pull(controller) {
+            pulls += 1;
+            if (pulls === 1) {
+              controller.enqueue(new Uint8Array(MAX_MOD_BYTES));
+            } else if (pulls === 2) {
+              controller.enqueue(new Uint8Array([32]));
+            } else {
+              controller.close();
+            }
+          },
+          cancel,
+        },
+        { highWaterMark: 0 },
+      ),
+    ),
+  );
   expect((await readPaste(url, fetchMod)).issue).toBeDefined();
   expect(cancel).toHaveBeenCalledOnce();
   expect(pulls).toBe(2);

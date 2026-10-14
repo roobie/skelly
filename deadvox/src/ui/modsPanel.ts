@@ -3,13 +3,20 @@ import { type BrowserMod, evaluateMods, MAX_MOD_BYTES } from '../game/browserMod
 import type { StartupContent } from '../game/bundledContent.ts';
 import { factDetail } from './factDetail.ts';
 
-export const readPaste = async (draft: string, fetchMod: typeof fetch = fetch): Promise<{ name: string; text: string; issue?: string }> => {
+const httpUrl = /^https?:\/\//i;
+
+export const readPaste = async (
+  draft: string,
+  fetchMod: typeof fetch = fetch,
+): Promise<{ name: string; text: string; issue?: string }> => {
   const value = draft.trim();
-  if (!/^https?:\/\//i.test(value)) return { name: 'pasted.json', text: draft };
+  if (!httpUrl.test(value)) {
+    return { name: 'pasted.json', text: draft };
+  }
   const failed = (issue: string) => ({ name: value, text: '', issue });
   try {
     const response = await fetchMod(value, { credentials: 'omit' });
-    if (response.url && !/^https?:\/\//i.test(response.url)) {
+    if (response.url && !httpUrl.test(response.url)) {
       await response.body?.cancel();
       return failed('HTTP or HTTPS URLs only');
     }
@@ -17,15 +24,20 @@ export const readPaste = async (draft: string, fetchMod: typeof fetch = fetch): 
       await response.body?.cancel();
       return failed(`HTTP ${response.status}`);
     }
-    if (!response.body) return failed('Empty response');
+    if (!response.body) {
+      return failed('Empty response');
+    }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let bytes = 0;
     let text = '';
     try {
       for (;;) {
+        // biome-ignore lint/performance/noAwaitInLoops: Read sequentially so the byte bound precedes the next pull.
         const chunk = await reader.read();
-        if (chunk.done) break;
+        if (chunk.done) {
+          break;
+        }
         bytes += chunk.value.byteLength;
         if (bytes > MAX_MOD_BYTES) {
           await reader.cancel();
@@ -95,7 +107,9 @@ export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
       draw();
     };
     const paste = async () => {
-      if (!draft.trim() || busy) return;
+      if (!draft.trim() || busy) {
+        return;
+      }
       busy = true;
       uploadError = '';
       draw();
@@ -116,7 +130,9 @@ export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
       <section class="mods-card" aria-label="Mods">
         <h1>Mods</h1>
         <p>${factDetail('JSON files', `Later JSON files replace whole definitions with the same id; the limit is ${MAX_MOD_BYTES} bytes per file. This preview does not retain mods across reloads or check their identity against saves.`)}</p>
-        <label>JSON or URL<textarea aria-label="Mod JSON or URL" ?disabled=${busy} .value=${draft} @input=${(event: Event) => {
+        <label>JSON or URL<textarea aria-label="Mod JSON or URL" ?disabled=${busy} .value=${draft} @input=${(
+          event: Event,
+        ) => {
           draft = (event.currentTarget as HTMLTextAreaElement).value;
         }}></textarea></label>
         <button type="button" ?disabled=${busy} @click=${paste}>Add</button>
