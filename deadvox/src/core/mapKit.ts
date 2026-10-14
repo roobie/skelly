@@ -142,7 +142,7 @@ const portIssues = (registry: Registry, template: CompiledTemplate): [string, st
   return issues;
 };
 
-export const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [string, string][] => [
+const compiledKitIssues = (registry: Registry, template: CompiledTemplate): [string, string][] => [
   ...templateStoreyIssues(template),
   ...(template.access && !reservedStanding(registry, template, template.access.entrance)
     ? [['.access.entrance', 'entrance needs reserved body clearance and known support'] as [string, string]]

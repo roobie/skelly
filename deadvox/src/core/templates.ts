@@ -373,7 +373,7 @@ export const compileMapPiece = (
   };
 };
 
-export const compileKitRef = (registry: Registry, ref: KitRef, context: AssemblyContext): CompiledTemplate => {
+const compileKitRef = (registry: Registry, ref: KitRef, context: AssemblyContext): CompiledTemplate => {
   if (ref.kind === 'piece') {
     const piece = registry.mapPieces.get(ref.id);
     if (!piece) {
@@ -471,7 +471,7 @@ const resolveSlot = (
   return candidates.at(-1)!.placement;
 };
 
-export const placedPort = (placement: Placement, port: KitPort): KitPort => {
+const placedPort = (placement: Placement, port: KitPort): KitPort => {
   const low = placedPoint(placement, port.clearance.min);
   const high = placedPoint(
     placement,

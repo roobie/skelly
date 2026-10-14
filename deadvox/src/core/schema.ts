@@ -1939,7 +1939,6 @@ export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type MapPieceDef = InferOutput<typeof MapPieceSchema>;
 export type MapAssemblyDef = InferOutput<typeof MapAssemblySchema>;
 export type MapSiteDef = InferOutput<typeof MapSiteSchema>;
-export type MapStyleDef = InferOutput<typeof MapStyleSchema>;
 export type KitPort = InferOutput<typeof KitPortSchema>;
 export type KitAnchor = InferOutput<typeof KitAnchorSchema>;
 export type KitRef = InferOutput<typeof KitRefSchema>;
