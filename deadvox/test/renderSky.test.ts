@@ -9,6 +9,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it } from 'vitest';
+import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
 import { skyAt } from '../src/core/sky.ts';
 import { heightFogUniforms } from '../src/render/heightFog.ts';
 import { Mood } from '../src/render/mood.ts';
@@ -23,7 +24,7 @@ it('fog, background and mist follow local sky visibility from darkness to open s
     camera: new PerspectiveCamera(),
     radiusM: 100,
   };
-  const mood = new Mood({} as WebGLRenderer, scene, targets.camera);
+  const mood = new Mood({} as WebGLRenderer, scene, targets.camera, graphicsFile.graphics[0]!);
   const sky = {
     ...skyAt(12),
     sky: [0.6, 0.7, 0.8] as const,

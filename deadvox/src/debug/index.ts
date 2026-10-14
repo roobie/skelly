@@ -1126,21 +1126,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   });
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
-  if (initialLook.renderScale !== undefined) {
-    hooks.engine.mood?.setRenderScale(initialLook.renderScale);
-  }
-  if (initialLook.bloomScale !== undefined) {
-    hooks.engine.mood?.setBloomScale(initialLook.bloomScale);
-  }
-  if (initialLook.smallSunMap) {
-    hooks.engine.shadows?.setSmallSunMap(true);
-  }
-  if (initialLook.fastCamo) {
-    hooks.engine.meshes.setFastCamo(true);
-  }
-  if (initialLook.coarseWeathering) {
-    hooks.engine.meshes.setCoarseWeathering(true);
-  }
   // `?cam=` puts the player at a saved view instead of the spawn or a save's position (the body moves; saves
   // only ever record the body, never this URL). Mid-air the player falls, unless `freeze=1` or noclip holds
   // them. Roll is ignored: it only comes from damage feedback.
@@ -1170,11 +1155,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     crackCheck: look.crackCheck,
     hotCheck: look.hotCheck,
     ...look.moodState,
-    ...((hooks.engine.mood?.renderScale ?? 1) < 1 ? { renderScale: hooks.engine.mood?.renderScale ?? 1 } : {}),
-    ...((hooks.engine.mood?.bloomScale ?? 1) < 1 ? { bloomScale: hooks.engine.mood?.bloomScale ?? 1 } : {}),
-    ...(hooks.engine.shadows?.smallSunMap ? { smallSunMap: true } : {}),
-    ...(hooks.engine.meshes.fastCamo ? { fastCamo: true } : {}),
-    ...(hooks.engine.meshes.coarseWeathering ? { coarseWeathering: true } : {}),
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {

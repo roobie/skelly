@@ -81,15 +81,19 @@ export const validGraphicsSettings = (tuning: GraphicsOptions, input: unknown): 
   ) as GraphicsSettings;
 };
 
+export const assertGraphicsValue = (tuning: GraphicsOptions, key: GraphicsKey, value: unknown): void => {
+  if (!graphicsValueAllowed(tuning, key, value)) {
+    throw new RangeError(`Graphics setting ${key} is outside the content's allowed choices`);
+  }
+};
+
 export const setGraphicsSetting = <K extends GraphicsKey>(
   tuning: GraphicsOptions,
   settings: GraphicsSettings,
   key: K,
   value: GraphicsValues[K],
 ): GraphicsSettings => {
-  if (!graphicsValueAllowed(tuning, key, value)) {
-    throw new RangeError(`Graphics setting ${key} is outside the content's allowed choices`);
-  }
+  assertGraphicsValue(tuning, key, value);
   return { ...validGraphicsSettings(tuning, settings), [key]: value };
 };
 

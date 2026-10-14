@@ -13,7 +13,6 @@ import {
 } from '../src/debug/lookUrl.ts';
 import { setAutoToneWeight } from '../src/render/autoTone.ts';
 import { hotCheckUniform } from '../src/render/hotCheck.ts';
-import { bloomRenderScale, sceneRenderScale } from '../src/render/moodQuality.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 
@@ -74,13 +73,18 @@ describe('look URL parameters', () => {
       shadows: { sun: false, torch: false, distance: 64 },
       crackCheck: true,
       hotCheck: true,
-      renderScale: sceneRenderScale(0),
-      bloomScale: bloomRenderScale(0),
-      smallSunMap: true,
-      fastCamo: true,
-      coarseWeathering: true,
     };
     expect(parse(write('', state))).toEqual(state);
+  });
+
+  it('leaves graphics override identity untouched on unrelated look changes', () => {
+    const query = 'debug=1&renderscale=1&bloomscale=0.2&sunsmall=0&camofast=1&weathercoarse=0';
+    const changed = new URLSearchParams(write(query, { ...DEFAULT_LOOK_URL_STATE, tone: 'agx' }));
+    const original = new URLSearchParams(query);
+    for (const [key, value] of original) {
+      expect(changed.get(key)).toBe(value);
+    }
+    expect(write('debug=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
   });
 
   it('keeps both shadows on unless sunshadow=0 / torchshadow=0, and omits the defaults', () => {

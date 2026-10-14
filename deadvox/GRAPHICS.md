@@ -23,7 +23,7 @@ Post-processing and shadows support the intended mood. Compare the same workload
 
 Tone mapping, display transfer and colour grading share a fullscreen draw because storing and sampling an intermediate display-space image adds GPU work without adding an effect. Grade remains after tone mapping and transfer so its controls keep their display-referred meaning; bloom stays before them in linear light. See `src/render/moodOutput.ts`, `createMoodOutputPass`, and `src/render/mood.ts`, `Mood`.
 
-GPU quality trials stay debug-only until the operator judges the paired images by eye: a measured cost reduction does not authorize a different default look. Scale the post-chain inputs rather than the canvas so DOM/HUD readability and display-space film stay independent of scene resolution. The direct no-post path remains unscaled. See `src/debug/lookUrl.ts`, `parseLookParams`, and `src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`.
+A measured cost reduction does not authorize a different default look; default changes require the operator's visual judgment. Scale the post-chain inputs rather than the canvas so DOM/HUD readability and display-space film stay independent of scene resolution. The direct no-post path remains unscaled. See `src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`.
 
 Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `src/render/shadows.ts`, `Shadows.setSmallSunMap`.
 
@@ -41,6 +41,12 @@ Persist only explicit player choices, not resolved defaults or debug overrides, 
 policy can change without stale defaults becoming machine preferences. Validate stored
 choices against the effective content policy before using them; unavailable storage must
 not prevent play. See `src/core/graphics.ts`, `validGraphicsSettings`.
+
+Graphics options are meta controls because hardware preferences are not character knowledge.
+Clearing a preference returns ownership to content rather than saving its resolved default.
+Debug overrides remain separate from preferences, and unrelated look changes must not promote
+player or mod values into the URL. See `src/ui/graphicsOptions.ts`, `renderGraphicsOptions`,
+`src/game/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
 
 ## Unresolved constraints
 

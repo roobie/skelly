@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
+import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import {
@@ -11,7 +12,9 @@ import {
   validGraphicsSettings,
   writeGraphicsParams,
 } from '../src/core/graphics.ts';
+import { GraphicsControls } from '../src/game/graphicsControls.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
+import { Mood } from '../src/render/mood.ts';
 
 const scale = (label: string) => ({ label, min: 0.2, max: 0.9, default: 0.6 });
 const toggle = (label: string) => ({ label, default: true, options: [false, true] });
@@ -86,6 +89,50 @@ it('validated setters reject disallowed values without mutating the player choic
   expect(() => setGraphicsSetting(tuning, settings, 'renderScale', tuning.renderScale.max + 1)).toThrow(RangeError);
   const locked = { ...tuning, fastCamo: { ...tuning.fastCamo, options: [true] } };
   expect(() => setGraphicsSetting(locked, settings, 'fastCamo', false)).toThrow(RangeError);
+});
+
+it('applies all resolved knobs on startup and player changes, with URL priority gated by debug', () => {
+  const targets = {
+    mood: { setRenderScale: vi.fn(), setBloomScale: vi.fn() },
+    shadows: { setSmallSunMap: vi.fn() },
+    meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn() },
+  };
+  let saved = '';
+  const storage = {
+    getItem: () => saved || null,
+    setItem: (_key: string, value: string) => {
+      saved = value;
+    },
+  };
+  writeGraphicsSettings(tuning, { renderScale: tuning.renderScale.min, fastCamo: false }, storage);
+  const params = writeGraphicsParams(new URLSearchParams(), tuning, { fastCamo: true });
+  const controls = new GraphicsControls(tuning, targets, { debug: false, params, storage });
+  expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.min);
+  expect(targets.mood.setBloomScale).toHaveBeenLastCalledWith(tuning.bloomScale.default);
+  expect(targets.shadows.setSmallSunMap).toHaveBeenLastCalledWith(tuning.smallSunMap.default);
+  expect(targets.meshes.setFastCamo).toHaveBeenLastCalledWith(false);
+  expect(targets.meshes.setCoarseWeathering).toHaveBeenLastCalledWith(tuning.coarseWeathering.default);
+  controls.clear('renderScale');
+  expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.default);
+  expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
+  const debug = new GraphicsControls(tuning, targets, { debug: true, params, storage });
+  debug.set('fastCamo', false);
+  expect(targets.meshes.setFastCamo).toHaveBeenLastCalledWith(true);
+  expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
+  expect(() => debug.set('bloomScale', tuning.bloomScale.max + 1)).toThrow(RangeError);
+  expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
+});
+
+it('mood scale setters enforce content bounds without the former URL trial floors', () => {
+  const mood = new Mood({} as WebGLRenderer, new Scene(), new PerspectiveCamera(), tuning);
+  mood.setRenderScale(tuning.renderScale.min);
+  mood.setBloomScale(tuning.bloomScale.min);
+  expect(mood.renderScale).toBe(tuning.renderScale.min);
+  expect(mood.bloomScale).toBe(tuning.bloomScale.min);
+  expect(() => mood.setRenderScale(tuning.renderScale.min / 2)).toThrow(RangeError);
+  expect(() => mood.setBloomScale(tuning.bloomScale.max + 1)).toThrow(RangeError);
+  expect(mood.renderScale).toBe(tuning.renderScale.min);
+  expect(mood.bloomScale).toBe(tuning.bloomScale.min);
 });
 
 describe('machine graphics settings persistence', () => {
