@@ -11,7 +11,8 @@ read_if:
   - you change sleep onset, its tuning or cancellation
   - you're changing the rendering of zombie actor models
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
-  - you're changing how the amalgam's flesh meets terrain, the player or shots, or what that costs per tick (#563)
+  - you're changing how the amalgam's flesh meets terrain, the player or shots
+  - you're measuring or reducing amalgam collision cost against its per-tick budget (#574)
   - you're changing the holes hits carve in the amalgam or the flesh chunks that fly off
   - you're changing the crawler's established silhouette
   - you're changing crawler gait, hit response or generation validation
