@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { buildCityPlan, scenarioPlanIssues, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
+// biome-ignore lint/performance/noNamespaceImport: A module spy observes every scenario-source handoff.
+import * as lootSelection from '../src/core/loot.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { compileTemplate, type Placement, placedPieces } from '../src/core/templates.ts';
@@ -23,6 +25,7 @@ const fixture = () => {
     fixedLoot: [
       {
         at: [2, 1, 2],
+        lootUsage: ['Medical'],
         items: [
           { item: 'fixture_token', count: 3 },
           { item: 'fixture_token', placement: 'surface' },
@@ -88,8 +91,29 @@ describe('authored scenario composition', () => {
         site
           .furnitureIn(toChunk(anchor[0]), toChunk(anchor[2]))
           .find((spawn) => spawn.spec.pos.join(',') === anchor.join(','))!;
+      const selection = vi.spyOn(lootSelection, 'rollLoot');
       const before = read();
       expect(before).toBeDefined();
+      const points = site.lootPointsIn(toChunk(anchor[0]), toChunk(anchor[2]));
+      expect(points.some((point) => point.channel === 'container' && point.required)).toBe(true);
+      expect(points.some((point) => point.channel === 'surface' && point.required)).toBe(true);
+      expect(selection.mock.calls.map(([, point]) => point.id)).toEqual(
+        expect.arrayContaining(points.map((point) => point.id)),
+      );
+      selection.mockRestore();
+      for (const [channel, entries] of [
+        ['container', before.loot],
+        ['surface', before.surfaceLoot!],
+      ] as const) {
+        expect(entries.length).toBeGreaterThan(0);
+        for (const entry of entries) {
+          const point = points.find(
+            (candidate) => candidate.channel === channel && candidate.destination.join(',') === anchor.join(','),
+          )!;
+          expect(point.context.usage).toEqual(['Medical']);
+          expect(entry.origin).toMatchObject({ kind: 'economy', source: point.id, channel });
+        }
+      }
       expect(
         before.loot.filter((item) => item.type === 'fixture_token').reduce((sum, item) => sum + item.count, 0),
       ).toBeGreaterThanOrEqual(3);

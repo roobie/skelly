@@ -20,7 +20,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
   const { blockSize } = config.scale;
   const inventory = new Inventory(registry);
   const add = (type: string, target: Parameters<Inventory['add']>[1]) => {
-    const item = inventory.create(type);
+    const item = inventory.createFixture(type);
     if (!inventory.add(item, target)) {
       throw new Error(`Could not place benchmark light: ${type}`);
     }
@@ -32,7 +32,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
 
   add('torch', { kind: 'hand', side: 'right' });
   add('candle', { kind: 'hand', side: 'left' });
-  const hoodie = inventory.create('hoodie');
+  const hoodie = inventory.createFixture('hoodie');
   if (!inventory.add(hoodie, { kind: 'worn' })) {
     throw new Error('Could not wear benchmark light container');
   }
@@ -47,7 +47,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
       const blockZ = Math.round((z + Math.sin(angle) * radius) / blockSize);
       const ground = engine.groundAt((blockX + 0.5) * blockSize, (blockZ + 0.5) * blockSize);
       const pos: [number, number, number] = [blockX, Math.floor(ground / blockSize), blockZ];
-      const item = inventory.create('glowstick');
+      const item = inventory.createFixture('glowstick');
       if (!inventory.add(item, { kind: 'pile', pos })) {
         throw new Error(`Could not place dropped benchmark glowstick on ring ${ring}`);
       }

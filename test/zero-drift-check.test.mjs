@@ -209,6 +209,10 @@ describe('zero-drift symbol check', () => {
     assert.ok(checks(scan(document(`${link(code('missingSymbol'), 'src/known.ts')}.`))).includes('symbol'));
     assert.deepEqual(scan(document(link(code('known.ts'), 'src/known.ts'))), []);
   });
+
+  it('checks a symbol pair wrapped across a line break', () => {
+    assert.ok(checks(scan(document(`See ${code('src/known.ts')},\n${code('missingSymbol')}.`))).includes('symbol'));
+  });
 });
 
 describe('zero-drift section cues', () => {
@@ -271,6 +275,26 @@ describe('zero-drift section cues', () => {
     }
   });
 
+  it('does not let possessive apostrophes hide a bare section cue', () => {
+    const apostrophe = String.fromCharCode(39);
+    const path = ['docs/anchors', 'md'].join('.');
+    const body = ['BR', apostrophe, 's rule: ', path, ', "Missing" isn', apostrophe, 't kept.'].join('');
+    assert.deepEqual(new Set(checks(sections(body))), new Set(['section_form', 'section']));
+  });
+
+  it('catches numbered section references in emphasized and linked text, not code', () => {
+    const path = ['docs/anchors', 'md'].join('.');
+    assert.deepEqual(checks(sections(`**${path}** section 3`)), ['section_form']);
+    assert.deepEqual(sections(`${code(path)} section 3`), []);
+    assert.deepEqual(checks(sections(`[${path} section 3](${path})`)), ['section_form']);
+  });
+
+  it('does not promote escaped backticks in text to code cue nodes', () => {
+    const escaped = (value) => code(value).replaceAll('`', '\\`');
+    assert.deepEqual(sections(`${escaped('docs/anchors.md')}, ${escaped('Missing')}`), []);
+    assert.deepEqual(sections(`${escaped('engine/src/known.ts')}, ${escaped('missing')}`), []);
+  });
+
   it('resolves reference links through definitions and checks their destinations and code labels', () => {
     assert.deepEqual(sections('[target][ref]\n\n[ref]: docs/anchors.md#anchors'), []);
     assert.ok(checks(sections('[target][ref]\n\n[ref]: docs/anchors.md#missing')).includes('section'));
@@ -281,6 +305,8 @@ describe('zero-drift section cues', () => {
       ).includes('symbol'),
     );
     assert.deepEqual(sections('[target][undefined]'), []);
+    const adjacentName = sections('[target][ref], "Missing"\n\n[ref]: docs/anchors.md');
+    assert.deepEqual(new Set(checks(adjacentName)), new Set(['section_form', 'section']));
   });
 
   it('first definition wins for duplicate reference labels', () => {
@@ -410,6 +436,8 @@ describe('zero-drift section cues', () => {
       ),
       [],
     );
+    assert.deepEqual(sections(`${code('docs/anchors.md')}, "*example*"`), []);
+    assert.deepEqual(checks(sections(`${code('docs/anchors.md')}; "*example*"`)), ['section_form']);
     assert.deepEqual(sections(`${code('docs/anchors.md')}'s label is the player's cue.`, 'src/fixture.ts'), []);
     assert.ok(checks(sections(lineCue('foo.ts', '3'), 'src/fixture.ts')).includes('line_number'));
     assert.deepEqual(

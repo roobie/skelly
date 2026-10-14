@@ -1,5 +1,6 @@
 import { NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
+import { GRAPHICS_KEYS, GRAPHICS_KNOBS } from '../src/core/graphics.ts';
 import { SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { DEFAULT_FOGGINESS, type Weather } from '../src/core/weather.ts';
 import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
@@ -117,7 +118,9 @@ describe('debug action dispatch', () => {
         (def.notes ?? []).flatMap((note) => (note.param ? [paramName(note.param)] : [])),
       ),
     ]);
-    expect([...catalogued].sort()).toEqual([...LOOK_PARAMS, 'cam'].sort());
+    expect([...catalogued].sort()).toEqual(
+      [...LOOK_PARAMS, ...GRAPHICS_KEYS.map((key) => GRAPHICS_KNOBS[key].url), 'cam', 'interactionray'].sort(),
+    );
   });
 });
 
@@ -231,6 +234,7 @@ const makeActions = (
   let frozen = false;
   let gameFrozen = false;
   let laserEnabled = true;
+  let interactionRayEnabled = false;
   const spawnCounts: number[] = [];
   const spawnRequests: { typeId: string; count: number }[] = [];
   const replayCalls: string[] = [];
@@ -271,6 +275,12 @@ const makeActions = (
     },
     chooseInputReplay: () => {
       replayCalls.push('import');
+    },
+    interactionRay: {
+      enabled: () => interactionRayEnabled,
+      toggle: () => {
+        interactionRayEnabled = !interactionRayEnabled;
+      },
     },
     impactLaser: {
       enabled: () => laserEnabled,

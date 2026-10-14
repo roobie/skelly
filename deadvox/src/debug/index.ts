@@ -12,6 +12,7 @@ import {
   type FirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
 import type { ShadowState } from '../core/mood.ts';
+import { raycast } from '../core/raycast.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { WEATHERING_RANGES } from '../core/weather.ts';
 import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
@@ -60,6 +61,7 @@ import {
   spawnZombieType,
 } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
+import { TransientDebugDraw } from './transientDraw.ts';
 
 const COMPASS_DEBUG_LOADOUT = 'compass';
 
@@ -132,6 +134,7 @@ export const shadowReadoutText = (
 
 const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult => html`
   <span>${readout.fps.toFixed(0)} fps · frame ${ms(readout.frame.p50)} / ${ms(readout.frame.p95)} ms (p50 / p95, 2 s) · cpu ${ms(readout.work.p50)} / ${ms(readout.work.p95)} ms</span>
+  ${readout.drawSubmission ? html`<span>CPU submission · ${readout.drawSubmission.calls} draw calls · ${readout.drawSubmission.triangles} triangles · drawing buffer ${readout.drawSubmission.drawingBufferWidth} × ${readout.drawSubmission.drawingBufferHeight} px</span>` : nothing}
   <span>simulation ${ms(readout.simulationMs)} ms · render ${ms(readout.renderMs)} ms incl. post passes · mesh queue ${ms(readout.meshingQueueMs)} ms</span>
   <span>${shadowText}</span>
   <span>seed ${readout.seed}</span>
@@ -534,6 +537,7 @@ const panelTemplate = ({
 };
 
 const emptyReadout: DebugReadout = {
+  drawSubmission: null,
   fps: 0,
   frame: { p50: Number.NaN, p95: Number.NaN },
   work: { p50: Number.NaN, p95: Number.NaN },
@@ -577,6 +581,7 @@ interface ActionContext {
   isGameFrozen: () => boolean;
   toggleGameFrozen: () => void;
   impactLaser: DebugHooks['impactLaser'];
+  interactionRay: { enabled: () => boolean; toggle: () => void };
   exportInputReplay: () => void;
   chooseInputReplay: () => void;
   look: LookControls;
@@ -600,6 +605,7 @@ export const createDebugActions = ({
   isGameFrozen,
   toggleGameFrozen,
   impactLaser,
+  interactionRay,
   exportInputReplay,
   chooseInputReplay,
   look,
@@ -895,6 +901,13 @@ export const createDebugActions = ({
         detail: () => `${look.shadowState.distance} m`,
         run: () => look.stepShadowDistance(),
       },
+      {
+        id: 'debug.interaction-ray-toggle',
+        label: 'Interaction ray',
+        group: 'diagnostics',
+        state: interactionRay.enabled,
+        run: interactionRay.toggle,
+      },
       // Diagnostics for a stray bright pixel (see render/hotCheck.ts and Mood.render): End paints the background
       // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments in a per-material colour.
       {
@@ -1054,7 +1067,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       new URLSearchParams(location.search).get('loadout') === COMPASS_DEBUG_LOADOUT &&
       !hooks.inventory.hands[dominantSide(hooks.inventory.character)]
     ) {
-      hooks.inventory.add(hooks.inventory.create('compass'), {
+      hooks.inventory.add(hooks.inventory.createFixture('compass'), {
         kind: 'hand',
         side: dominantSide(hooks.inventory.character),
       });
@@ -1092,6 +1105,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let snapshotStatus = '';
   let snapshotCopyStatus = '';
   let aimEnabled = true;
+  let interactionRayEnabled = new URLSearchParams(location.search).get('interactionray') === '1';
+  const transientDraw = new TransientDebugDraw(hooks.engine.scene, hooks.engine.config.debug);
   let lastHitText = '';
   let lastHitUntil = 0;
   let readout = emptyReadout;
@@ -1126,21 +1141,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   });
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
-  if (initialLook.renderScale !== undefined) {
-    hooks.engine.mood?.setRenderScale(initialLook.renderScale);
-  }
-  if (initialLook.bloomScale !== undefined) {
-    hooks.engine.mood?.setBloomScale(initialLook.bloomScale);
-  }
-  if (initialLook.smallSunMap) {
-    hooks.engine.shadows?.setSmallSunMap(true);
-  }
-  if (initialLook.fastCamo) {
-    hooks.engine.meshes.setFastCamo(true);
-  }
-  if (initialLook.coarseWeathering) {
-    hooks.engine.meshes.setCoarseWeathering(true);
-  }
   // `?cam=` puts the player at a saved view instead of the spawn or a save's position (the body moves; saves
   // only ever record the body, never this URL). Mid-air the player falls, unless `freeze=1` or noclip holds
   // them. Roll is ignored: it only comes from damage feedback.
@@ -1170,11 +1170,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     crackCheck: look.crackCheck,
     hotCheck: look.hotCheck,
     ...look.moodState,
-    ...((hooks.engine.mood?.renderScale ?? 1) < 1 ? { renderScale: hooks.engine.mood?.renderScale ?? 1 } : {}),
-    ...((hooks.engine.mood?.bloomScale ?? 1) < 1 ? { bloomScale: hooks.engine.mood?.bloomScale ?? 1 } : {}),
-    ...(hooks.engine.shadows?.smallSunMap ? { smallSunMap: true } : {}),
-    ...(hooks.engine.meshes.fastCamo ? { fastCamo: true } : {}),
-    ...(hooks.engine.meshes.coarseWeathering ? { coarseWeathering: true } : {}),
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
@@ -1244,6 +1239,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const actions = createDebugActions({
     hooks,
     impactLaser: hooks.impactLaser,
+    interactionRay: {
+      enabled: () => interactionRayEnabled,
+      toggle: () => {
+        interactionRayEnabled = !interactionRayEnabled;
+      },
+    },
     exportInputReplay,
     chooseInputReplay,
     look,
@@ -1621,7 +1622,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       fogginess: look.fogginess,
       torch: look.torch,
       shadows: look.shadowState,
-      performance: { fps: readout.fps, frame: readout.frame, work: readout.work },
+      performance: {
+        fps: readout.fps,
+        frame: readout.frame,
+        work: readout.work,
+        drawSubmission: readout.drawSubmission,
+      },
       gameTime: formatClock(hooks.sim.calendar),
       site: config.site,
       seed: config.seed,
@@ -1792,6 +1798,32 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       drawShell();
     },
     target: (eye, dir, active) => build.target(eye, dir, active),
+    get interactionRayEnabled() {
+      return interactionRayEnabled;
+    },
+    drawInteractionRay({ origin, direction, reachMetres, frame, interactionDistanceBlocks }) {
+      if (!(transientDraw.enabled && interactionRayEnabled)) {
+        return;
+      }
+      const opaqueHit = raycast(origin, direction, reachMetres / metresPerBlock, hooks.engine.isOpaque);
+      const opaqueDistance = opaqueHit?.distance;
+      const distanceBlocks = Math.min(
+        reachMetres / metresPerBlock,
+        opaqueDistance ?? Number.POSITIVE_INFINITY,
+        interactionDistanceBlocks ?? Number.POSITIVE_INFINITY,
+      );
+      const distanceMetres = distanceBlocks * metresPerBlock;
+      const start = origin.map((coordinate) => coordinate * metresPerBlock) as Vec3;
+      const end = start.map((coordinate, axis) => coordinate + direction[axis]! * distanceMetres) as Vec3;
+      transientDraw.line(start, end, frame);
+      const marker = end.map((coordinate, axis) =>
+        opaqueDistance !== undefined && opaqueDistance <= (interactionDistanceBlocks ?? Number.POSITIVE_INFINITY)
+          ? coordinate + opaqueHit!.normal[axis]! * 0.09
+          : coordinate - direction[axis]! * 0.09,
+      ) as Vec3;
+      transientDraw.point(marker, frame);
+    },
+    updateTransientDraw: (nowMs) => transientDraw.update(nowMs),
     click: (button, eye, dir) => build.click(button, eye, dir),
     wheel: (delta) => build.wheel(delta),
     stepNoclip: (step: DebugNoclipStep) => stepNoclip(step),

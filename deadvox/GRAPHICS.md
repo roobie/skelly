@@ -3,7 +3,9 @@ read_if:
   - you're changing procedural surface weathering or building appearance
   - you're changing the solar-phase look, flashlight daylight adaptation, or evaluating renderer performance
   - you're changing wide ambient occlusion or its interaction with skylight
+  - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating opt-in GPU quality trials
+  - you're interpreting or changing debug draw submission counters
 ---
 
 # Deadvox graphics
@@ -22,11 +24,38 @@ Post-processing and shadows support the intended mood. Compare the same workload
 
 Tone mapping, display transfer and colour grading share a fullscreen draw because storing and sampling an intermediate display-space image adds GPU work without adding an effect. Grade remains after tone mapping and transfer so its controls keep their display-referred meaning; bloom stays before them in linear light. See `src/render/moodOutput.ts`, `createMoodOutputPass`, and `src/render/mood.ts`, `Mood`.
 
-GPU quality trials stay debug-only until the operator judges the paired images by eye: a measured cost reduction does not authorize a different default look. Scale the post-chain inputs rather than the canvas so DOM/HUD readability and display-space film stay independent of scene resolution. The direct no-post path remains unscaled. See `src/debug/lookUrl.ts`, `parseLookParams`, and `src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`.
+A measured cost reduction does not authorize a different default look; default changes require the operator's visual judgment. Scale the post-chain inputs rather than the canvas so DOM/HUD readability and display-space film stay independent of scene resolution. The direct no-post path remains unscaled. See `src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`.
 
 Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `src/render/shadows.ts`, `Shadows.setSmallSunMap`.
 
 Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `src/core/occlusion.ts` and `src/render/chunks.ts`, `chunkMaterial`.
+
+## Graphics policy
+
+Keep graphics defaults and permitted choices in the core mod, while the player owns the
+choice for their machine: a content pack cannot know their GPU. Debug URL overrides must
+win over player choices, which must win over content defaults. Explicit false values are
+choices, not absence. See `src/content/base/graphics.jsonnet`,
+`src/core/graphics.ts`, `resolveGraphics`, and `src/game/graphicsSettings.ts`.
+
+Benchmarks use only effective mod defaults, ignoring machine preferences and debug graphics
+URL overrides, because saved choices must not silently change the comparison workload.
+See `src/game/engine.ts`, `createEngine`, and `src/main.ts`.
+
+Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's
+policy can change without stale defaults becoming machine preferences. Validate stored
+choices against the effective content policy before using them; unavailable storage must
+not prevent play. See `src/core/graphics.ts`, `validGraphicsSettings`.
+
+Graphics options are meta controls because hardware preferences are not character knowledge.
+Clearing a preference returns ownership to content rather than saving its resolved default.
+Debug overrides remain separate from preferences, and unrelated look changes must not promote
+player or mod values into the URL. See `src/ui/graphicsOptions.ts`, `renderGraphicsOptions`,
+`src/game/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
+
+## Performance diagnostics
+
+Debug-only whole-frame CPU submission counters distinguish batching growth from drawing-buffer pixel load alongside frame-time percentiles. Repeated geometry submissions count again; these are not unique geometry counts or GPU timings. GPU cost requires asynchronous timing probes on real hardware. See `src/render/drawCounters.ts`, `DrawCounters`, for frame-scoped collection; `src/debug/index.ts`, `readoutTemplate`, and `src/debug/lookDump.ts`, `lookDump`, for the readout and dump.
 
 ## Unresolved constraints
 

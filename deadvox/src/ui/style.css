@@ -1476,6 +1476,29 @@ body.resting #handling {
 .hud-options input {
   accent-color: var(--accent);
 }
+.graphics-options {
+  margin-top: 1rem;
+  text-align: left;
+}
+.graphics-options h2 {
+  font-size: 1rem;
+}
+.graphics-options__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0;
+}
+.graphics-options__row label {
+  flex: 1 1 10rem;
+}
+.graphics-options__row input[type="range"] {
+  width: 8rem;
+}
+.graphics-options__row output {
+  min-width: 3rem;
+}
 .audio-options {
   margin-top: calc(var(--ui-spacing) * 0.875rem);
   padding-top: calc(var(--ui-spacing) * 0.625rem);

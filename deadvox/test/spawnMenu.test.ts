@@ -140,6 +140,7 @@ describe('spawnMenuViewModel', () => {
       isGameFrozen: () => false,
       toggleGameFrozen: () => undefined,
       impactLaser: { enabled: () => true, toggle: () => undefined },
+      interactionRay: { enabled: () => false, toggle: () => undefined },
       exportInputReplay: () => undefined,
       chooseInputReplay: () => undefined,
     });

@@ -6,6 +6,7 @@
 import { array, check, type InferOutput, picklist, pipe, strictObject } from 'valibot';
 import type { ItemDef, LootEntry, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { copyOrigin, type ItemOrigin } from './itemOrigin.ts';
 import { Rng } from './random.ts';
 import type { FixedLootItemDef } from './schema.ts';
 
@@ -39,7 +40,7 @@ type LootSupply =
 
 export interface LootSpawnPoint {
   readonly id: string;
-  readonly channel: 'container' | 'surface';
+  readonly channel: 'container' | 'surface' | 'corpse';
   readonly position: Vec3;
   readonly destination: Vec3;
   readonly context: LootContext;
@@ -151,6 +152,7 @@ export const lootTypeIssue = (
 };
 
 export interface Rolled {
+  readonly origin: ItemOrigin;
   type: string;
   count: number;
   /** 0 to 1, rounded to hundredths so identical rolls stack. */
@@ -159,7 +161,10 @@ export interface Rolled {
   fitted?: Readonly<Record<string, string>>;
 }
 
-const pick = (entries: readonly LootEntry[], rng: Rng): LootEntry => {
+const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T => {
+  if (entries.length === 1) {
+    return entries[0]!;
+  }
   const total = entries.reduce((sum, e) => sum + e.weight, 0);
   let r = rng.next() * total;
   for (const entry of entries) {
@@ -175,23 +180,96 @@ const pick = (entries: readonly LootEntry[], rng: Rng): LootEntry => {
  * Items for one count of an entry: a stackable item comes as stacks of up to its
  * limit, anything else as separate items.
  */
-const itemsOf = (registry: Registry, type: string, count: number, condition: number): Rolled[] => {
+const itemsOf = (registry: Registry, { type, count, condition, origin }: Rolled): Rolled[] => {
   const limit = registry.items.get(type)?.stack ?? 1;
   const out: Rolled[] = [];
   for (let left = count; left > 0; left -= limit) {
-    out.push({ type, count: Math.min(left, limit), condition });
+    out.push({ type, count: Math.min(left, limit), condition, origin });
   }
   return out;
 };
 
-/** Turns authored fixed items into worldgen records while respecting each item's stack limit. */
-export const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[]): Rolled[] =>
-  items.flatMap(({ item, count = 1, condition = 1, fitted }) =>
-    itemsOf(registry, item, count, condition).map((rolled) => (fitted ? { ...rolled, fitted } : rolled)),
+export interface WeightedCandidate {
+  readonly type?: string | undefined;
+  readonly weight: number;
+  readonly fitted?: Readonly<Record<string, string>> | undefined;
+}
+
+const admittedCandidates = (registry: Registry, point: LootSpawnPoint, candidates: readonly WeightedCandidate[]) =>
+  candidates.filter(
+    (candidate) =>
+      candidate.type === undefined ||
+      (registry.items.has(candidate.type) &&
+        ((point.fixture && point.supply.kind === 'fixed') ||
+          lootTypeIssue(registry, candidate.type, point.context, candidate.fitted) === undefined)),
   );
 
-/** Rolls a table. The validator has already ruled out missing ids and loops. */
-export const rollLoot = (registry: Registry, tableId: string, rng: Rng): Rolled[] => {
+/** All item-type choices meet here; explicit fixture stock is not world-economy supply. */
+export const selectLootType = (
+  registry: Registry,
+  point: LootSpawnPoint,
+  candidates: readonly WeightedCandidate[],
+  rng: Rng,
+): string | undefined => {
+  const admitted = admittedCandidates(registry, point, candidates);
+  return admitted.length === 0 ? undefined : pick(admitted, rng).type;
+};
+
+const originOf = (point: LootSpawnPoint, mode: 'fixed' | 'random'): ItemOrigin =>
+  copyOrigin(point.fixture ? { kind: 'fixture' } : { kind: 'economy', source: point.id, channel: point.channel, mode });
+
+const fixedItems = (
+  registry: Registry,
+  items: readonly FixedLootItemDef[],
+  point: LootSpawnPoint,
+  rng: Rng,
+): Rolled[] =>
+  items.flatMap(({ item, count = 1, condition = 1, fitted }) => {
+    const type = selectLootType(registry, point, [{ type: item, weight: 1, fitted }], rng);
+    if (type === undefined) {
+      if (point.required) {
+        throw new Error(`required loot ${item} is outside source ${point.id}`);
+      }
+      return [];
+    }
+    return itemsOf(registry, { type, count, condition, origin: originOf(point, 'fixed') }).map((rolled) =>
+      fitted ? { ...rolled, fitted } : rolled,
+    );
+  });
+
+const leafCandidates = (entries: readonly LootEntry[]): WeightedCandidate[] =>
+  entries.filter((entry) => entry.table === undefined).map((entry) => ({ type: entry.item, weight: entry.weight }));
+
+const tableEntry = (
+  registry: Registry,
+  point: LootSpawnPoint,
+  entries: readonly LootEntry[],
+  rng: Rng,
+): LootEntry | undefined => {
+  const leaves = leafCandidates(entries);
+  const branches = entries.filter((entry) => entry.table !== undefined);
+  const leafWeight = admittedCandidates(registry, point, leaves).reduce((sum, entry) => sum + entry.weight, 0);
+  if (branches.length > 0) {
+    // Grouping leaf weights preserves nested-table roll multiplicity without choosing any item outside the selector.
+    const branch = pick<LootEntry>(
+      [...branches, ...(leafWeight > 0 ? [{ weight: leafWeight, nothing: true }] : [])],
+      rng,
+    );
+    if (branch.table !== undefined) {
+      return branch;
+    }
+  }
+  const type = selectLootType(registry, point, leaves, rng);
+  if (type === undefined) {
+    return;
+  }
+  return pick(
+    entries.filter((entry) => entry.item === type),
+    rng,
+  );
+};
+
+const rollTable = (registry: Registry, tableId: string, point: LootSpawnPoint, rng: Rng): Rolled[] => {
   const table = registry.loot.get(tableId);
   if (!table) {
     return [];
@@ -199,14 +277,40 @@ export const rollLoot = (registry: Registry, tableId: string, rng: Rng): Rolled[
   const out: Rolled[] = [];
   const rolls = rng.int(table.rolls[0], table.rolls[1]);
   for (let i = 0; i < rolls; i++) {
-    const entry = pick(table.entries, rng);
-    if (entry.table !== undefined) {
-      out.push(...rollLoot(registry, entry.table, rng));
-    } else if (entry.item !== undefined) {
+    const entry = tableEntry(registry, point, table.entries, rng);
+    if (entry?.table !== undefined) {
+      out.push(...rollTable(registry, entry.table, point, rng));
+    } else if (entry?.item !== undefined) {
       const count = entry.count ? rng.int(entry.count[0], entry.count[1]) : 1;
       const condition = entry.condition ? Math.round(rng.range(entry.condition[0], entry.condition[1]) * 100) / 100 : 1;
-      out.push(...itemsOf(registry, entry.item, count, condition));
+      out.push(...itemsOf(registry, { type: entry.item, count, condition, origin: originOf(point, 'random') }));
     }
   }
   return out;
 };
+
+export const rollLoot = (registry: Registry, point: LootSpawnPoint, rng: Rng): Rolled[] => {
+  switch (point.supply.kind) {
+    case 'empty':
+      return [];
+    case 'table':
+      return rollTable(registry, point.supply.table, point, rng);
+    case 'fixed':
+      return [
+        ...fixedItems(registry, point.supply.items, point, rng),
+        ...(point.supply.table === undefined ? [] : rollTable(registry, point.supply.table, point, rng)),
+      ];
+    default:
+      throw new Error('Unknown loot supply');
+  }
+};
+
+export const corpseLootPoint = (table: string, id: number, pos: Vec3): LootSpawnPoint => ({
+  id: `corpse:${id}`,
+  channel: 'corpse',
+  position: [...pos],
+  destination: [...pos],
+  context: { usage: ['Infected'], tier: 'Tier1' },
+  supply: { kind: 'table', table },
+  required: false,
+});

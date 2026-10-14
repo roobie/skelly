@@ -5,6 +5,7 @@
 // the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { DAY_SKY } from '../core/sky.ts';
@@ -16,6 +17,7 @@ import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
 import type { GameConfig } from './config.ts';
+import { GraphicsControls } from './graphicsControls.ts';
 import type { StreamerStats } from './streamer.ts';
 import { createWorldSetup, type WorldSetup } from './worldSetup.ts';
 
@@ -25,6 +27,7 @@ export interface Engine extends WorldSetup {
   scene: Scene;
   camera: PerspectiveCamera;
   meshes: ChunkMeshes;
+  graphics: GraphicsControls;
   /** The scene's lights and fog, for time of day. Starts in daylight, which the benchmark keeps. */
   sky: SkyTargets;
   /** Bloom, grade, film and height fog. Everything starts off; play turns it on (benchmarks never do). */
@@ -42,9 +45,15 @@ export interface RenderedEngine extends Engine {
 export interface EngineOptions {
   /** Skip all WebGL initialization while retaining simulation, collision and CPU mesh streaming. */
   render?: boolean;
+  graphicsSource?: 'player' | 'mod';
 }
 
-export function createEngine(config: GameConfig, view: HTMLElement, stats?: StreamerStats): RenderedEngine;
+export function createEngine(
+  config: GameConfig,
+  view: HTMLElement,
+  stats?: StreamerStats,
+  options?: EngineOptions & { render?: true },
+): RenderedEngine;
 export function createEngine(
   config: GameConfig,
   view: HTMLElement,
@@ -55,7 +64,7 @@ export function createEngine(
   config: GameConfig,
   view: HTMLElement,
   stats?: StreamerStats,
-  { render = true }: EngineOptions = {},
+  { render = true, graphicsSource = 'player' }: EngineOptions = {},
 ): Engine {
   const { scale, radiusM } = config;
   const renderer = render ? new WebGLRenderer({ antialias: true }) : undefined;
@@ -121,8 +130,17 @@ export function createEngine(
     meshes.cull(cam);
   };
 
-  const mood = renderer ? new Mood(renderer, scene, camera) : undefined;
+  const graphicsTuning = worldSetup.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
+  if (!graphicsTuning) {
+    throw new Error('Missing core graphics policy');
+  }
+  const mood = renderer ? new Mood(renderer, scene, camera, graphicsTuning) : undefined;
   const shadows = renderer ? new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes) : undefined;
+  const graphics = new GraphicsControls(
+    graphicsTuning,
+    { meshes, ...(mood ? { mood } : {}), ...(shadows ? { shadows } : {}) },
+    { source: graphicsSource, debug: config.debug, params: new URLSearchParams(globalThis.location?.search ?? '') },
+  );
 
   const resize = () => {
     renderer?.setSize(view.clientWidth, view.clientHeight);
@@ -140,6 +158,7 @@ export function createEngine(
     scene,
     camera,
     meshes,
+    graphics,
     sky,
     ...(mood ? { mood } : {}),
     ...(shadows ? { shadows } : {}),

@@ -7,13 +7,12 @@ import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { GauntletSite } from '../core/gauntlet.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
-import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn, rollLoot } from '../core/loot.ts';
+import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn } from '../core/loot.ts';
 import { blockPatterns, blockWeatherability } from '../core/meshInput.ts';
-import { Rng } from '../core/random.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
 import type { ScenarioDef } from '../core/schema.ts';
-import type { FurnitureSpawn, Rect, Site } from '../core/site.ts';
+import { type FurnitureSpawn, fillFurnitureLoot, type Rect, type Site } from '../core/site.ts';
 import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
 import { type Surface, terrainBlockIds, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
@@ -21,7 +20,7 @@ import type { ChunkMeshes } from '../render/chunks.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
-import { testHouseRangeStock, testHouseRangeSupply } from './testHouseRange.ts';
+import { testHouseRangeSupply } from './testHouseRange.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
 export interface WorldSetup {
@@ -124,10 +123,12 @@ export const testHouseScene = (config: GameConfig, registry: Registry) => {
     lootSources,
     structures: rasterize(house, scale.blockSize),
     spawn: { pos: spawn, yaw: SPAWN_YAW },
-    furniture: furniture.map(({ loot, ...spec }) => ({
-      spec,
-      loot: loot ? rollLoot(registry, loot, Rng.stream(seed, `loot:${spec.pos.join(',')}`)) : [],
-    })),
+    furniture: fillFurnitureLoot(
+      registry,
+      seed,
+      furniture.map(({ loot: _loot, ...spec }) => ({ spec, loot: [] })),
+      [...lootPointsByColumn(lootSources).values()].flat(),
+    ),
   };
 };
 
@@ -150,7 +151,8 @@ export class DebugTestHouseSite implements Site {
   readonly spawn: Site['spawn'];
   private readonly structures: BlockBox[];
   private readonly rack: EntitySpec;
-  private readonly stock: ReturnType<typeof testHouseRangeStock>;
+  private readonly registry: Registry;
+  private readonly seed: number;
   private readonly target: EntitySpec;
   private readonly lootPoints: ReadonlyMap<string, readonly LootSpawnPoint[]>;
 
@@ -177,7 +179,8 @@ export class DebugTestHouseSite implements Site {
       size: [...rackSize],
       facing: 's',
     };
-    this.stock = testHouseRangeStock(registry);
+    this.registry = registry;
+    this.seed = config.seed;
     this.lootPoints = lootPointsByColumn([
       ...house.lootSources,
       fixtureLootSource(
@@ -214,7 +217,9 @@ export class DebugTestHouseSite implements Site {
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
     const spawns = this.range.furnitureIn(cx, cz);
     if (toChunk(this.rack.pos[0]) === cx && toChunk(this.rack.pos[2]) === cz) {
-      spawns.push({ spec: this.rack, loot: this.stock });
+      spawns.push(
+        ...fillFurnitureLoot(this.registry, this.seed, [{ spec: this.rack, loot: [] }], this.lootPointsIn(cx, cz)),
+      );
     }
     if (toChunk(this.target.pos[0]) === cx && toChunk(this.target.pos[2]) === cz) {
       spawns.push({ spec: this.target, loot: [] });

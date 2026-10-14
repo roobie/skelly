@@ -256,7 +256,7 @@ if (bench === 'report') {
   if (run) {
     const config = makeConfig(run.seed, DEFAULT_RADIUS_M, content);
     config.start = parseTimeOfDay(run.time)!;
-    startShamblerBench(createEngine(config, view), run);
+    startShamblerBench(createEngine(config, view, undefined, { graphicsSource: 'mod' }), run);
   } else {
     document.getElementById('hud')!.textContent =
       'Invalid shambler benchmark parameters. Use n as unique positive integers up to 500, seed as a signed 32-bit integer, and time as HH:MM (default 23:30).';
@@ -268,5 +268,5 @@ if (bench === 'report') {
   const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, content, blockSize);
   // The test house is defined in metres, so it compares across block sizes; `&site=city` benchmarks the city.
   Object.assign(config, siteFromUrl(params, 'testHouse', content.registry));
-  startBench(createEngine(config, view, stats), run, stats);
+  startBench(createEngine(config, view, stats, { graphicsSource: 'mod' }), run, stats);
 }

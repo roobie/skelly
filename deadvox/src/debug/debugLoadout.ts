@@ -13,7 +13,7 @@ const wornBackpack = (inventory: Inventory): Item | undefined => {
   if (inventory.worn.back) {
     return inventory.worn.back;
   }
-  const backpack = inventory.create('hiking_backpack');
+  const backpack = inventory.createFixture('hiking_backpack');
   return inventory.add(backpack, { kind: 'worn' }) ? backpack : undefined;
 };
 
@@ -56,9 +56,12 @@ const equipGrenades = (inventory: Inventory, backpack: Item): void => {
   const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
   if (
     !(
-      inventory.add(inventory.create('frag_grenade'), { kind: 'hand', side: dominantSide(inventory.character) }) &&
-      inventory.add(inventory.create('frag_grenade'), pocket) &&
-      inventory.add(inventory.create('frag_grenade'), pocket)
+      inventory.add(inventory.createFixture('frag_grenade'), {
+        kind: 'hand',
+        side: dominantSide(inventory.character),
+      }) &&
+      inventory.add(inventory.createFixture('frag_grenade'), pocket) &&
+      inventory.add(inventory.createFixture('frag_grenade'), pocket)
     )
   ) {
     throw new Error('Could not equip grenade preview loadout');
@@ -72,12 +75,12 @@ const equipEmptyMagazine = (inventory: Inventory, backpack: Item): void => {
   const stack = inventory.registry.items.get(round)?.stack ?? 1;
   if (
     !(
-      inventory.add(inventory.create('magazine_stanag_30'), {
+      inventory.add(inventory.createFixture('magazine_stanag_30'), {
         kind: 'hand',
         side: dominantSide(inventory.character),
       }) &&
-      inventory.add(inventory.create(round, stack), pocket) &&
-      inventory.add(inventory.create(round, stack), pocket)
+      inventory.add(inventory.createFixture(round, stack), pocket) &&
+      inventory.add(inventory.createFixture(round, stack), pocket)
     )
   ) {
     throw new Error('Could not equip magazine preview loadout');
@@ -86,14 +89,17 @@ const equipEmptyMagazine = (inventory: Inventory, backpack: Item): void => {
 
 /** The empty pump in hand; a sealed shell box and a stack of loose shells of the kind it holds packed, to load now. */
 const equipPump = (inventory: Inventory, backpack: Item): void => {
-  const box = inventory.create('shotshell_box');
+  const box = inventory.createFixture('shotshell_box');
   const shell = defOf(inventory.registry, box.type).unpack!.item;
   const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
   if (
     !(
-      inventory.add(inventory.create('pump_shotgun'), { kind: 'hand', side: dominantSide(inventory.character) }) &&
+      inventory.add(inventory.createFixture('pump_shotgun'), {
+        kind: 'hand',
+        side: dominantSide(inventory.character),
+      }) &&
       inventory.add(box, pocket) &&
-      inventory.add(inventory.create(shell, 20), pocket)
+      inventory.add(inventory.createFixture(shell, 20), pocket)
     )
   ) {
     throw new Error('Could not equip pump preview loadout');
@@ -112,14 +118,14 @@ const equipRifles = (inventory: Inventory, backpack: Item, choice: 'ar' | 'ak'):
   } as const;
   const { magazine, cartridge, box } = ammunition[choice];
   const full = (): Item => {
-    const loaded = inventory.create(magazine);
+    const loaded = inventory.createFixture(magazine);
     loaded.cartridges = Array.from({ length: magazineSpec(inventory.registry, magazine)!.capacity }, () => cartridge);
     return loaded;
   };
-  const rifle = inventory.create(rifles[choice]);
+  const rifle = inventory.createFixture(rifles[choice]);
   inventory.fitSlot(rifle, 'magazine', full());
   const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
-  const packed = [inventory.create(rifles[choice === 'ar' ? 'ak' : 'ar']), full(), inventory.create(box)];
+  const packed = [inventory.createFixture(rifles[choice === 'ar' ? 'ak' : 'ar']), full(), inventory.createFixture(box)];
   if (
     !(
       inventory.add(rifle, { kind: 'hand', side: dominantSide(inventory.character) }) &&

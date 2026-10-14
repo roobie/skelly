@@ -48,6 +48,31 @@ const popCount = (bits: number): number => {
   return (count + (count >>> 8)) & 0x1f;
 };
 
+const layerBoxes = new Uint16Array(1 << (BRICK * BRICK));
+
+/** A layer mask's tight rectangle and whether it fills it; independent of terrain position or revision. */
+const layerBox = (mask: number): number => {
+  const cached = layerBoxes[mask]!;
+  if (cached !== 0) {
+    return cached;
+  }
+  let columns = 0;
+  let rows = 0;
+  for (let z = 0; z < BRICK; z++) {
+    const row = (mask >> (BRICK * z)) & ROW;
+    columns |= row;
+    rows |= row === 0 ? 0 : 1 << z;
+  }
+  const x0 = lowBit(columns);
+  const z0 = lowBit(rows);
+  const x1 = highBit(columns);
+  const z1 = highBit(rows);
+  const full = popCount(mask) === (x1 - x0) * (z1 - z0);
+  const box = x0 | (z0 << 2) | (x1 << 4) | (z1 << 7) | (Number(full) << 10);
+  layerBoxes[mask] = box;
+  return box;
+};
+
 /** The octree's layout for one figure at one block size, shared by every amalgam with that figure. */
 interface ShapeTree {
   readonly owner: Uint8Array;
@@ -62,6 +87,7 @@ interface ShapeTree {
   readonly children: Int32Array;
   /** Per leaf node: its first voxel cell (i, j, k); -1 for inner nodes. */
   readonly leafCell: Int32Array;
+  readonly leafBase: Float64Array;
   /** Per node: its parent, -1 for the root. */
   readonly parent: Int32Array;
   /** Per voxel cell: the leaf holding it, -1 for a cell with no flesh. */
@@ -155,19 +181,30 @@ const buildTree = (figure: AmalgamFigure, blockSize: number): ShapeTree => {
   while (level.nodes.filter((node) => node >= 0).length > 1) {
     level = parentLevel(level, tree);
   }
+  const voxel = metres / blockSize;
+  const base: Vec3 = [
+    (origin[0] * metres + figure.originOffset[0]) / blockSize,
+    ((origin[1] + 0.5) * metres + figure.originOffset[1]) / blockSize,
+    (origin[2] * metres + figure.originOffset[2]) / blockSize,
+  ];
+  const leafBase = new Float64Array(tree.leafCell.length * 3);
+  tree.leafCell.forEach((cell, node) => {
+    if (cell >= 0) {
+      leafBase[node * 3] = base[0] + (cell % dims[0]) * voxel;
+      leafBase[node * 3 + 1] = base[1] + (Math.floor(cell / dims[0]) % dims[1]) * voxel;
+      leafBase[node * 3 + 2] = base[2] + Math.floor(cell / (dims[0] * dims[1])) * voxel;
+    }
+  });
   return {
     owner,
     dims,
-    voxel: metres / blockSize,
-    base: [
-      (origin[0] * metres + figure.originOffset[0]) / blockSize,
-      ((origin[1] + 0.5) * metres + figure.originOffset[1]) / blockSize,
-      (origin[2] * metres + figure.originOffset[2]) / blockSize,
-    ],
+    voxel,
+    base,
     childStart: Int32Array.from(tree.childStart),
     childCount: Uint8Array.from(tree.childCount),
     children: Int32Array.from(tree.children),
     leafCell: Int32Array.from(tree.leafCell),
+    leafBase,
     parent: Int32Array.from(tree.parent),
     leafOf: tree.leafOf,
     nodeCount: tree.leafCell.length,
@@ -233,6 +270,8 @@ export class AmalgamShape implements BodyShape {
   /** Per node: live voxels (leaves) and the tight local box around them, min then max, in blocks. */
   private readonly masks: Uint8Array;
   private readonly bounds: Float64Array;
+  private readonly boxes: Float64Array;
+  private readonly relativeTarget = new Float64Array(8);
   private readonly stack: Int32Array;
   /** The box the walk prunes against: centre, then half extents. */
   private readonly target = new Float64Array(6);
@@ -270,6 +309,7 @@ export class AmalgamShape implements BodyShape {
     this.terrain = terrain;
     this.masks = new Uint8Array(this.tree.nodeCount);
     this.bounds = new Float64Array(this.tree.nodeCount * 6);
+    this.boxes = new Float64Array(this.tree.nodeCount * 6);
     this.stack = new Int32Array(this.tree.nodeCount);
     this.gone = new Uint8Array(this.tree.owner.length);
   }
@@ -394,6 +434,7 @@ export class AmalgamShape implements BodyShape {
     this.bounds[at + 3] = base[0] + (i0 + ((mask & 0xaa) === 0 ? 0 : 1)) * voxel + half;
     this.bounds[at + 4] = base[1] + (j0 + ((mask & 0xcc) === 0 ? 0 : 1)) * voxel + half;
     this.bounds[at + 5] = base[2] + (k0 + ((mask & 0xf0) === 0 ? 0 : 1)) * voxel + half;
+    this.keepBox(node);
   }
 
   private keepParent(node: number): void {
@@ -411,6 +452,16 @@ export class AmalgamShape implements BodyShape {
       bounds[at + axis] = low;
       bounds[at + 3 + axis] = high;
     }
+    this.keepBox(node);
+  }
+
+  private keepBox(node: number): void {
+    const at = node * 6;
+    for (let axis = 0; axis < 3; axis++) {
+      const center = (this.bounds[at + axis]! + this.bounds[at + axis + 3]!) / 2;
+      this.boxes[at + axis] = center;
+      this.boxes[at + axis + 3] = this.bounds[at + axis + 3]! - center;
+    }
   }
 
   /** Whether node's turned box, with the shape's base centre at `pos`, overlaps the target box. */
@@ -421,25 +472,35 @@ export class AmalgamShape implements BodyShape {
     if (!(minX <= bounds[at + 3]!) || pos[1] + bounds[at + 1]! >= this.top) {
       return false;
     }
-    const lx = (minX + bounds[at + 3]!) / 2;
-    const ly = (bounds[at + 1]! + bounds[at + 4]!) / 2;
-    const lz = (bounds[at + 2]! + bounds[at + 5]!) / 2;
-    return turnedBoxOverlaps(
-      pos[0] + this.c * lx + this.s * lz,
-      pos[1] + ly,
-      pos[2] - this.s * lx + this.c * lz,
-      bounds[at + 3]! - lx,
-      bounds[at + 4]! - ly,
-      bounds[at + 5]! - lz,
-      this.c,
-      this.s,
-      this.target,
+    const { boxes, relativeTarget: target, c, s } = this;
+    const lx = boxes[at]!;
+    const ly = boxes[at + 1]!;
+    const lz = boxes[at + 2]!;
+    const hx = boxes[at + 3]!;
+    const hy = boxes[at + 4]!;
+    const hz = boxes[at + 5]!;
+    const ac = Math.abs(c);
+    const as = Math.abs(s);
+    return (
+      Math.abs(ly - target[1]!) < this.target[4]! + hy &&
+      Math.abs(c * lx + s * lz - target[0]!) < this.target[3]! + hx * ac + hz * as &&
+      Math.abs(-s * lx + c * lz - target[2]!) < this.target[5]! + hx * as + hz * ac &&
+      Math.abs(lx - target[3]!) < hx + target[5]! &&
+      Math.abs(lz - target[4]!) < hz + target[6]!
     );
   }
 
   /** Walks the octree, pruned by the target box, and tests each live voxel it reaches by `test`. */
   private walk(pos: Vec3, test: VoxelTest): boolean {
     const { childStart, childCount, children, leafCell, nodeCount } = this.tree;
+    const { target, relativeTarget: relative, c, s } = this;
+    relative[0] = target[0]! - pos[0];
+    relative[1] = target[1]! - pos[1];
+    relative[2] = target[2]! - pos[2];
+    relative[3] = c * relative[0]! - s * relative[2]!;
+    relative[4] = s * relative[0]! + c * relative[2]!;
+    relative[5] = target[3]! * Math.abs(c) + target[5]! * Math.abs(s);
+    relative[6] = target[3]! * Math.abs(s) + target[5]! * Math.abs(c);
     const root = nodeCount - 1;
     if (!this.nodeOverlaps(root, pos)) {
       return false;
@@ -450,7 +511,13 @@ export class AmalgamShape implements BodyShape {
       top -= 1;
       const node = this.stack[top]!;
       if (leafCell[node]! >= 0) {
-        if (this.leafHits(node, pos, test)) {
+        if (
+          (!this.gathering &&
+            this.top === Number.POSITIVE_INFINITY &&
+            (test === 'box' || this.full) &&
+            this.masks[node] === 255) ||
+          this.leafHits(node, pos, test)
+        ) {
           return true;
         }
         continue;
@@ -467,23 +534,20 @@ export class AmalgamShape implements BodyShape {
   }
 
   private leafHits(node: number, pos: Vec3, test: VoxelTest): boolean {
-    const { dims, voxel, base, leafCell } = this.tree;
-    const cell = leafCell[node]!;
+    const { voxel, leafBase } = this.tree;
     const mask = this.masks[node]!;
     const half = voxel / 2;
-    const i0 = cell % dims[0];
-    const j0 = Math.floor(cell / dims[0]) % dims[1];
-    const k0 = Math.floor(cell / (dims[0] * dims[1]));
+    const at = node * 3;
     for (let bit = 0; bit < 8; bit++) {
       if (((mask >> bit) & 1) === 0) {
         continue;
       }
-      const lx = base[0] + (i0 + (bit & 1)) * voxel;
-      const y = pos[1] + base[1] + (j0 + ((bit >> 1) & 1)) * voxel;
+      const lx = leafBase[at]! + (bit & 1) * voxel;
+      const y = pos[1] + leafBase[at + 1]! + ((bit >> 1) & 1) * voxel;
       if (y - half >= this.top) {
         continue;
       }
-      const lz = base[2] + (k0 + (bit >> 2)) * voxel;
+      const lz = leafBase[at + 2]! + (bit >> 2) * voxel;
       const x = pos[0] + this.c * lx + this.s * lz;
       const z = pos[2] - this.s * lx + this.c * lz;
       if (
@@ -593,24 +657,18 @@ export class AmalgamShape implements BodyShape {
   /** Whether the flesh overlaps layers `from` to `to` (exclusive) of the brick, each solid as `mask`. */
   private layersHit(pos: Vec3, mask: number, from: number, to: number): boolean {
     const { span, target } = this;
-    let columns = 0;
-    let rows = 0;
-    for (let z = 0; z < BRICK; z++) {
-      const row = (mask >> (BRICK * z)) & ROW;
-      columns |= row;
-      rows |= row === 0 ? 0 : 1 << z;
-    }
-    span[3] = span[0]! + lowBit(columns);
+    const box = layerBox(mask);
+    span[3] = span[0]! + (box & 3);
     span[4] = span[1]! + from;
-    span[5] = span[2]! + lowBit(rows);
-    span[6] = span[0]! + highBit(columns);
+    span[5] = span[2]! + ((box >> 2) & 3);
+    span[6] = span[0]! + ((box >> 4) & 7);
     span[7] = span[1]! + to;
-    span[8] = span[2]! + highBit(rows);
+    span[8] = span[2]! + ((box >> 7) & 7);
     for (let axis = 0; axis < 3; axis++) {
       target[axis] = (span[3 + axis]! + span[6 + axis]!) / 2;
       target[3 + axis] = (span[6 + axis]! - span[3 + axis]!) / 2;
     }
-    this.full = popCount(mask) === (span[6]! - span[3]!) * (span[8]! - span[5]!);
+    this.full = (box & (1 << 10)) !== 0;
     return this.walk(pos, 'brick');
   }
 
