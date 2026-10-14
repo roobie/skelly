@@ -70,7 +70,7 @@ described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES
 - A new world loads in under 10 s. A 10-hour save is under 50 MB.
 - Plays in current Chrome, Firefox and Safari.
 - A new player learns the controls and the inventory without reading this
-  repo: an onboarding card, plus contextual hints.
+  repo, through an onboarding card and ordinary play.
 - It's frightening: in the Slice 8 playtest, most players say they were afraid,
   and what scared them came from the systems (the dark, sounds, being hunted),
   not from a scripted moment. See [Dread](DESIGN.md#dread).
@@ -240,8 +240,8 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 
 ### 8. Version 1
 
-- Balance passes, an onboarding card and contextual hints, and a death screen
-  that starts a new run.
+- Balance passes, an onboarding card, and a death screen that starts a new
+  run.
 - Settings: keybindings, graphics quality, and the relaxed mode that pauses in
   menus.
 - Performance and memory passes against the exit criteria, and hardening of

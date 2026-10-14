@@ -75,7 +75,6 @@ See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#over
 
 ## Open direction
 
-- Build the hint channel and its guard, with bindings-sourced key labels and hints enabled by `?playtest=1`.
 - Add the playtest profile and shape a diegetic first-run introduction from playtest findings.
 - Make the clock diegetic through a watch.
 - Develop bodily cues one state at a time; retire a HUD line only after its replacement is judged in play.
