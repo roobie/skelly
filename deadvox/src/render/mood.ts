@@ -435,6 +435,8 @@ export class Mood {
     const target = new WebGLRenderTarget(this.width * ratio, this.height * ratio, {
       type: HalfFloatType,
       samples: MSAA_SAMPLES,
+      // No pass samples resolved depth; resolving it adds a depth blit per pass.
+      resolveDepthBuffer: false,
     });
     const composer = new EffectComposer(this.renderer, target);
     composer.addPass(new RenderPass(this.scene, this.camera));
