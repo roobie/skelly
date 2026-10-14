@@ -49,12 +49,19 @@ body {
     sans-serif;
 }
 .fact-detail {
+  position: relative;
   display: inline-block;
   border-bottom: 1px dotted var(--muted);
 }
 .fact-detail-copy {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: var(--ui-layer-inventory-feedback);
   display: none;
-  max-width: 32rem;
+  width: max-content;
+  max-width: min(32rem, 80vw);
+  pointer-events: none;
   padding: 0.4rem;
   background: var(--panel);
   color: var(--text);

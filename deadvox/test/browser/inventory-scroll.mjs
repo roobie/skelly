@@ -298,8 +298,11 @@ try {
   assert.equal(await inventoryFact.count(), 1, 'inventory rule has a focusable owner');
   await page.mouse.move(0, 0);
   assert.equal(await factCopy.isVisible(), false, 'rule is absent from the resting screen');
+  const restingBounds = await inventoryFact.boundingBox();
+  assert.ok(restingBounds);
   await inventoryFact.focus();
   assert.equal(await factCopy.isVisible(), true, 'keyboard focus exposes the rule');
+  assert.deepEqual(await inventoryFact.boundingBox(), restingBounds, 'disclosure does not move its owner');
   await page.locator('#inventory .inv-tab[data-tab="items"]').focus();
   assert.equal(await factCopy.isVisible(), false, 'rule retires after focus leaves');
   await inventoryFact.hover();
