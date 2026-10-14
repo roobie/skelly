@@ -4,6 +4,7 @@ read_if:
   - you change item economy metadata, source contexts, loot selection or loot-point descriptions
   - you change skill content tuning or training rules
   - you're authoring or changing base template geometry or palettes
+  - you're authoring or changing exterior door openings
   - you change content references, static reachability, or disassembly-output contracts
   - you change how content-loading tests build their registry fixtures
   - you change recipe, workstation or book reachability contracts
@@ -106,6 +107,13 @@ Use the same physical certificate for composed scenarios and kit publication so 
 boundaries cannot disagree about a usable climb. See `src/core/mapKit.ts`, `compileMapSite`,
 `src/core/templateSpatial.ts`, `templateClimbCertificate` and `templateStandingRoute`,
 and `src/core/climbCertificate.ts`, `climbCertificate`.
+
+An exterior wall door is a delegated piece, not a hole baked into the shell: the shell
+leaves the doorway slot unclaimed and the assembly names a door piece that owns exactly
+the opening it fills. The slot's size binds the door's own size, so a window-sized hole
+cannot host a door. A door must be its own opening, not a leaf standing in a larger
+window hole. See `src/content/base/gauntlet-city-doors.libsonnet`, `gauntlet_city_door`,
+`src/core/templates.ts`, `compileAssembly`, and `test/cityKitPlan.test.ts`, "gauntlet door openings".
 
 ## Recipes
 
