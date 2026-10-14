@@ -3058,6 +3058,7 @@ export const startPlay = (
       playReadout({
         measurements: {
           fps,
+          drawSubmission: view.drawSubmission,
           frame: frameInterval.summary(),
           work: frameWork.summary(),
           seed: config.seed,
