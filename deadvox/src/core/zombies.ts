@@ -21,6 +21,7 @@ import type { DayPhase, DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import { lightSenseRangeScale } from './lights.ts';
+import type { Modifier } from './modifiers.ts';
 import {
   type Body,
   type BodyShape,
@@ -254,6 +255,7 @@ const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
 
 export interface Zombie {
   type: ZombieDef;
+  modifiers: Modifier[];
   /** Derived tier; a single entity moves between update schedules without duplicating ownership. */
   tier?: ZombieTier | undefined;
   hordeId?: string | undefined;
@@ -365,7 +367,7 @@ export const zombieAttackReachMetres = (zombie: Pick<Zombie, 'type' | 'figureSee
 
 export type ZombieState = Omit<
   Zombie,
-  'type' | 'tier' | 'behaviorRng' | 'soundRng' | 'dismemberRng' | 'renderPrevious' | 'lastVocalNoiseId'
+  'type' | 'tier' | 'behaviorRng' | 'soundRng' | 'dismemberRng' | 'renderPrevious' | 'lastVocalNoiseId' | 'modifiers'
 > & {
   type: string;
   behaviorRng: RngState;
@@ -1673,6 +1675,7 @@ export class ZombieSystem {
         const restored: Zombie = {
           ...fields,
           type,
+          modifiers: [],
           regions: { ...zombie.regions },
           behaviorRng: new Rng(behaviorRng),
           soundRng: new Rng(soundRng),
@@ -1904,6 +1907,7 @@ export class ZombieSystem {
     const dimensions = zombieBodyDimensions(type, this.options.blockSize);
     const zombie: Zombie = {
       type,
+      modifiers: [],
       tier: this.tierAt(position, this.options.player()),
       body: {
         pos: copy(position),
