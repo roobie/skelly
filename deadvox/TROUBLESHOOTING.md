@@ -5,6 +5,7 @@ read_if:
   - you're collecting a real-hardware lighting gate from a published preview
   - you're authoring a browser stage or exporting a site in Tiled
   - you investigate a save-lock timeout or browser CI launch failure
+  - you add or use transient world-space debug geometry
 ---
 
 # Deadvox troubleshooting
@@ -24,6 +25,10 @@ A frozen page can hold the lock, so the last committed generation is the recover
 ## Debug and rendering
 
 `?debug=1` is for authoring and diagnostics, including immutable preview measurements. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
+
+Use transient world-space primitives for spatial diagnostics rather than a one-off visualizer or permanent scene objects. Keep producers behind a debug group. Primitives without a duration retire at the next rendered frame; durations use the same frame Real clock, so simulation speed and pause do not affect expiry. The draw owner copies caller coordinates and releases its scene resources on disposal. Its bounded queue drops the oldest entry and counts overload. See `src/debug/transientDraw.ts`, `TransientDebugDraw`.
+
+The Diagnostics interaction-ray toggle shows interaction reach and a cross marker outside the hit surface, so a camera-collinear ray still has a visible witness. See `src/debug/index.ts`, `attachDebugTools`, and `src/game/play.ts`, `updateDebugTargets`.
 
 Look and camera parameters are copied from the URL, making a reported pose reproducible. Use `tools/render-probe.mjs` with a `cam=` pose for headless shader reproduction; inspect the screenshot and pixel scan. SwiftShader is not a GPU, so a clean run cannot rule out driver-specific defects. Flip one debug toggle at a time before theorizing; see `src/debug/lookUrl.ts`, `src/debug/camUrl.ts`, and `src/core/weatheringUrl.ts`.
 

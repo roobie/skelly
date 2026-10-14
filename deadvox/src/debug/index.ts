@@ -12,6 +12,7 @@ import {
   type FirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
 import type { ShadowState } from '../core/mood.ts';
+import { raycast } from '../core/raycast.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { WEATHERING_RANGES } from '../core/weather.ts';
 import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
@@ -1810,12 +1811,20 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       drawShell();
     },
     target: (eye, dir, active) => build.target(eye, dir, active),
-    drawInteractionRay(origin, direction, nowMs) {
+    drawInteractionRay(origin, direction, reachMetres, nowMs) {
       if (!(transientDraw.enabled && interactionRayEnabled)) {
         return;
       }
-      const end: Vec3 = [origin[0] + direction[0] * 8, origin[1] + direction[1] * 8, origin[2] + direction[2] * 8];
-      transientDraw.line(origin, end, nowMs);
+      const hit = raycast(origin, direction, reachMetres / metresPerBlock, hooks.engine.isOpaque);
+      const distanceMetres = hit ? hit.distance * metresPerBlock : reachMetres;
+      const start = origin.map((coordinate) => coordinate * metresPerBlock) as Vec3;
+      const end = start.map((coordinate, axis) => coordinate + direction[axis]! * distanceMetres) as Vec3;
+      transientDraw.line(start, end, nowMs);
+      const markerSizeMetres = 0.08;
+      const marker = end.map(
+        (coordinate, axis) => coordinate + (hit?.normal[axis] ?? 0) * (markerSizeMetres + 0.01),
+      ) as Vec3;
+      transientDraw.point(marker, nowMs, { size: markerSizeMetres });
     },
     updateTransientDraw: (nowMs) => transientDraw.update(nowMs),
     click: (button, eye, dir) => build.click(button, eye, dir),

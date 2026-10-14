@@ -2,9 +2,9 @@ import { BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, type 
 import type { Vec3 } from '../core/coords.ts';
 
 export type DebugPrimitive =
-  | { kind: 'line'; start: Vec3; end: Vec3; color: number; expiresAtRealMs: number }
-  | { kind: 'box'; min: Vec3; max: Vec3; color: number; expiresAtRealMs: number }
-  | { kind: 'point'; at: Vec3; size: number; color: number; expiresAtRealMs: number };
+  | { kind: 'line'; start: Vec3; end: Vec3; color: number; expiresAtRealMs: number | null }
+  | { kind: 'box'; min: Vec3; max: Vec3; color: number; expiresAtRealMs: number | null }
+  | { kind: 'point'; at: Vec3; size: number; color: number; expiresAtRealMs: number | null };
 
 interface DebugDrawOptions {
   durationRealMs?: number;
@@ -36,6 +36,7 @@ export class TransientDebugDraw {
   private readonly colors?: Float32Array;
   private readonly mesh?: LineSegments;
   private readonly capacity: number;
+  private disposed = false;
 
   constructor(scene: Scene, enabled: boolean, capacity = 256) {
     this.capacity = capacity;
@@ -54,36 +55,75 @@ export class TransientDebugDraw {
   }
 
   get enabled(): boolean {
-    return this.mesh !== undefined;
+    return this.mesh !== undefined && !this.disposed;
   }
 
   meshVertexCount(): number {
     return this.geometry?.drawRange.count ?? 0;
   }
 
-  line(start: Vec3, end: Vec3, nowMs: number, options: DebugDrawOptions = {}): void {
-    const { durationRealMs = 0, color = 0x66_dd_ff } = options;
-    this.push({ kind: 'line', start, end, color, expiresAtRealMs: nowMs + Math.max(1, durationRealMs) });
+  line(start: Vec3, end: Vec3, nowMs: number, options?: DebugDrawOptions): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.push({
+      kind: 'line',
+      start: [...start],
+      end: [...end],
+      color: options?.color ?? 0x66_dd_ff,
+      expiresAtRealMs: this.expiry(nowMs, options),
+    });
   }
 
-  box(min: Vec3, max: Vec3, nowMs: number, options: DebugDrawOptions = {}): void {
-    const { durationRealMs = 0, color = 0x66_dd_ff } = options;
-    this.push({ kind: 'box', min, max, color, expiresAtRealMs: nowMs + Math.max(1, durationRealMs) });
+  box(min: Vec3, max: Vec3, nowMs: number, options?: DebugDrawOptions): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.push({
+      kind: 'box',
+      min: [...min],
+      max: [...max],
+      color: options?.color ?? 0x66_dd_ff,
+      expiresAtRealMs: this.expiry(nowMs, options),
+    });
   }
 
-  point(at: Vec3, nowMs: number, options: DebugDrawOptions & { size?: number } = {}): void {
-    const { durationRealMs = 0, color = 0x66_dd_ff, size = 0.08 } = options;
-    this.push({ kind: 'point', at, size, color, expiresAtRealMs: nowMs + Math.max(1, durationRealMs) });
+  point(at: Vec3, nowMs: number, options?: DebugDrawOptions & { size?: number }): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.push({
+      kind: 'point',
+      at: [...at],
+      size: options?.size ?? 0.08,
+      color: options?.color ?? 0x66_dd_ff,
+      expiresAtRealMs: this.expiry(nowMs, options),
+    });
   }
 
-  /** Expire entries and rewrite the existing buffer before the scene render; no frame-time allocation. */
+  private expiry(nowMs: number, options?: DebugDrawOptions): number | null {
+    const duration = options?.durationRealMs ?? 0;
+    return duration > 0 ? nowMs + duration : null;
+  }
+
+  dispose(): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.disposed = true;
+    this.entries.length = 0;
+    this.geometry!.setDrawRange(0, 0);
+    this.mesh!.removeFromParent();
+    this.geometry!.dispose();
+    (this.mesh!.material as LineBasicMaterial).dispose();
+  }
   update(nowMs: number): void {
-    if (!(this.mesh && this.geometry && this.positions && this.colors)) {
+    if (!(this.enabled && this.geometry && this.positions && this.colors)) {
       return;
     }
     let live = 0;
     for (const entry of this.entries) {
-      if (entry.expiresAtRealMs > nowMs) {
+      if (entry.expiresAtRealMs === null || entry.expiresAtRealMs > nowMs) {
         this.entries[live] = entry;
         live += 1;
       }
@@ -118,9 +158,21 @@ export class TransientDebugDraw {
         vertex = this.segment([x, y, z - size], [x, y, z + size], entry.color, vertex);
       }
     }
+    this.retireFrameEntries();
     this.geometry.attributes.position!.needsUpdate = true;
     this.geometry.attributes.color!.needsUpdate = true;
     this.geometry.setDrawRange(0, vertex);
+  }
+
+  private retireFrameEntries(): void {
+    let live = 0;
+    for (const entry of this.entries) {
+      if (entry.expiresAtRealMs !== null) {
+        this.entries[live] = entry;
+        live += 1;
+      }
+    }
+    this.entries.length = live;
   }
 
   private push(entry: DebugPrimitive): void {
