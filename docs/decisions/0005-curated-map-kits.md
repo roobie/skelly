@@ -45,6 +45,18 @@ engine. Compiled ownership and provenance travel with the geometry so diagnostic
 explain both claimed solids and reserved voids. See `deadvox/src/core/templates.ts`,
 `compileTemplate` and `stampPlacement`, and `deadvox/src/core/cityPlan.ts`, `buildCityPlan`.
 
+## City storey boundaries
+
+A stair wedge and its reserved air own the opening through the next floor. The room and
+floor pieces leave that strip unclaimed; they cannot repaint the stair or its headroom.
+Sharing literal storey pieces keeps repeated facades consistent without turning floor
+count into a geometry generator. See `deadvox/src/content/base/gauntlet-city-kits.libsonnet`,
+`lowerSlots`, `lowerFloorClaims` and `middleFloorClaims`.
+
+Furnishing choices preserve the circulation contract but can still add obstacles and
+loot outside it. Reachability witnesses must use the final furnished assembly in both
+directions; material ownership alone does not establish a usable flight.
+
 ## Consequences
 
 Curated kits cost authoring and seam review effort, but substitutions remain understandable
