@@ -1,6 +1,6 @@
 import { type InferOutput, literal, minLength, parse, picklist, pipe, strictObject, string, variant } from 'valibot';
 
-export const ItemOriginSchema = variant('kind', [
+const ItemOriginSchema = variant('kind', [
   strictObject({
     kind: literal('economy'),
     source: pipe(string(), minLength(1)),
