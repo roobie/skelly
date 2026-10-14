@@ -24,6 +24,8 @@ Every map feature not constructed from noise comes from a curated template. Auth
 
 Curated geometry lets authors inspect and change the intended space directly, rather than reverse-engineering a generator to discover which walls, openings or material courses it produces.
 
+Known exceptions remain until #712 replaces generated map geometry with curated kit assemblies: `deadvox/src/content/base/gauntlet-lab.libsonnet`, `deadvox/src/content/base/gauntlet-look.jsonnet`, `deadvox/src/content/base/camp.jsonnet`, `deadvox/src/content/base/ladders.jsonnet`, and `deadvox/src/content/base/locks.jsonnet`. Keeping these exceptions explicit permits the gauntlet's curated city to land without claiming that its underground lab or the other generated features already satisfy the rule.
+
 ## Reasons
 
 - Outside map geometry, use templates and constructors when they expose a real relationship; shared structure keeps variants from drifting. Keep irregular authored choices explicit when abstraction would obscure them.

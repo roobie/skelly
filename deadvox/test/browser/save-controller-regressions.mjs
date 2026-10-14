@@ -13,6 +13,7 @@ import { launchChromium } from './chromium.mjs';
 import { gauntletFlow } from './gauntlet-flow.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
 const { createServer } = await import(pathToFileURL(`${root}/node_modules/vite/dist/node/index.js`));
@@ -321,38 +322,7 @@ try {
   await test('title, loading mask, periodic checkpoint, and visible save-failure recovery', async (t) => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     t.after(() => context.close());
-    await context.addInitScript(() => {
-      const NativeWorker = globalThis.Worker;
-      const held = [];
-      const meshWorkers = [];
-      globalThis.holdWorldMeshes = false;
-      globalThis.failWorldMesh = () => {
-        if (meshWorkers.length === 0) {
-          throw new Error('No mesh owner to fail');
-        }
-        meshWorkers[0].dispatchEvent(new ErrorEvent('error', { message: 'Controlled loading worker failure' }));
-      };
-      globalThis.releaseWorldMeshes = () => {
-        globalThis.holdWorldMeshes = false;
-        for (const [worker, data] of held.splice(0)) {
-          worker.dispatchEvent(new MessageEvent('message', { data }));
-        }
-      };
-      globalThis.Worker = class extends NativeWorker {
-        constructor(workerUrl, options) {
-          super(workerUrl, options);
-          if (String(workerUrl).includes('mesh.worker')) {
-            meshWorkers.push(this);
-            this.addEventListener('message', (event) => {
-              if (globalThis.holdWorldMeshes) {
-                event.stopImmediatePropagation();
-                held.push([this, event.data]);
-              }
-            });
-          }
-        }
-      };
-    });
+    await context.addInitScript(installWorldMeshControl);
     const page = await context.newPage();
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));

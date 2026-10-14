@@ -4,8 +4,74 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: route segments and save boundaries run in order.
 import assert from 'node:assert/strict';
 import { pressAction } from './input-actions.mjs';
+import { installWorldMeshControl } from './world-mesh-fixture.mjs';
+
+const gauntletLoading = async (browser, baseUrl) => {
+  const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+  try {
+    await context.addInitScript(installWorldMeshControl);
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    const url = new URL(baseUrl);
+    url.searchParams.set('site', 'gauntlet');
+    url.searchParams.set('debug', '1');
+    url.searchParams.set('time', '12:00');
+    url.searchParams.delete('actors');
+    await page.goto(url.href);
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.evaluate(() => {
+      globalThis.holdWorldMeshes = true;
+    });
+    await page.click('#go');
+    await page.waitForFunction(() => globalThis.worldLoadWitness && document.pointerLockElement !== null);
+    assert.equal(await page.locator('#world-loading').isVisible(), true, 'gauntlet creation is masked');
+    const masked = await page.evaluate(() => {
+      const { session, worldLoading, engine, frame } = globalThis.worldLoadWitness;
+      const before = {
+        time: session.sim.time,
+        position: [...session.body.pos],
+        elapsed: session.scenarioRun.activeRealSeconds,
+      };
+      const now = performance.now();
+      for (let step = 1; step <= 3; step++) {
+        frame(now + step * 100);
+      }
+      return {
+        ready: worldLoading.ready,
+        paused: session.sim.paused,
+        pending: engine.streamer.unmeshedColumns(session.body.pos[0], session.body.pos[2], engine.config.radiusChunks),
+        before,
+        after: {
+          time: session.sim.time,
+          position: [...session.body.pos],
+          elapsed: session.scenarioRun.activeRealSeconds,
+        },
+      };
+    });
+    assert.equal(masked.ready, false);
+    assert.equal(masked.paused, true);
+    assert(masked.pending > 0, 'gauntlet has actual outstanding mesh work');
+    assert.deepEqual(masked.after, masked.before, 'simulation, position and scenario elapsed time remain frozen');
+    await page.evaluate(() => globalThis.releaseWorldMeshes());
+    await page.waitForFunction(() => globalThis.worldLoadWitness.worldLoading.ready);
+    assert.equal(await page.locator('#world-loading').isVisible(), false, 'gauntlet readiness reveals the scene');
+    const advancing = await page.evaluate(() => {
+      const { session, frame } = globalThis.worldLoadWitness;
+      const { time } = session.sim;
+      const elapsed = session.scenarioRun.activeRealSeconds;
+      frame(performance.now() + 100);
+      return session.sim.time > time && session.scenarioRun.activeRealSeconds > elapsed;
+    });
+    assert.equal(advancing, true, 'gauntlet simulation and run clock resume after readiness');
+    assert.deepEqual(errors, []);
+  } finally {
+    await context.close();
+  }
+};
 
 export const gauntletFlow = async (browser, baseUrl) => {
+  await gauntletLoading(browser, baseUrl);
   const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
   try {
     const page = await context.newPage();
