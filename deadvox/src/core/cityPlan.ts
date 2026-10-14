@@ -21,8 +21,10 @@ import {
 
 export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
 const SINGLE_STOREY = new Set(['gas_station', 'shed']);
+export type CityPoolRow = ScenarioDef['city']['templates'][number];
+type PoolRef = Pick<CityPoolRow['ref'], 'id' | 'style'>;
 export type CityGrid = Omit<ScenarioDef['city'], 'templates' | 'streetProps'> & {
-  readonly templates: readonly string[];
+  readonly templates: readonly CityPoolRow[];
   readonly streetProps?: readonly string[] | undefined;
 };
 type Cell = readonly [number, number];
@@ -54,7 +56,7 @@ export const benchmarkCityGrid = (): CityGrid => ({
   blend: CITY.blend,
   blocksX: Math.ceil(CITY.reach / (CITY.street + CITY.blockX)),
   blocksZ: Math.ceil(CITY.reach / (CITY.street + CITY.blockZ)),
-  templates: [...HAMLET_TEMPLATES],
+  templates: HAMLET_TEMPLATES.map((id) => ({ ref: { kind: 'template', id }, weight: 1 })),
 });
 
 const cityDecorationIssues = (registry: Registry, city: CityGrid): [string, string][] => {
@@ -98,16 +100,23 @@ const cityPerimeter = (registry: Registry, grid: CityGrid, floor: number, bounds
 };
 
 const cityPoolIssues = (registry: Registry, city: CityGrid): [string, string][] =>
-  city.templates.flatMap((id): [string, string][] => {
+  city.templates.flatMap(({ ref: { id, style } }, row): [string, string][] => {
+    const path = `.city.templates[${row}]`;
     const template = registry.templates.get(id) ?? registry.mapAssemblies.get(id);
     if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
-      return [['.city.templates', `ambiguous template and assembly "${id}"`]];
+      return [[path, `ambiguous template and assembly "${id}"`]];
     }
     if (!template) {
-      return [['.city.templates', `no template or assembly "${id}"`]];
+      return [[path, `no template or assembly "${id}"`]];
+    }
+    if (style && !registry.mapAssemblies.has(id)) {
+      return [[`${path}.ref.style`, `style "${style}" needs an assembly, not template "${id}"`]];
+    }
+    if (style && !registry.mapStyles.has(style)) {
+      return [[`${path}.ref.style`, `no style "${style}"`]];
     }
     return template.size[0] > city.blockX - 2 * city.pad || template.size[2] > cityRowDepth(city)
-      ? [['.city.templates', `template "${id}" does not fit the reserved row`]]
+      ? [[path, `template "${id}" does not fit the reserved row`]]
       : [];
   });
 
@@ -179,25 +188,27 @@ const cityCells = (grid: CityGrid): Cell[] => {
   return cells;
 };
 
+const compilePoolTemplate = (registry: Registry, id: string, storeys: number) => {
+  const definition = registry.templates.get(id);
+  if (!definition) {
+    throw new Error(`Missing city template or assembly "${id}"`);
+  }
+  return stackTemplate(compileTemplate(registry, definition), storeys);
+};
+
 const templateCompiler = (registry: Registry, seed: number) => {
   const cache = new Map<string, ReturnType<typeof compileTemplate>>();
-  return (id: string, storeys: number, siteId = 'dimensions') => {
+  return ({ id, style }: PoolRef, storeys: number, siteId = 'dimensions') => {
     const assembly = registry.mapAssemblies.get(id);
     if (assembly && registry.templates.has(id)) {
       throw new Error(`Ambiguous city template and assembly "${id}"`);
     }
-    const key = assembly ? JSON.stringify([id, siteId]) : JSON.stringify([id, storeys]);
+    const key = assembly ? JSON.stringify([id, siteId, style]) : JSON.stringify([id, storeys]);
     let template = cache.get(key);
     if (!template) {
-      if (assembly) {
-        template = compileAssembly(registry, assembly, { seed, siteId });
-      } else {
-        const definition = registry.templates.get(id);
-        if (!definition) {
-          throw new Error(`Missing city template or assembly "${id}"`);
-        }
-        template = stackTemplate(compileTemplate(registry, definition), storeys);
-      }
+      template = assembly
+        ? compileAssembly(registry, assembly, { seed, siteId, ...(style ? { style } : {}) })
+        : compilePoolTemplate(registry, id, storeys);
       cache.set(key, template);
     }
     return template;
@@ -220,6 +231,18 @@ export const cityRowStart = (grid: CityGrid, row: number): number =>
 
 const groundedY = (template: Placement['template'], floor: number): number => floor - (template.groundLayer ?? 0);
 
+const pickRow = (rows: readonly CityPoolRow[], unit: number): CityPoolRow => {
+  const open = rows.filter(({ weight }) => weight > 0);
+  const roll = unit * open.reduce((sum, { weight }) => sum + weight, 0);
+  let upTo = 0;
+  return (
+    open.find(({ weight }) => {
+      upTo += weight;
+      return roll < upTo;
+    }) ?? open.at(-1)!
+  );
+};
+
 const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
   const { seed, floor, grid, compiled, maxStoreys } = context;
   const pitchX = grid.street + grid.blockX;
@@ -229,18 +252,21 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
   let x = i * pitchX + grid.street + grid.pad;
   const placements: Placement[] = [];
   for (let k = 0; ; k++) {
-    const fits = (name: string) => footprint({ template: compiled(name, 1), origin: [0, 0, 0], turn })[0] <= end - x;
+    const fits = ({ id, style }: PoolRef) =>
+      footprint({ template: compiled({ id, style }, 1), origin: [0, 0, 0], turn })[0] <= end - x;
     const pool =
-      k === 0 && row === 0 && context.incidentalTemplates.length > 0 ? context.incidentalTemplates : grid.templates;
-    const first = pool[Math.floor(hash3(seed, i * 64 + k, j * (grid.rows ?? 2) + row, 0) * pool.length)]!;
-    const id = fits(first) ? first : grid.templates.find(fits);
-    if (!id) {
+      k === 0 && row === 0 && context.incidentalTemplates.length > 0
+        ? context.incidentalTemplates.map((id) => ({ ref: { kind: 'template' as const, id }, weight: 1 }))
+        : grid.templates;
+    const first = pickRow(pool, hash3(seed, i * 64 + k, j * (grid.rows ?? 2) + row, 0)).ref;
+    const ref = fits(first) ? first : grid.templates.find((candidate) => fits(candidate.ref))?.ref;
+    if (!ref) {
       break;
     }
-    const storeys = SINGLE_STOREY.has(id)
+    const storeys = SINGLE_STOREY.has(ref.id)
       ? 1
       : 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * maxStoreys);
-    const template = compiled(id, storeys, `city:${i},${j}/row:${row}/building:${k}`);
+    const template = compiled(ref, storeys, `city:${i},${j}/row:${row}/building:${k}`);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const bank = j * pitchZ + cityRowStart(grid, row);
     const z = row % 2 === 0 ? bank : bank + 2 * cityRowDepth(grid) - depth;
@@ -276,7 +302,9 @@ export const servicePlacement = ({
 const freezeGrid = (grid: CityGrid): Readonly<CityGrid> =>
   Object.freeze({
     ...grid,
-    templates: Object.freeze([...grid.templates]),
+    templates: Object.freeze(
+      grid.templates.map((row) => Object.freeze({ ...row, ref: Object.freeze({ ...row.ref }) })),
+    ),
     ...(grid.perimeter ? { perimeter: Object.freeze({ ...grid.perimeter }) } : {}),
     ...(grid.streetProps ? { streetProps: Object.freeze([...grid.streetProps]) } : {}),
   });
@@ -312,7 +340,7 @@ export const buildCityPlan = ({
   const service =
     scenario && serviceBlock
       ? servicePlacement({
-          template: context.compiled(scenario.serviceTemplate, 1, `scenario:${scenario.id}:service`),
+          template: context.compiled({ id: scenario.serviceTemplate }, 1, `scenario:${scenario.id}:service`),
           floor,
           grid,
           cell: serviceBlock,
@@ -339,7 +367,7 @@ export const buildCityPlan = ({
   };
   for (const [i, j] of cells) {
     for (const [index, id] of (grid.streetProps ?? []).entries()) {
-      const template = context.compiled(id, 1);
+      const template = context.compiled({ id }, 1);
       placements.push(
         freezePlacement({
           template,

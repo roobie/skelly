@@ -33,15 +33,22 @@ const knownBody = (template: CompiledTemplate, [x, feet, z]: Vec3, doors: Set<nu
 /** Every compiled alternative of every city-pool building, one per way of choosing each slot. */
 const cityAlternatives = function* () {
   const { registry } = BUNDLED_CONTENT;
-  const pool = new Set([...registry.scenarios.values()].flatMap((scenario) => scenario.city.templates));
-  const buildings = [...registry.mapAssemblies.values()].filter((assembly) => pool.has(assembly.id) && assembly.access);
+  const rows = new Map(
+    [...registry.scenarios.values()]
+      .flatMap((scenario) => scenario.city.templates)
+      .map(({ ref }) => [`${ref.id}@${ref.style ?? ''}`, ref] as const),
+  );
+  const buildings = [...rows.values()].flatMap(({ id, style }) => {
+    const assembly = registry.mapAssemblies.get(id);
+    return assembly?.access ? [{ building: assembly, style }] : [];
+  });
   if (buildings.length === 0) {
     throw new Error('no city-pool building declares access');
   }
   const alternatives = Math.max(
     ...[...registry.mapAssemblies.values()].flatMap((assembly) => assembly.slots.map((slot) => slot.choices.length)),
   );
-  for (const building of buildings) {
+  for (const { building, style } of buildings) {
     for (let variant = 0; variant < alternatives; variant++) {
       const selected = {
         ...registry,
@@ -60,9 +67,11 @@ const cityAlternatives = function* () {
       };
       yield {
         building,
+        style,
         compiled: compileAssembly(selected, selected.mapAssemblies.get(building.id)!, {
           seed: 1,
           siteId: 'route_witness',
+          ...(style ? { style } : {}),
         }),
       };
     }
@@ -104,6 +113,46 @@ const sealedBelowGrade = (compiled: CompiledTemplate): Vec3 | undefined => {
   }
   return undefined;
 };
+
+it('a pool row styles every facade piece of its building, whichever way each slot is chosen', () => {
+  const { registry } = BUNDLED_CONTENT;
+  const literal = new Set(
+    [...registry.mapPieces.values()].flatMap((piece) =>
+      Object.values(piece.palette).flatMap((entry) =>
+        typeof entry === 'string' ? [registry.blockIds.get(entry)!] : [],
+      ),
+    ),
+  );
+  const bound = (style: string) =>
+    new Set(Object.values(registry.mapStyles.get(style)!.bindings).map(({ block }) => registry.blockIds.get(block)!));
+  const styles = new Set<string>();
+  let checkedForeign = 0;
+  for (const { building, style, compiled } of cityAlternatives()) {
+    if (!style) {
+      continue;
+    }
+    styles.add(style);
+    const own = bound(style);
+    const foreign = new Set(
+      [...registry.mapStyles.keys()]
+        .filter((other) => other !== style)
+        .flatMap((other) => [...bound(other)])
+        .filter((block) => !(own.has(block) || literal.has(block))),
+    );
+    checkedForeign += foreign.size;
+    const used = new Set(compiled.blocks);
+    expect(
+      [...foreign].filter((block) => used.has(block)),
+      `${building.id}@${style}: blocks bound only by another style`,
+    ).toEqual([]);
+    expect(
+      [...own].filter((block) => used.has(block)).length,
+      `${building.id}@${style}: uses its own palette`,
+    ).toBeGreaterThan(0);
+  }
+  expect(styles.size).toBeGreaterThan(1);
+  expect(checkedForeign, 'some style must have a foreign block to catch').toBeGreaterThan(0);
+});
 
 it('city buildings leave no sealed owned air below grade that nothing can stand in or reach', () => {
   for (const { building, compiled } of cityAlternatives()) {

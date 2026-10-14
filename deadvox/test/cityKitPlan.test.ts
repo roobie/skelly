@@ -3,8 +3,8 @@ import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import { buildCityPlan, scenarioPlanIssues } from '../src/core/cityPlan.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { placedPoint } from '../src/core/templates.ts';
-import { fixtureScenario } from './fixtures/scenario.ts';
+import { compileAssembly, placedPoint } from '../src/core/templates.ts';
+import { fixtureScenario, poolRows } from './fixtures/scenario.ts';
 
 it('resolves one repeatable variant per slot and varies city assemblies across buildings and seeds', () => {
   const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
@@ -19,7 +19,7 @@ it('resolves one repeatable variant per slot and varies city assemblies across b
     blend: 2,
     blocksX: 1,
     blocksZ: 1,
-    templates: ['fixture_route'],
+    templates: poolRows(['fixture_route']),
   };
   const plan = (seed: number) => buildCityPlan({ seed, registry, floor: 0, grid });
   const variants = (result: ReturnType<typeof plan>) =>
@@ -82,7 +82,7 @@ describe('authored city grounding', () => {
         blend: 2,
         blocksX: 1,
         blocksZ: 1,
-        templates: [building.id],
+        templates: poolRows([building.id], 'assembly'),
       },
     });
     expect(plan.placements.length).toBeGreaterThan(0);
@@ -92,6 +92,27 @@ describe('authored city grounding', () => {
       expect(placedPoint(placement, [1, cellar.floor, 2])[1]).toBeLessThan(floor);
     }
   });
+});
+
+it('reports an unknown style on a pool row or a slot ref with its source path', () => {
+  const data = JSON.parse(compileJsonnetFile('deadvox/test/fixtures/jsonnet/map-kits.jsonnet')) as ContentFile;
+  const { registry, issues } = buildRegistry([{ source: 'fixture-city-kits.json', data }]);
+  expect(issues).toEqual([]);
+  const scenario = fixtureScenario();
+  scenario.city.templates = [{ ref: { kind: 'assembly', id: 'fixture_route', style: 'no_such_style' }, weight: 1 }];
+  expect(scenarioPlanIssues(registry, scenario)).toContainEqual([
+    '.city.templates[0].ref.style',
+    'no style "no_such_style"',
+  ]);
+  const assembly = registry.mapAssemblies.get('fixture_route')!;
+  const slot = assembly.slots[0]!;
+  const styled = {
+    ...assembly,
+    slots: [{ ...slot, choices: [{ ...slot.choices[0]!, ref: { ...slot.choices[0]!.ref, style: 'no_such_style' } }] }],
+  };
+  expect(() => compileAssembly(registry, styled, { seed: 1, siteId: 'unknown_style' })).toThrow(
+    new RegExp(`slot=fixture_route/${slot.id}: unknown style no_such_style`),
+  );
 });
 
 it('rejects ambiguous city pool identities instead of choosing a template or assembly namespace', () => {
@@ -108,9 +129,9 @@ it('rejects ambiguous city pool identities instead of choosing a template or ass
   const { registry, issues } = buildRegistry([{ source: 'fixture-city-kits.json', data }]);
   expect(issues).toEqual([]);
   const scenario = fixtureScenario();
-  scenario.city.templates = ['fixture_route'];
+  scenario.city.templates = poolRows(['fixture_route']);
   expect(scenarioPlanIssues(registry, scenario)).toContainEqual([
-    '.city.templates',
+    '.city.templates[0]',
     'ambiguous template and assembly "fixture_route"',
   ]);
 });

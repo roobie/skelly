@@ -18,7 +18,72 @@
         "rows": 4,
         "street": 12,
         "streetProps": ["gauntlet_car_wreck"],
-        "templates": ["gauntlet_city_1", "gauntlet_city_2", "gauntlet_city_3", "gauntlet_city_cellar"]
+        "templates": [
+          {
+            "ref": {
+              "id": "gauntlet_city_1",
+              "kind": "assembly",
+              "style": "brick_townhouse"
+            },
+            "weight": 3
+          },
+          {
+            "ref": {
+              "id": "gauntlet_city_1",
+              "kind": "assembly",
+              "style": "concrete_townhouse"
+            },
+            "weight": 1
+          },
+          {
+            "ref": {
+              "id": "gauntlet_city_2",
+              "kind": "assembly",
+              "style": "brick_townhouse"
+            },
+            "weight": 3
+          },
+          {
+            "ref": {
+              "id": "gauntlet_city_2",
+              "kind": "assembly",
+              "style": "concrete_townhouse"
+            },
+            "weight": 1
+          },
+          {
+            "ref": {
+              "id": "gauntlet_city_3",
+              "kind": "assembly",
+              "style": "brick_townhouse"
+            },
+            "weight": 3
+          },
+          {
+            "ref": {
+              "id": "gauntlet_city_3",
+              "kind": "assembly",
+              "style": "concrete_townhouse"
+            },
+            "weight": 1
+          },
+          {
+            "ref": {
+              "id": "gauntlet_city_cellar",
+              "kind": "assembly",
+              "style": "brick_townhouse"
+            },
+            "weight": 3
+          },
+          {
+            "ref": {
+              "id": "gauntlet_city_cellar",
+              "kind": "assembly",
+              "style": "concrete_townhouse"
+            },
+            "weight": 1
+          }
+        ]
       },
       "composition": {
         "descents": [

@@ -62,7 +62,9 @@ const gauntletPopulation = (site: CitySite, scenarioId: string, settlementPressu
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
-  const ordinary = site.placements.filter((placement) => grid.templates.includes(placement.template.id));
+  const ordinary = site.placements.filter((placement) =>
+    grid.templates.some(({ ref }) => ref.id === placement.template.id),
+  );
   const weights = ordinaryHamletSpawnWeights(site.registry);
   const append = <T extends { pos: Vec3 }>(columns: Map<string, T[]>, spawn: T) => {
     const key = `${toChunk(spawn.pos[0])},${toChunk(spawn.pos[2])}`;

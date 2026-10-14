@@ -9,7 +9,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { HordeSpawn, ZombieSpawn } from '../src/core/site.ts';
 import { cellsOf, compileAssembly, compileTemplate, footprint } from '../src/core/templates.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
-import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { fixtureScenario, fixtureScenarioSources, poolRows } from './fixtures/scenario.ts';
 
 const BUNDLED_CONTENT = buildBundledContent();
 
@@ -71,7 +71,7 @@ const generated = (reverse: boolean) => {
 };
 
 // Slot choices are enumerated, not rolled: a seeded roll may never pick the style that breaks the rule.
-const nativeDefinitions = (id: string) => {
+const nativeDefinitions = (id: string, style?: string) => {
   const native = BUNDLED_CONTENT.registry;
   const assembly = native.mapAssemblies.get(id);
   if (!assembly) {
@@ -96,7 +96,11 @@ const nativeDefinitions = (id: string) => {
         ]),
       ),
     };
-    return compileAssembly(selected, selected.mapAssemblies.get(id)!, { seed: 73, siteId: 'facade-course-witness' });
+    return compileAssembly(selected, selected.mapAssemblies.get(id)!, {
+      seed: 73,
+      siteId: 'facade-course-witness',
+      ...(style ? { style } : {}),
+    });
   });
 };
 
@@ -132,13 +136,14 @@ describe('one finished city plan', () => {
     const native = BUNDLED_CONTENT.registry;
     const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
     let checked = 0;
-    for (const id of scenario.city.templates) {
-      for (const [variant, template] of nativeDefinitions(id).entries()) {
+    for (const { ref } of scenario.city.templates) {
+      const { id, style } = ref;
+      for (const [variant, template] of nativeDefinitions(id, style).entries()) {
         const courses = exteriorCourses(template);
         for (const course of courses) {
-          expect(course.block, `${id} variant ${variant}: exterior course at ${course.at}`).toBe(course.wall);
+          expect(course.block, `${id}@${style} variant ${variant}: exterior course at ${course.at}`).toBe(course.wall);
         }
-        expect(courses.length, `${id} variant ${variant}`).toBeGreaterThan(0);
+        expect(courses.length, `${id}@${style} variant ${variant}`).toBeGreaterThan(0);
         checked += 1;
       }
     }
@@ -157,7 +162,7 @@ describe('one finished city plan', () => {
       seed: 73,
       registry: cityRegistry,
       scale,
-      scenario: { ...scenario, city: { ...scenario.city, templates: [fixture.id] } },
+      scenario: { ...scenario, city: { ...scenario.city, templates: poolRows([fixture.id]) } },
     });
     const spawns: ZombieSpawn[] = [];
     const hordes: HordeSpawn[] = [];
@@ -245,7 +250,7 @@ describe('one finished city plan', () => {
     expect(plan.placements.length).toBeGreaterThan(1);
     for (const placement of plan.placements) {
       if (placement !== plan.service) {
-        expect(profile.city.templates.includes(placement.template.id)).toBe(true);
+        expect(profile.city.templates.some(({ ref }) => ref.id === placement.template.id)).toBe(true);
       }
       const [width, depth] = footprint(placement);
       expect(mod(placement.origin[0], pitchX)).toBeGreaterThanOrEqual(grid.street + grid.pad);
@@ -261,10 +266,10 @@ describe('one finished city plan', () => {
   });
 
   it('chooses the service block/turn independently of incidental template selection', () => {
-    const forPool = (templates: string[]) =>
+    const forPool = (templates: typeof profile.city.templates) =>
       buildCityPlan({ seed: 74, registry, floor, grid: { ...profile.city, templates }, scenario: profile });
     const first = forPool(profile.city.templates);
-    const varied = forPool(['fixture_small_house']);
+    const varied = forPool(poolRows(['fixture_small_house']));
     expect(varied.placements.some((placement) => placement.template.id === 'fixture_small_house')).toBe(true);
     expect(varied.serviceBlock).toEqual(first.serviceBlock);
     expect(varied.service?.turn).toEqual(first.service?.turn);

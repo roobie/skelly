@@ -3,6 +3,9 @@ import type { ContentSource } from '../../src/core/content.ts';
 import type { ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
 
+export const poolRows = (ids: readonly string[], kind: 'template' | 'assembly' = 'template') =>
+  ids.map((id) => ({ ref: { kind, id }, weight: 1 }));
+
 export const fixtureScenario = (): ScenarioDef => ({
   id: 'fixture_scenario',
   kind: 'gauntlet',
@@ -19,7 +22,7 @@ export const fixtureScenario = (): ScenarioDef => ({
     pad: 2,
     gap: 2,
     blend: 4,
-    templates: ['fixture_house'],
+    templates: poolRows(['fixture_house']),
   },
 });
 

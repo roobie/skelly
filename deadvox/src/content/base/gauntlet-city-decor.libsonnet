@@ -89,8 +89,5 @@ local rooftop = function(id, deck) {
       anchors: {}, ports: [],
     },
   ],
-  mapAssemblies: [
-    rooftop('gauntlet_city_roof_fitted', 'gauntlet_city_roof'),
-    rooftop('gauntlet_city_roof_fitted_concrete', 'gauntlet_city_roof_concrete'),
-  ],
+  mapAssemblies: [rooftop('gauntlet_city_roof_fitted', 'gauntlet_city_roof')],
 }

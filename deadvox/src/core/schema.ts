@@ -1072,7 +1072,7 @@ const MapPieceSchema = strictObject({
   anchors: record(Id, KitAnchorSchema),
   ports: array(KitPortSchema),
 });
-const KitRefSchema = strictObject({ kind: picklist(['piece', 'assembly']), id: Id });
+const KitRefSchema = strictObject({ kind: picklist(['piece', 'assembly']), id: Id, style: optional(Id) });
 const KitSlotSchema = strictObject({
   id: Id,
   at: tuple([Count, Count, Count]),
@@ -1225,6 +1225,16 @@ const SiteLayoutSchema = strictObject({
   beats: optional(array(strictObject({ id: Id, area: LayoutRect }))),
 });
 
+const PoolRefSchema = strictObject({ kind: picklist(['template', 'assembly']), id: Id, style: optional(Id) });
+const CityPoolRowSchema = strictObject({
+  ref: PoolRefSchema,
+  weight: pipe(
+    number(),
+    minValue(0),
+    check((value) => Number.isFinite(value), 'must be finite'),
+  ),
+});
+
 const ScenarioSchema = strictObject({
   id: Id,
   kind: literal('gauntlet'),
@@ -1282,7 +1292,16 @@ const ScenarioSchema = strictObject({
       }),
     ),
     streetProps: optional(pipe(array(Id), maxLength(16))),
-    templates: pipe(array(Id), minLength(1), maxLength(32)),
+    templates: pipe(
+      array(CityPoolRowSchema),
+      minLength(1),
+      maxLength(32),
+      check(
+        (rows) => new Set(rows.map(({ ref }) => `${ref.kind}:${ref.id}@${ref.style ?? ''}`)).size === rows.length,
+        'building refs must be unique',
+      ),
+      check((rows) => rows.some(({ weight }) => weight > 0), 'needs a positive building weight'),
+    ),
   }),
 });
 
