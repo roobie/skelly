@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { createServer } from 'vite';
 
+const BRANCH_REF_PREFIX = /^refs\/heads\//;
+
 const sources = [
   'game/engine.ts',
   'core/authoredSite.ts',
@@ -24,13 +26,19 @@ export function mainOverlayPath(root, id) {
 
 export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTransform, viewport, eventPath }) {
   const event = eventPath ? JSON.parse(await readFile(eventPath, 'utf8')) : null;
-  const ref = event?.pull_request?.base?.sha ?? 'origin/main';
+  const ref = event?.pull_request?.base?.sha ?? event?.ref?.replace(BRANCH_REF_PREFIX, '') ?? 'origin/main';
+  if (eventPath && ref === 'origin/main') {
+    throw new Error('GitHub event has neither a pull-request base nor a branch ref');
+  }
   const repository = resolve(root, '..');
   const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8' }).trim();
+  let base;
   if (eventPath) {
     git(['fetch', '--no-tags', '--depth=1', 'origin', ref]);
+    base = git(['rev-parse', 'FETCH_HEAD']);
+  } else {
+    base = git(['rev-parse', ref]);
   }
-  const base = git(['rev-parse', ref]);
   const overlays = new Map(sources.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
   const appliedSources = new Set();
   const server = await createServer({
