@@ -1372,7 +1372,9 @@ The registry is built after startup content selection and passed through the wor
 configuration so URL discovery, weathering, rendering and simulation all use the
 same admitted definitions. A module-load registry would freeze the base pack before
 a player could select mods. See `src/game/bundledContent.ts`, `buildBundledContent`,
-and `src/game/config.ts`, `GameConfig`.
+and `src/game/config.ts`, `GameConfig`. Startup admission remains part of the
+simulation fingerprint because it can change a world without changing a simulation
+call site; see `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`.
 
 Whole-definition overrides keep composition in the authoring language rather than
 creating a second patch language. Browser Jsonnet, mod persistence, save-pack identity
