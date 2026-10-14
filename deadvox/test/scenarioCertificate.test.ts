@@ -1,14 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
+import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
 import type { Chunk } from '../src/core/chunk.ts';
 import { buildCityPlan, type CityPlan, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
+import type { ContentFile, MapAssemblyDef } from '../src/core/schema.ts';
 import { compileAssembly, compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
 import { generateChunk, terrainBlockIds } from '../src/core/worldgen.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
@@ -27,9 +29,64 @@ const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.se
   siteId: `scenario:${profile.id}:service`,
 });
 
-const candidatePlan = (cell: readonly [number, number], turn: Turn): CityPlan => {
-  const service = servicePlacement({ template: compiled, floor: base.floor, grid: profile.city, cell, turn });
-  const composition = composeScenario(registry, profile, service, base.floor)!;
+const lab = JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-lab.libsonnet')) as ContentFile;
+const roomPools = new Map<string, MapAssemblyDef[]>();
+for (const room of lab.mapAssemblies!) {
+  const shell = room.slots.find((slot) => slot.id === 'shell');
+  if (!shell) {
+    continue;
+  }
+  const template = compileAssembly(registry, room, { seed: 9, siteId: 'fixture_room_pool' });
+  if (template.pieces.some((piece) => registry.furniture.get(piece.furniture)?.scenarioGoal)) {
+    continue;
+  }
+  const key = shell.choices[0]!.ref.id;
+  roomPools.set(key, [...(roomPools.get(key) ?? []), room]);
+}
+const alternatives = new Map(
+  [...roomPools.values()].flatMap((rooms) => rooms.map((room) => [room.id, rooms] as const)),
+);
+const substitutedRegistry: Registry = {
+  ...registry,
+  mapAssemblies: new Map([
+    ...registry.mapAssemblies,
+    ...lab.mapAssemblies!.map((assembly) => [
+      assembly.id,
+      {
+        ...assembly,
+        slots: assembly.slots.map((slot) => {
+          const choices = slot.choices[0]!.ref.kind === 'assembly' && alternatives.get(slot.choices[0]!.ref.id);
+          const replacements = choices && choices.filter((room) => room.id !== slot.choices[0]!.ref.id);
+          return replacements && replacements.length > 0
+            ? {
+                ...slot,
+                choices: replacements.map((room) => ({ ref: { kind: 'assembly' as const, id: room.id }, weight: 1 })),
+              }
+            : slot;
+        }),
+      },
+    ] as const),
+  ]),
+};
+if (![...roomPools.values()].some((rooms) => rooms.length > 1)) {
+  throw new Error('Production lab fixture needs substitutable furnished rooms');
+}
+const selectedServices = [9, 10, 11].map((seed) => ({
+  seed,
+  template: compileAssembly(substitutedRegistry, substitutedRegistry.mapAssemblies.get(profile.serviceTemplate)!, {
+    seed,
+    siteId: `scenario:${profile.id}:service`,
+  }),
+}));
+
+const candidatePlan = (
+  cell: readonly [number, number],
+  turn: Turn,
+  template = compiled,
+  content = registry,
+): CityPlan => {
+  const service = servicePlacement({ template, floor: base.floor, grid: profile.city, cell, turn });
+  const composition = composeScenario(content, profile, service, base.floor)!;
   const [width, depth] = footprint(service);
   const placements = base.placements.filter((placement) => {
     if (
@@ -87,9 +144,11 @@ class ObstructedSite extends CitySite {
 describe('final composed body-route certificate', () => {
   for (const cell of base.candidates) {
     it.each([0, 1, 2, 3] as const)(
-      `joins the street, every landing, resources and button face for candidate ${cell}, turn %s`,
+      `joins substituted production rooms, street, landings, resources and button face for candidate ${cell}, turn %s`,
       (turn) => {
-        expect(scenarioCertificate(siteOf(candidatePlan(cell, turn))).issues).toEqual([]);
+        const selected = selectedServices[(base.candidates.indexOf(cell) + turn) % selectedServices.length]!;
+        const plan = candidatePlan(cell, turn, selected.template, substitutedRegistry);
+        expect(scenarioCertificate(new CitySite(selected.seed, substitutedRegistry, scale, plan)).issues).toEqual([]);
       },
     );
   }
