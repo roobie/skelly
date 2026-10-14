@@ -18,7 +18,7 @@ prove the subsequent lifecycle save completed, and a final log entry does not lo
 of cumulative stage delay. The quarantine removes CI proof of Chromium's real bfcache
 handoff and post-Back lifecycle commit; Firefox navigation and unit lifecycle checks cannot
 replace that proof. Keep the explicit local diagnostic available through
-`deadvox/package.json`, `test:browser:chromium:navigation`. Reinstatement requires the
+`deadvox/package.json`, "test:browser:chromium:navigation". Reinstatement requires the
 issue's bounded diagnosis and before/after/restored-before evidence, not a retry or larger
 timeout. See `deadvox/test/browser/save-storage.mjs`, `navigationOnly`, and
 `test/browser-ci-manifest.mjs`, `quarantinedScripts`.
