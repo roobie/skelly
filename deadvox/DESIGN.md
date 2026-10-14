@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change browser mod identity or startup admission
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
@@ -1436,6 +1437,14 @@ Remote intake shares local admission so a host cannot bypass the content contrac
 Browser-owned fetching keeps credentials and cross-origin permission with their
 owners, without a proxy that widens access. Streaming bounds memory before parsing;
 see `src/ui/modsPanel.ts`, `readPaste`.
+
+Browser mods require an explicit mod identity independent of their URL or upload
+name. Repeated selection of that identity is an error, not a second admission;
+changing transport must not bypass the clash. Different mod identities may still
+override the same definitions. Identity belongs to browser intake rather than
+bundled content fragments, which are parts of one core pack, not separate mods.
+This also gives later persistence and save-pack identity work an explicit owner;
+see `src/game/browserMods.ts`, `readMod` and `evaluateMods`.
 
 Importing larger authored buildings from voxel editors remains an open direction;
 no importer contract is settled.

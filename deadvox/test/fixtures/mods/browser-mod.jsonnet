@@ -1,5 +1,6 @@
 local zombies = import '../../../src/content/base/zombies.jsonnet';
 {
+  id: 'browser-test-mod',
   items: [{
     id: 'mod_test_token',
     name: 'Mod token',

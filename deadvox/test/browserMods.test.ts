@@ -11,6 +11,54 @@ afterEach(() => vi.unstubAllGlobals());
 const mod = (data: unknown): BrowserMod => ({ source: 'fixture.json', text: JSON.stringify(data), enabled: true });
 
 describe('browser mod admission', () => {
+  it('refuses a missing mod id without admitting its definitions', () => {
+    const { id: _id, ...data } = fixture;
+    const result = evaluateMods([mod(data)]);
+    expect(result.canStart).toBe(false);
+    expect(result.issues.get('fixture.json')).toEqual([
+      expect.objectContaining({ path: 'id', message: expect.stringContaining('required') }),
+    ]);
+    expect(result.content.origins).toEqual(base.origins);
+  });
+
+  it('refuses a duplicate mod id across sources without replacing admitted definitions', () => {
+    const first = mod(fixture);
+    const duplicate = {
+      ...mod({ ...fixture, items: [{ ...fixture.items[0], name: 'Duplicate replacement' }] }),
+      source: 'https://example.test/same-mod.json',
+    };
+    const admitted = evaluateMods([first]);
+    const result = evaluateMods([first, duplicate]);
+    expect(result.issues.get(duplicate.source)).toEqual([
+      expect.objectContaining({ path: 'id', message: expect.stringContaining(fixture.id) }),
+    ]);
+    expect(admitted.canStart).toBe(true);
+    expect(result.canStart).toBe(false);
+    expect(result.content.origins).toEqual(admitted.content.origins);
+    expect(result.content.registry.items).toEqual(admitted.content.registry.items);
+    expect(result.issues.has(first.source)).toBe(false);
+  });
+
+  it('allows startup with a disabled duplicate while showing its clash', () => {
+    const result = evaluateMods([mod(fixture), { ...mod(fixture), source: 'disabled.json', enabled: false }]);
+    expect(result.canStart).toBe(true);
+    expect(result.issues.get('disabled.json')).toEqual([
+      expect.objectContaining({ path: 'id', message: expect.stringContaining(fixture.id) }),
+    ]);
+  });
+
+  it('allows different mod ids to override the same definitions', () => {
+    const result = evaluateMods([
+      mod(fixture),
+      {
+        ...mod({ ...fixture, id: 'different-mod', items: [{ ...fixture.items[0], name: 'Distinct override' }] }),
+        source: 'override.json',
+      },
+    ]);
+    expect(result.canStart).toBe(true);
+    expect(result.content.origins.get(`items:${fixture.items[0]!.id}`)?.source).toBe('override.json');
+    expect(result.content.registry.items.get(fixture.items[0]!.id)?.name).toBe('Distinct override');
+  });
   it('caps UTF-8 bytes rather than character count before parsing', () => {
     const oversized = mod({ items: [{ ...fixture.items[0], description: 'é'.repeat(MAX_MOD_BYTES / 2) }] });
     expect(oversized.text.length).toBeLessThan(MAX_MOD_BYTES);

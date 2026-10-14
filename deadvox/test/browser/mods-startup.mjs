@@ -14,7 +14,7 @@ export const selectFixtureMods = async (page) => {
     await page.getByRole('textbox', { name: 'Mod JSON or URL' }).fill(data);
     await page.getByRole('button', { name: 'Add', exact: true }).click();
   };
-  await paste(JSON.stringify({ items: [{ ...fixture.items[0], name: 'Earlier override' }] }));
+  await paste(JSON.stringify({ id: 'earlier-mod', items: [{ ...fixture.items[0], name: 'Earlier override' }] }));
   await paste('{');
   assert.equal(await page.locator('#mods-start').isDisabled(), true, 'enabled broken JSON blocks startup');
   const invalid = page.locator('[data-mod-source="mod-3/pasted.json"]');
@@ -27,8 +27,12 @@ export const selectFixtureMods = async (page) => {
   );
   const url = new URL('/test/fixtures/mods/browser-mod.json', page.url()).href;
   await paste(url);
-  await page.locator(`[data-mod-source="mod-4/${url}"]`).waitFor();
-  assert.equal(await page.locator('#mods-start').isDisabled(), false, 'disabled invalid file cannot block startup');
+  const duplicate = page.locator(`[data-mod-source="mod-4/${url}"]`);
+  await duplicate.waitFor();
+  assert.equal(await page.locator('#mods-start').isDisabled(), true, 'duplicate mod id blocks startup');
+  assert.ok((await duplicate.locator('pre').textContent()).includes(fixture.id), 'duplicate feedback names the mod id');
+  await page.locator('[data-mod-source="mod-1/browser-mod.json"]').getByRole('checkbox').uncheck();
+  assert.equal(await page.locator('#mods-start').isDisabled(), false, 'disabled files cannot block startup');
   await page.locator('#mods-start').click();
   return fixture;
 };
