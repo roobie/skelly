@@ -1227,11 +1227,17 @@ export const createSession = (options: SessionOptions) => {
   const standingZombieBodies = (): Body[] =>
     [...zombieStore.entries()].filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body);
 
-  const observeEntry = (run: ScenarioRun, discovery: ScenarioDiscovery, climbing: boolean): void => {
+  const observeEntry = (
+    run: ScenarioRun,
+    discovery: ScenarioDiscovery,
+    climbing: boolean,
+    before: Readonly<Vec3>,
+  ): void => {
     if (!nearDiscoveryBox(body.pos, discovery.entrance, 0)) {
       return;
     }
-    if (climbing) {
+    // Collision contact correction is not ladder travel.
+    if (climbing && Math.hypot(...body.pos.map((value, axis) => value - before[axis]!)) > 2 * CONTACT_SKIN) {
       run.discover('entranceTravel', sim.calendar);
     }
     for (const entity of entities.all) {
@@ -1247,7 +1253,7 @@ export const createSession = (options: SessionOptions) => {
       }
     }
   };
-  const observeDiscovery = (climbing: boolean): void => {
+  const observeDiscovery = (climbing: boolean, before: Readonly<Vec3>): void => {
     const { discovery } = options;
     if (!(scenarioRun && discovery) || sim.dead || debug?.()?.noclip) {
       return;
@@ -1258,7 +1264,7 @@ export const createSession = (options: SessionOptions) => {
     if (nearDiscoveryBox(body.pos, discovery.building, 2 / s)) {
       scenarioRun.discover('buildingArrival', sim.calendar);
     }
-    observeEntry(scenarioRun, discovery, climbing);
+    observeEntry(scenarioRun, discovery, climbing, before);
   };
 
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
@@ -1295,7 +1301,7 @@ export const createSession = (options: SessionOptions) => {
       climbing,
       calendar: sim.calendar,
     });
-    observeDiscovery(climbing);
+    observeDiscovery(climbing, previousPosition);
     updatePlayerSounds(wasGrounded, previousPosition, time);
     if (climbing) {
       // A climb down is not a fall: a drop is measured from where the ladder was let go.

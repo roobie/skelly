@@ -118,7 +118,7 @@ try {
         await page.evaluate((namespace) => sessionStorage.getItem(`deadvox.dead-world:${namespace}`), saved.namespace),
         null,
       );
-      // Terminal visibility can precede native pointer-lock release; keyboard activation does not use its old cursor.
+      // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
       await page.locator('#death button').press('Enter');
       await page.waitForURL((target) => !target.searchParams.has('tutorial'));
       await page.waitForFunction(
