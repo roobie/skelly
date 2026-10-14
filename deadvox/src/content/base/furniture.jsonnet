@@ -5,6 +5,7 @@
       "name": "Kitchen cupboard",
       "size": [2, 2, 1],
       "color": "#8a6a48",
+      "appearance": { "kind": "cabinet", "surface": "wood" },
       "container": {
         "pockets": [
           {
@@ -20,6 +21,7 @@
       "name": "Kitchen counter",
       "size": [2, 2, 1],
       "color": "#b8b2a6",
+      "appearance": { "kind": "drawers", "surface": "plastic" },
       "container": {
         "pockets": [
           {
@@ -35,6 +37,7 @@
       "name": "Fridge",
       "size": [2, 4, 2],
       "color": "#d8dcd8",
+      "appearance": { "kind": "fridge", "surface": "painted-metal" },
       "container": {
         "pockets": [
           {
@@ -50,6 +53,7 @@
       "name": "Wardrobe",
       "size": [2, 4, 1],
       "color": "#6e5037",
+      "appearance": { "kind": "cabinet", "surface": "wood" },
       "container": {
         "pockets": [
           {
@@ -140,6 +144,7 @@
       "name": "Crate",
       "size": [2, 2, 2],
       "color": "#9a7b4f",
+      "appearance": { "kind": "crate", "surface": "wood" },
       "container": {
         "pockets": [
           {

@@ -1,6 +1,10 @@
 {
   "furniture": [
     {
+      "appearance": {
+        "kind": "cabinet",
+        "surface": "wood"
+      },
       "color": "#8a6a48",
       "container": {
         "pockets": [
@@ -16,6 +20,10 @@
       "size": [2, 2, 1]
     },
     {
+      "appearance": {
+        "kind": "drawers",
+        "surface": "plastic"
+      },
       "color": "#b8b2a6",
       "container": {
         "pockets": [
@@ -31,6 +39,10 @@
       "size": [2, 2, 1]
     },
     {
+      "appearance": {
+        "kind": "fridge",
+        "surface": "painted-metal"
+      },
       "color": "#d8dcd8",
       "container": {
         "pockets": [
@@ -46,6 +58,10 @@
       "size": [2, 4, 2]
     },
     {
+      "appearance": {
+        "kind": "cabinet",
+        "surface": "wood"
+      },
       "color": "#6e5037",
       "container": {
         "pockets": [
@@ -154,6 +170,10 @@
       }
     },
     {
+      "appearance": {
+        "kind": "crate",
+        "surface": "wood"
+      },
       "color": "#9a7b4f",
       "container": {
         "pockets": [
