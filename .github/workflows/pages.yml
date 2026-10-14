@@ -1,11 +1,5 @@
 name: pages
 
-# Publishes on runtime/build-input changes to main; manual dispatches are exempt
-# from the freeze gate. See `deadvox/docs/playtest-run.md`, "Deployment freeze":
-#   /          site/index.html (landing page)
-#   /gungen/   the gungen viewer
-#   /deadvox/  the deadvox game
-#   /mobgen/   the mobgen viewer
 # Requires Settings → Pages → Source: "GitHub Actions".
 
 on:
@@ -43,7 +37,6 @@ concurrency:
 
 jobs:
   build:
-    if: ${{ github.event_name == 'workflow_dispatch' || vars.PAGES_FREEZE != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -108,8 +101,6 @@ jobs:
 
   deploy:
     needs: build
-    # Recheck before publication if an automatic build began before the freeze.
-    if: ${{ github.event_name == 'workflow_dispatch' || vars.PAGES_FREEZE != 'true' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -2,17 +2,13 @@
   "$schema": "./node_modules/knip/schema.json",
   "workspaces": {
     ".": {
-      "entry": [
-        "site/launcher.js!",
-        "site/deadvox/playtest/round1/round1.js!",
-        "test/**/*.mjs",
-        "testPool.ts",
-        "tools/**/*.mjs"
-      ],
+      "entry": ["site/launcher.js!", "test/**/*.mjs", "testPool.ts", "tools/**/*.mjs"],
       "project": ["site/**/*.js!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"]
     },
     "deadvox": {
       "ignoreBinaries": [
+        // Local publication uses the operator's mise-managed, authenticated Surge CLI.
+        "mise",
         // OS dependency installed for Firefox's native-window probe; not a project package.
         "xwininfo",
         // OS dependency installed for Firefox's native-window probe; not a project package.
@@ -32,6 +28,7 @@
       ],
       "entry": [
         "index.html!",
+        "playtests/**/*.js!",
         "sounds.html!",
         "map.html!",
         "vehicle-spike.html!",
@@ -43,7 +40,12 @@
         "tools/bench-zombie-swings.mjs",
         "tools/ui-browser-contract.mjs"
       ],
-      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"],
+      "project": [
+        "src/**/*.{js,mjs,ts,tsx}!",
+        "playtests/**/*.js!",
+        "test/**/*.{js,mjs,ts,tsx}",
+        "tools/**/*.{js,mjs,ts,tsx}"
+      ],
       "paths": {
         "@mobgen/*": ["../mobgen/src/*"]
       }

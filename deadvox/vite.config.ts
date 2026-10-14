@@ -177,7 +177,7 @@ const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
 
 export default defineConfig({
   plugins: [
-    // biome-ignore lint/style/noProcessEnv: only the Pages deploy opts into production analytics.
+    // biome-ignore lint/style/noProcessEnv: publication tooling opts into the analytics described by its consent page.
     pagesAnalyticsPlugin(process.env.PAGES_ANALYTICS === '1'),
     simulationFingerprintPlugin(),
     // biome-ignore lint/style/noProcessEnv: HTTPS is an opt-in local development server mode.
