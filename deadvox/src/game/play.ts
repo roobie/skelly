@@ -1308,7 +1308,7 @@ export const startPlay = (
   const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
 
   const spawnItem = (type: string): string => {
-    const item = inventory.create(type);
+    const item = inventory.createFixture(type);
     return inventory.add(item, { kind: 'pile', pos: feet() })
       ? `${inventory.name(item)} is at your feet`
       : `No room for the ${inventory.name(item).toLowerCase()} in the pile at your feet`;
@@ -3060,6 +3060,7 @@ export const startPlay = (
       playReadout({
         measurements: {
           fps,
+          drawSubmission: view.drawSubmission,
           frame: frameInterval.summary(),
           work: frameWork.summary(),
           seed: config.seed,
@@ -3363,7 +3364,7 @@ export const startPlay = (
     return gameFrozen;
   };
 
-  const updateDebugTargets = (bore: ReturnType<typeof firearmBoreRay> | undefined) => {
+  const updateDebugTargets = (bore: ReturnType<typeof firearmBoreRay> | undefined, nowMs: number) => {
     if (!debugTools) {
       return;
     }
@@ -3377,6 +3378,16 @@ export const startPlay = (
       pointerLocked: input.locked,
       menuPointer: input.menuPointer,
       firearmReady,
+    });
+    const interactionDistanceBlocks = debugTools.interactionRayEnabled
+      ? interactionTargetAt()?.distanceBlocks
+      : undefined;
+    debugTools.drawInteractionRay({
+      origin: eye(),
+      direction: lookDir(),
+      reachMetres: USE_REACH,
+      frame: nowMs,
+      ...(interactionDistanceBlocks === undefined ? {} : { interactionDistanceBlocks }),
     });
     const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(ray.origin, ray.direction, meleeWeapon()) : undefined;
     debugTools.updateAim(zombieAim);
@@ -3566,7 +3577,8 @@ export const startPlay = (
     const readiness = firearmReadiness();
     updateHeldItems(dt, readiness);
     const bore = heldFirearmBore(readiness);
-    updateDebugTargets(bore);
+    updateDebugTargets(bore, now);
+    debugTools?.updateTransientDraw(now);
     updateDebugReadout(now);
     mark = realNow();
 

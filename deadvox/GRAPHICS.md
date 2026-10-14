@@ -4,6 +4,8 @@ read_if:
   - you're changing the solar-phase look, flashlight daylight adaptation, or evaluating renderer performance
   - you're changing wide ambient occlusion or its interaction with skylight
   - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
+  - you're adding or evaluating opt-in GPU quality trials
+  - you're interpreting or changing debug draw submission counters
 ---
 
 # Deadvox graphics
@@ -51,10 +53,14 @@ Debug overrides remain separate from preferences, and unrelated look changes mus
 player or mod values into the URL. See `src/ui/graphicsOptions.ts`, `renderGraphicsOptions`,
 `src/game/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
 
+## Performance diagnostics
+
+Debug-only whole-frame CPU submission counters distinguish batching growth from drawing-buffer pixel load alongside frame-time percentiles. Repeated geometry submissions count again; these are not unique geometry counts or GPU timings. GPU cost requires asynchronous timing probes on real hardware. See `src/render/drawCounters.ts`, `DrawCounters`, for frame-scoped collection; `src/debug/index.ts`, `readoutTemplate`, and `src/debug/lookDump.ts`, `lookDump`, for the readout and dump.
+
 ## Unresolved constraints
 
 - Sun-shadow rendering and flashlight falloff rely on three.js internals; upgrades must fail loudly until these hooks have a supported replacement.
-- Wide occlusion is tuned by eye on limited indoor scenes. Revisit its strength when Slice 4 skylight overlaps with it.
+- Wide occlusion is tuned by eye on limited indoor scenes. Revisit its strength when Slice 4a skylight overlaps with it.
 - Dawn/dusk tone transitions and weathering profiles need review on a real GPU.
 - Debug-only look controls must move before their reserved gameplay inputs are bound.
 - Shader warm-up gaps remain for model materials and the no-post-processing path.

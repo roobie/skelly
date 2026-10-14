@@ -34,7 +34,7 @@ Use the playtest questions in [EPIC.md](EPIC.md), together with Slice 2's questi
 - Do weapon attachments and firearm handling make ammunition choices clear before a shot is fired?
 - Can players tell which available treatment applies to a wound and its infection stage?
 
-The end-of-slice playtest runs before Slice 4 on the authored map in [#181](https://github.com/roobie/skelly/issues/181). Share the Round 1 landing page at `site/deadvox/playtest/round1/` with at least three people, including someone new to both CDDA and DayZ; testers use its play link to enter the map and play independently until they want to stop. The task is authored by `site/playtest.jsonnet`, `en.task`. Use any metrics and feedback they choose to share to assess inventory time, pocket choices, reactions to unseen sounds and interruptions, where players got to, and what felt annoying or delightful. See `EPIC.md`, "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md).
+The end-of-slice playtest runs before Slice 4a on the authored map in [#181](https://github.com/roobie/skelly/issues/181). Share the Round 1 landing page at `site/deadvox/playtest/round1/` with at least three people, including someone new to both CDDA and DayZ; testers use its play link to enter the map and play independently until they want to stop. The task is authored by `site/playtest.jsonnet`, `en.task`. Use any metrics and feedback they choose to share to assess inventory time, pocket choices, reactions to unseen sounds and interruptions, where players got to, and what felt annoying or delightful. See `EPIC.md`, "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md).
 
 ## Scope
 
@@ -384,7 +384,7 @@ BR's grounded prone form and perception-directed gaze make the crawler's shape a
 > 4. Gunshots: does a gunshot carry far enough to pull background zombies, and hordes, toward you? That would make firing a real decision.
 > yes, it's loud and brings in enemies from far
 
-**In:** Background zombies beeline in big, cheap steps; no shared flow fields. Keep the targets in `CHALLENGES.md`, "Many zombies in a browser", as an initial target while measuring whether substantially more are possible. Add the first group drifting through the hamlet, attracted by loud noise such as gunshots or roaming at night. Gunshots carry far and pull background zombies and hordes toward the source. Abstract region-map hordes remain Slice 4.
+**In:** Background zombies beeline in big, cheap steps; no shared flow fields. Keep the targets in `CHALLENGES.md`, "Many zombies in a browser", as an initial target while measuring whether substantially more are possible. Add the first group drifting through the hamlet, attracted by loud noise such as gunshots or roaming at night. Gunshots carry far and pull background zombies and hordes toward the source. Abstract region-map hordes remain Slice 4b.
 **Saves:** Save the background actors/group state needed to continue movement, target and noise response after load. Keep active and background ownership explicit and fingerprinted; do not serialize a derived navigation field.
 **Tests:** repeated simulation steps move background actors toward the chosen target without traversing blocked geometry; gunshot attention reaches distant background actors; group behavior stays deterministic over save/load; measure the active/background workload and frame cost without asserting a drifting actor count in a unit test.
 **Done when:** the first horde responds to noise, background actors beeline with bounded cheap work, and the measured workload is recorded against the project performance gate.
@@ -415,7 +415,7 @@ Replay retains generated-column transitions because readiness determines whether
 
 ### 3.11 Authored playtest map and playtest
 
-The end-of-slice playtest uses the authored progression in [#181](https://github.com/roobie/skelly/issues/181). Testers open the frozen round's landing page and use its play link to enter the map; the Pages landing directs them there. They can explore for as long as they like; the game is not a facilitated or shadowed session. The localized task is authored in `site/playtest.jsonnet`, `en.task` and `sv.task`. See `EPIC.md`, "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md) for the self-serve format, frozen round publication and how tester feedback and metrics inform Slice 4.
+The end-of-slice playtest uses the authored progression in [#181](https://github.com/roobie/skelly/issues/181). Testers open the frozen round's landing page and use its play link to enter the map; the Pages landing directs them there. They can explore for as long as they like; the game is not a facilitated or shadowed session. The localized task is authored in `site/playtest.jsonnet`, `en.task` and `sv.task`. See `EPIC.md`, "Playtest plan", and [docs/playtest-run.md](docs/playtest-run.md) for the self-serve format, frozen round publication and how tester feedback and metrics inform Slice 4a.
 
 **In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. The medical site's virus-sampling research is lore, not a player mission. Its wards stay dangerous because the sick brought there remain among the beds; crawler markers make that threat part of the care setting rather than a scripted encounter. Ordinary shamblers also occupy the FOB, medical site, workshop and cabins, inside and outside where clear routes and the finale remain legible. See `src/content/base/templates-medical.json`, `medical_hall`, and `maps/playtest.tmj`, its spawn layer.
 
@@ -433,7 +433,7 @@ The yard scrap pile is the only source of one improvised-suppressor input; fixed
 
 **Saves:** The authored layout, fixed placements and seeded loot regenerate from the site and seed. Dynamic changes and looted items use the existing world/inventory save; no separate map-progress state is added.
 **Tests:** authored content validates; site generation is deterministic across chunk order; required progression and routes remain traversable; fixed key loot and seeded filler follow their separate ownership without pinning exact coordinates or complete loot lists. Metrics remain outside game state.
-**Done when:** the approved map supports the self-serve end-of-slice playtest, its progression and nights are playable, the checklist links its evidence, and the playtest findings are recorded before Slice 4 planning.
+**Done when:** the approved map supports the self-serve end-of-slice playtest, its progression and nights are playable, the checklist links its evidence, and the playtest findings are recorded before Slice 4a planning.
 **First look / BR approval:** the completed authored map, including the workshop/medical/military progression and night locations.
 
 #### Loose-item pickup
@@ -480,6 +480,6 @@ Only questions BR left open; don't infer answers from implementation or old prop
 - Milestones 3.0–3.11 are merged and deployed with CI green, including their required type, unit, content and browser checks.
 - Every new persistent simulation state is owned, saved, fingerprinted and covered by a current-build round trip. The default test run remains within the applicable budget or has a coverage-based explanation and a plan to keep it fast.
 - The noise-to-positional-sound contract holds; recordings replay deterministically; performance work is measured against the approved workloads.
-- The checklist issue links evidence and carried-forward work; the Pages link reaches at least three testers, including someone new to both CDDA and DayZ, and findings from their feedback and any metrics they choose to share are recorded before Slice 4 planning.
+- The checklist issue links evidence and carried-forward work; the Pages link reaches at least three testers, including someone new to both CDDA and DayZ, and findings from their feedback and any metrics they choose to share are recorded before Slice 4a planning.
 - BR has approved the required first looks for ready/ADS, firearm gore/impacts, optics, new zombie types, the horde and the authored map.
 - A retrospective records what changed and what carries forward.

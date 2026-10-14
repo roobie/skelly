@@ -119,7 +119,7 @@ describe('debug action dispatch', () => {
       ),
     ]);
     expect([...catalogued].sort()).toEqual(
-      [...LOOK_PARAMS, ...GRAPHICS_KEYS.map((key) => GRAPHICS_KNOBS[key].url), 'cam'].sort(),
+      [...LOOK_PARAMS, ...GRAPHICS_KEYS.map((key) => GRAPHICS_KNOBS[key].url), 'cam', 'interactionray'].sort(),
     );
   });
 });
@@ -234,6 +234,7 @@ const makeActions = (
   let frozen = false;
   let gameFrozen = false;
   let laserEnabled = true;
+  let interactionRayEnabled = false;
   const spawnCounts: number[] = [];
   const spawnRequests: { typeId: string; count: number }[] = [];
   const replayCalls: string[] = [];
@@ -274,6 +275,12 @@ const makeActions = (
     },
     chooseInputReplay: () => {
       replayCalls.push('import');
+    },
+    interactionRay: {
+      enabled: () => interactionRayEnabled,
+      toggle: () => {
+        interactionRayEnabled = !interactionRayEnabled;
+      },
     },
     impactLaser: {
       enabled: () => laserEnabled,

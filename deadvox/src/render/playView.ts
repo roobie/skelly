@@ -23,6 +23,7 @@ import { PLAYER } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CaseEffects } from './caseEffects.ts';
+import { DrawCounters } from './drawCounters.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
@@ -130,6 +131,7 @@ export const createPlayView = (
   page: Pick<EventTarget, 'addEventListener'> = globalThis,
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
+  const drawCounters = config.debug && renderer ? new DrawCounters(renderer) : undefined;
   const dayCycle = dayCycleFor(registry.dayCycle);
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
@@ -248,6 +250,9 @@ export const createPlayView = (
 
   return {
     models,
+    get drawSubmission() {
+      return drawCounters?.snapshot ?? null;
+    },
     piles,
     caseEffects,
     gore,
@@ -362,14 +367,19 @@ export const createPlayView = (
         return null;
       }
       const start = performance.now();
-      mood.render(
-        () => {
-          if (!thirdPerson) {
-            held.render(renderer, camera, engine.sky);
-          }
-        },
-        thirdPerson ? undefined : held.opticLensFrame,
-      );
+      drawCounters?.begin();
+      try {
+        mood.render(
+          () => {
+            if (!thirdPerson) {
+              held.render(renderer, camera, engine.sky);
+            }
+          },
+          thirdPerson ? undefined : held.opticLensFrame,
+        );
+      } finally {
+        drawCounters?.end();
+      }
       return performance.now() - start;
     },
     warmUp: () => {
