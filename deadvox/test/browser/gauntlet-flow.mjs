@@ -85,7 +85,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     await page.waitForFunction(
       () => globalThis.gauntletWitness?.input.locked && !globalThis.gauntletWitness.session.sim.paused,
     );
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const w = globalThis.gauntletWitness;
       const { engine } = w;
       const overlay = document.querySelector('#debug-kit-overlay');
