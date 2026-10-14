@@ -467,10 +467,12 @@ const PAW_BONES = LEGS.map((leg) => leg.paw);
 export interface DogStance {
   readonly limp?: number;
   readonly headTilt?: number;
+  /** Bones hidden by accumulated cuts; grounding ignores them so a severed limb is not an invisible support. */
+  readonly severed?: ReadonlySet<string> | undefined;
 }
 
-/** The rest stance: a low, uneven four-paw stand, head hanging. Regrounded against every bone so the
- * paws define the contact and nothing else dips below them. */
+/** The rest stance: a low, uneven four-paw stand, head hanging. Regrounded against the surviving bones so
+ * the paws define the contact and nothing else dips below them. */
 export const dogPose = (realized: Realized, stance: DogStance = {}): Pose => {
   const limp = stance.limp ?? 0;
   const headTilt = stance.headTilt ?? 0;
@@ -488,20 +490,19 @@ export const dogPose = (realized: Realized, stance: DogStance = {}): Pose => {
     'foreLower.L': rotX(-6 * limpScale),
     'hindLower.L': rotX(8 * limpScale),
   };
-  return groundDogPose(realized, { root: [0, 0, 0], rotations });
+  return groundDogPose(realized, { root: [0, 0, 0], rotations }, stance.severed);
 };
 
 const smoothstep = (value: number): number => value * value * (3 - 2 * value);
 
 /** Sets root.y so the lowest voxel surface of the posed body sits on the ground (y = 0). Any pose whose
- * planted paws are the lowest points keeps them exactly on the ground; a swing paw that lifts does not. */
-const groundDogPose = (realized: Realized, pose: Pose): Pose => {
+ * planted paws are the lowest points keeps them exactly on the ground; a swing paw that lifts does not.
+ * Severed bones are excluded, so the body rests or falls on its surviving geometry rather than hovering on
+ * a hidden leg. */
+const groundDogPose = (realized: Realized, pose: Pose, severed?: ReadonlySet<string>): Pose => {
   const probe: Pose = { root: [pose.root[0], 0, pose.root[2]], rotations: pose.rotations };
-  const surfaces = posedVoxelSurfaceBoundsForBones(
-    realized,
-    probe,
-    realized.body.bones.map((bone) => bone.id),
-  );
+  const surviving = realized.body.bones.map((bone) => bone.id).filter((id) => !(severed?.has(id) ?? false));
+  const surfaces = posedVoxelSurfaceBoundsForBones(realized, probe, surviving);
   const lowest = Math.min(...surfaces.values());
   return { ...pose, root: [pose.root[0], -lowest, pose.root[2]] };
 };
@@ -529,7 +530,9 @@ export const dogGaitPose = (realized: Realized, phase: number, speed: number, st
     rotations[bone] = mulMM(rotations[bone] ?? IDENTITY_M, delta);
   };
   for (const leg of LEGS) {
-    const swinging = (leg.side === 'L') === (half === 0);
+    // Opposite-corner diagonal: fore-left with hind-right, fore-right with hind-left.
+    const diagonal = leg.front === (leg.side === 'L');
+    const swinging = diagonal === (half === 0);
     // Limp only on the left side: that diagonal lags and folds less.
     const sideScale = leg.side === 'L' ? 1 - 0.5 * limpScale : 1;
     if (swinging) {
@@ -544,14 +547,21 @@ export const dogGaitPose = (realized: Realized, phase: number, speed: number, st
   addRotation('spine', rotZ(3 * Math.sin(cycle) * (1 + limpScale)));
   addRotation('neck', rotX(4 * reach));
   addRotation('head', rotX(5 * reach));
-  return groundDogPose(realized, { root: [sway, base.root[1], 0], rotations });
+  return groundDogPose(realized, { root: [sway, base.root[1], 0], rotations }, stance.severed);
 };
 
-/** A short brace/recoil layered over the current pose and re-grounded against the paw supports. */
-export const dogHitPose = (realized: Realized, base: Pose, time: number, side = 0): Pose => {
+/** How a flinch lands: which side it mirrors to, and the cuts whose bones must not bear its regrounding. */
+export interface DogHitOptions {
+  readonly side?: number;
+  readonly severed?: ReadonlySet<string>;
+}
+
+/** A short brace/recoil layered over the current pose and re-grounded against the surviving supports. */
+export const dogHitPose = (realized: Realized, base: Pose, time: number, options: DogHitOptions = {}): Pose => {
   if (!(time > 0) || time >= HIT_FLINCH.duration) {
     return base;
   }
+  const side = options.side ?? 0;
   const progress = time / HIT_FLINCH.duration;
   const intensity = progress < 0.2 ? smoothstep(progress / 0.2) : 1 - smoothstep((progress - 0.2) / 0.8);
   const rotations: Record<string, Mat3> = { ...base.rotations };
@@ -564,7 +574,7 @@ export const dogHitPose = (realized: Realized, base: Pose, time: number, side = 
   addRotation('jaw', rotX(10 * intensity));
   addRotation('foreUpper.L', rotZ(-3 * intensity * side));
   addRotation('foreUpper.R', rotZ(3 * intensity * side));
-  return groundDogPose(realized, { ...base, rotations });
+  return groundDogPose(realized, { ...base, rotations }, options.severed);
 };
 
 /** Exported for tests: the paw bones that bear the ground contact. */

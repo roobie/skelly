@@ -167,7 +167,11 @@ let gridZ = 0;
 // same spirit as idle.ts's own seed-based phase offset for a crowd of actors sharing one body.
 let idleTime = 0;
 const currentStance = (): IdleStance => idleStanceSelect.value as IdleStance;
-const dogStance = (genome: Genome) => ({ limp: genome.params.limp ?? 0, headTilt: genome.params.headTilt ?? 0 });
+const dogStance = (genome: Genome, severed?: ReadonlySet<string>) => ({
+  limp: genome.params.limp ?? 0,
+  headTilt: genome.params.headTilt ?? 0,
+  severed,
+});
 const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
 let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
 let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
@@ -184,6 +188,9 @@ let deathDirection: 1 | -1 = 1;
  * it, for free). Reset on Heal or a fresh load. Not yet the crowd texture's mask (that's a deadvox/renderer
  * concern) — the main viewer just hides bone meshes directly (see scene.ts's setSeveredBones). */
 let severedCuts: string[] = [];
+/** The bones hidden by `severedCuts`, recomputed whenever a cut changes; the dog's grounding needs it so
+ * severed limbs stop bearing the body. */
+let severedBones: ReadonlySet<string> = new Set();
 
 const playAttack = (): void => {
   attackTime = 0; // (re)starts even if one is already playing
@@ -198,7 +205,8 @@ const applySeveredBones = (): void => {
   if (!current) {
     return;
   }
-  current.actor.setSeveredBones(severedBoneSet(current.realized.body.bones, severedCuts));
+  severedBones = severedBoneSet(current.realized.body.bones, severedCuts);
+  current.actor.setSeveredBones(severedBones);
 };
 
 const sever = (): void => {
@@ -224,7 +232,7 @@ const playDeath = (): void => {
   if (current.template.bodyPlan !== 'humanoid') {
     deathBasePose =
       current.template.bodyPlan === 'dog'
-        ? dogPose(current.realized, dogStance(current.genome))
+        ? dogPose(current.realized, dogStance(current.genome, severedBones))
         : crawlerPose(current.realized);
     deathDirection = dieBackward.checked ? -1 : 1;
     deathTime = 0;
@@ -393,6 +401,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     if (template.bodyPlan === 'humanoid') {
       initialPose = idlePose(walkActor, currentStance(), idleTime);
     } else if (template.bodyPlan === 'dog') {
+      // A fresh load starts whole; `severedCuts` is cleared below, so this pose is deliberately intact.
       initialPose = dogPose(realized, dogStance(genome));
     } else {
       initialPose = crawlerPose(realized);
@@ -688,8 +697,11 @@ const applyDogFrame = (loaded: Loaded, dt: number): void => {
   const speed = walkOn.checked ? Number(speedInput.value) : 0;
   advanceWalk(dt, walkOn.checked, speed);
   advanceHit(dt);
-  const basePose = dogGaitPose(loaded.realized, dogPhase, speed, dogStance(loaded.genome));
-  const pose = hitTime === undefined ? basePose : dogHitPose(loaded.realized, basePose, hitTime, hitSide);
+  const basePose = dogGaitPose(loaded.realized, dogPhase, speed, dogStance(loaded.genome, severedBones));
+  const pose =
+    hitTime === undefined
+      ? basePose
+      : dogHitPose(loaded.realized, basePose, hitTime, { side: hitSide, severed: severedBones });
   applyLookAt(loaded, pose, dt);
 };
 

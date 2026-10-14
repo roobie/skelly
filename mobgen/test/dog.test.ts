@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generate, realize } from '../src/core/generate.ts';
+import { applyPoint } from '../src/core/math.ts';
+import { boneTransforms } from '../src/core/pose.ts';
 import { posedVoxelSurfaceBoundsForBones } from '../src/core/voxelBounds.ts';
 import { crowdTextureLayout, isSeveredInMask, packSeveredMask } from '../src/mob/crowd.ts';
 import { severedBoneSet } from '../src/mob/dismember.ts';
@@ -45,6 +47,18 @@ const ownerIds = (realized: ReturnType<typeof realize>): ReadonlySet<string> => 
 
 const pawSurface = (realized: ReturnType<typeof realize>, pose: ReturnType<typeof dogPose>, boneId: string): number =>
   posedVoxelSurfaceBoundsForBones(realized, pose, [boneId]).get(boneId)!;
+
+/** The lowest voxel surface among the bones a set of cuts leaves behind. */
+const survivingSurface = (
+  realized: ReturnType<typeof realize>,
+  pose: ReturnType<typeof dogPose>,
+  hidden: ReadonlySet<string>,
+): number => {
+  const survivors = realized.body.bones.map((bone) => bone.id).filter((id) => !hidden.has(id));
+  return Math.min(...posedVoxelSurfaceBoundsForBones(realized, pose, survivors).values());
+};
+
+const ALL_LEG_CUTS = ['foreUpper.L', 'foreUpper.R', 'hindUpper.L', 'hindUpper.R'] as const;
 
 describe('dog shambler', () => {
   it('is its own body plan, outside the templates Deadvox spawns', () => {
@@ -93,12 +107,38 @@ describe('dog shambler', () => {
         // At least one paw is planted on the ground at every phase.
         expect(surfaces.some((surface) => Math.abs(surface) <= tolerance)).toBe(true);
 
-        const flinch = dogHitPose(realized, gait, 0.08, 0.5);
+        const flinch = dogHitPose(realized, gait, 0.08, { side: 0.5 });
         expect(flinch.rotations.head).not.toEqual(gait.rotations.head);
         const flinchSurfaces = dogPawBones.map((paw) => pawSurface(realized, flinch, paw));
         expect(Math.min(...flinchSurfaces)).toBeGreaterThanOrEqual(-tolerance);
         expect(flinchSurfaces.some((surface) => Math.abs(surface) <= tolerance)).toBe(true);
         expect(dogHitPose(realized, gait, HIT_FLINCH.duration)).toEqual(gait);
+      }
+    }
+  });
+
+  it('walks with opposite-corner diagonal pairs, not same-side pacing', () => {
+    const realized = realizedFor(1);
+    const rest = dogPose(realized);
+    const restTransforms = boneTransforms(realized.body.bones, rest);
+    const toeZ = (transforms: ReturnType<typeof boneTransforms>, paw: string): number => {
+      const bone = realized.body.bones.find((candidate) => candidate.id === paw)!;
+      return applyPoint(transforms.get(paw)!, bone.tail)[2];
+    };
+    const motion = realized.voxels.size / 2; // a voxel of slack, so the sign is what matters
+
+    // At each half's reach peak the documented diagonal swings forward (dog faces -Z) while the other
+    // pair plants; a static pose would leave every displacement zero.
+    for (const [phase, swinging, planted] of [
+      [Math.PI / 2, ['forePaw.L', 'hindPaw.R'], ['forePaw.R', 'hindPaw.L']],
+      [(3 * Math.PI) / 2, ['forePaw.R', 'hindPaw.L'], ['forePaw.L', 'hindPaw.R']],
+    ] as const) {
+      const gaitTransforms = boneTransforms(realized.body.bones, dogGaitPose(realized, phase, 1));
+      for (const paw of swinging) {
+        expect(toeZ(gaitTransforms, paw) - toeZ(restTransforms, paw)).toBeLessThan(-motion);
+      }
+      for (const paw of planted) {
+        expect(toeZ(gaitTransforms, paw) - toeZ(restTransforms, paw)).toBeGreaterThan(motion);
       }
     }
   });
@@ -118,18 +158,33 @@ describe('dog shambler', () => {
     }
   });
 
-  it('stands on its remaining contacts after one leg is severed', () => {
+  it('grounds the production pose on surviving geometry when legs are severed', () => {
     const realized = realizedFor(1);
-    const rest = dogPose(realized);
     const tolerance = realized.voxels.size;
-    for (const cut of ['foreUpper.L', 'foreUpper.R', 'hindUpper.L', 'hindUpper.R']) {
+
+    // One leg gone: the surviving three paws at least keep the body planted and nothing dips below ground.
+    for (const cut of ALL_LEG_CUTS) {
       const hidden = severedBoneSet(realized.body.bones, [cut]);
-      expect(hidden.has(cut)).toBe(true);
-      const remaining = dogPawBones.filter((paw) => !hidden.has(paw));
-      expect(remaining.length).toBe(3);
-      for (const paw of remaining) {
-        expect(Math.abs(pawSurface(realized, rest, paw))).toBeLessThanOrEqual(tolerance);
+      const remainingPaws = dogPawBones.filter((paw) => !hidden.has(paw));
+      expect(remainingPaws.length).toBe(3);
+      for (const phase of [Math.PI / 2, Math.PI + 0.5]) {
+        const pose = dogGaitPose(realized, phase, 1, { severed: hidden });
+        const surfaces = remainingPaws.map((paw) => pawSurface(realized, pose, paw));
+        expect(Math.min(...surfaces)).toBeGreaterThanOrEqual(-tolerance);
+        expect(surfaces.some((surface) => Math.abs(surface) <= tolerance)).toBe(true);
+        expect(Math.abs(survivingSurface(realized, pose, hidden))).toBeLessThanOrEqual(tolerance);
       }
+    }
+
+    // All four paws gone: grounding must ignore the hidden legs and rest the body on its lowest surviving
+    // geometry, rather than hovering on an invisible paw.
+    const allLegsHidden = severedBoneSet(realized.body.bones, ALL_LEG_CUTS);
+    for (const paw of dogPawBones) {
+      expect(allLegsHidden.has(paw)).toBe(true);
+    }
+    for (const phase of [0.5, Math.PI + 0.5]) {
+      const pose = dogGaitPose(realized, phase, 1, { severed: allLegsHidden });
+      expect(Math.abs(survivingSurface(realized, pose, allLegsHidden))).toBeLessThanOrEqual(tolerance);
     }
   });
 
