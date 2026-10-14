@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
@@ -37,6 +37,7 @@ const makeRuntime = ({
   yaw = 0,
   seed = 73,
   restore = undefined as Readonly<SaveSnapshot> | undefined,
+  content = registry,
 } = {}) => {
   const scale = makeScale(0.5);
   let intent: MoveIntent = { ...IDLE };
@@ -45,7 +46,7 @@ const makeRuntime = ({
   const footfalls: string[] = [];
   const refusals: string[] = [];
   const session = createSession({
-    registry,
+    registry: content,
     ...(restore ? { restore } : {}),
     world: new World(),
     isSolid,
@@ -136,6 +137,70 @@ const downShambler = (session: Session, position: Vec3): { id: EntityId; zombie:
   }
   return { id, zombie };
 };
+
+describe('attacker modifiers', () => {
+  it('applies attacker damage modifiers once at delivery so a stronger hit opens a deeper wound', () => {
+    const tuning = registry.body.get('player')!;
+    const tier = tuning.bleeding.tiers[0]!;
+    const content = {
+      ...registry,
+      body: new Map([
+        [
+          'player',
+          {
+            ...tuning,
+            bleeding: {
+              ...tuning.bleeding,
+              tiers: [0, 10].map((minDamage, index) => ({
+                ...tier,
+                id: `fixture-tier-${index}`,
+                minDamage,
+                regionFactor: {},
+                chance: { blunt: 1, cut: 1, pierce: 1 },
+              })),
+            },
+          },
+        ],
+      ]),
+    };
+    const move: ZombieDef['attack']['moves'][number] = {
+      id: 'fixture-hit',
+      weight: 1,
+      damage: 4,
+      damageKind: 'cut',
+      hitRegions: [{ region: 'leftArm', weight: 1 }],
+    };
+    const type: ZombieDef = {
+      ...shambler,
+      attack: { ...shambler.attack, moves: [move] },
+    };
+    const strike = (boost: boolean) => {
+      const runtime = makeRuntime({ content });
+      const { session } = runtime;
+      const id = session.zombies.add(type, [1.2, 1, 0], [-1, 0, 0]);
+      const zombie = session.zombies.store.get(id)!;
+      expect(zombie.modifiers).toEqual([]);
+      if (boost) {
+        zombie.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4 });
+      }
+      const hit = vi.spyOn(session.sim, 'hit');
+      const maxFrames = Math.ceil((type.attack.windupSimSeconds + 2) * 60);
+      for (let frames = 0; frames < maxFrames && hit.mock.calls.length === 0; frames++) {
+        runtime.advance(1);
+      }
+      expect(hit).toHaveBeenCalledTimes(1);
+      expect(hit.mock.calls[0]![2]).toBe('leftArm');
+      expect(hit.mock.calls[0]![3]).toEqual({ kind: move.damageKind });
+      return { damage: hit.mock.calls[0]![0], bleeding: session.sim.body.bleedingTier('leftArm') };
+    };
+    const plain = strike(false);
+    const boosted = strike(true);
+    expect(plain.damage).toBe(move.damage);
+    expect(boosted.damage).toBe(move.damage * 2 + 4);
+    expect(plain.bleeding).toBe(content.body.get('player')!.bleeding.tiers[0]);
+    expect(boosted.bleeding).toBe(content.body.get('player')!.bleeding.tiers[1]);
+  });
+});
 
 describe('landing injuries', () => {
   const scale = makeScale(0.5);
