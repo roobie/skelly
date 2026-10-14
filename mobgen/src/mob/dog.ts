@@ -715,7 +715,8 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
   // One support height the planted legs share: the higher of the pair's rigid arcs at its current sweep,
   // so both plant flat instead of one riding its own arc above the other. A swing leg solves to that same
   // height plus its lift, so it leaves and rejoins the ground exactly as the pair swaps. The arc is
-  // measured through the parent's own rotation, in the world frame the solve targets.  const supportY = Math.max(...phase.filter((step) => step.stance).map((step) => step.arcWorld));
+  // measured through the parent's own rotation, in the world frame the solve targets.
+  const supportY = Math.max(...phase.filter((step) => step.stance).map((step) => step.arcWorld));
   const rotations: Record<string, Mat3> = { ...base.rotations };
   for (const { leg, offset, lift, anchor } of phase) {
     // Rotations act in rest-pose world axes while the solve lives in the parent's frame, so rotate the
