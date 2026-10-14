@@ -2,12 +2,12 @@ import { BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, type 
 import type { Vec3 } from '../core/coords.ts';
 
 export type DebugPrimitive =
-  | { kind: 'line'; start: Vec3; end: Vec3; color: number; expiresAt: number }
-  | { kind: 'box'; min: Vec3; max: Vec3; color: number; expiresAt: number }
-  | { kind: 'point'; at: Vec3; size: number; color: number; expiresAt: number };
+  | { kind: 'line'; start: Vec3; end: Vec3; color: number; expiresAtRealMs: number }
+  | { kind: 'box'; min: Vec3; max: Vec3; color: number; expiresAtRealMs: number }
+  | { kind: 'point'; at: Vec3; size: number; color: number; expiresAtRealMs: number };
 
 interface DebugDrawOptions {
-  durationMs?: number;
+  durationRealMs?: number;
   color?: number;
 }
 
@@ -62,18 +62,18 @@ export class TransientDebugDraw {
   }
 
   line(start: Vec3, end: Vec3, nowMs: number, options: DebugDrawOptions = {}): void {
-    const { durationMs = 0, color = 0x66_dd_ff } = options;
-    this.push({ kind: 'line', start, end, color, expiresAt: nowMs + Math.max(1, durationMs) });
+    const { durationRealMs = 0, color = 0x66_dd_ff } = options;
+    this.push({ kind: 'line', start, end, color, expiresAtRealMs: nowMs + Math.max(1, durationRealMs) });
   }
 
   box(min: Vec3, max: Vec3, nowMs: number, options: DebugDrawOptions = {}): void {
-    const { durationMs = 0, color = 0x66_dd_ff } = options;
-    this.push({ kind: 'box', min, max, color, expiresAt: nowMs + Math.max(1, durationMs) });
+    const { durationRealMs = 0, color = 0x66_dd_ff } = options;
+    this.push({ kind: 'box', min, max, color, expiresAtRealMs: nowMs + Math.max(1, durationRealMs) });
   }
 
   point(at: Vec3, nowMs: number, options: DebugDrawOptions & { size?: number } = {}): void {
-    const { durationMs = 0, color = 0x66_dd_ff, size = 0.08 } = options;
-    this.push({ kind: 'point', at, size, color, expiresAt: nowMs + Math.max(1, durationMs) });
+    const { durationRealMs = 0, color = 0x66_dd_ff, size = 0.08 } = options;
+    this.push({ kind: 'point', at, size, color, expiresAtRealMs: nowMs + Math.max(1, durationRealMs) });
   }
 
   /** Expire entries and rewrite the existing buffer before the scene render; no frame-time allocation. */
@@ -83,7 +83,7 @@ export class TransientDebugDraw {
     }
     let live = 0;
     for (const entry of this.entries) {
-      if (entry.expiresAt > nowMs) {
+      if (entry.expiresAtRealMs > nowMs) {
         this.entries[live] = entry;
         live += 1;
       }
