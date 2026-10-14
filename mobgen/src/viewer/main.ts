@@ -20,10 +20,12 @@ import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
 import type { Genome, Template } from '../core/template.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
-import { VIEWER_TEMPLATES as TEMPLATES } from '../mob/amalgamTemplate.ts';
+import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
+import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';
+import { dogTemplate } from '../mob/dogTemplate.ts';
 import {
   advanceClock,
   bodyRestExtents,
@@ -42,6 +44,10 @@ import { LOOK_AT_REST, type LookAtState, lookAtPose } from '../mob/lookAt.ts';
 import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
+
+// The viewer shows the dog shambler even though it is not in TEMPLATES (so Deadvox does not spawn it
+// yet); amalgamTemplate.ts stays Deadvox-reachable and does not import it.
+const TEMPLATES: readonly Template[] = [...VIEWER_TEMPLATES, dogTemplate];
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
@@ -154,12 +160,14 @@ interface Loaded {
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
 let crawlerPhase = 0;
+let dogPhase = 0;
 let gridZ = 0;
 // Runs unconditionally (walking, standing, attacking...) so breathing/sway never stalls; only its phase
 // matters, so it's never reset on load/death — a fresh actor just joins the motion already in progress,
 // same spirit as idle.ts's own seed-based phase offset for a crowd of actors sharing one body.
 let idleTime = 0;
 const currentStance = (): IdleStance => idleStanceSelect.value as IdleStance;
+const dogStance = (genome: Genome) => ({ limp: genome.params.limp ?? 0, headTilt: genome.params.headTilt ?? 0 });
 const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
 let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
 let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
@@ -213,8 +221,11 @@ const playDeath = (): void => {
     return;
   }
   const actor = current.walkActor;
-  if (current.genome.template === 'crawler') {
-    deathBasePose = crawlerPose(current.realized);
+  if (current.template.bodyPlan !== 'humanoid') {
+    deathBasePose =
+      current.template.bodyPlan === 'dog'
+        ? dogPose(current.realized, dogStance(current.genome))
+        : crawlerPose(current.realized);
     deathDirection = dieBackward.checked ? -1 : 1;
     deathTime = 0;
     return;
@@ -366,7 +377,8 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   } else {
     const extents = footRestExtents(realized.body.bones, realized.voxels);
     const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-    const legGeometry = template.bodyPlan === 'crawler' ? undefined : legGeometryFor(realized.body.bones, extents, 'L');
+    const legGeometry =
+      template.bodyPlan === 'humanoid' ? legGeometryFor(realized.body.bones, extents, 'L') : undefined;
     const params = genome.params as HumanoidParams;
     const walkActor: WalkActor = {
       bones: realized.body.bones,
@@ -377,11 +389,19 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     };
     // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
     // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
-    actor.applyPose(
-      template.bodyPlan === 'crawler' ? crawlerPose(realized) : idlePose(walkActor, currentStance(), idleTime),
-    );
+    let initialPose: Pose;
+    if (template.bodyPlan === 'humanoid') {
+      initialPose = idlePose(walkActor, currentStance(), idleTime);
+    } else if (template.bodyPlan === 'dog') {
+      initialPose = dogPose(realized, dogStance(genome));
+    } else {
+      initialPose = crawlerPose(realized);
+    }
+    actor.applyPose(initialPose);
     loaded = { ...loaded, params, extents, bodyExtents, legGeometry, walkActor };
-    severPart.replaceChildren(...SEVERABLE_PARTS.map((part) => new Option(part, part)));
+    severPart.replaceChildren(
+      ...(template.bodyPlan === 'dog' ? DOG_SEVERABLE_PARTS : SEVERABLE_PARTS).map((part) => new Option(part, part)),
+    );
   }
   walkFieldset.hidden = staticOnly;
   attackFieldset.hidden = staticOnly;
@@ -389,6 +409,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   current = loaded;
   clock = INITIAL_CLOCK;
   crawlerPhase = 0;
+  dogPhase = 0;
   gridZ = 0;
   attackTime = undefined;
   attackCooldown = 0;
@@ -589,6 +610,12 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     groundGroup.position.z = gridZ;
     return;
   }
+  if (current.template.bodyPlan === 'dog') {
+    dogPhase += speed * dt * Math.PI;
+    gridZ = (gridZ + speed * dt) % 0.5;
+    groundGroup.position.z = gridZ;
+    return;
+  }
   if (!(current.walkActor && current.params && current.legGeometry)) {
     return;
   }
@@ -648,18 +675,34 @@ const applyLookAt = (loaded: Loaded, pose: Pose, dt: number): void => {
 
 /** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
  * standing), optionally attacked, optionally flinched on top. */
+const applyCrawlerFrame = (loaded: Loaded, dt: number): void => {
+  const speed = walkOn.checked ? Number(speedInput.value) : 0;
+  advanceWalk(dt, walkOn.checked, speed);
+  advanceHit(dt);
+  const basePose = crawlerGaitPose(loaded.realized, crawlerPhase, speed);
+  const pose = hitTime === undefined ? basePose : crawlerHitPose(loaded.realized, basePose, hitTime, hitSide);
+  applyLookAt(loaded, pose, dt);
+};
+
+const applyDogFrame = (loaded: Loaded, dt: number): void => {
+  const speed = walkOn.checked ? Number(speedInput.value) : 0;
+  advanceWalk(dt, walkOn.checked, speed);
+  advanceHit(dt);
+  const basePose = dogGaitPose(loaded.realized, dogPhase, speed, dogStance(loaded.genome));
+  const pose = hitTime === undefined ? basePose : dogHitPose(loaded.realized, basePose, hitTime, hitSide);
+  applyLookAt(loaded, pose, dt);
+};
+
 const applyLiveFrame = (loaded: Loaded, dt: number): void => {
   if (loaded.template.bodyPlan === 'amalgam') {
     return;
   }
   if (loaded.template.bodyPlan === 'crawler') {
-    const walking = walkOn.checked;
-    const speed = walking ? Number(speedInput.value) : 0;
-    advanceWalk(dt, walking, speed);
-    advanceHit(dt);
-    const basePose = crawlerGaitPose(loaded.realized, crawlerPhase, speed);
-    const pose = hitTime === undefined ? basePose : crawlerHitPose(loaded.realized, basePose, hitTime, hitSide);
-    applyLookAt(loaded, pose, dt);
+    applyCrawlerFrame(loaded, dt);
+    return;
+  }
+  if (loaded.template.bodyPlan === 'dog') {
+    applyDogFrame(loaded, dt);
     return;
   }
   if (!loaded.walkActor) {

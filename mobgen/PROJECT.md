@@ -2,6 +2,7 @@
 read_if:
   - "you're changing mobgen's core, authoring or body-plan boundaries"
   - "you're changing the crawler's body-plan or gait constraints"
+  - "you're changing the dog shambler's body-plan or gait constraints"
   - "you're reviewing the amalgam's visual quality pass in #378"
   - "you're changing the Mobgen/Deadvox boundary or the amalgam movement-cost trade-off in #574"
   - "you change the crowd gore-mask encoding"
@@ -24,6 +25,8 @@ Mobgen keeps body construction independent of feasibility rules and rendering so
 ## Body-plan constraints
 
 The crawler is a distinct prone creature, not a humanoid gait variant: its arm-drag silhouette and trailing leg stumps define its identity. Other proposed forms need their own body plans. See `src/mob/crawler.ts`, `crawlerPose`, `crawlerGaitPose`, `crawlerHitPose`, and `test/crawler.test.ts`.
+
+The dog shambler is a quadruped: four paws, a hanging head and a limping diagonal gait define it, so it is its own body plan rather than a crouched humanoid. The four paws are the declared supports, and the template stays outside `TEMPLATES` so Deadvox does not spawn it until a Deadvox feature opts in. See `src/mob/dog.ts`, `buildDog`, `dogPose`, `dogGaitPose`, `dogHitPose`, `src/mob/dogTemplate.ts`, `dogTemplate`, and `test/dog.test.ts`.
 
 The playtest apex enemy must read as one grotesque fusion, not several unrelated actors. Complete shambler members remain severable subtrees beneath a non-severable shared core; members may hang or turn in any orientation, while support comes from actual ground contacts. The core's spreading lower mass should read as flesh rather than a platform or extra limbs. Its member count is a visual choice, not a budget ceiling. See `src/mob/amalgam.ts`, `amalgamManifest`, `src/core/generate.ts`, `resolveSupportBones`, and `test/amalgam.test.ts`.
 
