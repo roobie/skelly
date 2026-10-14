@@ -30,13 +30,16 @@ const knownBody = (template: CompiledTemplate, [x, feet, z]: Vec3, doors: Set<nu
   return true;
 };
 
-/** Every compiled alternative of every city-pool building, one per way of choosing each slot. */
-const cityAlternatives = function* () {
+/**
+ * Every compiled alternative of every city-pool building, one per way of choosing each slot.
+ * Routes do not depend on the style, so only the style test asks for every style of a building.
+ */
+const cityAlternatives = function* (everyStyle = false) {
   const { registry } = BUNDLED_CONTENT;
   const rows = new Map(
     [...registry.scenarios.values()]
       .flatMap((scenario) => scenario.city.templates)
-      .map(({ ref }) => [`${ref.id}@${ref.style ?? ''}`, ref] as const),
+      .map(({ ref }) => [everyStyle ? `${ref.id}@${ref.style ?? ''}` : ref.id, ref] as const),
   );
   const buildings = [...rows.values()].flatMap(({ id, style }) => {
     const assembly = registry.mapAssemblies.get(id);
@@ -127,7 +130,7 @@ it('a pool row styles every facade piece of its building, whichever way each slo
     new Set(Object.values(registry.mapStyles.get(style)!.bindings).map(({ block }) => registry.blockIds.get(block)!));
   const styles = new Set<string>();
   let checkedForeign = 0;
-  for (const { building, style, compiled } of cityAlternatives()) {
+  for (const { building, style, compiled } of cityAlternatives(true)) {
     if (!style) {
       continue;
     }
