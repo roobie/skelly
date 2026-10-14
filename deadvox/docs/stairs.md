@@ -3,6 +3,7 @@ read_if:
   - you're authoring multi-storey templates, stairs or root cellars
   - you're changing floor-opening validation, stair traversal or site lighting
   - you're changing asynchronous lighting pixel comparisons, first-mesh fairness or real-hardware camp attribution
+  - you change main-reference source overlays or their core API boundary
   - you're changing cross-floor zombie behavior or its browser witness
 ---
 
@@ -18,7 +19,7 @@ Buried rooms need world-derived sky visibility because wide ambient occlusion re
 
 Shamblers do not navigate stairs as routes. A resident can drift onto a flight while beelining, but a target on another floor does not grant stair knowledge. Door bashing remains deferred under #273 until mob and obstacle strength exist. See `src/core/zombies.ts`, `ZombieSystem.tick`.
 
-The first-mesh reference restores main's site, lighting and worker sources on the same fixture/content and browser, isolating startup admission from geometry changes. It measures delivered geometry, not first rendered pixels, and is not a pristine whole-build screenshot comparison. Both timestamps remain observations rather than default timing assertions. Fetch the exact event base: a shallow merge checkout's parents need not contain that commit. Normalize the directory URL before identifying source modules: a trailing separator must not turn the overlay into a silent branch-source run. The reference rejects absent engine/streamer overlays and records applied sources and browser errors. Enter Play before waiting for meshes: the title screen does not construct the played world. See `test/browser/sky-main-arrival.mjs`, `measureMainFirstMesh`.
+The first-mesh reference compares main's rendering path with the same branch core contracts, fixture content and browser. Keep core API owners paired with their branch callers: an older owner can invalidate imports before rendering, producing no meaningful timing comparison. The reference measures delivered geometry, not first rendered pixels or a pristine whole build. Missing overlays and browser errors invalidate the evidence; timestamps remain observations rather than default timing assertions. See `test/browser/sky-main-arrival.mjs`, `mainSourceOverlays` and `measureMainFirstMesh`, and `test/sky-main-arrival.test.mjs`.
 
 The performance gate needs a real GPU on the immutable published preview. Software-rendered CI establishes correctness, ownership and admission fairness, not a frame-rate verdict. Its relative job trace remains useful for locating candidate selection, snapshot preparation, admission, execution and publication delay; dispatch and return gaps also contain delivery and scheduling, not pure transfer. See `test/browser/sky-timing.mjs`, `summarizeSkyTiming`.
 
