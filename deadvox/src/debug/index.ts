@@ -1814,7 +1814,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     get interactionRayEnabled() {
       return interactionRayEnabled;
     },
-    drawInteractionRay({ origin, direction, reachMetres, nowMs, interactionDistanceBlocks }) {
+    drawInteractionRay({ origin, direction, reachMetres, frame, interactionDistanceBlocks }) {
       if (!(transientDraw.enabled && interactionRayEnabled)) {
         return;
       }
@@ -1828,13 +1828,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       const distanceMetres = distanceBlocks * metresPerBlock;
       const start = origin.map((coordinate) => coordinate * metresPerBlock) as Vec3;
       const end = start.map((coordinate, axis) => coordinate + direction[axis]! * distanceMetres) as Vec3;
-      transientDraw.line(start, end, nowMs);
+      transientDraw.line(start, end, frame);
       const marker = end.map((coordinate, axis) =>
         opaqueDistance !== undefined && opaqueDistance <= (interactionDistanceBlocks ?? Number.POSITIVE_INFINITY)
           ? coordinate + opaqueHit!.normal[axis]! * 0.09
           : coordinate - direction[axis]! * 0.09,
       ) as Vec3;
-      transientDraw.point(marker, nowMs);
+      transientDraw.point(marker, frame);
     },
     updateTransientDraw: (nowMs) => transientDraw.update(nowMs),
     click: (button, eye, dir) => build.click(button, eye, dir),

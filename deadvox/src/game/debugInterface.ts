@@ -127,7 +127,7 @@ export interface DebugRuntime {
     readonly origin: Vec3;
     readonly direction: Vec3;
     readonly reachMetres: number;
-    readonly nowMs: number;
+    readonly frame: number;
     readonly interactionDistanceBlocks?: number;
   }) => void;
   updateTransientDraw: (nowMs: number) => void;
