@@ -11,7 +11,9 @@
     "round": "Round",
     "sending": "Sending them is your choice: the F9 menu saves your metrics, and a replay of your recent play, as files you can attach to your feedback.",
     "task": "Your task: survive and find the military camp.",
-    "title": "Playtest"
+    "title": "Playtest",
+    "tutorialHint": "Learn the controls without changing your saved world.",
+    "tutorialLink": "Practice tutorial (unsaved)"
   },
   "sv": {
     "analytics": "Den här webbplatsen, spelet inräknat, använder Simple Analytics för att räkna besök. Det är anonymt, sparar inga kakor på din enhet och får inte ta del av din speldata.",
@@ -25,6 +27,8 @@
     "round": "Runda",
     "sending": "Du väljer själv om du vill skicka den: i F9-menyn sparar du din speldata, och en repris av ditt senaste spelande, som filer du kan bifoga till din återkoppling.",
     "task": "Ditt uppdrag: överlev och hitta militärlägret.",
-    "title": "Speltest"
+    "title": "Speltest",
+    "tutorialHint": "Lär dig kontrollerna utan att ändra din sparade värld.",
+    "tutorialLink": "Öva i introduktionen (sparas inte)"
   }
 }

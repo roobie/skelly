@@ -11,6 +11,7 @@
     "prebuild": "npm --prefix .. run content:compile",
     "build": "tsc && vite build && node tools/check-favicon.mjs",
     "typecheck": "tsc",
+    "publish:playtest": "node tools/publish-playtest.mjs",
     "lint:time": "node tools/time-lint.mjs",
     "pretest": "npm --prefix .. run content:compile",
     "test": "vitest run",
