@@ -242,6 +242,10 @@ export class Simulation {
 
   /** A hit of a damage kind may open a bleeding wound (`Body.bleedingTierForHit`). */
   hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: HitEffects = {}): void {
+    this.takeDamage(cause, () => this.impact(amount, region, effects));
+  }
+
+  private impact(amount: number, region: BodyRegion, effects: HitEffects): number {
     const bleeding =
       effects.kind === undefined
         ? undefined
@@ -257,12 +261,28 @@ export class Simulation {
       (bleeding !== undefined &&
         (woundAlreadyExists ||
           this.rng(`body-infection:${region}:${this.time}:${amount}`).next() < this.body.tuning.infectionChance));
+    return this.body.impact(amount, region, {
+      ...effects,
+      infectionAtRisk,
+      ...(bleeding === undefined ? {} : { bleeding }),
+    });
+  }
+
+  land(speedMetresPerSimSecond: number): void {
+    const { safeSpeedMetresPerSimSecond, damagePerSquaredSpeed, damageSpread, regions, kind, cause } =
+      this.body.tuning.landing;
+    if (speedMetresPerSimSecond <= safeSpeedMetresPerSimSecond) {
+      return;
+    }
+    const roll = this.rng(`body-landing:${this.time}:${speedMetresPerSimSecond}`).next();
+    const spread = damageSpread.min + roll * (damageSpread.max - damageSpread.min);
+    const damage = (speedMetresPerSimSecond ** 2 - safeSpeedMetresPerSimSecond ** 2) * damagePerSquaredSpeed * spread;
+    const totalWeight = regions.reduce((sum, { weight }) => sum + weight, 0);
     this.takeDamage(cause, () =>
-      this.body.impact(amount, region, {
-        ...effects,
-        infectionAtRisk,
-        ...(bleeding === undefined ? {} : { bleeding }),
-      }),
+      regions.reduce(
+        (applied, { region, weight }) => applied + this.impact((damage * weight) / totalWeight, region, { kind }),
+        0,
+      ),
     );
   }
 

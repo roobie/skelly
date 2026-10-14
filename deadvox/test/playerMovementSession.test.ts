@@ -6,6 +6,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { bodyDistance, INVENTORY_REACH } from '../src/core/reach.ts';
+import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
 import { compileTemplate, footprint, type Placement, placedBlockAt } from '../src/core/templates.ts';
@@ -14,7 +15,7 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import { type MoveIntent, PLAYER } from '../src/game/player.ts';
+import { type MoveIntent, PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -30,7 +31,13 @@ if (issues.length > 0) {
 
 const FLAT: SolidAt = (_x, y) => y === 0;
 
-const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3, yaw = 0 } = {}) => {
+const makeRuntime = ({
+  isSolid = FLAT,
+  spawn = [0, 1, 0] as Vec3,
+  yaw = 0,
+  seed = 73,
+  restore = undefined as Readonly<SaveSnapshot> | undefined,
+} = {}) => {
   const scale = makeScale(0.5);
   let intent: MoveIntent = { ...IDLE };
   let crouchToggle = false;
@@ -39,11 +46,12 @@ const makeRuntime = ({ isSolid = FLAT, spawn = [0, 1, 0] as Vec3, yaw = 0 } = {}
   const refusals: string[] = [];
   const session = createSession({
     registry,
+    ...(restore ? { restore } : {}),
     world: new World(),
     isSolid,
     isOpaque: isSolid,
     scale,
-    seed: 73,
+    seed,
     start: 43_200,
     spawn,
     ready: () => true,
@@ -128,6 +136,89 @@ const downShambler = (session: Session, position: Vec3): { id: EntityId; zombie:
   }
   return { id, zombie };
 };
+
+describe('landing injuries', () => {
+  const scale = makeScale(0.5);
+  const tuning = registry.body.get('player')!.landing;
+  const drop = (speed: number, seed = 73) => {
+    const gravity = physicsFor(scale).gravity * scale.blockSize;
+    const height = speed ** 2 / (2 * gravity);
+    const runtime = makeRuntime({ spawn: [0, 1 + height / scale.blockSize, 0], seed });
+    const before = runtime.session.sim.body.snapshotState();
+    const frames = Math.ceil((speed / gravity + 1) * 60);
+    for (let frame = 0; frame < frames && !runtime.session.body.onGround; frame++) {
+      runtime.advance(1);
+    }
+    if (!runtime.session.body.onGround) {
+      throw new Error('Fall fixture did not land');
+    }
+    return { runtime, before, after: runtime.session.sim.body.snapshotState() };
+  };
+
+  it('survives low fixture drops even at the maximum landing damage spread', () => {
+    const gravity = physicsFor(scale).gravity * scale.blockSize;
+    const speed = Math.sqrt(2 * gravity * 4);
+    const { health } = makeRuntime().session.sim.body;
+    const damage = Math.max(0, speed ** 2 - tuning.safeSpeedMetresPerSimSecond ** 2) * tuning.damagePerSquaredSpeed;
+    expect(damage * tuning.damageSpread.max).toBeLessThan(health);
+    expect(drop(speed).runtime.session.sim.dead).toBeUndefined();
+  });
+
+  it('rolls different survivable landing health losses for different seeds', () => {
+    const gravity = physicsFor(scale).gravity * scale.blockSize;
+    const speed = Math.sqrt(2 * gravity * 4);
+    const losses = [73, 74].map((seed) => {
+      const { runtime, before, after } = drop(speed, seed);
+      expect(runtime.session.sim.dead).toBeUndefined();
+      const loss = before.health - after.health;
+      expect(loss).toBeGreaterThan(0);
+      return loss;
+    });
+    expect(losses[0]).not.toBe(losses[1]);
+  });
+
+  it('allows high fixture drops to kill or spare full health across the content damage spread', () => {
+    const gravity = physicsFor(scale).gravity * scale.blockSize;
+    const speed = Math.sqrt(2 * gravity * 12);
+    const { health } = makeRuntime().session.sim.body;
+    const damage = Math.max(0, speed ** 2 - tuning.safeSpeedMetresPerSimSecond ** 2) * tuning.damagePerSquaredSpeed;
+    expect(damage * tuning.damageSpread.min).toBeLessThan(health);
+    expect(damage * tuning.damageSpread.max).toBeGreaterThan(health);
+  });
+
+  it('leaves the body unchanged after a safe landing', () => {
+    const { before, after } = drop(tuning.safeSpeedMetresPerSimSecond / 2);
+    expect(after).toEqual(before);
+  });
+
+  it('injures the content landing regions once at contact', () => {
+    const { runtime, before, after } = drop(tuning.safeSpeedMetresPerSimSecond * 1.2);
+    expect(after.health).toBeLessThan(before.health);
+    for (const { region } of tuning.regions) {
+      expect(after.regionDamage[region]).toBeGreaterThan(0);
+    }
+    expect(after.pain.acute).toBeGreaterThan(before.pain.acute);
+    runtime.advance(1);
+    expect(runtime.session.sim.body.regionDamage).toEqual(after.regionDamage);
+  });
+
+  it('preserves landing injuries when a saved session is resumed', () => {
+    const { runtime, after } = drop(tuning.safeSpeedMetresPerSimSecond * 1.5);
+    expect(after.health).toBeLessThan(100);
+    const restore = runtime.session.snapshot({ worldId: 'fall-world', characterId: 'fall-character' });
+    const resumed = makeRuntime({ restore: structuredClone(restore) });
+    expect(resumed.session.sim.body.snapshotState()).toEqual(after);
+  });
+
+  it('kills through the existing death path on a sufficiently fast landing', () => {
+    const { health } = makeRuntime().session.sim.body;
+    const lethalSpeed = Math.sqrt(
+      tuning.safeSpeedMetresPerSimSecond ** 2 + health / (tuning.damagePerSquaredSpeed * tuning.damageSpread.min),
+    );
+    const { runtime } = drop(lethalSpeed * 1.2);
+    expect(runtime.session.sim.dead?.cause).toBe(tuning.cause);
+  });
+});
 
 describe('session movement consequences', () => {
   it('slows the same walking intent after leg damage', () => {

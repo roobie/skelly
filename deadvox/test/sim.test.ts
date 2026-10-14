@@ -425,6 +425,17 @@ describe('Simulation', () => {
     expect(sim.frame(0.5)).toBeCloseTo(0.5, 9);
   });
 
+  it('god mode prevents landing injuries and death', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.godMode = true;
+    const before = sim.body.snapshotState();
+    const { safeSpeedMetresPerSimSecond, damagePerSquaredSpeed } = sim.body.tuning.landing;
+    const lethalSpeed = Math.sqrt(safeSpeedMetresPerSimSecond ** 2 + sim.body.health / damagePerSquaredSpeed);
+    sim.land(lethalSpeed * 2);
+    expect(sim.body.snapshotState()).toEqual(before);
+    expect(sim.dead).toBeUndefined();
+  });
+
   it('god mode prevents hunger and thirst health loss while needs still advance', () => {
     const sim = new Simulation({ seed: 1 });
     sim.godMode = true;

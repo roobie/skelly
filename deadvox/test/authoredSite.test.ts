@@ -372,12 +372,20 @@ describe('authored layout acceptance', () => {
     });
   });
   it('carries a spawn window from an authored marker into its world column', () => {
-    const marker = { ...layout.shamblers[0]!, chance: 1, window: { fromGameTimeOfDay: 'dusk' } };
-    const timedLayout = { ...layout, shamblers: [marker] };
-    const result = load(timedLayout);
+    const marker = {
+      ...layout.shamblers[0]!,
+      position: [5, 0.5, 5] as const,
+      chance: 1,
+      window: { fromGameTimeOfDay: 'dusk' },
+    };
+    const timedLayout = { ...validationLayout('timed_spawn_fixture'), shamblers: [marker] };
+    const result = buildRegistry([
+      ...layoutValidationBase,
+      { source: 'layout-test.json', data: { layouts: [timedLayout] } },
+    ]);
     expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
-    const admitted = result.registry.layouts.get(layout.id)!;
-    const site = new AuthoredSite(1, result.registry, scale, admitted);
+    const admitted = result.registry.layouts.get(timedLayout.id)!;
+    const site = new AuthoredSite(1, registry, scale, admitted);
     const x = marker.position[0] / scale.blockSize;
     const z = marker.position[2] / scale.blockSize;
     expect(site.zombiesIn(toChunk(x), toChunk(z))).toContainEqual({
@@ -388,11 +396,16 @@ describe('authored layout acceptance', () => {
   });
 
   it('serves authored hordes only in the columns derived from their layout positions', () => {
-    const { registry: bundledRegistry } = BUNDLED_CONTENT;
-    const playtest = bundledRegistry.layouts.get('playtest')!;
-    const markers = playtest.hordes ?? [];
-    expect(markers.length).toBeGreaterThan(0);
-    const site = new AuthoredSite(1, bundledRegistry, scale, playtest);
+    const playtest: SiteLayoutDef = {
+      ...validationLayout('horde_columns_fixture'),
+      bounds: { x0: 0, z0: 0, x1: 40, z1: 40 },
+      hordes: [
+        { id: 'near', position: [5, 0.5, 5] },
+        { id: 'far', position: [25, 0.5, 25] },
+      ],
+    };
+    const markers = playtest.hordes!;
+    const site = new AuthoredSite(1, registry, scale, playtest);
     const expectedIn = (cx: number, cz: number) =>
       markers
         .filter(
@@ -588,10 +601,17 @@ describe('authored layout acceptance', () => {
   });
   it('validates optional windows on authored shambler markers', () => {
     const timed = {
-      ...layout,
-      shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' } }],
+      ...validationLayout('timed_marker_fixture'),
+      shamblers: [
+        {
+          ...layout.shamblers[0]!,
+          position: [5, 0.5, 5],
+          window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' },
+        },
+      ],
     };
-    expect(load(timed).issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
+    const result = buildRegistry([...layoutValidationBase, { source: 'layout-test.json', data: { layouts: [timed] } }]);
+    expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
     invalid(
       { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'sunset' } }] },
       'expected a named game time or HH:MM',

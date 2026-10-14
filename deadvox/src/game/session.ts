@@ -1287,13 +1287,14 @@ export const createSession = (options: SessionOptions) => {
         dt,
         strafing: steered.right !== 0,
       });
-    stepBody(body, dt, isSolid, {
+    const landingSpeed = stepBody(body, dt, isSolid, {
       ...physics,
       // Only a climb up steps up a ledge: one down would step back onto the roof edge it is leaving.
       ...(climbing ? { gravity: 0, braced: body.vel[1] >= 0 } : {}),
       obstacles: standingZombieBodies(),
       shapeOf: zombieSystem.shapeOf,
     });
+    sim.land(landingSpeed * s);
     observeScenarioMovement(scenarioRun, {
       before: previousPosition,
       after: body.pos,
