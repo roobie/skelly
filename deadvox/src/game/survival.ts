@@ -51,6 +51,7 @@ export interface SurvivalHooks {
   read: (readable: Readonly<Readable>, bookUid?: number, itemType?: string) => void;
   /** Whether the book has already taught every recipe it owns. */
   bookRead?: (bookUid: number) => boolean;
+  consumed?: ((type: string) => void) | undefined;
 }
 
 export class Survival {
@@ -352,6 +353,7 @@ export class Survival {
     } else {
       consume(this.sim.needs, def.food!);
     }
+    this.hooks.consumed?.(item.type);
   }
 
   private heldFirestarterFor(light: Item): Item | string {

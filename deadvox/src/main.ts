@@ -18,6 +18,7 @@ import { startPlay } from './game/play.ts';
 import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
+import { tutorialRequested, tutorialUrl } from './game/tutorial.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
@@ -162,7 +163,21 @@ if (bench === 'report') {
       clearPendingInputReplay();
       showStartupFailure(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
     }
+  } else if (tutorialRequested(params)) {
+    const practiceParams = new URLSearchParams(new URL(tutorialUrl(location.href, true)).search);
+    practiceParams.set('site', 'tutorial');
+    const practiceConfig = configFromUrl(practiceParams);
+    const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
+    startPlay(engine, undefined, { tutorial: true });
+    document.getElementById('new-character-options')!.hidden = true;
+    document.getElementById('tutorial-start')!.hidden = true;
+    document.getElementById('save-status')!.textContent = 'Unsaved practice — saved worlds are untouched.';
+    hideStartupScreen();
   } else {
+    document.getElementById('tutorial-start')!.addEventListener('click', (event) => {
+      event.stopPropagation();
+      location.assign(tutorialUrl(location.href, true));
+    });
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
     const saveController = new SaveController(backend);

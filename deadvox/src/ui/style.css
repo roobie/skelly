@@ -48,6 +48,32 @@ body {
     0.875rem / 1.4 system-ui,
     sans-serif;
 }
+#tutorial-objective {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  max-width: min(34rem, 70vw);
+  padding: 0.6rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  z-index: var(--ui-layer-inventory-feedback);
+  pointer-events: none;
+}
+.tutorial-copy {
+  margin: 0.3rem 0;
+}
+.tutorial-note {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+#tutorial-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+#tutorial-actions:empty {
+  display: none;
+}
 #startup-screen {
   position: fixed;
   z-index: var(--ui-layer-startup-screen);
