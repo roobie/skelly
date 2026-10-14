@@ -44,7 +44,7 @@ const inputIndex = (event: Event, max: number): number =>
 
 /** A debug-only authored-cell slice, not a second world ownership index. */
 export class KitOverlay {
-  private readonly host = document.createElement('aside');
+  private host: HTMLElement | undefined;
   private open = false;
   private selected = 0;
   private layer = 0;
@@ -54,14 +54,11 @@ export class KitOverlay {
     this.placements = placements.filter(({ template }) => template.ownership !== undefined);
   }
 
-  mount(): void {
-    if (this.placements.length === 0) {
+  mount(host: HTMLElement): void {
+    if (this.placements.length === 0 || this.host === host) {
       return;
     }
-    this.host.id = 'debug-kit-overlay';
-    this.host.style.cssText =
-      'position:fixed;right:12px;bottom:12px;z-index:40;background:#111e;color:#eee;padding:8px;max-width:75vw;font:12px monospace';
-    document.body.append(this.host);
+    this.host = host;
     this.draw();
   }
 
@@ -82,21 +79,24 @@ export class KitOverlay {
   };
 
   private draw(): void {
+    const host = this.host!;
     const placement = this.placements[this.selected]!;
     const slice = html`
       <div><label>Placement <input aria-label="Kit placement" type="number" min="0" max=${this.placements.length - 1} .value=${String(this.selected)} @change=${this.select} /></label> ${placement.template.id} · turn ${placement.turn}</div>
       <div><label>Local Y <input aria-label="Kit layer" type="number" min="0" max=${placement.template.size[1] - 1} .value=${String(this.layer)} @change=${this.changeLayer} /></label> blue occupancy · green air · magenta reserved · grey unclaimed</div>
-      <canvas aria-label="Compiled kit ownership slice" style="max-width:70vw;max-height:45vh;image-rendering:pixelated"></canvas>
-      <pre style="white-space:pre-wrap;max-width:70vw;margin:4px 0">Point at a cell for compiler provenance.</pre>
+      <canvas aria-label="Compiled kit ownership slice" title="Point at a cell for compiler provenance" style="max-width:70vw;max-height:45vh;image-rendering:pixelated"></canvas>
+      <pre style="white-space:pre-wrap;max-width:70vw;margin:4px 0"></pre>
     `;
     render(
       html`
-        <button type="button" @click=${this.toggle}>Kit cells · ${this.open ? 'close' : 'open'}</button>
-        ${this.open ? slice : ''}
+        <aside id="debug-kit-overlay" style="position:fixed;right:12px;bottom:12px;pointer-events:auto;z-index:var(--ui-layer-debug-ui);background:#111e;color:#eee;padding:8px;max-width:75vw;font:12px monospace">
+          <button type="button" @click=${this.toggle}>Kit cells · ${this.open ? 'close' : 'open'}</button>
+          ${this.open ? slice : ''}
+        </aside>
       `,
-      this.host,
+      host,
     );
-    const canvas = this.host.querySelector('canvas');
+    const canvas = host.querySelector('canvas');
     if (!canvas) {
       return;
     }
@@ -117,9 +117,9 @@ export class KitOverlay {
       const x = Math.floor(((event.clientX - bounds.left) * placement.template.size[0]) / bounds.width);
       const z = Math.floor(((event.clientY - bounds.top) * placement.template.size[2]) / bounds.height);
       const cell = cells[x + placement.template.size[0] * z];
-      const detail = this.host.querySelector('pre');
+      const detail = host.querySelector('pre');
       if (detail) {
-        detail.textContent = cell ? cellText(cell) : '';
+        render(html`${cell ? cellText(cell) : ''}`, detail);
       }
     };
   }
