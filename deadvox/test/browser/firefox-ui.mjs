@@ -29,15 +29,15 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, surfacePatternsGlsl: FirefoxSurfacePatternsGlsl, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
-    const startupHintMarker = '    updateStartupHint();';
-    assert(exposed.includes(startupHintMarker), 'startup hint observation point exists');
-    const withStartupHint = exposed.replace(
-      startupHintMarker,
-      `${startupHintMarker}\n    if (!startupHint.hidden && startupProgress.value < startupProgress.max && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { meshes: Array.from(engine.meshes.keys()).length };\n    }`,
+    const loadingMarker = '    updateWorldLoading(now);';
+    assert(exposed.includes(loadingMarker), 'world-loading observation point exists');
+    const withLoading = exposed.replace(
+      loadingMarker,
+      `${loadingMarker}\n    if (worldLoading.state === 'loading' && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { pending: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks), masked: !$('world-loading').hidden };\n    }`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { SURFACE_PATTERN_GLSL as FirefoxSurfacePatternsGlsl } from '../render/surfacePatterns.ts';\n${withStartupHint}\n`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { SURFACE_PATTERN_GLSL as FirefoxSurfacePatternsGlsl } from '../render/surfacePatterns.ts';\n${withLoading}\n`;
   },
 };
 const vite = await createServer({
@@ -115,15 +115,19 @@ try {
     { timeout: 10_000 },
   );
   try {
-    await page.waitForFunction(() => globalThis.firefoxUiStartupSample?.meshes === 0, null, { timeout: 10_000 });
+    await page.waitForFunction(
+      () => globalThis.firefoxUiStartupSample?.masked && globalThis.firefoxUiStartupSample.pending > 0,
+      null,
+      { timeout: 10_000 },
+    );
   } catch (error) {
     const state = await page.evaluate(() => {
-      const hint = document.querySelector('#startup-hint');
-      const progress = document.querySelector('#startup-hint-progress');
+      const mask = document.querySelector('#world-loading');
       const runtime = globalThis.firefoxUiTest;
       return {
-        hintHidden: hint?.hidden,
-        progress: progress ? { value: progress.value, max: progress.max } : null,
+        maskHidden: mask?.hidden,
+        loading: runtime?.worldLoading.state,
+        loadingError: runtime?.worldLoading.error,
         firstVisibleSample: globalThis.firefoxUiStartupSample,
         meshes: runtime?.engine?.meshes ? Array.from(runtime.engine.meshes.keys()).length : null,
         locked: runtime?.input?.locked,
@@ -137,11 +141,7 @@ try {
     );
   }
   await page.waitForFunction(
-    () => {
-      const hint = document.querySelector('#startup-hint');
-      const progress = document.querySelector('#startup-hint-progress');
-      return hint?.hidden && progress && progress.value === progress.max;
-    },
+    () => globalThis.firefoxUiTest.worldLoading.ready && document.querySelector('#world-loading')?.hidden,
     null,
     { timeout: 30_000 },
   );
@@ -492,7 +492,14 @@ try {
       null,
       { timeout: 60_000 },
     );
-    await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#overlay').hidden &&
+        globalThis.firefoxUiTest.worldLoading.ready &&
+        document.querySelector('#world-loading')?.hidden,
+      null,
+      { timeout: 10_000 },
+    );
     await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
     const weatheringPixels = await measureWeatheringMaterials(page);
@@ -627,7 +634,14 @@ try {
       timeout: 30_000,
     });
     await page.locator('#go').click();
-    await page.waitForFunction(() => globalThis.firefoxUiTest?.engine.renderer, null, { timeout: 60_000 });
+    await page.waitForFunction(
+      () =>
+        globalThis.firefoxUiTest?.engine.renderer &&
+        globalThis.firefoxUiTest.worldLoading.ready &&
+        document.querySelector('#world-loading')?.hidden,
+      null,
+      { timeout: 60_000 },
+    );
     await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').waitFor({ state: 'visible' });
     await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
     const reloadedWeatheringGroup = page.locator('.debug-group[data-group="weathering"]');

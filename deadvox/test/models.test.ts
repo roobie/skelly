@@ -551,14 +551,19 @@ describe('base pack melee', () => {
   });
 });
 
-describe('base pack shotshells', () => {
-  it('links stackable ammo and the spent-case counter identity to their real-scale models', () => {
-    const loaded = registry.items.get('shell_12_gauge_00_buck')!;
-    const fired = registry.items.get(spentCaseItemId('12-gauge-00-buck'))!;
-    expect(loaded).toMatchObject({ category: 'ammo', model: 'round_12_h_gauge_h_00_h_buck', stack: 25, weight: 40 });
-    expect(fired).toMatchObject({ model: 'case_12_h_gauge_h_00_h_buck', stack: 10_000, weight: 5 });
-    expect(loaded.description).toContain('estimate');
-    expect(fired.description).toContain('estimate');
+describe('base pack modeled ammunition and spent cases', () => {
+  it('links modeled ammo to a stackable spent-case item of the same calibre', () => {
+    const cartridges = [...registry.items.values()].filter((item) => item.ammo && item.model);
+    expect(cartridges.length).toBeGreaterThan(0);
+    for (const loaded of cartridges) {
+      const { calibre } = loaded.ammo!;
+      const fired = registry.items.get(spentCaseItemId(calibre));
+      expect(fired).toBeDefined();
+      expect(registry.models.get(loaded.model!)?.calibre).toBe(calibre);
+      expect(registry.models.get(fired!.model!)?.calibre).toBe(calibre);
+      expect(loaded.stack).toBeGreaterThan(1);
+      expect(fired!.stack).toBeGreaterThan(1);
+    }
   });
   it.each([
     ['round_12_h_gauge_h_00_h_buck', 0.062_23],

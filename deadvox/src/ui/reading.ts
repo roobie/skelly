@@ -1,7 +1,7 @@
 // A held-paper/sign reading surface. Authored text remains escaped Lit text nodes.
 import { html, render } from 'lit-html';
 import type { Readable } from '../core/readable.ts';
-import { inputBindings, labelForAction } from '../game/inputBindings.ts';
+import { inputBindings } from '../game/inputBindings.ts';
 
 /** Meta progress embedded in the paper, because the optional HUD cannot explain a compressed reading action. */
 export interface ReadingProgress {
@@ -62,7 +62,6 @@ export const mountReading = (host: HTMLElement, changed: () => void, closing: ()
         <header><h1 class="reading-title" id="reading-title">${current.title}</h1><button class="reading-dismiss" type="button" @click=${close} aria-label="Put away reading">Put away</button></header>
         ${progress ? html`<progress class="reading-progress" max=${progress.max} value=${progress.value} aria-label="Reading progress"></progress>` : ''}
         <div class="reading-text" tabindex="0" aria-label="Text">${current.text}</div>
-        <footer>${labelForAction('reading.close')} to put away · The world keeps moving</footer>
       </article>`,
       host,
     );

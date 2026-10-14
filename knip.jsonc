@@ -17,6 +17,12 @@
       "ignoreUnresolved": [
         // Vite resolves this browser URL from the Deadvox root at runtime.
         "/src/game/saveStorage.ts",
+        "/src/core/templates.ts",
+        "/src/game/session.ts",
+        "/src/core/scenarioCertificate.ts",
+        "/src/core/options.ts",
+        "/src/game/doorAction.ts",
+        "/src/core/ladders.ts",
         "/test/browser/sky-selection.ts",
         "/test/browser/interaction-marker-lighting.ts"
       ],

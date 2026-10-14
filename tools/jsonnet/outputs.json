@@ -17,6 +17,14 @@
       "output": "deadvox/src/content/base/furniture.json"
     },
     {
+      "source": "deadvox/src/content/base/gauntlet-look.jsonnet",
+      "output": "deadvox/src/content/base/gauntlet-look.json"
+    },
+    {
+      "source": "deadvox/src/content/base/gauntlet.jsonnet",
+      "output": "deadvox/src/content/base/gauntlet.json"
+    },
+    {
       "source": "deadvox/src/content/base/items-ammunition.jsonnet",
       "output": "deadvox/src/content/base/items-ammunition.json"
     },
@@ -91,6 +99,10 @@
     {
       "source": "deadvox/src/content/base/saves.jsonnet",
       "output": "deadvox/src/content/base/saves.json"
+    },
+    {
+      "source": "deadvox/src/content/base/scenarios.jsonnet",
+      "output": "deadvox/src/content/base/scenarios.json"
     },
     {
       "source": "deadvox/src/content/base/senses.jsonnet",

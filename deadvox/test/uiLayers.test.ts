@@ -81,12 +81,14 @@ describe('UI layer order', () => {
         name !== '--ui-layer-game-cursor' &&
         name !== '--ui-layer-error-report' &&
         name !== '--ui-layer-startup-screen' &&
+        name !== '--ui-layer-world-loading' &&
         name !== '--ui-layer-review-map'
       ) {
         expect(layerPositions.get(name)).toBeLessThan(cursorPosition);
       }
     }
     expect(positionOf('startup-screen')).toBeGreaterThan(cursorPosition);
+    expect(positionOf('world-loading')).toBeGreaterThan(cursorPosition);
     expect(positionOf('review-map')).toBeLessThan(positionOf('error-report'));
     expect(positionOf('error-report')).toBe(layers.length - 1);
   });

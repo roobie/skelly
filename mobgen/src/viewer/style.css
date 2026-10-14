@@ -75,6 +75,11 @@ h1 {
   color: var(--muted);
   margin: 8px 0;
 }
+#description .comparison-only {
+  color: var(--fail);
+  font-weight: 600;
+  margin-right: 4px;
+}
 #status {
   font-weight: 600;
   margin: 8px 0;

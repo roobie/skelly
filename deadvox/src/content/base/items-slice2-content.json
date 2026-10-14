@@ -530,7 +530,7 @@
     },
     {
       "category": "weapon",
-      "description": "A loose strap-and-bracket assembly; fitting it to a weapon is not modeled.",
+      "description": "A loose strap-and-bracket assembly.",
       "disassembly": {
         "skill": "mechanics",
         "timeGameMinutes": 7,
@@ -561,7 +561,7 @@
     },
     {
       "category": "weapon",
-      "description": "A rough grip made from a wood offcut and rubber; fitting is not modeled.",
+      "description": "A rough grip made from a wood offcut and rubber.",
       "disassembly": {
         "skill": "mechanics",
         "timeGameMinutes": 7,

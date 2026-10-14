@@ -221,6 +221,7 @@ describe('lazy restored world diffs', () => {
     expect(() => streamer.update(0, 0)).not.toThrow();
     expect(failures).toHaveLength(1);
     expect(failures[0]).toMatchObject({ message: expect.stringContaining('Generated base mismatch') });
+    expect(streamer.failure).toContain('Generated base mismatch');
     expect(title).toEqual({
       continueEnabled: false,
       status: expect.stringContaining('Saved world unreadable: Generated base mismatch'),

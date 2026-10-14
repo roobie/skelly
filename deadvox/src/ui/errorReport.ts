@@ -144,14 +144,7 @@ export const installErrorReportHandler = (): void => {
     }
     panel.hidden = false;
     document.getElementById('error-report-title')?.focus();
-    render(
-      html`${
-        feedback.attachReport
-          ? 'The full error is too long to prefill. Download the report and attach it to your GitHub feedback.'
-          : ''
-      }`,
-      status,
-    );
+    render(html`${feedback.attachReport ? 'Error exceeds feedback URL limit.' : ''}`, status);
   };
 
   globalThis.addEventListener('error', (event) => {
@@ -168,7 +161,7 @@ export const installErrorReportHandler = (): void => {
       await navigator.clipboard.writeText(currentText);
       render(html`Full error text copied.`, status);
     } catch {
-      render(html`Clipboard access failed. Select and copy the error text above.`, status);
+      render(html`Clipboard access failed.`, status);
     }
   });
   downloadButton.addEventListener('click', async () => {
@@ -188,9 +181,9 @@ export const installErrorReportHandler = (): void => {
       downloadLink.download = 'deadvox-error-report.json';
       downloadLink.click();
       URL.revokeObjectURL(url);
-      render(html`Error report downloaded to your device; nothing was sent.`, status);
+      render(html`Error report downloaded.`, status);
     } catch {
-      render(html`Could not create the error report. Use Copy error to send the full text.`, status);
+      render(html`Could not create the error report.`, status);
     }
   });
 };

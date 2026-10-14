@@ -319,7 +319,7 @@
     },
     {
       "category": "material",
-      "description": "A spent case from debug firearm handling.",
+      "description": "A fired 5.56×45 case.",
       "economy": {
         "tiers": [],
         "usage": []
@@ -334,7 +334,7 @@
     },
     {
       "category": "material",
-      "description": "A spent case from debug firearm handling. Gameplay mass estimate: 6 g, not a sourced case mass.",
+      "description": "A fired 7.62×39 case.",
       "economy": {
         "tiers": [],
         "usage": []
@@ -357,7 +357,7 @@
         "rangeMetres": 50
       },
       "category": "ammo",
-      "description": "Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy. Payload from gungen cartridges/12-gauge-00-buck.json: Federal PFC154 00 (9 pellets), SAAMI shotshell standard p.39 (8.38 mm nominal 00). Per-pellet damage, push and reach are gameplay estimates.",
+      "description": "Nine-pellet 00 buckshot.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
@@ -371,7 +371,7 @@
     },
     {
       "category": "ammo",
-      "description": "Sealed cardboard box of twenty 00-buck shells. Size, 40 g cardboard and 40 g per shell are gameplay mass estimates.",
+      "description": "Sealed cardboard box of twenty 00-buck shells.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
@@ -387,7 +387,7 @@
     },
     {
       "category": "material",
-      "description": "An opened shotshell hull. Fired-hull gameplay mass estimate: 5 g, not a manufacturer specification.",
+      "description": "A fired shotshell hull.",
       "economy": {
         "tiers": [],
         "usage": []

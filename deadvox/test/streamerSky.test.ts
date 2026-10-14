@@ -57,6 +57,44 @@ afterEach(() => {
   OwnedWorker.instances = [];
 });
 
+it('meshes a partial recorded ring without generating extra columns and repairs it when a neighbour arrives', () => {
+  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
+  vi.stubGlobal('Worker', OwnedWorker);
+  const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
+  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
+  const streamer = new Streamer({
+    world: new World(),
+    meshes: meshes as never,
+    seed: 17,
+    terrain: { grass: 1, dirt: 2, stone: 3, sand: 4 },
+    colors: new Uint8Array(256 * 4).fill(255),
+    patterns: new Uint8Array(256),
+    weatherable: new Uint8Array(256),
+    scale,
+    structures: [],
+    radius: 1,
+    surface: { height: () => 20, top: () => undefined },
+  });
+  streamer.setReplayControlled();
+  streamer.update(0, 0);
+  expect(streamer.generateForReplay(0, 0)).toBe(true);
+  streamer.update(0, 0);
+  const worker = OwnedWorker.instances[0]!;
+  expect(worker.waiting).toHaveLength(1);
+  expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(1);
+  worker.replyNext();
+  expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(0);
+  expect(streamer.generatedColumns()).toEqual([[0, 0]]);
+  expect(streamer.generateForReplay(1, 0)).toBe(true);
+  expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(1);
+  streamer.update(0, 0);
+  worker.replyNext();
+  expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(0);
+  expect(meshes.set).toHaveBeenCalled();
+  streamer.unloadForReplay(1, 0);
+  expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(1);
+});
+
 it('delivers the first mesh before sky and admits queued sky at the next completion despite mesh backlog', () => {
   vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
   vi.stubGlobal('Worker', OwnedWorker);

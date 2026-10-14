@@ -176,7 +176,13 @@ try {
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
-  await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  await page.waitForFunction(
+    () =>
+      document.pointerLockElement &&
+      document.querySelector('#overlay').hidden &&
+      document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+      document.querySelector('#world-loading').hidden,
+  );
   const reloadCode = await page.evaluate(
     `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
   );
