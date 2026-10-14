@@ -3,6 +3,7 @@ import { controlsCardRows, filterControlsCardRows } from '../src/game/controls.t
 import { BindingRegistry, DEBUG_ONLY_CONTEXTS, INPUT_BINDINGS, INPUT_CONTEXTS } from '../src/game/inputBindings.ts';
 import {
   loadMetrics,
+  METRICS_HISTORY_LIMIT,
   measureSnapshots,
   metricsExportJson,
   metricsStorageKey,
@@ -89,19 +90,19 @@ describe('playtest metrics', () => {
     expect(loadMetrics(13, storage)).toBeUndefined();
   });
 
-  it('rejects malformed versioned metrics and bounds retained history on load', () => {
+  it('rejects malformed versioned metrics and bounds recorded history', () => {
     const stored = new Map<string, string>([[metricsStorageKey(73), '{"schemaVersion":1,"seed":73}']]);
     const storage = { getItem: (key: string) => stored.get(key) ?? null };
     expect(loadMetrics(73, storage)).toBeUndefined();
 
     const large = new SessionMetrics(74);
-    for (let i = 0; i < 600; i++) {
+    for (let i = 0; i < METRICS_HISTORY_LIMIT + 1; i++) {
       large.recordContainerLoot(`container-${i}`, 1, 2);
       large.recordDeath('shambler', i);
     }
     const payload = large.toJSON();
-    expect(payload.containersLooted).toHaveLength(512);
-    expect(payload.deaths).toHaveLength(512);
+    expect(payload.containersLooted).toHaveLength(METRICS_HISTORY_LIMIT);
+    expect(payload.deaths).toHaveLength(METRICS_HISTORY_LIMIT);
   });
 });
 

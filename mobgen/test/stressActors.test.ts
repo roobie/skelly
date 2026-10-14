@@ -8,7 +8,7 @@
 // instanceMatrix). The pure crowd math (packCrowdBoneMatrix, crowdTextureLayout) moved to
 // src/mob/crowd.ts and test/crowd.test.ts, so deadvox can import it without touching this viewer layer.
 
-import type { InstancedMesh } from 'three';
+import { type DataTexture, type InstancedMesh, type MeshStandardMaterial, ShaderLib, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
 import { compose, rotation, rotY, type Transform, translation } from '../src/core/math.ts';
 import { boneLocalTransform, type Pose } from '../src/core/pose.ts';
@@ -59,11 +59,13 @@ describe('buildBonesActor', () => {
     // The group itself carries the crowd placement (position/yaw); fold that in too.
     const crowd = compose(translation([2, 0, 3]), rotation(rotY((0.7 * 180) / Math.PI)));
 
+    let checkedBones = 0;
     for (const [i, bone] of bones.entries()) {
       const mesh = group.children[i];
       if (!mesh) {
         continue; // a bone with no owned voxels has no mesh (see meshBones) — nothing to check
       }
+      checkedBones += 1;
       const local = worldByOwnMath.get(bone.id)!;
       const world = compose(crowd, local);
       const [hx, hy, hz] = bone.head;
@@ -82,6 +84,7 @@ describe('buildBonesActor', () => {
       expect(actual[1]).toBeCloseTo(expected[1]!, 9);
       expect(actual[2]).toBeCloseTo(expected[2]!, 9);
     }
+    expect(checkedBones).toBeGreaterThan(0);
   });
 });
 
@@ -172,16 +175,36 @@ describe('buildCrowdRender', () => {
     }
   });
 
-  it('place() and commit() run for every actor across two variants without throwing, including a no-op second commit', () => {
+  it('place() updates the shared bone texture and commit() uploads it only when dirty', () => {
     const assignments: readonly CrowdVariantAssignment[] = [{ poolIndex: 0 }, { poolIndex: 1 }, { poolIndex: 0 }];
     const render = buildCrowdRender(pool, renders, assignments);
     try {
+      const mesh = render.sceneObjects[0] as InstancedMesh;
+      const material = mesh.material as MeshStandardMaterial;
+      const shader = { ...ShaderLib.standard!, uniforms: { ...ShaderLib.standard!.uniforms } } as Parameters<
+        typeof material.onBeforeCompile
+      >[0];
+      material.onBeforeCompile(shader, {} as WebGLRenderer);
+      const texture = shader.uniforms.crowdBoneTexture!.value as DataTexture;
+      const data = texture.image.data!;
+      const before = Array.from(data);
+      const { version } = texture;
       const pose = somePose();
       for (const [i, actor] of render.actors.entries()) {
         actor.place(i * 1.5, -i, i * 0.2, pose);
       }
-      expect(() => render.commit()).not.toThrow();
-      expect(() => render.commit()).not.toThrow(); // nothing pending — must still be a harmless no-op
+      const placed = Array.from(data);
+      const rowSize = texture.image.width * 4;
+      for (let slot = 0; slot < assignments.length; slot++) {
+        const start = slot * rowSize;
+        expect(placed.slice(start, start + rowSize)).not.toEqual(before.slice(start, start + rowSize));
+      }
+      render.commit();
+      expect(texture.version).toBe(version + 1);
+      expect(Array.from(data)).toEqual(placed);
+      render.commit();
+      expect(texture.version).toBe(version + 1);
+      expect(Array.from(data)).toEqual(placed);
     } finally {
       render.dispose();
     }

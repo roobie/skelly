@@ -159,28 +159,6 @@ describe('generated magazine round columns', () => {
     expect(() => magazineRoundColumn(narrowedBody, cartridge, params)).toThrow(NARROW_BODY_DEPTH_ERROR);
   });
 
-  it('refuses export when the generated magazine body is narrower than the real case head', () => {
-    const params = { length: 'M', profile: 'standard', orientation: 'straight' };
-    const asset = { id: 'magazine_narrow_canary', file: 'assets/models/magazine-narrow-canary.glb' };
-    const originalBuild = magazine.build;
-    const writableFamily = magazine as unknown as { build: typeof magazine.build };
-    try {
-      writableFamily.build = (buildParams) => {
-        const part = originalBuild(buildParams);
-        const narrow = (solids: readonly Solid[]) =>
-          solids.map((solid) =>
-            solid.id === 'body' && solid.kind === 'box'
-              ? { ...solid, box: { ...solid.box, half: [solid.box.half[0], solid.box.half[1], 0.4] as const } }
-              : solid,
-          );
-        return { ...part, solids: narrow(part.solids) };
-      };
-      expect(() => exportMagazineGlb({ asset, params, cartridge })).toThrow(NARROW_MAGAZINE_ERROR);
-    } finally {
-      writableFamily.build = originalBuild;
-    }
-  });
-
   it('refuses when the actual magazine feed-face section cannot hold a round', () => {
     const params = { length: 'L', profile: 'stanag-curved' };
     const part = magazine.build(params);

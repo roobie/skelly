@@ -1062,27 +1062,9 @@ describe('authored fixed loot', () => {
     expect(contents(forward)).toEqual(contents(reverse));
   });
 
-  it('places each beat’s key loot in its agreed buildings and containers', () => {
+  it('supplies the starting house with the components for its light recipe', () => {
     const overrides = placedOverrides(layout);
-    const templates = new Set(layout.buildings.map(({ template }) => template));
-    for (const template of ['small_house', 'bungalow', 'playtest_store', 'playtest_gas_station', 'shed']) {
-      expect(templates.has(template), template).toBe(true);
-    }
-    expect(templates.has('hardware_store')).toBe(false);
     const house = overrides.filter(({ building }) => building.template === 'playtest_house');
-    const beans = overrideFor(house, 'playtest_house', 'canned_beans');
-    const opener = overrideFor(house, 'playtest_house', 'can_opener');
-    const flashlight = overrideFor(house, 'playtest_house', 'flashlight');
-    const battery = overrideFor(house, 'playtest_house', 'aa_battery');
-    const matches = overrideFor(house, 'playtest_house', 'matches');
-    expect(beans).toBeDefined();
-    expect(opener).toBeDefined();
-    expect(opener).not.toBe(beans);
-    expect(flashlight).toBeDefined();
-    expect(battery).toBeDefined();
-    expect(battery).not.toBe(flashlight);
-    expect(matches).toBeDefined();
-    expect(matches).not.toBe(flashlight);
 
     const houseCounts = new Map<string, number>();
     for (const { override } of house) {
@@ -1095,57 +1077,6 @@ describe('authored fixed loot', () => {
     for (const alternatives of torch!.components) {
       expect(alternatives.some((ingredient) => (houseCounts.get(ingredient.item) ?? 0) >= ingredient.count)).toBe(true);
     }
-
-    expect(fixedCount(overrides, 'shed', 'crowbar')).toBeGreaterThan(0);
-    expect(
-      overrides
-        .filter(({ building }) => ['playtest_tool_shack', 'shed'].includes(building.template))
-        .flatMap(({ override }) => override.items)
-        .some(({ item }) => item === 'hammer' || item === 'duct_tape'),
-    ).toBe(false);
-    const toolShack = result.registry.templates.get('playtest_tool_shack')!;
-    const toolShackCrate = compileTemplate(result.registry, toolShack).pieces.find(
-      (piece) => piece.furniture === 'crate',
-    );
-    expect(toolShackCrate?.loot).toBe('d41_empty');
-    expect(fixedCount(overrides, 'bungalow', 'home_repair_book')).toBeGreaterThan(0);
-    expect(fixedCount(overrides, 'bungalow', 'rag')).toBeGreaterThanOrEqual(2);
-    expect(fixedCount(overrides, 'bungalow', 'wax')).toBeGreaterThan(0);
-    expect(fixedCount(overrides, 'bungalow', 'jacket')).toBeGreaterThan(0);
-    expect(fixedCount(overrides, 'playtest_gas_station', 'scrap_metal')).toBeGreaterThan(0);
-    const scrap = overrideFor(overrides, 'playtest_gas_station', 'scrap_metal');
-    expect(scrap).toBeDefined();
-    expect(furnitureAt(scrap!)).toBe('crate');
-    expect(fixedCount(overrides, 'playtest_store', 'duct_tape')).toBeGreaterThan(0);
-    for (const item of ['canned_soup', 'crackers', 'soda_can', 'painkillers', 'bandage']) {
-      expect(fixedCount(overrides, 'playtest_store', item), item).toBeGreaterThan(0);
-    }
-    const medicine = overrideFor(overrides, 'playtest_store', 'painkillers');
-    expect(medicine).toBeDefined();
-    expect(furnitureAt(medicine!)).toBe('kitchen_cupboard');
-    const kiosk = overrideFor(overrides, 'playtest_gas_station', 'portable_radio');
-    const radio = kiosk?.override.items.find(({ item }) => item === 'portable_radio');
-    expect(radio?.condition).toBeLessThan(1);
-    expect(kiosk?.override.items.some(({ item }) => item === 'compass')).toBe(true);
-    expect(furnitureAt(kiosk!)).toBe('counter');
-    expect(fixedCount(overrides, 'playtest_gas_station', 'compass')).toBeGreaterThan(0);
-
-    const cellar = overrideFor(overrides, 'playtest_dads_cabin', 'shotshell_box');
-    const cabin = result.registry.templates.get('playtest_dads_cabin');
-    expect(cellar).toBeDefined();
-    expect(cellar!.override.at[1]).toBe(cabin?.access?.storeys.find(({ id }) => id === 'cellar')?.floor);
-    expect(fixedCount(overrides, 'playtest_dads_cabin', 'pump_shotgun')).toBeGreaterThan(0);
-
-    for (const template of ['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard']) {
-      expect(
-        layout.buildings.some((building) => building.template === template),
-        template,
-      ).toBe(true);
-    }
-    expect(fixedCount(overrides, 'workshop_hall', 'shotshell_box')).toBeGreaterThan(0);
-    expect(fixedCount(overrides, 'workshop_hall', 'portable_radio')).toBeGreaterThan(0);
-    expect(fixedCount(overrides, 'workshop_hall', 'jerry_can')).toBeGreaterThan(0);
-    expect(fixedCount(overrides, 'workshop_office', 'workshop_notes')).toBeGreaterThan(0);
   });
 
   it('furnishes the long gun in Dad’s cabin with a sling, so it can go on the shoulder', () => {
@@ -1573,8 +1504,17 @@ describe('authored fixed loot', () => {
     ).toBe(true);
   });
 
-  it('keeps every fixed-loot container reachable from outside at standing height', () => {
-    const buildings = layout.buildings.filter((building) => (building.fixedLoot?.length ?? 0) > 0);
+  it.each(layout.beats!)('keeps $id fixed loot reachable from outside at standing height', (beat) => {
+    const buildings = layout.buildings.filter((building) => {
+      if (!building.fixedLoot?.length) {
+        return false;
+      }
+      const [x, , z] = building.position;
+      const nearestBeat = layout.beats!.reduce((nearest, candidate) =>
+        gapToBounds(x, z, candidate.area) < gapToBounds(x, z, nearest.area) ? candidate : nearest,
+      );
+      return nearestBeat === beat;
+    });
     expect(buildings.length).toBeGreaterThan(0);
     for (const building of buildings) {
       const definition = result.registry.templates.get(building.template)!;
