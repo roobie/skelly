@@ -33,7 +33,35 @@
 /* The UI is measured in rem and scales through the root size, so the browser's font setting still counts and
    client coordinates stay true for hit testing; the world canvas sizes from the viewport (`DESIGN.md`, "UI principles"). */
 html {
-  font-size: calc(100% * var(--ui-scale));
+  font-size: calc(100% * var(--ui-scale, 1));
+}
+#mods-screen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-layer-startup-screen);
+  overflow: auto;
+  background: #0e1013;
+  padding: 2rem;
+}
+#mods-screen[hidden] {
+  display: none;
+}
+.mods-card {
+  max-width: 48rem;
+  margin: auto;
+}
+.mods-card textarea {
+  display: block;
+  width: 100%;
+  min-height: 12rem;
+}
+.mods-card pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mods-card button,
+.mods-card input {
+  margin: 0.3rem;
 }
 html,
 body {

@@ -9,7 +9,9 @@ import {
   placedPoint,
   type TemplateAssembly,
 } from '../src/core/templates.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
 
 it('lab room substitutions preserve furnished threshold-to-circulation and return routes at every quarter turn', () => {
   const data = JSON.parse(compileJsonnetFile('deadvox/src/content/base/gauntlet-lab-rooms.libsonnet')) as ContentFile;

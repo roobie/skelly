@@ -42,6 +42,7 @@ import { climb, LadderHold } from '../core/ladders.ts';
 import { lightSenseSourceFor, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
+import { modified } from '../core/modifiers.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
@@ -1034,8 +1035,9 @@ export const createSession = (options: SessionOptions) => {
       }
       const region = pickZombieHitRegion(hitRegions, sim.rng(`player-hit-region:${attacker}:${sim.time}`).next());
       wearOnPlayerHit(inventory, region);
-      const attackerType = zombieStore.get(attacker)?.type.name.toLowerCase() ?? 'zombie';
-      sim.hit(amount, `a ${attackerType}`, region, { kind });
+      const source = zombieStore.get(attacker);
+      const attackerType = source?.type.name.toLowerCase() ?? 'zombie';
+      sim.hit(source ? modified('attack.damage', amount, source) : amount, `a ${attackerType}`, region, { kind });
     },
     onSound: (event, position, zombie) => {
       if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {

@@ -51,6 +51,8 @@ export const SIMULATION_ENTRIES = [
   'src/game/survival.ts',
   'src/game/streamer.ts',
   'src/game/config.ts',
+  // Worlds receive admitted content, so startup admission is no longer reachable from world setup.
+  'src/game/browserMods.ts',
   'src/game/play.ts',
   'src/game/quickbar.ts',
   'src/game/session.ts',

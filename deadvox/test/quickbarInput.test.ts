@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { PressHoldInput } from '../src/game/pressHoldInput.ts';
 import { QuickbarInput } from '../src/game/quickbarInput.ts';
 

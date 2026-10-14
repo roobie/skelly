@@ -5,9 +5,8 @@ import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { World } from '../src/core/world.ts';
 import { generateChunk, terrainBlockIds } from '../src/core/worldgen.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
-import { configFromUrl } from '../src/game/config.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
 
 it('the authored escape path can be walked with the ordinary threat active and no injury', () => {
   const config = configFromUrl(new URLSearchParams('site=tutorial'));
