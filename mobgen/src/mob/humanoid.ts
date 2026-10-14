@@ -768,7 +768,8 @@ const HUE_WEDGES: readonly (readonly [number, (c: number, x: number) => Vec3])[]
   [360, (c, x) => [c, 0, x]],
 ];
 
-const hslToRgb = (hDeg: number, s: number, l: number): Vec3 => {
+/** HSL to palette RGB; exported for the other body plans' palettes (see mob/quadruped.ts). */
+export const hslToRgb = (hDeg: number, s: number, l: number): Vec3 => {
   const h = ((hDeg % 360) + 360) % 360;
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
@@ -907,12 +908,12 @@ const amputateCrawlerLegs = (body: Body, genome: Genome): Body => {
   return translateCrawlerBodyToGround({ ...body, bones, features }, genome.voxelSize, genome.seed);
 };
 
-export const sampleWounds = (rng: Rng, count: number): Wound[] => {
+export const sampleWounds = (rng: Rng, count: number, bones: readonly string[] = WOUNDABLE_BONES): Wound[] => {
   const n = Math.max(0, Math.round(count));
   const wounds: Wound[] = [];
   for (let i = 0; i < n; i++) {
     wounds.push({
-      bone: pick(rng, WOUNDABLE_BONES),
+      bone: pick(rng, bones),
       t: range(rng, 0.15, 0.85),
       angle: range(rng, 0, 360),
       radius: range(rng, 0.018, 0.045),
