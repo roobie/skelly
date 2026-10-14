@@ -1,4 +1,5 @@
 local look = import 'gauntlet-look.jsonnet';
+local city = import 'gauntlet-city.libsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
 local original = look.templates[0];
 local memo = std.filter(function(f) f.id == 'gauntlet_look_memo', look.furniture)[0];
@@ -17,7 +18,7 @@ local utilities = [
   { id: 'gauntlet_incidental_riser', furniture: 'gauntlet_look_riser', size: [3, 5, 3] },
 ];
 {
-  furniture: [
+  furniture: city.furniture + [
     { [k]: button[k] for k in std.objectFields(button) if k != 'readable' } + {
       id: 'gauntlet_button', name: 'Nuclear objective button', scenarioGoal: true,
     },
@@ -56,7 +57,7 @@ local utilities = [
       ],
     },
   ],
-  templates: [original + {
+  templates: city.templates + [original + {
     id: 'gauntlet_service',
     palette: original.palette + {
       N: { furniture: 'gauntlet_maintenance_memo' },

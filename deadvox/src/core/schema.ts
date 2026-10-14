@@ -1189,6 +1189,22 @@ const ScenarioSchema = strictObject({
     pad: pipe(Count, minValue(2), maxValue(32)),
     gap: pipe(Count, minValue(1), maxValue(32)),
     blend: pipe(Count, maxValue(64)),
+    rows: optional(
+      pipe(
+        Count,
+        minValue(2),
+        maxValue(8),
+        check((value) => value % 2 === 0, 'needs paired rows'),
+      ),
+    ),
+    perimeter: optional(
+      strictObject({
+        block: Id,
+        height: pipe(Count, minValue(1), maxValue(32)),
+        thickness: pipe(Count, minValue(2), maxValue(8)),
+      }),
+    ),
+    streetProps: optional(pipe(array(Id), maxLength(16))),
     templates: pipe(array(Id), minLength(1), maxLength(32)),
   }),
 });

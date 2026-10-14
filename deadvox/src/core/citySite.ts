@@ -1,6 +1,6 @@
 import { smoothstep } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
-import type { CityPlan } from './cityPlan.ts';
+import { type CityPlan, cityRowDepth, cityRowStart } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
@@ -8,6 +8,7 @@ import type { LootSpawnPoint } from './loot.ts';
 import { applyPlacementLoot, collectPlacementLoot } from './placementLoot.ts';
 import type { Scale } from './scale.ts';
 import { type FurnitureSpawn, furnitureOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
+import { stampChunk } from './structure.ts';
 import { footprint, type Placement, stampPlacement } from './templates.ts';
 import type { Surface } from './worldgen.ts';
 
@@ -65,6 +66,10 @@ export class CitySite implements Site {
 
   get surface(): Surface {
     const { grid, bounds, floor } = this.plan;
+    const alleys = Array.from(
+      { length: (grid.rows ?? 2) / 2 - 1 },
+      (_, pair) => cityRowStart(grid, pair * 2) + 2 * cityRowDepth(grid),
+    );
     return {
       height: (x, z, natural) => {
         const distance = rectDistance(bounds, x, z);
@@ -78,14 +83,16 @@ export class CitySite implements Site {
       },
       top: (x, z) => {
         const inside = rectDistance(bounds, x, z) === 0;
-        const street =
-          mod(x, grid.street + grid.blockX) < grid.street || mod(z, grid.street + grid.blockZ) < grid.street;
+        const localZ = mod(z, grid.street + grid.blockZ);
+        const alley = alleys.some((start) => localZ >= start && localZ < start + grid.street);
+        const street = mod(x, grid.street + grid.blockX) < grid.street || localZ < grid.street || alley;
         return inside && street ? this.asphalt : undefined;
       },
     };
   }
 
   stamp(chunk: Chunk): void {
+    stampChunk(chunk, this.plan.structures);
     const y0 = chunk.cy * CHUNK;
     for (const placement of this.byColumn.get(`${chunk.cx},${chunk.cz}`) ?? []) {
       if (placement.origin[1] < y0 + CHUNK && placement.origin[1] + placement.template.size[1] > y0) {

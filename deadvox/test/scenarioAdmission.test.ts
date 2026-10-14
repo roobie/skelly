@@ -30,6 +30,23 @@ describe('scenario admission', () => {
     },
   );
 
+  it('rejects a lane prop that reaches into the reserved street-centre body envelope', () => {
+    const profile = fixtureScenario();
+    profile.city.streetProps = ['fixture_lane_prop'];
+    const sources = fixtureScenarioSources(profile);
+    const data = sources[0]!.data as { templates: ReturnType<typeof fixtureService>[] };
+    data.templates.push({
+      id: 'fixture_lane_prop',
+      size: [profile.city.street / 2, 1, 1],
+      lootContext: fixtureService().lootContext,
+      palette: { '=': 'fixture_solid' },
+      layers: [['='.repeat(profile.city.street / 2)]],
+    });
+    const rejected = buildRegistry(sources);
+    expect(rejected.issues.some((issue) => issue.path.endsWith('.city.streetProps'))).toBe(true);
+    expect(rejected.registry.scenarios.has(profile.id)).toBe(false);
+  });
+
   it('rejects bounds that cannot preserve the reserved apron under every service turn', () => {
     const profile = fixtureScenario();
     profile.city.blockZ = profile.city.pad * 2 + fixtureService().size[2];

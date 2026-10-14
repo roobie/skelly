@@ -1,6 +1,6 @@
 local content = import 'gauntlet.jsonnet';
 local lab = import 'gauntlet-lab.libsonnet';
-local service = content.templates[0];
+local service = std.filter(function(t) t.id == 'gauntlet_service', content.templates)[0];
 local ground = lab.ground;
 local hatch = lab.entry.hatch;
 local ladder = lab.entry.ladder;
@@ -34,8 +34,11 @@ local ladder = lab.entry.ladder;
       street: 12,
       blockX: std.max(service.size[0], service.size[2]) + 24,
       blockZ: std.max(service.size[0], service.size[2]) + 24,
-      pad: 2, gap: 2, blend: 24,
-      templates: ['small_house', 'shed', 'workshop_hall'],
+      pad: 2, gap: 1, blend: 24,
+      rows: 4,
+      perimeter: { block: 'concrete', height: 8, thickness: 2 },
+      streetProps: ['gauntlet_car_wreck'],
+      templates: ['gauntlet_city_1', 'gauntlet_city_2', 'gauntlet_city_3'],
     },
   }],
 }

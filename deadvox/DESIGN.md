@@ -305,25 +305,30 @@ mechanics in the implementation rather than repeating the format here.
 
 ### Gauntlet
 
-Gauntlet is a seeded city objective using the ordinary survival simulation, not
-another mission runtime. A reserved service block gives the underground lab a
-constructible street approach instead of hoping an arbitrary shop can fit it.
-The entrance is an unlocked hatch with a ladder; knowledge of a clue never grants
-access. Independent notes, including a plain-text schematic in the ordinary
-reader, provide alternate ways to infer the destination. There is no enforced
-world edge. Ordinary body defaults and existing spawn admission keep scenario
-pressure a content decision rather than a hidden needs or enemy-rule fork; city
-size, scarcity and pressure require in-game judgment. Multi-day growth and needs
-rate authoring are outside #671's first version.
+Gauntlet uses ordinary survival rules, not a second mission runtime. Reserving
+the service campus makes its street approach constructible; knowing a clue never
+grants access. Independent notes give alternate ways to infer the destination.
+Physical perimeter walls enclose the core without an enforced world edge: ordinary
+movement, doors and destruction remain authoritative. City size, scarcity and
+pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
+remain outside #671's first version.
 
-The benchmark and scenario consume one finished placement plan so their street
-and stamping rules cannot diverge as city authoring changes. Planning reserves
-connected street space and an apron before filling ordinary lots; the service
-choice uses a separate seed domain so incidental template changes cannot move
-the destination. Benchmark stacking stays a deliberate stress policy, not a
-promise of playable upper floors or scenario population. See `src/core/cityPlan.ts`,
-`buildCityPlan`; `src/core/citySite.ts`, `CitySite`; and the consumers in
-`src/core/city.ts` and `src/core/gauntlet.ts`.
+Dense blocks need inner circulation, not deeper empty lots behind two facade rows.
+The benchmark and scenario share a finished plan so streets, reserved approaches
+and stamping cannot diverge. Playable upper floors use authored stairs rather than
+benchmark stacking. Elevated routes reward getting onto structures and traversing
+away from default ground; not every structure must provide one, and existing
+movement remains the only authority. See `src/core/cityPlan.ts`, `buildCityPlan`;
+`src/core/citySite.ts`, `CitySite`; and `src/content/base/gauntlet-city.libsonnet`,
+`building`.
+
+Marker-only population omits the ordinary settlement's wanderers and horde, making
+empty marker sets silently remove street pressure. Gauntlet therefore scales the
+ordinary settlement policy by building groups, not by the reserved campus's empty
+area, while the lab retains its authored markers. This reuses population and spawn
+admission instead of inventing an enemy-density runtime. See `src/core/gauntlet.ts`,
+`gauntletPopulation`; `src/core/hamlet.ts`, `hamletZombieSpawns`; and
+`src/core/zombieSpawns.ts`, `ZombieSpawner`.
 
 Admission fails closed because a profile with dangling references, an ambiguous
 selector or a service footprint that fits only some turns is not a valid seeded

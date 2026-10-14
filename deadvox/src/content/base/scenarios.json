@@ -8,10 +8,17 @@
         "blockZ": 96,
         "blocksX": 1,
         "blocksZ": 1,
-        "gap": 2,
+        "gap": 1,
         "pad": 2,
+        "perimeter": {
+          "block": "concrete",
+          "height": 8,
+          "thickness": 2
+        },
+        "rows": 4,
         "street": 12,
-        "templates": ["small_house", "shed", "workshop_hall"]
+        "streetProps": ["gauntlet_car_wreck"],
+        "templates": ["gauntlet_city_1", "gauntlet_city_2", "gauntlet_city_3"]
       },
       "composition": {
         "descents": [

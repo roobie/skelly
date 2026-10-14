@@ -126,6 +126,7 @@ export const hamletZombieSpawns = (
   options: {
     readonly roadHeightAt: (x: number) => number;
     readonly spawnWeights?: ReadonlyMap<string, number>;
+    readonly roadsideOffset?: number;
   },
 ): ZombieSpawn[] => {
   const { roadHeightAt } = options;
@@ -149,12 +150,16 @@ export const hamletZombieSpawns = (
     return weightedTypes.at(-1)![0];
   };
   const count = rng.int(...ZOMBIE_COUNT);
-  const spawns = selected.slice(0, count).map(({ zombie, pos }) => ({ type: zombie, pos }));
+  const spawns = selected.slice(0, count).map(({ zombie, pos, window: spawnWindow }) => ({
+    type: zombie,
+    pos,
+    ...(spawnWindow ? { window: spawnWindow } : {}),
+  }));
   const wanderers = count - spawns.length;
   for (let i = 0; i < wanderers; i++) {
     const x = Math.floor(road.x0 + ((i + 1) * (road.x1 - road.x0)) / (wanderers + 1));
     const side = i % 2 === 0 ? -1 : 1;
-    const z = Math.floor((road.z0 + road.z1) / 2 + side * (HAMLET.road / 2 + 2));
+    const z = Math.floor((road.z0 + road.z1) / 2 + side * (options.roadsideOffset ?? HAMLET.road / 2 + 2));
     spawns.push({ type: wandererType(), pos: [x, roadHeightAt(x) + 1, z] });
   }
   return spawns;

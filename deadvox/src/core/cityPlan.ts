@@ -7,6 +7,7 @@ import { portalLadderPoint, scenarioPortalIssues } from './scenarioPortal.ts';
 import type { ScenarioDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
+import type { BlockBox } from './structure.ts';
 import {
   compileTemplate,
   footprint,
@@ -19,7 +20,10 @@ import {
 
 export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
 const SINGLE_STOREY = new Set(['gas_station', 'shed']);
-export type CityGrid = Omit<ScenarioDef['city'], 'templates'> & { readonly templates: readonly string[] };
+export type CityGrid = Omit<ScenarioDef['city'], 'templates' | 'streetProps'> & {
+  readonly templates: readonly string[];
+  readonly streetProps?: readonly string[] | undefined;
+};
 type Cell = readonly [number, number];
 interface Portal {
   readonly upper: Readonly<Vec3>;
@@ -31,6 +35,7 @@ export interface CityPlan {
   readonly floor: number;
   readonly bounds: Rect;
   readonly placements: readonly Placement[];
+  readonly structures: readonly BlockBox[];
   readonly service: Placement | undefined;
   readonly serviceBlock: Cell | undefined;
   readonly candidates: readonly Cell[];
@@ -51,6 +56,46 @@ export const benchmarkCityGrid = (): CityGrid => ({
   templates: [...HAMLET_TEMPLATES],
 });
 
+const cityDecorationIssues = (registry: Registry, city: CityGrid): [string, string][] => {
+  const issues: [string, string][] = [];
+  if (city.perimeter && !registry.blockIds.has(city.perimeter.block)) {
+    issues.push(['.city.perimeter.block', `no block "${city.perimeter.block}"`]);
+  }
+  for (const id of city.streetProps ?? []) {
+    const prop = registry.templates.get(id);
+    if (
+      !prop ||
+      prop.size[0] + STAIR_BODY_HALF_WIDTH > city.street / 2 ||
+      prop.size[2] > Math.floor(city.blockZ / ((city.streetProps?.length ?? 0) + 1))
+    ) {
+      issues.push(['.city.streetProps', `street prop "${id}" does not fit its lane`]);
+    }
+  }
+  return issues;
+};
+
+const cityPerimeter = (registry: Registry, grid: CityGrid, floor: number, bounds: Rect): BlockBox[] => {
+  if (!grid.perimeter) {
+    return [];
+  }
+  const { height, thickness, block } = grid.perimeter;
+  const structures: BlockBox[] = [];
+  const box = (min: Vec3, max: Vec3) => structures.push({ min, max, block: registry.blockIds.get(block)! });
+  box(
+    [bounds.x0 - thickness, floor - thickness, bounds.z0 - thickness],
+    [bounds.x0, floor + height + 1, bounds.z1 + thickness],
+  );
+  box(
+    [bounds.x1, floor - thickness, bounds.z0 - thickness],
+    [bounds.x1 + thickness, floor + height + 1, bounds.z1 + thickness],
+  );
+  for (const z of [bounds.z0 - thickness, bounds.z1]) {
+    box([bounds.x0, floor - thickness, z], [0, floor + height + 1, z + thickness]);
+    box([grid.street, floor - thickness, z], [bounds.x1, floor + height + 1, z + thickness]);
+  }
+  return structures;
+};
+
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
   if (!registry.blockIds.has('asphalt')) {
@@ -58,18 +103,19 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
   }
   const { city, serviceTemplate } = scenario;
   const width = city.blockX - 2 * city.pad;
-  const depth = city.blockZ - 2 * city.pad;
+  const depth = cityRowDepth(city);
+  issues.push(...cityDecorationIssues(registry, city));
   for (const id of city.templates) {
     const template = registry.templates.get(id);
     if (!template) {
       issues.push(['.city.templates', `no template "${id}"`]);
-    } else if (template.size[0] > width || 2 * template.size[2] > depth) {
-      issues.push(['.city.templates', `template "${id}" does not fit the two reserved-apron rows`]);
+    } else if (template.size[0] > width || template.size[2] > depth) {
+      issues.push(['.city.templates', `template "${id}" does not fit the reserved row`]);
     }
   }
   const service = registry.templates.get(serviceTemplate);
   if (service) {
-    if (Math.max(service.size[0], service.size[2]) > Math.min(width, depth)) {
+    if (Math.max(service.size[0], service.size[2]) > Math.min(width, city.blockZ - 2 * city.pad)) {
       issues.push(['.serviceTemplate', 'service template must fit every quarter turn inside its reserved block']);
     }
     if (templateResolves(registry, service)) {
@@ -146,27 +192,36 @@ interface FillContext {
   incidentalTemplates: readonly string[];
   compiled: ReturnType<typeof templateCompiler>;
 }
-const fillRow = (context: FillContext, [i, j]: Cell, row: 0 | 1): Placement[] => {
+export const cityRowDepth = (grid: CityGrid): number =>
+  Math.floor((grid.blockZ - 2 * grid.pad - ((grid.rows ?? 2) / 2 - 1) * grid.street) / (grid.rows ?? 2));
+
+export const cityRowStart = (grid: CityGrid, row: number): number =>
+  grid.street + grid.pad + Math.floor(row / 2) * (2 * cityRowDepth(grid) + grid.street);
+
+const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
   const { seed, floor, grid, compiled, maxStoreys } = context;
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
   const end = (i + 1) * pitchX - grid.pad;
-  const turn = row === 0 ? 0 : 2;
+  const turn = row % 2 === 0 ? 0 : 2;
   let x = i * pitchX + grid.street + grid.pad;
   const placements: Placement[] = [];
   for (let k = 0; ; k++) {
     const fits = (name: string) => footprint({ template: compiled(name, 1), origin: [0, 0, 0], turn })[0] <= end - x;
     const pool =
       k === 0 && row === 0 && context.incidentalTemplates.length > 0 ? context.incidentalTemplates : grid.templates;
-    const first = pool[Math.floor(hash3(seed, i * 64 + k, j * 2 + row, 0) * pool.length)]!;
+    const first = pool[Math.floor(hash3(seed, i * 64 + k, j * (grid.rows ?? 2) + row, 0) * pool.length)]!;
     const id = fits(first) ? first : grid.templates.find(fits);
     if (!id) {
       break;
     }
-    const storeys = SINGLE_STOREY.has(id) ? 1 : 1 + Math.floor(hash3(seed, i, j * 2 + row, k + 1000) * maxStoreys);
+    const storeys = SINGLE_STOREY.has(id)
+      ? 1
+      : 1 + Math.floor(hash3(seed, i, j * (grid.rows ?? 2) + row, k + 1000) * maxStoreys);
     const template = compiled(id, storeys);
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
-    const z = row === 0 ? j * pitchZ + grid.street + grid.pad : (j + 1) * pitchZ - grid.pad - depth;
+    const bank = j * pitchZ + cityRowStart(grid, row);
+    const z = row % 2 === 0 ? bank : bank + 2 * cityRowDepth(grid) - depth;
     placements.push(freezePlacement({ template, origin: [x, floor, z], turn }));
     x += width + grid.gap;
   }
@@ -194,6 +249,14 @@ export const servicePlacement = ({
       j * (grid.street + grid.blockZ) + grid.street + grid.pad,
     ],
     turn,
+  });
+
+const freezeGrid = (grid: CityGrid): Readonly<CityGrid> =>
+  Object.freeze({
+    ...grid,
+    templates: Object.freeze([...grid.templates]),
+    ...(grid.perimeter ? { perimeter: Object.freeze({ ...grid.perimeter }) } : {}),
+    ...(grid.streetProps ? { streetProps: Object.freeze([...grid.streetProps]) } : {}),
   });
 
 export const buildCityPlan = ({
@@ -238,7 +301,7 @@ export const buildCityPlan = ({
   const placements = cells.flatMap(([i, j]) =>
     service && serviceBlock?.[0] === i && serviceBlock[1] === j
       ? [service]
-      : [...fillRow(context, [i, j], 0), ...fillRow(context, [i, j], 1)],
+      : Array.from({ length: grid.rows ?? 2 }, (_, row) => fillRow(context, [i, j], row)).flat(),
   );
   if (composition) {
     placements.push(...composition.leads, ...composition.landmarks);
@@ -246,15 +309,40 @@ export const buildCityPlan = ({
   const pitchX = grid.street + grid.blockX;
   const pitchZ = grid.street + grid.blockZ;
   const spawn: Vec3 = [grid.street / 2, floor + 1, grid.street / 2];
+  const bounds = {
+    x0: -grid.blocksX * pitchX,
+    z0: -grid.blocksZ * pitchZ,
+    x1: grid.blocksX * pitchX + grid.street,
+    z1: grid.blocksZ * pitchZ + grid.street,
+  };
+  for (const [i, j] of cells) {
+    for (const [index, id] of (grid.streetProps ?? []).entries()) {
+      const template = context.compiled(id, 1);
+      placements.push(
+        freezePlacement({
+          template,
+          turn: 0,
+          origin: [
+            i * pitchX,
+            floor,
+            j * pitchZ + grid.street + (grid.blockZ * (index + 1)) / ((grid.streetProps?.length ?? 0) + 1),
+          ].map(Math.floor) as Vec3,
+        }),
+      );
+    }
+  }
+  const structures = cityPerimeter(registry, grid, floor, bounds);
   return Object.freeze({
-    grid: Object.freeze({ ...grid, templates: Object.freeze([...grid.templates]) }),
+    grid: freezeGrid(grid),
     floor,
-    bounds: Object.freeze({
-      x0: -grid.blocksX * pitchX,
-      z0: -grid.blocksZ * pitchZ,
-      x1: grid.blocksX * pitchX + grid.street,
-      z1: grid.blocksZ * pitchZ + grid.street,
-    }),
+    bounds: Object.freeze(bounds),
+    structures: Object.freeze(
+      structures.map((box) => {
+        Object.freeze(box.min);
+        Object.freeze(box.max);
+        return Object.freeze(box);
+      }),
+    ),
     placements: Object.freeze(placements),
     service,
     serviceBlock,
