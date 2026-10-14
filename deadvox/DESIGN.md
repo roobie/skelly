@@ -30,6 +30,7 @@ read_if:
   - you're changing the HUD defaults or why players can turn HUD elements off
   - you're changing timed-action progress presentation or its relationship to HUD scale
   - you're changing content-defined UI spacing or HUD scale, or choosing rem or px for a UI length
+  - you're changing startup content selection or browser mod admission
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
@@ -1362,20 +1363,24 @@ their state.
 
 ## Content and modding
 
-- **Content types are defined with Valibot schemas,** chosen for its bundle
-  size. The schema gives both the TypeScript types and the runtime validation.
-- **Packs.** A pack is a folder of JSON files. The base pack loads first; mods
-  load after it and can add new ids or override existing ones. Ids are strings,
-  namespaced by pack when they would clash (for example `base:shambler`).
-- **Every kind of content goes through the same validator:** blocks, shapes,
-  items, recipes, loot tables, templates, zombie types, vehicle parts, sounds.
-  It reports references to missing ids.
-- **Versioned saves.** A save records which packs, and which pack versions, it
-  was made with. Ids that no longer exist are kept as "unknown" rather than
-  dropped (see [CHALLENGES.md](CHALLENGES.md#7-saves-and-migration)).
-- **Larger authored buildings.** Importing voxel-editor work from tools such as
-  MagicaVoxel or vengi remains a direction when building scale outgrows the
-  current authoring path; no importer contract is settled.
+Content is data, never JavaScript: mods must not bypass simulation ownership or
+persistence. Schema validation keeps authored definitions and runtime types in
+agreement; reference validation prevents partial files from entering a world.
+See `src/core/content.ts`, `buildRegistry`.
+
+The registry is built after startup content selection and passed through the world
+configuration so URL discovery, weathering, rendering and simulation all use the
+same admitted definitions. A module-load registry would freeze the base pack before
+a player could select mods. See `src/game/bundledContent.ts`, `buildBundledContent`,
+and `src/game/config.ts`, `GameConfig`.
+
+Whole-definition overrides keep composition in the authoring language rather than
+creating a second patch language. Browser Jsonnet, mod persistence, save-pack identity
+and uploaded assets remain follow-up work in #633. The preview panel is opt-in while
+that save boundary is unfinished; see `src/ui/modsPanel.ts`, `chooseMods`.
+
+Importing larger authored buildings from voxel editors remains an open direction;
+no importer contract is settled.
 
 ## A world that feels real
 

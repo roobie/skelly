@@ -9,14 +9,17 @@ import { HandlingRange } from '../src/core/range.ts';
 import { furnitureDistance, INVENTORY_REACH } from '../src/core/reach.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
-import { makeConfig } from '../src/game/config.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../src/game/testHouse.ts';
 import { isTestHouseRangeStockItem, testHouseRangeStock } from '../src/game/testHouseRange.ts';
 import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
+import { makeConfig } from './fixtures/startupContent.ts';
 import { buildTestHouseRangeRoute, routeMovementInput } from './testHouseRangeRoute.ts';
 
 const withRangeStockFixtures = (): { registry: Registry; firearm: string; ammo: string; box: string } => {

@@ -4,7 +4,7 @@ import { blockColors, blockId } from './core/content.ts';
 import { CHUNK, compassBearing, toChunk, toLocal } from './core/coords.ts';
 import { BLOCK_SIZE } from './core/scale.ts';
 import { generateColumn, terrainBlockIds, worldGroundAt } from './core/worldgen.ts';
-import { BUNDLED_CONTENT } from './game/bundledContent.ts';
+import { buildBundledContent } from './game/bundledContent.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';
 import {
@@ -19,13 +19,14 @@ import {
 const CELL_SIZE = BLOCK_SIZE;
 const OUTSIDE_MARGIN_METRES = 24;
 const DEFAULT_SEED = 73;
-const { registry } = BUNDLED_CONTENT;
+const content = buildBundledContent();
+const { registry } = content;
 const params = new URLSearchParams(globalThis.location.search);
 const overlay = params.get('overlay') === '1';
 const rawSeed = Number(params.get('seed') ?? DEFAULT_SEED);
 const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
-const config = makeConfig(seed, DEFAULT_RADIUS_M);
-Object.assign(config, siteFromUrl(params, 'playtest'));
+const config = makeConfig(seed, DEFAULT_RADIUS_M, content);
+Object.assign(config, siteFromUrl(params, 'playtest', registry));
 config.debug = true;
 const layout = registry.layouts.get(config.site);
 const site = siteForReviewMap(config, registry);

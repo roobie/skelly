@@ -8,7 +8,10 @@ import { currentSaveVersionIdentity, encodeSave } from '../src/core/saveFormat.t
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { realTimestamp } from '../src/core/time.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import type { SaveLoadResult } from '../src/game/saveStorage.ts';
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 import { SaveController } from '../src/ui/saveController.ts';

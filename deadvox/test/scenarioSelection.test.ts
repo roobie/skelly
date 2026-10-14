@@ -3,10 +3,13 @@ import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
-import { siteFromUrl } from '../src/game/config.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { createSession, IDLE } from '../src/game/session.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { siteFromUrl } from './fixtures/startupContent.ts';
 
 it('selects only admitted scenario ids from the URL', () => {
   const profile = fixtureScenario();

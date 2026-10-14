@@ -145,6 +145,10 @@
       "output": "deadvox/src/content/base/zombies.json"
     },
     {
+      "source": "deadvox/test/fixtures/mods/browser-mod.jsonnet",
+      "output": "deadvox/test/fixtures/mods/browser-mod.json"
+    },
+    {
       "source": "site/playtest.jsonnet",
       "output": "site/playtest.json"
     }

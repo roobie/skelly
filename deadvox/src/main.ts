@@ -9,7 +9,7 @@ import assetManifest from './content/base/assets/manifest.json' with { type: 'js
 import { validateManifest } from './core/assets.ts';
 import { getBuildRevision } from './core/buildInfo.ts';
 import { parseTimeOfDay } from './core/clock.ts';
-import { BUNDLED_CONTENT } from './game/bundledContent.ts';
+import { buildBundledContent } from './game/bundledContent.ts';
 import { applyWeatheringConfig, configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
@@ -23,10 +23,10 @@ import { tutorialRequested, tutorialUrl } from './game/tutorial.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
+import { chooseMods } from './ui/modsPanel.ts';
 import { contentLookup, SaveController } from './ui/saveController.ts';
 import { applyUiTokens } from './ui/uiTokens.ts';
 
-applyUiTokens(BUNDLED_CONTENT.registry, document.documentElement);
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
 const params = new URLSearchParams(location.search);
@@ -35,6 +35,15 @@ const startupScreen = document.getElementById('startup-screen')!;
 installErrorReportHandler();
 const overlay = document.getElementById('overlay')!;
 overlay.inert = true;
+const modsScreen = document.getElementById('mods-screen')!;
+const showMods = params.get('mods') === '1' && !params.has('bench');
+if (showMods) {
+  startupScreen.hidden = true;
+  modsScreen.hidden = false;
+}
+const content = showMods ? await chooseMods(modsScreen) : buildBundledContent();
+startupScreen.hidden = false;
+applyUiTokens(content.registry, document.documentElement);
 const saveStatus = document.getElementById('save-status')!;
 const saveStatusHome = saveStatus.parentElement!;
 const saveStatusNextSibling = saveStatus.nextSibling;
@@ -110,7 +119,7 @@ if (bench === 'report') {
 } else if (bench === null) {
   keyboardInput.install();
   inputBindings.loadLayout();
-  let config = configFromUrl(params);
+  let config = configFromUrl(params, content);
   keyboardInput.context = () => ({ context: 'title', debug: config.debug });
   let pendingReplay: Uint8Array | undefined;
   try {
@@ -138,7 +147,7 @@ if (bench === 'report') {
     try {
       const preliminary = await decodeInputReplay(pendingReplay, { contentLookup: () => true });
       const identity = preliminary.worldOptions;
-      const replayConfig = makeConfig(identity.seed, config.radiusM, identity.blockSize);
+      const replayConfig = makeConfig(identity.seed, config.radiusM, content, identity.blockSize);
       replayConfig.start = identity.clock.start;
       replayConfig.debug = true;
       replayConfig.actors = config.actors;
@@ -168,7 +177,7 @@ if (bench === 'report') {
   } else if (tutorialRequested(params)) {
     const practiceParams = new URLSearchParams(new URL(tutorialUrl(location.href, true)).search);
     practiceParams.set('site', 'tutorial');
-    const practiceConfig = configFromUrl(practiceParams);
+    const practiceConfig = configFromUrl(practiceParams, content);
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
     startPlay(engine, undefined, { tutorial: true });
     document.getElementById('new-character-options')!.hidden = true;
@@ -208,7 +217,7 @@ if (bench === 'report') {
     }
     const savedWorld = await saveController.prepare();
     if (savedWorld) {
-      const resumed = makeConfig(savedWorld.seed, config.radiusM, savedWorld.blockSize);
+      const resumed = makeConfig(savedWorld.seed, config.radiusM, content, savedWorld.blockSize);
       resumed.start = savedWorld.clock.start;
       resumed.debug = config.debug;
       resumed.actors = config.actors;
@@ -245,7 +254,7 @@ if (bench === 'report') {
 } else if (bench === 'shamblers') {
   const run = shamblerRunFromUrl(params);
   if (run) {
-    const config = makeConfig(run.seed, DEFAULT_RADIUS_M);
+    const config = makeConfig(run.seed, DEFAULT_RADIUS_M, content);
     config.start = parseTimeOfDay(run.time)!;
     startShamblerBench(createEngine(config, view), run);
   } else {
@@ -253,11 +262,11 @@ if (bench === 'report') {
       'Invalid shambler benchmark parameters. Use n as unique positive integers up to 500, seed as a signed 32-bit integer, and time as HH:MM (default 23:30).';
   }
 } else {
-  const run = benchRunFromUrl(params);
+  const run = benchRunFromUrl(params, content.registry);
   const { blockSize, radiusM } = currentConfig(run);
   const stats: StreamerStats = { genMs: [], meshMs: [], triangles: [] };
-  const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, blockSize);
+  const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, content, blockSize);
   // The test house is defined in metres, so it compares across block sizes; `&site=city` benchmarks the city.
-  Object.assign(config, siteFromUrl(params, 'testHouse'));
+  Object.assign(config, siteFromUrl(params, 'testHouse', content.registry));
   startBench(createEngine(config, view, stats), run, stats);
 }

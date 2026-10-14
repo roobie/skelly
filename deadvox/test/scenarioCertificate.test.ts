@@ -10,7 +10,10 @@ import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import { compileTemplate, footprint, placedPoint, type Turn } from '../src/core/templates.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/game/bundledContent.ts';
+
+const BUNDLED_CONTENT = buildBundledContent();
+
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 
 const { registry } = BUNDLED_CONTENT;
