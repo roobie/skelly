@@ -11,11 +11,11 @@ import type { FixedLootItemDef } from './schema.ts';
 
 const distinct = <T>(values: T[]): boolean => new Set(values).size === values.length;
 
-export const UsageSchema = pipe(
+const UsageSchema = pipe(
   array(picklist(['Residential', 'Industrial', 'Medical', 'Hunting', 'Military', 'Infected'])),
   check(distinct, 'usage tags must be unique'),
 );
-export const LootTierSchema = picklist(['Tier1', 'Tier2', 'Tier3']);
+const LootTierSchema = picklist(['Tier1', 'Tier2', 'Tier3']);
 export const ItemEconomySchema = strictObject({
   usage: UsageSchema,
   tiers: pipe(array(LootTierSchema), check(distinct, 'tiers must be unique')),
@@ -24,7 +24,7 @@ export const LootContextSchema = strictObject({ usage: UsageSchema, tier: LootTi
 
 export type ItemEconomy = InferOutput<typeof ItemEconomySchema>;
 export type LootContext = InferOutput<typeof LootContextSchema>;
-export type UsageTag = ItemEconomy['usage'][number];
+type UsageTag = ItemEconomy['usage'][number];
 
 export const economyEligible = (economy: ItemEconomy, context: LootContext): boolean =>
   economy.tiers.includes(context.tier) && economy.usage.some((usage) => context.usage.includes(usage));
@@ -32,7 +32,7 @@ export const economyEligible = (economy: ItemEconomy, context: LootContext): boo
 export const militaryOnlyEconomy = (economy: ItemEconomy): boolean =>
   economy.usage.length === 1 && economy.usage[0] === 'Military';
 
-export type LootSupply =
+type LootSupply =
   | { readonly kind: 'table'; readonly table: string }
   | { readonly kind: 'fixed'; readonly items: readonly FixedLootItemDef[] }
   | { readonly kind: 'empty' };
