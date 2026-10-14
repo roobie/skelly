@@ -147,6 +147,7 @@ local row = function(y, z)
   ],
   templates: [{
     id: 'gauntlet_look_service',
+    lootContext: { usage: ['Industrial', 'Medical'], tier: 'Tier1' },
     size: [width, roof + 1, depth],
     palette: {
       '.': 'air', '=': 'concrete', '#': 'brick', R: 'galvanized',
@@ -171,6 +172,7 @@ local row = function(y, z)
   }],
   layouts: [{
     id: 'gauntlet_look',
+    lootContext: { usage: ['Industrial', 'Medical'], tier: 'Tier1' },
     demo: true,
     bounds: { x0: 40, z0: 40, x1: 82, z1: 78 },
     ground: 21,

@@ -224,7 +224,6 @@ const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
 
   const compiledHq = compileTemplate(result.registry, hqDefinition);
   expectHqMaterialsAndFloorEdges();
-  expect(hqDefinition.military).toBe(true);
   expect(compiledHq.pieces.some((piece) => piece.loot === 'military_armoury')).toBe(false);
   expect(hqDefinition.access?.storeys.length).toBeGreaterThanOrEqual(3);
   expect(templateSpatialIssues(result.registry, compiledHq)).toEqual([]);
@@ -1294,10 +1293,10 @@ describe('authored fixed loot', () => {
     expectCampHqProperties(compiledArmoury);
   });
 
-  it('admits military surface loot through stacked authored placement', () => {
+  it('admits surface loot through a stacked placement with its authored source context', () => {
     const template: TemplateDef = {
       id: 'fixture_military',
-      military: true,
+      lootContext: { usage: ['Military'], tier: 'Tier1' },
       size: [2, 3, 2],
       palette: { '.': 'air', S: { furniture: 'fixture_shelf' } },
       layers: [
@@ -1306,8 +1305,6 @@ describe('authored fixed loot', () => {
         ['..', '..'],
       ],
     };
-    const rifle = result.registry.items.get('rifle_assault');
-    expect(rifle).toBeDefined();
     const registry = {
       ...result.registry,
       templates: new Map([[template.id, template]]),
@@ -1323,7 +1320,19 @@ describe('authored fixed loot', () => {
           },
         ],
       ]),
-      items: new Map([['fixture_gear', { ...rifle!, id: 'fixture_gear' }]]),
+      items: new Map([
+        [
+          'fixture_gear',
+          {
+            id: 'fixture_gear',
+            name: 'Fixture gear',
+            category: 'material' as const,
+            weight: 1,
+            size: [1, 1] as [number, number],
+            economy: { usage: ['Military' as const], tiers: ['Tier1' as const] },
+          },
+        ],
+      ]),
     };
     const fixture: SiteLayoutDef = {
       ...layout,
@@ -1350,10 +1359,10 @@ describe('authored fixed loot', () => {
     expect(authoredLayoutIssues(fixture, registry)).toEqual([]);
   });
 
-  it('rejects a surface military item in a non-military template', () => {
+  it('rejects surface supply outside its source economy context', () => {
     const buildingIndex = layout.buildings.findIndex(
       (candidate) =>
-        candidate.fixedLoot?.length && result.registry.templates.get(candidate.template)?.military !== true,
+        candidate.fixedLoot?.length && !(candidate.lootContext ?? layout.lootContext).usage.includes('Military'),
     );
     const building = layout.buildings[buildingIndex];
     if (!building?.fixedLoot?.length) {
@@ -1373,7 +1382,7 @@ describe('authored fixed loot', () => {
 
     expect(issues).toContainEqual([
       `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`,
-      expect.stringContaining('military loot only'),
+      expect.stringContaining('outside the source loot context'),
     ]);
   });
 

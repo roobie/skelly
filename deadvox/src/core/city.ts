@@ -3,6 +3,7 @@ import { benchmarkCityGrid, buildCityPlan } from './cityPlan.ts';
 import { CitySite } from './citySite.ts';
 import type { Registry } from './content.ts';
 import type { Scale } from './scale.ts';
+import { lootPointsOf } from './site.ts';
 import { terrainHeight } from './worldgen.ts';
 
 export class StressCity extends CitySite {
@@ -18,6 +19,12 @@ export class StressCity extends CitySite {
         grid: benchmarkCityGrid(),
         maxStoreys: Math.max(1, maxStoreys),
       }),
+    );
+  }
+
+  override lootPointsIn(cx: number, cz: number) {
+    return (this.byColumn.get(`${cx},${cz}`) ?? []).flatMap((placement) =>
+      lootPointsOf(this.registry, 'city', placement, [cx, cz]),
     );
   }
 }

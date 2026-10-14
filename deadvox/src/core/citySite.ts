@@ -4,6 +4,7 @@ import type { CityPlan } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import type { LootSpawnPoint } from './loot.ts';
 import { applyPlacementLoot, collectPlacementLoot } from './placementLoot.ts';
 import type { Scale } from './scale.ts';
 import { type FurnitureSpawn, furnitureOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
@@ -17,7 +18,7 @@ export class CitySite implements Site {
   readonly registry: Registry;
   readonly plan: CityPlan;
   readonly spawn: Site['spawn'];
-  private readonly byColumn = new Map<string, Placement[]>();
+  protected readonly byColumn = new Map<string, Placement[]>();
   private readonly asphalt: number;
   private readonly loot: ReturnType<typeof collectPlacementLoot>;
 
@@ -91,6 +92,11 @@ export class CitySite implements Site {
         stampPlacement(chunk, placement);
       }
     }
+  }
+
+  // Gauntlet sources are not part of the ordinary economy selector's round-one contract.
+  lootPointsIn(_cx: number, _cz: number): readonly LootSpawnPoint[] {
+    return [];
   }
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {

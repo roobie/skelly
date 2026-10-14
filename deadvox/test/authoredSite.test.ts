@@ -18,7 +18,7 @@ import {
   standingHeight,
 } from '../src/core/authoredTerrain.mjs';
 import { SPAWN_TIMES } from '../src/core/clock.ts';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import type { Registry } from '../src/core/content.ts';
 import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
 import { HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from '../src/core/hamlet.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
@@ -32,6 +32,7 @@ import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { configFromUrl } from '../src/game/config.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const base = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -44,6 +45,7 @@ const { registry, issues } = load(layout);
 const baseLayoutIds = [...registry.layouts.keys()].filter((id) => id !== layout.id);
 const validationLayout = (id: string): SiteLayoutDef => ({
   id,
+  lootContext: { usage: ['Residential'], tier: 'Tier1' },
   bounds: { x0: 0, z0: 0, x1: 10, z1: 10 },
   ground: 0,
   terrain: [],
@@ -449,6 +451,7 @@ describe('authored layout acceptance', () => {
   it('rejects an amalgam whose feet are clear but whose full envelope intersects a building', () => {
     const template: TemplateDef = {
       id: 'spawn_clearance_fixture',
+      lootContext: { usage: ['Residential'], tier: 'Tier1' },
       size: [4, 4, 4],
       palette: { '.': 'air', '#': 'planks', z: { spawn: 'amalgam' } },
       layers: [
@@ -553,17 +556,16 @@ describe('authored layout acceptance', () => {
     const nonContainer = fixedLootTemplate.pieces.find((piece) => !registry.furniture.get(piece.furniture)?.container)!;
     invalidWithSharedRegistry(withFixedLoot(nonContainer.pos, 'rag'), 'has no container');
   });
-  it('places military-only fixed loot only in a container that rolls a military table', () => {
+  it('admits fixed stock by building context rather than its container table', () => {
     const [military] = militaryLootItems(registry);
-    const rolled = registry.loot.get(fixedLootContainer.loot ?? '');
-    if (military === undefined || rolled === undefined || rolled.military) {
-      throw new Error('fixture needs a military-only item and a non-military container table');
+    if (military === undefined) {
+      throw new Error('fixture needs a Military-only item');
     }
     const fixed = withFixedLoot(fixedLootContainer.pos, military);
-    invalidWithSharedRegistry(fixed, 'military loot only');
-    const loot = new Map(registry.loot);
-    loot.set(rolled.id, { ...rolled, military: true });
-    expect(authoredLayoutIssues(fixed, { ...registry, loot })).toEqual([]);
+    invalidWithSharedRegistry(fixed, 'outside the source loot context');
+    const accepted = structuredClone(fixed);
+    accepted.buildings[0]!.lootContext = { usage: ['Military'], tier: 'Tier2' };
+    expect(authoredLayoutIssues(accepted, registry)).toEqual([]);
   });
   it('rejects fixed loot without a furniture anchor', () => {
     invalidWithSharedRegistry(withFixedLoot([0, 0, 0], 'rag'), 'no furniture anchor');
@@ -887,6 +889,7 @@ it('grounds a seed-owned woodland tree in the lot blend rather than on the raw r
     buildings: [44, 52, 60, 68, 76, 84].map((cx) => {
       const building = {
         template: 'shed',
+        lootContext: registry.templates.get('shed')!.lootContext,
         position: [cx - 1.5, 0, 67.5] as [number, number, number],
         rotation: 90 as const,
       };

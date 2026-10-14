@@ -1,29 +1,44 @@
 {
-  "items": [
-    {
-      "id": "sample_note",
-      "name": "Placeholder note",
-      "category": "book",
-      "weight": 5,
-      "size": [1, 1],
-      "description": "A clearly marked prototype reading sample, not playtest lore.",
-      "readable": {
-        "title": "Placeholder — a folded note",
-        "text": "PLACEHOLDER TEXT — NOT PLAYTEST LORE\n\nThis paper demonstrates reading an authored note. The evacuation message, Dad's cabin directions and hunter's logbook will be written separately.\n\nYou can put the paper away with Esc or Tab. The world keeps moving while you read."
-      }
-    }
-  ],
   "furniture": [
     {
+      "color": "#99794c",
       "id": "sample_sign",
       "name": "Placeholder sign",
-      "size": [2, 3, 1],
-      "color": "#99794c",
       "readable": {
-        "title": "Placeholder — a wooden sign",
-        "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION\n\nThis is a sample of readable furniture. The hamlet signs and actual directions will be authored later."
-      }
+        "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION\n\nThis is a sample of readable furniture. The hamlet signs and actual directions will be authored later.",
+        "title": "Placeholder — a wooden sign"
+      },
+      "size": [2, 3, 1]
     }
   ],
-  "loot": [{ "id": "sample_note_loot", "rolls": [1, 1], "entries": [{ "weight": 1, "item": "sample_note" }] }]
+  "items": [
+    {
+      "category": "book",
+      "description": "A clearly marked prototype reading sample, not playtest lore.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "sample_note",
+      "name": "Placeholder note",
+      "readable": {
+        "text": "PLACEHOLDER TEXT — NOT PLAYTEST LORE\n\nThis paper demonstrates reading an authored note. The evacuation message, Dad's cabin directions and hunter's logbook will be written separately.\n\nYou can put the paper away with Esc or Tab. The world keeps moving while you read.",
+        "title": "Placeholder — a folded note"
+      },
+      "size": [1, 1],
+      "weight": 5
+    }
+  ],
+  "loot": [
+    {
+      "entries": [
+        {
+          "item": "sample_note",
+          "weight": 1
+        }
+      ],
+      "id": "sample_note_loot",
+      "rolls": [1, 1]
+    }
+  ]
 }

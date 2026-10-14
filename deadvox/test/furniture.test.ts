@@ -408,6 +408,7 @@ describe('templates', () => {
   /** An asymmetric template: an L of blocks, and a wardrobe facing east. */
   const template: TemplateDef = {
     id: 'l_shape',
+    lootContext: { usage: ['Residential'], tier: 'Tier1' },
     size: [3, 5, 2],
     palette: { '#': 'brick', '.': 'air', R: { furniture: 'wardrobe', facing: 'e' } },
     layers: [

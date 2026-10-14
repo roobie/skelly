@@ -4,7 +4,6 @@ import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation
 import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_TYPE } from './hamlet.ts';
-import { militaryLootItems } from './magazine.ts';
 import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
@@ -32,7 +31,6 @@ const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['building
 
 export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry): [string, string][] => {
   const issues: [string, string][] = [];
-  const military = militaryLootItems(registry);
   if (['hamlet', 'city', 'forest'].includes(layout.id)) {
     issues.push(['.id', 'reserved built-in site id']);
   }
@@ -92,10 +90,10 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (!templateResolves(registry, template)) {
       return; // checkTemplates reports the palette; the placement can't compile without it.
     }
-    const placement = placementOf(registry, building);
+    const placement = placementOf(registry, building, layout.lootContext);
     issues.push(
       ...placementLootIssues(
-        { registry, military, militaryTemplate: template.military === true },
+        { registry, context: placement.lootContext! },
         placement.template,
         building.fixedLoot ?? [],
         `.buildings[${i}].fixedLoot`,

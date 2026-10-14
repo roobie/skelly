@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bestPocket } from '../src/core/options.ts';
@@ -10,6 +9,7 @@ import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Survival } from '../src/game/survival.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const BASE = 'src/content/base';

@@ -2,17 +2,6 @@
   "templates": [
     {
       "id": "playtest_tool_shack",
-      "size": [8, 6, 6],
-      "palette": {
-        "=": "concrete",
-        "#": "planks",
-        ".": "air",
-        "^": "roof",
-        "D": { "furniture": "wood_door" },
-        "C": { "furniture": "crate", "loot": "d41_empty" },
-        "W": { "furniture": "workbench" },
-        "z": { "spawn": "shambler", "chance": 0.3 }
-      },
       "layers": [
         ["========", "========", "========", "========", "========", "========"],
         ["###DD###", "#......#", "#...z..#", "#WWW.CC#", "#WWW.CC#", "########"],
@@ -20,38 +9,59 @@
         ["###DD###", "#......#", "#......#", "#......#", "#......#", "########"],
         ["###DD###", "#......#", "#......#", "#......#", "#......#", "########"],
         ["^^^^^^^^", "^^^^^^^^", "^^^^^^^^", "^^^^^^^^", "^^^^^^^^", "^^^^^^^^"]
-      ]
-    },
-    {
-      "id": "playtest_house",
-      "size": [16, 16, 16],
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
       "palette": {
+        "#": "planks",
         ".": "air",
-        "s": "stone",
-        "p": "planks",
-        "w": "brick",
+        "=": "concrete",
+        "C": {
+          "furniture": "crate",
+          "loot": "d41_empty"
+        },
         "D": {
           "furniture": "wood_door"
         },
-        "Z": {
+        "W": {
+          "furniture": "workbench"
+        },
+        "^": "roof",
+        "z": {
+          "chance": 0.29999999999999999,
           "spawn": "shambler"
-        },
-        "K": {
-          "furniture": "kitchen_cupboard"
-        },
-        "F": {
-          "furniture": "fridge"
-        },
-        "T": {
-          "furniture": "desk"
-        },
-        "R": {
-          "furniture": "wardrobe"
-        },
-        "B": {
-          "furniture": "bed"
         }
       },
+      "size": [8, 6, 6]
+    },
+    {
+      "access": {
+        "entrance": [2, 1, 2],
+        "ground": "downstairs",
+        "stairs": [
+          {
+            "block": "planks",
+            "from": "downstairs",
+            "lower": [2, 1, 5],
+            "to": "bedroom",
+            "upper": [11, 9, 5],
+            "width": 2
+          }
+        ],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "downstairs"
+          },
+          {
+            "floor": 9,
+            "id": "bedroom"
+          }
+        ]
+      },
+      "id": "playtest_house",
       "layers": [
         [
           "wwwwwwwwwwwwwwww",
@@ -342,73 +352,41 @@
           "wwwwwwwwwwwwwwww"
         ]
       ],
-      "access": {
-        "ground": "downstairs",
-        "entrance": [2, 1, 2],
-        "storeys": [
-          {
-            "id": "downstairs",
-            "floor": 1
-          },
-          {
-            "id": "bedroom",
-            "floor": 9
-          }
-        ],
-        "stairs": [
-          {
-            "from": "downstairs",
-            "to": "bedroom",
-            "lower": [2, 1, 5],
-            "upper": [11, 9, 5],
-            "width": 2,
-            "block": "planks"
-          }
-        ]
-      }
-    },
-    {
-      "id": "playtest_store",
-      "size": [20, 8, 16],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
       "palette": {
         ".": "air",
-        "#": "brick",
-        "p": "plaster",
-        "^": "roof",
-        "w": "window_frame",
-        "k": "concrete",
+        "B": {
+          "furniture": "bed"
+        },
         "D": {
           "furniture": "wood_door"
-        },
-        "d": {
-          "furniture": "wood_door"
-        },
-        "S": {
-          "furniture": "shelf",
-          "loot": "snacks"
-        },
-        "C": {
-          "furniture": "counter",
-          "loot": "snacks"
         },
         "F": {
           "furniture": "fridge"
         },
-        "X": {
-          "furniture": "crate"
+        "K": {
+          "furniture": "kitchen_cupboard"
+        },
+        "R": {
+          "furniture": "wardrobe"
         },
         "T": {
           "furniture": "desk"
         },
-        "K": {
-          "furniture": "kitchen_cupboard",
-          "loot": "kitchen_cupboard"
+        "Z": {
+          "spawn": "shambler"
         },
-        "Q": {
-          "furniture": "clinic_sign",
-          "facing": "s"
-        }
+        "p": "planks",
+        "s": "stone",
+        "w": "brick"
       },
+      "size": [16, 16, 16]
+    },
+    {
+      "id": "playtest_store",
       "layers": [
         [
           "kkkkkkkkkkkkkkkkkkkk",
@@ -554,42 +532,54 @@
           "^^^^^^^^^^^^^^^^^^^^",
           "^^^^^^^^^^^^^^^^^^^^"
         ]
-      ]
-    },
-    {
-      "id": "playtest_gas_station",
-      "size": [16, 9, 26],
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
       "palette": {
-        ".": "air",
         "#": "brick",
-        "p": "plaster",
-        "^": "roof",
-        "w": "window_frame",
-        "k": "concrete",
-        "t": "tiles",
-        "a": "asphalt",
+        ".": "air",
+        "C": {
+          "furniture": "counter",
+          "loot": "snacks"
+        },
         "D": {
           "furniture": "wood_door"
+        },
+        "F": {
+          "furniture": "fridge"
+        },
+        "K": {
+          "furniture": "kitchen_cupboard",
+          "loot": "kitchen_cupboard"
+        },
+        "Q": {
+          "facing": "s",
+          "furniture": "clinic_sign"
         },
         "S": {
           "furniture": "shelf",
           "loot": "snacks"
         },
-        "C": {
-          "furniture": "counter",
-          "loot": "snacks"
-        },
-        "F": {
-          "furniture": "fridge"
+        "T": {
+          "furniture": "desk"
         },
         "X": {
-          "furniture": "crate",
-          "loot": "junk"
+          "furniture": "crate"
         },
-        "Q": {
-          "furniture": "gas_directions_sign"
-        }
+        "^": "roof",
+        "d": {
+          "furniture": "wood_door"
+        },
+        "k": "concrete",
+        "p": "plaster",
+        "w": "window_frame"
       },
+      "size": [20, 8, 16]
+    },
+    {
+      "id": "playtest_gas_station",
       "layers": [
         [
           "aaaaaaaaaaaaaaaa",
@@ -843,41 +833,70 @@
           "................",
           "................"
         ]
-      ]
-    },
-    {
-      "id": "playtest_dads_cabin",
-      "size": [16, 15, 16],
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
       "palette": {
+        "#": "brick",
         ".": "air",
-        "s": "stone",
-        "p": "planks",
-        "^": "roof",
+        "C": {
+          "furniture": "counter",
+          "loot": "snacks"
+        },
         "D": {
-          "furniture": "dad_front_door",
-          "lock": {
-            "id": "dad_cabin",
-            "locked": true
-          }
+          "furniture": "wood_door"
         },
-        "G": {
-          "furniture": "gun_cabinet"
+        "F": {
+          "furniture": "fridge"
         },
-        "B": {
-          "furniture": "bed"
+        "Q": {
+          "furniture": "gas_directions_sign"
         },
         "S": {
           "furniture": "shelf",
-          "loot": "d41_empty"
+          "loot": "snacks"
         },
-        "C": {
+        "X": {
           "furniture": "crate",
-          "loot": "d41_empty"
+          "loot": "junk"
         },
-        "K": {
-          "furniture": "key_box"
-        }
+        "^": "roof",
+        "a": "asphalt",
+        "k": "concrete",
+        "p": "plaster",
+        "t": "tiles",
+        "w": "window_frame"
       },
+      "size": [16, 9, 26]
+    },
+    {
+      "access": {
+        "entrance": [13, 7, 3],
+        "ground": "ground",
+        "stairs": [
+          {
+            "block": "planks",
+            "from": "cellar",
+            "lower": [3, 1, 6],
+            "to": "ground",
+            "upper": [10, 7, 6],
+            "width": 2
+          }
+        ],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "cellar"
+          },
+          {
+            "floor": 7,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "playtest_dads_cabin",
       "layers": [
         [
           "ssssssssssssssss",
@@ -1150,69 +1169,12 @@
           "^^^^^^^^^^^^^^^^"
         ]
       ],
-      "access": {
-        "ground": "ground",
-        "entrance": [13, 7, 3],
-        "storeys": [
-          {
-            "id": "cellar",
-            "floor": 1
-          },
-          {
-            "id": "ground",
-            "floor": 7
-          }
-        ],
-        "stairs": [
-          {
-            "from": "cellar",
-            "to": "ground",
-            "lower": [3, 1, 6],
-            "upper": [10, 7, 6],
-            "width": 2,
-            "block": "planks"
-          }
-        ]
-      }
-    },
-    {
-      "id": "hen_house",
-      "size": [8, 5, 6],
-      "palette": {
-        ".": "air",
-        "d": "dirt",
-        "p": "planks",
-        "r": "roof",
-        "w": "window_frame"
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
       },
-      "layers": [
-        ["dddddddd", "dddddddd", "dddddddd", "dddddddd", "dddddddd", "dddddddd"],
-        ["pp..pppp", "p......p", "p......p", "p......p", "p......p", "pppppppp"],
-        ["pp..pppp", "p......p", "p......p", "p......p", "p......p", "pppppppp"],
-        ["ppwwpppp", "p......p", "p......p", "p......p", "p......p", "pppppppp"],
-        ["rrrrrrrr", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr"]
-      ]
-    },
-    {
-      "id": "rickety_fence",
-      "size": [14, 3, 1],
       "palette": {
         ".": "air",
-        "d": "dirt",
-        "p": "planks"
-      },
-      "layers": [["dddddddddddddd"], ["p...p...p...p."], ["pppppppppppppp"]]
-    },
-    {
-      "id": "playtest_hunter_cabin",
-      "size": [12, 11, 14],
-      "palette": {
-        ".": "air",
-        "p": "planks",
-        "^": "roof",
-        "D": {
-          "furniture": "wood_door"
-        },
         "B": {
           "furniture": "bed"
         },
@@ -1220,10 +1182,79 @@
           "furniture": "crate",
           "loot": "d41_empty"
         },
+        "D": {
+          "furniture": "dad_front_door",
+          "lock": {
+            "id": "dad_cabin",
+            "locked": true
+          }
+        },
+        "G": {
+          "furniture": "gun_cabinet",
+          "lootUsage": ["Hunting"]
+        },
+        "K": {
+          "furniture": "key_box"
+        },
         "S": {
-          "furniture": "shelf"
-        }
+          "furniture": "shelf",
+          "loot": "d41_empty"
+        },
+        "^": "roof",
+        "p": "planks",
+        "s": "stone"
       },
+      "size": [16, 15, 16]
+    },
+    {
+      "id": "hen_house",
+      "layers": [
+        ["dddddddd", "dddddddd", "dddddddd", "dddddddd", "dddddddd", "dddddddd"],
+        ["pp..pppp", "p......p", "p......p", "p......p", "p......p", "pppppppp"],
+        ["pp..pppp", "p......p", "p......p", "p......p", "p......p", "pppppppp"],
+        ["ppwwpppp", "p......p", "p......p", "p......p", "p......p", "pppppppp"],
+        ["rrrrrrrr", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "d": "dirt",
+        "p": "planks",
+        "r": "roof",
+        "w": "window_frame"
+      },
+      "size": [8, 5, 6]
+    },
+    {
+      "id": "rickety_fence",
+      "layers": [["dddddddddddddd"], ["p...p...p...p."], ["pppppppppppppp"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "d": "dirt",
+        "p": "planks"
+      },
+      "size": [14, 3, 1]
+    },
+    {
+      "access": {
+        "entrance": [3, 1, 2],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "playtest_hunter_cabin",
       "layers": [
         [
           "pppppppppppp",
@@ -1402,17 +1433,30 @@
           "^^^^^^^^^^^^"
         ]
       ],
-      "access": {
-        "ground": "ground",
-        "entrance": [3, 1, 2],
-        "storeys": [
-          {
-            "id": "ground",
-            "floor": 1
-          }
-        ],
-        "stairs": []
-      }
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        ".": "air",
+        "B": {
+          "furniture": "bed"
+        },
+        "C": {
+          "furniture": "crate",
+          "loot": "d41_empty",
+          "lootUsage": ["Hunting"]
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "S": {
+          "furniture": "shelf"
+        },
+        "^": "roof",
+        "p": "planks"
+      },
+      "size": [12, 11, 14]
     }
   ]
 }

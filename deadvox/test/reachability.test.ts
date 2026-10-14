@@ -7,6 +7,7 @@ import { checkReachability } from '../src/core/reachability.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import type { SpawnMarker } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { fixtureEconomy, fixtureLootContext } from './economyFixtures.ts';
 
 const BASE = 'src/content/base';
 const sources = readdirSync(BASE)
@@ -69,7 +70,14 @@ describe('static reachability', () => {
     const registry = fresh();
     registry.recipes.clear();
     for (const id of ['fixture_cycle_a', 'fixture_cycle_b']) {
-      registry.items.set(id, { id, name: id, category: 'material', weight: 1, size: [1, 1] });
+      registry.items.set(id, {
+        id,
+        economy: fixtureEconomy(),
+        name: id,
+        category: 'material',
+        weight: 1,
+        size: [1, 1],
+      });
     }
     for (const [id, result, input] of [
       ['fixture_cycle_a_recipe', 'fixture_cycle_a', 'fixture_cycle_b'],
@@ -127,6 +135,7 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.items.set('unlearned_tool', {
       id: 'unlearned_tool',
+      economy: fixtureEconomy(),
       name: 'Unlearned tool',
       category: 'tool',
       weight: 1,
@@ -217,7 +226,14 @@ describe('static reachability', () => {
       'zero_count',
     ];
     for (const id of names) {
-      registry.items.set(id, { id, name: id, category: 'material', weight: 1, size: [1, 1] });
+      registry.items.set(id, {
+        id,
+        economy: fixtureEconomy(),
+        name: id,
+        category: 'material',
+        weight: 1,
+        size: [1, 1],
+      });
       registry.loot.set(id, { id, rolls: [1, 1], entries: [{ item: id, weight: 1 }] });
     }
     registry.loot.set('nested', {
@@ -259,6 +275,7 @@ describe('static reachability', () => {
     registry.zombies.set('fixture_zero', { ...shambler, id: 'fixture_zero', loot: 'zero_spawn', spawnWeight: 0 });
     registry.templates.set('shed', {
       id: 'shed',
+      lootContext: fixtureLootContext(),
       size: [3, 1, 1],
       layers: [['FZ0']],
       palette: Object.fromEntries([
@@ -270,6 +287,7 @@ describe('static reachability', () => {
     });
     registry.templates.set('not_placed', {
       id: 'not_placed',
+      lootContext: fixtureLootContext(),
       size: [1, 1, 1],
       layers: [['F']],
       palette: Object.fromEntries([['F', { furniture: 'fixture_crate', loot: 'unplaced' }]]),
@@ -288,6 +306,7 @@ describe('static reachability', () => {
     const registry = fresh();
     registry.items.set('fixture_demo_fixed', {
       id: 'fixture_demo_fixed',
+      economy: fixtureEconomy(),
       name: 'Fixture fixed item',
       category: 'material',
       weight: 1,
@@ -295,6 +314,7 @@ describe('static reachability', () => {
     });
     registry.items.set('fixture_demo_table_item', {
       id: 'fixture_demo_table_item',
+      economy: fixtureEconomy(),
       name: 'Fixture table item',
       category: 'material',
       weight: 1,
@@ -312,6 +332,7 @@ describe('static reachability', () => {
     });
     registry.templates.set('fixture_demo_template', {
       id: 'fixture_demo_template',
+      lootContext: fixtureLootContext(),
       size: [2, 2, 2],
       layers: [
         ['CC', 'CC'],
@@ -321,6 +342,7 @@ describe('static reachability', () => {
     });
     const layout: SiteLayoutDef = {
       id: 'fixture_site',
+      lootContext: fixtureLootContext(),
       demo: true,
       bounds: { x0: 0, z0: 0, x1: 5, z1: 5 },
       ground: 0,
@@ -328,6 +350,7 @@ describe('static reachability', () => {
       buildings: [
         {
           template: 'fixture_demo_template',
+          lootContext: fixtureLootContext(),
           position: [1, 0, 1],
           rotation: 0,
           fixedLoot: [{ at: [0, 0, 0], items: [{ item: 'fixture_demo_fixed' }] }],
@@ -358,7 +381,14 @@ describe('static reachability', () => {
       'fixture_yield_output',
       'fixture_salvage_output',
     ]) {
-      registry.items.set(id, { id, name: id, category: 'material', weight: 1, size: [1, 1] });
+      registry.items.set(id, {
+        id,
+        economy: fixtureEconomy(),
+        name: id,
+        category: 'material',
+        weight: 1,
+        size: [1, 1],
+      });
     }
     registry.items.set('fixture_yield_source', {
       ...registry.items.get('fixture_yield_source')!,
@@ -399,6 +429,7 @@ describe('static reachability', () => {
     ] as const) {
       registry.items.set(id, {
         id,
+        economy: fixtureEconomy(),
         name: id,
         category: 'material',
         weight: 1,
@@ -424,6 +455,7 @@ describe('static reachability', () => {
     const registry = fresh();
     registry.items.set('fixture_package_input', {
       id: 'fixture_package_input',
+      economy: fixtureEconomy(),
       name: 'Fixture package input',
       category: 'material',
       weight: 1,
@@ -431,6 +463,7 @@ describe('static reachability', () => {
     });
     registry.items.set('fixture_crafted_package', {
       id: 'fixture_crafted_package',
+      economy: fixtureEconomy(),
       name: 'Fixture crafted package',
       category: 'material',
       weight: 1,
@@ -439,6 +472,7 @@ describe('static reachability', () => {
     });
     registry.items.set('fixture_crafted_payload', {
       id: 'fixture_crafted_payload',
+      economy: fixtureEconomy(),
       name: 'Fixture crafted payload',
       category: 'material',
       weight: 1,
@@ -471,6 +505,7 @@ describe('static reachability', () => {
     const output = 'fixture_zero_yield_output';
     registry.items.set(source, {
       id: source,
+      economy: fixtureEconomy(),
       name: source,
       category: 'material',
       weight: 1,
@@ -481,7 +516,14 @@ describe('static reachability', () => {
         yields: [{ item: output, count: 1, fractions: [0.9], rounding: 'floor' }],
       },
     });
-    registry.items.set(output, { id: output, name: output, category: 'material', weight: 1, size: [1, 1] });
+    registry.items.set(output, {
+      id: output,
+      economy: fixtureEconomy(),
+      name: output,
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+    });
     const junk = registry.loot.get('junk')!;
     registry.loot.set('junk', { ...junk, entries: [...junk.entries, { item: source, weight: 1 }] });
 
@@ -535,6 +577,7 @@ describe('static reachability', () => {
     ] as const) {
       registry.items.set(id, {
         id,
+        economy: fixtureEconomy(),
         name: id,
         category: 'tool',
         weight: 1,
@@ -543,7 +586,14 @@ describe('static reachability', () => {
       });
     }
     for (const id of ['middle', 'missing_alternative', 'fixture_product']) {
-      registry.items.set(id, { id, name: id, category: 'material', weight: 1, size: [1, 1] });
+      registry.items.set(id, {
+        id,
+        economy: fixtureEconomy(),
+        name: id,
+        category: 'material',
+        weight: 1,
+        size: [1, 1],
+      });
     }
     const recipe = (id: string, product: string, input: string, quality?: string) => ({
       id,

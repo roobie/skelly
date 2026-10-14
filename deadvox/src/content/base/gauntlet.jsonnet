@@ -65,6 +65,7 @@ local utilities = [
   }] + [
     {
       id: u.id, size: [u.size[0], u.size[1] + 1, u.size[2]],
+      lootContext: { usage: [], tier: 'Tier1' },
       palette: { '=': 'concrete', F: { furniture: u.furniture } },
       layers: [
         [std.repeat(if y == 0 then '=' else 'F', u.size[0]) for z in std.range(0, u.size[2] - 1)]

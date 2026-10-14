@@ -1,11 +1,11 @@
 import { BlockEntities } from '../../src/core/blockEntities.ts';
 import { Chunk } from '../../src/core/chunk.ts';
 import { worldOpaque } from '../../src/core/collision.ts';
-import { buildRegistry } from '../../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import { CHUNK, toChunk, type Vec3 } from '../../src/core/coords.ts';
 import { SKY_LOSS, type SkyBounds } from '../../src/core/skylight.ts';
 import { World } from '../../src/core/world.ts';
+import { buildFixtureRegistry as buildRegistry } from '../economyFixtures.ts';
 
 function room(world: World, box: SkyBounds, wall: number): void {
   const [x0, y0, z0] = box.min;

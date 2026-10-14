@@ -188,6 +188,41 @@ const movePlayerTo = (
 };
 
 describe('the debug test-house range', () => {
+  it('describes debug rack stock as fixture supply rather than world economy', () => {
+    const { registry, firearm, ammo, box } = withRangeStockFixtures();
+    for (const type of [firearm, ammo, box]) {
+      registry.items.set(type, { ...registry.items.get(type)!, economy: { usage: [], tiers: [] } });
+    }
+    const config = makeConfig(13, 64);
+    config.site = 'testHouse';
+    config.debug = true;
+    const house = testHouseScene(config, registry);
+    const site = new DebugTestHouseSite(config, registry, house);
+    const rack = rangeFurnitureFor(site).find(({ loot }) => loot.some(({ type }) => type === firearm));
+    if (!rack) {
+      throw new Error('fixture firearm did not reach the debug rack');
+    }
+    const points = site.lootPointsIn(toChunk(rack.spec.pos[0]), toChunk(rack.spec.pos[2]));
+    const point = points.find(({ destination }) => destination.every((value, axis) => value === rack.spec.pos[axis]));
+    if (point?.supply.kind !== 'fixed') {
+      throw new Error('debug rack has no fixed supply description');
+    }
+    expect(point.fixture).toBe(true);
+    expect(point.required).toBe(false);
+    for (const type of [firearm, ammo, box]) {
+      expect(point.supply.items.some(({ item }) => item === type)).toBe(true);
+    }
+    for (const source of house.lootSources) {
+      const described = site.lootPointsIn(toChunk(source.destination[0]), toChunk(source.destination[2]));
+      expect(
+        described.some(
+          ({ fixture, destination }) =>
+            fixture === true && destination.every((value, axis) => value === source.destination[axis]),
+        ),
+      ).toBe(true);
+    }
+  });
+
   it('uses the shared lane geometry beside the house, with the spawn behind the firing line', () => {
     const config = makeConfig(13, 64);
     config.site = 'testHouse';

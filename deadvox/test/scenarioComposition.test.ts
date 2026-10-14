@@ -7,6 +7,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
 import { compileTemplate, type Placement, placedPieces } from '../src/core/templates.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
 
 const fixture = () => {
@@ -51,6 +52,7 @@ const fixture = () => {
       ],
       templates: ['fixture_note_a', 'fixture_note_b', 'fixture_landmark_a', 'fixture_landmark_b'].map((id) => ({
         id,
+        lootContext: fixtureLootContext(),
         size: [1, 2, 1],
         palette: { '=': 'fixture_solid', N: { furniture: 'fixture_note' } },
         layers: [['='], ['N']],

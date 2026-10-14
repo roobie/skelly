@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { blockColors, buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
+import { blockColors, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ordinaryHamletSpawnWeights } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -22,6 +22,7 @@ import { terrainBlockIds } from '../src/core/worldgen.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -213,6 +214,7 @@ describe('content', () => {
   it('rejects a template marker whose zombie envelope intersects a solid', () => {
     const fixture: TemplateDef = {
       id: 'spawn_clearance_fixture',
+      lootContext: { usage: ['Residential'], tier: 'Tier1' },
       size: [4, 4, 4],
       palette: { '.': 'air', '#': 'planks', z: { spawn: 'amalgam' } },
       layers: [
@@ -523,6 +525,7 @@ describe('content', () => {
     const source = 'firearm-dispersion-fixture.json';
     const item = {
       id: 'fixture_firearm',
+      economy: { usage: [], tiers: [] },
       name: 'Fixture firearm',
       category: 'weapon',
       weight: 1,
@@ -647,6 +650,7 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_input',
+          economy: { usage: [], tiers: [] },
           name: 'Input part',
           category: 'tool',
           weight: 1,
@@ -657,7 +661,14 @@ describe('content', () => {
             yields: [{ item: 'fixture_input', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
           },
         },
-        { id: 'fixture_output', name: 'Output part', category: 'tool', weight: 1, size: [1, 1] },
+        {
+          id: 'fixture_output',
+          economy: { usage: [], tiers: [] },
+          name: 'Output part',
+          category: 'tool',
+          weight: 1,
+          size: [1, 1],
+        },
       ],
     };
     const valid = structuredClone(data);
@@ -720,6 +731,7 @@ describe('content', () => {
       items: [
         {
           id: 'book_reference_fixture',
+          economy: { usage: [], tiers: [] },
           name: 'Fixture manual',
           category: 'book',
           weight: 1,
@@ -1358,7 +1370,7 @@ describe('content references', () => {
     });
   });
 
-  it('lets only a military table hold military-only loot, boxed at any depth, and no salvage or recipe make it', () => {
+  it('forbids ordinary salvage and recipes from producing authored Military-only supplies', () => {
     const military = militaryLootItems(baseRegistry);
     const baseFirearm = [...military]
       .map((id) => baseRegistry.items.get(id))
@@ -1376,7 +1388,6 @@ describe('content references', () => {
     const cartridge = 'fixture_cartridge';
     const armoury = {
       id: 'fixture_armoury',
-      military: true,
       rolls: [1, 1],
       entries: [
         { item, weight: 1 },
@@ -1390,8 +1401,25 @@ describe('content references', () => {
         data: {
           models: [{ ...firearmModel, id: item, attachments: [] }],
           items: [
-            { id: item, name: 'Fixture rifle', category: 'weapon', weight: 1, size: [1, 1], firearm, model: item },
-            { id: cartridge, name: 'Fixture cartridge', category: 'material', weight: 1, size: [1, 1], ammo },
+            {
+              id: item,
+              economy: { usage: ['Military'], tiers: ['Tier2'] },
+              name: 'Fixture rifle',
+              category: 'weapon',
+              weight: 1,
+              size: [1, 1],
+              firearm,
+              model: item,
+            },
+            {
+              id: cartridge,
+              economy: { usage: ['Military'], tiers: ['Tier2'] },
+              name: 'Fixture cartridge',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              ammo,
+            },
           ],
         },
       },
@@ -1412,7 +1440,6 @@ describe('content references', () => {
             },
             {
               id: 'fixture_ammo_crate',
-              military: true,
               rolls: [1, 1],
               entries: [
                 { item, weight: 1 },
@@ -1442,9 +1469,9 @@ describe('content references', () => {
                 yields: [{ item, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
               },
             },
-            // Listed before the box it holds, so finding boxes in one pass would miss it.
             {
               id: 'fixture_ammo_case',
+              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Case',
               category: 'material',
               weight: 1,
@@ -1453,6 +1480,7 @@ describe('content references', () => {
             },
             {
               id: 'fixture_box',
+              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Box',
               category: 'material',
               weight: 1,
@@ -1481,20 +1509,59 @@ describe('content references', () => {
     ]);
     const only = (id: string) => `"${id}" is military loot only`;
     expect(issues).toEqual([
-      { source, path: 'loot[1].entries[0].item', message: `${only(item)}; only a "military" table may hold it` },
-      { source, path: 'loot[1].entries[1].table', message: `only a "military" table may nest "${armoury.id}"` },
-      {
-        source,
-        path: 'loot[1].entries[3].item',
-        message: `${only('fixture_ammo_case')}; only a "military" table may hold it`,
-      },
       { source, path: 'items[0].salvage[0].item', message: `${only(item)}; salvage may not yield it` },
       { source, path: 'items[1].disassembly.yields[0].item', message: `${only(item)}; salvage may not yield it` },
       { source, path: 'recipes[0].result.item', message: `${only('fixture_box')}; no recipe may make it` },
     ]);
   });
 
-  it('limits military tables to military templates and forbids them on zombie types', () => {
+  it('permits crafting and salvage of shared supplies even when Military is one authored usage', () => {
+    const scrap = {
+      id: 'fixture_scrap',
+      name: 'Scrap',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+      economy: { usage: ['Residential'], tiers: ['Tier1'] },
+      salvage: [{ item: 'fixture_shared', count: 1 }],
+    };
+    const shared = {
+      id: 'fixture_shared',
+      name: 'Shared',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+      economy: { usage: ['Residential', 'Military'], tiers: ['Tier1'] },
+      disassembly: {
+        timeGameMinutes: 1,
+        skill: 'fixture_skill',
+        yields: [{ item: scrap.id, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+      },
+    };
+    const result = buildRegistry([
+      {
+        source: 'shared-fixture',
+        data: {
+          items: [scrap, shared],
+          skills: [{ id: 'fixture_skill', name: 'Fixture' }],
+          recipes: [
+            {
+              id: 'fixture_recipe',
+              result: { item: shared.id, count: 1 },
+              timeGameMinutes: 1,
+              components: [[{ item: scrap.id, count: 1 }]],
+              qualities: {},
+              skills: {},
+            },
+          ],
+        },
+      },
+    ]);
+    expect(result.issues).toEqual([]);
+    expect(result.registry.recipes.has('fixture_recipe')).toBe(true);
+  });
+
+  it('allows tables to hold candidates without becoming a second geography authority', () => {
     const source = 'military-site.json';
     const lootId = 'fixture_military_table';
     const furniture = {
@@ -1519,7 +1586,14 @@ describe('content references', () => {
         source,
         data: {
           items: [
-            { id: 'fixture_military_item', name: 'Fixture item', category: 'material', weight: 1, size: [1, 1] },
+            {
+              id: 'fixture_military_item',
+              economy: { usage: ['Military'], tiers: ['Tier2'] },
+              name: 'Fixture item',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+            },
             {
               id: 'fixture_blade',
               name: 'Fixture blade',
@@ -1529,9 +1603,7 @@ describe('content references', () => {
               tool: { qualities: { [quality]: level } },
             },
           ],
-          loot: [
-            { id: lootId, military: true, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] },
-          ],
+          loot: [{ id: lootId, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] }],
           furniture: [furniture],
           templates: [template],
           zombies: [zombie],
@@ -1539,18 +1611,7 @@ describe('content references', () => {
         },
       },
     ]);
-    expect(result.issues).toEqual([
-      {
-        source,
-        path: 'templates[0].palette["C"].loot',
-        message: 'military loot tables may only appear in a military template',
-      },
-      {
-        source,
-        path: 'zombies[0].loot',
-        message: 'zombie loot may not use a military table',
-      },
-    ]);
+    expect(result.issues).toEqual([]);
   });
 
   it('makes every military-only item reachable from the playtest layout', () => {
@@ -1950,6 +2011,7 @@ describe('content', () => {
   it('rejects held-display capabilities without a renderer', () => {
     const items = ['watch', 'map'].map((heldDisplay, index) => ({
       id: `unrendered_display_${index}`,
+      economy: { usage: [], tiers: [] },
       name: 'Unrendered display',
       category: 'material',
       weight: 1,

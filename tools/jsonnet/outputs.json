@@ -25,20 +25,56 @@
       "output": "deadvox/src/content/base/gauntlet.json"
     },
     {
+      "source": "deadvox/src/content/base/items-ammunition.jsonnet",
+      "output": "deadvox/src/content/base/items-ammunition.json"
+    },
+    {
+      "source": "deadvox/src/content/base/items-attachments.jsonnet",
+      "output": "deadvox/src/content/base/items-attachments.json"
+    },
+    {
       "source": "deadvox/src/content/base/items-explosives.jsonnet",
       "output": "deadvox/src/content/base/items-explosives.json"
+    },
+    {
+      "source": "deadvox/src/content/base/items-food.jsonnet",
+      "output": "deadvox/src/content/base/items-food.json"
     },
     {
       "source": "deadvox/src/content/base/items-other.jsonnet",
       "output": "deadvox/src/content/base/items-other.json"
     },
     {
+      "source": "deadvox/src/content/base/items-playtest.jsonnet",
+      "output": "deadvox/src/content/base/items-playtest.json"
+    },
+    {
+      "source": "deadvox/src/content/base/items-slice2-content.jsonnet",
+      "output": "deadvox/src/content/base/items-slice2-content.json"
+    },
+    {
       "source": "deadvox/src/content/base/items-tools.jsonnet",
       "output": "deadvox/src/content/base/items-tools.json"
     },
     {
+      "source": "deadvox/src/content/base/items-wearables.jsonnet",
+      "output": "deadvox/src/content/base/items-wearables.json"
+    },
+    {
       "source": "deadvox/src/content/base/ladders.jsonnet",
       "output": "deadvox/src/content/base/ladders.json"
+    },
+    {
+      "source": "deadvox/src/content/base/layouts-cabins.jsonnet",
+      "output": "deadvox/src/content/base/layouts-cabins.json"
+    },
+    {
+      "source": "deadvox/src/content/base/layouts-stairs.jsonnet",
+      "output": "deadvox/src/content/base/layouts-stairs.json"
+    },
+    {
+      "source": "deadvox/src/content/base/layouts-voice-size.jsonnet",
+      "output": "deadvox/src/content/base/layouts-voice-size.json"
     },
     {
       "source": "deadvox/src/content/base/locks.jsonnet",
@@ -47,6 +83,18 @@
     {
       "source": "deadvox/src/content/base/loot.jsonnet",
       "output": "deadvox/src/content/base/loot.json"
+    },
+    {
+      "source": "deadvox/src/content/base/models-firearms.jsonnet",
+      "output": "deadvox/src/content/base/models-firearms.json"
+    },
+    {
+      "source": "deadvox/src/content/base/readables.jsonnet",
+      "output": "deadvox/src/content/base/readables.json"
+    },
+    {
+      "source": "deadvox/src/content/base/recipes.jsonnet",
+      "output": "deadvox/src/content/base/recipes.json"
     },
     {
       "source": "deadvox/src/content/base/saves.jsonnet",
@@ -59,6 +107,30 @@
     {
       "source": "deadvox/src/content/base/senses.jsonnet",
       "output": "deadvox/src/content/base/senses.json"
+    },
+    {
+      "source": "deadvox/src/content/base/templates-cabins.jsonnet",
+      "output": "deadvox/src/content/base/templates-cabins.json"
+    },
+    {
+      "source": "deadvox/src/content/base/templates-medical.jsonnet",
+      "output": "deadvox/src/content/base/templates-medical.json"
+    },
+    {
+      "source": "deadvox/src/content/base/templates-playtest.jsonnet",
+      "output": "deadvox/src/content/base/templates-playtest.json"
+    },
+    {
+      "source": "deadvox/src/content/base/templates-stairs.jsonnet",
+      "output": "deadvox/src/content/base/templates-stairs.json"
+    },
+    {
+      "source": "deadvox/src/content/base/templates-workshop.jsonnet",
+      "output": "deadvox/src/content/base/templates-workshop.json"
+    },
+    {
+      "source": "deadvox/src/content/base/templates.jsonnet",
+      "output": "deadvox/src/content/base/templates.json"
     },
     {
       "source": "deadvox/src/content/base/tutorial.jsonnet",

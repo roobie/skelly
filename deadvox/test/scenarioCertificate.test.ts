@@ -134,6 +134,7 @@ describe('final composed body-route certificate', () => {
           templates: [
             {
               id: 'boundary_box',
+              lootContext: { usage: [], tier: 'Tier1' },
               size: [3, 4, 2],
               palette: { B: { furniture: 'boundary_box' } },
               layers: Array.from({ length: 4 }, () => ['BBB', 'BBB']),

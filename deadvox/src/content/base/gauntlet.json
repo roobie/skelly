@@ -3367,6 +3367,10 @@
           "........................................................................"
         ]
       ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
       "palette": {
         "#": "brick",
         ".": "air",
@@ -3502,6 +3506,10 @@
     {
       "id": "gauntlet_public_memo",
       "layers": [["=="], ["FF"], ["FF"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
       "palette": {
         "=": "concrete",
         "F": {
@@ -3513,6 +3521,10 @@
     {
       "id": "gauntlet_public_directions",
       "layers": [["=="], ["FF"], ["FF"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
       "palette": {
         "=": "concrete",
         "F": {
@@ -3538,6 +3550,10 @@
         ["FFFFFF", "FFFFFF", "FFFFFF", "FFFFFF", "FFFFFF", "FFFFFF"],
         ["FFFFFF", "FFFFFF", "FFFFFF", "FFFFFF", "FFFFFF", "FFFFFF"]
       ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
       "palette": {
         "=": "concrete",
         "F": {
@@ -3559,6 +3575,10 @@
         ["FFFFFF", "FFFFFF"],
         ["FFFFFF", "FFFFFF"]
       ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
       "palette": {
         "=": "concrete",
         "F": {
@@ -3570,6 +3590,10 @@
     {
       "id": "gauntlet_incidental_bollard",
       "layers": [["==", "=="], ["FF", "FF"], ["FF", "FF"], ["FF", "FF"], ["FF", "FF"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
       "palette": {
         "=": "concrete",
         "F": {
@@ -3581,6 +3605,10 @@
     {
       "id": "gauntlet_incidental_cabinet",
       "layers": [["====", "===="], ["FFFF", "FFFF"], ["FFFF", "FFFF"], ["FFFF", "FFFF"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
       "palette": {
         "=": "concrete",
         "F": {
@@ -3599,6 +3627,10 @@
         ["FFF", "FFF", "FFF"],
         ["FFF", "FFF", "FFF"]
       ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
       "palette": {
         "=": "concrete",
         "F": {

@@ -688,6 +688,10 @@
       "demo": true,
       "ground": 21,
       "id": "gauntlet_look",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
       "player": {
         "bearing": 0,
         "position": [62, 21.5, 67]
@@ -3955,6 +3959,10 @@
           "........................................................................"
         ]
       ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial", "Medical"]
+      },
       "palette": {
         "#": "brick",
         ".": "air",

@@ -3,7 +3,7 @@ import { BlockEntities } from '../../src/core/blockEntities.ts';
 import type { CityPlan } from '../../src/core/cityPlan.ts';
 import { CitySite } from '../../src/core/citySite.ts';
 import { worldSolid } from '../../src/core/collision.ts';
-import { buildRegistry, type Registry } from '../../src/core/content.ts';
+import type { Registry } from '../../src/core/content.ts';
 import { toChunk, type Vec3 } from '../../src/core/coords.ts';
 import { ladderOutward } from '../../src/core/ladders.ts';
 import { doorPlan } from '../../src/core/options.ts';
@@ -13,9 +13,10 @@ import type { ScenarioDef } from '../../src/core/schema.ts';
 import { compileTemplate } from '../../src/core/templates.ts';
 import { DOOR_ACTION } from '../../src/game/doorAction.ts';
 import { createSession, IDLE } from '../../src/game/session.ts';
+import { buildFixtureRegistry } from '../economyFixtures.ts';
 
 export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): CitySite => {
-  const own = buildRegistry([
+  const own = buildFixtureRegistry([
     {
       source: 'owned-cycle.json',
       data: {

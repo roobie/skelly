@@ -90,6 +90,7 @@ const vite = await createServer({
           const walls = ['########', ...new Array(6).fill('c......#'), '########'];
           content.templates.push({
             id: 'stairs_camo_witness',
+            lootContext: { usage: ['Residential'], tier: 'Tier1' },
             size: [8, 4, 8],
             palette: { '#': 'stone', c: 'camo_woodland', '.': 'air' },
             layers: [floor, walls, walls, new Array(8).fill('........')],

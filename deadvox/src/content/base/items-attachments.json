@@ -1,110 +1,161 @@
 {
   "items": [
     {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "optic_digital_thermal",
+      "model": "optic_digital_thermal",
       "name": "Digital thermal optic",
-      "category": "misc",
-      "weight": 750,
       "size": [2, 2],
-      "model": "optic_digital_thermal"
+      "weight": 750
     },
     {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "optic_fixed_prism_4x",
+      "model": "optic_fixed_prism_4x",
       "name": "Fixed 4× prism optic",
-      "category": "misc",
-      "weight": 450,
       "size": [1, 2],
-      "model": "optic_fixed_prism_4x"
+      "weight": 450
     },
     {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "optic_high_mag_5_25x",
-      "name": "5–25× magnified optic",
-      "category": "misc",
-      "weight": 900,
-      "size": [2, 2],
       "model": "optic_high_mag_5_25x",
-      "opticMagnification": 10
-    },
-    {
-      "id": "optic_holographic",
-      "name": "Holographic sight",
-      "category": "misc",
-      "weight": 250,
-      "size": [1, 1],
-      "model": "optic_holographic"
-    },
-    {
-      "id": "optic_lpvo_1_6x",
-      "name": "1–6× variable-power optic",
-      "category": "misc",
-      "weight": 520,
+      "name": "5–25× magnified optic",
+      "opticMagnification": 10,
       "size": [2, 2],
+      "weight": 900
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "optic_holographic",
+      "model": "optic_holographic",
+      "name": "Holographic sight",
+      "size": [1, 1],
+      "weight": 250
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "optic_lpvo_1_6x",
       "model": "optic_lpvo_1_6x",
-      "opticMagnification": 3
+      "name": "1–6× variable-power optic",
+      "opticMagnification": 3,
+      "size": [2, 2],
+      "weight": 520
     },
     {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "optic_mini_reflex",
+      "model": "optic_mini_reflex",
       "name": "Mini reflex sight",
-      "category": "misc",
-      "weight": 180,
       "size": [1, 1],
-      "model": "optic_mini_reflex"
+      "weight": 180
     },
     {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "optic_tube_dot",
+      "model": "optic_tube_dot",
       "name": "Tube red-dot sight",
-      "category": "misc",
-      "weight": 220,
       "size": [1, 2],
-      "model": "optic_tube_dot"
+      "weight": 220
     },
     {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "rail_front_sight",
+      "model": "rail_front_sight",
       "name": "Rail-mounted front sight",
-      "category": "misc",
-      "weight": 90,
       "size": [1, 1],
-      "model": "rail_front_sight"
+      "weight": 90
     },
     {
+      "category": "misc",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "firearmAttachmentEffects": {
+        "recoilReduction": 0.14999999999999999,
+        "wearPerShot": 0.001
+      },
       "id": "real_suppressor",
-      "name": "Suppressor",
-      "category": "misc",
-      "weight": 300,
-      "size": [1, 2],
       "model": "real_suppressor",
-      "firearmAttachmentEffects": { "recoilReduction": 0.15, "wearPerShot": 0.001 }
+      "name": "Suppressor",
+      "size": [1, 2],
+      "weight": 300
     },
     {
-      "id": "tactical_flashlight_mount",
-      "name": "Tactical flashlight rail mount",
       "category": "misc",
-      "weight": 120,
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
+      "id": "tactical_flashlight_mount",
+      "model": "tactical_flashlight_mount",
+      "name": "Tactical flashlight rail mount",
       "size": [1, 1],
-      "model": "tactical_flashlight_mount"
+      "weight": 120
     },
     {
+      "category": "misc",
+      "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "id": "weapon_sling",
       "name": "Weapon sling",
-      "category": "misc",
-      "weight": 150,
       "size": [1, 1],
-      "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
-      "sling": true
+      "sling": true,
+      "weight": 150
     },
     {
-      "id": "foregrip",
-      "name": "Vertical foregrip",
       "category": "misc",
-      "weight": 160,
-      "size": [1, 1],
-      "model": "foregrip",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Military", "Infected"]
+      },
       "firearmAttachmentEffects": {
-        "swayScale": 0.85,
-        "recoveryScale": 1.1,
-        "raiseScale": 0.95,
-        "swingScale": 1.1
-      }
+        "raiseScale": 0.94999999999999996,
+        "recoveryScale": 1.1000000000000001,
+        "swayScale": 0.84999999999999998,
+        "swingScale": 1.1000000000000001
+      },
+      "id": "foregrip",
+      "model": "foregrip",
+      "name": "Vertical foregrip",
+      "size": [1, 1],
+      "weight": 160
     }
   ]
 }

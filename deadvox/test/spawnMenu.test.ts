@@ -1,12 +1,12 @@
 import { NoToneMapping } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { WORK_IN_PROGRESS } from '../src/core/inventory.ts';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 import { BindingRegistry, KeyboardInput } from '../src/game/inputBindings.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 

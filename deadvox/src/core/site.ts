@@ -9,8 +9,9 @@ import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
-import { type Rolled, rollLoot } from './loot.ts';
+import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn, type Rolled, rollLoot } from './loot.ts';
 import { Rng } from './random.ts';
+import type { FixedLootItemDef, SiteLayoutDef } from './schema.ts';
 import { type Placement, placedPieces } from './templates.ts';
 import type { Surface } from './worldgen.ts';
 
@@ -69,6 +70,8 @@ export interface Site {
   readonly spawn: { pos: Vec3; yaw: number };
   /** Writes the site's blocks that fall inside a chunk. */
   stamp: (chunk: Chunk) => void;
+  /** Descriptions include empty containers and do not roll or materialize supply. */
+  lootPointsIn: (cx: number, cz: number) => readonly LootSpawnPoint[];
   /** Furniture anchored in the column (cx, cz), with its loot. */
   furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
   /** Zombie spawns anchored in the column, deterministic for the site seed. */
@@ -76,6 +79,67 @@ export interface Site {
   /** Optional group spawns anchored in a single column, deterministic for the site seed. */
   hordesIn?: ((cx: number, cz: number) => HordeSpawn[]) | undefined;
 }
+
+const pointSupply = (table: string | undefined, items: readonly FixedLootItemDef[]): LootPointSource['supply'] => {
+  if (items.length > 0) {
+    return { kind: 'fixed', items, ...(table === undefined ? {} : { table }) };
+  }
+  return table === undefined ? { kind: 'empty' } : { kind: 'table', table };
+};
+
+export const lootSourcesOf = (
+  registry: Registry,
+  site: string,
+  placement: Placement,
+  fixedLoot: NonNullable<SiteLayoutDef['buildings'][number]['fixedLoot']> = [],
+): LootPointSource[] => {
+  const context = placement.lootContext ?? placement.template.lootContext;
+  const building = JSON.stringify([placement.origin, placement.turn]);
+  const placed = placedPieces(placement);
+  return placement.template.pieces.flatMap((piece, i) => {
+    const world = placed[i]!;
+    const override = fixedLoot.find((entry) => entry.at.join(',') === piece.pos.join(','));
+    const items = override?.items ?? [];
+    const container = items.filter((item) => item.placement !== 'surface');
+    const surface = items.filter((item) => item.placement === 'surface');
+    const usage = override?.lootUsage ?? piece.lootUsage;
+    const base = {
+      site,
+      building,
+      anchor: piece.pos,
+      destination: world.pos,
+      context,
+      ...(usage === undefined ? {} : { usage }),
+    };
+    const sources: LootPointSource[] = [];
+    if (registry.furniture.get(piece.furniture)?.container) {
+      sources.push({
+        ...base,
+        channel: 'container',
+        position: world.pos,
+        supply: pointSupply(piece.loot, container),
+        required: container.length > 0,
+      });
+    }
+    if (surface.length > 0) {
+      sources.push({
+        ...base,
+        channel: 'surface',
+        position: [world.pos[0], world.pos[1] + world.size[1], world.pos[2]],
+        supply: { kind: 'fixed', items: surface },
+        required: true,
+      });
+    }
+    return sources;
+  });
+};
+
+export const lootPointsOf = (
+  registry: Registry,
+  site: string,
+  placement: Placement,
+  [cx, cz]: readonly [number, number],
+): readonly LootSpawnPoint[] => lootPointsByColumn(lootSourcesOf(registry, site, placement)).get(`${cx},${cz}`) ?? [];
 
 /**
  * The furniture of a placed template that's anchored in a column, with loot rolled

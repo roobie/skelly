@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '../../src/core/content.ts';
 import type { ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
+import { fixtureEconomy, fixtureLootContext } from '../economyFixtures.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
   id: 'fixture_scenario',
@@ -40,6 +41,7 @@ const serviceCell = (x: number, y: number, z: number): string => {
 
 export const fixtureService = (): TemplateDef => ({
   id: 'fixture_service',
+  lootContext: fixtureLootContext(),
   size: [10, 40, 8],
   palette: {
     '.': 'air',
@@ -96,18 +98,29 @@ export const fixtureScenarioSources = (scenario = fixtureScenario(), service = f
             loot: 'fixture_loot',
           },
         ],
-        items: [{ id: 'fixture_token', name: 'Fixture token', category: 'material', weight: 1, size: [1, 1] }],
+        items: [
+          {
+            id: 'fixture_token',
+            name: 'Fixture token',
+            category: 'material',
+            weight: 1,
+            size: [1, 1],
+            economy: fixtureEconomy(),
+          },
+        ],
         loot: [{ id: 'fixture_loot', rolls: [1, 2], entries: [{ weight: 1, item: 'fixture_token' }] }],
         templates: [
           service,
           {
             id: 'fixture_small_house',
+            lootContext: fixtureLootContext(),
             size: [3, 3, 4],
             palette: { '=': 'fixture_solid' },
             layers: Array.from({ length: 3 }, (_layerValue) => Array.from({ length: 4 }, () => '===')),
           },
           {
             id: 'fixture_house',
+            lootContext: fixtureLootContext(),
             size: [4, 3, 4],
             palette: { '=': 'fixture_solid', C: { furniture: 'fixture_crate' } },
             layers: Array.from({ length: 3 }, (_layerValue, layer) =>

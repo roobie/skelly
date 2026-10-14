@@ -6,8 +6,14 @@ import { ammoMatchesCalibre, firearmModelForType } from './firearmHandling.ts';
 export const isTestHouseRangeStockItem = (item: ItemDef): boolean =>
   item.firearm !== undefined || Object.hasOwn(item, 'mod') || Object.hasOwn(item, 'mount');
 
+interface RangeSupply {
+  item: string;
+  count: number;
+  condition: number;
+}
+
 /** Firearms, compatible loose ammunition, and any package that unpacks to that ammunition. */
-export const testHouseRangeStock = (registry: Registry): Rolled[] => {
+export const testHouseRangeSupply = (registry: Registry): RangeSupply[] => {
   const items = [...registry.items.values()];
   const firearms = items.filter((item) => item.firearm !== undefined);
   const calibres = new Set(
@@ -28,5 +34,8 @@ export const testHouseRangeStock = (registry: Registry): Rolled[] => {
     }
   }
 
-  return [...stock].sort().map((type) => ({ type, count: 1, condition: 1 }));
+  return [...stock].sort().map((item) => ({ item, count: 1, condition: 1 }));
 };
+
+export const testHouseRangeStock = (registry: Registry): Rolled[] =>
+  testHouseRangeSupply(registry).map(({ item, count, condition }) => ({ type: item, count, condition }));

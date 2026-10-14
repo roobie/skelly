@@ -6,10 +6,8 @@ import { createServer } from 'vite';
 
 const BRANCH_REF_PREFIX = /^refs\/heads\//;
 
-const sources = [
+export const mainSourceOverlays = [
   'game/engine.ts',
-  'core/authoredSite.ts',
-  'core/site.ts',
   'render/skylight.ts',
   'render/playView.ts',
   'render/flashlight.ts',
@@ -39,7 +37,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   } else {
     base = git(['rev-parse', ref]);
   }
-  const overlays = new Map(sources.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
+  const overlays = new Map(mainSourceOverlays.map((path) => [path, git(['show', `${base}:deadvox/src/${path}`])]));
   const appliedSources = new Set();
   const server = await createServer({
     root,
@@ -124,13 +122,13 @@ if(msg.mesh.indices.length>0 && globalThis.mainArrival.firstMeshRealMs===null) {
     }));
     Object.assign(evidence, {
       base,
-      sourceOverlays: sources,
+      sourceOverlays: mainSourceOverlays,
       appliedSources: [...appliedSources],
       errors,
       browser: browser.version(),
       viewport: page.viewportSize(),
       attribution:
-        'Main lighting, site and worker sources on the same fixture/content and browser; startup mesh delivery, not first rendered pixels or a pristine whole-build screenshot.',
+        'Main lighting and worker sources with branch core contracts, the same fixture/content and browser; startup mesh delivery, not first rendered pixels or a pristine whole-build screenshot.',
     });
     await writeFile(resolve(artifacts, 'main-first-mesh.json'), JSON.stringify(evidence, null, 2));
     process.stdout.write(`MAIN_FIRST_MESH_EVIDENCE ${JSON.stringify(evidence)}\n`);

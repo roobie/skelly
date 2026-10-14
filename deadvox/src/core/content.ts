@@ -9,6 +9,7 @@ import { authoredLayoutIssues } from './authoredLayout.ts';
 import { scenarioPlanIssues } from './cityPlan.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { visibleGridName } from './inventoryGridName.ts';
+import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
@@ -599,36 +600,29 @@ const checkSearchNoise = (registry: Registry, furniture: FurnitureDef, report: R
 
 const militaryOnly = (id: string) => `"${id}" is military loot only`;
 
-const checkMilitaryTables = (registry: Registry, military: ReadonlySet<string>, report: Report) => {
-  for (const table of registry.loot.values()) {
-    if (table.military) {
-      continue;
+const checkInstalledEconomy = (registry: Registry, item: ItemDef, report: Report) => {
+  for (const usage of item.economy.usage) {
+    for (const tier of item.economy.tiers) {
+      const issue = lootTypeIssue(registry, item.id, { usage: [usage], tier });
+      if (issue !== undefined) {
+        report('items', item.id, '.economy', issue);
+      }
     }
-    table.entries.forEach((entry, i) => {
-      if (entry.item !== undefined && military.has(entry.item)) {
-        report(
-          'loot',
-          table.id,
-          `.entries[${i}].item`,
-          `${militaryOnly(entry.item)}; only a "military" table may hold it`,
-        );
-      }
-      if (entry.table !== undefined && registry.loot.get(entry.table)?.military) {
-        report('loot', table.id, `.entries[${i}].table`, `only a "military" table may nest "${entry.table}"`);
-      }
-    });
   }
 };
 
-/** Every source of a military-only item is a military table: no other table, craft or salvage makes one. */
+const itemSupplyOutputs = (item: ItemDef): (readonly [string, string])[] => [
+  ...(item.unpack ? [['.unpack.item', item.unpack.item] as const] : []),
+  ...(item.disassembly?.yields ?? []).map((output, i) => [`.disassembly.yields[${i}].item`, output.item] as const),
+  ...(item.salvage ?? []).map((output, i) => [`.salvage[${i}].item`, output.item] as const),
+];
+
+/** Military-only supply cannot be manufactured through an ordinary recipe or salvage source. */
 const checkMilitaryLoot = (registry: Registry, report: Report) => {
   const military = militaryLootItems(registry);
-  checkMilitaryTables(registry, military, report);
   for (const item of registry.items.values()) {
-    const outputs = [
-      ...(item.disassembly?.yields ?? []).map((output, i) => [`.disassembly.yields[${i}].item`, output.item] as const),
-      ...(item.salvage ?? []).map((output, i) => [`.salvage[${i}].item`, output.item] as const),
-    ];
+    checkInstalledEconomy(registry, item, report);
+    const outputs = itemSupplyOutputs(item);
     for (const [path, output] of military.has(item.id) ? [] : outputs) {
       if (military.has(output)) {
         report('items', item.id, path, `${militaryOnly(output)}; salvage may not yield it`);
@@ -663,15 +657,6 @@ const checkFurniture = (registry: Registry, report: Report) => {
 
 type PaletteThing = Exclude<TemplateDef['palette'][string], string>;
 
-const militaryLootIssue = (
-  registry: Registry,
-  template: TemplateDef,
-  lootId: string | undefined,
-): string | undefined =>
-  registry.loot.get(lootId ?? '')?.military && !template.military
-    ? 'military loot tables may only appear in a military template'
-    : undefined;
-
 const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [string, string][] => {
   const found: [string, string][] = [];
   const furniture = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture);
@@ -694,13 +679,8 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (problem) {
     found.push(['.furniture', problem]);
   }
-  const lootId = entry.loot ?? furniture?.loot;
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
-  }
-  const militaryIssue = militaryLootIssue(registry, template, lootId);
-  if (militaryIssue) {
-    found.push(['.loot', militaryIssue]);
   }
   if (entry.loot !== undefined && furniture && furniture.container === undefined) {
     found.push(['.loot', 'has loot but no container to put it in']);
@@ -841,8 +821,6 @@ const checkZombies = (registry: Registry, report: Report) => {
   for (const zombie of registry.zombies.values()) {
     if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
       report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
-    } else if (registry.loot.get(zombie.loot ?? '')?.military) {
-      report('zombies', zombie.id, '.loot', 'zombie loot may not use a military table');
     }
     const quality = zombie.downed?.dismember.quality;
     if (quality !== undefined && !qualities.has(quality)) {

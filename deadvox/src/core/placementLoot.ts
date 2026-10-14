@@ -1,17 +1,12 @@
 import type { Registry } from './content.ts';
 import { ItemFactory } from './items.ts';
-import { fixedItems, type Rolled } from './loot.ts';
-import { militaryLootItems, slotsReason } from './magazine.ts';
+import { fixedItems, type LootContext, lootTypeIssue, type Rolled } from './loot.ts';
+import { slotsReason } from './magazine.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
 import { type CompiledTemplate, type Placement, placedPieces } from './templates.ts';
 
-const fixedItemIssue = (
-  registry: Registry,
-  military: ReadonlySet<string>,
-  fixed: FixedLootItemDef,
-  source: { loot: string | undefined; militaryTemplate: boolean },
-): string | undefined => {
+const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: LootContext): string | undefined => {
   if (!registry.items.has(fixed.item)) {
     return `no item "${fixed.item}"`;
   }
@@ -29,22 +24,11 @@ const fixedItemIssue = (
       return issue;
     }
   }
-  const militarySource =
-    fixed.placement === 'surface' ? source.militaryTemplate : registry.loot.get(source.loot ?? '')?.military;
-  if (!military.has(fixed.item) || militarySource) {
-    return undefined;
-  }
-  return fixed.placement === 'surface'
-    ? `"${fixed.item}" is military loot only; surface placement requires a military template`
-    : `"${fixed.item}" is military loot only; place it where a "military" table rolls`;
+  return lootTypeIssue(registry, fixed.item, context, fixed.fitted);
 };
 
 export const placementLootIssues = (
-  {
-    registry,
-    military = militaryLootItems(registry),
-    militaryTemplate,
-  }: { registry: Registry; military?: ReadonlySet<string>; militaryTemplate: boolean },
+  { registry, context }: { registry: Registry; context: LootContext },
   compiled: CompiledTemplate,
   overrides: readonly FixedLootOverrideDef[],
   path: string,
@@ -70,7 +54,10 @@ export const placementLootIssues = (
       issues.push([`${at}.at`, `furniture at ${key} has no container`]);
     }
     for (const [itemIndex, fixed] of override.items.entries()) {
-      const issue = fixedItemIssue(registry, military, fixed, { loot: piece.loot, militaryTemplate });
+      const issue = fixedItemIssue(registry, fixed, {
+        usage: override.lootUsage ?? piece.lootUsage ?? context.usage,
+        tier: context.tier,
+      });
       if (issue !== undefined) {
         issues.push([`${at}.items[${itemIndex}].item`, issue]);
       }

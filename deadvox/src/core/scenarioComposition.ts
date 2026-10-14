@@ -123,7 +123,7 @@ export const scenarioCompositionIssues = (
     return [];
   }
   const issues = placementLootIssues(
-    { registry, militaryTemplate: registry.templates.get(scenario.serviceTemplate)?.military === true },
+    { registry, context: service.lootContext },
     service,
     composition.fixedLoot,
     '.composition.fixedLoot',

@@ -1,10 +1,12 @@
 import { expect, it } from 'vitest';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { compileTemplate, findPieces } from '../src/core/templates.ts';
+import { fixtureLootContext } from './economyFixtures.ts';
 
 it.each(['P', '🧪'])('indexes furniture and blocks by code point for marker %s', (marker) => {
   const template: TemplateDef = {
     id: 'fixture_markers',
+    lootContext: fixtureLootContext(),
     size: [4, 1, 1],
     palette: { '=': 'fixture_solid', [marker]: { furniture: 'fixture_piece' } },
     layers: [[`=${marker}=${marker}`]],

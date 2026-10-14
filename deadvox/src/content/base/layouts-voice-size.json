@@ -1,19 +1,39 @@
 {
   "layouts": [
     {
-      "id": "voice_size",
-      "demo": true,
-      "bounds": { "x0": 0, "z0": 0, "x1": 32, "z1": 32 },
-      "ground": 21,
-      "terrain": [],
+      "bounds": {
+        "x0": 0,
+        "x1": 32,
+        "z0": 0,
+        "z1": 32
+      },
       "buildings": [],
-      "player": { "position": [16, 21.5, 16], "bearing": 0 },
+      "demo": true,
+      "ground": 21,
+      "id": "voice_size",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 0,
+        "position": [16, 21.5, 16]
+      },
       "shamblers": [
-        { "type": "shambler", "position": [12, 21.5, 16], "chance": 1 },
-        { "type": "shambler", "position": [20, 21.5, 16], "chance": 1 }
+        {
+          "chance": 1,
+          "position": [12, 21.5, 16],
+          "type": "shambler"
+        },
+        {
+          "chance": 1,
+          "position": [20, 21.5, 16],
+          "type": "shambler"
+        }
       ],
-      "woodlands": [],
-      "tracks": []
+      "terrain": [],
+      "tracks": [],
+      "woodlands": []
     }
   ]
 }

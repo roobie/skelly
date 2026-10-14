@@ -2,17 +2,26 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import type { LootContext } from './loot.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { compileTemplate, type Placement, stackTemplate, type Turn } from './templates.ts';
 
 export const blocks = (position: readonly number[]): Vec3 => position.map((value) => value / HAMLET_BLOCK_SIZE) as Vec3;
 
-export const placementOf = (registry: Registry, building: SiteLayoutDef['buildings'][number]): Placement => {
+export const placementOf = (
+  registry: Registry,
+  building: SiteLayoutDef['buildings'][number],
+  siteContext?: LootContext,
+): Placement => {
   const template = stackTemplate(
     compileTemplate(registry, registry.templates.get(building.template)!),
     building.storeys ?? 1,
   );
   const origin = blocks(building.position);
   origin[1] -= template.groundLayer ?? 0;
-  return { template, origin, turn: (building.rotation / 90) as Turn };
+  const lootContext = building.lootContext ?? {
+    usage: template.lootContext.usage,
+    tier: siteContext?.tier ?? template.lootContext.tier,
+  };
+  return { template, origin, turn: (building.rotation / 90) as Turn, lootContext };
 };
