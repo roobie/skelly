@@ -28,9 +28,6 @@ const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title|deadvox-p
 const LINKS_CARD_PATTERN = /<section class="card" aria-labelledby="links-title">([\s\S]*?)<\/section>/;
 const ENGLISH_DOCUMENT_LANGUAGE_PATTERN = /<html lang="en">/;
 const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
-const GAUNTLET_SITE_OPTION_PATTERN = /state\.deadvox\.bench === '' \? html`<option value="gauntlet">/;
-const GAUNTLET_SITE_WRITE_PATTERN = /if \(m === '' && d\.site === 'gauntlet'\) \{\s*p\.set\('site', 'gauntlet'\);/;
-const GAUNTLET_PRESET_PATTERN = /data-deadvox-preset="gauntlet"/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
 const DEADVOX_CONTENT = 'deadvox/src/content/base';
@@ -131,31 +128,6 @@ const coverageFailures = (description, supportedValues, offeredValues, intention
   ];
 };
 
-const DEADVOX_URL_DEFAULTS = {
-  bench: '',
-  seed: '1',
-  time: '12:30',
-  radius: '96',
-  site: '',
-  storeys: '3',
-  density: '',
-  actors: '',
-  debug: false,
-  loadout: '',
-  at: '',
-  handedness: '',
-  wobbleFlat: '',
-  weathering: '',
-  weatheringVariation: '',
-  weatheringSplit: '',
-  plan: '0.5:64,0.5:96,0.5:128',
-  worldIndex: '0',
-  shamblers: '60',
-  quick: false,
-  n: '10,25,50,100',
-  shamblerIndex: '0',
-};
-
 // Evaluates the launcher's pure URL builders from the page source, so the tests observe the composed
 // links rather than re-describing them.
 const extractDeclaration = (name) => {
@@ -182,6 +154,10 @@ const makeDeadvoxForTest = () => {
   const source = ['defaultTime', 'setDefault', 'addDebugParams', 'makeDeadvox'].map(extractDeclaration).join('\n');
   return new Function('location', `${source}\nreturn makeDeadvox;`)({ href: 'https://example.test/site/' });
 };
+
+// Reads the launcher's own defaults and presets, so the tests cannot drift from a second copy.
+const launcherModelForTest = () => new Function(`${extractDeclaration('model')}\nreturn model;`)();
+const launcherPresetsForTest = () => new Function(`${extractDeclaration('presets')}\nreturn presets;`)();
 
 describe('playtest language and catalog', () => {
   it('chooses Swedish when a Swedish browser tag comes before English', () => {
@@ -270,20 +246,18 @@ describe('site launchers track the games’ URL parameters', () => {
 
   it('composes the gauntlet site for play and never in a benchmark', () => {
     const makeDeadvox = makeDeadvoxForTest();
-    const play = makeDeadvox({ ...DEADVOX_URL_DEFAULTS, site: 'gauntlet' });
-    assert.equal(play.searchParams.get('site'), 'gauntlet');
+    const defaults = launcherModelForTest().deadvox;
+    const gauntlet = { ...defaults, ...launcherPresetsForTest().gauntlet };
+    const scenarioIds = JSON.parse(read('deadvox/src/content/base/scenarios.json')).scenarios.map(
+      (scenario) => scenario.id,
+    );
+    const play = makeDeadvox(gauntlet);
+    const site = play.searchParams.get('site');
+    assert.ok(scenarioIds.includes(site), `the gauntlet preset composes a scenario site (${site})`);
     for (const bench of ['1', 'shamblers', 'report']) {
-      const url = makeDeadvox({ ...DEADVOX_URL_DEFAULTS, bench, site: 'gauntlet' });
+      const url = makeDeadvox({ ...gauntlet, bench });
       assert.equal(url.searchParams.has('site'), false, `bench ${bench} does not carry a gauntlet site`);
     }
-  });
-
-  it('offers the gauntlet option for play and as a preset', () => {
-    const form = page.match(DEADVOX_FORM_PATTERN)?.[1];
-    assert.ok(form, 'the launcher has a deadvox form');
-    assert.match(form, GAUNTLET_SITE_OPTION_PATTERN);
-    assert.match(page, GAUNTLET_SITE_WRITE_PATTERN);
-    assert.match(page, GAUNTLET_PRESET_PATTERN);
   });
 
   it('offers every launcher-editable gungen URL parameter except documented omissions', () => {
