@@ -178,7 +178,7 @@ describe('walkPose', () => {
   for (const name of TEMPLATES.map((t) => t.name)) {
     for (const speed of SPEEDS) {
       for (const seed of seeds) {
-        it(`${name} seed ${seed}: grounded foot drift stays inside the roll envelope at ${speed} m/s over ${StepsToCheck} steps`, () => {
+        it(`${name} seed ${seed}: grounded foot drift stays within one voxel at ${speed} m/s over ${StepsToCheck} steps`, () => {
           const found = setup(name, seed);
           let worstHeelDrift = 0;
           let worstToeDrift = 0;
@@ -195,15 +195,10 @@ describe('walkPose', () => {
           // checks below would be silently checking nothing).
           expect(anyHeelDown).toBe(true);
           expect(anyToeDown).toBe(true);
-          const footDiameters = [...found.extents.values()].map((extent) =>
-            Math.hypot(...extent.max.map((v, axis) => v - extent.min[axis]!)),
-          );
-          // A point on a rolling sole can move while still within the grounded-height band.
-          // The chord for a radius R and rise h is sqrt(2Rh); use the sole diameter as an
-          // upper bound on R, allowing both ends of the sampled grounded interval to move.
-          const rollEnvelope = 2 * Math.sqrt(2 * Math.max(...footDiameters) * found.voxels.size);
-          expect(worstHeelDrift).toBeLessThanOrEqual(rollEnvelope);
-          expect(worstToeDrift).toBeLessThanOrEqual(rollEnvelope);
+          // One voxel is the grid's resolution: a smaller slide cannot show on the voxel grid.
+          const maxDrift = found.voxels.size;
+          expect(worstHeelDrift).toBeLessThanOrEqual(maxDrift);
+          expect(worstToeDrift).toBeLessThanOrEqual(maxDrift);
         });
       }
     }
