@@ -7863,7 +7863,7 @@
         ["...pppppppp", "...pppppppp"],
         ["....ppppppp", "....ppppppp"],
         [".....pppppp", ".....pppppp"],
-        ["......ppppp", "......ppppp"],
+        [".......pppp", ".......pppp"],
         [".......pppp", ".......pppp"],
         ["........ppp", "........ppp"],
         [".........pp", ".........pp"]
@@ -7878,7 +7878,7 @@
           ["RRRSSSSSSSS", "RRRSSSSSSSS"],
           ["RRRRSSSSSSS", "RRRRSSSSSSS"],
           ["RRRRRSSSSSS", "RRRRRSSSSSS"],
-          ["RRRRRRSSSSS", "RRRRRRSSSSS"],
+          ["RRRRRRRSSSS", "RRRRRRRSSSS"],
           ["RRRRRRRSSSS", "RRRRRRRSSSS"],
           ["RRRRRRRRSSS", "RRRRRRRRSSS"],
           ["RRRRRRRRRSS", "RRRRRRRRRSS"]

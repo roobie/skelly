@@ -199,13 +199,13 @@ local kit = {
       layers: [
         ['..ppppppppp', '..ppppppppp'], ['...pppppppp', '...pppppppp'],
         ['....ppppppp', '....ppppppp'], ['.....pppppp', '.....pppppp'],
-        ['......ppppp', '......ppppp'], ['.......pppp', '.......pppp'],
+        ['.......pppp', '.......pppp'], ['.......pppp', '.......pppp'],
         ['........ppp', '........ppp'], ['.........pp', '.........pp'],
       ],
       ownership: { layers: [
         ['RRSSSSSSSSS', 'RRSSSSSSSSS'], ['RRRSSSSSSSS', 'RRRSSSSSSSS'],
         ['RRRRSSSSSSS', 'RRRRSSSSSSS'], ['RRRRRSSSSSS', 'RRRRRSSSSSS'],
-        ['RRRRRRSSSSS', 'RRRRRRSSSSS'], ['RRRRRRRSSSS', 'RRRRRRRSSSS'],
+        ['RRRRRRRSSSS', 'RRRRRRRSSSS'], ['RRRRRRRSSSS', 'RRRRRRRSSSS'],
         ['RRRRRRRRSSS', 'RRRRRRRRSSS'], ['RRRRRRRRRSS', 'RRRRRRRRRSS'],
       ] },
       anchors: {}, ports: [],
