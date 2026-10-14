@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -22,8 +22,9 @@ export const playtestRound = (round) => {
 
 const git = (root, ...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
 const cleanRevision = (root) => {
-  if (git(root, 'status', '--porcelain', '--untracked-files=all')) {
-    throw new Error('Playtest publishing requires a clean checkout, including untracked files.');
+  const changes = git(root, 'status', '--porcelain', '--untracked-files=all');
+  if (changes) {
+    throw new Error(`Playtest publishing requires a clean checkout, including untracked files:\n${changes}`);
   }
   return git(root, 'rev-parse', 'HEAD');
 };
@@ -54,7 +55,7 @@ const reuseDependencies = (root, checkout) => {
     if (!readFileSync(join(root, runtime)).equals(readFileSync(join(checkout, runtime)))) {
       throw new Error('Frozen game requires a different Jsonnet runtime; use a matching checkout.');
     }
-    symlinkSync(join(root, 'tools/jsonnet/bin'), join(checkout, 'tools/jsonnet/bin'), 'dir');
+    execFileSync('cp', ['-al', join(root, 'tools/jsonnet/bin'), join(checkout, 'tools/jsonnet/bin')]);
   }
 };
 

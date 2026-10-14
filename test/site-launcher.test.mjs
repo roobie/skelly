@@ -261,14 +261,24 @@ describe('site launcher playtest entry', () => {
       mkdirSync(join(root, 'deadvox'), { recursive: true });
       cpSync(join(ROOT, 'deadvox/playtests'), join(root, 'deadvox/playtests'), { recursive: true });
       cpSync(join(ROOT, 'site'), join(root, 'site'), { recursive: true });
-      writeFileSync(join(root, '.gitignore'), '/deadvox/dist-playtest/\n/deadvox/dist/\n');
+      writeFileSync(join(root, '.gitignore'), '/deadvox/dist-playtest/\n/deadvox/dist/\nnode_modules/\n/tools/jsonnet/bin/\n');
+      writeFileSync(join(root, 'deadvox/package-lock.json'), JSON.stringify({ lockfileVersion: 3 }));
+      mkdirSync(join(root, 'deadvox/node_modules/fixture-dep'), { recursive: true });
+      writeFileSync(join(root, 'deadvox/node_modules/fixture-dep/index.js'), '// fixture dependency');
+      mkdirSync(join(root, 'tools/jsonnet/bin'), { recursive: true });
+      writeFileSync(join(root, 'tools/jsonnet/runtime.json'), JSON.stringify({ version: 'fixture' }));
+      writeFileSync(join(root, 'tools/jsonnet/bin/fixture'), 'compiler fixture');
       writeFileSync(
         join(root, 'deadvox/package.json'),
         JSON.stringify({ type: 'module', scripts: { build: 'node build.mjs' } }),
       );
       writeFileSync(
         join(root, 'deadvox/build.mjs'),
-        "import { mkdirSync, copyFileSync } from 'node:fs'; mkdirSync('dist'); copyFileSync('index.html', 'dist/index.html');",
+        [
+          "import { mkdirSync, copyFileSync, realpathSync } from 'node:fs';",
+          "if (!realpathSync('node_modules/fixture-dep').startsWith(process.cwd() + '/node_modules/')) throw new Error('Dependency escaped checkout');",
+          "mkdirSync('dist'); copyFileSync('index.html', 'dist/index.html');",
+        ].join('\n'),
       );
       const frozenGame = '<main>Frozen fixture game</main>';
       writeFileSync(join(root, 'deadvox/index.html'), frozenGame);
