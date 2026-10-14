@@ -7,6 +7,7 @@ import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
 import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
+import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
@@ -88,6 +89,7 @@ export interface DebugNoclipStep {
 }
 
 export interface DebugReadout {
+  readonly drawSubmission: DrawSubmission | null;
   readonly fps: number;
   /** Time between frames, median and 95th percentile over the last couple of seconds. */
   readonly frame: FrameSummary;
@@ -122,6 +124,15 @@ export interface DebugRuntime {
   setCrosshairVisible: (visible: boolean) => void;
   /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when a shambler is aimed at. */
   updateLookedAt: (eye: Vec3, dir: Vec3, active: boolean) => void;
+  readonly interactionRayEnabled: boolean;
+  drawInteractionRay: (options: {
+    readonly origin: Vec3;
+    readonly direction: Vec3;
+    readonly reachMetres: number;
+    readonly frame: number;
+    readonly interactionDistanceBlocks?: number;
+  }) => void;
+  updateTransientDraw: (nowMs: number) => void;
   recordMeleeResult: (result: MeleeResult) => void;
   readonly buildOn: boolean;
   readonly noclip: boolean;

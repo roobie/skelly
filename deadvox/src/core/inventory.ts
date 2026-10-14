@@ -23,6 +23,7 @@ import {
   validDisassemblyToolLevels,
 } from './disassembly.ts';
 import { firearmSlotIds, isLongGun, slingFitted } from './firearmFitting.ts';
+import type { ItemOrigin } from './itemOrigin.ts';
 import {
   cellCount,
   couldFit,
@@ -315,10 +316,10 @@ export class Inventory {
     return entity;
   }
 
-  private createRolled({ type, count, condition, fitted }: Rolled): Item {
-    const item = this.create(type, count, condition);
+  createRolled({ type, count, condition, fitted, origin }: Rolled): Item {
+    const item = this.create(type, count, condition, origin);
     for (const [slot, child] of Object.entries(fitted ?? {})) {
-      this.fitSlot(item, slot, this.create(child));
+      this.fitSlot(item, slot, this.create(child, 1, 1, origin));
     }
     return item;
   }
@@ -442,8 +443,12 @@ export class Inventory {
     }
   }
 
-  create(type: string, count = 1, condition = 1): Item {
-    return this.factory.create(this.registry, type, count, condition);
+  create(type: string, count = 1, condition = 1, origin: ItemOrigin = { kind: 'created' }): Item {
+    return this.factory.create(this.registry, type, count, { condition, origin });
+  }
+
+  createFixture(type: string, count = 1, condition = 1): Item {
+    return this.create(type, count, condition, { kind: 'fixture' });
   }
 
   /** Fills or empties an owner's slot with a loose, certified item; returns the item displaced. */
@@ -858,13 +863,13 @@ export class Inventory {
       return payload.components;
     }
     if (payload.kind === 'disassembly') {
-      return payload.outputs.map(({ item, count }) => this.create(item, count));
+      return payload.outputs.map(({ item, count }) => this.create(item, count, 1, { kind: 'crafted' }));
     }
     if (payload.repairTargetUid !== undefined) {
       return [];
     }
     const { result } = this.registry.recipes.get(payload.recipe)!;
-    return [this.create(result.item, result.count)];
+    return [this.create(result.item, result.count, 1, { kind: 'crafted' })];
   }
 
   private repairTargetForWork(payload: NonNullable<Item['work']>, finish: boolean): Item | undefined {

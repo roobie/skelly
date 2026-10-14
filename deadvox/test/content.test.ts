@@ -12,7 +12,7 @@ import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
-import { furnitureOf } from '../src/core/site.ts';
+import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
 import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
@@ -762,6 +762,9 @@ describe('content', () => {
   it('rejects placement loot without a container and retains the same loot when a pocket exists', () => {
     const source = 'test/fixtures/content/loot-override-no-container.json';
     const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;
+    // Valid admission on both sides isolates the container-shape contract.
+    const { lootContext } = data.templates![0]!;
+    data.items![0]!.economy = { usage: lootContext.usage, tiers: [lootContext.tier] };
     const rejected = buildRegistry([{ source, data }]);
     expect
       .soft(rejected.issues)
@@ -778,9 +781,12 @@ describe('content', () => {
       origin: [0, 0, 0],
       turn: 0,
     };
-    const spawned = furnitureOf({ seed: 1, registry }, placement, [0, 0]).find(
-      (piece) => piece.spec.type === 'review_pedestal',
-    )!;
+    const spawned = furnitureOf(
+      { seed: 1, registry },
+      placement,
+      [0, 0],
+      lootPointsOf(registry, 'fixture', placement, [0, 0]),
+    ).find((piece) => piece.spec.type === 'review_pedestal')!;
     expect(spawned.loot.map((item) => item.type)).toEqual(['review_only_item']);
     const inventory = new Inventory(registry);
     const entity = inventory.furnish(spawned.spec, spawned.loot)!;

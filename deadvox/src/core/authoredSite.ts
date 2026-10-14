@@ -17,7 +17,7 @@ import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_HORDE_MEMBERS, HAMLET_HORDE_TYPE } from './hamlet.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
-import { applyPlacementLoot, collectPlacementLoot } from './placementLoot.ts';
+import { placementKeyLoot } from './placementLoot.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
@@ -54,7 +54,6 @@ export class AuthoredSite implements Site {
   private readonly spawns: readonly ZombieSpawn[];
   private readonly hordes: readonly HordeSpawn[];
   private readonly treeIndex: TreeIndex;
-  private readonly loot: ReturnType<typeof collectPlacementLoot>;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   readonly playtestMarks: PlaytestMarks;
   readonly seed: number;
@@ -84,16 +83,14 @@ export class AuthoredSite implements Site {
         return layout.demo ? sources.map((source) => ({ ...source, fixture: true as const })) : sources;
       }),
     );
-    this.loot = collectPlacementLoot(
-      registry,
-      this.placements.map((placement, index) => ({
-        placement,
-        fixedLoot: layout.buildings[index]!.fixedLoot,
-      })),
-    );
     this.playtestMarks = {
       beats: (layout.beats ?? []).map((beat) => ({ id: beat.id, area: rectBlocks(beat.area) })),
-      keyLoot: this.loot.keyLoot,
+      keyLoot: placementKeyLoot(
+        this.placements.map((placement, index) => ({
+          placement,
+          fixedLoot: layout.buildings[index]!.fixedLoot,
+        })),
+      ),
     };
     this.spawn = { pos: [...layout.player.position], yaw: yawFromBearing(layout.player.bearing) };
     const spawnPoints: [number, number][] = [
@@ -362,9 +359,7 @@ export class AuthoredSite implements Site {
   }
 
   furnitureIn(cx: number, cz: number) {
-    return this.placements
-      .flatMap((placement) => furnitureOf(this, placement, [cx, cz]))
-      .map((spawn) => applyPlacementLoot(spawn, this.loot));
+    return this.placements.flatMap((placement) => furnitureOf(this, placement, [cx, cz], this.lootPointsIn(cx, cz)));
   }
   zombiesIn(cx: number, cz: number): ZombieSpawn[] {
     return this.spawns.filter((spawn) => toChunk(spawn.pos[0]) === cx && toChunk(spawn.pos[2]) === cz);
