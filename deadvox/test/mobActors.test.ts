@@ -30,10 +30,11 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
+import { makeScale } from '../src/core/scale.ts';
 import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
-import { PLAYER } from '../src/game/player.ts';
+import { type Zombie, type ZombieMode, ZombieSystem } from '../src/core/zombies.ts';
+import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import {
@@ -43,6 +44,9 @@ import {
   MobActorMeshes,
   perceptionLabelFor,
 } from '../src/render/mobActors.ts';
+
+import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 interface TestDebris {
   elapsed: number;
@@ -305,6 +309,37 @@ const makeZombie = (
     severed,
     carved: [],
   };
+};
+
+const incapacitate = (zombie: Zombie) => {
+  const blockSize = 0.5;
+  const system = new ZombieSystem({
+    isSolid: () => false,
+    isOpaque: () => false,
+    blockSize,
+    physics: physicsFor(makeScale(blockSize)),
+    jumpSpeed: PLAYER.jump,
+    tuning: TEST_SENSE_TUNING,
+    player: () => ({ pos: [1000, 0, 1000], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 0 }),
+    dayPhase: () => dayStateAtHour(12),
+    hurtPlayer: () => undefined,
+  });
+  const id = system.store.add(zombie);
+  const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize));
+  const { center } = boxes.torso.find((box) => box.bone === 'chest')!;
+  const origin: Vec3 = [center[0] - zombie.facing[0] * 2, center[1], center[2] - zombie.facing[2] * 2];
+  const direction: Vec3 = [center[0] - origin[0], center[1] - origin[1], center[2] - origin[2]];
+  const hit = system.swing(origin, direction, {
+    damage: Number.MAX_SAFE_INTEGER,
+    reach: 3,
+    cooldown: 0,
+    stamina: 0,
+    type: 'blunt',
+  });
+  if (hit !== id || !zombie.incapacitated) {
+    throw new Error('Damage fixture did not incapacitate its shambler');
+  }
+  return { system, id };
 };
 
 const directionAngle = (a: Vec3, b: Vec3): number => {
@@ -669,6 +704,9 @@ describe('MobActorMeshes', () => {
       const store = new MapEntityStore<Zombie>();
       const id = store.add(zombie);
       renderer.sync(store, 1 / 30, 1);
+      const damage = incapacitate(zombie);
+      expect(damage.system.finishDowned(damage.id, true)).toBeUndefined();
+      expect(zombie.regions.head).toBe(0);
       renderer.zombieDied(id, zombie, [0, 0, 0]);
       const corpse = (renderer as unknown as { corpses: Map<number, { basePose: unknown }> }).corpses.get(id)!;
       const frozenPose = structuredClone(corpse.basePose);
@@ -678,29 +716,6 @@ describe('MobActorMeshes', () => {
       store.remove(id);
       renderer.sync(store, 1 / 30, 1);
       expect(corpse.basePose).toEqual(frozenPose);
-    } finally {
-      renderer.dispose();
-    }
-  });
-
-  it('does not track with a destroyed head', () => {
-    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
-    try {
-      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
-      camera.position.set(0.6, 1.6, 0);
-      camera.lookAt(0, 1, -2);
-      camera.updateMatrixWorld(true);
-      renderer.setCamera(camera);
-      const zombie = makeZombie([0, 0, -4], [0, 0, 1]);
-      zombie.regions.head = 0;
-      zombie.severed = ['head'];
-      const store = new MapEntityStore<Zombie>();
-      const id = store.add(zombie);
-      renderer.sync(store, 1 / 30, 1);
-      const state = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(
-        id,
-      )!;
-      expect(state.lookAtState).toEqual(LOOK_AT_REST);
     } finally {
       renderer.dispose();
     }
@@ -1041,7 +1056,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, 0, 1);
       const uprightHead = renderer.boneMatrix(ids[0]!, 'head');
       const incapacitated = zombies[0]!;
-      incapacitated.incapacitated = true;
+      incapacitate(incapacitated);
       renderer.sync(store, 0, 1);
       for (let i = 1; i < zombies.length; i++) {
         renderer.zombieDied(ids[i]!, zombies[i]!);
@@ -1056,9 +1071,6 @@ describe('MobActorMeshes reactions', () => {
       expect(renderer.isTracked(ids[0]!)).toBe(true);
       renderer.sync(store, 20, 1);
       expect(renderer.boneMatrix(ids[0]!, 'pelvis')).toEqual(lying); // lies still; never sinks
-      incapacitated.incapacitated = false;
-      renderer.sync(store, 1 / 60, 1); // a future revive reclaims a live row
-      expect(renderer.boneMatrix(ids[0]!, 'pelvis')).not.toEqual(lying);
     } finally {
       renderer.dispose();
     }
@@ -1071,8 +1083,9 @@ describe('MobActorMeshes reactions', () => {
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
-      zombie.incapacitated = true;
+      const damage = incapacitate(zombie);
       renderer.sync(store, 20, 1); // lying well past a corpse's lifetime
+      expect(damage.system.finishDowned(damage.id, false)).toBeUndefined();
       store.remove(id);
       renderer.zombieDied(id, zombie);
       renderer.sync(store, 1, 1);

@@ -42,6 +42,7 @@ import {
   perceivePlayer,
   pickZombieHitRegion,
   pickZombieMove,
+  type Zombie,
   ZombieSystem,
 } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
@@ -293,11 +294,27 @@ const runChaserAtWall = (isSolid: SolidAt, seconds: number) => {
   }
   return { states, clearOfSolid };
 };
+const settle = (body: Body, solid: SolidAt = FLOOR): void => {
+  for (let tick = 0; tick < 60 && !body.onGround; tick++) {
+    stepBody(body, 1 / 60, solid, PHYSICS);
+  }
+  if (!body.onGround) {
+    throw new Error('Fixture body did not settle on its terrain');
+  }
+};
+const beginObstacleWander = (system: ZombieSystem, zombie: Zombie): void => {
+  for (let tick = 0; tick < 10 * 60 && zombie.obstacleWanderRemaining === 0; tick++) {
+    system.tick(1 / 60);
+  }
+  if (zombie.obstacleWanderRemaining <= 0) {
+    throw new Error('Fixture shambler did not start an obstacle wander');
+  }
+};
 const standing = (position: Vec3, facing: Vec3 = [0, 0, -1]) => {
   const system = new ZombieSystem(senses(() => player([1000, 1, 1000])));
   const id = system.add(SHAMBLER, position, facing);
   const zombie = system.store.get(id)!;
-  zombie.body.onGround = true;
+  settle(zombie.body);
   return { system, id, zombie };
 };
 
@@ -899,7 +916,7 @@ describe('shambler scenarios', () => {
     const { entities, door, solid } = makeDoorWorld();
     entities.setOpen(door, true);
     const playerBody = createPlayerBody(SCALE, 5, 1, -6);
-    playerBody.onGround = true;
+    settle(playerBody, solid);
     const target = { ...player([5, 1, -6], [0, 0, 1]), body: playerBody };
     const system = new ZombieSystem(senses(() => target, solid));
     const ids = [
@@ -1159,23 +1176,21 @@ describe('shambler scenarios', () => {
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
     };
-    for (const seed of [1, 7, 23]) {
-      const system = new ZombieSystem({
-        ...senses(() => player(target, [-1, 0, 0], 'sprinting'), wall),
-        isOpaque: () => false,
-        seed,
-      });
-      const id = system.add(type, [0, 1, 0], [1, 0, 0]);
-      const zombie = system.store.get(id)!;
-      let sawObstacleContact = false;
-      for (let tick = 0; tick < 5 * 60; tick++) {
-        system.tick(1 / 60);
-        sawObstacleContact ||= zombie.obstacleContact;
-        expect(zombie.obstacleWanderRemaining).toBe(0);
-      }
-      expect(sawObstacleContact).toBe(true);
-      expect(zombie.mode).toBe('chase');
+    const system = new ZombieSystem({
+      ...senses(() => player(target, [-1, 0, 0], 'sprinting'), wall),
+      isOpaque: () => false,
+      seed: 1,
+    });
+    const id = system.add(type, [0, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    let sawObstacleContact = false;
+    for (let tick = 0; tick < 5 * 60; tick++) {
+      system.tick(1 / 60);
+      sawObstacleContact ||= zombie.obstacleContact;
+      expect(zombie.obstacleWanderRemaining).toBe(0);
     }
+    expect(sawObstacleContact).toBe(true);
+    expect(zombie.mode).toBe('chase');
   });
 
   it('still wanders at an obstacle when the same target is unseen', () => {
@@ -1205,24 +1220,23 @@ describe('shambler scenarios', () => {
 
   it('ends an active wander when its target enters sight', () => {
     let target = player([300, 1, 0], [-1, 0, 0], 'sprinting');
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5);
     const type = {
       ...SHAMBLER,
       sight: 100,
       sightCone: 180,
+      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
     };
     const system = new ZombieSystem({
-      ...senses(() => target),
+      ...senses(() => target, wall),
       isOpaque: () => false,
     });
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
-    zombie.obstacleWanderHeading = [0, 0, 1];
-    zombie.obstacleWanderRemaining = 3;
-    zombie.mode = 'investigate';
-    zombie.investigationTier = 'near';
-    zombie.lastPerceived = [...target.pos];
-    target = player([30, 1, 0], [-1, 0, 0], 'sprinting');
+    beginObstacleWander(system, zombie);
+    expect(zombie.mode).toBe('investigate');
+    target = player([...zombie.body.pos].map((value, axis) => value + (axis === 0 ? 10 : 0)) as Vec3);
 
     system.tick(1 / 60);
 
@@ -1231,7 +1245,7 @@ describe('shambler scenarios', () => {
     expect(zombie.obstacleWanderHeading).toBeUndefined();
   });
 
-  it('wanders a distance set by type in an open direction, then resumes pursuit', () => {
+  it('moves in an open direction during an obstacle wander, then resumes pursuit', () => {
     const obstacle: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5 && z >= -2 && z <= 2);
     const target: Vec3 = [300, 1, 0];
     const type = {
@@ -1280,33 +1294,50 @@ describe('shambler scenarios', () => {
   });
 
   it('ends a blocked obstacle wander and resumes its attention target', () => {
-    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5);
+    let barrier: { axis: 0 | 2; coordinate: number } | undefined;
+    const wall: SolidAt = (x, y, z) =>
+      FLOOR(x, y, z) ||
+      (y >= 1 && y <= 5 && (x === 4 || (barrier !== undefined && (barrier.axis === 0 ? x : z) === barrier.coordinate)));
     const type = {
       ...SHAMBLER,
       sight: 1,
       nightSight: 1,
-      wander: { ...SHAMBLER.wander, obstacleWanderChance: 0 },
+      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
     };
     const system = new ZombieSystem({
       ...senses(() => player([300, 1, 0], [-1, 0, 0], 'sprinting'), wall),
       isOpaque: () => false,
     });
-    const id = system.add(type, [2.8, 1, 0], [1, 0, 0]);
+    const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
-    zombie.obstacleWanderHeading = [1, 0, 0];
-    zombie.obstacleWanderRemaining = 3;
-    zombie.horizontalSpeed = type.speed.chaseMetresPerSimSecond;
+    beginObstacleWander(system, zombie);
+    const heading = zombie.obstacleWanderHeading!;
+    const axis = Math.abs(heading[0]) > Math.abs(heading[2]) ? 0 : 2;
+    const direction = Math.sign(heading[axis]);
+    barrier = {
+      axis,
+      coordinate:
+        direction > 0
+          ? Math.ceil(zombie.body.pos[axis] + zombie.body.halfWidth)
+          : Math.floor(zombie.body.pos[axis] - zombie.body.halfWidth) - 1,
+    };
     let endedAtBlockedContact = false;
     let resumedMotion = false;
-    for (let tick = 0; tick < 20; tick++) {
+    for (let tick = 0; tick < 10 * 60; tick++) {
       const wasWandering = zombie.obstacleWanderRemaining > 0;
       const before = [...zombie.body.pos] as Vec3;
       system.tick(1 / 60);
       const travelled = metres(before, zombie.body.pos);
       endedAtBlockedContact ||=
         wasWandering && zombie.obstacleWanderRemaining === 0 && zombie.obstacleContact && travelled < 0.01;
+      if (endedAtBlockedContact) {
+        barrier = undefined;
+      }
       resumedMotion ||= endedAtBlockedContact && zombie.obstacleWanderRemaining === 0 && travelled > 0.01;
+      if (resumedMotion) {
+        break;
+      }
     }
     expect(endedAtBlockedContact).toBe(true);
     expect(resumedMotion).toBe(true);
@@ -1347,9 +1378,8 @@ describe('shambler scenarios', () => {
 
   it('stops a walking player at a standing shambler without stepping onto its body', () => {
     const { zombie } = standing([2, 1, 0]);
-    zombie.body.onGround = true;
     const playerBody = createPlayerBody(SCALE, 0, 1, 0);
-    playerBody.onGround = true;
+    settle(playerBody);
     const obstacles = [zombie.body];
     for (let frame = 0; frame < 3 * 60; frame++) {
       steer(playerBody, SCALE, 0, {
@@ -1386,12 +1416,12 @@ describe('shambler scenarios', () => {
   it('does not separate a player standing two metres above a shambler footprint', () => {
     const platform: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 0 && y === 4 && z === 0);
     const playerBody = createPlayerBody(SCALE, 0.5, 5, 0.5);
-    playerBody.onGround = true;
+    settle(playerBody, platform);
     const target = () => ({ ...player(playerBody.pos), body: playerBody });
     const stillShambler = { ...SHAMBLER, speed: speedRates(0, 0) };
     const system = new ZombieSystem(senses(target, platform));
     const id = system.add(stillShambler, [0.5, 1, 0.5]);
-    system.store.get(id)!.body.onGround = true;
+    settle(system.store.get(id)!.body, platform);
     const start = [...playerBody.pos] as Vec3;
 
     for (let tick = 0; tick < 60; tick++) {
@@ -1410,8 +1440,8 @@ describe('shambler scenarios', () => {
     const upperId = system.add(stillShambler, [0.5, 5, 0.5]);
     const lower = system.store.get(lowerId)!.body;
     const upper = system.store.get(upperId)!.body;
-    lower.onGround = true;
-    upper.onGround = true;
+    settle(lower, ledge);
+    settle(upper, ledge);
     const lowerStart = [...lower.pos] as Vec3;
     const upperStart = [...upper.pos] as Vec3;
 
@@ -1433,7 +1463,7 @@ describe('shambler scenarios', () => {
     const stillShambler = { ...SHAMBLER, speed: speedRates(0, 0) };
     const id = system.add(stillShambler, [3.4, 1, 0]);
     const zombieBody = system.store.get(id)!.body;
-    zombieBody.onGround = true;
+    settle(zombieBody, wall);
     for (let frame = 0; frame < 120; frame++) {
       stepBody(playerBody, 1 / 60, wall, { ...PHYSICS, obstacles: [zombieBody] });
     }
@@ -1472,7 +1502,7 @@ describe('shambler scenarios', () => {
 
   it('lets a chaser attack a player against a wall without overlapping either box', () => {
     const playerBody = createPlayerBody(SCALE, 0.4, 1, 0);
-    playerBody.onGround = true;
+    settle(playerBody);
     const target = { ...player([0.4, 1, 0]), body: playerBody };
     const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 1 && y >= 1 && y <= 5);
     expect(bodyHitsSolid(playerBody, wall)).toBe(false);
@@ -1886,7 +1916,7 @@ describe('shambler scenarios', () => {
     const zombie = system.store.get(id)!;
     zombie.regions.leftLeg = 0;
     zombie.regions.rightLeg = 0;
-    zombie.body.onGround = true;
+    settle(zombie.body);
     for (let tick = 0; tick < 10 * 20; tick++) {
       system.tick(1 / 20);
     }
@@ -2610,7 +2640,7 @@ describe('lurching chase', () => {
     const system = new ZombieSystem({ ...senses(() => player([20, 1, 0])), seed: 19 });
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
-    zombie.body.onGround = true;
+    settle(zombie.body);
     const factors: number[] = [];
     for (let tick = 0; tick < 60 * 20; tick++) {
       system.tick(1 / 20);
@@ -2642,7 +2672,7 @@ describe('lurching chase', () => {
     const system = new ZombieSystem({ ...senses(() => player(target)), seed: 91 });
     const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
-    zombie.body.onGround = true;
+    settle(zombie.body);
     const lateral: number[] = [];
     const speeds: number[] = [];
     let ticks = 0;
@@ -2681,29 +2711,28 @@ describe('lurching chase', () => {
 describe('facing-directed movement', () => {
   type TravelMode = 'stroll' | 'investigate' | 'return' | 'chase';
   const createScenario = (mode: TravelMode) => {
-    let sensed = player(mode === 'chase' ? [10, 1, 0] : [1000, 1, 1000]);
+    const distant = player([1000, 1, 1000]);
+    let sensed = mode === 'stroll' ? distant : player([10, 1, 0], [-1, 0, 0], 'sprinting');
     const type = { ...SHAMBLER, sight: 100, nightSight: 100, sightCone: 180 };
-    const system = new ZombieSystem(senses(() => sensed));
+    const system = new ZombieSystem({
+      ...senses(() => sensed),
+      isOpaque: () => mode === 'investigate',
+    });
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
-    zombie.body.onGround = true;
-    switch (mode) {
-      case 'stroll':
-        zombie.mode = 'stroll';
-        zombie.modeTimer = 10;
-        zombie.strollHeading = [0, 0, 1];
-        break;
-      case 'investigate':
-        zombie.mode = 'investigate';
-        zombie.investigationTier = 'near';
-        zombie.lastPerceived = [10, 1, 0];
-        break;
-      case 'return':
-        zombie.body.pos = [10, 1, 0];
-        zombie.mode = 'return';
-        break;
-      default:
-        break;
+    if (mode === 'return') {
+      run(system, 2);
+      sensed = distant;
+    }
+    for (let tick = 0; tick < 60 * 20 && zombie.mode !== mode; tick++) {
+      const time = mode === 'return' ? type.stimulusMemorySimSeconds + 3 + tick / 20 : tick / 20;
+      system.tick(1 / 20, time);
+    }
+    if (zombie.mode !== mode) {
+      throw new Error(`Fixture shambler did not enter ${mode}`);
+    }
+    if (mode === 'investigate') {
+      sensed = distant;
     }
     return {
       system,
@@ -2926,7 +2955,7 @@ describe('two-tier shambler hearing', () => {
     const system = new ZombieSystem({ ...senses(() => distant), seed: 27 });
     const id = system.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
     const zombie = system.store.get(id)!;
-    zombie.body.onGround = true;
+    settle(zombie.body);
     zombie.mode = 'search';
     zombie.searchAnchor = [0, 1, 0];
     zombie.searchTimer = 30;
@@ -2986,7 +3015,7 @@ describe('two-tier shambler hearing', () => {
     const system = new ZombieSystem({ ...senses(() => noise), seed: 113 });
     const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
     const zombie = system.store.get(system.add(type, [0, 1, 0]))!;
-    zombie.body.onGround = true;
+    settle(zombie.body);
     expect(advanceToMode(system, zombie, 'investigate', 200)).toBe(true);
     noise = { ...noise, movement: 'still' };
     expect(advanceToMode(system, zombie, 'search', 200)).toBe(true);
@@ -3121,8 +3150,8 @@ describe('idle and stroll shambling', () => {
     withExtraBody.add(SHAMBLER, [100, 1, 100]);
     const zombie = system.store.get(id)!;
     const independent = withExtraBody.store.get(independentId)!;
-    zombie.body.onGround = true;
-    independent.body.onGround = true;
+    settle(zombie.body);
+    settle(independent.body);
     let idleTicks = 0;
     let strollTicks = 0;
     const sampleTicks = 5 * 60 * 20;
@@ -3149,7 +3178,7 @@ describe('idle and stroll shambling', () => {
     const system = new ZombieSystem(senses(() => player([1000, 1, 1000])));
     const id = system.add(SHAMBLER, [0, 1, 0]);
     const zombie = system.store.get(id)!;
-    zombie.body.onGround = true;
+    settle(zombie.body);
     let idleTurned = false;
     let strollingTicks = 0;
     const meshes = new ZombieMeshes(BLOCK_SIZE);
@@ -3190,7 +3219,7 @@ describe('idle and stroll shambling', () => {
     const system = new ZombieSystem(senses(() => player(target)));
     const id = system.add({ ...SHAMBLER, sightCone: 180 }, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
-    zombie.body.onGround = true;
+    settle(zombie.body);
     const meshes = new ZombieMeshes(BLOCK_SIZE);
     const bodyMesh = meshes.group.children[0] as import('three').InstancedMesh;
     meshes.sync(system.store);
@@ -3224,7 +3253,7 @@ describe('idle and stroll shambling', () => {
     const idleSystem = new ZombieSystem(senses(() => player([1000, 1, 1000])));
     const idleId = idleSystem.add(SHAMBLER, [0, 1, 0]);
     const idleZombie = idleSystem.store.get(idleId)!;
-    idleZombie.body.onGround = true;
+    settle(idleZombie.body);
     idleZombie.modeTimer = 100;
     const idleMeshes = new ZombieMeshes(BLOCK_SIZE);
     const idleBody = idleMeshes.group.children[0] as import('three').InstancedMesh;

@@ -236,6 +236,8 @@ export const cityRowDepth = (grid: CityGrid): number =>
 export const cityRowStart = (grid: CityGrid, row: number): number =>
   grid.street + grid.pad + Math.floor(row / 2) * (2 * cityRowDepth(grid) + grid.street);
 
+const groundedY = (template: Placement['template'], floor: number): number => floor - (template.groundLayer ?? 0);
+
 const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] => {
   const { seed, floor, grid, compiled, maxStoreys } = context;
   const pitchX = grid.street + grid.blockX;
@@ -265,7 +267,7 @@ const fillRow = (context: FillContext, [i, j]: Cell, row: number): Placement[] =
     const [width, depth] = footprint({ template, origin: [0, 0, 0], turn });
     const bank = j * pitchZ + cityRowStart(grid, row);
     const z = row % 2 === 0 ? bank : bank + 2 * cityRowDepth(grid) - depth;
-    placements.push(freezePlacement({ template, origin: [x, floor, z], turn }));
+    placements.push(freezePlacement({ template, origin: [x, groundedY(template, floor), z], turn }));
     x += width + grid.gap;
   }
   return placements;
@@ -288,7 +290,7 @@ export const servicePlacement = ({
     template,
     origin: [
       i * (grid.street + grid.blockX) + grid.street + grid.pad,
-      floor - (template.groundLayer ?? 0),
+      groundedY(template, floor),
       j * (grid.street + grid.blockZ) + grid.street + grid.pad,
     ],
     turn,
