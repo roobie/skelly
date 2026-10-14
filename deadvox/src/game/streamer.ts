@@ -69,6 +69,12 @@ export class Streamer {
   private readonly workers: Worker[] = [];
   private readonly maxInFlight: number;
   private generationFailed = false;
+  failure: string | undefined;
+
+  get loadingWorkUnits(): number {
+    const columns = (this.opts.radius * 2 + 1) ** 2;
+    return (this.opts.radius * 2 + 3) ** 2 + columns * (this.opts.scale.maxCy - this.opts.scale.minCy + 1);
+  }
   private replayControlled = false;
   private readonly offsets: [number, number][] = [];
   private nextWorker = 0;
@@ -125,6 +131,12 @@ export class Streamer {
     for (let i = 0; i < count; i++) {
       const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(worker, e.data);
+      worker.onerror = (event) => {
+        this.failure = event.message || 'World mesh worker failed';
+      };
+      worker.onmessageerror = () => {
+        this.failure = 'World mesh worker reply could not be decoded';
+      };
       this.send(worker, { type: 'init', colors: opts.colors, patterns: opts.patterns, weatherable: opts.weatherable });
       this.workers.push(worker);
     }
@@ -173,6 +185,7 @@ export class Streamer {
       return false;
     }
     this.generate(cx, cz, false);
+    this.dirtyReplayNeighbours(cx, cz);
     return this.generated.has(`${cx},${cz}`);
   }
 
@@ -183,6 +196,7 @@ export class Streamer {
       return;
     }
     const { world, scale } = this.opts;
+    this.dirtyReplayNeighbours(cx, cz);
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
       const key = chunkKey(cx, cy, cz);
       if (!world.getChunk(cx, cy, cz)?.edited) {
@@ -216,6 +230,33 @@ export class Streamer {
     return count;
   }
 
+  unmeshedRecordedColumns(x: number, z: number, columns: readonly (readonly [number, number])[]): number {
+    const pcx = toChunk(Math.floor(x));
+    const pcz = toChunk(Math.floor(z));
+    return columns.filter(
+      ([cx, cz]) =>
+        Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) <= this.opts.radius &&
+        this.unmeshedColumns(cx * CHUNK, cz * CHUNK, 0) > 0,
+    ).length;
+  }
+
+  // Replay may start with a partial ring: mesh the recorded boundary without inventing terrain,
+  // then repair its border AO/faces when a recorded neighbour arrives or leaves.
+  private dirtyReplayNeighbours(cx: number, cz: number): void {
+    for (let z = cz - 1; z <= cz + 1; z++) {
+      for (let x = cx - 1; x <= cx + 1; x++) {
+        for (let y = this.opts.scale.minCy; y <= this.opts.scale.maxCy; y++) {
+          const chunk = this.opts.world.getChunk(x, y, z);
+          if (chunk && !chunk.isEmpty()) {
+            const key = chunkKey(x, y, z);
+            this.dirty.add(key);
+            this.versions.set(key, (this.versions.get(key) ?? 0) + 1);
+          }
+        }
+      }
+    }
+  }
+
   /** Call after editing blocks with the chunks World.setBlock returned. */
   markEdited(chunks: Vec3[]): void {
     for (const [cx, cy, cz] of chunks) {
@@ -228,7 +269,7 @@ export class Streamer {
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
   update(x: number, z: number): void {
-    if (this.generationFailed) {
+    if (this.generationFailed || this.failure) {
       return;
     }
     const pcx = toChunk(Math.floor(x));
@@ -257,7 +298,7 @@ export class Streamer {
       }
       const cx = pcx + dx;
       const cz = pcz + dz;
-      if (!this.neighboursGenerated(cx, cz)) {
+      if (!(this.replayControlled || this.neighboursGenerated(cx, cz))) {
         continue;
       }
       for (let cy = this.opts.scale.minCy; cy <= this.opts.scale.maxCy && this.occupied < this.maxInFlight; cy++) {
@@ -351,6 +392,7 @@ export class Streamer {
       return true;
     } catch (error) {
       this.generationFailed = true;
+      this.failure = (error instanceof Error ? error.message : String(error)) || 'World generation failed';
       if (!this.onGenerationError) {
         throw error;
       }
