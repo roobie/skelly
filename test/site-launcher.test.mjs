@@ -16,8 +16,6 @@ const page = read('site/launcher.js');
 const round1Page = read('deadvox/playtests/round1/round1.js');
 const GUNGEN_FORM_PATTERN = /<form\b[^>]*id="gungen-form"[^>]*>([\s\S]*?)<\/form>/;
 const SELECT_PATTERN = /<select\b/;
-const WEATHERING_SITE_OPTION_PATTERN =
-  /state\.deadvox\.debug && state\.deadvox\.bench === ''[\s\S]*value="weatheringTest"/;
 const GAME_WEATHERING_MAX_PATTERN = /export const WEATHERING_STRENGTH_MAX = (\d+);/;
 const LAUNCHER_WEATHERING_MAX_PATTERN = /const WEATHERING_STRENGTH_MAX = (\d+);/;
 const PLAY_LINK_PATTERN = /<a[^>]*class="playtest-action"[^>]*>/;
@@ -151,9 +149,25 @@ const extractDeclaration = (name) => {
 };
 
 const makeDeadvoxForTest = () => {
-  const source = ['defaultTime', 'setDefault', 'addDebugParams', 'makeDeadvox'].map(extractDeclaration).join('\n');
+  const source = ['defaultTime', 'setDefault', 'siteOffered', 'addDebugParams', 'makeDeadvox']
+    .map(extractDeclaration)
+    .join('\n');
   return new Function('location', `${source}\nreturn makeDeadvox;`)({ href: 'https://example.test/site/' });
 };
+
+// Evaluates the launcher's site predicate and input handler, so the tests observe the same
+// clearing rule the page runs rather than re-describing it.
+const siteOfferedForTest = () => new Function(`${extractDeclaration('siteOffered')}\nreturn siteOffered;`)();
+const onInputForTest = (model) => {
+  const source = ['siteOffered', 'onInput'].map(extractDeclaration).join('\n');
+  return new Function('model', 'refresh', `${source}\nreturn onInput;`)(model, () => {
+    // The page's refresh renders and recomputes the URL; this test reads the model only.
+  });
+};
+const benchChange = (bench) => ({
+  currentTarget: { id: 'deadvox-form' },
+  target: { dataset: { stateKey: 'bench' }, type: 'select-one', value: bench },
+});
 
 // Reads the launcher's own defaults and presets, so the tests cannot drift from a second copy.
 const launcherModelForTest = () => new Function(`${extractDeclaration('model')}\nreturn model;`)();
@@ -227,7 +241,6 @@ describe('site launchers track the games’ URL parameters', () => {
   });
 
   it('offers weathering overrides only in debug play and matches the game strength ceiling', () => {
-    assert.match(page, WEATHERING_SITE_OPTION_PATTERN);
     for (const [id, parameter] of [
       ['deadvox-weathering-field', 'weathering'],
       ['deadvox-weathering-variation-field', 'weatheringVariation'],
@@ -242,6 +255,33 @@ describe('site launchers track the games’ URL parameters', () => {
     assert.ok(gameMax, 'game weathering ceiling is declared');
     assert.ok(launcherMax, 'static launcher weathering ceiling is declared');
     assert.equal(launcherMax[1], gameMax[1]);
+  });
+
+  it('drops a site the chosen bench mode does not offer', () => {
+    const offered = siteOfferedForTest();
+    const model = launcherModelForTest();
+    const onInput = onInputForTest(model);
+    const gauntlet = { ...model.deadvox, ...launcherPresetsForTest().gauntlet, debug: true };
+
+    assert.equal(offered(gauntlet, 'gauntlet'), true, 'play offers the gauntlet');
+    assert.equal(offered(gauntlet, 'testHouse'), true, 'debug play offers the debug sites');
+    assert.equal(offered({ ...gauntlet, debug: false }, 'testHouse'), false, 'plain play hides the debug sites');
+
+    for (const bench of ['1', 'shamblers', 'report']) {
+      model.deadvox = { ...gauntlet, bench, site: 'gauntlet' };
+      onInput(benchChange(bench));
+      assert.equal(model.deadvox.site, '', `bench ${bench} clears a gauntlet site it does not offer`);
+      assert.ok(offered(model.deadvox, model.deadvox.site), `bench ${bench} leaves an offered site`);
+    }
+
+    model.deadvox.bench = '';
+    model.deadvox.site = 'testHouse';
+    onInput(benchChange('1'));
+    assert.equal(model.deadvox.site, '', 'a bench change clears a debug site');
+
+    model.deadvox = { ...gauntlet, bench: '1', site: 'city' };
+    onInput(benchChange('1'));
+    assert.equal(model.deadvox.site, 'city', 'a bench that offers the city keeps it');
   });
 
   it('composes the gauntlet site for play and never in a benchmark', () => {
