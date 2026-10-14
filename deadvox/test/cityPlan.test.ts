@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Chunk } from '../src/core/chunk.ts';
-import { buildCityPlan, servicePlacement } from '../src/core/cityPlan.ts';
+import { buildCityPlan, cityGridOf, servicePlacement } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
@@ -20,12 +20,13 @@ if (issues.length > 0) {
 }
 const scale = makeScale(0.5);
 const floor = CHUNK;
-const planned = (pool = profile.city.templates) =>
+const fixtureGrid = cityGridOf(registry, profile.city);
+const planned = (pool = fixtureGrid.templates) =>
   buildCityPlan({
     seed: 73,
     registry,
     floor,
-    grid: { ...profile.city, templates: pool },
+    grid: { ...fixtureGrid, templates: pool },
     maxStoreys: 4,
     scenario: profile,
   });
@@ -128,7 +129,7 @@ describe('one finished city plan', () => {
   it('keeps generated building floor and roof courses in the exterior wall material', () => {
     const native = BUNDLED_CONTENT.registry;
     const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-    for (const { id } of scenario.city.templates) {
+    for (const { id } of cityGridOf(native, scenario.city).templates) {
       const { courses, scanned } = floorCourses(id);
       expect(scanned, `${id}: no shell wall under a floor or roof layer was scanned`).toBeGreaterThan(0);
       for (const [actual, wall, message] of courses) {
@@ -144,12 +145,19 @@ describe('one finished city plan', () => {
     const cityRegistry = {
       ...native,
       templates: new Map([...native.templates, [fixture.id, { ...fixture, palette: { '=': solid, C: solid } }]]),
+      mapPools: new Map([
+        ...native.mapPools,
+        [
+          scenario.city.pool,
+          { id: scenario.city.pool, choices: [{ ref: { kind: 'template' as const, id: fixture.id }, weight: 1 }] },
+        ],
+      ]),
     };
     const site = new GauntletSite({
       seed: 73,
       registry: cityRegistry,
       scale,
-      scenario: { ...scenario, city: { ...scenario.city, templates: [{ id: fixture.id, weight: 1 }] } },
+      scenario,
     });
     const spawns: ZombieSpawn[] = [];
     const hordes: HordeSpawn[] = [];
@@ -175,7 +183,9 @@ describe('one finished city plan', () => {
     };
     const admitted = buildRegistry(fixtureScenarioSources(scenario));
     expect(admitted.issues).toEqual([]);
-    const plan = buildCityPlan({ seed: 73, registry: admitted.registry, floor, grid: scenario.city, scenario });
+    const plan = buildCityPlan({ seed: 73, registry: admitted.registry, floor, grid: cityGridOf(admitted.registry, scenario.city),
+      scenario,
+    });
     const normal = plan.placements.filter((placement) => placement !== plan.service);
     const banks = new Set(
       normal
@@ -217,7 +227,7 @@ describe('one finished city plan', () => {
     expect(plan.candidates.length).toBeGreaterThan(0);
     expect(plan.candidates.some(([i, j]) => i === 0 && j === 0)).toBe(false);
     const service = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
-    const grid = profile.city;
+    const grid = fixtureGrid;
     const pitchX = grid.street + grid.blockX;
     const pitchZ = grid.street + grid.blockZ;
     for (const cell of plan.candidates) {
@@ -237,7 +247,7 @@ describe('one finished city plan', () => {
     expect(plan.placements.length).toBeGreaterThan(1);
     for (const placement of plan.placements) {
       if (placement !== plan.service) {
-        expect(profile.city.templates.some(({ id }) => id === placement.template.id)).toBe(true);
+        expect(fixtureGrid.templates.some(({ id }) => id === placement.template.id)).toBe(true);
       }
       const [width, depth] = footprint(placement);
       expect(mod(placement.origin[0], pitchX)).toBeGreaterThanOrEqual(grid.street + grid.pad);
@@ -253,9 +263,9 @@ describe('one finished city plan', () => {
   });
 
   it('chooses the service block/turn independently of incidental template selection', () => {
-    const forPool = (templates: typeof profile.city.templates) =>
-      buildCityPlan({ seed: 74, registry, floor, grid: { ...profile.city, templates }, scenario: profile });
-    const first = forPool(profile.city.templates);
+    const forPool = (templates: typeof fixtureGrid.templates) =>
+      buildCityPlan({ seed: 74, registry, floor, grid: { ...fixtureGrid, templates }, scenario: profile });
+    const first = forPool(fixtureGrid.templates);
     const varied = forPool([{ id: 'fixture_small_house', weight: 1 }]);
     expect(varied.placements.some((placement) => placement.template.id === 'fixture_small_house')).toBe(true);
     expect(varied.serviceBlock).toEqual(first.serviceBlock);

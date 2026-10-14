@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../tools/jsonnet/index.mjs';
-import { buildCityPlan, scenarioPlanIssues } from '../src/core/cityPlan.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityPlan.ts';
+import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { buildingLootEvidence, buildingVariants, cityBuildingDraws } from './fixtures/cityBuildings.ts';
-import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { fixturePool, fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
 
 const BUNDLED_CONTENT = buildBundledContent();
 
@@ -60,10 +60,12 @@ it('rejects ambiguous city pool identities instead of choosing a template or ass
   ];
   const { registry, issues } = buildRegistry([{ source: 'fixture-city-kits.json', data }]);
   expect(issues).toEqual([]);
-  const scenario = fixtureScenario();
-  scenario.city.templates = [{ id: 'fixture_route', weight: 1 }];
-  expect(scenarioPlanIssues(registry, scenario)).toContainEqual([
-    '.city.templates',
+  registry.mapPools.set('fixture_pool', {
+    id: 'fixture_pool',
+    choices: [{ ref: { kind: 'template', id: 'fixture_route' }, weight: 1 }],
+  });
+  expect(scenarioPlanIssues(registry, fixtureScenario())).toContainEqual([
+    '.city.pool.choices[0].ref',
     'ambiguous template and assembly "fixture_route"',
   ]);
 });
@@ -139,13 +141,66 @@ describe('content-owned city building types', () => {
     expect(fallback).toBeGreaterThan(0);
   });
 
-  it('rejects duplicate building identities and pools with no enabled weight', () => {
-    const scenario = fixtureScenario();
-    const row = scenario.city.templates[0]!;
-    for (const templates of [[row, row], [{ ...row, weight: 0 }], [{ ...row, weight: -1 }]]) {
-      const result = buildRegistry(fixtureScenarioSources({ ...scenario, city: { ...scenario.city, templates } }));
-      expect(result.issues.some(({ path }) => path.includes('city.templates'))).toBe(true);
+  it('rejects duplicate building refs and pools with no enabled weight', () => {
+    const { ref } = fixturePool().choices[0]!;
+    for (const choices of [
+      [
+        { ref, weight: 1 },
+        { ref, weight: 2 },
+      ],
+      [{ ref, weight: 0 }],
+      [{ ref, weight: -1 }],
+    ]) {
+      const result = buildRegistry(fixtureScenarioSources(fixtureScenario(), fixtureService(), fixturePool(choices)));
+      expect(result.issues.some(({ path }) => path.includes('mapPools[0].choices'))).toBe(true);
     }
+  });
+
+  it('reports a missing pool at the scenario city', () => {
+    const scenario = fixtureScenario();
+    const { registry } = buildRegistry(fixtureScenarioSources(scenario));
+    scenario.city.pool = 'no_such_pool';
+    expect(scenarioPlanIssues(registry, scenario)).toContainEqual(['.city.pool', 'no map pool "no_such_pool"']);
+  });
+
+  it('reports a pool ref that names no building of its kind, or one that does not fit', () => {
+    const scenario = fixtureScenario();
+    const { registry } = buildRegistry(fixtureScenarioSources(scenario));
+    const refAt = (kind: 'template' | 'assembly', id: string) => {
+      registry.mapPools.set('fixture_pool', { id: 'fixture_pool', choices: [{ ref: { kind, id }, weight: 1 }] });
+      return scenarioPlanIssues(registry, scenario).filter(([path]) => path === '.city.pool.choices[0].ref');
+    };
+    expect(refAt('template', 'no_such_building')).toHaveLength(1);
+    expect(refAt('assembly', 'fixture_house')).toHaveLength(1);
+    expect(refAt('template', 'fixture_house')).toEqual([]);
+    scenario.city.blockX = 6;
+    expect(refAt('template', 'fixture_house')).toHaveLength(1);
+  });
+
+  it('lets one pool entry from a mod override a single building weight', () => {
+    const scenario = fixtureScenario();
+    const choices = [
+      { ref: { kind: 'template' as const, id: 'fixture_house' }, weight: 1 },
+      { ref: { kind: 'template' as const, id: 'fixture_small_house' }, weight: 1 },
+    ];
+    const sources = fixtureScenarioSources(scenario, fixtureService(), fixturePool(choices));
+    const placed = (mod: ContentSource[]) => {
+      const { registry, issues } = buildRegistry([...sources, ...mod]);
+      expect(issues).toEqual([]);
+      const ids = new Set<string>();
+      for (const seed of [11, 73, 191, 307]) {
+        for (const { template } of buildCityPlan({ seed, registry, floor: 0, grid: cityGridOf(registry, scenario.city) })
+          .placements) {
+          ids.add(template.id);
+        }
+      }
+      return ids;
+    };
+    expect(placed([])).toEqual(new Set(['fixture_house', 'fixture_small_house']));
+    const override = fixturePool([{ ...choices[0]!, weight: 0 }, choices[1]!]);
+    expect(placed([{ source: 'fixture-mod.json', data: { mapPools: [override] } }])).toEqual(
+      new Set(['fixture_small_house']),
+    );
   });
 
   it('every authored city building has valid assemblies and reachable eligible loot', () => {
@@ -155,15 +210,16 @@ describe('content-owned city building types', () => {
     expect(scenarios.length).toBeGreaterThan(0);
     for (const scenario of scenarios) {
       expect(scenarioPlanIssues(registry, scenario)).toEqual([]);
-      const enabled = scenario.city.templates.filter(({ weight }) => weight > 0);
+      const city = cityGridOf(registry, scenario.city);
+      const enabled = city.templates.filter(({ weight }) => weight > 0);
       expect(enabled.length).toBeGreaterThan(0);
-      const plan = buildCityPlan({ seed: 1, registry, grid: { ...scenario.city, streetProps: [] }, floor: 0 });
+      const plan = buildCityPlan({ seed: 1, registry, grid: { ...city, streetProps: [] }, floor: 0 });
       expect(plan.placements.length).toBeGreaterThan(0);
       expect(plan.placements.every(({ template }) => enabled.some(({ id }) => id === template.id))).toBe(true);
     }
     const buildings = scenarios.flatMap((scenario) =>
-      scenario.city.templates
-        .filter(({ weight }) => weight > 0)
+      cityGridOf(registry, scenario.city)
+        .templates.filter(({ weight }) => weight > 0)
         .flatMap(({ id }) => buildingVariants(registry, registry.mapAssemblies.get(id)!)),
     );
     expect(buildings.length).toBeGreaterThan(0);

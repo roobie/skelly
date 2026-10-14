@@ -21,7 +21,7 @@ import {
 
 export const CITY = { street: 12, blockX: 104, blockZ: 64, pad: 2, gap: 2, reach: 400, blend: 24 } as const;
 const SINGLE_STOREY = new Set(['gas_station', 'shed']);
-export type CityGrid = Omit<ScenarioDef['city'], 'templates' | 'streetProps'> & {
+export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps'> & {
   readonly templates: readonly Readonly<{ id: string; weight: number }>[];
   readonly streetProps?: readonly string[] | undefined;
 };
@@ -57,7 +57,7 @@ export const benchmarkCityGrid = (): CityGrid => ({
   templates: HAMLET_TEMPLATES.map((id) => ({ id, weight: 1 })),
 });
 
-const cityDecorationIssues = (registry: Registry, city: CityGrid): [string, string][] => {
+const cityDecorationIssues = (registry: Registry, city: Omit<CityGrid, 'templates'>): [string, string][] => {
   const issues: [string, string][] = [];
   if (city.perimeter && !registry.blockIds.has(city.perimeter.block)) {
     issues.push(['.city.perimeter.block', `no block "${city.perimeter.block}"`]);
@@ -97,19 +97,37 @@ const cityPerimeter = (registry: Registry, grid: CityGrid, floor: number, bounds
   return structures;
 };
 
-const cityPoolIssues = (registry: Registry, city: CityGrid): [string, string][] =>
-  city.templates.flatMap(({ id }): [string, string][] => {
-    const template = registry.templates.get(id) ?? registry.mapAssemblies.get(id);
+/** The scenario's city with its named pool resolved to weighted building ids. */
+export const cityGridOf = (registry: Registry, city: ScenarioDef['city']): CityGrid => {
+  const { pool, ...grid } = city;
+  const choices = registry.mapPools.get(pool)?.choices;
+  if (!choices) {
+    throw new Error(`Missing city pool "${pool}"`);
+  }
+  return { ...grid, templates: choices.map(({ ref, weight }) => ({ id: ref.id, weight })) };
+};
+
+const cityPoolIssues = (registry: Registry, city: ScenarioDef['city']): [string, string][] => {
+  const pool = registry.mapPools.get(city.pool);
+  if (!pool) {
+    return [['.city.pool', `no map pool "${city.pool}"`]];
+  }
+  const grid = { ...city, templates: [] };
+  return pool.choices.flatMap(({ ref }, index): [string, string][] => {
+    const at = `.city.pool.choices[${index}].ref`;
+    const { id } = ref;
     if (registry.templates.has(id) && registry.mapAssemblies.has(id)) {
-      return [['.city.templates', `ambiguous template and assembly "${id}"`]];
+      return [[at, `ambiguous template and assembly "${id}"`]];
     }
-    if (!template) {
-      return [['.city.templates', `no template or assembly "${id}"`]];
+    const building = (ref.kind === 'template' ? registry.templates : registry.mapAssemblies).get(id);
+    if (!building) {
+      return [[at, `no ${ref.kind} "${id}" in pool "${pool.id}"`]];
     }
-    return template.size[0] > city.blockX - 2 * city.pad || template.size[2] > cityRowDepth(city)
-      ? [['.city.templates', `template "${id}" does not fit the reserved row`]]
+    return building.size[0] > city.blockX - 2 * city.pad || building.size[2] > cityRowDepth(grid)
+      ? [[at, `${ref.kind} "${id}" does not fit the reserved row`]]
       : [];
   });
+};
 
 export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
