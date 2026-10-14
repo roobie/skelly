@@ -60,7 +60,7 @@ export const chooseMods = (root: HTMLElement): Promise<StartupContent> =>
         html`
       <section class="mods-card" aria-label="Mods">
         <h1>Mods</h1>
-        <p>${factDetail('JSON files', `Data only. Later files replace whole definitions with the same id. Limit: ${MAX_MOD_BYTES} bytes per file. Mods are not stored across reloads in this preview.`)}</p>
+        <p>${factDetail('JSON files', `Later JSON files replace whole definitions with the same id; the limit is ${MAX_MOD_BYTES} bytes per file. This preview does not retain mods across reloads or check their identity against saves.`)}</p>
         <label>JSON<textarea aria-label="Mod JSON" .value=${draft} @input=${(event: Event) => {
           draft = (event.currentTarget as HTMLTextAreaElement).value;
         }}></textarea></label>
