@@ -108,7 +108,9 @@ describe('stimulus memory', () => {
     zombie.body.onGround = true;
     const dt = 1 / 20;
     let time = dt;
-    system.tickActive(dt, time);
+    // A blocked shambler slides along the wall, so it can drift past the active radius and out of
+    // tickActive's selection during the 180 s wait; tick every tier to keep the memory timer under test.
+    system.tick(dt, time);
     expect(zombie.mode).toBe('investigate');
     expect(zombie.body.pos[0]).toBeGreaterThan(10);
     const { stimulusAt } = zombie;
@@ -119,12 +121,12 @@ describe('stimulus memory', () => {
     const ticksBeforeExpiry = Math.ceil((deadline - time) / dt) - 1;
     for (let tick = 0; tick < ticksBeforeExpiry; tick++) {
       time += dt;
-      system.tickActive(dt, time);
+      system.tick(dt, time);
     }
     expect(zombie.mode).toBe('investigate');
     expect(zombie.body.pos[0]).toBeGreaterThan(10);
     time += dt;
-    system.tickActive(dt, time);
+    system.tick(dt, time);
     expect(zombie.mode).toBe('return');
     expect(zombie.lastPerceived).toBeUndefined();
   });

@@ -25,6 +25,7 @@ import type { Modifier } from './modifiers.ts';
 import {
   type Body,
   type BodyShape,
+  bodyOverlapsTerrain,
   CONTACT_SKIN,
   type PhysicsParams,
   type ShapeOf,
@@ -2618,9 +2619,10 @@ export class ZombieSystem {
   }
 
   /**
-   * Whether a wall stands just ahead along `aim`. A box-sized body casts a ray from its centre. An amalgam's
-   * flesh reaches metres past its centre, so a ray from there never meets the wall it is pressed against and it
-   * would never slide off; its shape is moved as far ahead instead.
+   * Whether a wall stands just ahead along `aim`. A box-sized body moves its box as far ahead and tests
+   * whether it meets terrain: a ray from its centre misses the block corner its body catches, so it would
+   * grind against that corner without ever registering the contact. An amalgam's flesh reaches metres past
+   * its centre, so its shape is moved as far ahead instead.
    */
   private wallAhead(aim: Vec3): boolean {
     const { zombie, beforeStep, blockSize, isSolid } = this.tickScratch;
@@ -2629,7 +2631,11 @@ export class ZombieSystem {
       return this.fleshMeets(shape, aim);
     }
     const reach = OBSTACLE_LOOKAHEAD_METRES / blockSize;
-    return raycast([beforeStep[0], beforeStep[1] + 0.1 / blockSize, beforeStep[2]], aim, reach, isSolid) !== undefined;
+    const ahead: Body = {
+      ...zombie.body,
+      pos: [beforeStep[0] + aim[0] * reach, beforeStep[1], beforeStep[2] + aim[2] * reach],
+    };
+    return bodyOverlapsTerrain(ahead, isSolid);
   }
 
   /** Whether an amalgam's flesh, moved the obstacle lookahead along `heading` and lifted over a step, meets terrain. */
