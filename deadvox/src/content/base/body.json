@@ -108,7 +108,11 @@
       "knockoutSimSeconds": 20,
       "landing": {
         "cause": "a fall",
-        "damagePerSquaredSpeed": 0.17999999999999999,
+        "damagePerSquaredSpeed": 0.129,
+        "damageSpread": {
+          "max": 2,
+          "min": 0.20000000000000001
+        },
         "kind": "blunt",
         "regions": [
           {
@@ -120,7 +124,7 @@
             "weight": 1
           }
         ],
-        "safeSpeedMetresPerSimSecond": 9
+        "safeSpeedMetresPerSimSecond": 11.5
       },
       "minimumMovementSpeed": 0.5,
       "movementSlowdownPerDamage": 0.0050000000000000001,

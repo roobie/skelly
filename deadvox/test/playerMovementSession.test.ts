@@ -35,6 +35,7 @@ const makeRuntime = ({
   isSolid = FLAT,
   spawn = [0, 1, 0] as Vec3,
   yaw = 0,
+  seed = 73,
   restore = undefined as Readonly<SaveSnapshot> | undefined,
 } = {}) => {
   const scale = makeScale(0.5);
@@ -50,7 +51,7 @@ const makeRuntime = ({
     isSolid,
     isOpaque: isSolid,
     scale,
-    seed: 73,
+    seed,
     start: 43_200,
     spawn,
     ready: () => true,
@@ -139,10 +140,10 @@ const downShambler = (session: Session, position: Vec3): { id: EntityId; zombie:
 describe('landing injuries', () => {
   const scale = makeScale(0.5);
   const tuning = registry.body.get('player')!.landing;
-  const drop = (speed: number) => {
+  const drop = (speed: number, seed = 73) => {
     const gravity = physicsFor(scale).gravity * scale.blockSize;
     const height = speed ** 2 / (2 * gravity);
-    const runtime = makeRuntime({ spawn: [0, 1 + height / scale.blockSize, 0] });
+    const runtime = makeRuntime({ spawn: [0, 1 + height / scale.blockSize, 0], seed });
     const before = runtime.session.sim.body.snapshotState();
     const frames = Math.ceil((speed / gravity + 1) * 60);
     for (let frame = 0; frame < frames && !runtime.session.body.onGround; frame++) {
@@ -154,24 +155,30 @@ describe('landing injuries', () => {
     return { runtime, before, after: runtime.session.sim.body.snapshotState() };
   };
 
+  it('survives low fixture drops while high fixture drops can kill or spare a healthy player', () => {
+    const gravity = physicsFor(scale).gravity * scale.blockSize;
+    const outcomes = [4, 12].map((height) =>
+      [1, 2, 3, 4].map((seed) => drop(Math.sqrt(2 * gravity * height), seed).runtime.session.sim.dead !== undefined),
+    );
+    expect(outcomes[0]).not.toContain(true);
+    expect(outcomes[1]).toContain(true);
+    expect(outcomes[1]).toContain(false);
+  });
+
   it('leaves the body unchanged after a safe landing', () => {
     const { before, after } = drop(tuning.safeSpeedMetresPerSimSecond / 2);
     expect(after).toEqual(before);
   });
 
-  it('injures the content landing regions more on a faster impact', () => {
-    const slow = drop(tuning.safeSpeedMetresPerSimSecond * 1.2);
-    const fast = drop(tuning.safeSpeedMetresPerSimSecond * 1.5);
-    expect(slow.after.health).toBeLessThan(slow.before.health);
+  it('injures the content landing regions once at contact', () => {
+    const { runtime, before, after } = drop(tuning.safeSpeedMetresPerSimSecond * 1.2);
+    expect(after.health).toBeLessThan(before.health);
     for (const { region } of tuning.regions) {
-      expect(slow.after.regionDamage[region]).toBeGreaterThan(0);
-      expect(fast.after.regionDamage[region]).toBeGreaterThan(slow.after.regionDamage[region]);
+      expect(after.regionDamage[region]).toBeGreaterThan(0);
     }
-    expect(fast.after.health).toBeLessThan(slow.after.health);
-    expect(fast.after.pain.acute).toBeGreaterThan(slow.after.pain.acute);
-    const landed = structuredClone(fast.after);
-    fast.runtime.advance(1);
-    expect(fast.runtime.session.sim.body.regionDamage).toEqual(landed.regionDamage);
+    expect(after.pain.acute).toBeGreaterThan(before.pain.acute);
+    runtime.advance(1);
+    expect(runtime.session.sim.body.regionDamage).toEqual(after.regionDamage);
   });
 
   it('preserves landing injuries when a saved session is resumed', () => {
@@ -184,7 +191,9 @@ describe('landing injuries', () => {
 
   it('kills through the existing death path on a sufficiently fast landing', () => {
     const { health } = makeRuntime().session.sim.body;
-    const lethalSpeed = Math.sqrt(tuning.safeSpeedMetresPerSimSecond ** 2 + health / tuning.damagePerSquaredSpeed);
+    const lethalSpeed = Math.sqrt(
+      tuning.safeSpeedMetresPerSimSecond ** 2 + health / (tuning.damagePerSquaredSpeed * tuning.damageSpread.min),
+    );
     const { runtime } = drop(lethalSpeed * 1.2);
     expect(runtime.session.sim.dead?.cause).toBe(tuning.cause);
   });

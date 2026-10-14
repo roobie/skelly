@@ -16,6 +16,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   landing: {
     safeSpeedMetresPerSimSecond: simRate(8),
     damagePerSquaredSpeed: 0.25,
+    damageSpread: { min: 0.2, max: 2 },
     kind: 'blunt',
     cause: 'a fixture fall',
     regions: [

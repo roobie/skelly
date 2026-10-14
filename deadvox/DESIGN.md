@@ -732,15 +732,23 @@ collision physics but not the player's body-hit path, so they do not take
 landing injuries. See `src/core/physics.ts`, `stepBody`, `src/core/sim.ts`,
 `Simulation.land`, and `src/game/session.ts`, `advancePlayerBody`.
 
-Starting tuning uses an approximate three-metre human storey as a play reference:
-a one-storey drop should be survivable but hurt, while three storeys should be
-serious and larger drops can kill. This is a gameplay reference, not a medical
-prediction. Speed squared represents impact energy; removing the safe-speed
-energy gives a continuous onset without punishing an ordinary jump. Gravity
-is deliberately heavier than Earth's, so starting values are calibrated to
-in-game speeds rather than real-world free-fall speeds. BR tunes these starting
-values by playing; they are not final balance. See `src/content/base/body.jsonnet`,
-`landing`, and `src/game/player.ts`, `physicsFor`.
+The lowest gauntlet roofs should hurt modestly without normally opening an
+artery; the tallest should kill roughly one fall in three, not guarantee death.
+These are play-balancing goals, not medical predictions or frozen test rates.
+Calibrate against roof-to-street distances in the authored buildings rather
+than an assumed human storey. See `src/content/base/gauntlet-city.libsonnet`,
+`templates`, and `src/core/cityPlan.ts`, `buildCityPlan`.
+
+Speed squared represents impact energy; removing the safe-speed energy gives
+a continuous onset without punishing an ordinary jump. One seeded damage
+multiplier per fall gives a wide range of outcomes before distributing the hit
+across regions: a tall roof remains a gamble instead of a deterministic death
+boundary. The shared roll keeps both legs part of the same impact. Gravity is
+deliberately heavier than Earth's, so calibration uses in-game speeds rather
+than real-world free-fall speeds. Content owns the threshold, scale and spread
+so balance can change without changing the injury mechanism. See
+`src/content/base/body.jsonnet`, `landing`, `src/core/sim.ts`, `Simulation.land`,
+and `src/game/player.ts`, `physicsFor`.
 
 ### Bleeding
 

@@ -13,8 +13,9 @@ local normalSleep = 100 / normalSleepGameHours;
     proneEyeHeightMetres: 0.3,
     shockPerDamage: { blunt: 2, cut: 0, pierce: 0 },
     landing: {
-      safeSpeedMetresPerSimSecond: 9,
-      damagePerSquaredSpeed: 0.18,
+      safeSpeedMetresPerSimSecond: 11.5,
+      damagePerSquaredSpeed: 0.129,
+      damageSpread: { min: 0.2, max: 2 },
       kind: 'blunt',
       cause: 'a fall',
       regions: [

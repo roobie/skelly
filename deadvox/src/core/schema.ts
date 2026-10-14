@@ -1703,6 +1703,10 @@ const BodyTuningSchema = strictObject({
   landing: strictObject({
     safeSpeedMetresPerSimSecond: SimRate,
     damagePerSquaredSpeed: Positive,
+    damageSpread: pipe(
+      strictObject({ min: Positive, max: Positive }),
+      check(({ min, max }) => min <= max, 'min must not be more than max'),
+    ),
     kind: picklist(DAMAGE_KINDS),
     cause: Name,
     regions: pipe(

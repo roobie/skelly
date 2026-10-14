@@ -269,11 +269,14 @@ export class Simulation {
   }
 
   land(speedMetresPerSimSecond: number): void {
-    const { safeSpeedMetresPerSimSecond, damagePerSquaredSpeed, regions, kind, cause } = this.body.tuning.landing;
+    const { safeSpeedMetresPerSimSecond, damagePerSquaredSpeed, damageSpread, regions, kind, cause } =
+      this.body.tuning.landing;
     if (speedMetresPerSimSecond <= safeSpeedMetresPerSimSecond) {
       return;
     }
-    const damage = (speedMetresPerSimSecond ** 2 - safeSpeedMetresPerSimSecond ** 2) * damagePerSquaredSpeed;
+    const roll = this.rng(`body-landing:${this.time}:${speedMetresPerSimSecond}`).next();
+    const spread = damageSpread.min + roll * (damageSpread.max - damageSpread.min);
+    const damage = (speedMetresPerSimSecond ** 2 - safeSpeedMetresPerSimSecond ** 2) * damagePerSquaredSpeed * spread;
     const totalWeight = regions.reduce((sum, { weight }) => sum + weight, 0);
     this.takeDamage(cause, () =>
       regions.reduce(
