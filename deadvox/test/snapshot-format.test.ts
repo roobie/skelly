@@ -153,6 +153,19 @@ const lightCandleWithOffHandMatches = (runtime: ReturnType<typeof createRuntime>
   return candle;
 };
 
+it('economy origin survives the save codec and runtime restoration without becoming current ownership', async () => {
+  const source = createRuntime();
+  const type = [...registry.items.values()].find((definition) => definition.stack !== undefined)!;
+  expect(type).toBeDefined();
+  const origin = { kind: 'economy', source: 'fixture-source', channel: 'container', mode: 'random' } as const;
+  const item = source.inventory.create(type.id, 1, 1, origin);
+  expect(source.inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  const restored = createRuntime(decoded.snapshot).inventory.itemByUid(item.uid)!;
+  expect(restored.origin).toEqual(origin);
+  expect(Object.isFrozen(restored.origin)).toBe(true);
+});
+
 it('a doused candle keeps its remaining burn through save and relighting', async () => {
   const source = createRuntime();
   const candle = lightCandleWithOffHandMatches(source);
@@ -728,6 +741,7 @@ describe('canonical save format', () => {
       restoreItem(registry, {
         uid: 1,
         type: 'school_backpack',
+        origin: { kind: 'fixture' },
         count: 1,
         condition: 1,
         pinPulled: true,

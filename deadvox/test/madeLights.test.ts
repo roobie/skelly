@@ -210,7 +210,7 @@ describe('made light burn state', () => {
 
   it('does not let a used glowstick be doused or relit', () => {
     const spec = registry.items.get('glowstick')!.light!;
-    const glowstick = { uid: 1, type: 'glowstick', count: 1, condition: 1 };
+    const glowstick = { uid: 1, type: 'glowstick', count: 1, condition: 1, origin: { kind: 'fixture' } as const };
     expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
     expect(toggleLight(registry, glowstick, 1)).toBe("It can't be doused");
     expect(drainBurnLight(glowstick, spec.burnTimeGameHours!)).toBe(true);
