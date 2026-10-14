@@ -47,6 +47,7 @@ import {
   readClosedGroups,
   writeClosedGroups,
 } from './groups.ts';
+import { KitOverlay } from './kitOverlay.ts';
 import { LookControls } from './look.ts';
 import { lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
@@ -1060,6 +1061,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       });
     }
   }
+  new KitOverlay(hooks.engine.site?.authoredPlacements ?? []);
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;
   let mouseText = formatMouseDiag(undefined);

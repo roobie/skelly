@@ -20,6 +20,7 @@ read_if:
   - you're authoring or changing Deadvox content sources or their build pipeline
   - you add code that reads a content row by a fixed id
   - you author or validate curated map kits, role styles or connector contracts
+  - you change the debug kit ownership view
 ---
 
 # Content sections and recipes
@@ -78,6 +79,11 @@ Whole-definition overrides revalidate retained consumers. Source provenance foll
 winning definition through nested placement so a conflict identifies the authors of both
 claims rather than just the final block. See `src/core/content.ts`, `buildRegistry`, and
 `src/core/mapKit.ts`, `mapKitIssues`.
+
+Kit inspection stays in the development profile and reads compiled ownership and
+provenance, including air claims. Reconstructing claims from visible blocks would hide
+reserved voids and could blame the wrong nested source. See `src/debug/kitOverlay.ts`,
+`KitOverlay` and `kitSlice`.
 
 A route graph is intent, not body reachability. Admission uses reserved volume and known
 support rather than assuming that unclaimed cells or terrain outside a piece are empty
