@@ -87,6 +87,53 @@ export const gauntletFlow = async (browser, baseUrl) => {
     );
     await page.evaluate(async () => {
       const w = globalThis.gauntletWitness;
+      const { engine } = w;
+      const overlay = document.querySelector('#debug-kit-overlay');
+      if (!overlay) {
+        throw new Error('Debug kit overlay missing');
+      }
+      overlay.querySelector('button').click();
+      const placements = engine.site.authoredPlacements.filter((item) => item.template.ownership);
+      const selected = placements.findIndex((item) => item.template.reserved.includes(1));
+      if (selected < 0) {
+        throw new Error('No compiled reserved void to inspect');
+      }
+      const placementInput = overlay.querySelector('[aria-label="Kit placement"]');
+      placementInput.value = String(selected);
+      placementInput.dispatchEvent(new Event('change'));
+      const { template } = placements[selected];
+      const index = template.reserved.indexOf(1);
+      const x = index % template.size[0];
+      const z = Math.floor(index / template.size[0]) % template.size[2];
+      const y = Math.floor(index / (template.size[0] * template.size[2]));
+      const layer = overlay.querySelector('[aria-label="Kit layer"]');
+      layer.value = String(y);
+      layer.dispatchEvent(new Event('change'));
+      const canvas = overlay.querySelector('canvas');
+      const rect = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: rect.left + ((x + 0.5) * rect.width) / template.size[0],
+          clientY: rect.top + ((z + 0.5) * rect.height) / template.size[2],
+        }),
+      );
+      const detail = overlay.querySelector('pre').textContent;
+      const record = template.provenance[index];
+      if (!record) {
+        throw new Error('Reserved cell lacks compiler provenance');
+      }
+      for (const field of ['owner', 'source', 'variant']) {
+        if (!detail.includes(`${field} ${record[field]}`)) {
+          throw new Error(`Overlay differs from compiler ${field}`);
+        }
+      }
+      if (!detail.includes('reserved void yes')) {
+        throw new Error('Overlay lost reserved void');
+      }
+      overlay.querySelector('button').click();
+    });
+    await page.evaluate(async () => {
+      const w = globalThis.gauntletWitness;
       const { engine, session, input } = w;
       const { placedPieces } = await import('/src/core/templates.ts');
       const { IDLE } = await import('/src/game/session.ts');
