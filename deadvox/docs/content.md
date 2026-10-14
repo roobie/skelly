@@ -93,6 +93,14 @@ its weight cannot close a ladder landing or a route around the roof. See
 The fixture mod in `test/fixtures/jsonnet/concrete-style-mod.jsonnet` demonstrates
 a whole-definition style override through the ordinary ordered-pack boundary.
 
+Courtyard variants reserve their street approach independently of planted beds and
+boundary furniture, so tuning decoration cannot seal the entrance. Cellar street
+courses retain support outside the doorway while their interior openings belong
+to the stair owner. See `src/content/base/gauntlet-city-yards.libsonnet`, `yard`,
+and `src/content/base/gauntlet-city-cellars.libsonnet`, `street`.
+Route witnesses admit openable doors but never assume unclaimed volume is clear;
+see `test/cityKitRoutes.test.ts`, `knownBody`.
+
 City placement honours the authored ground storey so a cellar stays underground
 rather than lifting the building above the street. Ordinary buildings and the service
 campus share this alignment rule; see `src/core/cityPlan.ts`, `groundedY`.
