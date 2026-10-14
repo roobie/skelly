@@ -31,8 +31,8 @@ Use the repository-wide authoring and conversion rule in `../../docs/jsonnet.md`
 
 ## Browser mod identity
 
-Give each browser mod an explicit identity, independent of its delivery URL or
-filename. Missing identities and repeat selections are refused so a renamed
+Give each browser mod a required top-level `id`, independent of its delivery URL
+or filename. Missing identities and repeat selections are refused so a renamed
 upload or mirrored URL cannot silently admit the same mod twice. Different mods
 may override the same definitions; identity is not a definition-id collision rule.
 The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
