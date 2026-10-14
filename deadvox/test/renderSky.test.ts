@@ -1,0 +1,47 @@
+import {
+  Color,
+  DirectionalLight,
+  Fog,
+  HemisphereLight,
+  PerspectiveCamera,
+  Scene,
+  SRGBColorSpace,
+  type WebGLRenderer,
+} from 'three';
+import { expect, it } from 'vitest';
+import { skyAt } from '../src/core/sky.ts';
+import { heightFogUniforms } from '../src/render/heightFog.ts';
+import { Mood } from '../src/render/mood.ts';
+import { applySky } from '../src/render/sky.ts';
+
+it('fog, background and mist follow local sky visibility from darkness to open sky', () => {
+  const scene = new Scene();
+  const targets = {
+    scene,
+    light: new DirectionalLight(),
+    ambient: new HemisphereLight(),
+    camera: new PerspectiveCamera(),
+    radiusM: 100,
+  };
+  const mood = new Mood({} as WebGLRenderer, scene, targets.camera);
+  const sky = {
+    ...skyAt(12),
+    sky: [0.6, 0.7, 0.8] as const,
+    heightFogColor: [0.4, 0.5, 0.6] as const,
+  };
+  const outdoorFog = new Color().setRGB(...sky.sky, SRGBColorSpace);
+  const outdoorMist = new Color().setRGB(...sky.heightFogColor, SRGBColorSpace);
+  for (const visibility of [0, 0.5, 1]) {
+    applySky(targets, sky, visibility);
+    mood.setSky(sky, visibility);
+    expect(scene.fog).toBeInstanceOf(Fog);
+    const fog = scene.fog as Fog;
+    expect(fog.color.toArray()).toEqual(outdoorFog.clone().multiplyScalar(visibility).toArray());
+    expect(scene.background).toBe(fog.color);
+    expect(heightFogUniforms.uHeightFogColor.value.toArray()).toEqual(
+      outdoorMist.clone().multiplyScalar(visibility).toArray(),
+    );
+    expect(targets.light.intensity).toBe(sky.lightIntensity);
+    expect(targets.ambient.intensity).toBe(sky.ambientIntensity);
+  }
+});

@@ -1,6 +1,17 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PerspectiveCamera, Scene, Vector3 } from 'three';
+import { runInNewContext } from 'node:vm';
+import {
+  BoxGeometry,
+  DirectionalLight,
+  HemisphereLight,
+  Mesh,
+  MeshLambertMaterial,
+  PerspectiveCamera,
+  Scene,
+  ShaderLib,
+  Vector3,
+} from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -40,6 +51,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     restore: vi.fn(),
     render: vi.fn((draw: () => void) => draw()),
     setPainDesaturation: vi.fn(),
+    setSky: vi.fn(),
   };
   const shadows = { restore: vi.fn(), attachTorch: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
   const engine = {
@@ -51,7 +63,13 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
     mood,
     shadows,
-    sky: {},
+    sky: {
+      scene: new Scene(),
+      light: new DirectionalLight(),
+      ambient: new HemisphereLight(),
+      camera: new PerspectiveCamera(),
+      radiusM: 64,
+    },
     isSolid,
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), page);
@@ -158,12 +176,17 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
     registry: inventory.registry,
     scene,
     camera,
-    sky: {},
+    sky: { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), camera, radiusM: 64 },
     skylight: sky,
     isSolid: owner.knownOpaque,
     renderer: { toneMapping: 0, toneMappingExposure: 1 },
     meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
-    mood: { post: false, restore: vi.fn(), render: vi.fn((draw: () => void) => draw()) },
+    mood: {
+      post: false,
+      restore: vi.fn(),
+      render: vi.fn((draw: () => void) => draw()),
+      setSky: vi.fn(),
+    },
     shadows: { torchOn: true, restore: vi.fn(), attachTorch: vi.fn() },
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
@@ -193,6 +216,41 @@ function litWorld(geometry: 'doorway' | 'near-wall') {
   };
 }
 
+const RECEIVER_SCALE =
+  /getSpotLightInfo\( spotLight, geometryPosition, directLight \);\s*directLight.color \*= ([^;]+);/;
+
+function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3) {
+  const material = new MeshLambertMaterial();
+  const geometry = new BoxGeometry();
+  const mesh = new Mesh(geometry, material);
+  f.engine.scene.add(mesh);
+  f.sky.update(f.engine.scene, f.engine.camera.position.toArray().map((axis) => axis / 0.5) as Vec3);
+  const shader = {
+    uniforms: {} as Record<string, { value: unknown }>,
+    vertexShader: ShaderLib.lambert.vertexShader,
+    fragmentShader: ShaderLib.lambert.fragmentShader,
+  };
+  material.onBeforeCompile(shader as never, null as never);
+  try {
+    const expression = RECEIVER_SCALE.exec(shader.fragmentShader)?.[1];
+    if (!expression) {
+      throw new Error('Skylight did not patch spotlight receiver attenuation');
+    }
+    // Execute the emitted scalar GLSL with the CPU sample of the same published field.
+    const scale = Number(
+      runInNewContext(expression.replaceAll('float(', 'Number(').replaceAll('pow(', 'Math.pow('), {
+        uSkyDaylight: shader.uniforms.uSkyDaylight!.value,
+        receiverSkyVisibility: f.sky.at(target),
+      }),
+    );
+    return { scale, shader: shader.fragmentShader };
+  } finally {
+    f.engine.scene.remove(mesh);
+    geometry.dispose();
+    material.dispose();
+  }
+}
+
 describe('play presentation ownership', () => {
   it('routes one held draw through Mood with renderer, camera, and sky', async () => {
     const { engine, view, mood, shadows } = fixture();
@@ -210,7 +268,7 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('keeps a beam bright when a lit camera aims at a dark target', () => {
+  it('gives a dark receiver useful beam strength even with a sunlit camera', () => {
     const f = litWorld('doorway');
     try {
       const cameraPosition = f.engine.camera.position.toArray() as Vec3;
@@ -228,41 +286,64 @@ describe('play presentation ownership', () => {
       expect(f.sky.at(cameraPosition)).toBe(1);
       expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
       expect(f.sky.at(target)).toBeLessThan(f.sky.at(cameraPosition));
-      expect(f.view.flashlight.daylightScale).toBeGreaterThan(flashlightDaylightScale(f.daylight, 1));
-      expect(f.view.flashlight.light.intensity).toBeGreaterThan(0);
+      const receiver = receiverLighting(f, target);
+      expect(receiver.shader).toContain('float receiverSkyVisibility = skyVisibility();');
+      expect(receiver.shader).toContain('irradiance *= receiverSkyVisibility;');
+      expect(f.view.flashlight.daylightScale * receiver.scale).toBeGreaterThan(
+        flashlightDaylightScale(f.daylight) * 10,
+      );
     } finally {
       f.cleanup();
     }
   });
 
-  it('keeps carried point-light brightness independent of aim', () => {
+  it('keeps beam output stable when aim crosses a sunlit doorway edge', () => {
     const f = litWorld('doorway');
     try {
       const glowstick = f.inventory.create('glowstick');
       expect(f.inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
       expect(toggleLight(f.inventory.registry, glowstick, 0)).toBeUndefined();
-      f.engine.camera.position.set(4.75, 2.62, 8.25);
+      f.engine.camera.position.set(0.25, 2.12, 8.25);
       expect(
         f.owner.knownOpaque(...(f.engine.camera.position.toArray().map((axis) => Math.floor(axis / 0.5)) as Vec3)),
       ).toBe(false);
-      f.engine.camera.lookAt(f.engine.camera.position.clone().add(new Vector3(-1, 0, 0)));
-      f.updateFrame();
-      const outdoorScale = f.view.flashlight.daylightScale;
-      const first = f.view.lightPool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity);
       f.engine.camera.lookAt(f.engine.camera.position.clone().add(new Vector3(1, 0, 0)));
       f.updateFrame();
-      const darkTargetScale = f.view.flashlight.daylightScale;
-      const second = f.view.lightPool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity);
-      expect(outdoorScale).not.toBe(darkTargetScale);
-      expect(first).toHaveLength(1);
-      expect(second).toHaveLength(1);
-      expect(second).toEqual(first);
+      const aimAt = (targetPoint: Vec3) => {
+        f.engine.camera.lookAt(new Vector3(...targetPoint));
+        f.updateFrame();
+        const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+        const hit = raycast(
+          f.view.flashlight.light.position.toArray().map((axis) => axis / 0.5) as Vec3,
+          direction,
+          f.view.flashlight.light.distance / 0.5,
+          f.owner.knownOpaque,
+        );
+        expect(hit).toBeDefined();
+        const target = f.view.flashlight.light.position
+          .clone()
+          .addScaledVector(new Vector3(...direction), hit!.distance * 0.5)
+          .addScaledVector(new Vector3(...hit!.normal), 0.005)
+          .toArray() as Vec3;
+        return {
+          scale: f.view.flashlight.daylightScale,
+          targetVisibility: f.sky.at(target),
+          pointLights: f.view.lightPool.lights.filter((light) => light.intensity > 0).map((light) => light.intensity),
+        };
+      };
+      const first = aimAt([11, 2.12, 8.25]);
+      const second = aimAt([11, 2.12, 11]);
+      expect(first.targetVisibility).not.toBe(second.targetVisibility);
+      expect(second.scale).toBeCloseTo(first.scale);
+
+      expect(first.pointLights).toHaveLength(1);
+      expect(second.pointLights).toEqual(first.pointLights);
     } finally {
       f.cleanup();
     }
   });
 
-  it('keeps the daylight fade when the beam hits a nearby sunlit wall from shade', () => {
+  it('suppresses beam strength on a sunlit receiver even with a shaded camera', () => {
     const f = litWorld('near-wall');
     try {
       const cameraPosition = f.engine.camera.position.toArray() as Vec3;
@@ -280,8 +361,9 @@ describe('play presentation ownership', () => {
       expect(f.sky.at(cameraPosition)).toBeLessThan(1);
       expect(f.owner.knownOpaque(...(target.map((axis) => Math.floor(axis / 0.5)) as Vec3))).toBe(false);
       expect(f.sky.at(target)).toBe(1);
-      expect(f.view.flashlight.daylightScale).toBeLessThan(flashlightDaylightScale(f.daylight, 0));
-      expect(f.view.flashlight.light.intensity).toBeGreaterThan(0);
+      expect(f.view.flashlight.daylightScale * receiverLighting(f, target).scale).toBeLessThan(
+        flashlightDaylightScale(f.daylight, f.sky.at(cameraPosition)),
+      );
     } finally {
       f.cleanup();
     }

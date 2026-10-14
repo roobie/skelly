@@ -1,6 +1,5 @@
 // Owned play presentation resources and read-only frame projections. Gameplay chooses
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
-import { Vector3 } from 'three';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
@@ -175,7 +174,6 @@ export const createPlayView = (
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const flashlight = new Flashlight(scene);
-  const beamDirection = new Vector3();
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, held.warmUpTarget.scene);
   engine.shadows?.attachTorch(flashlight.light);
@@ -289,8 +287,6 @@ export const createPlayView = (
       blastFlashes.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather);
-      applySky(engine.sky, sky);
-      engine.mood?.setSky(sky);
       piles.sync(inventory, itemThrows.hiddenItemUids);
       furniture.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
@@ -305,32 +301,12 @@ export const createPlayView = (
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
+      applySky(engine.sky, sky, skyVisibility);
+      engine.mood?.setSky(sky, skyVisibility);
       held.setSkyVisibility(skyVisibility);
       cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
-      let beamVisibility = skyVisibility;
-      if (flashlight.light.intensity > 0) {
-        camera.getWorldDirection(beamDirection);
-        const blockSize = s;
-        const origin: Vec3 = [
-          flashlight.light.position.x / blockSize,
-          flashlight.light.position.y / blockSize,
-          flashlight.light.position.z / blockSize,
-        ];
-        const direction: Vec3 = [beamDirection.x, beamDirection.y, beamDirection.z];
-        const hit = raycast(origin, direction, flashlight.light.distance / blockSize, engine.isSolid);
-        if (hit?.normal.some((component) => component !== 0)) {
-          const freeAirSide: Vec3 = [
-            (origin[0] + direction[0] * hit.distance + hit.normal[0] * 0.01) * blockSize,
-            (origin[1] + direction[1] * hit.distance + hit.normal[1] * 0.01) * blockSize,
-            (origin[2] + direction[2] * hit.distance + hit.normal[2] * 0.01) * blockSize,
-          ];
-          beamVisibility = engine.skylight?.at(freeAirSide) ?? 1;
-        } else {
-          // A miss has no illuminated surface; treat the unoccluded beam as outdoors.
-          beamVisibility = 1;
-        }
-      }
-      flashlight.daylightScale = flashlightDaylightScale(sky, beamVisibility);
+      engine.skylight?.setDaylight(sky);
+      flashlight.daylightScale = engine.skylight ? 1 : flashlightDaylightScale(sky);
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (sky: ReturnType<typeof skyInWeather>) => {
