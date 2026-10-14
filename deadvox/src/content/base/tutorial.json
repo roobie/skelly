@@ -70,6 +70,10 @@
       "demo": true,
       "ground": 0,
       "id": "tutorial",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
       "player": {
         "bearing": 0,
         "position": [0, 0.5, 8]
@@ -174,6 +178,10 @@
           "RRRRRRRRRRRR"
         ]
       ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
       "palette": {
         "#": "planks",
         ".": "air",
