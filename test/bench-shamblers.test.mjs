@@ -4,11 +4,14 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const DEADVOX = fileURLToPath(new URL('../deadvox/', import.meta.url));
+const POPULATION_REPORT = /^N=(\d+) \(/m;
 
 test('one-shambler CPU benchmark runs through its npm script under plain Node', () => {
   const output = execFileSync('npm', ['run', '--silent', 'bench:shamblers', '--', '1'], {
     cwd: DEADVOX,
     encoding: 'utf8',
   });
-  assert.notEqual(output.trim(), '');
+  const report = POPULATION_REPORT.exec(output);
+  assert.ok(report, `benchmark produced no population report: ${output}`);
+  assert.equal(Number(report[1]), 1);
 });

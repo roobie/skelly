@@ -70,6 +70,8 @@ describe('flinchPose', () => {
     const walkBase = walkPose(actor, INITIAL_CLOCK, 0.8);
     const a = flinchPose(actor, 0.1, walkBase, { side: 0.5 });
     const b = flinchPose(actor, 0.1, walkBase, { side: 0.5 });
+    expect(Object.keys(a.rotations).length).toBeGreaterThan(0);
+    expect(maxPoseDiff(a, walkBase)).toBeGreaterThan(0);
     expect(maxPoseDiff(a, b)).toBe(0);
   });
 
@@ -125,6 +127,8 @@ describe('deathPose', () => {
     const walkBase = walkPose(walkActorOf(found), INITIAL_CLOCK, 0);
     const a = deathPose(actor, walkBase, 0.6, { direction: 1 });
     const b = deathPose(actor, walkBase, 0.6, { direction: 1 });
+    expect(Object.keys(a.rotations).length).toBeGreaterThan(0);
+    expect(maxPoseDiff(a, walkBase)).toBeGreaterThan(0);
     expect(maxPoseDiff(a, b)).toBe(0);
   });
 

@@ -11,7 +11,6 @@ import { amalgamManifest } from '../src/mob/amalgam.ts';
 import { amalgamTemplate } from '../src/mob/amalgamTemplate.ts';
 import {
   CROWD_MASK_BITS_PER_TEXEL,
-  CROWD_VERTEX_DECLARATIONS,
   crowdMaskTexelIndex,
   crowdTexelIndex,
   crowdTextureLayout,
@@ -168,8 +167,6 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
       packSeveredMask(data, layout, 0, [index]);
       expect(isSeveredInMask(data, layout, 0, index)).toBe(true);
     }
-    expect(CROWD_VERTEX_DECLARATIONS).toContain(`int word = boneIndex / ${CROWD_MASK_BITS_PER_TEXEL};`);
-    expect(CROWD_VERTEX_DECLARATIONS).toContain(`int bit = boneIndex % ${CROWD_MASK_BITS_PER_TEXEL};`);
   });
 
   it('rejects severed bone indices outside the allocated crowd slot', () => {

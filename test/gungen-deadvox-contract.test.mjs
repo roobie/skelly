@@ -171,24 +171,12 @@ describe('gungen exports satisfy deadvox model validation', () => {
   it('rejects unknown action fields', () => {
     const { file, model } = loadExports().find(({ model: entry }) => entry.action?.fire) ?? {};
     assert.ok(file && model?.action?.fire);
-    const oldCycleNames = ({ durationSimSeconds, rearwardSimSeconds, dwellSimSeconds, forwardSimSeconds }) => ({
-      durationSeconds: durationSimSeconds,
-      rearwardSeconds: rearwardSimSeconds,
-      dwellSeconds: dwellSimSeconds,
-      forwardSeconds: forwardSimSeconds,
-    });
-    const { action } = model;
-    const { roundsPerSimMinute, ...actionWithoutRate } = action;
-    const oldModel = {
-      ...model,
-      action: {
-        ...actionWithoutRate,
-        fire: oldCycleNames(action.fire),
-        hand: oldCycleNames(action.hand),
-        rpm: roundsPerSimMinute,
-      },
-    };
-    const { issues } = buildRegistry([{ source: `gungen/designs/${file}`, data: { models: [oldModel] } }]);
-    assert.notDeepEqual(issues, [], `${file} should fail with the pre-r44-3 exporter fields`);
+    const source = `gungen/designs/${file}`;
+    assert.deepEqual(buildRegistry([{ source, data: { models: [model] } }]).issues, []);
+    const unknownField = 'fixtureUnknownActionField';
+    const invalidModel = { ...model, action: { ...model.action, [unknownField]: true } };
+    const { issues } = buildRegistry([{ source, data: { models: [invalidModel] } }]);
+    assert.equal(issues.length, 1);
+    assert.ok(JSON.stringify(issues[0]).includes(unknownField), JSON.stringify(issues));
   });
 });

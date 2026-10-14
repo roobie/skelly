@@ -270,11 +270,13 @@ describe('validation profiles', () => {
   });
 
   it('recommends from full-detail limb thickness in cells without changing the explicit full default', () => {
-    const genome = generate(TEMPLATES.find((template) => template.name === 'shambler')!, 7);
-    expect(recommendedProfileFor(genome, genome.voxelSize)).toBe('silhouette');
-    expect(recommendedProfileFor(genome, 0.5 / 2)).toBe('silhouette');
-    // Even when thin anatomy suggests silhouette rules, the caller's omission still means full.
-    expect(realize(genome).profile).toBe('full');
+    const base = generate(TEMPLATES.find((template) => template.name === 'shambler')!, 7);
+    const thin = { ...base, voxelSize: 0.05, params: { ...base.params, height: 2, girth: 0.1 } };
+    const thick = { ...thin, params: { ...thin.params, girth: 4 } };
+    expect(recommendedProfileFor(thin)).toBe('silhouette');
+    expect(recommendedProfileFor(thick)).toBe('full');
+    // The recommendation must not silently change the caller's omitted profile.
+    expect(realize(thin).profile).toBe('full');
   });
 
   it('derives all three far sizes from an already full-valid humanoid genome', () => {
